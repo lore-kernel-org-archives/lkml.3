@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933671AbaKSVVF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:21:05 -0500
+	id S933676AbaKSVVr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:21:47 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:57366 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933932AbaKSVO6 (ORCPT
+	with ESMTP id S933912AbaKSVO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:58 -0500
+	Wed, 19 Nov 2014 16:14:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         David Rientjes <rientjes@google.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        azurIt <azurit@pobox.sk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        azurIt <azurit@pobox.sk>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Cong Wang <xiyou.wangcong@gmail.com>
-Subject: [PATCH 3.10 68/70] mm: memcg: rework and document OOM waiting and wakeup
-Date: Wed, 19 Nov 2014 12:52:59 -0800
-Message-Id: <20141119205213.156816484@linuxfoundation.org>
+Subject: [PATCH 3.10 66/70] x86: finish user fault error path with fatal signal
+Date: Wed, 19 Nov 2014 12:52:57 -0800
+Message-Id: <20141119205213.095650815@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -37,215 +36,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit fb2a6fc56be66c169f8b80e07ed999ba453a2db2 upstream.
+commit 3a13c4d761b4b979ba8767f42345fed3274991b0 upstream.
 
-The memcg OOM handler open-codes a sleeping lock for OOM serialization
-(trylock, wait, repeat) because the required locking is so specific to
-memcg hierarchies.  However, it would be nice if this construct would be
-clearly recognizable and not be as obfuscated as it is right now.  Clean
-up as follows:
+The x86 fault handler bails in the middle of error handling when the
+task has a fatal signal pending.  For a subsequent patch this is a
+problem in OOM situations because it relies on pagefault_out_of_memory()
+being called even when the task has been killed, to perform proper
+per-task OOM state unwinding.
 
-1. Remove the return value of mem_cgroup_oom_unlock()
+Shortcutting the fault like this is a rather minor optimization that
+saves a few instructions in rare cases.  Just remove it for
+user-triggered faults.
 
-2. Rename mem_cgroup_oom_lock() to mem_cgroup_oom_trylock().
-
-3. Pull the prepare_to_wait() out of the memcg_oom_lock scope.  This
-   makes it more obvious that the task has to be on the waitqueue
-   before attempting to OOM-trylock the hierarchy, to not miss any
-   wakeups before going to sleep.  It just didn't matter until now
-   because it was all lumped together into the global memcg_oom_lock
-   spinlock section.
-
-4. Pull the mem_cgroup_oom_notify() out of the memcg_oom_lock scope.
-   It is proctected by the hierarchical OOM-lock.
-
-5. The memcg_oom_lock spinlock is only required to propagate the OOM
-   lock in any given hierarchy atomically.  Restrict its scope to
-   mem_cgroup_oom_(trylock|unlock).
-
-6. Do not wake up the waitqueue unconditionally at the end of the
-   function.  Only the lockholder has to wake up the next in line
-   after releasing the lock.
-
-   Note that the lockholder kicks off the OOM-killer, which in turn
-   leads to wakeups from the uncharges of the exiting task.  But a
-   contender is not guaranteed to see them if it enters the OOM path
-   after the OOM kills but before the lockholder releases the lock.
-   Thus there has to be an explicit wakeup after releasing the lock.
-
-7. Put the OOM task on the waitqueue before marking the hierarchy as
-   under OOM as that is the point where we start to receive wakeups.
-   No point in listening before being on the waitqueue.
-
-8. Likewise, unmark the hierarchy before finishing the sleep, for
-   symmetry.
+Use the opportunity to split the fault retry handling from actual fault
+errors and add locking documentation that reads suprisingly similar to
+ARM's.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: David Rientjes <rientjes@google.com>
 Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: azurIt <azurit@pobox.sk>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memcontrol.c |   83 +++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 46 insertions(+), 37 deletions(-)
+ arch/x86/mm/fault.c |   35 +++++++++++++++++------------------
+ 1 file changed, 17 insertions(+), 18 deletions(-)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2075,15 +2075,18 @@ static int mem_cgroup_soft_reclaim(struc
- 	return total;
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -842,23 +842,15 @@ do_sigbus(struct pt_regs *regs, unsigned
+ 	force_sig_info_fault(SIGBUS, code, address, tsk, fault);
  }
  
-+static DEFINE_SPINLOCK(memcg_oom_lock);
-+
- /*
-  * Check OOM-Killer is already running under our hierarchy.
-  * If someone is running, return false.
-- * Has to be called with memcg_oom_lock
-  */
--static bool mem_cgroup_oom_lock(struct mem_cgroup *memcg)
-+static bool mem_cgroup_oom_trylock(struct mem_cgroup *memcg)
+-static noinline int
++static noinline void
+ mm_fault_error(struct pt_regs *regs, unsigned long error_code,
+ 	       unsigned long address, unsigned int fault)
  {
- 	struct mem_cgroup *iter, *failed = NULL;
- 
-+	spin_lock(&memcg_oom_lock);
-+
- 	for_each_mem_cgroup_tree(iter, memcg) {
- 		if (iter->oom_lock) {
- 			/*
-@@ -2097,33 +2100,33 @@ static bool mem_cgroup_oom_lock(struct m
- 			iter->oom_lock = true;
- 	}
- 
--	if (!failed)
--		return true;
--
 -	/*
--	 * OK, we failed to lock the whole subtree so we have to clean up
--	 * what we set up to the failing subtree
+-	 * Pagefault was interrupted by SIGKILL. We have no reason to
+-	 * continue pagefault.
 -	 */
--	for_each_mem_cgroup_tree(iter, memcg) {
--		if (iter == failed) {
--			mem_cgroup_iter_break(memcg, iter);
--			break;
-+	if (failed) {
-+		/*
-+		 * OK, we failed to lock the whole subtree so we have
-+		 * to clean up what we set up to the failing subtree
-+		 */
-+		for_each_mem_cgroup_tree(iter, memcg) {
-+			if (iter == failed) {
-+				mem_cgroup_iter_break(memcg, iter);
-+				break;
-+			}
-+			iter->oom_lock = false;
+-	if (fatal_signal_pending(current)) {
+-		if (!(fault & VM_FAULT_RETRY))
+-			up_read(&current->mm->mmap_sem);
+-		if (!(error_code & PF_USER))
+-			no_context(regs, error_code, address, 0, 0);
+-		return 1;
++	if (fatal_signal_pending(current) && !(error_code & PF_USER)) {
++		up_read(&current->mm->mmap_sem);
++		no_context(regs, error_code, address, 0, 0);
++		return;
+ 	}
+-	if (!(fault & VM_FAULT_ERROR))
+-		return 0;
+ 
+ 	if (fault & VM_FAULT_OOM) {
+ 		/* Kernel mode? Handle exceptions or die: */
+@@ -866,7 +858,7 @@ mm_fault_error(struct pt_regs *regs, uns
+ 			up_read(&current->mm->mmap_sem);
+ 			no_context(regs, error_code, address,
+ 				   SIGSEGV, SEGV_MAPERR);
+-			return 1;
++			return;
  		}
--		iter->oom_lock = false;
+ 
+ 		up_read(&current->mm->mmap_sem);
+@@ -884,7 +876,6 @@ mm_fault_error(struct pt_regs *regs, uns
+ 		else
+ 			BUG();
  	}
--	return false;
-+
-+	spin_unlock(&memcg_oom_lock);
-+
-+	return !failed;
+-	return 1;
  }
  
--/*
-- * Has to be called with memcg_oom_lock
-- */
--static int mem_cgroup_oom_unlock(struct mem_cgroup *memcg)
-+static void mem_cgroup_oom_unlock(struct mem_cgroup *memcg)
- {
- 	struct mem_cgroup *iter;
- 
-+	spin_lock(&memcg_oom_lock);
- 	for_each_mem_cgroup_tree(iter, memcg)
- 		iter->oom_lock = false;
--	return 0;
-+	spin_unlock(&memcg_oom_lock);
- }
- 
- static void mem_cgroup_mark_under_oom(struct mem_cgroup *memcg)
-@@ -2147,7 +2150,6 @@ static void mem_cgroup_unmark_under_oom(
- 		atomic_add_unless(&iter->under_oom, -1, 0);
- }
- 
--static DEFINE_SPINLOCK(memcg_oom_lock);
- static DECLARE_WAIT_QUEUE_HEAD(memcg_oom_waitq);
- 
- struct oom_wait_info {
-@@ -2194,45 +2196,52 @@ static bool mem_cgroup_handle_oom(struct
- 				  int order)
- {
- 	struct oom_wait_info owait;
--	bool locked, need_to_kill;
-+	bool locked;
- 
- 	owait.memcg = memcg;
- 	owait.wait.flags = 0;
- 	owait.wait.func = memcg_oom_wake_function;
- 	owait.wait.private = current;
- 	INIT_LIST_HEAD(&owait.wait.task_list);
--	need_to_kill = true;
--	mem_cgroup_mark_under_oom(memcg);
- 
--	/* At first, try to OOM lock hierarchy under memcg.*/
--	spin_lock(&memcg_oom_lock);
--	locked = mem_cgroup_oom_lock(memcg);
- 	/*
-+	 * As with any blocking lock, a contender needs to start
-+	 * listening for wakeups before attempting the trylock,
-+	 * otherwise it can miss the wakeup from the unlock and sleep
-+	 * indefinitely.  This is just open-coded because our locking
-+	 * is so particular to memcg hierarchies.
-+	 *
- 	 * Even if signal_pending(), we can't quit charge() loop without
- 	 * accounting. So, UNINTERRUPTIBLE is appropriate. But SIGKILL
- 	 * under OOM is always welcomed, use TASK_KILLABLE here.
+ static int spurious_fault_check(unsigned long error_code, pte_t *pte)
+@@ -1193,9 +1184,17 @@ good_area:
  	 */
- 	prepare_to_wait(&memcg_oom_waitq, &owait.wait, TASK_KILLABLE);
--	if (!locked || memcg->oom_kill_disable)
--		need_to_kill = false;
-+	mem_cgroup_mark_under_oom(memcg);
-+
-+	locked = mem_cgroup_oom_trylock(memcg);
-+
- 	if (locked)
- 		mem_cgroup_oom_notify(memcg);
--	spin_unlock(&memcg_oom_lock);
+ 	fault = handle_mm_fault(mm, vma, address, flags);
  
--	if (need_to_kill) {
-+	if (locked && !memcg->oom_kill_disable) {
-+		mem_cgroup_unmark_under_oom(memcg);
- 		finish_wait(&memcg_oom_waitq, &owait.wait);
- 		mem_cgroup_out_of_memory(memcg, mask, order);
- 	} else {
- 		schedule();
-+		mem_cgroup_unmark_under_oom(memcg);
- 		finish_wait(&memcg_oom_waitq, &owait.wait);
+-	if (unlikely(fault & (VM_FAULT_RETRY|VM_FAULT_ERROR))) {
+-		if (mm_fault_error(regs, error_code, address, fault))
+-			return;
++	/*
++	 * If we need to retry but a fatal signal is pending, handle the
++	 * signal first. We do not need to release the mmap_sem because it
++	 * would already be released in __lock_page_or_retry in mm/filemap.c.
++	 */
++	if (unlikely((fault & VM_FAULT_RETRY) && fatal_signal_pending(current)))
++		return;
++
++	if (unlikely(fault & VM_FAULT_ERROR)) {
++		mm_fault_error(regs, error_code, address, fault);
++		return;
  	}
--	spin_lock(&memcg_oom_lock);
--	if (locked)
--		mem_cgroup_oom_unlock(memcg);
--	memcg_wakeup_oom(memcg);
--	spin_unlock(&memcg_oom_lock);
  
--	mem_cgroup_unmark_under_oom(memcg);
-+	if (locked) {
-+		mem_cgroup_oom_unlock(memcg);
-+		/*
-+		 * There is no guarantee that an OOM-lock contender
-+		 * sees the wakeups triggered by the OOM kill
-+		 * uncharges.  Wake any sleepers explicitely.
-+		 */
-+		memcg_oom_recover(memcg);
-+	}
- 
- 	if (test_thread_flag(TIF_MEMDIE) || fatal_signal_pending(current))
- 		return false;
+ 	/*
 
 
