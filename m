@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402AbaKSWjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:39:32 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:54099 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756714AbaKSWjR (ORCPT
+	id S1758247AbaKSWjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:39:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55895 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756714AbaKSUxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 17:39:17 -0500
-Date: Wed, 19 Nov 2014 14:39:14 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Luiz Capitulino <lcapitulino@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, andi@firstfloor.org, riel@redhat.com,
-        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org, davidlohr@hp.com
-Subject: Re: [PATCH 1/3] hugetlb: fix hugepages= entry in
- kernel-parameters.txt
-In-Reply-To: <1415831593-9020-2-git-send-email-lcapitulino@redhat.com>
-Message-ID: <alpine.DEB.2.10.1411191439030.24691@chino.kir.corp.google.com>
-References: <1415831593-9020-1-git-send-email-lcapitulino@redhat.com> <1415831593-9020-2-git-send-email-lcapitulino@redhat.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 19 Nov 2014 15:53:53 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dwight Engen <dwight.engen@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 022/141] sunvdc: dont call VD_OP_GET_VTOC
+Date: Wed, 19 Nov 2014 12:50:45 -0800
+Message-Id: <20141119205151.385342986@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
+References: <20141119205150.700188369@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Nov 2014, Luiz Capitulino wrote:
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-> The hugepages= entry in kernel-parameters.txt states that
-> 1GB pages can only be allocated at boot time and not
-> freed afterwards. This is not true since commit
-> 944d9fec8d7aee, at least for x86_64.
-> 
-> Instead of adding arch-specifc observations to the
-> hugepages= entry, this commit just drops the out of date
-> information. Further information about arch-specific
-> support and available features can be obtained in the
-> hugetlb documentation.
-> 
-> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+------------------
 
-Acked-by: David Rientjes <rientjes@google.com>
+From: Dwight Engen <dwight.engen@oracle.com>
+
+[ Upstream commit 85b0c6e62c48bb9179fd5b3e954f362fb346cbd5 ]
+
+The VD_OP_GET_VTOC operation will succeed only if the vdisk backend has a
+VTOC label, otherwise it will fail. In particular, it will return error
+48 (ENOTSUP) if the disk has an EFI label. VTOC disk labels are already
+handled by directly reading the disk in block/partitions/sun.c (enabled by
+CONFIG_SUN_PARTITION which defaults to y on SPARC). Since port->label is
+unused in the driver, remove the call and the field.
+
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/block/sunvdc.c |    9 ---------
+ 1 file changed, 9 deletions(-)
+
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -69,8 +69,6 @@ struct vdc_port {
+ 	u8			vdisk_mtype;
+ 
+ 	char			disk_name[32];
+-
+-	struct vio_disk_vtoc	label;
+ };
+ 
+ static inline struct vdc_port *to_vdc_port(struct vio_driver_state *vio)
+@@ -710,13 +708,6 @@ static int probe_disk(struct vdc_port *p
+ 	if (comp.err)
+ 		return comp.err;
+ 
+-	err = generic_request(port, VD_OP_GET_VTOC,
+-			      &port->label, sizeof(port->label));
+-	if (err < 0) {
+-		printk(KERN_ERR PFX "VD_OP_GET_VTOC returns error %d\n", err);
+-		return err;
+-	}
+-
+ 	if (vdc_version_supported(port, 1, 1)) {
+ 		/* vdisk_size should be set during the handshake, if it wasn't
+ 		 * then the underlying disk is reserved by another system
+
+
