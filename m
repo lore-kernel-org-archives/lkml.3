@@ -1,178 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213AbaKSUfI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:35:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756132AbaKSUfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:35:06 -0500
-Date: Wed, 19 Nov 2014 14:34:30 -0600
-From: Seth Jennings <sjenning@redhat.com>
-To: Miroslav Benes <mbenes@suse.cz>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 2/3] kernel: add support for live patching
-Message-ID: <20141119203430.GA12517@cerebellum.variantweb.net>
-References: <1416187764-3341-1-git-send-email-sjenning@redhat.com>
- <1416187764-3341-3-git-send-email-sjenning@redhat.com>
- <alpine.LNX.2.00.1411181540580.1117@pobox.suse.cz>
+	id S932305AbaKSUfV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:35:21 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33884 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932096AbaKSUfS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 15:35:18 -0500
+Date: Wed, 19 Nov 2014 12:35:12 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
+Message-ID: <20141119203512.GQ5050@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141013022454.289398272@linuxfoundation.org>
+ <20141013112834.GA10826@khazad-dum.debian.net>
+ <20141013082319.175d90bb@as>
+ <20141119172235.GA31260@kroah.com>
+ <20141119194414.GN5050@linux.vnet.ibm.com>
+ <20141119201648.GA22775@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1411181540580.1117@pobox.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141119201648.GA22775@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111920-0021-0000-0000-000006464782
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 03:45:22PM +0100, Miroslav Benes wrote:
+On Wed, Nov 19, 2014 at 12:16:48PM -0800, Greg Kroah-Hartman wrote:
+> On Wed, Nov 19, 2014 at 11:44:14AM -0800, Paul E. McKenney wrote:
+> > On Wed, Nov 19, 2014 at 09:22:35AM -0800, Greg Kroah-Hartman wrote:
+> > > On Mon, Oct 13, 2014 at 08:23:19AM -0500, Chuck Ebbert wrote:
+> > > > On Mon, 13 Oct 2014 08:28:35 -0300
+> > > > Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
+> > > > 
+> > > > > On Mon, 13 Oct 2014, Greg Kroah-Hartman wrote:
+> > > > > > This is the start of the stable review cycle for the 3.17.1
+> > > > > > release. There are 25 patches in this series, all will be posted
+> > > > > > as a response to this one.  If anyone has any issues with these
+> > > > > > being applied, please let me know.
+> > > > > 
+> > > > > Actually, 3.17 is a filesystem killer for some unlucky users due to
+> > > > > the libata blacklist being disabled by a bug.
+> > > > > 
+> > > > > Patch:
+> > > > > https://git.kernel.org/cgit/linux/kernel/git/tj/libata.git/patch/?id=1c40279960bcd7d52dbdf1d466b20d24b99176c8
+> > > > > 1c40279960bcd7d52dbdf1d466b20d24b99176c8 (libata: Un-break ATA
+> > > > > blacklist)
+> > > > > 
+> > > > 
+> > > > There are some more bugs too:
+> > > > 
+> > > > 
+> > > > RCU stalls, fix has been in rcu/urgent for 7 days:
+> > > > https://git.kernel.org/cgit/linux/kernel/git/paulmck/linux-rcu.git/commit/?h=rcu/urgent&id=789cbbeca4eb7141cbd748ee93772471101b507b
+> > > 
+> > > Doesn't build in 3.17 properly :(
+> > > 
+> > > > blk-mq bio merging (still no good fix available):
+> > > > https://lkml.org/lkml/2014/10/9/729
+> > > > (The fix sitting in the block tree:
+> > > > https://git.kernel.org/cgit/linux/kernel/git/axboe/linux-block.git/commit/?h=for-3.18/core&id=764f612c6c3c231b9c12cfae7c328ccc9c453258
+> > > > is wrong according to that message.)
+> > > 
+> > > Did this ever get resolved?
+> > > 
+> > > > Stalls when using nohz, requires series of six patches to fix that
+> > > > didn't make 3.17 and weren't marked for -stable:
+> > > > 
+> > > > From a80e49e2cc3145af014a8ae44f575829cc236192 Mon Sep 17 00:00:00 2001
+> > > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > Subject: nohz: Move nohz full init call to tick init
+> > > > 
+> > > > From c5c38ef3d70377dc504a6a3f611a3ec814bc757b Mon Sep 17 00:00:00 2001
+> > > > From: Peter Zijlstra <peterz@infradead.org>
+> > > > Subject: irq_work: Introduce arch_irq_work_has_interrupt()
+> > > > 
+> > > > From 76a33061b9323b7fdb220ae5fa116c10833ec22e Mon Sep 17 00:00:00 2001
+> > > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > Subject: irq_work: Force raised irq work to run on irq work interrupt
+> > > > 
+> > > > From 3010279f0fc36f0388872203e63ca49912f648fd Mon Sep 17 00:00:00 2001
+> > > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > Subject: x86: Tell irq work about self IPI support
+> > > > 
+> > > > From 09f6edd424218eb69078551b2ecfada1f2d098eb Mon Sep 17 00:00:00 2001
+> > > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > Subject: arm: Tell irq work about self IPI support
+> > > > 
+> > > > From 3631073659d0aafeaa52227bb61a100efaf901dc Mon Sep 17 00:00:00 2001
+> > > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > To: 09f6edd424218eb69078551b2ecfada1f2d098eb
+> > > To: Chuck Ebbert <cebbert.lkml@gmail.com>
+> > > Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+> > > 	linux-kernel@vger.kernel.org, stable@kernel.org
+> > > Bcc: 
+> > > Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
+> > > Reply-To: 
+> > > In-Reply-To: <20141013082319.175d90bb@as>
+> > > 
+> > > On Mon, Oct 13, 2014 at 08:23:19AM -0500, Chuck Ebbert wrote:
+> > > > On Mon, 13 Oct 2014 08:28:35 -0300
+> > > > Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
+> > > > 
+> > > > > On Mon, 13 Oct 2014, Greg Kroah-Hartman wrote:
+> > > > > > This is the start of the stable review cycle for the 3.17.1
+> > > > > > release. There are 25 patches in this series, all will be posted
+> > > > > > as a response to this one.  If anyone has any issues with these
+> > > > > > being applied, please let me know.
+> > > > > 
+> > > > > Actually, 3.17 is a filesystem killer for some unlucky users due to
+> > > > > the libata blacklist being disabled by a bug.
+> > > > > 
+> > > > > Patch:
+> > > > > https://git.kernel.org/cgit/linux/kernel/git/tj/libata.git/patch/?id=1c40279960bcd7d52dbdf1d466b20d24b99176c8
+> > > > > 1c40279960bcd7d52dbdf1d466b20d24b99176c8 (libata: Un-break ATA
+> > > > > blacklist)
+> > > > > 
+> > > > 
+> > > > There are some more bugs too:
+> > > > 
+> > > > 
+> > > > RCU stalls, fix has been in rcu/urgent for 7 days:
+> > > > https://git.kernel.org/cgit/linux/kernel/git/paulmck/linux-rcu.git/commit/?h=rcu/urgent&id=789cbbeca4eb7141cbd748ee93772471101b507b
+> > > 
+> > > Doesn't build in 3.17 properly :(
+> > 
+> > Older kernels can use rcu_note_context_switch() instead of
+> > rcu_note_voluntary_context_switch(), which didn't show up until quite
+> > recently.  Please note that rcu_note_context_switch() is quite a bit
+> > more heavy-weight than is rcu_note_voluntary_context_switch(), but it
+> > should be OK in this context.
 > 
-> On Sun, 16 Nov 2014, Seth Jennings wrote:
-> 
-> [...]
-> 
-> > diff --git a/include/linux/livepatch.h b/include/linux/livepatch.h
-> > new file mode 100644
-> > index 0000000..8b68fef
-> > --- /dev/null
-> > +++ b/include/linux/livepatch.h
-> > @@ -0,0 +1,68 @@
-> > +/*
-> > + * livepatch.h - Live Kernel Patching Core
-> > + *
-> > + * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License
-> > + * as published by the Free Software Foundation; either version 2
-> > + * of the License, or (at your option) any later version.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + *
-> > + * You should have received a copy of the GNU General Public License
-> > + * along with this program; if not, see <http://www.gnu.org/licenses/>.
-> > + */
-> > +
-> > +#ifndef _LINUX_LIVEPATCH_H_
-> > +#define _LINUX_LIVEPATCH_H_
-> > +
-> > +#include <linux/module.h>
-> > +
-> 
-> I think we need something like 
-> 
-> #if IS_ENABLED(CONFIG_LIVE_PATCHING)
-> 
-> here. Otherwise kernel module with live patch itself would be built 
-> even with live patching support disabled (as the structures and needed 
-> functions are declared).
+> "OK" as in "worth the overhead to fix the known bug"?  Or is this just
+> not worth backporting to 3.17, 3.14, and 3.10 as no one really hits this
+> issue there?
 
-What do you think of this (already includes s/lp/klp/ change)?
+"OK" as in "the added overhead of rcu_note_context_switch() is likely
+to be down in the noise in this case".  I must confess that I have no
+idea whether or not people hit this issue in 3.17, 3.14, or 3.10.
 
-====
-diff --git a/include/linux/livepatch.h b/include/linux/livepatch.h
-index 0143b73..a9821f3 100644
---- a/include/linux/livepatch.h
-+++ b/include/linux/livepatch.h
-@@ -21,6 +21,7 @@
- #define _LINUX_LIVEPATCH_H_
- 
- #include <linux/module.h>
-+#include <asm/livepatch.h>
- 
- /* TODO: add kernel-doc for structures once agreed upon */
- 
-@@ -58,11 +59,20 @@ struct klp_patch {
-        struct klp_object *objs;
- };
- 
--int klp_register_patch(struct klp_patch *);
--int klp_unregister_patch(struct klp_patch *);
--int klp_enable_patch(struct klp_patch *);
--int klp_disable_patch(struct klp_patch *);
-+#ifdef CONFIG_LIVE_PATCHING
- 
--#include <asm/livepatch.h>
-+extern int klp_register_patch(struct klp_patch *);
-+extern int klp_unregister_patch(struct klp_patch *);
-+extern int klp_enable_patch(struct klp_patch *);
-+extern int klp_disable_patch(struct klp_patch *);
-+
-+#else /* !CONFIG_LIVE_PATCHING */
-+
-+static int klp_register_patch(struct klp_patch *k) { return -ENOSYS; }
-+static int klp_unregister_patch(struct klp_patch *k) { return -ENOSYS; }
-+static int klp_enable_patch(struct klp_patch *k) { return -ENOSYS; }
-+static int klp_disable_patch(struct klp_patch *k) { return -ENOSYS; }
-+
-+#endif
-====
+							Thanx, Paul
 
-This seems to be the way many headers handle this.  Patch modules built
-against a kernel that doesn't support live patching will build cleanly,
-but will always fail to load.
-
-Seth
-
-> 
-> > +/* TODO: add kernel-doc for structures once agreed upon */
-> > +
-> > +struct lp_func {
-> > +	const char *old_name; /* function to be patched */
-> > +	void *new_func; /* replacement function in patch module */
-> > +	/*
-> > +	 * The old_addr field is optional and can be used to resolve
-> > +	 * duplicate symbol names in the vmlinux object.  If this
-> > +	 * information is not present, the symbol is located by name
-> > +	 * with kallsyms. If the name is not unique and old_addr is
-> > +	 * not provided, the patch application fails as there is no
-> > +	 * way to resolve the ambiguity.
-> > +	 */
-> > +	unsigned long old_addr;
-> > +};
-> > +
-> > +struct lp_reloc {
-> > +	unsigned long dest;
-> > +	unsigned long src;
-> > +	unsigned long type;
-> > +	const char *name;
-> > +	int addend;
-> > +	int external;
-> > +};
-> > +
-> > +struct lp_object {
-> > +	const char *name; /* "vmlinux" or module name */
-> > +	struct lp_func *funcs;
-> > +	struct lp_reloc *relocs;
-> > +};
-> > +
-> > +struct lp_patch {
-> > +	struct module *mod; /* module containing the patch */
-> > +	struct lp_object *objs;
-> > +};
-> > +
-> > +int lp_register_patch(struct lp_patch *);
-> > +int lp_unregister_patch(struct lp_patch *);
-> > +int lp_enable_patch(struct lp_patch *);
-> > +int lp_disable_patch(struct lp_patch *);
-> > +
-> > +#include <asm/livepatch.h>
-> 
-> and #endif for CONFIG_LIVE_PATCHING here.
-> 
-> > +
-> > +#endif /* _LINUX_LIVEPATCH_H_ */
-> 
-> Thanks,
-> --
-> Miroslav Benes
-> SUSE Labs
