@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933267AbaKSVBa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:01:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56371 "EHLO
+	id S933282AbaKSVBb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:01:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56353 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933195AbaKSVBU (ORCPT
+	with ESMTP id S932666AbaKSVBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:01:20 -0500
+	Wed, 19 Nov 2014 16:01:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Houcheng Lin <houcheng@gmail.com>, Florian Westphal <fw@strlen.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
         Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.17 125/141] netfilter: nf_log: release skbuff on nlmsg put failure
-Date: Wed, 19 Nov 2014 12:52:28 -0800
-Message-Id: <20141119205154.915892626@linuxfoundation.org>
+Subject: [PATCH 3.17 121/141] netfilter: ipset: off by one in ip_set_nfnl_get_byindex()
+Date: Wed, 19 Nov 2014 12:52:24 -0800
+Message-Id: <20141119205154.689365506@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,66 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Houcheng Lin <houcheng@gmail.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit b51d3fa364885a2c1e1668f88776c67c95291820 upstream.
+commit 0f9f5e1b83abd2b37c67658e02a6fc9001831fa5 upstream.
 
-The kernel should reserve enough room in the skb so that the DONE
-message can always be appended.  However, in case of e.g. new attribute
-erronously not being size-accounted for, __nfulnl_send() will still
-try to put next nlmsg into this full skbuf, causing the skb to be stuck
-forever and blocking delivery of further messages.
+The ->ip_set_list[] array is initialized in ip_set_net_init() and it
+has ->ip_set_max elements so this check should be >= instead of >
+otherwise we are off by one.
 
-Fix issue by releasing skb immediately after nlmsg_put error and
-WARN() so we can track down the cause of such size mismatch.
-
-[ fw@strlen.de: add tailroom/len info to WARN ]
-
-Signed-off-by: Houcheng Lin <houcheng@gmail.com>
-Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nfnetlink_log.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ net/netfilter/ipset/ip_set_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/netfilter/nfnetlink_log.c
-+++ b/net/netfilter/nfnetlink_log.c
-@@ -346,26 +346,25 @@ nfulnl_alloc_skb(struct net *net, u32 pe
- 	return skb;
- }
+--- a/net/netfilter/ipset/ip_set_core.c
++++ b/net/netfilter/ipset/ip_set_core.c
+@@ -635,7 +635,7 @@ ip_set_nfnl_get_byindex(struct net *net,
+ 	struct ip_set *set;
+ 	struct ip_set_net *inst = ip_set_pernet(net);
  
--static int
-+static void
- __nfulnl_send(struct nfulnl_instance *inst)
- {
--	int status = -1;
--
- 	if (inst->qlen > 1) {
- 		struct nlmsghdr *nlh = nlmsg_put(inst->skb, 0, 0,
- 						 NLMSG_DONE,
- 						 sizeof(struct nfgenmsg),
- 						 0);
--		if (!nlh)
-+		if (WARN_ONCE(!nlh, "bad nlskb size: %u, tailroom %d\n",
-+			      inst->skb->len, skb_tailroom(inst->skb))) {
-+			kfree_skb(inst->skb);
- 			goto out;
-+		}
- 	}
--	status = nfnetlink_unicast(inst->skb, inst->net, inst->peer_portid,
--				   MSG_DONTWAIT);
--
-+	nfnetlink_unicast(inst->skb, inst->net, inst->peer_portid,
-+			  MSG_DONTWAIT);
-+out:
- 	inst->qlen = 0;
- 	inst->skb = NULL;
--out:
--	return status;
- }
+-	if (index > inst->ip_set_max)
++	if (index >= inst->ip_set_max)
+ 		return IPSET_INVALID_ID;
  
- static void
+ 	nfnl_lock(NFNL_SUBSYS_IPSET);
 
 
