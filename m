@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934327AbaKSV3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:29:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57366 "EHLO
+	id S933804AbaKSVOm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:14:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57291 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933815AbaKSVOo (ORCPT
+	with ESMTP id S933195AbaKSVOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:44 -0500
+	Wed, 19 Nov 2014 16:14:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.10 36/70] NFS: Dont try to reclaim delegation open state if recovery failed
-Date: Wed, 19 Nov 2014 12:52:27 -0800
-Message-Id: <20141119205212.117023445@linuxfoundation.org>
+        Andreas Larsson <andreas@gaisler.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 12/70] sparc32: Implement xchg and atomic_xchg using ATOMIC_HASH locks
+Date: Wed, 19 Nov 2014 12:52:03 -0800
+Message-Id: <20141119205211.323884815@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -28,31 +29,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Andreas Larsson <andreas@gaisler.com>
 
-commit f8ebf7a8ca35dde321f0cd385fee6f1950609367 upstream.
+[ Upstream commit 1a17fdc4f4ed06b63fac1937470378a5441a663a ]
 
-If state recovery failed, then we should not attempt to reclaim delegated
-state.
+Atomicity between xchg and cmpxchg cannot be guaranteed when xchg is
+implemented with a swap and cmpxchg is implemented with locks.
+Without this, e.g. mcs_spin_lock and mcs_spin_unlock are broken.
 
-http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/nfs/delegation.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/sparc/include/asm/atomic_32.h  |    2 +-
+ arch/sparc/include/asm/cmpxchg_32.h |   12 ++----------
+ arch/sparc/lib/atomic32.c           |   27 +++++++++++++++++++++++++++
+ 3 files changed, 30 insertions(+), 11 deletions(-)
 
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -108,6 +108,8 @@ again:
- 			continue;
- 		if (!test_bit(NFS_DELEGATED_STATE, &state->flags))
- 			continue;
-+		if (!nfs4_valid_open_stateid(state))
-+			continue;
- 		if (!nfs4_stateid_match(&state->stateid, stateid))
- 			continue;
- 		get_nfs_open_context(ctx);
+--- a/arch/sparc/include/asm/atomic_32.h
++++ b/arch/sparc/include/asm/atomic_32.h
+@@ -21,7 +21,7 @@
+ 
+ extern int __atomic_add_return(int, atomic_t *);
+ extern int atomic_cmpxchg(atomic_t *, int, int);
+-#define atomic_xchg(v, new) (xchg(&((v)->counter), new))
++extern int atomic_xchg(atomic_t *, int);
+ extern int __atomic_add_unless(atomic_t *, int, int);
+ extern void atomic_set(atomic_t *, int);
+ 
+--- a/arch/sparc/include/asm/cmpxchg_32.h
++++ b/arch/sparc/include/asm/cmpxchg_32.h
+@@ -11,22 +11,14 @@
+ #ifndef __ARCH_SPARC_CMPXCHG__
+ #define __ARCH_SPARC_CMPXCHG__
+ 
+-static inline unsigned long xchg_u32(__volatile__ unsigned long *m, unsigned long val)
+-{
+-	__asm__ __volatile__("swap [%2], %0"
+-			     : "=&r" (val)
+-			     : "0" (val), "r" (m)
+-			     : "memory");
+-	return val;
+-}
+-
++extern unsigned long __xchg_u32(volatile u32 *m, u32 new);
+ extern void __xchg_called_with_bad_pointer(void);
+ 
+ static inline unsigned long __xchg(unsigned long x, __volatile__ void * ptr, int size)
+ {
+ 	switch (size) {
+ 	case 4:
+-		return xchg_u32(ptr, x);
++		return __xchg_u32(ptr, x);
+ 	}
+ 	__xchg_called_with_bad_pointer();
+ 	return x;
+--- a/arch/sparc/lib/atomic32.c
++++ b/arch/sparc/lib/atomic32.c
+@@ -40,6 +40,19 @@ int __atomic_add_return(int i, atomic_t
+ }
+ EXPORT_SYMBOL(__atomic_add_return);
+ 
++int atomic_xchg(atomic_t *v, int new)
++{
++	int ret;
++	unsigned long flags;
++
++	spin_lock_irqsave(ATOMIC_HASH(v), flags);
++	ret = v->counter;
++	v->counter = new;
++	spin_unlock_irqrestore(ATOMIC_HASH(v), flags);
++	return ret;
++}
++EXPORT_SYMBOL(atomic_xchg);
++
+ int atomic_cmpxchg(atomic_t *v, int old, int new)
+ {
+ 	int ret;
+@@ -132,3 +145,17 @@ unsigned long __cmpxchg_u32(volatile u32
+ 	return (unsigned long)prev;
+ }
+ EXPORT_SYMBOL(__cmpxchg_u32);
++
++unsigned long __xchg_u32(volatile u32 *ptr, u32 new)
++{
++	unsigned long flags;
++	u32 prev;
++
++	spin_lock_irqsave(ATOMIC_HASH(ptr), flags);
++	prev = *ptr;
++	*ptr = new;
++	spin_unlock_irqrestore(ATOMIC_HASH(ptr), flags);
++
++	return (unsigned long)prev;
++}
++EXPORT_SYMBOL(__xchg_u32);
 
 
