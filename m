@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933804AbaKSVOm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:14:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57291 "EHLO
+	id S934344AbaKSV3h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:29:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933195AbaKSVOf (ORCPT
+	with ESMTP id S933799AbaKSVOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:35 -0500
+	Wed, 19 Nov 2014 16:14:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Larsson <andreas@gaisler.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 12/70] sparc32: Implement xchg and atomic_xchg using ATOMIC_HASH locks
-Date: Wed, 19 Nov 2014 12:52:03 -0800
-Message-Id: <20141119205211.323884815@linuxfoundation.org>
+        "Liuhua Wang" <lwang@suse.com>, Heinz Mauelshagen <heinzm@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.10 32/70] dm raid: ensure superblocks size matches devices logical block size
+Date: Wed, 19 Nov 2014 12:52:23 -0800
+Message-Id: <20141119205211.995344778@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -29,100 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Larsson <andreas@gaisler.com>
+From: Heinz Mauelshagen <heinzm@redhat.com>
 
-[ Upstream commit 1a17fdc4f4ed06b63fac1937470378a5441a663a ]
+commit 40d43c4b4cac4c2647bf07110d7b07d35f399a84 upstream.
 
-Atomicity between xchg and cmpxchg cannot be guaranteed when xchg is
-implemented with a swap and cmpxchg is implemented with locks.
-Without this, e.g. mcs_spin_lock and mcs_spin_unlock are broken.
+The dm-raid superblock (struct dm_raid_superblock) is padded to 512
+bytes and that size is being used to read it in from the metadata
+device into one preallocated page.
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reading or writing this on a 512-byte sector device works fine but on
+a 4096-byte sector device this fails.
+
+Set the dm-raid superblock's size to the logical block size of the
+metadata device, because IO at that size is guaranteed too work.  Also
+add a size check to avoid silent partial metadata loss in case the
+superblock should ever grow past the logical block size or PAGE_SIZE.
+
+[includes pointer math fix from Dan Carpenter]
+Reported-by: "Liuhua Wang" <lwang@suse.com>
+Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/include/asm/atomic_32.h  |    2 +-
- arch/sparc/include/asm/cmpxchg_32.h |   12 ++----------
- arch/sparc/lib/atomic32.c           |   27 +++++++++++++++++++++++++++
- 3 files changed, 30 insertions(+), 11 deletions(-)
 
---- a/arch/sparc/include/asm/atomic_32.h
-+++ b/arch/sparc/include/asm/atomic_32.h
-@@ -21,7 +21,7 @@
+---
+ drivers/md/dm-raid.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+--- a/drivers/md/dm-raid.c
++++ b/drivers/md/dm-raid.c
+@@ -785,8 +785,7 @@ struct dm_raid_superblock {
+ 	__le32 layout;
+ 	__le32 stripe_sectors;
  
- extern int __atomic_add_return(int, atomic_t *);
- extern int atomic_cmpxchg(atomic_t *, int, int);
--#define atomic_xchg(v, new) (xchg(&((v)->counter), new))
-+extern int atomic_xchg(atomic_t *, int);
- extern int __atomic_add_unless(atomic_t *, int, int);
- extern void atomic_set(atomic_t *, int);
+-	__u8 pad[452];		/* Round struct to 512 bytes. */
+-				/* Always set to 0 when writing. */
++	/* Remainder of a logical block is zero-filled when writing (see super_sync()). */
+ } __packed;
  
---- a/arch/sparc/include/asm/cmpxchg_32.h
-+++ b/arch/sparc/include/asm/cmpxchg_32.h
-@@ -11,22 +11,14 @@
- #ifndef __ARCH_SPARC_CMPXCHG__
- #define __ARCH_SPARC_CMPXCHG__
+ static int read_disk_sb(struct md_rdev *rdev, int size)
+@@ -823,7 +822,7 @@ static void super_sync(struct mddev *mdd
+ 		    test_bit(Faulty, &(rs->dev[i].rdev.flags)))
+ 			failed_devices |= (1ULL << i);
  
--static inline unsigned long xchg_u32(__volatile__ unsigned long *m, unsigned long val)
--{
--	__asm__ __volatile__("swap [%2], %0"
--			     : "=&r" (val)
--			     : "0" (val), "r" (m)
--			     : "memory");
--	return val;
--}
--
-+extern unsigned long __xchg_u32(volatile u32 *m, u32 new);
- extern void __xchg_called_with_bad_pointer(void);
+-	memset(sb, 0, sizeof(*sb));
++	memset(sb + 1, 0, rdev->sb_size - sizeof(*sb));
  
- static inline unsigned long __xchg(unsigned long x, __volatile__ void * ptr, int size)
- {
- 	switch (size) {
- 	case 4:
--		return xchg_u32(ptr, x);
-+		return __xchg_u32(ptr, x);
- 	}
- 	__xchg_called_with_bad_pointer();
- 	return x;
---- a/arch/sparc/lib/atomic32.c
-+++ b/arch/sparc/lib/atomic32.c
-@@ -40,6 +40,19 @@ int __atomic_add_return(int i, atomic_t
- }
- EXPORT_SYMBOL(__atomic_add_return);
+ 	sb->magic = cpu_to_le32(DM_RAID_MAGIC);
+ 	sb->features = cpu_to_le32(0);	/* No features yet */
+@@ -858,7 +857,11 @@ static int super_load(struct md_rdev *rd
+ 	uint64_t events_sb, events_refsb;
  
-+int atomic_xchg(atomic_t *v, int new)
-+{
-+	int ret;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(ATOMIC_HASH(v), flags);
-+	ret = v->counter;
-+	v->counter = new;
-+	spin_unlock_irqrestore(ATOMIC_HASH(v), flags);
-+	return ret;
-+}
-+EXPORT_SYMBOL(atomic_xchg);
-+
- int atomic_cmpxchg(atomic_t *v, int old, int new)
- {
- 	int ret;
-@@ -132,3 +145,17 @@ unsigned long __cmpxchg_u32(volatile u32
- 	return (unsigned long)prev;
- }
- EXPORT_SYMBOL(__cmpxchg_u32);
-+
-+unsigned long __xchg_u32(volatile u32 *ptr, u32 new)
-+{
-+	unsigned long flags;
-+	u32 prev;
-+
-+	spin_lock_irqsave(ATOMIC_HASH(ptr), flags);
-+	prev = *ptr;
-+	*ptr = new;
-+	spin_unlock_irqrestore(ATOMIC_HASH(ptr), flags);
-+
-+	return (unsigned long)prev;
-+}
-+EXPORT_SYMBOL(__xchg_u32);
+ 	rdev->sb_start = 0;
+-	rdev->sb_size = sizeof(*sb);
++	rdev->sb_size = bdev_logical_block_size(rdev->meta_bdev);
++	if (rdev->sb_size < sizeof(*sb) || rdev->sb_size > PAGE_SIZE) {
++		DMERR("superblock size of a logical block is no longer valid");
++		return -EINVAL;
++	}
+ 
+ 	ret = read_disk_sb(rdev, rdev->sb_size);
+ 	if (ret)
 
 
