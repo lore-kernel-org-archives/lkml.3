@@ -1,188 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401AbaKSOOk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 09:14:40 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:51149 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753824AbaKSOOh (ORCPT
+	id S1755557AbaKSOOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 09:14:43 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43848 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753824AbaKSOOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:14:37 -0500
-X-Listener-Flag: 11101
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Marc Zyngier <marc.zyngier@arm.com>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
-        <devicetree@vger.kernel.org>, <hc.yen@mediatek.com>,
-        <srv_heupstream@mediatek.com>, <yh.chen@mediatek.com>,
-        <linux-kernel@vger.kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh+dt@kernel.org>,
-        <nathan.chung@mediatek.com>, <yingjoe.chen@gmail.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>, <eddie.huang@mediatek.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v7 1/4] irqchip: gic: Support hierarchy irq domain.
-Date: Wed, 19 Nov 2014 22:14:08 +0800
-Message-ID: <1416406451-4578-2-git-send-email-yingjoe.chen@mediatek.com>
-X-Mailer: git-send-email 1.8.1.1.dirty
-In-Reply-To: <1416406451-4578-1-git-send-email-yingjoe.chen@mediatek.com>
-References: <1416406451-4578-1-git-send-email-yingjoe.chen@mediatek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-MTK: N
+	Wed, 19 Nov 2014 09:14:41 -0500
+From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+To: broonie@kernel.org
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: [PATCH] regulator: gpio: fix parsing of gpio list
+Date: Wed, 19 Nov 2014 14:13:06 +0000
+Message-Id: <1416406386-22923-1-git-send-email-rf@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support to use gic as a parent for stacked irq domain.
+The list of gpios is defined as optional but the code was
+failing to properly handle the case of no gpios, and also
+failing to check for errors reading the entry from the
+devicetree.
 
-Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+This patch fixes the handling of optional gpios - this is a
+useful feature enabling the gpio-regulator to be used as a
+dummy variable voltage regulator without having to assign any
+real GPIO lines.
+
+Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
 ---
- drivers/irqchip/Kconfig   |  1 +
- drivers/irqchip/irq-gic.c | 78 ++++++++++++++++++++++++++++++++---------------
- 2 files changed, 55 insertions(+), 24 deletions(-)
+ drivers/regulator/gpio-regulator.c |   93 ++++++++++++++++++++----------------
+ 1 files changed, 51 insertions(+), 42 deletions(-)
 
-diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-index b21f12f..7f34138 100644
---- a/drivers/irqchip/Kconfig
-+++ b/drivers/irqchip/Kconfig
-@@ -5,6 +5,7 @@ config IRQCHIP
- config ARM_GIC
- 	bool
- 	select IRQ_DOMAIN
-+	select IRQ_DOMAIN_HIERARCHY
- 	select MULTI_IRQ_HANDLER
+diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
+index 86546c1..b42c7ec 100644
+--- a/drivers/regulator/gpio-regulator.c
++++ b/drivers/regulator/gpio-regulator.c
+@@ -162,34 +162,41 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
  
- config GIC_NON_BANKED
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 38493ff..464dd53 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -788,17 +788,16 @@ static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
- {
- 	if (hw < 32) {
- 		irq_set_percpu_devid(irq);
--		irq_set_chip_and_handler(irq, &gic_chip,
--					 handle_percpu_devid_irq);
-+		irq_domain_set_info(d, irq, hw, &gic_chip, d->host_data,
-+				    handle_percpu_devid_irq, NULL, NULL);
- 		set_irq_flags(irq, IRQF_VALID | IRQF_NOAUTOEN);
- 	} else {
--		irq_set_chip_and_handler(irq, &gic_chip,
--					 handle_fasteoi_irq);
-+		irq_domain_set_info(d, irq, hw, &gic_chip, d->host_data,
-+				    handle_fasteoi_irq, NULL, NULL);
- 		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
+ 	config->enable_gpio = of_get_named_gpio(np, "enable-gpio", 0);
  
- 		gic_routable_irq_domain_ops->map(d, irq, hw);
+-	/* Fetch GPIOs. */
+-	config->nr_gpios = of_gpio_count(np);
+-
+-	config->gpios = devm_kzalloc(dev,
+-				sizeof(struct gpio) * config->nr_gpios,
+-				GFP_KERNEL);
+-	if (!config->gpios)
+-		return ERR_PTR(-ENOMEM);
+-
+-	proplen = of_property_count_u32_elems(np, "gpios-states");
+-	/* optional property */
+-	if (proplen < 0)
+-		proplen = 0;
+-
+-	if (proplen > 0 && proplen != config->nr_gpios) {
+-		dev_warn(dev, "gpios <-> gpios-states mismatch\n");
+-		proplen = 0;
+-	}
++	/* Fetch GPIOs. - optional property*/
++	ret = of_gpio_count(np);
++	if ((ret < 0) && (ret != -ENOENT))
++		return ERR_PTR(ret);
++
++	if (ret > 0) {
++		config->nr_gpios = ret;
++		config->gpios = devm_kzalloc(dev,
++					sizeof(struct gpio) * config->nr_gpios,
++					GFP_KERNEL);
++		if (!config->gpios)
++			return ERR_PTR(-ENOMEM);
++
++		proplen = of_property_count_u32_elems(np, "gpios-states");
++		/* optional property */
++		if (proplen < 0)
++			proplen = 0;
++
++		if (proplen > 0 && proplen != config->nr_gpios) {
++			dev_warn(dev, "gpios <-> gpios-states mismatch\n");
++			proplen = 0;
++		}
+ 
+-	for (i = 0; i < config->nr_gpios; i++) {
+-		gpio = of_get_named_gpio(np, "gpios", i);
+-		if (gpio < 0)
+-			break;
+-		config->gpios[i].gpio = gpio;
+-		if (proplen > 0) {
+-			of_property_read_u32_index(np, "gpios-states", i, &ret);
+-			if (ret)
+-				config->gpios[i].flags = GPIOF_OUT_INIT_HIGH;
++		for (i = 0; i < config->nr_gpios; i++) {
++			gpio = of_get_named_gpio(np, "gpios", i);
++			if (gpio < 0)
++				break;
++			config->gpios[i].gpio = gpio;
++			if (proplen > 0) {
++				of_property_read_u32_index(np, "gpios-states",
++							   i, &ret);
++				if (ret)
++					config->gpios[i].flags =
++							   GPIOF_OUT_INIT_HIGH;
++			}
+ 		}
  	}
--	irq_set_chip_data(irq, d->host_data);
- 	return 0;
- }
  
-@@ -858,6 +857,31 @@ static struct notifier_block gic_cpu_notifier = {
- };
- #endif
+@@ -261,13 +268,23 @@ static int gpio_regulator_probe(struct platform_device *pdev)
+ 		goto err;
+ 	}
  
-+static int gic_irq_domain_alloc(struct irq_domain *domain, unsigned int virq,
-+				unsigned int nr_irqs, void *arg)
-+{
-+	int i, ret;
-+	irq_hw_number_t hwirq;
-+	unsigned int type = IRQ_TYPE_NONE;
-+	struct of_phandle_args *irq_data = arg;
+-	drvdata->gpios = kmemdup(config->gpios,
+-				 config->nr_gpios * sizeof(struct gpio),
+-				 GFP_KERNEL);
+-	if (drvdata->gpios == NULL) {
+-		dev_err(&pdev->dev, "Failed to allocate gpio data\n");
+-		ret = -ENOMEM;
+-		goto err_name;
++	if (config->nr_gpios != 0) {
++		drvdata->gpios = kmemdup(config->gpios,
++					 config->nr_gpios * sizeof(struct gpio),
++					 GFP_KERNEL);
++		if (drvdata->gpios == NULL) {
++			dev_err(&pdev->dev, "Failed to allocate gpio data\n");
++			ret = -ENOMEM;
++			goto err_name;
++		}
 +
-+	ret = gic_irq_domain_xlate(domain, irq_data->np, irq_data->args,
-+				   irq_data->args_count, &hwirq, &type);
-+	if (ret)
-+		return ret;
-+
-+	for (i = 0; i < nr_irqs; i++)
-+		gic_irq_domain_map(domain, virq+i, hwirq+i);
-+
-+	return 0;
-+}
-+
-+static const struct irq_domain_ops gic_irq_domain_hierarchy_ops = {
-+	.xlate = gic_irq_domain_xlate,
-+	.alloc = gic_irq_domain_alloc,
-+	.free = irq_domain_free_irqs_top,
-+};
-+
- static const struct irq_domain_ops gic_irq_domain_ops = {
- 	.map = gic_irq_domain_map,
- 	.unmap = gic_irq_domain_unmap,
-@@ -948,18 +972,6 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
- 		gic_cpu_map[i] = 0xff;
++		drvdata->nr_gpios = config->nr_gpios;
++		ret = gpio_request_array(drvdata->gpios, drvdata->nr_gpios);
++		if (ret) {
++			dev_err(&pdev->dev,
++			"Could not obtain regulator setting GPIOs: %d\n", ret);
++			goto err_memstate;
++		}
+ 	}
  
- 	/*
--	 * For primary GICs, skip over SGIs.
--	 * For secondary GICs, skip over PPIs, too.
--	 */
--	if (gic_nr == 0 && (irq_start & 31) > 0) {
--		hwirq_base = 16;
--		if (irq_start != -1)
--			irq_start = (irq_start & ~31) + 16;
--	} else {
--		hwirq_base = 32;
+ 	drvdata->states = kmemdup(config->states,
+@@ -301,14 +318,6 @@ static int gpio_regulator_probe(struct platform_device *pdev)
+ 		goto err_memgpio;
+ 	}
+ 
+-	drvdata->nr_gpios = config->nr_gpios;
+-	ret = gpio_request_array(drvdata->gpios, drvdata->nr_gpios);
+-	if (ret) {
+-		dev_err(&pdev->dev,
+-		   "Could not obtain regulator setting GPIOs: %d\n", ret);
+-		goto err_memstate;
 -	}
 -
--	/*
- 	 * Find out how many interrupts are supported.
- 	 * The GIC only supports up to 1020 interrupt sources.
- 	 */
-@@ -969,10 +981,32 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
- 		gic_irqs = 1020;
- 	gic->gic_irqs = gic_irqs;
- 
--	gic_irqs -= hwirq_base; /* calculate # of irqs to allocate */
-+	if (node) {		/* DT case */
-+		const struct irq_domain_ops *ops =
-+					&gic_irq_domain_hierarchy_ops;
-+
-+		if (!of_property_read_u32(node, "arm,routable-irqs",
-+					  &nr_routable_irqs)) {
-+			ops = &gic_irq_domain_ops;
-+			gic_irqs = nr_routable_irqs;
-+		}
-+
-+		gic->domain = irq_domain_add_linear(node, gic_irqs, ops, gic);
-+	} else {		/* Non-DT case */
-+		/*
-+		 * For primary GICs, skip over SGIs.
-+		 * For secondary GICs, skip over PPIs, too.
-+		 */
-+		if (gic_nr == 0 && (irq_start & 31) > 0) {
-+			hwirq_base = 16;
-+			if (irq_start != -1)
-+				irq_start = (irq_start & ~31) + 16;
-+		} else {
-+			hwirq_base = 32;
-+		}
-+
-+		gic_irqs -= hwirq_base; /* calculate # of irqs to allocate */
- 
--	if (of_property_read_u32(node, "arm,routable-irqs",
--				 &nr_routable_irqs)) {
- 		irq_base = irq_alloc_descs(irq_start, 16, gic_irqs,
- 					   numa_node_id());
- 		if (IS_ERR_VALUE(irq_base)) {
-@@ -983,10 +1017,6 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
- 
- 		gic->domain = irq_domain_add_legacy(node, gic_irqs, irq_base,
- 					hwirq_base, &gic_irq_domain_ops, gic);
--	} else {
--		gic->domain = irq_domain_add_linear(node, nr_routable_irqs,
--						    &gic_irq_domain_ops,
--						    gic);
- 	}
- 
- 	if (WARN_ON(!gic->domain))
+ 	/* build initial state from gpio init data. */
+ 	state = 0;
+ 	for (ptr = 0; ptr < drvdata->nr_gpios; ptr++) {
 -- 
-1.8.1.1.dirty
+1.7.2.5
 
