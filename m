@@ -1,128 +1,442 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585AbaKSIVD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 03:21:03 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:61560 "EHLO
+	id S932253AbaKSIWQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 03:22:16 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:61849 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755271AbaKSIU7 (ORCPT
+	with ESMTP id S932160AbaKSIWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 03:20:59 -0500
-X-AuditID: cbfee68f-f791c6d000004834-e9-546c52cd955b
-Message-id: <546C52CD.2030209@samsung.com>
-Date: Wed, 19 Nov 2014 17:20:29 +0900
-From: Chan-yeol Park <chanyeol.park@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
+	Wed, 19 Nov 2014 03:22:13 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-f6-546c53325ac1
+Date: Wed, 19 Nov 2014 09:21:39 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>,
+        Caesar Wang <caesar.wang@rock-chips.com>, Wei Ni <wni@nvidia.com>,
+        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
+        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        lm-sensors@lm-sensors.org, Rob Herring <robh+dt@kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCHv4 1/1] thermal: of: improve of-thermal sensor registration
+ API
+Message-id: <20141119092139.1965e44e@amdc2363>
+In-reply-to: <1416321575-18348-2-git-send-email-edubezval@gmail.com>
+References: <1416321575-18348-1-git-send-email-edubezval@gmail.com>
+ <1416321575-18348-2-git-send-email-edubezval@gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 MIME-version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2014-11-07
-References: <20141118133459.GB27428@node.dhcp.inet.fi>
- <20141118180919.GA32128@t440s.P-661HNU-F1>
-In-reply-to: <20141118180919.GA32128@t440s.P-661HNU-F1>
-Content-type: text/plain; charset=windows-1252; format=flowed
+Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+Zpu7ZoJwQg2PrjS3WTFzIbHG26Q27
-	xZxrfcwWl3fNYbN4s+IOu8XWHgkHNo++LasYPWb3PWXyuPJ9NaPH501yASxRXDYpqTmZZalF
-	+nYJXBn3Z+5lKfgiV7GlYR9rA+MByS5GTg4JAROJXXNWskHYYhIX7q0Hs4UEljFKHJrGAlPT
-	tvA2UxcjF1B8EaPE+kcHoZxXjBJr9rxhAqniFdCSeNb7nhnEZhFQlfi+excjiM0mYCBxpaMH
-	zBYVCJPYvmYCM0S9oMSPyfdYQAaJCFxnlPh58zHYOmGQk9ZOZoc4I1mi5+BEsAWcAuYSOw49
-	BzuPWcBWYsH7dSwQtrzE5jVvmUEGSQhsYpd4sPIsO8QVAhLfJh8CKuIASshKbDrADPGOpMTB
-	FTdYJjCKzkJyxywkY2chGbuAkXkVo2hqQXJBcVJ6kbFecWJucWleul5yfu4mRkgs9e9gvHvA
-	+hCjAAejEg/vi7fZIUKsiWXFlbmHGE2BrpjILCWanA+M2LySeENjMyMLUxNTYyNzSzMlcd6F
-	Uj+DhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTDOm/lIdnfXh1nLjJQeNrCIr/kbcMCAYU/d
-	8uuLJ9ifubdc1yG/96rONJdT/hFvjvLptxxSyv49ZaXgxcC1cX9Cnle2++25fTo3dzPP18dP
-	vD5zrUn8J/O+iW9eZyPXlDLDl6tOdmi2GMsJHhUpi33SI2mk9i4tfEE3V+2bJZ4H+67EaM1j
-	KlymxFKckWioxVxUnAgA4QEjv6ACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t9jAd2zQTkhBnO69C3WTFzIbHG26Q27
-	xZxrfcwWl3fNYbN4s+IOu8XWHgkHNo++LasYPWb3PWXyuPJ9NaPH501yASxRDYw2GamJKalF
-	Cql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUDLlRTKEnNKgUIBicXF
-	Svp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZ92fuZSn4IlexpWEfawPjAckuRk4OCQETibaF
-	t5kgbDGJC/fWs3UxcnEICSxilFj/6CAThPOKUWLNnjdgVbwCWhLPet8zg9gsAqoS33fvYgSx
-	2QQMJK509IDZogJhEtvXTGCGqBeU+DH5HgvIIBGB64wSP28+ZgFJCAOt3rV2MjuILSSQLNFz
-	cCLYAk4Bc4kdh56zgdjMArYSC96vY4Gw5SU2r3nLPIGRfxaSubOQlM1CUraAkXkVo2hqQXJB
-	cVJ6rqFecWJucWleul5yfu4mRnCsPpPawbiyweIQowAHoxIP74u32SFCrIllxZW5hxglOJiV
-	RHhPeueECPGmJFZWpRblxxeV5qQWH2I0BXp7IrOUaHI+MI3klcQbGpuYGVkamRmbmBsbK4nz
-	Hmi1DhQSSE8sSc1OTS1ILYLpY+LglGpg5GctMi2zXHnu6bEnW28raLlIKtk+unSgLr+WYc8u
-	R2PJ84vmBTwwiguZK/zA9NkRNbu6920LF3vObElY9JSj+lL1t2xW+9hVf0+eXVyX1OGvMFX/
-	Nct8Ec9wpiCOhKvKe3a71+SKOp808J99u+i22Z2z12ds0GB5tm/O3bQ5eQ7vJjwO1+YIV2Ip
-	zkg01GIuKk4EAFEJ5MvrAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jAV3j4JwQg9b/nBZfPvexWcw/co7V
+	Yv6Va6wW5149YrE48GcHo8XSu5/YLC7vmsNm8bn3CKNF55dZbBZPFp5hsrgzbS+bxe0PB5gt
+	WvceYbd48hBowKuDbSwWP3fNA+o91czsIOixc9Zddo/Fe14yeVw694fZY9OqTjaPO9f2sHk8
+	mLibzaO3+R2bx99Z+1k8dn5vYPfYfLra4/MmOY+Nc0MDeKK4bFJSczLLUov07RK4Mjr2LWEv
+	WJRd8WfiVqYGxr6wLkYODgkBE4kduzO6GDmBTDGJC/fWs4HYQgKLGCWOTrTrYuQCsn8xSrzo
+	WgOWYBFQlXgzbRYTiM0moCfx+e5TMFtEQEvixKXtTCANzAIHWSTeXFsK1iAsECLxeOYxdhCb
+	F6ih+dhvFhCbU8BF4v+aGywQ22olZjdeZgWx+QUkJdr//WCGuMhO4tynDVC9ghI/Jt8Dq2cG
+	WrZ5WxMrhC0vsXnNW+YJjIKzkJTNQlI2C0nZAkbmVYyiqQXJBcVJ6bmGesWJucWleel6yfm5
+	mxjBMfpMagfjygaLQ4wCHIxKPLwv3maHCLEmlhVX5h5ilOBgVhLhPemdEyLEm5JYWZValB9f
+	VJqTWnyIUZqDRUmc90CrdaCQQHpiSWp2ampBahFMlomDU6qBMXCbaMLrYiPFXvbfXk82FEi8
+	m3RDs0Lol67Wa89vTu8vajwNsDv+/sUb3o9feuXj/x9pXZz0NOOmnvRtlRCW72c8Zl36PXP9
+	vQ9vvp7NP3npu+yrGk5PlQWeFbMLRDMfHi546siSUMytPe9QT/+BfsXMtWrTenZ6TRAp2WZ3
+	q+tDd76o80V+ZSWW4oxEQy3mouJEAM3iXXfNAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi Eduardo,
 
-On 11/19/2014 03:09 AM, Johan Hedberg wrote:
-> Hi Kirill,
->
-> On Tue, Nov 18, 2014, Kirill A. Shutemov wrote:
->> On Fri, Nov 07, 2014 at 11:27:54AM +0200, Johan Hedberg wrote:
->>> Chan-yeol Park (1):
->>>        Bluetooth: Fix hci_sync missing wakeup interrupt
->> Look like this commit causes problem for me:
->>
->> [    2.018671] ------------[ cut here ]------------
->> [    2.022836] WARNING: CPU: 2 PID: 109 at /home/kas/git/public/linux/kernel/sched/core.c:7323 __might_sleep+0xbd/0xd0()
->> [    2.023166] Freeing unused kernel memory: 944K (ffff880001b14000 - ffff880001c00000)
->> [    2.030362] do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff819ab67b>] __hci_req_sync+0x7b/0x2a0
->> [    2.034193] Modules linked in:
->> [    2.036133] CPU: 2 PID: 109 Comm: kworker/u17:0 Not tainted 3.18.0-rc4-next-20141117-07404-g9dad2ab6df8b #66
->> [    2.036383] Freeing unused kernel memory: 1404K (ffff8800020a1000 - ffff880002200000)
->> [    2.038940] Hardware name: LENOVO 3460CC6/3460CC6, BIOS G6ET93WW (2.53 ) 02/04/2013
->> [    2.040233] Workqueue: hci0 hci_power_on
->> [    2.041517]  ffffffff81f51d50 ffff8800d3ecfb28 ffffffff81afc316 0000000000000000
->> [    2.042811]  ffff8800d3ecfb78 ffff8800d3ecfb68 ffffffff810fc11a ffff880000000000
->> [    2.042812]  ffffffff81f52a28 000000000000026d 0000000000000000 ffff8800d3ec9200
->> [    2.042813] Call Trace:
->> [    2.042818]  [<ffffffff81afc316>] dump_stack+0x4c/0x6e
->> [    2.042821]  [<ffffffff810fc11a>] warn_slowpath_common+0x8a/0xc0
->> [    2.042823]  [<ffffffff810fc196>] warn_slowpath_fmt+0x46/0x50
->> [    2.042825]  [<ffffffff819ab67b>] ? __hci_req_sync+0x7b/0x2a0
->> [    2.042827]  [<ffffffff819ab67b>] ? __hci_req_sync+0x7b/0x2a0
->> [    2.042830]  [<ffffffff811295ed>] __might_sleep+0xbd/0xd0
->> [    2.042832]  [<ffffffff81b04b8f>] mutex_lock_nested+0x2f/0x450
->> [    2.042835]  [<ffffffff81b0812b>] ? _raw_spin_unlock+0x2b/0x50
->> [    2.042837]  [<ffffffff81131db0>] ? wake_up_process+0x50/0x50
->> [    2.042840]  [<ffffffff813b9ea1>] __create_file+0x71/0x2c0
->> [    2.042842]  [<ffffffff813ba10f>] debugfs_create_file+0x1f/0x30
->> [    2.042844]  [<ffffffff819ac461>] hci_dev_do_open+0x431/0xa70
->> [    2.042846]  [<ffffffff8111a72c>] ? process_one_work+0x13c/0x810
->> [    2.042847]  [<ffffffff819ad2b1>] hci_power_on+0x31/0x1e0
->> [    2.042849]  [<ffffffff8111a7c8>] process_one_work+0x1d8/0x810
->> [    2.042850]  [<ffffffff8111a72c>] ? process_one_work+0x13c/0x810
->> [    2.042851]  [<ffffffff8111b2db>] worker_thread+0x6b/0x4b0
->> [    2.042852]  [<ffffffff8111b270>] ? init_pwq+0xf0/0xf0
->> [    2.042854]  [<ffffffff81120ef9>] kthread+0x119/0x130
->> [    2.042855]  [<ffffffff8112923d>] ? finish_task_switch+0x4d/0x140
->> [    2.042857]  [<ffffffff81120de0>] ? kthread_create_on_node+0x240/0x240
->> [    2.042859]  [<ffffffff81b08cfc>] ret_from_fork+0x7c/0xb0
->> [    2.042861]  [<ffffffff81120de0>] ? kthread_create_on_node+0x240/0x240
->> [    2.042863] ---[ end trace 3a40e80ec4ca7159 ]---
-> At least one obvious bug that the patch in question seems to have is
-> that it fails to set the state back to TASK_RUNNING in case
-> hci_req_run() fails and we never call schedule_timeout(). This would
-> also seem to match the error you're getting.
->
-> The attached patch fixes the missing set_current_state() calls - could
-> you please check if it fixes the issue for you? Out of curiosity, which
-> HW are you reproducing this with and are there any special steps
-> involved? Looking at the code it seems that at least some older
-> Bluetooth adapters could cause some hci_req_run() calls to return
-> ENODATA, however I wasn't able to get the warning with any of my own
-> adapters (I have one for pretty much every Bluetooth version).
->
-> Johan
+> Different drivers request API extensions in of-thermal. For this
+> reason, additional callbacks are required to fit the new drivers
+> needs.
+> 
+> The current API implementation expects the registering sensor driver
+> to provide a get_temp and get_trend callbacks as function parameters.
+> As the amount of callbacks is growing, this patch changes the existing
+> implementation to use a .ops field to hold all the of thermal
+> callbacks to sensor drivers.
+> 
+> This patch also changes the existing of-thermal users to fit the new
+> API design. No functional change is introduced in this patch.
+> 
+> Cc: Alexandre Courbot <gnurou@gmail.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Guenter Roeck <linux@roeck-us.net>
+> Cc: Jean Delvare <jdelvare@suse.de>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-tegra@vger.kernel.org
+> Cc: lm-sensors@lm-sensors.org
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Stephen Warren <swarren@wwwdotorg.org>
+> Cc: Thierry Reding <thierry.reding@gmail.com>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Reviewed-by: Lukasz Majewski <l.majewski@samsung.com>
+> Signed-off-by: Eduardo Valentin <edubezval@gmail.com>
+> ---
+>  drivers/hwmon/lm75.c                               |  9 +++--
+>  drivers/hwmon/ntc_thermistor.c                     |  6 +++-
+>  drivers/hwmon/tmp102.c                             |  6 +++-
+>  drivers/thermal/of-thermal.c                       | 40
+> ++++++++++------------
+> drivers/thermal/tegra_soctherm.c                   |  7 ++--
+> drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  8 +++--
+> include/linux/thermal.h                            | 24 +++++++++----
+> 7 files changed, 63 insertions(+), 37 deletions(-) ---
+> Difference from V3:
+>   - Keep the same behavior regarding callback checks.
+>     Change in behavior may be sent in a separate patch.
+> Difference from V2:
+>   - Fix wrong assignment in tegra driver.
+> Difference from V1:
+>   - Fix error handling when .get_trend is not provided.
+> 
+> diff --git a/drivers/hwmon/lm75.c b/drivers/hwmon/lm75.c
+> index d16dbb3..e7c8bf9 100644
+> --- a/drivers/hwmon/lm75.c
+> +++ b/drivers/hwmon/lm75.c
+> @@ -176,6 +176,10 @@ static struct attribute *lm75_attrs[] = {
+>  };
+>  ATTRIBUTE_GROUPS(lm75);
+>  
+> +static const struct thermal_zone_of_device_ops lm75_of_thermal_ops =
+> {
+> +	.get_temp = lm75_read_temp,
+> +};
+> +
+>  /*-----------------------------------------------------------------------*/
+>  
+>  /* device probe and removal */
+> @@ -291,10 +295,9 @@ lm75_probe(struct i2c_client *client, const
+> struct i2c_device_id *id) if (IS_ERR(data->hwmon_dev))
+>  		return PTR_ERR(data->hwmon_dev);
+>  
+> -	data->tz = thermal_zone_of_sensor_register(data->hwmon_dev,
+> -						   0,
+> +	data->tz = thermal_zone_of_sensor_register(data->hwmon_dev,
+> 0, data->hwmon_dev,
+> -						   lm75_read_temp,
+> NULL);
+> +
+> &lm75_of_thermal_ops); if (IS_ERR(data->tz))
+>  		data->tz = NULL;
+>  
+> diff --git a/drivers/hwmon/ntc_thermistor.c
+> b/drivers/hwmon/ntc_thermistor.c index 4ff89b2..bca8521c8 100644
+> --- a/drivers/hwmon/ntc_thermistor.c
+> +++ b/drivers/hwmon/ntc_thermistor.c
+> @@ -486,6 +486,10 @@ static const struct attribute_group
+> ntc_attr_group = { .attrs = ntc_attributes,
+>  };
+>  
+> +static const struct thermal_zone_of_device_ops ntc_of_thermal_ops = {
+> +	.get_temp = ntc_read_temp,
+> +};
+> +
+>  static int ntc_thermistor_probe(struct platform_device *pdev)
+>  {
+>  	const struct of_device_id *of_id =
+> @@ -579,7 +583,7 @@ static int ntc_thermistor_probe(struct
+> platform_device *pdev) pdev_id->name);
+>  
+>  	data->tz = thermal_zone_of_sensor_register(data->dev, 0,
+> data->dev,
+> -						ntc_read_temp, NULL);
+> +
+> &ntc_of_thermal_ops); if (IS_ERR(data->tz)) {
+>  		dev_dbg(&pdev->dev, "Failed to register to thermal
+> fw.\n"); data->tz = NULL;
+> diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
+> index 5171995..ba9f478 100644
+> --- a/drivers/hwmon/tmp102.c
+> +++ b/drivers/hwmon/tmp102.c
+> @@ -158,6 +158,10 @@ ATTRIBUTE_GROUPS(tmp102);
+>  #define TMP102_CONFIG  (TMP102_CONF_TM | TMP102_CONF_EM |
+> TMP102_CONF_CR1) #define TMP102_CONFIG_RD_ONLY (TMP102_CONF_R0 |
+> TMP102_CONF_R1 | TMP102_CONF_AL) 
+> +static const struct thermal_zone_of_device_ops tmp102_of_thermal_ops
+> = {
+> +	.get_temp = tmp102_read_temp,
+> +};
+> +
+>  static int tmp102_probe(struct i2c_client *client,
+>  				  const struct i2c_device_id *id)
+>  {
+> @@ -215,7 +219,7 @@ static int tmp102_probe(struct i2c_client *client,
+>  	}
+>  	tmp102->hwmon_dev = hwmon_dev;
+>  	tmp102->tz = thermal_zone_of_sensor_register(hwmon_dev, 0,
+> hwmon_dev,
+> -
+> tmp102_read_temp, NULL);
+> +
+> &tmp102_of_thermal_ops); if (IS_ERR(tmp102->tz))
+>  		tmp102->tz = NULL;
+>  
+> diff --git a/drivers/thermal/of-thermal.c
+> b/drivers/thermal/of-thermal.c index f8eb625..e87ccdb 100644
+> --- a/drivers/thermal/of-thermal.c
+> +++ b/drivers/thermal/of-thermal.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/err.h>
+>  #include <linux/export.h>
+>  #include <linux/string.h>
+> +#include <linux/thermal.h>
+>  
+>  #include "thermal_core.h"
+>  
+> @@ -77,8 +78,7 @@ struct __thermal_bind_params {
+>   * @num_tbps: number of thermal bind params
+>   * @tbps: an array of thermal bind params (0..num_tbps - 1)
+>   * @sensor_data: sensor private data used while reading temperature
+> and trend
+> - * @get_temp: sensor callback to read temperature
+> - * @get_trend: sensor callback to read temperature trend
+> + * @ops: set of callbacks to handle the thermal zone based on DT
+>   */
+>  
+>  struct __thermal_zone {
+> @@ -96,8 +96,7 @@ struct __thermal_zone {
+>  
+>  	/* sensor interface */
+>  	void *sensor_data;
+> -	int (*get_temp)(void *, long *);
+> -	int (*get_trend)(void *, long *);
+> +	const struct thermal_zone_of_device_ops *ops;
+>  };
+>  
+>  /***   DT thermal zone device callbacks   ***/
+> @@ -107,10 +106,10 @@ static int of_thermal_get_temp(struct
+> thermal_zone_device *tz, {
+>  	struct __thermal_zone *data = tz->devdata;
+>  
+> -	if (!data->get_temp)
+> +	if (!data->ops->get_temp)
+>  		return -EINVAL;
+>  
+> -	return data->get_temp(data->sensor_data, temp);
+> +	return data->ops->get_temp(data->sensor_data, temp);
+>  }
+>  
+>  static int of_thermal_get_trend(struct thermal_zone_device *tz, int
+> trip, @@ -120,10 +119,10 @@ static int of_thermal_get_trend(struct
+> thermal_zone_device *tz, int trip, long dev_trend;
+>  	int r;
+>  
+> -	if (!data->get_trend)
+> +	if (!data->ops->get_trend)
+>  		return -EINVAL;
+>  
+> -	r = data->get_trend(data->sensor_data, &dev_trend);
+> +	r = data->ops->get_trend(data->sensor_data, &dev_trend);
+>  	if (r)
+>  		return r;
+>  
+> @@ -324,8 +323,7 @@ static struct thermal_zone_device_ops
+> of_thermal_ops = { static struct thermal_zone_device *
+>  thermal_zone_of_add_sensor(struct device_node *zone,
+>  			   struct device_node *sensor, void *data,
+> -			   int (*get_temp)(void *, long *),
+> -			   int (*get_trend)(void *, long *))
+> +			   const struct thermal_zone_of_device_ops
+> *ops) {
+>  	struct thermal_zone_device *tzd;
+>  	struct __thermal_zone *tz;
+> @@ -336,9 +334,11 @@ thermal_zone_of_add_sensor(struct device_node
+> *zone, 
+>  	tz = tzd->devdata;
+>  
+> +	if (!ops)
+> +		return ERR_PTR(-EINVAL);
+> +
+>  	mutex_lock(&tzd->lock);
+> -	tz->get_temp = get_temp;
+> -	tz->get_trend = get_trend;
+> +	tz->ops = ops;
+>  	tz->sensor_data = data;
+>  
+>  	tzd->ops->get_temp = of_thermal_get_temp;
+> @@ -356,8 +356,8 @@ thermal_zone_of_add_sensor(struct device_node
+> *zone,
+>   *             than one sensors
+>   * @data: a private pointer (owned by the caller) that will be passed
+>   *        back, when a temperature reading is needed.
+> - * @get_temp: a pointer to a function that reads the sensor
+> temperature.
+> - * @get_trend: a pointer to a function that reads the sensor
+> temperature trend.
+> + * @ops: struct thermal_zone_of_device *. Must contain at
+> least .get_trend and
+> + *       .get_temp.
+>   *
+>   * This function will search the list of thermal zones described in
+> device
+>   * tree and look for the zone that refer to the sensor device
+> pointed by @@ -382,9 +382,8 @@ thermal_zone_of_add_sensor(struct
+> device_node *zone,
+>   * check the return value with help of IS_ERR() helper.
+>   */
+>  struct thermal_zone_device *
+> -thermal_zone_of_sensor_register(struct device *dev, int sensor_id,
+> -				void *data, int (*get_temp)(void *,
+> long *),
+> -				int (*get_trend)(void *, long *))
+> +thermal_zone_of_sensor_register(struct device *dev, int sensor_id,
+> void *data,
+> +				const struct
+> thermal_zone_of_device_ops *ops) {
+>  	struct device_node *np, *child, *sensor_np;
+>  
+> @@ -424,9 +423,7 @@ thermal_zone_of_sensor_register(struct device
+> *dev, int sensor_id, if (sensor_specs.np == sensor_np && id ==
+> sensor_id) { of_node_put(np);
+>  			return thermal_zone_of_add_sensor(child,
+> sensor_np,
+> -							  data,
+> -							  get_temp,
+> -							  get_trend);
+> +							  data, ops);
+>  		}
+>  	}
+>  	of_node_put(np);
+> @@ -468,8 +465,7 @@ void thermal_zone_of_sensor_unregister(struct
+> device *dev, tzd->ops->get_temp = NULL;
+>  	tzd->ops->get_trend = NULL;
+>  
+> -	tz->get_temp = NULL;
+> -	tz->get_trend = NULL;
+> +	tz->ops = NULL;
+>  	tz->sensor_data = NULL;
+>  	mutex_unlock(&tzd->lock);
+>  }
+> diff --git a/drivers/thermal/tegra_soctherm.c
+> b/drivers/thermal/tegra_soctherm.c index 70f7e9e..9197fc0 100644
+> --- a/drivers/thermal/tegra_soctherm.c
+> +++ b/drivers/thermal/tegra_soctherm.c
+> @@ -317,6 +317,10 @@ static int tegra_thermctl_get_temp(void *data,
+> long *out_temp) return 0;
+>  }
+>  
+> +static const struct thermal_zone_of_device_ops tegra_of_thermal_ops
+> = {
+> +	.get_temp = tegra_thermctl_get_temp,
+> +};
+> +
+>  static const struct of_device_id tegra_soctherm_of_match[] = {
+>  	{ .compatible = "nvidia,tegra124-soctherm" },
+>  	{ },
+> @@ -416,8 +420,7 @@ static int tegra_soctherm_probe(struct
+> platform_device *pdev) zone->shift =
+> t124_thermctl_temp_zones[i].shift; 
+>  		tz = thermal_zone_of_sensor_register(&pdev->dev, i,
+> zone,
+> -
+> tegra_thermctl_get_temp,
+> -						     NULL);
+> +
+> &tegra_of_thermal_ops); if (IS_ERR(tz)) {
+>  			err = PTR_ERR(tz);
+>  			dev_err(&pdev->dev, "failed to register
+> sensor: %d\n", diff --git
+> a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
+> b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c index
+> 9eec26d..5fd0386 100644 ---
+> a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c +++
+> b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c @@ -286,6
+> +286,11 @@ static int ti_thermal_get_crit_temp(struct
+> thermal_zone_device *thermal, return
+> ti_thermal_get_trip_temp(thermal, OMAP_TRIP_NUMBER - 1, temp); }
+> +static const struct thermal_zone_of_device_ops ti_of_thermal_ops = {
+> +	.get_temp = __ti_thermal_get_temp,
+> +	.get_trend = __ti_thermal_get_trend,
+> +};
+> +
+>  static struct thermal_zone_device_ops ti_thermal_ops = {
+>  	.get_temp = ti_thermal_get_temp,
+>  	.get_trend = ti_thermal_get_trend,
+> @@ -333,8 +338,7 @@ int ti_thermal_expose_sensor(struct ti_bandgap
+> *bgp, int id, 
+>  	/* in case this is specified by DT */
+>  	data->ti_thermal = thermal_zone_of_sensor_register(bgp->dev,
+> id,
+> -					data, __ti_thermal_get_temp,
+> -					__ti_thermal_get_trend);
+> +					data, &ti_of_thermal_ops);
+>  	if (IS_ERR(data->ti_thermal)) {
+>  		/* Create thermal zone */
+>  		data->ti_thermal =
+> thermal_zone_device_register(domain, diff --git
+> a/include/linux/thermal.h b/include/linux/thermal.h index
+> ef90838..b565964 100644 --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -289,19 +289,31 @@ struct thermal_genl_event {
+>  	enum events event;
+>  };
+>  
+> +/**
+> + * struct thermal_zone_of_device_ops - scallbacks for handling DT
+> based zones
+> + *
+> + * Mandatory:
+> + * @get_temp: a pointer to a function that reads the sensor
+> temperature.
+> + *
+> + * Optional:
+> + * @get_trend: a pointer to a function that reads the sensor
+> temperature trend.
+> + */
+> +struct thermal_zone_of_device_ops {
+> +	int (*get_temp)(void *, long *);
+> +	int (*get_trend)(void *, long *);
+> +};
+> +
+>  /* Function declarations */
+>  #ifdef CONFIG_THERMAL_OF
+>  struct thermal_zone_device *
+> -thermal_zone_of_sensor_register(struct device *dev, int id,
+> -				void *data, int (*get_temp)(void *,
+> long *),
+> -				int (*get_trend)(void *, long *));
+> +thermal_zone_of_sensor_register(struct device *dev, int id, void
+> *data,
+> +				const struct
+> thermal_zone_of_device_ops *); void
+> thermal_zone_of_sensor_unregister(struct device *dev, struct
+> thermal_zone_device *tz); #else
+>  static inline struct thermal_zone_device *
+> -thermal_zone_of_sensor_register(struct device *dev, int id,
+> -				void *data, int (*get_temp)(void *,
+> long *),
+> -				int (*get_trend)(void *, long *))
+> +thermal_zone_of_sensor_register(struct device *dev, int id, void
+> *data,
+> +				const struct
+> thermal_zone_of_device_ops *) {
+>  	return NULL;
+>  }
 
-I agree I made a bug in the previous commit and I think we need to apply 
-Johan's patch.
-It is working fine on my machine.
+On which branch should I apply this patch?
 
-Thanks
-Chanyeol
+I've tried to apply this patch on top of newest linux-soc-thermal/next:
+git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.git
+branch: next
+SHA1:4027494124fd88e5d51127eebba315de5d8d57c8
 
+Unfortunately, it conflicts with:
+"thermal: fix multiple disbalanced device node counters"
+c2aad93c Vladimir Zapolskiy
+
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
