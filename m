@@ -1,113 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349AbaKSRdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:33:45 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:52178 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754439AbaKSRdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:33:44 -0500
-X-IronPort-AV: E=Sophos;i="5.07,418,1413244800"; 
-   d="scan'208";a="192964554"
-Date: Wed, 19 Nov 2014 17:33:18 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: David Vrabel <david.vrabel@citrix.com>
-CC: <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        <x86@kernel.org>, <xen-devel@lists.xenproject.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        <linux-ia64@vger.kernel.org>
-Subject: Re: [PATCH 2/4] ia64: use common dma_get_required_mask_from_pfn()
-In-Reply-To: <1416412921-23671-3-git-send-email-david.vrabel@citrix.com>
-Message-ID: <alpine.DEB.2.02.1411191733090.12596@kaball.uk.xensource.com>
-References: <1416412921-23671-1-git-send-email-david.vrabel@citrix.com> <1416412921-23671-3-git-send-email-david.vrabel@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756362AbaKSReK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:34:10 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:35514 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755666AbaKSReI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 12:34:08 -0500
+Date: Wed, 19 Nov 2014 17:34:01 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: wsa@the-dreams.de, julia.lawall@lip6.fr, dan.carpenter@oracle.com,
+        johan@kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Immutable branch between MFD, GPIO and I2C (Second batch) 
+Message-ID: <20141119173401.GL1875@x1>
+References: <1416315480-2053-1-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1416315480-2053-1-git-send-email-octavian.purdila@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014, David Vrabel wrote:
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> Cc: linux-ia64@vger.kernel.org
+Linus, Wolfram,
 
-Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Second instalment.  Enjoy!
 
+The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
 
->  arch/ia64/include/asm/machvec.h      |    2 +-
->  arch/ia64/include/asm/machvec_init.h |    1 -
->  arch/ia64/pci/pci.c                  |   20 --------------------
->  3 files changed, 1 insertion(+), 22 deletions(-)
-> 
-> diff --git a/arch/ia64/include/asm/machvec.h b/arch/ia64/include/asm/machvec.h
-> index 9c39bdf..beaa47d 100644
-> --- a/arch/ia64/include/asm/machvec.h
-> +++ b/arch/ia64/include/asm/machvec.h
-> @@ -287,7 +287,7 @@ extern struct dma_map_ops *dma_get_ops(struct device *);
->  # define platform_dma_get_ops		dma_get_ops
->  #endif
->  #ifndef platform_dma_get_required_mask
-> -# define  platform_dma_get_required_mask	ia64_dma_get_required_mask
-> +# define  platform_dma_get_required_mask	dma_get_required_mask_from_max_pfn
->  #endif
->  #ifndef platform_irq_to_vector
->  # define platform_irq_to_vector		__ia64_irq_to_vector
-> diff --git a/arch/ia64/include/asm/machvec_init.h b/arch/ia64/include/asm/machvec_init.h
-> index 37a4698..ef964b2 100644
-> --- a/arch/ia64/include/asm/machvec_init.h
-> +++ b/arch/ia64/include/asm/machvec_init.h
-> @@ -3,7 +3,6 @@
->  
->  extern ia64_mv_send_ipi_t ia64_send_ipi;
->  extern ia64_mv_global_tlb_purge_t ia64_global_tlb_purge;
-> -extern ia64_mv_dma_get_required_mask ia64_dma_get_required_mask;
->  extern ia64_mv_irq_to_vector __ia64_irq_to_vector;
->  extern ia64_mv_local_vector_to_irq __ia64_local_vector_to_irq;
->  extern ia64_mv_pci_get_legacy_mem_t ia64_pci_get_legacy_mem;
-> diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
-> index 291a582..79da21b 100644
-> --- a/arch/ia64/pci/pci.c
-> +++ b/arch/ia64/pci/pci.c
-> @@ -791,26 +791,6 @@ static void __init set_pci_dfl_cacheline_size(void)
->  	pci_dfl_cache_line_size = (1 << cci.pcci_line_size) / 4;
->  }
->  
-> -u64 ia64_dma_get_required_mask(struct device *dev)
-> -{
-> -	u32 low_totalram = ((max_pfn - 1) << PAGE_SHIFT);
-> -	u32 high_totalram = ((max_pfn - 1) >> (32 - PAGE_SHIFT));
-> -	u64 mask;
-> -
-> -	if (!high_totalram) {
-> -		/* convert to mask just covering totalram */
-> -		low_totalram = (1 << (fls(low_totalram) - 1));
-> -		low_totalram += low_totalram - 1;
-> -		mask = low_totalram;
-> -	} else {
-> -		high_totalram = (1 << (fls(high_totalram) - 1));
-> -		high_totalram += high_totalram - 1;
-> -		mask = (((u64)high_totalram) << 32) + 0xffffffff;
-> -	}
-> -	return mask;
-> -}
-> -EXPORT_SYMBOL_GPL(ia64_dma_get_required_mask);
-> -
->  u64 dma_get_required_mask(struct device *dev)
->  {
->  	return platform_dma_get_required_mask(dev);
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://secure-web.cisco.com/1uzdEOuzPh9ddYCppJ7edARD7taQXur82_EMioIJqXcGS1lEgfETQB2j546iHGLqo8mraFv4u9YxUpICa6DurqoTbYGXFrH14KuGQfFFzn4DHYx5HIksjcOqO2hiw74xfemY9frjnyDwhuBoBc3quJ5I8zLhf8kRz1AJGBKOKY_o/http%3A%2F%2Fwww.tux.org%2Flkml%2F
-> 
+  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-gpio-i2c-v3.19-1
+
+for you to fetch changes up to 2fc2b4846c14c8c2d2c6e9114b4548f846521cfb:
+
+  mfd: dln2: A couple endian fixes (2014-11-19 17:12:59 +0000)
+
+----------------------------------------------------------------
+Immutable branch between MFD, GPIO and I2C due for v3.19.
+
+This is the second such tag, due to more patches (fixes) added.
+
+----------------------------------------------------------------
+Dan Carpenter (1):
+      mfd: dln2: A couple endian fixes
+
+Daniel Baluta (1):
+      gpio: add support for the Diolan DLN-2 USB GPIO driver
+
+Johan Hovold (1):
+      mfd: core: Add helper function to register hotplug devices
+
+Laurentiu Palcu (1):
+      i2c: add support for Diolan DLN-2 USB-I2C adapter
+
+Octavian Purdila (4):
+      mfd: Add support for Diolan DLN-2 devices
+      mfd: dln2: Fix _dln2_transfer return code
+      i2c: dln2: Simplify return flow for dln2_i2c_enable
+      mfd: dln2: Add a limit check for invalid echo
+
+ drivers/gpio/Kconfig          |  12 +
+ drivers/gpio/Makefile         |   1 +
+ drivers/gpio/gpio-dln2.c      | 553 ++++++++++++++++++++++++++++++
+ drivers/i2c/busses/Kconfig    |  10 +
+ drivers/i2c/busses/Makefile   |   1 +
+ drivers/i2c/busses/i2c-dln2.c | 262 ++++++++++++++
+ drivers/mfd/Kconfig           |  10 +
+ drivers/mfd/Makefile          |   1 +
+ drivers/mfd/dln2.c            | 769 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/core.h      |   7 +
+ include/linux/mfd/dln2.h      | 103 ++++++
+ 11 files changed, 1729 insertions(+)
+ create mode 100644 drivers/gpio/gpio-dln2.c
+ create mode 100644 drivers/i2c/busses/i2c-dln2.c
+ create mode 100644 drivers/mfd/dln2.c
+ create mode 100644 include/linux/mfd/dln2.h
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
