@@ -1,90 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518AbaKSSBU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 13:01:20 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:35963 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756319AbaKSSBR (ORCPT
+	id S1756427AbaKSSC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 13:02:29 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:33029 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755520AbaKSSC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 13:01:17 -0500
-Message-ID: <546CDADD.3080003@iki.fi>
-Date: Wed, 19 Nov 2014 20:01:01 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:33.0) Gecko/20100101 SeaMonkey/2.30
+	Wed, 19 Nov 2014 13:02:28 -0500
+X-IronPort-AV: E=Sophos;i="5.07,418,1413244800"; 
+   d="scan'208";a="194487346"
+Date: Wed, 19 Nov 2014 17:51:02 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: David Vrabel <david.vrabel@citrix.com>
+CC: <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <x86@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        <xen-devel@lists.xenproject.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: Re: [Xen-devel] [PATCH 4/4] x86/xen: use the maximum MFN to calculate
+ the required DMA mask
+In-Reply-To: <1416412921-23671-5-git-send-email-david.vrabel@citrix.com>
+Message-ID: <alpine.DEB.2.02.1411191749110.12596@kaball.uk.xensource.com>
+References: <1416412921-23671-1-git-send-email-david.vrabel@citrix.com> <1416412921-23671-5-git-send-email-david.vrabel@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>, Tony Lindgren <tony@atomide.com>
-CC: =?UTF-8?Q?Pali_Roh=c3=a1r?= <pali.rohar@gmail.com>, sre@debian.org,
-        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, khilman@kernel.org, aaro.koskinen@iki.fi,
-        freemangordon@abv.bg, bcousson@baylibre.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devicetree@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [RFC] adp1653: Add device tree bindings for LED controller
-References: <20141116075928.GA9763@amd> <20141117101553.GA21151@amd> <20141117145545.GC7046@atomide.com> <201411171601.32311@pali> <20141117150617.GD7046@atomide.com> <20141118183545.GA16999@amd>
-In-Reply-To: <20141118183545.GA16999@amd>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
-
-Pavel Machek wrote:
-> On Mon 2014-11-17 07:06:17, Tony Lindgren wrote:
->> * Pali Rohár <pali.rohar@gmail.com> [141117 07:03]:
->>> On Monday 17 November 2014 15:55:46 Tony Lindgren wrote:
->>>>
->>>> There's nothing stopping us from initializing the camera code
->>>> from pdata-quirks.c for now to keep it working. Certainly the
->>>> binding should be added to the driver, but that removes a
->>>> dependency to the legacy booting mode if things are otherwise
->>>> working.
->>>
->>> Tony, legacy board code for n900 is not in mainline tree. And 
->>> that omap3 camera subsystem for n900 is broken since 3.5 
->>> kernel... (both Front and Back camera on n900 show only green 
->>> picture).
->>
->> I'm still seeing the legacy board code for n900 in mainline tree :)
->> It's deprecated, but still there.
->>
->> Are you maybe talking about some other piece of platform_data that's
->> no longer in the mainline kernel?
->>
->> No idea what might be wrong with the camera though.
+On Wed, 19 Nov 2014, David Vrabel wrote:
+> On a Xen PV guest the DMA addresses and physical addresses are not 1:1
+> (such as Xen PV guests) and the generic dma_get_required_mask() does
+> not return the correct mask (since it uses max_pfn).
 > 
-> Camera support for main and secondary cameras was never mainline, AFAICT.
+> Some device drivers (such as mptsas, mpt2sas) use
+> dma_get_required_mask() to set the device's DMA mask to allow them to
+> use only 32-bit DMA addresses in hardware structures.  This results in
+> unnecessary use of the SWIOTLB if DMA addresses are more than 32-bits,
+> impacting performance significantly.
 > 
-> Merging it will not be easy, as it lacks DT support... and was broken
-> for long time.
+> Provide a get_required_mask op that uses the maximum MFN to calculate
+> the DMA mask.
+> 
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> ---
+>  arch/x86/xen/pci-swiotlb-xen.c |    1 +
+>  drivers/xen/swiotlb-xen.c      |   13 +++++++++++++
+>  include/xen/swiotlb-xen.h      |    4 ++++
+>  3 files changed, 18 insertions(+)
+> 
+> diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
+> index 0e98e5d..a5d180a 100644
+> --- a/arch/x86/xen/pci-swiotlb-xen.c
+> +++ b/arch/x86/xen/pci-swiotlb-xen.c
+> @@ -31,6 +31,7 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
+>  	.map_page = xen_swiotlb_map_page,
+>  	.unmap_page = xen_swiotlb_unmap_page,
+>  	.dma_supported = xen_swiotlb_dma_supported,
+> +	.get_required_mask = xen_swiotlb_get_required_mask,
+>  };
+>  
+>  /*
+> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> index ebd8f21..654587d 100644
+> --- a/drivers/xen/swiotlb-xen.c
+> +++ b/drivers/xen/swiotlb-xen.c
+> @@ -42,9 +42,11 @@
+>  #include <xen/page.h>
+>  #include <xen/xen-ops.h>
+>  #include <xen/hvc-console.h>
+> +#include <xen/interface/memory.h>
+>  
+>  #include <asm/dma-mapping.h>
+>  #include <asm/xen/page-coherent.h>
+> +#include <asm/xen/hypercall.h>
+>  
+>  #include <trace/events/swiotlb.h>
+>  /*
+> @@ -683,3 +685,14 @@ xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask)
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(xen_swiotlb_set_dma_mask);
+> +
+> +u64
+> +xen_swiotlb_get_required_mask(struct device *dev)
+> +{
+> +	unsigned long max_mfn;
+> +
+> +	max_mfn = HYPERVISOR_memory_op(XENMEM_maximum_ram_page, NULL);
 
-I have a smiapp patchset for DT support that I posted a while ago, here:
+As Jan pointed out, I think you need to change the prototype of
+HYPERVISOR_memory_op to return long. Please do consistently across all
+relevant archs.
 
-<URL:http://www.spinics.net/lists/linux-media/msg83285.html>
 
-What's missing on top of that is the omap3isp support, plus something to
-toggle the sysctl registers based on the chosen receiver. I have a
-preliminary, not RFC yet but functional set here:
-
-<URL:http://vihersipuli.retiisi.org.uk/cgi-bin/gitweb.cgi?p=~sailus/linux.git;a=shortlog;h=refs/heads/rm696-045-dt>
-
-The main camera support requires et8ek8 driver as well, and resolving
-the breakage with the image capture on 3430.
-
-N9/N950 will be first, though. Lens controllers are another matter, but
-nothing too difficult on that side either.
-
-> Anyway, flash is kind of important for me, since it makes phone useful
-> as backup light; and it is simple piece of hw, so I intend to keep it
-> useful.
-
-Me, too. :-)
-
--- 
-Kind regards,
-
-Sakari Ailus
-sakari.ailus@iki.fi
+> +	return DMA_BIT_MASK(fls_long(max_mfn - 1) + PAGE_SHIFT);
+> +}
+> +EXPORT_SYMBOL_GPL(xen_swiotlb_get_required_mask);
+> diff --git a/include/xen/swiotlb-xen.h b/include/xen/swiotlb-xen.h
+> index 8b2eb93..6408888 100644
+> --- a/include/xen/swiotlb-xen.h
+> +++ b/include/xen/swiotlb-xen.h
+> @@ -58,4 +58,8 @@ xen_swiotlb_dma_supported(struct device *hwdev, u64 mask);
+>  
+>  extern int
+>  xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask);
+> +
+> +extern u64
+> +xen_swiotlb_get_required_mask(struct device *dev);
+> +
+>  #endif /* __LINUX_SWIOTLB_XEN_H */
+> -- 
+> 1.7.10.4
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
+> 
