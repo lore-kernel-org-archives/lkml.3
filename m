@@ -1,87 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940AbaKSFWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 00:22:25 -0500
-Received: from ozlabs.org ([103.22.144.67]:53113 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754295AbaKSFWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 00:22:23 -0500
-Message-ID: <1416374519.32483.1.camel@concordia>
-Subject: [git pull] Please pull mpe.git for-linus branch (for powerpc)
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        haokexin@gmail.com, scottwood@freescale.com
-Date: Wed, 19 Nov 2014 16:21:59 +1100
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-cFnBl0cYDCIzAbFpCMPS"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	id S1754998AbaKSFWd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 00:22:33 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:60367 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754946AbaKSFWb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 00:22:31 -0500
+From: Peter Hung <hpeter@gmail.com>
+X-Google-Original-From: Peter Hung <hpeter+linux_kernel@gmail.com>
+To: gregkh@linuxfoundation.org, jslaby@suse.cz
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Hung <hpeter+linux_kernel@gmail.com>
+Subject: [PATCH] serial: Fix io address assign flow with Fintek PCI-to-UART Product
+Date: Wed, 19 Nov 2014 13:22:27 +0800
+Message-Id: <1416374547-30494-1-git-send-email-hpeter+linux_kernel@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The original driver fixed the io address with 0xe000+idx*8,
+but real io address assigned from BIOS is dynamically from
+read PCI configure space 0x24, 0x20, 0x1c.
 
---=-cFnBl0cYDCIzAbFpCMPS
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The Fintek F81504/F81508/F81512 maybe malfunction without
+this patch and malfunction surely when more then 1 PCI card.
 
-Hi Linus,
+Signed-off-by: Peter Hung <hpeter+linux_kernel@gmail.com>
+---
+ drivers/tty/serial/8250/8250_pci.c | 61 ++++++++++++++++++++++++++++----------
+ 1 file changed, 46 insertions(+), 15 deletions(-)
 
-Please pull one fix from Scott, he says:
-
-  This patch fixes a crash (introduced in v3.18-rc1) in the FSL MSI driver
-  when threaded IRQs are enabled.
-
-
-The following changes since commit 8a97577a5967c1234ccc3bc1b45e4b1a58b39ea8=
-:
-
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git=
-/mpe/linux (2014-11-04 11:18:29 -0800)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mpe/linux.git for-linus
-
-for you to fetch changes up to d7ce4377494adfaf8afb15ecf4f07d399bbf13d9:
-
-  powerpc/fsl_msi: mark the msi cascade handler IRQF_NO_THREAD (2014-11-17 =
-22:00:30 -0600)
-
-----------------------------------------------------------------
-Kevin Hao (1):
-      powerpc/fsl_msi: mark the msi cascade handler IRQF_NO_THREAD
-
- arch/powerpc/sysdev/fsl_msi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-
-
-
---=-cFnBl0cYDCIzAbFpCMPS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAABAgAGBQJUbCkLAAoJEFHr6jzI4aWA2SQP/3c7P3oO3zZrc6JmRtkgwn/D
-LwORvTZDbwQgYMEG9xHS3rM4ZESjxGmfpbFX3Tl4Pa0yUVXDFFpqIw4b8LTNtvak
-SbB/w1DeeiJ02BTns2npSt8Te4Q+B6QybDf6Auu+C5HfqcnMiYLOrJy9qOs1pdUz
-+h0UmPt2L8VXlnrBUQhz/O3J2yjvHcqQKD9G1lErC/5RlqmhT6/vALeg4siz0095
-owsE9iMf5U7Ek2wrfIqGvOQSDQvoT+9LYQsG0d2EsFDj6xtMCei/j7jG5OaHiZu8
-uwIihdy/pieEJTz/6UmlhITfgBjO6GiZlylRRruTtUqn6LgK+g7mmPuih3xPSTkh
-H/edOK9FI1bm99NM9F11x+BphXti9OPfnl4/JhZw81F4UkXqqUKntiIUxJ9ls4LI
-7dwWDLS/1us5r3sqIRl1s96g1M7niQ0Rq21G08dps5tiVBkfyrXxehmccMWSO8GV
-9lhZ1ZnRixPkMZ4ae27f8bGuEfbVkAvgWnn5X2EB3Eid6k0QIrgLUZ8fmzW0Hru2
-OQI1OAoc+YO/mgGqQX7bsnf9kellz3KEdNWdvf1lRByzdHgGYPK/gRSXeXRFhEkO
-dr/+J6/eEsH0lSSgsbiOCapZnfF5JWxK1bofBeDgzn7KUEWvFBkzAM/kdfD2jE85
-qu5og4pBwpa+JOacxpNY
-=eEY3
------END PGP SIGNATURE-----
-
---=-cFnBl0cYDCIzAbFpCMPS--
+diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
+index 0468e15..31feeb2 100644
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1554,25 +1554,48 @@ static int pci_fintek_setup(struct serial_private *priv,
+ 	unsigned long iobase;
+ 	unsigned long ciobase = 0;
+ 	u8 config_base;
++	u32 bar_data[3];
+ 
+ 	/*
+-	 * We are supposed to be able to read these from the PCI config space,
+-	 * but the values there don't seem to match what we need to use, so
+-	 * just use these hard-coded values for now, as they are correct.
++	 * Find each UARTs offset in PCI configuraion space
+ 	 */
+ 	switch (idx) {
+-	case 0: iobase = 0xe000; config_base = 0x40; break;
+-	case 1: iobase = 0xe008; config_base = 0x48; break;
+-	case 2: iobase = 0xe010; config_base = 0x50; break;
+-	case 3: iobase = 0xe018; config_base = 0x58; break;
+-	case 4: iobase = 0xe020; config_base = 0x60; break;
+-	case 5: iobase = 0xe028; config_base = 0x68; break;
+-	case 6: iobase = 0xe030; config_base = 0x70; break;
+-	case 7: iobase = 0xe038; config_base = 0x78; break;
+-	case 8: iobase = 0xe040; config_base = 0x80; break;
+-	case 9: iobase = 0xe048; config_base = 0x88; break;
+-	case 10: iobase = 0xe050; config_base = 0x90; break;
+-	case 11: iobase = 0xe058; config_base = 0x98; break;
++	case 0:
++		config_base = 0x40;
++		break;
++	case 1:
++		config_base = 0x48;
++		break;
++	case 2:
++		config_base = 0x50;
++		break;
++	case 3:
++		config_base = 0x58;
++		break;
++	case 4:
++		config_base = 0x60;
++		break;
++	case 5:
++		config_base = 0x68;
++		break;
++	case 6:
++		config_base = 0x70;
++		break;
++	case 7:
++		config_base = 0x78;
++		break;
++	case 8:
++		config_base = 0x80;
++		break;
++	case 9:
++		config_base = 0x88;
++		break;
++	case 10:
++		config_base = 0x90;
++		break;
++	case 11:
++		config_base = 0x98;
++		break;
+ 	default:
+ 		/* Unknown number of ports, get out of here */
+ 		return -EINVAL;
+@@ -1583,6 +1606,14 @@ static int pci_fintek_setup(struct serial_private *priv,
+ 		ciobase = (int)(base + (0x8 * idx));
+ 	}
+ 
++	/* Get the io address dispatch from the BIOS */
++	pci_read_config_dword(pdev, 0x24, &bar_data[0]);
++	pci_read_config_dword(pdev, 0x20, &bar_data[1]);
++	pci_read_config_dword(pdev, 0x1c, &bar_data[2]);
++
++	/* Calculate Real IO Port */
++	iobase = (bar_data[idx/4] & 0xffffffe0) + (idx % 4) * 8;
++
+ 	dev_dbg(&pdev->dev, "%s: idx=%d iobase=0x%lx ciobase=0x%lx config_base=0x%2x\n",
+ 		__func__, idx, iobase, ciobase, config_base);
+ 
+-- 
+1.9.1
 
