@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616AbaKSIqk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 03:46:40 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:20197 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753595AbaKSIqh (ORCPT
+	id S1754439AbaKSIvA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 03:51:00 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:38020 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753375AbaKSIu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 03:46:37 -0500
-Date: Wed, 19 Nov 2014 11:45:42 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH 1/1] net: xfrm: Deletion of an unnecessary check before
- the function call "ipcomp_free_tfms"
-Message-ID: <20141119084542.GK4905@mwanda>
-References: <530C5E18.1020800@users.sourceforge.net>
- <alpine.DEB.2.10.1402251014170.2080@hadrien>
- <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net>
- <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net>
- <546BAFF5.5020603@users.sourceforge.net>
+	Wed, 19 Nov 2014 03:50:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546BAFF5.5020603@users.sourceforge.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <20141118152156.GA21726@ubuntu-mba51>
+References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
+	<1414013060-137148-3-git-send-email-seth.forshee@canonical.com>
+	<20141111140454.GD333@tucsk>
+	<87mw7xd9zt.fsf@x220.int.ebiederm.org>
+	<20141112130915.GG333@tucsk>
+	<20141112162254.GB31775@ubuntu-hedt>
+	<20141118152156.GA21726@ubuntu-mba51>
+Date: Wed, 19 Nov 2014 09:50:57 +0100
+Message-ID: <CAJfpeguuT1V1Pf0iFXRozmeohDH2Jy=p8o=1EnvD_qfB1CTQuA@mail.gmail.com>
+Subject: Re: [PATCH v5 2/4] fuse: Support fuse filesystems outside of init_user_ns
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Michael j Theall <mtheall@us.ibm.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 09:45:41PM +0100, SF Markus Elfring wrote:
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Tue, 18 Nov 2014 21:41:26 +0100
-> 
-> The ipcomp_free_tfms() function tests whether its argument is NULL and then
-> returns immediately. Thus the test around the call is not needed.
-> 
+On Tue, Nov 18, 2014 at 4:21 PM, Seth Forshee
+<seth.forshee@canonical.com> wrote:
+>> I asked around a bit, and it turns out there are use cases for nested
+> containers (i.e. a container within a container) where the rootfs for
+> the outer container mounts a filesystem containing the rootfs for the
+> inner container. If that mount is nosuid then suid utilities like ping
+> aren't going to work in the inner container.
+>
+> So since there's a use case for suid in a userns mount and we have what
+> we belive are sufficient protections against using this as a vector to
+> get privileges outside the container, I'm planning to move ahead without
+> the MNT_NOSUID restriction. Any objections?
 
-It doesn't though...
+In the general case how'd we prevent suid executable being tricked to
+do something it shouldn't do by unprivileged mounting into sensitive
+places (i.e. config files) inside the container?
 
-regards,
-dan carpenter
+Allowing SUID looks like a slippery slope to me.  And there are plenty
+of solutions to the "ping" problem, AFAICS, that don't involve the
+suid bit.
 
+Disclaimer: I'm pretty ignorant in the field of computer security...
+
+Thanks,
+Miklos
