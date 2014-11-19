@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005AbaKSWFN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:05:13 -0500
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:57191 "HELO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932792AbaKSWFJ (ORCPT
+	id S933397AbaKSVEP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:04:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56529 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933341AbaKSVEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 17:05:09 -0500
+	Wed, 19 Nov 2014 16:04:09 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dwight Engen <dwight.engen@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 012/122] sunvdc: limit each sg segment to a page
+Date: Wed, 19 Nov 2014 12:51:02 -0800
+Message-Id: <20141119205209.225089686@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
+References: <20141119205208.812884198@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <1416434089-47062-1-git-send-email-joestringer@nicira.com>
-References: <1416434089-47062-1-git-send-email-joestringer@nicira.com>
-Date: Wed, 19 Nov 2014 14:05:09 -0800
-Message-ID: <CALnjE+rtJG+o_jwQtCaWJkjiGOeNA7fWNbDhgFnx-_v4kpA5hA@mail.gmail.com>
-Subject: Re: [PATCHv3 net] openvswitch: Don't validate IPv6 label masks.
-From: Pravin Shelar <pshelar@nicira.com>
-To: Joe Stringer <joestringer@nicira.com>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "dev@openvswitch.org" <dev@openvswitch.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 1:54 PM, Joe Stringer <joestringer@nicira.com> wrote:
-> When userspace doesn't provide a mask, OVS datapath generates a fully
-> unwildcarded mask for the flow by copying the flow and setting all bits
-> in all fields. For IPv6 label, this creates a mask that matches on the
-> upper 12 bits, causing the following error:
->
-> openvswitch: netlink: Invalid IPv6 flow label value (value=ffffffff, max=fffff)
->
-> This patch ignores the label validation check for masks, avoiding this
-> error.
->
-> Signed-off-by: Joe Stringer <joestringer@nicira.com>
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Thanks for the fix.
-Acked-by: Pravin B Shelar <pshelar@nicira.com>
+------------------
 
-> ---
-> v3: Alternative approach.
->     Was "openvswitch: Fix mask generation for IPv6 labels."
-> v2: OR lower 20 bits (upper 12 bits remain from earlier memdup)
-> ---
->  net/openvswitch/flow_netlink.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/net/openvswitch/flow_netlink.c b/net/openvswitch/flow_netlink.c
-> index fa4ec2e..089b195 100644
-> --- a/net/openvswitch/flow_netlink.c
-> +++ b/net/openvswitch/flow_netlink.c
-> @@ -690,7 +690,7 @@ static int ovs_key_from_nlattrs(struct sw_flow_match *match, u64 attrs,
->                         return -EINVAL;
->                 }
->
-> -               if (ipv6_key->ipv6_label & htonl(0xFFF00000)) {
-> +               if (!is_mask && ipv6_key->ipv6_label & htonl(0xFFF00000)) {
->                         OVS_NLERR("IPv6 flow label %x is out of range (max=%x).\n",
->                                   ntohl(ipv6_key->ipv6_label), (1 << 20) - 1);
->                         return -EINVAL;
-> --
-> 1.7.10.4
->
+From: Dwight Engen <dwight.engen@oracle.com>
+
+[ Upstream commit 5eed69ffd248c9f68f56c710caf07db134aef28b ]
+
+ldc_map_sg() could fail its check that the number of pages referred to
+by the sg scatterlist was <= the number of cookies.
+
+This fixes the issue by doing a similar thing to the xen-blkfront driver,
+ensuring that the scatterlist will only ever contain a segment count <=
+port->ring_cookies, and each segment will be page aligned, and <= page
+size. This ensures that the scatterlist is always mappable.
+
+Orabug: 19347817
+OraBZ: 15945
+
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/block/sunvdc.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -747,6 +747,10 @@ static int probe_disk(struct vdc_port *p
+ 
+ 	port->disk = g;
+ 
++	/* Each segment in a request is up to an aligned page in size. */
++	blk_queue_segment_boundary(q, PAGE_SIZE - 1);
++	blk_queue_max_segment_size(q, PAGE_SIZE);
++
+ 	blk_queue_max_segments(q, port->ring_cookies);
+ 	blk_queue_max_hw_sectors(q, port->max_xfer_size);
+ 	g->major = vdc_major;
+
+
