@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933986AbaKSVPG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:15:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57274 "EHLO
+	id S933653AbaKSVPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:15:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57643 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933880AbaKSVOv (ORCPT
+	with ESMTP id S932873AbaKSVPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:51 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 58/70] KVM: x86: Dont report guest userspace emulation error to userspace
-Date: Wed, 19 Nov 2014 12:52:49 -0800
-Message-Id: <20141119205212.835275053@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
-References: <20141119205210.913169042@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Wed, 19 Nov 2014 16:15:36 -0500
+Date: Wed, 19 Nov 2014 13:15:35 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Karam Lee <karam.lee@lge.com>, Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH] zram: rely on the bi_end_io for zram_rw_page fails
+Message-Id: <20141119131535.7d848c148535c076a17b9d29@linux-foundation.org>
+In-Reply-To: <20141118235201.GB7393@bbox>
+References: <1415926147-9023-1-git-send-email-minchan@kernel.org>
+	<20141118152336.d58b7b61a711b7d9982deb9d@linux-foundation.org>
+	<20141118235201.GB7393@bbox>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 19 Nov 2014 08:52:01 +0900 Minchan Kim <minchan@kernel.org> wrote:
 
-------------------
+> > >  
+> > > -	/*
+> > > -	 * Return 0 prevents I/O fallback trial caused by rw_page fail
+> > > -	 * and upper layer can handle this IO error via page error.
+> > > -	 */
+> > > +	page_endio(page, rw, 0);
+> > >  	return 0;
+> > 
+> > Losing the comment makes me sad.  The code is somewhat odd-looking.  We
+> > should add some words explaining why we're not reporting errors at this
+> > point.
+> 
+> Okay. How about this?
+> 
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index decca6f161b8..1d7c90d5e0d0 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -975,6 +975,12 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
+>  	err = zram_bvec_rw(zram, &bv, index, offset, rw);
+>  out_unlock:
+>  	up_read(&zram->init_lock);
+> +	/*
+> +	 * If I/O fails, just return error without calling page_endio.
+> +	 * It causes resubmit the I/O with bio request by rw_page fallback
+> +	 * and bio I/O complete handler does things to handle the error
+> +	 * (e.g., set_page_dirty of swap_writepage fail).
+> +	 */
+>  	if (err == 0)
+>  		page_endio(page, rw, 0);
+>  	return err;
 
-From: Nadav Amit <namit@cs.technion.ac.il>
+I don't understand the comment :( bdev_read_page() doesn't resubmit the
+IO if block_device_operations.rw_page() returns zero and it's unclear
+how the bio I/O complete handler (which one?) gets involved.
 
-commit a2b9e6c1a35afcc0973acb72e591c714e78885ff upstream.
-
-Commit fc3a9157d314 ("KVM: X86: Don't report L2 emulation failures to
-user-space") disabled the reporting of L2 (nested guest) emulation failures to
-userspace due to race-condition between a vmexit and the instruction emulator.
-The same rational applies also to userspace applications that are permitted by
-the guest OS to access MMIO area or perform PIO.
-
-This patch extends the current behavior - of injecting a #UD instead of
-reporting it to userspace - also for guest userspace code.
-
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/kvm/x86.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4834,7 +4834,7 @@ static int handle_emulation_failure(stru
- 
- 	++vcpu->stat.insn_emulation_fail;
- 	trace_kvm_emulate_insn_failed(vcpu);
--	if (!is_guest_mode(vcpu)) {
-+	if (!is_guest_mode(vcpu) && kvm_x86_ops->get_cpl(vcpu) == 0) {
- 		vcpu->run->exit_reason = KVM_EXIT_INTERNAL_ERROR;
- 		vcpu->run->internal.suberror = KVM_INTERNAL_ERROR_EMULATION;
- 		vcpu->run->internal.ndata = 0;
-
+It would help in the comment was more specific.  Instead of using vague
+terms like "rw_page fallback" and "bio I/O complete handler", use
+actual function names so the reader understand exactly what code we're
+referring to.
 
