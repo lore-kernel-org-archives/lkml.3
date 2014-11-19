@@ -1,351 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750AbaKSBpS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 20:45:18 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:58309 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755664AbaKSBpN (ORCPT
+	id S1755829AbaKSBsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 20:48:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38953 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943AbaKSBsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 20:45:13 -0500
-Message-ID: <546BF59C.8060203@huawei.com>
-Date: Wed, 19 Nov 2014 09:42:52 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 18 Nov 2014 20:48:21 -0500
+Subject: Patch "MIPS: Fix forgotten preempt_enable() when CPU has inclusive" has been added to the 3.10-stable tree
+To: yuasa@linux-mips.org, aaro.koskinen@iki.fi, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, lxoliva@fsfla.org, ralf@linux-mips.org
+Cc: <stable@vger.kernel.org>, <stable-commits@vger.kernel.org>
+From: <gregkh@linuxfoundation.org>
+Date: Tue, 18 Nov 2014 17:48:20 -0800
+Message-ID: <14163617003126@kroah.com>
 MIME-Version: 1.0
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "huxinwei@huawei.com" <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Liviu Dudau <liviu@dudau.co.uk>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
-Subject: Re: [RFC PATCH 07/16] PCI: Separate pci_host_bridge creation out
- of pci_create_root_bus()
-References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com> <1416219710-26088-8-git-send-email-wangyijing@huawei.com> <20141118153020.GL12037@e106497-lin.cambridge.arm.com>
-In-Reply-To: <20141118153020.GL12037@e106497-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.546BF5AC.0128,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 6c30e06b394fa6177a7b802026ca246b
+Content-Type: text/plain; charset=ANSI_X3.4-1968
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/18 23:30, Liviu Dudau wrote:
-> On Mon, Nov 17, 2014 at 10:21:41AM +0000, Yijing Wang wrote:
->> There are some common PCI infos like domain, msi_controller, these
->> infos are saved in arch PCI sysdata, and lots arch specific functions
->> like pci_domain_nr() and pcibios_msi_controller() required.
->> We could separate pci_host_bridge creation out of pci_create_root_bus(),
->> then we could put the common infos in, then we could eliminate
->> the arch specifc functions.
->>
-> 
-> Please Cc: Yinghai Lu and Jiang Liu on future versions.
-> 
-> More comments on the conversion of pci_create_root_bus():
 
-That's my mistake, will add CC Yinghai and Jiang in next version.
+This is a note to let you know that I've just added the patch titled
 
-> 
->> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->> ---
-...
->> +
->> +static void pci_release_host_bridge_dev(struct device *dev)
->> +{
->> +       struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
->> +
->> +       if (bridge->release_fn)
->> +               bridge->release_fn(bridge);
->> +       pci_free_resource_list(&bridge->windows);
->> +       kfree(bridge);
->> +}
->> +
->> +struct pci_host_bridge *pci_create_host_bridge(
->> +               struct device *parent, u32 db,
->> +               struct pci_ops *ops, void *sysdata,
-> 
-> I don't thinks it is worth moving the buses' pci_ops into pci_host_bridge. It
-> might be more useful to have pci_host_bridge specific ops here.
+    MIPS: Fix forgotten preempt_enable() when CPU has inclusive
 
-Because we want to create pci_host_bridge before pci root bus creation,
-so when we scan the root bus and child buses, we use pci_host_bridge as
-the only argument, and another pci_host_info will be addes in later patch,
-which one support carry the pci_host_bridge ops.
+to the 3.10-stable tree which can be found at:
+    http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
 
-> 
->> +               struct list_head *resources)
->> +{
->> +       int error;
->> +       struct pci_bus *b;
->> +       struct pci_host_bridge *host, *h;
-...
->> -struct pci_bus *pci_create_root_bus(struct device *parent, u32 db,
->> -               struct pci_ops *ops, void *sysdata, struct list_head *resources)
->> +struct pci_bus *__pci_create_root_bus(struct pci_host_bridge *bridge)
->>  {
->>         int error;
->> -       struct pci_host_bridge *bridge;
->>         struct pci_bus *b, *b2;
->> -       struct pci_host_bridge_window *window, *n;
->> +       struct pci_host_bridge_window *window;
->>         struct resource *res;
->>         resource_size_t offset;
->>         char bus_addr[64];
->>         char *fmt;
->> -       u8      bus = PCI_BUSNUM(db);
->> +       struct device *parent = bridge->dev.parent;
->>
->>         b = pci_alloc_bus(NULL);
->>         if (!b)
->>                 return NULL;
->>
->> -       b->sysdata = sysdata;
->> -       b->ops = ops;
->> -       b->number = b->busn_res.start = bus;
->> +       b->sysdata = bridge->sysdata;
-> 
-> I think bridge should be the b->sysdata here. 
+The filename of the patch is:
+     mips-fix-forgotten-preempt_enable-when-cpu-has-inclusive.patch
+and it can be found in the queue-3.10 subdirectory.
 
-? what's the meaning?
-
-> 
->> +       b->ops = bridge->ops;
-> 
-> See comment above why I don't think this is necessary.
-> 
->> +       b->number = b->busn_res.start = bridge->busnum;
->>         pci_bus_assign_domain_nr(b, parent);
->> -       b2 = pci_find_bus(pci_domain_nr(b), bus);
->> +       bridge->domain = pci_domain_nr(b);
-> 
-> Do you really want to overwrite the bridge's domain with the one from a bus that
-> could possibly be rejected a couple of lines further down?
-> 
-> As an asside: if we are doing the split of pci_host_bridge from root bus creation
-> it is worth in my opinion to move the domain setup in pci_create_host_bridge()
-> and stop fiddling with it here.
+If you, or anyone else, feels it should not be added to the stable tree,
+please let <stable@vger.kernel.org> know about it.
 
 
-Hi Liviu, these lines just temporary, I will remove it after all host drivers
-save its domain in pci_host_bridge.
+>From 5596b0b245fb9d2cefb5023b11061050351c1398 Mon Sep 17 00:00:00 2001
+From: Yoichi Yuasa <yuasa@linux-mips.org>
+Date: Wed, 2 Oct 2013 15:03:03 +0900
+Subject: MIPS: Fix forgotten preempt_enable() when CPU has inclusive
+ pcaches
+
+From: Yoichi Yuasa <yuasa@linux-mips.org>
+
+commit 5596b0b245fb9d2cefb5023b11061050351c1398 upstream.
+
+[    1.904000] BUG: scheduling while atomic: swapper/1/0x00000002
+[    1.908000] Modules linked in:
+[    1.916000] CPU: 0 PID: 1 Comm: swapper Not tainted 3.12.0-rc2-lemote-los.git-5318619-dirty #1
+[    1.920000] Stack : 0000000031aac000 ffffffff810d0000 0000000000000052 ffffffff802730a4
+          0000000000000000 0000000000000001 ffffffff810cdf90 ffffffff810d0000
+          ffffffff8068b968 ffffffff806f5537 ffffffff810cdf90 980000009f0782e8
+          0000000000000001 ffffffff80720000 ffffffff806b0000 980000009f078000
+          980000009f290000 ffffffff805f312c 980000009f05b5d8 ffffffff80233518
+          980000009f05b5e8 ffffffff80274b7c 980000009f078000 ffffffff8068b968
+          0000000000000000 0000000000000000 0000000000000000 0000000000000000
+          0000000000000000 980000009f05b520 0000000000000000 ffffffff805f2f6c
+          0000000000000000 ffffffff80700000 ffffffff80700000 ffffffff806fc758
+          ffffffff80700000 ffffffff8020be98 ffffffff806fceb0 ffffffff805f2f6c
+          ...
+[    2.028000] Call Trace:
+[    2.032000] [<ffffffff8020be98>] show_stack+0x80/0x98
+[    2.036000] [<ffffffff805f2f6c>] __schedule_bug+0x44/0x6c
+[    2.040000] [<ffffffff805fac58>] __schedule+0x518/0x5b0
+[    2.044000] [<ffffffff805f8a58>] schedule_timeout+0x128/0x1f0
+[    2.048000] [<ffffffff80240314>] msleep+0x3c/0x60
+[    2.052000] [<ffffffff80495400>] do_probe+0x238/0x3a8
+[    2.056000] [<ffffffff804958b0>] ide_probe_port+0x340/0x7e8
+[    2.060000] [<ffffffff80496028>] ide_host_register+0x2d0/0x7a8
+[    2.064000] [<ffffffff8049c65c>] ide_pci_init_two+0x4e4/0x790
+[    2.068000] [<ffffffff8049f9b8>] amd74xx_probe+0x148/0x2c8
+[    2.072000] [<ffffffff803f571c>] pci_device_probe+0xc4/0x130
+[    2.076000] [<ffffffff80478f60>] driver_probe_device+0x98/0x270
+[    2.080000] [<ffffffff80479298>] __driver_attach+0xe0/0xe8
+[    2.084000] [<ffffffff80476ab0>] bus_for_each_dev+0x78/0xe0
+[    2.088000] [<ffffffff80478468>] bus_add_driver+0x230/0x310
+[    2.092000] [<ffffffff80479b44>] driver_register+0x84/0x158
+[    2.096000] [<ffffffff80200504>] do_one_initcall+0x104/0x160
+
+Signed-off-by: Yoichi Yuasa <yuasa@linux-mips.org>
+Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: linux-mips@linux-mips.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Patchwork: https://patchwork.linux-mips.org/patch/5941/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: Alexandre Oliva <lxoliva@fsfla.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/mips/mm/c-r4k.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/arch/mips/mm/c-r4k.c
++++ b/arch/mips/mm/c-r4k.c
+@@ -608,6 +608,7 @@ static void r4k_dma_cache_wback_inv(unsi
+ 			r4k_blast_scache();
+ 		else
+ 			blast_scache_range(addr, addr + size);
++		preempt_enable();
+ 		__sync();
+ 		return;
+ 	}
+@@ -649,6 +650,7 @@ static void r4k_dma_cache_inv(unsigned l
+ 			 */
+ 			blast_inv_scache_range(addr, addr + size);
+ 		}
++		preempt_enable();
+ 		__sync();
+ 		return;
+ 	}
 
 
-> 
-> Otherwise it looks to me like you are heading in the right direction.
+Patches currently in stable-queue which might be from yuasa@linux-mips.org are
 
-Thanks!
-Yijing.
-
-> 
-> Best regards,
-> Liviu
-> 
->> +       b2 = pci_find_bus(pci_domain_nr(b), bridge->busnum);
->>         if (b2) {
->>                 /* If we already got to this bus through a different bridge, ignore it */
->>                 dev_dbg(&b2->dev, "bus already known\n");
->>                 goto err_out;
->>         }
->>
->> -       bridge = pci_alloc_host_bridge(b);
->> -       if (!bridge)
->> -               goto err_out;
->> -
->> -       bridge->dev.parent = parent;
->> -       bridge->dev.release = pci_release_host_bridge_dev;
->> -       dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
->> -       error = pcibios_root_bridge_prepare(bridge);
->> -       if (error) {
->> -               kfree(bridge);
->> -               goto err_out;
->> -       }
->> -
->> -       error = device_register(&bridge->dev);
->> -       if (error) {
->> -               put_device(&bridge->dev);
->> -               goto err_out;
->> -       }
->>         b->bridge = get_device(&bridge->dev);
->>         device_enable_async_suspend(b->bridge);
->>         pci_set_bus_of_node(b);
->> @@ -1950,7 +1899,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, u32 db,
->>
->>         b->dev.class = &pcibus_class;
->>         b->dev.parent = b->bridge;
->> -       dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
->> +       dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), b->number);
->>         error = device_register(&b->dev);
->>         if (error)
->>                 goto class_dev_reg_err;
->> @@ -1966,12 +1915,11 @@ struct pci_bus *pci_create_root_bus(struct device *parent, u32 db,
->>                 printk(KERN_INFO "PCI host bridge to bus %s\n", dev_name(&b->dev));
->>
->>         /* Add initial resources to the bus */
->> -       list_for_each_entry_safe(window, n, resources, list) {
->> -               list_move_tail(&window->list, &bridge->windows);
->> +       list_for_each_entry(window, &bridge->windows, list) {
->>                 res = window->res;
->>                 offset = window->offset;
->>                 if (res->flags & IORESOURCE_BUS)
->> -                       pci_bus_insert_busn_res(b, bus, res->end);
->> +                       pci_bus_insert_busn_res(b, b->number, res->end);
->>                 else
->>                         pci_bus_add_resource(b, res, 0);
->>                 if (offset) {
->> @@ -2001,6 +1949,25 @@ err_out:
->>         return NULL;
->>  }
->>
->> +struct pci_bus *pci_create_root_bus(struct device *parent, u32 bus,
->> +               struct pci_ops *ops, void *sysdata, struct list_head *resources)
->> +{
->> +       struct pci_host_bridge *host;
->> +
->> +       host = pci_create_host_bridge(parent, bus, ops,
->> +                       sysdata ,resources);
->> +       if (!host)
->> +               return NULL;
->> +
->> +       host->bus = __pci_create_root_bus(host);
->> +       if (!host->bus) {
->> +               pci_free_host_bridge(host);
->> +               return NULL;
->> +       }
->> +
->> +       return host->bus;
->> +}
->> +
->>  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
->>  {
->>         struct resource *res = &b->busn_res;
->> @@ -2069,40 +2036,37 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, u32 db,
->>  {
->>         struct pci_host_bridge_window *window;
->>         bool found = false;
->> -       struct pci_bus *b;
->> -       LIST_HEAD(default_res);
->> +       struct pci_host_bridge *host;
->>         int max;
->>
->> -       if (!resources) {
->> -               pci_add_resource(&default_res, &ioport_resource);
->> -               pci_add_resource(&default_res, &iomem_resource);
->> -               pci_add_resource(&default_res, &busn_resource);
->> -       } else {
->> -               list_for_each_entry(window, resources, list)
->> -                       if (window->res->flags & IORESOURCE_BUS) {
->> -                               found = true;
->> -                               break;
->> -                       }
->> -       }
->> +       host = pci_create_host_bridge(parent, db, ops, sysdata, resources);
->> +       if (!host)
->> +               return NULL;
->>
->> -       b = pci_create_root_bus(parent, db, ops, sysdata,
->> -                       resources ? resources : &default_res);
->> -       if (!b)
->> +       list_for_each_entry(window, &host->windows, list)
->> +               if (window->res->flags & IORESOURCE_BUS) {
->> +                       found = true;
->> +                       break;
->> +               }
->> +
->> +       host->bus = __pci_create_root_bus(host);
->> +       if (!host->bus) {
->> +               pci_free_host_bridge(host);
->>                 return NULL;
->> +       }
->>
->>         if (!found) {
->> -               dev_info(&b->dev,
->> +               dev_info(&host->bus->dev,
->>                  "No busn resource found for root bus, will use [bus %02x-ff]\n",
->>                         PCI_BUSNUM(db));
->> -               pci_bus_insert_busn_res(b, PCI_BUSNUM(db), 255);
->> +               pci_bus_insert_busn_res(host->bus, PCI_BUSNUM(db), 255);
->>         }
->>
->> -       max = pci_scan_child_bus(b);
->> -
->> +       max = pci_scan_child_bus(host->bus);
->>         if (!found)
->> -               pci_bus_update_busn_res_end(b, max);
->> +               pci_bus_update_busn_res_end(host->bus, max);
->>
->> -       return b;
->> +       return host->bus;
->>  }
->>  EXPORT_SYMBOL(pci_scan_root_bus);
->>
->> diff --git a/include/linux/pci.h b/include/linux/pci.h
->> index 8b11b38..daa7f40 100644
->> --- a/include/linux/pci.h
->> +++ b/include/linux/pci.h
->> @@ -402,7 +402,12 @@ struct pci_host_bridge_window {
->>  struct pci_host_bridge {
->>         struct device dev;
->>         struct pci_bus *bus;            /* root bus */
->> +       struct list_head list;
->>         struct list_head windows;       /* pci_host_bridge_windows */
->> +       int busnum;
->> +       int domain;
->> +       void *sysdata;
->> +       struct pci_ops *ops;
->>         void (*release_fn)(struct pci_host_bridge *);
->>         void *release_data;
->>  };
->> @@ -413,7 +418,9 @@ void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
->>                      void *release_data);
->>
->>  int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge);
->> -
->> +struct pci_host_bridge *pci_create_host_bridge(
->> +               struct device *parent, u32 db, struct pci_ops *ops,
->> +               void *sys, struct list_head *resources);
->>  /*
->>   * The first PCI_BRIDGE_RESOURCE_NUM PCI bus resources (those that correspond
->>   * to P2P or CardBus bridge windows) go in a table.  Additional ones (for
->> @@ -770,6 +777,8 @@ void pci_bus_add_devices(const struct pci_bus *bus);
->>  struct pci_bus *pci_create_root_bus(struct device *parent, u32 bus,
->>                                     struct pci_ops *ops, void *sysdata,
->>                                     struct list_head *resources);
->> +struct pci_bus *__pci_create_root_bus(struct pci_host_bridge *host);
->> +void pci_free_host_bridge(struct pci_host_bridge *host);
->>  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
->>  int pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
->>  void pci_bus_release_busn_res(struct pci_bus *b);
->> --
->> 1.7.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
-
-
--- 
-Thanks!
-Yijing
-
+queue-3.10/mips-fix-forgotten-preempt_enable-when-cpu-has-inclusive.patch
