@@ -1,96 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796AbaKSJUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 04:20:50 -0500
-Received: from mout.web.de ([212.227.17.11]:54266 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226AbaKSJUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 04:20:47 -0500
-Message-ID: <546C60E0.1070903@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 10:20:32 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754913AbaKSJVC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 04:21:02 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33004 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754376AbaKSJU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 04:20:57 -0500
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: "Yun Wu \(Abel\)" <wuyun.wu@huawei.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "grant.likely\@linaro.org" <grant.likely@linaro.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [patch 08/16] genirq: Introduce callback irq_chip.irq_write_msi_msg
+In-Reply-To: <546C3F55.3090301@huawei.com> (Yun Wu's message of "Wed, 19 Nov
+	2014 06:57:25 +0000")
+Organization: ARM Ltd
+References: <20141112133941.647950773@linutronix.de>
+	<20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com>
+	<alpine.DEB.2.11.1411181103360.3909@nanos>
+	<546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com>
+	<546B4F18.5060705@huawei.com> <546B51BA.6070806@linux.intel.com>
+	<546B5635.6020806@huawei.com>
+	<alpine.DEB.2.11.1411181526220.3909@nanos>
+	<546C3F55.3090301@huawei.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+Date: Wed, 19 Nov 2014 09:20:48 +0000
+Message-ID: <87ioibczrj.fsf@approximate.cambridge.arm.com>
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.apana.org.au>, linux-crypto@vger.kernel.org
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] crypto-drbg: Deletion of unnecessary checks before the
- function call "kzfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:KOxjjYI+AKsiE1tjO4B5WBm6BW6Jbh+JE5Ow4rAeQBzgiRoTIn7
- onk0q6qTU8WbR0nQByms1xirJgiG93y8Df8WMpjwckwG8ywrRkSHmdQ+DS1mZiOblAfKJcr
- VFq2lHG/oEAt1rF//3ksOx3VVp9oXUNj/8EDPvucpNnILfjnBzSAe15nUyiv5qKPawFrjOm
- 4MscnJNcEMyV9RALLHfjw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 10:11:04 +0100
+On Wed, Nov 19 2014 at  6:57:25 am GMT, "Yun Wu (Abel)" <wuyun.wu@huawei.com> wrote:
+> On 2014/11/18 22:32, Thomas Gleixner wrote:
+>
+>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
+>> 
+>> Can you please trim the messages when you're replying?
+>> 
+>>> The above you described is absolutely right, but not the things I want
+>>> to know. :)
+>>> Take GICv3 ITS for example, it deals with both PCI and non PCI message
+>>> interrupts. IIUC, several irq_chips need to be implemented in the ITS
+>>> driver (i.e. pci_msi_chip, A_msi_chip and B_msi_chip). What should we
+>>> do to the ITS driver if new MSI-capable devices come out?
+>> 
+>> You seem to miss the stacking here
+>> 
+>> PCI-MSI	->
+>> A-MSI	->   ITS  -> GIC
+>> B-MSI	->
+>> 
+>> So each of the device types has its own MSI controller. Each of them
+>> will have their own callbacks and are backed by the underlying ITS/GIC
+>> implementation.
+>
+> Yes, this hits the key point. Once a new device type becomes available,
+> we need to add pieces of code outside the new device's driver to make
+> it work, which in my opinion is due to lack of core infrastructure.
+> More specifically, the core infrastructure needs to support mechanism
+> of MSI, not the various types of devices.
+>
+>> 
+>> And that's the only sensible solution.
+>> 
+>
+> It's sensible, but not perfect.
+> What I suggested is to add a generic layer:
+>
+> PCI-MSI	->
+> A-MSI	-> (generic layer) -> ITS -> GICR
+> B-MSI	->
+>
+> The PCI/A/B/... passes its hardware properties to the generic layer which
+> gets configurations ready by calling ITS's domain/chip callbacks. When
+> a new device type arrives, the only thing need to do is to implement the
+> driver of that device, with nothing to do with the generic layer or ITS.
 
-The kzfree() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+I really don't get your "generic layer" story. To me, it looks like a
+glorified set of function pointers. And that's exactly what stacked
+domains are giving you:
 
-This issue was detected by using the Coccinelle software.
+A-MSI -> ITS -> GIC
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- crypto/drbg.c | 18 ++++++------------
- 1 file changed, 6 insertions(+), 12 deletions(-)
+This "A-MSI" is responsible for:
+- implementing the "prepare" callback, which allocates the ITT
+- implementing the "irq_compose_msi_msg"
 
-diff --git a/crypto/drbg.c b/crypto/drbg.c
-index a53ee09..b6f22d4 100644
---- a/crypto/drbg.c
-+++ b/crypto/drbg.c
-@@ -1151,8 +1151,7 @@ static int drbg_seed(struct drbg_state *drbg, struct drbg_string *pers,
- 	drbg->reseed_ctr = 1;
- 
- out:
--	if (entropy)
--		kzfree(entropy);
-+	kzfree(entropy);
- 	return ret;
- }
- 
-@@ -1161,19 +1160,15 @@ static inline void drbg_dealloc_state(struct drbg_state *drbg)
- {
- 	if (!drbg)
- 		return;
--	if (drbg->V)
--		kzfree(drbg->V);
-+	kzfree(drbg->V);
- 	drbg->V = NULL;
--	if (drbg->C)
--		kzfree(drbg->C);
-+	kzfree(drbg->C);
- 	drbg->C = NULL;
--	if (drbg->scratchpad)
--		kzfree(drbg->scratchpad);
-+	kzfree(drbg->scratchpad);
- 	drbg->scratchpad = NULL;
- 	drbg->reseed_ctr = 0;
- #ifdef CONFIG_CRYPTO_FIPS
--	if (drbg->prev)
--		kzfree(drbg->prev);
-+	kzfree(drbg->prev);
- 	drbg->prev = NULL;
- 	drbg->fips_primed = false;
- #endif
-@@ -1293,8 +1288,7 @@ static int drbg_make_shadow(struct drbg_state *drbg, struct drbg_state **shadow)
- 	return 0;
- 
- err:
--	if (tmp)
--		kzfree(tmp);
-+	kzfree(tmp);
- 	return ret;
- }
- 
+Hardly anything to change in the ITS driver, and I can probably make it
+so that you don't even have to write a single line of code in the ITS
+driver.
+
+If the generic MSI layer we now have is not enough for you, then please
+submit detailed use cases.
+
+Thanks,
+
+	M.
 -- 
-2.1.3
-
+Jazz is not dead. It just smells funny.
