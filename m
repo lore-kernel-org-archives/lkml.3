@@ -1,173 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758263AbaKSWjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:39:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55888 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756713AbaKSUxw (ORCPT
+	id S1756402AbaKSWjc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:39:32 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:54099 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756714AbaKSWjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:53:52 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dwight Engen <dwight.engen@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 021/141] vio: fix reuse of vio_dring slot
-Date: Wed, 19 Nov 2014 12:50:44 -0800
-Message-Id: <20141119205151.354074071@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
-References: <20141119205150.700188369@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 19 Nov 2014 17:39:17 -0500
+Date: Wed, 19 Nov 2014 14:39:14 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Luiz Capitulino <lcapitulino@redhat.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, andi@firstfloor.org, riel@redhat.com,
+        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org, davidlohr@hp.com
+Subject: Re: [PATCH 1/3] hugetlb: fix hugepages= entry in
+ kernel-parameters.txt
+In-Reply-To: <1415831593-9020-2-git-send-email-lcapitulino@redhat.com>
+Message-ID: <alpine.DEB.2.10.1411191439030.24691@chino.kir.corp.google.com>
+References: <1415831593-9020-1-git-send-email-lcapitulino@redhat.com> <1415831593-9020-2-git-send-email-lcapitulino@redhat.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 12 Nov 2014, Luiz Capitulino wrote:
 
-------------------
+> The hugepages= entry in kernel-parameters.txt states that
+> 1GB pages can only be allocated at boot time and not
+> freed afterwards. This is not true since commit
+> 944d9fec8d7aee, at least for x86_64.
+> 
+> Instead of adding arch-specifc observations to the
+> hugepages= entry, this commit just drops the out of date
+> information. Further information about arch-specific
+> support and available features can be obtained in the
+> hugetlb documentation.
+> 
+> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
 
-From: Dwight Engen <dwight.engen@oracle.com>
-
-[ Upstream commit d0aedcd4f14a22e23b313f42b7e6e6ebfc0fbc31 ]
-
-vio_dring_avail() will allow use of every dring entry, but when the last
-entry is allocated then dr->prod == dr->cons which is indistinguishable from
-the ring empty condition. This causes the next allocation to reuse an entry.
-When this happens in sunvdc, the server side vds driver begins nack'ing the
-messages and ends up resetting the ldc channel. This problem does not effect
-sunvnet since it checks for < 2.
-
-The fix here is to just never allocate the very last dring slot so that full
-and empty are not the same condition. The request start path was changed to
-check for the ring being full a bit earlier, and to stop the blk_queue if
-there is no space left. The blk_queue will be restarted once the ring is
-only half full again. The number of ring entries was increased to 512 which
-matches the sunvnet and Solaris vdc drivers, and greatly reduces the
-frequency of hitting the ring full condition and the associated blk_queue
-stop/starting. The checks in sunvent were adjusted to account for
-vio_dring_avail() returning 1 less.
-
-Orabug: 19441666
-OraBZ: 14983
-
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/include/asm/vio.h       |    2 -
- drivers/block/sunvdc.c             |   39 +++++++++++++++++++++----------------
- drivers/net/ethernet/sun/sunvnet.c |    4 +--
- 3 files changed, 26 insertions(+), 19 deletions(-)
-
---- a/arch/sparc/include/asm/vio.h
-+++ b/arch/sparc/include/asm/vio.h
-@@ -265,7 +265,7 @@ static inline u32 vio_dring_avail(struct
- 				  unsigned int ring_size)
- {
- 	return (dr->pending -
--		((dr->prod - dr->cons) & (ring_size - 1)));
-+		((dr->prod - dr->cons) & (ring_size - 1)) - 1);
- }
- 
- #define VIO_MAX_TYPE_LEN	32
---- a/drivers/block/sunvdc.c
-+++ b/drivers/block/sunvdc.c
-@@ -33,7 +33,7 @@ MODULE_DESCRIPTION("Sun LDOM virtual dis
- MODULE_LICENSE("GPL");
- MODULE_VERSION(DRV_MODULE_VERSION);
- 
--#define VDC_TX_RING_SIZE	256
-+#define VDC_TX_RING_SIZE	512
- 
- #define WAITING_FOR_LINK_UP	0x01
- #define WAITING_FOR_TX_SPACE	0x02
-@@ -283,7 +283,9 @@ static void vdc_end_one(struct vdc_port
- 
- 	__blk_end_request(req, (desc->status ? -EIO : 0), desc->size);
- 
--	if (blk_queue_stopped(port->disk->queue))
-+	/* restart blk queue when ring is half emptied */
-+	if (blk_queue_stopped(port->disk->queue) &&
-+	    vdc_tx_dring_avail(dr) * 100 / VDC_TX_RING_SIZE >= 50)
- 		blk_start_queue(port->disk->queue);
- }
- 
-@@ -435,12 +437,6 @@ static int __send_request(struct request
- 	for (i = 0; i < nsg; i++)
- 		len += sg[i].length;
- 
--	if (unlikely(vdc_tx_dring_avail(dr) < 1)) {
--		blk_stop_queue(port->disk->queue);
--		err = -ENOMEM;
--		goto out;
--	}
--
- 	desc = vio_dring_cur(dr);
- 
- 	err = ldc_map_sg(port->vio.lp, sg, nsg,
-@@ -480,21 +476,32 @@ static int __send_request(struct request
- 		port->req_id++;
- 		dr->prod = (dr->prod + 1) & (VDC_TX_RING_SIZE - 1);
- 	}
--out:
- 
- 	return err;
- }
- 
--static void do_vdc_request(struct request_queue *q)
-+static void do_vdc_request(struct request_queue *rq)
- {
--	while (1) {
--		struct request *req = blk_fetch_request(q);
-+	struct request *req;
- 
--		if (!req)
-+	while ((req = blk_peek_request(rq)) != NULL) {
-+		struct vdc_port *port;
-+		struct vio_dring_state *dr;
-+
-+		port = req->rq_disk->private_data;
-+		dr = &port->vio.drings[VIO_DRIVER_TX_RING];
-+		if (unlikely(vdc_tx_dring_avail(dr) < 1))
-+			goto wait;
-+
-+		blk_start_request(req);
-+
-+		if (__send_request(req) < 0) {
-+			blk_requeue_request(rq, req);
-+wait:
-+			/* Avoid pointless unplugs. */
-+			blk_stop_queue(rq);
- 			break;
--
--		if (__send_request(req) < 0)
--			__blk_end_request_all(req, -EIO);
-+		}
- 	}
- }
- 
---- a/drivers/net/ethernet/sun/sunvnet.c
-+++ b/drivers/net/ethernet/sun/sunvnet.c
-@@ -693,7 +693,7 @@ static int vnet_start_xmit(struct sk_buf
- 	spin_lock_irqsave(&port->vio.lock, flags);
- 
- 	dr = &port->vio.drings[VIO_DRIVER_TX_RING];
--	if (unlikely(vnet_tx_dring_avail(dr) < 2)) {
-+	if (unlikely(vnet_tx_dring_avail(dr) < 1)) {
- 		if (!netif_queue_stopped(dev)) {
- 			netif_stop_queue(dev);
- 
-@@ -749,7 +749,7 @@ static int vnet_start_xmit(struct sk_buf
- 	dev->stats.tx_bytes += skb->len;
- 
- 	dr->prod = (dr->prod + 1) & (VNET_TX_RING_SIZE - 1);
--	if (unlikely(vnet_tx_dring_avail(dr) < 2)) {
-+	if (unlikely(vnet_tx_dring_avail(dr) < 1)) {
- 		netif_stop_queue(dev);
- 		if (vnet_tx_dring_avail(dr) > VNET_TX_WAKEUP_THRESH(dr))
- 			netif_wake_queue(dev);
-
-
+Acked-by: David Rientjes <rientjes@google.com>
