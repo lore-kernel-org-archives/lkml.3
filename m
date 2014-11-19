@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483AbaKSWZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:25:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56064 "EHLO
+	id S1757406AbaKSWZU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:25:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55895 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932459AbaKSUyH (ORCPT
+	with ESMTP id S932467AbaKSUyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:54:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jammy Zhou <Jammy.Zhou@amd.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.17 065/141] drm/radeon: set correct CE ram size for CIK
-Date: Wed, 19 Nov 2014 12:51:28 -0800
-Message-Id: <20141119205152.797958267@linuxfoundation.org>
+Subject: [PATCH 3.17 066/141] drm/radeon: make sure mode init is complete in bandwidth_update
+Date: Wed, 19 Nov 2014 12:51:29 -0800
+Message-Id: <20141119205152.828323037@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,34 +28,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jammy Zhou <Jammy.Zhou@amd.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit dc4edad6530a9b7b66c3d905e2bc06021a05dcad upstream.
+commit 8efe82ca908400785253c8f0dfcf301e6bd93488 upstream.
 
-CE ram size is 32k/0k/0k for GFX/CS0/CS1 with CIK
+The power management code calls into the display code for
+certain things.  If certain power management sysfs attributes
+are called before the driver has finished initializing all of
+the hardware we can run into problems with uninitialized
+modesetting state.  Add a check to make sure modesetting
+init has completed to the bandwidth update callbacks to
+fix this.  Can be triggered by the tlp and laptop start
+up scripts depending on the timing.
 
-Ported from amdgpu driver.
+bugs:
+https://bugzilla.kernel.org/show_bug.cgi?id=83611
+https://bugs.freedesktop.org/show_bug.cgi?id=85771
 
-Signed-off-by: Jammy Zhou <Jammy.Zhou@amd.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/cik.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/cik.c       |    3 +++
+ drivers/gpu/drm/radeon/evergreen.c |    3 +++
+ drivers/gpu/drm/radeon/r100.c      |    3 +++
+ drivers/gpu/drm/radeon/rs600.c     |    3 +++
+ drivers/gpu/drm/radeon/rs690.c     |    3 +++
+ drivers/gpu/drm/radeon/rv515.c     |    3 +++
+ drivers/gpu/drm/radeon/si.c        |    3 +++
+ 7 files changed, 21 insertions(+)
 
 --- a/drivers/gpu/drm/radeon/cik.c
 +++ b/drivers/gpu/drm/radeon/cik.c
-@@ -4315,8 +4315,8 @@ static int cik_cp_gfx_start(struct radeo
- 	/* init the CE partitions.  CE only used for gfx on CIK */
- 	radeon_ring_write(ring, PACKET3(PACKET3_SET_BASE, 2));
- 	radeon_ring_write(ring, PACKET3_BASE_INDEX(CE_PARTITION_BASE));
--	radeon_ring_write(ring, 0xc000);
--	radeon_ring_write(ring, 0xc000);
-+	radeon_ring_write(ring, 0x8000);
-+	radeon_ring_write(ring, 0x8000);
+@@ -9447,6 +9447,9 @@ void dce8_bandwidth_update(struct radeon
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
  
- 	/* setup clear context state */
- 	radeon_ring_write(ring, PACKET3(PACKET3_PREAMBLE_CNTL, 0));
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	for (i = 0; i < rdev->num_crtc; i++) {
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -2346,6 +2346,9 @@ void evergreen_bandwidth_update(struct r
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	for (i = 0; i < rdev->num_crtc; i++) {
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -3204,6 +3204,9 @@ void r100_bandwidth_update(struct radeon
+ 	uint32_t pixel_bytes1 = 0;
+ 	uint32_t pixel_bytes2 = 0;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled) {
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -879,6 +879,9 @@ void rs600_bandwidth_update(struct radeo
+ 	u32 d1mode_priority_a_cnt, d2mode_priority_a_cnt;
+ 	/* FIXME: implement full support */
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+--- a/drivers/gpu/drm/radeon/rs690.c
++++ b/drivers/gpu/drm/radeon/rs690.c
+@@ -579,6 +579,9 @@ void rs690_bandwidth_update(struct radeo
+ 	u32 d1mode_priority_a_cnt, d1mode_priority_b_cnt;
+ 	u32 d2mode_priority_a_cnt, d2mode_priority_b_cnt;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+--- a/drivers/gpu/drm/radeon/rv515.c
++++ b/drivers/gpu/drm/radeon/rv515.c
+@@ -1277,6 +1277,9 @@ void rv515_bandwidth_update(struct radeo
+ 	struct drm_display_mode *mode0 = NULL;
+ 	struct drm_display_mode *mode1 = NULL;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -2384,6 +2384,9 @@ void dce6_bandwidth_update(struct radeon
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	for (i = 0; i < rdev->num_crtc; i++) {
 
 
