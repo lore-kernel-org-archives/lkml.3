@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620AbaKSW4X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:56:23 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:45216 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978AbaKSW4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 17:56:21 -0500
-Date: Wed, 19 Nov 2014 23:56:18 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+	id S932532AbaKSW7O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:59:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41413 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755043AbaKSW7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 17:59:13 -0500
+Date: Wed, 19 Nov 2014 17:18:42 -0500
+From: Dave Jones <davej@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+        Peter Zijlstra <peterz@infradead.org>
 Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141119225615.GA11386@lerouge>
-References: <20141118145234.GA7487@redhat.com>
+Message-ID: <20141119221842.GA21963@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Borislav Petkov <bp@alien8.de>,
+	Andy Lutomirski <luto@amacapital.net>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Don Zickus <dzickus@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	the arch/x86 maintainers <x86@kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>
+References: <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
+ <20141118145234.GA7487@redhat.com>
  <alpine.DEB.2.11.1411181914020.3909@nanos>
  <20141118215540.GD35311@redhat.com>
  <20141119021902.GA14216@redhat.com>
  <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
  <20141119145902.GA13387@redhat.com>
- <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
- <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
- <20141119190215.GA10796@lerouge>
- <alpine.DEB.2.11.1411192251120.3909@nanos>
+ <546D0530.8040800@mit.edu>
+ <20141119214743.GA18883@redhat.com>
+ <20141119215814.GA4613@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1411192251120.3909@nanos>
+In-Reply-To: <20141119215814.GA4613@pd.tnic>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 10:56:26PM +0100, Thomas Gleixner wrote:
-> On Wed, 19 Nov 2014, Frederic Weisbecker wrote:
-> > I got a report lately involving context tracking. Not sure if it's
-> > the same here but the issue was that context tracking uses per cpu data
-> > and per cpu allocation use vmalloc and vmalloc'ed area can fault due to
-> > lazy paging.
-> 
-> This is complete nonsense. pcpu allocations are populated right
-> away. Otherwise no single line of kernel code which uses dynamically
-> allocated per cpu storage would be safe.
+On Wed, Nov 19, 2014 at 10:58:14PM +0100, Borislav Petkov wrote:
+ > On Wed, Nov 19, 2014 at 04:47:43PM -0500, Dave Jones wrote:
+ > > This box is usually pretty solid, but it's been in service as a 24/7
+ > > fuzzing box for over a year now, so it's not outside the realm of
+ > > possibility that this could all be a hardware fault if some memory
+ > > has gone bad or the like.
+ > 
+ > You could grep old logs for "Hardware Error" and the usual suspects
+ > coming from MCE/EDAC. Also /var/log/mcelog or something like that,
+ > depending on what's running on that box.
 
-Note this isn't faulting because part of the allocation is swapped. No
-it's all reserved in the physical memory, but it's a lazy allocation.
-Part of it isn't yet addressed in the P[UGM?]D. That's what vmalloc_fault() is for.
+Nothing, but it wouldn't be the first time I'd seen a hardware fault
+that didn't raise an MCE.
 
-So it's a non-blocking/sleeping fault which is why it's probably fine
-most of the time except on code that isn't fault-safe. And I suspect that
-most people assume that kernel data won't fault so probably some other
-places have similar issues. 
-
-That's a long standing issue. We even had to convert the perf callchain
-allocation to ad-hoc kmalloc() based per cpu allocation to get over vmalloc
-faults. At that time, NMIs couldn't handle faults and many callchains were
-populated in NMIs. We had serious crashes because of per cpu memory faults.
-
-I think that lazy adressing is there for allocation performance reasons. But
-still having faultable per cpu memory is insame IMHO.
+	Dave
 
