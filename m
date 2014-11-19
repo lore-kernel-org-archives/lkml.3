@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934344AbaKSV3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:29:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57274 "EHLO
+	id S934355AbaKSV3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:29:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57366 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933799AbaKSVOm (ORCPT
+	with ESMTP id S933800AbaKSVOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:14:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Liuhua Wang" <lwang@suse.com>, Heinz Mauelshagen <heinzm@redhat.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.10 32/70] dm raid: ensure superblocks size matches devices logical block size
-Date: Wed, 19 Nov 2014 12:52:23 -0800
-Message-Id: <20141119205211.995344778@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.10 31/70] dm btree: fix a recursion depth bug in btree walking code
+Date: Wed, 19 Nov 2014 12:52:22 -0800
+Message-Id: <20141119205211.966093584@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -30,66 +28,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heinz Mauelshagen <heinzm@redhat.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 40d43c4b4cac4c2647bf07110d7b07d35f399a84 upstream.
+commit 9b460d3699324d570a4d4161c3741431887f102f upstream.
 
-The dm-raid superblock (struct dm_raid_superblock) is padded to 512
-bytes and that size is being used to read it in from the metadata
-device into one preallocated page.
+The walk code was using a 'ro_spine' to hold it's locked btree nodes.
+But this data structure is designed for the rolling lock scheme, and
+as such automatically unlocks blocks that are two steps up the call
+chain.  This is not suitable for the simple recursive walk algorithm,
+which retraces its steps.
 
-Reading or writing this on a 512-byte sector device works fine but on
-a 4096-byte sector device this fails.
+This code is only used by the persistent array code, which in turn is
+only used by dm-cache.  In order to trigger it you need to have a
+mapping tree that is more than 2 levels deep; which equates to 8-16
+million cache blocks.  For instance a 4T ssd with a very small block
+size of 32k only just triggers this bug.
 
-Set the dm-raid superblock's size to the logical block size of the
-metadata device, because IO at that size is guaranteed too work.  Also
-add a size check to avoid silent partial metadata loss in case the
-superblock should ever grow past the logical block size or PAGE_SIZE.
+The fix just places the locked blocks on the stack, and stops using
+the ro_spine altogether.
 
-[includes pointer math fix from Dan Carpenter]
-Reported-by: "Liuhua Wang" <lwang@suse.com>
-Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-raid.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/md/persistent-data/dm-btree-internal.h |    6 ++++++
+ drivers/md/persistent-data/dm-btree-spine.c    |    2 +-
+ drivers/md/persistent-data/dm-btree.c          |   24 ++++++++++--------------
+ 3 files changed, 17 insertions(+), 15 deletions(-)
 
---- a/drivers/md/dm-raid.c
-+++ b/drivers/md/dm-raid.c
-@@ -785,8 +785,7 @@ struct dm_raid_superblock {
- 	__le32 layout;
- 	__le32 stripe_sectors;
- 
--	__u8 pad[452];		/* Round struct to 512 bytes. */
--				/* Always set to 0 when writing. */
-+	/* Remainder of a logical block is zero-filled when writing (see super_sync()). */
+--- a/drivers/md/persistent-data/dm-btree-internal.h
++++ b/drivers/md/persistent-data/dm-btree-internal.h
+@@ -42,6 +42,12 @@ struct btree_node {
  } __packed;
  
- static int read_disk_sb(struct md_rdev *rdev, int size)
-@@ -823,7 +822,7 @@ static void super_sync(struct mddev *mdd
- 		    test_bit(Faulty, &(rs->dev[i].rdev.flags)))
- 			failed_devices |= (1ULL << i);
  
--	memset(sb, 0, sizeof(*sb));
-+	memset(sb + 1, 0, rdev->sb_size - sizeof(*sb));
++/*
++ * Locks a block using the btree node validator.
++ */
++int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
++		 struct dm_block **result);
++
+ void inc_children(struct dm_transaction_manager *tm, struct btree_node *n,
+ 		  struct dm_btree_value_type *vt);
  
- 	sb->magic = cpu_to_le32(DM_RAID_MAGIC);
- 	sb->features = cpu_to_le32(0);	/* No features yet */
-@@ -858,7 +857,11 @@ static int super_load(struct md_rdev *rd
- 	uint64_t events_sb, events_refsb;
+--- a/drivers/md/persistent-data/dm-btree-spine.c
++++ b/drivers/md/persistent-data/dm-btree-spine.c
+@@ -92,7 +92,7 @@ struct dm_block_validator btree_node_val
  
- 	rdev->sb_start = 0;
--	rdev->sb_size = sizeof(*sb);
-+	rdev->sb_size = bdev_logical_block_size(rdev->meta_bdev);
-+	if (rdev->sb_size < sizeof(*sb) || rdev->sb_size > PAGE_SIZE) {
-+		DMERR("superblock size of a logical block is no longer valid");
-+		return -EINVAL;
-+	}
+ /*----------------------------------------------------------------*/
  
- 	ret = read_disk_sb(rdev, rdev->sb_size);
- 	if (ret)
+-static int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
++int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
+ 		 struct dm_block **result)
+ {
+ 	return dm_tm_read_lock(info->tm, b, &btree_node_validator, result);
+--- a/drivers/md/persistent-data/dm-btree.c
++++ b/drivers/md/persistent-data/dm-btree.c
+@@ -812,22 +812,26 @@ EXPORT_SYMBOL_GPL(dm_btree_find_highest_
+  * FIXME: We shouldn't use a recursive algorithm when we have limited stack
+  * space.  Also this only works for single level trees.
+  */
+-static int walk_node(struct ro_spine *s, dm_block_t block,
++static int walk_node(struct dm_btree_info *info, dm_block_t block,
+ 		     int (*fn)(void *context, uint64_t *keys, void *leaf),
+ 		     void *context)
+ {
+ 	int r;
+ 	unsigned i, nr;
++	struct dm_block *node;
+ 	struct btree_node *n;
+ 	uint64_t keys;
+ 
+-	r = ro_step(s, block);
+-	n = ro_node(s);
++	r = bn_read_lock(info, block, &node);
++	if (r)
++		return r;
++
++	n = dm_block_data(node);
+ 
+ 	nr = le32_to_cpu(n->header.nr_entries);
+ 	for (i = 0; i < nr; i++) {
+ 		if (le32_to_cpu(n->header.flags) & INTERNAL_NODE) {
+-			r = walk_node(s, value64(n, i), fn, context);
++			r = walk_node(info, value64(n, i), fn, context);
+ 			if (r)
+ 				goto out;
+ 		} else {
+@@ -839,7 +843,7 @@ static int walk_node(struct ro_spine *s,
+ 	}
+ 
+ out:
+-	ro_pop(s);
++	dm_tm_unlock(info->tm, node);
+ 	return r;
+ }
+ 
+@@ -847,15 +851,7 @@ int dm_btree_walk(struct dm_btree_info *
+ 		  int (*fn)(void *context, uint64_t *keys, void *leaf),
+ 		  void *context)
+ {
+-	int r;
+-	struct ro_spine spine;
+-
+ 	BUG_ON(info->levels > 1);
+-
+-	init_ro_spine(&spine, info);
+-	r = walk_node(&spine, root, fn, context);
+-	exit_ro_spine(&spine);
+-
+-	return r;
++	return walk_node(info, root, fn, context);
+ }
+ EXPORT_SYMBOL_GPL(dm_btree_walk);
 
 
