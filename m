@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979AbaKSRrl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:47:41 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54401 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755772AbaKSRrj (ORCPT
+	id S1756139AbaKSRsS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:48:18 -0500
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:60753 "HELO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755821AbaKSRsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:47:39 -0500
-Date: Wed, 19 Nov 2014 17:47:09 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Simon Glass <sjg@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Message-ID: <20141119174709.GF22111@sirena.org.uk>
-References: <1416246184-29071-1-git-send-email-javier.martinez@collabora.co.uk>
- <1416246184-29071-2-git-send-email-javier.martinez@collabora.co.uk>
- <CAD=FV=Xkei_wxa3jWb8bPvuynbSyq4o=ezjVD0+e04aOPCAM+Q@mail.gmail.com>
- <546C6BD2.4020802@collabora.co.uk>
- <CAD=FV=XpweHvcTsVTMBkv9g4+GxoO8WdngGhfVj0QnOwq3ASdQ@mail.gmail.com>
+	Wed, 19 Nov 2014 12:48:16 -0500
+From: Joe Stringer <joestringer@nicira.com>
+To: Pravin Shelar <pshelar@nicira.com>
+Subject: Re: [ovs-dev] [PATCH net] openvswitch: Fix mask generation for IPv6 labels.
+Date: Wed, 19 Nov 2014 09:48:11 -0800
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: "dev@openvswitch.org" <dev@openvswitch.org>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+References: <1416336857-61405-1-git-send-email-joestringer@nicira.com> <CAOftzPgYBBFTfNZunf4oGSmECzjOKF0=dnQ9EkTDFsDi+9jfNw@mail.gmail.com> <CALnjE+rr2tFdvD+X=BbAza_5ad4DYs6viwvZWHCebQYmpvKU3Q@mail.gmail.com>
+In-Reply-To: <CALnjE+rr2tFdvD+X=BbAza_5ad4DYs6viwvZWHCebQYmpvKU3Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="K/+MhuhYzqQJJ3Xj"
-Content-Disposition: inline
-In-Reply-To: <CAD=FV=XpweHvcTsVTMBkv9g4+GxoO8WdngGhfVj0QnOwq3ASdQ@mail.gmail.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 81.128.185.34
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/3] ARM: dts: Add SPI flash node for Peach boards
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411190948.11857.joestringer@nicira.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, November 19, 2014 00:11:01 Pravin Shelar wrote:
+> On Tue, Nov 18, 2014 at 11:25 PM, Joe Stringer <joestringer@nicira.com> 
+wrote:
+> > On 18 November 2014 22:09, Pravin Shelar <pshelar@nicira.com> wrote:
+> >> On Tue, Nov 18, 2014 at 10:54 AM, Joe Stringer <joestringer@nicira.com>
+> >> 
+> >> wrote:
+> >> > When userspace doesn't provide a mask, OVS datapath generates a fully
+> >> > unwildcarded mask for the flow. This is done by taking a copy of the
+> >> > flow key, then iterating across its attributes, setting all values to
+> >> > 0xff. This works for most attributes, as the length of the netlink
+> >> > attribute typically matches the length of the value. However, IPv6
+> >> > labels only use the lower 20 bits of the field. This patch makes a
+> >> > special case to handle this.
+> >> > 
+> >> > This fixes the following error seen when installing IPv6 flows without
+> >> > a mask:
+> >> > 
+> >> > openvswitch: netlink: Invalid IPv6 flow label value (value=ffffffff,
+> >> > max=fffff)
+> >> 
+> >> We should allow exact match mask here rather than generating
+> >> wildcarded mask. So that ovs can catch invalid ipv6.label.
+> > 
+> > I don't quite follow, I thought this was exact-match? (The existing
+> > function sets all bits to 1)
+> 
+> With 0xffffffff value we can exact match on all ipv6.lable bits.
 
---K/+MhuhYzqQJJ3Xj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Wed, Nov 19, 2014 at 09:19:13AM -0800, Doug Anderson wrote:
-
-Please stop CCing my work address for upstream things.
-
-> On Wed, Nov 19, 2014 at 2:07 AM, Javier Martinez Canillas
-
-> > I see, I thought that it was a common practice in the mainline kernel
-> > too since I saw that many board DTS currently have a spidev node:
-
-> > $ git grep 'compatible = "spidev"' arch/arm/boot/dts/ | wc -l
-> > 19
-
-These are bugs.  The device tree should describe the hardware, spidev is
-a Linux implementation detail.  Provide a compatible string for the
-device that is there just as you would for any other device.
-
-> OK.  Please don't take my comments as a NAK on this patch.  I should
-> have done the same grep myself before sending--sorry.  I just
-> remembered the old conversation and looked for that instead.
-
-Please take this as one.
-
---K/+MhuhYzqQJJ3Xj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUbNeYAAoJECTWi3JdVIfQo4EH/RcaunwCOce7Jj1PrrMI8VnO
-VUJP08dSxzrNLrr158YGR4H2/Sc/P37f5X3e5I57cy7LXDRFV+rQMOCMiccWQ/b8
-PyR9o6NBqIspwY2WHCE39EuExK5DYD8OD6lYzq4IXI5/g4UXHV+cvqAeIsVNqT3v
-9SC0EvVaNxWyh9tJ5iIHi43myNfKnM3m5y/uyywuCJiKDfLsZgpkHSBqxynSvPae
-YhT1fcNCIjV90oGWNTQjXjVQ8CgITaV9RHIw4JoG0Y89Sxs+lbdkJP51aCNpMBr+
-PregHOYkJu4CYCd84S12EHp0uXRuEJpwr+480FTYlEb8ew6aGFQvImdp3hRwbDA=
-=rTzA
------END PGP SIGNATURE-----
-
---K/+MhuhYzqQJJ3Xj--
+The label field is only 20 bits. The other bits in the same word of the IPv6 
+header are for version (fixed) and traffic class (handled separately). We don't 
+do anything with the other bits.
