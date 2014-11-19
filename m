@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932347AbaKSKf2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 05:35:28 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33111 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650AbaKSKf0 (ORCPT
+	id S1755121AbaKSKhd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 05:37:33 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52878 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265AbaKSKhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 05:35:26 -0500
-Date: Wed, 19 Nov 2014 10:35:22 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Robert Richter <robert.richter@caviumnetworks.com>,
-        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-Subject: Re: [PATCH v2 01/13] arm64: PCI/MSI: Use asm-generic/msi.h
-Message-ID: <20141119103522.GA15985@arm.com>
-References: <1416336788-22634-1-git-send-email-marc.zyngier@arm.com>
- <1416336788-22634-2-git-send-email-marc.zyngier@arm.com>
+	Wed, 19 Nov 2014 05:37:32 -0500
+Date: Wed, 19 Nov 2014 10:37:13 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141119103713.GZ22111@sirena.org.uk>
+References: <1416336354-32148-1-git-send-email-lars@metafoo.de>
+ <1416336354-32148-2-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lKbk9CFItQTD29wm"
 Content-Disposition: inline
-In-Reply-To: <1416336788-22634-2-git-send-email-marc.zyngier@arm.com>
+In-Reply-To: <1416336354-32148-2-git-send-email-lars@metafoo.de>
+X-Cookie: You look tired.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 188.29.164.121
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/4] regmap: ac97: Add generic AC'97 callbacks
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 06:52:56PM +0000, Marc Zyngier wrote:
-> In order to support CONFIG_GENERIC_MSI_IRQ_DOMAIN, we need to
-> define msi_alloc_info_t. As the generic version exposed in
-> asm-generic/msi.h is perfectly convenient, import this file
-> as asm/msi.h.
-> 
-> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-> ---
 
-Since this depends on the asm-generic file,
+--lKbk9CFItQTD29wm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+On Tue, Nov 18, 2014 at 07:45:51PM +0100, Lars-Peter Clausen wrote:
+> From: Mark Brown <broonie@linaro.org>
+>=20
+> Use the recently added support for bus operations to provide a standard
+> mapping for AC'97 register I/O.
 
-Will
+Applied, thanks.
 
->  arch/arm64/include/asm/Kbuild | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
-> index dc770bd..e315bd8 100644
-> --- a/arch/arm64/include/asm/Kbuild
-> +++ b/arch/arm64/include/asm/Kbuild
-> @@ -28,6 +28,7 @@ generic-y += local64.h
->  generic-y += mcs_spinlock.h
->  generic-y += mman.h
->  generic-y += msgbuf.h
-> +generic-y += msi.h
->  generic-y += mutex.h
->  generic-y += pci.h
->  generic-y += pci-bridge.h
-> -- 
-> 2.1.3
-> 
-> 
+--lKbk9CFItQTD29wm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUbHLYAAoJECTWi3JdVIfQyAYH/RMswVANRS2KwNr7T6XYPDWY
+qCTaCt3bLuKAUzwTErJ7BtmsJ7ncBhpWCrbcMBAfmb+Rmj5AahuwuwA1TcTDTtVC
+nrG6lH2pQaQYGh711mngoPcQAf2rbz0rrRystaofr43jMPBnKyY084bMh1Pl/XRA
+0VtyKMWZpCDbPmvObR8ExEfD5djZeYAWqZJHPeiElZH0JF2S8N8wXBbZd64ngxmp
+xLPTd+TMjgT1v89B5f9kXZKY22xL7nQDhhSCPBD1qwe+86uHFD3pZqFpRKubdUZt
+fMc2q8uzu+9N/0d9XpGOntq0T6RzNBko9Smmq3+L4dTYRf6M5j6BXK6f3Y5JsTs=
+=dRm/
+-----END PGP SIGNATURE-----
+
+--lKbk9CFItQTD29wm--
