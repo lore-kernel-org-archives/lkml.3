@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933807AbaKSV5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:57:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
+	id S933865AbaKSV6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:58:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933471AbaKSVEX (ORCPT
+	with ESMTP id S933347AbaKSVEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:23 -0500
+	Wed, 19 Nov 2014 16:04:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.14 053/122] dm bufio: change __GFP_IO to __GFP_FS in shrinker callbacks
-Date: Wed, 19 Nov 2014 12:51:43 -0800
-Message-Id: <20141119205210.562146736@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>
+Subject: [PATCH 3.14 051/122] parisc: Use compat layer for msgctl, shmat, shmctl and semtimedop syscalls
+Date: Wed, 19 Nov 2014 12:51:41 -0800
+Message-Id: <20141119205210.499243090@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,72 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Helge Deller <deller@gmx.de>
 
-commit 9d28eb12447ee08bb5d1e8bb3195cf20e1ecd1c0 upstream.
+commit 2fe749f50b0bec07650ef135b29b1f55bf543869 upstream.
 
-The shrinker uses gfp flags to indicate what kind of operation can the
-driver wait for. If __GFP_IO flag is present, the driver can wait for
-block I/O operations, if __GFP_FS flag is present, the driver can wait on
-operations involving the filesystem.
+Switch over the msgctl, shmat, shmctl and semtimedop syscalls to use the compat
+layer. The problem was found with the debian procenv package, which called
+	shmctl(0, SHM_INFO, &info);
+in which the shmctl syscall then overwrote parts of the surrounding areas on
+the stack on which the info variable was stored and thus lead to a segfault
+later on.
 
-dm-bufio tested for __GFP_IO. However, dm-bufio can run on a loop block
-device that makes calls into the filesystem. If __GFP_IO is present and
-__GFP_FS isn't, dm-bufio could still block on filesystem operations if it
-runs on a loop block device.
+Additionally fix the definition of struct shminfo64 to use unsigned longs like
+the other architectures. This has no impact on userspace since we only have a
+32bit userspace up to now.
 
-The change from __GFP_IO to __GFP_FS supposedly fixes one observed (though
-unreproducible) deadlock involving dm-bufio and loop device.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Helge Deller <deller@gmx.de>
+Cc: John David Anglin <dave.anglin@bell.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-bufio.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/parisc/include/uapi/asm/shmbuf.h |   25 +++++++++----------------
+ arch/parisc/kernel/syscall_table.S    |    8 ++++----
+ 2 files changed, 13 insertions(+), 20 deletions(-)
 
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -1448,9 +1448,9 @@ static void drop_buffers(struct dm_bufio
+--- a/arch/parisc/include/uapi/asm/shmbuf.h
++++ b/arch/parisc/include/uapi/asm/shmbuf.h
+@@ -36,23 +36,16 @@ struct shmid64_ds {
+ 	unsigned int		__unused2;
+ };
  
- /*
-  * Test if the buffer is unused and too old, and commit it.
-- * At if noio is set, we must not do any I/O because we hold
-- * dm_bufio_clients_lock and we would risk deadlock if the I/O gets rerouted to
-- * different bufio client.
-+ * And if GFP_NOFS is used, we must not do any I/O because we hold
-+ * dm_bufio_clients_lock and we would risk deadlock if the I/O gets
-+ * rerouted to different bufio client.
-  */
- static int __cleanup_old_buffer(struct dm_buffer *b, gfp_t gfp,
- 				unsigned long max_jiffies)
-@@ -1458,7 +1458,7 @@ static int __cleanup_old_buffer(struct d
- 	if (jiffies - b->last_accessed < max_jiffies)
- 		return 0;
+-#ifdef CONFIG_64BIT
+-/* The 'unsigned int' (formerly 'unsigned long') data types below will
+- * ensure that a 32-bit app calling shmctl(*,IPC_INFO,*) will work on
+- * a wide kernel, but if some of these values are meant to contain pointers
+- * they may need to be 'long long' instead. -PB XXX FIXME
+- */
+-#endif
+ struct shminfo64 {
+-	unsigned int	shmmax;
+-	unsigned int	shmmin;
+-	unsigned int	shmmni;
+-	unsigned int	shmseg;
+-	unsigned int	shmall;
+-	unsigned int	__unused1;
+-	unsigned int	__unused2;
+-	unsigned int	__unused3;
+-	unsigned int	__unused4;
++	unsigned long	shmmax;
++	unsigned long	shmmin;
++	unsigned long	shmmni;
++	unsigned long	shmseg;
++	unsigned long	shmall;
++	unsigned long	__unused1;
++	unsigned long	__unused2;
++	unsigned long	__unused3;
++	unsigned long	__unused4;
+ };
  
--	if (!(gfp & __GFP_IO)) {
-+	if (!(gfp & __GFP_FS)) {
- 		if (test_bit(B_READING, &b->state) ||
- 		    test_bit(B_WRITING, &b->state) ||
- 		    test_bit(B_DIRTY, &b->state))
-@@ -1500,7 +1500,7 @@ dm_bufio_shrink_scan(struct shrinker *sh
- 	unsigned long freed;
- 
- 	c = container_of(shrink, struct dm_bufio_client, shrinker);
--	if (sc->gfp_mask & __GFP_IO)
-+	if (sc->gfp_mask & __GFP_FS)
- 		dm_bufio_lock(c);
- 	else if (!dm_bufio_trylock(c))
- 		return SHRINK_STOP;
-@@ -1517,7 +1517,7 @@ dm_bufio_shrink_count(struct shrinker *s
- 	unsigned long count;
- 
- 	c = container_of(shrink, struct dm_bufio_client, shrinker);
--	if (sc->gfp_mask & __GFP_IO)
-+	if (sc->gfp_mask & __GFP_FS)
- 		dm_bufio_lock(c);
- 	else if (!dm_bufio_trylock(c))
- 		return 0;
+ #endif /* _PARISC_SHMBUF_H */
+--- a/arch/parisc/kernel/syscall_table.S
++++ b/arch/parisc/kernel/syscall_table.S
+@@ -286,11 +286,11 @@
+ 	ENTRY_COMP(msgsnd)
+ 	ENTRY_COMP(msgrcv)
+ 	ENTRY_SAME(msgget)		/* 190 */
+-	ENTRY_SAME(msgctl)
+-	ENTRY_SAME(shmat)
++	ENTRY_COMP(msgctl)
++	ENTRY_COMP(shmat)
+ 	ENTRY_SAME(shmdt)
+ 	ENTRY_SAME(shmget)
+-	ENTRY_SAME(shmctl)		/* 195 */
++	ENTRY_COMP(shmctl)		/* 195 */
+ 	ENTRY_SAME(ni_syscall)		/* streams1 */
+ 	ENTRY_SAME(ni_syscall)		/* streams2 */
+ 	ENTRY_SAME(lstat64)
+@@ -323,7 +323,7 @@
+ 	ENTRY_SAME(epoll_ctl)		/* 225 */
+ 	ENTRY_SAME(epoll_wait)
+  	ENTRY_SAME(remap_file_pages)
+-	ENTRY_SAME(semtimedop)
++	ENTRY_COMP(semtimedop)
+ 	ENTRY_COMP(mq_open)
+ 	ENTRY_SAME(mq_unlink)		/* 230 */
+ 	ENTRY_COMP(mq_timedsend)
 
 
