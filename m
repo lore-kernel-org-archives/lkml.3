@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289AbaKSF1w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 00:27:52 -0500
-Received: from mout.web.de ([212.227.15.4]:59470 "EHLO mout.web.de"
+	id S1753208AbaKSFdn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 00:33:43 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46680 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750728AbaKSF1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 00:27:50 -0500
-Message-ID: <546C2A13.3010307@web.de>
-Date: Wed, 19 Nov 2014 06:26:43 +0100
-From: Soeren Moch <smoch@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1750728AbaKSFdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 00:33:42 -0500
+Message-ID: <546C2B9E.3030204@ti.com>
+Date: Wed, 19 Nov 2014 11:03:18 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>, Robin Gong <b38343@freescale.com>
-CC: kernel@pengutronix.de, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux@arm.linux.org.uk, sre@kernel.org,
-        dbaryshkov@gmail.com, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: dts: imx6: add pm_power_off support for i.mx6
- chips
-References: <1415780439-29728-1-git-send-email-b38343@freescale.com> <1415780439-29728-2-git-send-email-b38343@freescale.com> <20141119031823.GC27759@dragon>
-In-Reply-To: <20141119031823.GC27759@dragon>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:JjymxUeng6RdhjiVYLR22egM8rvmT3XdFiWID16DdIpgzaccQhO
- Wxtq43MyE8oILE1EIoJIw83NNcCfIYa/getmAFnpBgrU39i+hEm7BTaOf5TEfozJfnhUUe7
- PzvE4gZBxSaSzy9yyZKNQE8WgWuDpKnnwvLOj8d9G2gZQAYwZZaVBWV3kIioBtZQ8Z4ITsj
- pLRKYUWMxQVRzFwM5Y4gw==
-X-UI-Out-Filterresults: notjunk:1;
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: Vivek Gautam <gautamvivek1987@gmail.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        <andrew.kim@intel.com>
+Subject: Re: [PATCHv4 2/6] phy: improved lookup method
+References: <1413556756-5050-1-git-send-email-heikki.krogerus@linux.intel.com> <1413556756-5050-3-git-send-email-heikki.krogerus@linux.intel.com> <CAFp+6iH2oPT-HyJhFCXVCL4eUOQ0AFfxuyGsnXzPv9JTo55+VQ@mail.gmail.com> <5461AFD3.5020302@ti.com> <CAFp+6iGJBSpA5+Q7WQVu0+y-mfoN-E+LmYedipVfgXFZOpr+Cw@mail.gmail.com> <5461CDDF.4090209@ti.com> <CAFp+6iGAQMgX8S6dfPO44U=r6QJ4fT+1FX2uHNF9KK4sYs+=XA@mail.gmail.com> <CAFp+6iHta15CuBbsoQxEo2xr5GyXDgXQ=cg_Q_vOSC7akX0Vcw@mail.gmail.com> <20141117154028.GD7512@kuha.fi.intel.com> <546AD6D6.5070205@ti.com> <20141118153642.GA8881@kuha.fi.intel.com>
+In-Reply-To: <20141118153642.GA8881@kuha.fi.intel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-On 19.11.2014 04:18, Shawn Guo wrote:
-> On Wed, Nov 12, 2014 at 04:20:37PM +0800, Robin Gong wrote:
->> All chips of i.mx6 can be powered off by programming SNVS.
->> For example :
->> On i.mx6q-sabresd board, PMIC_ON_REQ connect with external
->> pmic ON/OFF pin, that will cause the whole PMIC powered off
->> except VSNVS. And system can restart once PMIC_ON_REQ goes
->> high by push POWRER key.
+On Tuesday 18 November 2014 09:06 PM, Heikki Krogerus wrote:
+> On Tue, Nov 18, 2014 at 10:49:18AM +0530, Kishon Vijay Abraham I wrote:
+>> On Monday 17 November 2014 09:10 PM, Heikki Krogerus wrote:
+>>> On Thu, Nov 13, 2014 at 07:03:01PM +0530, Vivek Gautam wrote:
+>>>> How about adding the change in attached patch [1] on top of this patch.
+>>>> Just introduced the phy pointer in "phy_lookup" structure, and
+>>>> modified phy_find() accordingly.
+>>>
+>>> I would be fine if we used the phy pointer to match, but if we have
+>>> the pointer to the phy in the lookup, then I would say we need to
+>>> remove the phy_name member.
+>>>
+>>> Otherwise we would have to support two ways of finding the lookups
+>>> (one for the "static" lookups where we match to the phy_name and other
+>>> where we match to the pointer). That means we will also not be able to
+>>> create "static" lookups, but those would be only needed if we wanted to
+>>> create them in board files. I don't think there will ever be need to
+>>> create the lookups in board files, so I'm more then happy to remove
+>>> the static way of creating the lookups.
 >>
->> Signed-off-by: Robin Gong <b38343@freescale.com>
->> ---
->>  arch/arm/boot/dts/imx6qdl-sabresd.dtsi |    4 ++++
->>  arch/arm/boot/dts/imx6qdl.dtsi         |    6 ++++++
->>  arch/arm/boot/dts/imx6sl-evk.dts       |    4 ++++
->>  arch/arm/boot/dts/imx6sl.dtsi          |    6 ++++++
->>  arch/arm/boot/dts/imx6sx-sdb.dts       |    4 ++++
->>  arch/arm/boot/dts/imx6sx.dtsi          |    6 ++++++
->>  6 files changed, 30 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/imx6qdl-sabresd.dtsi b/arch/arm/boot/dts/imx6qdl-sabresd.dtsi
->> index 07fb302..ba12cc6 100644
->> --- a/arch/arm/boot/dts/imx6qdl-sabresd.dtsi
->> +++ b/arch/arm/boot/dts/imx6qdl-sabresd.dtsi
->> @@ -531,6 +531,10 @@
->>  	status = "okay";
->>  };
->>  
->> +&snvs-poweroff {
->> +	status = "okay";
->> +};"
->> +
->>  &ssi2 {
->>  	status = "okay";
->>  };
->> diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
->> index c701af9..3a032d1 100644
->> --- a/arch/arm/boot/dts/imx6qdl.dtsi
->> +++ b/arch/arm/boot/dts/imx6qdl.dtsi
->> @@ -645,6 +645,12 @@
->>  					interrupts = <0 19 IRQ_TYPE_LEVEL_HIGH>,
->>  						     <0 20 IRQ_TYPE_LEVEL_HIGH>;
->>  				};
->> +
->> +				snvs-poweroff: snvs-poweroff@38 {
+>> Just using the phy pointer sounds good. But interested to know where the phy
+>> pointer will be added to the lookup table.
 > 
-> I'm not sure if it's because my DTC version is too low or you didn't
-> test, the DTC reports error in label name 'snvs-poweroff'.  IIRC, hyphen
-> '-' cannot be used in label name, but underscore '_' can.
+> I'm making assumption that there will not be any (new) platforms where
+> the bindings are not provided in HW descriptions like dt or ACPI
+> tables. That leaves the lookups to be useful only in cases where a
+> driver has to, for whatever reason, pass it's phy's forward, like
+> dwc3 host. ULPI will be an other case where we will need to use them.
+
+right.
 > 
-> Shawn
+> Now the only user for the lookups is twl4030-usb, but since it's
+> actually just ULPI type PHY in cases where we have platform data to
+> deal with (please correct me if I'm wrong), I think we could later
 
-In the patch series "[PATCH v4 0/3] add power off driver for i.mx6" from
-Sep 26 (what I have tested) snvs_poweroff was used. This worked as expected.
+you mean passing consumer information using platform data?
+> remove it's need for platform data completely with the help of the
+> ULPI bus I'm working with.
 
-So this series "[PATCH v4 0/3] add power off driver for i.mx6" (sent on
-Nov 12) apparently contains old patches and is not simply resent as
-stated in the cover letter.
+Sure.
 
-Soeren
+Thanks
+Kishon
