@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918AbaKSVOS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:14:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57177 "EHLO
+	id S1757395AbaKSVnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:43:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57168 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756517AbaKSVOP (ORCPT
+	with ESMTP id S1756442AbaKSVOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:14:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Pranith Kumar <bobby.prani@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.14 088/122] rcu: Make callers awaken grace-period kthread
-Date: Wed, 19 Nov 2014 12:52:18 -0800
-Message-Id: <20141119205211.733460077@linuxfoundation.org>
+        Vlastimil Babka <vbabka@suse.cz>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 114/122] mm/compaction: do not count migratepages when unnecessary
+Date: Wed, 19 Nov 2014 12:52:44 -0800
+Message-Id: <20141119205212.628566227@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -34,99 +37,167 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Vlastimil Babka <vbabka@suse.cz>
 
-commit 48a7639ce80cf279834d0d44865e49ecd714f37d upstream.
+commit f8c9301fa5a2a8b873c67f2a3d8230d5c13f61b7 upstream.
 
-The rcu_start_gp_advanced() function currently uses irq_work_queue()
-to defer wakeups of the RCU grace-period kthread.  This deferring
-is necessary to avoid RCU-scheduler deadlocks involving the rcu_node
-structure's lock, meaning that RCU cannot call any of the scheduler's
-wake-up functions while holding one of these locks.
+During compaction, update_nr_listpages() has been used to count remaining
+non-migrated and free pages after a call to migrage_pages().  The
+freepages counting has become unneccessary, and it turns out that
+migratepages counting is also unnecessary in most cases.
 
-Unfortunately, the second and subsequent calls to irq_work_queue() are
-ignored, and the first call will be ignored (aside from queuing the work
-item) if the scheduler-clock tick is turned off.  This is OK for many
-uses, especially those where irq_work_queue() is called from an interrupt
-or softirq handler, because in those cases the scheduler-clock-tick state
-will be re-evaluated, which will turn the scheduler-clock tick back on.
-On the next tick, any deferred work will then be processed.
+The only situation when it's needed to count cc->migratepages is when
+migrate_pages() returns with a negative error code.  Otherwise, the
+non-negative return value is the number of pages that were not migrated,
+which is exactly the count of remaining pages in the cc->migratepages
+list.
 
-However, this strategy does not always work for RCU, which can be invoked
-at process level from idle CPUs.  In this case, the tick might never
-be turned back on, indefinitely defering a grace-period start request.
-Note that the RCU CPU stall detector cannot see this condition, because
-there is no RCU grace period in progress.  Therefore, we can (and do!)
-see long tens-of-seconds stalls in grace-period handling.  In theory,
-we could see a full grace-period hang, but rcutorture testing to date
-has seen only the tens-of-seconds stalls.  Event tracing demonstrates
-that irq_work_queue() is being called repeatedly to no effect during
-these stalls: The "newreq" event appears repeatedly from a task that is
-not one of the grace-period kthreads.
+Furthermore, any non-zero count is only interesting for the tracepoint of
+mm_compaction_migratepages events, because after that all remaining
+unmigrated pages are put back and their count is set to 0.
 
-In theory, irq_work_queue() might be fixed to avoid this sort of issue,
-but RCU's requirements are unusual and it is quite straightforward to pass
-wake-up responsibility up through RCU's call chain, so that the wakeup
-happens when the offending locks are released.
+This patch therefore removes update_nr_listpages() completely, and changes
+the tracepoint definition so that the manual counting is done only when
+the tracepoint is enabled, and only when migrate_pages() returns a
+negative error code.
 
-This commit therefore makes this change.  The rcu_start_gp_advanced(),
-rcu_start_future_gp(), rcu_accelerate_cbs(), rcu_advance_cbs(),
-__note_gp_changes(), and rcu_start_gp() functions now return a boolean
-which indicates when a wake-up is needed.  A new rcu_gp_kthread_wake()
-does the wakeup when it is necessary and safe to do so: No self-wakes,
-no wake-ups if the ->gp_flags field indicates there is no need (as in
-someone else did the wake-up before we got around to it), and no wake-ups
-before the grace-period kthread has been created.
+Furthermore, migrate_pages() and the tracepoints won't be called when
+there's nothing to migrate.  This potentially avoids some wasted cycles
+and reduces the volume of uninteresting mm_compaction_migratepages events
+where "nr_migrated=0 nr_failed=0".  In the stress-highalloc mmtest, this
+was about 75% of the events.  The mm_compaction_isolate_migratepages event
+is better for determining that nothing was isolated for migration, and
+this one was just duplicating the info.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-[ Pranith: backport to 3.13-stable: just rcu_gp_kthread_wake(),
-  prereq for 2aa792e "rcu: Use rcu_gp_kthread_wake() to wake up grace
-  period kthreads" ]
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/rcu/tree.c |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ include/trace/events/compaction.h |   25 +++++++++++++++++++++----
+ mm/compaction.c                   |   31 +++++++------------------------
+ 2 files changed, 28 insertions(+), 28 deletions(-)
 
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -1228,6 +1228,22 @@ static int rcu_future_gp_cleanup(struct
- }
+--- a/include/trace/events/compaction.h
++++ b/include/trace/events/compaction.h
+@@ -5,6 +5,7 @@
+ #define _TRACE_COMPACTION_H
  
- /*
-+ * Awaken the grace-period kthread for the specified flavor of RCU.
-+ * Don't do a self-awaken, and don't bother awakening when there is
-+ * nothing for the grace-period kthread to do (as in several CPUs
-+ * raced to awaken, and we lost), and finally don't try to awaken
-+ * a kthread that has not yet been created.
-+ */
-+static void rcu_gp_kthread_wake(struct rcu_state *rsp)
-+{
-+	if (current == rsp->gp_kthread ||
-+	    !ACCESS_ONCE(rsp->gp_flags) ||
-+	    !rsp->gp_kthread)
-+		return;
-+	wake_up(&rsp->gp_wq);
-+}
+ #include <linux/types.h>
++#include <linux/list.h>
+ #include <linux/tracepoint.h>
+ #include <trace/events/gfpflags.h>
+ 
+@@ -47,10 +48,11 @@ DEFINE_EVENT(mm_compaction_isolate_templ
+ 
+ TRACE_EVENT(mm_compaction_migratepages,
+ 
+-	TP_PROTO(unsigned long nr_migrated,
+-		unsigned long nr_failed),
++	TP_PROTO(unsigned long nr_all,
++		int migrate_rc,
++		struct list_head *migratepages),
+ 
+-	TP_ARGS(nr_migrated, nr_failed),
++	TP_ARGS(nr_all, migrate_rc, migratepages),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(unsigned long, nr_migrated)
+@@ -58,7 +60,22 @@ TRACE_EVENT(mm_compaction_migratepages,
+ 	),
+ 
+ 	TP_fast_assign(
+-		__entry->nr_migrated = nr_migrated;
++		unsigned long nr_failed = 0;
++		struct list_head *page_lru;
 +
-+/*
-  * If there is room, assign a ->completed number to any callbacks on
-  * this CPU that have not already been assigned.  Also accelerate any
-  * callbacks that were previously assigned a ->completed number that has
-@@ -1670,7 +1686,7 @@ static void rsp_wakeup(struct irq_work *
- 	struct rcu_state *rsp = container_of(work, struct rcu_state, wakeup_work);
++		/*
++		 * migrate_pages() returns either a non-negative number
++		 * with the number of pages that failed migration, or an
++		 * error code, in which case we need to count the remaining
++		 * pages manually
++		 */
++		if (migrate_rc >= 0)
++			nr_failed = migrate_rc;
++		else
++			list_for_each(page_lru, migratepages)
++				nr_failed++;
++
++		__entry->nr_migrated = nr_all - nr_failed;
+ 		__entry->nr_failed = nr_failed;
+ 	),
  
- 	/* Wake up rcu_gp_kthread() to start the grace period. */
--	wake_up(&rsp->gp_wq);
-+	rcu_gp_kthread_wake(rsp);
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -822,22 +822,6 @@ static void compaction_free(struct page
+ 	cc->nr_freepages++;
  }
  
- /*
+-/*
+- * We cannot control nr_migratepages fully when migration is running as
+- * migrate_pages() has no knowledge of of compact_control.  When migration is
+- * complete, we count the number of pages on the list by hand.
+- */
+-static void update_nr_listpages(struct compact_control *cc)
+-{
+-	int nr_migratepages = 0;
+-	struct page *page;
+-
+-	list_for_each_entry(page, &cc->migratepages, lru)
+-		nr_migratepages++;
+-
+-	cc->nr_migratepages = nr_migratepages;
+-}
+-
+ /* possible outcome of isolate_migratepages */
+ typedef enum {
+ 	ISOLATE_ABORT,		/* Abort compaction now */
+@@ -1032,7 +1016,6 @@ static int compact_zone(struct zone *zon
+ 	migrate_prep_local();
+ 
+ 	while ((ret = compact_finished(zone, cc)) == COMPACT_CONTINUE) {
+-		unsigned long nr_migrate, nr_remaining;
+ 		int err;
+ 
+ 		switch (isolate_migratepages(zone, cc)) {
+@@ -1047,20 +1030,20 @@ static int compact_zone(struct zone *zon
+ 			;
+ 		}
+ 
+-		nr_migrate = cc->nr_migratepages;
++		if (!cc->nr_migratepages)
++			continue;
++
+ 		err = migrate_pages(&cc->migratepages, compaction_alloc,
+ 				compaction_free, (unsigned long)cc, cc->mode,
+ 				MR_COMPACTION);
+-		update_nr_listpages(cc);
+-		nr_remaining = cc->nr_migratepages;
+ 
+-		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
+-						nr_remaining);
++		trace_mm_compaction_migratepages(cc->nr_migratepages, err,
++							&cc->migratepages);
+ 
+-		/* Release isolated pages not migrated */
++		/* All pages were either migrated or will be released */
++		cc->nr_migratepages = 0;
+ 		if (err) {
+ 			putback_movable_pages(&cc->migratepages);
+-			cc->nr_migratepages = 0;
+ 			/*
+ 			 * migrate_pages() may return -ENOMEM when scanners meet
+ 			 * and we want compact_finished() to detect it
 
 
