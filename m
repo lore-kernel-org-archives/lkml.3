@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457AbaKSQAI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:00:08 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:49009 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756428AbaKSQAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:00:03 -0500
-Message-ID: <546CBE7F.2090905@osg.samsung.com>
-Date: Wed, 19 Nov 2014 08:59:59 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1756478AbaKSQAY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:00:24 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:45473 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756437AbaKSQAH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:00:07 -0500
+Date: Wed, 19 Nov 2014 11:00:06 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Julius Werner <jwerner@chromium.org>
+cc: Felipe Balbi <balbi@ti.com>, Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Paul Zimmerman <paulz@synopsys.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>,
+        Romain Perier <romain.perier@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Douglas Anderson <dianders@chromium.org>,
+        Sonny Rao <sonnyrao@chromium.org>, addy ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, wulf <wulf@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Roy Li <roy.li@rock-chips.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] usb: dwc2: resume root hub when device detect with
+ suspend state
+In-Reply-To: <CAODwPW8hQdxv_ecaVHYjS4rHjZVB_G5zURDPCHzaPsEXVgs=fA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1411191051110.1345-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: mmarek@suse.cz, ebiederm@xmission.com, serge.hallyn@ubuntu.com
-CC: gregkh@linuxfoundation.org, akpm@linux-foundation.org, davem@davemloft.net,
-        keescook@chromium.org, tranmanphong@gmail.com, dh.herrmann@gmail.com,
-        hughd@google.com, bobby.prani@gmail.com, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2 02/19] kbuild: kselftest_install - add a new make target
- to install selftests
-References: <cover.1415735831.git.shuahkh@osg.samsung.com> <a2344d4df903d673afe1631118f40917f773cc9a.1415735831.git.shuahkh@osg.samsung.com>
-In-Reply-To: <a2344d4df903d673afe1631118f40917f773cc9a.1415735831.git.shuahkh@osg.samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2014 01:27 PM, Shuah Khan wrote:
-> Add a new make target to install to install kernel selftests.
-> This new target will build and install selftests. kselftest
-> target now depends on kselftest_install and runs the generated
-> kselftest script to reduce duplicate work and for common look
-> and feel when running tests.
-> 
-> Approach:
-> 
-> make kselftest_target:
-> -- exports kselftest INSTALL_KSFT_PATH
->    default $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
-> -- exports path for ksefltest.sh
-> -- runs selftests make install target:
-> 
-> selftests make install target
-> -- creates kselftest.sh script in install install dir
-> -- runs install targets for all INSTALL_TARGETS
->    (Note: ftrace and powerpc aren't included in INSTALL_TARGETS,
->           to not add more content to patch v1 series. This work
->           will happen soon. In this series these two targets are
->           run after running the generated kselftest script, without
->           any regression in the way these tests are run with
->           "make kselftest" prior to this work.)
-> -- install target can be run only from top level source dir.
-> 
-> Individual test make install targets:
-> -- install test programs and/or scripts in install dir
-> -- append to the ksefltest.sh file to add commands to run test
-> -- install target can be run only from top level source dir.
-> 
-> Adds the following new ways to initiate selftests:
-> -- Installing and running kselftest from install directory
->    by running  "make kselftest"
-> -- Running kselftest script from install directory
-> 
-> Maintains the following ways to run tests:
-> -- make -C tools/testing/selftests run_tests
-> -- make -C tools/testing/selftests TARGETS=target run_tests
->    Ability specify targets: e.g TARGETS=net
-> -- make run_tests from tools/testing/selftests
-> -- make run_tests from individual test directories:
->    e.g: make run_tests in tools/testing/selftests/breakpoints
-> 
-> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
-> ---
->  Makefile | 21 +++++++++++++++++++--
->  1 file changed, 19 insertions(+), 2 deletions(-)
+On Tue, 18 Nov 2014, Julius Werner wrote:
 
-Hi Marek,
+> >> You should be aware that it's not safe to use hcd->state for anything
+> >> in a host controller driver.  That field is owned by usbcore, not by
+> >> the HCD, and it is not protected by any locks.
+> >>
+> >> Thus, for example, hcd->state does not get set to HC_STATE_SUSPENDED
+> >> until some time after the bus_suspend routine has returned.  A
+> >> port-change interrupt might occur during that time interval.
+> 
+> Looks like there is explicit code in hcd_bus_suspend() to check for
+> that race condition right after setting hcd->state, or do I
+> misinterpret that (the "Did we race with a root-hub wakeup event?"
+> part)?
 
-Did you get a chance to take a look at this patch?
+That code doesn't quite do what you think.  For example:
 
--- Shuah
+	CPU 1				CPU 2
+	-----				-----
+	hcd_bus_suspend():
+	call hcd->bus_suspend():
+	    root hub gets suspended
 
+					Wakeup IRQ arrives and is
+					  ignored because hcd->state
+					  is still HC_STATE_QUIESCING
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+	set hcd->state to HC_STATE_SUSPENDED
+	Did we race with a wakeup event?
+	  No because usb_hcd_resume_root_hub()
+	  wasn't called.
+
+Result: the wakeup event is lost.
+
+> Also, it seems xhci_bus_suspend() explicitly sets 'hcd->state =
+> HC_STATE_SUSPENDED' before giving up the spinlock for some
+> undocumented reason, maybe to avoid exactly this problem. We could
+> just copy that trick if the hcd.c solution isn't enough (although the
+> DWC2 bus_suspend/bus_resume in the other patch don't grab that
+> spinlock right now, where I'm also not so sure if that's a good
+> idea...).
+
+It's better for HCDs to avoid testing hcd->state at all.  They should 
+set it to appropriate values at the right times, because usbcore checks 
+it, but they should not test it.  This is why ehci-hcd, ohci-hcd, and 
+uhci-hcd all have a private rh_state variable, and they use it while 
+holding their respective private spinlocks.
+
+Alan Stern
+
