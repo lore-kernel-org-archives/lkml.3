@@ -1,266 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559AbaKSJjT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 04:39:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60422 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750785AbaKSJjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 04:39:17 -0500
-Date: Wed, 19 Nov 2014 11:39:01 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH net] virtio-net: validate features during probe
-Message-ID: <20141119093901.GB26119@redhat.com>
-References: <1416378939-28821-1-git-send-email-jasowang@redhat.com>
- <20141119085939.GB24827@redhat.com>
- <546C63E6.7040600@redhat.com>
+	id S1754888AbaKSJlL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 04:41:11 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:52641 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754218AbaKSJlI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 04:41:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546C63E6.7040600@redhat.com>
+X-Originating-IP: [88.122.124.10]
+In-Reply-To: <CAKxAHQ4intUoy2qv9ftTJL_c2JN3kYn8bC_Jk9=93rvvXNE80Q@mail.gmail.com>
+References: <CANoib0HW2umPpzzerYNq1fMMnkYxOa78o5X90-K=eNEnTGSO1w@mail.gmail.com>
+ <F01422F2-5F7C-406A-A06B-2C2CE96B9E3A@holtmann.org> <546C3CCE.400@gmail.com> <CAKxAHQ4intUoy2qv9ftTJL_c2JN3kYn8bC_Jk9=93rvvXNE80Q@mail.gmail.com>
+From: Michel Memeteau - EKIMIA <contact@ekimia.fr>
+Date: Wed, 19 Nov 2014 10:40:50 +0100
+Message-ID: <CAKxAHQ5wDG=Bi4bLUsN5A9r4Y82444Ysnuppy+8REf7qUh1nmg@mail.gmail.com>
+Subject: Re: [PATCH v3] ath3k: Add support of MCI 13d3:3408 bt device
+To: Dmitry Tunin <hanipouspilot@gmail.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 05:33:26PM +0800, Jason Wang wrote:
-> On 11/19/2014 04:59 PM, Michael S. Tsirkin wrote:
-> > On Wed, Nov 19, 2014 at 02:35:39PM +0800, Jason Wang wrote:
-> >> This patch validates feature dependencies during probe and fail the probing
-> >> if a dependency is missed. This fixes the issues of hitting BUG()
-> >> when qemu fails to advertise features correctly. One example is booting
-> >> guest with ctrl_vq=off through qemu.
-> >>
-> >> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> >> Cc: Michael S. Tsirkin <mst@redhat.com>
-> >> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
-> >> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> >> ---
-> >>  drivers/net/virtio_net.c | 93 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >>  1 file changed, 93 insertions(+)
-> >>
-> >> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> >> index ec2a8b4..4a0ad46 100644
-> >> --- a/drivers/net/virtio_net.c
-> >> +++ b/drivers/net/virtio_net.c
-> >> @@ -1673,6 +1673,95 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
-> >>  };
-> >>  #endif
-> >>  
-> >> +static int virtnet_validate_features(struct virtio_device *dev,
-> >> +				     unsigned int *table,
-> >> +				     int table_size,
-> >> +				     unsigned int feature)
-> >> +{
-> >> +	int i;
-> >> +
-> >> +	if (!virtio_has_feature(dev, feature)) {
-> >> +		for (i = 0; i < table_size; i++) {
-> >> +			unsigned int f = table[i];
-> >> +
-> >> +			if (virtio_has_feature(dev, f)) {
-> >> +				dev_err(&dev->dev,
-> >> +					"buggy hyperviser: feature 0x%x was advertised but its dependency 0x%x was not",
-> >
-> > This line's way too long.
-> 
-> Yes. (Anyway it pass checkpatch.pl since it forbids quoted string to be
-> split)
-> >
-> >> +					f, feature);
-> >> +				return -EINVAL;
-> >> +			}
-> >> +		}
-> >> +	}
-> >> +
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +static int virtnet_check_features(struct virtio_device *dev)
-> >> +{
-> >> +	unsigned int features_for_ctrl_vq[] = {
-> >> +		VIRTIO_NET_F_CTRL_RX,
-> >> +		VIRTIO_NET_F_CTRL_VLAN,
-> >> +		VIRTIO_NET_F_GUEST_ANNOUNCE,
-> >> +		VIRTIO_NET_F_MQ,
-> >> +		VIRTIO_NET_F_CTRL_MAC_ADDR
-> >> +	};
-> >> +	unsigned int features_for_guest_csum[] = {
-> >> +		VIRTIO_NET_F_GUEST_TSO4,
-> >> +		VIRTIO_NET_F_GUEST_TSO6,
-> >> +		VIRTIO_NET_F_GUEST_ECN,
-> >> +		VIRTIO_NET_F_GUEST_UFO,
-> >> +	};
-> >> +	unsigned int features_for_host_csum[] = {
-> >> +		VIRTIO_NET_F_HOST_TSO4,
-> >> +		VIRTIO_NET_F_HOST_TSO6,
-> >> +		VIRTIO_NET_F_HOST_ECN,
-> >> +		VIRTIO_NET_F_HOST_UFO,
-> >> +	};
-> >> +	int err;
-> >> +
-> >> +	err = virtnet_validate_features(dev, features_for_ctrl_vq,
-> >> +					ARRAY_SIZE(features_for_ctrl_vq),
-> >> +					VIRTIO_NET_F_CTRL_VQ);
-> >> +	if (err)
-> >> +		return err;
-> >> +
-> >> +	err = virtnet_validate_features(dev, features_for_guest_csum,
-> >> +					ARRAY_SIZE(features_for_guest_csum),
-> >> +					VIRTIO_NET_F_GUEST_CSUM);
-> >> +	if (err)
-> >> +		return err;
-> >> +
-> >> +	err = virtnet_validate_features(dev, features_for_host_csum,
-> >> +					ARRAY_SIZE(features_for_host_csum),
-> >> +					VIRTIO_NET_F_CSUM);
-> >> +	if (err)
-> >> +		return err;
-> >> +
-> >> +	if (virtio_has_feature(dev, VIRTIO_NET_F_GUEST_ECN) &&
-> >> +	    (!virtio_has_feature(dev, VIRTIO_NET_F_GUEST_TSO4) ||
-> >> +	     !virtio_has_feature(dev, VIRTIO_NET_F_GUEST_TSO6))) {
-> >> +		dev_err(&dev->dev,
-> >> +			"buggy hyperviser: feature 0x%x was advertised but its dependency 0x%x or 0x%x was not",
-> >> +			VIRTIO_NET_F_GUEST_ECN,
-> >> +			VIRTIO_NET_F_GUEST_TSO4,
-> >> +			VIRTIO_NET_F_GUEST_TSO6);
-> >> +		return -EINVAL;
-> >> +	}
-> >> +
-> >> +	if (virtio_has_feature(dev, VIRTIO_NET_F_HOST_ECN) &&
-> >> +	    (!virtio_has_feature(dev, VIRTIO_NET_F_HOST_TSO4) ||
-> >> +	     !virtio_has_feature(dev, VIRTIO_NET_F_HOST_TSO6))) {
-> >> +		dev_err(&dev->dev,
-> >> +			"buggy hyperviser: feature 0x%x was advertised but its dependency 0x%x or 0x%x was not",
-> >> +			VIRTIO_NET_F_HOST_ECN,
-> >> +			VIRTIO_NET_F_HOST_TSO4,
-> >> +			VIRTIO_NET_F_HOST_TSO6);
-> >> +		return -EINVAL;
-> >> +	}
-> >> +
-> >> +	return 0;
-> >> +}
-> >> +
-> >>  static int virtnet_probe(struct virtio_device *vdev)
-> >>  {
-> >>  	int i, err;
-> >> @@ -1680,6 +1769,10 @@ static int virtnet_probe(struct virtio_device *vdev)
-> >>  	struct virtnet_info *vi;
-> >>  	u16 max_queue_pairs;
-> >>  
-> >> +	err = virtnet_check_features(vdev);
-> >> +	if (err)
-> >> +		return -EINVAL;
-> >> +
-> >>  	/* Find if host supports multiqueue virtio_net device */
-> >>  	err = virtio_cread_feature(vdev, VIRTIO_NET_F_MQ,
-> >>  				   struct virtio_net_config,
-> > The API seems too complex, and you still had to open-code ECN logic.
-> > Just open-code most of it. 
-> 
-> Yes, the ECN could be done through the same way as ctrl_vq did.
-> 
-> How about move those checking into virtio core by just letting device
-> export its dependency table?
+Hi,
 
-So far we only have this for net, let's not add
-one-off APIs.
+I tried to understand why this "0x13d3, 0x3408" device support
+wouldn't go in btusb as it's really close to IMC BT chip found in
+Realtek Wifi devices which is on the path to go in btusb [1]
 
-> >  You can use a helper macro to output a
-> > friendly message without code duplication.
-> > For example like the below (completely untested)?
-> >
-> >
-> > I would also like to split things: dependencies on
-> > VIRTIO_NET_F_CTRL_VQ might go into this kernel,
-> > since they help fix BUG.
-> >
-> > Others should wait since they don't fix any crashes, and there's a small
-> > chance of a regression for some hypervisor in the field.
-> 
-> Probably ok but not sure, since the rest features are all related to
-> csum and offloading, we are in fact depends on network core to fix them.
+then I guess there is a lot of code that could be shared to support
+all IMC usb devices in the btusb module.
 
-Well it does fix them so ... there's no bug, is there?
+Regards.
 
+[1] https://github.com/lwfinger/rtl8723au_bt/tree/new
 
-> >
-> > -->
-> >
-> > virtio-net: friendlier handling of misconfigured hypervisors
-> >
-> > We currently trigger BUG when VIRTIO_NET_F_CTRL_VQ
-> > is not set but one of features depending on it is.
-> > That's not a friendly way to report errors to
-> > hypervisors.
-> > Let's check, and fail probe instead.
-> >
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >
-> > ---
-> >
-> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> > index 26e1330..7a7d1a3 100644
-> > --- a/drivers/net/virtio_net.c
-> > +++ b/drivers/net/virtio_net.c
-> > @@ -1673,6 +1673,21 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
-> >  };
-> >  #endif
-> >  
-> > +bool __virtnet_fail_on_feature(struct virtio_device *vdev, unsigned int fbit,
-> > +			       const char *fname)
-> > +{
-> > +	if (!virtio_has_feature(vdev, fbit))
-> > +		return false;
-> > +
-> > +        dev_err(&dev->dev, "missing requirements for feature bit %d: %s\n",
-> > +		fbit, fname);
-> > +
-> > +	return true;
-> > +}
-> > +
-> > +#define VIRTNET_FAIL_ON(vdev, fbit) \
-> > +	__virtnet_fail_on_feature(vdev, fbit, #fbit)
-> > +
-> >  static int virtnet_probe(struct virtio_device *vdev)
-> >  {
-> >  	int i, err;
-> > @@ -1680,6 +1695,14 @@ static int virtnet_probe(struct virtio_device *vdev)
-> >  	struct virtnet_info *vi;
-> >  	u16 max_queue_pairs;
-> >  
-> > +	if (!virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ) &&
-> > +		(VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_RX) ||
-> > +		 VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_VLAN) ||
-> > +		 VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_GUEST_ANNOUNCE) ||
-> > +		 VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_MQ) ||
-> > +		 VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_MAC_ADDR)))
-> > +		return -EINVAL;
-> > +
-> >  	/* Find if host supports multiqueue virtio_net device */
-> >  	err = virtio_cread_feature(vdev, VIRTIO_NET_F_MQ,
-> >  				   struct virtio_net_config,
-> >
-> 
-> Patch looks good, but consider we may check more dependencies in the
-> future, may need a helper instead. Or just use this and switch to
-> dependency table in 3.19. 
+ <------------------------------------------------------------------------------------------------------------------>
+ Michel Memeteau  - Directeur.
 
-Pls note this is just pseudo-code - I didn't even compile it.
-If you want something like this merged, go ahead and
-post it, probably addressing Cornelia's request to
-print the dependency too. Maybe:
+ Notre Boutique Ordinateurs GNU/Linux : http://shop.ekimia.fr
+ 49 chemin de l'union 13720 La Bouilladisse - France.
+ Fixe :  +33 (0) 972308334   Mobile : +33(0) 624808051
+ <------------------------------------------------------------------------------------------------------------------>
 
-> >		(VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_RX, "ctrl_vq") ||
-> >		 VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_VLAN, "ctrl_vq") ||
-> >		 VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_GUEST_ANNOUNCE, "ctrl_vq") ||
-> >		 VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_MQ, "ctrl_vq") ||
-> >		 VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_MAC_ADDR, "ctrl_vq")))
-
--- 
-MST
+ 2014-11-19 7:46 GMT+01:00 Dmitry Tunin <hanipouspilot@gmail.com>:
+>
+> Hi Marcel,
+>
+> Here is information from /sys/kernel/debug/usb/devices
+>
+> T:  Bus=01 Lev=02 Prnt=03 Port=00 Cnt=01 Dev#= 20 Spd=12 MxCh= 0
+> D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
+> P:  Vendor=13d3 ProdID=3408 Rev= 0.02
+> C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+> A:  FirstIf#= 0 IfCount= 2 Cls=e0(wlcon) Sub=01 Prot=01
+> I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+>
+>
+> I hope this mail client is OK now.
+>
+> Add support for bluetooth MCI WB335 (AR9565) Wi-Fi+bt module.
+> It is AR3011 device according to iProduct == 0.
+> So btusb should be blacklisted
+> I submitted a wrong patch before asif  it was an AR3012 device,
+> but it works both ways. This is the right one.
+>
+> Signed-off-by: Dmitry Tunin<hanipouspilot@gmail.com>
+>
+> ---
+>
+> diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+> index d85ced2..3b53116 100644
+> --- a/drivers/bluetooth/ath3k.c
+> +++ b/drivers/bluetooth/ath3k.c
+> @@ -69,6 +69,7 @@ static const struct usb_device_id ath3k_table[] = {
+>      { USB_DEVICE(0x0CF3, 0x3002) },
+>      { USB_DEVICE(0x0CF3, 0xE019) },
+>      { USB_DEVICE(0x13d3, 0x3304) },
+> +    { USB_DEVICE(0x13d3, 0x3408) },
+>
+>      /* Atheros AR9285 Malbec with sflash firmware */
+>      { USB_DEVICE(0x03F0, 0x311D) },
+> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+> index edfc17b..bbf5c1c 100644
+> --- a/drivers/bluetooth/btusb.c
+> +++ b/drivers/bluetooth/btusb.c
+> @@ -146,6 +146,7 @@ static const struct usb_device_id blacklist_table[] = {
+>      { USB_DEVICE(0x0cf3, 0x3002), .driver_info = BTUSB_IGNORE },
+>      { USB_DEVICE(0x0cf3, 0xe019), .driver_info = BTUSB_IGNORE },
+>      { USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
+> +    { USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_IGNORE },
+>
+>      /* Atheros AR9285 Malbec with sflash firmware */
+>      { USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
+>
+>
+> 19.11.2014 01:56, Marcel Holtmann wrote:
+>>
+>> Hi Dmitry,
+>>
+>>> Add support for bluetooth MCI WB335 (AR9565) Wi-Fi+bt module.
+>>> It is AR3011 device according to iProduct == 0.
+>>> So btusb should be blacklisted
+>>> I submitted a wrong patch before asif  it was an AR3012 device,
+>>> but it works both ways. This is the right one.
+>>
+>> include the device details from /sys/kernel/debug/usb/devices.
+>>
+>>> Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
+>>> are */
+>>
+>> No idea what this are */ is.
+>>
+>>> ---
+>>>
+>>> diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+>>> index d85ced2..3b53116 100644
+>>> --- a/drivers/bluetooth/ath3k.c
+>>> +++ b/drivers/bluetooth/ath3k.c
+>>> @@ -69,6 +69,7 @@ static const struct usb_device_id ath3k_table[] = {
+>>>   { USB_DEVICE(0x0CF3, 0x3002) },
+>>>   { USB_DEVICE(0x0CF3, 0xE019) },
+>>>   { USB_DEVICE(0x13d3, 0x3304) },
+>>> + { USB_DEVICE(0x13d3, 0x3408) },
+>>>
+>>>   /* Atheros AR9285 Malbec with sflash firmware */
+>>>   { USB_DEVICE(0x03F0, 0x311D) },
+>>> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+>>> index edfc17b..bbf5c1c 100644
+>>> --- a/drivers/bluetooth/btusb.c
+>>> +++ b/drivers/bluetooth/btusb.c
+>>> @@ -146,6 +146,7 @@ static const struct usb_device_id blacklist_table[] = {
+>>   { USB_DEVICE(0x0cf3, 0x3002), .driver_info = BTUSB_IGNORE },
+>>>   { USB_DEVICE(0x0cf3, 0xe019), .driver_info = BTUSB_IGNORE },
+>>>   { USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
+>>> + { USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_IGNORE },
+>>
+>> Fix whitespace here or use a proper mail client.
+>>
+>> Regards
+>>
+>> Marcel
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
