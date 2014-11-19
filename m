@@ -1,94 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986AbaKSNi0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 08:38:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55979 "EHLO mx2.suse.de"
+	id S1755187AbaKSNik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 08:38:40 -0500
+Received: from mail.us.es ([193.147.175.20]:47334 "EHLO mail.us.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968AbaKSNiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 08:38:25 -0500
-Message-ID: <546C9D4D.9090201@suse.cz>
-Date: Wed, 19 Nov 2014 14:38:21 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755078AbaKSNih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 08:38:37 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.4/19652. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-103.2/7.5):. 
+ Processed in 2.052451 secs); 19 Nov 2014 13:38:35 -0000
+X-Spam-ASN: AS12715 87.216.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Wed, 19 Nov 2014 14:40:40 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Julian Anastasov <ja@ssi.bg>, Patrick McHardy <kaber@trash.net>,
+        Simon Horman <horms@verge.net.au>,
+        Wensong Zhang <wensong@linux-vs.org>, netdev@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        coreteam@netfilter.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH 1/1] netfilter: Deletion of unnecessary checks before two
+ function calls
+Message-ID: <20141119134040.GA12270@salvia>
+References: <530C5E18.1020800@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <546BA253.6030100@users.sourceforge.net>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-CC: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: mm: shmem: freeing mlocked page
-References: <545C4A36.9050702@oracle.com>	<5466142C.60100@oracle.com> <20141118135843.bd711e95d3977c74cf51d803@linux-foundation.org>
-In-Reply-To: <20141118135843.bd711e95d3977c74cf51d803@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546BA253.6030100@users.sourceforge.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2014 10:58 PM, Andrew Morton wrote:
-> On Fri, 14 Nov 2014 09:39:40 -0500 Sasha Levin <sasha.levin@oracle.com> wrote:
+On Tue, Nov 18, 2014 at 08:47:31PM +0100, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Tue, 18 Nov 2014 20:37:05 +0100
 > 
->> 
->> [ 1026.988043] BUG: Bad page state in process trinity-c374  pfn:23f70
->> [ 1026.989684] page:ffffea0000b3d300 count:0 mapcount:0 mapping:          (null) index:0x5b
->> [ 1026.991151] flags: 0x1fffff8028000c(referenced|uptodate|swapbacked|mlocked)
->> [ 1026.992410] page dumped because: PAGE_FLAGS_CHECK_AT_FREE flag(s) set
->> [ 1026.993479] bad because of flags:
->> [ 1026.994125] flags: 0x200000(mlocked)
+> The functions free_percpu() and module_put() test whether their argument
+> is NULL and then return immediately. Thus the test around the call is
+> not needed.
+
+@IPVS folks: Since this involves a nf_tables specific chunk, ack your
+chunks and I'll put this into nf-next to speed up things.
+
+Thanks.
+
+> This issue was detected by using the Coccinelle software.
 > 
-> Gee that new page dumping code is nice!
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> ---
+>  net/netfilter/ipvs/ip_vs_ctl.c   | 3 +--
+>  net/netfilter/ipvs/ip_vs_pe.c    | 3 +--
+>  net/netfilter/ipvs/ip_vs_sched.c | 3 +--
+>  net/netfilter/ipvs/ip_vs_sync.c  | 3 +--
+>  net/netfilter/nf_tables_api.c    | 3 +--
+>  5 files changed, 5 insertions(+), 10 deletions(-)
 > 
->> [ 1026.994816] Modules linked in:
->> [ 1026.995378] CPU: 7 PID: 7879 Comm: trinity-c374 Not tainted 3.18.0-rc4-next-20141113-sasha-00047-gd1763ce-dirty #1455
->> [ 1026.996123] FAULT_INJECTION: forcing a failure.
->> [ 1026.996123] name failslab, interval 100, probability 30, space 0, times -1
->> [ 1026.999050]  0000000000000000 0000000000000000 0000000000b3d300 ffff88061295bbd8
->> [ 1027.000676]  ffffffff92f71097 0000000000000000 ffffea0000b3d300 ffff88061295bc08
->> [ 1027.002020]  ffffffff8197ef7a ffffea0000b3d300 ffffffff942dd148 dfffe90000000000
->> [ 1027.003359] Call Trace:
->> [ 1027.003831] dump_stack (lib/dump_stack.c:52)
->> [ 1027.004725] bad_page (mm/page_alloc.c:338)
->> [ 1027.005623] free_pages_prepare (mm/page_alloc.c:657 mm/page_alloc.c:763)
->> [ 1027.006761] free_hot_cold_page (mm/page_alloc.c:1438)
->> [ 1027.007772] ? __page_cache_release (mm/swap.c:66)
->> [ 1027.008815] put_page (mm/swap.c:270)
->> [ 1027.009665] page_cache_pipe_buf_release (fs/splice.c:93)
->> [ 1027.010888] __splice_from_pipe (fs/splice.c:784 fs/splice.c:886)
->> [ 1027.011917] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3734)
->> [ 1027.012856] ? pipe_lock (fs/pipe.c:69)
->> [ 1027.013728] ? write_pipe_buf (fs/splice.c:1534)
->> [ 1027.014756] vmsplice_to_user (fs/splice.c:1574)
->> [ 1027.015725] ? rcu_read_lock_held (kernel/rcu/update.c:169)
->> [ 1027.016757] ? __fget_light (include/linux/fdtable.h:80 fs/file.c:684)
->> [ 1027.017782] SyS_vmsplice (fs/splice.c:1656 fs/splice.c:1639)
->> [ 1027.018863] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
->> 
+> diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+> index fd3f444..7c5e40a 100644
+> --- a/net/netfilter/ipvs/ip_vs_ctl.c
+> +++ b/net/netfilter/ipvs/ip_vs_ctl.c
+> @@ -465,8 +465,7 @@ __ip_vs_bind_svc(struct ip_vs_dest *dest, struct ip_vs_service *svc)
+>  
+>  static void ip_vs_service_free(struct ip_vs_service *svc)
+>  {
+> -	if (svc->stats.cpustats)
+> -		free_percpu(svc->stats.cpustats);
+> +	free_percpu(svc->stats.cpustats);
+>  	kfree(svc);
+>  }
+>  
+> diff --git a/net/netfilter/ipvs/ip_vs_pe.c b/net/netfilter/ipvs/ip_vs_pe.c
+> index 1a82b29..0df17ca 100644
+> --- a/net/netfilter/ipvs/ip_vs_pe.c
+> +++ b/net/netfilter/ipvs/ip_vs_pe.c
+> @@ -37,8 +37,7 @@ struct ip_vs_pe *__ip_vs_pe_getbyname(const char *pe_name)
+>  			rcu_read_unlock();
+>  			return pe;
+>  		}
+> -		if (pe->module)
+> -			module_put(pe->module);
+> +		module_put(pe->module);
+>  	}
+>  	rcu_read_unlock();
+>  
+> diff --git a/net/netfilter/ipvs/ip_vs_sched.c b/net/netfilter/ipvs/ip_vs_sched.c
+> index 4dbcda6..199760c 100644
+> --- a/net/netfilter/ipvs/ip_vs_sched.c
+> +++ b/net/netfilter/ipvs/ip_vs_sched.c
+> @@ -104,8 +104,7 @@ static struct ip_vs_scheduler *ip_vs_sched_getbyname(const char *sched_name)
+>  			mutex_unlock(&ip_vs_sched_mutex);
+>  			return sched;
+>  		}
+> -		if (sched->module)
+> -			module_put(sched->module);
+> +		module_put(sched->module);
+>  	}
+>  
+>  	mutex_unlock(&ip_vs_sched_mutex);
+> diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
+> index eadffb2..cafe28d 100644
+> --- a/net/netfilter/ipvs/ip_vs_sync.c
+> +++ b/net/netfilter/ipvs/ip_vs_sync.c
+> @@ -820,8 +820,7 @@ ip_vs_conn_fill_param_sync(struct net *net, int af, union ip_vs_sync_conn *sc,
+>  
+>  		p->pe_data = kmemdup(pe_data, pe_data_len, GFP_ATOMIC);
+>  		if (!p->pe_data) {
+> -			if (p->pe->module)
+> -				module_put(p->pe->module);
+> +			module_put(p->pe->module);
+>  			return -ENOMEM;
+>  		}
+>  		p->pe_data_len = pe_data_len;
+> diff --git a/net/netfilter/nf_tables_api.c b/net/netfilter/nf_tables_api.c
+> index deeb95f..b115f54 100644
+> --- a/net/netfilter/nf_tables_api.c
+> +++ b/net/netfilter/nf_tables_api.c
+> @@ -3472,8 +3472,7 @@ static int nf_tables_abort(struct sk_buff *skb)
+>  			break;
+>  		case NFT_MSG_NEWCHAIN:
+>  			if (nft_trans_chain_update(trans)) {
+> -				if (nft_trans_chain_stats(trans))
+> -					free_percpu(nft_trans_chain_stats(trans));
+> +				free_percpu(nft_trans_chain_stats(trans));
+>  
+>  				nft_trans_destroy(trans);
+>  			} else {
+> -- 
+> 2.1.3
 > 
-> So what happened here?  Userspace fed some mlocked memory into splice()
-> and then, while splice() was running, userspace dropped its reference
-> to the memory, leaving splice() with the last reference.  Yet somehow,
-> that page was still marked as being mlocked.  I wouldn't expect the
-> kernel to permit userspace to drop its reference to the memory without
-> first clearing the mlocked state.
-
-I did check a bit and something caught my eye. Both page_remove_rmap() and
-page_remove_file_rmap() contain this:
-
-        if (unlikely(PageMlocked(page)))
-                clear_page_mlock(page);
-
-So could maybe something mlock the page between the check and clear?
-
-I find lru_cache_add_active_or_unevictable somewhat suspicious. But checking if
-these two could race will take some time.
-
-> Is it possible to work out from trinity sources what the exact sequence
-> was?  Which syscalls are being used, for example?
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
