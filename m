@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327AbaKSI7y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 03:59:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37509 "EHLO mx1.redhat.com"
+	id S1754508AbaKSJBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 04:01:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33740 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948AbaKSI7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 03:59:53 -0500
-Date: Wed, 19 Nov 2014 10:59:39 +0200
+	id S1750785AbaKSJBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 04:01:23 -0500
+Date: Wed, 19 Nov 2014 11:01:09 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Jason Wang <jasowang@redhat.com>
 Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Cornelia Huck <cornelia.huck@de.ibm.com>,
         Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH net] virtio-net: validate features during probe
-Message-ID: <20141119085939.GB24827@redhat.com>
-References: <1416378939-28821-1-git-send-email-jasowang@redhat.com>
+Subject: Re: [PATCH V2 net] virtio-net: validate features during probe
+Message-ID: <20141119090109.GC24827@redhat.com>
+References: <1416381689-2025-1-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416378939-28821-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1416381689-2025-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 02:35:39PM +0800, Jason Wang wrote:
+On Wed, Nov 19, 2014 at 03:21:29PM +0800, Jason Wang wrote:
 > This patch validates feature dependencies during probe and fail the probing
 > if a dependency is missed. This fixes the issues of hitting BUG()
 > when qemu fails to advertise features correctly. One example is booting
@@ -36,14 +36,23 @@ On Wed, Nov 19, 2014 at 02:35:39PM +0800, Jason Wang wrote:
 > Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 > Signed-off-by: Jason Wang <jasowang@redhat.com>
 > ---
->  drivers/net/virtio_net.c | 93 ++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 93 insertions(+)
+> Changes from V1:
+> - Drop VIRTIO_NET_F_*_UFO from the checklist, since it was disabled
+
+In this form, it's not 3.18 material anyway.
+Let's just focus on fixing BUG that you see for now,
+and for 3.19, let's fix UFO.
+
+
+> ---
+>  drivers/net/virtio_net.c | 91 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 91 insertions(+)
 > 
 > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index ec2a8b4..4a0ad46 100644
+> index ec2a8b4..b16a761 100644
 > --- a/drivers/net/virtio_net.c
 > +++ b/drivers/net/virtio_net.c
-> @@ -1673,6 +1673,95 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
+> @@ -1673,6 +1673,93 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
 >  };
 >  #endif
 >  
@@ -61,10 +70,6 @@ On Wed, Nov 19, 2014 at 02:35:39PM +0800, Jason Wang wrote:
 > +			if (virtio_has_feature(dev, f)) {
 > +				dev_err(&dev->dev,
 > +					"buggy hyperviser: feature 0x%x was advertised but its dependency 0x%x was not",
-
-
-This line's way too long.
-
 > +					f, feature);
 > +				return -EINVAL;
 > +			}
@@ -87,13 +92,11 @@ This line's way too long.
 > +		VIRTIO_NET_F_GUEST_TSO4,
 > +		VIRTIO_NET_F_GUEST_TSO6,
 > +		VIRTIO_NET_F_GUEST_ECN,
-> +		VIRTIO_NET_F_GUEST_UFO,
 > +	};
 > +	unsigned int features_for_host_csum[] = {
 > +		VIRTIO_NET_F_HOST_TSO4,
 > +		VIRTIO_NET_F_HOST_TSO6,
 > +		VIRTIO_NET_F_HOST_ECN,
-> +		VIRTIO_NET_F_HOST_UFO,
 > +	};
 > +	int err;
 > +
@@ -138,13 +141,12 @@ This line's way too long.
 > +	}
 > +
 > +	return 0;
-
 > +}
 > +
 >  static int virtnet_probe(struct virtio_device *vdev)
 >  {
 >  	int i, err;
-> @@ -1680,6 +1769,10 @@ static int virtnet_probe(struct virtio_device *vdev)
+> @@ -1680,6 +1767,10 @@ static int virtnet_probe(struct virtio_device *vdev)
 >  	struct virtnet_info *vi;
 >  	u16 max_queue_pairs;
 >  
@@ -155,74 +157,5 @@ This line's way too long.
 >  	/* Find if host supports multiqueue virtio_net device */
 >  	err = virtio_cread_feature(vdev, VIRTIO_NET_F_MQ,
 >  				   struct virtio_net_config,
-
-The API seems too complex, and you still had to open-code ECN logic.
-Just open-code most of it.  You can use a helper macro to output a
-friendly message without code duplication.
-For example like the below (completely untested)?
-
-
-I would also like to split things: dependencies on
-VIRTIO_NET_F_CTRL_VQ might go into this kernel,
-since they help fix BUG.
-
-Others should wait since they don't fix any crashes, and there's a small
-chance of a regression for some hypervisor in the field.
-
-
--->
-
-virtio-net: friendlier handling of misconfigured hypervisors
-
-We currently trigger BUG when VIRTIO_NET_F_CTRL_VQ
-is not set but one of features depending on it is.
-That's not a friendly way to report errors to
-hypervisors.
-Let's check, and fail probe instead.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
----
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 26e1330..7a7d1a3 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1673,6 +1673,21 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
- };
- #endif
- 
-+bool __virtnet_fail_on_feature(struct virtio_device *vdev, unsigned int fbit,
-+			       const char *fname)
-+{
-+	if (!virtio_has_feature(vdev, fbit))
-+		return false;
-+
-+        dev_err(&dev->dev, "missing requirements for feature bit %d: %s\n",
-+		fbit, fname);
-+
-+	return true;
-+}
-+
-+#define VIRTNET_FAIL_ON(vdev, fbit) \
-+	__virtnet_fail_on_feature(vdev, fbit, #fbit)
-+
- static int virtnet_probe(struct virtio_device *vdev)
- {
- 	int i, err;
-@@ -1680,6 +1695,14 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	struct virtnet_info *vi;
- 	u16 max_queue_pairs;
- 
-+	if (!virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ) &&
-+		(VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_RX) ||
-+		 VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_VLAN) ||
-+		 VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_GUEST_ANNOUNCE) ||
-+		 VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_MQ) ||
-+		 VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_MAC_ADDR)))
-+		return -EINVAL;
-+
- 	/* Find if host supports multiqueue virtio_net device */
- 	err = virtio_cread_feature(vdev, VIRTIO_NET_F_MQ,
- 				   struct virtio_net_config,
-
+> -- 
+> 1.9.1
