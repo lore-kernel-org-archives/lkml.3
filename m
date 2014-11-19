@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026AbaKSWSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:18:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56201 "EHLO
+	id S1757346AbaKSWSu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:18:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56207 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932401AbaKSUyO (ORCPT
+	with ESMTP id S932611AbaKSUyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:54:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>
-Subject: [PATCH 3.17 084/141] parisc: Use compat layer for msgctl, shmat, shmctl and semtimedop syscalls
-Date: Wed, 19 Nov 2014 12:51:47 -0800
-Message-Id: <20141119205153.420478739@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
+        Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.17 085/141] block: Fix computation of merged request priority
+Date: Wed, 19 Nov 2014 12:51:48 -0800
+Message-Id: <20141119205153.449355863@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -28,90 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Jan Kara <jack@suse.cz>
 
-commit 2fe749f50b0bec07650ef135b29b1f55bf543869 upstream.
+commit ece9c72accdc45c3a9484dacb1125ce572647288 upstream.
 
-Switch over the msgctl, shmat, shmctl and semtimedop syscalls to use the compat
-layer. The problem was found with the debian procenv package, which called
-	shmctl(0, SHM_INFO, &info);
-in which the shmctl syscall then overwrote parts of the surrounding areas on
-the stack on which the info variable was stored and thus lead to a segfault
-later on.
+Priority of a merged request is computed by ioprio_best(). If one of the
+requests has undefined priority (IOPRIO_CLASS_NONE) and another request
+has priority from IOPRIO_CLASS_BE, the function will return the
+undefined priority which is wrong. Fix the function to properly return
+priority of a request with the defined priority.
 
-Additionally fix the definition of struct shminfo64 to use unsigned longs like
-the other architectures. This has no impact on userspace since we only have a
-32bit userspace up to now.
-
-Signed-off-by: Helge Deller <deller@gmx.de>
-Cc: John David Anglin <dave.anglin@bell.net>
+Fixes: d58cdfb89ce0c6bd5f81ae931a984ef298dbda20
+Signed-off-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/uapi/asm/shmbuf.h |   25 +++++++++----------------
- arch/parisc/kernel/syscall_table.S    |    8 ++++----
- 2 files changed, 13 insertions(+), 20 deletions(-)
+ block/ioprio.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/arch/parisc/include/uapi/asm/shmbuf.h
-+++ b/arch/parisc/include/uapi/asm/shmbuf.h
-@@ -36,23 +36,16 @@ struct shmid64_ds {
- 	unsigned int		__unused2;
- };
+--- a/block/ioprio.c
++++ b/block/ioprio.c
+@@ -157,14 +157,16 @@ out:
  
--#ifdef CONFIG_64BIT
--/* The 'unsigned int' (formerly 'unsigned long') data types below will
-- * ensure that a 32-bit app calling shmctl(*,IPC_INFO,*) will work on
-- * a wide kernel, but if some of these values are meant to contain pointers
-- * they may need to be 'long long' instead. -PB XXX FIXME
-- */
--#endif
- struct shminfo64 {
--	unsigned int	shmmax;
--	unsigned int	shmmin;
--	unsigned int	shmmni;
--	unsigned int	shmseg;
--	unsigned int	shmall;
--	unsigned int	__unused1;
--	unsigned int	__unused2;
--	unsigned int	__unused3;
--	unsigned int	__unused4;
-+	unsigned long	shmmax;
-+	unsigned long	shmmin;
-+	unsigned long	shmmni;
-+	unsigned long	shmseg;
-+	unsigned long	shmall;
-+	unsigned long	__unused1;
-+	unsigned long	__unused2;
-+	unsigned long	__unused3;
-+	unsigned long	__unused4;
- };
+ int ioprio_best(unsigned short aprio, unsigned short bprio)
+ {
+-	unsigned short aclass = IOPRIO_PRIO_CLASS(aprio);
+-	unsigned short bclass = IOPRIO_PRIO_CLASS(bprio);
++	unsigned short aclass;
++	unsigned short bclass;
  
- #endif /* _PARISC_SHMBUF_H */
---- a/arch/parisc/kernel/syscall_table.S
-+++ b/arch/parisc/kernel/syscall_table.S
-@@ -286,11 +286,11 @@
- 	ENTRY_COMP(msgsnd)
- 	ENTRY_COMP(msgrcv)
- 	ENTRY_SAME(msgget)		/* 190 */
--	ENTRY_SAME(msgctl)
--	ENTRY_SAME(shmat)
-+	ENTRY_COMP(msgctl)
-+	ENTRY_COMP(shmat)
- 	ENTRY_SAME(shmdt)
- 	ENTRY_SAME(shmget)
--	ENTRY_SAME(shmctl)		/* 195 */
-+	ENTRY_COMP(shmctl)		/* 195 */
- 	ENTRY_SAME(ni_syscall)		/* streams1 */
- 	ENTRY_SAME(ni_syscall)		/* streams2 */
- 	ENTRY_SAME(lstat64)
-@@ -323,7 +323,7 @@
- 	ENTRY_SAME(epoll_ctl)		/* 225 */
- 	ENTRY_SAME(epoll_wait)
-  	ENTRY_SAME(remap_file_pages)
--	ENTRY_SAME(semtimedop)
-+	ENTRY_COMP(semtimedop)
- 	ENTRY_COMP(mq_open)
- 	ENTRY_SAME(mq_unlink)		/* 230 */
- 	ENTRY_COMP(mq_timedsend)
+-	if (aclass == IOPRIO_CLASS_NONE)
+-		aclass = IOPRIO_CLASS_BE;
+-	if (bclass == IOPRIO_CLASS_NONE)
+-		bclass = IOPRIO_CLASS_BE;
++	if (!ioprio_valid(aprio))
++		aprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
++	if (!ioprio_valid(bprio))
++		bprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
+ 
++	aclass = IOPRIO_PRIO_CLASS(aprio);
++	bclass = IOPRIO_PRIO_CLASS(bprio);
+ 	if (aclass == bclass)
+ 		return min(aprio, bprio);
+ 	if (aclass > bclass)
 
 
