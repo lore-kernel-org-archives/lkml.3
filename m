@@ -1,77 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183AbaKSJGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 04:06:13 -0500
-Received: from sauhun.de ([89.238.76.85]:52665 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757AbaKSJGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 04:06:09 -0500
-Date: Wed, 19 Nov 2014 10:07:28 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Ezequiel Garcia <ezequiel.garcia@imgtec.com>,
-        James Hartley <james.hartley@imgtec.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: img-scb: Allow building for MIPS
-Message-ID: <20141119090728.GA1439@katana>
-References: <1416355113-8942-1-git-send-email-abrestic@chromium.org>
- <20141119000308.GL1739@jhogan-linux.le.imgtec.org>
+	id S1754425AbaKSJIS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 04:08:18 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:41115 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065AbaKSJIM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 04:08:12 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5mCyUwZo2JvN/JJP"
-Content-Disposition: inline
-In-Reply-To: <20141119000308.GL1739@jhogan-linux.le.imgtec.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141119090222.GU27002@pengutronix.de>
+References: <1360738983-22436-1-git-send-email-gnurou@gmail.com>
+ <1360738983-22436-3-git-send-email-gnurou@gmail.com> <20141117090915.GE27002@pengutronix.de>
+ <CAAVeFuKzP0ADix8TxC31ohb3ZmnEVmNcO5kgzhZ3DcwAhTq=-Q@mail.gmail.com>
+ <20141119084432.GT27002@pengutronix.de> <CAAVeFuLtQoxt_D_TaRQc49Sh0FZTg=q4y5QorZ7OUK+qPE0CbQ@mail.gmail.com>
+ <20141119090222.GU27002@pengutronix.de>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 19 Nov 2014 18:07:50 +0900
+Message-ID: <CAAVeFu+zc6tiM-SvwQ3mQmkMNdY+1+Ysi0F2eThyCjziKVwpOQ@mail.gmail.com>
+Subject: Re: [PATCH 2/4] gpiolib: use const parameters when possible
+To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ On Wed, Nov 19, 2014 at 6:02 PM, Uwe Kleine-König
+<u.kleine-koenig@pengutronix.de> wrote:
+> Hello Alexandre,
+>
+> On Wed, Nov 19, 2014 at 05:57:46PM +0900, Alexandre Courbot wrote:
+>> On Wed, Nov 19, 2014 at 5:44 PM, Uwe Kleine-König
+>> <u.kleine-koenig@pengutronix.de> wrote:
+>> > Hello Alexandre,
+>> >
+>> > On Wed, Nov 19, 2014 at 05:33:42PM +0900, Alexandre Courbot wrote:
+>> >> On Mon, Nov 17, 2014 at 6:09 PM, Uwe Kleine-König
+>> >> <u.kleine-koenig@pengutronix.de> wrote:
+>> >> > Hello,
+>> >> >
+>> >> > On Wed, Feb 13, 2013 at 04:03:00PM +0900, Alexandre Courbot wrote:
+>> >> >> From: Alexandre Courbot <acourbot@nvidia.com>
+>> >> >>
+>> >> >> Constify descriptor parameter of gpiod_* functions for those that
+>> >> >> should obviously not modify it. This includes value or direction get,
+>> >> >> cansleep, and IRQ number query.
+>> >> >>
+>> >> >> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>> >> > This patch is applied as def634338d3ffb32fbe9b0a2d70cc24ef909cd4f since
+>> >> > v3.9-rc2.
+>> >> >
+>> >> >>  drivers/gpio/gpiolib.c | 29 ++++++++++++++++-------------
+>> >> >>  1 file changed, 16 insertions(+), 13 deletions(-)
+>> >> >>
+>> >> >> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+>> >> >> index 8a2cf9c..ad6df6b 100644
+>> >> >> --- a/drivers/gpio/gpiolib.c
+>> >> >> +++ b/drivers/gpio/gpiolib.c
+>> >> >> @@ -207,7 +208,7 @@ static int gpiochip_find_base(int ngpio)
+>> >> >>  }
+>> >> >>
+>> >> >>  /* caller ensures gpio is valid and requested, chip->get_direction may sleep  */
+>> >> >> -static int gpiod_get_direction(struct gpio_desc *desc)
+>> >> >> +static int gpiod_get_direction(const struct gpio_desc *desc)
+>> >> >>  {
+>> >> >>       struct gpio_chip        *chip;
+>> >> >>       unsigned                offset;
+>> >> >> @@ -223,11 +224,13 @@ static int gpiod_get_direction(struct gpio_desc *desc)
+>> >> >>       if (status > 0) {
+>> >> >>               /* GPIOF_DIR_IN, or other positive */
+>> >> >>               status = 1;
+>> >> >> -             clear_bit(FLAG_IS_OUT, &desc->flags);
+>> >> >> +             /* FLAG_IS_OUT is just a cache of the result of get_direction(),
+>> >> >> +              * so it does not affect constness per se */
+>> >> >> +             clear_bit(FLAG_IS_OUT, &((struct gpio_desc *)desc)->flags);
+>> >> > I think this is worse than not having gpiod_get_direction take a const
+>> >> > descriptor.
+>> >>
+>> >> Yeah, this kind of sucks but ultimately gpiod_get_direction() is
+>> >> without side-effect to the caller and the const parameter helps
+>> >> highlighting that fact.
+>> > Does that mean you want to keep the const and take the risk that it
+>> > might introduce some hard to debug problem when the compiler changes its
+>> > optimisation strategies? I hope you don't.
+>>
+>> Nope, I would like to keep that const but correctness is more
+>> important than prototype aesthetics. I will fix that.
+> Fine.
+>
+>>
+>> >> > I don't know an example for this particular case where this could break,
+>> >> > but usually casting away a const is bad and can break in various ways.
+>> >> >
+>> >> > Maybe even drop the public function gpiod_get_direction completely.
+>> >> > As of next-20141114 there are only two users of this function (apart
+>> >> > from drivers/gpio/gpiolib*) and both are wrong (as discussed in
+>> >> > http://thread.gmane.org/gmane.linux.serial/16808/focus=4783).
+>> >>
+>> >> Or maybe gpiod_direction_*() should register the last set direction to
+>> >> be used by gpiod_get_direction() if the controller does not implement
+>> >> the get_direction op? On the other hand callers can also track the
+>> >> direction themselves (since they presumably set it), so this function
+>> >> is really only useful for users who want to read the *hardware* state
+>> >> of a GPIO. Which might still be a useful feature?
+>> > I think it's useful to be able to check how a given gpio is configured
+>> > in hardware. So you really want to look into the register and not cache
+>> > the direction in gpiod_direction_*.
+>> > And I'd say having /sys/kernel/debug/gpio is good enough. So IMHO there
+>> > is no reason to hide gpiod_get_direction from general misuse.
+>>
+>> Mmm so are you suggesting that we should keep gpiod_get_direction() in the end?
+> I'd make gpiod_get_direction static and only use it to fill in
+> /sys/kernel/debug/gpio.
 
---5mCyUwZo2JvN/JJP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That's very tempting. I see only atmel_serial.c using this function,
+and there is no gpio_get_direction() declared anywhere so no user of
+this either. I'm not sure what I was thinking when I decided to export
+it?
 
-On Wed, Nov 19, 2014 at 12:03:08AM +0000, James Hogan wrote:
-> On Tue, Nov 18, 2014 at 03:58:33PM -0800, Andrew Bresticker wrote:
-> > The SCB is present on IMG SoCs other than the META-based TZ1090,
-> > such as the MIPS-based Pistachio SoC.  Relax the Kconfig dependency
-> > so that it can be built on any MIPS or META machine.
-> >=20
-> > Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
->=20
-> Looks good to me.
->=20
-> Acked-by: James Hogan <james.hogan@imgtec.com>
->=20
-> Cheers
-> James
->=20
-
-Applied to for-next, thanks!
-
-
---5mCyUwZo2JvN/JJP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUbF3PAAoJEBQN5MwUoCm2BkkP/Rfkudxo76QE8eg2cpf2Vmjn
-XjgYl6c//YO9Vi9J5MvajPGNhEgtRzq2J4VF8MlnUNVUYi00NaSuFwQF6PZFt0NS
-pUpKorkcwdLOxNd4KktWxFLBA7lcivs/LTBjYP+Fpl5o/j8rDeJe+kQlHPI06YT8
-0sA8MUAFXBzno3KsKQ8JgCbxMSO13El41Hhn+WedkpmGIUNkVfbUV/lOubdO55PA
-pD72KDsm5B8wRPu/Pxau5TRkz6Oi1mSn6Kwk4u7541CNxsEdFXZ3r2k8y2yibZiF
-CdUegGMGj1BLdgF7covYnHvYeV2w5/3t+BB4lSZXxSfmjzRdQNPsOgwTyjglQrEs
-hoCG+9+H6QhOsA9SrgRNNiJ8wgvxHryGlh8nJDiciCs2c92BBp6b5FNbbrzqjZHL
-BQ+iiM8UFUe/J2TlEpqhh6shC1pPDdo0KKBfEURbVmUVUGZ5bvCWLv5FuOk+HlAb
-SlpbopHspdt9YjwuvuM6XjY0Z5QQixdgcmHtKR2hb8fEwEQiQvAKkfoJ/Dhcx871
-EV4W9+Q9vQjrMx8Hz/0OfxakBIx/UjmDGm3mQJCyY03NgVFnxO0hXLOFb7r4vuzI
-T9tn1QcAjzb/2gIYfYLTbvfOvfltc11+jRmcjFcuVsvAVZxXduj8XdxC4AE/pOLq
-t+MDhU/qKfmEBl7oC29K
-=lbF/
------END PGP SIGNATURE-----
-
---5mCyUwZo2JvN/JJP--
+So yeah, if you can fix the current users, I agree with your proposal.
