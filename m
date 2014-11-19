@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758555AbaKSWvu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:51:50 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:35251 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757511AbaKSWvq (ORCPT
+	id S1758583AbaKSWwV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:52:21 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:36761 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756986AbaKSWvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 17:51:46 -0500
+	Wed, 19 Nov 2014 17:51:45 -0500
 From: Doug Anderson <dianders@chromium.org>
 To: Heiko Stuebner <heiko@sntech.de>, Linus Walleij <linus.walleij@linaro.org>
 Cc: Sonny Rao <sonnyrao@chromium.org>,
@@ -15,9 +15,9 @@ Cc: Sonny Rao <sonnyrao@chromium.org>,
         linux-rockchip@lists.infradead.org,
         Doug Anderson <dianders@chromium.org>, linux-gpio@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] pinctrl: rockchip: Fix enable/disable/mask/unmask
-Date: Wed, 19 Nov 2014 14:51:33 -0800
-Message-Id: <1416437493-25588-3-git-send-email-dianders@chromium.org>
+Subject: [PATCH v2 1/2] pinctrl: rockchip: Handle wakeup pins
+Date: Wed, 19 Nov 2014 14:51:32 -0800
+Message-Id: <1416437493-25588-2-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1416437493-25588-1-git-send-email-dianders@chromium.org>
 References: <1416437493-25588-1-git-send-email-dianders@chromium.org>
@@ -25,88 +25,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Rockchip pinctrl driver was only implementing the "mask" and
-"unmask" operations though the hardware actually has two distinct
-things: enable/disable and mask/unmask.  It was implementing the
-"mask" operations as a hardware enable/disable and always leaving all
-interrupts unmasked.
+The rockchip pinctrl driver was using irq_gc_set_wake() as its
+implementation of irq_set_wake() but was totally ignoring everything
+that irq_gc_set_wake() did (which is to upkeep gc->wake_active).
 
-I believe that the old system had some downsides, specifically:
-- (Untested) if an interrupt went off while interrupts were "masked"
-  it would be lost.  Now it will be kept track of.
-- If someone wanted to change an interrupt back into a GPIO (is such a
-  thing sensible?) by calling irq_disable() it wouldn't actually take
-  effect.  That's because Linux does some extra optimizations when
-  there's no true "disable" function: it does a lazy mask.
+Let's fix that by setting gc->wake_active as GPIO_INTEN at suspend
+time and restoring GPIO_INTEN at resume time.
 
-Let's actually implement enable/disable/mask/unmask properly.
+NOTE a few quirks when thinking about this patch:
+- Rockchip pinctrl hardware supports both "disable/enable" and
+  "mask/unmask".  Right now we only use "disable/enable" and present
+  those to Linux as "mask/unmask".  This should be OK because
+  enable/disable is optional and Linux will implement it in terms of
+  mask/unmask.  At the moment we always tell hardware all interrupts
+  are unmasked (the boot default).
+- At suspend time Linux tries to call "disable" on all interrupts and
+  also enables wakeup on all wakeup interrupts.  One would think that
+  since "disable" is implemented as "mask" when "disable" isn't
+  provided and that since we were ignoring gc->wake_active that
+  nothing would have woken us up.  That's not the case since Linux
+  "optimizes" things and just leaves interrutps unmasked, assuming it
+  could mask them later when they go off.  That meant that at suspend
+  time all interrupts were actually being left enabled.
+
+With this patch random non-wakeup interrupts no longer wake the system
+up.  Wakeup interrupts still wake the system up.
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Reviewed-by: Heiko Stuebner <heiko@sntech.de>
 ---
-Changes in v2:
-- Spread out code (heiko)
+Changes in v2: None
 
- drivers/pinctrl/pinctrl-rockchip.c | 36 +++++++++++++++++++++++++++++++++---
- 1 file changed, 33 insertions(+), 3 deletions(-)
+ drivers/pinctrl/pinctrl-rockchip.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
 diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
-index e91e845..3c22dbe 100644
+index ba74f0a..e91e845 100644
 --- a/drivers/pinctrl/pinctrl-rockchip.c
 +++ b/drivers/pinctrl/pinctrl-rockchip.c
-@@ -1562,6 +1562,34 @@ static void rockchip_irq_resume(struct irq_data *d)
- 	irq_reg_writel(gc, bank->saved_enables, GPIO_INTEN);
+@@ -89,6 +89,7 @@ struct rockchip_iomux {
+  * @reg_pull: optional separate register for additional pull settings
+  * @clk: clock of the gpio bank
+  * @irq: interrupt of the gpio bank
++ * @saved_enables: Saved content of GPIO_INTEN at suspend time.
+  * @pin_base: first pin number
+  * @nr_pins: number of pins in this bank
+  * @name: name of the bank
+@@ -107,6 +108,7 @@ struct rockchip_pin_bank {
+ 	struct regmap			*regmap_pull;
+ 	struct clk			*clk;
+ 	int				irq;
++	u32				saved_enables;
+ 	u32				pin_base;
+ 	u8				nr_pins;
+ 	char				*name;
+@@ -1543,6 +1545,23 @@ static int rockchip_irq_set_type(struct irq_data *d, unsigned int type)
+ 	return 0;
  }
  
-+static void rockchip_irq_disable(struct irq_data *d)
++static void rockchip_irq_suspend(struct irq_data *d)
 +{
 +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	u32 val;
++	struct rockchip_pin_bank *bank = gc->private;
 +
-+	irq_gc_lock(gc);
-+
-+	val = irq_reg_readl(gc, GPIO_INTEN);
-+	val &= ~d->mask;
-+	irq_reg_writel(gc, val, GPIO_INTEN);
-+
-+	irq_gc_unlock(gc);
++	bank->saved_enables = irq_reg_readl(gc, GPIO_INTEN);
++	irq_reg_writel(gc, gc->wake_active, GPIO_INTEN);
 +}
 +
-+static void rockchip_irq_enable(struct irq_data *d)
++static void rockchip_irq_resume(struct irq_data *d)
 +{
 +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	u32 val;
++	struct rockchip_pin_bank *bank = gc->private;
 +
-+	irq_gc_lock(gc);
-+
-+	val = irq_reg_readl(gc, GPIO_INTEN);
-+	val |= d->mask;
-+	irq_reg_writel(gc, val, GPIO_INTEN);
-+
-+	irq_gc_unlock(gc);
++	irq_reg_writel(gc, bank->saved_enables, GPIO_INTEN);
 +}
 +
  static int rockchip_interrupts_register(struct platform_device *pdev,
  						struct rockchip_pinctrl *info)
  {
-@@ -1600,11 +1628,13 @@ static int rockchip_interrupts_register(struct platform_device *pdev,
- 		gc = irq_get_domain_generic_chip(bank->domain, 0);
- 		gc->reg_base = bank->reg_base;
- 		gc->private = bank;
--		gc->chip_types[0].regs.mask = GPIO_INTEN;
-+		gc->chip_types[0].regs.mask = GPIO_INTMASK;
- 		gc->chip_types[0].regs.ack = GPIO_PORTS_EOI;
- 		gc->chip_types[0].chip.irq_ack = irq_gc_ack_set_bit;
--		gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
--		gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
-+		gc->chip_types[0].chip.irq_mask = irq_gc_mask_set_bit;
-+		gc->chip_types[0].chip.irq_unmask = irq_gc_mask_clr_bit;
-+		gc->chip_types[0].chip.irq_enable = rockchip_irq_enable;
-+		gc->chip_types[0].chip.irq_disable = rockchip_irq_disable;
+@@ -1587,6 +1606,8 @@ static int rockchip_interrupts_register(struct platform_device *pdev,
+ 		gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
+ 		gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
  		gc->chip_types[0].chip.irq_set_wake = irq_gc_set_wake;
- 		gc->chip_types[0].chip.irq_suspend = rockchip_irq_suspend;
- 		gc->chip_types[0].chip.irq_resume = rockchip_irq_resume;
++		gc->chip_types[0].chip.irq_suspend = rockchip_irq_suspend;
++		gc->chip_types[0].chip.irq_resume = rockchip_irq_resume;
+ 		gc->chip_types[0].chip.irq_set_type = rockchip_irq_set_type;
+ 		gc->wake_enabled = IRQ_MSK(bank->nr_pins);
+ 
 -- 
 2.1.0.rc2.206.gedb03e5
 
