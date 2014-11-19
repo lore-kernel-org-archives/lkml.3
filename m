@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076AbaKSMk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 07:40:29 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:38258 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaKSMk1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 07:40:27 -0500
-Date: Wed, 19 Nov 2014 20:40:21 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Terence Eden <terence.eden@gmail.com>
-Cc: davem@davemloft.net, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        clabbe.montjoie@gmail.com
-Subject: Re: [PATCH] crypto: Fix a typo in ahash.c
-Message-ID: <20141119124021.GA21828@gondor.apana.org.au>
-References: <CABV2FHjqGTBWjNqT6g=v2nW1rXg4oGNrYvbAZUXxpE_Wn_UvUA@mail.gmail.com>
+	id S1754376AbaKSMlB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 07:41:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47622 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754175AbaKSMk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 07:40:59 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Dexuan Cui <decui@microsoft.com>
+Cc: "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel\@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf\@aepfle.de" <olaf@aepfle.de>,
+        "apw\@canonical.com" <apw@canonical.com>,
+        "jasowang\@redhat.com" <jasowang@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH] tools: hv: ignore ENOBUFS in the KVP daemon
+References: <1416394245-31717-1-git-send-email-decui@microsoft.com>
+	<87lhn7forv.fsf@vitty.brq.redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C613E4F2FA@SIXPRD3002MB028.064d.mgd.msft.net>
+Date: Wed, 19 Nov 2014 13:40:45 +0100
+In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C613E4F2FA@SIXPRD3002MB028.064d.mgd.msft.net>
+	(Dexuan Cui's message of "Wed, 19 Nov 2014 12:15:21 +0000")
+Message-ID: <87egszfjn6.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABV2FHjqGTBWjNqT6g=v2nW1rXg4oGNrYvbAZUXxpE_Wn_UvUA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 06:52:40PM +0000, Terence Eden wrote:
-> From: Terence Eden <terence.eden@gmail.com>
-> 
-> "its" == "something belong to it". "it's" == "it is", "it has", "it
-> was", etc. Sorry - just bugged me as I was reading the code.
-> (Resubmitting - hopefully correctly!)
-> 
-> Signed-off-by: Terence Eden <terence.eden@gmail.com>
-> ---
->  crypto/ahash.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/crypto/ahash.c b/crypto/ahash.c
-> index f6a36a5..ffbcda3 100644
-> --- a/crypto/ahash.c
-> +++ b/crypto/ahash.c
-> @@ -271,7 +271,7 @@ static int ahash_save_req(struct ahash_request
-> *req, crypto_completion_t cplt)
->      /*
->       * WARNING: We do not backup req->priv here! The req->priv
->       *          is for internal use of the Crypto API and the
-> -     *          user must _NOT_ _EVER_ depend on it's content!
-> +     *          user must _NOT_ _EVER_ depend on its content!
+Dexuan Cui <decui@microsoft.com> writes:
 
-Sorry but your patch does not apply because you've mangled tabs
-into spaces.  Please try to apply the patch that you receive via
-the list yourself to ensure that you're sending something that
-can be applied.
+>> -----Original Message-----
+>> From: Vitaly Kuznetsov
+>> Sent: Wednesday, November 19, 2014 18:50 PM
+>> To: Dexuan Cui
+>> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; driverdev-
+>> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+>> jasowang@redhat.com; Haiyang Zhang
+>> Subject: Re: [PATCH] tools: hv: ignore ENOBUFS in the KVP daemon
+>> 
+>> Dexuan Cui  writes:
+>> 
+>> > Under high memory pressure and very high KVP R/W test pressure, the netlink
+>> > recvfrom() may transiently return ENOBUFS to the daemon -- we found this
+>> > during a 2-week stress test.
+>> >
+>> > We'd better not terminate the daemon on this failure, because a typical KVP
+>> > user can re-try the R/W and hopefully it will succeed next time.
+>> >
+>> > diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+>> > index 22b0764..9f4b303 100644
+>> > --- a/tools/hv/hv_kvp_daemon.c
+>> > +++ b/tools/hv/hv_kvp_daemon.c
+>> > @@ -1559,8 +1559,15 @@ int main(int argc, char *argv[])
+>> >  				addr_p, &addr_l);
+>> >
+>> >  		if (len < 0) {
+>> > +			int saved_errno = errno;
+>> >  			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s",
+>> >  					addr.nl_pid, errno, strerror(errno));
+>> > +
+>> > +			if (saved_errno == ENOBUFS) {
+>> 
+>> is it possible to meet EAGAIN (or EWOULDBLOCK) here as well? I'd suggest
+>> we ignore these as well in such case. Ignoring ENOMEM here is doubtful,
+>> I think. But possible.
+>> 
+>>   Vitaly
+>
+> I don't think EAGAIN is possible  because "man recvfrom" says
+>    "If  no messages are available at the socket, the receive calls wait for a
+>      message to arrive, unless the socket is nonblocking (see fcntl(2)), in which
+>      case the value -1 is returned and  the  external variable  errno is set to
+>     EAGAIN or EWOULDBLOCK".
+>
+> The same man page mention ENOMEM for recvmsg(), but not recvfrom().
 
-Thanks,
+Ah, sorry, I though your patch patches the other place: call to
+netlink_send() which does sendmsg() (and my EAGAIN/EWOULDBLOCK/ENOMEM
+comment was about it). It could also make sense to patch them both as I
+think it is possible to hit these as well.
+
+>
+> -- Dexuan
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+  Vitaly
