@@ -1,173 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804AbaKSQhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:37:14 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:60706 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754998AbaKSQhK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:37:10 -0500
-Date: Wed, 19 Nov 2014 16:37:02 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Beomho Seo <beomho.seo@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, sameo@linux.intel.com, lee.jone@linaro.org,
-        lgirdwood@gmail.com, broonie@kernel.org, sre@kernel.org,
-        dbaryshkov@gmail.com, dwmw2@infradead.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        cw00.choi@samsung.com, geunsik.lim@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com
-Subject: Re: [PATCH v5 1/4] mfd: rt5033: Add Richtek RT5033 driver core.
-Message-ID: <20141119163702.GF1875@x1>
-References: <1416372760-2090-1-git-send-email-beomho.seo@samsung.com>
- <1416372760-2090-2-git-send-email-beomho.seo@samsung.com>
+	id S1754751AbaKSQh0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:37:26 -0500
+Received: from dliviu.plus.com ([80.229.23.120]:60535 "EHLO smtp.dudau.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755825AbaKSQhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:37:23 -0500
+Date: Wed, 19 Nov 2014 16:29:14 +0000
+From: Liviu Dudau <liviu@dudau.co.uk>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Tony Luck <tony.luck@intel.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "huxinwei@huawei.com" <huxinwei@huawei.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Wuyun <wuyun.wu@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 07/16] PCI: Separate pci_host_bridge creation out of
+ pci_create_root_bus()
+Message-ID: <20141119162914.GB9162@bart.dudau.co.uk>
+References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
+ <1416219710-26088-8-git-send-email-wangyijing@huawei.com>
+ <2507218.mHliopJb05@wuerfel>
+ <546B041A.4060403@huawei.com>
+ <20141118144819.GK12037@e106497-lin.cambridge.arm.com>
+ <546BFF74.4030101@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416372760-2090-2-git-send-email-beomho.seo@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <546BFF74.4030101@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014, Beomho Seo wrote:
+On Wed, Nov 19, 2014 at 10:24:52AM +0800, Yijing Wang wrote:
+> >> We need, some platforms pass NULL pointer as host bridge parent.
+> > 
+> > Yijing,
+> > 
+> > May I suggest a different approach here? Rather than having to pass an opaque
+> > pointer that gets converted by the host bridge driver back to the private
+> > structure, what about promoting a new style of usage, that is similar to the
+> > way device drivers work? Lets try to promote the embedding of the generic
+> > pci_host_bridge structure in the host bridge specific structure! Then we can
+> > access the private data doing container_of().
+> > 
+> > Something like this:
+> > 
+> > struct pci_controller {
+> > 	struct pci_host_bridge bridge;
+> > 	/* private host bridge data here */
+> > 	.....
+> > };
+> > 
+> > #define PCI_CONTROLLER(bus)	({
+> > 	struct pci_host_bridge *hb = to_pci_host_bridge(bus->bridge); \
+> > 	container_of(hb, struct pci_controller, bridge); })
+> > 
+> > 
+> > Then we can retrieve the host bridge structure from everywhere we have a device.
+> 
+> Hi Liviu, it looks good to me, because this change will involve lots platforms,
+> I would think more about it. Thanks for your suggestion very much! :)
 
-> This patch adds a new driver for Richtek RT5033 driver.
-> RT5033 is a Multifunction device which includes battery charger, fuel gauge,
-> flash LED current source, LDO and synchronous Buck converter. It is interfaced
-> to host controller using I2C interface.
-> 
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Lee Jones <lee.jone@linaro.org>
-> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
-> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
-> ---
-> Changes in v5
-> - Change possible built as a module.
-> - Revise rt5033_dev mfd cell entry.
-> - Fix incorrect typo.
-> - Add module alias.
-> 
-> Changes in v4
-> - none.
-> 
-> Changes in v3
-> - Correct sentence errors.
-> - Add author information the top of each drivers.
-> - Remove unnecessary pre-initialise, struct member(rt5033->i2c) and blink.
-> - Change some return check.
-> - Use bool and of_match_ptr().
-> 
-> Changes in v2
-> - Remove volatile_reg callback. Because this driver not in use regmap cache.
-> - Revmoe unnecessary subnode of_compatible.
-> - Add define for set_high impedance mode of charger.
-> ---
->  drivers/mfd/Kconfig                |   12 ++
->  drivers/mfd/Makefile               |    1 +
->  drivers/mfd/rt5033.c               |  136 +++++++++++++++++++
->  include/linux/mfd/rt5033-private.h |  260 ++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/rt5033.h         |   62 +++++++++
->  5 files changed, 471 insertions(+)
->  create mode 100644 drivers/mfd/rt5033.c
->  create mode 100644 include/linux/mfd/rt5033-private.h
->  create mode 100644 include/linux/mfd/rt5033.h
-> 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 72d3808..9c13170 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -618,6 +618,18 @@ config MFD_RTSX_PCI
->  	  types of memory cards, such as Memory Stick, Memory Stick Pro,
->  	  Secure Digital and MultiMediaCard.
->  
-> +config MFD_RT5033
-> +	tristate "Richtek RT5033 Power Management IC"
-> +	depends on I2C=y
-> +	select MFD_CORE
-> +	select REGMAP_I2C
-> +	help
-> +	  This driver provides for the Richtek RT5033 Power Management IC,
-> +	  which includes the I2C driver and the Core APIs. This driver provides
-> +	  common support for accessing the device. The device supports multiple
-> +	  sub-devices like charger, fuel gauge, flash LED, current source,
-> +	  LDO and Buck.
-> +
->  config MFD_RTSX_USB
->  	tristate "Realtek USB card reader"
->  	depends on USB
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index 53467e2..4059c24 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -176,6 +176,7 @@ obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
->  obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
->  obj-$(CONFIG_MFD_HI6421_PMIC)	+= hi6421-pmic-core.o
->  obj-$(CONFIG_MFD_DLN2)		+= dln2.o
-> +obj-$(CONFIG_MFD_RT5033)	+= rt5033.o
->  
->  intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
->  obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
-> diff --git a/drivers/mfd/rt5033.c b/drivers/mfd/rt5033.c
-> new file mode 100644
-> index 0000000..4d289b9
-> --- /dev/null
-> +++ b/drivers/mfd/rt5033.c
-> @@ -0,0 +1,136 @@
-> +/*
-> + * MFD core driver for the Richtek RT5033.
-> + *
-> + * Copyright (C) 2014 Samsung Electronics, Co., Ltd.
-> + * Author: Beomho Seo <beomho.seo@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published bythe Free Software Foundation.
-> + */
-> +
-> +#include <linux/err.h>
-> +#include <linux/module.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/of_device.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/mfd/rt5033.h>
-> +#include <linux/mfd/rt5033-private.h>
-> +
-> +static const struct regmap_irq rt5033_irqs[] = {
-> +	{ .mask = RT5033_PMIC_IRQ_BUCKOCP, },
-> +	{ .mask = RT5033_PMIC_IRQ_BUCKLV, },
-> +	{ .mask = RT5033_PMIC_IRQ_SAFELDOLV, },
-> +	{ .mask = RT5033_PMIC_IRQ_LDOLV, },
-> +	{ .mask = RT5033_PMIC_IRQ_OT, },
-> +	{ .mask = RT5033_PMIC_IRQ_VDDA_UV, },
-> +};
-> +
-> +static const struct regmap_irq_chip rt5033_irq_chip = {
-> +	.name		= "rt5033",
-> +	.status_base	= RT5033_REG_PMIC_IRQ_STAT,
-> +	.mask_base	= RT5033_REG_PMIC_IRQ_CTRL,
-> +	.mask_invert	= true,
-> +	.num_regs	= 1,
-> +	.irqs		= rt5033_irqs,
-> +	.num_irqs	= ARRAY_SIZE(rt5033_irqs),
-> +};
-> +
-> +static const struct mfd_cell rt5033_devs[] = {
-> +	{ .name = "rt5033-regulator", },
-> +	{ .name = "rt5033-charger", .of_compatible = "richtek,rt5033-charger",},
-> +	{ .name = "rt5033-battery", .of_compatible = "richtek,rt5033-battery",},
-> +};
+Given that I also look at this area maybe we should join forces and divide the problem?
 
-Perhaps I wasn't clear enough in my previous review -- sorry for
-that.  I only want to see the single entry on one line i.e. one with
-.name, but no .of_compatible.  I probably wouldn't have requested a
-re-spin, but you have white space issues at the end of those two lines
-too.
+Best regards,
+Liviu
+
+> 
+> 
+> Thanks!
+> Yijing.
+> 
+> > 
+> > Best regards,
+> > Liviu
+> > 
+> >>
+> >>>
+> >>>> +	host = kzalloc(sizeof(*host), GFP_KERNEL);
+> >>>> +	if (!host)
+> >>>> +		return NULL;
+> >>>
+> >>> devm_kzalloc maybe?
+> >>
+> >> I don't know much detail about devm_kzalloc(), but we have no pci host driver
+> >> here, and I found no devm_kzalloc() uses in core PCI code before.
+> >>
+> >>>
+> >>>> +	if (!resources) {
+> >>>> +		/* Use default IO/MEM/BUS resources*/
+> >>>> +		pci_add_resource(&host->windows, &ioport_resource);
+> >>>> +		pci_add_resource(&host->windows, &iomem_resource);
+> >>>> +		pci_add_resource(&host->windows, &busn_resource);
+> >>>> +	} else {
+> >>>> +		list_for_each_entry_safe(window, n, resources, list)
+> >>>> +			list_move_tail(&window->list, &host->windows);
+> >>>> +	}
+> >>>
+> >>> I think we should assume that the correct resources are passed. You
+> >>> could add a wrapper around this function to convert old platforms
+> >>> though.
+> >>
+> >> OK, I will move these code out of pci_create_host_bridge, and add a wrapper
+> >> to setup the default resources.
+> >>
+> >>>
+> >>>> +EXPORT_SYMBOL(pci_create_host_bridge);
+> >>>
+> >>> EXPORT_SYMBOL_GPL() maybe?
+> >>
+> >> OK, will update it.
+> >>
+> >>>
+> >>>> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> >>>> index 8b11b38..daa7f40 100644
+> >>>> --- a/include/linux/pci.h
+> >>>> +++ b/include/linux/pci.h
+> >>>> @@ -402,7 +402,12 @@ struct pci_host_bridge_window {
+> >>>>  struct pci_host_bridge {
+> >>>>  	struct device dev;
+> >>>>  	struct pci_bus *bus;		/* root bus */
+> >>>> +	struct list_head list;
+> >>>>  	struct list_head windows;	/* pci_host_bridge_windows */
+> >>>> +	int busnum;
+> >>>
+> >>> The busnum should already be implied through the bus resource.
+> >>
+> >> Yes, I will consider remove it and introduce a helper function to get the root bus number, thanks!
+> >>
+> >> Thanks!
+> >> Yijing.
+> >>
+> >>>
+> >>> 	Arnd
+> >>>
+> >>> .
+> >>>
+> >>
+> >>
+> >> -- 
+> >> Thanks!
+> >> Yijing
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>
+> > 
+> 
+> 
+> -- 
+> Thanks!
+> Yijing
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+-------------------
+   .oooO
+   (   )
+    \ (  Oooo.
+     \_) (   )
+          ) /
+         (_/
+
+ One small step
+   for me ...
+
