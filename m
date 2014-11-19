@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933906AbaKSVOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:14:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57453 "EHLO
+	id S934001AbaKSVPJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:15:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57462 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933840AbaKSVOw (ORCPT
+	with ESMTP id S933892AbaKSVOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:52 -0500
+	Wed, 19 Nov 2014 16:14:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-Subject: [PATCH 3.10 60/70] net: sctp: fix panic on duplicate ASCONF chunks
-Date: Wed, 19 Nov 2014 12:52:51 -0800
-Message-Id: <20141119205212.897884949@linuxfoundation.org>
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        azurIt <azurit@pobox.sk>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Subject: [PATCH 3.10 63/70] arch: mm: remove obsolete init OOM protection
+Date: Wed, 19 Nov 2014 12:52:54 -0800
+Message-Id: <20141119205212.996374510@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -31,94 +34,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit b69040d8e39f20d5215a03502a8e8b4c6ab78395 upstream.
+commit 94bce453c78996cc4373d5da6cfabe07fcc6d9f9 upstream.
 
-When receiving a e.g. semi-good formed connection scan in the
-form of ...
+The memcg code can trap tasks in the context of the failing allocation
+until an OOM situation is resolved.  They can hold all kinds of locks
+(fs, mm) at this point, which makes it prone to deadlocking.
 
-  -------------- INIT[ASCONF; ASCONF_ACK] ------------->
-  <----------- INIT-ACK[ASCONF; ASCONF_ACK] ------------
-  -------------------- COOKIE-ECHO -------------------->
-  <-------------------- COOKIE-ACK ---------------------
-  ---------------- ASCONF_a; ASCONF_b ----------------->
+This series converts memcg OOM handling into a two step process that is
+started in the charge context, but any waiting is done after the fault
+stack is fully unwound.
 
-... where ASCONF_a equals ASCONF_b chunk (at least both serials
-need to be equal), we panic an SCTP server!
+Patches 1-4 prepare architecture handlers to support the new memcg
+requirements, but in doing so they also remove old cruft and unify
+out-of-memory behavior across architectures.
 
-The problem is that good-formed ASCONF chunks that we reply with
-ASCONF_ACK chunks are cached per serial. Thus, when we receive a
-same ASCONF chunk twice (e.g. through a lost ASCONF_ACK), we do
-not need to process them again on the server side (that was the
-idea, also proposed in the RFC). Instead, we know it was cached
-and we just resend the cached chunk instead. So far, so good.
+Patch 5 disables the memcg OOM handling for syscalls, readahead, kernel
+faults, because they can gracefully unwind the stack with -ENOMEM.  OOM
+handling is restricted to user triggered faults that have no other
+option.
 
-Where things get nasty is in SCTP's side effect interpreter, that
-is, sctp_cmd_interpreter():
+Patch 6 reworks memcg's hierarchical OOM locking to make it a little
+more obvious wth is going on in there: reduce locked regions, rename
+locking functions, reorder and document.
 
-While incoming ASCONF_a (chunk = event_arg) is being marked
-!end_of_packet and !singleton, and we have an association context,
-we do not flush the outqueue the first time after processing the
-ASCONF_ACK singleton chunk via SCTP_CMD_REPLY. Instead, we keep it
-queued up, although we set local_cork to 1. Commit 2e3216cd54b1
-changed the precedence, so that as long as we get bundled, incoming
-chunks we try possible bundling on outgoing queue as well. Before
-this commit, we would just flush the output queue.
+Patch 7 implements the two-part OOM handling such that tasks are never
+trapped with the full charge stack in an OOM situation.
 
-Now, while ASCONF_a's ASCONF_ACK sits in the corked outq, we
-continue to process the same ASCONF_b chunk from the packet. As
-we have cached the previous ASCONF_ACK, we find it, grab it and
-do another SCTP_CMD_REPLY command on it. So, effectively, we rip
-the chunk->list pointers and requeue the same ASCONF_ACK chunk
-another time. Since we process ASCONF_b, it's correctly marked
-with end_of_packet and we enforce an uncork, and thus flush, thus
-crashing the kernel.
+This patch:
 
-Fix it by testing if the ASCONF_ACK is currently pending and if
-that is the case, do not requeue it. When flushing the output
-queue we may relink the chunk for preparing an outgoing packet,
-but eventually unlink it when it's copied into the skb right
-before transmission.
+Back before smart OOM killing, when faulting tasks were killed directly on
+allocation failures, the arch-specific fault handlers needed special
+protection for the init process.
 
-Joint work with Vlad Yasevich.
+Now that all fault handlers call into the generic OOM killer (see commit
+609838cfed97: "mm: invoke oom-killer from remaining unconverted page
+fault handlers"), which already provides init protection, the
+arch-specific leftovers can be removed.
 
-Fixes: 2e3216cd54b1 ("sctp: Follow security requirement of responding with 1 packet")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: azurIt <azurit@pobox.sk>
+Acked-by: Vineet Gupta <vgupta@synopsys.com>	[arch/arc bits]
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/net/sctp/sctp.h |    5 +++++
- net/sctp/associola.c    |    2 ++
- 2 files changed, 7 insertions(+)
+ arch/arc/mm/fault.c   |    5 -----
+ arch/score/mm/fault.c |    6 ------
+ arch/tile/mm/fault.c  |    6 ------
+ 3 files changed, 17 deletions(-)
 
---- a/include/net/sctp/sctp.h
-+++ b/include/net/sctp/sctp.h
-@@ -540,6 +540,11 @@ static inline void sctp_assoc_pending_pm
- 	asoc->pmtu_pending = 0;
- }
+--- a/arch/arc/mm/fault.c
++++ b/arch/arc/mm/fault.c
+@@ -120,7 +120,6 @@ good_area:
+ 			goto bad_area;
+ 	}
  
-+static inline bool sctp_chunk_pending(const struct sctp_chunk *chunk)
-+{
-+	return !list_empty(&chunk->list);
-+}
-+
- /* Walk through a list of TLV parameters.  Don't trust the
-  * individual parameter lengths and instead depend on
-  * the chunk length to indicate when to stop.  Make sure
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -1659,6 +1659,8 @@ struct sctp_chunk *sctp_assoc_lookup_asc
- 	 * ack chunk whose serial number matches that of the request.
- 	 */
- 	list_for_each_entry(ack, &asoc->asconf_ack_list, transmitted_list) {
-+		if (sctp_chunk_pending(ack))
-+			continue;
- 		if (ack->subh.addip_hdr->serial == serial) {
- 			sctp_chunk_hold(ack);
- 			return ack;
+-survive:
+ 	/*
+ 	 * If for any reason at all we couldn't handle the fault,
+ 	 * make sure we exit gracefully rather than endlessly redo
+@@ -200,10 +199,6 @@ no_context:
+ 	die("Oops", regs, address, cause_code);
+ 
+ out_of_memory:
+-	if (is_global_init(tsk)) {
+-		yield();
+-		goto survive;
+-	}
+ 	up_read(&mm->mmap_sem);
+ 
+ 	if (user_mode(regs)) {
+--- a/arch/score/mm/fault.c
++++ b/arch/score/mm/fault.c
+@@ -100,7 +100,6 @@ good_area:
+ 			goto bad_area;
+ 	}
+ 
+-survive:
+ 	/*
+ 	* If for any reason at all we couldn't handle the fault,
+ 	* make sure we exit gracefully rather than endlessly redo
+@@ -167,11 +166,6 @@ no_context:
+ 	*/
+ out_of_memory:
+ 	up_read(&mm->mmap_sem);
+-	if (is_global_init(tsk)) {
+-		yield();
+-		down_read(&mm->mmap_sem);
+-		goto survive;
+-	}
+ 	if (!user_mode(regs))
+ 		goto no_context;
+ 	pagefault_out_of_memory();
+--- a/arch/tile/mm/fault.c
++++ b/arch/tile/mm/fault.c
+@@ -430,7 +430,6 @@ good_area:
+ 			goto bad_area;
+ 	}
+ 
+- survive:
+ 	/*
+ 	 * If for any reason at all we couldn't handle the fault,
+ 	 * make sure we exit gracefully rather than endlessly redo
+@@ -568,11 +567,6 @@ no_context:
+  */
+ out_of_memory:
+ 	up_read(&mm->mmap_sem);
+-	if (is_global_init(tsk)) {
+-		yield();
+-		down_read(&mm->mmap_sem);
+-		goto survive;
+-	}
+ 	if (is_kernel_mode)
+ 		goto no_context;
+ 	pagefault_out_of_memory();
 
 
