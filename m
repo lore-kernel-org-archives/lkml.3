@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950AbaKSWJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:09:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56472 "EHLO
+	id S1757936AbaKSWJP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:09:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56476 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933335AbaKSVEI (ORCPT
+	with ESMTP id S933339AbaKSVEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:04:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 133/141] mm, thp: fix collapsing of hugepages on madvise
-Date: Wed, 19 Nov 2014 12:52:36 -0800
-Message-Id: <20141119205155.254882782@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 001/122] Revert "drivers/net: Disable UFO through virtio"
+Date: Wed, 19 Nov 2014 12:50:51 -0800
+Message-Id: <20141119205208.878043709@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
-References: <20141119205150.700188369@linuxfoundation.org>
+In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
+References: <20141119205208.812884198@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -29,175 +25,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+This reverts commit 2b52d6c6beda6308ba95024a1eba1dfc9515ba32 which was
+commit 3d0ad09412ffe00c9afa201d01effdb6023d09b4 upstream.
 
-commit 6d50e60cd2edb5a57154db5a6f64eef5aa59b751 upstream.
+Ben writes:
 
-If an anonymous mapping is not allowed to fault thp memory and then
-madvise(MADV_HUGEPAGE) is used after fault, khugepaged will never
-collapse this memory into thp memory.
+	Please drop this patch for 3.14 and 3.17.  It causes problems
+	for migration of VMs and we're probably going to revert part of
+	this.  The following patch ("drivers/net, ipv6: Select IPv6
+	fragment idents for virtio UFO packets") might no longer apply,
+	in which case you can drop that as well until we have this
+	sorted out upstream.
 
-This occurs because the madvise(2) handler for thp, hugepage_madvise(),
-clears VM_NOHUGEPAGE on the stack and it isn't stored in vma->vm_flags
-until the final action of madvise_behavior().  This causes the
-khugepaged_enter_vma_merge() to be a no-op in hugepage_madvise() when
-the vma had previously had VM_NOHUGEPAGE set.
-
-Fix this by passing the correct vma flags to the khugepaged mm slot
-handler.  There's no chance khugepaged can run on this vma until after
-madvise_behavior() returns since we hold mm->mmap_sem.
-
-It would be possible to clear VM_NOHUGEPAGE directly from vma->vm_flags
-in hugepage_advise(), but I didn't want to introduce special case
-behavior into madvise_behavior().  I think it's best to just let it
-always set vma->vm_flags itself.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Suleiman Souhlal <suleiman@google.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/khugepaged.h |   17 ++++++++++-------
- mm/huge_memory.c           |   11 ++++++-----
- mm/mmap.c                  |    8 ++++----
- 3 files changed, 20 insertions(+), 16 deletions(-)
+ drivers/net/macvtap.c    |   13 ++++++++-----
+ drivers/net/tun.c        |   19 ++++++++-----------
+ drivers/net/virtio_net.c |   24 ++++++++++--------------
+ 3 files changed, 26 insertions(+), 30 deletions(-)
 
---- a/include/linux/khugepaged.h
-+++ b/include/linux/khugepaged.h
-@@ -6,7 +6,8 @@
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- extern int __khugepaged_enter(struct mm_struct *mm);
- extern void __khugepaged_exit(struct mm_struct *mm);
--extern int khugepaged_enter_vma_merge(struct vm_area_struct *vma);
-+extern int khugepaged_enter_vma_merge(struct vm_area_struct *vma,
-+				      unsigned long vm_flags);
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -66,7 +66,7 @@ static struct cdev macvtap_cdev;
+ static const struct proto_ops macvtap_socket_ops;
  
- #define khugepaged_enabled()					       \
- 	(transparent_hugepage_flags &				       \
-@@ -35,13 +36,13 @@ static inline void khugepaged_exit(struc
- 		__khugepaged_exit(mm);
- }
+ #define TUN_OFFLOADS (NETIF_F_HW_CSUM | NETIF_F_TSO_ECN | NETIF_F_TSO | \
+-		      NETIF_F_TSO6)
++		      NETIF_F_TSO6 | NETIF_F_UFO)
+ #define RX_OFFLOADS (NETIF_F_GRO | NETIF_F_LRO)
+ #define TAP_FEATURES (NETIF_F_GSO | NETIF_F_SG)
  
--static inline int khugepaged_enter(struct vm_area_struct *vma)
-+static inline int khugepaged_enter(struct vm_area_struct *vma,
-+				   unsigned long vm_flags)
- {
- 	if (!test_bit(MMF_VM_HUGEPAGE, &vma->vm_mm->flags))
- 		if ((khugepaged_always() ||
--		     (khugepaged_req_madv() &&
--		      vma->vm_flags & VM_HUGEPAGE)) &&
--		    !(vma->vm_flags & VM_NOHUGEPAGE))
-+		     (khugepaged_req_madv() && (vm_flags & VM_HUGEPAGE))) &&
-+		    !(vm_flags & VM_NOHUGEPAGE))
- 			if (__khugepaged_enter(vma->vm_mm))
- 				return -ENOMEM;
- 	return 0;
-@@ -54,11 +55,13 @@ static inline int khugepaged_fork(struct
- static inline void khugepaged_exit(struct mm_struct *mm)
- {
- }
--static inline int khugepaged_enter(struct vm_area_struct *vma)
-+static inline int khugepaged_enter(struct vm_area_struct *vma,
-+				   unsigned long vm_flags)
- {
- 	return 0;
- }
--static inline int khugepaged_enter_vma_merge(struct vm_area_struct *vma)
-+static inline int khugepaged_enter_vma_merge(struct vm_area_struct *vma,
-+					     unsigned long vm_flags)
- {
- 	return 0;
- }
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -803,7 +803,7 @@ int do_huge_pmd_anonymous_page(struct mm
- 		return VM_FAULT_FALLBACK;
- 	if (unlikely(anon_vma_prepare(vma)))
- 		return VM_FAULT_OOM;
--	if (unlikely(khugepaged_enter(vma)))
-+	if (unlikely(khugepaged_enter(vma, vma->vm_flags)))
- 		return VM_FAULT_OOM;
- 	if (!(flags & FAULT_FLAG_WRITE) &&
- 			transparent_hugepage_use_zero_page()) {
-@@ -1970,7 +1970,7 @@ int hugepage_madvise(struct vm_area_stru
- 		 * register it here without waiting a page fault that
- 		 * may not happen any time soon.
- 		 */
--		if (unlikely(khugepaged_enter_vma_merge(vma)))
-+		if (unlikely(khugepaged_enter_vma_merge(vma, *vm_flags)))
- 			return -ENOMEM;
- 		break;
- 	case MADV_NOHUGEPAGE:
-@@ -2071,7 +2071,8 @@ int __khugepaged_enter(struct mm_struct
- 	return 0;
- }
- 
--int khugepaged_enter_vma_merge(struct vm_area_struct *vma)
-+int khugepaged_enter_vma_merge(struct vm_area_struct *vma,
-+			       unsigned long vm_flags)
- {
- 	unsigned long hstart, hend;
- 	if (!vma->anon_vma)
-@@ -2083,11 +2084,11 @@ int khugepaged_enter_vma_merge(struct vm
- 	if (vma->vm_ops)
- 		/* khugepaged not yet working on file or special mappings */
- 		return 0;
--	VM_BUG_ON(vma->vm_flags & VM_NO_THP);
-+	VM_BUG_ON(vm_flags & VM_NO_THP);
- 	hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
- 	hend = vma->vm_end & HPAGE_PMD_MASK;
- 	if (hstart < hend)
--		return khugepaged_enter(vma);
-+		return khugepaged_enter(vma, vm_flags);
- 	return 0;
- }
- 
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1056,7 +1056,7 @@ struct vm_area_struct *vma_merge(struct
- 				end, prev->vm_pgoff, NULL);
- 		if (err)
- 			return NULL;
--		khugepaged_enter_vma_merge(prev);
-+		khugepaged_enter_vma_merge(prev, vm_flags);
- 		return prev;
- 	}
- 
-@@ -1075,7 +1075,7 @@ struct vm_area_struct *vma_merge(struct
- 				next->vm_pgoff - pglen, NULL);
- 		if (err)
- 			return NULL;
--		khugepaged_enter_vma_merge(area);
-+		khugepaged_enter_vma_merge(area, vm_flags);
- 		return area;
- 	}
- 
-@@ -2192,7 +2192,7 @@ int expand_upwards(struct vm_area_struct
+@@ -570,8 +570,6 @@ static int macvtap_skb_from_vnet_hdr(str
+ 			gso_type = SKB_GSO_TCPV6;
+ 			break;
+ 		case VIRTIO_NET_HDR_GSO_UDP:
+-			pr_warn_once("macvtap: %s: using disabled UFO feature; please fix this program\n",
+-				     current->comm);
+ 			gso_type = SKB_GSO_UDP;
+ 			if (skb->protocol == htons(ETH_P_IPV6))
+ 				ipv6_proxy_select_ident(skb);
+@@ -619,6 +617,8 @@ static void macvtap_skb_to_vnet_hdr(cons
+ 			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
+ 		else if (sinfo->gso_type & SKB_GSO_TCPV6)
+ 			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
++		else if (sinfo->gso_type & SKB_GSO_UDP)
++			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_UDP;
+ 		else
+ 			BUG();
+ 		if (sinfo->gso_type & SKB_GSO_TCP_ECN)
+@@ -953,6 +953,9 @@ static int set_offload(struct macvtap_qu
+ 			if (arg & TUN_F_TSO6)
+ 				feature_mask |= NETIF_F_TSO6;
  		}
++
++		if (arg & TUN_F_UFO)
++			feature_mask |= NETIF_F_UFO;
  	}
- 	vma_unlock_anon_vma(vma);
--	khugepaged_enter_vma_merge(vma);
-+	khugepaged_enter_vma_merge(vma, vma->vm_flags);
- 	validate_mm(vma->vm_mm);
- 	return error;
- }
-@@ -2261,7 +2261,7 @@ int expand_downwards(struct vm_area_stru
+ 
+ 	/* tun/tap driver inverts the usage for TSO offloads, where
+@@ -963,7 +966,7 @@ static int set_offload(struct macvtap_qu
+ 	 * When user space turns off TSO, we turn off GSO/LRO so that
+ 	 * user-space will not receive TSO frames.
+ 	 */
+-	if (feature_mask & (NETIF_F_TSO | NETIF_F_TSO6))
++	if (feature_mask & (NETIF_F_TSO | NETIF_F_TSO6 | NETIF_F_UFO))
+ 		features |= RX_OFFLOADS;
+ 	else
+ 		features &= ~RX_OFFLOADS;
+@@ -1064,7 +1067,7 @@ static long macvtap_ioctl(struct file *f
+ 	case TUNSETOFFLOAD:
+ 		/* let the user check for future flags */
+ 		if (arg & ~(TUN_F_CSUM | TUN_F_TSO4 | TUN_F_TSO6 |
+-			    TUN_F_TSO_ECN))
++			    TUN_F_TSO_ECN | TUN_F_UFO))
+ 			return -EINVAL;
+ 
+ 		rtnl_lock();
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -175,7 +175,7 @@ struct tun_struct {
+ 	struct net_device	*dev;
+ 	netdev_features_t	set_features;
+ #define TUN_USER_FEATURES (NETIF_F_HW_CSUM|NETIF_F_TSO_ECN|NETIF_F_TSO| \
+-			  NETIF_F_TSO6)
++			  NETIF_F_TSO6|NETIF_F_UFO)
+ 
+ 	int			vnet_hdr_sz;
+ 	int			sndbuf;
+@@ -1153,20 +1153,10 @@ static ssize_t tun_get_user(struct tun_s
+ 			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
+ 			break;
+ 		case VIRTIO_NET_HDR_GSO_UDP:
+-		{
+-			static bool warned;
+-
+-			if (!warned) {
+-				warned = true;
+-				netdev_warn(tun->dev,
+-					    "%s: using disabled UFO feature; please fix this program\n",
+-					    current->comm);
+-			}
+ 			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
+ 			if (skb->protocol == htons(ETH_P_IPV6))
+ 				ipv6_proxy_select_ident(skb);
+ 			break;
+-		}
+ 		default:
+ 			tun->dev->stats.rx_frame_errors++;
+ 			kfree_skb(skb);
+@@ -1266,6 +1256,8 @@ static ssize_t tun_put_user(struct tun_s
+ 				gso.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
+ 			else if (sinfo->gso_type & SKB_GSO_TCPV6)
+ 				gso.gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
++			else if (sinfo->gso_type & SKB_GSO_UDP)
++				gso.gso_type = VIRTIO_NET_HDR_GSO_UDP;
+ 			else {
+ 				pr_err("unexpected GSO type: "
+ 				       "0x%x, gso_size %d, hdr_len %d\n",
+@@ -1795,6 +1787,11 @@ static int set_offload(struct tun_struct
+ 				features |= NETIF_F_TSO6;
+ 			arg &= ~(TUN_F_TSO4|TUN_F_TSO6);
  		}
++
++		if (arg & TUN_F_UFO) {
++			features |= NETIF_F_UFO;
++			arg &= ~TUN_F_UFO;
++		}
  	}
- 	vma_unlock_anon_vma(vma);
--	khugepaged_enter_vma_merge(vma);
-+	khugepaged_enter_vma_merge(vma, vma->vm_flags);
- 	validate_mm(vma->vm_mm);
- 	return error;
- }
+ 
+ 	/* This gives the user a way to test for new features in future by
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -496,17 +496,8 @@ static void receive_buf(struct receive_q
+ 			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
+ 			break;
+ 		case VIRTIO_NET_HDR_GSO_UDP:
+-		{
+-			static bool warned;
+-
+-			if (!warned) {
+-				warned = true;
+-				netdev_warn(dev,
+-					    "host using disabled UFO feature; please fix it\n");
+-			}
+ 			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
+ 			break;
+-		}
+ 		case VIRTIO_NET_HDR_GSO_TCPV6:
+ 			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
+ 			break;
+@@ -845,6 +836,8 @@ static int xmit_skb(struct send_queue *s
+ 			hdr->hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
+ 		else if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV6)
+ 			hdr->hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
++		else if (skb_shinfo(skb)->gso_type & SKB_GSO_UDP)
++			hdr->hdr.gso_type = VIRTIO_NET_HDR_GSO_UDP;
+ 		else
+ 			BUG();
+ 		if (skb_shinfo(skb)->gso_type & SKB_GSO_TCP_ECN)
+@@ -1664,7 +1657,7 @@ static int virtnet_probe(struct virtio_d
+ 			dev->features |= NETIF_F_HW_CSUM|NETIF_F_SG|NETIF_F_FRAGLIST;
+ 
+ 		if (virtio_has_feature(vdev, VIRTIO_NET_F_GSO)) {
+-			dev->hw_features |= NETIF_F_TSO
++			dev->hw_features |= NETIF_F_TSO | NETIF_F_UFO
+ 				| NETIF_F_TSO_ECN | NETIF_F_TSO6;
+ 		}
+ 		/* Individual feature bits: what can host handle? */
+@@ -1674,9 +1667,11 @@ static int virtnet_probe(struct virtio_d
+ 			dev->hw_features |= NETIF_F_TSO6;
+ 		if (virtio_has_feature(vdev, VIRTIO_NET_F_HOST_ECN))
+ 			dev->hw_features |= NETIF_F_TSO_ECN;
++		if (virtio_has_feature(vdev, VIRTIO_NET_F_HOST_UFO))
++			dev->hw_features |= NETIF_F_UFO;
+ 
+ 		if (gso)
+-			dev->features |= dev->hw_features & NETIF_F_ALL_TSO;
++			dev->features |= dev->hw_features & (NETIF_F_ALL_TSO|NETIF_F_UFO);
+ 		/* (!csum && gso) case will be fixed by register_netdev() */
+ 	}
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_CSUM))
+@@ -1716,7 +1711,8 @@ static int virtnet_probe(struct virtio_d
+ 	/* If we can receive ANY GSO packets, we must allocate large ones. */
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
+ 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
+-	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
+ 		vi->big_packets = true;
+ 
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
+@@ -1907,9 +1903,9 @@ static struct virtio_device_id id_table[
+ static unsigned int features[] = {
+ 	VIRTIO_NET_F_CSUM, VIRTIO_NET_F_GUEST_CSUM,
+ 	VIRTIO_NET_F_GSO, VIRTIO_NET_F_MAC,
+-	VIRTIO_NET_F_HOST_TSO4, VIRTIO_NET_F_HOST_TSO6,
++	VIRTIO_NET_F_HOST_TSO4, VIRTIO_NET_F_HOST_UFO, VIRTIO_NET_F_HOST_TSO6,
+ 	VIRTIO_NET_F_HOST_ECN, VIRTIO_NET_F_GUEST_TSO4, VIRTIO_NET_F_GUEST_TSO6,
+-	VIRTIO_NET_F_GUEST_ECN,
++	VIRTIO_NET_F_GUEST_ECN, VIRTIO_NET_F_GUEST_UFO,
+ 	VIRTIO_NET_F_MRG_RXBUF, VIRTIO_NET_F_STATUS, VIRTIO_NET_F_CTRL_VQ,
+ 	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
+ 	VIRTIO_NET_F_GUEST_ANNOUNCE, VIRTIO_NET_F_MQ,
 
 
