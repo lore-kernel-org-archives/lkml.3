@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934317AbaKSW2P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:28:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55903 "EHLO
+	id S934298AbaKSW2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:28:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56046 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756888AbaKSUyB (ORCPT
+	with ESMTP id S1756744AbaKSUyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:54:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 039/141] mem-hotplug: reset node managed pages when hot-adding a new pgdat
-Date: Wed, 19 Nov 2014 12:51:02 -0800
-Message-Id: <20141119205151.952100198@linuxfoundation.org>
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 3.17 048/141] param: fix crash on bad kernel arguments
+Date: Wed, 19 Nov 2014 12:51:11 -0800
+Message-Id: <20141119205152.258357286@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -31,143 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tang Chen <tangchen@cn.fujitsu.com>
+From: Daniel Thompson <daniel.thompson@linaro.org>
 
-commit f784a3f19613901ca4539a5b0eed3bdc700e6ee7 upstream.
+commit 3438cf549d2f3ee8e52c82acc8e2a9710ac21a5b upstream.
 
-In free_area_init_core(), zone->managed_pages is set to an approximate
-value for lowmem, and will be adjusted when the bootmem allocator frees
-pages into the buddy system.
+Currently if the user passes an invalid value on the kernel command line
+then the kernel will crash during argument parsing. On most systems this
+is very hard to debug because the console hasn't been initialized yet.
 
-But free_area_init_core() is also called by hotadd_new_pgdat() when
-hot-adding memory.  As a result, zone->managed_pages of the newly added
-node's pgdat is set to an approximate value in the very beginning.
+This is a regression due to commit 51e158c12aca ("param: hand arguments
+after -- straight to init") which, in response to the systemd debug
+controversy, made it possible to explicitly pass arguments to init. To
+achieve this parse_args() was extended from simply returning an error
+code to returning a pointer. Regretably the new init args logic does not
+perform a proper validity check on the pointer resulting in a crash.
 
-Even if the memory on that node has node been onlined,
-/sys/device/system/node/nodeXXX/meminfo has wrong value:
+This patch fixes the validity check. Should the check fail then no arguments
+will be passed to init. This is reasonable and matches how the kernel treats
+its own arguments (i.e. no error recovery).
 
-  hot-add node2 (memory not onlined)
-  cat /sys/device/system/node/node2/meminfo
-  Node 2 MemTotal:       33554432 kB
-  Node 2 MemFree:               0 kB
-  Node 2 MemUsed:        33554432 kB
-  Node 2 Active:                0 kB
-
-This patch fixes this problem by reset node managed pages to 0 after
-hot-adding a new node.
-
-1. Move reset_managed_pages_done from reset_node_managed_pages() to
-   reset_all_zones_managed_pages()
-2. Make reset_node_managed_pages() non-static
-3. Call reset_node_managed_pages() in hotadd_new_pgdat() after pgdat
-   is initialized
-
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/bootmem.h |    1 +
- mm/bootmem.c            |    9 +++++----
- mm/memory_hotplug.c     |    9 +++++++++
- mm/nobootmem.c          |    8 +++++---
- 4 files changed, 20 insertions(+), 7 deletions(-)
+ init/main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -46,6 +46,7 @@ extern unsigned long init_bootmem_node(p
- extern unsigned long init_bootmem(unsigned long addr, unsigned long memend);
- 
- extern unsigned long free_all_bootmem(void);
-+extern void reset_node_managed_pages(pg_data_t *pgdat);
- extern void reset_all_zones_managed_pages(void);
- 
- extern void free_bootmem_node(pg_data_t *pgdat,
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -243,13 +243,10 @@ static unsigned long __init free_all_boo
- 
- static int reset_managed_pages_done __initdata;
- 
--static inline void __init reset_node_managed_pages(pg_data_t *pgdat)
-+void reset_node_managed_pages(pg_data_t *pgdat)
- {
- 	struct zone *z;
- 
--	if (reset_managed_pages_done)
--		return;
--
- 	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
- 		z->managed_pages = 0;
- }
-@@ -258,8 +255,12 @@ void __init reset_all_zones_managed_page
- {
- 	struct pglist_data *pgdat;
- 
-+	if (reset_managed_pages_done)
-+		return;
-+
- 	for_each_online_pgdat(pgdat)
- 		reset_node_managed_pages(pgdat);
-+
- 	reset_managed_pages_done = 1;
- }
- 
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -31,6 +31,7 @@
- #include <linux/stop_machine.h>
- #include <linux/hugetlb.h>
- #include <linux/memblock.h>
-+#include <linux/bootmem.h>
- 
- #include <asm/tlbflush.h>
- 
-@@ -1096,6 +1097,14 @@ static pg_data_t __ref *hotadd_new_pgdat
- 	build_all_zonelists(pgdat, NULL);
- 	mutex_unlock(&zonelists_mutex);
- 
-+	/*
-+	 * zone->managed_pages is set to an approximate value in
-+	 * free_area_init_core(), which will cause
-+	 * /sys/device/system/node/nodeX/meminfo has wrong data.
-+	 * So reset it to 0 before any memory is onlined.
-+	 */
-+	reset_node_managed_pages(pgdat);
-+
- 	return pgdat;
- }
- 
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -145,12 +145,10 @@ static unsigned long __init free_low_mem
- 
- static int reset_managed_pages_done __initdata;
- 
--static inline void __init reset_node_managed_pages(pg_data_t *pgdat)
-+void reset_node_managed_pages(pg_data_t *pgdat)
- {
- 	struct zone *z;
- 
--	if (reset_managed_pages_done)
--		return;
- 	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
- 		z->managed_pages = 0;
- }
-@@ -159,8 +157,12 @@ void __init reset_all_zones_managed_page
- {
- 	struct pglist_data *pgdat;
- 
-+	if (reset_managed_pages_done)
-+		return;
-+
- 	for_each_online_pgdat(pgdat)
- 		reset_node_managed_pages(pgdat);
-+
- 	reset_managed_pages_done = 1;
- }
+--- a/init/main.c
++++ b/init/main.c
+@@ -544,7 +544,7 @@ asmlinkage __visible void __init start_k
+ 				  static_command_line, __start___param,
+ 				  __stop___param - __start___param,
+ 				  -1, -1, &unknown_bootoption);
+-	if (after_dashes)
++	if (!IS_ERR_OR_NULL(after_dashes))
+ 		parse_args("Setting init args", after_dashes, NULL, 0, -1, -1,
+ 			   set_init_arg);
  
 
 
