@@ -1,106 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604AbaKSRG0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:06:26 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:34155 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829AbaKSRGZ (ORCPT
+	id S1755776AbaKSRHr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:07:47 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53389 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753980AbaKSRHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:06:25 -0500
-From: Lin Yongting <linyongting@gmail.com>
-To: linux@arm.linux.org.uk, stefano.stabellini@eu.citrix.com,
-        haojian.zhuang@gmail.com, christoffer.dall@linaro.org, nsekhar@ti.com,
-        linux-arm-kernel@lists.infradead.org, will.deacon@arm.com
-Cc: linux-kernel@vger.kernel.org, linyongting@gmail.com,
-        linyongting@huawei.com
-Subject: [PATCH] ARM: Add unwinding support for __memzero function
-Date: Thu, 20 Nov 2014 01:06:05 +0800
-Message-Id: <1416416765-10217-1-git-send-email-linyongting@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 19 Nov 2014 12:07:46 -0500
+Message-ID: <546CCE73.4020708@wwwdotorg.org>
+Date: Wed, 19 Nov 2014 10:08:03 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Lee Jones <lee@kernel.org>, Matthias Klein <matthias.klein@linux.com>
+CC: linux-rpi-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: bcm2835: add device tree for Raspberry Pi model
+ B+
+References: <1415231123-920-1-git-send-email-matthias.klein@linux.com> <20141119152951.GA1875@x1>
+In-Reply-To: <20141119152951.GA1875@x1>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __memzero function never had unwinding annotations added.
-Currently, when accessing invalid pointer by __memzero occurs the
-backtrace shown will stop at __memzero or some completely unrelated
-function. Add unwinding annotations in hopes of getting a more
-useful backtrace in following cases:
-1. die on accessing invalid pointer by __memzero
-2. kprobe trapped at any instruction within __memzero
-3. interrupted at any instruction within __memzero
+On 11/19/2014 08:29 AM, Lee Jones wrote:
+>> The model B and B+ differ in the GPIO lines for ACT and PWR leds, and the
+>> I2S interface.
+>>
+>> Signed-off-by: Matthias Klein <matthias.klein@linux.com>
+>> ---
+>> Changes in v2:
+>> - move the common parts between the B and B+ model into the new bcm2835-rpi.dtsi file
+>>
+>> - add the I2S signals to the B+ file which fix the problem that USB is not working
+>>    with the current bcm2835-rpi-b.dts file on the B+.
+>> ---
+>>   arch/arm/boot/dts/Makefile               |  1 +
+>>   arch/arm/boot/dts/bcm2835-rpi-b-plus.dts | 30 +++++++++++++++++++
+>>   arch/arm/boot/dts/bcm2835-rpi-b.dts      | 46 ++--------------------------
+>>   arch/arm/boot/dts/bcm2835-rpi.dtsi       | 51 ++++++++++++++++++++++++++++++++
+>>   4 files changed, 85 insertions(+), 43 deletions(-)
+>>   create mode 100644 arch/arm/boot/dts/bcm2835-rpi-b-plus.dts
+>>   create mode 100644 arch/arm/boot/dts/bcm2835-rpi.dtsi
+>
+> Sorry for the delay.  I thought RPi world was exceptionally quiet, but
+> in fact I had issues with my newly setup mailbox and filters.  All
+> rectified now in any case.
+>
+> It might be worth noting that this will not likely land in v3.19, as
+> we are one step removed from Linus (i.e. via ARM SoC) and they usually
+> like to have pull-requests in by -rc5.  Unless anyone stamps their
+> feet, I'll be sending this no sooner than v3.20.
 
-Signed-off-by: Lin Yongting <linyongting@gmail.com>
----
- arch/arm/lib/memzero.S |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-diff --git a/arch/arm/lib/memzero.S b/arch/arm/lib/memzero.S
-index 385ccb3..0eded95 100644
---- a/arch/arm/lib/memzero.S
-+++ b/arch/arm/lib/memzero.S
-@@ -9,6 +9,7 @@
-  */
- #include <linux/linkage.h>
- #include <asm/assembler.h>
-+#include <asm/unwind.h>
- 
- 	.text
- 	.align	5
-@@ -18,6 +19,7 @@
-  * mis-aligned by, and r1 is the number of bytes.  If r1 < 4, then we
-  * don't bother; we use byte stores instead.
-  */
-+UNWIND(	.fnstart			)
- 1:	subs	r1, r1, #4		@ 1 do we have enough
- 	blt	5f			@ 1 bytes to align with?
- 	cmp	r3, #2			@ 1
-@@ -47,6 +49,9 @@ ENTRY(__memzero)
-  * use the LR
-  */
- 	str	lr, [sp, #-4]!		@ 1
-+UNWIND(	.fnend				)
-+UNWIND(	.fnstart			)
-+UNWIND(	.save 	{lr}			)
- 	mov	ip, r2			@ 1
- 	mov	lr, r2			@ 1
- 
-@@ -66,6 +71,7 @@ ENTRY(__memzero)
- 	tst	r1, #16			@ 1 16 bytes or more?
- 	stmneia	r0!, {r2, r3, ip, lr}	@ 4
- 	ldr	lr, [sp], #4		@ 1
-+UNWIND(	.fnend				)
- 
- #else
- 
-@@ -75,6 +81,9 @@ ENTRY(__memzero)
-  */
- 
- 	stmfd	sp!, {r4-r7, lr}
-+UNWIND(	.fnend		       )
-+UNWIND(	.fnstart	       )
-+UNWIND(	.save 	{r4-r7, lr}    )
- 	mov	r4, r2
- 	mov	r5, r2
- 	mov	r6, r2
-@@ -105,9 +114,11 @@ ENTRY(__memzero)
- 	tst	r1, #16
- 	stmneia	r0!, {r4-r7}
- 	ldmfd	sp!, {r4-r7, lr}
-+UNWIND(	.fnend		       )
- 
- #endif
- 
-+UNWIND(	.fnstart			)
- 4:	tst	r1, #8			@ 1 8 bytes or more?
- 	stmneia	r0!, {r2, r3}		@ 2
- 	tst	r1, #4			@ 1 4 bytes or more?
-@@ -122,4 +133,5 @@ ENTRY(__memzero)
- 	tst	r1, #1			@ 1 a byte left over
- 	strneb	r2, [r0], #1		@ 1
- 	ret	lr			@ 1
-+UNWIND(	.fnend				)
- ENDPROC(__memzero)
--- 
-1.7.9.5
-
+-rc6 is the usual cut-off, and the arm-soc maintainers have said that's 
+not always a very strict cut-off; it depends on how invasive the patch 
+is (which this isn't) and whether the patch has been in linux-next 
+already before getting into arm-soc (and linux-rpi.git's for-next branch 
+is in linux-next).
