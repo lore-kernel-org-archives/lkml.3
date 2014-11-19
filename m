@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933707AbaKSV42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:56:28 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:37939 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756343AbaKSV4Y (ORCPT
+	id S933734AbaKSV4f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:56:35 -0500
+Received: from www.linutronix.de ([62.245.132.108]:47732 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933043AbaKSV4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:56:24 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
+	Wed, 19 Nov 2014 16:56:32 -0500
+Date: Wed, 19 Nov 2014 22:56:26 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH] x86, syscall: Fix _TIF_NOHZ handling in syscall_trace_enter_phase1
-Date: Wed, 19 Nov 2014 13:56:19 -0800
-Message-Id: <a6cd3b60a3f53afb6e1c8081b0ec30ff19003dd7.1416434075.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <546D0530.8040800@mit.edu>
-References: <546D0530.8040800@mit.edu>
+        Andy Lutomirski <luto@amacapital.net>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: frequent lockups in 3.18rc4
+In-Reply-To: <20141119190215.GA10796@lerouge>
+Message-ID: <alpine.DEB.2.11.1411192251120.3909@nanos>
+References: <20141118023930.GA2871@redhat.com> <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com> <20141118145234.GA7487@redhat.com> <alpine.DEB.2.11.1411181914020.3909@nanos> <20141118215540.GD35311@redhat.com> <20141119021902.GA14216@redhat.com>
+ <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com> <20141119145902.GA13387@redhat.com> <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com> <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
+ <20141119190215.GA10796@lerouge>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TIF_NOHZ is 19 (i.e. _TIF_SYSCALL_TRACE | _TIF_NOTIFY_RESUME |
-_TIF_SINGLESTEP), not (1<<19).
+On Wed, 19 Nov 2014, Frederic Weisbecker wrote:
+> I got a report lately involving context tracking. Not sure if it's
+> the same here but the issue was that context tracking uses per cpu data
+> and per cpu allocation use vmalloc and vmalloc'ed area can fault due to
+> lazy paging.
 
-This code is involved in Dave's trinity lockup, but I don't see why
-it would cause any of the problems he's seeing, except inadvertently
-by causing a different path through entry_64.S's syscall handling.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/kernel/ptrace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 749b0e423419..e510618b2e91 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -1484,7 +1484,7 @@ unsigned long syscall_trace_enter_phase1(struct pt_regs *regs, u32 arch)
- 	 */
- 	if (work & _TIF_NOHZ) {
- 		user_exit();
--		work &= ~TIF_NOHZ;
-+		work &= ~_TIF_NOHZ;
- 	}
+This is complete nonsense. pcpu allocations are populated right
+away. Otherwise no single line of kernel code which uses dynamically
+allocated per cpu storage would be safe.
  
- #ifdef CONFIG_SECCOMP
--- 
-1.9.3
+Thanks,
 
+	tglx
