@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933075AbaKSWY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:24:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56115 "EHLO
+	id S1757483AbaKSWZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:25:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56064 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932480AbaKSUyI (ORCPT
+	with ESMTP id S932459AbaKSUyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:08 -0500
+	Wed, 19 Nov 2014 15:54:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jammy Zhou <Jammy.Zhou@amd.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.17 068/141] drm/radeon: add missing crtc unlock when setting up the MC
-Date: Wed, 19 Nov 2014 12:51:31 -0800
-Message-Id: <20141119205152.897928225@linuxfoundation.org>
+Subject: [PATCH 3.17 065/141] drm/radeon: set correct CE ram size for CIK
+Date: Wed, 19 Nov 2014 12:51:28 -0800
+Message-Id: <20141119205152.797958267@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -28,28 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jammy Zhou <Jammy.Zhou@amd.com>
 
-commit f0d7bfb9407fccb6499ec01c33afe43512a439a2 upstream.
+commit dc4edad6530a9b7b66c3d905e2bc06021a05dcad upstream.
 
-Need to unlock the crtc after updating the blanking state.
+CE ram size is 32k/0k/0k for GFX/CS0/CS1 with CIK
 
+Ported from amdgpu driver.
+
+Signed-off-by: Jammy Zhou <Jammy.Zhou@amd.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/cik.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -2556,6 +2556,7 @@ void evergreen_mc_stop(struct radeon_dev
- 					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 					tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
- 					WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 				}
- 			} else {
- 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -4315,8 +4315,8 @@ static int cik_cp_gfx_start(struct radeo
+ 	/* init the CE partitions.  CE only used for gfx on CIK */
+ 	radeon_ring_write(ring, PACKET3(PACKET3_SET_BASE, 2));
+ 	radeon_ring_write(ring, PACKET3_BASE_INDEX(CE_PARTITION_BASE));
+-	radeon_ring_write(ring, 0xc000);
+-	radeon_ring_write(ring, 0xc000);
++	radeon_ring_write(ring, 0x8000);
++	radeon_ring_write(ring, 0x8000);
+ 
+ 	/* setup clear context state */
+ 	radeon_ring_write(ring, PACKET3(PACKET3_PREAMBLE_CNTL, 0));
 
 
