@@ -1,145 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086AbaKSNFb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 08:05:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60347 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754897AbaKSNF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 08:05:28 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Dexuan Cui <decui@microsoft.com>
-Cc: "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel\@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf\@aepfle.de" <olaf@aepfle.de>,
-        "apw\@canonical.com" <apw@canonical.com>,
-        "jasowang\@redhat.com" <jasowang@redhat.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH] tools: hv: ignore ENOBUFS in the KVP daemon
-References: <1416394245-31717-1-git-send-email-decui@microsoft.com>
-	<87lhn7forv.fsf@vitty.brq.redhat.com>
-	<F792CF86EFE20D4AB8064279AFBA51C613E4F2FA@SIXPRD3002MB028.064d.mgd.msft.net>
-	<87egszfjn6.fsf@vitty.brq.redhat.com>
-	<F792CF86EFE20D4AB8064279AFBA51C613E4F3AA@SIXPRD3002MB028.064d.mgd.msft.net>
-Date: Wed, 19 Nov 2014 14:05:12 +0100
-In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C613E4F3AA@SIXPRD3002MB028.064d.mgd.msft.net>
-	(Dexuan Cui's message of "Wed, 19 Nov 2014 12:57:24 +0000")
-Message-ID: <87a93nfiif.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S932143AbaKSNGp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 08:06:45 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:45736 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754051AbaKSNGl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 08:06:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20141118222936.GB20945@cerebellum.variantweb.net>
+References: <000001d0030d$0505aaa0$0f10ffe0$%yang@samsung.com>
+	<20141118222936.GB20945@cerebellum.variantweb.net>
+Date: Wed, 19 Nov 2014 21:06:41 +0800
+Message-ID: <CAL1ERfO6qoqCDyfEdJx3OCjdJjrsakSRG4SQhvzA6SL4NxO6uQ@mail.gmail.com>
+Subject: Re: [PATCH] mm: frontswap: invalidate expired data on a dup-store failure
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Seth Jennings <sjennings@variantweb.net>
+Cc: Weijie Yang <weijie.yang@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Streetman <ddstreet@ieee.org>, Minchan Kim <minchan@kernel.org>,
+        Bob Liu <bob.liu@oracle.com>,
+        =?UTF-8?B?5p2O5bi45Z2k?= <xfishcoder@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dexuan Cui <decui@microsoft.com> writes:
-
->> -----Original Message-----
->> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
->> Sent: Wednesday, November 19, 2014 20:41 PM
->> To: Dexuan Cui
->> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; driverdev-
->> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
->> jasowang@redhat.com; Haiyang Zhang
->> Subject: Re: [PATCH] tools: hv: ignore ENOBUFS in the KVP daemon
->> 
->> Dexuan Cui <decui@microsoft.com> writes:
->> 
->> >> -----Original Message-----
->> >> From: Vitaly Kuznetsov
->> >> Sent: Wednesday, November 19, 2014 18:50 PM
->> >> To: Dexuan Cui
->> >> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
->> driverdev-
->> >> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
->> >> jasowang@redhat.com; Haiyang Zhang
->> >> Subject: Re: [PATCH] tools: hv: ignore ENOBUFS in the KVP daemon
->> >>
->> >> Dexuan Cui  writes:
->> >>
->> >> > Under high memory pressure and very high KVP R/W test pressure,
->> the netlink
->> >> > recvfrom() may transiently return ENOBUFS to the daemon -- we found
->> this
->> >> > during a 2-week stress test.
->> >> >
->> >> > We'd better not terminate the daemon on this failure, because a
->> typical KVP
->> >> > user can re-try the R/W and hopefully it will succeed next time.
->> >> >
->> >> > diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
->> >> > index 22b0764..9f4b303 100644
->> >> > --- a/tools/hv/hv_kvp_daemon.c
->> >> > +++ b/tools/hv/hv_kvp_daemon.c
->> >> > @@ -1559,8 +1559,15 @@ int main(int argc, char *argv[])
->> >> >  				addr_p, &addr_l);
->> >> >
->> >> >  		if (len < 0) {
->> >> > +			int saved_errno = errno;
->> >> >  			syslog(LOG_ERR, "recvfrom failed; pid:%u
->> error:%d %s",
->> >> >  					addr.nl_pid, errno, strerror(errno));
->> >> > +
->> >> > +			if (saved_errno == ENOBUFS) {
->> >>
->> >> is it possible to meet EAGAIN (or EWOULDBLOCK) here as well? I'd
->> suggest
->> >> we ignore these as well in such case. Ignoring ENOMEM here is doubtful,
->> >> I think. But possible.
->> >>
->> >>   Vitaly
->> >
->> > I don't think EAGAIN is possible  because "man recvfrom" says
->> >    "If  no messages are available at the socket, the receive calls wait for a
->> >      message to arrive, unless the socket is nonblocking (see fcntl(2)), in
->> which
->> >      case the value -1 is returned and  the  external variable  errno is set to
->> >     EAGAIN or EWOULDBLOCK".
->> >
->> > The same man page mention ENOMEM for recvmsg(), but not recvfrom().
->> 
->> Ah, sorry, I though your patch patches the other place: call to
->> netlink_send() which does sendmsg() (and my
->> EAGAIN/EWOULDBLOCK/ENOMEM
->> comment was about it). It could also make sense to patch them both as I
->> think it is possible to hit these as well.
->> 
->> > -- Dexuan
->> --
->>   Vitaly
+On Wed, Nov 19, 2014 at 6:29 AM, Seth Jennings <sjennings@variantweb.net> wrote:
+> On Tue, Nov 18, 2014 at 04:51:36PM +0800, Weijie Yang wrote:
+>> If a frontswap dup-store failed, it should invalidate the expired page
+>> in the backend, or it could trigger some data corruption issue.
+>> Such as:
+>> 1. use zswap as the frontswap backend with writeback feature
+>> 2. store a swap page(version_1) to entry A, success
+>> 3. dup-store a newer page(version_2) to the same entry A, fail
+>> 4. use __swap_writepage() write version_2 page to swapfile, success
+>> 5. zswap do shrink, writeback version_1 page to swapfile
+>> 6. version_2 page is overwrited by version_1, data corrupt.
 >
-> OK, I can add this new check:
-> (I'll send out the v2 tomorrow in case  people have new comments)
+> Good catch!
 >
-
-Thanks!
-
-> --- a/tools/hv/hv_kvp_daemon.c
-> +++ b/tools/hv/hv_kvp_daemon.c
-> @@ -1770,8 +1770,15 @@ kvp_done:
+>>
+>> This patch fixes this issue by invalidating expired data immediately
+>> when meet a dup-store failure.
+>>
+>> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+>> ---
+>>  mm/frontswap.c |    4 +++-
+>>  1 files changed, 3 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/mm/frontswap.c b/mm/frontswap.c
+>> index c30eec5..f2a3571 100644
+>> --- a/mm/frontswap.c
+>> +++ b/mm/frontswap.c
+>> @@ -244,8 +244,10 @@ int __frontswap_store(struct page *page)
+>>                 the (older) page from frontswap
+>>                */
+>>               inc_frontswap_failed_stores();
+>> -             if (dup)
+>> +             if (dup) {
+>>                       __frontswap_clear(sis, offset);
+>> +                     frontswap_ops->invalidate_page(type, offset);
 >
->                 len = netlink_send(fd, incoming_cn_msg);
->                 if (len < 0) {
-> +                       int saved_errno = errno;
->                         syslog(LOG_ERR, "net_link send failed; error: %d %s", errno,
->                                         strerror(errno));
-> +
-> +                       if (saved_errno == ENOMEM || saved_errno ==  EAGAIN) {
+> Looking at __frontswap_invalidate_page(), should we do
+> inc_frontswap_invalidates() too?  If so, maybe we should just call
+> __frontswap_invalidate_page().
 
-Sorry for being pushy, but it seems ENOBUFS is also possible here (at
-least man sendmsg mentions it).
+The frontswap_invalidate_page() is for swap_entry_free, while here
+is an inner ops for dup-store, so I think there is no need for
+inc_frontswap_invalidates().
 
-> +                               syslog(LOG_ERR, "send error: ignored");
-> +                               continue;
-> +                       }
-> +
->                         exit(EXIT_FAILURE);
->                 }
->         }
->
 > Thanks,
-> -- Dexuan
-
--- 
-  Vitaly
+> Seth
+>
+>> +             }
+>>       }
+>>       if (frontswap_writethrough_enabled)
+>>               /* report failure so swap also writes to swap device */
+>> --
+>> 1.7.0.4
+>>
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
