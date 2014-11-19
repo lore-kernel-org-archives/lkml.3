@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875AbaKSKSH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 05:18:07 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:64278 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755848AbaKSKSE (ORCPT
+	id S1755667AbaKSKTC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 05:19:02 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:33789 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151AbaKSKS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 05:18:04 -0500
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: rjw@rjwysocki.net
-Cc: Lorenzo.Pieralisi@arm.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 3/3] drivers: cpuidle: Remove cpuidle-arm64 duplicate error messages
-Date: Wed, 19 Nov 2014 11:17:58 +0100
-Message-Id: <1416392278-18397-3-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416392278-18397-1-git-send-email-daniel.lezcano@linaro.org>
-References: <546C6DEB.8060204@linaro.org>
- <1416392278-18397-1-git-send-email-daniel.lezcano@linaro.org>
+	Wed, 19 Nov 2014 05:18:59 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ARM: at91/at91sam9g45: remove useless header file
+Date: Wed, 19 Nov 2014 11:18:58 +0100
+Message-ID: <1416392338-30665-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Remove this useless cpu.h header file forgotten during the !DT support removal.
 
-Current CPUidle driver for arm64 machines spits errors upon idle
-state initialization and cpuidle driver registration failures.
-These error messages are already printed in core code so there is
-no need to print them again.
-
-This patch removes the duplicate print messages from the cpuidle-arm64
-driver.
-
-Acked-by: Kevin Hilman <khilman@linaro.org>
-Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- drivers/cpuidle/cpuidle-arm64.c | 13 ++-----------
- 1 file changed, 2 insertions(+), 11 deletions(-)
+ arch/arm/mach-at91/at91sam9g45.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/cpuidle/cpuidle-arm64.c b/drivers/cpuidle/cpuidle-arm64.c
-index 50997ea..1b10f92e 100644
---- a/drivers/cpuidle/cpuidle-arm64.c
-+++ b/drivers/cpuidle/cpuidle-arm64.c
-@@ -104,11 +104,8 @@ static int __init arm64_idle_init(void)
- 	 * reason to initialize the idle driver if only wfi is supported.
- 	 */
- 	ret = dt_init_idle_driver(drv, arm64_idle_state_match, 1);
--	if (ret <= 0) {
--		if (ret)
--			pr_err("failed to initialize idle states\n");
-+	if (ret <= 0)
- 		return ret ? : -ENODEV;
--	}
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index 2ad0db4caa9b..3d225105e0d1 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -11,7 +11,6 @@
+  */
  
- 	/*
- 	 * Call arch CPU operations in order to initialize
-@@ -122,12 +119,6 @@ static int __init arm64_idle_init(void)
- 		}
- 	}
+ #include <asm/system_misc.h>
+-#include <mach/cpu.h>
+ #include <mach/hardware.h>
  
--	ret = cpuidle_register(drv, NULL);
--	if (ret) {
--		pr_err("failed to register cpuidle driver\n");
--		return ret;
--	}
--
--	return 0;
-+	return cpuidle_register(drv, NULL);
- }
- device_initcall(arm64_idle_init);
+ #include "soc.h"
 -- 
-1.9.1
+2.1.3
 
