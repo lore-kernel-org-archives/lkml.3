@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474AbaKSKJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 05:09:55 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:48527 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755325AbaKSKJw (ORCPT
+	id S1755557AbaKSKKD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 05:10:03 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54147 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265AbaKSKJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 05:09:52 -0500
-Date: Wed, 19 Nov 2014 11:09:46 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Kirill Tkhai <ktkhai@parallels.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>, linux-kernel@vger.kernel.org
-Subject: rcu warning caused by [sched: Fix race between task_group and
- sched_task_group]
-Message-ID: <20141119100946.GB4163@osiris>
+	Wed, 19 Nov 2014 05:09:58 -0500
+Date: Wed, 19 Nov 2014 11:09:54 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: Re: [PATCH 2/4] gpiolib: use const parameters when possible
+Message-ID: <20141119100954.GV27002@pengutronix.de>
+References: <1360738983-22436-1-git-send-email-gnurou@gmail.com>
+ <1360738983-22436-3-git-send-email-gnurou@gmail.com>
+ <20141117090915.GE27002@pengutronix.de>
+ <CAAVeFuKzP0ADix8TxC31ohb3ZmnEVmNcO5kgzhZ3DcwAhTq=-Q@mail.gmail.com>
+ <20141119084432.GT27002@pengutronix.de>
+ <CAAVeFuLtQoxt_D_TaRQc49Sh0FZTg=q4y5QorZ7OUK+qPE0CbQ@mail.gmail.com>
+ <20141119090222.GU27002@pengutronix.de>
+ <CAAVeFu+zc6tiM-SvwQ3mQmkMNdY+1+Ysi0F2eThyCjziKVwpOQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAVeFu+zc6tiM-SvwQ3mQmkMNdY+1+Ysi0F2eThyCjziKVwpOQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14111910-0041-0000-0000-0000022CC51C
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
+Hello Alexandre,
 
-the problem below has already been reported here:
-https://lkml.org/lkml/2014/11/11/505
+On Wed, Nov 19, 2014 at 06:07:50PM +0900, Alexandre Courbot wrote:
+>  On Wed, Nov 19, 2014 at 6:02 PM, Uwe Kleine-König
+> <u.kleine-koenig@pengutronix.de> wrote:
+> > I'd make gpiod_get_direction static and only use it to fill in
+> > /sys/kernel/debug/gpio.
+> 
+> That's very tempting. I see only atmel_serial.c using this function,
+> and there is no gpio_get_direction() declared anywhere so no user of
+> this either. I'm not sure what I was thinking when I decided to export
+> it?
+In next there is also drivers/tty/serial/mxs-auart.c.
+ 
+Best regards
+Uwe
 
-but seems there is still no fix available upstream?
-Would be good to have it soon, since this basically renders lockdep unusable.
 
-[    0.173906] ===============================
-[    0.173907] [ INFO: suspicious RCU usage. ]
-[    0.173909] 3.18.0-rc5 #15 Not tainted
-[    0.173909] -------------------------------
-[    0.173910] kernel/sched/core.c:7449 suspicious rcu_dereference_check() usage!
-[    0.173912] 
-               other info that might help us debug this:
-[    0.173913] 
-               rcu_scheduler_active = 1, debug_locks = 0
-[    0.173914] 2 locks held by swapper/0/0:
-[    0.173915]  #0:  (&p->pi_lock){......}, at: [<000000000017baae>] task_rq_lock+0x4e/0xf8
-[    0.173925]  #1:  (&rq->lock){......}, at: [<000000000017bad6>] task_rq_lock+0x76/0xf8
-[    0.173928] 
-[    0.173930] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.18.0-rc5 #15
-[    0.173931]        0000000000b9fb70 0000000000b9fb80 0000000000000002 0000000000000000 
-                      0000000000b9fc10 0000000000b9fb88 0000000000b9fb88 0000000000112638 
-                      0000000000000000 00000000009d5b8c 00000000009be240 000000000000000b 
-                      0000000000b9fbd0 0000000000b9fb70 0000000000000000 0000000000000000 
-                      0000000000000000 0000000000112638 0000000000b9fb70 0000000000b9fbd0 
-[    0.173944] Call Trace:
-[    0.173947] ([<000000000011251c>] show_trace+0xf4/0x158)
-[    0.173949]  [<00000000001125ea>] show_stack+0x6a/0xe8
-[    0.173952]  [<0000000000807ac2>] dump_stack+0x82/0xb0
-[    0.173955]  [<000000000018700a>] sched_move_task+0x20a/0x210
-[    0.173959]  [<0000000000203bf0>] cgroup_post_fork+0x60/0x148
-[    0.173963]  [<000000000014c5b8>] copy_process.part.46+0xfe8/0x1bc8
-[    0.173964]  [<000000000014d39c>] do_fork+0x104/0x7d8
-[    0.173965]  [<000000000014dab6>] kernel_thread+0x46/0x58
-[    0.173968]  [<00000000007fe890>] rest_init+0x38/0x170
-[    0.173971]  [<0000000000c45b40>] start_kernel+0x460/0x470
-[    0.173972]  [<0000000000100020>] _stext+0x20/0x80
-[    0.173973] INFO: lockdep is turned off.
-
-caused by (bisected):
-
-commit eeb61e53ea19be0c4015b00b2e8b3b2185436f2b
-Author: Kirill Tkhai <ktkhai@parallels.com>
-Date:   Mon Oct 27 14:18:25 2014 +0400
-
-    sched: Fix race between task_group and sched_task_group
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
