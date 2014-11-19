@@ -1,36 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603AbaKSWgk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:36:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55895 "EHLO
+	id S1757640AbaKSWhf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:37:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55888 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756836AbaKSUxz (ORCPT
+	with ESMTP id S1756832AbaKSUxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:53:55 -0500
+	Wed, 19 Nov 2014 15:53:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Minchan Kim <minchan@kernel.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, Gioh Kim <gioh.kim@lge.com>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
+        Weijie Yang <weijie.yang.kh@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 027/141] mm/page_alloc: fix incorrect isolation behavior by rechecking migratetype
-Date: Wed, 19 Nov 2014 12:50:50 -0800
-Message-Id: <20141119205151.539863132@linuxfoundation.org>
+Subject: [PATCH 3.17 026/141] zram: avoid kunmap_atomic() of a NULL pointer
+Date: Wed, 19 Nov 2014 12:50:49 -0800
+Message-Id: <20141119205151.510562775@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -45,218 +34,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+From: Weijie Yang <weijie.yang@samsung.com>
 
-commit ad53f92eb416d81e469fa8ea57153e59455e7175 upstream.
+commit c406515239376fc93a30d5d03192182160cbd3fb upstream.
 
-Before describing bugs itself, I first explain definition of freepage.
+zram could kunmap_atomic() a NULL pointer in a rare situation: a zram
+page becomes a full-zeroed page after a partial write io.  The current
+code doesn't handle this case and performs kunmap_atomic() on a NULL
+pointer, which panics the kernel.
 
- 1. pages on buddy list are counted as freepage.
- 2. pages on isolate migratetype buddy list are *not* counted as freepage.
- 3. pages on cma buddy list are counted as CMA freepage, too.
+This patch fixes this issue.
 
-Now, I describe problems and related patch.
-
-Patch 1: There is race conditions on getting pageblock migratetype that
-it results in misplacement of freepages on buddy list, incorrect
-freepage count and un-availability of freepage.
-
-Patch 2: Freepages on pcp list could have stale cached information to
-determine migratetype of buddy list to go.  This causes misplacement of
-freepages on buddy list and incorrect freepage count.
-
-Patch 4: Merging between freepages on different migratetype of
-pageblocks will cause freepages accouting problem.  This patch fixes it.
-
-Without patchset [3], above problem doesn't happens on my CMA allocation
-test, because CMA reserved pages aren't used at all.  So there is no
-chance for above race.
-
-With patchset [3], I did simple CMA allocation test and get below
-result:
-
- - Virtual machine, 4 cpus, 1024 MB memory, 256 MB CMA reservation
- - run kernel build (make -j16) on background
- - 30 times CMA allocation(8MB * 30 = 240MB) attempts in 5 sec interval
- - Result: more than 5000 freepage count are missed
-
-With patchset [3] and this patchset, I found that no freepage count are
-missed so that I conclude that problems are solved.
-
-On my simple memory offlining test, these problems also occur on that
-environment, too.
-
-This patch (of 4):
-
-There are two paths to reach core free function of buddy allocator,
-__free_one_page(), one is free_one_page()->__free_one_page() and the
-other is free_hot_cold_page()->free_pcppages_bulk()->__free_one_page().
-Each paths has race condition causing serious problems.  At first, this
-patch is focused on first type of freepath.  And then, following patch
-will solve the problem in second type of freepath.
-
-In the first type of freepath, we got migratetype of freeing page
-without holding the zone lock, so it could be racy.  There are two cases
-of this race.
-
- 1. pages are added to isolate buddy list after restoring orignal
-    migratetype
-
-    CPU1                                   CPU2
-
-    get migratetype => return MIGRATE_ISOLATE
-    call free_one_page() with MIGRATE_ISOLATE
-
-                                grab the zone lock
-                                unisolate pageblock
-                                release the zone lock
-
-    grab the zone lock
-    call __free_one_page() with MIGRATE_ISOLATE
-    freepage go into isolate buddy list,
-    although pageblock is already unisolated
-
-This may cause two problems.  One is that we can't use this page anymore
-until next isolation attempt of this pageblock, because freepage is on
-isolate buddy list.  The other is that freepage accouting could be wrong
-due to merging between different buddy list.  Freepages on isolate buddy
-list aren't counted as freepage, but ones on normal buddy list are
-counted as freepage.  If merge happens, buddy freepage on normal buddy
-list is inevitably moved to isolate buddy list without any consideration
-of freepage accouting so it could be incorrect.
-
- 2. pages are added to normal buddy list while pageblock is isolated.
-    It is similar with above case.
-
-This also may cause two problems.  One is that we can't keep these
-freepages from being allocated.  Although this pageblock is isolated,
-freepage would be added to normal buddy list so that it could be
-allocated without any restriction.  And the other problem is same as
-case 1, that it, incorrect freepage accouting.
-
-This race condition would be prevented by checking migratetype again
-with holding the zone lock.  Because it is somewhat heavy operation and
-it isn't needed in common case, we want to avoid rechecking as much as
-possible.  So this patch introduce new variable, nr_isolate_pageblock in
-struct zone to check if there is isolated pageblock.  With this, we can
-avoid to re-check migratetype in common case and do it only if there is
-isolated pageblock or migratetype is MIGRATE_ISOLATE.  This solve above
-mentioned problems.
-
-Changes from v3:
-Add one more check in free_one_page() that checks whether migratetype is
-MIGRATE_ISOLATE or not. Without this, abovementioned case 1 could happens.
-
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Laura Abbott <lauraa@codeaurora.org>
-Cc: Heesub Shin <heesub.shin@samsung.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Ritesh Harjani <ritesh.list@gmail.com>
-Cc: Gioh Kim <gioh.kim@lge.com>
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Dan Streetman <ddstreet@ieee.org>
+Cc: Nitin Gupta <ngupta@vflare.org>
+Cc: Weijie Yang <weijie.yang.kh@gmail.com>
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mmzone.h         |    9 +++++++++
- include/linux/page-isolation.h |    8 ++++++++
- mm/page_alloc.c                |   11 +++++++++--
- mm/page_isolation.c            |    2 ++
- 4 files changed, 28 insertions(+), 2 deletions(-)
+ drivers/block/zram/zram_drv.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -431,6 +431,15 @@ struct zone {
- 	 */
- 	int			nr_migrate_reserve_block;
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -476,7 +476,8 @@ static int zram_bvec_write(struct zram *
+ 	}
  
-+#ifdef CONFIG_MEMORY_ISOLATION
-+	/*
-+	 * Number of isolated pageblock. It is used to solve incorrect
-+	 * freepage counting problem due to racy retrieving migratetype
-+	 * of pageblock. Protected by zone->lock.
-+	 */
-+	unsigned long		nr_isolate_pageblock;
-+#endif
-+
- #ifdef CONFIG_MEMORY_HOTPLUG
- 	/* see spanned/present_pages for more description */
- 	seqlock_t		span_seqlock;
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -2,6 +2,10 @@
- #define __LINUX_PAGEISOLATION_H
- 
- #ifdef CONFIG_MEMORY_ISOLATION
-+static inline bool has_isolate_pageblock(struct zone *zone)
-+{
-+	return zone->nr_isolate_pageblock;
-+}
- static inline bool is_migrate_isolate_page(struct page *page)
- {
- 	return get_pageblock_migratetype(page) == MIGRATE_ISOLATE;
-@@ -11,6 +15,10 @@ static inline bool is_migrate_isolate(in
- 	return migratetype == MIGRATE_ISOLATE;
- }
- #else
-+static inline bool has_isolate_pageblock(struct zone *zone)
-+{
-+	return false;
-+}
- static inline bool is_migrate_isolate_page(struct page *page)
- {
- 	return false;
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -740,9 +740,16 @@ static void free_one_page(struct zone *z
- 	if (nr_scanned)
- 		__mod_zone_page_state(zone, NR_PAGES_SCANNED, -nr_scanned);
- 
-+	if (unlikely(has_isolate_pageblock(zone) ||
-+		is_migrate_isolate(migratetype))) {
-+		migratetype = get_pfnblock_migratetype(page, pfn);
-+		if (is_migrate_isolate(migratetype))
-+			goto skip_counting;
-+	}
-+	__mod_zone_freepage_state(zone, 1 << order, migratetype);
-+
-+skip_counting:
- 	__free_one_page(page, pfn, zone, order, migratetype);
--	if (unlikely(!is_migrate_isolate(migratetype)))
--		__mod_zone_freepage_state(zone, 1 << order, migratetype);
- 	spin_unlock(&zone->lock);
- }
- 
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -60,6 +60,7 @@ out:
- 		int migratetype = get_pageblock_migratetype(page);
- 
- 		set_pageblock_migratetype(page, MIGRATE_ISOLATE);
-+		zone->nr_isolate_pageblock++;
- 		nr_pages = move_freepages_block(zone, page, MIGRATE_ISOLATE);
- 
- 		__mod_zone_freepage_state(zone, -nr_pages, migratetype);
-@@ -83,6 +84,7 @@ void unset_migratetype_isolate(struct pa
- 	nr_pages = move_freepages_block(zone, page, migratetype);
- 	__mod_zone_freepage_state(zone, nr_pages, migratetype);
- 	set_pageblock_migratetype(page, migratetype);
-+	zone->nr_isolate_pageblock--;
- out:
- 	spin_unlock_irqrestore(&zone->lock, flags);
- }
+ 	if (page_zero_filled(uncmem)) {
+-		kunmap_atomic(user_mem);
++		if (user_mem)
++			kunmap_atomic(user_mem);
+ 		/* Free memory associated with this sector now. */
+ 		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+ 		zram_free_page(zram, index);
 
 
