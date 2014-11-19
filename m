@@ -1,111 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933127AbaKSVOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:14:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57219 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756826AbaKSVOQ (ORCPT
+	id S933185AbaKSVO3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:14:29 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:49245 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933107AbaKSVOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:16 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Shaohua Li <shli@fusionio.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 117/122] x86/mm: In the PTE swapout page reclaim case clear the accessed bit instead of flushing the TLB
-Date: Wed, 19 Nov 2014 12:52:47 -0800
-Message-Id: <20141119205212.727672767@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
-References: <20141119205208.812884198@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 19 Nov 2014 16:14:25 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAL1qeaFcdaxLYQu5y4pz-d29SdRA79TpkrRA9VjUYaMfnoSeVw@mail.gmail.com>
+References: <1416423073-8105-1-git-send-email-dianders@chromium.org>
+	<CAL1qeaGkQVimrFNtGgfTJEHNemG_QUTecQwH4=nXu1_u1rWwhg@mail.gmail.com>
+	<CAD=FV=UjvQ5Sgfv_-WzvZpOvofA=7Vpzh36LavCwqGV1-0_aHQ@mail.gmail.com>
+	<CAL1qeaFcdaxLYQu5y4pz-d29SdRA79TpkrRA9VjUYaMfnoSeVw@mail.gmail.com>
+Date: Wed, 19 Nov 2014 13:14:24 -0800
+X-Google-Sender-Auth: EU7VHkwTtnnFwVtL-593VneNEPE
+Message-ID: <CAD=FV=VrCRztQUb50b3JWyy6fuNvTfPZ5LKTte4O5ZDz5zdedg@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Turn the card clock off at suspend time
+From: Doug Anderson <dianders@chromium.org>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Sonny Rao <sonnyrao@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Chris Ball <chris@printf.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+Andrew,
 
-------------------
+On Wed, Nov 19, 2014 at 11:49 AM, Andrew Bresticker
+<abrestic@chromium.org> wrote:
+> Doug,
+>
+> On Wed, Nov 19, 2014 at 11:30 AM, Doug Anderson <dianders@chromium.org> wrote:
+>> Andrew,
+>>
+>> On Wed, Nov 19, 2014 at 11:03 AM, Andrew Bresticker
+>> <abrestic@chromium.org> wrote:
+>>> Doug,
+>>>
+>>> On Wed, Nov 19, 2014 at 10:51 AM, Doug Anderson <dianders@chromium.org> wrote:
+>>>> Since the dw_mmc driver was first added to Linux it's had a TODO in it
+>>>> that we should turn off the card clock during suspend.  I have no idea
+>>>> for sure why it wasn't done originally, but if I had to guess I'd
+>>>> guess it was related to the lack of a common clock framework.  Let's
+>>>> do it now.
+>>>>
+>>>> There is no reason for the card clock to be left on during suspend and
+>>>> most systems will eventually turn it off anyway (when whole clock
+>>>> trees are disabled).  However, it's good to be explicit that it's
+>>>> disabled at the time that the MMC subsystem is disabled.
+>>>
+>>> Should the bus clock (biu) be disabled as well?
+>>
+>> Good question.  I'm slightly hesitant to turn biu_clk off in this
+>> patch, though.  Specifically interrupts are still enabled at this
+>> point in suspend.  I  guess most interrupts shouldn't be going off
+>> right now (nobody is accessing storage, right?), but I could imagine
+>> that a card detect or an SDIO interrupt at just the wrong time could
+>> cause our ISR to go off _after_ this function is called.  The
+>> interrupt handling function doesn't know to turn the BIU clock back on
+>> so you'd get a hang.
+>
+> Perhaps interrupts should be disabled as well across suspend/resume,
+> like the sdhci-based hosts do?
 
-From: Shaohua Li <shli@kernel.org>
+Well, interrupts _are_ disabled across suspend/resume.  ...just not at
+the point this function runs.  You're right thought that I could do my
+work in the "no_irq" variant of the function.
 
-commit b13b1d2d8692b437203de7a404c6b809d2cc4d99 upstream.
+> Would would happen if we tried to
+> service an interrupt with the ciu clock disabled?
 
-We use the accessed bit to age a page at page reclaim time,
-and currently we also flush the TLB when doing so.
+Hrm, good question.  I was thinking that all would be OK because the
+interrupt would kick off something to the MMC layer which would then
+realize that the system was suspended, but I that's actually not the
+case.
 
-But in some workloads TLB flush overhead is very heavy. In my
-simple multithreaded app with a lot of swap to several pcie
-SSDs, removing the tlb flush gives about 20% ~ 30% swapout
-speedup.
-
-Fortunately just removing the TLB flush is a valid optimization:
-on x86 CPUs, clearing the accessed bit without a TLB flush
-doesn't cause data corruption.
-
-It could cause incorrect page aging and the (mistaken) reclaim of
-hot pages, but the chance of that should be relatively low.
-
-So as a performance optimization don't flush the TLB when
-clearing the accessed bit, it will eventually be flushed by
-a context switch or a VM operation anyway. [ In the rare
-event of it not getting flushed for a long time the delay
-shouldn't really matter because there's no real memory
-pressure for swapout to react to. ]
-
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Shaohua Li <shli@fusionio.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Hugh Dickins <hughd@google.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20140408075809.GA1764@kernel.org
-[ Rewrote the changelog and the code comments. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/mm/pgtable.c |   21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
-
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -399,13 +399,20 @@ int pmdp_test_and_clear_young(struct vm_
- int ptep_clear_flush_young(struct vm_area_struct *vma,
- 			   unsigned long address, pte_t *ptep)
- {
--	int young;
--
--	young = ptep_test_and_clear_young(vma, address, ptep);
--	if (young)
--		flush_tlb_page(vma, address);
--
--	return young;
-+	/*
-+	 * On x86 CPUs, clearing the accessed bit without a TLB flush
-+	 * doesn't cause data corruption. [ It could cause incorrect
-+	 * page aging and the (mistaken) reclaim of hot pages, but the
-+	 * chance of that should be relatively low. ]
-+	 *
-+	 * So as a performance optimization don't flush the TLB when
-+	 * clearing the accessed bit, it will eventually be flushed by
-+	 * a context switch or a VM operation anyway. [ In the rare
-+	 * event of it not getting flushed for a long time the delay
-+	 * shouldn't really matter because there's no real memory
-+	 * pressure for swapout to react to. ]
-+	 */
-+	return ptep_test_and_clear_young(vma, address, ptep);
- }
- 
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+It turns out that the root cause of my problem was actually SDIO
+interrupts coming after suspend and causing problems.  It looks like
+this might not be a problem in mainline Linux but it was a problem in
+my old 3.14-based tree.  Once I fixed that I no longer need this
+patch.  Sorry for the noise.  :(  I've been trying to be in the habit
+of sending stuff upstream immediately (so I don't forget about stuff),
+but a bad side effect of that is some extra noise...  Sigh.
 
 
+Anyway, I guess I'd say that we should consider this patch abandoned,
+though if someone would like me to submit something that turns off
+"ciu" and "biu" clock in the "noirq" suspend I'm happy to do it.  I
+don't have any strong need now though it would get rid of the TODO
+sitting in the code.  ...or we could just remove the TODO.
+
+
+-Doug
