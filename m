@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964785AbaKSWCI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:02:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
+	id S934049AbaKSWCM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:02:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933427AbaKSVES (ORCPT
+	with ESMTP id S933422AbaKSVES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:04:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 004/122] sit: Use ipip6_tunnel_init as the ndo_init function.
-Date: Wed, 19 Nov 2014 12:50:54 -0800
-Message-Id: <20141119205208.983453248@linuxfoundation.org>
+        Jouni Malinen <j@w1.fi>, Luciano Coelho <luciano.coelho@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.14 035/122] mac80211: use secondary channel offset IE also beacons during CSA
+Date: Wed, 19 Nov 2014 12:51:25 -0800
+Message-Id: <20141119205209.936500251@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,75 +29,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Luciano Coelho <luciano.coelho@intel.com>
 
-[ Upstream commit ebe084aafb7e93adf210e80043c9f69adf56820d ]
+commit 84469a45a1bedec9918e94ab2f78c5dc0739e4a7 upstream.
 
-ipip6_tunnel_init() sets the dev->iflink via a call to
-ipip6_tunnel_bind_dev(). After that, register_netdevice()
-sets dev->iflink = -1. So we loose the iflink configuration
-for ipv6 tunnels. Fix this by using ipip6_tunnel_init() as the
-ndo_init function. Then ipip6_tunnel_init() is called after
-dev->iflink is set to -1 from register_netdevice().
+If we are switching from an HT40+ to an HT40- channel (or vice-versa),
+we need the secondary channel offset IE to specify what is the
+post-CSA offset to be used.  This applies both to beacons and to probe
+responses.
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+In ieee80211_parse_ch_switch_ie() we were ignoring this IE from
+beacons and using the *current* HT information IE instead.  This was
+causing us to use the same offset as before the switch.
+
+Fix that by using the secondary channel offset IE also for beacons and
+don't ever use the pre-switch offset.  Additionally, remove the
+"beacon" argument from ieee80211_parse_ch_switch_ie(), since it's not
+needed anymore.
+
+Reported-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Luciano Coelho <luciano.coelho@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/sit.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
 
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -195,10 +195,8 @@ static int ipip6_tunnel_create(struct ne
- 	struct sit_net *sitn = net_generic(net, sit_net_id);
- 	int err;
+---
+ net/mac80211/ibss.c        |    2 +-
+ net/mac80211/ieee80211_i.h |    3 +--
+ net/mac80211/mesh.c        |    2 +-
+ net/mac80211/mlme.c        |    2 +-
+ net/mac80211/spectmgmt.c   |   18 ++++++------------
+ 5 files changed, 10 insertions(+), 17 deletions(-)
+
+--- a/net/mac80211/ibss.c
++++ b/net/mac80211/ibss.c
+@@ -815,7 +815,7 @@ ieee80211_ibss_process_chanswitch(struct
  
--	err = ipip6_tunnel_init(dev);
--	if (err < 0)
--		goto out;
--	ipip6_tunnel_clone_6rd(dev, sitn);
-+	memcpy(dev->dev_addr, &t->parms.iph.saddr, 4);
-+	memcpy(dev->broadcast, &t->parms.iph.daddr, 4);
+ 	memset(&params, 0, sizeof(params));
+ 	memset(&csa_ie, 0, sizeof(csa_ie));
+-	err = ieee80211_parse_ch_switch_ie(sdata, elems, beacon,
++	err = ieee80211_parse_ch_switch_ie(sdata, elems,
+ 					   ifibss->chandef.chan->band,
+ 					   sta_flags, ifibss->bssid, &csa_ie);
+ 	/* can't switch to destination channel, fail */
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -1569,7 +1569,6 @@ void ieee80211_process_measurement_req(s
+  * ieee80211_parse_ch_switch_ie - parses channel switch IEs
+  * @sdata: the sdata of the interface which has received the frame
+  * @elems: parsed 802.11 elements received with the frame
+- * @beacon: indicates if the frame was a beacon or probe response
+  * @current_band: indicates the current band
+  * @sta_flags: contains information about own capabilities and restrictions
+  *	to decide which channel switch announcements can be accepted. Only the
+@@ -1583,7 +1582,7 @@ void ieee80211_process_measurement_req(s
+  * Return: 0 on success, <0 on error and >0 if there is nothing to parse.
+  */
+ int ieee80211_parse_ch_switch_ie(struct ieee80211_sub_if_data *sdata,
+-				 struct ieee802_11_elems *elems, bool beacon,
++				 struct ieee802_11_elems *elems,
+ 				 enum ieee80211_band current_band,
+ 				 u32 sta_flags, u8 *bssid,
+ 				 struct ieee80211_csa_ie *csa_ie);
+--- a/net/mac80211/mesh.c
++++ b/net/mac80211/mesh.c
+@@ -885,7 +885,7 @@ ieee80211_mesh_process_chnswitch(struct
  
- 	if ((__force u16)t->parms.i_flags & SIT_ISATAP)
- 		dev->priv_flags |= IFF_ISATAP;
-@@ -207,7 +205,8 @@ static int ipip6_tunnel_create(struct ne
+ 	memset(&params, 0, sizeof(params));
+ 	memset(&csa_ie, 0, sizeof(csa_ie));
+-	err = ieee80211_parse_ch_switch_ie(sdata, elems, beacon, band,
++	err = ieee80211_parse_ch_switch_ie(sdata, elems, band,
+ 					   sta_flags, sdata->vif.addr,
+ 					   &csa_ie);
  	if (err < 0)
- 		goto out;
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -1001,7 +1001,7 @@ ieee80211_sta_process_chanswitch(struct
  
--	strcpy(t->parms.name, dev->name);
-+	ipip6_tunnel_clone_6rd(dev, sitn);
-+
- 	dev->rtnl_link_ops = &sit_link_ops;
+ 	current_band = cbss->channel->band;
+ 	memset(&csa_ie, 0, sizeof(csa_ie));
+-	res = ieee80211_parse_ch_switch_ie(sdata, elems, beacon, current_band,
++	res = ieee80211_parse_ch_switch_ie(sdata, elems, current_band,
+ 					   ifmgd->flags,
+ 					   ifmgd->associated->bssid, &csa_ie);
+ 	if (res	< 0)
+--- a/net/mac80211/spectmgmt.c
++++ b/net/mac80211/spectmgmt.c
+@@ -22,7 +22,7 @@
+ #include "wme.h"
  
- 	dev_hold(dev);
-@@ -1321,6 +1320,7 @@ static int ipip6_tunnel_change_mtu(struc
- }
+ int ieee80211_parse_ch_switch_ie(struct ieee80211_sub_if_data *sdata,
+-				 struct ieee802_11_elems *elems, bool beacon,
++				 struct ieee802_11_elems *elems,
+ 				 enum ieee80211_band current_band,
+ 				 u32 sta_flags, u8 *bssid,
+ 				 struct ieee80211_csa_ie *csa_ie)
+@@ -91,19 +91,13 @@ int ieee80211_parse_ch_switch_ie(struct
+ 		return -EINVAL;
+ 	}
  
- static const struct net_device_ops ipip6_netdev_ops = {
-+	.ndo_init	= ipip6_tunnel_init,
- 	.ndo_uninit	= ipip6_tunnel_uninit,
- 	.ndo_start_xmit	= sit_tunnel_xmit,
- 	.ndo_do_ioctl	= ipip6_tunnel_ioctl,
-@@ -1367,9 +1367,7 @@ static int ipip6_tunnel_init(struct net_
+-	if (!beacon && sec_chan_offs) {
++	if (sec_chan_offs) {
+ 		secondary_channel_offset = sec_chan_offs->sec_chan_offs;
+-	} else if (beacon && ht_oper) {
+-		secondary_channel_offset =
+-			ht_oper->ht_param & IEEE80211_HT_PARAM_CHA_SEC_OFFSET;
+ 	} else if (!(sta_flags & IEEE80211_STA_DISABLE_HT)) {
+-		/* If it's not a beacon, HT is enabled and the IE not present,
+-		 * it's 20 MHz, 802.11-2012 8.5.2.6:
+-		 *	This element [the Secondary Channel Offset Element] is
+-		 *	present when switching to a 40 MHz channel. It may be
+-		 *	present when switching to a 20 MHz channel (in which
+-		 *	case the secondary channel offset is set to SCN).
+-		 */
++		/* If the secondary channel offset IE is not present,
++		 * we can't know what's the post-CSA offset, so the
++		 * best we can do is use 20MHz.
++		*/
+ 		secondary_channel_offset = IEEE80211_HT_PARAM_CHA_SEC_NONE;
+ 	}
  
- 	tunnel->dev = dev;
- 	tunnel->net = dev_net(dev);
--
--	memcpy(dev->dev_addr, &tunnel->parms.iph.saddr, 4);
--	memcpy(dev->broadcast, &tunnel->parms.iph.daddr, 4);
-+	strcpy(tunnel->parms.name, dev->name);
- 
- 	ipip6_tunnel_bind_dev(dev);
- 	dev->tstats = alloc_percpu(struct pcpu_sw_netstats);
-@@ -1401,7 +1399,6 @@ static int __net_init ipip6_fb_tunnel_in
- 
- 	tunnel->dev = dev;
- 	tunnel->net = dev_net(dev);
--	strcpy(tunnel->parms.name, dev->name);
- 
- 	iph->version		= 4;
- 	iph->protocol		= IPPROTO_IPV6;
 
 
