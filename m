@@ -1,126 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756496AbaKSSAU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 13:00:20 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:41297 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756336AbaKSSAS convert rfc822-to-8bit (ORCPT
+	id S1756518AbaKSSBU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 13:01:20 -0500
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:35963 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756319AbaKSSBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 13:00:18 -0500
+	Wed, 19 Nov 2014 13:01:17 -0500
+Message-ID: <546CDADD.3080003@iki.fi>
+Date: Wed, 19 Nov 2014 20:01:01 +0200
+From: Sakari Ailus <sakari.ailus@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:33.0) Gecko/20100101 SeaMonkey/2.30
 MIME-Version: 1.0
-In-Reply-To: <CAN+gG=FaovQETa3+qQsLoBBQnbZ8Q2uoQJD6_XvAmCCvGTHT1g@mail.gmail.com>
-References: <20141114222640.GA39748@dtor-ws>
-	<CAN+gG=FaovQETa3+qQsLoBBQnbZ8Q2uoQJD6_XvAmCCvGTHT1g@mail.gmail.com>
-Date: Wed, 19 Nov 2014 19:00:16 +0100
-Message-ID: <CAJBHPojp7JVG6KKgrNfbC-V5ibPs-j6+BnqrSDkxvak0vNGM8w@mail.gmail.com>
-Subject: Re: [git pull] Input updates for 3.18-rc4
-From: Marcus Overhagen <marcus.overhagen@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Ulrik De Bie <ulrik.debie-os@e2big.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-input <linux-input@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
+To: Pavel Machek <pavel@ucw.cz>, Tony Lindgren <tony@atomide.com>
+CC: =?UTF-8?Q?Pali_Roh=c3=a1r?= <pali.rohar@gmail.com>, sre@debian.org,
+        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, khilman@kernel.org, aaro.koskinen@iki.fi,
+        freemangordon@abv.bg, bcousson@baylibre.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: [RFC] adp1653: Add device tree bindings for LED controller
+References: <20141116075928.GA9763@amd> <20141117101553.GA21151@amd> <20141117145545.GC7046@atomide.com> <201411171601.32311@pali> <20141117150617.GD7046@atomide.com> <20141118183545.GA16999@amd>
+In-Reply-To: <20141118183545.GA16999@amd>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not sure if my problems are related, but anyway:
+Hi Pavel,
 
-I'm using a Samsung NP730U3E notebook that also has an elantech touchpad.
+Pavel Machek wrote:
+> On Mon 2014-11-17 07:06:17, Tony Lindgren wrote:
+>> * Pali Rohár <pali.rohar@gmail.com> [141117 07:03]:
+>>> On Monday 17 November 2014 15:55:46 Tony Lindgren wrote:
+>>>>
+>>>> There's nothing stopping us from initializing the camera code
+>>>> from pdata-quirks.c for now to keep it working. Certainly the
+>>>> binding should be added to the driver, but that removes a
+>>>> dependency to the legacy booting mode if things are otherwise
+>>>> working.
+>>>
+>>> Tony, legacy board code for n900 is not in mainline tree. And 
+>>> that omap3 camera subsystem for n900 is broken since 3.5 
+>>> kernel... (both Front and Back camera on n900 show only green 
+>>> picture).
+>>
+>> I'm still seeing the legacy board code for n900 in mainline tree :)
+>> It's deprecated, but still there.
+>>
+>> Are you maybe talking about some other piece of platform_data that's
+>> no longer in the mainline kernel?
+>>
+>> No idea what might be wrong with the camera though.
+> 
+> Camera support for main and secondary cameras was never mainline, AFAICT.
+> 
+> Merging it will not be easy, as it lacks DT support... and was broken
+> for long time.
 
-With 3.18.0-rc3 two finger scrolling in Firefox is smoth, but with
-3.18.0-rc5 I have to press a
-lot harder and usually scrolling only startes after stopping the
-movement shortly and retrying once
+I have a smiapp patchset for DT support that I posted a while ago, here:
 
-I skipped rc4.
+<URL:http://www.spinics.net/lists/linux-media/msg83285.html>
 
-from RC3 dmesg:
-[   20.507633] psmouse serio1: elantech: assuming hardware version 4
-(with firmware version 0x675f04)
-[   20.520740] psmouse serio1: elantech: Synaptics capabilities query
-result 0x10, 0x15, 0x0e.
+What's missing on top of that is the omap3isp support, plus something to
+toggle the sysctl registers based on the chosen receiver. I have a
+preliminary, not RFC yet but functional set here:
 
-regards
-Marcus
+<URL:http://vihersipuli.retiisi.org.uk/cgi-bin/gitweb.cgi?p=~sailus/linux.git;a=shortlog;h=refs/heads/rm696-045-dt>
 
+The main camera support requires et8ek8 driver as well, and resolving
+the breakage with the image capture on 3430.
 
+N9/N950 will be first, though. Lens controllers are another matter, but
+nothing too difficult on that side either.
 
-On Wed, Nov 19, 2014 at 4:32 PM, Benjamin Tissoires
-<benjamin.tissoires@gmail.com> wrote:
-> Hi Ulrik,
->
->
-> On Fri, Nov 14, 2014 at 5:26 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
->> Hi Linus,
->>
->> Please pull from:
->>
->>         git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
->> or
->>         master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
->>
->> to receive updates for the input subsystem. Mostly small fixups to PS/2
->> tochpad drivers (ALPS, Elantech, Synaptics) to better deal with specific
->> hardware.
->>
->> Changelog:
->> ---------
->>
->> NeilBrown (1):
->>       Input: twl4030-pwrbutton - ensure a wakeup event is recorded.
->>
->> Pali Rohár (3):
->>       Input: alps - ignore potential bare packets when device is out of sync
->>       Input: alps - allow up to 2 invalid packets without resetting device
->>       Input: alps - ignore bad data on Dell Latitudes E6440 and E7440
->>
->> Takashi Iwai (1):
->>       Input: synaptics - add min/max quirk for Lenovo T440s
->>
->> Ulrik De Bie (5):
->>       Input: elantech - use elantech_report_trackpoint for hardware v4 too
->>       Input: elantech - fix crc_enabled for Fujitsu H730
->>       Input: elantech - report the middle button of the touchpad
->>       Input: elantech - provide a sysfs knob for crc_enabled
->>       Input: elantech - update the documentation
->
-> It looks like this elantech changes raise some warnings on a Samsung
-> laptop. Can you have a look please?
-> https://bugzilla.redhat.com/show_bug.cgi?id=1165390
->
-> Hans and myself are in CC of the bug report, we can ask further
-> details to the reporter if requested.
->
-> Cheers,
-> Benjamin
->
->>
->>
->> Diffstat:
->> --------
->>
->>  Documentation/input/elantech.txt       | 81 +++++++++++++++++++++++++++++++---
->>  drivers/input/misc/twl4030-pwrbutton.c |  1 +
->>  drivers/input/mouse/alps.c             | 28 +++++++++++-
->>  drivers/input/mouse/elantech.c         | 56 +++++++++++++++++++++--
->>  drivers/input/mouse/synaptics.c        |  5 ++-
->>  5 files changed, 158 insertions(+), 13 deletions(-)
->>
->> --
->> Dmitry
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-input" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Anyway, flash is kind of important for me, since it makes phone useful
+> as backup light; and it is simple piece of hw, so I intend to keep it
+> useful.
+
+Me, too. :-)
+
+-- 
+Kind regards,
+
+Sakari Ailus
+sakari.ailus@iki.fi
