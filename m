@@ -1,121 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002AbaKSPne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:43:34 -0500
-Received: from mail.kapsi.fi ([217.30.184.167]:40027 "EHLO mail.kapsi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755541AbaKSPnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:43:31 -0500
-Message-ID: <546CBA98.1040607@kapsi.fi>
-Date: Wed, 19 Nov 2014 17:43:20 +0200
-From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Eduardo Valentin <edubezval@gmail.com>,
-        Linux PM <linux-pm@vger.kernel.org>
-CC: Caesar Wang <caesar.wang@rock-chips.com>, Wei Ni <wni@nvidia.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Rob Herring <robh+dt@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCHv4 1/1] thermal: of: improve of-thermal sensor registration
- API
-References: <1416321575-18348-1-git-send-email-edubezval@gmail.com> <1416321575-18348-2-git-send-email-edubezval@gmail.com> <546CBA3C.9020709@kapsi.fi>
-In-Reply-To: <546CBA3C.9020709@kapsi.fi>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
-X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+	id S1755849AbaKSPpv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:45:51 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:43999 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754153AbaKSPpt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 10:45:49 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH] MAINTAINERS: Remove Sam from MFD Maintainers list
+Date: Wed, 19 Nov 2014 15:45:35 +0000
+Message-Id: <1416411935-2102-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2014 05:41 PM, Mikko Perttunen wrote:
-> On 11/18/2014 04:39 PM, Eduardo Valentin wrote:
->> Different drivers request API extensions in of-thermal. For this reason,
->> additional callbacks are required to fit the new drivers needs.
->>
->> The current API implementation expects the registering sensor driver
->> to provide a get_temp and get_trend callbacks as function parameters.
->> As the amount of callbacks is growing, this patch changes the existing
->> implementation to use a .ops field to hold all the of thermal callbacks
->> to sensor drivers.
->>
->> This patch also changes the existing of-thermal users to fit the new
->> API design. No functional change is introduced in this patch.
->>
->> Cc: Alexandre Courbot <gnurou@gmail.com>
->> Cc: devicetree@vger.kernel.org
->> Cc: Grant Likely <grant.likely@linaro.org>
->> Cc: Guenter Roeck <linux@roeck-us.net>
->> Cc: Jean Delvare <jdelvare@suse.de>
->> Cc: linux-kernel@vger.kernel.org
->> Cc: linux-pm@vger.kernel.org
->> Cc: linux-tegra@vger.kernel.org
->> Cc: lm-sensors@lm-sensors.org
->> Cc: Rob Herring <robh+dt@kernel.org>
->> Cc: Stephen Warren <swarren@wwwdotorg.org>
->> Cc: Thierry Reding <thierry.reding@gmail.com>
->> Cc: Zhang Rui <rui.zhang@intel.com>
->> Reviewed-by: Lukasz Majewski <l.majewski@samsung.com>
->> Signed-off-by: Eduardo Valentin <edubezval@gmail.com>
->> ---
->>   drivers/hwmon/lm75.c                               |  9 +++--
->>   drivers/hwmon/ntc_thermistor.c                     |  6 +++-
->>   drivers/hwmon/tmp102.c                             |  6 +++-
->>   drivers/thermal/of-thermal.c                       | 40
->> ++++++++++------------
->>   drivers/thermal/tegra_soctherm.c                   |  7 ++--
->>   drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  8 +++--
->>   include/linux/thermal.h                            | 24 +++++++++----
->>   7 files changed, 63 insertions(+), 37 deletions(-)
->> ---
->> Difference from V3:
->>    - Keep the same behavior regarding callback checks.
->>      Change in behavior may be sent in a separate patch.
->> Difference from V2:
->>    - Fix wrong assignment in tegra driver.
->> Difference from V1:
->>    - Fix error handling when .get_trend is not provided.
->>
->> @@ -356,8 +356,8 @@ thermal_zone_of_add_sensor(struct device_node *zone,
->>    *             than one sensors
->>    * @data: a private pointer (owned by the caller) that will be passed
->>    *        back, when a temperature reading is needed.
->> - * @get_temp: a pointer to a function that reads the sensor temperature.
->> - * @get_trend: a pointer to a function that reads the sensor
->> temperature trend.
->> + * @ops: struct thermal_zone_of_device *. Must contain at least
->> .get_trend and
->> + *       .get_temp.
->
-> This comment seems to be incorrect, as .get_trend is optional.
+Sam hasn't been active in MFD for around a year now.  If he'd like
+to come and play again I'll be only too pleased to have him aboard.
+Until then we can save submitters that little bit of work and
+simultaneously stop spamming Sam with emails he likely doesn't care
+about.
 
-Also, the parameter is of type struct thermal_zone_of_device_ops *, not 
-just thermal_zone_of_device.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ MAINTAINERS | 1 -
+ 1 file changed, 1 deletion(-)
 
->
->>    *
->>    * This function will search the list of thermal zones described in
->> device
->>    * tree and look for the zone that refer to the sensor device
->> pointed by
->
-> With that minor one fixed,
->
-> Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-> Reviewed-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
->
-> Cheers,
-> Mikko
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/MAINTAINERS b/MAINTAINERS
+index f10ed39..277b667 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6080,7 +6080,6 @@ F:	drivers/media/i2c/mt9v032.c
+ F:	include/media/mt9v032.h
+ 
+ MULTIFUNCTION DEVICES (MFD)
+-M:	Samuel Ortiz <sameo@linux.intel.com>
+ M:	Lee Jones <lee.jones@linaro.org>
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git
+ S:	Supported
+-- 
+1.9.1
 
