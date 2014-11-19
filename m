@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757495AbaKSWbv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:31:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55895 "EHLO
+	id S1757532AbaKSWbw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:31:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756694AbaKSUx6 (ORCPT
+	with ESMTP id S1756877AbaKSUx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:53:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Cristian Stoica <cristian.stoica@freescale.com>
-Subject: [PATCH 3.17 034/141] crypto: caam - remove duplicated sg copy functions
-Date: Wed, 19 Nov 2014 12:50:57 -0800
-Message-Id: <20141119205151.763427188@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.17 035/141] mfd: twl4030-power: Fix poweroff with PM configuration enabled
+Date: Wed, 19 Nov 2014 12:50:58 -0800
+Message-Id: <20141119205151.804349493@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,184 +29,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cristian Stoica <cristian.stoica@freescale.com>
+From: Tony Lindgren <tony@atomide.com>
 
-commit 307fd543f3d23f8f56850eca1b27b1be2fe71017 upstream.
+commit 481c7f868c6d855f31a29c69b445ac4aee9625a6 upstream.
 
-Replace equivalent (and partially incorrect) scatter-gather functions
-with ones from crypto-API.
+Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
+configuration") enabled configuring the PM features for twl4030.
 
-The replacement is motivated by page-faults in sg_copy_part triggered
-by successive calls to crypto_hash_update. The following fault appears
-after calling crypto_ahash_update twice, first with 13 and then
-with 285 bytes:
+This caused poweroff command to fail on devices that have the
+BCI charger on twl4030 wired, or have power wired for VBUS.
+Instead of powering off, the device reboots. This is because
+voltage is detected on charger or VBUS with the default bits
+enabled for the power transition registers.
 
-Unable to handle kernel paging request for data at address 0x00000008
-Faulting instruction address: 0xf9bf9a8c
-Oops: Kernel access of bad area, sig: 11 [#1]
-SMP NR_CPUS=8 CoreNet Generic
-Modules linked in: tcrypt(+) caamhash caam_jr caam tls
-CPU: 6 PID: 1497 Comm: cryptomgr_test Not tainted
-3.12.19-rt30-QorIQ-SDK-V1.6+g9fda9f2 #75
-task: e9308530 ti: e700e000 task.ti: e700e000
-NIP: f9bf9a8c LR: f9bfcf28 CTR: c0019ea0
-REGS: e700fb80 TRAP: 0300   Not tainted
-(3.12.19-rt30-QorIQ-SDK-V1.6+g9fda9f2)
-MSR: 00029002 <CE,EE,ME>  CR: 44f92024  XER: 20000000
-DEAR: 00000008, ESR: 00000000
+To fix the issue, let's just clear VBUS and CHG bits as we want
+poweroff command to keep the system powered off.
 
-GPR00: f9bfcf28 e700fc30 e9308530 e70b1e55 00000000 ffffffdd e70b1e54 0bebf888
-GPR08: 902c7ef5 c0e771e2 00000002 00000888 c0019ea0 00000000 00000000 c07a4154
-GPR16: c08d0000 e91a8f9c 00000001 e98fb400 00000100 e9c83028 e70b1e08 e70b1d48
-GPR24: e992ce10 e70b1dc8 f9bfe4f4 e70b1e55 ffffffdd e70b1ce0 00000000 00000000
-NIP [f9bf9a8c] sg_copy+0x1c/0x100 [caamhash]
-LR [f9bfcf28] ahash_update_no_ctx+0x628/0x660 [caamhash]
-Call Trace:
-[e700fc30] [f9bf9c50] sg_copy_part+0xe0/0x160 [caamhash] (unreliable)
-[e700fc50] [f9bfcf28] ahash_update_no_ctx+0x628/0x660 [caamhash]
-[e700fcb0] [f954e19c] crypto_tls_genicv+0x13c/0x300 [tls]
-[e700fd10] [f954e65c] crypto_tls_encrypt+0x5c/0x260 [tls]
-[e700fd40] [c02250ec] __test_aead.constprop.9+0x2bc/0xb70
-[e700fe40] [c02259f0] alg_test_aead+0x50/0xc0
-[e700fe60] [c02241e4] alg_test+0x114/0x2e0
-[e700fee0] [c022276c] cryptomgr_test+0x4c/0x60
-[e700fef0] [c004f658] kthread+0x98/0xa0
-[e700ff40] [c000fd04] ret_from_kernel_thread+0x5c/0x64
-
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Cristian Stoica <cristian.stoica@freescale.com>
+Fixes: e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset configuration")
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/crypto/caam/caamhash.c   |   22 ++++++++++-----
- drivers/crypto/caam/sg_sw_sec4.h |   54 ---------------------------------------
- 2 files changed, 14 insertions(+), 62 deletions(-)
+ drivers/mfd/twl4030-power.c |   52 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 52 insertions(+)
 
---- a/drivers/crypto/caam/caamhash.c
-+++ b/drivers/crypto/caam/caamhash.c
-@@ -836,8 +836,9 @@ static int ahash_update_ctx(struct ahash
- 					   edesc->sec4_sg + sec4_sg_src_index,
- 					   chained);
- 			if (*next_buflen) {
--				sg_copy_part(next_buf, req->src, to_hash -
--					     *buflen, req->nbytes);
-+				scatterwalk_map_and_copy(next_buf, req->src,
-+							 to_hash - *buflen,
-+							 *next_buflen, 0);
- 				state->current_buf = !state->current_buf;
- 			}
- 		} else {
-@@ -878,7 +879,8 @@ static int ahash_update_ctx(struct ahash
- 			kfree(edesc);
- 		}
- 	} else if (*next_buflen) {
--		sg_copy(buf + *buflen, req->src, req->nbytes);
-+		scatterwalk_map_and_copy(buf + *buflen, req->src, 0,
-+					 req->nbytes, 0);
- 		*buflen = *next_buflen;
- 		*next_buflen = last_buflen;
- 	}
-@@ -1262,8 +1264,9 @@ static int ahash_update_no_ctx(struct ah
- 		src_map_to_sec4_sg(jrdev, req->src, src_nents,
- 				   edesc->sec4_sg + 1, chained);
- 		if (*next_buflen) {
--			sg_copy_part(next_buf, req->src, to_hash - *buflen,
--				    req->nbytes);
-+			scatterwalk_map_and_copy(next_buf, req->src,
-+						 to_hash - *buflen,
-+						 *next_buflen, 0);
- 			state->current_buf = !state->current_buf;
- 		}
+--- a/drivers/mfd/twl4030-power.c
++++ b/drivers/mfd/twl4030-power.c
+@@ -44,6 +44,15 @@ static u8 twl4030_start_script_address =
+ #define PWR_DEVSLP		BIT(1)
+ #define PWR_DEVOFF		BIT(0)
  
-@@ -1304,7 +1307,8 @@ static int ahash_update_no_ctx(struct ah
- 			kfree(edesc);
- 		}
- 	} else if (*next_buflen) {
--		sg_copy(buf + *buflen, req->src, req->nbytes);
-+		scatterwalk_map_and_copy(buf + *buflen, req->src, 0,
-+					 req->nbytes, 0);
- 		*buflen = *next_buflen;
- 		*next_buflen = 0;
- 	}
-@@ -1476,7 +1480,8 @@ static int ahash_update_first(struct aha
- 		}
++/* Register bits for CFG_P1_TRANSITION (also for P2 and P3) */
++#define STARTON_SWBUG		BIT(7)	/* Start on watchdog */
++#define STARTON_VBUS		BIT(5)	/* Start on VBUS */
++#define STARTON_VBAT		BIT(4)	/* Start on battery insert */
++#define STARTON_RTC		BIT(3)	/* Start on RTC */
++#define STARTON_USB		BIT(2)	/* Start on USB host */
++#define STARTON_CHG		BIT(1)	/* Start on charger */
++#define STARTON_PWON		BIT(0)	/* Start on PWRON button */
++
+ #define SEQ_OFFSYNC		(1 << 0)
  
- 		if (*next_buflen)
--			sg_copy_part(next_buf, req->src, to_hash, req->nbytes);
-+			scatterwalk_map_and_copy(next_buf, req->src, to_hash,
-+						 *next_buflen, 0);
- 
- 		sh_len = desc_len(sh_desc);
- 		desc = edesc->hw_desc;
-@@ -1511,7 +1516,8 @@ static int ahash_update_first(struct aha
- 		state->update = ahash_update_no_ctx;
- 		state->finup = ahash_finup_no_ctx;
- 		state->final = ahash_final_no_ctx;
--		sg_copy(next_buf, req->src, req->nbytes);
-+		scatterwalk_map_and_copy(next_buf, req->src, 0,
-+					 req->nbytes, 0);
- 	}
- #ifdef DEBUG
- 	print_hex_dump(KERN_ERR, "next buf@"__stringify(__LINE__)": ",
---- a/drivers/crypto/caam/sg_sw_sec4.h
-+++ b/drivers/crypto/caam/sg_sw_sec4.h
-@@ -116,57 +116,3 @@ static int dma_unmap_sg_chained(struct d
- 	}
- 	return nents;
+ #define PHY_TO_OFF_PM_MASTER(p)		(p - 0x36)
+@@ -606,6 +615,44 @@ twl4030_power_configure_resources(const
+ 	return 0;
  }
--
--/* Map SG page in kernel virtual address space and copy */
--static inline void sg_map_copy(u8 *dest, struct scatterlist *sg,
--			       int len, int offset)
--{
--	u8 *mapped_addr;
--
--	/*
--	 * Page here can be user-space pinned using get_user_pages
--	 * Same must be kmapped before use and kunmapped subsequently
--	 */
--	mapped_addr = kmap_atomic(sg_page(sg));
--	memcpy(dest, mapped_addr + offset, len);
--	kunmap_atomic(mapped_addr);
--}
--
--/* Copy from len bytes of sg to dest, starting from beginning */
--static inline void sg_copy(u8 *dest, struct scatterlist *sg, unsigned int len)
--{
--	struct scatterlist *current_sg = sg;
--	int cpy_index = 0, next_cpy_index = current_sg->length;
--
--	while (next_cpy_index < len) {
--		sg_map_copy(dest + cpy_index, current_sg, current_sg->length,
--			    current_sg->offset);
--		current_sg = scatterwalk_sg_next(current_sg);
--		cpy_index = next_cpy_index;
--		next_cpy_index += current_sg->length;
--	}
--	if (cpy_index < len)
--		sg_map_copy(dest + cpy_index, current_sg, len-cpy_index,
--			    current_sg->offset);
--}
--
--/* Copy sg data, from to_skip to end, to dest */
--static inline void sg_copy_part(u8 *dest, struct scatterlist *sg,
--				      int to_skip, unsigned int end)
--{
--	struct scatterlist *current_sg = sg;
--	int sg_index, cpy_index, offset;
--
--	sg_index = current_sg->length;
--	while (sg_index <= to_skip) {
--		current_sg = scatterwalk_sg_next(current_sg);
--		sg_index += current_sg->length;
--	}
--	cpy_index = sg_index - to_skip;
--	offset = current_sg->offset + current_sg->length - cpy_index;
--	sg_map_copy(dest, current_sg, cpy_index, offset);
--	if (end - sg_index) {
--		current_sg = scatterwalk_sg_next(current_sg);
--		sg_copy(dest + cpy_index, current_sg, end - sg_index);
--	}
--}
+ 
++static int twl4030_starton_mask_and_set(u8 bitmask, u8 bitvalues)
++{
++	u8 regs[3] = { TWL4030_PM_MASTER_CFG_P1_TRANSITION,
++		       TWL4030_PM_MASTER_CFG_P2_TRANSITION,
++		       TWL4030_PM_MASTER_CFG_P3_TRANSITION, };
++	u8 val;
++	int i, err;
++
++	err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER, TWL4030_PM_MASTER_KEY_CFG1,
++			       TWL4030_PM_MASTER_PROTECT_KEY);
++	if (err)
++		goto relock;
++	err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER,
++			       TWL4030_PM_MASTER_KEY_CFG2,
++			       TWL4030_PM_MASTER_PROTECT_KEY);
++	if (err)
++		goto relock;
++
++	for (i = 0; i < sizeof(regs); i++) {
++		err = twl_i2c_read_u8(TWL_MODULE_PM_MASTER,
++				      &val, regs[i]);
++		if (err)
++			break;
++		val = (~bitmask & val) | (bitmask & bitvalues);
++		err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER,
++				       val, regs[i]);
++		if (err)
++			break;
++	}
++
++	if (err)
++		pr_err("TWL4030 Register access failed: %i\n", err);
++
++relock:
++	return twl_i2c_write_u8(TWL_MODULE_PM_MASTER, 0,
++				TWL4030_PM_MASTER_PROTECT_KEY);
++}
++
+ /*
+  * In master mode, start the power off sequence.
+  * After a successful execution, TWL shuts down the power to the SoC
+@@ -615,6 +662,11 @@ void twl4030_power_off(void)
+ {
+ 	int err;
+ 
++	/* Disable start on charger or VBUS as it can break poweroff */
++	err = twl4030_starton_mask_and_set(STARTON_VBUS | STARTON_CHG, 0);
++	if (err)
++		pr_err("TWL4030 Unable to configure start-up\n");
++
+ 	err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER, PWR_DEVOFF,
+ 			       TWL4030_PM_MASTER_P1_SW_EVENTS);
+ 	if (err)
 
 
