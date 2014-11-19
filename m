@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434AbaKSWFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:05:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56468 "EHLO
+	id S1757596AbaKSWGN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:06:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933392AbaKSVEP (ORCPT
+	with ESMTP id S933383AbaKSVEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:15 -0500
+	Wed, 19 Nov 2014 16:04:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.14 027/122] ahci: Add Device IDs for Intel Sunrise Point PCH
-Date: Wed, 19 Nov 2014 12:51:17 -0800
-Message-Id: <20141119205209.693740926@linuxfoundation.org>
+        Richard Guy Briggs <rgb@redhat.com>, Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.14 025/122] audit: AUDIT_FEATURE_CHANGE message format missing delimiting space
+Date: Wed, 19 Nov 2014 12:51:15 -0800
+Message-Id: <20141119205209.635319874@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -28,33 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Richard Guy Briggs <rgb@redhat.com>
 
-commit 690000b930456a98663567d35dd5c54b688d1e3f upstream.
+commit 897f1acbb6702ddaa953e8d8436eee3b12016c7e upstream.
 
-This patch adds the AHCI-mode SATA Device IDs for the Intel Sunrise Point PCH.
+Add a space between subj= and feature= fields to make them parsable.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ kernel/audit.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -314,6 +314,11 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H AHCI */
-+	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H RAID */
-+	{ PCI_VDEVICE(INTEL, 0xa105), board_ahci }, /* Sunrise Point-H RAID */
-+	{ PCI_VDEVICE(INTEL, 0xa107), board_ahci }, /* Sunrise Point-H RAID */
-+	{ PCI_VDEVICE(INTEL, 0xa10f), board_ahci }, /* Sunrise Point-H RAID */
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -702,7 +702,7 @@ static void audit_log_feature_change(int
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+ 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_FEATURE_CHANGE);
+ 	audit_log_task_info(ab, current);
+-	audit_log_format(ab, "feature=%s old=%u new=%u old_lock=%u new_lock=%u res=%d",
++	audit_log_format(ab, " feature=%s old=%u new=%u old_lock=%u new_lock=%u res=%d",
+ 			 audit_feature_names[which], !!old_feature, !!new_feature,
+ 			 !!old_lock, !!new_lock, res);
+ 	audit_log_end(ab);
 
 
