@@ -1,112 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087AbaKSQqk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:46:40 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:61648 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754153AbaKSQqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:46:38 -0500
-From: Antonio Borneo <borneo.antonio@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-Subject: [PATCH V2] HID: i2c-hid: fix race condition reading reports
-Date: Thu, 20 Nov 2014 00:46:37 +0800
-Message-Id: <1416415597-21235-1-git-send-email-borneo.antonio@gmail.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1416149064-25655-1-git-send-email-borneo.antonio@gmail.com>
-References: <1416149064-25655-1-git-send-email-borneo.antonio@gmail.com>
+	id S1756122AbaKSQrg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:47:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43915 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752950AbaKSQre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:47:34 -0500
+Message-ID: <1416415634.4763.9.camel@dcbw.local>
+Subject: Re: [PATCH 1/3] tun: move internal flag defines out of uapi
+From: Dan Williams <dcbw@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, davem@davemloft.net,
+        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Tom Herbert <therbert@google.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Masatake YAMATO <yamato@redhat.com>, Xi Wang <xii@google.com>,
+        netdev@vger.kernel.org, linux-api@vger.kernel.org
+Date: Wed, 19 Nov 2014 10:47:14 -0600
+In-Reply-To: <1416413891-29562-2-git-send-email-mst@redhat.com>
+References: <1416413891-29562-1-git-send-email-mst@redhat.com>
+	 <1416413891-29562-2-git-send-email-mst@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+On Wed, 2014-11-19 at 18:18 +0200, Michael S. Tsirkin wrote:
+> TUN_ flags are internal and never exposed
+> to userspace. Any application using it is almost
+> certainly buggy.
 
-Current driver uses a common buffer for reading reports either
-synchronously in i2c_hid_get_raw_report() and asynchronously in
-the interrupt handler.
-There is race condition if an interrupt arrives immediately after
-the report is received in i2c_hid_get_raw_report(); the common
-buffer is modified by the interrupt handler with the new report
-and then i2c_hid_get_raw_report() proceed using wrong data.
+Except for TUN_TUN_DEV and TUN_TAP_DEV and TUN_TYPE_MASK...  which we're
+using (for some reason) in NetworkManager, though I'll happily convert
+those to IFF_* instead.  It might be worth #defining those to their
+IFF_* equivalents since their usage is not technically broken.
 
-Fix it by using a separate buffers for synchronous reports.
+Dan
 
-Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-[Antonio Borneo: cleanup, rebase to v3.17, submit mainline]
-Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
-Cc: stable@vger.kernel.org
----
-V1 -> V2
-	rename the synchronous buffer as rawbuf (instead of the
-	asynchronous one)
+> Move them out to tun.c, we'll remove them in follow-up patches.
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  include/uapi/linux/if_tun.h | 14 --------------
+>  drivers/net/tun.c           | 14 ++++++++++++++
+>  2 files changed, 14 insertions(+), 14 deletions(-)
+> 
+> diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
+> index e9502dd..b82c276 100644
+> --- a/include/uapi/linux/if_tun.h
+> +++ b/include/uapi/linux/if_tun.h
+> @@ -23,20 +23,6 @@
+>  /* Read queue size */
+>  #define TUN_READQ_SIZE	500
+>  
+> -/* TUN device flags */
+> -#define TUN_TUN_DEV 	0x0001	
+> -#define TUN_TAP_DEV	0x0002
+> -#define TUN_TYPE_MASK   0x000f
+> -
+> -#define TUN_FASYNC	0x0010
+> -#define TUN_NOCHECKSUM	0x0020
+> -#define TUN_NO_PI	0x0040
+> -/* This flag has no real effect */
+> -#define TUN_ONE_QUEUE	0x0080
+> -#define TUN_PERSIST 	0x0100	
+> -#define TUN_VNET_HDR 	0x0200
+> -#define TUN_TAP_MQ      0x0400
+> -
+>  /* Ioctl defines */
+>  #define TUNSETNOCSUM  _IOW('T', 200, int) 
+>  #define TUNSETDEBUG   _IOW('T', 201, int) 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index 2e18ddd..81735f5 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -103,6 +103,20 @@ do {								\
+>  } while (0)
+>  #endif
+>  
+> +/* TUN device flags */
+> +#define TUN_TUN_DEV 	0x0001
+> +#define TUN_TAP_DEV	0x0002
+> +#define TUN_TYPE_MASK   0x000f
+> +
+> +#define TUN_FASYNC	0x0010
+> +#define TUN_NOCHECKSUM	0x0020
+> +#define TUN_NO_PI	0x0040
+> +/* This flag has no real effect */
+> +#define TUN_ONE_QUEUE	0x0080
+> +#define TUN_PERSIST 	0x0100
+> +#define TUN_VNET_HDR 	0x0200
+> +#define TUN_TAP_MQ      0x0400
+> +
+>  #define GOODCOPY_LEN 128
+>  
+>  #define FLT_EXACT_COUNT 8
 
- drivers/hid/i2c-hid/i2c-hid.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index 933bf10..c66e6ac 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -137,6 +137,7 @@ struct i2c_hid {
- 						   * descriptor. */
- 	unsigned int		bufsize;	/* i2c buffer size */
- 	char			*inbuf;		/* Input buffer */
-+	char			*rawbuf;	/* Raw Input buffer */
- 	char			*cmdbuf;	/* Command buffer */
- 	char			*argsbuf;	/* Command arguments buffer */
- 
-@@ -504,9 +505,11 @@ static void i2c_hid_find_max_report(struct hid_device *hid, unsigned int type,
- static void i2c_hid_free_buffers(struct i2c_hid *ihid)
- {
- 	kfree(ihid->inbuf);
-+	kfree(ihid->rawbuf);
- 	kfree(ihid->argsbuf);
- 	kfree(ihid->cmdbuf);
- 	ihid->inbuf = NULL;
-+	ihid->rawbuf = NULL;
- 	ihid->cmdbuf = NULL;
- 	ihid->argsbuf = NULL;
- 	ihid->bufsize = 0;
-@@ -522,10 +525,11 @@ static int i2c_hid_alloc_buffers(struct i2c_hid *ihid, size_t report_size)
- 		       report_size; /* report */
- 
- 	ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
-+	ihid->rawbuf = kzalloc(report_size, GFP_KERNEL);
- 	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
- 	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
- 
--	if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
-+	if (!ihid->inbuf || !ihid->rawbuf || !ihid->argsbuf || !ihid->cmdbuf) {
- 		i2c_hid_free_buffers(ihid);
- 		return -ENOMEM;
- 	}
-@@ -552,12 +556,12 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
- 
- 	ret = i2c_hid_get_report(client,
- 			report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
--			report_number, ihid->inbuf, ask_count);
-+			report_number, ihid->rawbuf, ask_count);
- 
- 	if (ret < 0)
- 		return ret;
- 
--	ret_count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
-+	ret_count = ihid->rawbuf[0] | (ihid->rawbuf[1] << 8);
- 
- 	if (ret_count <= 2)
- 		return 0;
-@@ -566,7 +570,7 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
- 
- 	/* The query buffer contains the size, dropping it in the reply */
- 	count = min(count, ret_count - 2);
--	memcpy(buf, ihid->inbuf + 2, count);
-+	memcpy(buf, ihid->rawbuf + 2, count);
- 
- 	return count;
- }
--- 
-2.1.3
 
