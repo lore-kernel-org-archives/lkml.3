@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681AbaKSUbm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:31:42 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:38453 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756542AbaKSUbi (ORCPT
+	id S1756621AbaKSUdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:33:12 -0500
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:38999 "HELO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756026AbaKSUdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:31:38 -0500
-Date: Wed, 19 Nov 2014 15:31:36 -0500 (EST)
-Message-Id: <20141119.153136.867017618826698045.davem@davemloft.net>
-To: viro@ZenIV.linux.org.uk
-Cc: torvalds@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] situation with csum_and_copy_... API
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141118212307.GU7996@ZenIV.linux.org.uk>
-References: <20141118084745.GT7996@ZenIV.linux.org.uk>
-	<CA+55aFxK0wj2LLp0WmhRsBZch8XfoYbzmbEeJaMpt=SDh5GBvw@mail.gmail.com>
-	<20141118212307.GU7996@ZenIV.linux.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Nov 2014 12:31:38 -0800 (PST)
+	Wed, 19 Nov 2014 15:33:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <201411191151.40064.joestringer@nicira.com>
+References: <1416336857-61405-1-git-send-email-joestringer@nicira.com>
+	<201411190948.11857.joestringer@nicira.com>
+	<CALnjE+pQnUGiiuWPGt7fNnBetwdn7SQReDqCHDforX7ykQQR8Q@mail.gmail.com>
+	<201411191151.40064.joestringer@nicira.com>
+Date: Wed, 19 Nov 2014 12:33:10 -0800
+Message-ID: <CALnjE+otirroKNXE7qbUHfoTifipp8LJ6g8yNsLz0dBjm3PUsQ@mail.gmail.com>
+Subject: Re: [ovs-dev] [PATCH net] openvswitch: Fix mask generation for IPv6 labels.
+From: Pravin Shelar <pshelar@nicira.com>
+To: Joe Stringer <joestringer@nicira.com>
+Cc: "dev@openvswitch.org" <dev@openvswitch.org>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
-Date: Tue, 18 Nov 2014 21:23:07 +0000
+On Wed, Nov 19, 2014 at 11:51 AM, Joe Stringer <joestringer@nicira.com> wrote:
+> On Wednesday, November 19, 2014 11:08:35 Pravin Shelar wrote:
+>> On Wed, Nov 19, 2014 at 9:48 AM, Joe Stringer <joestringer@nicira.com>
+> wrote:
+>> > On Wednesday, November 19, 2014 00:11:01 Pravin Shelar wrote:
+>> >> On Tue, Nov 18, 2014 at 11:25 PM, Joe Stringer <joestringer@nicira.com>
+>> >
+>> > wrote:
+>> >> > On 18 November 2014 22:09, Pravin Shelar <pshelar@nicira.com> wrote:
+>> >> >> On Tue, Nov 18, 2014 at 10:54 AM, Joe Stringer
+>> >> >> <joestringer@nicira.com>
+>> >> >>
+>> >> >> wrote:
+>> >> >> > When userspace doesn't provide a mask, OVS datapath generates a
+>> >> >> > fully unwildcarded mask for the flow. This is done by taking a
+>> >> >> > copy of the flow key, then iterating across its attributes,
+>> >> >> > setting all values to 0xff. This works for most attributes, as the
+>> >> >> > length of the netlink attribute typically matches the length of
+>> >> >> > the value. However, IPv6 labels only use the lower 20 bits of the
+>> >> >> > field. This patch makes a special case to handle this.
+>> >> >> >
+>> >> >> > This fixes the following error seen when installing IPv6 flows
+>> >> >> > without a mask:
+>> >> >> >
+>> >> >> > openvswitch: netlink: Invalid IPv6 flow label value
+>> >> >> > (value=ffffffff, max=fffff)
+>> >> >>
+>> >> >> We should allow exact match mask here rather than generating
+>> >> >> wildcarded mask. So that ovs can catch invalid ipv6.label.
+>> >> >
+>> >> > I don't quite follow, I thought this was exact-match? (The existing
+>> >> > function sets all bits to 1)
+>> >>
+>> >> With 0xffffffff value we can exact match on all ipv6.lable bits.
+>> >
+>> > The label field is only 20 bits. The other bits in the same word of the
+>> > IPv6 header are for version (fixed) and traffic class (handled
+>> > separately). We don't do anything with the other bits.
+>>
+>> This is just to make sure that we do not use those field for any thing
+>> else. Masking those extra bits can hide incorrect ipv6 key extraction.
+>
+> Oh, I see. I meant something more like:
+>
+> ipv6_key->ipv6_label &= htonl(0xFFF00000);
+> ipv6_key->ipv6_label |= htonl(0x000FFFFF);
+>
+> (Which would propagate the invalid bits from the flow key, but actually produce
+> an exact match).
 
-> On Tue, Nov 18, 2014 at 12:49:13PM -0800, Linus Torvalds wrote:
->> "access_ok()" isn't that expensive, and removing them as unnecessary
->> is fraught with errors. We've had several cases of "oops, we used
->> __get_user() in a loop, because it generates much better code, but
->> we'd forgotten to do access_ok(), so now people can read kernel data".
-> 
-> OK...  If netdev folks can live with that for now, I've no problem with
-> dropping 3/5.  However, I really think we need a variant of csum-and-copy
-> that would _not_ bother with access_ok() longer term.  That can wait, though...
-
-I think because of the way Al verifies things at the top level, and
-how we structure access to these msg->msg_iov so strictly, these cases
-of access_ok() really can safely go.
-
-But that is just my opinion, and yes I do acknowledge that we've had
-serious holes in this area in the past.
+yes, it can wildcard unused bits.
