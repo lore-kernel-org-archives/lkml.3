@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913AbaKSOCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 09:02:52 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:64989 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065AbaKSOCu (ORCPT
+	id S1754998AbaKSOFx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 09:05:53 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:62229 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736AbaKSOFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:02:50 -0500
-Message-ID: <546CA307.7020407@cogentembedded.com>
-Date: Wed, 19 Nov 2014 17:02:47 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 19 Nov 2014 09:05:51 -0500
+Date: Wed, 19 Nov 2014 15:05:46 +0100
+From: Johan Hovold <johan@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>
+Cc: Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: NULL derefs after failed suspend (i915, pm, ext4, slub)
+Message-ID: <20141119140546.GG7857@localhost>
+References: <20141028142910.GU2006@localhost>
 MIME-Version: 1.0
-To: Hayes Wang <hayeswang@realtek.com>, netdev@vger.kernel.org
-CC: nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next v2 1/2] r8152: adjust r8152_submit_rx
-References: <1394712342-15778-88-Taiwan-albertk@realtek.com> <1394712342-15778-95-Taiwan-albertk@realtek.com> <1394712342-15778-96-Taiwan-albertk@realtek.com>
-In-Reply-To: <1394712342-15778-96-Taiwan-albertk@realtek.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141028142910.GU2006@localhost>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, Oct 28, 2014 at 03:29:10PM +0100, Johan Hovold wrote:
+> Hi, 
+> 
+> I have had some problems with crashes involving suspend-to-disk after
+> updating to v3.16.
+> 
+> Below is a log with 3.16.6 from a failed suspend attempt after which I
+> get a NULL deref in ext4 code.
+> 
+> A couple of weeks ago I got something similar, with backtraces from 
+> ext4 (ext4_alloc_inode) and NULL-derefs in vfs (vfs_get_attr_nosec) when
+> trying to do IO after resuming from suspend. That was with 3.16.3 and I
+> was hoping that whatever it was would have been fixed in 3.16.6 (there
+> were some ext4 error handling patches in there). I only got photos of
+> those oopses but it involved kmem_cache_alloc (slub) and a NULL-deref in
+> vfs_get_attr_nosec. I can put the photos up somewhere. That time I also
+> got back to X and could issue a dmesg in an xterm, but any process trying
+> to do IO died.
+> 
+> Something similar happened with 3.16.1 but unfortunately I do not have
+> any logs from that.
 
-On 11/19/2014 8:20 AM, Hayes Wang wrote:
+For the record, it seems this problem went away with 3.17 (.2 and .3).
+Been suspending daily now for almost three weeks without triggering this
+again.
 
-> The behavior of handling the returned status from r8152_submit_rx()
-> is almost same, so let r8152_submit_rx() deal with the error
-> directly. This could avoid the duplicate code.
+Since 3.16 is EOL (and 3.15 did not suffer from this) I guess there's no
+need to track it down for stable.
 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-> ---
->   drivers/net/usb/r8152.c | 41 +++++++++++++++++++++--------------------
->   1 file changed, 21 insertions(+), 20 deletions(-)
->
-> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-> index 0a30fd3..df0868b 100644
-> --- a/drivers/net/usb/r8152.c
-> +++ b/drivers/net/usb/r8152.c
-[...]
-> @@ -1806,11 +1789,29 @@ static void bottom_half(unsigned long data)
->   static
->   int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags)
->   {
-> +	int ret = 0;
-
-    Initialization not needed.
-
-> +
->   	usb_fill_bulk_urb(agg->urb, tp->udev, usb_rcvbulkpipe(tp->udev, 1),
->   			  agg->head, agg_buf_sz,
->   			  (usb_complete_t)read_bulk_callback, agg);
->
-> -	return usb_submit_urb(agg->urb, mem_flags);
-> +	ret = usb_submit_urb(agg->urb, mem_flags);
-> +
-
-    Empty line not needed here either.
-
-> +	if (ret == -ENODEV) {
-> +		set_bit(RTL8152_UNPLUG, &tp->flags);
-> +		netif_device_detach(tp->netdev);
-> +	} else if (ret) {
-> +		struct urb *urb = agg->urb;
-> +		unsigned long flags;
-> +
-> +		urb->actual_length = 0;
-> +		spin_lock_irqsave(&tp->rx_lock, flags);
-> +		list_add_tail(&agg->list, &tp->rx_done);
-> +		spin_unlock_irqrestore(&tp->rx_lock, flags);
-> +		tasklet_schedule(&tp->tl);
-> +	}
-> +
-> +	return ret;
->   }
-[...]
-
-WBR, Sergei
-
+Johan
