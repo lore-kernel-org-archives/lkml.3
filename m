@@ -1,107 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758431AbaKSWlk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:41:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55888 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500AbaKSUxt (ORCPT
+	id S1758485AbaKSWmG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:42:06 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:34907 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758467AbaKSWmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:53:49 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 012/141] net: sctp: fix NULL pointer dereference in af->from_addr_param on malformed packet
-Date: Wed, 19 Nov 2014 12:50:35 -0800
-Message-Id: <20141119205151.081383561@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
-References: <20141119205150.700188369@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 19 Nov 2014 17:42:03 -0500
+Date: Wed, 19 Nov 2014 14:42:00 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Luiz Capitulino <lcapitulino@redhat.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, andi@firstfloor.org, riel@redhat.com,
+        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org, davidlohr@hp.com
+Subject: Re: [PATCH 2/3] hugetlb: alloc_bootmem_huge_page(): use
+ IS_ALIGNED()
+In-Reply-To: <1415831593-9020-3-git-send-email-lcapitulino@redhat.com>
+Message-ID: <alpine.DEB.2.10.1411191441450.24691@chino.kir.corp.google.com>
+References: <1415831593-9020-1-git-send-email-lcapitulino@redhat.com> <1415831593-9020-3-git-send-email-lcapitulino@redhat.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 12 Nov 2014, Luiz Capitulino wrote:
 
-------------------
+> No reason to duplicate the code of an existing macro.
+> 
+> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
 
-From: Daniel Borkmann <dborkman@redhat.com>
-
-[ Upstream commit e40607cbe270a9e8360907cb1e62ddf0736e4864 ]
-
-An SCTP server doing ASCONF will panic on malformed INIT ping-of-death
-in the form of:
-
-  ------------ INIT[PARAM: SET_PRIMARY_IP] ------------>
-
-While the INIT chunk parameter verification dissects through many things
-in order to detect malformed input, it misses to actually check parameters
-inside of parameters. E.g. RFC5061, section 4.2.4 proposes a 'set primary
-IP address' parameter in ASCONF, which has as a subparameter an address
-parameter.
-
-So an attacker may send a parameter type other than SCTP_PARAM_IPV4_ADDRESS
-or SCTP_PARAM_IPV6_ADDRESS, param_type2af() will subsequently return 0
-and thus sctp_get_af_specific() returns NULL, too, which we then happily
-dereference unconditionally through af->from_addr_param().
-
-The trace for the log:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
-IP: [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
-PGD 0
-Oops: 0000 [#1] SMP
-[...]
-Pid: 0, comm: swapper Not tainted 2.6.32-504.el6.x86_64 #1 Bochs Bochs
-RIP: 0010:[<ffffffffa01e9c62>]  [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
-[...]
-Call Trace:
- <IRQ>
- [<ffffffffa01f2add>] ? sctp_bind_addr_copy+0x5d/0xe0 [sctp]
- [<ffffffffa01e1fcb>] sctp_sf_do_5_1B_init+0x21b/0x340 [sctp]
- [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
- [<ffffffffa01e5c09>] ? sctp_endpoint_lookup_assoc+0xc9/0xf0 [sctp]
- [<ffffffffa01e61f6>] sctp_endpoint_bh_rcv+0x116/0x230 [sctp]
- [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
- [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
- [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
- [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
- [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
-[...]
-
-A minimal way to address this is to check for NULL as we do on all
-other such occasions where we know sctp_get_af_specific() could
-possibly return with NULL.
-
-Fixes: d6de3097592b ("[SCTP]: Add the handling of "Set Primary IP Address" parameter to INIT")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/sm_make_chunk.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -2609,6 +2609,9 @@ do_addr_param:
- 		addr_param = param.v + sizeof(sctp_addip_param_t);
- 
- 		af = sctp_get_af_specific(param_type2af(param.p->type));
-+		if (af == NULL)
-+			break;
-+
- 		af->from_addr_param(&addr, addr_param,
- 				    htons(asoc->peer.port), 0);
- 
-
-
+Acked-by: David Rientjes <rientjes@google.com>
