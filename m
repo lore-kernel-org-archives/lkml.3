@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933994AbaKSWBc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:01:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56468 "EHLO
+	id S934019AbaKSWBs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:01:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933435AbaKSVET (ORCPT
+	with ESMTP id S933430AbaKSVET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:04:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
+        Jean-Tsung Hsiao <jhsiao@redhat.com>,
+        Marcelo Ricardo Leitner <mleitner@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 007/122] net: sctp: fix NULL pointer dereference in af->from_addr_param on malformed packet
-Date: Wed, 19 Nov 2014 12:50:57 -0800
-Message-Id: <20141119205209.073863528@linuxfoundation.org>
+Subject: [PATCH 3.14 006/122] vxlan: Do not reuse sockets for a different address family
+Date: Wed, 19 Nov 2014 12:50:56 -0800
+Message-Id: <20141119205209.043051688@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -31,77 +30,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Marcelo Leitner <mleitner@redhat.com>
 
-[ Upstream commit e40607cbe270a9e8360907cb1e62ddf0736e4864 ]
+[ Upstream commit 19ca9fc1445b76b60d34148f7ff837b055f5dcf3 ]
 
-An SCTP server doing ASCONF will panic on malformed INIT ping-of-death
-in the form of:
+Currently, we only match against local port number in order to reuse
+socket. But if this new vxlan wants an IPv6 socket and a IPv4 one bound
+to that port, vxlan will reuse an IPv4 socket as IPv6 and a panic will
+follow. The following steps reproduce it:
 
-  ------------ INIT[PARAM: SET_PRIMARY_IP] ------------>
+   # ip link add vxlan6 type vxlan id 42 group 229.10.10.10 \
+       srcport 5000 6000 dev eth0
+   # ip link add vxlan7 type vxlan id 43 group ff0e::110 \
+       srcport 5000 6000 dev eth0
+   # ip link set vxlan6 up
+   # ip link set vxlan7 up
+   <panic>
 
-While the INIT chunk parameter verification dissects through many things
-in order to detect malformed input, it misses to actually check parameters
-inside of parameters. E.g. RFC5061, section 4.2.4 proposes a 'set primary
-IP address' parameter in ASCONF, which has as a subparameter an address
-parameter.
+[    4.187481] BUG: unable to handle kernel NULL pointer dereference at 0000000000000058
+...
+[    4.188076] Call Trace:
+[    4.188085]  [<ffffffff81667c4a>] ? ipv6_sock_mc_join+0x3a/0x630
+[    4.188098]  [<ffffffffa05a6ad6>] vxlan_igmp_join+0x66/0xd0 [vxlan]
+[    4.188113]  [<ffffffff810a3430>] process_one_work+0x220/0x710
+[    4.188125]  [<ffffffff810a33c4>] ? process_one_work+0x1b4/0x710
+[    4.188138]  [<ffffffff810a3a3b>] worker_thread+0x11b/0x3a0
+[    4.188149]  [<ffffffff810a3920>] ? process_one_work+0x710/0x710
 
-So an attacker may send a parameter type other than SCTP_PARAM_IPV4_ADDRESS
-or SCTP_PARAM_IPV6_ADDRESS, param_type2af() will subsequently return 0
-and thus sctp_get_af_specific() returns NULL, too, which we then happily
-dereference unconditionally through af->from_addr_param().
+So address family must also match in order to reuse a socket.
 
-The trace for the log:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
-IP: [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
-PGD 0
-Oops: 0000 [#1] SMP
-[...]
-Pid: 0, comm: swapper Not tainted 2.6.32-504.el6.x86_64 #1 Bochs Bochs
-RIP: 0010:[<ffffffffa01e9c62>]  [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
-[...]
-Call Trace:
- <IRQ>
- [<ffffffffa01f2add>] ? sctp_bind_addr_copy+0x5d/0xe0 [sctp]
- [<ffffffffa01e1fcb>] sctp_sf_do_5_1B_init+0x21b/0x340 [sctp]
- [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
- [<ffffffffa01e5c09>] ? sctp_endpoint_lookup_assoc+0xc9/0xf0 [sctp]
- [<ffffffffa01e61f6>] sctp_endpoint_bh_rcv+0x116/0x230 [sctp]
- [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
- [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
- [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
- [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
- [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
-[...]
-
-A minimal way to address this is to check for NULL as we do on all
-other such occasions where we know sctp_get_af_specific() could
-possibly return with NULL.
-
-Fixes: d6de3097592b ("[SCTP]: Add the handling of "Set Primary IP Address" parameter to INIT")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Jean-Tsung Hsiao <jhsiao@redhat.com>
+Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/sm_make_chunk.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/vxlan.c |   28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
 
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -2609,6 +2609,9 @@ do_addr_param:
- 		addr_param = param.v + sizeof(sctp_addip_param_t);
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -279,13 +279,15 @@ static inline struct vxlan_rdst *first_r
+ 	return list_first_entry(&fdb->remotes, struct vxlan_rdst, list);
+ }
  
- 		af = sctp_get_af_specific(param_type2af(param.p->type));
-+		if (af == NULL)
-+			break;
-+
- 		af->from_addr_param(&addr, addr_param,
- 				    htons(asoc->peer.port), 0);
+-/* Find VXLAN socket based on network namespace and UDP port */
+-static struct vxlan_sock *vxlan_find_sock(struct net *net, __be16 port)
++/* Find VXLAN socket based on network namespace, address family and UDP port */
++static struct vxlan_sock *vxlan_find_sock(struct net *net,
++					  sa_family_t family, __be16 port)
+ {
+ 	struct vxlan_sock *vs;
  
+ 	hlist_for_each_entry_rcu(vs, vs_head(net, port), hlist) {
+-		if (inet_sk(vs->sock->sk)->inet_sport == port)
++		if (inet_sk(vs->sock->sk)->inet_sport == port &&
++		    inet_sk(vs->sock->sk)->sk.sk_family == family)
+ 			return vs;
+ 	}
+ 	return NULL;
+@@ -304,11 +306,12 @@ static struct vxlan_dev *vxlan_vs_find_v
+ }
+ 
+ /* Look up VNI in a per net namespace table */
+-static struct vxlan_dev *vxlan_find_vni(struct net *net, u32 id, __be16 port)
++static struct vxlan_dev *vxlan_find_vni(struct net *net, u32 id,
++					sa_family_t family, __be16 port)
+ {
+ 	struct vxlan_sock *vs;
+ 
+-	vs = vxlan_find_sock(net, port);
++	vs = vxlan_find_sock(net, family, port);
+ 	if (!vs)
+ 		return NULL;
+ 
+@@ -1872,7 +1875,8 @@ static void vxlan_xmit_one(struct sk_buf
+ 			struct vxlan_dev *dst_vxlan;
+ 
+ 			ip_rt_put(rt);
+-			dst_vxlan = vxlan_find_vni(dev_net(dev), vni, dst_port);
++			dst_vxlan = vxlan_find_vni(dev_net(dev), vni,
++						   dst->sa.sa_family, dst_port);
+ 			if (!dst_vxlan)
+ 				goto tx_error;
+ 			vxlan_encap_bypass(skb, vxlan, dst_vxlan);
+@@ -1925,7 +1929,8 @@ static void vxlan_xmit_one(struct sk_buf
+ 			struct vxlan_dev *dst_vxlan;
+ 
+ 			dst_release(ndst);
+-			dst_vxlan = vxlan_find_vni(dev_net(dev), vni, dst_port);
++			dst_vxlan = vxlan_find_vni(dev_net(dev), vni,
++						   dst->sa.sa_family, dst_port);
+ 			if (!dst_vxlan)
+ 				goto tx_error;
+ 			vxlan_encap_bypass(skb, vxlan, dst_vxlan);
+@@ -2083,6 +2088,7 @@ static int vxlan_init(struct net_device
+ {
+ 	struct vxlan_dev *vxlan = netdev_priv(dev);
+ 	struct vxlan_net *vn = net_generic(dev_net(dev), vxlan_net_id);
++	bool ipv6 = vxlan->flags & VXLAN_F_IPV6;
+ 	struct vxlan_sock *vs;
+ 	int i;
+ 
+@@ -2098,7 +2104,8 @@ static int vxlan_init(struct net_device
+ 
+ 
+ 	spin_lock(&vn->sock_lock);
+-	vs = vxlan_find_sock(dev_net(dev), vxlan->dst_port);
++	vs = vxlan_find_sock(dev_net(dev), ipv6 ? AF_INET6 : AF_INET,
++			     vxlan->dst_port);
+ 	if (vs) {
+ 		/* If we have a socket with same port already, reuse it */
+ 		atomic_inc(&vs->refcnt);
+@@ -2566,7 +2573,7 @@ struct vxlan_sock *vxlan_sock_add(struct
+ 		return vs;
+ 
+ 	spin_lock(&vn->sock_lock);
+-	vs = vxlan_find_sock(net, port);
++	vs = vxlan_find_sock(net, ipv6 ? AF_INET6 : AF_INET, port);
+ 	if (vs) {
+ 		if (vs->rcv == rcv)
+ 			atomic_inc(&vs->refcnt);
+@@ -2712,7 +2719,8 @@ static int vxlan_newlink(struct net *net
+ 	if (data[IFLA_VXLAN_PORT])
+ 		vxlan->dst_port = nla_get_be16(data[IFLA_VXLAN_PORT]);
+ 
+-	if (vxlan_find_vni(net, vni, vxlan->dst_port)) {
++	if (vxlan_find_vni(net, vni, use_ipv6 ? AF_INET6 : AF_INET,
++			   vxlan->dst_port)) {
+ 		pr_info("duplicate VNI %u\n", vni);
+ 		return -EEXIST;
+ 	}
 
 
