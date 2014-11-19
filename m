@@ -1,154 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755AbaKSQGW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:06:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38243 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755334AbaKSQGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:06:18 -0500
-Date: Wed, 19 Nov 2014 10:05:40 -0600
-From: Seth Jennings <sjenning@redhat.com>
-To: Miroslav Benes <mbenes@suse.cz>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 2/3] kernel: add support for live patching
-Message-ID: <20141119160540.GA2058@cerebellum.variantweb.net>
-References: <1416187764-3341-1-git-send-email-sjenning@redhat.com>
- <1416187764-3341-3-git-send-email-sjenning@redhat.com>
- <alpine.LNX.2.00.1411191615000.5471@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1411191615000.5471@pobox.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932375AbaKSQGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:06:46 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:46426 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932264AbaKSQFj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:05:39 -0500
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+To: catalin.marinas@arm.com, will.deacon@arm.com, bhelgaas@google.com,
+        lorenzo.pieralisi@arm.com, wangyijing@huawei.com, arnd@arndb.de,
+        hanjun.guo@linaro.org, Liviu.Dudau@arm.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, rjw@rjwysocki.net
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linaro-acpi@lists.linaro.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: [PATCH 4/6] x86, acpi, pci: mmconfig_{32,64}.c code refactoring - remove code duplication.
+Date: Wed, 19 Nov 2014 17:04:49 +0100
+Message-Id: <1416413091-13452-5-git-send-email-tomasz.nowicki@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416413091-13452-1-git-send-email-tomasz.nowicki@linaro.org>
+References: <1416413091-13452-1-git-send-email-tomasz.nowicki@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 04:27:39PM +0100, Miroslav Benes wrote:
-> 
-> Hi,
-> 
-> during rewriting our code I came across few more things. See below.
-> 
-> On Sun, 16 Nov 2014, Seth Jennings wrote:
-> 
-> [...]
-> 
-> > +/******************************
-> > + * module notifier
-> > + *****************************/
-> > +
-> > +static void lpc_module_notify_coming(struct module *pmod,
-> > +				     struct lpc_object *obj)
-> > +{
-> > +	struct module *mod = obj->mod;
-> > +	int ret;
-> > +
-> > +	pr_notice("applying patch '%s' to loading module '%s'\n",
-> > +		  mod->name, pmod->name);
-> 
-> This looks strange. I guess the arguments should be swapped.
+mmconfig_64.c version is going to be default implementation for arch
+agnostic low-level direct PCI config space accessors via MMCONFIG.
+However, now it initialize raw_pci_ext_ops pointer which is used in
+x86 specific code only. Moreover, mmconfig_32.c is doing the same thing
+at the same time.
 
-Indeed, you are correct :)
+Move it to mmconfig_shared.c so it becomes common for both and
+mmconfig_64.c turns out to be purely arch agnostic.
 
-> 
-> > +	obj->mod = mod;
-> 
-> And this is redundant.
+Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Tested-by: Hanjun Guo <hanjun.guo@linaro.org>
+---
+ arch/x86/pci/mmconfig-shared.c | 10 ++++++++--
+ arch/x86/pci/mmconfig_32.c     | 10 ++--------
+ arch/x86/pci/mmconfig_64.c     |  6 ++----
+ include/linux/mmconfig.h       |  4 ++++
+ 4 files changed, 16 insertions(+), 14 deletions(-)
 
-True again!
+diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
+index b397544..e42004c 100644
+--- a/arch/x86/pci/mmconfig-shared.c
++++ b/arch/x86/pci/mmconfig-shared.c
+@@ -29,6 +29,11 @@
+ static bool pci_mmcfg_running_state;
+ static bool pci_mmcfg_arch_init_failed;
+ 
++const struct pci_raw_ops pci_mmcfg = {
++	.read =		pci_mmcfg_read,
++	.write =	pci_mmcfg_write,
++};
++
+ static const char *__init pci_mmcfg_e7520(void)
+ {
+ 	u32 win;
+@@ -486,9 +491,10 @@ static void __init __pci_mmcfg_init(int early)
+ 		}
+ 	}
+ 
+-	if (pci_mmcfg_arch_init())
++	if (pci_mmcfg_arch_init()) {
++		raw_pci_ext_ops = &pci_mmcfg;
+ 		pci_probe = (pci_probe & ~PCI_PROBE_MASK) | PCI_PROBE_MMCONF;
+-	else {
++	} else {
+ 		free_all_mmcfg();
+ 		pci_mmcfg_arch_init_failed = true;
+ 	}
+diff --git a/arch/x86/pci/mmconfig_32.c b/arch/x86/pci/mmconfig_32.c
+index d774672..c0106a6 100644
+--- a/arch/x86/pci/mmconfig_32.c
++++ b/arch/x86/pci/mmconfig_32.c
+@@ -50,7 +50,7 @@ static void pci_exp_set_dev_base(unsigned int base, int bus, int devfn)
+ 	}
+ }
+ 
+-static int pci_mmcfg_read(unsigned int seg, unsigned int bus,
++int pci_mmcfg_read(unsigned int seg, unsigned int bus,
+ 			  unsigned int devfn, int reg, int len, u32 *value)
+ {
+ 	unsigned long flags;
+@@ -89,7 +89,7 @@ err:		*value = -1;
+ 	return 0;
+ }
+ 
+-static int pci_mmcfg_write(unsigned int seg, unsigned int bus,
++int pci_mmcfg_write(unsigned int seg, unsigned int bus,
+ 			   unsigned int devfn, int reg, int len, u32 value)
+ {
+ 	unsigned long flags;
+@@ -126,15 +126,9 @@ static int pci_mmcfg_write(unsigned int seg, unsigned int bus,
+ 	return 0;
+ }
+ 
+-const struct pci_raw_ops pci_mmcfg = {
+-	.read =		pci_mmcfg_read,
+-	.write =	pci_mmcfg_write,
+-};
+-
+ int __init pci_mmcfg_arch_init(void)
+ {
+ 	printk(KERN_INFO "PCI: Using MMCONFIG for extended config space\n");
+-	raw_pci_ext_ops = &pci_mmcfg;
+ 	return 1;
+ }
+ 
+diff --git a/arch/x86/pci/mmconfig_64.c b/arch/x86/pci/mmconfig_64.c
+index 1209596..ff2c50c 100644
+--- a/arch/x86/pci/mmconfig_64.c
++++ b/arch/x86/pci/mmconfig_64.c
+@@ -25,7 +25,7 @@ static char __iomem *pci_dev_base(unsigned int seg, unsigned int bus, unsigned i
+ 	return NULL;
+ }
+ 
+-static int pci_mmcfg_read(unsigned int seg, unsigned int bus,
++int pci_mmcfg_read(unsigned int seg, unsigned int bus,
+ 			  unsigned int devfn, int reg, int len, u32 *value)
+ {
+ 	char __iomem *addr;
+@@ -59,7 +59,7 @@ err:		*value = -1;
+ 	return 0;
+ }
+ 
+-static int pci_mmcfg_write(unsigned int seg, unsigned int bus,
++int pci_mmcfg_write(unsigned int seg, unsigned int bus,
+ 			   unsigned int devfn, int reg, int len, u32 value)
+ {
+ 	char __iomem *addr;
+@@ -121,8 +121,6 @@ int __init pci_mmcfg_arch_init(void)
+ 			return 0;
+ 		}
+ 
+-	raw_pci_ext_ops = &pci_mmcfg;
+-
+ 	return 1;
+ }
+ 
+diff --git a/include/linux/mmconfig.h b/include/linux/mmconfig.h
+index 6ccd1ee..ae8ec83 100644
+--- a/include/linux/mmconfig.h
++++ b/include/linux/mmconfig.h
+@@ -43,6 +43,10 @@ int pci_mmcfg_arch_init(void);
+ void pci_mmcfg_arch_free(void);
+ int pci_mmcfg_arch_map(struct pci_mmcfg_region *cfg);
+ void pci_mmcfg_arch_unmap(struct pci_mmcfg_region *cfg);
++int pci_mmcfg_read(unsigned int seg, unsigned int bus,
++		   unsigned int devfn, int reg, int len, u32 *value);
++int pci_mmcfg_write(unsigned int seg, unsigned int bus,
++		    unsigned int devfn, int reg, int len, u32 value);
+ 
+ extern struct list_head pci_mmcfg_list;
+ 
+-- 
+1.9.1
 
-> 
-> > +	ret = lpc_enable_object(pmod, obj);
-> > +	if (ret)
-> > +		pr_warn("failed to apply patch '%s' to module '%s' (%d)\n",
-> > +			pmod->name, mod->name, ret);
-> > +}
-> > +
-> > +static void lpc_module_notify_going(struct module *pmod,
-> > +				    struct lpc_object *obj)
-> > +{
-> > +	struct module *mod = obj->mod;
-> > +	int ret;
-> > +
-> > +	pr_notice("reverting patch '%s' on unloading module '%s'\n",
-> > +		  pmod->name, mod->name);
-> > +	ret = lpc_disable_object(obj);
-> > +	if (ret)
-> > +		pr_warn("failed to revert patch '%s' on module '%s' (%d)\n",
-> > +			pmod->name, mod->name, ret);
-> > +	obj->mod = NULL;
-> > +}
-> > +
-> > +static int lpc_module_notify(struct notifier_block *nb, unsigned long action,
-> > +			    void *data)
-> > +{
-> > +	struct module *mod = data;
-> > +	struct lpc_patch *patch;
-> > +	struct lpc_object *obj;
-> > +
-> > +	mutex_lock(&lpc_mutex);
-> > +
-> > +	if (action != MODULE_STATE_COMING && action != MODULE_STATE_GOING)
-> > +		goto out;
-> > +
-> > +	list_for_each_entry(patch, &lpc_patches, list) {
-> > +		if (patch->state == LPC_DISABLED)
-> > +			continue;
-> > +		list_for_each_entry(obj, &patch->objs, list) {
-> > +			if (strcmp(obj->name, mod->name))
-> > +				continue;
-> > +			if (action == MODULE_STATE_COMING) {
-> > +				obj->mod = mod;
-> > +				lpc_module_notify_coming(patch->mod, obj);
-> > +			} else /* MODULE_STATE_GOING */
-> > +				lpc_module_notify_going(patch->mod, obj);
-> > +			break;
-> > +		}
-> > +	}
-> > +out:
-> > +	mutex_unlock(&lpc_mutex);
-> > +	return 0;
-> > +}
-> 
-> [...]
-> 
-> > +static struct lpc_object *lpc_create_object(struct kobject *root,
-> > +					    struct lp_object *userobj)
-> > +{
-> > +	struct lpc_object *obj;
-> > +	int ret;
-> > +
-> > +	/* alloc */
-> > +	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
-> > +	if (!obj)
-> > +		return NULL;
-> > +
-> > +	/* init */
-> > +	INIT_LIST_HEAD(&obj->list);
-> > +	obj->name = userobj->name;
-> > +	obj->relocs = userobj->relocs;
-> > +	obj->state = LPC_DISABLED;
-> > +	/* obj->mod set by lpc_object_module_get() */
-> > +	INIT_LIST_HEAD(&obj->funcs);
-> 
-> There is nothing like lpc_object_module_get() in the code. Did you mean 
-> lpc_find_object_module()?
-
-Yes, this comment should be removed or updated.
-
-Thanks,
-Seth
-
-> 
-> Thank you,
-> --
-> Miroslav Benes
-> SUSE Labs
