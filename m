@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836AbaKSMlq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 07:41:46 -0500
-Received: from www.linutronix.de ([62.245.132.108]:44374 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754717AbaKSMlo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 07:41:44 -0500
-Date: Wed, 19 Nov 2014 13:40:58 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: David Drysdale <drysdale@google.com>
-cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, Oleg Nesterov <oleg@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rich Felker <dalias@aerifal.cx>, Christoph Hellwig <hch@infradead.org>,
-        x86@kernel.org, linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCHv8 1/4] syscalls,x86: implement execveat() system call
-In-Reply-To: <1415982183-20525-2-git-send-email-drysdale@google.com>
-Message-ID: <alpine.DEB.2.11.1411191249560.3909@nanos>
-References: <1415982183-20525-1-git-send-email-drysdale@google.com> <1415982183-20525-2-git-send-email-drysdale@google.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1754897AbaKSMnr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 07:43:47 -0500
+Received: from mout.web.de ([212.227.17.12]:65124 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752578AbaKSMnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 07:43:46 -0500
+Message-ID: <546C9076.2030500@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 13:43:34 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Lars Ellenberg <drbd-dev@lists.linbit.com>, drbd-user@lists.linbit.com
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] drbd: Deletion of an unnecessary check before the function
+ call "lc_destroy"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:sqCGH9RxCzMEAzbOWuBqpaoIkz3hnD1WjBKGfObnpxVqB1PbUEV
+ m3EENigGSfF9WYY7DBi3qdlj8sVZD/698vJyw+ImB+Dp2ETfaf5Y/72DAn9ep+vsp55ORPt
+ eQWCvImqwYDDiGM556QJP6g4Sygs3nwN/D3tU+HrflP6djWGAYUQdm7vqwPHxo62L9niC/X
+ orzU4iXRUU5CEsNZuXi0w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Nov 2014, David Drysdale wrote:
-> Only x86-64, i386 and x32 ABIs are supported in this patch.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 13:33:32 +0100
 
-Can you please split this into the core/fs changes and the actual x86
-hookup?
- 
-Thanks,
+The lc_destroy() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-	tglx
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/block/drbd/drbd_nl.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 1cd47df..0bcb3e0 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -1115,8 +1115,7 @@ static int drbd_check_al_size(struct drbd_device *device, struct disk_conf *dc)
+ 		lc_destroy(n);
+ 		return -EBUSY;
+ 	} else {
+-		if (t)
+-			lc_destroy(t);
++		lc_destroy(t);
+ 	}
+ 	drbd_md_mark_dirty(device); /* we changed device->act_log->nr_elemens */
+ 	return 0;
+-- 
+2.1.3
+
