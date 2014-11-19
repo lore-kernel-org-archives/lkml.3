@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932790AbaKSUya (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:54:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56050 "EHLO
+	id S932768AbaKSUy1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:54:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55903 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932383AbaKSUyG (ORCPT
+	with ESMTP id S1756912AbaKSUyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:06 -0500
+	Wed, 19 Nov 2014 15:54:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yosef Khyal <yosefx.khyal@intel.com>,
+        Jouni Malinen <j@w1.fi>, Luciano Coelho <luciano.coelho@intel.com>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.17 061/141] mac80211: fix use-after-free in defragmentation
-Date: Wed, 19 Nov 2014 12:51:24 -0800
-Message-Id: <20141119205152.670494564@linuxfoundation.org>
+Subject: [PATCH 3.17 060/141] mac80211: schedule the actual switch of the station before CSA count 0
+Date: Wed, 19 Nov 2014 12:51:23 -0800
+Message-Id: <20141119205152.641502085@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,58 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Luciano Coelho <luciano.coelho@intel.com>
 
-commit b8fff407a180286aa683d543d878d98d9fc57b13 upstream.
+commit ff1e417c7c239b7abfe70aa90460a77eaafc7f83 upstream.
 
-Upon receiving the last fragment, all but the first fragment
-are freed, but the multicast check for statistics at the end
-of the function refers to the current skb (the last fragment)
-causing a use-after-free bug.
+Due to the time it takes to process the beacon that started the CSA
+process, we may be late for the switch if we try to reach exactly
+beacon 0.  To avoid that, use count - 1 when calculating the switch time.
 
-Since multicast frames cannot be fragmented and we check for
-this early in the function, just modify that check to also
-do the accounting to fix the issue.
-
-Reported-by: Yosef Khyal <yosefx.khyal@intel.com>
+Reported-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Luciano Coelho <luciano.coelho@intel.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rx.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ net/mac80211/mlme.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1667,11 +1667,14 @@ ieee80211_rx_h_defragment(struct ieee802
- 	sc = le16_to_cpu(hdr->seq_ctrl);
- 	frag = sc & IEEE80211_SCTL_FRAG;
- 
--	if (likely((!ieee80211_has_morefrags(fc) && frag == 0) ||
--		   is_multicast_ether_addr(hdr->addr1))) {
--		/* not fragmented */
-+	if (likely(!ieee80211_has_morefrags(fc) && frag == 0))
-+		goto out;
-+
-+	if (is_multicast_ether_addr(hdr->addr1)) {
-+		rx->local->dot11MulticastReceivedFrameCount++;
- 		goto out;
- 	}
-+
- 	I802_DEBUG_INC(rx->local->rx_handlers_fragments);
- 
- 	if (skb_linearize(rx->skb))
-@@ -1764,10 +1767,7 @@ ieee80211_rx_h_defragment(struct ieee802
-  out:
- 	if (rx->sta)
- 		rx->sta->rx_packets++;
--	if (is_multicast_ether_addr(hdr->addr1))
--		rx->local->dot11MulticastReceivedFrameCount++;
--	else
--		ieee80211_led_rx(rx->local);
-+	ieee80211_led_rx(rx->local);
- 	return RX_CONTINUE;
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -1154,7 +1154,8 @@ ieee80211_sta_process_chanswitch(struct
+ 		ieee80211_queue_work(&local->hw, &ifmgd->chswitch_work);
+ 	else
+ 		mod_timer(&ifmgd->chswitch_timer,
+-			  TU_TO_EXP_TIME(csa_ie.count * cbss->beacon_interval));
++			  TU_TO_EXP_TIME((csa_ie.count - 1) *
++					 cbss->beacon_interval));
  }
  
+ static u32 ieee80211_handle_pwr_constr(struct ieee80211_sub_if_data *sdata,
 
 
