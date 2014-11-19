@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804AbaKSP2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:28:38 -0500
-Received: from mga02.intel.com ([134.134.136.20]:1978 "EHLO mga02.intel.com"
+	id S1755925AbaKSP2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:28:46 -0500
+Received: from mga02.intel.com ([134.134.136.20]:36425 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755285AbaKSP2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:28:36 -0500
+	id S1755883AbaKSP2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 10:28:43 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,417,1413270000"; 
-   d="scan'208";a="639756181"
+   d="scan'208";a="639756233"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Kishon Vijay Abraham I <kishon@ti.com>
 Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-kernel@vger.kernel.org,
         linux-usb@vger.kernel.org, andrew.kim@intel.com
-Subject: [PATCHv5 4/7] arm: omap3: twl: remove usb phy init data
-Date: Wed, 19 Nov 2014 17:28:20 +0200
-Message-Id: <1416410903-162369-5-git-send-email-heikki.krogerus@linux.intel.com>
+Subject: [PATCHv5 7/7] usb: dwc3: host: convey the PHYs to xhci
+Date: Wed, 19 Nov 2014 17:28:23 +0200
+Message-Id: <1416410903-162369-8-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1416410903-162369-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1416410903-162369-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -23,58 +23,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver does no use it any more.
+On some platforms a PHY may need to be handled also in the
+host controller driver. Exynos5420 SoC requires some "PHY
+tuning" based on the USB speed. This patch delivers dwc3's
+PHYs to the xhci platform device when it's created.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
 ---
- arch/arm/mach-omap2/twl-common.c | 12 +-----------
- include/linux/i2c/twl.h          |  2 --
- 2 files changed, 1 insertion(+), 13 deletions(-)
+ drivers/usb/dwc3/host.c | 22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
-index b0d54da..4457e73 100644
---- a/arch/arm/mach-omap2/twl-common.c
-+++ b/arch/arm/mach-omap2/twl-common.c
-@@ -91,18 +91,8 @@ void __init omap_pmic_late_init(void)
+diff --git a/drivers/usb/dwc3/host.c b/drivers/usb/dwc3/host.c
+index dcb8ca0..12bfd3c 100644
+--- a/drivers/usb/dwc3/host.c
++++ b/drivers/usb/dwc3/host.c
+@@ -29,8 +29,7 @@ int dwc3_host_init(struct dwc3 *dwc)
+ 	xhci = platform_device_alloc("xhci-hcd", PLATFORM_DEVID_AUTO);
+ 	if (!xhci) {
+ 		dev_err(dwc->dev, "couldn't allocate xHCI device\n");
+-		ret = -ENOMEM;
+-		goto err0;
++		return -ENOMEM;
+ 	}
+ 
+ 	dma_set_coherent_mask(&xhci->dev, dwc->dev->coherent_dma_mask);
+@@ -60,22 +59,33 @@ int dwc3_host_init(struct dwc3 *dwc)
+ 		goto err1;
+ 	}
+ 
++	phy_create_lookup(dwc->usb2_generic_phy, "usb2-phy",
++			  dev_name(&xhci->dev));
++	phy_create_lookup(dwc->usb3_generic_phy, "usb3-phy",
++			  dev_name(&xhci->dev));
++
+ 	ret = platform_device_add(xhci);
+ 	if (ret) {
+ 		dev_err(dwc->dev, "failed to register xHCI device\n");
+-		goto err1;
++		goto err2;
+ 	}
+ 
+ 	return 0;
+-
++err2:
++	phy_remove_lookup(dwc->usb2_generic_phy, "usb2-phy",
++			  dev_name(&xhci->dev));
++	phy_remove_lookup(dwc->usb3_generic_phy, "usb3-phy",
++			  dev_name(&xhci->dev));
+ err1:
+ 	platform_device_put(xhci);
+-
+-err0:
+ 	return ret;
  }
  
- #if defined(CONFIG_ARCH_OMAP3)
--struct phy_consumer consumers[] = {
--	PHY_CONSUMER("musb-hdrc.0", "usb"),
--};
--
--struct phy_init_data init_data = {
--	.consumers = consumers,
--	.num_consumers = ARRAY_SIZE(consumers),
--};
--
- static struct twl4030_usb_data omap3_usb_pdata = {
--	.usb_mode	= T2_USB_MODE_ULPI,
--	.init_data	= &init_data,
-+	.usb_mode = T2_USB_MODE_ULPI,
- };
- 
- static int omap3_batt_table[] = {
-diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index 8cfb50f..0bc03f1 100644
---- a/include/linux/i2c/twl.h
-+++ b/include/linux/i2c/twl.h
-@@ -26,7 +26,6 @@
- #define __TWL_H_
- 
- #include <linux/types.h>
--#include <linux/phy/phy.h>
- #include <linux/input/matrix_keypad.h>
- 
- /*
-@@ -634,7 +633,6 @@ enum twl4030_usb_mode {
- struct twl4030_usb_data {
- 	enum twl4030_usb_mode	usb_mode;
- 	unsigned long		features;
--	struct phy_init_data	*init_data;
- 
- 	int		(*phy_init)(struct device *dev);
- 	int		(*phy_exit)(struct device *dev);
+ void dwc3_host_exit(struct dwc3 *dwc)
+ {
++	phy_remove_lookup(dwc->usb2_generic_phy, "usb2-phy",
++			  dev_name(&dwc->xhci->dev));
++	phy_remove_lookup(dwc->usb3_generic_phy, "usb3-phy",
++			  dev_name(&dwc->xhci->dev));
+ 	platform_device_unregister(dwc->xhci);
+ }
 -- 
 2.1.3
 
