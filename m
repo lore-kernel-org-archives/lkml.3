@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163AbaKSTIt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 14:08:49 -0500
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:42632 "HELO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756624AbaKSTIr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 14:08:47 -0500
+	id S932286AbaKSTJu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 14:09:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932166AbaKSTJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 14:09:49 -0500
+Message-ID: <546CEAE5.9000305@redhat.com>
+Date: Wed, 19 Nov 2014 20:09:25 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <201411190948.11857.joestringer@nicira.com>
-References: <1416336857-61405-1-git-send-email-joestringer@nicira.com>
-	<CAOftzPgYBBFTfNZunf4oGSmECzjOKF0=dnQ9EkTDFsDi+9jfNw@mail.gmail.com>
-	<CALnjE+rr2tFdvD+X=BbAza_5ad4DYs6viwvZWHCebQYmpvKU3Q@mail.gmail.com>
-	<201411190948.11857.joestringer@nicira.com>
-Date: Wed, 19 Nov 2014 11:08:35 -0800
-Message-ID: <CALnjE+pQnUGiiuWPGt7fNnBetwdn7SQReDqCHDforX7ykQQR8Q@mail.gmail.com>
-Subject: Re: [ovs-dev] [PATCH net] openvswitch: Fix mask generation for IPv6 labels.
-From: Pravin Shelar <pshelar@nicira.com>
-To: Joe Stringer <joestringer@nicira.com>
-Cc: "dev@openvswitch.org" <dev@openvswitch.org>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+CC: John Fastabend <john.fastabend@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <jhs@mojatatu.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
+Subject: Re: net: sched: Deletion of an unnecessary check before the function
+ call "kfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546BAB93.4010406@users.sourceforge.net> <546CC9B3.5060405@gmail.com> <546CE650.6080205@users.sourceforge.net>
+In-Reply-To: <546CE650.6080205@users.sourceforge.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 9:48 AM, Joe Stringer <joestringer@nicira.com> wrote:
-> On Wednesday, November 19, 2014 00:11:01 Pravin Shelar wrote:
->> On Tue, Nov 18, 2014 at 11:25 PM, Joe Stringer <joestringer@nicira.com>
-> wrote:
->> > On 18 November 2014 22:09, Pravin Shelar <pshelar@nicira.com> wrote:
->> >> On Tue, Nov 18, 2014 at 10:54 AM, Joe Stringer <joestringer@nicira.com>
->> >>
->> >> wrote:
->> >> > When userspace doesn't provide a mask, OVS datapath generates a fully
->> >> > unwildcarded mask for the flow. This is done by taking a copy of the
->> >> > flow key, then iterating across its attributes, setting all values to
->> >> > 0xff. This works for most attributes, as the length of the netlink
->> >> > attribute typically matches the length of the value. However, IPv6
->> >> > labels only use the lower 20 bits of the field. This patch makes a
->> >> > special case to handle this.
->> >> >
->> >> > This fixes the following error seen when installing IPv6 flows without
->> >> > a mask:
->> >> >
->> >> > openvswitch: netlink: Invalid IPv6 flow label value (value=ffffffff,
->> >> > max=fffff)
->> >>
->> >> We should allow exact match mask here rather than generating
->> >> wildcarded mask. So that ovs can catch invalid ipv6.label.
->> >
->> > I don't quite follow, I thought this was exact-match? (The existing
->> > function sets all bits to 1)
->>
->> With 0xffffffff value we can exact match on all ipv6.lable bits.
+On 11/19/2014 07:49 PM, SF Markus Elfring wrote:
+>> Marcus, what tree are you looking at?
 >
-> The label field is only 20 bits. The other bits in the same word of the IPv6
-> header are for version (fixed) and traffic class (handled separately). We don't
-> do anything with the other bits.
+> I dared to base this update suggestion on the source files
+> for Linux 3.17.3. Are newer software developments relevant here?
+>
+> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/net/sched/
 
-This is just to make sure that we do not use those field for any thing
-else. Masking those extra bits can hide incorrect ipv6 key extraction.
+Pointing to linux-next and saying you based your changes on 3.17.3
+is confusing, please look correctly when you provide a link ...
+
+Again, John's commit 1f947bf151e90ec0b removed the relevant part in
+cls_bpf_modify_existing() that you're trying to modify:
+
+$ git grep -n bpf_old net/sched/cls_bpf.c
+$
+
+Therefore, this patch is not needed.
+
+Thanks !
