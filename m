@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933656AbaKSVEl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:04:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56595 "EHLO
+	id S933640AbaKSVEj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:04:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933587AbaKSVEe (ORCPT
+	with ESMTP id S933579AbaKSVEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:34 -0500
+	Wed, 19 Nov 2014 16:04:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Houcheng Lin <houcheng@gmail.com>, Florian Westphal <fw@strlen.de>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.14 081/122] netfilter: nf_log: account for size of NLMSG_DONE attribute
-Date: Wed, 19 Nov 2014 12:52:11 -0800
-Message-Id: <20141119205211.495038058@linuxfoundation.org>
+        Andrey Vagin <avagin@openvz.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Joe Perches <joe@perches.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 079/122] ipc: always handle a new value of auto_msgmni
+Date: Wed, 19 Nov 2014 12:52:09 -0800
+Message-Id: <20141119205211.428299049@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,47 +33,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Andrey Vagin <avagin@openvz.org>
 
-commit 9dfa1dfe4d5e5e66a991321ab08afe69759d797a upstream.
+commit 1195d94e006b23c6292e78857e154872e33b6d7e upstream.
 
-We currently neither account for the nlattr size, nor do we consider
-the size of the trailing NLMSG_DONE when allocating nlmsg skb.
+proc_dointvec_minmax() returns zero if a new value has been set.  So we
+don't need to check all charecters have been handled.
 
-This can result in nflog to stop working, as __nfulnl_send() re-tries
-sending forever if it failed to append NLMSG_DONE (which will never
-work if buffer is not large enough).
+Below you can find two examples.  In the new value has not been handled
+properly.
 
-Reported-by: Houcheng Lin <houcheng@gmail.com>
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+$ strace ./a.out
+open("/proc/sys/kernel/auto_msgmni", O_WRONLY) = 3
+write(3, "0\n\0", 3)                    = 2
+close(3)                                = 0
+exit_group(0)
+$ cat /sys/kernel/debug/tracing/trace
+
+$strace ./a.out
+open("/proc/sys/kernel/auto_msgmni", O_WRONLY) = 3
+write(3, "0\n", 2)                      = 2
+close(3)                                = 0
+
+$ cat /sys/kernel/debug/tracing/trace
+a.out-697   [000] ....  3280.998235: unregister_ipcns_notifier <-proc_ipcauto_dointvec_minmax
+
+Fixes: 9eefe520c814 ("ipc: do not use a negative value to re-enable msgmni automatic recomputin")
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Cc: Mathias Krause <minipli@googlemail.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nfnetlink_log.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ ipc/ipc_sysctl.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/netfilter/nfnetlink_log.c
-+++ b/net/netfilter/nfnetlink_log.c
-@@ -652,7 +652,8 @@ nfulnl_log_packet(struct net *net,
- 		+ nla_total_size(sizeof(u_int32_t))	/* gid */
- 		+ nla_total_size(plen)			/* prefix */
- 		+ nla_total_size(sizeof(struct nfulnl_msg_packet_hw))
--		+ nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp));
-+		+ nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp))
-+		+ nla_total_size(sizeof(struct nfgenmsg));	/* NLMSG_DONE */
+--- a/ipc/ipc_sysctl.c
++++ b/ipc/ipc_sysctl.c
+@@ -123,7 +123,6 @@ static int proc_ipcauto_dointvec_minmax(
+ 	void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	struct ctl_table ipc_table;
+-	size_t lenp_bef = *lenp;
+ 	int oldval;
+ 	int rc;
  
- 	if (in && skb_mac_header_was_set(skb)) {
- 		size +=   nla_total_size(skb->dev->hard_header_len)
-@@ -695,8 +696,7 @@ nfulnl_log_packet(struct net *net,
- 		goto unlock_and_release;
- 	}
+@@ -133,7 +132,7 @@ static int proc_ipcauto_dointvec_minmax(
  
--	if (inst->skb &&
--	    size > skb_tailroom(inst->skb) - sizeof(struct nfgenmsg)) {
-+	if (inst->skb && size > skb_tailroom(inst->skb)) {
- 		/* either the queue len is too high or we don't have
- 		 * enough room in the skb left. flush to userspace. */
- 		__nfulnl_flush(inst);
+ 	rc = proc_dointvec_minmax(&ipc_table, write, buffer, lenp, ppos);
+ 
+-	if (write && !rc && lenp_bef == *lenp) {
++	if (write && !rc) {
+ 		int newval = *((int *)(ipc_table.data));
+ 		/*
+ 		 * The file "auto_msgmni" has correctly been set.
 
 
