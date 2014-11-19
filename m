@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874AbaKSUx6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:53:58 -0500
+	id S934427AbaKSWcp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:32:45 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:55908 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756694AbaKSUxw (ORCPT
+	with ESMTP id S1756875AbaKSUx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:53:52 -0500
+	Wed, 19 Nov 2014 15:53:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dwight Engen <dwight.engen@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 020/141] sunvdc: limit each sg segment to a page
-Date: Wed, 19 Nov 2014 12:50:43 -0800
-Message-Id: <20141119205151.325135667@linuxfoundation.org>
+        Tadeusz Struk <tadeusz.struk@intel.com>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.17 033/141] crypto: qat - Enforce valid numa configuration
+Date: Wed, 19 Nov 2014 12:50:56 -0800
+Message-Id: <20141119205151.734328745@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,40 +31,211 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dwight Engen <dwight.engen@oracle.com>
+From: Tadeusz Struk <tadeusz.struk@intel.com>
 
-[ Upstream commit 5eed69ffd248c9f68f56c710caf07db134aef28b ]
+commit 09adc8789c4e895d7548fa9eb5d24ad9a5d91c5d upstream.
 
-ldc_map_sg() could fail its check that the number of pages referred to
-by the sg scatterlist was <= the number of cookies.
+In a system with NUMA configuration we want to enforce that the accelerator is
+connected to a node with memory to avoid cross QPI memory transaction.
+Otherwise there is no point in using the accelerator as the encryption in
+software will be faster.
 
-This fixes the issue by doing a similar thing to the xen-blkfront driver,
-ensuring that the scatterlist will only ever contain a segment count <=
-port->ring_cookies, and each segment will be page aligned, and <= page
-size. This ensures that the scatterlist is always mappable.
-
-Orabug: 19347817
-OraBZ: 15945
-
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
+Tested-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Reviewed-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/block/sunvdc.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
---- a/drivers/block/sunvdc.c
-+++ b/drivers/block/sunvdc.c
-@@ -747,6 +747,10 @@ static int probe_disk(struct vdc_port *p
+---
+ drivers/crypto/qat/qat_common/adf_accel_devices.h |    3 --
+ drivers/crypto/qat/qat_common/adf_transport.c     |   12 ++++----
+ drivers/crypto/qat/qat_common/qat_algs.c          |    5 ++-
+ drivers/crypto/qat/qat_common/qat_crypto.c        |    8 +++--
+ drivers/crypto/qat/qat_dh895xcc/adf_admin.c       |    2 -
+ drivers/crypto/qat/qat_dh895xcc/adf_drv.c         |   32 ++++++++--------------
+ drivers/crypto/qat/qat_dh895xcc/adf_isr.c         |    2 -
+ 7 files changed, 30 insertions(+), 34 deletions(-)
+
+--- a/drivers/crypto/qat/qat_common/adf_accel_devices.h
++++ b/drivers/crypto/qat/qat_common/adf_accel_devices.h
+@@ -198,8 +198,7 @@ struct adf_accel_dev {
+ 	struct dentry *debugfs_dir;
+ 	struct list_head list;
+ 	struct module *owner;
+-	uint8_t accel_id;
+-	uint8_t numa_node;
+ 	struct adf_accel_pci accel_pci_dev;
++	uint8_t accel_id;
+ } __packed;
+ #endif
+--- a/drivers/crypto/qat/qat_common/adf_transport.c
++++ b/drivers/crypto/qat/qat_common/adf_transport.c
+@@ -419,9 +419,10 @@ static int adf_init_bank(struct adf_acce
+ 		WRITE_CSR_RING_BASE(csr_addr, bank_num, i, 0);
+ 		ring = &bank->rings[i];
+ 		if (hw_data->tx_rings_mask & (1 << i)) {
+-			ring->inflights = kzalloc_node(sizeof(atomic_t),
+-						       GFP_KERNEL,
+-						       accel_dev->numa_node);
++			ring->inflights =
++				kzalloc_node(sizeof(atomic_t),
++					     GFP_KERNEL,
++					     dev_to_node(&GET_DEV(accel_dev)));
+ 			if (!ring->inflights)
+ 				goto err;
+ 		} else {
+@@ -469,13 +470,14 @@ int adf_init_etr_data(struct adf_accel_d
+ 	int i, ret;
  
- 	port->disk = g;
+ 	etr_data = kzalloc_node(sizeof(*etr_data), GFP_KERNEL,
+-				accel_dev->numa_node);
++				dev_to_node(&GET_DEV(accel_dev)));
+ 	if (!etr_data)
+ 		return -ENOMEM;
  
-+	/* Each segment in a request is up to an aligned page in size. */
-+	blk_queue_segment_boundary(q, PAGE_SIZE - 1);
-+	blk_queue_max_segment_size(q, PAGE_SIZE);
+ 	num_banks = GET_MAX_BANKS(accel_dev);
+ 	size = num_banks * sizeof(struct adf_etr_bank_data);
+-	etr_data->banks = kzalloc_node(size, GFP_KERNEL, accel_dev->numa_node);
++	etr_data->banks = kzalloc_node(size, GFP_KERNEL,
++				       dev_to_node(&GET_DEV(accel_dev)));
+ 	if (!etr_data->banks) {
+ 		ret = -ENOMEM;
+ 		goto err_bank;
+--- a/drivers/crypto/qat/qat_common/qat_algs.c
++++ b/drivers/crypto/qat/qat_common/qat_algs.c
+@@ -641,7 +641,8 @@ static int qat_alg_sgl_to_bufl(struct qa
+ 	if (unlikely(!n))
+ 		return -EINVAL;
+ 
+-	bufl = kmalloc_node(sz, GFP_ATOMIC, inst->accel_dev->numa_node);
++	bufl = kmalloc_node(sz, GFP_ATOMIC,
++			    dev_to_node(&GET_DEV(inst->accel_dev)));
+ 	if (unlikely(!bufl))
+ 		return -ENOMEM;
+ 
+@@ -687,7 +688,7 @@ static int qat_alg_sgl_to_bufl(struct qa
+ 		struct qat_alg_buf *bufers;
+ 
+ 		buflout = kmalloc_node(sz, GFP_ATOMIC,
+-				       inst->accel_dev->numa_node);
++				       dev_to_node(&GET_DEV(inst->accel_dev)));
+ 		if (unlikely(!buflout))
+ 			goto err;
+ 		bloutp = dma_map_single(dev, buflout, sz, DMA_TO_DEVICE);
+--- a/drivers/crypto/qat/qat_common/qat_crypto.c
++++ b/drivers/crypto/qat/qat_common/qat_crypto.c
+@@ -109,12 +109,14 @@ struct qat_crypto_instance *qat_crypto_g
+ 
+ 	list_for_each(itr, adf_devmgr_get_head()) {
+ 		accel_dev = list_entry(itr, struct adf_accel_dev, list);
+-		if (accel_dev->numa_node == node && adf_dev_started(accel_dev))
++		if ((node == dev_to_node(&GET_DEV(accel_dev)) ||
++			dev_to_node(&GET_DEV(accel_dev)) < 0)
++				&& adf_dev_started(accel_dev))
+ 			break;
+ 		accel_dev = NULL;
+ 	}
+ 	if (!accel_dev) {
+-		pr_err("QAT: Could not find device on give node\n");
++		pr_err("QAT: Could not find device on node %d\n", node);
+ 		accel_dev = adf_devmgr_get_first();
+ 	}
+ 	if (!accel_dev || !adf_dev_started(accel_dev))
+@@ -164,7 +166,7 @@ static int qat_crypto_create_instances(s
+ 
+ 	for (i = 0; i < num_inst; i++) {
+ 		inst = kzalloc_node(sizeof(*inst), GFP_KERNEL,
+-				    accel_dev->numa_node);
++				    dev_to_node(&GET_DEV(accel_dev)));
+ 		if (!inst)
+ 			goto err;
+ 
+--- a/drivers/crypto/qat/qat_dh895xcc/adf_admin.c
++++ b/drivers/crypto/qat/qat_dh895xcc/adf_admin.c
+@@ -108,7 +108,7 @@ int adf_init_admin_comms(struct adf_acce
+ 	uint64_t reg_val;
+ 
+ 	admin = kzalloc_node(sizeof(*accel_dev->admin), GFP_KERNEL,
+-			     accel_dev->numa_node);
++			     dev_to_node(&GET_DEV(accel_dev)));
+ 	if (!admin)
+ 		return -ENOMEM;
+ 	admin->virt_addr = dma_zalloc_coherent(&GET_DEV(accel_dev), PAGE_SIZE,
+--- a/drivers/crypto/qat/qat_dh895xcc/adf_drv.c
++++ b/drivers/crypto/qat/qat_dh895xcc/adf_drv.c
+@@ -119,21 +119,6 @@ static void adf_cleanup_accel(struct adf
+ 	kfree(accel_dev);
+ }
+ 
+-static uint8_t adf_get_dev_node_id(struct pci_dev *pdev)
+-{
+-	unsigned int bus_per_cpu = 0;
+-	struct cpuinfo_x86 *c = &cpu_data(num_online_cpus() - 1);
+-
+-	if (!c->phys_proc_id)
+-		return 0;
+-
+-	bus_per_cpu = 256 / (c->phys_proc_id + 1);
+-
+-	if (bus_per_cpu != 0)
+-		return pdev->bus->number / bus_per_cpu;
+-	return 0;
+-}
+-
+ static int qat_dev_start(struct adf_accel_dev *accel_dev)
+ {
+ 	int cpus = num_online_cpus();
+@@ -235,7 +220,6 @@ static int adf_probe(struct pci_dev *pde
+ 	void __iomem *pmisc_bar_addr = NULL;
+ 	char name[ADF_DEVICE_NAME_LENGTH];
+ 	unsigned int i, bar_nr;
+-	uint8_t node;
+ 	int ret;
+ 
+ 	switch (ent->device) {
+@@ -246,12 +230,19 @@ static int adf_probe(struct pci_dev *pde
+ 		return -ENODEV;
+ 	}
+ 
+-	node = adf_get_dev_node_id(pdev);
+-	accel_dev = kzalloc_node(sizeof(*accel_dev), GFP_KERNEL, node);
++	if (num_possible_nodes() > 1 && dev_to_node(&pdev->dev) < 0) {
++		/* If the accelerator is connected to a node with no memory
++		 * there is no point in using the accelerator since the remote
++		 * memory transaction will be very slow. */
++		dev_err(&pdev->dev, "Invalid NUMA configuration.\n");
++		return -EINVAL;
++	}
 +
- 	blk_queue_max_segments(q, port->ring_cookies);
- 	blk_queue_max_hw_sectors(q, port->max_xfer_size);
- 	g->major = vdc_major;
++	accel_dev = kzalloc_node(sizeof(*accel_dev), GFP_KERNEL,
++			         dev_to_node(&pdev->dev));
+ 	if (!accel_dev)
+ 		return -ENOMEM;
+ 
+-	accel_dev->numa_node = node;
+ 	INIT_LIST_HEAD(&accel_dev->crypto_list);
+ 
+ 	/* Add accel device to accel table.
+@@ -264,7 +255,8 @@ static int adf_probe(struct pci_dev *pde
+ 
+ 	accel_dev->owner = THIS_MODULE;
+ 	/* Allocate and configure device configuration structure */
+-	hw_data = kzalloc_node(sizeof(*hw_data), GFP_KERNEL, node);
++	hw_data = kzalloc_node(sizeof(*hw_data), GFP_KERNEL,
++			       dev_to_node(&pdev->dev));
+ 	if (!hw_data) {
+ 		ret = -ENOMEM;
+ 		goto out_err;
+--- a/drivers/crypto/qat/qat_dh895xcc/adf_isr.c
++++ b/drivers/crypto/qat/qat_dh895xcc/adf_isr.c
+@@ -168,7 +168,7 @@ static int adf_isr_alloc_msix_entry_tabl
+ 	uint32_t msix_num_entries = hw_data->num_banks + 1;
+ 
+ 	entries = kzalloc_node(msix_num_entries * sizeof(*entries),
+-			       GFP_KERNEL, accel_dev->numa_node);
++			       GFP_KERNEL, dev_to_node(&GET_DEV(accel_dev)));
+ 	if (!entries)
+ 		return -ENOMEM;
+ 
 
 
