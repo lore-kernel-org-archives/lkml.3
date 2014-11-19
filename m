@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182AbaKSW0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:26:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56055 "EHLO
+	id S934236AbaKSW0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:26:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56061 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932434AbaKSUyG (ORCPT
+	with ESMTP id S1756895AbaKSUyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:06 -0500
+	Wed, 19 Nov 2014 15:54:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        James Ausmus <james.ausmus@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Rodrigo Vivi <rodrigo.vivi@intel.com>
-Subject: [PATCH 3.17 063/141] drm/i915: Disable caches for Global GTT.
-Date: Wed, 19 Nov 2014 12:51:26 -0800
-Message-Id: <20141119205152.737584518@linuxfoundation.org>
+        Szymon Kowalczyk <fazerxlo@o2.pl>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.17 052/141] ALSA: hda - Add mute LED control for Lenovo Ideapad Z560
+Date: Wed, 19 Nov 2014 12:51:15 -0800
+Message-Id: <20141119205152.392506896@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -32,68 +28,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rodrigo Vivi <rodrigo.vivi@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit d6a8b72edc92471283925ceb4ba12799b67c3ff8 upstream.
+commit 3542aed7480925eb859f7ce101982209cc19a126 upstream.
 
-Global GTT doesn't have pat_sel[2:0] so it always point to pat_sel = 000;
-So the only way to avoid screen corruptions is setting PAT 0 to Uncached.
+Lenovo Ideapad Z560 has a mute LED that is controlled via EAPD pin
+0x1b on CX20585 codec.  (EAPD bit on corresponds to mute LED on.)
+The machine doesn't need other EAPD, so the fixup concentrates on
+controlling EAPD 0x1b following the vmaster state (but inversely).
 
-MOCS can still be used though. But if userspace is trusting PTE for
-cache selection the safest thing to do is to let caches disabled.
-
-BSpec: "For GGTT, there is NO pat_sel[2:0] from the entry,
-so RTL will always use the value corresponding to pat_sel = 000"
-
-- System agent ggtt writes (i.e. cpu gtt mmaps) already work before
-this patch, i.e. the same uncached + snooping access like on gen6/7
-seems to be in effect.
-- So this just fixes blitter/render access. Again it looks like it's
-not just uncached access, but uncached + snooping. So we can still
-hold onto all our assumptions wrt cpu clflushing on LLC machines.
-
-v2: Cleaner patch as suggested by Chris.
-v3: Add Daniel's comment
-
-Reference: https://bugs.freedesktop.org/show_bug.cgi?id=85576
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: James Ausmus <james.ausmus@intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@intel.com>
-Tested-by: James Ausmus <james.ausmus@intel.com>
-Reviewed-by: James Ausmus <james.ausmus@intel.com>
-Signed-off-by: Rodrigo Vivi <rodrigo.vivi@intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=665315
+Reported-by: Szymon Kowalczyk <fazerxlo@o2.pl>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem_gtt.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ sound/pci/hda/patch_conexant.c |   31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_gem_gtt.c
-+++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
-@@ -1901,6 +1901,22 @@ static void bdw_setup_private_ppat(struc
- 	      GEN8_PPAT(6, GEN8_PPAT_WB | GEN8_PPAT_LLCELLC | GEN8_PPAT_AGE(2)) |
- 	      GEN8_PPAT(7, GEN8_PPAT_WB | GEN8_PPAT_LLCELLC | GEN8_PPAT_AGE(3));
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -44,6 +44,7 @@ struct conexant_spec {
+ 	unsigned int num_eapds;
+ 	hda_nid_t eapds[4];
+ 	bool dynamic_eapd;
++	hda_nid_t mute_led_eapd;
  
-+	if (!USES_PPGTT(dev_priv->dev))
-+		/* Spec: "For GGTT, there is NO pat_sel[2:0] from the entry,
-+		 * so RTL will always use the value corresponding to
-+		 * pat_sel = 000".
-+		 * So let's disable cache for GGTT to avoid screen corruptions.
-+		 * MOCS still can be used though.
-+		 * - System agent ggtt writes (i.e. cpu gtt mmaps) already work
-+		 * before this patch, i.e. the same uncached + snooping access
-+		 * like on gen6/7 seems to be in effect.
-+		 * - So this just fixes blitter/render access. Again it looks
-+		 * like it's not just uncached access, but uncached + snooping.
-+		 * So we can still hold onto all our assumptions wrt cpu
-+		 * clflushing on LLC machines.
-+		 */
-+		pat = GEN8_PPAT(0, GEN8_PPAT_UC);
+ 	unsigned int parse_flags; /* flag for snd_hda_parse_pin_defcfg() */
+ 
+@@ -164,6 +165,17 @@ static void cx_auto_vmaster_hook(void *p
+ 	cx_auto_turn_eapd(codec, spec->num_eapds, spec->eapds, enabled);
+ }
+ 
++/* turn on/off EAPD according to Master switch (inversely!) for mute LED */
++static void cx_auto_vmaster_hook_mute_led(void *private_data, int enabled)
++{
++	struct hda_codec *codec = private_data;
++	struct conexant_spec *spec = codec->spec;
 +
- 	/* XXX: spec defines this as 2 distinct registers. It's unclear if a 64b
- 	 * write would work. */
- 	I915_WRITE(GEN8_PRIVATE_PAT, pat);
++	snd_hda_codec_write(codec, spec->mute_led_eapd, 0,
++			    AC_VERB_SET_EAPD_BTLENABLE,
++			    enabled ? 0x00 : 0x02);
++}
++
+ static int cx_auto_build_controls(struct hda_codec *codec)
+ {
+ 	int err;
+@@ -224,6 +236,7 @@ enum {
+ 	CXT_FIXUP_TOSHIBA_P105,
+ 	CXT_FIXUP_HP_530,
+ 	CXT_FIXUP_CAP_MIX_AMP_5047,
++	CXT_FIXUP_MUTE_LED_EAPD,
+ };
+ 
+ /* for hda_fixup_thinkpad_acpi() */
+@@ -557,6 +570,18 @@ static void cxt_fixup_olpc_xo(struct hda
+ 	}
+ }
+ 
++static void cxt_fixup_mute_led_eapd(struct hda_codec *codec,
++				    const struct hda_fixup *fix, int action)
++{
++	struct conexant_spec *spec = codec->spec;
++
++	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
++		spec->mute_led_eapd = 0x1b;
++		spec->dynamic_eapd = 1;
++		spec->gen.vmaster_mute.hook = cx_auto_vmaster_hook_mute_led;
++	}
++}
++
+ /*
+  * Fix max input level on mixer widget to 0dB
+  * (originally it has 0x2b steps with 0dB offset 0x14)
+@@ -705,6 +730,10 @@ static const struct hda_fixup cxt_fixups
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = cxt_fixup_cap_mix_amp_5047,
+ 	},
++	[CXT_FIXUP_MUTE_LED_EAPD] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = cxt_fixup_mute_led_eapd,
++	},
+ };
+ 
+ static const struct snd_pci_quirk cxt5045_fixups[] = {
+@@ -761,6 +790,7 @@ static const struct snd_pci_quirk cxt506
+ 	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x21da, "Lenovo X220", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x21db, "Lenovo X220-tablet", CXT_PINCFG_LENOVO_TP410),
++	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo IdeaPad Z560", CXT_FIXUP_MUTE_LED_EAPD),
+ 	SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x17aa, 0x3977, "Lenovo IdeaPad U310", CXT_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x17aa, 0x397b, "Lenovo S205", CXT_FIXUP_STEREO_DMIC),
+@@ -779,6 +809,7 @@ static const struct hda_model_fixup cxt5
+ 	{ .id = CXT_PINCFG_LEMOTE_A1004, .name = "lemote-a1004" },
+ 	{ .id = CXT_PINCFG_LEMOTE_A1205, .name = "lemote-a1205" },
+ 	{ .id = CXT_FIXUP_OLPC_XO, .name = "olpc-xo" },
++	{ .id = CXT_FIXUP_MUTE_LED_EAPD, .name = "mute-led-eapd" },
+ 	{}
+ };
+ 
 
 
