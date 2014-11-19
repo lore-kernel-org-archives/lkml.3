@@ -1,92 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949AbaKSXmf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 18:42:35 -0500
-Received: from ozlabs.org ([103.22.144.67]:34052 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575AbaKSXmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 18:42:32 -0500
-Date: Thu, 20 Nov 2014 10:42:23 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Drysdale <drysdale@google.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rich Felker <dalias@aerifal.cx>, Christoph Hellwig <hch@infradead.org>,
-        x86@kernel.org, linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCHv9 4/5] sparc: Hook up execveat system call.
-Message-ID: <20141120104223.2cea8043@canb.auug.org.au>
-In-Reply-To: <1416418072-18639-5-git-send-email-drysdale@google.com>
-References: <1416418072-18639-1-git-send-email-drysdale@google.com>
-	<1416418072-18639-5-git-send-email-drysdale@google.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1756870AbaKSXqI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 18:46:08 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:51098 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756318AbaKSXqG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 18:46:06 -0500
+Date: Wed, 19 Nov 2014 15:46:03 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 1/3] mm: sl[aou]b: introduce kmem_cache_zalloc_node()
+In-Reply-To: <1415621218-6438-1-git-send-email-a.ryabinin@samsung.com>
+Message-ID: <alpine.DEB.2.10.1411191545210.32057@chino.kir.corp.google.com>
+References: <1415621218-6438-1-git-send-email-a.ryabinin@samsung.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/RAw1y7OKVANSa1LBZY6zEbt"; protocol="application/pgp-signature"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/RAw1y7OKVANSa1LBZY6zEbt
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, 10 Nov 2014, Andrey Ryabinin wrote:
 
-Hi David,
+> kmem_cache_zalloc_node() allocates zeroed memory for a particular
+> cache from a specified memory node. To be used for struct irq_desc.
+> 
 
-On Wed, 19 Nov 2014 17:27:51 +0000 David Drysdale <drysdale@google.com> wro=
-te:
->
-> diff --git a/arch/sparc/kernel/systbls_64.S b/arch/sparc/kernel/systbls_6=
-4.S
-> index 580cde9370c9..15069cb35dac 100644
-> --- a/arch/sparc/kernel/systbls_64.S
-> +++ b/arch/sparc/kernel/systbls_64.S
-> @@ -88,6 +88,7 @@ sys_call_table32:
->  	.word sys_syncfs, compat_sys_sendmmsg, sys_setns, compat_sys_process_vm=
-_readv, compat_sys_process_vm_writev
->  /*340*/	.word sys_kern_features, sys_kcmp, sys_finit_module, sys_sched_s=
-etattr, sys_sched_getattr
->  	.word sys32_renameat2, sys_seccomp, sys_getrandom, sys_memfd_create, sy=
-s_bpf
-> +/*350*/	.word sys_execveat
-
-Shouldn't this be compat_sys_execveat?
-
-> =20
->  #endif /* CONFIG_COMPAT */
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/RAw1y7OKVANSa1LBZY6zEbt
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUbSrkAAoJEMDTa8Ir7ZwVoVoP/AlHLVTxaKtx1n9YHKSFO8T8
-/G7WwXkXbsm3fb5qBHJeHtjq+rc9tOA1DM/78qeeDbr9rt4eog0N6scoLXdPeSLK
-vZSKe+Z0i8z9hGUph0CXmuQI37XmG+V+HtIQCcdtC6PxijjNWzzCmADN+NToyDKr
-pmn/jQKHDTGOQHjhfEDhq6G55M3bKzBna5V7YDAd8+Utd/PmT+5lmKNEtuLT8Y/0
-MdnuXZUaX1dsh3SKI8y/l2sCmgc91L10OW0OV+k0Jlj78/lZDmg4mPQZs9h9uZQ2
-m9+Gw86XKKunUDKoynl0u9obZGWa2J4XMKX0cBWwvgZkXd+SBwZEyeKpwiHb66OF
-b6+YxrJdf5ciu+zMkRTpFPyLfwGxGDHnp8HQBvjZtrtHmFwTdLZpQavFwLQpurNv
-9Xh3GCg/wb8wTxlvRuMqSZjCH+Wniea0RnBfdVwfGAwFBA2Yzi+gZMVhi7EvAd0i
-yDBm5WnaNcDJ9AyvMiyierIweTVJBjCGhdvVSbFtjoFcGBrql+/4Zw9Ng+u360U3
-0PGLDNB7Tc18CKP0u3JDYlL23/mFeJhe2OA9OV9899i62QOF9YnJvkDNz+PwqAXC
-PuuU/YDA8L8y8E2QOrP8ry1VnC1bWhDzHTYmfBUWwbRPGZNVFfLyy23uSj+T1GHC
-03oLWeCX9F9iyjrlQ8Ko
-=41EX
------END PGP SIGNATURE-----
-
---Sig_/RAw1y7OKVANSa1LBZY6zEbt--
+Is there a reason to add this for such a specialized purpose to the slab 
+allocator?  I think it can just be handled for struct irq_desc explicitly.
