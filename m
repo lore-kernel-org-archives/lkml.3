@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761AbaKSKOX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 05:14:23 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:54126 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753748AbaKSKOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 05:14:22 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Jianqun Xu <jay.xu@rock-chips.com>
-Cc: lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, huangtao@rock-chips.com,
-        Sonny Rao <sonnyrao@chromium.org>
-Subject: Re: [PATCH v2 2/2] ASoC: rockchip: i2s: add support for grabbing output clock to codec
-Date: Wed, 19 Nov 2014 11:17:56 +0100
-Message-ID: <3448679.qPaq5DHST3@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1416384567-29476-1-git-send-email-jay.xu@rock-chips.com>
-References: <1416366468-4744-1-git-send-email-jay.xu@rock-chips.com> <1416384567-29476-1-git-send-email-jay.xu@rock-chips.com>
+	id S1755800AbaKSKOa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 05:14:30 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:40826 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755767AbaKSKOY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 05:14:24 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20141107234628.4923.60525.stgit@notabene.brown>
+References: <20141107234628.4923.60525.stgit@notabene.brown>
+Date: Wed, 19 Nov 2014 11:14:24 +0100
+Message-ID: <CAPDyKFr=vjh5UOzkrbn7Fpm8j97sqf6xxD7tm+HydOKtyeYKoQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] mmc: omap_hsmmc: make more use of mmc library functionality
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Chris Ball <chris@printf.net>, Balaji T K <balajitk@ti.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        GTA04 owners <gta04-owner@goldelico.com>,
+        Venkatraman S <svenkatr@ti.com>, Felipe Balbi <balbi@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jianqun,
+On 8 November 2014 00:52, NeilBrown <neilb@suse.de> wrote:
+> omap_hsmmc currently duplicates some work that can be done for
+> it by common code, and consequently does not benefit from extra
+> functionality in that common code.
+>
+> In particular, mmc_of_parse and the slot-gpio library are not used.
+>
+> This set of patches allows omap_hsmmc to use that common
+> functionality, and benefit from any extra devicetree parsing
+> that it performs.
+>
+> The one awkward part of this change is that omap_hsmmc has an
+> interrupt handler for 'card detect' which does more than the
+> common code.
+> I see three options:
+>  1 - move that functionality into common code
+>  2 - discard that functionality
+>  3 - allow the common code to be configured to use a device-specific
+>      card detect interrupt.
+>
+> This series implements '3'.  I suspect a mix of '1' and '2' would
+> be a better choice but I know no of the history or justification
+> for those differences.
+>
+> My preference would be for this series to be applied (if there are
+> no other issues) and if there are opinions about effecting '1' or '2',
+> they can be done with subsequent patches.
+>
+> Thanks,
+> NeilBrown
+>
 
+I like the looks of this patchset, but it needs a rebase.
 
-Am Mittwoch, 19. November 2014, 16:09:27 schrieb Jianqun Xu:
-> Patch is from Sonny Rao <sonnyrao@chromium.org>
-that line above should read exactly:
-From: Sonny Rao <sonnyrao@chromium.org>
+Kind regards
+Uffe
 
-that way git will also set the author correctly when importing the patch mbox.
-
-> 
-> We need to claim the clock which is driving the codec so that when we enable
-> clock gating, we continue to clock the codec when needed.  I make this an
-> optional clock since there might be some applications where we don't need
-> it but can still use the I2S block.
-> 
-> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-
-I think we you're submitting someone elses patch you'll need a Signed-off-by 
-line for yourself too [which marks that you were allowed to submit it etc], so 
-it should read something like
-
-Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
-
-
+>
 > ---
-> changes since v1:
-> - modify commit message
-> 
->  sound/soc/rockchip/rockchip_i2s.c | 11 +++++++++++
->  1 file changed, 11 insertions(+)
-> 
-> diff --git a/sound/soc/rockchip/rockchip_i2s.c
-> b/sound/soc/rockchip/rockchip_i2s.c index c74ba37..2820ade 100644
-> --- a/sound/soc/rockchip/rockchip_i2s.c
-> +++ b/sound/soc/rockchip/rockchip_i2s.c
-> @@ -28,6 +28,7 @@ struct rk_i2s_dev {
-> 
->  	struct clk *hclk;
->  	struct clk *mclk;
-> +	struct clk *oclk;
-> 
->  	struct snd_dmaengine_dai_dma_data capture_dma_data;
->  	struct snd_dmaengine_dai_dma_data playback_dma_data;
-> @@ -439,6 +440,14 @@ static int rockchip_i2s_probe(struct platform_device
-> *pdev) return PTR_ERR(i2s->mclk);
->  	}
-> 
-> +	i2s->oclk = devm_clk_get(&pdev->dev, "i2s_clk_out");
-> +	if (IS_ERR(i2s->oclk)) {
-> +		dev_dbg(&pdev->dev, "Didn't find output clock\n");
-> +		i2s->oclk = NULL;
-> +	}
-
-blank line here?
-
-> +	if (i2s->oclk)
-> +		ret = clk_prepare_enable(i2s->oclk);
-> +
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	regs = devm_ioremap_resource(&pdev->dev, res);
->  	if (IS_ERR(regs))
-> @@ -505,6 +514,8 @@ static int rockchip_i2s_remove(struct platform_device
-> *pdev) if (!pm_runtime_status_suspended(&pdev->dev))
->  		i2s_runtime_suspend(&pdev->dev);
-> 
-> +	if (i2s->oclk)
-> +		clk_disable_unprepare(i2s->oclk);
->  	clk_disable_unprepare(i2s->mclk);
->  	clk_disable_unprepare(i2s->hclk);
->  	snd_dmaengine_pcm_unregister(&pdev->dev);
-
-
-Heiko
-
+>
+> NeilBrown (3):
+>       mmc: omap_hsmmc: remove prepare/complete system suspend support.
+>       mmc: omap_hsmmc: use slot-gpio library for gpio support.
+>       mmc: omap_hsmmc: use mmc_of_parse to parse common mmc configuration.
+>
+>
+>  drivers/mmc/core/slot-gpio.c           |   21 ++++
+>  drivers/mmc/host/omap_hsmmc.c          |  158 +++++---------------------------
+>  include/linux/mmc/slot-gpio.h          |    2
+>  include/linux/platform_data/mmc-omap.h |    4 -
+>  4 files changed, 47 insertions(+), 138 deletions(-)
+>
+> --
+> Signature
+>
