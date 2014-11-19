@@ -1,123 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709AbaKSKzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 05:55:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59328 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755222AbaKSKzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 05:55:09 -0500
-Date: Wed, 19 Nov 2014 11:54:50 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org, "Liang, Kan" <kan.liang@intel.com>
-Subject: Re: Implement lbr-as-callgraph v10
-Message-ID: <20141119105450.GA22132@krava.brq.redhat.com>
-References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
- <20141117213457.GE4163@kernel.org>
- <20141118104416.GE27645@krava.brq.redhat.com>
- <20141118110007.GF27645@krava.brq.redhat.com>
- <87zjbnpv64.fsf@sejong.aot.lge.com>
- <20141119092323.GC2592@krava.brq.redhat.com>
+	id S1754652AbaKSK5w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 05:57:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35697 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaKSK5v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 05:57:51 -0500
+Date: Wed, 19 Nov 2014 02:57:30 -0800
+From: tip-bot for Dave Hansen <tipbot@zytor.com>
+Message-ID: <tip-68c009c4137927fd4ffd3e653bb5209d752c1d42@git.kernel.org>
+Cc: dave@sr71.net, dave.hansen@linux.intel.com, tglx@linutronix.de,
+        hpa@zytor.com, mingo@kernel.org, linux-kernel@vger.kernel.org
+Reply-To: dave@sr71.net, hpa@zytor.com, tglx@linutronix.de,
+        dave.hansen@linux.intel.com, linux-kernel@vger.kernel.org,
+        mingo@kernel.org
+In-Reply-To: <20141118182343.C3E0C629@viggo.jf.intel.com>
+References: <20141118182343.C3E0C629@viggo.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mpx] x86 mpx: Change return type of get_reg_offset()
+Git-Commit-ID: 68c009c4137927fd4ffd3e653bb5209d752c1d42
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141119092323.GC2592@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 10:23:23AM +0100, Jiri Olsa wrote:
-> On Wed, Nov 19, 2014 at 03:21:39PM +0900, Namhyung Kim wrote:
-> > Hi Jiri,
-> > 
-> > On Tue, 18 Nov 2014 12:00:07 +0100, Jiri Olsa wrote:
-> > > On Tue, Nov 18, 2014 at 11:44:16AM +0100, Jiri Olsa wrote:
-> > >> On Mon, Nov 17, 2014 at 06:34:57PM -0300, Arnaldo Carvalho de Melo wrote:
-> > >> > Em Wed, Nov 12, 2014 at 06:05:18PM -0800, Andi Kleen escreveu:
-> > >> > > [Reworks to address all the review feedback. Rebased to latest tree]
-> > >> > > [Just a repost after a rebase]
-> > >> > > [Even more review feedback and some bugs addressed.]
-> > >> > > [Only port to changes in perf/core. No other changes.]
-> > >> > > [Rebase to latest perf/core]
-> > >> > > [Another rebase. No changes]
-> > >> > > 
-> > >> > > This patchkit implements lbr-as-callgraphs in per freport,
-> > >> > > as an alternative way to present LBR information.
-> > >> > 
-> > >> > Ok, I have this in my perf/core branch, but I need to test it further,
-> > >> > as I couldn't get the output that appears on some of the changelogs.
-> > >> > 
-> > >> > If you could take a look at
-> > >> > 
-> > >> > git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
-> > >> > 
-> > >> > To see if I made some mistake, that would be of help,
-> > >> > 
-> > >> 
-> > >> I'm getting compile error for DEBUG=1
-> > >
-> > > looks like the BUILD_BUG_ON_MSG does not work correctly with -O6 we use
-> > 
-> > Nope, DEBUG=1 prevents -O6 from applied.  we have below in config/Makefile:
-> 
-> right.. the other way around ;))
-> 
-> > 
-> >   ifndef DEBUG
-> >     DEBUG := 0
-> >   endif
-> > 
-> >   ifeq ($(DEBUG),0)
-> >     CFLAGS += -O6
-> >   endif
-> > 
-> > 
-> > Looking at include/linux/bug.h, BUILD_BUG_ON is guarded under
-> > __OPTIMIZE__ but BUILD_BUG_ON_MSG is not.  What about changing it to
-> > BUILD_BUG_ON then?
-> 
-> sounds gut
+Commit-ID:  68c009c4137927fd4ffd3e653bb5209d752c1d42
+Gitweb:     http://git.kernel.org/tip/68c009c4137927fd4ffd3e653bb5209d752c1d42
+Author:     Dave Hansen <dave.hansen@linux.intel.com>
+AuthorDate: Tue, 18 Nov 2014 10:23:43 -0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 19 Nov 2014 11:54:12 +0100
 
-hum, acme/perf/core changed and so has the compile error ;-)
-we dont overload the <linux/bug.h>, so the kernel one got
-included, which is wrong.. attached patch fixes that
+x86 mpx: Change return type of get_reg_offset()
 
-jirka
+get_reg_offset() used to return the register contents themselves
+instead of the register offset.  When it did that, it was an
+unsigned long.  I changed it to return an integer _offset_
+instead of the register.  But, I neglected to change the return
+type of the function or the variables in which we store the
+result of the call.
 
+This fixes up the code to clear up the warnings from the smatch
+bot:
 
-[jolsa@krava perf]$ make JOBS=1
-  BUILD:   Doing 'make -j1' parallel build
-  CC       perf.o
-  CC       builtin-annotate.o
-In file included from util/machine.h:5:0,
-                 from util/session.h:7,
-                 from builtin-annotate.c:29:
-/home/jolsa/kernel.org/linux-perf/include/linux/bug.h: In function ‘report_bug’:
-/home/jolsa/kernel.org/linux-perf/include/linux/bug.h:105:59: error: unused parameter ‘bug_addr’ [-Werror=unused-parameter]
- static inline enum bug_trap_type report_bug(unsigned long bug_addr,
-                                                           ^
-/home/jolsa/kernel.org/linux-perf/include/linux/bug.h:106:26: error: unused parameter ‘regs’ [-Werror=unused-parameter]
-          struct pt_regs *regs)
-                          ^
-cc1: all warnings being treated as errors
-make[1]: *** [builtin-annotate.o] Error 1
-make: *** [all] Error 2
+New smatch warnings:
+arch/x86/mm/mpx.c:178 mpx_get_addr_ref() warn: unsigned 'addr_offset' is never less than zero.
+arch/x86/mm/mpx.c:184 mpx_get_addr_ref() warn: unsigned 'base_offset' is never less than zero.
+arch/x86/mm/mpx.c:188 mpx_get_addr_ref() warn: unsigned 'indx_offset' is never less than zero.
+arch/x86/mm/mpx.c:196 mpx_get_addr_ref() warn: unsigned 'addr_offset' is never less than zero.
 
-
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: x86@kernel.org
+Link: http://lkml.kernel.org/r/20141118182343.C3E0C629@viggo.jf.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 180d16c19a2b..e8b7779a0a3f 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -2,7 +2,6 @@
- #define __PERF_MACHINE_H
+ arch/x86/mm/mpx.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/mm/mpx.c b/arch/x86/mm/mpx.c
+index f30b48e..67ebf57 100644
+--- a/arch/x86/mm/mpx.c
++++ b/arch/x86/mm/mpx.c
+@@ -102,8 +102,8 @@ enum reg_type {
+ 	REG_TYPE_BASE,
+ };
  
- #include <sys/types.h>
--#include <linux/bug.h>
- #include <linux/rbtree.h>
- #include "map.h"
- #include "dso.h"
+-static unsigned long get_reg_offset(struct insn *insn, struct pt_regs *regs,
+-				    enum reg_type type)
++static int get_reg_offset(struct insn *insn, struct pt_regs *regs,
++			  enum reg_type type)
+ {
+ 	int regno = 0;
+ 
+@@ -174,9 +174,8 @@ static unsigned long get_reg_offset(struct insn *insn, struct pt_regs *regs,
+  */
+ static void __user *mpx_get_addr_ref(struct insn *insn, struct pt_regs *regs)
+ {
+-	unsigned long addr, addr_offset;
+-	unsigned long base, base_offset;
+-	unsigned long indx, indx_offset;
++	unsigned long addr, base, indx;
++	int addr_offset, base_offset, indx_offset;
+ 	insn_byte_t sib;
+ 
+ 	insn_get_modrm(insn);
