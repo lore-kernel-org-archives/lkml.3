@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756478AbaKSQAY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:00:24 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:45473 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756437AbaKSQAH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:00:07 -0500
-Date: Wed, 19 Nov 2014 11:00:06 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Julius Werner <jwerner@chromium.org>
-cc: Felipe Balbi <balbi@ti.com>, Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Paul Zimmerman <paulz@synopsys.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        Romain Perier <romain.perier@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Douglas Anderson <dianders@chromium.org>,
-        Sonny Rao <sonnyrao@chromium.org>, addy ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, wulf <wulf@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Roy Li <roy.li@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] usb: dwc2: resume root hub when device detect with
- suspend state
-In-Reply-To: <CAODwPW8hQdxv_ecaVHYjS4rHjZVB_G5zURDPCHzaPsEXVgs=fA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1411191051110.1345-100000@iolanthe.rowland.org>
+	id S1756507AbaKSQAn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:00:43 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:20479 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756486AbaKSQAk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:00:40 -0500
+Date: Wed, 19 Nov 2014 11:00:37 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH 2/2] tracing: Use trace_seq_used() and seq_buf_used()
+ instead of len
+Message-ID: <20141119110037.6fafa106@gandalf.local.home>
+In-Reply-To: <20141119144004.GB2332@dhcp128.suse.cz>
+References: <20141115045847.712848224@goodmis.org>
+	<20141115050603.904875201@goodmis.org>
+	<20141117123250.10f6f57c@gandalf.local.home>
+	<20141117141215.2dbd5f12@gandalf.local.home>
+	<20141118163354.GK23958@pathway.suse.cz>
+	<20141118123732.462b1ad8@gandalf.local.home>
+	<20141119114017.GA2332@dhcp128.suse.cz>
+	<20141119084800.524beb62@gandalf.local.home>
+	<20141119144004.GB2332@dhcp128.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014, Julius Werner wrote:
+On Wed, 19 Nov 2014 15:40:05 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-> >> You should be aware that it's not safe to use hcd->state for anything
-> >> in a host controller driver.  That field is owned by usbcore, not by
-> >> the HCD, and it is not protected by any locks.
-> >>
-> >> Thus, for example, hcd->state does not get set to HC_STATE_SUSPENDED
-> >> until some time after the bus_suspend routine has returned.  A
-> >> port-change interrupt might occur during that time interval.
+> > Regardless of overflow or not (or even if trace_seq is full), that if
+> > statement will prevent this from doing any buffer overflows.
+> > 
+> > s->seq.len will never be more than s->seq.size after the test against
+> > TRACE_MAX_PRINT. So I see no harm here.
 > 
-> Looks like there is explicit code in hcd_bus_suspend() to check for
-> that race condition right after setting hcd->state, or do I
-> misinterpret that (the "Did we race with a root-hub wakeup event?"
-> part)?
+> Ah, I see. Well, I would feel more comfortable if it uses
+> trace_seq_used() or if there is some explanation in a comment.
+> But you are right, it is safe as it is. Feel free to leave it.
+> 
 
-That code doesn't quite do what you think.  For example:
+OK, I added this just for you:
 
-	CPU 1				CPU 2
-	-----				-----
-	hcd_bus_suspend():
-	call hcd->bus_suspend():
-	    root hub gets suspended
+BTW, using trace_seq_used() would not be good enough because it could
+return s->seq.size. Which would overflow the buffer on the
 
-					Wakeup IRQ arrives and is
-					  ignored because hcd->state
-					  is still HC_STATE_QUIESCING
+	s->buffer[s->seq.len] = 0;
 
-	set hcd->state to HC_STATE_SUSPENDED
-	Did we race with a wakeup event?
-	  No because usb_hcd_resume_root_hub()
-	  wasn't called.
+-- Steve
 
-Result: the wakeup event is lost.
+>From 1922acc9987d23d0b9c1ad28dc3eaafc1cf2d6b7 Mon Sep 17 00:00:00 2001
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Date: Wed, 19 Nov 2014 10:56:41 -0500
+Subject: [PATCH] tracing: Add paranoid size check in trace_printk_seq()
 
-> Also, it seems xhci_bus_suspend() explicitly sets 'hcd->state =
-> HC_STATE_SUSPENDED' before giving up the spinlock for some
-> undocumented reason, maybe to avoid exactly this problem. We could
-> just copy that trick if the hcd.c solution isn't enough (although the
-> DWC2 bus_suspend/bus_resume in the other patch don't grab that
-> spinlock right now, where I'm also not so sure if that's a good
-> idea...).
+To be really paranoid about writing out of bound data in
+trace_printk_seq(), add another check of len compared to size.
 
-It's better for HCDs to avoid testing hcd->state at all.  They should 
-set it to appropriate values at the right times, because usbcore checks 
-it, but they should not test it.  This is why ehci-hcd, ohci-hcd, and 
-uhci-hcd all have a private rh_state variable, and they use it while 
-holding their respective private spinlocks.
+Link: http://lkml.kernel.org/r/20141119144004.GB2332@dhcp128.suse.cz
 
-Alan Stern
+Suggested-by: Petr Mladek <pmladek@suse.cz>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 9023446b2c2b..26facec4625e 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -6656,6 +6656,14 @@ trace_printk_seq(struct trace_seq *s)
+ 	if (s->seq.len >= TRACE_MAX_PRINT)
+ 		s->seq.len = TRACE_MAX_PRINT;
+ 
++	/*
++	 * More paranoid code. Although the buffer size is set to
++	 * PAGE_SIZE, and TRACE_MAX_PRINT is 1000, this is just
++	 * an extra layer of protection.
++	 */
++	if (WARN_ON_ONCE(s->seq.len >= s->seq.size))
++		s->seq.len = s->seq.size - 1;
++
+ 	/* should be zero ended, but we are paranoid. */
+ 	s->buffer[s->seq.len] = 0;
+ 
+-- 
+1.8.1.4
 
