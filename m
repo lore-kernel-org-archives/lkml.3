@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933594AbaKSVEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:04:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
+	id S933258AbaKSVK5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:10:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933541AbaKSVE3 (ORCPT
+	with ESMTP id S933590AbaKSVEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:29 -0500
+	Wed, 19 Nov 2014 16:04:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 069/122] NFS: Dont try to reclaim delegation open state if recovery failed
-Date: Wed, 19 Nov 2014 12:51:59 -0800
-Message-Id: <20141119205211.088473436@linuxfoundation.org>
+        Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.14 082/122] netfilter: nfnetlink_log: fix maximum packet length logged to userspace
+Date: Wed, 19 Nov 2014 12:52:12 -0800
+Message-Id: <20141119205211.527829739@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -28,31 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Florian Westphal <fw@strlen.de>
 
-commit f8ebf7a8ca35dde321f0cd385fee6f1950609367 upstream.
+commit c1e7dc91eed0ed1a51c9b814d648db18bf8fc6e9 upstream.
 
-If state recovery failed, then we should not attempt to reclaim delegated
-state.
+don't try to queue payloads > 0xffff - NLA_HDRLEN, it does not work.
+The nla length includes the size of the nla struct, so anything larger
+results in u16 integer overflow.
 
-http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+This patch is similar to
+9cefbbc9c8f9abe (netfilter: nfnetlink_queue: cleanup copy_range usage).
+
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/delegation.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/netfilter/nfnetlink_log.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -109,6 +109,8 @@ again:
- 			continue;
- 		if (!test_bit(NFS_DELEGATED_STATE, &state->flags))
- 			continue;
-+		if (!nfs4_valid_open_stateid(state))
-+			continue;
- 		if (!nfs4_stateid_match(&state->stateid, stateid))
- 			continue;
- 		get_nfs_open_context(ctx);
+--- a/net/netfilter/nfnetlink_log.c
++++ b/net/netfilter/nfnetlink_log.c
+@@ -45,7 +45,8 @@
+ #define NFULNL_NLBUFSIZ_DEFAULT	NLMSG_GOODSIZE
+ #define NFULNL_TIMEOUT_DEFAULT 	100	/* every second */
+ #define NFULNL_QTHRESH_DEFAULT 	100	/* 100 packets */
+-#define NFULNL_COPY_RANGE_MAX	0xFFFF	/* max packet size is limited by 16-bit struct nfattr nfa_len field */
++/* max packet size is limited by 16-bit struct nfattr nfa_len field */
++#define NFULNL_COPY_RANGE_MAX	(0xFFFF - NLA_HDRLEN)
+ 
+ #define PRINTR(x, args...)	do { if (net_ratelimit()) \
+ 				     printk(x, ## args); } while (0);
+@@ -255,6 +256,8 @@ nfulnl_set_mode(struct nfulnl_instance *
+ 
+ 	case NFULNL_COPY_PACKET:
+ 		inst->copy_mode = mode;
++		if (range == 0)
++			range = NFULNL_COPY_RANGE_MAX;
+ 		inst->copy_range = min_t(unsigned int,
+ 					 range, NFULNL_COPY_RANGE_MAX);
+ 		break;
+@@ -682,8 +685,7 @@ nfulnl_log_packet(struct net *net,
+ 		break;
+ 
+ 	case NFULNL_COPY_PACKET:
+-		if (inst->copy_range == 0
+-		    || inst->copy_range > skb->len)
++		if (inst->copy_range > skb->len)
+ 			data_len = skb->len;
+ 		else
+ 			data_len = inst->copy_range;
 
 
