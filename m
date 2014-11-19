@@ -1,91 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008AbaKSP5q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:57:46 -0500
-Received: from michel.telenet-ops.be ([195.130.137.88]:52867 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755901AbaKSP5l (ORCPT
+	id S1756304AbaKSP6F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:58:05 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:36622 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756281AbaKSP6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:57:41 -0500
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-sh@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH RFC 0/7] ARM: shmobile: sh73a0: DT PM domain support
-Date: Wed, 19 Nov 2014 16:57:27 +0100
-Message-Id: <1416412654-6508-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
+	Wed, 19 Nov 2014 10:58:02 -0500
+Message-ID: <546CBE04.1000705@atmel.com>
+Date: Wed, 19 Nov 2014 16:57:56 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Peter Korsgaard <jacmet@sunsite.dk>, Matt Mackall <mpm@selenic.com>,
+        "Herbert Xu" <herbert@gondor.apana.org.au>
+CC: <linux-arm-kernel@lists.infradead.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] ARM: at91/dt: add trng node
+References: <1412093987-30241-1-git-send-email-boris.brezillon@free-electrons.com> <1412093987-30241-6-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1412093987-30241-6-git-send-email-boris.brezillon@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Simon, Magnus,
+On 30/09/2014 18:19, Boris Brezillon :
+> Add a DT node for the TRNG (True Random Number Generator) block.
+> 
+> Keep this block enabled as it does not depend on any external connection,
+> and thus should be available on all boards.
+> 
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 
-This patch series enables DT support for PM domains on the Renesas SH-Mobile
-AG5 (sh73a0) SoC.  It is marked "RFC" due to the addition of memory-controllers
-nodes without bindings in patch [5/7] and [7/7].
+For patches 2 to 5, you can add my:
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-This series builds further on the series "[PATCH v5 0/8] ARM: shmobile:
-R-Mobile: DT PM domain support", which added similar support for R-Mobile A1
-(r8a7740).  Due to the similarity of the SYSC System-Controller on the various
-SH-Mobile/R-Mobile SoCs, and the abstraction of PM domains in DT, the same
-driver can handle sh73a0 after some small modifications, without changing the
-DT bindings.
+while re-sending a series. Maybe add linux-crypto and the "HARDWARE
+RANDOM NUMBER GENERATOR CORE" guys to the CC list.
 
-Compared to r8a7740, the only significant change is the move of the
-memory-controller(s) to separate PM domains on sh73a0 (and also on R-Mobile
-APE6 (r8a73a4)). Hence a provision must be made to not turn off these PM
-domains inadvertently. Please see patch [5/7] ("[RFC] ARM: shmobile: sh73a0
-dtsi: Add PM domain support"), and the follow-up patch for r8a7740 [7/7]
-("[RFC] ARM: shmobile: r8a7740 dtsi: Add missing memory-controller node") for
-more details.
+Bye,
 
-This was tested on kzm9g-multiplatform.
-Functionality-wise, it behaves the same as the legacy (non-DT) version (modulo
-missing DT support in some device drivers).
+> ---
+>  arch/arm/boot/dts/at91sam9g45.dtsi | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+> index 932a669..790c890 100644
+> --- a/arch/arm/boot/dts/at91sam9g45.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+> @@ -934,6 +934,13 @@
+>  				status = "disabled";
+>  			};
+>  
+> +			trng@fffcc000 {
+> +				compatible = "atmel,at91sam9g45-trng";
+> +				reg = <0xfffcc000 0x4000>;
+> +				interrupts = <6 IRQ_TYPE_LEVEL_HIGH 0>;
+> +				clocks = <&trng_clk>;
+> +			};
+> +
+>  			i2c0: i2c@fff84000 {
+>  				compatible = "atmel,at91sam9g10-i2c";
+>  				reg = <0xfff84000 0x100>;
+> 
 
-Thanks for your comments!
-
-Dependencies:
-  - [PATCH v5 0/8] ARM: shmobile: R-Mobile: DT PM domain support,
-  - [[PATCH v5 0/6] sh73a0 common clock framework implementation,
-  - [PATCH 2/2] ARM: shmobile: sh73a0 dtsi: Add missing INTCA0 clock for
-    irqpin module.
-
-Geert Uytterhoeven (7):
-  PM / Domains: Document SH-Mobile AG5 (sh73a0) binding
-  ARM: shmobile: R-Mobile: Consolidate rmobile_pd_suspend_*()
-  ARM: shmobile: R-Mobile: Generalize adding/looking up special PM
-    domains
-  ARM: shmobile: R-Mobile: Special-case PM domains containing SBSCs
-  [RFC] ARM: shmobile: sh73a0 dtsi: Add PM domain support
-  drivers: sh: Disable PM runtime for multi-platform sh73a0 with genpd
-  [RFC] ARM: shmobile: r8a7740 dtsi: Add missing memory-controller node
-
- .../bindings/power/renesas,sysc-rmobile.txt        |   1 +
- arch/arm/boot/dts/r8a7740.dtsi                     |   6 +
- arch/arm/boot/dts/sh73a0.dtsi                      | 159 ++++++++++++++++++++-
- arch/arm/mach-shmobile/pm-rmobile.c                | 159 +++++++++++++--------
- drivers/sh/pm_runtime.c                            |   4 +-
- 5 files changed, 268 insertions(+), 61 deletions(-)
 
 -- 
-1.9.1
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Nicolas Ferre
