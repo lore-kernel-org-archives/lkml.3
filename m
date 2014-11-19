@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936AbaKSWJP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:09:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56476 "EHLO
+	id S1757921AbaKSWJO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:09:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56482 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933339AbaKSVEI (ORCPT
+	with ESMTP id S932938AbaKSVEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:04:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
+        Dwight Engen <dwight.engen@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 001/122] Revert "drivers/net: Disable UFO through virtio"
-Date: Wed, 19 Nov 2014 12:50:51 -0800
-Message-Id: <20141119205208.878043709@linuxfoundation.org>
+Subject: [PATCH 3.14 010/122] sunvdc: add cdrom and v1.1 protocol support
+Date: Wed, 19 Nov 2014 12:51:00 -0800
+Message-Id: <20141119205209.164858460@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,210 +29,246 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-This reverts commit 2b52d6c6beda6308ba95024a1eba1dfc9515ba32 which was
-commit 3d0ad09412ffe00c9afa201d01effdb6023d09b4 upstream.
+From: Allen Pais <allen.pais@oracle.com>
 
-Ben writes:
+[ Upstream commit 9bce21828d54a95143f1b74619705c2dd8e88b92 ]
 
-	Please drop this patch for 3.14 and 3.17.  It causes problems
-	for migration of VMs and we're probably going to revert part of
-	this.  The following patch ("drivers/net, ipv6: Select IPv6
-	fragment idents for virtio UFO packets") might no longer apply,
-	in which case you can drop that as well until we have this
-	sorted out upstream.
+Interpret the media type from v1.1 protocol to support CDROM/DVD.
 
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: David S. Miller <davem@davemloft.net>
+For v1.0 protocol, a disk's size continues to be calculated from the
+geometry returned by the vdisk server. The geometry returned by the server
+can be less than the actual number of sectors available in the backing
+image/device due to the rounding in the division used to compute the
+geometry in the vdisk server.
+
+In v1.1 protocol a disk's actual size in sectors is returned during the
+handshake. Use this size when v1.1 protocol is negotiated. Since this size
+will always be larger than the former geometry computed size, disks created
+under v1.0 will be forwards compatible to v1.1, but not vice versa.
+
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/macvtap.c    |   13 ++++++++-----
- drivers/net/tun.c        |   19 ++++++++-----------
- drivers/net/virtio_net.c |   24 ++++++++++--------------
- 3 files changed, 26 insertions(+), 30 deletions(-)
+ arch/sparc/include/asm/vio.h |   12 +++-
+ drivers/block/sunvdc.c       |  109 ++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 101 insertions(+), 20 deletions(-)
 
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -66,7 +66,7 @@ static struct cdev macvtap_cdev;
- static const struct proto_ops macvtap_socket_ops;
+--- a/arch/sparc/include/asm/vio.h
++++ b/arch/sparc/include/asm/vio.h
+@@ -118,12 +118,18 @@ struct vio_disk_attr_info {
+ 	u8			vdisk_type;
+ #define VD_DISK_TYPE_SLICE	0x01 /* Slice in block device	*/
+ #define VD_DISK_TYPE_DISK	0x02 /* Entire block device	*/
+-	u16			resv1;
++	u8			vdisk_mtype;		/* v1.1 */
++#define VD_MEDIA_TYPE_FIXED	0x01 /* Fixed device */
++#define VD_MEDIA_TYPE_CD	0x02 /* CD Device    */
++#define VD_MEDIA_TYPE_DVD	0x03 /* DVD Device   */
++	u8			resv1;
+ 	u32			vdisk_block_size;
+ 	u64			operations;
+-	u64			vdisk_size;
++	u64			vdisk_size;		/* v1.1 */
+ 	u64			max_xfer_size;
+-	u64			resv2[2];
++	u32			phys_block_size;	/* v1.2 */
++	u32			resv2;
++	u64			resv3[1];
+ };
  
- #define TUN_OFFLOADS (NETIF_F_HW_CSUM | NETIF_F_TSO_ECN | NETIF_F_TSO | \
--		      NETIF_F_TSO6)
-+		      NETIF_F_TSO6 | NETIF_F_UFO)
- #define RX_OFFLOADS (NETIF_F_GRO | NETIF_F_LRO)
- #define TAP_FEATURES (NETIF_F_GSO | NETIF_F_SG)
+ struct vio_disk_desc {
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -9,6 +9,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/hdreg.h>
+ #include <linux/genhd.h>
++#include <linux/cdrom.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/completion.h>
+@@ -22,8 +23,8 @@
  
-@@ -570,8 +570,6 @@ static int macvtap_skb_from_vnet_hdr(str
- 			gso_type = SKB_GSO_TCPV6;
- 			break;
- 		case VIRTIO_NET_HDR_GSO_UDP:
--			pr_warn_once("macvtap: %s: using disabled UFO feature; please fix this program\n",
--				     current->comm);
- 			gso_type = SKB_GSO_UDP;
- 			if (skb->protocol == htons(ETH_P_IPV6))
- 				ipv6_proxy_select_ident(skb);
-@@ -619,6 +617,8 @@ static void macvtap_skb_to_vnet_hdr(cons
- 			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
- 		else if (sinfo->gso_type & SKB_GSO_TCPV6)
- 			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
-+		else if (sinfo->gso_type & SKB_GSO_UDP)
-+			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_UDP;
- 		else
- 			BUG();
- 		if (sinfo->gso_type & SKB_GSO_TCP_ECN)
-@@ -953,6 +953,9 @@ static int set_offload(struct macvtap_qu
- 			if (arg & TUN_F_TSO6)
- 				feature_mask |= NETIF_F_TSO6;
- 		}
+ #define DRV_MODULE_NAME		"sunvdc"
+ #define PFX DRV_MODULE_NAME	": "
+-#define DRV_MODULE_VERSION	"1.0"
+-#define DRV_MODULE_RELDATE	"June 25, 2007"
++#define DRV_MODULE_VERSION	"1.1"
++#define DRV_MODULE_RELDATE	"February 13, 2013"
+ 
+ static char version[] =
+ 	DRV_MODULE_NAME ".c:v" DRV_MODULE_VERSION " (" DRV_MODULE_RELDATE ")\n";
+@@ -65,6 +66,7 @@ struct vdc_port {
+ 	u64			operations;
+ 	u32			vdisk_size;
+ 	u8			vdisk_type;
++	u8			vdisk_mtype;
+ 
+ 	char			disk_name[32];
+ 
+@@ -79,9 +81,16 @@ static inline struct vdc_port *to_vdc_po
+ 
+ /* Ordered from largest major to lowest */
+ static struct vio_version vdc_versions[] = {
++	{ .major = 1, .minor = 1 },
+ 	{ .major = 1, .minor = 0 },
+ };
+ 
++static inline int vdc_version_supported(struct vdc_port *port,
++					u16 major, u16 minor)
++{
++	return port->vio.ver.major == major && port->vio.ver.minor >= minor;
++}
 +
-+		if (arg & TUN_F_UFO)
-+			feature_mask |= NETIF_F_UFO;
- 	}
+ #define VDCBLK_NAME	"vdisk"
+ static int vdc_major;
+ #define PARTITION_SHIFT	3
+@@ -103,9 +112,41 @@ static int vdc_getgeo(struct block_devic
+ 	return 0;
+ }
  
- 	/* tun/tap driver inverts the usage for TSO offloads, where
-@@ -963,7 +966,7 @@ static int set_offload(struct macvtap_qu
- 	 * When user space turns off TSO, we turn off GSO/LRO so that
- 	 * user-space will not receive TSO frames.
- 	 */
--	if (feature_mask & (NETIF_F_TSO | NETIF_F_TSO6))
-+	if (feature_mask & (NETIF_F_TSO | NETIF_F_TSO6 | NETIF_F_UFO))
- 		features |= RX_OFFLOADS;
- 	else
- 		features &= ~RX_OFFLOADS;
-@@ -1064,7 +1067,7 @@ static long macvtap_ioctl(struct file *f
- 	case TUNSETOFFLOAD:
- 		/* let the user check for future flags */
- 		if (arg & ~(TUN_F_CSUM | TUN_F_TSO4 | TUN_F_TSO6 |
--			    TUN_F_TSO_ECN))
-+			    TUN_F_TSO_ECN | TUN_F_UFO))
- 			return -EINVAL;
- 
- 		rtnl_lock();
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -175,7 +175,7 @@ struct tun_struct {
- 	struct net_device	*dev;
- 	netdev_features_t	set_features;
- #define TUN_USER_FEATURES (NETIF_F_HW_CSUM|NETIF_F_TSO_ECN|NETIF_F_TSO| \
--			  NETIF_F_TSO6)
-+			  NETIF_F_TSO6|NETIF_F_UFO)
- 
- 	int			vnet_hdr_sz;
- 	int			sndbuf;
-@@ -1153,20 +1153,10 @@ static ssize_t tun_get_user(struct tun_s
- 			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
- 			break;
- 		case VIRTIO_NET_HDR_GSO_UDP:
--		{
--			static bool warned;
--
--			if (!warned) {
--				warned = true;
--				netdev_warn(tun->dev,
--					    "%s: using disabled UFO feature; please fix this program\n",
--					    current->comm);
--			}
- 			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
- 			if (skb->protocol == htons(ETH_P_IPV6))
- 				ipv6_proxy_select_ident(skb);
- 			break;
--		}
- 		default:
- 			tun->dev->stats.rx_frame_errors++;
- 			kfree_skb(skb);
-@@ -1266,6 +1256,8 @@ static ssize_t tun_put_user(struct tun_s
- 				gso.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
- 			else if (sinfo->gso_type & SKB_GSO_TCPV6)
- 				gso.gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
-+			else if (sinfo->gso_type & SKB_GSO_UDP)
-+				gso.gso_type = VIRTIO_NET_HDR_GSO_UDP;
- 			else {
- 				pr_err("unexpected GSO type: "
- 				       "0x%x, gso_size %d, hdr_len %d\n",
-@@ -1795,6 +1787,11 @@ static int set_offload(struct tun_struct
- 				features |= NETIF_F_TSO6;
- 			arg &= ~(TUN_F_TSO4|TUN_F_TSO6);
- 		}
++/* Add ioctl/CDROM_GET_CAPABILITY to support cdrom_id in udev
++ * when vdisk_mtype is VD_MEDIA_TYPE_CD or VD_MEDIA_TYPE_DVD.
++ * Needed to be able to install inside an ldom from an iso image.
++ */
++static int vdc_ioctl(struct block_device *bdev, fmode_t mode,
++		     unsigned command, unsigned long argument)
++{
++	int i;
++	struct gendisk *disk;
 +
-+		if (arg & TUN_F_UFO) {
-+			features |= NETIF_F_UFO;
-+			arg &= ~TUN_F_UFO;
++	switch (command) {
++	case CDROMMULTISESSION:
++		pr_debug(PFX "Multisession CDs not supported\n");
++		for (i = 0; i < sizeof(struct cdrom_multisession); i++)
++			if (put_user(0, (char __user *)(argument + i)))
++				return -EFAULT;
++		return 0;
++
++	case CDROM_GET_CAPABILITY:
++		disk = bdev->bd_disk;
++
++		if (bdev->bd_disk && (disk->flags & GENHD_FL_CD))
++			return 0;
++		return -EINVAL;
++
++	default:
++		pr_debug(PFX "ioctl %08x not supported\n", command);
++		return -EINVAL;
++	}
++}
++
+ static const struct block_device_operations vdc_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.getgeo		= vdc_getgeo,
++	.ioctl		= vdc_ioctl,
+ };
+ 
+ static void vdc_finish(struct vio_driver_state *vio, int err, int waiting_for)
+@@ -165,9 +206,9 @@ static int vdc_handle_attr(struct vio_dr
+ 	struct vio_disk_attr_info *pkt = arg;
+ 
+ 	viodbg(HS, "GOT ATTR stype[0x%x] ops[%llx] disk_size[%llu] disk_type[%x] "
+-	       "xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
++	       "mtype[0x%x] xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
+ 	       pkt->tag.stype, pkt->operations,
+-	       pkt->vdisk_size, pkt->vdisk_type,
++	       pkt->vdisk_size, pkt->vdisk_type, pkt->vdisk_mtype,
+ 	       pkt->xfer_mode, pkt->vdisk_block_size,
+ 	       pkt->max_xfer_size);
+ 
+@@ -192,8 +233,11 @@ static int vdc_handle_attr(struct vio_dr
+ 		}
+ 
+ 		port->operations = pkt->operations;
+-		port->vdisk_size = pkt->vdisk_size;
+ 		port->vdisk_type = pkt->vdisk_type;
++		if (vdc_version_supported(port, 1, 1)) {
++			port->vdisk_size = pkt->vdisk_size;
++			port->vdisk_mtype = pkt->vdisk_mtype;
 +		}
+ 		if (pkt->max_xfer_size < port->max_xfer_size)
+ 			port->max_xfer_size = pkt->max_xfer_size;
+ 		port->vdisk_block_size = pkt->vdisk_block_size;
+@@ -663,18 +707,25 @@ static int probe_disk(struct vdc_port *p
+ 		return err;
  	}
  
- 	/* This gives the user a way to test for new features in future by
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -496,17 +496,8 @@ static void receive_buf(struct receive_q
- 			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
- 			break;
- 		case VIRTIO_NET_HDR_GSO_UDP:
--		{
--			static bool warned;
+-	err = generic_request(port, VD_OP_GET_DISKGEOM,
+-			      &port->geom, sizeof(port->geom));
+-	if (err < 0) {
+-		printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
+-		       "error %d\n", err);
+-		return err;
++	if (vdc_version_supported(port, 1, 1)) {
++		/* vdisk_size should be set during the handshake, if it wasn't
++		 * then the underlying disk is reserved by another system
++		 */
++		if (port->vdisk_size == -1)
++			return -ENODEV;
++	} else {
++		err = generic_request(port, VD_OP_GET_DISKGEOM,
++				      &port->geom, sizeof(port->geom));
++		if (err < 0) {
++			printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
++			       "error %d\n", err);
++			return err;
++		}
++		port->vdisk_size = ((u64)port->geom.num_cyl *
++				    (u64)port->geom.num_hd *
++				    (u64)port->geom.num_sec);
+ 	}
+ 
+-	port->vdisk_size = ((u64)port->geom.num_cyl *
+-			    (u64)port->geom.num_hd *
+-			    (u64)port->geom.num_sec);
 -
--			if (!warned) {
--				warned = true;
--				netdev_warn(dev,
--					    "host using disabled UFO feature; please fix it\n");
--			}
- 			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
- 			break;
--		}
- 		case VIRTIO_NET_HDR_GSO_TCPV6:
- 			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
- 			break;
-@@ -845,6 +836,8 @@ static int xmit_skb(struct send_queue *s
- 			hdr->hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
- 		else if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV6)
- 			hdr->hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
-+		else if (skb_shinfo(skb)->gso_type & SKB_GSO_UDP)
-+			hdr->hdr.gso_type = VIRTIO_NET_HDR_GSO_UDP;
- 		else
- 			BUG();
- 		if (skb_shinfo(skb)->gso_type & SKB_GSO_TCP_ECN)
-@@ -1664,7 +1657,7 @@ static int virtnet_probe(struct virtio_d
- 			dev->features |= NETIF_F_HW_CSUM|NETIF_F_SG|NETIF_F_FRAGLIST;
+ 	q = blk_init_queue(do_vdc_request, &port->vio.lock);
+ 	if (!q) {
+ 		printk(KERN_ERR PFX "%s: Could not allocate queue.\n",
+@@ -704,9 +755,32 @@ static int probe_disk(struct vdc_port *p
  
- 		if (virtio_has_feature(vdev, VIRTIO_NET_F_GSO)) {
--			dev->hw_features |= NETIF_F_TSO
-+			dev->hw_features |= NETIF_F_TSO | NETIF_F_UFO
- 				| NETIF_F_TSO_ECN | NETIF_F_TSO6;
- 		}
- 		/* Individual feature bits: what can host handle? */
-@@ -1674,9 +1667,11 @@ static int virtnet_probe(struct virtio_d
- 			dev->hw_features |= NETIF_F_TSO6;
- 		if (virtio_has_feature(vdev, VIRTIO_NET_F_HOST_ECN))
- 			dev->hw_features |= NETIF_F_TSO_ECN;
-+		if (virtio_has_feature(vdev, VIRTIO_NET_F_HOST_UFO))
-+			dev->hw_features |= NETIF_F_UFO;
+ 	set_capacity(g, port->vdisk_size);
  
- 		if (gso)
--			dev->features |= dev->hw_features & NETIF_F_ALL_TSO;
-+			dev->features |= dev->hw_features & (NETIF_F_ALL_TSO|NETIF_F_UFO);
- 		/* (!csum && gso) case will be fixed by register_netdev() */
- 	}
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_CSUM))
-@@ -1716,7 +1711,8 @@ static int virtnet_probe(struct virtio_d
- 	/* If we can receive ANY GSO packets, we must allocate large ones. */
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
- 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
--	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
- 		vi->big_packets = true;
+-	printk(KERN_INFO PFX "%s: %u sectors (%u MB)\n",
++	if (vdc_version_supported(port, 1, 1)) {
++		switch (port->vdisk_mtype) {
++		case VD_MEDIA_TYPE_CD:
++			pr_info(PFX "Virtual CDROM %s\n", port->disk_name);
++			g->flags |= GENHD_FL_CD;
++			g->flags |= GENHD_FL_REMOVABLE;
++			set_disk_ro(g, 1);
++			break;
++
++		case VD_MEDIA_TYPE_DVD:
++			pr_info(PFX "Virtual DVD %s\n", port->disk_name);
++			g->flags |= GENHD_FL_CD;
++			g->flags |= GENHD_FL_REMOVABLE;
++			set_disk_ro(g, 1);
++			break;
++
++		case VD_MEDIA_TYPE_FIXED:
++			pr_info(PFX "Virtual Hard disk %s\n", port->disk_name);
++			break;
++		}
++	}
++
++	pr_info(PFX "%s: %u sectors (%u MB) protocol %d.%d\n",
+ 	       g->disk_name,
+-	       port->vdisk_size, (port->vdisk_size >> (20 - 9)));
++	       port->vdisk_size, (port->vdisk_size >> (20 - 9)),
++	       port->vio.ver.major, port->vio.ver.minor);
  
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
-@@ -1907,9 +1903,9 @@ static struct virtio_device_id id_table[
- static unsigned int features[] = {
- 	VIRTIO_NET_F_CSUM, VIRTIO_NET_F_GUEST_CSUM,
- 	VIRTIO_NET_F_GSO, VIRTIO_NET_F_MAC,
--	VIRTIO_NET_F_HOST_TSO4, VIRTIO_NET_F_HOST_TSO6,
-+	VIRTIO_NET_F_HOST_TSO4, VIRTIO_NET_F_HOST_UFO, VIRTIO_NET_F_HOST_TSO6,
- 	VIRTIO_NET_F_HOST_ECN, VIRTIO_NET_F_GUEST_TSO4, VIRTIO_NET_F_GUEST_TSO6,
--	VIRTIO_NET_F_GUEST_ECN,
-+	VIRTIO_NET_F_GUEST_ECN, VIRTIO_NET_F_GUEST_UFO,
- 	VIRTIO_NET_F_MRG_RXBUF, VIRTIO_NET_F_STATUS, VIRTIO_NET_F_CTRL_VQ,
- 	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
- 	VIRTIO_NET_F_GUEST_ANNOUNCE, VIRTIO_NET_F_MQ,
+ 	add_disk(g);
+ 
+@@ -765,6 +839,7 @@ static int vdc_port_probe(struct vio_dev
+ 	else
+ 		snprintf(port->disk_name, sizeof(port->disk_name),
+ 			 VDCBLK_NAME "%c", 'a' + ((int)vdev->dev_no % 26));
++	port->vdisk_size = -1;
+ 
+ 	err = vio_driver_init(&port->vio, vdev, VDEV_DISK,
+ 			      vdc_versions, ARRAY_SIZE(vdc_versions),
 
 
