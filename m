@@ -1,26 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934364AbaKSW3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:29:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56064 "EHLO
+	id S934348AbaKSW3F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:29:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55895 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932428AbaKSUyA (ORCPT
+	with ESMTP id S1756711AbaKSUyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:54:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Slawomir Gajzner <slawomir.gajzner@gmail.com>,
-        Julien DAscenzio <jdascenzio@yahoo.fr>,
-        Karl Beldan <karl.beldan@rivierawaves.com>,
-        Ian Campbell <ijc@hellion.org.uk>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jesse Gross <jesse@nicira.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 008/141] net: mv643xx_eth: reclaim TX skbs only when released by the HW
-Date: Wed, 19 Nov 2014 12:50:31 -0800
-Message-Id: <20141119205150.954960197@linuxfoundation.org>
+Subject: [PATCH 3.17 009/141] udptunnel: Add SKB_GSO_UDP_TUNNEL during gro_complete.
+Date: Wed, 19 Nov 2014 12:50:32 -0800
+Message-Id: <20141119205150.986546753@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -35,73 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Karl Beldan <karl.beldan@rivierawaves.com>
+From: Jesse Gross <jesse@nicira.com>
 
-[ Upstream commit 2c2a9cbd64387d6b70ac5db013e9bfe9412c7354 ]
+[ Upstream commit cfdf1e1ba5bf55e095cf4bcaa9585c4759f239e8 ]
 
-ATM, txq_reclaim will dequeue and free an skb for each tx desc released
-by the hw that has TX_LAST_DESC set. However, in case of TSO, each
-hw desc embedding the last part of a segment has TX_LAST_DESC set,
-losing the one-to-one 'last skb frag'/'TX_LAST_DESC set' correspondance,
-which causes data corruption.
+When doing GRO processing for UDP tunnels, we never add
+SKB_GSO_UDP_TUNNEL to gso_type - only the type of the inner protocol
+is added (such as SKB_GSO_TCPV4). The result is that if the packet is
+later resegmented we will do GSO but not treat it as a tunnel. This
+results in UDP fragmentation of the outer header instead of (i.e.) TCP
+segmentation of the inner header as was originally on the wire.
 
-Fix this by checking TX_ENABLE_INTERRUPT instead of TX_LAST_DESC, and
-warn when trying to dequeue from an empty txq (which can be symptomatic
-of releasing skbs prematurely).
-
-Fixes: 3ae8f4e0b98 ('net: mv643xx_eth: Implement software TSO')
-Reported-by: Slawomir Gajzner <slawomir.gajzner@gmail.com>
-Reported-by: Julien D'Ascenzio <jdascenzio@yahoo.fr>
-Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
-Cc: Ian Campbell <ijc@hellion.org.uk>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Signed-off-by: Jesse Gross <jesse@nicira.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/marvell/mv643xx_eth.c |   18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ drivers/net/vxlan.c      |    2 ++
+ include/net/udp_tunnel.h |    9 +++++++++
+ 2 files changed, 11 insertions(+)
 
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -1047,7 +1047,6 @@ static int txq_reclaim(struct tx_queue *
- 		int tx_index;
- 		struct tx_desc *desc;
- 		u32 cmd_sts;
--		struct sk_buff *skb;
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -620,6 +620,8 @@ static int vxlan_gro_complete(struct sk_
+ 	int vxlan_len  = sizeof(struct vxlanhdr) + sizeof(struct ethhdr);
+ 	int err = -ENOSYS;
  
- 		tx_index = txq->tx_used_desc;
- 		desc = &txq->tx_desc_area[tx_index];
-@@ -1066,19 +1065,22 @@ static int txq_reclaim(struct tx_queue *
- 		reclaimed++;
- 		txq->tx_desc_count--;
- 
--		skb = NULL;
--		if (cmd_sts & TX_LAST_DESC)
--			skb = __skb_dequeue(&txq->tx_skb);
-+		if (!IS_TSO_HEADER(txq, desc->buf_ptr))
-+			dma_unmap_single(mp->dev->dev.parent, desc->buf_ptr,
-+					 desc->byte_cnt, DMA_TO_DEVICE);
++	udp_tunnel_gro_complete(skb, nhoff);
 +
-+		if (cmd_sts & TX_ENABLE_INTERRUPT) {
-+			struct sk_buff *skb = __skb_dequeue(&txq->tx_skb);
+ 	eh = (struct ethhdr *)(skb->data + nhoff + sizeof(struct vxlanhdr));
+ 	type = eh->h_proto;
+ 
+--- a/include/net/udp_tunnel.h
++++ b/include/net/udp_tunnel.h
+@@ -26,6 +26,15 @@ struct udp_port_cfg {
+ 				use_udp6_rx_checksums:1;
+ };
+ 
++static inline void udp_tunnel_gro_complete(struct sk_buff *skb, int nhoff)
++{
++	struct udphdr *uh;
 +
-+			if (!WARN_ON(!skb))
-+				dev_kfree_skb(skb);
-+		}
++	uh = (struct udphdr *)(skb->data + nhoff - sizeof(struct udphdr));
++	skb_shinfo(skb)->gso_type |= uh->check ?
++				SKB_GSO_UDP_TUNNEL_CSUM : SKB_GSO_UDP_TUNNEL;
++}
++
+ int udp_sock_create(struct net *net, struct udp_port_cfg *cfg,
+ 		    struct socket **sockp);
  
- 		if (cmd_sts & ERROR_SUMMARY) {
- 			netdev_info(mp->dev, "tx error\n");
- 			mp->dev->stats.tx_errors++;
- 		}
- 
--		if (!IS_TSO_HEADER(txq, desc->buf_ptr))
--			dma_unmap_single(mp->dev->dev.parent, desc->buf_ptr,
--					 desc->byte_cnt, DMA_TO_DEVICE);
--		dev_kfree_skb(skb);
- 	}
- 
- 	__netif_tx_unlock_bh(nq);
 
 
