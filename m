@@ -1,77 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571AbaKSNu7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 08:50:59 -0500
-Received: from mout.web.de ([212.227.15.3]:61051 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754113AbaKSNu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 08:50:58 -0500
-Message-ID: <546CA034.60705@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 14:50:44 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755709AbaKSNv0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 08:51:26 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:44252 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754716AbaKSNvY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 08:51:24 -0500
+Date: Wed, 19 Nov 2014 14:51:21 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Laurentiu Palcu <laurentiu.palcu@intel.com>
+Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Johan Havold <johan@kernel.org>,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/2] spi: add support for DLN-2 USB-SPI adapter
+Message-ID: <20141119135121.GF7857@localhost>
+References: <1416394031-2663-1-git-send-email-laurentiu.palcu@intel.com>
+ <1416402467-26999-1-git-send-email-laurentiu.palcu@intel.com>
 MIME-Version: 1.0
-To: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Peter Huewe <peterhuewe@gmx.de>, tpmdd-devel@lists.sourceforge.net
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] char: tpm: Deletion of unnecessary checks before the
- function call "tpm_dev_vendor_release"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:ZSZqKEBNu5I8Nbu6avKtW+PcF5Ai65BPPaBDXCWuSzEqCYVPVKl
- eXRNPGblnq9618XBEe5hMqlepcgCyRD5UpYuqbWYflTQq1WtLsXc6rQfV82pdSYiMEI3i2L
- vy4G6V7/S1mS1441Y8aUd43tXJDl69GGIr8F4a+neHtx5ufR4NED3lXWJvjFP+0SEc5opwj
- LFjsZN/X9mCJ9prbvtEkw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416402467-26999-1-git-send-email-laurentiu.palcu@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 14:44:15 +0100
+On Wed, Nov 19, 2014 at 03:07:47PM +0200, Laurentiu Palcu wrote:
 
-The tpm_dev_vendor_release() function tests whether its argument is NULL
-and then returns immediately. Thus the test around the call is not needed.
+> +/*
+> + * Perform one read operation.
+> + */
+> +static int dln2_spi_read_one(struct dln2_spi *dln2, u8 *data,
+> +			     u16 data_len, u8 attr)
+> +{
+> +	int ret;
+> +	struct {
+> +		u8 port;
+> +		__le16 size;
+> +		u8 attr;
+> +	} __packed tx;
+> +	struct {
+> +		__le16 size;
+> +		u8 buf[DLN2_SPI_MAX_XFER_SIZE];
+> +	} __packed *rx = dln2->buf;
 
-This issue was detected by using the Coccinelle software.
+You said you verified that the dln2 protocol headers did not mess up the
+alignment, yet they do. Here you have a two byte header.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/char/tpm/tpm_i2c_atmel.c   | 3 +--
- drivers/char/tpm/tpm_i2c_nuvoton.c | 3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+> +	unsigned rx_len = sizeof(*rx);
+> +
+> +	BUILD_BUG_ON(sizeof(*rx) > DLN2_SPI_BUF_SIZE);
+> +
+> +	if (data_len > DLN2_SPI_MAX_XFER_SIZE)
+> +		return -EINVAL;
+> +
+> +	tx.port = dln2->port;
+> +	tx.size = cpu_to_le16(data_len);
+> +	tx.attr = attr;
+> +
+> +	ret = dln2_transfer(dln2->pdev, DLN2_SPI_READ, &tx, sizeof(tx),
+> +			    rx, &rx_len);
+> +	if (ret < 0)
+> +		return ret;
+> +	if (rx_len < sizeof(rx->size) + data_len)
+> +		return -EPROTO;
+> +	if (le16_to_cpu(rx->size) != data_len)
+> +		return -EPROTO;
+> +
+> +	dln2_spi_copy_from_buf(data, rx->buf, data_len, dln2->bpw);
 
-diff --git a/drivers/char/tpm/tpm_i2c_atmel.c b/drivers/char/tpm/tpm_i2c_atmel.c
-index 7727292..19c3a7b 100644
---- a/drivers/char/tpm/tpm_i2c_atmel.c
-+++ b/drivers/char/tpm/tpm_i2c_atmel.c
-@@ -202,8 +202,7 @@ static int i2c_atmel_remove(struct i2c_client *client)
- 	struct device *dev = &(client->dev);
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
- 
--	if (chip)
--		tpm_dev_vendor_release(chip);
-+	tpm_dev_vendor_release(chip);
- 	tpm_remove_hardware(dev);
- 	kfree(chip);
- 	return 0;
-diff --git a/drivers/char/tpm/tpm_i2c_nuvoton.c b/drivers/char/tpm/tpm_i2c_nuvoton.c
-index 7b158ef..8d09628 100644
---- a/drivers/char/tpm/tpm_i2c_nuvoton.c
-+++ b/drivers/char/tpm/tpm_i2c_nuvoton.c
-@@ -625,8 +625,7 @@ static int i2c_nuvoton_remove(struct i2c_client *client)
- 	struct device *dev = &(client->dev);
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
- 
--	if (chip)
--		tpm_dev_vendor_release(chip);
-+	tpm_dev_vendor_release(chip);
- 	tpm_remove_hardware(dev);
- 	kfree(chip);
- 	return 0;
--- 
-2.1.3
+So you need to use the unaligned macros in dln2_spi_copy_from_buf for
+rx->buf (at least for bpw 32).
 
+Make sure to document why.
+
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * Perform one write & read operation.
+> + */
+> +static int dln2_spi_read_write_one(struct dln2_spi *dln2, const u8 *tx_data,
+> +				   u8 *rx_data, u16 data_len, u8 attr)
+> +{
+> +	int ret;
+> +	struct {
+> +		u8 port;
+> +		__le16 size;
+> +		u8 attr;
+> +		u8 buf[DLN2_SPI_MAX_XFER_SIZE];
+> +	} __packed *tx;
+
+tx is ok.
+
+> +	struct {
+> +		__le16 size;
+> +		u8 buf[DLN2_SPI_MAX_XFER_SIZE];
+> +	} __packed *rx;
+
+But here you have the same two-byte header.
+
+Johan
