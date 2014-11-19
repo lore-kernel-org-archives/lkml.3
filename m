@@ -1,131 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764AbaKSBKH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 20:10:07 -0500
-Received: from regular1.263xmail.com ([211.150.99.135]:54995 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456AbaKSBKE (ORCPT
+	id S1755671AbaKSBQP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 20:16:15 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:42731 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753660AbaKSBQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 20:10:04 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: boris.brezillon@free-electrons.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <420251a43b18a7039c972b940691d778>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <546BEDD9.1000205@rock-chips.com>
-Date: Wed, 19 Nov 2014 09:09:45 +0800
-From: Mark yao <mark.yao@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 18 Nov 2014 20:16:12 -0500
+Message-ID: <546BEF40.70109@huawei.com>
+Date: Wed, 19 Nov 2014 09:15:44 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>, heiko@sntech.de,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, dianders@chromium.org,
-        marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
-        djkurtz@chromium.org, cf@rock-chips.com, xxm@rock-chips.com,
-        huangtao@rock-chips.com, kever.yang@rock-chips.com, yxj@rock-chips.com,
-        xw@rock-chips.com
-Subject: Re: [PATCH v12 1/3] drm: rockchip: Add basic drm driver
-References: <1416297587-18959-1-git-send-email-mark.yao@rock-chips.com> <1416297629-19024-1-git-send-email-mark.yao@rock-chips.com> <20141118083234.GZ25711@phenom.ffwll.local> <20141118142130.6c12ab50@bbrezillon> <20141118142447.GC25711@phenom.ffwll.local>
-In-Reply-To: <20141118142447.GC25711@phenom.ffwll.local>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Liviu Dudau <liviu@dudau.co.uk>, "Tony Luck" <tony.luck@intel.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "huxinwei@huawei.com" <huxinwei@huawei.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Wuyun <wuyun.wu@huawei.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Yijing Wang <wangyijing0307@gmail.com>
+Subject: Re: [RFC PATCH 01/16] PCI: Enhance pci_scan_root_bus() to support
+ default IO/MEM resources
+References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com> <2732970.7HG94QvVBv@wuerfel> <546AF8D7.9010103@huawei.com> <2447172.ADYWdCTnMP@wuerfel> <546B317E.4090800@huawei.com> <20141118142354.GH12037@e106497-lin.cambridge.arm.com>
+In-Reply-To: <20141118142354.GH12037@e106497-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年11月18日 22:24, Daniel Vetter wrote:
-> On Tue, Nov 18, 2014 at 02:21:30PM +0100, Boris Brezillon wrote:
->> Hi Daniel,
->>
->> On Tue, 18 Nov 2014 09:32:34 +0100
->> Daniel Vetter <daniel@ffwll.ch> wrote:
->>
->>> On Tue, Nov 18, 2014 at 04:00:29PM +0800, Mark Yao wrote:
->>>> From: Mark yao <mark.yao@rock-chips.com>
+On 2014/11/18 22:23, Liviu Dudau wrote:
+> On Tue, Nov 18, 2014 at 11:46:06AM +0000, Yijing Wang wrote:
+>> On 2014/11/18 17:36, Arnd Bergmann wrote:
+>>> On Tuesday 18 November 2014 15:44:23 Yijing Wang wrote:
+>>>> On 2014/11/17 18:08, Arnd Bergmann wrote:
+>>>>> On Monday 17 November 2014 18:21:35 Yijing Wang wrote:
+>>>>>> -       list_for_each_entry(window, resources, list)
+>>>>>> -               if (window->res->flags & IORESOURCE_BUS) {
+>>>>>> -                       found = true;
+>>>>>> -                       break;
+>>>>>> -               }
+>>>>>> +       if (!resources) {
+>>>>>> +               pci_add_resource(&default_res, &ioport_resource);
+>>>>>> +               pci_add_resource(&default_res, &iomem_resource);
+>>>>>> +               pci_add_resource(&default_res, &busn_resource);
+>>>>>> +       } else {
+>>>>>>
+>>>>>
+>>>>> Isn't it almost always wrong to do this? You are adding all of the
+>>>>> I/O ports and memory to the host bridge, which will prevent you from
+>>>>> adding another host bridge, and the iomem_resource normally
+>>>>> includes a lot of addresses that are not accessible by the PCI host.
 >>>>
->>>> This patch adds the basic structure of a DRM Driver for Rockchip Socs.
->>>>
->>>> Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
->>>> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
->>>> Acked-by: Daniel Vetter <daniel@ffwll.ch>
->>>> Reviewed-by: Rob Clark <robdclark@gmail.com>
->>>> ---
->>>> Changes in v2:
->>>> - use the component framework to defer main drm driver probe
->>>>    until all VOP devices have been probed.
->>>> - use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
->>>>    master device and each vop device can shared the drm dma mapping.
->>>> - use drm_crtc_init_with_planes and drm_universal_plane_init.
->>>> - remove unnecessary middle layers.
->>>> - add cursor set, move funcs to rockchip drm crtc.
->>>> - use vop reset at first init
->>>> - reference framebuffer when used and unreference when swap out vop
->>>>
->>>> Changes in v3:
->>>> - change "crtc->fb" to "crtc->primary-fb"
->>>> Adviced by Daniel Vetter
->>>> - init cursor plane with universal api, remove unnecessary cursor set,move
->>>>
->>>> Changes in v4:
->>>> Adviced by David Herrmann
->>>> - remove drm_platform_*() usage, use register drm device directly.
->>> Minor fixup for that part below.
+>>>> Hi Arnd, pci host bridge windows are the ranges allow child devices to setup
+>>>> from. Add all of IO/MEM here just a limit to child devices, no request for these
+>>>> resources, so it won't hurt another host bridge. Some platforms have no dts or ACPI
+>>>> report host bridge resources, in this case, we directly assign ioport/iomem_resources
+>>>> as the root resources of PCI devices.
 >>>
->>> [snip]
+>>> But it would be wrong to allow hosts to allocate a device BAR that is not
+>>> visible through the host bridge. I think we need to keep these separate
+>>> from the general case: if you call any of the modern interfaces you have
+>>> to provide the resources and a device. I notice that there is only one
+>>> caller of pci_scan_bus_parented(), we should probably change that over to
+>>> pci_scan_root_bus() or your new interface and remove the old one, but
+>>> keep pci_scan_bus() as the only entry point for all of the legacy users
+>>> that do not know about the resources.
+>>
+>> Ok, I will move this out of the generic interface.
+> 
+> My suggestion would actually be to trigger a warning/error if you detect that the resources
+> are missing. That way we can force the drivers to clean up.
+
+It make sense to me, thanks.
+
+> 
+> Best regards,
+> Liviu
+> 
+>>
+>> Thanks!
+>> Yijing.
+>>
 >>>
->>>> +static int rockchip_drm_bind(struct device *dev)
->>>> +{
->>>> +	struct drm_device *drm;
->>>> +	int ret;
->>>> +
->>>> +	drm = drm_dev_alloc(&rockchip_drm_driver, dev);
->>>> +	if (!drm)
->>>> +		return -ENOMEM;
->>>> +
->>>> +	ret = drm_dev_set_unique(drm, "%s", dev_name(dev));
->>>> +	if (ret)
->>>> +		goto err_free;
->>> Please call rockchip_drm_load here directly and don't put it as the ->load
->>> function into the driver vtable. The point of the alloc/register split is
->>> that the driver can be completely set up _before_ we register anything.
->>> But for backwards compat and historical reasons ->load is called somewhere
->>> in the middle (so that you could access the minor nodes if needed, since
->>> some drivers do that).
->> I tried to do the same in the atmel-hlcdc DRM driver, but I need the
->> primary drm_minor to register the connectors (see this kernel
->> backtrace [1]), which means I either initialize the connector in the
->> wrong place (currently part of the drm load process), or I just can't
->> call atmel_hlcdc_dc_load before registering the drm device...
-> Hm right, wonder who that works with rockchip tbh.
->
-> We did split up the drm_connector setup into _init and register, so if you
-> want to do this then you need to move the call to drm_connector_register
-> below the call to drm_dev_register.
->
-> We should probably have a drm_connectors_register_all helper which does
-> this for all connectors on the connector list. And also grabs the
-> appropriate lock.
->
-> I guess it's somewhat obvious that no one yet actually tried this ;-)
-> -Daniel
-right, I re-test the driver with it, get the same problem with Boris.
-I should move drm_connector_register below the drm_dev_register.
+>>> 	Arnd
+>>>
+>>> .
+>>>
+>>
+>>
+>> -- 
+>> Thanks!
+>> Yijing
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
+
+
+-- 
+Thanks!
+Yijing
 
