@@ -1,109 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933097AbaKSAJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 19:09:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53989 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932660AbaKSAJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 19:09:20 -0500
-Message-ID: <546BDF5F.2040400@redhat.com>
-Date: Tue, 18 Nov 2014 16:07:59 -0800
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932794AbaKSAKB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 19:10:01 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:34166 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932213AbaKSAKA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 19:10:00 -0500
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+In-Reply-To: <546BD866.5050101@oracle.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+	<1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
+	<546BD866.5050101@oracle.com>
+Date: Wed, 19 Nov 2014 04:09:59 +0400
+Message-ID: <CAPAsAGxYF27pbNEgsr3PgNJ=uNFzR2qcviLB_7bp=nM3ZD5Jgw@mail.gmail.com>
+Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory debugger.
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Michael Neuling <mikey@neuling.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        donald.c.skidmore@intel.com, matthew.vick@intel.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, nic_swsd@realtek.com,
-        Will Deacon <will.deacon@arm.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Tony Luck <tony.luck@intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH v4 0/4] Add lightweight memory barriers for coherent memory
- access
-References: <20141118172644.26303.37688.stgit@ahduyck-server>	<CA+55aFw3ygP8UEF1vidWdjBUEkqXOELCPkpjLMD-X=vXXQEGOQ@mail.gmail.com>	<546BCC73.3050903@redhat.com> <CA+55aFwHUQv+zBxyN41Y4MDyRXbQ84H8zc01O6O_eg9ZvoqYiQ@mail.gmail.com>
-In-Reply-To: <CA+55aFwHUQv+zBxyN41Y4MDyRXbQ84H8zc01O6O_eg9ZvoqYiQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 11/18/2014 03:06 PM, Linus Torvalds wrote:
-> On Tue, Nov 18, 2014 at 2:47 PM, Alexander Duyck
-> <alexander.h.duyck@redhat.com> wrote:
->>
->> The problem is DMA is a broad brush.  There are multiple cases I can think
->> of where DMA does not represent coherent memory.
+2014-11-19 2:38 GMT+03:00 Sasha Levin <sasha.levin@oracle.com>:
+> Hi Andrey,
 >
-> .. and I already addressed that, in the thing you even included:
+> After the recent exchange of mails about kasan it came to me that I haven't
+> seen a kasan warning for a while now. To give kasan a quick test I added a rather
+> simple error which should generate a kasan warning about accessing userspace
+> memory (yes, I know kasan has a test module but my setup doesn't like modules):
 >
->>> about what is actually the important issue. All sane memory is
->>> coherent, after all (and if it isn't, you have other issues than
->>> memory ordering).
+>         diff --git a/net/socket.c b/net/socket.c
+>         index fe20c31..794e9f4 100644
+>         --- a/net/socket.c
+>         +++ b/net/socket.c
+>         @@ -1902,7 +1902,7 @@ SYSCALL_DEFINE5(setsockopt, int, fd, int, level, int, optname,
+>          {
+>                 int err, fput_needed;
+>                 struct socket *sock;
+>         -
+>         +       *((char *)10) = 5;
+>                 if (optlen < 0)
+>                         return -EINVAL;
 >
-> The thing is, if the DMA isn't coherent, nobody is going to care about
-> the memory barriers anyway. You have bigger issues.
+> A gfp was triggered, but no kasan warning was shown.
 >
-> And your argument is that "dma" is bigger than this issue. *MY*
-> argument is that "coherent" is bigger than this issue. There's tons of
-> coherent memory that is not about DMA, the same way that there is DMA
-> memory that isn't coherent.
+
+Yes with CONFIG_KASAN_INLINE you will get GPF instead of kasan report.
+For userspaces addresses we don't have shadow memory. In outline case
+I just check address itself before checking shadow. In inline case compiler
+just checks shadow, so there is no way to avoid GPF.
+
+To be able to print report instead of GPF, I need to treat GPFs in a special
+way if inline instrumentation was enabled, but it's not done yet.
+
+> I remembered that one of the biggest changes in kasan was the introduction of
+> inline instrumentation, so I went ahead to disable it and see if it helps. But
+> the only result of that was having the boot process hang pretty early:
 >
-> See? The two are 100% equivalent. Except "dma" is just three letters,
-> and matches "smp" both visually and in use (SMP memory is "coherent"
-> too - yes, you can - and crap architectures do - have incoherent
-> caches due to virtual aliases etc, but exactly as with DMA, if you
-> have incoherent SMP, you have bigger issues than the barriers).
-
-Actually if anything maybe the crap architectures are a good reason for 
-changing the name.  If they can't even do coherent SMP memory then the 
-coherent_*mb() could be misleading since they would just be full 
-barriers anyway.
-
-> And yes, you could call it "coherent_dma_read_memory_barrier()", and
-> it would be very descriptive. It would also drive everybody crazy.
-
-No, I think "dma_wmb__before_coherent_write" would have been much more 
-descriptive.  You have to squeeze in that extra underscore somewhere. ;-)
-
-> So I argue for "dma_mb()" pairing with "smp_mb()" from a naming
-> standpoint. It just *describes* the problem better. Look at the
-> drivers, it's very much about the devices doing DMA to memory, and our
-> ordering.
+> [...]
+> [    0.000000] IOAPIC[0]: apic_id 21, version 17, address 0xfec00000, GSI 0-23
+> [    0.000000] Processors: 20
+> [    0.000000] smpboot: Allowing 24 CPUs, 4 hotplug CPUs
+> [    0.000000] e820: [mem 0xd0000000-0xffffffff] available for PCI devices
+> [    0.000000] Booting paravirtualized kernel on KVM
+> [    0.000000] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:24 nr_cpu_ids:24 nr_node_ids:1
+> [    0.000000] PERCPU: Embedded 491 pages/cpu @ffff8808dce00000 s1971864 r8192 d31080 u2097152
+> *HANG*
 >
-> To be even more clear: nobody sane cares about the "coherent" part,
-> because only insane horrible crap architectures have incoherent memory
-> in the first place, and sane people run away screaming from that
-> steaming pile of sh*t.
 
-I think that is part of my reluctance.  I didn't even want it implied 
-that the barriers could be used with that kind of stuff.
+This hang happens only with your error patch above or even without it?
+In any case I'll look tomorrow.
 
-> Just look at some of the drivers you actually *use* this in. They are
-> for intel hardware, they presumably would never even work in the first
-> place without cache-coherent DMA. Why do you think that "coherent" is
-> so important?
+> I'm using the latest gcc:
 >
->                         Linus
+> $ gcc --version
+> gcc (GCC) 5.0.0 20141117 (experimental)
+>
+>
+> I'll continue looking into it tomorrow, just hoping it rings a bell...
+>
+>
+> Thanks,
+> Sasha
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-v5 should be up shortly after a quick pass with sed to do the 
-find/replace, clean up any whitespace issues, and a quick run through 
-some cross compiling scripts just to make sure I didn't screw anything up.
 
-- Alex
+
+-- 
+Best regards,
+Andrey Ryabinin
