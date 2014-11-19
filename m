@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459AbaKSVp7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:45:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
+	id S1757485AbaKSVqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:46:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933583AbaKSVEd (ORCPT
+	with ESMTP id S933573AbaKSVEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:33 -0500
+	Wed, 19 Nov 2014 16:04:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.14 080/122] netfilter: ipset: off by one in ip_set_nfnl_get_byindex()
-Date: Wed, 19 Nov 2014 12:52:10 -0800
-Message-Id: <20141119205211.465215371@linuxfoundation.org>
+        Devesh Sharma <devesh.sharma@emulex.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.14 078/122] IB/core: Clear AH attr variable to prevent garbage data
+Date: Wed, 19 Nov 2014 12:52:08 -0800
+Message-Id: <20141119205211.396338904@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -30,33 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Devesh Sharma <devesh.sharma@emulex.com>
 
-commit 0f9f5e1b83abd2b37c67658e02a6fc9001831fa5 upstream.
+commit 8b0f93d9490653a7b9fc91f3570089132faed1c0 upstream.
 
-The ->ip_set_list[] array is initialized in ip_set_net_init() and it
-has ->ip_set_max elements so this check should be >= instead of >
-otherwise we are off by one.
+During create-ah from userspace, uverbs is sending garbage data in
+attr.dmac and attr.vlan_id.  This patch sets attr.dmac and
+attr.vlan_id to zero.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Fixes: dd5f03beb4f7 ("IB/core: Ethernet L2 attributes in verbs/cm structures")
+Signed-off-by: Devesh Sharma <devesh.sharma@emulex.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipset/ip_set_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/core/uverbs_cmd.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/netfilter/ipset/ip_set_core.c
-+++ b/net/netfilter/ipset/ip_set_core.c
-@@ -636,7 +636,7 @@ ip_set_nfnl_get_byindex(struct net *net,
- 	struct ip_set *set;
- 	struct ip_set_net *inst = ip_set_pernet(net);
+--- a/drivers/infiniband/core/uverbs_cmd.c
++++ b/drivers/infiniband/core/uverbs_cmd.c
+@@ -2425,6 +2425,8 @@ ssize_t ib_uverbs_create_ah(struct ib_uv
+ 	attr.grh.sgid_index    = cmd.attr.grh.sgid_index;
+ 	attr.grh.hop_limit     = cmd.attr.grh.hop_limit;
+ 	attr.grh.traffic_class = cmd.attr.grh.traffic_class;
++	attr.vlan_id           = 0;
++	memset(&attr.dmac, 0, sizeof(attr.dmac));
+ 	memcpy(attr.grh.dgid.raw, cmd.attr.grh.dgid, 16);
  
--	if (index > inst->ip_set_max)
-+	if (index >= inst->ip_set_max)
- 		return IPSET_INVALID_ID;
- 
- 	nfnl_lock(NFNL_SUBSYS_IPSET);
+ 	ah = ib_create_ah(pd, &attr);
 
 
