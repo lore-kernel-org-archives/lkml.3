@@ -1,106 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709AbaKSNv0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 08:51:26 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:44252 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754716AbaKSNvY (ORCPT
+	id S1754797AbaKSN4a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 08:56:30 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:38613 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751547AbaKSN41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 08:51:24 -0500
-Date: Wed, 19 Nov 2014 14:51:21 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Laurentiu Palcu <laurentiu.palcu@intel.com>
-Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, Johan Havold <johan@kernel.org>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/2] spi: add support for DLN-2 USB-SPI adapter
-Message-ID: <20141119135121.GF7857@localhost>
-References: <1416394031-2663-1-git-send-email-laurentiu.palcu@intel.com>
- <1416402467-26999-1-git-send-email-laurentiu.palcu@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416402467-26999-1-git-send-email-laurentiu.palcu@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 19 Nov 2014 08:56:27 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Daniel Vetter <daniel@ffwll.ch>,
+        Rob Clark <robdclark@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v8 0/2] drm: add support for Atmel HLCDC Display Controller
+Date: Wed, 19 Nov 2014 14:56:20 +0100
+Message-Id: <1416405382-24692-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 03:07:47PM +0200, Laurentiu Palcu wrote:
+Hello,
 
-> +/*
-> + * Perform one read operation.
-> + */
-> +static int dln2_spi_read_one(struct dln2_spi *dln2, u8 *data,
-> +			     u16 data_len, u8 attr)
-> +{
-> +	int ret;
-> +	struct {
-> +		u8 port;
-> +		__le16 size;
-> +		u8 attr;
-> +	} __packed tx;
-> +	struct {
-> +		__le16 size;
-> +		u8 buf[DLN2_SPI_MAX_XFER_SIZE];
-> +	} __packed *rx = dln2->buf;
+This patch series adds support for the Atmel HLCDC Display Controller
+embedded in the HLCDC block.
 
-You said you verified that the dln2 protocol headers did not mess up the
-alignment, yet they do. Here you have a two byte header.
+The drivers supports basic CRTC functionalities, several overlays and
+provides an hardware cursor.
 
-> +	unsigned rx_len = sizeof(*rx);
-> +
-> +	BUILD_BUG_ON(sizeof(*rx) > DLN2_SPI_BUF_SIZE);
-> +
-> +	if (data_len > DLN2_SPI_MAX_XFER_SIZE)
-> +		return -EINVAL;
-> +
-> +	tx.port = dln2->port;
-> +	tx.size = cpu_to_le16(data_len);
-> +	tx.attr = attr;
-> +
-> +	ret = dln2_transfer(dln2->pdev, DLN2_SPI_READ, &tx, sizeof(tx),
-> +			    rx, &rx_len);
-> +	if (ret < 0)
-> +		return ret;
-> +	if (rx_len < sizeof(rx->size) + data_len)
-> +		return -EPROTO;
-> +	if (le16_to_cpu(rx->size) != data_len)
-> +		return -EPROTO;
-> +
-> +	dln2_spi_copy_from_buf(data, rx->buf, data_len, dln2->bpw);
+At the moment, it only supports connection to LCD panels through an RGB
+connector (defined as an LVDS connector in my implementation), though
+connection to other kind of devices (like DRM bridges) could be added later.
 
-So you need to use the unaligned macros in dln2_spi_copy_from_buf for
-rx->buf (at least for bpw 32).
+It also supports several RGB formats on all planes and some YUV formats on
+the HEO overlay plane.
 
-Make sure to document why.
+Best Regards,
 
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Perform one write & read operation.
-> + */
-> +static int dln2_spi_read_write_one(struct dln2_spi *dln2, const u8 *tx_data,
-> +				   u8 *rx_data, u16 data_len, u8 attr)
-> +{
-> +	int ret;
-> +	struct {
-> +		u8 port;
-> +		__le16 size;
-> +		u8 attr;
-> +		u8 buf[DLN2_SPI_MAX_XFER_SIZE];
-> +	} __packed *tx;
+Boris
 
-tx is ok.
+Changes since v7:
+ - split MFD, PWM and Display Controller drivers in several patch series
+ - fix inline documentation (suggested by Nicolas)
+ - fix DMA BURST LEN config (suggested by Nicolas)
+ - call load and unload in probe and remove functions instead of setting
+   them in drm_driver struct
 
-> +	struct {
-> +		__le16 size;
-> +		u8 buf[DLN2_SPI_MAX_XFER_SIZE];
-> +	} __packed *rx;
+Changes since v6:
+- move interrupts property from hlcdc display controller node to its
+  parent node (the MFD device)
+- add mode_set_base implementation
+- rework page flip handling to rely on vblank events instead of DMA
+  transfer events (the end of a DMA transfer does not mean the frame
+  is actually flipped: data are first copied to an output FIFO before
+  being sent on the RGB/DPI connector)
+- few minor coding style fixes
 
-But here you have the same two-byte header.
+Changes since v5:
+- fix Kconfig dependency bug
+- use adjusted mode in crtc config
+- move signal config (clk, hsync, vsync) from connector to crtc mode_set
+  function
+- use standard rotation property
+- check display_mode validity in connecto mode_valid function
+- remove dma_set_coherent mask call (now done in MFD core)
+- do not use drm_platform_init
 
-Johan
+Changes since v4:
+- fix a few more bugs in rotation handling (rotation was buggy on some
+  formats)
+- return connector_status_unknown until a panel is exposed by the
+  drm_panel infrastructure (prevent fbdev creation until everyting is
+  in place)
+- rework Kconfig MFD_ATMEL_HLCDC selection to simplify the configuration
+  (automatically select this option when selecting the HLCDC PMW or DRM
+  driver, instead of depending on this option)
+
+Changes since v3:
+- rework the layer code to simplify several parts (locking and layer
+  disabling)
+- make use of the drm_flip_work infrastructure
+- rely on default HW cursor implementation using on the cursor plane
+- rework the display controller DT bindings (based on OF graph
+  representation)
+- add rotation support
+- retrive RGB bus format from drm_display_info
+- drop the dynamic pinctrl state selection
+- rework HLCDC output handling (previously specialized to interface
+  with LCD panels)
+- drop ".module = THIS_MODULE" lines
+- change display controller compatible string
+
+Changes since v2:
+- fix coding style issues (macro indentation)
+- make use of GENMASK in several places
+- declare regmap config as a static structure
+- rework hlcdc plane update API
+- rework cursor handling to make use of the new plane update API
+- fix backporch config
+- do not use devm_regmap_init_mmio_clk to avoid extra clk_enable
+  clk disable calls when accessing registers
+- explicitely include regmap and clk headers instead of relying on
+  atmel-hlcdc.h inclusions
+- make the atmel-hlcdc driver depends on CONFIG_OF
+- separate DT bindings documentation from driver implementation
+- support several pin muxing for HLCDC pins on sama5d3 SoCs
+
+Changes since v1:
+- replace the backlight driver by a PWM driver
+- make use of drm_panel infrastructure
+- split driver code in several subsystem: MFD, PWM and DRM
+- add support for overlays
+- add support for hardware cursor
+
+Boris Brezillon (2):
+  drm: add Atmel HLCDC Display Controller support
+  drm: add DT bindings documentation for atmel-hlcdc-dc driver
+
+ .../devicetree/bindings/drm/atmel/hlcdc-dc.txt     |  53 ++
+ drivers/gpu/drm/Kconfig                            |   2 +
+ drivers/gpu/drm/Makefile                           |   1 +
+ drivers/gpu/drm/atmel-hlcdc/Kconfig                |  11 +
+ drivers/gpu/drm/atmel-hlcdc/Makefile               |   7 +
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_crtc.c     | 406 ++++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.c       | 579 ++++++++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.h       | 213 +++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.c    | 667 ++++++++++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.h    | 398 ++++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_output.c   | 323 ++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_plane.c    | 856 +++++++++++++++++++++
+ 12 files changed, 3516 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/drm/atmel/hlcdc-dc.txt
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/Kconfig
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/Makefile
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_crtc.c
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.c
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.h
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.c
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.h
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_output.c
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_plane.c
+
+-- 
+1.9.1
+
