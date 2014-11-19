@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757868AbaKSWIf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:08:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56491 "EHLO
+	id S1757880AbaKSWIv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:08:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56482 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933355AbaKSVEM (ORCPT
+	with ESMTP id S933352AbaKSVEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:12 -0500
+	Wed, 19 Nov 2014 16:04:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 002/122] ip6_tunnel: Use ip6_tnl_dev_init as the ndo_init function.
-Date: Wed, 19 Nov 2014 12:50:52 -0800
-Message-Id: <20141119205208.916426805@linuxfoundation.org>
+        Cristian Stoica <cristian.stoica@freescale.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.14 019/122] crypto: caam - fix missing dma unmap on error path
+Date: Wed, 19 Nov 2014 12:51:09 -0800
+Message-Id: <20141119205209.448475953@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,60 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Cristian Stoica <cristian.stoica@freescale.com>
 
-[ Upstream commit 6c6151daaf2d8dc2046d9926539feed5f66bf74e ]
+commit 738459e3f88538f2ece263424dafe5d91799e46b upstream.
 
-ip6_tnl_dev_init() sets the dev->iflink via a call to
-ip6_tnl_link_config(). After that, register_netdevice()
-sets dev->iflink = -1. So we loose the iflink configuration
-for ipv6 tunnels. Fix this by using ip6_tnl_dev_init() as the
-ndo_init function. Then ip6_tnl_dev_init() is called after
-dev->iflink is set to -1 from register_netdevice().
+If dma mapping for dma_addr_out fails, the descriptor memory is freed
+but the previous dma mapping for dma_addr_in remains.
+This patch resolves the missing dma unmap and groups resource
+allocations at function start.
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ip6_tunnel.c |   10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
 
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -272,9 +272,6 @@ static int ip6_tnl_create2(struct net_de
- 	int err;
+---
+ drivers/crypto/caam/key_gen.c |   29 ++++++++++++++---------------
+ 1 file changed, 14 insertions(+), 15 deletions(-)
+
+--- a/drivers/crypto/caam/key_gen.c
++++ b/drivers/crypto/caam/key_gen.c
+@@ -51,23 +51,29 @@ int gen_split_key(struct device *jrdev,
+ 	u32 *desc;
+ 	struct split_key_result result;
+ 	dma_addr_t dma_addr_in, dma_addr_out;
+-	int ret = 0;
++	int ret = -ENOMEM;
  
- 	t = netdev_priv(dev);
--	err = ip6_tnl_dev_init(dev);
--	if (err < 0)
--		goto out;
+ 	desc = kmalloc(CAAM_CMD_SZ * 6 + CAAM_PTR_SZ * 2, GFP_KERNEL | GFP_DMA);
+ 	if (!desc) {
+ 		dev_err(jrdev, "unable to allocate key input memory\n");
+-		return -ENOMEM;
++		return ret;
+ 	}
  
- 	err = register_netdevice(dev);
- 	if (err < 0)
-@@ -1456,6 +1453,7 @@ ip6_tnl_change_mtu(struct net_device *de
- 
- 
- static const struct net_device_ops ip6_tnl_netdev_ops = {
-+	.ndo_init	= ip6_tnl_dev_init,
- 	.ndo_uninit	= ip6_tnl_dev_uninit,
- 	.ndo_start_xmit = ip6_tnl_xmit,
- 	.ndo_do_ioctl	= ip6_tnl_ioctl,
-@@ -1547,16 +1545,10 @@ static int __net_init ip6_fb_tnl_dev_ini
- 	struct ip6_tnl *t = netdev_priv(dev);
- 	struct net *net = dev_net(dev);
- 	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
--	int err = ip6_tnl_dev_init_gen(dev);
+-	init_job_desc(desc, 0);
 -
--	if (err)
--		return err;
+ 	dma_addr_in = dma_map_single(jrdev, (void *)key_in, keylen,
+ 				     DMA_TO_DEVICE);
+ 	if (dma_mapping_error(jrdev, dma_addr_in)) {
+ 		dev_err(jrdev, "unable to map key input memory\n");
+-		kfree(desc);
+-		return -ENOMEM;
++		goto out_free;
+ 	}
++
++	dma_addr_out = dma_map_single(jrdev, key_out, split_key_pad_len,
++				      DMA_FROM_DEVICE);
++	if (dma_mapping_error(jrdev, dma_addr_out)) {
++		dev_err(jrdev, "unable to map key output memory\n");
++		goto out_unmap_in;
++	}
++
++	init_job_desc(desc, 0);
+ 	append_key(desc, dma_addr_in, keylen, CLASS_2 | KEY_DEST_CLASS_REG);
  
- 	t->parms.proto = IPPROTO_IPV6;
- 	dev_hold(dev);
+ 	/* Sets MDHA up into an HMAC-INIT */
+@@ -84,13 +90,6 @@ int gen_split_key(struct device *jrdev,
+ 	 * FIFO_STORE with the explicit split-key content store
+ 	 * (0x26 output type)
+ 	 */
+-	dma_addr_out = dma_map_single(jrdev, key_out, split_key_pad_len,
+-				      DMA_FROM_DEVICE);
+-	if (dma_mapping_error(jrdev, dma_addr_out)) {
+-		dev_err(jrdev, "unable to map key output memory\n");
+-		kfree(desc);
+-		return -ENOMEM;
+-	}
+ 	append_fifo_store(desc, dma_addr_out, split_key_len,
+ 			  LDST_CLASS_2_CCB | FIFOST_TYPE_SPLIT_KEK);
  
--	ip6_tnl_link_config(t);
+@@ -118,10 +117,10 @@ int gen_split_key(struct device *jrdev,
+ 
+ 	dma_unmap_single(jrdev, dma_addr_out, split_key_pad_len,
+ 			 DMA_FROM_DEVICE);
++out_unmap_in:
+ 	dma_unmap_single(jrdev, dma_addr_in, keylen, DMA_TO_DEVICE);
 -
- 	rcu_assign_pointer(ip6n->tnls_wc[0], t);
- 	return 0;
++out_free:
+ 	kfree(desc);
+-
+ 	return ret;
  }
+ EXPORT_SYMBOL(gen_split_key);
 
 
