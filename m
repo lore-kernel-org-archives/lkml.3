@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702AbaKSQzg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:55:36 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:55388 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754153AbaKSQzf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:55:35 -0500
-Date: Wed, 19 Nov 2014 16:55:17 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
-Message-ID: <20141119165517.GL4042@n2100.arm.linux.org.uk>
-References: <20141118173413.GB4042@n2100.arm.linux.org.uk>
- <546B8C64.3010904@samsung.com>
- <2041617.Kxhx5O4MMr@wuerfel>
- <CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
- <CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
- <CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com>
- <20141119160747.GH4042@n2100.arm.linux.org.uk>
- <CAKv+Gu-kvmkhrptmaN0miM3c0K3ZOh4maTFXL=NpYTMi9Q83kA@mail.gmail.com>
- <CALYGNiN5XC_4MhRbxZmFW5Jmc1N1H32tSZr3kKf_UBFriG71nA@mail.gmail.com>
- <CAKv+Gu8o_-Q5PeFqdQXW=mcHNYxFcLLnvxjq94y-iG8+JUp=9w@mail.gmail.com>
+	id S1756021AbaKSQzo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:55:44 -0500
+Received: from mout.web.de ([212.227.17.11]:55271 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755776AbaKSQzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:55:42 -0500
+Message-ID: <546CCB7E.3050109@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 17:55:26 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKv+Gu8o_-Q5PeFqdQXW=mcHNYxFcLLnvxjq94y-iG8+JUp=9w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] DRM-vmwgfx: Deletion of an unnecessary check before the
+ function call "vfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:dM2Kshmlo+R1dQFqS0h1ItoATrq+3xPiQpvkbzOAryGylOfrcLp
+ GSBksd3UJRLYhMH/oX05eIKSzmrN0MRWJnwe39p3fgym/9n+BdsihhcLuQKcvwZd1R7hrqa
+ HrJ4QQmthUn1STcyh0HT/9aRK/VG1Fh3xr01jZ9qonM1j6MPnMuQYSHu2jAjyyaQvZ1Y/Z7
+ B0TogeoakRSoEtQeRKzyA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 05:38:57PM +0100, Ard Biesheuvel wrote:
-> Numbers are disambiguated by the f and b suffixes, so they can be
-> reused in the same .s file. So as long as you use a strictly numerical
-> prefix, you can deal correctly with the case where, for instance,
-> do_div() is called twice in the same compilation unit, and still not
-> clash with other inline asm
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 17:50:19 +0100
 
-What's not particularly nice though is to hide these in a macro,
-which itself may be part of a larger macro or code fragment also
-using small numbers.
+The vfree() function performes also input parameter validation. Thus the test
+around the call is not needed.
 
-We probably ought to be a bit more inteligent about how we choose
-these numbers inside macros, rather than just randomly picking some
-and hoping that they don't clash.
+This issue was detected by using the Coccinelle software.
 
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+index 14b2f50..f9a67b8 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+@@ -889,8 +889,7 @@ static int vmw_driver_unload(struct drm_device *dev)
+ 
+ 	if (dev_priv->ctx.res_ht_initialized)
+ 		drm_ht_remove(&dev_priv->ctx.res_ht);
+-	if (dev_priv->ctx.cmd_bounce)
+-		vfree(dev_priv->ctx.cmd_bounce);
++	vfree(dev_priv->ctx.cmd_bounce);
+ 	if (dev_priv->enable_fb) {
+ 		vmw_fb_close(dev_priv);
+ 		vmw_kms_restore_vga(dev_priv);
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+2.1.3
+
