@@ -1,133 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaKSLkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 06:40:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52995 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751587AbaKSLko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 06:40:44 -0500
-Date: Wed, 19 Nov 2014 12:40:17 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 2/2] tracing: Use trace_seq_used() and seq_buf_used()
- instead of len
-Message-ID: <20141119114017.GA2332@dhcp128.suse.cz>
-References: <20141115045847.712848224@goodmis.org>
- <20141115050603.904875201@goodmis.org>
- <20141117123250.10f6f57c@gandalf.local.home>
- <20141117141215.2dbd5f12@gandalf.local.home>
- <20141118163354.GK23958@pathway.suse.cz>
- <20141118123732.462b1ad8@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141118123732.462b1ad8@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754751AbaKSL7u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 06:59:50 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:41326 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673AbaKSL7r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 06:59:47 -0500
+From: Johan Hovold <johan@kernel.org>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Bruno Thomsen <bth@kamstrup.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 02/10] net: phy: micrel: add device-type abstraction
+Date: Wed, 19 Nov 2014 12:59:15 +0100
+Message-Id: <1416398363-32306-3-git-send-email-johan@kernel.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1416398363-32306-1-git-send-email-johan@kernel.org>
+References: <1416398363-32306-1-git-send-email-johan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-11-18 12:37:32, Steven Rostedt wrote:
-> On Tue, 18 Nov 2014 17:33:54 +0100
-> Petr Mladek <pmladek@suse.cz> wrote:
-> 
-> > On Mon 2014-11-17 14:12:15, Steven Rostedt wrote:
-> > > 
-> > > > I don't like the fact that I did a code structure change with this
-> > > > patch. This patch should be just a simple conversion of len to
-> > > > seq_buf_used(). I'm going to strip this change out and put it before
-> > > > this patch.
-> > > 
-> > > 
-> > > As the seq_buf->len will soon be +1 size when there's an overflow, we
-> > > must use trace_seq_used() or seq_buf_used() methods to get the real
-> > > length. This will prevent buffer overflow issues if just the len
-> > > of the seq_buf descriptor is used to copy memory.
-> > > 
-> > > Link: http://lkml.kernel.org/r/20141114121911.09ba3d38@gandalf.local.home
-> > > 
-> > > Reported-by: Petr Mladek <pmladek@suse.cz>
-> > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > > ---
-> > >  include/linux/trace_seq.h            | 20 +++++++++++++++++++-
-> > >  kernel/trace/seq_buf.c               |  2 +-
-> > >  kernel/trace/trace.c                 | 22 +++++++++++-----------
-> > >  kernel/trace/trace_events.c          |  9 ++++++---
-> > >  kernel/trace/trace_functions_graph.c |  5 ++++-
-> > >  kernel/trace/trace_seq.c             |  2 +-
-> > >  6 files changed, 42 insertions(+), 18 deletions(-)
-> > 
-> > [...]
-> > 
-> > 
-> > > --- a/kernel/trace/trace.c
-> > > +++ b/kernel/trace/trace.c
-> > > @@ -944,10 +944,10 @@ static ssize_t trace_seq_to_buffer(struct trace_seq *s, void *buf, size_t cnt)
-> > >  {
-> > >  	int len;
-> > >  
-> > > -	if (s->seq.len <= s->seq.readpos)
-> > > +	if (trace_seq_used(s) <= s->seq.readpos)
-> > >  		return -EBUSY;
-> > >  
-> > > -	len = s->seq.len - s->seq.readpos;
-> > > +	len = trace_seq_used(s) - s->seq.readpos;
-> > >  	if (cnt > len)
-> > >  		cnt = len;
-> > >  	memcpy(buf, s->buffer + s->seq.readpos, cnt);
-> > 
-> > 
-> > There is one more dangerous usage in trace_printk_seq(). It is on
-> > three lines there.
-> 
-> You totally confused me. What usage in trace_printk_seq(), and what
-> three lines?
-> 
-> In this patch, trace_printk_seq() looks like this:
-> 
-> int trace_print_seq(struct seq_file *m, struct trace_seq *s)
-> {
->         int ret;
-> 
->         __trace_seq_init(s);
-> 
->         ret = seq_buf_print_seq(m, &s->seq);
-> 
->         /*
->          * Only reset this buffer if we successfully wrote to the
->          * seq_file buffer. This lets the caller try again or
->          * do something else with the contents.
->          */
->         if (!ret)
->                 trace_seq_init(s);
-> 
->         return ret;
-> }
+Add structured device-type information and support for generic led-mode
+setup to the generic config_init callback.
 
-The confusion is caused by the 'k' ("print" vs. "printk") in the
-function name. I was talking about the following function from
-kernel/trace/trace.c:
+This is a first step in ultimately getting rid of device-type specific
+callbacks.
 
-void
-trace_printk_seq(struct trace_seq *s)
-{
-	/* Probably should print a warning here. */
-	if (s->seq.len >= TRACE_MAX_PRINT)
-		s->seq.len = TRACE_MAX_PRINT;
+Signed-off-by: Johan Hovold <johan@kernel.org>
+---
+ drivers/net/phy/micrel.c | 83 ++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 70 insertions(+), 13 deletions(-)
 
-	/* should be zero ended, but we are paranoid. */
-	s->buffer[s->seq.len] = 0;
+diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
+index 30e894d6ffbd..1b528137afd9 100644
+--- a/drivers/net/phy/micrel.c
++++ b/drivers/net/phy/micrel.c
+@@ -73,6 +73,30 @@
+ 
+ #define PS_TO_REG				200
+ 
++struct kszphy_type {
++	u32 led_mode_reg;
++};
++
++struct kszphy_priv {
++	const struct kszphy_type *type;
++};
++
++static const struct kszphy_type ksz8021_type = {
++	.led_mode_reg		= MII_KSZPHY_CTRL_2,
++};
++
++static const struct kszphy_type ksz8041_type = {
++	.led_mode_reg		= MII_KSZPHY_CTRL_1,
++};
++
++static const struct kszphy_type ksz8051_type = {
++	.led_mode_reg		= MII_KSZPHY_CTRL_2,
++};
++
++static const struct kszphy_type ksz8081_type = {
++	.led_mode_reg		= MII_KSZPHY_CTRL_2,
++};
++
+ static int ksz_config_flags(struct phy_device *phydev)
+ {
+ 	int regval;
+@@ -229,19 +253,25 @@ out:
+ 
+ static int kszphy_config_init(struct phy_device *phydev)
+ {
+-	return 0;
+-}
++	struct kszphy_priv *priv = phydev->priv;
++	const struct kszphy_type *type;
+ 
+-static int kszphy_config_init_led8041(struct phy_device *phydev)
+-{
+-	return kszphy_setup_led(phydev, MII_KSZPHY_CTRL_1);
++	if (!priv)
++		return 0;
++
++	type = priv->type;
++
++	if (type->led_mode_reg)
++		kszphy_setup_led(phydev, type->led_mode_reg);
++
++	return 0;
+ }
+ 
+ static int ksz8021_config_init(struct phy_device *phydev)
+ {
+ 	int rc;
+ 
+-	kszphy_setup_led(phydev, MII_KSZPHY_CTRL_2);
++	kszphy_config_init(phydev);
+ 
+ 	rc = ksz_config_flags(phydev);
+ 	if (rc < 0)
+@@ -256,7 +286,7 @@ static int ks8051_config_init(struct phy_device *phydev)
+ {
+ 	int rc;
+ 
+-	kszphy_setup_led(phydev, MII_KSZPHY_CTRL_2);
++	kszphy_config_init(phydev);
+ 
+ 	rc = ksz_config_flags(phydev);
+ 	return rc < 0 ? rc : 0;
+@@ -265,9 +295,8 @@ static int ks8051_config_init(struct phy_device *phydev)
+ static int ksz8081_config_init(struct phy_device *phydev)
+ {
+ 	kszphy_broadcast_disable(phydev);
+-	kszphy_setup_led(phydev, MII_KSZPHY_CTRL_2);
+ 
+-	return 0;
++	return kszphy_config_init(phydev);
+ }
+ 
+ static int ksz9021_load_values_from_of(struct phy_device *phydev,
+@@ -499,6 +528,22 @@ ksz9021_wr_mmd_phyreg(struct phy_device *phydev, int ptrad, int devnum,
+ {
+ }
+ 
++static int kszphy_probe(struct phy_device *phydev)
++{
++	const struct kszphy_type *type = phydev->drv->driver_data;
++	struct kszphy_priv *priv;
++
++	priv = devm_kzalloc(&phydev->dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	phydev->priv = priv;
++
++	priv->type = type;
++
++	return 0;
++}
++
+ static int ksz8021_probe(struct phy_device *phydev)
+ {
+ 	struct clk *clk;
+@@ -517,7 +562,7 @@ static int ksz8021_probe(struct phy_device *phydev)
+ 		}
+ 	}
+ 
+-	return 0;
++	return kszphy_probe(phydev);
+ }
+ 
+ static struct phy_driver ksphy_driver[] = {
+@@ -542,6 +587,7 @@ static struct phy_driver ksphy_driver[] = {
+ 	.features	= (PHY_BASIC_FEATURES | SUPPORTED_Pause |
+ 			   SUPPORTED_Asym_Pause),
+ 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
++	.driver_data	= &ksz8021_type,
+ 	.probe		= ksz8021_probe,
+ 	.config_init	= ksz8021_config_init,
+ 	.config_aneg	= genphy_config_aneg,
+@@ -558,6 +604,7 @@ static struct phy_driver ksphy_driver[] = {
+ 	.features	= (PHY_BASIC_FEATURES | SUPPORTED_Pause |
+ 			   SUPPORTED_Asym_Pause),
+ 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
++	.driver_data	= &ksz8021_type,
+ 	.probe		= ksz8021_probe,
+ 	.config_init	= ksz8021_config_init,
+ 	.config_aneg	= genphy_config_aneg,
+@@ -574,7 +621,9 @@ static struct phy_driver ksphy_driver[] = {
+ 	.features	= (PHY_BASIC_FEATURES | SUPPORTED_Pause
+ 				| SUPPORTED_Asym_Pause),
+ 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
+-	.config_init	= kszphy_config_init_led8041,
++	.driver_data	= &ksz8041_type,
++	.probe		= kszphy_probe,
++	.config_init	= kszphy_config_init,
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
+ 	.ack_interrupt	= kszphy_ack_interrupt,
+@@ -589,7 +638,9 @@ static struct phy_driver ksphy_driver[] = {
+ 	.features	= PHY_BASIC_FEATURES |
+ 			  SUPPORTED_Pause | SUPPORTED_Asym_Pause,
+ 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
+-	.config_init	= kszphy_config_init_led8041,
++	.driver_data	= &ksz8041_type,
++	.probe		= kszphy_probe,
++	.config_init	= kszphy_config_init,
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
+ 	.ack_interrupt	= kszphy_ack_interrupt,
+@@ -604,6 +655,8 @@ static struct phy_driver ksphy_driver[] = {
+ 	.features	= (PHY_BASIC_FEATURES | SUPPORTED_Pause
+ 				| SUPPORTED_Asym_Pause),
+ 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
++	.driver_data	= &ksz8051_type,
++	.probe		= kszphy_probe,
+ 	.config_init	= ks8051_config_init,
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
+@@ -618,7 +671,9 @@ static struct phy_driver ksphy_driver[] = {
+ 	.phy_id_mask	= 0x00ffffff,
+ 	.features	= (PHY_BASIC_FEATURES | SUPPORTED_Pause),
+ 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
+-	.config_init	= kszphy_config_init_led8041,
++	.driver_data	= &ksz8041_type,
++	.probe		= kszphy_probe,
++	.config_init	= kszphy_config_init,
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
+ 	.ack_interrupt	= kszphy_ack_interrupt,
+@@ -632,6 +687,8 @@ static struct phy_driver ksphy_driver[] = {
+ 	.phy_id_mask	= 0x00fffff0,
+ 	.features	= (PHY_BASIC_FEATURES | SUPPORTED_Pause),
+ 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
++	.driver_data	= &ksz8081_type,
++	.probe		= kszphy_probe,
+ 	.config_init	= ksz8081_config_init,
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
+-- 
+2.0.4
 
-	printk(KERN_TRACE "%s", s->buffer);
-
-	trace_seq_init(s);
-}
-
-I found it when checking the applied patches in origin/rfc/seq-buf
-branch. I hope that it was the correct place.
-
-Best Regards,
-Petr
