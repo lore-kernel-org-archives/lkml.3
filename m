@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932718AbaKSVs5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:48:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56595 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933547AbaKSVE3 (ORCPT
+	id S932796AbaKSVtL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:49:11 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:57158 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932724AbaKSVtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:29 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 070/122] nfs: Fix use of uninitialized variable in nfs_getattr()
-Date: Wed, 19 Nov 2014 12:52:00 -0800
-Message-Id: <20141119205211.119292502@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
-References: <20141119205208.812884198@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 19 Nov 2014 16:49:07 -0500
 MIME-Version: 1.0
+In-Reply-To: <20141119210552.GA5464@lantern>
+References: <20141114222640.GA39748@dtor-ws>
+	<CAN+gG=FaovQETa3+qQsLoBBQnbZ8Q2uoQJD6_XvAmCCvGTHT1g@mail.gmail.com>
+	<CAJBHPojp7JVG6KKgrNfbC-V5ibPs-j6+BnqrSDkxvak0vNGM8w@mail.gmail.com>
+	<20141119181247.GE37989@dtor-ws>
+	<CAJBHPohu71BXqyZ4u74tAiP84UcQhXgto34k8NtNHPgw61WvLQ@mail.gmail.com>
+	<20141119183921.GF37989@dtor-ws>
+	<CAJBHPog3qRMQgNnso_csUOgR30A6eFPx4PkTzfCzkB3Gd5oVfQ@mail.gmail.com>
+	<20141119210552.GA5464@lantern>
+Date: Wed, 19 Nov 2014 22:49:05 +0100
+Message-ID: <CAJBHPoiQ0ZuW2TjDu68SQrgOS=+OMTt0hptBmVedMLS55td1Rg@mail.gmail.com>
+Subject: Re: [git pull] Input updates for 3.18-rc4
+From: Marcus Overhagen <marcus.overhagen@gmail.com>
+To: Ulrik De Bie <ulrik.debie-os@e2big.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Nov 19, 2014 at 10:05 PM,  <ulrik.debie-os@e2big.org> wrote:
 
-------------------
+> Marcus, do you even have a trackpoint ?
+This is a clickpad without buttons and without trackpoint.
+Looks similar to this image: http://i.imgur.com/5pcCxqa.jpg
 
-From: Jan Kara <jack@suse.cz>
+> Marcus, can you send the firmware and capabilities information for your laptop
+> (it is available in the kernel messages). Could you send me a kernel message log for a period of 1 minute when using the touchpad with the debug set to 2 ?
+I sent you an email. hope that helps.
 
-commit 16caf5b6101d03335b386e77e9e14136f989be87 upstream.
-
-Variable 'err' needn't be initialized when nfs_getattr() uses it to
-check whether it should call generic_fillattr() or not. That can result
-in spurious error returns. Initialize 'err' properly.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/nfs/inode.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -592,7 +592,7 @@ int nfs_getattr(struct vfsmount *mnt, st
- {
- 	struct inode *inode = dentry->d_inode;
- 	int need_atime = NFS_I(inode)->cache_validity & NFS_INO_INVALID_ATIME;
--	int err;
-+	int err = 0;
- 
- 	trace_nfs_getattr_enter(inode);
- 	/* Flush out writes to the server in order to update c/mtime.  */
-
-
+regards
+Marcus
