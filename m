@@ -1,104 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540AbaKSQCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:02:40 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:57486 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756140AbaKSQCg (ORCPT
+	id S1756556AbaKSQCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:02:46 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:48320 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756140AbaKSQCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:02:36 -0500
-X-IronPort-AV: E=Sophos;i="5.07,417,1413244800"; 
-   d="scan'208";a="194441055"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <xen-devel@lists.xenproject.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        <linux-ia64@vger.kernel.org>
-Subject: [PATCH 2/4] ia64: use common dma_get_required_mask_from_pfn()
-Date: Wed, 19 Nov 2014 16:01:59 +0000
-Message-ID: <1416412921-23671-3-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1416412921-23671-1-git-send-email-david.vrabel@citrix.com>
-References: <1416412921-23671-1-git-send-email-david.vrabel@citrix.com>
+	Wed, 19 Nov 2014 11:02:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+In-Reply-To: <CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
+References: <20141118172146.3784.81151.stgit@buzz>
+	<20141118173413.GB4042@n2100.arm.linux.org.uk>
+	<546B8C64.3010904@samsung.com>
+	<2041617.Kxhx5O4MMr@wuerfel>
+	<CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
+	<CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
+Date: Wed, 19 Nov 2014 17:02:40 +0100
+Message-ID: <CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com>
+Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org
----
- arch/ia64/include/asm/machvec.h      |    2 +-
- arch/ia64/include/asm/machvec_init.h |    1 -
- arch/ia64/pci/pci.c                  |   20 --------------------
- 3 files changed, 1 insertion(+), 22 deletions(-)
+On 19 November 2014 16:52, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+> On Wed, Nov 19, 2014 at 5:54 PM, Ard Biesheuvel
+> <ard.biesheuvel@linaro.org> wrote:
+>> On 19 November 2014 14:40, Arnd Bergmann <arnd@arndb.de> wrote:
+>>> On Tuesday 18 November 2014 21:13:56 Konstantin Khlebnikov wrote:
+>>>> On 2014-11-18 20:34, Russell King - ARM Linux wrote:
+>>>> > On Tue, Nov 18, 2014 at 08:21:46PM +0400, Konstantin Khlebnikov wrote:
+>>>> >> Usually modules are loaded into small area prior to the kernel
+>>>> >> text because they are linked with the kernel using short calls.
+>>>> >> Compile-time instrumentation like GCOV or KASAN bloats code a lot,
+>>>> >> and as a result huge modules no longer fit into reserved area.
+>>>> >>
+>>>> >> This patch adds option CONFIG_MODULES_USE_VMALLOC which lifts
+>>>> >> limitation on amount of loaded modules. It links modules using
+>>>> >> long-calls (option -mlong-calls) and loads them into vmalloc area.
+>>>> >>
+>>>> >> In few places exported symbols are called from inline assembly.
+>>>> >> This patch adds macro for such call sites: __asmbl and __asmbl_clobber.
+>>>> >> Call turns into single 'bl' or sequence 'movw; movt; blx' depending on
+>>>> >> context and state of config option.
+>>>> >>
+>>>> >> Unfortunately this option isn't compatible with CONFIG_FUNCTION_TRACER.
+>>>> >> Compiler emits short calls to profiling function despite of -mlong-calls.
+>>>> >> This is a bug in GCC, but ftrace anyway needs an update to handle this.
+>>>> > It also isn't compatible with the older architectures which don't have
+>>>> > "blx".
+>>>>
+>>>> Ok, I'll add "depends on CPU_V6 || CPU_V7" I don't think that it is
+>>>> necessary for older cpus.
+>>>
+>>> Why not just use a different branch instruction for the older CPUs?
+>>>
+>>
+>> ARMv6 doesn't support movw/movt so this will only work on v7.
+>>
+>> What about doing 'mov lr, pc; ldr pc,=symbol' instead? You clearly
+>> don't care about performance in this case, so the performance hit (due
+>> to the dcache access and interfering with the return stack predictors)
+>> should be tolerable. The only thing to be careful about is thumb2
+>> kernels: you would need to set the thumb bit in lr manually but only
+>> if the call is made /from/ thumb. You would probably be better off
+>> just depending on !THUMB2_KERNEL.
+>
+> Do you mean ldr pc, =symbol ?
+>
+> In this case I get this error:
+>
+> /tmp/ccAHtONU.s: Assembler messages:
+> /tmp/ccAHtONU.s:220: Error: invalid literal constant: pool needs to be closer
+>
+> Probably constant pool doesn't work well in inline assembly.
+>
+>
+> Something like this seems work:
+>
+> add     lr, pc, #4
+> ldr       pc, [pc, #-4]
+> .long symbol
+>
 
-diff --git a/arch/ia64/include/asm/machvec.h b/arch/ia64/include/asm/machvec.h
-index 9c39bdf..beaa47d 100644
---- a/arch/ia64/include/asm/machvec.h
-+++ b/arch/ia64/include/asm/machvec.h
-@@ -287,7 +287,7 @@ extern struct dma_map_ops *dma_get_ops(struct device *);
- # define platform_dma_get_ops		dma_get_ops
- #endif
- #ifndef platform_dma_get_required_mask
--# define  platform_dma_get_required_mask	ia64_dma_get_required_mask
-+# define  platform_dma_get_required_mask	dma_get_required_mask_from_max_pfn
- #endif
- #ifndef platform_irq_to_vector
- # define platform_irq_to_vector		__ia64_irq_to_vector
-diff --git a/arch/ia64/include/asm/machvec_init.h b/arch/ia64/include/asm/machvec_init.h
-index 37a4698..ef964b2 100644
---- a/arch/ia64/include/asm/machvec_init.h
-+++ b/arch/ia64/include/asm/machvec_init.h
-@@ -3,7 +3,6 @@
- 
- extern ia64_mv_send_ipi_t ia64_send_ipi;
- extern ia64_mv_global_tlb_purge_t ia64_global_tlb_purge;
--extern ia64_mv_dma_get_required_mask ia64_dma_get_required_mask;
- extern ia64_mv_irq_to_vector __ia64_irq_to_vector;
- extern ia64_mv_local_vector_to_irq __ia64_local_vector_to_irq;
- extern ia64_mv_pci_get_legacy_mem_t ia64_pci_get_legacy_mem;
-diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
-index 291a582..79da21b 100644
---- a/arch/ia64/pci/pci.c
-+++ b/arch/ia64/pci/pci.c
-@@ -791,26 +791,6 @@ static void __init set_pci_dfl_cacheline_size(void)
- 	pci_dfl_cache_line_size = (1 << cci.pcci_line_size) / 4;
- }
- 
--u64 ia64_dma_get_required_mask(struct device *dev)
--{
--	u32 low_totalram = ((max_pfn - 1) << PAGE_SHIFT);
--	u32 high_totalram = ((max_pfn - 1) >> (32 - PAGE_SHIFT));
--	u64 mask;
--
--	if (!high_totalram) {
--		/* convert to mask just covering totalram */
--		low_totalram = (1 << (fls(low_totalram) - 1));
--		low_totalram += low_totalram - 1;
--		mask = low_totalram;
--	} else {
--		high_totalram = (1 << (fls(high_totalram) - 1));
--		high_totalram += high_totalram - 1;
--		mask = (((u64)high_totalram) << 32) + 0xffffffff;
--	}
--	return mask;
--}
--EXPORT_SYMBOL_GPL(ia64_dma_get_required_mask);
--
- u64 dma_get_required_mask(struct device *dev)
- {
- 	return platform_dma_get_required_mask(dev);
+You can add a '.ltorg' instruction which tells the assembler to dump
+the literal pool, but you still need to jump over it, i.e.,
+
+adr lr, 0f
+ldr pc, =symbol
+.ltorg
+0:
 -- 
-1.7.10.4
-
+Ard.
