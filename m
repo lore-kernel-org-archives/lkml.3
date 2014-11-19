@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139AbaKSRsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:48:18 -0500
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:60753 "HELO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755821AbaKSRsQ (ORCPT
+	id S1756201AbaKSRsm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:48:42 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54413 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755731AbaKSRsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:48:16 -0500
-From: Joe Stringer <joestringer@nicira.com>
-To: Pravin Shelar <pshelar@nicira.com>
-Subject: Re: [ovs-dev] [PATCH net] openvswitch: Fix mask generation for IPv6 labels.
-Date: Wed, 19 Nov 2014 09:48:11 -0800
-User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
-Cc: "dev@openvswitch.org" <dev@openvswitch.org>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-References: <1416336857-61405-1-git-send-email-joestringer@nicira.com> <CAOftzPgYBBFTfNZunf4oGSmECzjOKF0=dnQ9EkTDFsDi+9jfNw@mail.gmail.com> <CALnjE+rr2tFdvD+X=BbAza_5ad4DYs6viwvZWHCebQYmpvKU3Q@mail.gmail.com>
-In-Reply-To: <CALnjE+rr2tFdvD+X=BbAza_5ad4DYs6viwvZWHCebQYmpvKU3Q@mail.gmail.com>
+	Wed, 19 Nov 2014 12:48:40 -0500
+Date: Wed, 19 Nov 2014 17:48:09 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Zidan Wang <b50113@freescale.com>
+Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de, lars@metafoo.de,
+        ckeepax@opensource.wolfsonmicro.com, Li.Xiubo@freescale.com,
+        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141119174809.GG22111@sirena.org.uk>
+References: <1416400568-7512-1-git-send-email-b50113@freescale.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411190948.11857.joestringer@nicira.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mOKeRhn3B7HglGBY"
+Content-Disposition: inline
+In-Reply-To: <1416400568-7512-1-git-send-email-b50113@freescale.com>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 81.128.185.34
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel][PATCH] ASoC: wm8960: Add shared_lrclk and capless
+ to device tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 19, 2014 00:11:01 Pravin Shelar wrote:
-> On Tue, Nov 18, 2014 at 11:25 PM, Joe Stringer <joestringer@nicira.com> 
-wrote:
-> > On 18 November 2014 22:09, Pravin Shelar <pshelar@nicira.com> wrote:
-> >> On Tue, Nov 18, 2014 at 10:54 AM, Joe Stringer <joestringer@nicira.com>
-> >> 
-> >> wrote:
-> >> > When userspace doesn't provide a mask, OVS datapath generates a fully
-> >> > unwildcarded mask for the flow. This is done by taking a copy of the
-> >> > flow key, then iterating across its attributes, setting all values to
-> >> > 0xff. This works for most attributes, as the length of the netlink
-> >> > attribute typically matches the length of the value. However, IPv6
-> >> > labels only use the lower 20 bits of the field. This patch makes a
-> >> > special case to handle this.
-> >> > 
-> >> > This fixes the following error seen when installing IPv6 flows without
-> >> > a mask:
-> >> > 
-> >> > openvswitch: netlink: Invalid IPv6 flow label value (value=ffffffff,
-> >> > max=fffff)
-> >> 
-> >> We should allow exact match mask here rather than generating
-> >> wildcarded mask. So that ovs can catch invalid ipv6.label.
-> > 
-> > I don't quite follow, I thought this was exact-match? (The existing
-> > function sets all bits to 1)
-> 
-> With 0xffffffff value we can exact match on all ipv6.lable bits.
 
-The label field is only 20 bits. The other bits in the same word of the IPv6 
-header are for version (fixed) and traffic class (handled separately). We don't 
-do anything with the other bits.
+--mOKeRhn3B7HglGBY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed, Nov 19, 2014 at 08:36:08PM +0800, Zidan Wang wrote:
+> wm8960 codec has a wm8960_data struct which has two fields shared_lrclk and capless.
+
+Please ensure your changelog is wrapped within 80 columns.
+
+> ---
+>  sound/soc/codecs/wm8960.c | 49 ++++++++++++++++++++++++++++++-----------------
+>  1 file changed, 31 insertions(+), 18 deletions(-)
+
+Any DT bindings need to have a bindings document as well.
+
+--mOKeRhn3B7HglGBY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUbNfYAAoJECTWi3JdVIfQAFAH/j1+xp3C53PkHBtbW6117jkN
+uP5Q8aD/vq89dq7bqEIUhVeBAyiqYiZAhT5j07KQB1ITHGNOOZcVUjLSDmtT1wEE
+GeOi5j88LDbNoiJh51X0DY4iaoWlvPJaxK0T/myKrlVrM80puj6JxQiYUnnqAJSd
+Y5/CXbYuasMLfQy9/9y/lIBg7MV2owcSrea0j/d3LFFTJtI4VzAjiNeVF7AJ62RO
+hT0KT8EgtORT3pOUI/3wchF5rpHejW81+XCUgzjosEtM3v2OTQTCL59eViTZQZ+R
+Cb9T8DIaENwQi7PvyTils/WqMZHYftOlF+yBr89Yz04ffBs2Dcu7WhEMHbEfdEE=
+=uRTk
+-----END PGP SIGNATURE-----
+
+--mOKeRhn3B7HglGBY--
