@@ -1,143 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758096AbaKSWVG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:21:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56115 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932569AbaKSUyM (ORCPT
+	id S1758121AbaKSWVg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:21:36 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:59353 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995AbaKSWVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:12 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>, Joel Schopp <joel.schopp@amd.com>,
-        Roy Franz <roy.franz@linaro.org>,
-        Tom Lendacky <thomas.lendacky@amd.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Ian Campbell <ijc@hellion.org.uk>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Mark Salter <msalter@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.17 078/141] arm64: efi: Fix stub cache maintenance
-Date: Wed, 19 Nov 2014 12:51:41 -0800
-Message-Id: <20141119205153.229267543@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
-References: <20141119205150.700188369@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 19 Nov 2014 17:21:33 -0500
 MIME-Version: 1.0
+In-Reply-To: <20141119215417.GC5464@lantern>
+References: <20141114222640.GA39748@dtor-ws>
+	<CAN+gG=FaovQETa3+qQsLoBBQnbZ8Q2uoQJD6_XvAmCCvGTHT1g@mail.gmail.com>
+	<CAJBHPojp7JVG6KKgrNfbC-V5ibPs-j6+BnqrSDkxvak0vNGM8w@mail.gmail.com>
+	<20141119181247.GE37989@dtor-ws>
+	<CAJBHPohu71BXqyZ4u74tAiP84UcQhXgto34k8NtNHPgw61WvLQ@mail.gmail.com>
+	<20141119183921.GF37989@dtor-ws>
+	<CAJBHPog3qRMQgNnso_csUOgR30A6eFPx4PkTzfCzkB3Gd5oVfQ@mail.gmail.com>
+	<20141119210552.GA5464@lantern>
+	<CAJBHPoiQ0ZuW2TjDu68SQrgOS=+OMTt0hptBmVedMLS55td1Rg@mail.gmail.com>
+	<20141119215417.GC5464@lantern>
+Date: Wed, 19 Nov 2014 23:21:31 +0100
+Message-ID: <CAJBHPojucTj27EVLQRjDHZJe6bwZW3i-brwQ9N8mVY3rTp8koA@mail.gmail.com>
+Subject: Re: [git pull] Input updates for 3.18-rc4
+From: Marcus Overhagen <marcus.overhagen@gmail.com>
+To: Ulrik De Bie <ulrik.debie-os@e2big.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+when moving a single finger [3] seems to be one of 0x21, 0x25, 0x31, 0x35
+moving two fingers [3] seems to be mostly 0x22, 0x26, 0x32, 0x36  but
+also sometimes it's 0x42, 0x46, 0x52, 0x56.
+It seems to occationally seems to switch between these two groups
+after touching the pad with three or more fingers, but not every time.
 
-From: Mark Rutland <mark.rutland@arm.com>
+Moving three fingers I see[3] beeing  0x26, 0x36, 0x76, 0x66 (probably more)
 
-commit 9b0b26580a753d4d6bdd2b8b4ca9a8f3f2d39065 upstream.
-
-While efi-entry.S mentions that efi_entry() will have relocated the
-kernel image, it actually means that efi_entry will have placed a copy
-of the kernel in the appropriate location, and until this is branched to
-at the end of efi_entry.S, all instructions are executed from the
-original image.
-
-Thus while the flush in efi_entry.S does ensure that the copy is visible
-to noncacheable accesses, it does not guarantee that this is true for
-the image instructions are being executed from. This could have
-disasterous effects when the MMU and caches are disabled if the image
-has not been naturally evicted to the PoC.
-
-Additionally, due to a missing dsb following the ic ialluis, the new
-kernel image is not necessarily clean in the I-cache when it is branched
-to, with similar potentially disasterous effects.
-
-This patch adds additional flushing to ensure that the currently
-executing stub text is flushed to the PoC and is thus visible to
-noncacheable accesses. As it is placed after the instructions cache
-maintenance for the new image and __flush_dcache_area already contains a
-dsb, we do not need to add a separate barrier to ensure completion of
-the icache maintenance.
-
-Comments are updated to clarify the situation with regard to the two
-images and the maintenance required for both.
-
-Fixes: 3c7f255039a2ad6ee1e3890505caf0d029b22e29
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Joel Schopp <joel.schopp@amd.com>
-Reviewed-by: Roy Franz <roy.franz@linaro.org>
-Tested-by: Tom Lendacky <thomas.lendacky@amd.com>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: Ian Campbell <ijc@hellion.org.uk>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: Mark Salter <msalter@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm64/kernel/efi-entry.S |   27 +++++++++++++++++++++------
- 1 file changed, 21 insertions(+), 6 deletions(-)
-
---- a/arch/arm64/kernel/efi-entry.S
-+++ b/arch/arm64/kernel/efi-entry.S
-@@ -54,18 +54,17 @@ ENTRY(efi_stub_entry)
- 	b.eq	efi_load_fail
- 
- 	/*
--	 * efi_entry() will have relocated the kernel image if necessary
--	 * and we return here with device tree address in x0 and the kernel
--	 * entry point stored at *image_addr. Save those values in registers
--	 * which are callee preserved.
-+	 * efi_entry() will have copied the kernel image if necessary and we
-+	 * return here with device tree address in x0 and the kernel entry
-+	 * point stored at *image_addr. Save those values in registers which
-+	 * are callee preserved.
- 	 */
- 	mov	x20, x0		// DTB address
- 	ldr	x0, [sp, #16]	// relocated _text address
- 	mov	x21, x0
- 
- 	/*
--	 * Flush dcache covering current runtime addresses
--	 * of kernel text/data. Then flush all of icache.
-+	 * Calculate size of the kernel Image (same for original and copy).
- 	 */
- 	adrp	x1, _text
- 	add	x1, x1, #:lo12:_text
-@@ -73,9 +72,24 @@ ENTRY(efi_stub_entry)
- 	add	x2, x2, #:lo12:_edata
- 	sub	x1, x2, x1
- 
-+	/*
-+	 * Flush the copied Image to the PoC, and ensure it is not shadowed by
-+	 * stale icache entries from before relocation.
-+	 */
- 	bl	__flush_dcache_area
- 	ic	ialluis
- 
-+	/*
-+	 * Ensure that the rest of this function (in the original Image) is
-+	 * visible when the caches are disabled. The I-cache can't have stale
-+	 * entries for the VA range of the current image, so no maintenance is
-+	 * necessary.
-+	 */
-+	adr	x0, efi_stub_entry
-+	adr	x1, efi_stub_entry_end
-+	sub	x1, x1, x0
-+	bl	__flush_dcache_area
-+
- 	/* Turn off Dcache and MMU */
- 	mrs	x0, CurrentEL
- 	cmp	x0, #CurrentEL_EL2
-@@ -105,4 +119,5 @@ efi_load_fail:
- 	ldp	x29, x30, [sp], #32
- 	ret
- 
-+efi_stub_entry_end:
- ENDPROC(efi_stub_entry)
-
-
+regards
+Marcus
