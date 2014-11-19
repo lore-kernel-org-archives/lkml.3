@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647AbaKSKKi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 05:10:38 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:26329 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754007AbaKSKKe (ORCPT
+	id S1755693AbaKSKLQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 05:11:16 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52780 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755003AbaKSKLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 05:10:34 -0500
-Date: Wed, 19 Nov 2014 13:10:03 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: net: xfrm: Deletion of an unnecessary check before the function
- call "ipcomp_free_tfms"
-Message-ID: <20141119101003.GL4905@mwanda>
-References: <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net>
- <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net>
- <546BAFF5.5020603@users.sourceforge.net>
- <20141119084542.GK4905@mwanda>
- <546C6823.50900@users.sourceforge.net>
+	Wed, 19 Nov 2014 05:11:12 -0500
+Date: Wed, 19 Nov 2014 10:10:33 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jianqun Xu <jay.xu@rock-chips.com>
+Cc: heiko@sntech.de, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, huangtao@rock-chips.com
+Message-ID: <20141119101033.GW22111@sirena.org.uk>
+References: <1416366365-4632-2-git-send-email-jay.xu@rock-chips.com>
+ <1416384447-29391-1-git-send-email-jay.xu@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cxfMsoqvp1jUizWj"
 Content-Disposition: inline
-In-Reply-To: <546C6823.50900@users.sourceforge.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <1416384447-29391-1-git-send-email-jay.xu@rock-chips.com>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 188.29.164.121
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/2] ASoC: rockchip-i2s: dt: add an optional property
+ "i2s_clk_out"
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have come to view you as a very clever troll.  You will say
-infuriating things like "That is an interesting background information
-but the function implementation update suggestion is correct" and
-pretend to not see the bug for nine emails.  Then you'll say something
-"Ha ha, I audited all the call trees and it can't actually be NULL so
-you were getting angry for no reason."  Except you'll say it in a
-more obfuscated way than that.  This is what you did last time.
 
-regards,
-dan carpenter
+--cxfMsoqvp1jUizWj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Wed, Nov 19, 2014 at 04:07:27PM +0800, Jianqun Xu wrote:
+> Add an property "i2s_clk_out", which enables to output clock to outside
+> of rockchip SoCs. Let's make it optional since not each board needs it.
+
+Don't send new patches as individual followups to patches in the series,
+repost the series.  It becomes very difficult to follow what the current
+series is (which is the latest version of everything, what ordering, is
+everything still in the current version of the series).
+
+--cxfMsoqvp1jUizWj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUbGyYAAoJECTWi3JdVIfQSykH/1uSVGqRMROmMaERGIblI/+q
+ku9API9K0Jy5rUkFH6VNhF6CLe5Elt7pEESv5TbluSdjG+iT3v9CM7MbAftepUzT
+NQrYkMAW71NtKA3Ml4mT+QmcIGCxADnbykJ6ZTPj5MoOjxOH3AkpjKy1MAdVAG2s
+cEY2fb6A6MmmQokurkm9wbiDQn54J+0piYCwMbFrSA8zzHR/mX6TCiaBbkR1VUxB
+cUbQL2hbZslSvGPi5YHhXZVUm7vTEQ9EhPRbI5kPoOT9HydN9BoeLaJr9n5pRv/9
+1gt/DNffIqeTpr7UwffrwJkjg/0VsVoL+/q/h5EZUmYg7twKtzB/6HX81y2ftmQ=
+=KcGU
+-----END PGP SIGNATURE-----
+
+--cxfMsoqvp1jUizWj--
