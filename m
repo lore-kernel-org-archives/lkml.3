@@ -1,170 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122AbaKSP3d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:29:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:1978 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755821AbaKSP2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:28:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,417,1413270000"; 
-   d="scan'208";a="639756217"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, andrew.kim@intel.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCHv5 6/7] base: platform: name the device already during allocation
-Date: Wed, 19 Nov 2014 17:28:22 +0200
-Message-Id: <1416410903-162369-7-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1416410903-162369-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1416410903-162369-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S932183AbaKSP3u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:29:50 -0500
+Received: from mout1.fh-giessen.de ([212.201.18.42]:50108 "EHLO
+	mout1.fh-giessen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932126AbaKSP3r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 10:29:47 -0500
+X-Greylist: delayed 644 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Nov 2014 10:29:47 EST
+Message-ID: <546CB4E2.3010707@mni.thm.de>
+Date: Wed, 19 Nov 2014 16:18:58 +0100
+From: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:36.0) Gecko/20100101 Thunderbird/36.0a1
+MIME-Version: 1.0
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Michael Marineau <mike@marineau.org>, dri-devel@lists.freedesktop.org
+CC: linux-kernel@vger.kernel.org, Ben Skeggs <bskeggs@redhat.com>,
+        David Airlie <airlied@linux.ie>
+Subject: Re: 3.18-rc regression: drm/nouveau: use shared fences for
+ readable objects
+References: <CAHW-aUcEipi+NeU3wapLABV41Sud7Qy_=EYXCei9Dmf18SxuZA@mail.gmail.com> <546C5085.1020300@canonical.com>
+In-Reply-To: <546C5085.1020300@canonical.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device name is usually required when assigning resources
-like clocks to platform devices. The problem is that the
-device name is not know before platform_device_add is called
-and that can be too late as the drivers may have already
-requested the resources when the function returns. By naming
-the device already in platform_device_alloc, the resources
-can be assigned before platform_device_add is called.
+On 19.11.2014 09:10, Maarten Lankhorst wrote:
+> Hey,
+>
+> On 19-11-14 07:43, Michael Marineau wrote:
+>> On 3.18-rc kernel's I have been intermittently experiencing GPU
+>> lockups shortly after startup, accompanied with one or both of the
+>> following errors:
+>>
+>> nouveau E[   PFIFO][0000:01:00.0] read fault at 0x000734a000 [PTE]
+>> from PBDMA0/HOST_CPU on channel 0x007faa3000 [unknown]
+>> nouveau E[     DRM] GPU lockup - switching to software fbcon
+>>
+>> I was able to trace the issue with bisect to commit
+>> 809e9447b92ffe1346b2d6ec390e212d5307f61c "drm/nouveau: use shared
+>> fences for readable objects". The lockups appear to have cleared up
+>> since reverting that and a few related followup commits:
+>>
+>> 809e9447: "drm/nouveau: use shared fences for readable objects"
+>> 055dffdf: "drm/nouveau: bump driver patchlevel to 1.2.1"
+>> e3be4c23: "drm/nouveau: specify if interruptible wait is desired in
+>> nouveau_fence_sync"
+>> 15a996bb: "drm/nouveau: assign fence_chan->name correctly"
+> Weird. I'm not sure yet what causes it.
+>
+> http://cgit.freedesktop.org/~mlankhorst/linux/commit/?h=fixed-fences-for-bisect&id=86be4f216bbb9ea3339843a5658d4c21162c7ee2
+>
+> On the EDITED patch from fixed-fences-for-bisect, can you do the following:
+>
+> In nouveau/nv84_fence.c function nv84_fence_context_new, remove
+>
+> fctx->base.sequence = nv84_fence_read(chan);
+>
+> and add back
+>
+> nouveau_bo_wr32(priv->bo, chan->chid * 16/4, 0x00000000);
+>
+> If that fails you should compile your kernel with trace events, to get some debugging info from the fences. I'll post debugging info if this does not fix it.
+>
+> ~Maarten
 
-This change allows different kinds of probe drivers to pass
-forward their resources to the actual driver. The first
-place where we need it is dwc3 controllers host glue code
-(drivers/usb/dwc3/host.c) to pass the phy's to xhci.
+Hey,
+as mentioned in IRC the new fencing hangs my GPU for a while as well (nve7).
+Bisected back to  86be4f216bbb9ea3339843a5658d4c21162c7ee2
+, EDITED
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/base/platform.c | 69 +++++++++++++++++++++++++++++--------------------
- 1 file changed, 41 insertions(+), 28 deletions(-)
+from the fixed-fences-for-bisect branch mentioned above.
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index cdb6c07..d2217f3 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -195,11 +195,41 @@ void platform_device_put(struct platform_device *pdev)
- }
- EXPORT_SYMBOL_GPL(platform_device_put);
- 
-+static int pdev_set_name(struct platform_device *pdev)
-+{
-+	int ret;
-+
-+	switch (pdev->id) {
-+	default:
-+		return dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
-+	case PLATFORM_DEVID_NONE:
-+		return dev_set_name(&pdev->dev, "%s", pdev->name);
-+	case PLATFORM_DEVID_AUTO:
-+		/*
-+		 * Automatically allocated device ID. We mark it as such so
-+		 * that we remember it must be freed, and we append a suffix
-+		 * to avoid namespace collision with explicit IDs.
-+		 */
-+		ret = ida_simple_get(&platform_devid_ida, 0, 0, GFP_KERNEL);
-+		if (ret < 0)
-+			return ret;
-+		pdev->id = ret;
-+		pdev->id_auto = true;
-+		return dev_set_name(&pdev->dev, "%s.%d.auto", pdev->name,
-+				    pdev->id);
-+	}
-+
-+	return 0;
-+}
-+
- static void platform_device_release(struct device *dev)
- {
- 	struct platform_object *pa = container_of(dev, struct platform_object,
- 						  pdev.dev);
- 
-+	if (pa->pdev.id_auto)
-+		ida_simple_remove(&platform_devid_ida, pa->pdev.id);
-+
- 	of_device_node_put(&pa->pdev.dev);
- 	kfree(pa->pdev.dev.platform_data);
- 	kfree(pa->pdev.mfd_cell);
-@@ -228,6 +258,10 @@ struct platform_device *platform_device_alloc(const char *name, int id)
- 		device_initialize(&pa->pdev.dev);
- 		pa->pdev.dev.release = platform_device_release;
- 		arch_setup_pdev_archdata(&pa->pdev);
-+		if (pdev_set_name(&pa->pdev)) {
-+			kfree(pa);
-+			return NULL;
-+		}
- 	}
- 
- 	return pa ? &pa->pdev : NULL;
-@@ -308,28 +342,6 @@ int platform_device_add(struct platform_device *pdev)
- 
- 	pdev->dev.bus = &platform_bus_type;
- 
--	switch (pdev->id) {
--	default:
--		dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
--		break;
--	case PLATFORM_DEVID_NONE:
--		dev_set_name(&pdev->dev, "%s", pdev->name);
--		break;
--	case PLATFORM_DEVID_AUTO:
--		/*
--		 * Automatically allocated device ID. We mark it as such so
--		 * that we remember it must be freed, and we append a suffix
--		 * to avoid namespace collision with explicit IDs.
--		 */
--		ret = ida_simple_get(&platform_devid_ida, 0, 0, GFP_KERNEL);
--		if (ret < 0)
--			goto err_out;
--		pdev->id = ret;
--		pdev->id_auto = true;
--		dev_set_name(&pdev->dev, "%s.%d.auto", pdev->name, pdev->id);
--		break;
--	}
--
- 	for (i = 0; i < pdev->num_resources; i++) {
- 		struct resource *p, *r = &pdev->resource[i];
- 
-@@ -372,7 +384,6 @@ int platform_device_add(struct platform_device *pdev)
- 			release_resource(r);
- 	}
- 
-- err_out:
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(platform_device_add);
-@@ -392,11 +403,6 @@ void platform_device_del(struct platform_device *pdev)
- 	if (pdev) {
- 		device_del(&pdev->dev);
- 
--		if (pdev->id_auto) {
--			ida_simple_remove(&platform_devid_ida, pdev->id);
--			pdev->id = PLATFORM_DEVID_AUTO;
--		}
--
- 		for (i = 0; i < pdev->num_resources; i++) {
- 			struct resource *r = &pdev->resource[i];
- 			unsigned long type = resource_type(r);
-@@ -414,8 +420,15 @@ EXPORT_SYMBOL_GPL(platform_device_del);
-  */
- int platform_device_register(struct platform_device *pdev)
- {
-+	int ret;
-+
- 	device_initialize(&pdev->dev);
- 	arch_setup_pdev_archdata(pdev);
-+
-+	ret = pdev_set_name(pdev);
-+	if (ret)
-+		return ret;
-+
- 	return platform_device_add(pdev);
- }
- EXPORT_SYMBOL_GPL(platform_device_register);
--- 
-2.1.3
+Original bisect on linus brach brought me to:
+29ba89b2371d466ca68973525816cf10debc2655
+drm/nouveau: rework to new fence interface
 
+Michael if you are going to bisect the "fixed-fences-for-bisect" branch, 
+maybe take a closer look if you come anywhere near that commit, if that 
+does or does not trigger the GPU hangs for you!
+
+Tobias
