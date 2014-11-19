@@ -1,38 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389AbaKSNel (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 08:34:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47594 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759AbaKSNek convert rfc822-to-8bit (ORCPT
+	id S1754717AbaKSNgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 08:36:38 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:58980 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754066AbaKSNgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 08:34:40 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAGncdOaqXP0KpiwM3N6dGq_-hEvS-A1n0EJCCL5TSu9o6uc-Sg@mail.gmail.com>
-References: <CAGncdOaqXP0KpiwM3N6dGq_-hEvS-A1n0EJCCL5TSu9o6uc-Sg@mail.gmail.com>
-To: Anders Eriksson <aeriksson2@gmail.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, fabf@skynet.be
-Subject: Re: cachefiles: Assertion failed
+	Wed, 19 Nov 2014 08:36:37 -0500
+Date: Wed, 19 Nov 2014 08:36:22 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        williams@redhat.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 2/2] ftrace/x86/extable: Add is_ftrace_trampoline()
+ function
+Message-ID: <20141119083622.432a234b@gandalf.local.home>
+In-Reply-To: <87mw7nppu0.fsf@sejong.aot.lge.com>
+References: <20141119033331.689278545@goodmis.org>
+	<20141119034829.497125839@goodmis.org>
+	<87mw7nppu0.fsf@sejong.aot.lge.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <27724.1416404071.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 19 Nov 2014 13:34:31 +0000
-Message-ID: <27725.1416404071@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anders Eriksson <aeriksson2@gmail.com> wrote:
 
-> Using cachefiles to cache my nfsroot raspberryPi on the local SD card I got
-> this assertion. It hangs after this happens. It's been unastable since I added
-> cachefiles to the mix.
+> 
+> [SNIP]
+> > @@ -102,6 +103,8 @@ int __kernel_text_address(unsigned long addr)
+> >  		return 1;
+> >  	if (is_module_text_address(addr))
+> >  		return 1;
+> > +	if (is_ftrace_trampoline(addr))
+> > +		return 1;
+> 
+> What about kernel_text_address()?  It seems some archs like ARM use it
+> instead of __kernel_text_address() although trampoline is only enabled
+> on x86 for now.
+> 
 
-What kernel are you using?
+Good question. I just did this to get x86 working. But as we add
+trampolines to other archs, we probably should add it to that too.
 
-David
+-- Steve
