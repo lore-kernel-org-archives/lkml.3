@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934135AbaKSWNo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:13:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56458 "EHLO
+	id S934179AbaKSWOC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:14:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56453 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933300AbaKSVEE (ORCPT
+	with ESMTP id S933011AbaKSVEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:04:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Jeff Layton <jlayton@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.17 094/141] sunrpc: fix sleeping under rcu_read_lock in gss_stringify_acceptor
-Date: Wed, 19 Nov 2014 12:51:57 -0800
-Message-Id: <20141119205153.730303641@linuxfoundation.org>
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.17 093/141] cpufreq: Avoid crash in resume on SMP without OPP
+Date: Wed, 19 Nov 2014 12:51:56 -0800
+Message-Id: <20141119205153.694287427@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -30,129 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@primarydata.com>
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
-commit b3ecba096729f521312d1863ad22530695527aed upstream.
+commit 09712f557b31838092e1f22a5f2dd131a843a3de upstream.
 
-Bruce reported that he was seeing the following BUG pop:
+When resuming from s2ram on an SMP system without cpufreq operating
+points (e.g. there's no "operating-points" property for the CPU node in
+DT, or the platform doesn't use DT yet), the kernel crashes when
+bringing CPU 1 online:
 
-    BUG: sleeping function called from invalid context at mm/slab.c:2846
-    in_atomic(): 0, irqs_disabled(): 0, pid: 4539, name: mount.nfs
-    2 locks held by mount.nfs/4539:
-    #0:  (nfs_clid_init_mutex){+.+.+.}, at: [<ffffffffa01c0a9a>] nfs4_discover_server_trunking+0x4a/0x2f0 [nfsv4]
-    #1:  (rcu_read_lock){......}, at: [<ffffffffa00e3185>] gss_stringify_acceptor+0x5/0xb0 [auth_rpcgss]
-    Preemption disabled at:[<ffffffff81a4f082>] printk+0x4d/0x4f
+    Enabling non-boot CPUs ...
+    CPU1: Booted secondary processor
+    Unable to handle kernel NULL pointer dereference at virtual address 0000003c
+    pgd = ee5e6b00
+    [0000003c] *pgd=6e579003, *pmd=6e588003, *pte=00000000
+    Internal error: Oops: a07 [#1] SMP ARM
+    Modules linked in:
+    CPU: 0 PID: 1246 Comm: s2ram Tainted: G        W      3.18.0-rc3-koelsch-01614-g0377af242bb175c8-dirty #589
+    task: eeec5240 ti: ee704000 task.ti: ee704000
+    PC is at __cpufreq_add_dev.isra.24+0x24c/0x77c
+    LR is at __cpufreq_add_dev.isra.24+0x244/0x77c
+    pc : [<c0298efc>]    lr : [<c0298ef4>]    psr: 60000153
+    sp : ee705d48  ip : ee705d48  fp : ee705d84
+    r10: c04e0450  r9 : 00000000  r8 : 00000001
+    r7 : c05426a8  r6 : 00000001  r5 : 00000001  r4 : 00000000
+    r3 : 00000000  r2 : 00000000  r1 : 20000153  r0 : c0542734
 
-    CPU: 3 PID: 4539 Comm: mount.nfs Not tainted 3.18.0-rc1-00013-g5b095e9 #3393
-    Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-    ffff880021499390 ffff8800381476a8 ffffffff81a534cf 0000000000000001
-    0000000000000000 ffff8800381476c8 ffffffff81097854 00000000000000d0
-    0000000000000018 ffff880038147718 ffffffff8118e4f3 0000000020479f00
-    Call Trace:
-    [<ffffffff81a534cf>] dump_stack+0x4f/0x7c
-    [<ffffffff81097854>] __might_sleep+0x114/0x180
-    [<ffffffff8118e4f3>] __kmalloc+0x1a3/0x280
-    [<ffffffffa00e31d8>] gss_stringify_acceptor+0x58/0xb0 [auth_rpcgss]
-    [<ffffffffa00e3185>] ? gss_stringify_acceptor+0x5/0xb0 [auth_rpcgss]
-    [<ffffffffa006b438>] rpcauth_stringify_acceptor+0x18/0x30 [sunrpc]
-    [<ffffffffa01b0469>] nfs4_proc_setclientid+0x199/0x380 [nfsv4]
-    [<ffffffffa01b04d0>] ? nfs4_proc_setclientid+0x200/0x380 [nfsv4]
-    [<ffffffffa01bdf1a>] nfs40_discover_server_trunking+0xda/0x150 [nfsv4]
-    [<ffffffffa01bde45>] ? nfs40_discover_server_trunking+0x5/0x150 [nfsv4]
-    [<ffffffffa01c0acf>] nfs4_discover_server_trunking+0x7f/0x2f0 [nfsv4]
-    [<ffffffffa01c8e24>] nfs4_init_client+0x104/0x2f0 [nfsv4]
-    [<ffffffffa01539b4>] nfs_get_client+0x314/0x3f0 [nfs]
-    [<ffffffffa0153780>] ? nfs_get_client+0xe0/0x3f0 [nfs]
-    [<ffffffffa01c83aa>] nfs4_set_client+0x8a/0x110 [nfsv4]
-    [<ffffffffa0069708>] ? __rpc_init_priority_wait_queue+0xa8/0xf0 [sunrpc]
-    [<ffffffffa01c9b2f>] nfs4_create_server+0x12f/0x390 [nfsv4]
-    [<ffffffffa01c1472>] nfs4_remote_mount+0x32/0x60 [nfsv4]
-    [<ffffffff81196489>] mount_fs+0x39/0x1b0
-    [<ffffffff81166145>] ? __alloc_percpu+0x15/0x20
-    [<ffffffff811b276b>] vfs_kern_mount+0x6b/0x150
-    [<ffffffffa01c1396>] nfs_do_root_mount+0x86/0xc0 [nfsv4]
-    [<ffffffffa01c1784>] nfs4_try_mount+0x44/0xc0 [nfsv4]
-    [<ffffffffa01549b7>] ? get_nfs_version+0x27/0x90 [nfs]
-    [<ffffffffa0161a2d>] nfs_fs_mount+0x47d/0xd60 [nfs]
-    [<ffffffff81a59c5e>] ? mutex_unlock+0xe/0x10
-    [<ffffffffa01606a0>] ? nfs_remount+0x430/0x430 [nfs]
-    [<ffffffffa01609c0>] ? nfs_clone_super+0x140/0x140 [nfs]
-    [<ffffffff81196489>] mount_fs+0x39/0x1b0
-    [<ffffffff81166145>] ? __alloc_percpu+0x15/0x20
-    [<ffffffff811b276b>] vfs_kern_mount+0x6b/0x150
-    [<ffffffff811b5830>] do_mount+0x210/0xbe0
-    [<ffffffff811b54ca>] ? copy_mount_options+0x3a/0x160
-    [<ffffffff811b651f>] SyS_mount+0x6f/0xb0
-    [<ffffffff81a5c852>] system_call_fastpath+0x12/0x17
+Verify that policy is not NULL before dereferencing it to fix this.
 
-Sleeping under the rcu_read_lock is bad. This patch fixes it by dropping
-the rcu_read_lock before doing the allocation and then reacquiring it
-and redoing the dereference before doing the copy. If we find that the
-string has somehow grown in the meantime, we'll reallocate and try again.
-
-Reported-by: "J. Bruce Fields" <bfields@fieldses.org>
-Signed-off-by: Jeff Layton <jlayton@primarydata.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Fixes: 8414809c6a1e (cpufreq: Preserve policy structure across suspend/resume)
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/auth_gss/auth_gss.c |   35 ++++++++++++++++++++++++++++++-----
- 1 file changed, 30 insertions(+), 5 deletions(-)
+ drivers/cpufreq/cpufreq.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/sunrpc/auth_gss/auth_gss.c
-+++ b/net/sunrpc/auth_gss/auth_gss.c
-@@ -1353,6 +1353,7 @@ gss_stringify_acceptor(struct rpc_cred *
- 	char *string = NULL;
- 	struct gss_cred *gss_cred = container_of(cred, struct gss_cred, gc_base);
- 	struct gss_cl_ctx *ctx;
-+	unsigned int len;
- 	struct xdr_netobj *acceptor;
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1022,7 +1022,8 @@ static struct cpufreq_policy *cpufreq_po
  
- 	rcu_read_lock();
-@@ -1360,15 +1361,39 @@ gss_stringify_acceptor(struct rpc_cred *
- 	if (!ctx)
- 		goto out;
+ 	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
  
--	acceptor = &ctx->gc_acceptor;
-+	len = ctx->gc_acceptor.len;
-+	rcu_read_unlock();
+-	policy->governor = NULL;
++	if (policy)
++		policy->governor = NULL;
  
- 	/* no point if there's no string */
--	if (!acceptor->len)
--		goto out;
--
--	string = kmalloc(acceptor->len + 1, GFP_KERNEL);
-+	if (!len)
-+		return NULL;
-+realloc:
-+	string = kmalloc(len + 1, GFP_KERNEL);
- 	if (!string)
-+		return NULL;
-+
-+	rcu_read_lock();
-+	ctx = rcu_dereference(gss_cred->gc_ctx);
-+
-+	/* did the ctx disappear or was it replaced by one with no acceptor? */
-+	if (!ctx || !ctx->gc_acceptor.len) {
-+		kfree(string);
-+		string = NULL;
- 		goto out;
-+	}
-+
-+	acceptor = &ctx->gc_acceptor;
-+
-+	/*
-+	 * Did we find a new acceptor that's longer than the original? Allocate
-+	 * a longer buffer and try again.
-+	 */
-+	if (len < acceptor->len) {
-+		len = acceptor->len;
-+		rcu_read_unlock();
-+		kfree(string);
-+		goto realloc;
-+	}
- 
- 	memcpy(string, acceptor->data, acceptor->len);
- 	string[acceptor->len] = '\0';
+ 	return policy;
+ }
 
 
