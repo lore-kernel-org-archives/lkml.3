@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757392AbaKSWVE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:21:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
+	id S1758154AbaKSWWU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:22:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56064 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932571AbaKSUyM (ORCPT
+	with ESMTP id S932556AbaKSUyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:12 -0500
+	Wed, 19 Nov 2014 15:54:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Ramos <daramos@stanford.edu>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH 3.17 079/141] firewire: cdev: prevent kernel stack leaking into ioctl arguments
-Date: Wed, 19 Nov 2014 12:51:42 -0800
-Message-Id: <20141119205153.261644983@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.17 075/141] Fix thinko in iov_iter_single_seg_count
+Date: Wed, 19 Nov 2014 12:51:38 -0800
+Message-Id: <20141119205153.127266902@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,60 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Paul Mackerras <paulus@samba.org>
 
-commit eaca2d8e75e90a70a63a6695c9f61932609db212 upstream.
+commit ad0eab9293485d1c06237e9249f6d4dfa3d93d4d upstream.
 
-Found by the UC-KLEE tool:  A user could supply less input to
-firewire-cdev ioctls than write- or write/read-type ioctl handlers
-expect.  The handlers used data from uninitialized kernel stack then.
+The branches of the if (i->type & ITER_BVEC) statement in
+iov_iter_single_seg_count() are the wrong way around; if ITER_BVEC is
+clear then we use i->bvec, when we should be using i->iov.  This fixes
+it.
 
-This could partially leak back to the user if the kernel subsequently
-generated fw_cdev_event_'s (to be read from the firewire-cdev fd)
-which notably would contain the _u64 closure field which many of the
-ioctl argument structures contain.
+In my case, the symptom that this caused was that a KVM guest doing
+filesystem operations on a virtual disk would result in one of qemu's
+threads on the host going into an infinite loop in
+generic_perform_write().  The loop would hit the copied == 0 case and
+call iov_iter_single_seg_count() to reduce the number of bytes to try
+to process, but because of the error, iov_iter_single_seg_count()
+would just return i->count and the loop made no progress and continued
+forever.
 
-The fact that the handlers would act on random garbage input is a
-lesser issue since all handlers must check their input anyway.
-
-The fix simply always null-initializes the entire ioctl argument buffer
-regardless of the actual length of expected user input.  That is, a
-runtime overhead of memset(..., 40) is added to each firewirew-cdev
-ioctl() call.  [Comment from Clemens Ladisch:  This part of the stack is
-most likely to be already in the cache.]
-
-Remarks:
-  - There was never any leak from kernel stack to the ioctl output
-    buffer itself.  IOW, it was not possible to read kernel stack by a
-    read-type or write/read-type ioctl alone; the leak could at most
-    happen in combination with read()ing subsequent event data.
-  - The actual expected minimum user input of each ioctl from
-    include/uapi/linux/firewire-cdev.h is, in bytes:
-    [0x00] = 32, [0x05] =  4, [0x0a] = 16, [0x0f] = 20, [0x14] = 16,
-    [0x01] = 36, [0x06] = 20, [0x0b] =  4, [0x10] = 20, [0x15] = 20,
-    [0x02] = 20, [0x07] =  4, [0x0c] =  0, [0x11] =  0, [0x16] =  8,
-    [0x03] =  4, [0x08] = 24, [0x0d] = 20, [0x12] = 36, [0x17] = 12,
-    [0x04] = 20, [0x09] = 24, [0x0e] =  4, [0x13] = 40, [0x18] =  4.
-
-Reported-by: David Ramos <daramos@stanford.edu>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firewire/core-cdev.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ mm/iov_iter.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -1637,8 +1637,7 @@ static int dispatch_ioctl(struct client
- 	    _IOC_SIZE(cmd) > sizeof(buffer))
- 		return -ENOTTY;
+--- a/mm/iov_iter.c
++++ b/mm/iov_iter.c
+@@ -699,9 +699,9 @@ size_t iov_iter_single_seg_count(const s
+ 	if (i->nr_segs == 1)
+ 		return i->count;
+ 	else if (i->type & ITER_BVEC)
+-		return min(i->count, i->iov->iov_len - i->iov_offset);
+-	else
+ 		return min(i->count, i->bvec->bv_len - i->iov_offset);
++	else
++		return min(i->count, i->iov->iov_len - i->iov_offset);
+ }
+ EXPORT_SYMBOL(iov_iter_single_seg_count);
  
--	if (_IOC_DIR(cmd) == _IOC_READ)
--		memset(&buffer, 0, _IOC_SIZE(cmd));
-+	memset(&buffer, 0, sizeof(buffer));
- 
- 	if (_IOC_DIR(cmd) & _IOC_WRITE)
- 		if (copy_from_user(&buffer, arg, _IOC_SIZE(cmd)))
 
 
