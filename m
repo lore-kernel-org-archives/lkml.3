@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932994AbaKSVKk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:10:40 -0500
+	id S933594AbaKSVEe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:04:34 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933595AbaKSVEe (ORCPT
+	with ESMTP id S933541AbaKSVE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:34 -0500
+	Wed, 19 Nov 2014 16:04:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arturo Borrero Gonzalez <arturo.borrero.glez@gmail.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.14 084/122] netfilter: nft_compat: fix wrong target lookup in nft_target_select_ops()
-Date: Wed, 19 Nov 2014 12:52:14 -0800
-Message-Id: <20141119205211.597525958@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.14 069/122] NFS: Dont try to reclaim delegation open state if recovery failed
+Date: Wed, 19 Nov 2014 12:51:59 -0800
+Message-Id: <20141119205211.088473436@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,31 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arturo Borrero <arturo.borrero.glez@gmail.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 7965ee93719921ea5978f331da653dfa2d7b99f5 upstream.
+commit f8ebf7a8ca35dde321f0cd385fee6f1950609367 upstream.
 
-The code looks for an already loaded target, and the correct list to search
-is nft_target_list, not nft_match_list.
+If state recovery failed, then we should not attempt to reclaim delegated
+state.
 
-Signed-off-by: Arturo Borrero Gonzalez <arturo.borrero.glez@gmail.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nft_compat.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/delegation.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/netfilter/nft_compat.c
-+++ b/net/netfilter/nft_compat.c
-@@ -678,7 +678,7 @@ nft_target_select_ops(const struct nft_c
- 	family = ctx->afi->family;
- 
- 	/* Re-use the existing target if it's already loaded. */
--	list_for_each_entry(nft_target, &nft_match_list, head) {
-+	list_for_each_entry(nft_target, &nft_target_list, head) {
- 		struct xt_target *target = nft_target->ops.data;
- 
- 		if (strcmp(target->name, tg_name) == 0 &&
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -109,6 +109,8 @@ again:
+ 			continue;
+ 		if (!test_bit(NFS_DELEGATED_STATE, &state->flags))
+ 			continue;
++		if (!nfs4_valid_open_stateid(state))
++			continue;
+ 		if (!nfs4_stateid_match(&state->stateid, stateid))
+ 			continue;
+ 		get_nfs_open_context(ctx);
 
 
