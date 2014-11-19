@@ -1,127 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229AbaKSR3I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:29:08 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:44932 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755772AbaKSR3E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:29:04 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Cc: namit@cs.technion.ac.il
-Subject: [PATCH] KVM: emulator: remove code duplication in register_address{,_increment}
-Date: Wed, 19 Nov 2014 18:28:55 +0100
-Message-Id: <1416418135-11110-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1756208AbaKSR3k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:29:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58611 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754998AbaKSR3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 12:29:38 -0500
+Date: Wed, 19 Nov 2014 17:29:31 +0000
+From: Lee Jones <lee@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Matthias Klein <matthias.klein@linux.com>,
+        linux-rpi-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: bcm2835: add device tree for Raspberry Pi model
+ B+
+Message-ID: <20141119172931.GK1875@x1>
+References: <1415231123-920-1-git-send-email-matthias.klein@linux.com>
+ <20141119152951.GA1875@x1>
+ <546CCE73.4020708@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546CCE73.4020708@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-register_address has been a duplicate of address_mask ever since the
-ancestor of __linearize was born in 90de84f50b42 (KVM: x86 emulator:
-preserve an operand's segment identity, 2010-11-17).
+On Wed, 19 Nov 2014, Stephen Warren wrote:
 
-However, we can put it to a better use by including the call to reg_read
-in register_address.  Similarly, the call to reg_rmw can be moved to
-register_address_increment.
+> On 11/19/2014 08:29 AM, Lee Jones wrote:
+> >>The model B and B+ differ in the GPIO lines for ACT and PWR leds, and the
+> >>I2S interface.
+> >>
+> >>Signed-off-by: Matthias Klein <matthias.klein@linux.com>
+> >>---
+> >>Changes in v2:
+> >>- move the common parts between the B and B+ model into the new bcm2835-rpi.dtsi file
+> >>
+> >>- add the I2S signals to the B+ file which fix the problem that USB is not working
+> >>   with the current bcm2835-rpi-b.dts file on the B+.
+> >>---
+> >>  arch/arm/boot/dts/Makefile               |  1 +
+> >>  arch/arm/boot/dts/bcm2835-rpi-b-plus.dts | 30 +++++++++++++++++++
+> >>  arch/arm/boot/dts/bcm2835-rpi-b.dts      | 46 ++--------------------------
+> >>  arch/arm/boot/dts/bcm2835-rpi.dtsi       | 51 ++++++++++++++++++++++++++++++++
+> >>  4 files changed, 85 insertions(+), 43 deletions(-)
+> >>  create mode 100644 arch/arm/boot/dts/bcm2835-rpi-b-plus.dts
+> >>  create mode 100644 arch/arm/boot/dts/bcm2835-rpi.dtsi
+> >
+> >Sorry for the delay.  I thought RPi world was exceptionally quiet, but
+> >in fact I had issues with my newly setup mailbox and filters.  All
+> >rectified now in any case.
+> >
+> >It might be worth noting that this will not likely land in v3.19, as
+> >we are one step removed from Linus (i.e. via ARM SoC) and they usually
+> >like to have pull-requests in by -rc5.  Unless anyone stamps their
+> >feet, I'll be sending this no sooner than v3.20.
+> 
+> -rc6 is the usual cut-off, and the arm-soc maintainers have said
+> that's not always a very strict cut-off; it depends on how invasive
+> the patch is (which this isn't) and whether the patch has been in
+> linux-next already before getting into arm-soc (and linux-rpi.git's
+> for-next branch is in linux-next).
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/kvm/emulate.c | 23 +++++++++++------------
- 1 file changed, 11 insertions(+), 12 deletions(-)
-
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 19a59f3f702c..43a5b432d06f 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -488,9 +488,9 @@ address_mask(struct x86_emulate_ctxt *ctxt, unsigned long reg)
- }
- 
- static inline unsigned long
--register_address(struct x86_emulate_ctxt *ctxt, unsigned long reg)
-+register_address(struct x86_emulate_ctxt *ctxt, int reg)
- {
--	return address_mask(ctxt, reg);
-+	return address_mask(ctxt, reg_read(ctxt, reg));
- }
- 
- static void masked_increment(ulong *reg, ulong mask, int inc)
-@@ -499,7 +499,7 @@ static void masked_increment(ulong *reg, ulong mask, int inc)
- }
- 
- static inline void
--register_address_increment(struct x86_emulate_ctxt *ctxt, unsigned long *reg, int inc)
-+register_address_increment(struct x86_emulate_ctxt *ctxt, int reg, int inc)
- {
- 	ulong mask;
- 
-@@ -507,7 +507,7 @@ register_address_increment(struct x86_emulate_ctxt *ctxt, unsigned long *reg, in
- 		mask = ~0UL;
- 	else
- 		mask = ad_mask(ctxt);
--	masked_increment(reg, mask, inc);
-+	masked_increment(reg_rmw(ctxt, reg), mask, inc);
- }
- 
- static void rsp_increment(struct x86_emulate_ctxt *ctxt, int inc)
-@@ -2910,8 +2910,8 @@ static void string_addr_inc(struct x86_emulate_ctxt *ctxt, int reg,
- {
- 	int df = (ctxt->eflags & EFLG_DF) ? -op->count : op->count;
- 
--	register_address_increment(ctxt, reg_rmw(ctxt, reg), df * op->bytes);
--	op->addr.mem.ea = register_address(ctxt, reg_read(ctxt, reg));
-+	register_address_increment(ctxt, reg, df * op->bytes);
-+	op->addr.mem.ea = register_address(ctxt, reg);
- }
- 
- static int em_das(struct x86_emulate_ctxt *ctxt)
-@@ -3381,7 +3381,7 @@ static int em_loop(struct x86_emulate_ctxt *ctxt)
- {
- 	int rc = X86EMUL_CONTINUE;
- 
--	register_address_increment(ctxt, reg_rmw(ctxt, VCPU_REGS_RCX), -1);
-+	register_address_increment(ctxt, VCPU_REGS_RCX, -1);
- 	if ((address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) != 0) &&
- 	    (ctxt->b == 0xe2 || test_cc(ctxt->b ^ 0x5, ctxt->eflags)))
- 		rc = jmp_rel(ctxt, ctxt->src.val);
-@@ -4280,7 +4280,7 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
- 		op->type = OP_MEM;
- 		op->bytes = (ctxt->d & ByteOp) ? 1 : ctxt->op_bytes;
- 		op->addr.mem.ea =
--			register_address(ctxt, reg_read(ctxt, VCPU_REGS_RDI));
-+			register_address(ctxt, VCPU_REGS_RDI);
- 		op->addr.mem.seg = VCPU_SREG_ES;
- 		op->val = 0;
- 		op->count = 1;
-@@ -4332,7 +4332,7 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
- 		op->type = OP_MEM;
- 		op->bytes = (ctxt->d & ByteOp) ? 1 : ctxt->op_bytes;
- 		op->addr.mem.ea =
--			register_address(ctxt, reg_read(ctxt, VCPU_REGS_RSI));
-+			register_address(ctxt, VCPU_REGS_RSI);
- 		op->addr.mem.seg = ctxt->seg_override;
- 		op->val = 0;
- 		op->count = 1;
-@@ -4341,7 +4341,7 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
- 		op->type = OP_MEM;
- 		op->bytes = (ctxt->d & ByteOp) ? 1 : ctxt->op_bytes;
- 		op->addr.mem.ea =
--			register_address(ctxt,
-+			address_mask(ctxt,
- 				reg_read(ctxt, VCPU_REGS_RBX) +
- 				(reg_read(ctxt, VCPU_REGS_RAX) & 0xff));
- 		op->addr.mem.seg = ctxt->seg_override;
-@@ -4979,8 +4979,7 @@ writeback:
- 			count = ctxt->src.count;
- 		else
- 			count = ctxt->dst.count;
--		register_address_increment(ctxt, reg_rmw(ctxt, VCPU_REGS_RCX),
--				-count);
-+		register_address_increment(ctxt, VCPU_REGS_RCX, -count);
- 
- 		if (!string_insn_completed(ctxt)) {
- 			/*
--- 
-1.8.3.1
-
+Okay, looks like I'm off-by-one -- I ways thought the cut-off was
+-rc5.  Nevertheless, I'll have the patch in -next by tonight (tomorrow
+at the latest, as it's getting late and I need to wait for a previous
+test-build to finish before I can run this patch), let it stew there
+for a couple of weeks and fire them a pull-request around -rc6 and see
+what happens.
