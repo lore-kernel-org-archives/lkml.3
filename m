@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356AbaKSVl4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:41:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57233 "EHLO
+	id S1757338AbaKSVly (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:41:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933107AbaKSVOb (ORCPT
+	with ESMTP id S933196AbaKSVOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:31 -0500
+	Wed, 19 Nov 2014 16:14:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tim Chen <tim.c.chen@linux.intel.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Bob Liu <bob.liu@oracle.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Vlastimil Babka <vbabka@suse.cz>, Yong-Taek Lee <ytk.lee@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 119/122] fs/superblock: unregister sb shrinker before ->kill_sb()
-Date: Wed, 19 Nov 2014 12:52:49 -0800
-Message-Id: <20141119205212.791587069@linuxfoundation.org>
+Subject: [PATCH 3.14 122/122] mm/page_alloc: prevent MIGRATE_RESERVE pages from being misplaced
+Date: Wed, 19 Nov 2014 12:52:52 -0800
+Message-Id: <20141119205212.887273185@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -35,136 +38,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <david@fromorbit.com>
+From: Vlastimil Babka <vbabka@suse.cz>
 
-commit 28f2cd4f6da24a1aa06c226618ed5ad69e13df64 upstream.
+commit 5bcc9f86ef09a933255ee66bd899d4601785dad5 upstream.
 
-This series is aimed at regressions noticed during reclaim activity.  The
-first two patches are shrinker patches that were posted ages ago but never
-merged for reasons that are unclear to me.  I'm posting them again to see
-if there was a reason they were dropped or if they just got lost.  Dave?
-Time?  The last patch adjusts proportional reclaim.  Yuanhan Liu, can you
-retest the vm scalability test cases on a larger machine?  Hugh, does this
-work for you on the memcg test cases?
+For the MIGRATE_RESERVE pages, it is useful when they do not get
+misplaced on free_list of other migratetype, otherwise they might get
+allocated prematurely and e.g.  fragment the MIGRATE_RESEVE pageblocks.
+While this cannot be avoided completely when allocating new
+MIGRATE_RESERVE pageblocks in min_free_kbytes sysctl handler, we should
+prevent the misplacement where possible.
 
-Based on ext4, I get the following results but unfortunately my larger
-test machines are all unavailable so this is based on a relatively small
-machine.
+Currently, it is possible for the misplacement to happen when a
+MIGRATE_RESERVE page is allocated on pcplist through rmqueue_bulk() as a
+fallback for other desired migratetype, and then later freed back
+through free_pcppages_bulk() without being actually used.  This happens
+because free_pcppages_bulk() uses get_freepage_migratetype() to choose
+the free_list, and rmqueue_bulk() calls set_freepage_migratetype() with
+the *desired* migratetype and not the page's original MIGRATE_RESERVE
+migratetype.
 
-postmark
-                                  3.15.0-rc5            3.15.0-rc5
-                                     vanilla       proportion-v1r4
-Ops/sec Transactions         21.00 (  0.00%)       25.00 ( 19.05%)
-Ops/sec FilesCreate          39.00 (  0.00%)       45.00 ( 15.38%)
-Ops/sec CreateTransact       10.00 (  0.00%)       12.00 ( 20.00%)
-Ops/sec FilesDeleted       6202.00 (  0.00%)     6202.00 (  0.00%)
-Ops/sec DeleteTransact       11.00 (  0.00%)       12.00 (  9.09%)
-Ops/sec DataRead/MB          25.97 (  0.00%)       30.02 ( 15.59%)
-Ops/sec DataWrite/MB         49.99 (  0.00%)       57.78 ( 15.58%)
+This patch fixes the problem by moving the call to
+set_freepage_migratetype() from rmqueue_bulk() down to
+__rmqueue_smallest() and __rmqueue_fallback() where the actual page's
+migratetype (e.g.  from which free_list the page is taken from) is used.
+Note that this migratetype might be different from the pageblock's
+migratetype due to freepage stealing decisions.  This is OK, as page
+stealing never uses MIGRATE_RESERVE as a fallback, and also takes care
+to leave all MIGRATE_CMA pages on the correct freelist.
 
-ffsb (mail server simulator)
-                                 3.15.0-rc5             3.15.0-rc5
-                                    vanilla        proportion-v1r4
-Ops/sec readall           9402.63 (  0.00%)      9805.74 (  4.29%)
-Ops/sec create            4695.45 (  0.00%)      4781.39 (  1.83%)
-Ops/sec delete             173.72 (  0.00%)       177.23 (  2.02%)
-Ops/sec Transactions     14271.80 (  0.00%)     14764.37 (  3.45%)
-Ops/sec Read                37.00 (  0.00%)        38.50 (  4.05%)
-Ops/sec Write               18.20 (  0.00%)        18.50 (  1.65%)
+Therefore, as an additional benefit, the call to
+get_pageblock_migratetype() from rmqueue_bulk() when CMA is enabled, can
+be removed completely.  This relies on the fact that MIGRATE_CMA
+pageblocks are created only during system init, and the above.  The
+related is_migrate_isolate() check is also unnecessary, as memory
+isolation has other ways to move pages between freelists, and drain pcp
+lists containing pages that should be isolated.  The buffered_rmqueue()
+can also benefit from calling get_freepage_migratetype() instead of
+get_pageblock_migratetype().
 
-dd of a large file
-                                3.15.0-rc5            3.15.0-rc5
-                                   vanilla       proportion-v1r4
-WallTime DownloadTar       75.00 (  0.00%)       61.00 ( 18.67%)
-WallTime DD               423.00 (  0.00%)      401.00 (  5.20%)
-WallTime Delete             2.00 (  0.00%)        5.00 (-150.00%)
-
-stutter (times mmap latency during large amounts of IO)
-
-                            3.15.0-rc5            3.15.0-rc5
-                               vanilla       proportion-v1r4
-Unit >5ms Delays  80252.0000 (  0.00%)  81523.0000 ( -1.58%)
-Unit Mmap min         8.2118 (  0.00%)      8.3206 ( -1.33%)
-Unit Mmap mean       17.4614 (  0.00%)     17.2868 (  1.00%)
-Unit Mmap stddev     24.9059 (  0.00%)     34.6771 (-39.23%)
-Unit Mmap max      2811.6433 (  0.00%)   2645.1398 (  5.92%)
-Unit Mmap 90%        20.5098 (  0.00%)     18.3105 ( 10.72%)
-Unit Mmap 93%        22.9180 (  0.00%)     20.1751 ( 11.97%)
-Unit Mmap 95%        25.2114 (  0.00%)     22.4988 ( 10.76%)
-Unit Mmap 99%        46.1430 (  0.00%)     43.5952 (  5.52%)
-Unit Ideal  Tput     85.2623 (  0.00%)     78.8906 (  7.47%)
-Unit Tput min        44.0666 (  0.00%)     43.9609 (  0.24%)
-Unit Tput mean       45.5646 (  0.00%)     45.2009 (  0.80%)
-Unit Tput stddev      0.9318 (  0.00%)      1.1084 (-18.95%)
-Unit Tput max        46.7375 (  0.00%)     46.7539 ( -0.04%)
-
-This patch (of 3):
-
-We will like to unregister the sb shrinker before ->kill_sb().  This will
-allow cached objects to be counted without call to grab_super_passive() to
-update ref count on sb.  We want to avoid locking during memory
-reclamation especially when we are skipping the memory reclaim when we are
-out of cached objects.
-
-This is safe because grab_super_passive does a try-lock on the
-sb->s_umount now, and so if we are in the unmount process, it won't ever
-block.  That means what used to be a deadlock and races we were avoiding
-by using grab_super_passive() is now:
-
-        shrinker                        umount
-
-        down_read(shrinker_rwsem)
-                                        down_write(sb->s_umount)
-                                        shrinker_unregister
-                                          down_write(shrinker_rwsem)
-                                            <blocks>
-        grab_super_passive(sb)
-          down_read_trylock(sb->s_umount)
-            <fails>
-        <shrinker aborts>
-        ....
-        <shrinkers finish running>
-        up_read(shrinker_rwsem)
-                                          <unblocks>
-                                          <removes shrinker>
-                                          up_write(shrinker_rwsem)
-                                        ->kill_sb()
-                                        ....
-
-So it is safe to deregister the shrinker before ->kill_sb().
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reported-by: Yong-Taek Lee <ytk.lee@samsung.com>
+Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Suggested-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Suggested-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
 Cc: Hugh Dickins <hughd@google.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: Bob Liu <bob.liu@oracle.com>
-Cc: Jan Kara <jack@suse.cz>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/super.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ mm/page_alloc.c |   23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
 
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -278,10 +278,8 @@ void deactivate_locked_super(struct supe
- 	struct file_system_type *fs = s->s_type;
- 	if (atomic_dec_and_test(&s->s_active)) {
- 		cleancache_invalidate_fs(s);
--		fs->kill_sb(s);
--
--		/* caches are now gone, we can safely kill the shrinker now */
- 		unregister_shrinker(&s->s_shrink);
-+		fs->kill_sb(s);
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -943,6 +943,7 @@ struct page *__rmqueue_smallest(struct z
+ 		rmv_page_order(page);
+ 		area->nr_free--;
+ 		expand(zone, page, order, current_order, area, migratetype);
++		set_freepage_migratetype(page, migratetype);
+ 		return page;
+ 	}
  
- 		put_filesystem(fs);
- 		put_super(s);
+@@ -1069,7 +1070,9 @@ static int try_to_steal_freepages(struct
+ 
+ 	/*
+ 	 * When borrowing from MIGRATE_CMA, we need to release the excess
+-	 * buddy pages to CMA itself.
++	 * buddy pages to CMA itself. We also ensure the freepage_migratetype
++	 * is set to CMA so it is returned to the correct freelist in case
++	 * the page ends up being not actually allocated from the pcp lists.
+ 	 */
+ 	if (is_migrate_cma(fallback_type))
+ 		return fallback_type;
+@@ -1137,6 +1140,12 @@ __rmqueue_fallback(struct zone *zone, in
+ 
+ 			expand(zone, page, order, current_order, area,
+ 			       new_type);
++			/* The freepage_migratetype may differ from pageblock's
++			 * migratetype depending on the decisions in
++			 * try_to_steal_freepages. This is OK as long as it does
++			 * not differ for MIGRATE_CMA type.
++			 */
++			set_freepage_migratetype(page, new_type);
+ 
+ 			trace_mm_page_alloc_extfrag(page, order, current_order,
+ 				start_migratetype, migratetype, new_type);
+@@ -1187,7 +1196,7 @@ static int rmqueue_bulk(struct zone *zon
+ 			unsigned long count, struct list_head *list,
+ 			int migratetype, int cold)
+ {
+-	int mt = migratetype, i;
++	int i;
+ 
+ 	spin_lock(&zone->lock);
+ 	for (i = 0; i < count; ++i) {
+@@ -1208,14 +1217,8 @@ static int rmqueue_bulk(struct zone *zon
+ 			list_add(&page->lru, list);
+ 		else
+ 			list_add_tail(&page->lru, list);
+-		if (IS_ENABLED(CONFIG_CMA)) {
+-			mt = get_pageblock_migratetype(page);
+-			if (!is_migrate_cma(mt) && !is_migrate_isolate(mt))
+-				mt = migratetype;
+-		}
+-		set_freepage_migratetype(page, mt);
+ 		list = &page->lru;
+-		if (is_migrate_cma(mt))
++		if (is_migrate_cma(get_freepage_migratetype(page)))
+ 			__mod_zone_page_state(zone, NR_FREE_CMA_PAGES,
+ 					      -(1 << order));
+ 	}
+@@ -1584,7 +1587,7 @@ again:
+ 		if (!page)
+ 			goto failed;
+ 		__mod_zone_freepage_state(zone, -(1 << order),
+-					  get_pageblock_migratetype(page));
++					  get_freepage_migratetype(page));
+ 	}
+ 
+ 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
 
 
