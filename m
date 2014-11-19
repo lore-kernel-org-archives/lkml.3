@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585AbaKSQEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:04:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:51280 "EHLO mail.kernel.org"
+	id S1756596AbaKSQEG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:04:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:51308 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756569AbaKSQD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:03:58 -0500
+	id S1756149AbaKSQEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:04:02 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Aravinda Prasad <aravinda@linux.vnet.ibm.com>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Pekka Enberg <penberg@iki.fi>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
-        systemtap@sourceware.org, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/16] perf build-id: Move disable_buildid_cache() to util/build-id.c
-Date: Wed, 19 Nov 2014 13:03:21 -0300
-Message-Id: <1416413016-19110-2-git-send-email-acme@kernel.org>
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 02/16] perf tools: Clean up libelf feature support code
+Date: Wed, 19 Nov 2014 13:03:22 -0300
+Message-Id: <1416413016-19110-3-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416413016-19110-1-git-send-email-acme@kernel.org>
 References: <1416413016-19110-1-git-send-email-acme@kernel.org>
@@ -30,121 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-Also move static variable no_buildid_cache and check it in the
-perf_session_cache_build_ids().
+Current EXTLIBS contains -lelf by default and removes it when libelf is
+not detected.
+
+This is little bit confusing since we can now build perf without libelf
+so there's no need to handle it differently than other libraries.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Aravinda Prasad <aravinda@linux.vnet.ibm.com>
-Cc: Brendan Gregg <brendan.d.gregg@gmail.com>
-Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Pekka Enberg <penberg@iki.fi>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-Cc: systemtap@sourceware.org
-Link: http://lkml.kernel.org/r/1415368677-3794-1-git-send-email-namhyung@kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1415337606-2186-3-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/build-id.c | 11 +++++++++++
- tools/perf/util/build-id.h |  1 +
- tools/perf/util/header.c   | 10 +---------
- tools/perf/util/util.h     |  1 -
- 4 files changed, 13 insertions(+), 10 deletions(-)
+ tools/perf/Makefile.perf   | 2 --
+ tools/perf/config/Makefile | 5 +++--
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
-index dd2a3e52ada1..e8d79e5bfaf7 100644
---- a/tools/perf/util/build-id.c
-+++ b/tools/perf/util/build-id.c
-@@ -18,6 +18,9 @@
- #include "header.h"
- #include "vdso.h"
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index aecf61dcd754..478efa9b2364 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -497,8 +497,6 @@ ifneq ($(OUTPUT),)
+ endif
  
-+
-+static bool no_buildid_cache;
-+
- int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
- 			   union perf_event *event,
- 			   struct perf_sample *sample,
-@@ -251,6 +254,11 @@ int dsos__hit_all(struct perf_session *session)
- 	return 0;
- }
- 
-+void disable_buildid_cache(void)
-+{
-+	no_buildid_cache = true;
-+}
-+
- int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
- 			  const char *name, bool is_kallsyms, bool is_vdso)
- {
-@@ -404,6 +412,9 @@ int perf_session__cache_build_ids(struct perf_session *session)
- 	int ret;
- 	char debugdir[PATH_MAX];
- 
-+	if (no_buildid_cache)
-+		return 0;
-+
- 	snprintf(debugdir, sizeof(debugdir), "%s", buildid_dir);
- 
- 	if (mkdir(debugdir, 0755) != 0 && errno != EEXIST)
-diff --git a/tools/perf/util/build-id.h b/tools/perf/util/build-id.h
-index 666a3bd4f64e..8236319514d5 100644
---- a/tools/perf/util/build-id.h
-+++ b/tools/perf/util/build-id.h
-@@ -25,5 +25,6 @@ int perf_session__cache_build_ids(struct perf_session *session);
- int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
- 			  const char *name, bool is_kallsyms, bool is_vdso);
- int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir);
-+void disable_buildid_cache(void);
- 
- #endif
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 05fab7a188dc..b20e40c74468 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -24,8 +24,6 @@
- #include "build-id.h"
- #include "data.h"
- 
--static bool no_buildid_cache = false;
+ ifdef NO_LIBELF
+-EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
 -
- static u32 header_argc;
- static const char **header_argv;
+ # Remove ELF/DWARF dependent codes
+ LIB_OBJS := $(filter-out $(OUTPUT)util/symbol-elf.o,$(LIB_OBJS))
+ LIB_OBJS := $(filter-out $(OUTPUT)util/dwarf-aux.o,$(LIB_OBJS))
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 79f906c7124e..5d4b039fe1ed 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -150,7 +150,7 @@ CFLAGS += -std=gnu99
+ # adding assembler files missing the .GNU-stack linker note.
+ LDFLAGS += -Wl,-z,noexecstack
  
-@@ -191,8 +189,7 @@ static int write_build_id(int fd, struct perf_header *h,
- 		pr_debug("failed to write buildid table\n");
- 		return err;
- 	}
--	if (!no_buildid_cache)
--		perf_session__cache_build_ids(session);
-+	perf_session__cache_build_ids(session);
+-EXTLIBS = -lelf -lpthread -lrt -lm -ldl
++EXTLIBS = -lpthread -lrt -lm -ldl
  
- 	return 0;
- }
-@@ -2791,8 +2788,3 @@ int perf_event__process_build_id(struct perf_tool *tool __maybe_unused,
- 				 session);
- 	return 0;
- }
--
--void disable_buildid_cache(void)
--{
--	no_buildid_cache = true;
--}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 7dc44cfe25b3..76d23d83eae5 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -154,7 +154,6 @@ extern void set_die_routine(void (*routine)(const char *err, va_list params) NOR
+ ifneq ($(OUTPUT),)
+   OUTPUT_FEATURES = $(OUTPUT)config/feature-checks/
+@@ -354,6 +354,7 @@ endif # NO_LIBELF
  
- extern int prefixcmp(const char *str, const char *prefix);
- extern void set_buildid_dir(void);
--extern void disable_buildid_cache(void);
+ ifndef NO_LIBELF
+   CFLAGS += -DHAVE_LIBELF_SUPPORT
++  EXTLIBS += -lelf
  
- static inline const char *skip_prefix(const char *str, const char *prefix)
- {
+   ifeq ($(feature-libelf-mmap), 1)
+     CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
+@@ -373,7 +374,7 @@ ifndef NO_LIBELF
+     else
+       CFLAGS += -DHAVE_DWARF_SUPPORT $(LIBDW_CFLAGS)
+       LDFLAGS += $(LIBDW_LDFLAGS)
+-      EXTLIBS += -lelf -ldw
++      EXTLIBS += -ldw
+     endif # PERF_HAVE_DWARF_REGS
+   endif # NO_DWARF
+ endif # NO_LIBELF
 -- 
 1.9.3
 
