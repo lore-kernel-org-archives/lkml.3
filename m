@@ -1,157 +1,405 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447AbaKSUoA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:44:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55635 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755821AbaKSUn7 (ORCPT
+	id S1756611AbaKSUof (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:44:35 -0500
+Received: from mga09.intel.com ([134.134.136.24]:19663 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756182AbaKSUod convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:43:59 -0500
-Date: Wed, 19 Nov 2014 12:43:58 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
-Message-ID: <20141119204358.GA10165@kroah.com>
-References: <20141013022454.289398272@linuxfoundation.org>
- <20141013112834.GA10826@khazad-dum.debian.net>
- <20141013082319.175d90bb@as>
- <20141119172235.GA31260@kroah.com>
- <20141119194414.GN5050@linux.vnet.ibm.com>
- <20141119201648.GA22775@kroah.com>
- <20141119203512.GQ5050@linux.vnet.ibm.com>
+	Wed, 19 Nov 2014 15:44:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,418,1413270000"; 
+   d="scan'208";a="610678475"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: "jolsa@redhat.com" <jolsa@redhat.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: RE: [PATCH V4 3/3] perf tool: Add sort key symoff for perf diff
+Thread-Topic: [PATCH V4 3/3] perf tool: Add sort key symoff for perf diff
+Thread-Index: AQHQA1BpEr1H2ZY2I0eMdowyjLhZiZxmXDaAgAINoiA=
+Date: Wed, 19 Nov 2014 20:44:27 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077016724DD@SHSMSX103.ccr.corp.intel.com>
+References: <1416328700-1836-1-git-send-email-kan.liang@intel.com>
+ <1416328700-1836-4-git-send-email-kan.liang@intel.com>
+ <20141118211319.GD3790@kernel.org>
+In-Reply-To: <20141118211319.GD3790@kernel.org>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141119203512.GQ5050@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 12:35:12PM -0800, Paul E. McKenney wrote:
-> On Wed, Nov 19, 2014 at 12:16:48PM -0800, Greg Kroah-Hartman wrote:
-> > On Wed, Nov 19, 2014 at 11:44:14AM -0800, Paul E. McKenney wrote:
-> > > On Wed, Nov 19, 2014 at 09:22:35AM -0800, Greg Kroah-Hartman wrote:
-> > > > On Mon, Oct 13, 2014 at 08:23:19AM -0500, Chuck Ebbert wrote:
-> > > > > On Mon, 13 Oct 2014 08:28:35 -0300
-> > > > > Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
-> > > > > 
-> > > > > > On Mon, 13 Oct 2014, Greg Kroah-Hartman wrote:
-> > > > > > > This is the start of the stable review cycle for the 3.17.1
-> > > > > > > release. There are 25 patches in this series, all will be posted
-> > > > > > > as a response to this one.  If anyone has any issues with these
-> > > > > > > being applied, please let me know.
-> > > > > > 
-> > > > > > Actually, 3.17 is a filesystem killer for some unlucky users due to
-> > > > > > the libata blacklist being disabled by a bug.
-> > > > > > 
-> > > > > > Patch:
-> > > > > > https://git.kernel.org/cgit/linux/kernel/git/tj/libata.git/patch/?id=1c40279960bcd7d52dbdf1d466b20d24b99176c8
-> > > > > > 1c40279960bcd7d52dbdf1d466b20d24b99176c8 (libata: Un-break ATA
-> > > > > > blacklist)
-> > > > > > 
-> > > > > 
-> > > > > There are some more bugs too:
-> > > > > 
-> > > > > 
-> > > > > RCU stalls, fix has been in rcu/urgent for 7 days:
-> > > > > https://git.kernel.org/cgit/linux/kernel/git/paulmck/linux-rcu.git/commit/?h=rcu/urgent&id=789cbbeca4eb7141cbd748ee93772471101b507b
-> > > > 
-> > > > Doesn't build in 3.17 properly :(
-> > > > 
-> > > > > blk-mq bio merging (still no good fix available):
-> > > > > https://lkml.org/lkml/2014/10/9/729
-> > > > > (The fix sitting in the block tree:
-> > > > > https://git.kernel.org/cgit/linux/kernel/git/axboe/linux-block.git/commit/?h=for-3.18/core&id=764f612c6c3c231b9c12cfae7c328ccc9c453258
-> > > > > is wrong according to that message.)
-> > > > 
-> > > > Did this ever get resolved?
-> > > > 
-> > > > > Stalls when using nohz, requires series of six patches to fix that
-> > > > > didn't make 3.17 and weren't marked for -stable:
-> > > > > 
-> > > > > From a80e49e2cc3145af014a8ae44f575829cc236192 Mon Sep 17 00:00:00 2001
-> > > > > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > > Subject: nohz: Move nohz full init call to tick init
-> > > > > 
-> > > > > From c5c38ef3d70377dc504a6a3f611a3ec814bc757b Mon Sep 17 00:00:00 2001
-> > > > > From: Peter Zijlstra <peterz@infradead.org>
-> > > > > Subject: irq_work: Introduce arch_irq_work_has_interrupt()
-> > > > > 
-> > > > > From 76a33061b9323b7fdb220ae5fa116c10833ec22e Mon Sep 17 00:00:00 2001
-> > > > > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > > Subject: irq_work: Force raised irq work to run on irq work interrupt
-> > > > > 
-> > > > > From 3010279f0fc36f0388872203e63ca49912f648fd Mon Sep 17 00:00:00 2001
-> > > > > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > > Subject: x86: Tell irq work about self IPI support
-> > > > > 
-> > > > > From 09f6edd424218eb69078551b2ecfada1f2d098eb Mon Sep 17 00:00:00 2001
-> > > > > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > > Subject: arm: Tell irq work about self IPI support
-> > > > > 
-> > > > > From 3631073659d0aafeaa52227bb61a100efaf901dc Mon Sep 17 00:00:00 2001
-> > > > > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > To: 09f6edd424218eb69078551b2ecfada1f2d098eb
-> > > > To: Chuck Ebbert <cebbert.lkml@gmail.com>
-> > > > Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-> > > > 	linux-kernel@vger.kernel.org, stable@kernel.org
-> > > > Bcc: 
-> > > > Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
-> > > > Reply-To: 
-> > > > In-Reply-To: <20141013082319.175d90bb@as>
-> > > > 
-> > > > On Mon, Oct 13, 2014 at 08:23:19AM -0500, Chuck Ebbert wrote:
-> > > > > On Mon, 13 Oct 2014 08:28:35 -0300
-> > > > > Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
-> > > > > 
-> > > > > > On Mon, 13 Oct 2014, Greg Kroah-Hartman wrote:
-> > > > > > > This is the start of the stable review cycle for the 3.17.1
-> > > > > > > release. There are 25 patches in this series, all will be posted
-> > > > > > > as a response to this one.  If anyone has any issues with these
-> > > > > > > being applied, please let me know.
-> > > > > > 
-> > > > > > Actually, 3.17 is a filesystem killer for some unlucky users due to
-> > > > > > the libata blacklist being disabled by a bug.
-> > > > > > 
-> > > > > > Patch:
-> > > > > > https://git.kernel.org/cgit/linux/kernel/git/tj/libata.git/patch/?id=1c40279960bcd7d52dbdf1d466b20d24b99176c8
-> > > > > > 1c40279960bcd7d52dbdf1d466b20d24b99176c8 (libata: Un-break ATA
-> > > > > > blacklist)
-> > > > > > 
-> > > > > 
-> > > > > There are some more bugs too:
-> > > > > 
-> > > > > 
-> > > > > RCU stalls, fix has been in rcu/urgent for 7 days:
-> > > > > https://git.kernel.org/cgit/linux/kernel/git/paulmck/linux-rcu.git/commit/?h=rcu/urgent&id=789cbbeca4eb7141cbd748ee93772471101b507b
-> > > > 
-> > > > Doesn't build in 3.17 properly :(
-> > > 
-> > > Older kernels can use rcu_note_context_switch() instead of
-> > > rcu_note_voluntary_context_switch(), which didn't show up until quite
-> > > recently.  Please note that rcu_note_context_switch() is quite a bit
-> > > more heavy-weight than is rcu_note_voluntary_context_switch(), but it
-> > > should be OK in this context.
-> > 
-> > "OK" as in "worth the overhead to fix the known bug"?  Or is this just
-> > not worth backporting to 3.17, 3.14, and 3.10 as no one really hits this
-> > issue there?
+
+
 > 
-> "OK" as in "the added overhead of rcu_note_context_switch() is likely
-> to be down in the noise in this case".  I must confess that I have no
-> idea whether or not people hit this issue in 3.17, 3.14, or 3.10.
+> Em Tue, Nov 18, 2014 at 11:38:20AM -0500, kan.liang@intel.com escreveu:
+> > From: Kan Liang <kan.liang@intel.com>
+> >
+> > Sometime, especially debugging scaling issue, the function level diff
+> > may be high granularity. The user may want to do deeper diff analysis
+> > for some cache or lock issue. The "symoff" key can let the user sort
+> > differential profile by ips. This feature should only work when the
+> > perf.data comes from same binary.
+> 
+> So, to avoid having people scratching heads, and since we have the build-id
+> for both perf.data files, hence for both binaries being compared, can we
+> check the build ids and either refuse to do the diff or print a big warning
+> about different binaries being compared?
+> 
 
-Ah, if no one has noticed this in older kernels, I'm not about to
-backport it :)
+Sure. We can compare the buildid on symoff sort,
+and print a warning if they are from different binaries.
 
-Chuck, why do you think this needs to be in 3.17?  And if so there, do
-you think it also needs to be in older kernel trees as well?
+Currently, there is no code to compare the build-id,
+so we also need a patch to enhance the dso.c
+What about the code as below? 
 
-thanks,
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -1087,3 +1087,27 @@ enum dso_type dso__type(struct dso *dso,
+struct machine *machine)
 
-greg k-h
+        return dso__type_fd(fd);
+ }
++
++int dsos__buildid_compare(struct list_head *head_s,
+struct list_head *head_t)
++{
++       struct dso *dso_s;
++       struct dso *dso_t;
++       int ret;
++
++
++       for (dso_s = list_entry((head_s)->next, typeof(*dso_s), node),
++            dso_t = list_entry((head_t)->next, typeof(*dso_t), node);
++            ((&dso_s->node != (head_s)) && (&dso_t->node != (head_t)));
++            dso_s = list_entry(dso_s->node.next, typeof(*dso_s), node),
++            dso_t = list_entry(dso_t->node.next, typeof(*dso_t), node)) {
++
++               ret = memcmp(dso_s->build_id, dso_t->build_id, 
+sizeof(dso_s->build_id));
++               if (ret)
++                       return ret;
++       }
++
++       if ((&dso_s->node != (head_s)) || (&dso_t->node != (head_t)))
++               return -1;
++
++       return 0;
++}
+
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -677,6 +678,29 @@ static void data__free(struct data__file *d)
+        }
+ }
+
++static void buildid_compare(void)
++{
++       struct list_head *base_k_dso = &data__files[0].session
+->machines.host.kernel_dsos.head;
++       struct list_head *base_u_dso = &data__files[0].session
+->machines.host.user_dsos.head;
++       struct list_head *tmp_k_dso;
++       struct list_head *tmp_u_dso;
++       struct data__file *d;
++       int i;
++
++       data__for_each_file_new(i, d) {
++               tmp_k_dso = &d->session->machines.host.kernel_dsos.head;
++               tmp_u_dso = &d->session->machines.host.user_dsos.head;
++
++               if (dsos__buildid_compare(base_k_dso, tmp_k_dso))
++                       pr_warning("The perf.data comes from different kernel. "
++                                  "The kernel symbol offset may point to different code.\n");
++
++               if (dsos__buildid_compare(base_u_dso, tmp_u_dso))
++                       pr_warning("The perf.data comes from different user binary. "
++                                  "The kernel symbol offset may point to different code.\n");
++       }
++}
++
+ static int __cmd_diff(void)
+ {
+        struct data__file *d;
+@@ -699,6 +723,9 @@ static int __cmd_diff(void)
+                perf_evlist__collapse_resort(d->session->evlist);
+        }
+
++       if (sort__has_symoff)
++               buildid_compare();
++
+        data_process();
+
+  out_delete:
+
+
+
+Thanks,
+Kan
+
+> - Arnaldo
+> 
+> > Here is an example.
+> > perf diff -s symoff  v1_1_8_1perf.data v1_1_8_2perf.data
+> >
+> >  Event 'cycles'
+> >
+> >  Baseline    Delta  Symbol + Offset
+> >  ........  .......  ...............................
+> >
+> >      0.00%           __update_cpu_load+0xcc
+> >                      _raw_spin_lock_irqsave+0x24
+> >                      _raw_spin_unlock_irqrestore+0xa
+> >      0.00%           apic_timer_interrupt+0x0
+> >                      apic_timer_interrupt+0x68
+> >                      check_preempt_curr+0x1c
+> >      0.00%           f1+0x20
+> >      0.03%   +0.03%  f2+0x11
+> >      0.03%   +0.01%  f2+0x16
+> >      0.05%           f2+0x1b
+> >      0.04%   -0.02%  f2+0x20
+> >      0.03%           f2+0x25
+> >      0.17%   +0.11%  f2+0x29
+> >      0.15%           f2+0x2d
+> >                      f2+0x30
+> >      0.37%   +0.02%  f3+0x0
+> >      0.18%   +0.03%  f3+0x1
+> >      0.01%           f3+0x4
+> >      0.18%   +0.04%  f3+0xb
+> >     12.31%   +0.11%  f3+0xd
+> >      0.03%           f3+0x10
+> >      0.80%   -0.12%  f3+0x13
+> >      6.66%   +0.09%  f3+0x17
+> >      1.81%   -0.36%  f3+0x1b
+> >      6.35%   +0.24%  f3+0x1d
+> >      1.42%   -0.22%  f3+0x21
+> >     66.83%   +0.22%  f3+0x25
+> >      1.29%   -0.12%  f3+0x27
+> >      1.22%   -0.04%  f3+0x28
+> >      0.00%           load_balance+0x96
+> >      0.00%           native_apic_mem_write+0x0
+> >      0.00%           native_write_msr_safe+0xa
+> >      0.00%           native_write_msr_safe+0xd
+> >      0.00%           rb_erase+0x381
+> >                      resched_curr+0x5
+> >                      restore_args+0x4
+> >      0.00%           run_timer_softirq+0x29f
+> >                      select_task_rq_fair+0x9
+> >      0.00%           select_task_rq_fair+0x1d9
+> >                      task_tick_fair+0x46
+> >      0.00%           task_tick_fair+0x1ce
+> >                      task_waking_fair+0x27
+> >      0.00%           try_to_wake_up+0x158
+> >                      update_cfs_rq_blocked_load+0x99
+> >      0.00%           update_cpu_load_active+0x3b
+> >                      update_group_capacity+0x150
+> >                      update_wall_time+0x3c6
+> >
+> > Signed-off-by: Kan Liang <kan.liang@intel.com>
+> > ---
+> >  tools/perf/Documentation/perf-diff.txt |  8 +++-
+> >  tools/perf/builtin-diff.c              |  2 +-
+> >  tools/perf/util/hist.c                 |  5 ++-
+> >  tools/perf/util/hist.h                 |  1 +
+> >  tools/perf/util/sort.c                 | 67
+> ++++++++++++++++++++++++++++++++++
+> >  tools/perf/util/sort.h                 |  2 +
+> >  6 files changed, 80 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/tools/perf/Documentation/perf-diff.txt
+> > b/tools/perf/Documentation/perf-diff.txt
+> > index e463caa..9e13911 100644
+> > --- a/tools/perf/Documentation/perf-diff.txt
+> > +++ b/tools/perf/Documentation/perf-diff.txt
+> > @@ -50,8 +50,12 @@ OPTIONS
+> >
+> >  -s::
+> >  --sort=::
+> > -	Sort by key(s): pid, comm, dso, symbol, cpu, parent, srcline.
+> > -	Please see description of --sort in the perf-report man page.
+> > +	Sort by key(s): pid, comm, dso, symbol, cpu, parent, srcline, symoff.
+> > +
+> > +	- symoff: exact symbol +  offset address executed at the time of
+> sample.
+> > +	(for same binary compare)
+> > +
+> > +	For other keys, please see description of --sort in the perf-report
+> man page.
+> >
+> >  -t::
+> >  --field-separator=::
+> > diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+> > index 1ce425d..03a4001 100644
+> > --- a/tools/perf/builtin-diff.c
+> > +++ b/tools/perf/builtin-diff.c
+> > @@ -744,7 +744,7 @@ static const struct option options[] = {
+> >  	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str,
+> "symbol[,symbol...]",
+> >  		   "only consider these symbols"),
+> >  	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+> > -		   "sort by key(s): pid, comm, dso, symbol, parent, cpu,
+> srcline, ..."
+> > +		   "sort by key(s): pid, comm, dso, symbol, parent, cpu,
+> srcline, symoff, ..."
+> >  		   " Please refer the man page for the complete list."),
+> >  	OPT_STRING('t', "field-separator", &symbol_conf.field_sep,
+> "separator",
+> >  		   "separator for columns, no spaces will be added between
+> "
+> > diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c index
+> > 6e88b9e..3d8a71b 100644
+> > --- a/tools/perf/util/hist.c
+> > +++ b/tools/perf/util/hist.c
+> > @@ -67,13 +67,14 @@ void hists__calc_col_len(struct hists *hists, struct
+> hist_entry *h)
+> >  		symlen = h->ms.sym->namelen + 4;
+> >  		if (verbose)
+> >  			symlen += BITS_PER_LONG / 4 + 2 + 3;
+> > -		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
+> >  	} else {
+> >  		symlen = unresolved_col_width + 4 + 2;
+> > -		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
+> >  		hists__set_unres_dso_col_len(hists, HISTC_DSO);
+> >  	}
+> >
+> > +	hists__new_col_len(hists, HISTC_SYMBOL, symlen);
+> > +	hists__new_col_len(hists, HISTC_SYMOFF, symlen);
+> > +
+> >  	len = thread__comm_len(h->thread);
+> >  	if (hists__new_col_len(hists, HISTC_COMM, len))
+> >  		hists__set_col_len(hists, HISTC_THREAD, len + 6); diff --git
+> > a/tools/perf/util/hist.h b/tools/perf/util/hist.h index
+> > d0ef9a1..874b203 100644
+> > --- a/tools/perf/util/hist.h
+> > +++ b/tools/perf/util/hist.h
+> > @@ -24,6 +24,7 @@ enum hist_filter {
+> >
+> >  enum hist_column {
+> >  	HISTC_SYMBOL,
+> > +	HISTC_SYMOFF,
+> >  	HISTC_DSO,
+> >  	HISTC_THREAD,
+> >  	HISTC_COMM,
+> > diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c index
+> > bea2e07..49ad000 100644
+> > --- a/tools/perf/util/sort.c
+> > +++ b/tools/perf/util/sort.c
+> > @@ -280,6 +280,65 @@ struct sort_entry sort_sym = {
+> >  	.se_width_idx	= HISTC_SYMBOL,
+> >  };
+> >
+> > +static int64_t
+> > +sort__symoff_cmp(struct hist_entry *left, struct hist_entry *right) {
+> > +	return _sort__addr_cmp(left->ip, right->ip); }
+> > +
+> > +static int64_t
+> > +sort__symoff_collapse(struct hist_entry *left, struct hist_entry
+> > +*right) {
+> > +	struct symbol *sym_l = left->ms.sym;
+> > +	struct symbol *sym_r = right->ms.sym;
+> > +	u64 symoff_l, symoff_r;
+> > +	int64_t ret;
+> > +
+> > +	if (!sym_l || !sym_r)
+> > +		return cmp_null(sym_l, sym_r);
+> > +
+> > +	ret = strcmp(sym_r->name, sym_l->name);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +
+> > +	symoff_l = left->ip - sym_l->start;
+> > +	symoff_r = right->ip - sym_r->start;
+> > +
+> > +	return (int64_t)(symoff_r - symoff_l); }
+> > +
+> > +static int hist_entry__symoff_snprintf(struct hist_entry *he, char *bf,
+> > +				    size_t size, unsigned int width) {
+> > +	struct map *map = he->ms.map;
+> > +	struct symbol *sym = he->ms.sym;
+> > +	size_t ret = 0;
+> > +
+> > +	if (sym) {
+> > +		ret += repsep_snprintf(bf + ret, size - ret, "%s", sym-
+> >name);
+> > +		ret += repsep_snprintf(bf + ret, size - ret, "+0x%llx",
+> > +				       he->ip - sym->start);
+> > +
+> > +	} else {
+> > +		size_t len = BITS_PER_LONG / 4;
+> > +
+> > +		ret += repsep_snprintf(bf + ret, size - ret, "%-#.*llx", len,
+> > +				       map ? map->unmap_ip(map, he->ip) :
+> he->ip);
+> > +	}
+> > +
+> > +	ret += repsep_snprintf(bf + ret, size - ret, "%-*s",
+> > +			       width - ret, "");
+> > +	return ret;
+> > +}
+> > +
+> > +struct sort_entry sort_symoff = {
+> > +	.se_header	= "Symbol + Offset",
+> > +	.se_cmp		= sort__symoff_cmp,
+> > +	.se_snprintf	= hist_entry__symoff_snprintf,
+> > +	.se_width_idx	= HISTC_SYMOFF,
+> > +};
+> > +
+> >  /* --sort srcline */
+> >
+> >  static int64_t
+> > @@ -1172,6 +1231,7 @@ static struct sort_dimension
+> common_sort_dimensions[] = {
+> >  	DIM(SORT_COMM, "comm", sort_comm),
+> >  	DIM(SORT_DSO, "dso", sort_dso),
+> >  	DIM(SORT_SYM, "symbol", sort_sym),
+> > +	DIM(SORT_SYMOFF, "symoff", sort_symoff),
+> >  	DIM(SORT_PARENT, "parent", sort_parent),
+> >  	DIM(SORT_CPU, "cpu", sort_cpu),
+> >  	DIM(SORT_SRCLINE, "srcline", sort_srcline), @@ -1443,6 +1503,13
+> @@
+> > int sort_dimension__add(const char *tok)
+> >
+> >  		} else if (sd->entry == &sort_dso) {
+> >  			sort__has_dso = 1;
+> > +		} else if (sd->entry == &sort_symoff) {
+> > +			/*
+> > +			 * For symoff sort key, not only the offset but also
+> the
+> > +			 * symbol name should be compared.
+> > +			 */
+> > +			if (sort__mode == SORT_MODE__DIFF)
+> > +				sd->entry->se_collapse =
+> sort__symoff_collapse;
+> >  		}
+> >
+> >  		return __sort_dimension__add(sd);
+> > diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h index
+> > c03e4ff..ea0122f 100644
+> > --- a/tools/perf/util/sort.h
+> > +++ b/tools/perf/util/sort.h
+> > @@ -38,6 +38,7 @@ extern enum sort_mode sort__mode;  extern struct
+> > sort_entry sort_comm;  extern struct sort_entry sort_dso;  extern
+> > struct sort_entry sort_sym;
+> > +extern struct sort_entry sort_symoff;
+> >  extern struct sort_entry sort_parent;  extern struct sort_entry
+> > sort_dso_from;  extern struct sort_entry sort_dso_to; @@ -161,6 +162,7
+> > @@ enum sort_type {
+> >  	SORT_COMM,
+> >  	SORT_DSO,
+> >  	SORT_SYM,
+> > +	SORT_SYMOFF,
+> >  	SORT_PARENT,
+> >  	SORT_CPU,
+> >  	SORT_SRCLINE,
+> > --
+> > 1.8.3.2
