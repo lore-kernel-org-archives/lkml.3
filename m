@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964AbaKSAzY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 19:55:24 -0500
-Received: from mta-out1.inet.fi ([62.71.2.203]:37607 "EHLO kirsi1.inet.fi"
+	id S1755187AbaKSBCk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 20:02:40 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54634 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754345AbaKSAzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 19:55:23 -0500
-Date: Wed, 19 Nov 2014 02:54:55 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@gentwo.org>,
-        Steve Capper <steve.capper@linaro.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 06/19] mm: store mapcount for compound page separate
-Message-ID: <20141119005455.GA32179@node.dhcp.inet.fi>
-References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1415198994-15252-7-git-send-email-kirill.shutemov@linux.intel.com>
- <20141118084337.GA16714@hori1.linux.bs1.fc.nec.co.jp>
- <20141118095811.GA21774@node.dhcp.inet.fi>
- <20141118234145.GA4116@hori1.linux.bs1.fc.nec.co.jp>
+	id S1754004AbaKSBCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 20:02:39 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>, quentin.gouchet@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        ABI/API <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v2 02/10] crypto: AF_ALG: user space interface for cipher info
+Date: Wed, 19 Nov 2014 02:02:33 +0100
+Message-ID: <34547475.R7WC8JFgoJ@tachyon.chronox.de>
+User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <20141118140822.GB12100@gondor.apana.org.au>
+References: <5365136.g8vbXlhRyC@tachyon.chronox.de> <2688209.3bGZus2TD9@tachyon.chronox.de> <20141118140822.GB12100@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141118234145.GA4116@hori1.linux.bs1.fc.nec.co.jp>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 11:41:08PM +0000, Naoya Horiguchi wrote:
-> > > > @@ -6632,10 +6637,12 @@ static void dump_page_flags(unsigned long flags)
-> > > >  void dump_page_badflags(struct page *page, const char *reason,
-> > > >  		unsigned long badflags)
-> > > >  {
-> > > > -	printk(KERN_ALERT
-> > > > -	       "page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
-> > > > +	pr_alert("page:%p count:%d mapcount:%d mapping:%p index:%#lx",
-> > > >  		page, atomic_read(&page->_count), page_mapcount(page),
-> > > >  		page->mapping, page->index);
-> > > > +	if (PageCompound(page))
-> > > 
-> > > > +		printk(" compound_mapcount: %d", compound_mapcount(page));
-> > > > +	printk("\n");
-> > > 
-> > > These two printk() should be pr_alert(), too?
-> > 
-> > No. It will split the line into several messages in dmesg.
-> 
-> This splitting is fine. I meant that these printk()s are for one series
-> of message, so setting the same log level looks reasonable to me.
+Am Dienstag, 18. November 2014, 22:08:23 schrieb Herbert Xu:
 
-Hm. It seems what I really need to use there is pr_cont(). I didn't know
-it exists. Thanks for hint ;)
+Hi Herbert,
+
+> On Sun, Nov 16, 2014 at 03:24:25AM +0100, Stephan Mueller wrote:
+> > The AF_ALG interface allows normal cipher (hash, encrypt, decrypt).
+> > However, it does not allow user space to obtain the following generic
+> > 
+> > information about the currently active cipher:
+> > 	* block size of the cipher
+> > 	
+> > 	* IV size of the cipher
+> > 	
+> > 	* for AEAD, the maximum authentication tag size
+> > 
+> > The patch adds a getsockopt interface for the symmetric ciphers to
+> > answer such information requests from user space.
+> > 
+> > The kernel crypto API function calls are used to obtain the real data.
+> > As all data are simple integer values, the getsockopt handler function
+> > uses put_user() to return the integer value to user space in the
+> > *optval parameter of getsockopt.
+> > 
+> > Signed-off-by: Stephan Mueller <smueller@chronox.de>
+> 
+> We already have crypto_user so you should be extending that to
+> cover what's missing.
+
+Looking into that, I think nothing is missing -- thanks for the pointer. Thus 
+I think I can withdraw that patch and just simply update libkcapi to use that 
+user space netlink interface.
+
+Though, I yet have to try using that interface ;-)
+
+I am wondering why cryptouser.h is in include/linux -- shouldn't it be in 
+include/uapi/linux? Aren't the definitions in that header file needed for 
+userspace to talk to the netlink socket? I guess that is also the reason why I 
+do not see the interface API details in /usr/linux on my F21 system.
+> 
+> PS These paramters should not vary depending on the implementation,
+> if they do then one of the implementations must be buggy.
+> 
+> Cheers,
+
 
 -- 
- Kirill A. Shutemov
+Ciao
+Stephan
