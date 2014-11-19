@@ -1,145 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186AbaKSE4d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 23:56:33 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:21180 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754372AbaKSEz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 23:55:57 -0500
-Message-Id: <20141119045555.927153071@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Tue, 18 Nov 2014 23:39:19 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [RFC][PATCH 2/3] printk: Add per_cpu printk func to allow printk to be diverted
-References: <20141119043917.578498291@goodmis.org>
+	id S1754704AbaKSE7c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 23:59:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43122 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754233AbaKSE7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 23:59:31 -0500
+Date: Tue, 18 Nov 2014 23:59:17 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141119045917.GA17741@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Don Zickus <dzickus@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	the arch/x86 maintainers <x86@kernel.org>
+References: <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
+ <20141118020959.GA2091@redhat.com>
+ <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
+ <20141118023930.GA2871@redhat.com>
+ <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
+ <20141118145234.GA7487@redhat.com>
+ <alpine.DEB.2.11.1411181914020.3909@nanos>
+ <20141118215540.GD35311@redhat.com>
+ <20141119021902.GA14216@redhat.com>
+ <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0002-printk-Add-per_cpu-printk-func-to-allow-printk-to-be.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Tue, Nov 18, 2014 at 08:40:55PM -0800, Linus Torvalds wrote:
+ > On Tue, Nov 18, 2014 at 6:19 PM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > NMI watchdog: BUG: soft lockup - CPU#2 stuck for 21s! [trinity-c42:31480]
+ > > CPU: 2 PID: 31480 Comm: trinity-c42 Not tainted 3.18.0-rc5+ #91 [loadavg: 174.61 150.35 148.64 9/411 32140]
+ > > RIP: 0010:[<ffffffff8a1798b4>]  [<ffffffff8a1798b4>] context_tracking_user_enter+0xa4/0x190
+ > > Call Trace:
+ > >  [<ffffffff8a012fc5>] syscall_trace_leave+0xa5/0x160
+ > >  [<ffffffff8a7d8624>] int_check_syscall_exit_work+0x34/0x3d
+ > 
+ > Hmm, if we are getting soft-lockups here, maybe it suggest too much exit-work.
+ > 
+ > Some TIF_NOHZ loop, perhaps? You have nohz on, don't you?
 
-Being able to divert printk to call another function besides the normal
-logging is useful for such things like NMI handling. If some functions
-are to be called from NMI that does printk() it is possible to lock up
-the box if the nmi handler triggers when another printk is happening.
+I do.
 
-One example of this use is to perform a stack trace on all CPUs via NMI.
-But if the NMI is to do the printk() it can cause the system to lock up.
-By allowing the printk to be diverted to another function that can safely
-record the printk output and then print it when it in a safe context
-then NMIs will be safe to call these functions like show_regs().
+ > That makes me wonder: does the problem go away if you disable NOHZ?
 
-Link: http://lkml.kernel.org/p/20140619213952.209176403@goodmis.org
+I'll give it a try, and see what falls out overnight.
 
-Tested-by: Jiri Kosina <jkosina@suse.cz>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Petr Mladek <pmladek@suse.cz>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/percpu.h |  3 +++
- include/linux/printk.h |  2 ++
- kernel/printk/printk.c | 38 +++++++++++++++++++++++++++++---------
- 3 files changed, 34 insertions(+), 9 deletions(-)
-
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index a3aa63e47637..ba2e85a0ff5b 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -134,4 +134,7 @@ extern phys_addr_t per_cpu_ptr_to_phys(void *addr);
- 	(typeof(type) __percpu *)__alloc_percpu(sizeof(type),		\
- 						__alignof__(type))
- 
-+/* To avoid include hell, as printk can not declare this, we declare it here */
-+DECLARE_PER_CPU(printk_func_t, printk_func);
-+
- #endif /* __LINUX_PERCPU_H */
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index d78125f73ac4..3bbd979d32fb 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -162,6 +162,8 @@ extern int kptr_restrict;
- 
- extern void wake_up_klogd(void);
- 
-+typedef int(*printk_func_t)(const char *fmt, va_list args);
-+
- void log_buf_kexec_setup(void);
- void __init setup_log_buf(int early);
- void dump_stack_set_arch_desc(const char *fmt, ...);
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index ced2b84b1cb7..f7b723f98cb9 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1807,6 +1807,30 @@ asmlinkage int printk_emit(int facility, int level,
- }
- EXPORT_SYMBOL(printk_emit);
- 
-+int vprintk_default(const char *fmt, va_list args)
-+{
-+	int r;
-+
-+#ifdef CONFIG_KGDB_KDB
-+	if (unlikely(kdb_trap_printk)) {
-+		r = vkdb_printf(fmt, args);
-+		return r;
-+	}
-+#endif
-+	r = vprintk_emit(0, -1, NULL, 0, fmt, args);
-+
-+	return r;
-+}
-+EXPORT_SYMBOL_GPL(vprintk_default);
-+
-+/*
-+ * This allows printk to be diverted to another function per cpu.
-+ * This is useful for calling printk functions from within NMI
-+ * without worrying about race conditions that can lock up the
-+ * box.
-+ */
-+DEFINE_PER_CPU(printk_func_t, printk_func) = vprintk_default;
-+
- /**
-  * printk - print a kernel message
-  * @fmt: format string
-@@ -1830,19 +1854,15 @@ EXPORT_SYMBOL(printk_emit);
-  */
- asmlinkage __visible int printk(const char *fmt, ...)
- {
-+	printk_func_t vprintk_func;
- 	va_list args;
- 	int r;
- 
--#ifdef CONFIG_KGDB_KDB
--	if (unlikely(kdb_trap_printk)) {
--		va_start(args, fmt);
--		r = vkdb_printf(fmt, args);
--		va_end(args);
--		return r;
--	}
--#endif
- 	va_start(args, fmt);
--	r = vprintk_emit(0, -1, NULL, 0, fmt, args);
-+	preempt_disable();
-+	vprintk_func = this_cpu_read(printk_func);
-+	r = vprintk_func(fmt, args);
-+	preempt_enable();
- 	va_end(args);
- 
- 	return r;
--- 
-2.1.1
-
-
+	Dave
