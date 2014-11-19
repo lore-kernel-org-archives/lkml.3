@@ -1,62 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979AbaKSO7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 09:59:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46307 "EHLO mail.kernel.org"
+	id S1756005AbaKSO7T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 09:59:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46330 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755725AbaKSO7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:59:12 -0500
-Date: Tue, 18 Nov 2014 10:37:21 -0300
+	id S1755692AbaKSO7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 09:59:16 -0500
+Date: Wed, 19 Nov 2014 11:10:27 -0300
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+Cc: Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
         "Liang, Kan" <kan.liang@intel.com>
 Subject: Re: Implement lbr-as-callgraph v10
-Message-ID: <20141118133721.GA3790@kernel.org>
+Message-ID: <20141119141027.GF3790@kernel.org>
 References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
  <20141117213457.GE4163@kernel.org>
  <20141118104416.GE27645@krava.brq.redhat.com>
  <20141118110007.GF27645@krava.brq.redhat.com>
+ <87zjbnpv64.fsf@sejong.aot.lge.com>
+ <20141119092323.GC2592@krava.brq.redhat.com>
+ <20141119105450.GA22132@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141118110007.GF27645@krava.brq.redhat.com>
+In-Reply-To: <20141119105450.GA22132@krava.brq.redhat.com>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 18, 2014 at 12:00:07PM +0100, Jiri Olsa escreveu:
-> On Tue, Nov 18, 2014 at 11:44:16AM +0100, Jiri Olsa wrote:
-> > On Mon, Nov 17, 2014 at 06:34:57PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Wed, Nov 12, 2014 at 06:05:18PM -0800, Andi Kleen escreveu:
-> > > > [Reworks to address all the review feedback. Rebased to latest tree]
-> > > > [Just a repost after a rebase]
-> > > > [Even more review feedback and some bugs addressed.]
-> > > > [Only port to changes in perf/core. No other changes.]
-> > > > [Rebase to latest perf/core]
-> > > > [Another rebase. No changes]
+Em Wed, Nov 19, 2014 at 11:54:50AM +0100, Jiri Olsa escreveu:
+> > > BUILD_BUG_ON then?
+> > 
+> > sounds gut
+> 
+> hum, acme/perf/core changed and so has the compile error ;-)
+> we dont overload the <linux/bug.h>, so the kernel one got
+> included, which is wrong.. attached patch fixes that
 
-> > > > This patchkit implements lbr-as-callgraphs in per freport,
-> > > > as an alternative way to present LBR information.
+I had fixed this but not force pushed out, sorry.
 
-> > > Ok, I have this in my perf/core branch, but I need to test it further,
-> > > as I couldn't get the output that appears on some of the changelogs.
+Now I mistakenly tried running:
 
-> > > If you could take a look at
+perf report --stdio --no-children --branch-history
 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
+on a file that has no BRANCH_STACK, i.e. a perf.data file on a wrong
+directory since I'm comparing the output of --stdio, --tui and --gtk,
+since it looks --gtk is wrong, still unsure about what the problem is in
+that case, but stumbled on:
 
-> > > To see if I made some mistake, that would be of help,
+--branch-history works with this perf.data:
 
-> > I'm getting compile error for DEBUG=1
+[acme@zoo ~]$ perf evlist --verbose
+cycles: sample_freq=4000, size: 96, sample_type:
+IP|TID|TIME|CALLCHAIN|PERIOD|BRANCH_STACK, disabled: 1, inherit: 1,
+mmap: 1, mmap2: 1, comm: 1, comm_exec: 1, freq: 1, enable_on_exec: 1,
+sample_id_all: 1, exclude_guest: 1, branch_sample_type: 8
+[acme@zoo ~]$
 
-> looks like the BUILD_BUG_ON_MSG does not work correctly with -O6 we use
 
-Yeah, I'll probably just take the brute force approach Andi originally
-used and switch to BUILD_BUG_ON_MSG once we get it working in the tools/
-environment, i.e. using -O6, etc.
+But not with this one:
+
+[root@zoo ~]# perf evlist --verbose
+cycles: sample_freq=4000, size: 96, sample_type:
+IP|TID|TIME|CALLCHAIN|CPU|PERIOD, disabled: 1, inherit: 1, mmap: 1,
+mmap2: 1, comm: 1, comm_exec: 1, freq: 1, sample_id_all: 1,
+exclude_guest: 1
+[root@zoo ~]# 
+
+Where I get tons of:
+
+[root@zoo ~]# perf report --stdio --no-children --branch-history
+# To display the perf.data header info, please use --header/--header-only options.
+#
+BFD: Dwarf Error: Offset (994443) greater than or equal to .debug_str size (156124).
+BFD: Dwarf Error: Offset (1162200) greater than or equal to .debug_str size (156124).
+BFD: Dwarf Error: Offset (1929446660) greater than or equal to .debug_str size (1940537).
+BFD: Dwarf Error: Offset (465055236) greater than or equal to .debug_str size (156124).
+BFD: Dwarf Error: Could not find abbrev number 736412.
+BFD: Dwarf Error: Offset (470186753) greater than or equal to .debug_str size (1940537).
+<SNIP>
+BFD: Dwarf Error: Offset (3525378816) greater than or equal to .debug_str size (156124).
+BFD: Dwarf Error: Offset (1483770) greater than or equal to .debug_str size (156124).
+BFD: Dwarf Error: Could not find abbrev number 127.
+^C^C^C^C^C^C
+^C^C^C^Z
+
+and finally a:
+
+
+Segmentation fault (core dumped)
+[root@zoo ~]#
+
+Rebuilding with DEBUG=1 I get this backtrace:
+
+Using host libthread_db library "/lib64/libthread_db.so.1".
+Core was generated by `perf report --stdio --no-children --branch-history'.
+Program terminated with signal SIGSEGV, Segmentation fault.
+#0  0x000000000053ab10 in read_unsigned_leb128 ()
+Missing separate debuginfos, use: debuginfo-install bzip2-libs-1.0.6-9.fc20.x86_64 elfutils-libelf-0.160-1.fc20.x86_64 elfutils-libs-0.160-1.fc20.x86_64 libunwind-1.1-3.fc20.x86_64 nss-softokn-freebl-3.17.2-1.fc20.x86_64 numactl-libs-2.0.9-2.fc20.x86_64 slang-2.2.4-11.fc20.x86_64 xz-libs-5.1.2-12alpha.fc20.x86_64
+(gdb) bt
+#0  0x000000000053ab10 in read_unsigned_leb128 ()
+#1  0x00000000005485d7 in find_abstract_instance_name.isra ()
+#2  0x0000000000548756 in find_abstract_instance_name.isra ()
+#3  0x0000000000548756 in find_abstract_instance_name.isra ()
+#4  0x0000000000548d31 in scan_unit_for_symbols ()
+#5  0x00000000005496c9 in comp_unit_find_nearest_line ()
+#6  0x000000000054a6ca in find_line.part ()
+#7  0x00000000005606ca in _bfd_elf_find_nearest_line_discriminator ()
+#8  0x00000000005607db in _bfd_elf_find_nearest_line ()
+#9  0x00000000004dabf1 in find_address_in_section (abfd=0xfd522f0, section=0xe8be528, data=0xfa50c30) at util/srcline.c:100
+#10 0x000000000053cbdc in bfd_map_over_sections ()
+#11 0x00000000004dae84 in addr2line (dso_name=0xe89fe70 "/usr/lib/debug/usr/lib64/firefox/libxul.so.debug", addr=24667432, file=0x7fff3981f9c0, line=0x7fff3981f9bc, dso=0x22a0b50) at util/srcline.c:168
+#12 0x00000000004db017 in get_srcline (dso=0x22a0b50, addr=24667432, sym=0xf6b93f0, show_sym=true) at util/srcline.c:276
+#13 0x00000000004c5a31 in sort__srcline_cmp (left=0x39494a0, right=0x7fff3981fb80) at util/sort.c:303
+#14 0x00000000004cbe96 in hist_entry__cmp (left=0x39494a0, right=0x7fff3981fb80) at util/hist.c:916
+#15 0x00000000004caa97 in add_hist_entry (hists=0x229e688, entry=0x7fff3981fb80, al=0x7fff3981fe00, sample_self=true) at util/hist.c:397
+#16 0x00000000004cae19 in __hists__add_entry (hists=0x229e688, al=0x7fff3981fe00, sym_parent=0x0, bi=0x0, mi=0x0, period=770586, weight=0, transaction=0, sample_self=true) at util/hist.c:477
+#17 0x00000000004cb585 in iter_add_single_normal_entry (iter=0x7fff3981fe30, al=0x7fff3981fe00) at util/hist.c:668
+#18 0x00000000004cbcfe in hist_entry_iter__add (iter=0x7fff3981fe30, al=0x7fff3981fe00, evsel=0x229e570, sample=0x7fff39820020, max_stack_depth=127, arg=0x7fff39820510) at util/hist.c:876
+#19 0x000000000043206c in process_sample_event (tool=0x7fff39820510, event=0x7fcb0c4d8040, sample=0x7fff39820020, evsel=0x229e570, machine=0x229c9d0) at builtin-report.c:182
+#20 0x00000000004afe4e in perf_session__deliver_sample (session=0x229c910, tool=0x7fff39820510, event=0x7fcb0c4d8040, sample=0x7fff39820020, evsel=0x229e570, machine=0x229c9d0) at util/session.c:805
+#21 0x00000000004affeb in perf_session__deliver_event (session=0x229c910, event=0x7fcb0c4d8040, sample=0x7fff39820020, tool=0x7fff39820510, file_offset=1146944) at util/session.c:842
+#22 0x00000000004b2ee4 in __ordered_events__flush (s=0x229c910, tool=0x7fff39820510) at util/ordered-events.c:186
+#23 0x00000000004b31e6 in ordered_events__flush (s=0x229c910, tool=0x7fff39820510, how=OE_FLUSH__FINAL) at util/ordered-events.c:251
+#24 0x00000000004b1236 in __perf_session__process_events (session=0x229c910, data_offset=216, data_size=1220024, file_size=1220240, tool=0x7fff39820510) at util/session.c:1318
+#25 0x00000000004b132e in perf_session__process_events (session=0x229c910, tool=0x7fff39820510) at util/session.c:1337
+#26 0x0000000000432d5b in __cmd_report (rep=0x7fff39820510) at builtin-report.c:483
+#27 0x00000000004341ca in cmd_report (argc=0, argv=0x7fff39821950, prefix=0x0) at builtin-report.c:851
+#28 0x000000000041c8bc in run_builtin (p=0x857ec8 <commands+168>, argc=4, argv=0x7fff39821950) at perf.c:331
+#29 0x000000000041cb1b in handle_internal_command (argc=4, argv=0x7fff39821950) at perf.c:390
+#30 0x000000000041cc67 in run_argv (argcp=0x7fff398217ac, argv=0x7fff398217a0) at perf.c:434
+#31 0x000000000041cfbe in main (argc=4, argv=0x7fff39821950) at perf.c:549
+(gdb)
+
+Haven't checked yet, but I guess we need to check, when --branch-history is
+passed, if the sample_type has BRANCH_STACK, etc.
+
+Now back to checking why the --gtk output doesn't match, then I go back to this
+other bug.
 
 - Arnaldo
