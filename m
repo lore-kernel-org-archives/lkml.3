@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932594AbaKSQMa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:12:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:51368 "EHLO mail.kernel.org"
+	id S1756030AbaKSQNs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:13:48 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:49022 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755086AbaKSQEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:04:11 -0500
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, WANG Chao <chaowang@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/16] perf test: fix typo in python test
-Date: Wed, 19 Nov 2014 13:03:24 -0300
-Message-Id: <1416413016-19110-5-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1416413016-19110-1-git-send-email-acme@kernel.org>
-References: <1416413016-19110-1-git-send-email-acme@kernel.org>
+	id S1754554AbaKSQNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:13:46 -0500
+Message-ID: <546CC1B7.70600@osg.samsung.com>
+Date: Wed, 19 Nov 2014 09:13:43 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, "David S. Miller" <davem@davemloft.net>,
+        Phong Tran <tranmanphong@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Hugh Dickins <hughd@google.com>, pranith kumar <bobby.prani@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [PATCH v2 07/19] selftests/firmware: add install target to enable
+ installing test
+References: <cover.1415735831.git.shuahkh@osg.samsung.com> <1d2d13556ddbbbbb13989cdcb08447909bc4afaf.1415735831.git.shuahkh@osg.samsung.com> <CAGXu5j+yLqH0xj=5N90LRmK9F1xPLVWBy+cyUCzjvKJH7gE7AA@mail.gmail.com> <5462B2A3.9000007@osg.samsung.com>
+In-Reply-To: <5462B2A3.9000007@osg.samsung.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: WANG Chao <chaowang@redhat.com>
+On 11/11/2014 06:06 PM, Shuah Khan wrote:
+> On 11/11/2014 02:29 PM, Kees Cook wrote:
+>> Hi,
+>>
+>> Sorry, I still really don't like this approach. While it is all in one
+>> place (thank you for that), I think it isn't a form that is very
+>> workable for the people maintaining the self tests. How about this,
+>> instead of per-Makefile customization, why not define an execution
+>> framework for these tests instead.
+> 
+> If I understand correctly, sounds like you don't like the way
+> install target is implemented in the individual test Makefiles
+> and the changes I made to run_tests targets to address the code
+> duplication concern.
+> 
+> At the moment there is no duplicate code in this patch series
+> between install and run_tests targets. This is a  first step
+> towards standardizing the framework and a definite improvement
+> over what we have currently. As I mentioned earlier, my goal
+> is to make it easier for developers to install and run the
+> existing tests and evolve the framework as we go.
+> 
+> Assuming my understanding is correct that:
+> 
+> -- install and run_tests targets in individual tests can be
+>    refined and automated with a common Makefile approach you
+>    proposed.
+> -- the rest of the user-interface kselftest_install and kselftest
+>    are good.
+> 
+> I would like to propose that we get started with the current
+> implementation and refine it based on the following ideas you
+> suggested. The refinements you are recommending are confined
+> to selftests and can be made after the kselftest_install
+> gets added. Adding kselftest_install makes it easier to make
+> the refinements as it defines overall UI.
+> 
 
-Library loading in python syntax should be 'import perf', not 'use perf'.
+Hi Kees,
 
-Signed-off-by: WANG Chao <chaowang@redhat.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1415780826-13250-1-git-send-email-chaowang@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/tests/builtin-test.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Are you ok with the above proposal? I understand this approach
+might not be perfect, however it is a step in the right direction
+to enable and make it easier to run them. I would like to get some
+initial work in for 3.19 if at all possible.
 
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 162c978f1491..4b7d9ab0f049 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -85,7 +85,7 @@ static struct test {
- 		.func = test__hists_link,
- 	},
- 	{
--		.desc = "Try 'use perf' in python, checking link problems",
-+		.desc = "Try 'import perf' in python, checking link problems",
- 		.func = test__python_use,
- 	},
- 	{
+I plan to evolve the back-end to make it easier to write and
+maintain for developers writing tests going forward.
+
+thanks,
+-- Shuah
+
+
 -- 
-1.9.3
-
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
