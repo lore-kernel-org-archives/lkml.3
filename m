@@ -1,63 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905AbaKSHPZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 02:15:25 -0500
-Received: from mail-pa0-f74.google.com ([209.85.220.74]:40906 "EHLO
-	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754303AbaKSHPY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 02:15:24 -0500
-From: Sonny Rao <sonnyrao@chromium.org>
-To: Heiko Stuebner <heiko@sntech.de>
-Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, dianders@chromium.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Mark yao <mark.yao@rock-chips.com>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>
-Subject: [PATCH] clk: rockchip: rk3288 export i2s0_clkout for use in DT
-Date: Tue, 18 Nov 2014 23:15:19 -0800
-Message-Id: <1416381319-31117-1-git-send-email-sonnyrao@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	id S1754992AbaKSHVs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 02:21:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57193 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754295AbaKSHVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 02:21:47 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>, Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH V2 net] virtio-net: validate features during probe
+Date: Wed, 19 Nov 2014 15:21:29 +0800
+Message-Id: <1416381689-2025-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This exposes the clock that comes out of the i2s block which generally
-goes to the audio codec.
+This patch validates feature dependencies during probe and fail the probing
+if a dependency is missed. This fixes the issues of hitting BUG()
+when qemu fails to advertise features correctly. One example is booting
+guest with ctrl_vq=off through qemu.
 
-Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/clk/rockchip/clk-rk3288.c      | 3 ++-
- include/dt-bindings/clock/rk3288-cru.h | 1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
+Changes from V1:
+- Drop VIRTIO_NET_F_*_UFO from the checklist, since it was disabled
+---
+ drivers/net/virtio_net.c | 91 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 91 insertions(+)
 
-diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
-index 2327829..8777737 100644
---- a/drivers/clk/rockchip/clk-rk3288.c
-+++ b/drivers/clk/rockchip/clk-rk3288.c
-@@ -305,7 +305,8 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
- 			RK3288_CLKGATE_CON(4), 2, GFLAGS),
- 	MUX(0, "i2s_pre", mux_i2s_pre_p, CLK_SET_RATE_PARENT,
- 			RK3288_CLKSEL_CON(4), 8, 2, MFLAGS),
--	COMPOSITE_NODIV(0, "i2s0_clkout", mux_i2s_clkout_p, CLK_SET_RATE_PARENT,
-+	COMPOSITE_NODIV(SCLK_I2S0_OUT, "i2s0_clkout", mux_i2s_clkout_p,
-+			CLK_SET_RATE_PARENT,
- 			RK3288_CLKSEL_CON(4), 12, 1, MFLAGS,
- 			RK3288_CLKGATE_CON(4), 0, GFLAGS),
- 	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", CLK_SET_RATE_PARENT,
-diff --git a/include/dt-bindings/clock/rk3288-cru.h b/include/dt-bindings/clock/rk3288-cru.h
-index 100a08c..4acc730 100644
---- a/include/dt-bindings/clock/rk3288-cru.h
-+++ b/include/dt-bindings/clock/rk3288-cru.h
-@@ -71,6 +71,7 @@
- #define SCLK_HDMI_CEC		110
- #define SCLK_HEVC_CABAC		111
- #define SCLK_HEVC_CORE		112
-+#define SCLK_I2S0_OUT           113
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index ec2a8b4..b16a761 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1673,6 +1673,93 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
+ };
+ #endif
  
- #define DCLK_VOP0		190
- #define DCLK_VOP1		191
++static int virtnet_validate_features(struct virtio_device *dev,
++				     unsigned int *table,
++				     int table_size,
++				     unsigned int feature)
++{
++	int i;
++
++	if (!virtio_has_feature(dev, feature)) {
++		for (i = 0; i < table_size; i++) {
++			unsigned int f = table[i];
++
++			if (virtio_has_feature(dev, f)) {
++				dev_err(&dev->dev,
++					"buggy hyperviser: feature 0x%x was advertised but its dependency 0x%x was not",
++					f, feature);
++				return -EINVAL;
++			}
++		}
++	}
++
++	return 0;
++}
++
++static int virtnet_check_features(struct virtio_device *dev)
++{
++	unsigned int features_for_ctrl_vq[] = {
++		VIRTIO_NET_F_CTRL_RX,
++		VIRTIO_NET_F_CTRL_VLAN,
++		VIRTIO_NET_F_GUEST_ANNOUNCE,
++		VIRTIO_NET_F_MQ,
++		VIRTIO_NET_F_CTRL_MAC_ADDR
++	};
++	unsigned int features_for_guest_csum[] = {
++		VIRTIO_NET_F_GUEST_TSO4,
++		VIRTIO_NET_F_GUEST_TSO6,
++		VIRTIO_NET_F_GUEST_ECN,
++	};
++	unsigned int features_for_host_csum[] = {
++		VIRTIO_NET_F_HOST_TSO4,
++		VIRTIO_NET_F_HOST_TSO6,
++		VIRTIO_NET_F_HOST_ECN,
++	};
++	int err;
++
++	err = virtnet_validate_features(dev, features_for_ctrl_vq,
++					ARRAY_SIZE(features_for_ctrl_vq),
++					VIRTIO_NET_F_CTRL_VQ);
++	if (err)
++		return err;
++
++	err = virtnet_validate_features(dev, features_for_guest_csum,
++					ARRAY_SIZE(features_for_guest_csum),
++					VIRTIO_NET_F_GUEST_CSUM);
++	if (err)
++		return err;
++
++	err = virtnet_validate_features(dev, features_for_host_csum,
++					ARRAY_SIZE(features_for_host_csum),
++					VIRTIO_NET_F_CSUM);
++	if (err)
++		return err;
++
++	if (virtio_has_feature(dev, VIRTIO_NET_F_GUEST_ECN) &&
++	    (!virtio_has_feature(dev, VIRTIO_NET_F_GUEST_TSO4) ||
++	     !virtio_has_feature(dev, VIRTIO_NET_F_GUEST_TSO6))) {
++		dev_err(&dev->dev,
++			"buggy hyperviser: feature 0x%x was advertised but its dependency 0x%x or 0x%x was not",
++			VIRTIO_NET_F_GUEST_ECN,
++			VIRTIO_NET_F_GUEST_TSO4,
++			VIRTIO_NET_F_GUEST_TSO6);
++		return -EINVAL;
++	}
++
++	if (virtio_has_feature(dev, VIRTIO_NET_F_HOST_ECN) &&
++	    (!virtio_has_feature(dev, VIRTIO_NET_F_HOST_TSO4) ||
++	     !virtio_has_feature(dev, VIRTIO_NET_F_HOST_TSO6))) {
++		dev_err(&dev->dev,
++			"buggy hyperviser: feature 0x%x was advertised but its dependency 0x%x or 0x%x was not",
++			VIRTIO_NET_F_HOST_ECN,
++			VIRTIO_NET_F_HOST_TSO4,
++			VIRTIO_NET_F_HOST_TSO6);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static int virtnet_probe(struct virtio_device *vdev)
+ {
+ 	int i, err;
+@@ -1680,6 +1767,10 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	struct virtnet_info *vi;
+ 	u16 max_queue_pairs;
+ 
++	err = virtnet_check_features(vdev);
++	if (err)
++		return -EINVAL;
++
+ 	/* Find if host supports multiqueue virtio_net device */
+ 	err = virtio_cread_feature(vdev, VIRTIO_NET_F_MQ,
+ 				   struct virtio_net_config,
 -- 
-2.1.0.rc2.206.gedb03e5
+1.9.1
 
