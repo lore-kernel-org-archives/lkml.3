@@ -1,61 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977AbaKSPk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:40:29 -0500
-Received: from mout.web.de ([212.227.17.12]:56782 "EHLO mout.web.de"
+	id S1755127AbaKSPmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:42:22 -0500
+Received: from mail.kapsi.fi ([217.30.184.167]:52804 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754955AbaKSPk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:40:27 -0500
-Message-ID: <546CB9DE.8010701@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 16:40:14 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
+	id S1750759AbaKSPmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 10:42:20 -0500
+Message-ID: <546CBA3C.9020709@kapsi.fi>
+Date: Wed, 19 Nov 2014 17:41:48 +0200
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] DRM-EDID: Deletion of an unnecessary check before the
- function call "release_firmware"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
+To: Eduardo Valentin <edubezval@gmail.com>,
+        Linux PM <linux-pm@vger.kernel.org>
+CC: Caesar Wang <caesar.wang@rock-chips.com>, Wei Ni <wni@nvidia.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        lm-sensors@lm-sensors.org, Rob Herring <robh+dt@kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCHv4 1/1] thermal: of: improve of-thermal sensor registration
+ API
+References: <1416321575-18348-1-git-send-email-edubezval@gmail.com> <1416321575-18348-2-git-send-email-edubezval@gmail.com>
+In-Reply-To: <1416321575-18348-2-git-send-email-edubezval@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:GN19BIQpetLVEEER3qswgnJ0jdFpyGDuFfnEjNaEUdwjlhxo1+p
- KPxZp5aJNqlKiFDSZobrrX7MTy1Uhj40pKBsrUt8HVY7kMXMvMUhkjKf3ssgIfvCaHdASKc
- X9JzMdLbBf858Va6maKTlT2Mbviwa7p1d9csjGIh0Ig34BNzdTKIDsx+uGG2OK4ZzBkFHjk
- 5hvcYx0indgekvKfUtB8g==
-X-UI-Out-Filterresults: notjunk:1;
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 16:33:17 +0100
+On 11/18/2014 04:39 PM, Eduardo Valentin wrote:
+> Different drivers request API extensions in of-thermal. For this reason,
+> additional callbacks are required to fit the new drivers needs.
+>
+> The current API implementation expects the registering sensor driver
+> to provide a get_temp and get_trend callbacks as function parameters.
+> As the amount of callbacks is growing, this patch changes the existing
+> implementation to use a .ops field to hold all the of thermal callbacks
+> to sensor drivers.
+>
+> This patch also changes the existing of-thermal users to fit the new
+> API design. No functional change is introduced in this patch.
+>
+> Cc: Alexandre Courbot <gnurou@gmail.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Guenter Roeck <linux@roeck-us.net>
+> Cc: Jean Delvare <jdelvare@suse.de>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-tegra@vger.kernel.org
+> Cc: lm-sensors@lm-sensors.org
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Stephen Warren <swarren@wwwdotorg.org>
+> Cc: Thierry Reding <thierry.reding@gmail.com>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Reviewed-by: Lukasz Majewski <l.majewski@samsung.com>
+> Signed-off-by: Eduardo Valentin <edubezval@gmail.com>
+> ---
+>   drivers/hwmon/lm75.c                               |  9 +++--
+>   drivers/hwmon/ntc_thermistor.c                     |  6 +++-
+>   drivers/hwmon/tmp102.c                             |  6 +++-
+>   drivers/thermal/of-thermal.c                       | 40 ++++++++++------------
+>   drivers/thermal/tegra_soctherm.c                   |  7 ++--
+>   drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  8 +++--
+>   include/linux/thermal.h                            | 24 +++++++++----
+>   7 files changed, 63 insertions(+), 37 deletions(-)
+> ---
+> Difference from V3:
+>    - Keep the same behavior regarding callback checks.
+>      Change in behavior may be sent in a separate patch.
+> Difference from V2:
+>    - Fix wrong assignment in tegra driver.
+> Difference from V1:
+>    - Fix error handling when .get_trend is not provided.
+>
+> @@ -356,8 +356,8 @@ thermal_zone_of_add_sensor(struct device_node *zone,
+>    *             than one sensors
+>    * @data: a private pointer (owned by the caller) that will be passed
+>    *        back, when a temperature reading is needed.
+> - * @get_temp: a pointer to a function that reads the sensor temperature.
+> - * @get_trend: a pointer to a function that reads the sensor temperature trend.
+> + * @ops: struct thermal_zone_of_device *. Must contain at least .get_trend and
+> + *       .get_temp.
 
-The release_firmware() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+This comment seems to be incorrect, as .get_trend is optional.
 
-This issue was detected by using the Coccinelle software.
+>    *
+>    * This function will search the list of thermal zones described in device
+>    * tree and look for the zone that refer to the sensor device pointed by
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/gpu/drm/drm_edid_load.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+With that minor one fixed,
 
-diff --git a/drivers/gpu/drm/drm_edid_load.c b/drivers/gpu/drm/drm_edid_load.c
-index 0a235fe..732cb6f 100644
---- a/drivers/gpu/drm/drm_edid_load.c
-+++ b/drivers/gpu/drm/drm_edid_load.c
-@@ -254,8 +254,7 @@ static void *edid_load(struct drm_connector *connector, const char *name,
- 	    name, connector_name);
- 
- out:
--	if (fw)
--		release_firmware(fw);
-+	release_firmware(fw);
- 	return edid;
- }
- 
--- 
-2.1.3
+Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Reviewed-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 
+Cheers,
+Mikko
