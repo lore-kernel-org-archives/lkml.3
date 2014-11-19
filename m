@@ -1,49 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121AbaKSWVg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:21:36 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:59353 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995AbaKSWVd (ORCPT
+	id S1757392AbaKSWVE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:21:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932571AbaKSUyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 17:21:33 -0500
+	Wed, 19 Nov 2014 15:54:12 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Ramos <daramos@stanford.edu>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH 3.17 079/141] firewire: cdev: prevent kernel stack leaking into ioctl arguments
+Date: Wed, 19 Nov 2014 12:51:42 -0800
+Message-Id: <20141119205153.261644983@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
+References: <20141119205150.700188369@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <20141119215417.GC5464@lantern>
-References: <20141114222640.GA39748@dtor-ws>
-	<CAN+gG=FaovQETa3+qQsLoBBQnbZ8Q2uoQJD6_XvAmCCvGTHT1g@mail.gmail.com>
-	<CAJBHPojp7JVG6KKgrNfbC-V5ibPs-j6+BnqrSDkxvak0vNGM8w@mail.gmail.com>
-	<20141119181247.GE37989@dtor-ws>
-	<CAJBHPohu71BXqyZ4u74tAiP84UcQhXgto34k8NtNHPgw61WvLQ@mail.gmail.com>
-	<20141119183921.GF37989@dtor-ws>
-	<CAJBHPog3qRMQgNnso_csUOgR30A6eFPx4PkTzfCzkB3Gd5oVfQ@mail.gmail.com>
-	<20141119210552.GA5464@lantern>
-	<CAJBHPoiQ0ZuW2TjDu68SQrgOS=+OMTt0hptBmVedMLS55td1Rg@mail.gmail.com>
-	<20141119215417.GC5464@lantern>
-Date: Wed, 19 Nov 2014 23:21:31 +0100
-Message-ID: <CAJBHPojucTj27EVLQRjDHZJe6bwZW3i-brwQ9N8mVY3rTp8koA@mail.gmail.com>
-Subject: Re: [git pull] Input updates for 3.18-rc4
-From: Marcus Overhagen <marcus.overhagen@gmail.com>
-To: Ulrik De Bie <ulrik.debie-os@e2big.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-input <linux-input@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-when moving a single finger [3] seems to be one of 0x21, 0x25, 0x31, 0x35
-moving two fingers [3] seems to be mostly 0x22, 0x26, 0x32, 0x36  but
-also sometimes it's 0x42, 0x46, 0x52, 0x56.
-It seems to occationally seems to switch between these two groups
-after touching the pad with three or more fingers, but not every time.
+------------------
 
-Moving three fingers I see[3] beeing  0x26, 0x36, 0x76, 0x66 (probably more)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-regards
-Marcus
+commit eaca2d8e75e90a70a63a6695c9f61932609db212 upstream.
+
+Found by the UC-KLEE tool:  A user could supply less input to
+firewire-cdev ioctls than write- or write/read-type ioctl handlers
+expect.  The handlers used data from uninitialized kernel stack then.
+
+This could partially leak back to the user if the kernel subsequently
+generated fw_cdev_event_'s (to be read from the firewire-cdev fd)
+which notably would contain the _u64 closure field which many of the
+ioctl argument structures contain.
+
+The fact that the handlers would act on random garbage input is a
+lesser issue since all handlers must check their input anyway.
+
+The fix simply always null-initializes the entire ioctl argument buffer
+regardless of the actual length of expected user input.  That is, a
+runtime overhead of memset(..., 40) is added to each firewirew-cdev
+ioctl() call.  [Comment from Clemens Ladisch:  This part of the stack is
+most likely to be already in the cache.]
+
+Remarks:
+  - There was never any leak from kernel stack to the ioctl output
+    buffer itself.  IOW, it was not possible to read kernel stack by a
+    read-type or write/read-type ioctl alone; the leak could at most
+    happen in combination with read()ing subsequent event data.
+  - The actual expected minimum user input of each ioctl from
+    include/uapi/linux/firewire-cdev.h is, in bytes:
+    [0x00] = 32, [0x05] =  4, [0x0a] = 16, [0x0f] = 20, [0x14] = 16,
+    [0x01] = 36, [0x06] = 20, [0x0b] =  4, [0x10] = 20, [0x15] = 20,
+    [0x02] = 20, [0x07] =  4, [0x0c] =  0, [0x11] =  0, [0x16] =  8,
+    [0x03] =  4, [0x08] = 24, [0x0d] = 20, [0x12] = 36, [0x17] = 12,
+    [0x04] = 20, [0x09] = 24, [0x0e] =  4, [0x13] = 40, [0x18] =  4.
+
+Reported-by: David Ramos <daramos@stanford.edu>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/firewire/core-cdev.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -1637,8 +1637,7 @@ static int dispatch_ioctl(struct client
+ 	    _IOC_SIZE(cmd) > sizeof(buffer))
+ 		return -ENOTTY;
+ 
+-	if (_IOC_DIR(cmd) == _IOC_READ)
+-		memset(&buffer, 0, _IOC_SIZE(cmd));
++	memset(&buffer, 0, sizeof(buffer));
+ 
+ 	if (_IOC_DIR(cmd) & _IOC_WRITE)
+ 		if (copy_from_user(&buffer, arg, _IOC_SIZE(cmd)))
+
+
