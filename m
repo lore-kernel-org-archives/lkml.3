@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758327AbaKSWkQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:40:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
+	id S1758310AbaKSWkN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:40:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55903 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756639AbaKSUxu (ORCPT
+	with ESMTP id S1756665AbaKSUxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:53:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Richard Cochran <richardcochran@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 014/141] ipv6: fix IPV6_PKTINFO with v4 mapped
-Date: Wed, 19 Nov 2014 12:50:37 -0800
-Message-Id: <20141119205151.142235360@linuxfoundation.org>
+Subject: [PATCH 3.17 015/141] net: ptp: fix time stamp matching logic for VLAN packets.
+Date: Wed, 19 Nov 2014 12:50:38 -0800
+Message-Id: <20141119205151.175240916@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -30,32 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Richard Cochran <richardcochran@gmail.com>
 
-[ Upstream commit 5337b5b75cd9bd3624a6820e3c2a084d2480061c ]
+[ Upstream commit cca04b2854ecfb7cd1b8ee84ab38bc99af59f526 ]
 
-Use IS_ENABLED(CONFIG_IPV6), to enable this code if IPv6 is
-a module.
+Commit ae5c6c6d "ptp: Classify ptp over ip over vlan packets" changed the
+code in two drivers that matches time stamps with PTP frames, with the goal
+of allowing VLAN tagged PTP packets to receive hardware time stamps.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Fixes: c8e6ad0829a7 ("ipv6: honor IPV6_PKTINFO with v4 mapped addresses on sendmsg")
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+However, that commit failed to account for the VLAN header when parsing
+IPv4 packets. This patch fixes those two drivers to correctly match VLAN
+tagged IPv4/UDP PTP messages with their time stamps.
+
+This patch should also be applied to v3.17.
+
+Signed-off-by: Richard Cochran <richardcochran@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_sockglue.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/ti/cpts.c |    2 +-
+ drivers/net/phy/dp83640.c      |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/ipv4/ip_sockglue.c
-+++ b/net/ipv4/ip_sockglue.c
-@@ -195,7 +195,7 @@ int ip_cmsg_send(struct net *net, struct
- 	for (cmsg = CMSG_FIRSTHDR(msg); cmsg; cmsg = CMSG_NXTHDR(msg, cmsg)) {
- 		if (!CMSG_OK(msg, cmsg))
- 			return -EINVAL;
--#if defined(CONFIG_IPV6)
-+#if IS_ENABLED(CONFIG_IPV6)
- 		if (allow_ipv6 &&
- 		    cmsg->cmsg_level == SOL_IPV6 &&
- 		    cmsg->cmsg_type == IPV6_PKTINFO) {
+--- a/drivers/net/ethernet/ti/cpts.c
++++ b/drivers/net/ethernet/ti/cpts.c
+@@ -264,7 +264,7 @@ static int cpts_match(struct sk_buff *sk
+ 
+ 	switch (ptp_class & PTP_CLASS_PMASK) {
+ 	case PTP_CLASS_IPV4:
+-		offset += ETH_HLEN + IPV4_HLEN(data) + UDP_HLEN;
++		offset += ETH_HLEN + IPV4_HLEN(data + offset) + UDP_HLEN;
+ 		break;
+ 	case PTP_CLASS_IPV6:
+ 		offset += ETH_HLEN + IP6_HLEN + UDP_HLEN;
+--- a/drivers/net/phy/dp83640.c
++++ b/drivers/net/phy/dp83640.c
+@@ -784,7 +784,7 @@ static int match(struct sk_buff *skb, un
+ 
+ 	switch (type & PTP_CLASS_PMASK) {
+ 	case PTP_CLASS_IPV4:
+-		offset += ETH_HLEN + IPV4_HLEN(data) + UDP_HLEN;
++		offset += ETH_HLEN + IPV4_HLEN(data + offset) + UDP_HLEN;
+ 		break;
+ 	case PTP_CLASS_IPV6:
+ 		offset += ETH_HLEN + IP6_HLEN + UDP_HLEN;
+@@ -927,7 +927,7 @@ static int is_sync(struct sk_buff *skb,
+ 
+ 	switch (type & PTP_CLASS_PMASK) {
+ 	case PTP_CLASS_IPV4:
+-		offset += ETH_HLEN + IPV4_HLEN(data) + UDP_HLEN;
++		offset += ETH_HLEN + IPV4_HLEN(data + offset) + UDP_HLEN;
+ 		break;
+ 	case PTP_CLASS_IPV6:
+ 		offset += ETH_HLEN + IP6_HLEN + UDP_HLEN;
 
 
