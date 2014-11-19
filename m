@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934053AbaKSVRm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:17:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57544 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933887AbaKSVPA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933950AbaKSVPA (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 19 Nov 2014 16:15:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57462 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933887AbaKSVOw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 16:14:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Samu Kallio <samu.kallio@aberdeencloud.com>,
-        Florian Westphal <fw@strlen.de>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.10 47/70] netfilter: nf_nat: fix oops on netns removal
-Date: Wed, 19 Nov 2014 12:52:38 -0800
-Message-Id: <20141119205212.488243641@linuxfoundation.org>
+        Daniel Borkmann <dborkman@redhat.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+Subject: [PATCH 3.10 61/70] net: sctp: fix skb_over_panic when receiving malformed ASCONF chunks
+Date: Wed, 19 Nov 2014 12:52:52 -0800
+Message-Id: <20141119205212.935213082@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -30,98 +32,337 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 945b2b2d259d1a4364a2799e80e8ff32f8c6ee6f upstream.
+commit 9de7922bc709eee2f609cd01d98aaedc4cf5ea74 upstream.
 
-Quoting Samu Kallio:
+Commit 6f4c618ddb0 ("SCTP : Add paramters validity check for
+ASCONF chunk") added basic verification of ASCONF chunks, however,
+it is still possible to remotely crash a server by sending a
+special crafted ASCONF chunk, even up to pre 2.6.12 kernels:
 
- Basically what's happening is, during netns cleanup,
- nf_nat_net_exit gets called before ipv4_net_exit. As I understand
- it, nf_nat_net_exit is supposed to kill any conntrack entries which
- have NAT context (through nf_ct_iterate_cleanup), but for some
- reason this doesn't happen (perhaps something else is still holding
- refs to those entries?).
+skb_over_panic: text:ffffffffa01ea1c3 len:31056 put:30768
+ head:ffff88011bd81800 data:ffff88011bd81800 tail:0x7950
+ end:0x440 dev:<NULL>
+ ------------[ cut here ]------------
+kernel BUG at net/core/skbuff.c:129!
+[...]
+Call Trace:
+ <IRQ>
+ [<ffffffff8144fb1c>] skb_put+0x5c/0x70
+ [<ffffffffa01ea1c3>] sctp_addto_chunk+0x63/0xd0 [sctp]
+ [<ffffffffa01eadaf>] sctp_process_asconf+0x1af/0x540 [sctp]
+ [<ffffffff8152d025>] ? _read_unlock_bh+0x15/0x20
+ [<ffffffffa01e0038>] sctp_sf_do_asconf+0x168/0x240 [sctp]
+ [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
+ [<ffffffff8147645d>] ? fib_rules_lookup+0xad/0xf0
+ [<ffffffffa01e6b22>] ? sctp_cmp_addr_exact+0x32/0x40 [sctp]
+ [<ffffffffa01e8393>] sctp_assoc_bh_rcv+0xd3/0x180 [sctp]
+ [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
+ [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
+ [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
+ [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
+ [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
+ [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
+ [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
+ [<ffffffff81496ded>] ip_local_deliver_finish+0xdd/0x2d0
+ [<ffffffff81497078>] ip_local_deliver+0x98/0xa0
+ [<ffffffff8149653d>] ip_rcv_finish+0x12d/0x440
+ [<ffffffff81496ac5>] ip_rcv+0x275/0x350
+ [<ffffffff8145c88b>] __netif_receive_skb+0x4ab/0x750
+ [<ffffffff81460588>] netif_receive_skb+0x58/0x60
 
- When ipv4_net_exit is called, conntrack entries (including those
- with NAT context) are cleaned up, but the
- nat_bysource hashtable is long gone - freed in nf_nat_net_exit. The
- bug happens when attempting to free a conntrack entry whose NAT hash
- 'prev' field points to a slot in the freed hash table (head for that
- bin).
+This can be triggered e.g., through a simple scripted nmap
+connection scan injecting the chunk after the handshake, for
+example, ...
 
-We ignore conntracks with null nat bindings.  But this is wrong,
-as these are in bysource hash table as well.
+  -------------- INIT[ASCONF; ASCONF_ACK] ------------->
+  <----------- INIT-ACK[ASCONF; ASCONF_ACK] ------------
+  -------------------- COOKIE-ECHO -------------------->
+  <-------------------- COOKIE-ACK ---------------------
+  ------------------ ASCONF; UNKNOWN ------------------>
 
-Restore nat-cleaning for the netns-is-being-removed case.
+... where ASCONF chunk of length 280 contains 2 parameters ...
 
-bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=65191
+  1) Add IP address parameter (param length: 16)
+  2) Add/del IP address parameter (param length: 255)
 
-Fixes: c2d421e1718 ('netfilter: nf_nat: fix race when unloading protocol modules')
-Reported-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Debugged-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Tested-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-[samu.kallio@aberdeencloud.com: backport to 3.10-stable]
-Signed-off-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+... followed by an UNKNOWN chunk of e.g. 4 bytes. Here, the
+Address Parameter in the ASCONF chunk is even missing, too.
+This is just an example and similarly-crafted ASCONF chunks
+could be used just as well.
+
+The ASCONF chunk passes through sctp_verify_asconf() as all
+parameters passed sanity checks, and after walking, we ended
+up successfully at the chunk end boundary, and thus may invoke
+sctp_process_asconf(). Parameter walking is done with
+WORD_ROUND() to take padding into account.
+
+In sctp_process_asconf()'s TLV processing, we may fail in
+sctp_process_asconf_param() e.g., due to removal of the IP
+address that is also the source address of the packet containing
+the ASCONF chunk, and thus we need to add all TLVs after the
+failure to our ASCONF response to remote via helper function
+sctp_add_asconf_response(), which basically invokes a
+sctp_addto_chunk() adding the error parameters to the given
+skb.
+
+When walking to the next parameter this time, we proceed
+with ...
+
+  length = ntohs(asconf_param->param_hdr.length);
+  asconf_param = (void *)asconf_param + length;
+
+... instead of the WORD_ROUND()'ed length, thus resulting here
+in an off-by-one that leads to reading the follow-up garbage
+parameter length of 12336, and thus throwing an skb_over_panic
+for the reply when trying to sctp_addto_chunk() next time,
+which implicitly calls the skb_put() with that length.
+
+Fix it by using sctp_walk_params() [ which is also used in
+INIT parameter processing ] macro in the verification *and*
+in ASCONF processing: it will make sure we don't spill over,
+that we walk parameters WORD_ROUND()'ed. Moreover, we're being
+more defensive and guard against unknown parameter types and
+missized addresses.
+
+Joint work with Vlad Yasevich.
+
+Fixes: b896b82be4ae ("[SCTP] ADDIP: Support for processing incoming ASCONF_ACK chunks.")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nf_nat_core.c |   35 ++++++++++++++++++++++++++++++++++-
- 1 file changed, 34 insertions(+), 1 deletion(-)
+ include/net/sctp/sm.h    |    6 +-
+ net/sctp/sm_make_chunk.c |   99 ++++++++++++++++++++++++++---------------------
+ net/sctp/sm_statefuns.c  |   18 --------
+ 3 files changed, 60 insertions(+), 63 deletions(-)
 
---- a/net/netfilter/nf_nat_core.c
-+++ b/net/netfilter/nf_nat_core.c
-@@ -487,6 +487,39 @@ static int nf_nat_proto_remove(struct nf
- 	return i->status & IPS_NAT_MASK ? 1 : 0;
+--- a/include/net/sctp/sm.h
++++ b/include/net/sctp/sm.h
+@@ -255,9 +255,9 @@ struct sctp_chunk *sctp_make_asconf_upda
+ 					      int, __be16);
+ struct sctp_chunk *sctp_make_asconf_set_prim(struct sctp_association *asoc,
+ 					     union sctp_addr *addr);
+-int sctp_verify_asconf(const struct sctp_association *asoc,
+-		       struct sctp_paramhdr *param_hdr, void *chunk_end,
+-		       struct sctp_paramhdr **errp);
++bool sctp_verify_asconf(const struct sctp_association *asoc,
++			struct sctp_chunk *chunk, bool addr_param_needed,
++			struct sctp_paramhdr **errp);
+ struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
+ 				       struct sctp_chunk *asconf);
+ int sctp_process_asconf_ack(struct sctp_association *asoc,
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -3097,50 +3097,63 @@ static __be16 sctp_process_asconf_param(
+ 	return SCTP_ERROR_NO_ERROR;
  }
  
-+static int nf_nat_proto_clean(struct nf_conn *ct, void *data)
+-/* Verify the ASCONF packet before we process it.  */
+-int sctp_verify_asconf(const struct sctp_association *asoc,
+-		       struct sctp_paramhdr *param_hdr, void *chunk_end,
+-		       struct sctp_paramhdr **errp) {
+-	sctp_addip_param_t *asconf_param;
++/* Verify the ASCONF packet before we process it. */
++bool sctp_verify_asconf(const struct sctp_association *asoc,
++			struct sctp_chunk *chunk, bool addr_param_needed,
++			struct sctp_paramhdr **errp)
 +{
-+	struct nf_conn_nat *nat = nfct_nat(ct);
-+
-+	if (nf_nat_proto_remove(ct, data))
-+		return 1;
-+
-+	if (!nat || !nat->ct)
-+		return 0;
-+
-+	/* This netns is being destroyed, and conntrack has nat null binding.
-+	 * Remove it from bysource hash, as the table will be freed soon.
-+	 *
-+	 * Else, when the conntrack is destoyed, nf_nat_cleanup_conntrack()
-+	 * will delete entry from already-freed table.
-+	 */
-+	if (!del_timer(&ct->timeout))
-+		return 1;
-+
-+	spin_lock_bh(&nf_nat_lock);
-+	hlist_del_rcu(&nat->bysource);
-+	ct->status &= ~IPS_NAT_DONE_MASK;
-+	nat->ct = NULL;
-+	spin_unlock_bh(&nf_nat_lock);
-+
-+	add_timer(&ct->timeout);
-+
-+	/* don't delete conntrack.  Although that would make things a lot
-+	 * simpler, we'd end up flushing all conntracks on nat rmmod.
-+	 */
-+	return 0;
-+}
-+
- static void nf_nat_l4proto_clean(u8 l3proto, u8 l4proto)
- {
- 	struct nf_nat_proto_clean clean = {
-@@ -749,7 +782,7 @@ static void __net_exit nf_nat_net_exit(s
- {
- 	struct nf_nat_proto_clean clean = {};
++	sctp_addip_chunk_t *addip = (sctp_addip_chunk_t *) chunk->chunk_hdr;
+ 	union sctp_params param;
+-	int length, plen;
+-
+-	param.v = (sctp_paramhdr_t *) param_hdr;
+-	while (param.v <= chunk_end - sizeof(sctp_paramhdr_t)) {
+-		length = ntohs(param.p->length);
+-		*errp = param.p;
++	bool addr_param_seen = false;
  
--	nf_ct_iterate_cleanup(net, &nf_nat_proto_remove, &clean);
-+	nf_ct_iterate_cleanup(net, nf_nat_proto_clean, &clean);
- 	synchronize_rcu();
- 	nf_ct_free_hashtable(net->ct.nat_bysource, net->ct.nat_htable_size);
+-		if (param.v > chunk_end - length ||
+-		    length < sizeof(sctp_paramhdr_t))
+-			return 0;
++	sctp_walk_params(param, addip, addip_hdr.params) {
++		size_t length = ntohs(param.p->length);
+ 
++		*errp = param.p;
+ 		switch (param.p->type) {
++		case SCTP_PARAM_ERR_CAUSE:
++			break;
++		case SCTP_PARAM_IPV4_ADDRESS:
++			if (length != sizeof(sctp_ipv4addr_param_t))
++				return false;
++			addr_param_seen = true;
++			break;
++		case SCTP_PARAM_IPV6_ADDRESS:
++			if (length != sizeof(sctp_ipv6addr_param_t))
++				return false;
++			addr_param_seen = true;
++			break;
+ 		case SCTP_PARAM_ADD_IP:
+ 		case SCTP_PARAM_DEL_IP:
+ 		case SCTP_PARAM_SET_PRIMARY:
+-			asconf_param = (sctp_addip_param_t *)param.v;
+-			plen = ntohs(asconf_param->param_hdr.length);
+-			if (plen < sizeof(sctp_addip_param_t) +
+-			    sizeof(sctp_paramhdr_t))
+-				return 0;
++			/* In ASCONF chunks, these need to be first. */
++			if (addr_param_needed && !addr_param_seen)
++				return false;
++			length = ntohs(param.addip->param_hdr.length);
++			if (length < sizeof(sctp_addip_param_t) +
++				     sizeof(sctp_paramhdr_t))
++				return false;
+ 			break;
+ 		case SCTP_PARAM_SUCCESS_REPORT:
+ 		case SCTP_PARAM_ADAPTATION_LAYER_IND:
+ 			if (length != sizeof(sctp_addip_param_t))
+-				return 0;
+-
++				return false;
+ 			break;
+ 		default:
+-			break;
++			/* This is unkown to us, reject! */
++			return false;
+ 		}
+-
+-		param.v += WORD_ROUND(length);
+ 	}
+ 
+-	if (param.v != chunk_end)
+-		return 0;
++	/* Remaining sanity checks. */
++	if (addr_param_needed && !addr_param_seen)
++		return false;
++	if (!addr_param_needed && addr_param_seen)
++		return false;
++	if (param.v != chunk->chunk_end)
++		return false;
+ 
+-	return 1;
++	return true;
  }
+ 
+ /* Process an incoming ASCONF chunk with the next expected serial no. and
+@@ -3149,16 +3162,17 @@ int sctp_verify_asconf(const struct sctp
+ struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
+ 				       struct sctp_chunk *asconf)
+ {
++	sctp_addip_chunk_t *addip = (sctp_addip_chunk_t *) asconf->chunk_hdr;
++	bool all_param_pass = true;
++	union sctp_params param;
+ 	sctp_addiphdr_t		*hdr;
+ 	union sctp_addr_param	*addr_param;
+ 	sctp_addip_param_t	*asconf_param;
+ 	struct sctp_chunk	*asconf_ack;
+-
+ 	__be16	err_code;
+ 	int	length = 0;
+ 	int	chunk_len;
+ 	__u32	serial;
+-	int	all_param_pass = 1;
+ 
+ 	chunk_len = ntohs(asconf->chunk_hdr->length) - sizeof(sctp_chunkhdr_t);
+ 	hdr = (sctp_addiphdr_t *)asconf->skb->data;
+@@ -3186,9 +3200,14 @@ struct sctp_chunk *sctp_process_asconf(s
+ 		goto done;
+ 
+ 	/* Process the TLVs contained within the ASCONF chunk. */
+-	while (chunk_len > 0) {
++	sctp_walk_params(param, addip, addip_hdr.params) {
++		/* Skip preceeding address parameters. */
++		if (param.p->type == SCTP_PARAM_IPV4_ADDRESS ||
++		    param.p->type == SCTP_PARAM_IPV6_ADDRESS)
++			continue;
++
+ 		err_code = sctp_process_asconf_param(asoc, asconf,
+-						     asconf_param);
++						     param.addip);
+ 		/* ADDIP 4.1 A7)
+ 		 * If an error response is received for a TLV parameter,
+ 		 * all TLVs with no response before the failed TLV are
+@@ -3196,28 +3215,20 @@ struct sctp_chunk *sctp_process_asconf(s
+ 		 * the failed response are considered unsuccessful unless
+ 		 * a specific success indication is present for the parameter.
+ 		 */
+-		if (SCTP_ERROR_NO_ERROR != err_code)
+-			all_param_pass = 0;
+-
++		if (err_code != SCTP_ERROR_NO_ERROR)
++			all_param_pass = false;
+ 		if (!all_param_pass)
+-			sctp_add_asconf_response(asconf_ack,
+-						 asconf_param->crr_id, err_code,
+-						 asconf_param);
++			sctp_add_asconf_response(asconf_ack, param.addip->crr_id,
++						 err_code, param.addip);
+ 
+ 		/* ADDIP 4.3 D11) When an endpoint receiving an ASCONF to add
+ 		 * an IP address sends an 'Out of Resource' in its response, it
+ 		 * MUST also fail any subsequent add or delete requests bundled
+ 		 * in the ASCONF.
+ 		 */
+-		if (SCTP_ERROR_RSRC_LOW == err_code)
++		if (err_code == SCTP_ERROR_RSRC_LOW)
+ 			goto done;
+-
+-		/* Move to the next ASCONF param. */
+-		length = ntohs(asconf_param->param_hdr.length);
+-		asconf_param = (void *)asconf_param + length;
+-		chunk_len -= length;
+ 	}
+-
+ done:
+ 	asoc->peer.addip_serial++;
+ 
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -3596,9 +3596,7 @@ sctp_disposition_t sctp_sf_do_asconf(str
+ 	struct sctp_chunk	*asconf_ack = NULL;
+ 	struct sctp_paramhdr	*err_param = NULL;
+ 	sctp_addiphdr_t		*hdr;
+-	union sctp_addr_param	*addr_param;
+ 	__u32			serial;
+-	int			length;
+ 
+ 	if (!sctp_vtag_verify(chunk, asoc)) {
+ 		sctp_add_cmd_sf(commands, SCTP_CMD_REPORT_BAD_TAG,
+@@ -3623,17 +3621,8 @@ sctp_disposition_t sctp_sf_do_asconf(str
+ 	hdr = (sctp_addiphdr_t *)chunk->skb->data;
+ 	serial = ntohl(hdr->serial);
+ 
+-	addr_param = (union sctp_addr_param *)hdr->params;
+-	length = ntohs(addr_param->p.length);
+-	if (length < sizeof(sctp_paramhdr_t))
+-		return sctp_sf_violation_paramlen(net, ep, asoc, type, arg,
+-			   (void *)addr_param, commands);
+-
+ 	/* Verify the ASCONF chunk before processing it. */
+-	if (!sctp_verify_asconf(asoc,
+-			    (sctp_paramhdr_t *)((void *)addr_param + length),
+-			    (void *)chunk->chunk_end,
+-			    &err_param))
++	if (!sctp_verify_asconf(asoc, chunk, true, &err_param))
+ 		return sctp_sf_violation_paramlen(net, ep, asoc, type, arg,
+ 						  (void *)err_param, commands);
+ 
+@@ -3751,10 +3740,7 @@ sctp_disposition_t sctp_sf_do_asconf_ack
+ 	rcvd_serial = ntohl(addip_hdr->serial);
+ 
+ 	/* Verify the ASCONF-ACK chunk before processing it. */
+-	if (!sctp_verify_asconf(asoc,
+-	    (sctp_paramhdr_t *)addip_hdr->params,
+-	    (void *)asconf_ack->chunk_end,
+-	    &err_param))
++	if (!sctp_verify_asconf(asoc, asconf_ack, false, &err_param))
+ 		return sctp_sf_violation_paramlen(net, ep, asoc, type, arg,
+ 			   (void *)err_param, commands);
+ 
 
 
