@@ -1,131 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968AbaKSP2x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:28:53 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:51865 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931AbaKSP2u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:28:50 -0500
-Date: Wed, 19 Nov 2014 16:29:53 +0100
-From: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: linux-tegra@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        mikko.perttunen@kapsi.fi, acourbot@nvidia.com,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 12/14] clk: tegra: Add EMC clock driver
-Message-ID: <20141119152941.GA26442@avionic-0071.adnet.avionic-design.de>
-References: <1416312860-4446-1-git-send-email-tomeu.vizoso@collabora.com>
- <1416312860-4446-13-git-send-email-tomeu.vizoso@collabora.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416312860-4446-13-git-send-email-tomeu.vizoso@collabora.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Provags-ID: V02:K0:1KUalTGSHFSvMdUxGDAOfdW719vqugWzPnYZVPq83kJ
- sZKh91fWKv0RwTMBVqgVVLSJs8MX5w0IOH+3ywVt2fBogMNVpo
- JL7Ctciow0EdkRWVxq/BgA8fDbt/+F1p0gIs3lGythcY/r7k4t
- WLuX3KVJI8i0qMMPJsWMVRMPRR2Pq1YYRzE9Cmtlm4YFUrOP/7
- aP1B330tfo8X/gG9cGPrZbuKUVkDUQ5tMzgECMDRgWmUm57eIl
- 06qPocY9EexmqceVE4Caj9AQvDZve8RpndrPsubMwZQAj5vTeA
- bvJqaB3aD65K5GP/KCs+Xx6JB4pIsqWNin4iPu4IYTEP356YVj
- YarqUOylaBd9AjkW8XfqfBf44DCn89dd9vxarHpkGS/8rkmpUq
- 9OHfhOl8Rd/YJ6OHlkZqBbN/mZN3lRS8y6sLcxOo1RTKug1Q0h
- FowSo5ajsCIdq/URpQQfA8YzRLQ==
-X-UI-Out-Filterresults: notjunk:1;
+	id S932122AbaKSP3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:29:33 -0500
+Received: from mga02.intel.com ([134.134.136.20]:1978 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755821AbaKSP2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 10:28:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,417,1413270000"; 
+   d="scan'208";a="639756217"
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, andrew.kim@intel.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCHv5 6/7] base: platform: name the device already during allocation
+Date: Wed, 19 Nov 2014 17:28:22 +0200
+Message-Id: <1416410903-162369-7-git-send-email-heikki.krogerus@linux.intel.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1416410903-162369-1-git-send-email-heikki.krogerus@linux.intel.com>
+References: <1416410903-162369-1-git-send-email-heikki.krogerus@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 01:13:14PM +0100, Tomeu Vizoso wrote:
-> From: Mikko Perttunen <mperttunen@nvidia.com>
-> 
-> The driver is currently only tested on Tegra124 Jetson TK1, but should
-> work with other Tegra124 boards, provided that correct EMC tables are
-> provided through the device tree. Older chip models have differing
-> timing change sequences, so they are not currently supported.
-> 
-> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
-> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-> 
-> ---
-> 
-> v5:	* Get a pointer to the EMC driver at runtime, to be used when
-> 	  calling the EMC API.
-> 	* Misc. style fixes
-> 	* Fix logic for rounding down to a high rate
-> 
-> v4:	* Adapt to changes in the OF bindings
-> 	* Improve error handling
-> 	* Fix comment style
-> 	* Make static a few more functions
-> 
-> v3:	* Add some locking to protect the registers that are shared with the MC
-> 	  clock
-> 
-> v2:	* Make sure that the clock is properly registered
-> 	* Bail out early from attempts to set the same rate
-> ---
-> diff --git a/drivers/clk/tegra/clk-emc.c b/drivers/clk/tegra/clk-emc.c
-> new file mode 100644
-> index 0000000..399d945
-> --- /dev/null
-> +++ b/drivers/clk/tegra/clk-emc.c
-> @@ -0,0 +1,532 @@
-> +/*
-> + * Rounds up unless no higher rate exists, in which case down. This way is
-> + * safer since things have EMC rate floors. Also don't touch parent_rate
-> + * since we don't want the CCF to play with our parent clocks.
-> + */
-> +static long emc_round_rate(struct clk_hw *hw, unsigned long rate,
-> +		    unsigned long *parent_rate)
-> +{
-> +	struct tegra_clk_emc *tegra;
-> +	u8 ram_code = tegra_read_ram_code();
-> +	struct emc_timing *timing;
-> +	int i;
-> +
-> +	tegra = container_of(hw, struct tegra_clk_emc, hw);
-> +
-> +	for (i = 0; i < tegra->num_timings; i++) {
-> +		timing = tegra->timings + i;
-> +		if (timing->ram_code != ram_code)
-> +			continue;
-> +
-> +		if (timing->rate >= rate)
-> +			return timing->rate;
-> +	}
-> +
-> +	for (i = tegra->num_timings - 1; i >= 0; i--) {
-> +		timing = tegra->timings + i;
-> +		if (timing->ram_code != ram_code)
-> +			continue;
-> +
-> +		return timing->rate;
-> +	}
+The device name is usually required when assigning resources
+like clocks to platform devices. The problem is that the
+device name is not know before platform_device_add is called
+and that can be too late as the drivers may have already
+requested the resources when the function returns. By naming
+the device already in platform_device_alloc, the resources
+can be assigned before platform_device_add is called.
 
-While this is technically not wrong, it could be simplified to something
-like
+This change allows different kinds of probe drivers to pass
+forward their resources to the actual driver. The first
+place where we need it is dwc3 controllers host glue code
+(drivers/usb/dwc3/host.c) to pass the phy's to xhci.
 
-        struct emc_timing *timing = NULL;
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/base/platform.c | 69 +++++++++++++++++++++++++++++--------------------
+ 1 file changed, 41 insertions(+), 28 deletions(-)
 
-        for (i = 0; i < tegra->num_timings; i++) {
-                if (tegra->timings[i].ram_code != ram_code)
-                        continue;
-                timing = tegra->timings + i;
-                if (timing->rate >= rate)
-                        return timing->rate;
-        }
-        if (timing)
-                return timing->rate;
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index cdb6c07..d2217f3 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -195,11 +195,41 @@ void platform_device_put(struct platform_device *pdev)
+ }
+ EXPORT_SYMBOL_GPL(platform_device_put);
+ 
++static int pdev_set_name(struct platform_device *pdev)
++{
++	int ret;
++
++	switch (pdev->id) {
++	default:
++		return dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
++	case PLATFORM_DEVID_NONE:
++		return dev_set_name(&pdev->dev, "%s", pdev->name);
++	case PLATFORM_DEVID_AUTO:
++		/*
++		 * Automatically allocated device ID. We mark it as such so
++		 * that we remember it must be freed, and we append a suffix
++		 * to avoid namespace collision with explicit IDs.
++		 */
++		ret = ida_simple_get(&platform_devid_ida, 0, 0, GFP_KERNEL);
++		if (ret < 0)
++			return ret;
++		pdev->id = ret;
++		pdev->id_auto = true;
++		return dev_set_name(&pdev->dev, "%s.%d.auto", pdev->name,
++				    pdev->id);
++	}
++
++	return 0;
++}
++
+ static void platform_device_release(struct device *dev)
+ {
+ 	struct platform_object *pa = container_of(dev, struct platform_object,
+ 						  pdev.dev);
+ 
++	if (pa->pdev.id_auto)
++		ida_simple_remove(&platform_devid_ida, pa->pdev.id);
++
+ 	of_device_node_put(&pa->pdev.dev);
+ 	kfree(pa->pdev.dev.platform_data);
+ 	kfree(pa->pdev.mfd_cell);
+@@ -228,6 +258,10 @@ struct platform_device *platform_device_alloc(const char *name, int id)
+ 		device_initialize(&pa->pdev.dev);
+ 		pa->pdev.dev.release = platform_device_release;
+ 		arch_setup_pdev_archdata(&pa->pdev);
++		if (pdev_set_name(&pa->pdev)) {
++			kfree(pa);
++			return NULL;
++		}
+ 	}
+ 
+ 	return pa ? &pa->pdev : NULL;
+@@ -308,28 +342,6 @@ int platform_device_add(struct platform_device *pdev)
+ 
+ 	pdev->dev.bus = &platform_bus_type;
+ 
+-	switch (pdev->id) {
+-	default:
+-		dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
+-		break;
+-	case PLATFORM_DEVID_NONE:
+-		dev_set_name(&pdev->dev, "%s", pdev->name);
+-		break;
+-	case PLATFORM_DEVID_AUTO:
+-		/*
+-		 * Automatically allocated device ID. We mark it as such so
+-		 * that we remember it must be freed, and we append a suffix
+-		 * to avoid namespace collision with explicit IDs.
+-		 */
+-		ret = ida_simple_get(&platform_devid_ida, 0, 0, GFP_KERNEL);
+-		if (ret < 0)
+-			goto err_out;
+-		pdev->id = ret;
+-		pdev->id_auto = true;
+-		dev_set_name(&pdev->dev, "%s.%d.auto", pdev->name, pdev->id);
+-		break;
+-	}
+-
+ 	for (i = 0; i < pdev->num_resources; i++) {
+ 		struct resource *p, *r = &pdev->resource[i];
+ 
+@@ -372,7 +384,6 @@ int platform_device_add(struct platform_device *pdev)
+ 			release_resource(r);
+ 	}
+ 
+- err_out:
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(platform_device_add);
+@@ -392,11 +403,6 @@ void platform_device_del(struct platform_device *pdev)
+ 	if (pdev) {
+ 		device_del(&pdev->dev);
+ 
+-		if (pdev->id_auto) {
+-			ida_simple_remove(&platform_devid_ida, pdev->id);
+-			pdev->id = PLATFORM_DEVID_AUTO;
+-		}
+-
+ 		for (i = 0; i < pdev->num_resources; i++) {
+ 			struct resource *r = &pdev->resource[i];
+ 			unsigned long type = resource_type(r);
+@@ -414,8 +420,15 @@ EXPORT_SYMBOL_GPL(platform_device_del);
+  */
+ int platform_device_register(struct platform_device *pdev)
+ {
++	int ret;
++
+ 	device_initialize(&pdev->dev);
+ 	arch_setup_pdev_archdata(pdev);
++
++	ret = pdev_set_name(pdev);
++	if (ret)
++		return ret;
++
+ 	return platform_device_add(pdev);
+ }
+ EXPORT_SYMBOL_GPL(platform_device_register);
+-- 
+2.1.3
 
-> +
-> +	return __clk_get_rate(hw->clk);
-> +}
