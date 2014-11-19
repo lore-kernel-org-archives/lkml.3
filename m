@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757762AbaKSWGr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:06:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56574 "EHLO
+	id S1757789AbaKSWHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:07:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933377AbaKSVEO (ORCPT
+	with ESMTP id S933375AbaKSVEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:14 -0500
+	Wed, 19 Nov 2014 16:04:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve Grubb <sgrubb@redhat.com>, Richard Guy Briggs <rgb@redhat.com>
-Subject: [PATCH 3.14 024/122] audit: correct AUDIT_GET_FEATURE return message type
-Date: Wed, 19 Nov 2014 12:51:14 -0800
-Message-Id: <20141119205209.605713908@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.14 023/122] x86, x32, audit: Fix x32s AUDIT_ARCH wrt audit
+Date: Wed, 19 Nov 2014 12:51:13 -0800
+Message-Id: <20141119205209.578469990@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -28,35 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rgb@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 9ef91514774a140e468f99d73d7593521e6d25dc upstream.
+commit 81f49a8fd7088cfcb588d182eeede862c0e3303e upstream.
 
-When an AUDIT_GET_FEATURE message is sent from userspace to the kernel, it
-should reply with a message tagged as an AUDIT_GET_FEATURE type with a struct
-audit_feature.  The current reply is a message tagged as an AUDIT_GET
-type with a struct audit_feature.
+is_compat_task() is the wrong check for audit arch; the check should
+be is_ia32_task(): x32 syscalls should be AUDIT_ARCH_X86_64, not
+AUDIT_ARCH_I386.
 
-This appears to have been a cut-and-paste-eo in commit b0fed40.
+CONFIG_AUDITSYSCALL is currently incompatible with x32, so this has
+no visible effect.
 
-Reported-by: Steve Grubb <sgrubb@redhat.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/a0138ed8c709882aec06e4acc30bfa9b623b8717.1409954077.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/audit.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/ptrace.c |   11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -687,7 +687,7 @@ static int audit_get_feature(struct sk_b
- 
- 	seq = nlmsg_hdr(skb)->nlmsg_seq;
- 
--	audit_send_reply(skb, seq, AUDIT_GET, 0, 0, &af, sizeof(af));
-+	audit_send_reply(skb, seq, AUDIT_GET_FEATURE, 0, 0, &af, sizeof(af));
- 
- 	return 0;
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -1441,15 +1441,6 @@ void send_sigtrap(struct task_struct *ts
+ 	force_sig_info(SIGTRAP, &info, tsk);
  }
+ 
+-
+-#ifdef CONFIG_X86_32
+-# define IS_IA32	1
+-#elif defined CONFIG_IA32_EMULATION
+-# define IS_IA32	is_compat_task()
+-#else
+-# define IS_IA32	0
+-#endif
+-
+ /*
+  * We must return the syscall number to actually look up in the table.
+  * This can be -1L to skip running any syscall at all.
+@@ -1487,7 +1478,7 @@ long syscall_trace_enter(struct pt_regs
+ 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
+ 		trace_sys_enter(regs, regs->orig_ax);
+ 
+-	if (IS_IA32)
++	if (is_ia32_task())
+ 		audit_syscall_entry(AUDIT_ARCH_I386,
+ 				    regs->orig_ax,
+ 				    regs->bx, regs->cx,
 
 
