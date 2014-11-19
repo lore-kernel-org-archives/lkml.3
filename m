@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173AbaKSWWx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:22:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56055 "EHLO
+	id S1758159AbaKSWWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:22:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56061 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932536AbaKSUyK (ORCPT
+	with ESMTP id S932549AbaKSUyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:54:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.17 073/141] ARM: mvebu: armada xp: Generalize use of i2c quirk
-Date: Wed, 19 Nov 2014 12:51:36 -0800
-Message-Id: <20141119205153.064861665@linuxfoundation.org>
+        Roger Quadros <rogerq@ti.com>, Nishanth Menon <nm@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.17 074/141] pinctrl: dra: dt-bindings: Fix output pull up/down
+Date: Wed, 19 Nov 2014 12:51:37 -0800
+Message-Id: <20141119205153.098385720@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -31,51 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Lunn <andrew@lunn.ch>
+From: Roger Quadros <rogerq@ti.com>
 
-commit 5129ee22ce4aff7c5907d4c3d67d23f86cd6db9b upstream.
+commit 73b3a6657a88ef5348a0d69c9a8107d6f01ae862 upstream.
 
-A second product has come to light which makes use of the A0 stepping
-of the Armada XP SoC. A0 stepping has a hardware bug in the i2c core
-meaning that hardware offload does not work, resulting in the kernel
-failing to boot. The quirk detects that the kernel is running on an A0
-stepping SoC and disables the use of hardware offload.
+For PIN_OUTPUT_PULLUP and PIN_OUTPUT_PULLDOWN we must not set the
+PULL_DIS bit which disables the PULLs.
 
-Currently the quirk is only enabled for PlatHome Openblocks AX3. The
-AX3 has been produced with both A0 and B0 stepping SoCs. The second
-product is the Lenovo Iomega IX4-300d. It seems likely that this
-device will also swap from A0 to B0 SoC sometime during its life.
+PULL_ENA is a 0 and using it in an OR operation is a NOP, so don't
+use it in the PIN_OUTPUT_PULLUP/DOWN macros.
 
-If there are two products using A0, it seems likely there are more
-products with A0. Also, since the number of A0 SoCs is limited, these
-products are also likely to transition to B0. Hence detecting at run
-time is the safest option. So enable the quirk for all Armada XP
-boards.
+Fixes: 23d9cec07c58 ("pinctrl: dra: dt-bindings: Fix pull enable/disable")
 
-Tested on an AX3 with A0 stepping.
-
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Fixes: 930ab3d403ae: ("i2c: mv64xxx: Add I2C Transaction Generator support")
-Link: https://lkml.kernel.org/r/1406395238-29758-2-git-send-email-andrew@lunn.ch
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Acked-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-mvebu/board-v7.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/dt-bindings/pinctrl/dra.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/mach-mvebu/board-v7.c
-+++ b/arch/arm/mach-mvebu/board-v7.c
-@@ -188,7 +188,7 @@ static void __init thermal_quirk(void)
+--- a/include/dt-bindings/pinctrl/dra.h
++++ b/include/dt-bindings/pinctrl/dra.h
+@@ -40,8 +40,8 @@
  
- static void __init mvebu_dt_init(void)
- {
--	if (of_machine_is_compatible("plathome,openblocks-ax3-4"))
-+	if (of_machine_is_compatible("marvell,armadaxp"))
- 		i2c_quirk();
- 	if (of_machine_is_compatible("marvell,a375-db")) {
- 		external_abort_quirk();
+ /* Active pin states */
+ #define PIN_OUTPUT		(0 | PULL_DIS)
+-#define PIN_OUTPUT_PULLUP	(PIN_OUTPUT | PULL_ENA | PULL_UP)
+-#define PIN_OUTPUT_PULLDOWN	(PIN_OUTPUT | PULL_ENA)
++#define PIN_OUTPUT_PULLUP	(PULL_UP)
++#define PIN_OUTPUT_PULLDOWN	(0)
+ #define PIN_INPUT		(INPUT_EN | PULL_DIS)
+ #define PIN_INPUT_SLEW		(INPUT_EN | SLEWCONTROL)
+ #define PIN_INPUT_PULLUP	(PULL_ENA | INPUT_EN | PULL_UP)
 
 
