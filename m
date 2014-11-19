@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934378AbaKSVbD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:31:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57283 "EHLO
+	id S934398AbaKSVbm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:31:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933787AbaKSVOl (ORCPT
+	with ESMTP id S933789AbaKSVOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:14:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 03/70] net: sctp: fix NULL pointer dereference in af->from_addr_param on malformed packet
-Date: Wed, 19 Nov 2014 12:51:54 -0800
-Message-Id: <20141119205211.026877425@linuxfoundation.org>
+        Christoph Hellwig <hch@lst.de>, Meelis Roos <meelis.roos@ut.ee>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: [PATCH 3.10 28/70] scsi: only re-lock door after EH on devices that were reset
+Date: Wed, 19 Nov 2014 12:52:19 -0800
+Message-Id: <20141119205211.860225083@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -31,77 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Christoph Hellwig <hch@lst.de>
 
-[ Upstream commit e40607cbe270a9e8360907cb1e62ddf0736e4864 ]
+commit 48379270fe6808cf4612ee094adc8da2b7a83baa upstream.
 
-An SCTP server doing ASCONF will panic on malformed INIT ping-of-death
-in the form of:
+Setups that use the blk-mq I/O path can lock up if a host with a single
+device that has its door locked enters EH.  Make sure to only send the
+command to re-lock the door to devices that actually were reset and thus
+might have lost their state.  Otherwise the EH code might be get blocked
+on blk_get_request as all requests for non-reset devices might be in use.
 
-  ------------ INIT[PARAM: SET_PRIMARY_IP] ------------>
-
-While the INIT chunk parameter verification dissects through many things
-in order to detect malformed input, it misses to actually check parameters
-inside of parameters. E.g. RFC5061, section 4.2.4 proposes a 'set primary
-IP address' parameter in ASCONF, which has as a subparameter an address
-parameter.
-
-So an attacker may send a parameter type other than SCTP_PARAM_IPV4_ADDRESS
-or SCTP_PARAM_IPV6_ADDRESS, param_type2af() will subsequently return 0
-and thus sctp_get_af_specific() returns NULL, too, which we then happily
-dereference unconditionally through af->from_addr_param().
-
-The trace for the log:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
-IP: [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
-PGD 0
-Oops: 0000 [#1] SMP
-[...]
-Pid: 0, comm: swapper Not tainted 2.6.32-504.el6.x86_64 #1 Bochs Bochs
-RIP: 0010:[<ffffffffa01e9c62>]  [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
-[...]
-Call Trace:
- <IRQ>
- [<ffffffffa01f2add>] ? sctp_bind_addr_copy+0x5d/0xe0 [sctp]
- [<ffffffffa01e1fcb>] sctp_sf_do_5_1B_init+0x21b/0x340 [sctp]
- [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
- [<ffffffffa01e5c09>] ? sctp_endpoint_lookup_assoc+0xc9/0xf0 [sctp]
- [<ffffffffa01e61f6>] sctp_endpoint_bh_rcv+0x116/0x230 [sctp]
- [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
- [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
- [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
- [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
- [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
-[...]
-
-A minimal way to address this is to check for NULL as we do on all
-other such occasions where we know sctp_get_af_specific() could
-possibly return with NULL.
-
-Fixes: d6de3097592b ("[SCTP]: Add the handling of "Set Primary IP Address" parameter to INIT")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Meelis Roos <meelis.roos@ut.ee>
+Tested-by: Meelis Roos <meelis.roos@ut.ee>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/sm_make_chunk.c |    3 +++
- 1 file changed, 3 insertions(+)
 
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -2596,6 +2596,9 @@ do_addr_param:
- 		addr_param = param.v + sizeof(sctp_addip_param_t);
+---
+ drivers/scsi/scsi_error.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -1689,8 +1689,10 @@ static void scsi_restart_operations(stru
+ 	 * is no point trying to lock the door of an off-line device.
+ 	 */
+ 	shost_for_each_device(sdev, shost) {
+-		if (scsi_device_online(sdev) && sdev->locked)
++		if (scsi_device_online(sdev) && sdev->was_reset && sdev->locked) {
+ 			scsi_eh_lock_door(sdev);
++			sdev->was_reset = 0;
++		}
+ 	}
  
- 		af = sctp_get_af_specific(param_type2af(param.p->type));
-+		if (af == NULL)
-+			break;
-+
- 		af->from_addr_param(&addr, addr_param,
- 				    htons(asoc->peer.port), 0);
- 
+ 	/*
 
 
