@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964825AbaKSWEj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:04:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
+	id S934112AbaKSWEh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:04:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933394AbaKSVEP (ORCPT
+	with ESMTP id S933400AbaKSVEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:04:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, dorin@i51.org,
-        Imre Kaloz <kaloz@openwrt.org>
-Subject: [PATCH 3.14 028/122] ahci: disable MSI instead of NCQ on Samsung pci-e SSDs on macbooks
-Date: Wed, 19 Nov 2014 12:51:18 -0800
-Message-Id: <20141119205209.722133636@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 029/122] ALSA: usb-audio: Fix memory leak in FTU quirk
+Date: Wed, 19 Nov 2014 12:51:19 -0800
+Message-Id: <20141119205209.751249876@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,63 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 66a7cbc303f4d28f201529b06061944d51ab530c upstream.
+commit 1a290581ded60e87276741f8ca97b161d2b226fc upstream.
 
-Samsung pci-e SSDs on macbooks failed miserably on NCQ commands, so
-67809f85d31e ("ahci: disable NCQ on Samsung pci-e SSDs on macbooks")
-disabled NCQ on them.  It turns out that NCQ is fine as long as MSI is
-not used, so let's turn off MSI and leave NCQ on.
+M-audio FastTrack Ultra quirk doesn't release the kzalloc'ed memory.
+This patch adds the private_free callback to release it properly.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=60731
-Tested-by: <dorin@i51.org>
-Tested-by: Imre Kaloz <kaloz@openwrt.org>
-Fixes: 67809f85d31e ("ahci: disable NCQ on Samsung pci-e SSDs on macbooks")
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ sound/usb/mixer_quirks.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -61,6 +61,7 @@ enum board_ids {
- 	/* board IDs by feature in alphabetical order */
- 	board_ahci,
- 	board_ahci_ign_iferr,
-+	board_ahci_nomsi,
- 	board_ahci_noncq,
- 	board_ahci_nosntf,
- 	board_ahci_yes_fbs,
-@@ -122,6 +123,13 @@ static const struct ata_port_info ahci_p
- 		.udma_mask	= ATA_UDMA6,
- 		.port_ops	= &ahci_ops,
- 	},
-+	[board_ahci_nomsi] = {
-+		AHCI_HFLAGS	(AHCI_HFLAG_NO_MSI),
-+		.flags		= AHCI_FLAG_COMMON,
-+		.pio_mask	= ATA_PIO4,
-+		.udma_mask	= ATA_UDMA6,
-+		.port_ops	= &ahci_ops,
-+	},
- 	[board_ahci_noncq] = {
- 		AHCI_HFLAGS	(AHCI_HFLAG_NO_NCQ),
- 		.flags		= AHCI_FLAG_COMMON,
-@@ -481,10 +489,10 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
+--- a/sound/usb/mixer_quirks.c
++++ b/sound/usb/mixer_quirks.c
+@@ -885,6 +885,11 @@ static int snd_ftu_eff_switch_put(struct
+ 	return changed;
+ }
  
- 	/*
--	 * Samsung SSDs found on some macbooks.  NCQ times out.
--	 * https://bugzilla.kernel.org/show_bug.cgi?id=60731
-+	 * Samsung SSDs found on some macbooks.  NCQ times out if MSI is
-+	 * enabled.  https://bugzilla.kernel.org/show_bug.cgi?id=60731
- 	 */
--	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_noncq },
-+	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_nomsi },
++static void kctl_private_value_free(struct snd_kcontrol *kctl)
++{
++	kfree((void *)kctl->private_value);
++}
++
+ static int snd_ftu_create_effect_switch(struct usb_mixer_interface *mixer,
+ 	int validx, int bUnitID)
+ {
+@@ -919,6 +924,7 @@ static int snd_ftu_create_effect_switch(
+ 		return -ENOMEM;
+ 	}
  
- 	/* Enmotus */
- 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
++	kctl->private_free = kctl_private_value_free;
+ 	err = snd_ctl_add(mixer->chip->card, kctl);
+ 	if (err < 0)
+ 		return err;
 
 
