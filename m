@@ -1,129 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485AbaKSXA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 18:00:58 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:34709 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756183AbaKSXA5 (ORCPT
+	id S1756963AbaKSXBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 18:01:37 -0500
+Received: from mail-by2on0105.outbound.protection.outlook.com ([207.46.100.105]:36704
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756666AbaKSXBg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 18:00:57 -0500
-Date: Thu, 20 Nov 2014 00:00:53 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141119230051.GB11386@lerouge>
-References: <20141118145234.GA7487@redhat.com>
- <alpine.DEB.2.11.1411181914020.3909@nanos>
- <20141118215540.GD35311@redhat.com>
- <20141119021902.GA14216@redhat.com>
- <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
- <20141119145902.GA13387@redhat.com>
- <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
- <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
- <20141119190215.GA10796@lerouge>
- <CALCETrVOW1U8uDKZhChP_PgG40jsJE4F0Jeyfj1BT=qJSFY6yw@mail.gmail.com>
+	Wed, 19 Nov 2014 18:01:36 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dexuan Cui <decui@microsoft.com>
+Subject: RE: [PATCH v2 2/2] Tools: hv: vssdaemon: skip all filesystems mounted
+ readonly
+Thread-Topic: [PATCH v2 2/2] Tools: hv: vssdaemon: skip all filesystems
+ mounted readonly
+Thread-Index: AQHP/QSX+IorxTsbC0GR3F3ejpHwb5xon3hA
+Date: Wed, 19 Nov 2014 23:01:30 +0000
+Message-ID: <BN1PR0301MB0707B091F2A7185F3E7E616DA0890@BN1PR0301MB0707.namprd03.prod.outlook.com>
+References: <1415637422-27880-1-git-send-email-vkuznets@redhat.com>
+ <1415637422-27880-3-git-send-email-vkuznets@redhat.com>
+In-Reply-To: <1415637422-27880-3-git-send-email-vkuznets@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e8:ed31::3]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0706;UriScan:;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0706;
+x-forefront-prvs: 04004D94E2
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(377454003)(13464003)(199003)(189002)(86362001)(19580395003)(575784001)(19580405001)(97736003)(92566001)(92726001)(1511001)(21056001)(20776003)(86612001)(64706001)(122556002)(120916001)(2561002)(99396003)(101416001)(87936001)(33656002)(2656002)(95666004)(99286002)(105586002)(106116001)(76576001)(107046002)(106356001)(77156002)(77096003)(62966003)(40100003)(31966008)(2421001)(4396001)(76176999)(54206007)(74316001)(50986999)(54606007)(54356999)(46102003)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0706;H:BN1PR0301MB0707.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVOW1U8uDKZhChP_PgG40jsJE4F0Jeyfj1BT=qJSFY6yw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0644;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 11:03:48AM -0800, Andy Lutomirski wrote:
-> On Wed, Nov 19, 2014 at 11:02 AM, Frederic Weisbecker
-> <fweisbec@gmail.com> wrote:
-> > On Wed, Nov 19, 2014 at 09:40:26AM -0800, Linus Torvalds wrote:
-> >> On Wed, Nov 19, 2014 at 9:22 AM, Linus Torvalds
-> >> <torvalds@linux-foundation.org> wrote:
-> >> >
-> >> > So it hasn't actually done the "push %rbx; popfq" part - there must be
-> >> > a label at the return part, and context_tracking_user_exit() never
-> >> > actually did the local_irq_save/restore at all. Which means that it
-> >> > took one of the early exits instead:
-> >> >
-> >> >         if (!context_tracking_is_enabled())
-> >> >                 return;
-> >> >
-> >> >         if (in_interrupt())
-> >> >                 return;
-> >>
-> >> Ho humm. Interesting. Neither of those should possibly have happened.
-> >>
-> >> We "know" that "context_tracking_is_enabled()" must be true, because
-> >> the only way we get to context_tracking_user_exit() in the first place
-> >> is through "user_exit()", which does:
-> >>
-> >>         if (context_tracking_is_enabled())
-> >>                 context_tracking_user_exit();
-> >>
-> >> and we know we shouldn't be in_interrupt(), because the backtrace is
-> >> the system call entry path, for chrissake!
-> >>
-> >> So we definitely have some corruption going on. A few possibilities:
-> >>
-> >>  - either the register contents are corrupted (%rbx in your dump said
-> >> "0x0000000100000046", but the eflags we restored was 0x246)
-> >>
-> >>  - in_interrupt() is wrong, and we've had some irq_count() corruption.
-> >> I'd expect that to result in "scheduling while atomic" messages,
-> >> though, especially if it goes on long enough that you get a watchdog
-> >> event..
-> >>
-> >>  - there is something rotten in the land of
-> >> context_tracking_is_enabled(), which uses a static key.
-> >>
-> >>  - I have misread the whole trace, and am a moron. But your earlier
-> >> report really had some very similar things, just in
-> >> context_tracking_user_enter() instead of exit.
-> >>
-> >> In your previous oops, the registers that was allegedly used to
-> >> restore %eflags was %r12:
-> >>
-> >>   28: 41 54                 push   %r12
-> >>   2a: 9d                   popfq
-> >>   2b:* 5b                   pop    %rbx <-- trapping instruction
-> >>   2c: 41 5c                 pop    %r12
-> >>   2e: 5d                   pop    %rbp
-> >>   2f: c3                   retq
-> >>
-> >> but:
-> >>
-> >>   R12: ffff880101ee3ec0
-> >>   EFLAGS: 00000282
-> >>
-> >> so again, it looks like we never actually did that "popfq"
-> >> instruction, and it would have exited through the (same) early exits.
-> >>
-> >> But what an odd coincidence that it ended up in both of your reports
-> >> being *exactly* at that instruction after the "popf". If it had
-> >> actually *taken* the popf, I'd not be so surprised ("ok, popf enabled
-> >> interrupts, and there was an interrupt pending"), but since everything
-> >> seems to say that it came there through some control flow that did
-> >> *not* go through the popf, that's just a very odd coincidence.
-> >>
-> >> And both context_tracking_user_enter() and exit() have that exact same
-> >> issue with the early returns. They shouldn't have happened in the
-> >> first place.
-> >
-> > I got a report lately involving context tracking. Not sure if it's
-> > the same here but the issue was that context tracking uses per cpu data
-> > and per cpu allocation use vmalloc and vmalloc'ed area can fault due to
-> > lazy paging.
+
+
+> -----Original Message-----
+> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+> Sent: Monday, November 10, 2014 8:37 AM
+> To: KY Srinivasan; Haiyang Zhang; Greg Kroah-Hartman
+> Cc: devel@linuxdriverproject.org; linux-kernel@vger.kernel.org; Dexuan Cui
+> Subject: [PATCH v2 2/2] Tools: hv: vssdaemon: skip all filesystems mounted
+> readonly
 > 
-> Wait, what?  If something like kernel_stack ends with an unmapped pmd,
-> we are well and truly screwed.
+> Instead of making a list of exceptions for readonly filesystems in addition to
+> iso9660 we already have it is better to skip freeze operation for all readonly-
+> mounted filesystems.
+> 
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
-Note that's non-sleeping faults. So probably most places are fine except
-a few of them that really don't want exception to mess up some state. I
-can imagine some entry code that really don't want that.
+> ---
+>  tools/hv/hv_vss_daemon.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c index
+> ee44f0d..5e63f70 100644
+> --- a/tools/hv/hv_vss_daemon.c
+> +++ b/tools/hv/hv_vss_daemon.c
+> @@ -102,7 +102,7 @@ static int vss_operate(int operation)
+>  	while ((ent = getmntent(mounts))) {
+>  		if (strncmp(ent->mnt_fsname, match, strlen(match)))
+>  			continue;
+> -		if (strcmp(ent->mnt_type, "iso9660") == 0)
+> +		if (hasmntopt(ent, MNTOPT_RO) != NULL)
+>  			continue;
+>  		if (strcmp(ent->mnt_type, "vfat") == 0)
+>  			continue;
+> --
+> 1.9.3
 
-Is kernel stack allocated by vmalloc or alloc_percpu()?
