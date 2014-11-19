@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310AbaKSPwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:52:44 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:35983 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932279AbaKSPwm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:52:42 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [PATCH] arm: perf: Prevent wraparound during overflow
-Date: Wed, 19 Nov 2014 15:52:26 +0000
-Message-Id: <1416412346-8759-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	id S1756189AbaKSP4O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:56:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60269 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755920AbaKSP4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 10:56:09 -0500
+From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tomasz Figa <t.figa@samsung.com>,
+        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 4/4] ARM: dts: Add trackpad to exynos5250-spring
+Date: Wed, 19 Nov 2014 16:56:24 +0100
+Message-Id: <1416412585-10809-5-git-send-email-afaerber@suse.de>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1416412585-10809-1-git-send-email-afaerber@suse.de>
+References: <1416412585-10809-1-git-send-email-afaerber@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the overflow threshold for a counter is set above or near the
-0xffffffff boundary then the kernel may lose track of the overflow
-causing only events that occur *after* the overflow to be recorded.
-Specifically the problem occurs when the value of the performance counter
-overtakes its original programmed value due to wrap around.
+The HP Chromebook 11 uses an Atmel maXTouch as trackpad.
+The keymap was found by trial-and-error.
 
-Typical solutions to this problem are either to avoid programming in
-values likely to be overtaken or to treat the overflow bit as the 33rd
-bit of the counter.
-
-Its somewhat fiddly to refactor the code to correctly handle the 33rd bit
-during irqsave sections (context switches for example) so instead we take
-the simpler approach of avoiding values likely to be overtaken.
-
-We set the limit to half of max_period because this matches the limit
-imposed in __hw_perf_event_init(). This causes a doubling of the interrupt
-rate for large threshold values, however even with a very fast counter
-ticking at 4GHz the interrupt rate would only be ~1Hz.
-
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Signed-off-by: Andreas Färber <afaerber@suse.de>
 ---
+ arch/arm/boot/dts/exynos5250-spring.dts | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-Notes:
-    There is similar code in the arm64 tree which retains the assumptions of
-    the original arm code regarding 32-bit wide performance counters. If
-    this patch doesn't get beaten up during review I'll also share a similar
-    patch for arm64.
-    
-
- arch/arm/kernel/perf_event.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 266cba46db3e..b50a770f8c99 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -115,8 +115,14 @@ int armpmu_event_set_period(struct perf_event *event)
- 		ret = 1;
- 	}
-
--	if (left > (s64)armpmu->max_period)
--		left = armpmu->max_period;
-+	/*
-+	 * Limit the maximum period to prevent the counter value
-+	 * from overtaking the one we are about to program. In
-+	 * effect we are reducing max_period to account for
-+	 * interrupt latency (and we are being very conservative).
-+	 */
-+	if (left > (s64)(armpmu->max_period >> 1))
-+		left = armpmu->max_period >> 1;
-
- 	local64_set(&hwc->prev_count, (u64)-left);
-
---
-1.9.3
+diff --git a/arch/arm/boot/dts/exynos5250-spring.dts b/arch/arm/boot/dts/exynos5250-spring.dts
+index cc3361afba49..2fa207c9e5e2 100644
+--- a/arch/arm/boot/dts/exynos5250-spring.dts
++++ b/arch/arm/boot/dts/exynos5250-spring.dts
+@@ -330,6 +330,22 @@
+ 	status = "okay";
+ 	samsung,i2c-sda-delay = <100>;
+ 	samsung,i2c-max-bus-freq = <378000>;
++
++	trackpad@4b {
++		compatible = "atmel,maxtouch";
++		reg = <0x4b>;
++		interrupt-parent = <&gpx1>;
++		interrupts = <2 IRQ_TYPE_EDGE_FALLING>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&trackpad_irq>;
++		linux,gpio-keymap = <KEY_RESERVED
++		                     KEY_RESERVED
++		                     KEY_RESERVED
++		                     KEY_RESERVED
++		                     KEY_RESERVED
++		                     BTN_LEFT>;
++		wakeup-source;
++	};
+ };
+ 
+ /*
+@@ -465,6 +481,13 @@
+ 		samsung,pin-drv = <0>;
+ 	};
+ 
++	trackpad_irq: trackpad-irq {
++		samsung,pins = "gpx1-2";
++		samsung,pin-function = <0xf>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
+ 	power_key_irq: power-key-irq {
+ 		samsung,pins = "gpx1-3";
+ 		samsung,pin-function = <0>;
+-- 
+2.1.2
 
