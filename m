@@ -1,46 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849AbaKSPpv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:45:51 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:43999 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754153AbaKSPpt (ORCPT
+	id S1756062AbaKSPqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:46:49 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:57520 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480AbaKSPqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:45:49 -0500
-From: Lee Jones <lee.jones@linaro.org>
+	Wed, 19 Nov 2014 10:46:48 -0500
+From: "pang.xunlei" <pang.xunlei@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] MAINTAINERS: Remove Sam from MFD Maintainers list
-Date: Wed, 19 Nov 2014 15:45:35 +0000
-Message-Id: <1416411935-2102-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        "pang.xunlei" <pang.xunlei@linaro.org>
+Subject: [PATCH v2 1/4] sched/deadline: Modify cpudl.free_cpus to reflect rd->span
+Date: Wed, 19 Nov 2014 23:46:19 +0800
+Message-Id: <1416411982-1204-1-git-send-email-pang.xunlei@linaro.org>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sam hasn't been active in MFD for around a year now.  If he'd like
-to come and play again I'll be only too pleased to have him aboard.
-Until then we can save submitters that little bit of work and
-simultaneously stop spamming Sam with emails he likely doesn't care
-about.
+Currently, cpudl.free_cpus contains all cpus during init(see cpudl_init()),
+so when calling cpudl_find() we have to add rd->span cpumask(cpus_allowed is
+undependable when performing clustered scheduling using the cpuset) to avoid
+selecting the cpu outside current root domain, see find_later_rq().
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+This patch adds cpudl_set_freecpu() to initialize cpudl.free_cpus when doing
+rq_attach_root(), so we can avoid the extra rd->span operation when calling
+cpudl_find().
+
+Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
 ---
- MAINTAINERS | 1 -
- 1 file changed, 1 deletion(-)
+ kernel/sched/core.c        |    2 ++
+ kernel/sched/cpudeadline.c |   18 ++++++++++++++----
+ kernel/sched/cpudeadline.h |    1 +
+ kernel/sched/deadline.c    |    3 ---
+ 4 files changed, 17 insertions(+), 7 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index f10ed39..277b667 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6080,7 +6080,6 @@ F:	drivers/media/i2c/mt9v032.c
- F:	include/media/mt9v032.h
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 240157c..1b417de 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5584,6 +5584,8 @@ static void rq_attach_root(struct rq *rq, struct root_domain *rd)
+ 	rq->rd = rd;
  
- MULTIFUNCTION DEVICES (MFD)
--M:	Samuel Ortiz <sameo@linux.intel.com>
- M:	Lee Jones <lee.jones@linaro.org>
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git
- S:	Supported
+ 	cpumask_set_cpu(rq->cpu, rd->span);
++	cpudl_set_freecpu(&rd->cpudl, rq->cpu);
++
+ 	if (cpumask_test_cpu(rq->cpu, cpu_active_mask))
+ 		set_rq_online(rq);
+ 
+diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
+index 539ca3c..c79f0d7 100644
+--- a/kernel/sched/cpudeadline.c
++++ b/kernel/sched/cpudeadline.c
+@@ -107,7 +107,9 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
+ 	int best_cpu = -1;
+ 	const struct sched_dl_entity *dl_se = &p->dl;
+ 
+-	if (later_mask && cpumask_and(later_mask, later_mask, cp->free_cpus)) {
++	if (later_mask &&
++	    cpumask_and(later_mask, cp->free_cpus, &p->cpus_allowed) &&
++	    cpumask_and(later_mask, later_mask, cpu_active_mask)) {
+ 		best_cpu = cpumask_any(later_mask);
+ 		goto out;
+ 	} else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
+@@ -186,6 +188,16 @@ out:
+ }
+ 
+ /*
++ * cpudl_set_freecpu - Set the cpudl.free_cpus
++ * @cp: the cpudl max-heap context
++ * @cpu: rd attached cpu
++ */
++void cpudl_set_freecpu(struct cpudl *cp, int cpu)
++{
++	cpumask_set_cpu(cpu, cp->free_cpus);
++}
++
++/*
+  * cpudl_init - initialize the cpudl structure
+  * @cp: the cpudl max-heap context
+  */
+@@ -203,7 +215,7 @@ int cpudl_init(struct cpudl *cp)
+ 	if (!cp->elements)
+ 		return -ENOMEM;
+ 
+-	if (!alloc_cpumask_var(&cp->free_cpus, GFP_KERNEL)) {
++	if (!zalloc_cpumask_var(&cp->free_cpus, GFP_KERNEL)) {
+ 		kfree(cp->elements);
+ 		return -ENOMEM;
+ 	}
+@@ -211,8 +223,6 @@ int cpudl_init(struct cpudl *cp)
+ 	for_each_possible_cpu(i)
+ 		cp->elements[i].idx = IDX_INVALID;
+ 
+-	cpumask_setall(cp->free_cpus);
+-
+ 	return 0;
+ }
+ 
+diff --git a/kernel/sched/cpudeadline.h b/kernel/sched/cpudeadline.h
+index 020039b..4a10a65 100644
+--- a/kernel/sched/cpudeadline.h
++++ b/kernel/sched/cpudeadline.h
+@@ -24,6 +24,7 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
+ 	       struct cpumask *later_mask);
+ void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid);
+ int cpudl_init(struct cpudl *cp);
++void cpudl_set_freecpu(struct cpudl *cp, int cpu);
+ void cpudl_cleanup(struct cpudl *cp);
+ #endif /* CONFIG_SMP */
+ 
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 5285332..bd83272 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -1187,9 +1187,6 @@ static int find_later_rq(struct task_struct *task)
+ 	 * We have to consider system topology and task affinity
+ 	 * first, then we can look for a suitable cpu.
+ 	 */
+-	cpumask_copy(later_mask, task_rq(task)->rd->span);
+-	cpumask_and(later_mask, later_mask, cpu_active_mask);
+-	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+ 	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+ 			task, later_mask);
+ 	if (best_cpu == -1)
 -- 
-1.9.1
+1.7.9.5
 
