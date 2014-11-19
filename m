@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434AbaKSVoN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:44:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57106 "EHLO
+	id S1757416AbaKSVoL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:44:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57085 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932096AbaKSVLf (ORCPT
+	with ESMTP id S932166AbaKSVLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:11:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>,
         Mel Gorman <mgorman@suse.de>, Vlastimil Babka <vbabka@suse.cz>,
-        Greg Thelen <gthelen@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 109/122] mm, migration: add destination page freeing callback
-Date: Wed, 19 Nov 2014 12:52:39 -0800
-Message-Id: <20141119205212.464361751@linuxfoundation.org>
+Subject: [PATCH 3.14 110/122] mm, compaction: return failed migration target pages back to freelist
+Date: Wed, 19 Nov 2014 12:52:40 -0800
+Message-Id: <20141119205212.497501450@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -35,283 +34,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Rientjes <rientjes@google.com>
 
-commit 68711a746345c44ae00c64d8dbac6a9ce13ac54a upstream.
+commit d53aea3d46d64e95da9952887969f7533b9ab25e upstream.
 
-Memory migration uses a callback defined by the caller to determine how to
-allocate destination pages.  When migration fails for a source page,
-however, it frees the destination page back to the system.
+Greg reported that he found isolated free pages were returned back to the
+VM rather than the compaction freelist.  This will cause holes behind the
+free scanner and cause it to reallocate additional memory if necessary
+later.
 
-This patch adds a memory migration callback defined by the caller to
-determine how to free destination pages.  If a caller, such as memory
-compaction, builds its own freelist for migration targets, this can reuse
-already freed memory instead of scanning additional memory.
+He detected the problem at runtime seeing that ext4 metadata pages (esp
+the ones read by "sbi->s_group_desc[i] = sb_bread(sb, block)") were
+constantly visited by compaction calls of migrate_pages().  These pages
+had a non-zero b_count which caused fallback_migrate_page() ->
+try_to_release_page() -> try_to_free_buffers() to fail.
 
-If the caller provides a function to handle freeing of destination pages,
-it is called when page migration fails.  If the caller passes NULL then
-freeing back to the system will be handled as usual.  This patch
-introduces no functional change.
+Memory compaction works by having a "freeing scanner" scan from one end of
+a zone which isolates pages as migration targets while another "migrating
+scanner" scans from the other end of the same zone which isolates pages
+for migration.
+
+When page migration fails for an isolated page, the target page is
+returned to the system rather than the freelist built by the freeing
+scanner.  This may require the freeing scanner to continue scanning memory
+after suitable migration targets have already been returned to the system
+needlessly.
+
+This patch returns destination pages to the freeing scanner freelist when
+page migration fails.  This prevents unnecessary work done by the freeing
+scanner but also encourages memory to be as compacted as possible at the
+end of the zone.
 
 Signed-off-by: David Rientjes <rientjes@google.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reported-by: Greg Thelen <gthelen@google.com>
 Acked-by: Mel Gorman <mgorman@suse.de>
 Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Greg Thelen <gthelen@google.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- include/linux/migrate.h |   11 ++++++---
- mm/compaction.c         |    2 -
- mm/memory-failure.c     |    4 +--
- mm/memory_hotplug.c     |    2 -
- mm/mempolicy.c          |    4 +--
- mm/migrate.c            |   55 ++++++++++++++++++++++++++++++++++--------------
- mm/page_alloc.c         |    2 -
- 7 files changed, 53 insertions(+), 27 deletions(-)
+ mm/compaction.c |   27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
 
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -5,7 +5,9 @@
- #include <linux/mempolicy.h>
- #include <linux/migrate_mode.h>
- 
--typedef struct page *new_page_t(struct page *, unsigned long private, int **);
-+typedef struct page *new_page_t(struct page *page, unsigned long private,
-+				int **reason);
-+typedef void free_page_t(struct page *page, unsigned long private);
- 
- /*
-  * Return values from addresss_space_operations.migratepage():
-@@ -38,7 +40,7 @@ enum migrate_reason {
- extern void putback_movable_pages(struct list_head *l);
- extern int migrate_page(struct address_space *,
- 			struct page *, struct page *, enum migrate_mode);
--extern int migrate_pages(struct list_head *l, new_page_t x,
-+extern int migrate_pages(struct list_head *l, new_page_t new, free_page_t free,
- 		unsigned long private, enum migrate_mode mode, int reason);
- 
- extern int migrate_prep(void);
-@@ -56,8 +58,9 @@ extern int migrate_page_move_mapping(str
- #else
- 
- static inline void putback_movable_pages(struct list_head *l) {}
--static inline int migrate_pages(struct list_head *l, new_page_t x,
--		unsigned long private, enum migrate_mode mode, int reason)
-+static inline int migrate_pages(struct list_head *l, new_page_t new,
-+		free_page_t free, unsigned long private, enum migrate_mode mode,
-+		int reason)
- 	{ return -ENOSYS; }
- 
- static inline int migrate_prep(void) { return -ENOSYS; }
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -1016,7 +1016,7 @@ static int compact_zone(struct zone *zon
+@@ -790,23 +790,32 @@ static struct page *compaction_alloc(str
+ }
+ 
+ /*
+- * We cannot control nr_migratepages and nr_freepages fully when migration is
+- * running as migrate_pages() has no knowledge of compact_control. When
+- * migration is complete, we count the number of pages on the lists by hand.
++ * This is a migrate-callback that "frees" freepages back to the isolated
++ * freelist.  All pages on the freelist are from the same zone, so there is no
++ * special handling needed for NUMA.
++ */
++static void compaction_free(struct page *page, unsigned long data)
++{
++	struct compact_control *cc = (struct compact_control *)data;
++
++	list_add(&page->lru, &cc->freepages);
++	cc->nr_freepages++;
++}
++
++/*
++ * We cannot control nr_migratepages fully when migration is running as
++ * migrate_pages() has no knowledge of of compact_control.  When migration is
++ * complete, we count the number of pages on the list by hand.
+  */
+ static void update_nr_listpages(struct compact_control *cc)
+ {
+ 	int nr_migratepages = 0;
+-	int nr_freepages = 0;
+ 	struct page *page;
+ 
+ 	list_for_each_entry(page, &cc->migratepages, lru)
+ 		nr_migratepages++;
+-	list_for_each_entry(page, &cc->freepages, lru)
+-		nr_freepages++;
+ 
+ 	cc->nr_migratepages = nr_migratepages;
+-	cc->nr_freepages = nr_freepages;
+ }
+ 
+ /* possible outcome of isolate_migratepages */
+@@ -1016,8 +1025,8 @@ static int compact_zone(struct zone *zon
  		}
  
  		nr_migrate = cc->nr_migratepages;
--		err = migrate_pages(&cc->migratepages, compaction_alloc,
-+		err = migrate_pages(&cc->migratepages, compaction_alloc, NULL,
- 				(unsigned long)cc,
+-		err = migrate_pages(&cc->migratepages, compaction_alloc, NULL,
+-				(unsigned long)cc,
++		err = migrate_pages(&cc->migratepages, compaction_alloc,
++				compaction_free, (unsigned long)cc,
  				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC,
  				MR_COMPACTION);
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1540,7 +1540,7 @@ static int soft_offline_huge_page(struct
- 
- 	/* Keep page count to indicate a given hugepage is isolated. */
- 	list_move(&hpage->lru, &pagelist);
--	ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
-+	ret = migrate_pages(&pagelist, new_page, NULL, MPOL_MF_MOVE_ALL,
- 				MIGRATE_SYNC, MR_MEMORY_FAILURE);
- 	if (ret) {
- 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
-@@ -1621,7 +1621,7 @@ static int __soft_offline_page(struct pa
- 		inc_zone_page_state(page, NR_ISOLATED_ANON +
- 					page_is_file_cache(page));
- 		list_add(&page->lru, &pagelist);
--		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
-+		ret = migrate_pages(&pagelist, new_page, NULL, MPOL_MF_MOVE_ALL,
- 					MIGRATE_SYNC, MR_MEMORY_FAILURE);
- 		if (ret) {
- 			if (!list_empty(&pagelist)) {
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -1332,7 +1332,7 @@ do_migrate_range(unsigned long start_pfn
- 		 * alloc_migrate_target should be improooooved!!
- 		 * migrate_pages returns # of failed pages.
- 		 */
--		ret = migrate_pages(&source, alloc_migrate_target, 0,
-+		ret = migrate_pages(&source, alloc_migrate_target, NULL, 0,
- 					MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
- 		if (ret)
- 			putback_movable_pages(&source);
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1060,7 +1060,7 @@ static int migrate_to_node(struct mm_str
- 			flags | MPOL_MF_DISCONTIG_OK, &pagelist);
- 
- 	if (!list_empty(&pagelist)) {
--		err = migrate_pages(&pagelist, new_node_page, dest,
-+		err = migrate_pages(&pagelist, new_node_page, NULL, dest,
- 					MIGRATE_SYNC, MR_SYSCALL);
- 		if (err)
- 			putback_movable_pages(&pagelist);
-@@ -1306,7 +1306,7 @@ static long do_mbind(unsigned long start
- 
- 		if (!list_empty(&pagelist)) {
- 			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
--			nr_failed = migrate_pages(&pagelist, new_page,
-+			nr_failed = migrate_pages(&pagelist, new_page, NULL,
- 				start, MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
- 			if (nr_failed)
- 				putback_movable_pages(&pagelist);
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -941,8 +941,9 @@ out:
-  * Obtain the lock on page, remove all ptes and migrate the page
-  * to the newly allocated page in newpage.
-  */
--static int unmap_and_move(new_page_t get_new_page, unsigned long private,
--			struct page *page, int force, enum migrate_mode mode)
-+static int unmap_and_move(new_page_t get_new_page, free_page_t put_new_page,
-+			unsigned long private, struct page *page, int force,
-+			enum migrate_mode mode)
- {
- 	int rc = 0;
- 	int *result = NULL;
-@@ -986,11 +987,17 @@ out:
- 				page_is_file_cache(page));
- 		putback_lru_page(page);
- 	}
-+
- 	/*
--	 * Move the new page to the LRU. If migration was not successful
--	 * then this will free the page.
-+	 * If migration was not successful and there's a freeing callback, use
-+	 * it.  Otherwise, putback_lru_page() will drop the reference grabbed
-+	 * during isolation.
- 	 */
--	putback_lru_page(newpage);
-+	if (rc != MIGRATEPAGE_SUCCESS && put_new_page)
-+		put_new_page(newpage, private);
-+	else
-+		putback_lru_page(newpage);
-+
- 	if (result) {
- 		if (rc)
- 			*result = rc;
-@@ -1019,8 +1026,9 @@ out:
-  * will wait in the page fault for migration to complete.
-  */
- static int unmap_and_move_huge_page(new_page_t get_new_page,
--				unsigned long private, struct page *hpage,
--				int force, enum migrate_mode mode)
-+				free_page_t put_new_page, unsigned long private,
-+				struct page *hpage, int force,
-+				enum migrate_mode mode)
- {
- 	int rc = 0;
- 	int *result = NULL;
-@@ -1059,20 +1067,30 @@ static int unmap_and_move_huge_page(new_
- 	if (!page_mapped(hpage))
- 		rc = move_to_new_page(new_hpage, hpage, 1, mode);
- 
--	if (rc)
-+	if (rc != MIGRATEPAGE_SUCCESS)
- 		remove_migration_ptes(hpage, hpage);
- 
- 	if (anon_vma)
- 		put_anon_vma(anon_vma);
- 
--	if (!rc)
-+	if (rc == MIGRATEPAGE_SUCCESS)
- 		hugetlb_cgroup_migrate(hpage, new_hpage);
- 
- 	unlock_page(hpage);
- out:
- 	if (rc != -EAGAIN)
- 		putback_active_hugepage(hpage);
--	put_page(new_hpage);
-+
-+	/*
-+	 * If migration was not successful and there's a freeing callback, use
-+	 * it.  Otherwise, put_page() will drop the reference grabbed during
-+	 * isolation.
-+	 */
-+	if (rc != MIGRATEPAGE_SUCCESS && put_new_page)
-+		put_new_page(new_hpage, private);
-+	else
-+		put_page(new_hpage);
-+
- 	if (result) {
- 		if (rc)
- 			*result = rc;
-@@ -1089,6 +1107,8 @@ out:
-  * @from:		The list of pages to be migrated.
-  * @get_new_page:	The function used to allocate free pages to be used
-  *			as the target of the page migration.
-+ * @put_new_page:	The function used to free target pages if migration
-+ *			fails, or NULL if no special handling is necessary.
-  * @private:		Private data to be passed on to get_new_page()
-  * @mode:		The migration mode that specifies the constraints for
-  *			page migration, if any.
-@@ -1102,7 +1122,8 @@ out:
-  * Returns the number of pages that were not migrated, or an error code.
-  */
- int migrate_pages(struct list_head *from, new_page_t get_new_page,
--		unsigned long private, enum migrate_mode mode, int reason)
-+		free_page_t put_new_page, unsigned long private,
-+		enum migrate_mode mode, int reason)
- {
- 	int retry = 1;
- 	int nr_failed = 0;
-@@ -1124,10 +1145,11 @@ int migrate_pages(struct list_head *from
- 
- 			if (PageHuge(page))
- 				rc = unmap_and_move_huge_page(get_new_page,
--						private, page, pass > 2, mode);
-+						put_new_page, private, page,
-+						pass > 2, mode);
- 			else
--				rc = unmap_and_move(get_new_page, private,
--						page, pass > 2, mode);
-+				rc = unmap_and_move(get_new_page, put_new_page,
-+						private, page, pass > 2, mode);
- 
- 			switch(rc) {
- 			case -ENOMEM:
-@@ -1276,7 +1298,7 @@ set_status:
- 
- 	err = 0;
- 	if (!list_empty(&pagelist)) {
--		err = migrate_pages(&pagelist, new_page_node,
-+		err = migrate_pages(&pagelist, new_page_node, NULL,
- 				(unsigned long)pm, MIGRATE_SYNC, MR_SYSCALL);
- 		if (err)
- 			putback_movable_pages(&pagelist);
-@@ -1732,7 +1754,8 @@ int migrate_misplaced_page(struct page *
- 
- 	list_add(&page->lru, &migratepages);
- 	nr_remaining = migrate_pages(&migratepages, alloc_misplaced_dst_page,
--				     node, MIGRATE_ASYNC, MR_NUMA_MISPLACED);
-+				     NULL, node, MIGRATE_ASYNC,
-+				     MR_NUMA_MISPLACED);
- 	if (nr_remaining) {
- 		if (!list_empty(&migratepages)) {
- 			list_del(&page->lru);
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -6261,7 +6261,7 @@ static int __alloc_contig_migrate_range(
- 		cc->nr_migratepages -= nr_reclaimed;
- 
- 		ret = migrate_pages(&cc->migratepages, alloc_migrate_target,
--				    0, MIGRATE_SYNC, MR_CMA);
-+				    NULL, 0, MIGRATE_SYNC, MR_CMA);
- 	}
- 	if (ret < 0) {
- 		putback_movable_pages(&cc->migratepages);
+ 		update_nr_listpages(cc);
 
 
