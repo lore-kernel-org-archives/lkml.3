@@ -1,116 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934445AbaKSWdM (ORCPT <rfc822;w@1wt.eu>);
+	id S934466AbaKSWdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:33:15 -0500
+Received: from ja.ssi.bg ([178.16.129.10]:57700 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933077AbaKSWdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 17:33:12 -0500
-Received: from mail.kernel.org ([198.145.19.201]:53881 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320AbaKSWdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 17:33:07 -0500
-Date: Wed, 19 Nov 2014 14:33:01 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH 2/2] f2fs: put the inode page when error was
- occurred
-Message-ID: <20141119223301.GA6116@jaegeuk-mac02>
-References: <1416275874-74186-1-git-send-email-jaegeuk@kernel.org>
- <1416275874-74186-2-git-send-email-jaegeuk@kernel.org>
- <006b01d002f0$f6da1b80$e48e5280$@samsung.com>
+Date: Thu, 20 Nov 2014 00:26:56 +0200 (EET)
+From: Julian Anastasov <ja@ssi.bg>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+cc: "David S. Miller" <davem@davemloft.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>, Simon Horman <horms@verge.net.au>,
+        Wensong Zhang <wensong@linux-vs.org>, netdev@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        coreteam@netfilter.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH 1/1] netfilter: Deletion of unnecessary checks before
+ two function calls
+In-Reply-To: <546BA253.6030100@users.sourceforge.net>
+Message-ID: <alpine.LFD.2.11.1411200024280.6497@ja.home.ssi.bg>
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net>
+ <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net> <546BA253.6030100@users.sourceforge.net>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <006b01d002f0$f6da1b80$e48e5280$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 01:30:46PM +0800, Chao Yu wrote:
-> Hi Jaegeuk,
-> 
-> > -----Original Message-----
-> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > Sent: Tuesday, November 18, 2014 9:58 AM
-> > To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> > linux-f2fs-devel@lists.sourceforge.net
-> > Cc: Jaegeuk Kim
-> > Subject: [f2fs-dev] [PATCH 2/2] f2fs: put the inode page when error was occurred
-> > 
-> > We should put the inode page when error was occurred.
-> > 
-> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> 
-> You can add Reviewed-by: Chao Yu <chao2.yu@samsung.com>
-> after the following issue is fixed.
-> 
-> > ---
-> >  fs/f2fs/data.c | 10 ++++++----
-> >  1 file changed, 6 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-> > index 8f16443..12dd58a 100644
-> > --- a/fs/f2fs/data.c
-> > +++ b/fs/f2fs/data.c
-> > @@ -963,22 +963,22 @@ repeat:
-> >  		} else if (page->index == 0) {
-> >  			err = f2fs_convert_inline_page(&dn, page);
-> >  			if (err)
-> > -				goto unlock_fail;
-> > +				goto put_fail;
-> >  		} else {
-> >  			struct page *p = grab_cache_page(inode->i_mapping, 0);
-> >  			if (!p) {
-> >  				err = -ENOMEM;
-> > -				goto unlock_fail;
-> > +				goto put_fail;
-> >  			}
-> >  			err = f2fs_convert_inline_page(&dn, p);
-> >  			f2fs_put_page(p, 1);
-> >  			if (err)
-> > -				goto unlock_fail;
-> > +				goto put_fail;
-> >  		}
-> >  	}
-> >  	err = f2fs_reserve_block(&dn, index);
-> >  	if (err)
-> > -		goto unlock_fail;
-> > +		goto put_fail;
-> 
-> f2fs_reserve_block will do the clean work, we should not release dn again.
 
-Well, I added this to handle errors consistently.
-It's harmless, since f2fs_put_dnode removes the pointers after putting them.
+	Hello,
 
-Thanks,
+On Tue, 18 Nov 2014, SF Markus Elfring wrote:
 
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Tue, 18 Nov 2014 20:37:05 +0100
 > 
-> Thanks,
-> Yu
+> The functions free_percpu() and module_put() test whether their argument
+> is NULL and then return immediately. Thus the test around the call is
+> not needed.
 > 
-> >  put_next:
-> >  	f2fs_put_dnode(&dn);
-> >  	f2fs_unlock_op(sbi);
-> > @@ -1021,6 +1021,8 @@ out:
-> >  	clear_cold_data(page);
-> >  	return 0;
-> > 
-> > +put_fail:
-> > +	f2fs_put_dnode(&dn);
-> >  unlock_fail:
-> >  	f2fs_unlock_op(sbi);
-> >  	f2fs_put_page(page, 1);
-> > --
-> > 2.1.1
-> > 
-> > 
-> > ------------------------------------------------------------------------------
-> > Download BIRT iHub F-Type - The Free Enterprise-Grade BIRT Server
-> > from Actuate! Instantly Supercharge Your Business Reports and Dashboards
-> > with Interactivity, Sharing, Native Excel Exports, App Integration & more
-> > Get technology previously reserved for billion-dollar corporations, FREE
-> > http://pubads.g.doubleclick.net/gampad/clk?id=157005751&iu=/4140/ostg.clktrk
-> > _______________________________________________
-> > Linux-f2fs-devel mailing list
-> > Linux-f2fs-devel@lists.sourceforge.net
-> > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+> This issue was detected by using the Coccinelle software.
+> 
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+
+	Pablo, the IPVS parts look ok to me,
+
+Acked-by: Julian Anastasov <ja@ssi.bg>
+
+> ---
+>  net/netfilter/ipvs/ip_vs_ctl.c   | 3 +--
+>  net/netfilter/ipvs/ip_vs_pe.c    | 3 +--
+>  net/netfilter/ipvs/ip_vs_sched.c | 3 +--
+>  net/netfilter/ipvs/ip_vs_sync.c  | 3 +--
+>  net/netfilter/nf_tables_api.c    | 3 +--
+>  5 files changed, 5 insertions(+), 10 deletions(-)
+> 
+> diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+> index fd3f444..7c5e40a 100644
+> --- a/net/netfilter/ipvs/ip_vs_ctl.c
+> +++ b/net/netfilter/ipvs/ip_vs_ctl.c
+> @@ -465,8 +465,7 @@ __ip_vs_bind_svc(struct ip_vs_dest *dest, struct ip_vs_service *svc)
+>  
+>  static void ip_vs_service_free(struct ip_vs_service *svc)
+>  {
+> -	if (svc->stats.cpustats)
+> -		free_percpu(svc->stats.cpustats);
+> +	free_percpu(svc->stats.cpustats);
+>  	kfree(svc);
+>  }
+>  
+> diff --git a/net/netfilter/ipvs/ip_vs_pe.c b/net/netfilter/ipvs/ip_vs_pe.c
+> index 1a82b29..0df17ca 100644
+> --- a/net/netfilter/ipvs/ip_vs_pe.c
+> +++ b/net/netfilter/ipvs/ip_vs_pe.c
+> @@ -37,8 +37,7 @@ struct ip_vs_pe *__ip_vs_pe_getbyname(const char *pe_name)
+>  			rcu_read_unlock();
+>  			return pe;
+>  		}
+> -		if (pe->module)
+> -			module_put(pe->module);
+> +		module_put(pe->module);
+>  	}
+>  	rcu_read_unlock();
+>  
+> diff --git a/net/netfilter/ipvs/ip_vs_sched.c b/net/netfilter/ipvs/ip_vs_sched.c
+> index 4dbcda6..199760c 100644
+> --- a/net/netfilter/ipvs/ip_vs_sched.c
+> +++ b/net/netfilter/ipvs/ip_vs_sched.c
+> @@ -104,8 +104,7 @@ static struct ip_vs_scheduler *ip_vs_sched_getbyname(const char *sched_name)
+>  			mutex_unlock(&ip_vs_sched_mutex);
+>  			return sched;
+>  		}
+> -		if (sched->module)
+> -			module_put(sched->module);
+> +		module_put(sched->module);
+>  	}
+>  
+>  	mutex_unlock(&ip_vs_sched_mutex);
+> diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
+> index eadffb2..cafe28d 100644
+> --- a/net/netfilter/ipvs/ip_vs_sync.c
+> +++ b/net/netfilter/ipvs/ip_vs_sync.c
+> @@ -820,8 +820,7 @@ ip_vs_conn_fill_param_sync(struct net *net, int af, union ip_vs_sync_conn *sc,
+>  
+>  		p->pe_data = kmemdup(pe_data, pe_data_len, GFP_ATOMIC);
+>  		if (!p->pe_data) {
+> -			if (p->pe->module)
+> -				module_put(p->pe->module);
+> +			module_put(p->pe->module);
+>  			return -ENOMEM;
+>  		}
+>  		p->pe_data_len = pe_data_len;
+> diff --git a/net/netfilter/nf_tables_api.c b/net/netfilter/nf_tables_api.c
+> index deeb95f..b115f54 100644
+> --- a/net/netfilter/nf_tables_api.c
+> +++ b/net/netfilter/nf_tables_api.c
+> @@ -3472,8 +3472,7 @@ static int nf_tables_abort(struct sk_buff *skb)
+>  			break;
+>  		case NFT_MSG_NEWCHAIN:
+>  			if (nft_trans_chain_update(trans)) {
+> -				if (nft_trans_chain_stats(trans))
+> -					free_percpu(nft_trans_chain_stats(trans));
+> +				free_percpu(nft_trans_chain_stats(trans));
+>  
+>  				nft_trans_destroy(trans);
+>  			} else {
+> -- 
+> 2.1.3
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
