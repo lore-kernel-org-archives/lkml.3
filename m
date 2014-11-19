@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943AbaKSCDN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 21:03:13 -0500
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:49498 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542AbaKSCDK (ORCPT
+	id S1754473AbaKSCFH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 21:05:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39256 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754206AbaKSCFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 21:03:10 -0500
+	Tue, 18 Nov 2014 21:05:03 -0500
+Date: Tue, 18 Nov 2014 18:05:02 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+Cc: Matt Fleming <matt@console-pimps.org>, Ming Lei <ming.lei@canonical.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        Sam Protsenko <semen.protsenko@linaro.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: Re: [PATCH v2 1/3] firmware loader: Introduce new API -
+ request_firmware_abort()
+Message-ID: <20141119020502.GC6054@kroah.com>
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+ <1414984030-13859-2-git-send-email-hock.leong.kweh@intel.com>
+ <20141108190655.GA2638@kroah.com>
+ <F54AEECA5E2B9541821D670476DAE19C2B8529E3@PGSMSX102.gar.corp.intel.com>
+ <20141117151211.GB6810@console-pimps.org>
+ <F54AEECA5E2B9541821D670476DAE19C2B85DA57@PGSMSX102.gar.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20141118164100.GD6179@saruman>
-References: <1416273684-11300-1-git-send-email-kever.yang@rock-chips.com>
-	<Pine.LNX.4.44L0.1411181104280.1500-100000@iolanthe.rowland.org>
-	<20141118164100.GD6179@saruman>
-Date: Tue, 18 Nov 2014 18:03:09 -0800
-X-Google-Sender-Auth: KCpbZNb2j_p2ONF8msm1nqKFCwE
-Message-ID: <CAODwPW8hQdxv_ecaVHYjS4rHjZVB_G5zURDPCHzaPsEXVgs=fA@mail.gmail.com>
-Subject: Re: [PATCH v2] usb: dwc2: resume root hub when device detect with
- suspend state
-From: Julius Werner <jwerner@chromium.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Paul Zimmerman <paulz@synopsys.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        Romain Perier <romain.perier@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Douglas Anderson <dianders@chromium.org>,
-        Sonny Rao <sonnyrao@chromium.org>, addy ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, wulf <wulf@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Roy Li <roy.li@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F54AEECA5E2B9541821D670476DAE19C2B85DA57@PGSMSX102.gar.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> You should be aware that it's not safe to use hcd->state for anything
->> in a host controller driver.  That field is owned by usbcore, not by
->> the HCD, and it is not protected by any locks.
->>
->> Thus, for example, hcd->state does not get set to HC_STATE_SUSPENDED
->> until some time after the bus_suspend routine has returned.  A
->> port-change interrupt might occur during that time interval.
+On Tue, Nov 18, 2014 at 06:31:38AM +0000, Kweh, Hock Leong wrote:
+> > -----Original Message-----
+> > From: Matt Fleming [mailto:matt@console-pimps.org]
+> > Sent: Monday, November 17, 2014 11:12 PM
+> > >
+> > > - Only doing module unload is required to be aware of this synchronization
+> > > 	-> Ensuring the call back does not fall into unloaded code which may
+> > cause
+> > > 	     undefined behavior.
+> > > 	-> Ensuring the put_device() & module_put() code have finished in
+> > firmware_class.c
+> > > 	     function request_firmware_work_func() before the device is
+> > unregistered
+> > > 	     and module unloaded happen.
+> > 
+> > Shouldn't the existing module_{put,get}() and {put,get}_device() calls
+> > provide all the necessary synchronisation?
+> > 
+> > Module unload should not be possible while other code is using the
+> > module (and the module refcnt has been incremented accordindly).
+> > 
+> > Right?
+> > 
+> > --
+> > Matt Fleming, Intel Open Source Technology Center
+> 
+> Hi Matt,
+> 
+> Yes, you are right. If the module refcount is not zero, you will get error
+> message and returned while you do "rmmod". But I strongly believe if we
+> have the capability in our code to take care of it by doing synchronization,
+> we should take care of it in case people are doing "rmmod -f". Don't
+> you think so?
 
-Looks like there is explicit code in hcd_bus_suspend() to check for
-that race condition right after setting hcd->state, or do I
-misinterpret that (the "Did we race with a root-hub wakeup event?"
-part)? Also, it seems xhci_bus_suspend() explicitly sets 'hcd->state =
-HC_STATE_SUSPENDED' before giving up the spinlock for some
-undocumented reason, maybe to avoid exactly this problem. We could
-just copy that trick if the hcd.c solution isn't enough (although the
-DWC2 bus_suspend/bus_resume in the other patch don't grab that
-spinlock right now, where I'm also not so sure if that's a good
-idea...).
+If you do 'rmmod -f' you get to keep all of the broken pieces of your
+kernel, no need to try to help out with crazy things like that.
+
+greg k-h
