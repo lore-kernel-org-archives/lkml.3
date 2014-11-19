@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066AbaKSOLz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 09:11:55 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:58728 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759AbaKSOLy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:11:54 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] isofs: avoid unused function warning
-Date: Wed, 19 Nov 2014 15:11:24 +0100
-Message-ID: <1744765.FITJHBjs5L@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+	id S1754766AbaKSOOF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 09:14:05 -0500
+Received: from mga01.intel.com ([192.55.52.88]:30963 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753824AbaKSOOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 09:14:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,417,1413270000"; 
+   d="scan'208";a="634523840"
+Date: Wed, 19 Nov 2014 16:12:40 +0200
+From: Laurentiu Palcu <laurentiu.palcu@intel.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/2] spi: add support for DLN-2 USB-SPI adapter
+Message-ID: <20141119141239.GE2583@lpalcu-linux>
+References: <1416394031-2663-1-git-send-email-laurentiu.palcu@intel.com>
+ <1416402467-26999-1-git-send-email-laurentiu.palcu@intel.com>
+ <20141119135121.GF7857@localhost>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:RaZMrmf7fNBACi7L2Vs8BIb8Gqs3mxW7TWRQZhbUQz1
- POnughnRmnwwUn35s16AhAttPo57enNoqnDCokav0phTtskqYk
- ekKmqZ6VBA9Y+kIzzpMuw/1NyIcxf56U6g060O5FiuIgJUXEGa
- V2+xb0xzODKXUgSTYLoBavkDB+mZmSm1kLlEiSzZ6laWjRRwo/
- MAgNJtO6IpsJ1E+OecS19/QNd6PAVdgGquBSgfzGzkCgce6oT+
- xRa7iFEZN4QZT2BfQlp97MYsdcGu6Ffbp+OO+qiWuspjDe07xo
- HWRbMSjr5YmysxBIoczUXFjLYaXsjnzPyGmoZrho+7aTXf2RMj
- vUt5hVhzEzrnvVM7h/nQ=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141119135121.GF7857@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the isofs_hash() function removed, isofs_hash_ms() is the only user
-of isofs_hash_common(), but it's defined inside of an #ifdef, which triggers
-this gcc warning in ARM axm55xx_defconfig starting with v3.18-rc3:
+On Wed, Nov 19, 2014 at 02:51:21PM +0100, Johan Hovold wrote:
+> On Wed, Nov 19, 2014 at 03:07:47PM +0200, Laurentiu Palcu wrote:
+> 
+> > +/*
+> > + * Perform one read operation.
+> > + */
+> > +static int dln2_spi_read_one(struct dln2_spi *dln2, u8 *data,
+> > +			     u16 data_len, u8 attr)
+> > +{
+> > +	int ret;
+> > +	struct {
+> > +		u8 port;
+> > +		__le16 size;
+> > +		u8 attr;
+> > +	} __packed tx;
+> > +	struct {
+> > +		__le16 size;
+> > +		u8 buf[DLN2_SPI_MAX_XFER_SIZE];
+> > +	} __packed *rx = dln2->buf;
+> 
+> You said you verified that the dln2 protocol headers did not mess up the
+> alignment, yet they do. Here you have a two byte header.
+I did, only that I mistakenly counted the entire header, including
+dln2_response struct size, which is 10 bytes... :/
 
-fs/isofs/inode.c:177:1: warning: 'isofs_hash_common' defined but not used [-Wunused-function]
+thanks,
+laurentiu
 
-This patch moves the function inside of the same #ifdef section to avoid that
-warning, which seems the best compromise of a relatively harmless patch for
-a late -rc.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Fixes: b0afd8e5db7b ("isofs: don't bother with ->d_op for normal case")
----
-
-diff --git a/fs/isofs/inode.c b/fs/isofs/inode.c
-index fe839b915116..d67a16f2a45d 100644
---- a/fs/isofs/inode.c
-+++ b/fs/isofs/inode.c
-@@ -174,27 +174,6 @@ struct iso9660_options{
-  * Compute the hash for the isofs name corresponding to the dentry.
-  */
- static int
--isofs_hash_common(struct qstr *qstr, int ms)
--{
--	const char *name;
--	int len;
--
--	len = qstr->len;
--	name = qstr->name;
--	if (ms) {
--		while (len && name[len-1] == '.')
--			len--;
--	}
--
--	qstr->hash = full_name_hash(name, len);
--
--	return 0;
--}
--
--/*
-- * Compute the hash for the isofs name corresponding to the dentry.
-- */
--static int
- isofs_hashi_common(struct qstr *qstr, int ms)
- {
- 	const char *name;
-@@ -263,6 +242,27 @@ isofs_dentry_cmpi(const struct dentry *parent, const struct dentry *dentry,
- }
- 
- #ifdef CONFIG_JOLIET
-+/*
-+ * Compute the hash for the isofs name corresponding to the dentry.
-+ */
-+static int
-+isofs_hash_common(struct qstr *qstr, int ms)
-+{
-+	const char *name;
-+	int len;
-+
-+	len = qstr->len;
-+	name = qstr->name;
-+	if (ms) {
-+		while (len && name[len-1] == '.')
-+			len--;
-+	}
-+
-+	qstr->hash = full_name_hash(name, len);
-+
-+	return 0;
-+}
-+
- static int
- isofs_hash_ms(const struct dentry *dentry, struct qstr *qstr)
- {
