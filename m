@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733AbaKSWGM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:06:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
+	id S1757762AbaKSWGr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:06:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56574 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933387AbaKSVEO (ORCPT
+	with ESMTP id S933377AbaKSVEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:04:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>, Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.14 026/122] audit: keep inode pinned
-Date: Wed, 19 Nov 2014 12:51:16 -0800
-Message-Id: <20141119205209.664635769@linuxfoundation.org>
+        Steve Grubb <sgrubb@redhat.com>, Richard Guy Briggs <rgb@redhat.com>
+Subject: [PATCH 3.14 024/122] audit: correct AUDIT_GET_FEATURE return message type
+Date: Wed, 19 Nov 2014 12:51:14 -0800
+Message-Id: <20141119205209.605713908@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -28,37 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Richard Guy Briggs <rgb@redhat.com>
 
-commit 799b601451b21ebe7af0e6e8f6e2ccd4683c5064 upstream.
+commit 9ef91514774a140e468f99d73d7593521e6d25dc upstream.
 
-Audit rules disappear when an inode they watch is evicted from the cache.
-This is likely not what we want.
+When an AUDIT_GET_FEATURE message is sent from userspace to the kernel, it
+should reply with a message tagged as an AUDIT_GET_FEATURE type with a struct
+audit_feature.  The current reply is a message tagged as an AUDIT_GET
+type with a struct audit_feature.
 
-The guilty commit is "fsnotify: allow marks to not pin inodes in core",
-which didn't take into account that audit_tree adds watches with a zero
-mask.
+This appears to have been a cut-and-paste-eo in commit b0fed40.
 
-Adding any mask should fix this.
-
-Fixes: 90b1e7a57880 ("fsnotify: allow marks to not pin inodes in core")
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Reported-by: Steve Grubb <sgrubb@redhat.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/audit_tree.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/audit.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -154,6 +154,7 @@ static struct audit_chunk *alloc_chunk(i
- 		chunk->owners[i].index = i;
- 	}
- 	fsnotify_init_mark(&chunk->mark, audit_tree_destroy_watch);
-+	chunk->mark.mask = FS_IN_IGNORED;
- 	return chunk;
- }
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -687,7 +687,7 @@ static int audit_get_feature(struct sk_b
  
+ 	seq = nlmsg_hdr(skb)->nlmsg_seq;
+ 
+-	audit_send_reply(skb, seq, AUDIT_GET, 0, 0, &af, sizeof(af));
++	audit_send_reply(skb, seq, AUDIT_GET_FEATURE, 0, 0, &af, sizeof(af));
+ 
+ 	return 0;
+ }
 
 
