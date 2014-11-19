@@ -1,75 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933653AbaKSVPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:15:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57643 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932873AbaKSVPg (ORCPT
+	id S934010AbaKSVQE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:16:04 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10337 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933959AbaKSVPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:15:36 -0500
-Date: Wed, 19 Nov 2014 13:15:35 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Karam Lee <karam.lee@lge.com>, Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH] zram: rely on the bi_end_io for zram_rw_page fails
-Message-Id: <20141119131535.7d848c148535c076a17b9d29@linux-foundation.org>
-In-Reply-To: <20141118235201.GB7393@bbox>
-References: <1415926147-9023-1-git-send-email-minchan@kernel.org>
-	<20141118152336.d58b7b61a711b7d9982deb9d@linux-foundation.org>
-	<20141118235201.GB7393@bbox>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 19 Nov 2014 16:15:03 -0500
+Message-ID: <546D084D.20002@sonymobile.com>
+Date: Wed, 19 Nov 2014 13:14:53 -0800
+From: Tim Bird <tim.bird@sonymobile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Shuah Khan <shuahkh@osg.samsung.com>, <linux-api@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
+Subject: [PATCH] selftest: size: Add size test for Linux kernel
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014 08:52:01 +0900 Minchan Kim <minchan@kernel.org> wrote:
 
-> > >  
-> > > -	/*
-> > > -	 * Return 0 prevents I/O fallback trial caused by rw_page fail
-> > > -	 * and upper layer can handle this IO error via page error.
-> > > -	 */
-> > > +	page_endio(page, rw, 0);
-> > >  	return 0;
-> > 
-> > Losing the comment makes me sad.  The code is somewhat odd-looking.  We
-> > should add some words explaining why we're not reporting errors at this
-> > point.
-> 
-> Okay. How about this?
-> 
-> 
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index decca6f161b8..1d7c90d5e0d0 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -975,6 +975,12 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
->  	err = zram_bvec_rw(zram, &bv, index, offset, rw);
->  out_unlock:
->  	up_read(&zram->init_lock);
-> +	/*
-> +	 * If I/O fails, just return error without calling page_endio.
-> +	 * It causes resubmit the I/O with bio request by rw_page fallback
-> +	 * and bio I/O complete handler does things to handle the error
-> +	 * (e.g., set_page_dirty of swap_writepage fail).
-> +	 */
->  	if (err == 0)
->  		page_endio(page, rw, 0);
->  	return err;
+This test shows the amount of memory used by the system.
+Note that this is dependent on the user-space that is loaded
+when this program runs.  Optimally, this program would be
+run as the init program itself.
 
-I don't understand the comment :( bdev_read_page() doesn't resubmit the
-IO if block_device_operations.rw_page() returns zero and it's unclear
-how the bio I/O complete handler (which one?) gets involved.
+The program is optimized for size itself, to avoid conflating
+its own execution with that of the system software.
+The code is compiled statically, with no stdlibs. On my x86_64 system,
+this results in a statically linked binary of less than 5K.
 
-It would help in the comment was more specific.  Instead of using vague
-terms like "rw_page fallback" and "bio I/O complete handler", use
-actual function names so the reader understand exactly what code we're
-referring to.
+Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+---
+ tools/testing/selftests/Makefile        |   1 +
+ tools/testing/selftests/size/Makefile   |  21 +++++++
+ tools/testing/selftests/size/get_size.c | 105 ++++++++++++++++++++++++++++++++
+ 3 files changed, 127 insertions(+)
+ create mode 100644 tools/testing/selftests/size/Makefile
+ create mode 100644 tools/testing/selftests/size/get_size.c
 
+diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+index 45f145c..fa91aef 100644
+--- a/tools/testing/selftests/Makefile
++++ b/tools/testing/selftests/Makefile
+@@ -15,6 +15,7 @@ TARGETS += user
+ TARGETS += sysctl
+ TARGETS += firmware
+ TARGETS += ftrace
++TARGETS += size
+ 
+ TARGETS_HOTPLUG = cpu-hotplug
+ TARGETS_HOTPLUG += memory-hotplug
+diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
+new file mode 100644
+index 0000000..51e5fbd
+--- /dev/null
++++ b/tools/testing/selftests/size/Makefile
+@@ -0,0 +1,21 @@
++#ifndef CC
++	CC = $(CROSS_COMPILE)gcc
++#endif
++
++#ifndef STRIP
++	STRIP = $(CROSS_COMPILE)strip
++#endif
++
++all: get_size
++
++get_size: get_size.c
++	$(CC) --static -ffreestanding -nostartfiles \
++		-Wl,--entry=main get_size.c -o get_size \
++		`cc -print-libgcc-file-name`
++	$(STRIP) -s get_size
++
++run_tests: all
++	./get_size
++
++clean:
++	$(RM) get_size
+diff --git a/tools/testing/selftests/size/get_size.c b/tools/testing/selftests/size/get_size.c
+new file mode 100644
+index 0000000..f8ffc80
+--- /dev/null
++++ b/tools/testing/selftests/size/get_size.c
+@@ -0,0 +1,105 @@
++/*
++ * Copyright 2014 Sony
++ *
++ * Licensed under the terms of the GNU GPL License version 2
++ *
++ * Selftest for runtime system size
++ *
++ * Prints the amount of RAM that the currently running system is using.
++ *
++ * This program tries to be as small as possible itself, to
++ * avoid perturbing the system memory utilization with its
++ * own execution.  It also attempts to have as few dependencies
++ * on kernel features as possible.
++ *
++ * It should be statically linked, with startup libs avoided.
++ * It uses no library calls, and only the following 3 syscalls:
++ *   sysinfo(), write(), and _exit()
++ *
++ * For output, it avoids printf (which in some C libraries
++ * has large external dependencies) by implementing its own
++ * strlen(), number output and print() routines.
++ */
++
++#include <sys/sysinfo.h>
++#include <unistd.h>
++
++#define STDOUT_FILENO 1
++
++my_strlen(const char *s)
++{
++	int len = 0;
++
++	while (*s++)
++		len++;
++	return len;
++}
++
++/*
++ * num_to_str - put digits from num into *s, left to right
++ *   do this by dividing the number by powers of 10
++ *   the tricky part is to omit leading zeros
++ *   don't print zeros until we've started printing any numbers at all
++ */
++static void num_to_str(unsigned long num, char *s)
++{
++	unsigned long long temp, div;
++	int started;
++
++	temp = num;
++	div = 1000000000000000000LL;
++	started = 0;
++	while (div) {
++		if (temp/div || started) {
++			*s++ = (unsigned char)(temp/div + '0');
++			started = 1;
++		}
++		temp -= (temp/div)*div;
++		div /= 10;
++	}
++	*s = 0;
++}
++
++print_num(unsigned long num)
++{
++	char num_buf[30];
++
++	num_to_str(num, num_buf);
++	write(STDOUT_FILENO, num_buf, my_strlen(num_buf));
++}
++
++print(char *s)
++{
++	write(STDOUT_FILENO, s, my_strlen(s));
++}
++
++void main(int argc, char **argv)
++{
++	int ccode;
++	unsigned long used;
++	struct sysinfo info;
++	unsigned long long temp;
++
++	print("Testing system size.\n");
++	print("1..1\n");
++
++	ccode = sysinfo(&info);
++	if (ccode < 0) {
++		print("not ok 1 get size runtime size\n");
++		print("# could not get sysinfo\n");
++		_exit(ccode);
++	}
++
++	/* ignore cache complexities for now */
++	temp = info.totalram - info.freeram - info.bufferram;
++	temp = temp * info.mem_unit;
++	temp = temp / 1024;
++
++	used = temp;
++
++	print("ok 1 get runtime size # size = ");
++	print_num(used);
++	print(" K\n");
++
++	_exit(0);
++}
+-- 
+1.8.2.2
