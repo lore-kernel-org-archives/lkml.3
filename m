@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757320AbaKSVlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:41:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57291 "EHLO
+	id S1757356AbaKSVl4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:41:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57233 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933204AbaKSVOd (ORCPT
+	with ESMTP id S933107AbaKSVOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:33 -0500
+	Wed, 19 Nov 2014 16:14:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Drew Richardson <drew.richardson@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        David Ahern <daahern@cisco.com>
-Subject: [PATCH 3.14 091/122] perf: Handle compat ioctl
-Date: Wed, 19 Nov 2014 12:52:21 -0800
-Message-Id: <20141119205211.841632999@linuxfoundation.org>
+        Tim Chen <tim.c.chen@linux.intel.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Bob Liu <bob.liu@oracle.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 119/122] fs/superblock: unregister sb shrinker before ->kill_sb()
+Date: Wed, 19 Nov 2014 12:52:49 -0800
+Message-Id: <20141119205212.791587069@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -32,80 +35,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pawel Moll <pawel.moll@arm.com>
+From: Dave Chinner <david@fromorbit.com>
 
-commit b3f207855f57b9c8f43a547a801340bb5cbc59e5 upstream.
+commit 28f2cd4f6da24a1aa06c226618ed5ad69e13df64 upstream.
 
-When running a 32-bit userspace on a 64-bit kernel (eg. i386
-application on x86_64 kernel or 32-bit arm userspace on arm64
-kernel) some of the perf ioctls must be treated with special
-care, as they have a pointer size encoded in the command.
+This series is aimed at regressions noticed during reclaim activity.  The
+first two patches are shrinker patches that were posted ages ago but never
+merged for reasons that are unclear to me.  I'm posting them again to see
+if there was a reason they were dropped or if they just got lost.  Dave?
+Time?  The last patch adjusts proportional reclaim.  Yuanhan Liu, can you
+retest the vm scalability test cases on a larger machine?  Hugh, does this
+work for you on the memcg test cases?
 
-For example, PERF_EVENT_IOC_ID in 32-bit world will be encoded
-as 0x80042407, but 64-bit kernel will expect 0x80082407. In
-result the ioctl will fail returning -ENOTTY.
+Based on ext4, I get the following results but unfortunately my larger
+test machines are all unavailable so this is based on a relatively small
+machine.
 
-This patch solves the problem by adding code fixing up the
-size as compat_ioctl file operation.
+postmark
+                                  3.15.0-rc5            3.15.0-rc5
+                                     vanilla       proportion-v1r4
+Ops/sec Transactions         21.00 (  0.00%)       25.00 ( 19.05%)
+Ops/sec FilesCreate          39.00 (  0.00%)       45.00 ( 15.38%)
+Ops/sec CreateTransact       10.00 (  0.00%)       12.00 ( 20.00%)
+Ops/sec FilesDeleted       6202.00 (  0.00%)     6202.00 (  0.00%)
+Ops/sec DeleteTransact       11.00 (  0.00%)       12.00 (  9.09%)
+Ops/sec DataRead/MB          25.97 (  0.00%)       30.02 ( 15.59%)
+Ops/sec DataWrite/MB         49.99 (  0.00%)       57.78 ( 15.58%)
 
-Reported-by: Drew Richardson <drew.richardson@arm.com>
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1402671812-9078-1-git-send-email-pawel.moll@arm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: David Ahern <daahern@cisco.com>
+ffsb (mail server simulator)
+                                 3.15.0-rc5             3.15.0-rc5
+                                    vanilla        proportion-v1r4
+Ops/sec readall           9402.63 (  0.00%)      9805.74 (  4.29%)
+Ops/sec create            4695.45 (  0.00%)      4781.39 (  1.83%)
+Ops/sec delete             173.72 (  0.00%)       177.23 (  2.02%)
+Ops/sec Transactions     14271.80 (  0.00%)     14764.37 (  3.45%)
+Ops/sec Read                37.00 (  0.00%)        38.50 (  4.05%)
+Ops/sec Write               18.20 (  0.00%)        18.50 (  1.65%)
+
+dd of a large file
+                                3.15.0-rc5            3.15.0-rc5
+                                   vanilla       proportion-v1r4
+WallTime DownloadTar       75.00 (  0.00%)       61.00 ( 18.67%)
+WallTime DD               423.00 (  0.00%)      401.00 (  5.20%)
+WallTime Delete             2.00 (  0.00%)        5.00 (-150.00%)
+
+stutter (times mmap latency during large amounts of IO)
+
+                            3.15.0-rc5            3.15.0-rc5
+                               vanilla       proportion-v1r4
+Unit >5ms Delays  80252.0000 (  0.00%)  81523.0000 ( -1.58%)
+Unit Mmap min         8.2118 (  0.00%)      8.3206 ( -1.33%)
+Unit Mmap mean       17.4614 (  0.00%)     17.2868 (  1.00%)
+Unit Mmap stddev     24.9059 (  0.00%)     34.6771 (-39.23%)
+Unit Mmap max      2811.6433 (  0.00%)   2645.1398 (  5.92%)
+Unit Mmap 90%        20.5098 (  0.00%)     18.3105 ( 10.72%)
+Unit Mmap 93%        22.9180 (  0.00%)     20.1751 ( 11.97%)
+Unit Mmap 95%        25.2114 (  0.00%)     22.4988 ( 10.76%)
+Unit Mmap 99%        46.1430 (  0.00%)     43.5952 (  5.52%)
+Unit Ideal  Tput     85.2623 (  0.00%)     78.8906 (  7.47%)
+Unit Tput min        44.0666 (  0.00%)     43.9609 (  0.24%)
+Unit Tput mean       45.5646 (  0.00%)     45.2009 (  0.80%)
+Unit Tput stddev      0.9318 (  0.00%)      1.1084 (-18.95%)
+Unit Tput max        46.7375 (  0.00%)     46.7539 ( -0.04%)
+
+This patch (of 3):
+
+We will like to unregister the sb shrinker before ->kill_sb().  This will
+allow cached objects to be counted without call to grab_super_passive() to
+update ref count on sb.  We want to avoid locking during memory
+reclamation especially when we are skipping the memory reclaim when we are
+out of cached objects.
+
+This is safe because grab_super_passive does a try-lock on the
+sb->s_umount now, and so if we are in the unmount process, it won't ever
+block.  That means what used to be a deadlock and races we were avoiding
+by using grab_super_passive() is now:
+
+        shrinker                        umount
+
+        down_read(shrinker_rwsem)
+                                        down_write(sb->s_umount)
+                                        shrinker_unregister
+                                          down_write(shrinker_rwsem)
+                                            <blocks>
+        grab_super_passive(sb)
+          down_read_trylock(sb->s_umount)
+            <fails>
+        <shrinker aborts>
+        ....
+        <shrinkers finish running>
+        up_read(shrinker_rwsem)
+                                          <unblocks>
+                                          <removes shrinker>
+                                          up_write(shrinker_rwsem)
+                                        ->kill_sb()
+                                        ....
+
+So it is safe to deregister the shrinker before ->kill_sb().
+
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Bob Liu <bob.liu@oracle.com>
+Cc: Jan Kara <jack@suse.cz>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- kernel/events/core.c |   23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -39,6 +39,7 @@
- #include <linux/hw_breakpoint.h>
- #include <linux/mm_types.h>
- #include <linux/cgroup.h>
-+#include <linux/compat.h>
+---
+ fs/super.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -278,10 +278,8 @@ void deactivate_locked_super(struct supe
+ 	struct file_system_type *fs = s->s_type;
+ 	if (atomic_dec_and_test(&s->s_active)) {
+ 		cleancache_invalidate_fs(s);
+-		fs->kill_sb(s);
+-
+-		/* caches are now gone, we can safely kill the shrinker now */
+ 		unregister_shrinker(&s->s_shrink);
++		fs->kill_sb(s);
  
- #include "internal.h"
- 
-@@ -3693,6 +3694,26 @@ static long perf_ioctl(struct file *file
- 	return 0;
- }
- 
-+#ifdef CONFIG_COMPAT
-+static long perf_compat_ioctl(struct file *file, unsigned int cmd,
-+				unsigned long arg)
-+{
-+	switch (_IOC_NR(cmd)) {
-+	case _IOC_NR(PERF_EVENT_IOC_SET_FILTER):
-+	case _IOC_NR(PERF_EVENT_IOC_ID):
-+		/* Fix up pointer size (usually 4 -> 8 in 32-on-64-bit case */
-+		if (_IOC_SIZE(cmd) == sizeof(compat_uptr_t)) {
-+			cmd &= ~IOCSIZE_MASK;
-+			cmd |= sizeof(void *) << IOCSIZE_SHIFT;
-+		}
-+		break;
-+	}
-+	return perf_ioctl(file, cmd, arg);
-+}
-+#else
-+# define perf_compat_ioctl NULL
-+#endif
-+
- int perf_event_task_enable(void)
- {
- 	struct perf_event *event;
-@@ -4185,7 +4206,7 @@ static const struct file_operations perf
- 	.read			= perf_read,
- 	.poll			= perf_poll,
- 	.unlocked_ioctl		= perf_ioctl,
--	.compat_ioctl		= perf_ioctl,
-+	.compat_ioctl		= perf_compat_ioctl,
- 	.mmap			= perf_mmap,
- 	.fasync			= perf_fasync,
- };
+ 		put_filesystem(fs);
+ 		put_super(s);
 
 
