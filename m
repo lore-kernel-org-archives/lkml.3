@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757804AbaKSWHe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:07:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56468 "EHLO
+	id S933373AbaKSVEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:04:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56491 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933371AbaKSVEN (ORCPT
+	with ESMTP id S932860AbaKSVEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:13 -0500
+	Wed, 19 Nov 2014 16:04:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Herbert Xu <herbert@gondor.apana.org.au>,
+        Dwight Engen <dwight.engen@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 022/122] tun: Fix csum_start with VLAN acceleration
-Date: Wed, 19 Nov 2014 12:51:12 -0800
-Message-Id: <20141119205209.546825557@linuxfoundation.org>
+Subject: [PATCH 3.14 011/122] sunvdc: compute vdisk geometry from capacity
+Date: Wed, 19 Nov 2014 12:51:01 -0800
+Message-Id: <20141119205209.195396560@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,73 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Allen Pais <allen.pais@oracle.com>
 
-commit a8f9bfdf982e2b1fb9f094e4de9ab08c57f3d2fd upstream.
+[ Upstream commit de5b73f08468b4fc5e2f6d1505f650262622f78b ]
 
-When VLAN acceleration is in use on the xmit path, we end up
-setting csum_start to the wrong place.  The result is that the
-whoever ends up doing the checksum setting will corrupt the packet
-instead of writing the checksum to the expected location, usually
-this means writing the checksum with an offset of -4.
+The LDom diskserver doesn't return reliable geometry data. In addition,
+the types for all fields in the vio_disk_geom are u16, which were being
+truncated in the cast into the u8's of the Linux struct hd_geometry.
 
-This patch fixes this by adjusting csum_start when VLAN acceleration
-is detected.
+Modify vdc_getgeo() to compute the geometry from the disk's capacity in a
+manner consistent with xen-blkfront::blkif_getgeo().
 
-Fixes: 6680ec68eff4 ("tuntap: hardware vlan tx support")
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/tun.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ drivers/block/sunvdc.c |   23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
 
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1226,6 +1226,10 @@ static ssize_t tun_put_user(struct tun_s
- 	struct tun_pi pi = { 0, skb->protocol };
- 	ssize_t total = 0;
- 	int vlan_offset = 0, copied;
-+	int vlan_hlen = 0;
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -70,7 +70,6 @@ struct vdc_port {
+ 
+ 	char			disk_name[32];
+ 
+-	struct vio_disk_geom	geom;
+ 	struct vio_disk_vtoc	label;
+ };
+ 
+@@ -103,11 +102,15 @@ static inline u32 vdc_tx_dring_avail(str
+ static int vdc_getgeo(struct block_device *bdev, struct hd_geometry *geo)
+ {
+ 	struct gendisk *disk = bdev->bd_disk;
+-	struct vdc_port *port = disk->private_data;
++	sector_t nsect = get_capacity(disk);
++	sector_t cylinders = nsect;
+ 
+-	geo->heads = (u8) port->geom.num_hd;
+-	geo->sectors = (u8) port->geom.num_sec;
+-	geo->cylinders = port->geom.num_cyl;
++	geo->heads = 0xff;
++	geo->sectors = 0x3f;
++	sector_div(cylinders, geo->heads * geo->sectors);
++	geo->cylinders = cylinders;
++	if ((sector_t)(geo->cylinders + 1) * geo->heads * geo->sectors < nsect)
++		geo->cylinders = 0xffff;
+ 
+ 	return 0;
+ }
+@@ -714,16 +717,18 @@ static int probe_disk(struct vdc_port *p
+ 		if (port->vdisk_size == -1)
+ 			return -ENODEV;
+ 	} else {
++		struct vio_disk_geom geom;
 +
-+	if (vlan_tx_tag_present(skb))
-+		vlan_hlen = VLAN_HLEN;
- 
- 	if (!(tun->flags & TUN_NO_PI)) {
- 		if ((len -= sizeof(pi)) < 0)
-@@ -1277,7 +1281,8 @@ static ssize_t tun_put_user(struct tun_s
- 
- 		if (skb->ip_summed == CHECKSUM_PARTIAL) {
- 			gso.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
--			gso.csum_start = skb_checksum_start_offset(skb);
-+			gso.csum_start = skb_checksum_start_offset(skb) +
-+					 vlan_hlen;
- 			gso.csum_offset = skb->csum_offset;
- 		} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
- 			gso.flags = VIRTIO_NET_HDR_F_DATA_VALID;
-@@ -1290,10 +1295,9 @@ static ssize_t tun_put_user(struct tun_s
+ 		err = generic_request(port, VD_OP_GET_DISKGEOM,
+-				      &port->geom, sizeof(port->geom));
++				      &geom, sizeof(geom));
+ 		if (err < 0) {
+ 			printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
+ 			       "error %d\n", err);
+ 			return err;
+ 		}
+-		port->vdisk_size = ((u64)port->geom.num_cyl *
+-				    (u64)port->geom.num_hd *
+-				    (u64)port->geom.num_sec);
++		port->vdisk_size = ((u64)geom.num_cyl *
++				    (u64)geom.num_hd *
++				    (u64)geom.num_sec);
  	}
  
- 	copied = total;
--	total += skb->len;
--	if (!vlan_tx_tag_present(skb)) {
--		len = min_t(int, skb->len, len);
--	} else {
-+	len = min_t(int, skb->len + vlan_hlen, len);
-+	total += skb->len + vlan_hlen;
-+	if (vlan_hlen) {
- 		int copy, ret;
- 		struct {
- 			__be16 h_vlan_proto;
-@@ -1304,8 +1308,6 @@ static ssize_t tun_put_user(struct tun_s
- 		veth.h_vlan_TCI = htons(vlan_tx_tag_get(skb));
- 
- 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
--		len = min_t(int, skb->len + VLAN_HLEN, len);
--		total += VLAN_HLEN;
- 
- 		copy = min_t(int, vlan_offset, len);
- 		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
+ 	q = blk_init_queue(do_vdc_request, &port->vio.lock);
 
 
