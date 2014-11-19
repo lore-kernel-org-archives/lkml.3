@@ -1,28 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757005AbaKSVWy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:22:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57366 "EHLO
+	id S933884AbaKSVOv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:14:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57291 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933710AbaKSVOx (ORCPT
+	with ESMTP id S933840AbaKSVOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:53 -0500
+	Wed, 19 Nov 2014 16:14:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        David Howells <dhowells@redhat.com>, Jonas Bonn <jonas@southpole.se>,
-        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: [PATCH 3.10 62/70] mm: invoke oom-killer from remaining unconverted page fault handlers
-Date: Wed, 19 Nov 2014 12:52:53 -0800
-Message-Id: <20141119205212.964174165@linuxfoundation.org>
+        Dwight Engen <dwight.engen@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 07/70] sunvdc: limit each sg segment to a page
+Date: Wed, 19 Nov 2014 12:51:58 -0800
+Message-Id: <20141119205211.154315647@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -37,144 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Dwight Engen <dwight.engen@oracle.com>
 
-commit 609838cfed972d49a65aac7923a9ff5cbe482e30 upstream.
+[ Upstream commit 5eed69ffd248c9f68f56c710caf07db134aef28b ]
 
-A few remaining architectures directly kill the page faulting task in an
-out of memory situation.  This is usually not a good idea since that
-task might not even use a significant amount of memory and so may not be
-the optimal victim to resolve the situation.
+ldc_map_sg() could fail its check that the number of pages referred to
+by the sg scatterlist was <= the number of cookies.
 
-Since 2.6.29's 1c0fe6e ("mm: invoke oom-killer from page fault") there
-is a hook that architecture page fault handlers are supposed to call to
-invoke the OOM killer and let it pick the right task to kill.  Convert
-the remaining architectures over to this hook.
+This fixes the issue by doing a similar thing to the xen-blkfront driver,
+ensuring that the scatterlist will only ever contain a segment count <=
+port->ring_cookies, and each segment will be page aligned, and <= page
+size. This ensures that the scatterlist is always mappable.
 
-To have the previous behavior of simply taking out the faulting task the
-vm.oom_kill_allocating_task sysctl can be set to 1.
+Orabug: 19347817
+OraBZ: 15945
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Vineet Gupta <vgupta@synopsys.com>   [arch/arc bits]
-Cc: James Hogan <james.hogan@imgtec.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Jonas Bonn <jonas@southpole.se>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arc/mm/fault.c      |    6 ++++--
- arch/metag/mm/fault.c    |    6 ++++--
- arch/mn10300/mm/fault.c  |    7 ++++---
- arch/openrisc/mm/fault.c |    8 ++++----
- arch/score/mm/fault.c    |    8 ++++----
- arch/tile/mm/fault.c     |    8 ++++----
- 6 files changed, 24 insertions(+), 19 deletions(-)
+ drivers/block/sunvdc.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/arc/mm/fault.c
-+++ b/arch/arc/mm/fault.c
-@@ -206,8 +206,10 @@ out_of_memory:
- 	}
- 	up_read(&mm->mmap_sem);
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -747,6 +747,10 @@ static int probe_disk(struct vdc_port *p
  
--	if (user_mode(regs))
--		do_group_exit(SIGKILL);	/* This will never return */
-+	if (user_mode(regs)) {
-+		pagefault_out_of_memory();
-+		return;
-+	}
+ 	port->disk = g;
  
- 	goto no_context;
- 
---- a/arch/metag/mm/fault.c
-+++ b/arch/metag/mm/fault.c
-@@ -224,8 +224,10 @@ do_sigbus:
- 	 */
- out_of_memory:
- 	up_read(&mm->mmap_sem);
--	if (user_mode(regs))
--		do_group_exit(SIGKILL);
-+	if (user_mode(regs)) {
-+		pagefault_out_of_memory();
-+		return 1;
-+	}
- 
- no_context:
- 	/* Are we prepared to handle this kernel fault?  */
---- a/arch/mn10300/mm/fault.c
-+++ b/arch/mn10300/mm/fault.c
-@@ -345,9 +345,10 @@ no_context:
-  */
- out_of_memory:
- 	up_read(&mm->mmap_sem);
--	printk(KERN_ALERT "VM: killing process %s\n", tsk->comm);
--	if ((fault_code & MMUFCR_xFC_ACCESS) == MMUFCR_xFC_ACCESS_USR)
--		do_exit(SIGKILL);
-+	if ((fault_code & MMUFCR_xFC_ACCESS) == MMUFCR_xFC_ACCESS_USR) {
-+		pagefault_out_of_memory();
-+		return;
-+	}
- 	goto no_context;
- 
- do_sigbus:
---- a/arch/openrisc/mm/fault.c
-+++ b/arch/openrisc/mm/fault.c
-@@ -267,10 +267,10 @@ out_of_memory:
- 	__asm__ __volatile__("l.nop 1");
- 
- 	up_read(&mm->mmap_sem);
--	printk("VM: killing process %s\n", tsk->comm);
--	if (user_mode(regs))
--		do_exit(SIGKILL);
--	goto no_context;
-+	if (!user_mode(regs))
-+		goto no_context;
-+	pagefault_out_of_memory();
-+	return;
- 
- do_sigbus:
- 	up_read(&mm->mmap_sem);
---- a/arch/score/mm/fault.c
-+++ b/arch/score/mm/fault.c
-@@ -172,10 +172,10 @@ out_of_memory:
- 		down_read(&mm->mmap_sem);
- 		goto survive;
- 	}
--	printk("VM: killing process %s\n", tsk->comm);
--	if (user_mode(regs))
--		do_group_exit(SIGKILL);
--	goto no_context;
-+	if (!user_mode(regs))
-+		goto no_context;
-+	pagefault_out_of_memory();
-+	return;
- 
- do_sigbus:
- 	up_read(&mm->mmap_sem);
---- a/arch/tile/mm/fault.c
-+++ b/arch/tile/mm/fault.c
-@@ -573,10 +573,10 @@ out_of_memory:
- 		down_read(&mm->mmap_sem);
- 		goto survive;
- 	}
--	pr_alert("VM: killing process %s\n", tsk->comm);
--	if (!is_kernel_mode)
--		do_group_exit(SIGKILL);
--	goto no_context;
-+	if (is_kernel_mode)
-+		goto no_context;
-+	pagefault_out_of_memory();
-+	return 0;
- 
- do_sigbus:
- 	up_read(&mm->mmap_sem);
++	/* Each segment in a request is up to an aligned page in size. */
++	blk_queue_segment_boundary(q, PAGE_SIZE - 1);
++	blk_queue_max_segment_size(q, PAGE_SIZE);
++
+ 	blk_queue_max_segments(q, port->ring_cookies);
+ 	blk_queue_max_hw_sectors(q, port->max_xfer_size);
+ 	g->major = vdc_major;
 
 
