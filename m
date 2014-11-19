@@ -1,105 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932790AbaKSW7V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:59:21 -0500
-Received: from mail-by2on0101.outbound.protection.outlook.com ([207.46.100.101]:3005
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755043AbaKSW7S convert rfc822-to-8bit (ORCPT
+	id S932885AbaKSW72 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:59:28 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:55778 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043AbaKSW7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 17:59:18 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Dexuan Cui <decui@microsoft.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-CC: Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH] hv: hv_fcopy: drop the obsolete message on transfer
- failure
-Thread-Topic: [PATCH] hv: hv_fcopy: drop the obsolete message on transfer
- failure
-Thread-Index: AQHP/ixzoWqBLlree0aJYfe1XGjx8ZxonIcQ
-Date: Wed, 19 Nov 2014 22:59:15 +0000
-Message-ID: <BN1PR0301MB0707ED3958628389255649FCA0890@BN1PR0301MB0707.namprd03.prod.outlook.com>
-References: <1415768606-28538-1-git-send-email-decui@microsoft.com>
-In-Reply-To: <1415768606-28538-1-git-send-email-decui@microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:4898:80e8:ed31::3]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0705;UriScan:;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0705;
-x-forefront-prvs: 04004D94E2
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(13464003)(377454003)(189002)(51704005)(199003)(40100003)(2420400002)(77156002)(62966003)(77096003)(86612001)(74316001)(106116001)(87936001)(2656002)(86362001)(105586002)(19580395003)(106356001)(107046002)(19580405001)(15975445006)(1511001)(92566001)(92726001)(2201001)(64706001)(20776003)(54606007)(76176999)(99286002)(54356999)(95666004)(50986999)(551934003)(2501002)(101416001)(97736003)(33656002)(2561002)(122556002)(2421001)(21056001)(54206007)(99396003)(120916001)(4396001)(46102003)(76576001)(15202345003)(217423001)(31966008)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0705;H:BN1PR0301MB0707.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Nov 2014 17:59:23 -0500
 MIME-Version: 1.0
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0596;
-X-OriginatorOrg: microsoft.onmicrosoft.com
+In-Reply-To: <20141119225615.GA11386@lerouge>
+References: <20141118145234.GA7487@redhat.com> <alpine.DEB.2.11.1411181914020.3909@nanos>
+ <20141118215540.GD35311@redhat.com> <20141119021902.GA14216@redhat.com>
+ <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
+ <20141119145902.GA13387@redhat.com> <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
+ <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
+ <20141119190215.GA10796@lerouge> <alpine.DEB.2.11.1411192251120.3909@nanos> <20141119225615.GA11386@lerouge>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 19 Nov 2014 14:59:01 -0800
+Message-ID: <CALCETrUX8O9u7+cU_32R+36t=jeB2dvj3_fDGD+uvhTGYZATuA@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 19, 2014 at 2:56 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Wed, Nov 19, 2014 at 10:56:26PM +0100, Thomas Gleixner wrote:
+>> On Wed, 19 Nov 2014, Frederic Weisbecker wrote:
+>> > I got a report lately involving context tracking. Not sure if it's
+>> > the same here but the issue was that context tracking uses per cpu data
+>> > and per cpu allocation use vmalloc and vmalloc'ed area can fault due to
+>> > lazy paging.
+>>
+>> This is complete nonsense. pcpu allocations are populated right
+>> away. Otherwise no single line of kernel code which uses dynamically
+>> allocated per cpu storage would be safe.
+>
+> Note this isn't faulting because part of the allocation is swapped. No
+> it's all reserved in the physical memory, but it's a lazy allocation.
+> Part of it isn't yet addressed in the P[UGM?]D. That's what vmalloc_fault() is for.
+>
+> So it's a non-blocking/sleeping fault which is why it's probably fine
+> most of the time except on code that isn't fault-safe. And I suspect that
+> most people assume that kernel data won't fault so probably some other
+> places have similar issues.
+>
+> That's a long standing issue. We even had to convert the perf callchain
+> allocation to ad-hoc kmalloc() based per cpu allocation to get over vmalloc
+> faults. At that time, NMIs couldn't handle faults and many callchains were
+> populated in NMIs. We had serious crashes because of per cpu memory faults.
+
+Is there seriously more than 512GB of per-cpu virtual space or
+whatever's needed to exceed a single pgd on x86_64?
+
+And there are definitely placed that access per-cpu data in contexts
+in which a non-IST fault is not allowed.  Maybe not dynamic per-cpu
+data, though.
+
+--Andy
+
+>
+> I think that lazy adressing is there for allocation performance reasons. But
+> still having faultable per cpu memory is insame IMHO.
+>
 
 
-> -----Original Message-----
-> From: devel [mailto:driverdev-devel-bounces@linuxdriverproject.org] On
-> Behalf Of Dexuan Cui
-> Sent: Tuesday, November 11, 2014 9:03 PM
-> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; driverdev-
-> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> jasowang@redhat.com
-> Cc: Haiyang Zhang
-> Subject: [PATCH] hv: hv_fcopy: drop the obsolete message on transfer
-> failure
-> 
-> In the case the user-space daemon crashes, hangs or is killed, we need to
-> down the semaphore, otherwise, after the daemon starts next time, the
-> obsolete data in fcopy_transaction.message or fcopy_transaction.fcopy_msg
-> will be used immediately.
-> 
-> Cc: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Dexuan Cui <decui@microsoft.com>
-> ---
->  drivers/hv/hv_fcopy.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c index
-> 23b2ce2..177122a 100644
-> --- a/drivers/hv/hv_fcopy.c
-> +++ b/drivers/hv/hv_fcopy.c
-> @@ -86,6 +86,15 @@ static void fcopy_work_func(struct work_struct
-> *dummy)
->  	 * process the pending transaction.
->  	 */
->  	fcopy_respond_to_host(HV_E_FAIL);
-> +
-> +	/* In the case the user-space daemon crashes, hangs or is killed, we
-> +	 * need to down the semaphore, otherwise, after the daemon starts
-> next
-> +	 * time, the obsolete data in fcopy_transaction.message or
-> +	 * fcopy_transaction.fcopy_msg will be used immediately.
-> +	 */
-> +	if (down_trylock(&fcopy_transaction.read_sema))
-> +		pr_debug("FCP: failed to acquire the semaphore\n");
-> +
->  }
 
-When the daemon is killed, we currently reset the state in the release function. Why can't we cleanup the semaphore state (initialize) here as well.
-
-K. Y
-> 
->  static int fcopy_handle_handshake(u32 version)
-> --
-> 1.9.1
-> 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
