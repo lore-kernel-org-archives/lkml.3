@@ -1,32 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797AbaKSVL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:11:58 -0500
-Received: from 1wt.eu ([62.212.114.60]:55778 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756460AbaKSVLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:11:55 -0500
-Date: Wed, 19 Nov 2014 22:11:50 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Mariusz Gorski <marius.gorski@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 8/9] staging: panel: Remove more magic number comparison
-Message-ID: <20141119211150.GG30756@1wt.eu>
-References: <1416429531-11088-1-git-send-email-marius.gorski@gmail.com> <1416429531-11088-9-git-send-email-marius.gorski@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416429531-11088-9-git-send-email-marius.gorski@gmail.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1756688AbaKSVLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:11:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57100 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756506AbaKSVLe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 16:11:34 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Vlastimil Babka <vbabka@suse.cz>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 108/122] mm/compaction: cleanup isolate_freepages()
+Date: Wed, 19 Nov 2014 12:52:38 -0800
+Message-Id: <20141119205212.429950366@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
+References: <20141119205208.812884198@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 09:38:50PM +0100, Mariusz Gorski wrote:
-> Use a defined value instead of magic number comparison
-> for checking whether a module param value has been set.
-> 
-> Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Willy Tarreau <w@1wt.eu>
+------------------
+
+From: Vlastimil Babka <vbabka@suse.cz>
+
+commit c96b9e508f3d06ddb601dcc9792d62c044ab359e upstream.
+
+isolate_freepages() is currently somewhat hard to follow thanks to many
+looks like it is related to the 'low_pfn' variable, but in fact it is not.
+
+This patch renames the 'high_pfn' variable to a hopefully less confusing name,
+and slightly changes its handling without a functional change. A comment made
+obsolete by recent changes is also updated.
+
+[akpm@linux-foundation.org: comment fixes, per Minchan]
+[iamjoonsoo.kim@lge.com: cleanups]
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Dongjun Shin <d.j.shin@samsung.com>
+Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ mm/compaction.c |   56 +++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 27 insertions(+), 29 deletions(-)
+
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -665,7 +665,10 @@ static void isolate_freepages(struct zon
+ 				struct compact_control *cc)
+ {
+ 	struct page *page;
+-	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
++	unsigned long block_start_pfn;	/* start of current pageblock */
++	unsigned long block_end_pfn;	/* end of current pageblock */
++	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
++	unsigned long next_free_pfn; /* start pfn for scaning at next round */
+ 	int nr_freepages = cc->nr_freepages;
+ 	struct list_head *freelist = &cc->freepages;
+ 
+@@ -673,32 +676,33 @@ static void isolate_freepages(struct zon
+ 	 * Initialise the free scanner. The starting point is where we last
+ 	 * successfully isolated from, zone-cached value, or the end of the
+ 	 * zone when isolating for the first time. We need this aligned to
+-	 * the pageblock boundary, because we do pfn -= pageblock_nr_pages
+-	 * in the for loop.
++	 * the pageblock boundary, because we do
++	 * block_start_pfn -= pageblock_nr_pages in the for loop.
++	 * For ending point, take care when isolating in last pageblock of a
++	 * a zone which ends in the middle of a pageblock.
+ 	 * The low boundary is the end of the pageblock the migration scanner
+ 	 * is using.
+ 	 */
+-	pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
++	block_start_pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
++	block_end_pfn = min(block_start_pfn + pageblock_nr_pages,
++						zone_end_pfn(zone));
+ 	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
+ 
+ 	/*
+-	 * Take care that if the migration scanner is at the end of the zone
+-	 * that the free scanner does not accidentally move to the next zone
+-	 * in the next isolation cycle.
++	 * If no pages are isolated, the block_start_pfn < low_pfn check
++	 * will kick in.
+ 	 */
+-	high_pfn = min(low_pfn, pfn);
+-
+-	z_end_pfn = zone_end_pfn(zone);
++	next_free_pfn = 0;
+ 
+ 	/*
+ 	 * Isolate free pages until enough are available to migrate the
+ 	 * pages on cc->migratepages. We stop searching if the migrate
+ 	 * and free page scanners meet or enough free pages are isolated.
+ 	 */
+-	for (; pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
+-					pfn -= pageblock_nr_pages) {
++	for (; block_start_pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
++				block_end_pfn = block_start_pfn,
++				block_start_pfn -= pageblock_nr_pages) {
+ 		unsigned long isolated;
+-		unsigned long end_pfn;
+ 
+ 		/*
+ 		 * This can iterate a massively long zone without finding any
+@@ -707,7 +711,7 @@ static void isolate_freepages(struct zon
+ 		 */
+ 		cond_resched();
+ 
+-		if (!pfn_valid(pfn))
++		if (!pfn_valid(block_start_pfn))
+ 			continue;
+ 
+ 		/*
+@@ -717,7 +721,7 @@ static void isolate_freepages(struct zon
+ 		 * i.e. it's possible that all pages within a zones range of
+ 		 * pages do not belong to a single zone.
+ 		 */
+-		page = pfn_to_page(pfn);
++		page = pfn_to_page(block_start_pfn);
+ 		if (page_zone(page) != zone)
+ 			continue;
+ 
+@@ -730,14 +734,8 @@ static void isolate_freepages(struct zon
+ 			continue;
+ 
+ 		/* Found a block suitable for isolating free pages from */
+-
+-		/*
+-		 * Take care when isolating in last pageblock of a zone which
+-		 * ends in the middle of a pageblock.
+-		 */
+-		end_pfn = min(pfn + pageblock_nr_pages, z_end_pfn);
+-		isolated = isolate_freepages_block(cc, pfn, end_pfn,
+-						   freelist, false);
++		isolated = isolate_freepages_block(cc, block_start_pfn,
++					block_end_pfn, freelist, false);
+ 		nr_freepages += isolated;
+ 
+ 		/*
+@@ -745,9 +743,9 @@ static void isolate_freepages(struct zon
+ 		 * looking for free pages, the search will restart here as
+ 		 * page migration may have returned some pages to the allocator
+ 		 */
+-		if (isolated) {
++		if (isolated && next_free_pfn == 0) {
+ 			cc->finished_update_free = true;
+-			high_pfn = max(high_pfn, pfn);
++			next_free_pfn = block_start_pfn;
+ 		}
+ 	}
+ 
+@@ -758,10 +756,10 @@ static void isolate_freepages(struct zon
+ 	 * If we crossed the migrate scanner, we want to keep it that way
+ 	 * so that compact_finished() may detect this
+ 	 */
+-	if (pfn < low_pfn)
+-		cc->free_pfn = max(pfn, zone->zone_start_pfn);
+-	else
+-		cc->free_pfn = high_pfn;
++	if (block_start_pfn < low_pfn)
++		next_free_pfn = cc->migrate_pfn;
++
++	cc->free_pfn = next_free_pfn;
+ 	cc->nr_freepages = nr_freepages;
+ }
+ 
+
+
