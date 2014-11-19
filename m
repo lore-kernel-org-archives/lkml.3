@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682AbaKSUyT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:54:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
+	id S933190AbaKSVBP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:01:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56201 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756910AbaKSUyF (ORCPT
+	with ESMTP id S932666AbaKSUyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:05 -0500
+	Wed, 19 Nov 2014 15:54:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sujith Manoharan <sujith@msujith.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.17 058/141] mac80211: properly flush delayed scan work on interface removal
-Date: Wed, 19 Nov 2014 12:51:21 -0800
-Message-Id: <20141119205152.581779027@linuxfoundation.org>
+        Richard Hendershot <rshendershot@mchsi.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3.17 101/141] x86, microcode, AMD: Fix ucode patch stashing on 32-bit
+Date: Wed, 19 Nov 2014 12:52:04 -0800
+Message-Id: <20141119205153.953944177@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,56 +29,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes@sipsolutions.net>
+From: Borislav Petkov <bp@suse.de>
 
-commit 46238845bd609a5c0fbe076e1b82b4c5b33360b2 upstream.
+commit c0a717f23dccdb6e3b03471bc846fdc636f2b353 upstream.
 
-When an interface is deleted, an ongoing hardware scan is canceled and
-the driver must abort the scan, at the very least reporting completion
-while the interface is removed.
+Save the patch while we're running on the BSP instead of later, before
+the initrd has been jettisoned. More importantly, on 32-bit we need to
+access the physical address instead of the virtual.
 
-However, if it scheduled the work that might only run after everything
-is said and done, which leads to cfg80211 warning that the scan isn't
-reported as finished yet; this is no fault of the driver, it already
-did, but mac80211 hasn't processed it.
+This way we actually do find it on the APs instead of having to go
+through the initrd each time.
 
-To fix this situation, flush the delayed work when the interface being
-removed is the one that was executing the scan.
-
-Reported-by: Sujith Manoharan <sujith@msujith.org>
-Tested-by: Sujith Manoharan <sujith@msujith.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Tested-by: Richard Hendershot <rshendershot@mchsi.com>
+Fixes: 5335ba5cf475 ("x86, microcode, AMD: Fix early ucode loading")
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/iface.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/x86/kernel/cpu/microcode/amd_early.c |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
 
---- a/net/mac80211/iface.c
-+++ b/net/mac80211/iface.c
-@@ -765,10 +765,12 @@ static void ieee80211_do_stop(struct iee
- 	int i, flushed;
- 	struct ps_data *ps;
- 	struct cfg80211_chan_def chandef;
-+	bool cancel_scan;
+--- a/arch/x86/kernel/cpu/microcode/amd_early.c
++++ b/arch/x86/kernel/cpu/microcode/amd_early.c
+@@ -108,12 +108,13 @@ static size_t compute_container_size(u8
+  * load_microcode_amd() to save equivalent cpu table and microcode patches in
+  * kernel heap memory.
+  */
+-static void apply_ucode_in_initrd(void *ucode, size_t size)
++static void apply_ucode_in_initrd(void *ucode, size_t size, bool save_patch)
+ {
+ 	struct equiv_cpu_entry *eq;
+ 	size_t *cont_sz;
+ 	u32 *header;
+ 	u8  *data, **cont;
++	u8 (*patch)[PATCH_MAX_SIZE];
+ 	u16 eq_id = 0;
+ 	int offset, left;
+ 	u32 rev, eax, ebx, ecx, edx;
+@@ -123,10 +124,12 @@ static void apply_ucode_in_initrd(void *
+ 	new_rev = (u32 *)__pa_nodebug(&ucode_new_rev);
+ 	cont_sz = (size_t *)__pa_nodebug(&container_size);
+ 	cont	= (u8 **)__pa_nodebug(&container);
++	patch	= (u8 (*)[PATCH_MAX_SIZE])__pa_nodebug(&amd_ucode_patch);
+ #else
+ 	new_rev = &ucode_new_rev;
+ 	cont_sz = &container_size;
+ 	cont	= &container;
++	patch	= &amd_ucode_patch;
+ #endif
  
- 	clear_bit(SDATA_STATE_RUNNING, &sdata->state);
+ 	data   = ucode;
+@@ -213,9 +216,9 @@ static void apply_ucode_in_initrd(void *
+ 				rev = mc->hdr.patch_id;
+ 				*new_rev = rev;
  
--	if (rcu_access_pointer(local->scan_sdata) == sdata)
-+	cancel_scan = rcu_access_pointer(local->scan_sdata) == sdata;
-+	if (cancel_scan)
- 		ieee80211_scan_cancel(local);
+-				/* save ucode patch */
+-				memcpy(amd_ucode_patch, mc,
+-				       min_t(u32, header[1], PATCH_MAX_SIZE));
++				if (save_patch)
++					memcpy(patch, mc,
++					       min_t(u32, header[1], PATCH_MAX_SIZE));
+ 			}
+ 		}
+ 
+@@ -246,7 +249,7 @@ void __init load_ucode_amd_bsp(void)
+ 	*data = cp.data;
+ 	*size = cp.size;
+ 
+-	apply_ucode_in_initrd(cp.data, cp.size);
++	apply_ucode_in_initrd(cp.data, cp.size, true);
+ }
+ 
+ #ifdef CONFIG_X86_32
+@@ -263,7 +266,7 @@ void load_ucode_amd_ap(void)
+ 	size_t *usize;
+ 	void **ucode;
+ 
+-	mc = (struct microcode_amd *)__pa(amd_ucode_patch);
++	mc = (struct microcode_amd *)__pa_nodebug(amd_ucode_patch);
+ 	if (mc->hdr.patch_id && mc->hdr.processor_rev_id) {
+ 		__apply_microcode_amd(mc);
+ 		return;
+@@ -275,7 +278,7 @@ void load_ucode_amd_ap(void)
+ 	if (!*ucode || !*usize)
+ 		return;
+ 
+-	apply_ucode_in_initrd(*ucode, *usize);
++	apply_ucode_in_initrd(*ucode, *usize, false);
+ }
+ 
+ static void __init collect_cpu_sig_on_bsp(void *arg)
+@@ -339,7 +342,7 @@ void load_ucode_amd_ap(void)
+ 		 * AP has a different equivalence ID than BSP, looks like
+ 		 * mixed-steppings silicon so go through the ucode blob anew.
+ 		 */
+-		apply_ucode_in_initrd(ucode_cpio.data, ucode_cpio.size);
++		apply_ucode_in_initrd(ucode_cpio.data, ucode_cpio.size, false);
+ 	}
+ }
+ #endif
+@@ -347,6 +350,7 @@ void load_ucode_amd_ap(void)
+ int __init save_microcode_in_initrd_amd(void)
+ {
+ 	unsigned long cont;
++	int retval = 0;
+ 	enum ucode_state ret;
+ 	u8 *cont_va;
+ 	u32 eax;
+@@ -387,7 +391,7 @@ int __init save_microcode_in_initrd_amd(
+ 
+ 	ret = load_microcode_amd(eax, container, container_size);
+ 	if (ret != UCODE_OK)
+-		return -EINVAL;
++		retval = -EINVAL;
  
  	/*
-@@ -990,6 +992,9 @@ static void ieee80211_do_stop(struct iee
+ 	 * This will be freed any msec now, stash patches for the current
+@@ -396,5 +400,5 @@ int __init save_microcode_in_initrd_amd(
+ 	container = NULL;
+ 	container_size = 0;
  
- 	ieee80211_recalc_ps(local, -1);
- 
-+	if (cancel_scan)
-+		flush_delayed_work(&local->scan_work);
-+
- 	if (local->open_count == 0) {
- 		ieee80211_stop_device(local);
- 
+-	return 0;
++	return retval;
+ }
 
 
