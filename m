@@ -1,78 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811AbaKSNoQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 08:44:16 -0500
-Received: from guitar.tcltek.co.il ([192.115.133.116]:41196 "EHLO
-	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752741AbaKSNoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 08:44:14 -0500
-X-Greylist: delayed 517 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Nov 2014 08:44:14 EST
-Date: Wed, 19 Nov 2014 15:35:32 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Andrew Jackson <Andrew.Jackson@arm.com>,
+	id S1755145AbaKSNsM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 08:48:12 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:54897 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753776AbaKSNsJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 08:48:09 -0500
+Date: Wed, 19 Nov 2014 08:48:00 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Du, Wenkai" <wenkai.du@intel.com>,
-        Shinya Kuribayashi <skuribay@pobox.com>,
-        Romain Baeriswyl <Romain.Baeriswyl@abilis.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH] i2c: designware: prevent early stop on TX FIFO empty
-Message-ID: <20141119133531.GD2374@sapphire.tkos.co.il>
-References: <545CB6C4.8010201@arm.com>
- <20141119092122.GC1439@katana>
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH 2/2] tracing: Use trace_seq_used() and seq_buf_used()
+ instead of len
+Message-ID: <20141119084800.524beb62@gandalf.local.home>
+In-Reply-To: <20141119114017.GA2332@dhcp128.suse.cz>
+References: <20141115045847.712848224@goodmis.org>
+	<20141115050603.904875201@goodmis.org>
+	<20141117123250.10f6f57c@gandalf.local.home>
+	<20141117141215.2dbd5f12@gandalf.local.home>
+	<20141118163354.GK23958@pathway.suse.cz>
+	<20141118123732.462b1ad8@gandalf.local.home>
+	<20141119114017.GA2332@dhcp128.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141119092122.GC1439@katana>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+On Wed, 19 Nov 2014 12:40:17 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-On Wed, Nov 19, 2014 at 10:21:22AM +0100, Wolfram Sang wrote:
-> On Fri, Nov 07, 2014 at 12:10:44PM +0000, Andrew Jackson wrote:
-> > If the Designware core is configured with IC_EMPTYFIFO_HOLD_MASTER_EN
-> > set to zero, allowing the TX FIFO to become empty causes a STOP
-> > condition to be generated on the I2C bus. If the transmit FIFO
-> > threshold is set too high, an erroneous STOP condition can be
-> > generated on long transfers - particularly where the interrupt
-> > latency is extended.
+> > > 
+> > > There is one more dangerous usage in trace_printk_seq(). It is on
+> > > three lines there.
 > > 
-> > Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> > You totally confused me. What usage in trace_printk_seq(), and what
+> > three lines?
+> > 
+> > In this patch, trace_printk_seq() looks like this:
+> > 
+> > int trace_print_seq(struct seq_file *m, struct trace_seq *s)
+> > {
+> >         int ret;
+> > 
+> >         __trace_seq_init(s);
+> > 
+> >         ret = seq_buf_print_seq(m, &s->seq);
+> > 
+> >         /*
+> >          * Only reset this buffer if we successfully wrote to the
+> >          * seq_file buffer. This lets the caller try again or
+> >          * do something else with the contents.
+> >          */
+> >         if (!ret)
+> >                 trace_seq_init(s);
+> > 
+> >         return ret;
+> > }
 > 
-> So, what do other designware users think of this change (nice CC list
-> BTW, Andrew). Adding Mika, too.
+> The confusion is caused by the 'k' ("print" vs. "printk") in the
+> function name. I was talking about the following function from
+> kernel/trace/trace.c:
 
-I don't have access to this hardware anymore so I can't test. As far as I 
-remember the spec this change should be OK.
+Silly 'k', Trix are for kids!
 
-baruch
+> 
+> void
+> trace_printk_seq(struct trace_seq *s)
+> {
+> 	/* Probably should print a warning here. */
+> 	if (s->seq.len >= TRACE_MAX_PRINT)
+> 		s->seq.len = TRACE_MAX_PRINT;
+> 
+> 	/* should be zero ended, but we are paranoid. */
+> 	s->buffer[s->seq.len] = 0;
+> 
+> 	printk(KERN_TRACE "%s", s->buffer);
+> 
+> 	trace_seq_init(s);
+> }
+> 
+> I found it when checking the applied patches in origin/rfc/seq-buf
+> branch. I hope that it was the correct place.
 
-> >  drivers/i2c/busses/i2c-designware-core.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-> > index 3c20e4b..e070edd 100644
-> > --- a/drivers/i2c/busses/i2c-designware-core.c
-> > +++ b/drivers/i2c/busses/i2c-designware-core.c
-> > @@ -363,7 +363,7 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
-> >  	}
-> >  
-> >  	/* Configure Tx/Rx FIFO threshold levels */
-> > -	dw_writel(dev, dev->tx_fifo_depth - 1, DW_IC_TX_TL);
-> > +	dw_writel(dev, dev->tx_fifo_depth / 2, DW_IC_TX_TL);
-> >  	dw_writel(dev, 0, DW_IC_RX_TL);
-> >  
-> >  	/* configure the i2c master */
+Yes, that's the working branch for this code.
 
--- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+Anyway, I saw this and thought about using trace_seq_used(), but then I
+realized that this is trace_seq code which has a hard coded buffer
+length of PAGE_SIZE which on all archs is more than 1000
+(TRACE_MAX_PRINT).
+
+Regardless of overflow or not (or even if trace_seq is full), that if
+statement will prevent this from doing any buffer overflows.
+
+s->seq.len will never be more than s->seq.size after the test against
+TRACE_MAX_PRINT. So I see no harm here.
+
+trace_printk_seq() is for dumping the ring buffer to console, which is
+usually something done on panic. It's special.
+
+-- Steve
