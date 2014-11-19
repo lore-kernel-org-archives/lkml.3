@@ -1,97 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882AbaKSNhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 08:37:19 -0500
-Received: from mga14.intel.com ([192.55.52.115]:58312 "EHLO mga14.intel.com"
+	id S1754986AbaKSNi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 08:38:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55979 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754233AbaKSNhS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 08:37:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,417,1413270000"; 
-   d="scan'208";a="624869816"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: Namhyung Kim <namhyung@kernel.org>
-CC: "acme@kernel.org" <acme@kernel.org>, "jolsa@redhat.com" <jolsa@redhat.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "eranian@google.com" <eranian@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: RE: [PATCH V3 3/3] perf tools: Construct LBR call chain
-Thread-Topic: [PATCH V3 3/3] perf tools: Construct LBR call chain
-Thread-Index: AQHQA743cQ1rb+Jn4kS+6OT1ok92KZxn81Zw
-Date: Wed, 19 Nov 2014 13:37:01 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F07701671C4D@SHSMSX103.ccr.corp.intel.com>
-References: <1415972652-17310-1-git-send-email-kan.liang@intel.com>
-	<1415972652-17310-4-git-send-email-kan.liang@intel.com>
-	<87d28lqb35.fsf@sejong.aot.lge.com>
-	<37D7C6CF3E00A74B8858931C1DB2F077016711F9@SHSMSX103.ccr.corp.intel.com>
- <874mtvraop.fsf@sejong.aot.lge.com>
-In-Reply-To: <874mtvraop.fsf@sejong.aot.lge.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751968AbaKSNiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 08:38:25 -0500
+Message-ID: <546C9D4D.9090201@suse.cz>
+Date: Wed, 19 Nov 2014 14:38:21 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+CC: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: mm: shmem: freeing mlocked page
+References: <545C4A36.9050702@oracle.com>	<5466142C.60100@oracle.com> <20141118135843.bd711e95d3977c74cf51d803@linux-foundation.org>
+In-Reply-To: <20141118135843.bd711e95d3977c74cf51d803@linux-foundation.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
+On 11/18/2014 10:58 PM, Andrew Morton wrote:
+> On Fri, 14 Nov 2014 09:39:40 -0500 Sasha Levin <sasha.levin@oracle.com> wrote:
 > 
-> On Tue, 18 Nov 2014 14:01:06 +0000, Kan Liang wrote:
-> >> On Fri, 14 Nov 2014 08:44:12 -0500, kan liang wrote:
-> >> > +		/* LBR only affects the user callchain */
-> >> > +		if (i != chain_nr) {
-> >> > +			struct branch_stack *lbr_stack = sample-
-> >> >branch_stack;
-> >> > +			int lbr_nr = lbr_stack->nr;
-> >> > +			/*
-> >> > +			 * LBR callstack can only get user call chain.
-> >> > +			 * The mix_chain_nr is kernel call chain
-> >> > +			 * number plus LBR user call chain number.
-> >> > +			 * i is kernel call chain number,
-> >> > +			 * 1 is PERF_CONTEXT_USER,
-> >> > +			 * lbr_nr + 1 is the user call chain number.
-> >> > +			 * For details, please refer to the comments
-> >> > +			 * in callchain__printf
-> >> > +			 */
-> >> > +			int mix_chain_nr = i + 1 + lbr_nr + 1;
-> >> > +
-> >> > +			if (mix_chain_nr > PERF_MAX_STACK_DEPTH) {
-> >> > +				pr_warning("corrupted callchain.
-> >> skipping...\n");
-> >> > +				return 0;
-> >> > +			}
-> >>
-> >> I'm not sure whether this is really a corrupted callchain.  If a
-> >> single chain is greater than the max it should be corrupted, but
-> >> we're now summing up with other values..
-> >>
-> >> What about checking callchain_nr and lbr_nr separately or mix_nr with
-> >> 2*max?
-> >
-> > The lbr_nr max is 16. I will change it to max+16.
+>> 
+>> [ 1026.988043] BUG: Bad page state in process trinity-c374  pfn:23f70
+>> [ 1026.989684] page:ffffea0000b3d300 count:0 mapcount:0 mapping:          (null) index:0x5b
+>> [ 1026.991151] flags: 0x1fffff8028000c(referenced|uptodate|swapbacked|mlocked)
+>> [ 1026.992410] page dumped because: PAGE_FLAGS_CHECK_AT_FREE flag(s) set
+>> [ 1026.993479] bad because of flags:
+>> [ 1026.994125] flags: 0x200000(mlocked)
 > 
-> Shouldn't it be 18 (16 + 1 + 1) at least?
-
-In the new patch, I use PERF_MAX_BRANCH_DEPTH from Andi's patch. It's
-127. It should be enough.
-
- +		if (mix_chain_nr > PERF_MAX_STACK_DEPTH +
- PERF_MAX_BRANCH_DEPTH) {
- +			pr_warning("corrupted callchain. skipping...\n");
- +			return 0;
- +		}
-
-Thanks,
-Kan
+> Gee that new page dumping code is nice!
 > 
-> Thanks,
-> Namhyung
+>> [ 1026.994816] Modules linked in:
+>> [ 1026.995378] CPU: 7 PID: 7879 Comm: trinity-c374 Not tainted 3.18.0-rc4-next-20141113-sasha-00047-gd1763ce-dirty #1455
+>> [ 1026.996123] FAULT_INJECTION: forcing a failure.
+>> [ 1026.996123] name failslab, interval 100, probability 30, space 0, times -1
+>> [ 1026.999050]  0000000000000000 0000000000000000 0000000000b3d300 ffff88061295bbd8
+>> [ 1027.000676]  ffffffff92f71097 0000000000000000 ffffea0000b3d300 ffff88061295bc08
+>> [ 1027.002020]  ffffffff8197ef7a ffffea0000b3d300 ffffffff942dd148 dfffe90000000000
+>> [ 1027.003359] Call Trace:
+>> [ 1027.003831] dump_stack (lib/dump_stack.c:52)
+>> [ 1027.004725] bad_page (mm/page_alloc.c:338)
+>> [ 1027.005623] free_pages_prepare (mm/page_alloc.c:657 mm/page_alloc.c:763)
+>> [ 1027.006761] free_hot_cold_page (mm/page_alloc.c:1438)
+>> [ 1027.007772] ? __page_cache_release (mm/swap.c:66)
+>> [ 1027.008815] put_page (mm/swap.c:270)
+>> [ 1027.009665] page_cache_pipe_buf_release (fs/splice.c:93)
+>> [ 1027.010888] __splice_from_pipe (fs/splice.c:784 fs/splice.c:886)
+>> [ 1027.011917] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3734)
+>> [ 1027.012856] ? pipe_lock (fs/pipe.c:69)
+>> [ 1027.013728] ? write_pipe_buf (fs/splice.c:1534)
+>> [ 1027.014756] vmsplice_to_user (fs/splice.c:1574)
+>> [ 1027.015725] ? rcu_read_lock_held (kernel/rcu/update.c:169)
+>> [ 1027.016757] ? __fget_light (include/linux/fdtable.h:80 fs/file.c:684)
+>> [ 1027.017782] SyS_vmsplice (fs/splice.c:1656 fs/splice.c:1639)
+>> [ 1027.018863] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
+>> 
+> 
+> So what happened here?  Userspace fed some mlocked memory into splice()
+> and then, while splice() was running, userspace dropped its reference
+> to the memory, leaving splice() with the last reference.  Yet somehow,
+> that page was still marked as being mlocked.  I wouldn't expect the
+> kernel to permit userspace to drop its reference to the memory without
+> first clearing the mlocked state.
+
+I did check a bit and something caught my eye. Both page_remove_rmap() and
+page_remove_file_rmap() contain this:
+
+        if (unlikely(PageMlocked(page)))
+                clear_page_mlock(page);
+
+So could maybe something mlock the page between the check and clear?
+
+I find lru_cache_add_active_or_unevictable somewhat suspicious. But checking if
+these two could race will take some time.
+
+> Is it possible to work out from trinity sources what the exact sequence
+> was?  Which syscalls are being used, for example?
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
