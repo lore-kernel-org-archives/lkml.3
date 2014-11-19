@@ -1,109 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160AbaKSQJx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:09:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60750 "EHLO mx2.suse.de"
+	id S932560AbaKSQKp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:10:45 -0500
+Received: from sauhun.de ([89.238.76.85]:55435 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754153AbaKSQJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:09:52 -0500
-Message-ID: <546CC0CD.40906@suse.cz>
-Date: Wed, 19 Nov 2014 17:09:49 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1756653AbaKSQEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:04:43 -0500
+Date: Wed, 19 Nov 2014 17:05:47 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: rjw@rjwysocki.net, lenb@kernel.org, robert.moore@intel.com,
+        lv.zheng@intel.com, shigorin@gmail.com, adamw@happyassassin.net,
+        jan.brummer@tabos.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        devel@acpica.org
+Subject: Re: [PATCH] ACPI: Add _DEP(Operation Region Dependencies) support to
+ fix battery issue on the Asus T100TA
+Message-ID: <20141119160547.GA8557@katana>
+References: <1416410441-14425-1-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Tim Hartrick <tim@edgecast.com>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
-References: <502D42E5.7090403@redhat.com>	<20120818000312.GA4262@evergreen.ssec.wisc.edu>	<502F100A.1080401@redhat.com>	<alpine.LSU.2.00.1208200032450.24855@eggly.anvils>	<CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>	<20120822032057.GA30871@google.com>	<50345232.4090002@redhat.com>	<20130603195003.GA31275@evergreen.ssec.wisc.edu>	<20141114163053.GA6547@cosmos.ssec.wisc.edu>	<20141117160212.b86d031e1870601240b0131d@linux-foundation.org>	<20141118014135.GA17252@cosmos.ssec.wisc.edu>	<546AB1F5.6030306@redhat.com>	<20141118121936.07b02545a0684b2cc839a10c@linux-foundation.org>	<CALYGNiMxnxmy-LyJ4OT9OoFeKwTPPkZMF-bJ-eJDBFXgZQ6AEA@mail.gmail.com>	<CALYGNiM_CsjjiK_36JGirZT8rTP+ROYcH0CSyZjghtSNDU8ptw@mail.gmail.com>	<546BDB29.9050403@suse.cz> <CALYGNiOHXvyqr3+Jq5FsZ_xscsXwrQ_9YCtL2819i6iRkgms2w@mail.gmail.com>
-In-Reply-To: <CALYGNiOHXvyqr3+Jq5FsZ_xscsXwrQ_9YCtL2819i6iRkgms2w@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
+Content-Disposition: inline
+In-Reply-To: <1416410441-14425-1-git-send-email-tianyu.lan@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2014 03:36 PM, Konstantin Khlebnikov wrote:
-> On Wed, Nov 19, 2014 at 2:50 AM, Vlastimil Babka <vbabka@suse.cz> wrote:
->> On 11/19/2014 12:02 AM, Konstantin Khlebnikov wrote:
->>> On Wed, Nov 19, 2014 at 1:15 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->>>> On Tue, Nov 18, 2014 at 11:19 PM, Andrew Morton
->>>> <akpm@linux-foundation.org> wrote:
->>>>> On Mon, 17 Nov 2014 21:41:57 -0500 Rik van Riel <riel@redhat.com> wrote:
->>>>>
->>>>>> > Because of the serial forking there does indeed end up being an
->>>>>> > infinite number of vmas.  The initial vma can never be deleted
->>>>>> > (even though the initial parent process has long since terminated)
->>>>>> > because the initial vma is referenced by the children.
->>>>>>
->>>>>> There is a finite number of VMAs, but an infite number of
->>>>>> anon_vmas.
->>>>>>
->>>>>> Subtle, yet deadly...
->>>>>
->>>>> Well, we clearly have the data structures screwed up.  I've forgotten
->>>>> enough about this code for me to be unable to work out what the fixed
->>>>> up data structures would look like :( But surely there is some proper
->>>>> solution here.  Help?
->>>>
->>>> Not sure if it's right but probably we could reuse on fork an old anon_vma
->>>> from the chain if it's already lost all vmas which points to it.
->>>> For endlessly forking exploit this should work mostly like proposed patch
->>>> which stops branching after some depth but without magic constant.
->>>
->>> Something like this. I leave proper comment for tomorrow.
->>
->> Hmm I'm not sure that will work as it is. If I understand it correctly, your
->> patch can detect if the parent's anon_vma has no own references at the fork()
->> time. But at the fork time, the parent is still alive, it only exits after the
->> fork, right? So I guess it still has own references and the child will still
->> allocate its new anon_vma, and the problem is not solved.
-> 
-> But it could reuse anon_vma from grandparent or older.
-> Count of anon_vmas in chain will be limited with count of alive processes.
 
-Ah I missed that it can reuse older anon_vma, sorry.
+--vkogqOf2sHV7VnPd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I think it's better to describe this in terms of sets of anon_vma
-> instead hierarchy:
-> at clone vma inherits pages from parent together with set of anon_vma
-> which they belong.
-> For new pages it might allocate new anon_vma or reuse existing. After
-> my patch vma
-> will try to reuse anon_vma from that set which has no vmas which points to it.
-> As a result there will be no parent-child relation between anon_vma and
-> multiple pages might have equal (anon_vma, index) pair but I see no
-> problems here.
+On Wed, Nov 19, 2014 at 11:20:41PM +0800, Lan Tianyu wrote:
+> ACPI 5.0 introduces _DEP to designate device objects that OSPM should
+> assign a higher priority in start ordering due to future operation region
+> accesses.
+>=20
+> On Asus T100TA, ACPI battery info are read from a I2C slave device via
+> I2C operation region. Before I2C operation region handler is installed,
+> battery _STA always returns 0. There is a _DEP method of designating
+> start order under battery device node.
+>=20
+> This patch is to implement _DEP feature to fix battery issue on the Asus =
+T100TA.
+> Introducing acpi_dep_list and adding dep_unmet count in the struct
+> acpi_device. During ACPI namespace scan, create struct acpi_dep_data for a
+> valid pair of master (device pointed to by _DEP)/slave(device with _DEP),=
+ record
+> master's and slave's ACPI handle in it and put it into acpi_dep_list. The=
+ dep_unmet
+> count will increase by one if there is a device under its _DEP. Driver's =
+probe() should
+> return EPROBE_DEFER when find dep_unmet larger than 0. When I2C operation
+> region handler is installed, remove all struct acpi_dep_data on the acpi_=
+dep_list
+> whose master is pointed to I2C host controller and decrease slave's dep_u=
+nmet.
+> When dep_unmet decreases to 0, all _DEP conditions are met and then do ac=
+pi_bus_attach()
+> for the device in order to resolve battery _STA issue on the Asus T100TA.
+>=20
+> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=3D69011=20
+> Tested-by: Jan-Michael Brummer <jan.brummer@tabos.org>
+> Tested-by: Adam Williamson <adamw@happyassassin.net>
+> Tested-by: Michael Shigorin <shigorin@gmail.com>
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 
-Hmm I wonder if root anon_vma should be excluded from this reusal. For
-performance reasons, exclusive pages go to non-root anon_vma (see
-__page_set_anon_rmap()) and reusing root anon_vma would change this.
-Also from reading http://lwn.net/Articles/383162/ I understand that correctness
-also depends on the hierarchy and I wonder if there's a danger of reintroducing
-a bug like the one described there.
+As long as the I2C related changes are that minimal:
 
-Vlastimil
+Acked-by: Wolfram Sang <wsa@the-dreams.de> for the I2C part
 
->>
->> So maybe we could detect that the own references dropped to zero when the parent
->> does exit, and then change mapping of all relevant pages to the root anon_vma,
->> destroy avc's of children and the anon_vma itself. But that sounds quite
->> heavyweight :/
->>
->> Vlastimil
->>
->>>>
->>>>>
->>
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
 
+--vkogqOf2sHV7VnPd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUbL/bAAoJEBQN5MwUoCm2JogQAIK28lczikHK/Ukm3thl2JbC
+JM8eud+VMxQDfAtarZyh8awYTsNatThy13vLlp0+ufdOeoauhNUyy64ai++eBA98
+1EFFKGO9qoNtv+fL2KVf3YtJXcSD8oRpzXjstDHEfQppshrkgsaXzFnWK1KCQTl1
+DJFgxlnpZ5gQDyJq3Wfm/R8LpvWkNgLPfYW94xvM6SFGejtnuEBcJo34XpXEPWLg
+CCXr/zYTonqiGuuhyNemYAk9U8aHVcfbNhrU70UzKzEI15a30s3GM2Acsg50mw5c
+4JBWWeb3EIjCv0JVfPANvDWIbEzPYmLtk/xaa2kulg07LfvpKJrkhVMxYE/yFqyI
+EWJypXqq8zB9UP/bw3YtZd5ZN9FC4045kQsxJSr7qWQk3goc5oSX7W6Yp7IziAbf
+f02r3XZPJC/b4ZBik/kGhql7873qaPT1rxxOMWcXFIyGbcOCSC+5Q00aaD9SaJ57
+loIKfe2TRSiYdC/vIk2dm3Vng/+rE5PyNb1LbNoXXTTLAPZvjGM+P/scdoNtmTRB
+H9VcQkbeamei3UXaH3i4kRBWpQmMxsbBjBQcq/toYauhiKPH6O2SMaOHpwzhx3l5
+laOjTEQBIztiB5KA2EkEAO9DWEwLz+9CoukYz2cEmVEPVbp6E2WserO8QWinWghh
+SiUjh8SzJkVCuu2bdxhF
+=mm43
+-----END PGP SIGNATURE-----
+
+--vkogqOf2sHV7VnPd--
