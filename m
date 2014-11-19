@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901AbaKSKSJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 05:18:09 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:60487 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755847AbaKSKSD (ORCPT
+	id S1755875AbaKSKSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 05:18:07 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:64278 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755848AbaKSKSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 05:18:03 -0500
+	Wed, 19 Nov 2014 05:18:04 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: rjw@rjwysocki.net
 Cc: Lorenzo.Pieralisi@arm.com, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 2/3] drivers: cpuidle: Add idle-state-name description to ARM idle states
-Date: Wed, 19 Nov 2014 11:17:57 +0100
-Message-Id: <1416392278-18397-2-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 3/3] drivers: cpuidle: Remove cpuidle-arm64 duplicate error messages
+Date: Wed, 19 Nov 2014 11:17:58 +0100
+Message-Id: <1416392278-18397-3-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416392278-18397-1-git-send-email-daniel.lezcano@linaro.org>
 References: <546C6DEB.8060204@linaro.org>
@@ -24,74 +24,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 
-On ARM machines, where generally speaking the idle state numbering has
-no fixed and standard meaning it is useful to provide a description
-of the idle state inner workings for benchmarking and monitoring purposes.
+Current CPUidle driver for arm64 machines spits errors upon idle
+state initialization and cpuidle driver registration failures.
+These error messages are already printed in core code so there is
+no need to print them again.
 
-This patch adds a property to the idle states bindings that if present
-gives platform firmware a means of describing the idle state and export
-the string description to user space.
-
-The patch updates the DT parsing code accordingly to take the description,
-if present, into consideration.
+This patch removes the duplicate print messages from the cpuidle-arm64
+driver.
 
 Acked-by: Kevin Hilman <khilman@linaro.org>
 Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- Documentation/devicetree/bindings/arm/idle-states.txt | 6 ++++++
- drivers/cpuidle/dt_idle_states.c                      | 7 ++++++-
- 2 files changed, 12 insertions(+), 1 deletion(-)
+ drivers/cpuidle/cpuidle-arm64.c | 13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/idle-states.txt b/Documentation/devicetree/bindings/arm/idle-states.txt
-index 5e51511..a8274ea 100644
---- a/Documentation/devicetree/bindings/arm/idle-states.txt
-+++ b/Documentation/devicetree/bindings/arm/idle-states.txt
-@@ -331,6 +331,12 @@ follows:
- 			    If the property is not present the idle-state must
- 			    be considered operational.
+diff --git a/drivers/cpuidle/cpuidle-arm64.c b/drivers/cpuidle/cpuidle-arm64.c
+index 50997ea..1b10f92e 100644
+--- a/drivers/cpuidle/cpuidle-arm64.c
++++ b/drivers/cpuidle/cpuidle-arm64.c
+@@ -104,11 +104,8 @@ static int __init arm64_idle_init(void)
+ 	 * reason to initialize the idle driver if only wfi is supported.
+ 	 */
+ 	ret = dt_init_idle_driver(drv, arm64_idle_state_match, 1);
+-	if (ret <= 0) {
+-		if (ret)
+-			pr_err("failed to initialize idle states\n");
++	if (ret <= 0)
+ 		return ret ? : -ENODEV;
+-	}
  
-+	- idle-state-name:
-+		Usage: Optional
-+		Value type: <string>
-+		Definition: A string used as a descriptive name for the idle
-+			    state.
-+
- 	In addition to the properties listed above, a state node may require
- 	additional properties specifics to the entry-method defined in the
- 	idle-states node, please refer to the entry-method bindings
-diff --git a/drivers/cpuidle/dt_idle_states.c b/drivers/cpuidle/dt_idle_states.c
-index 22840f4..5301912 100644
---- a/drivers/cpuidle/dt_idle_states.c
-+++ b/drivers/cpuidle/dt_idle_states.c
-@@ -27,6 +27,7 @@ static int init_state_node(struct cpuidle_state *idle_state,
- {
- 	int err;
- 	const struct of_device_id *match_id;
-+	const char *desc;
- 
- 	match_id = of_match_node(matches, state_node);
- 	if (!match_id)
-@@ -73,6 +74,10 @@ static int init_state_node(struct cpuidle_state *idle_state,
- 		return -EINVAL;
+ 	/*
+ 	 * Call arch CPU operations in order to initialize
+@@ -122,12 +119,6 @@ static int __init arm64_idle_init(void)
+ 		}
  	}
  
-+	err = of_property_read_string(state_node, "idle-state-name", &desc);
-+	if (err)
-+		desc = state_node->name;
-+
- 	idle_state->flags = CPUIDLE_FLAG_TIME_VALID;
- 	if (of_property_read_bool(state_node, "local-timer-stop"))
- 		idle_state->flags |= CPUIDLE_FLAG_TIMER_STOP;
-@@ -82,7 +87,7 @@ static int init_state_node(struct cpuidle_state *idle_state,
- 	 *	and desc become string pointers
- 	 */
- 	strncpy(idle_state->name, state_node->name, CPUIDLE_NAME_LEN - 1);
--	strncpy(idle_state->desc, state_node->name, CPUIDLE_DESC_LEN - 1);
-+	strncpy(idle_state->desc, desc, CPUIDLE_DESC_LEN - 1);
- 	return 0;
+-	ret = cpuidle_register(drv, NULL);
+-	if (ret) {
+-		pr_err("failed to register cpuidle driver\n");
+-		return ret;
+-	}
+-
+-	return 0;
++	return cpuidle_register(drv, NULL);
  }
- 
+ device_initcall(arm64_idle_init);
 -- 
 1.9.1
 
