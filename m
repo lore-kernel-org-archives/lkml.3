@@ -1,36 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934473AbaKSWe1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:34:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55895 "EHLO
+	id S1756855AbaKSUx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:53:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756859AbaKSUx5 (ORCPT
+	with ESMTP id S1753988AbaKSUxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:53:57 -0500
+	Wed, 19 Nov 2014 15:53:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, Gioh Kim <gioh.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 030/141] mm/page_alloc: restrict max order of merging on isolated pageblock
-Date: Wed, 19 Nov 2014 12:50:53 -0800
-Message-Id: <20141119205151.631869492@linuxfoundation.org>
+        Dwight Engen <dwight.engen@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 019/141] sunvdc: compute vdisk geometry from capacity
+Date: Wed, 19 Nov 2014 12:50:42 -0800
+Message-Id: <20141119205151.292847342@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -45,223 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+From: Allen Pais <allen.pais@oracle.com>
 
-commit 3c605096d3158216ba9326a16266f6ba128c2c8d upstream.
+[ Upstream commit de5b73f08468b4fc5e2f6d1505f650262622f78b ]
 
-Current pageblock isolation logic could isolate each pageblock
-individually.  This causes freepage accounting problem if freepage with
-pageblock order on isolate pageblock is merged with other freepage on
-normal pageblock.  We can prevent merging by restricting max order of
-merging to pageblock order if freepage is on isolate pageblock.
+The LDom diskserver doesn't return reliable geometry data. In addition,
+the types for all fields in the vio_disk_geom are u16, which were being
+truncated in the cast into the u8's of the Linux struct hd_geometry.
 
-A side-effect of this change is that there could be non-merged buddy
-freepage even if finishing pageblock isolation, because undoing
-pageblock isolation is just to move freepage from isolate buddy list to
-normal buddy list rather than to consider merging.  So, the patch also
-makes undoing pageblock isolation consider freepage merge.  When
-un-isolation, freepage with more than pageblock order and it's buddy are
-checked.  If they are on normal pageblock, instead of just moving, we
-isolate the freepage and free it in order to get merged.
+Modify vdc_getgeo() to compute the geometry from the disk's capacity in a
+manner consistent with xen-blkfront::blkif_getgeo().
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Laura Abbott <lauraa@codeaurora.org>
-Cc: Heesub Shin <heesub.shin@samsung.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Ritesh Harjani <ritesh.list@gmail.com>
-Cc: Gioh Kim <gioh.kim@lge.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/internal.h       |   25 +++++++++++++++++++++++++
- mm/page_alloc.c     |   41 ++++++++++++++---------------------------
- mm/page_isolation.c |   41 +++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 78 insertions(+), 29 deletions(-)
+ drivers/block/sunvdc.c |   23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
 
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -108,6 +108,31 @@ extern pmd_t *mm_find_pmd(struct mm_stru
- /*
-  * in mm/page_alloc.c
-  */
-+
-+/*
-+ * Locate the struct page for both the matching buddy in our
-+ * pair (buddy1) and the combined O(n+1) page they form (page).
-+ *
-+ * 1) Any buddy B1 will have an order O twin B2 which satisfies
-+ * the following equation:
-+ *     B2 = B1 ^ (1 << O)
-+ * For example, if the starting buddy (buddy2) is #8 its order
-+ * 1 buddy is #10:
-+ *     B2 = 8 ^ (1 << 1) = 8 ^ 2 = 10
-+ *
-+ * 2) Any buddy B will have an order O+1 parent P which
-+ * satisfies the following equation:
-+ *     P = B & ~(1 << O)
-+ *
-+ * Assumption: *_mem_map is contiguous at least up to MAX_ORDER
-+ */
-+static inline unsigned long
-+__find_buddy_index(unsigned long page_idx, unsigned int order)
-+{
-+	return page_idx ^ (1 << order);
-+}
-+
-+extern int __isolate_free_page(struct page *page, unsigned int order);
- extern void __free_pages_bootmem(struct page *page, unsigned int order);
- extern void prep_compound_page(struct page *page, unsigned long order);
- #ifdef CONFIG_MEMORY_FAILURE
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -468,29 +468,6 @@ static inline void rmv_page_order(struct
- }
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -70,7 +70,6 @@ struct vdc_port {
  
- /*
-- * Locate the struct page for both the matching buddy in our
-- * pair (buddy1) and the combined O(n+1) page they form (page).
-- *
-- * 1) Any buddy B1 will have an order O twin B2 which satisfies
-- * the following equation:
-- *     B2 = B1 ^ (1 << O)
-- * For example, if the starting buddy (buddy2) is #8 its order
-- * 1 buddy is #10:
-- *     B2 = 8 ^ (1 << 1) = 8 ^ 2 = 10
-- *
-- * 2) Any buddy B will have an order O+1 parent P which
-- * satisfies the following equation:
-- *     P = B & ~(1 << O)
-- *
-- * Assumption: *_mem_map is contiguous at least up to MAX_ORDER
-- */
--static inline unsigned long
--__find_buddy_index(unsigned long page_idx, unsigned int order)
--{
--	return page_idx ^ (1 << order);
--}
--
--/*
-  * This function checks whether a page is free && is the buddy
-  * we can do coalesce a page and its buddy if
-  * (a) the buddy is not in a hole &&
-@@ -570,6 +547,7 @@ static inline void __free_one_page(struc
- 	unsigned long combined_idx;
- 	unsigned long uninitialized_var(buddy_idx);
- 	struct page *buddy;
-+	int max_order = MAX_ORDER;
+ 	char			disk_name[32];
  
- 	VM_BUG_ON(!zone_is_initialized(zone));
+-	struct vio_disk_geom	geom;
+ 	struct vio_disk_vtoc	label;
+ };
  
-@@ -578,15 +556,24 @@ static inline void __free_one_page(struc
- 			return;
- 
- 	VM_BUG_ON(migratetype == -1);
--	if (!is_migrate_isolate(migratetype))
-+	if (is_migrate_isolate(migratetype)) {
-+		/*
-+		 * We restrict max order of merging to prevent merge
-+		 * between freepages on isolate pageblock and normal
-+		 * pageblock. Without this, pageblock isolation
-+		 * could cause incorrect freepage accounting.
-+		 */
-+		max_order = min(MAX_ORDER, pageblock_order + 1);
-+	} else {
- 		__mod_zone_freepage_state(zone, 1 << order, migratetype);
-+	}
- 
--	page_idx = pfn & ((1 << MAX_ORDER) - 1);
-+	page_idx = pfn & ((1 << max_order) - 1);
- 
- 	VM_BUG_ON_PAGE(page_idx & ((1 << order) - 1), page);
- 	VM_BUG_ON_PAGE(bad_range(zone, page), page);
- 
--	while (order < MAX_ORDER-1) {
-+	while (order < max_order - 1) {
- 		buddy_idx = __find_buddy_index(page_idx, order);
- 		buddy = page + (buddy_idx - page_idx);
- 		if (!page_is_buddy(page, buddy, order))
-@@ -1487,7 +1474,7 @@ void split_page(struct page *page, unsig
- }
- EXPORT_SYMBOL_GPL(split_page);
- 
--static int __isolate_free_page(struct page *page, unsigned int order)
-+int __isolate_free_page(struct page *page, unsigned int order)
+@@ -103,11 +102,15 @@ static inline u32 vdc_tx_dring_avail(str
+ static int vdc_getgeo(struct block_device *bdev, struct hd_geometry *geo)
  {
- 	unsigned long watermark;
- 	struct zone *zone;
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -76,17 +76,54 @@ void unset_migratetype_isolate(struct pa
- {
- 	struct zone *zone;
- 	unsigned long flags, nr_pages;
-+	struct page *isolated_page = NULL;
-+	unsigned int order;
-+	unsigned long page_idx, buddy_idx;
-+	struct page *buddy;
+ 	struct gendisk *disk = bdev->bd_disk;
+-	struct vdc_port *port = disk->private_data;
++	sector_t nsect = get_capacity(disk);
++	sector_t cylinders = nsect;
  
- 	zone = page_zone(page);
- 	spin_lock_irqsave(&zone->lock, flags);
- 	if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
- 		goto out;
--	nr_pages = move_freepages_block(zone, page, migratetype);
--	__mod_zone_freepage_state(zone, nr_pages, migratetype);
-+
-+	/*
-+	 * Because freepage with more than pageblock_order on isolated
-+	 * pageblock is restricted to merge due to freepage counting problem,
-+	 * it is possible that there is free buddy page.
-+	 * move_freepages_block() doesn't care of merge so we need other
-+	 * approach in order to merge them. Isolation and free will make
-+	 * these pages to be merged.
-+	 */
-+	if (PageBuddy(page)) {
-+		order = page_order(page);
-+		if (order >= pageblock_order) {
-+			page_idx = page_to_pfn(page) & ((1 << MAX_ORDER) - 1);
-+			buddy_idx = __find_buddy_index(page_idx, order);
-+			buddy = page + (buddy_idx - page_idx);
-+
-+			if (!is_migrate_isolate_page(buddy)) {
-+				__isolate_free_page(page, order);
-+				set_page_refcounted(page);
-+				isolated_page = page;
-+			}
-+		}
-+	}
-+
-+	/*
-+	 * If we isolate freepage with more than pageblock_order, there
-+	 * should be no freepage in the range, so we could avoid costly
-+	 * pageblock scanning for freepage moving.
-+	 */
-+	if (!isolated_page) {
-+		nr_pages = move_freepages_block(zone, page, migratetype);
-+		__mod_zone_freepage_state(zone, nr_pages, migratetype);
-+	}
- 	set_pageblock_migratetype(page, migratetype);
- 	zone->nr_isolate_pageblock--;
- out:
- 	spin_unlock_irqrestore(&zone->lock, flags);
-+	if (isolated_page)
-+		__free_pages(isolated_page, order);
+-	geo->heads = (u8) port->geom.num_hd;
+-	geo->sectors = (u8) port->geom.num_sec;
+-	geo->cylinders = port->geom.num_cyl;
++	geo->heads = 0xff;
++	geo->sectors = 0x3f;
++	sector_div(cylinders, geo->heads * geo->sectors);
++	geo->cylinders = cylinders;
++	if ((sector_t)(geo->cylinders + 1) * geo->heads * geo->sectors < nsect)
++		geo->cylinders = 0xffff;
+ 
+ 	return 0;
  }
+@@ -714,16 +717,18 @@ static int probe_disk(struct vdc_port *p
+ 		if (port->vdisk_size == -1)
+ 			return -ENODEV;
+ 	} else {
++		struct vio_disk_geom geom;
++
+ 		err = generic_request(port, VD_OP_GET_DISKGEOM,
+-				      &port->geom, sizeof(port->geom));
++				      &geom, sizeof(geom));
+ 		if (err < 0) {
+ 			printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
+ 			       "error %d\n", err);
+ 			return err;
+ 		}
+-		port->vdisk_size = ((u64)port->geom.num_cyl *
+-				    (u64)port->geom.num_hd *
+-				    (u64)port->geom.num_sec);
++		port->vdisk_size = ((u64)geom.num_cyl *
++				    (u64)geom.num_hd *
++				    (u64)geom.num_sec);
+ 	}
  
- static inline struct page *
+ 	q = blk_init_queue(do_vdc_request, &port->vio.lock);
 
 
