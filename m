@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285AbaKSLR4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 06:17:56 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:58574 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757AbaKSLRy (ORCPT
+	id S1754398AbaKSLV1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 06:21:27 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:39506 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaKSLVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 06:17:54 -0500
-Date: Wed, 19 Nov 2014 13:17:44 +0200
-From: Johan Hedberg <johan.hedberg@gmail.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chan-yeol Park <chanyeol.park@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2014-11-07
-Message-ID: <20141119111744.GA8153@t440s.lan>
-Mail-Followup-To: "Kirill A. Shutemov" <kirill@shutemov.name>,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Chan-yeol Park <chanyeol.park@samsung.com>,
-	Kyungmin Park <kyungmin.park@samsung.com>, linville@tuxdriver.com,
-	linux-wireless@vger.kernel.org
-References: <20141118133459.GB27428@node.dhcp.inet.fi>
- <20141118180919.GA32128@t440s.P-661HNU-F1>
- <20141119110654.GA1894@node.dhcp.inet.fi>
+	Wed, 19 Nov 2014 06:21:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141119110654.GA1894@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141118145643.GO18842@arm.com>
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org>
+	<1416292375-29560-2-git-send-email-dave.long@linaro.org>
+	<20141118145643.GO18842@arm.com>
+Date: Wed, 19 Nov 2014 16:51:24 +0530
+Message-ID: <CA+b37P337jcTCPTg4Ydxh6TKwqmyMngt-eEowzfsTNBDZ7-NEg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/5] arm64: Kprobes with single stepping support
+From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: David Long <dave.long@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        William Cohen <wcohen@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
+On 18 November 2014 20:26, Will Deacon <will.deacon@arm.com> wrote:
 
-On Wed, Nov 19, 2014, Kirill A. Shutemov wrote:
-> > From: Johan Hedberg <johan.hedberg@intel.com>
-> > Date: Tue, 18 Nov 2014 20:00:15 +0200
-> > Subject: [PATCH] Bluetooth: Fix setting state back to TASK_RUNNING
-> > 
-> > In __hci_cmd_sync_ev() and __hci_req_sync() if the hci_req_run() call
-> > fails and we return from the functions we should ensure that the state
-> > doesn't remain in TASK_INTERRUPTIBLE that we just set it to. This patch
-> > fixes missing calls to set_current_state(TASK_RUNNING) in both places.
-> > 
-> > Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-> 
-> This patch helps -- warning is gone.
+> One thing I noticed looking through this patch is that we're effectively
+> reinventing a bunch of the instruction decoding logic that we already have
+> in the kernel (introduced since Sandeepa last sent his patch).
+>
+> Could you take a look at include/asm/insn.h and kernel/insn.c please, and
+> see if you can at least consolidate some of this? Some of it should be easy
+> (i.e. reusing masks, using existing #defines to construct BRK encodings),
+> but I appreciate there may be places where kprobes needs to add extra bits,
+> in which case I'd really like to keep this all together if at all possible.
+>
+> We're currently in a position where the module loader, BPF jit, ftrace and
+> the proposed alternative patching scheme are all using the same instruction
+> manipulation functions, so we should try to continue that trend if we can.
+Will,
 
-Thanks! I've resent it to linux-bluetooth with the appropriate
-Reported-by/Tested-by credits. It'll be included in the next pull
-request for the bluetooth-next tree.
+kernel/insn.c support generating instruction encodings(forming opcodes
+with given specifications), so for kprobes, only BRK encoding can use
+this mechanism.
+For instruction simulation, the instruction behavior should be
+simulated on saved pt_regs, which is not supported on insn.c routines,
+so still need probes-simulate-insn.c. Please point me if I am missing
+something here.
 
-Johan
+>
+> Thanks,
+>
+> Will
