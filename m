@@ -1,86 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901AbaKSQ3e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:29:34 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:34969 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814AbaKSQ3c (ORCPT
+	id S1756109AbaKSQaR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:30:17 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:62575 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754351AbaKSQaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:29:32 -0500
-Date: Wed, 19 Nov 2014 16:29:25 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laurentiu Palcu <laurentiu.palcu@intel.com>
-Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Johan Havold <johan@kernel.org>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] mfd: dln2: add support for USB-SPI module
-Message-ID: <20141119162925.GE1875@x1>
-References: <1416312599-5176-1-git-send-email-laurentiu.palcu@intel.com>
- <1416312599-5176-3-git-send-email-laurentiu.palcu@intel.com>
+	Wed, 19 Nov 2014 11:30:16 -0500
+Date: Wed, 19 Nov 2014 11:30:08 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "pang.xunlei" <pang.xunlei@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: [PATCH v2 4/4] sched/deadline: change cpudl_find() to return
+ bool instead of best_cpu
+Message-ID: <20141119113008.1db0b463@gandalf.local.home>
+In-Reply-To: <1416411982-1204-4-git-send-email-pang.xunlei@linaro.org>
+References: <1416411982-1204-1-git-send-email-pang.xunlei@linaro.org>
+	<1416411982-1204-4-git-send-email-pang.xunlei@linaro.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416312599-5176-3-git-send-email-laurentiu.palcu@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014, Laurentiu Palcu wrote:
+On Wed, 19 Nov 2014 23:46:22 +0800
+"pang.xunlei" <pang.xunlei@linaro.org> wrote:
 
-> Signed-off-by: Laurentiu Palcu <laurentiu.palcu@intel.com>
+> cpudl_find() is not a good place to select the best cpu, so leave
+> this role to its call site, currently it is find_later_rq() where
+> we can do the election of the best cpu according to sd topology.
+> 
+> Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
 > ---
->  drivers/mfd/dln2.c | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
-
-For my own reference:
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
-So what's the plan for this set?
-
-> diff --git a/drivers/mfd/dln2.c b/drivers/mfd/dln2.c
-> index 9765a17..0cdad2d 100644
-> --- a/drivers/mfd/dln2.c
-> +++ b/drivers/mfd/dln2.c
-> @@ -52,6 +52,7 @@ enum dln2_handle {
->  	DLN2_HANDLE_CTRL,
->  	DLN2_HANDLE_GPIO,
->  	DLN2_HANDLE_I2C,
-> +	DLN2_HANDLE_SPI,
->  	DLN2_HANDLES
->  };
+>  kernel/sched/cpudeadline.c |   15 +++++----------
+>  kernel/sched/deadline.c    |   17 ++++++-----------
+>  2 files changed, 11 insertions(+), 21 deletions(-)
+> 
+> diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
+> index 3047846..41d3578 100644
+> --- a/kernel/sched/cpudeadline.c
+> +++ b/kernel/sched/cpudeadline.c
+> @@ -100,29 +100,24 @@ static inline int cpudl_maximum(struct cpudl *cp)
+>   * @later_mask: a mask to fill in with the selected CPUs (not NULL)
+>   * @set_flag: indicate if later_mask should be set
+>   *
+> - * Returns: int - best CPU (heap maximum if suitable)
+> + * Return: (int)bool - CPUs were found
+>   */
+>  int cpudl_find(struct cpudl *cp, struct task_struct *p,
+>  	       struct cpumask *later_mask, int set_flag)
+>  {
+> -	int best_cpu = -1;
+>  	const struct sched_dl_entity *dl_se = &p->dl;
 >  
-> @@ -634,6 +635,12 @@ static struct dln2_platform_data dln2_pdata_i2c = {
->  	.port = 0,
->  };
+>  	cpumask_and(later_mask, cpu_active_mask, &p->cpus_allowed);
+>  	if (cpumask_and(later_mask, later_mask, cp->free_cpus)) {
+> -		best_cpu = cpumask_any(later_mask);
+> -		goto out;
+> +		return 1;
+>  	} else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
+>  			dl_time_before(dl_se->deadline, cp->elements[0].dl)) {
+> -		best_cpu = cpudl_maximum(cp);
+>  		if (set_flag)
+> -			cpumask_set_cpu(best_cpu, later_mask);
+> +			cpumask_set_cpu(cpudl_maximum(cp), later_mask);
+> +		return 1;
+>  	}
 >  
-> +/* Only one SPI port supported */
-> +static struct dln2_platform_data dln2_pdata_spi = {
-> +	.handle = DLN2_HANDLE_SPI,
-> +	.port = 0,
-> +};
-> +
->  static const struct mfd_cell dln2_devs[] = {
->  	{
->  		.name = "dln2-gpio",
-> @@ -645,6 +652,11 @@ static const struct mfd_cell dln2_devs[] = {
->  		.platform_data = &dln2_pdata_i2c,
->  		.pdata_size = sizeof(struct dln2_platform_data),
->  	},
-> +	{
-> +		.name = "dln2-spi",
-> +		.platform_data = &dln2_pdata_spi,
-> +		.pdata_size = sizeof(struct dln2_platform_data),
-> +	},
->  };
->  
->  static void dln2_disconnect(struct usb_interface *interface)
+> -out:
+> -	WARN_ON(best_cpu != -1 && !cpu_present(best_cpu));
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+You lost this warning. It should be moved too.
+
+> -
+> -	return best_cpu;
+> +	return 0;
+>  }
+>  
+>  /*
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index e8208d0..3e82cf3 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -976,7 +976,7 @@ static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
+>  	 * let's hope p can move out.
+>  	 */
+>  	if (rq->curr->nr_cpus_allowed == 1 ||
+> -	    cpudl_find(&rq->rd->cpudl, rq->curr, later_mask, 0) == -1)
+> +	    !cpudl_find(&rq->rd->cpudl, rq->curr, later_mask, 0))
+>  		return;
+>  
+>  	/*
+> @@ -984,7 +984,7 @@ static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
+>  	 * see if it is pushed or pulled somewhere else.
+>  	 */
+>  	if (p->nr_cpus_allowed != 1 &&
+> -	    cpudl_find(&rq->rd->cpudl, p, later_mask, 0) != -1)
+> +	    cpudl_find(&rq->rd->cpudl, p, later_mask, 0))
+>  		return;
+>  
+>  	resched_curr(rq);
+> @@ -1189,9 +1189,7 @@ static int find_later_rq(struct task_struct *task)
+>  	 * We have to consider system topology and task affinity
+>  	 * first, then we can look for a suitable cpu.
+>  	 */
+> -	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+> -			task, later_mask, 1);
+> -	if (best_cpu == -1)
+> +	if (!cpudl_find(&task_rq(task)->rd->cpudl, task, later_mask, 1))
+>  		return -1;
+>  
+>  	/*
+> @@ -1230,12 +1228,9 @@ static int find_later_rq(struct task_struct *task)
+>  				return this_cpu;
+>  			}
+>  
+> -			/*
+> -			 * Last chance: if best_cpu is valid and is
+> -			 * in the mask, that becomes our choice.
+> -			 */
+> -			if (best_cpu < nr_cpu_ids &&
+> -			    cpumask_test_cpu(best_cpu, sched_domain_span(sd))) {
+> +			best_cpu = cpumask_first_and(lowest_mask,
+> +						sched_domain_span(sd));
+
+Sometimes that 80 character rule isn't the best for readability. But
+that is Peter's or Juri's call.
+
+> +			if (best_cpu < nr_cpu_ids) {
+
+The warning should probably go here.
+
+-- Steve
+
+>  				rcu_read_unlock();
+>  				return best_cpu;
+>  			}
+
