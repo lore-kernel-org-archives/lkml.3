@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933264AbaKSVxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:53:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56595 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933485AbaKSVEY (ORCPT
+	id S933455AbaKSVxs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:53:48 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:39173 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933274AbaKSVxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:24 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.14 056/122] Input: synaptics - add min/max quirk for Lenovo T440s
-Date: Wed, 19 Nov 2014 12:51:46 -0800
-Message-Id: <20141119205210.661506279@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
-References: <20141119205208.812884198@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Wed, 19 Nov 2014 16:53:46 -0500
+Date: Wed, 19 Nov 2014 16:53:40 -0500 (EST)
+Message-Id: <20141119.165340.2162829993279387495.davem@davemloft.net>
+To: viro@ZenIV.linux.org.uk
+Cc: torvalds@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] situation with csum_and_copy_... API
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141119213006.GE7996@ZenIV.linux.org.uk>
+References: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
+	<20141119.161744.1661940121298888832.davem@davemloft.net>
+	<20141119213006.GE7996@ZenIV.linux.org.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Nov 2014 13:53:45 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+From: Al Viro <viro@ZenIV.linux.org.uk>
+Date: Wed, 19 Nov 2014 21:30:07 +0000
 
-------------------
+> On Wed, Nov 19, 2014 at 04:17:44PM -0500, David Miller wrote:
+>> > Seeing a "__get_user()" and just being able to glance up in the same
+>> > function and seeing the "access_ok()" is just a good safety net. And
+>> > means that people don't have to waste time thinking about or looking
+>> > for where the hell the security net really is.
+>> 
+>> Fair enough.
+> 
+> OK, with 3/5 dropped 4/5 get a trivial conflict (removal of function in 4/5
+> vs. change in it in 3/5).  With that dealt with, the sucker is in
+> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-davem
+> 
+> Shortlog:
+> Al Viro (4):
+>       separate kernel- and userland-side msghdr
+>       {compat_,}verify_iovec(): switch to generic copying of iovecs
+>       fold verify_iovec() into copy_msghdr_from_user()
+>       bury skb_copy_to_page()
 
-From: Takashi Iwai <tiwai@suse.de>
-
-commit e4742b1e786ca386e88e6cfb2801e14e15e365cd upstream.
-
-The new Lenovo T440s laptop has a different PnP ID "LEN0039", and it
-needs the similar min/max quirk to make its clickpad working.
-
-BugLink: https://bugzilla.opensuse.org/show_bug.cgi?id=903748
-Reported-and-tested-by: Joschi Brauchle <joschibrauchle@gmx.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/input/mouse/synaptics.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -132,8 +132,8 @@ static const struct min_max_quirk min_ma
- 		1232, 5710, 1156, 4696
- 	},
- 	{
--		(const char * const []){"LEN0034", "LEN0036", "LEN2002",
--					"LEN2004", NULL},
-+		(const char * const []){"LEN0034", "LEN0036", "LEN0039",
-+					"LEN2002", "LEN2004", NULL},
- 		1024, 5112, 2024, 4832
- 	},
- 	{
-@@ -160,6 +160,7 @@ static const char * const topbuttonpad_p
- 	"LEN0036", /* T440 */
- 	"LEN0037",
- 	"LEN0038",
-+	"LEN0039", /* T440s */
- 	"LEN0041",
- 	"LEN0042", /* Yoga */
- 	"LEN0045",
-
-
+Pulled, thanks Al.
