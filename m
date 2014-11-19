@@ -1,76 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933770AbaKSVH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:07:56 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:31010 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932704AbaKSVHy (ORCPT
+	id S933742AbaKSVHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:07:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933619AbaKSVEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:07:54 -0500
-Date: Wed, 19 Nov 2014 16:07:03 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, Ian.Campbell@citrix.com,
-        david.vrabel@citrix.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, catalin.marinas@arm.com
-Subject: Re: [PATCH v9 12/13] swiotlb-xen: pass dev_addr to
- xen_dma_unmap_page and xen_dma_sync_single_for_cpu
-Message-ID: <20141119210703.GE20440@laptop.dumpdata.com>
-References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
- <1415792454-23161-12-git-send-email-stefano.stabellini@eu.citrix.com>
+	Wed, 19 Nov 2014 16:04:37 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+Subject: [PATCH 3.14 095/122] net: sctp: fix panic on duplicate ASCONF chunks
+Date: Wed, 19 Nov 2014 12:52:25 -0800
+Message-Id: <20141119205211.983362069@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
+References: <20141119205208.812884198@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415792454-23161-12-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 11:40:53AM +0000, Stefano Stabellini wrote:
-> xen_dma_unmap_page and xen_dma_sync_single_for_cpu take a dma_addr_t
-> handle as argument, not a physical address.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Ouch. Should this also go on stable tree?
+------------------
 
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-> ---
->  drivers/xen/swiotlb-xen.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> index 3725ee4..498b654 100644
-> --- a/drivers/xen/swiotlb-xen.c
-> +++ b/drivers/xen/swiotlb-xen.c
-> @@ -449,7 +449,7 @@ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
->  
->  	BUG_ON(dir == DMA_NONE);
->  
-> -	xen_dma_unmap_page(hwdev, paddr, size, dir, attrs);
-> +	xen_dma_unmap_page(hwdev, dev_addr, size, dir, attrs);
->  
->  	/* NOTE: We use dev_addr here, not paddr! */
->  	if (is_xen_swiotlb_buffer(dev_addr)) {
-> @@ -497,14 +497,14 @@ xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
->  	BUG_ON(dir == DMA_NONE);
->  
->  	if (target == SYNC_FOR_CPU)
-> -		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
-> +		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
->  
->  	/* NOTE: We use dev_addr here, not paddr! */
->  	if (is_xen_swiotlb_buffer(dev_addr))
->  		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
->  
->  	if (target == SYNC_FOR_DEVICE)
-> -		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
-> +		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
->  
->  	if (dir != DMA_FROM_DEVICE)
->  		return;
-> -- 
-> 1.7.10.4
-> 
+From: Daniel Borkmann <dborkman@redhat.com>
+
+commit b69040d8e39f20d5215a03502a8e8b4c6ab78395 upstream.
+
+When receiving a e.g. semi-good formed connection scan in the
+form of ...
+
+  -------------- INIT[ASCONF; ASCONF_ACK] ------------->
+  <----------- INIT-ACK[ASCONF; ASCONF_ACK] ------------
+  -------------------- COOKIE-ECHO -------------------->
+  <-------------------- COOKIE-ACK ---------------------
+  ---------------- ASCONF_a; ASCONF_b ----------------->
+
+... where ASCONF_a equals ASCONF_b chunk (at least both serials
+need to be equal), we panic an SCTP server!
+
+The problem is that good-formed ASCONF chunks that we reply with
+ASCONF_ACK chunks are cached per serial. Thus, when we receive a
+same ASCONF chunk twice (e.g. through a lost ASCONF_ACK), we do
+not need to process them again on the server side (that was the
+idea, also proposed in the RFC). Instead, we know it was cached
+and we just resend the cached chunk instead. So far, so good.
+
+Where things get nasty is in SCTP's side effect interpreter, that
+is, sctp_cmd_interpreter():
+
+While incoming ASCONF_a (chunk = event_arg) is being marked
+!end_of_packet and !singleton, and we have an association context,
+we do not flush the outqueue the first time after processing the
+ASCONF_ACK singleton chunk via SCTP_CMD_REPLY. Instead, we keep it
+queued up, although we set local_cork to 1. Commit 2e3216cd54b1
+changed the precedence, so that as long as we get bundled, incoming
+chunks we try possible bundling on outgoing queue as well. Before
+this commit, we would just flush the output queue.
+
+Now, while ASCONF_a's ASCONF_ACK sits in the corked outq, we
+continue to process the same ASCONF_b chunk from the packet. As
+we have cached the previous ASCONF_ACK, we find it, grab it and
+do another SCTP_CMD_REPLY command on it. So, effectively, we rip
+the chunk->list pointers and requeue the same ASCONF_ACK chunk
+another time. Since we process ASCONF_b, it's correctly marked
+with end_of_packet and we enforce an uncork, and thus flush, thus
+crashing the kernel.
+
+Fix it by testing if the ASCONF_ACK is currently pending and if
+that is the case, do not requeue it. When flushing the output
+queue we may relink the chunk for preparing an outgoing packet,
+but eventually unlink it when it's copied into the skb right
+before transmission.
+
+Joint work with Vlad Yasevich.
+
+Fixes: 2e3216cd54b1 ("sctp: Follow security requirement of responding with 1 packet")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ include/net/sctp/sctp.h |    5 +++++
+ net/sctp/associola.c    |    2 ++
+ 2 files changed, 7 insertions(+)
+
+--- a/include/net/sctp/sctp.h
++++ b/include/net/sctp/sctp.h
+@@ -433,6 +433,11 @@ static inline void sctp_assoc_pending_pm
+ 	asoc->pmtu_pending = 0;
+ }
+ 
++static inline bool sctp_chunk_pending(const struct sctp_chunk *chunk)
++{
++	return !list_empty(&chunk->list);
++}
++
+ /* Walk through a list of TLV parameters.  Don't trust the
+  * individual parameter lengths and instead depend on
+  * the chunk length to indicate when to stop.  Make sure
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -1627,6 +1627,8 @@ struct sctp_chunk *sctp_assoc_lookup_asc
+ 	 * ack chunk whose serial number matches that of the request.
+ 	 */
+ 	list_for_each_entry(ack, &asoc->asconf_ack_list, transmitted_list) {
++		if (sctp_chunk_pending(ack))
++			continue;
+ 		if (ack->subh.addip_hdr->serial == serial) {
+ 			sctp_chunk_hold(ack);
+ 			return ack;
+
+
