@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138AbaKSSjA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 13:39:00 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:30543 "EHLO
+	id S1756406AbaKSSjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 13:39:16 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:46146 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754641AbaKSSi7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 13:38:59 -0500
-Date: Wed, 19 Nov 2014 13:38:56 -0500
+	by vger.kernel.org with ESMTP id S1756228AbaKSSjN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 13:39:13 -0500
+Date: Wed, 19 Nov 2014 13:39:11 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>, williams@redhat.com,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Subject: Re: [PATCH 1/2] ftrace/x86: Add frames pointers to trampoline as
- necessary
-Message-ID: <20141119133856.411b0b34@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.11.1411191926150.3909@nanos>
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 2/2] ftrace/x86/extable: Add is_ftrace_trampoline()
+ function
+Message-ID: <20141119133911.1b030287@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.11.1411191928090.3909@nanos>
 References: <20141119033331.689278545@goodmis.org>
-	<20141119034829.355440340@goodmis.org>
-	<alpine.DEB.2.11.1411191926150.3909@nanos>
+	<20141119034829.497125839@goodmis.org>
+	<87mw7nppu0.fsf@sejong.aot.lge.com>
+	<20141119103716.1aa83ac3@gandalf.local.home>
+	<alpine.DEB.2.11.1411191928090.3909@nanos>
 X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014 19:26:48 +0100 (CET)
+On Wed, 19 Nov 2014 19:29:25 +0100 (CET)
 Thomas Gleixner <tglx@linutronix.de> wrote:
 
-> On Tue, 18 Nov 2014, Steven Rostedt wrote:
+> On Wed, 19 Nov 2014, Steven Rostedt wrote:
 > > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > Date: Tue, 18 Nov 2014 21:14:11 -0500
+> > Subject: [PATCH] ftrace/x86/extable: Add is_ftrace_trampoline() function
 > > 
-> > When CONFIG_FRAME_POINTERS are enabled, it is required that the
-> > ftrace_caller and ftrace_regs_caller trampolines set up frame pointers
-> > otherwise a stack trace from a function call wont print the functions
-> > that called the trampoline. This is due to a check in
-> > __save_stack_address():
+> > Stack traces that happen from function tracing check if the address
+> > on the stack is a __kernel_text_address(). That is, is the address
+> > kernel code. This calls core_kernel_text() which returns true
+> > if the address is part of the builtin kernel code. It also calls
+> > is_module_text_address() which returns true if the address belongs
+> > to module code.
 > > 
-> >  #ifdef CONFIG_FRAME_POINTER
-> > 	if (!reliable)
-> > 		return;
-> >  #endif
+> > But what is missing is ftrace dynamically allocated trampolines.
+> > These trampolines are allocated for individual ftrace_ops that
+> > call the ftrace_ops callback functions directly. But if they do a
+> > stack trace, the code checking the stack wont detect them as they
+> > are neither core kernel code nor module address space.
 > > 
-> > The "reliable" variable is only set if the function address is equal to
-> > contents of the address before the address the frame pointer register
-> > points to. If the frame pointer is not set up for the ftrace caller
-> > then this will fail the reliable test. It will miss the function that
-> > called the trampoline. Worse yet, if fentry is used (gcc 4.6 and
-> > beyond), it will also miss the parent, as the fentry is called before
-> > the stack frame is set up. That means the bp frame pointer points
-> > to the stack of just before the parent function was called.
+> > Adding another field to ftrace_ops that also stores the size of
+> > the trampoline assigned to it we can create a new function called
+> > is_ftrace_trampoline() that returns true if the address is a
+> > dynamically allocate ftrace trampoline. Note, it ignores trampolines
+> > that are not dynamically allocated as they will return true with
+> > the core_kernel_text() function.
+> > 
+> > Link: http://lkml.kernel.org/r/20141119034829.497125839@goodmis.org
 > > 
 > > Cc: Thomas Gleixner <tglx@linutronix.de>
 > > Cc: Ingo Molnar <mingo@redhat.com>
 > > Cc: "H. Peter Anvin" <hpa@zytor.com>
-> > Cc: x86@kernel.org
 > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > 
-> Shouldn't this be tagged stable?
-
->From the cover letter:
-
-"I stated testing the other triggers and discovered two other bugs.
-One was caused by my latest changes, but the other one has been in
-mainline for some time. It's been there since 3.16, and I haven't
-tested it further. It's not that big of a bug so I'm not labeling
-it with stable."
-
-I guess I can tag it. I have to see how far back it goes. My configs
-for the kernels I use this with didn't have FRAME_POINTER enabled, so I
-never noticed. I noticed it with my test configs.
-
-> 
 > Acked-by: Thomas Gleixner <tglx@linutronix.de>
-> 
 
 Thanks!
 
