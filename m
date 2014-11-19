@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756352AbaKSVec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:34:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57783 "EHLO
+	id S1756144AbaKSVea (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:34:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57789 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933590AbaKSVc7 (ORCPT
+	with ESMTP id S933638AbaKSVc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:32:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Joe Perches <joe@perches.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 120/141] ipc: always handle a new value of auto_msgmni
-Date: Wed, 19 Nov 2014 12:52:23 -0800
-Message-Id: <20141119205154.649972355@linuxfoundation.org>
+        Pranith Kumar <bobby.prani@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.17 129/141] rcu: Use rcu_gp_kthread_wake() to wake up grace period kthreads
+Date: Wed, 19 Nov 2014 12:52:32 -0800
+Message-Id: <20141119205155.131231616@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -33,63 +31,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Pranith Kumar <bobby.prani@gmail.com>
 
-commit 1195d94e006b23c6292e78857e154872e33b6d7e upstream.
+commit 2aa792e6faf1a00f5accf1f69e87e11a390ba2cd upstream.
 
-proc_dointvec_minmax() returns zero if a new value has been set.  So we
-don't need to check all charecters have been handled.
+The rcu_gp_kthread_wake() function checks for three conditions before
+waking up grace period kthreads:
 
-Below you can find two examples.  In the new value has not been handled
-properly.
+*  Is the thread we are trying to wake up the current thread?
+*  Are the gp_flags zero? (all threads wait on non-zero gp_flags condition)
+*  Is there no thread created for this flavour, hence nothing to wake up?
 
-$ strace ./a.out
-open("/proc/sys/kernel/auto_msgmni", O_WRONLY) = 3
-write(3, "0\n\0", 3)                    = 2
-close(3)                                = 0
-exit_group(0)
-$ cat /sys/kernel/debug/tracing/trace
+If any one of these condition is true, we do not call wake_up().
+It was found that there are quite a few avoidable wake ups both during
+idle time and under stress induced by rcutorture.
 
-$strace ./a.out
-open("/proc/sys/kernel/auto_msgmni", O_WRONLY) = 3
-write(3, "0\n", 2)                      = 2
-close(3)                                = 0
+Idle:
 
-$ cat /sys/kernel/debug/tracing/trace
-a.out-697   [000] ....  3280.998235: unregister_ipcns_notifier <-proc_ipcauto_dointvec_minmax
+Total:66000, unnecessary:66000, case1:61827, case2:66000, case3:0
+Total:68000, unnecessary:68000, case1:63696, case2:68000, case3:0
 
-Fixes: 9eefe520c814 ("ipc: do not use a negative value to re-enable msgmni automatic recomputin")
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Cc: Mathias Krause <minipli@googlemail.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+rcutorture:
+
+Total:254000, unnecessary:254000, case1:199913, case2:254000, case3:0
+Total:256000, unnecessary:256000, case1:201784, case2:256000, case3:0
+
+Here case{1-3} are the cases listed above. We can avoid these wake
+ups by using rcu_gp_kthread_wake() to conditionally wake up the grace
+period kthreads.
+
+There is a comment about an implied barrier supplied by the wake_up()
+logic.  This barrier is necessary for the awakened thread to see the
+updated ->gp_flags.  This flag is always being updated with the root node
+lock held. Also, the awakened thread tries to acquire the root node lock
+before reading ->gp_flags because of which there is proper ordering.
+
+Hence this commit tries to avoid calling wake_up() whenever we can by
+using rcu_gp_kthread_wake() function.
+
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Kamal Mostafa <kamal@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/ipc_sysctl.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ kernel/rcu/tree.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/ipc/ipc_sysctl.c
-+++ b/ipc/ipc_sysctl.c
-@@ -123,7 +123,6 @@ static int proc_ipcauto_dointvec_minmax(
- 	void __user *buffer, size_t *lenp, loff_t *ppos)
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -1928,7 +1928,7 @@ static void rcu_report_qs_rsp(struct rcu
  {
- 	struct ctl_table ipc_table;
--	size_t lenp_bef = *lenp;
- 	int oldval;
- 	int rc;
+ 	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
+ 	raw_spin_unlock_irqrestore(&rcu_get_root(rsp)->lock, flags);
+-	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
++	rcu_gp_kthread_wake(rsp);
+ }
  
-@@ -133,7 +132,7 @@ static int proc_ipcauto_dointvec_minmax(
+ /*
+@@ -2507,7 +2507,7 @@ static void force_quiescent_state(struct
+ 	}
+ 	ACCESS_ONCE(rsp->gp_flags) |= RCU_GP_FLAG_FQS;
+ 	raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
+-	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
++	rcu_gp_kthread_wake(rsp);
+ }
  
- 	rc = proc_dointvec_minmax(&ipc_table, write, buffer, lenp, ppos);
- 
--	if (write && !rc && lenp_bef == *lenp) {
-+	if (write && !rc) {
- 		int newval = *((int *)(ipc_table.data));
- 		/*
- 		 * The file "auto_msgmni" has correctly been set.
+ /*
 
 
