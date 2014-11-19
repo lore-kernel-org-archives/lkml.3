@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933035AbaKSU6H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:58:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56283 "EHLO
+	id S933105AbaKSU7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:59:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932714AbaKSUyW (ORCPT
+	with ESMTP id S932694AbaKSUyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:22 -0500
+	Wed, 19 Nov 2014 15:54:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.17 110/141] media: ttusb-dec: buffer overflow in ioctl
-Date: Wed, 19 Nov 2014 12:52:13 -0800
-Message-Id: <20141119205154.240239523@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.17 106/141] NFS: Dont try to reclaim delegation open state if recovery failed
+Date: Wed, 19 Nov 2014 12:52:09 -0800
+Message-Id: <20141119205154.111128050@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,31 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit f2e323ec96077642d397bb1c355def536d489d16 upstream.
+commit f8ebf7a8ca35dde321f0cd385fee6f1950609367 upstream.
 
-We need to add a limit check here so we don't overflow the buffer.
+If state recovery failed, then we should not attempt to reclaim delegated
+state.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/ttusb-dec/ttusbdecfe.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/nfs/delegation.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/media/usb/ttusb-dec/ttusbdecfe.c
-+++ b/drivers/media/usb/ttusb-dec/ttusbdecfe.c
-@@ -156,6 +156,9 @@ static int ttusbdecfe_dvbs_diseqc_send_m
- 		   0x00, 0x00, 0x00, 0x00,
- 		   0x00, 0x00 };
- 
-+	if (cmd->msg_len > sizeof(b) - 4)
-+		return -EINVAL;
-+
- 	memcpy(&b[4], cmd->msg, cmd->msg_len);
- 
- 	state->config->send_command(fe, 0x72,
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -125,6 +125,8 @@ again:
+ 			continue;
+ 		if (!test_bit(NFS_DELEGATED_STATE, &state->flags))
+ 			continue;
++		if (!nfs4_valid_open_stateid(state))
++			continue;
+ 		if (!nfs4_stateid_match(&state->stateid, stateid))
+ 			continue;
+ 		get_nfs_open_context(ctx);
 
 
