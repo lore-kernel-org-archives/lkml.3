@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932262AbaKSIJo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 03:09:44 -0500
-Received: from regular1.263xmail.com ([211.150.99.133]:42449 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160AbaKSIJm (ORCPT
+	id S932291AbaKSILE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 03:11:04 -0500
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:40962 "HELO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932161AbaKSILC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 03:09:42 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: jay.xu@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: jay.xu@rock-chips.com
-X-UNIQUE-TAG: <8f7c27c1d82777c169dee68056bb34e7>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Jianqun Xu <jay.xu@rock-chips.com>
-To: heiko@sntech.de, lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz,
-        tiwai@suse.de, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, huangtao@rock-chips.com
-Cc: Jianqun Xu <jay.xu@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>
-Subject: [PATCH v2 2/2] ASoC: rockchip: i2s: add support for grabbing output clock to codec
-Date: Wed, 19 Nov 2014 16:09:27 +0800
-Message-Id: <1416384567-29476-1-git-send-email-jay.xu@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416366468-4744-1-git-send-email-jay.xu@rock-chips.com>
-References: <1416366468-4744-1-git-send-email-jay.xu@rock-chips.com>
+	Wed, 19 Nov 2014 03:11:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAOftzPgYBBFTfNZunf4oGSmECzjOKF0=dnQ9EkTDFsDi+9jfNw@mail.gmail.com>
+References: <1416336857-61405-1-git-send-email-joestringer@nicira.com>
+	<CALnjE+qrkw92tZ-wgpGOPtbuMJVVCfo--7w6PAGO6OW4skiGQQ@mail.gmail.com>
+	<CAOftzPgYBBFTfNZunf4oGSmECzjOKF0=dnQ9EkTDFsDi+9jfNw@mail.gmail.com>
+Date: Wed, 19 Nov 2014 00:11:01 -0800
+Message-ID: <CALnjE+rr2tFdvD+X=BbAza_5ad4DYs6viwvZWHCebQYmpvKU3Q@mail.gmail.com>
+Subject: Re: [ovs-dev] [PATCH net] openvswitch: Fix mask generation for IPv6 labels.
+From: Pravin Shelar <pshelar@nicira.com>
+To: Joe Stringer <joestringer@nicira.com>
+Cc: "dev@openvswitch.org" <dev@openvswitch.org>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch is from Sonny Rao <sonnyrao@chromium.org>
+On Tue, Nov 18, 2014 at 11:25 PM, Joe Stringer <joestringer@nicira.com> wrote:
+> On 18 November 2014 22:09, Pravin Shelar <pshelar@nicira.com> wrote:
+>>
+>> On Tue, Nov 18, 2014 at 10:54 AM, Joe Stringer <joestringer@nicira.com>
+>> wrote:
+>> > When userspace doesn't provide a mask, OVS datapath generates a fully
+>> > unwildcarded mask for the flow. This is done by taking a copy of the
+>> > flow key, then iterating across its attributes, setting all values to
+>> > 0xff. This works for most attributes, as the length of the netlink
+>> > attribute typically matches the length of the value. However, IPv6
+>> > labels only use the lower 20 bits of the field. This patch makes a
+>> > special case to handle this.
+>> >
+>> > This fixes the following error seen when installing IPv6 flows without a
+>> > mask:
+>> >
+>> > openvswitch: netlink: Invalid IPv6 flow label value (value=ffffffff,
+>> > max=fffff)
+>> >
+>> We should allow exact match mask here rather than generating
+>> wildcarded mask. So that ovs can catch invalid ipv6.label.
+>
+>
+> I don't quite follow, I thought this was exact-match? (The existing function
+> sets all bits to 1)
+>
+With 0xffffffff value we can exact match on all ipv6.lable bits.
 
-We need to claim the clock which is driving the codec so that when we enable
-clock gating, we continue to clock the codec when needed.  I make this an
-optional clock since there might be some applications where we don't need it
-but can still use the I2S block.
+> In this case, userspace has not specified a mask, but the kernel complains
+> about a mask that is too wide (because it generated a mask that's too wide).
+> Do you have an alternative fix in mind?
 
-Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
----
-changes since v1:
-- modify commit message
-
- sound/soc/rockchip/rockchip_i2s.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
-
-diff --git a/sound/soc/rockchip/rockchip_i2s.c b/sound/soc/rockchip/rockchip_i2s.c
-index c74ba37..2820ade 100644
---- a/sound/soc/rockchip/rockchip_i2s.c
-+++ b/sound/soc/rockchip/rockchip_i2s.c
-@@ -28,6 +28,7 @@ struct rk_i2s_dev {
- 
- 	struct clk *hclk;
- 	struct clk *mclk;
-+	struct clk *oclk;
- 
- 	struct snd_dmaengine_dai_dma_data capture_dma_data;
- 	struct snd_dmaengine_dai_dma_data playback_dma_data;
-@@ -439,6 +440,14 @@ static int rockchip_i2s_probe(struct platform_device *pdev)
- 		return PTR_ERR(i2s->mclk);
- 	}
- 
-+	i2s->oclk = devm_clk_get(&pdev->dev, "i2s_clk_out");
-+	if (IS_ERR(i2s->oclk)) {
-+		dev_dbg(&pdev->dev, "Didn't find output clock\n");
-+		i2s->oclk = NULL;
-+	}
-+	if (i2s->oclk)
-+		ret = clk_prepare_enable(i2s->oclk);
-+
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	regs = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(regs))
-@@ -505,6 +514,8 @@ static int rockchip_i2s_remove(struct platform_device *pdev)
- 	if (!pm_runtime_status_suspended(&pdev->dev))
- 		i2s_runtime_suspend(&pdev->dev);
- 
-+	if (i2s->oclk)
-+		clk_disable_unprepare(i2s->oclk);
- 	clk_disable_unprepare(i2s->mclk);
- 	clk_disable_unprepare(i2s->hclk);
- 	snd_dmaengine_pcm_unregister(&pdev->dev);
--- 
-1.9.1
-
-
+We can avoid the sanity check ipv6.lable for mask key.
