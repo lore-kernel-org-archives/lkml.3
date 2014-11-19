@@ -1,98 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627AbaKSJUS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 04:20:18 -0500
-Received: from sauhun.de ([89.238.76.85]:52764 "EHLO pokefinder.org"
+	id S1754796AbaKSJUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 04:20:50 -0500
+Received: from mout.web.de ([212.227.17.11]:54266 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753643AbaKSJUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 04:20:15 -0500
-Date: Wed, 19 Nov 2014 10:21:22 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Andrew Jackson <Andrew.Jackson@arm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Baruch Siach <baruch@tkos.co.il>, "Du, Wenkai" <wenkai.du@intel.com>,
-        Shinya Kuribayashi <skuribay@pobox.com>,
-        Romain Baeriswyl <Romain.Baeriswyl@abilis.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH] i2c: designware: prevent early stop on TX FIFO empty
-Message-ID: <20141119092122.GC1439@katana>
-References: <545CB6C4.8010201@arm.com>
+	id S1754226AbaKSJUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 04:20:47 -0500
+Message-ID: <546C60E0.1070903@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 10:20:32 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HG+GLK89HZ1zG0kk"
-Content-Disposition: inline
-In-Reply-To: <545CB6C4.8010201@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.apana.org.au>, linux-crypto@vger.kernel.org
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] crypto-drbg: Deletion of unnecessary checks before the
+ function call "kzfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:KOxjjYI+AKsiE1tjO4B5WBm6BW6Jbh+JE5Ow4rAeQBzgiRoTIn7
+ onk0q6qTU8WbR0nQByms1xirJgiG93y8Df8WMpjwckwG8ywrRkSHmdQ+DS1mZiOblAfKJcr
+ VFq2lHG/oEAt1rF//3ksOx3VVp9oXUNj/8EDPvucpNnILfjnBzSAe15nUyiv5qKPawFrjOm
+ 4MscnJNcEMyV9RALLHfjw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 10:11:04 +0100
 
---HG+GLK89HZ1zG0kk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The kzfree() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-On Fri, Nov 07, 2014 at 12:10:44PM +0000, Andrew Jackson wrote:
-> If the Designware core is configured with IC_EMPTYFIFO_HOLD_MASTER_EN
-> set to zero, allowing the TX FIFO to become empty causes a STOP
-> condition to be generated on the I2C bus. If the transmit FIFO
-> threshold is set too high, an erroneous STOP condition can be
-> generated on long transfers - particularly where the interrupt
-> latency is extended.
->=20
-> Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+This issue was detected by using the Coccinelle software.
 
-So, what do other designware users think of this change (nice CC list
-BTW, Andrew). Adding Mika, too.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ crypto/drbg.c | 18 ++++++------------
+ 1 file changed, 6 insertions(+), 12 deletions(-)
 
-> ---
->  drivers/i2c/busses/i2c-designware-core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busse=
-s/i2c-designware-core.c
-> index 3c20e4b..e070edd 100644
-> --- a/drivers/i2c/busses/i2c-designware-core.c
-> +++ b/drivers/i2c/busses/i2c-designware-core.c
-> @@ -363,7 +363,7 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
->  	}
-> =20
->  	/* Configure Tx/Rx FIFO threshold levels */
-> -	dw_writel(dev, dev->tx_fifo_depth - 1, DW_IC_TX_TL);
-> +	dw_writel(dev, dev->tx_fifo_depth / 2, DW_IC_TX_TL);
->  	dw_writel(dev, 0, DW_IC_RX_TL);
-> =20
->  	/* configure the i2c master */
-> --=20
-> 1.7.1
->=20
+diff --git a/crypto/drbg.c b/crypto/drbg.c
+index a53ee09..b6f22d4 100644
+--- a/crypto/drbg.c
++++ b/crypto/drbg.c
+@@ -1151,8 +1151,7 @@ static int drbg_seed(struct drbg_state *drbg, struct drbg_string *pers,
+ 	drbg->reseed_ctr = 1;
+ 
+ out:
+-	if (entropy)
+-		kzfree(entropy);
++	kzfree(entropy);
+ 	return ret;
+ }
+ 
+@@ -1161,19 +1160,15 @@ static inline void drbg_dealloc_state(struct drbg_state *drbg)
+ {
+ 	if (!drbg)
+ 		return;
+-	if (drbg->V)
+-		kzfree(drbg->V);
++	kzfree(drbg->V);
+ 	drbg->V = NULL;
+-	if (drbg->C)
+-		kzfree(drbg->C);
++	kzfree(drbg->C);
+ 	drbg->C = NULL;
+-	if (drbg->scratchpad)
+-		kzfree(drbg->scratchpad);
++	kzfree(drbg->scratchpad);
+ 	drbg->scratchpad = NULL;
+ 	drbg->reseed_ctr = 0;
+ #ifdef CONFIG_CRYPTO_FIPS
+-	if (drbg->prev)
+-		kzfree(drbg->prev);
++	kzfree(drbg->prev);
+ 	drbg->prev = NULL;
+ 	drbg->fips_primed = false;
+ #endif
+@@ -1293,8 +1288,7 @@ static int drbg_make_shadow(struct drbg_state *drbg, struct drbg_state **shadow)
+ 	return 0;
+ 
+ err:
+-	if (tmp)
+-		kzfree(tmp);
++	kzfree(tmp);
+ 	return ret;
+ }
+ 
+-- 
+2.1.3
 
---HG+GLK89HZ1zG0kk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIbBAEBAgAGBQJUbGESAAoJEBQN5MwUoCm2bjYP+Ie4QLkVvrtwxxKd4S0GR2Al
-UnSMQoeq5yFZOKk+eO+7RdK7G5CWuMXYG/GIIpmx94X0XOGOi5AwX76TTY2nhsZf
-Sq0CcsQ7dnspJ9lpr+KfYo8PmbQft13+qnzFZwlWwOECs2qmFryYK9c9R1b87zaE
-mbz0DJtRiAWYroSKhpDXrFYp6u+qDGepxhuRgSo6ufgCNPm6axrNoM7ivoxw9ORK
-v3fEBWbB7KN+UbwrRIWFD3jSZyQVN6MuHB1OLH1IedJR5K2Xrd+f/uA5tkcxOnQY
-Wd2b//AMMrgSoWyNG7HF0cFeb996kOLshVz0zlxe+kmdkmN/n3hqJffLMrS8W+y0
-F6w1bH45yQfc03vjihIOaJxb+XPi8TrZ/bEglpSAwn7X3atMgKgz4K8VI4NV+Vu+
-pc4WYLh++HSMMyqK27ikVmckQ0VbMc2w6ZevEVrpBgS0yfC0KLQn7CY0CLn9LeFp
-99KUkCLbhvv1EycXKfnlHyMh6GdYIFa04jGLhr/+EP7MFOPUIR72ZuFt+bAcBlEK
-4hf0OegU0K6ICq9mkTAZKng6Kx6hehN6oA/L0jb4vwzCTGFrkDD+oVJr6giVTPz2
-g/io4l+a8tkolpqsAbcIoRwQ8mEG9qbidytCKLmdrEwiM7DM1TpZSoxlVteFM7jZ
-3GwRq80JDitC2BlvAHc=
-=j73i
------END PGP SIGNATURE-----
-
---HG+GLK89HZ1zG0kk--
