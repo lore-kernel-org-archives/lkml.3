@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902AbaKSENJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 23:13:09 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:41520 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851AbaKSENH (ORCPT
+	id S1754754AbaKSEPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 23:15:39 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:37129 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754124AbaKSEPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 23:13:07 -0500
-Message-ID: <546C18C5.5090508@oracle.com>
-Date: Tue, 18 Nov 2014 23:12:53 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 18 Nov 2014 23:15:38 -0500
+Date: Tue, 18 Nov 2014 23:15:16 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        williams@redhat.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 2/2] ftrace/x86/extable: Add is_ftrace_trampoline()
+ function
+Message-ID: <20141118231516.2c3a7bdb@gandalf.local.home>
+In-Reply-To: <20141119034829.497125839@goodmis.org>
+References: <20141119033331.689278545@goodmis.org>
+	<20141119034829.497125839@goodmis.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: mm: shmem: freeing mlocked page
-References: <545C4A36.9050702@oracle.com>	<5466142C.60100@oracle.com>	<20141118135843.bd711e95d3977c74cf51d803@linux-foundation.org>	<546C1202.1020502@oracle.com> <20141118195656.f80ff650.akpm@linux-foundation.org>
-In-Reply-To: <20141118195656.f80ff650.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2014 10:56 PM, Andrew Morton wrote:
->> Trinity can't really log anything because attempts to log syscalls slow everything
->> > down to a crawl to the point nothing reproduces.
-> Ah.  I was thinking that it could be worked out by looking at the
-> trinity source around where it calls splice().  But I suspect that
-> doesn't make sense if trinity just creates a zillion threads each of
-> which sprays semi-random syscalls at the kernel(?).
-
-I think Dave would agree here that this is a rather accurate description
-of Trinity :)
-
->> > I've just looked at that trace above, and got a bit more confused. I didn't think
->> > that you can mlock page cache. How would a user do that exactly?
-> mmap it then mlock it!  The kernel will fault everything in for you
-> then pin it down.
-
-But that's a pipe buffer, I didn't think userspace can mmap pipes? I have
-some reading to do.
+On Tue, 18 Nov 2014 22:33:33 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
 
-Thanks,
-Sasha
+> +/*
+> + * This is used by __kernel_text_address() to return true if the
+> + * the address is on a dynamically allocated trampoline that would
+> + * not return true for either core_kernel_text() or
+> + * is_module_text_address().
+> + */
+> +bool is_ftrace_trampoline(unsigned long addr)
+> +{
+> +	struct ftrace_ops *op;
+> +
+> +	do_for_each_ftrace_op(op, ftrace_ops_list) {
+> +		/*
+> +		 * This is to check for dynamically allocated trampolines.
+> +		 * Trampolines that are in kernel text will have
+> +		 * core_kernel_text() return true.
+> +		 */
+> +		if (op->trampoline && op->trampoline_size)
+> +			if (addr >= op->trampoline &&
+> +			    addr < op->trampoline + op->trampoline_size)
+> +				return true;
+> +	} while_for_each_ftrace_op(op);
+> +
+> +	return false;
+> +}
+> +
+
+Hmm, preemption should be disabled here. We can't guarantee that the
+caller will have that. Will update.
+
+-- Steve
