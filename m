@@ -1,59 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952AbaKSJl5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 04:41:57 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54696
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751265AbaKSJlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755054AbaKSJmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 04:42:20 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:55828 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751211AbaKSJlz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 04:41:55 -0500
-x-originating-ip: 72.167.245.219
-From: Dexuan Cui <decui@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com
-Cc: kys@microsoft.com, haiyangz@microsoft.com
-Subject: [PATCH] tools: hv: ignore ENOBUFS in the KVP daemon
-Date: Wed, 19 Nov 2014 02:50:45 -0800
-Message-Id: <1416394245-31717-1-git-send-email-decui@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+X-IronPort-AV: E=Sophos;i="5.07,415,1413237600"; 
+   d="scan'208";a="108135279"
+Date: Wed, 19 Nov 2014 10:41:37 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Eric Biederman <ebiederm@xmission.com>, Michal Marek <mmarek@suse.cz>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>,
+        Julia Lawall <Julia.Lawall@lip6.fr>, linux-crypto@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 1/2 v2] scripts/coccinelle: catch freeing cryptographic
+ structures via kfree
+In-Reply-To: <20141118114920.13498.73584.stgit@buzz>
+Message-ID: <alpine.DEB.2.10.1411191040020.2363@hadrien>
+References: <20141117151420.10739.16342.stgit@buzz> <20141118114920.13498.73584.stgit@buzz>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under high memory pressure and very high KVP R/W test pressure, the netlink
-recvfrom() may transiently return ENOBUFS to the daemon -- we found this
-during a 2-week stress test.
+> +// Comments: There are false positives in crypto/ where they are
+> actually freed.
 
-We'd better not terminate the daemon on this failure, because a typical KVP
-user can re-try the R/W and hopefully it will succeed next time.
+I didn't really understand this comment.  I ran the semantic patch and got
+around 10 results, but it wasn't clear to me how to see which were false
+positives.
 
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Dexuan Cui <decui@microsoft.com>
----
- tools/hv/hv_kvp_daemon.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+I would suggest to extend the rule a little bit to include information
+about where the allocation call is:
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 22b0764..9f4b303 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -1559,8 +1559,15 @@ int main(int argc, char *argv[])
- 				addr_p, &addr_l);
- 
- 		if (len < 0) {
-+			int saved_errno = errno;
- 			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s",
- 					addr.nl_pid, errno, strerror(errno));
-+
-+			if (saved_errno == ENOBUFS) {
-+				syslog(LOG_ERR, "error = ENOBUFS: ignored");
-+				continue;
-+			}
-+
- 			close(fd);
- 			return -1;
- 		}
--- 
-1.9.1
+///
+/// Structures allocated by crypto_alloc_* must be freed using crypto_free_*.
+/// This finds freeing them by kfree.
+///
+// Confidence: Moderate
+// Copyright: (C) 2014 Konstantin Khlebnikov,  GPLv2.
+// Comments: There are false positives in crypto/ where they are actually freed.
+// Keywords: crypto, kfree
+// Options: --no-includes --include-headers
 
+virtual org
+virtual report
+virtual context
+
+@r depends on context || org || report@
+expression x;
+position p1;
+@@
+
+(
+ x = crypto_alloc_base@p1(...)
+|
+ x = crypto_alloc_cipher@p1(...)
+|
+ x = crypto_alloc_ablkcipher@p1(...)
+|
+ x = crypto_alloc_aead@p1(...)
+|
+ x = crypto_alloc_instance@p1(...)
+|
+ x = crypto_alloc_instance2@p1(...)
+|
+ x = crypto_alloc_comp@p1(...)
+|
+ x = crypto_alloc_pcomp@p1(...)
+|
+ x = crypto_alloc_hash@p1(...)
+|
+ x = crypto_alloc_ahash@p1(...)
+|
+ x = crypto_alloc_shash@p1(...)
+|
+ x = crypto_alloc_rng@p1(...)
+)
+
+@pb@
+expression r.x;
+position p;
+@@
+
+* kfree@p(x)
+
+@script:python depends on org@
+p << pb.p;
+p1 << r.p1;
+@@
+
+msg="WARNING: invalid free of crypto_alloc_* allocated data"
+coccilib.org.print_todo(p[0], msg)
+coccilib.org.print_link(p1[0], "allocation")
+
+@script:python depends on report@
+p << pb.p;
+p1 << r.p1;
+@@
+
+msg="WARNING: invalid free of crypto_alloc_* allocated data, allocated on line %s" % (p1[0].line)
+coccilib.report.print_report(p[0], msg)
