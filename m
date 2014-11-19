@@ -1,170 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756206AbaKSQwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:52:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33710 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755184AbaKSQwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:52:04 -0500
-Date: Wed, 19 Nov 2014 17:51:49 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 1/2] tracing: Clean up tracing_fill_pipe_page()
-Message-ID: <20141119165149.GF2332@dhcp128.suse.cz>
-References: <20141115045847.712848224@goodmis.org>
- <20141115050603.904875201@goodmis.org>
- <20141117123250.10f6f57c@gandalf.local.home>
- <20141117141108.347a30e5@gandalf.local.home>
- <20141118161546.GJ23958@pathway.suse.cz>
- <20141119111718.11df478d@gandalf.local.home>
+	id S1756228AbaKSQwg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:52:36 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:15911 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351AbaKSQwf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:52:35 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: dt for 3.19 #2
+Date: Wed, 19 Nov 2014 17:52:33 +0100
+Message-ID: <1416415953-31966-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141119111718.11df478d@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-11-19 11:17:18, Steven Rostedt wrote:
-> On Tue, 18 Nov 2014 17:15:46 +0100
-> Petr Mladek <pmladek@suse.cz> wrote:
-> 
-> > On Mon 2014-11-17 14:11:08, Steven Rostedt wrote:
-> > > > 
-> > > > I don't like the fact that I did a code structure change with this
-> > > > patch. This patch should be just a simple conversion of len to
-> > > > seq_buf_used(). I'm going to strip this change out and put it before
-> > > > this patch.
-> > > 
-> > > 
-> > > The function tracing_fill_pipe_page() logic is a little confusing with the
-> > > use of count saving the seq.len and reusing it.
-> > > 
-> > > Instead of subtracting a number that is calculated from the saved
-> > > value of the seq.len from seq.len, just save the seq.len at the start
-> > > and if we need to reset it, just assign it again.
-> > > 
-> > > When the seq_buf overflow is len == size + 1, the current logic will
-> > > break. Changing it to use a saved length for resetting back to the
-> > > original value is more robust and will work when we change the way
-> > > seq_buf sets the overflow.
-> > > 
-> > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > > ---
-> > >  kernel/trace/trace.c | 26 ++++++++++++++++++++------
-> > >  1 file changed, 20 insertions(+), 6 deletions(-)
-> > > 
-> > > diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> > > index 7d7a07e9b9e9..2dbc18e5f929 100644
-> > > --- a/kernel/trace/trace.c
-> > > +++ b/kernel/trace/trace.c
-> > > @@ -4575,23 +4575,37 @@ static size_t
-> > >  tracing_fill_pipe_page(size_t rem, struct trace_iterator *iter)
-> > >  {
-> > >  	size_t count;
-> > > +	int save_len;
-> > >  	int ret;
-> > >  
-> > >  	/* Seq buffer is page-sized, exactly what we need. */
-> > >  	for (;;) {
-> > > -		count = iter->seq.seq.len;
-> > > +		save_len = iter->seq.seq.len;
-> > >  		ret = print_trace_line(iter);
-> > > -		count = iter->seq.seq.len - count;
-> > > -		if (rem < count) {
-> > > -			rem = 0;
-> > > -			iter->seq.seq.len -= count;
-> > > +
-> > > +		if (trace_seq_has_overflowed(&iter->seq)) {
-> > > +			iter->seq.seq.len = save_len;
-> > >  			break;
-> > >  		}
-> > > +
-> > > +		/*
-> > > +		 * This should not be hit, because it should only
-> > > +		 * be set if the iter->seq overflowed. But check it
-> > > +		 * anyway to be safe.
-> > > +		 */
-> > >  		if (ret == TRACE_TYPE_PARTIAL_LINE) {
-> > > -			iter->seq.seq.len -= count;
-> > > +			iter->seq.seq.len = save_len;
-> > >  			break;
-> > >  		}
-> > 
-> > The two ifs has the same body. Small optimization would be to do:
-> > 
-> > 		/*
-> > 		 * The two checks should be equivalent but rather be
-> > 		 * on the safe side.
-> > 		 */
-> > 		if (trace_seq_has_overflowed(&iter->seq) ||
-> > 		    ret == TRACE_TYPE_PARTIAL_LINE) {
-> > 			iter->seq.seq.len = save_len;
-> > 			break;
-> > 		}
-> 
-> Yeah, I originally had something like that, but I wanted to remove that
-> second check. I left it separate to make it stand out as something that
-> might be removed in the future. Just a preference I guess.
+Arnd, Olof, Kevin,
 
-Fair enough.
+Another DT pull-request for 3.19. For this one, I had to pull one Vinod's topic
+branch to be able to include the XDMA DT properties. This branch is stable and
+based on 3.18-rc3 (Cf. http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/304041.html).
+Note that my previous DT pull-request for 3.19 was based on 3.18-rc2.
+So, this is what I did:
+- took a v3.18-rc3 tag
+- merged the at91-3.19-dt branch that you already have in at91/dt (you'd taken the at91-dt tag)
+- merged the topic/at_xdmac from Vinod
+- stacked the new material described above on top of this.
+Tell me if it's okay for you or if I have to arrange things differently.
 
-> > To be honest, the code seems to be a bit twisted. This function
-> > is called from tracing_splice_read_pipe(). It copies the
-> > trace_seq buffer into spd.page and call trace_seq_init()
-> > in a for cycle.
-> 
-> Yeah, that splice code confused me too. I'll start looking at it some
-> more and see if it can be fixed up.
-> 
-> > 
-> > Therefore if the overflow happens, trace_find_next_entry_inc()
-> > is not called in tracing_fill_pipe_page() and we work with the same
-> > iterator instance next time. It means that the overflow happens most
-> > likely again and we fill all remaining spd.pages with no data and
-> > are stacked on the same iterator instance.
-> 
-> Luckily, overflows never happen. But if they do, things might break.
+The content itself is pretty straightforward.
 
-I thought so. :-)
+Thanks, best regards,
 
-> > 
-> > BTW: The trace_seq_to_buffer() in tracing_splice_read_pipe()
-> > is suspicious as well. It passes trace_seq_used(&iter->seq)
-> > as the "cnt" parameter. I guess that it should pass the
-> > size of the "spd.page" instead.
-> 
-> Wow, I should have looked harder at that code when I accepted it. It
-> just "worked" and I was happy. Oh well, another thing to fix up.
-> 
-> > 
-> > Also we should somehow handle the situation when some data are not
-> > copied. Well, it seems the spd.page has the page size, so it is
-> > the same size as the trace_seq buffer.
-> > 
-> > 
-> > Well, this patch does not change the behavior. We could solve the
-> > above problem later if it is there. Maybe I got it wrong.
-> 
-> No, that code doesn't look too good. That's some old stuff that got in
-> when we were still learning, and if it worked, we added it ;-)
-> 
-> That needs to be cleaned up. I'll put it on my ever growing todo
-> list.
+The following changes since commit 51f46e5bc326972f623cad7ac9dadc3cf8159203:
 
-I believe. I am a bit scared to put it on my todo list because these
-kind of working things tend to just fall down.
+  Merge branch 'topic/at_xdmac' of git://git.infradead.org/users/vkoul/slave-dma into at91-3.19-dt2 (2014-11-19 12:11:30 +0100)
 
+are available in the git repository at:
 
-> Of course if you want to clean it up, feel free to send some patches on
-> top of this. That is, if we get the OK from Linus or Andrew.
+  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-dt2
 
-OK, I'll put it on my todo list. Let's see who is faster ;-) And I
-keep my fingers crossed about the OK from Linus and Andrew.
+for you to fetch changes up to accda2736fcab10fc3eb35da935e0e049188f6d5:
 
-Best Regards,
-Petr
+  ARM: at91/dt: at91sam9g45: add ISI node (2014-11-19 15:55:17 +0100)
+
+----------------------------------------------------------------
+Second DT batch for 3.19:
+- some trivial fixes: macro for IRQ, license wording
+- DMA description for sama5d4
+- RTT as RTC driver definition plus associated GPBR for several SoCs
+- addition of missing nodes: rtc for at91sam9rl, isi for at91sam9g45
+
+----------------------------------------------------------------
+Alexandre Belloni (1):
+      ARM: at91/dt: at91sam9rl: add rtc
+
+Boris Brezillon (5):
+      ARM: at91/dt: add RTT nodes to at91 dtsis
+      ARM: at91/dt: add GPBR nodes
+      ARM: at91/dt: enable the RTT block on the sam9g20ek board
+      ARM: at91/dt: enable the RTT block on the at91sam9m10g45ek board
+      ARM: at91/dt: at91sam9g45: add ISI node
+
+Ludovic Desroches (2):
+      ARM: at91/dt: sama5d4: use macro instead of numeric value
+      ARM: at91/dt: sama5d4: add DMA support
+
+Nicolas Ferre (1):
+      ARM: at91: fix GPLv2 wording
+
+ arch/arm/boot/dts/at91-sama5d4ek.dts        |  4 +-
+ arch/arm/boot/dts/at91sam9260.dtsi          | 14 ++++++
+ arch/arm/boot/dts/at91sam9261.dtsi          | 14 ++++++
+ arch/arm/boot/dts/at91sam9263.dtsi          | 21 ++++++++
+ arch/arm/boot/dts/at91sam9g20ek_common.dtsi | 14 ++++++
+ arch/arm/boot/dts/at91sam9g45.dtsi          | 46 ++++++++++++++++++
+ arch/arm/boot/dts/at91sam9m10g45ek.dts      |  9 ++++
+ arch/arm/boot/dts/at91sam9rl.dtsi           | 21 ++++++++
+ arch/arm/boot/dts/sama5d4.dtsi              | 75 +++++++++++++++++++++++++++--
+ 9 files changed, 213 insertions(+), 5 deletions(-)
+
+-- 
+Nicolas Ferre
