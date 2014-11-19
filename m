@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051AbaKSTh3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 14:37:29 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:52207 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754598AbaKSTh1 (ORCPT
+	id S1756228AbaKSTiM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 14:38:12 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:56114 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756144AbaKSTiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 14:37:27 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Alim Akhtar <alim.akhtar@samsung.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Heiko Stuebner <heiko@sntech.de>, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, chris@printf.net,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] mmc: dw_mmc: Turn the card clock off at suspend time
-Date: Wed, 19 Nov 2014 11:37:21 -0800
-Message-Id: <1416425841-12681-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Wed, 19 Nov 2014 14:38:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <CALCETrXT3XvfoWvX2hBeW-S2nUHoeLqFFbnW-66H34_aUXKn8g@mail.gmail.com>
+References: <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
+	<20141118020959.GA2091@redhat.com>
+	<CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
+	<20141118023930.GA2871@redhat.com>
+	<CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
+	<20141118145234.GA7487@redhat.com>
+	<alpine.DEB.2.11.1411181914020.3909@nanos>
+	<20141118215540.GD35311@redhat.com>
+	<20141119021902.GA14216@redhat.com>
+	<CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
+	<20141119145902.GA13387@redhat.com>
+	<CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
+	<CALCETrXT3XvfoWvX2hBeW-S2nUHoeLqFFbnW-66H34_aUXKn8g@mail.gmail.com>
+Date: Wed, 19 Nov 2014 11:38:09 -0800
+X-Google-Sender-Auth: 2H_5dyyiT0sHurz5bbwJ3ljRSWQ
+Message-ID: <CA+55aFyRdYDzj_d42paCy-Tg33ysEmkTVVZ+A97b+-0LF_6Yeg@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the dw_mmc driver was first added to Linux it's had a TODO in it
-that we should turn off the card clock during suspend.  I have no idea
-for sure why it wasn't done originally, but if I had to guess I'd
-guess it was related to the lack of a common clock framework.  Let's
-do it now.
+On Wed, Nov 19, 2014 at 11:15 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> I suspect that the regression was triggered by the seccomp pull, since
+> that reworked a lot of this code.
 
-There is no reason for the card clock to be left on during suspend and
-most systems will eventually turn it off anyway (when whole clock
-trees are disabled).  However, it's good to be explicit that it's
-disabled at the time that the MMC subsystem is disabled.
+Note that it turns out that Dave can apparently see the same problems
+with 3.17, so it's not actually a regression. So it may have been
+going on for a while.
 
-This actually fixes a bug on Rockchip rk3288 where an SDIO card wakes
-the system back up during suspend.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v2:
-- Handle fact that ciu_clk is optional (abrestic)
-- Check for errors enabling ciu_clk (abrestic)
+> Just to make sure I understand: it says "NMI watchdog", but this trace
+> is from a timer interrupt, not NMI, right?
 
- drivers/mmc/host/dw_mmc.c | 21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
+Yeah. The kernel/watchdog.c code always says "NMI watchdog", but it's
+actually just a regular tiemr function: watchdog_timer_fn() started
+with hrtimer_start().
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 5a37c33..49f4013 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -2825,11 +2825,11 @@ EXPORT_SYMBOL(dw_mci_remove);
- 
- 
- #ifdef CONFIG_PM_SLEEP
--/*
-- * TODO: we should probably disable the clock to the card in the suspend path.
-- */
- int dw_mci_suspend(struct dw_mci *host)
- {
-+	if (!IS_ERR(host->ciu_clk))
-+		clk_disable(host->ciu_clk);
-+
- 	return 0;
- }
- EXPORT_SYMBOL(dw_mci_suspend);
-@@ -2838,9 +2838,15 @@ int dw_mci_resume(struct dw_mci *host)
- {
- 	int i, ret;
- 
-+	if (!IS_ERR(host->ciu_clk)) {
-+		ret = clk_enable(host->ciu_clk);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	if (!dw_mci_ctrl_reset(host, SDMMC_CTRL_ALL_RESET_FLAGS)) {
- 		ret = -ENODEV;
--		return ret;
-+		goto exit_ciu_enabled;
- 	}
- 
- 	if (host->use_dma && host->dma_ops->init)
-@@ -2871,7 +2877,14 @@ int dw_mci_resume(struct dw_mci *host)
- 			dw_mci_setup_bus(slot, true);
- 		}
- 	}
-+
- 	return 0;
-+
-+exit_ciu_enabled:
-+	if (!IS_ERR(host->ciu_clk))
-+		clk_disable(host->ciu_clk);
-+
-+	return ret;
- }
- EXPORT_SYMBOL(dw_mci_resume);
- #endif /* CONFIG_PM_SLEEP */
--- 
-2.1.0.rc2.206.gedb03e5
+> Is it possible that we've managed to return to userspace with
+> interrupts off somehow?  A loop in userspace that somehow has
+> interrupts off can cause all kinds of fun lockups.
 
+That sounds unlikely, but if there is some stack corruption going on.
+
+However, it wouldn't even explain things, because even if interrupts
+had been disabled in user space, and even if that popf got executed,
+this wouldn't be where they got enabled. That would be the :"sti" in
+the system call entry path (hidden behind the ENABLE_INTERRUPTS
+macro).
+
+Of course, maybe Dave has paravirtualization enabled (what a crock
+_that_ is), and there is something wrong with that whole code.
+
+> I don't understand the logic of what enables TIF_NOHZ.
+
+Yeah, that makes two of us.  But..
+
+> In 3.17, I don't think that code would run with context tracking on,
+> although I don't immediately see any bugs here.
+
+See above: the problem apparently isn't new. Although it is possible
+that we have two different issues going on..
+
+                      Linus
