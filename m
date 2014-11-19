@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555AbaKSUUD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:20:03 -0500
-Received: from plane.gmane.org ([80.91.229.3]:40728 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756499AbaKSUUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:20:00 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Holger =?iso-8859-1?q?Hoffst=E4tte?= 
-	<holger.hoffstaette@googlemail.com>
-Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
-Date: Wed, 19 Nov 2014 20:19:40 +0000 (UTC)
-Message-ID: <pan.2014.11.19.20.19.40@googlemail.com>
-References: <20141013022454.289398272@linuxfoundation.org>
-	<20141013112834.GA10826@khazad-dum.debian.net>
-	<20141013082319.175d90bb@as> <20141119172235.GA31260@kroah.com>
-	<20141119194414.GN5050@linux.vnet.ibm.com>
+	id S1756614AbaKSUUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:20:32 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:38348 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756559AbaKSUU3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 15:20:29 -0500
+Date: Wed, 19 Nov 2014 15:20:26 -0500 (EST)
+Message-Id: <20141119.152026.2218359090239941545.davem@davemloft.net>
+To: elfring@users.sourceforge.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, cocci@systeme.lip6.fr
+Subject: Re: [PATCH 1/1] net: pktgen: Deletion of an unnecessary check
+ before the function call "proc_remove"
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <546B9AF5.9050809@users.sourceforge.net>
+References: <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+	<5317A59D.4@users.sourceforge.net>
+	<546B9AF5.9050809@users.sourceforge.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: p4ff589a3.dip0.t-ipconnect.de
-User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
- git://git.gnome.org/pan2)
-Cc: stable@vger.kernel.org
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Nov 2014 12:20:28 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014 11:44:14 -0800, Paul E. McKenney wrote:
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+Date: Tue, 18 Nov 2014 20:16:05 +0100
 
-> On Wed, Nov 19, 2014 at 09:22:35AM -0800, Greg Kroah-Hartman wrote:
->> 
->> Doesn't build in 3.17 properly :(
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Tue, 18 Nov 2014 20:10:34 +0100
 > 
-> Older kernels can use rcu_note_context_switch() instead of
-> rcu_note_voluntary_context_switch(), which didn't show up until quite
-> recently.  Please note that rcu_note_context_switch() is quite a bit
-> more heavy-weight than is rcu_note_voluntary_context_switch(), but it
-> should be OK in this context.
+> The proc_remove() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
+> 
+> This issue was detected by using the Coccinelle software.
+> 
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 
-When I tried this in 3.14.x the kernel would lock up immediately during
-boot (not even a console). This may or may not have to do with me also
-using the BFS scheduler, but it's IMHO something that should be
-double-checked.
-
-I also tried to backport the necessary macros but that went nowhere
-fast, since they ended up pulling in most of the rcu-task stuff..
-
--h
-
+Applied, thanks.
