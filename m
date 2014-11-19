@@ -1,139 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934466AbaKSWdP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:33:15 -0500
-Received: from ja.ssi.bg ([178.16.129.10]:57700 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933077AbaKSWdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 17:33:12 -0500
-Date: Thu, 20 Nov 2014 00:26:56 +0200 (EET)
-From: Julian Anastasov <ja@ssi.bg>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-cc: "David S. Miller" <davem@davemloft.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>, Simon Horman <horms@verge.net.au>,
-        Wensong Zhang <wensong@linux-vs.org>, netdev@vger.kernel.org,
-        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        coreteam@netfilter.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH 1/1] netfilter: Deletion of unnecessary checks before
- two function calls
-In-Reply-To: <546BA253.6030100@users.sourceforge.net>
-Message-ID: <alpine.LFD.2.11.1411200024280.6497@ja.home.ssi.bg>
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net>
- <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <546BA253.6030100@users.sourceforge.net>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S933101AbaKSWd5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:33:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756864AbaKSUx5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 15:53:57 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Cristian Stoica <cristian.stoica@freescale.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.17 031/141] crypto: caam - fix missing dma unmap on error path
+Date: Wed, 19 Nov 2014 12:50:54 -0800
+Message-Id: <20141119205151.662883764@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
+References: <20141119205150.700188369@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-	Hello,
+------------------
 
-On Tue, 18 Nov 2014, SF Markus Elfring wrote:
+From: Cristian Stoica <cristian.stoica@freescale.com>
 
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Tue, 18 Nov 2014 20:37:05 +0100
-> 
-> The functions free_percpu() and module_put() test whether their argument
-> is NULL and then return immediately. Thus the test around the call is
-> not needed.
-> 
-> This issue was detected by using the Coccinelle software.
-> 
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+commit 738459e3f88538f2ece263424dafe5d91799e46b upstream.
 
-	Pablo, the IPVS parts look ok to me,
+If dma mapping for dma_addr_out fails, the descriptor memory is freed
+but the previous dma mapping for dma_addr_in remains.
+This patch resolves the missing dma unmap and groups resource
+allocations at function start.
 
-Acked-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> ---
->  net/netfilter/ipvs/ip_vs_ctl.c   | 3 +--
->  net/netfilter/ipvs/ip_vs_pe.c    | 3 +--
->  net/netfilter/ipvs/ip_vs_sched.c | 3 +--
->  net/netfilter/ipvs/ip_vs_sync.c  | 3 +--
->  net/netfilter/nf_tables_api.c    | 3 +--
->  5 files changed, 5 insertions(+), 10 deletions(-)
-> 
-> diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-> index fd3f444..7c5e40a 100644
-> --- a/net/netfilter/ipvs/ip_vs_ctl.c
-> +++ b/net/netfilter/ipvs/ip_vs_ctl.c
-> @@ -465,8 +465,7 @@ __ip_vs_bind_svc(struct ip_vs_dest *dest, struct ip_vs_service *svc)
->  
->  static void ip_vs_service_free(struct ip_vs_service *svc)
->  {
-> -	if (svc->stats.cpustats)
-> -		free_percpu(svc->stats.cpustats);
-> +	free_percpu(svc->stats.cpustats);
->  	kfree(svc);
->  }
->  
-> diff --git a/net/netfilter/ipvs/ip_vs_pe.c b/net/netfilter/ipvs/ip_vs_pe.c
-> index 1a82b29..0df17ca 100644
-> --- a/net/netfilter/ipvs/ip_vs_pe.c
-> +++ b/net/netfilter/ipvs/ip_vs_pe.c
-> @@ -37,8 +37,7 @@ struct ip_vs_pe *__ip_vs_pe_getbyname(const char *pe_name)
->  			rcu_read_unlock();
->  			return pe;
->  		}
-> -		if (pe->module)
-> -			module_put(pe->module);
-> +		module_put(pe->module);
->  	}
->  	rcu_read_unlock();
->  
-> diff --git a/net/netfilter/ipvs/ip_vs_sched.c b/net/netfilter/ipvs/ip_vs_sched.c
-> index 4dbcda6..199760c 100644
-> --- a/net/netfilter/ipvs/ip_vs_sched.c
-> +++ b/net/netfilter/ipvs/ip_vs_sched.c
-> @@ -104,8 +104,7 @@ static struct ip_vs_scheduler *ip_vs_sched_getbyname(const char *sched_name)
->  			mutex_unlock(&ip_vs_sched_mutex);
->  			return sched;
->  		}
-> -		if (sched->module)
-> -			module_put(sched->module);
-> +		module_put(sched->module);
->  	}
->  
->  	mutex_unlock(&ip_vs_sched_mutex);
-> diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
-> index eadffb2..cafe28d 100644
-> --- a/net/netfilter/ipvs/ip_vs_sync.c
-> +++ b/net/netfilter/ipvs/ip_vs_sync.c
-> @@ -820,8 +820,7 @@ ip_vs_conn_fill_param_sync(struct net *net, int af, union ip_vs_sync_conn *sc,
->  
->  		p->pe_data = kmemdup(pe_data, pe_data_len, GFP_ATOMIC);
->  		if (!p->pe_data) {
-> -			if (p->pe->module)
-> -				module_put(p->pe->module);
-> +			module_put(p->pe->module);
->  			return -ENOMEM;
->  		}
->  		p->pe_data_len = pe_data_len;
-> diff --git a/net/netfilter/nf_tables_api.c b/net/netfilter/nf_tables_api.c
-> index deeb95f..b115f54 100644
-> --- a/net/netfilter/nf_tables_api.c
-> +++ b/net/netfilter/nf_tables_api.c
-> @@ -3472,8 +3472,7 @@ static int nf_tables_abort(struct sk_buff *skb)
->  			break;
->  		case NFT_MSG_NEWCHAIN:
->  			if (nft_trans_chain_update(trans)) {
-> -				if (nft_trans_chain_stats(trans))
-> -					free_percpu(nft_trans_chain_stats(trans));
-> +				free_percpu(nft_trans_chain_stats(trans));
->  
->  				nft_trans_destroy(trans);
->  			} else {
-> -- 
-> 2.1.3
+---
+ drivers/crypto/caam/key_gen.c |   29 ++++++++++++++---------------
+ 1 file changed, 14 insertions(+), 15 deletions(-)
 
-Regards
+--- a/drivers/crypto/caam/key_gen.c
++++ b/drivers/crypto/caam/key_gen.c
+@@ -48,23 +48,29 @@ int gen_split_key(struct device *jrdev,
+ 	u32 *desc;
+ 	struct split_key_result result;
+ 	dma_addr_t dma_addr_in, dma_addr_out;
+-	int ret = 0;
++	int ret = -ENOMEM;
+ 
+ 	desc = kmalloc(CAAM_CMD_SZ * 6 + CAAM_PTR_SZ * 2, GFP_KERNEL | GFP_DMA);
+ 	if (!desc) {
+ 		dev_err(jrdev, "unable to allocate key input memory\n");
+-		return -ENOMEM;
++		return ret;
+ 	}
+ 
+-	init_job_desc(desc, 0);
+-
+ 	dma_addr_in = dma_map_single(jrdev, (void *)key_in, keylen,
+ 				     DMA_TO_DEVICE);
+ 	if (dma_mapping_error(jrdev, dma_addr_in)) {
+ 		dev_err(jrdev, "unable to map key input memory\n");
+-		kfree(desc);
+-		return -ENOMEM;
++		goto out_free;
+ 	}
++
++	dma_addr_out = dma_map_single(jrdev, key_out, split_key_pad_len,
++				      DMA_FROM_DEVICE);
++	if (dma_mapping_error(jrdev, dma_addr_out)) {
++		dev_err(jrdev, "unable to map key output memory\n");
++		goto out_unmap_in;
++	}
++
++	init_job_desc(desc, 0);
+ 	append_key(desc, dma_addr_in, keylen, CLASS_2 | KEY_DEST_CLASS_REG);
+ 
+ 	/* Sets MDHA up into an HMAC-INIT */
+@@ -81,13 +87,6 @@ int gen_split_key(struct device *jrdev,
+ 	 * FIFO_STORE with the explicit split-key content store
+ 	 * (0x26 output type)
+ 	 */
+-	dma_addr_out = dma_map_single(jrdev, key_out, split_key_pad_len,
+-				      DMA_FROM_DEVICE);
+-	if (dma_mapping_error(jrdev, dma_addr_out)) {
+-		dev_err(jrdev, "unable to map key output memory\n");
+-		kfree(desc);
+-		return -ENOMEM;
+-	}
+ 	append_fifo_store(desc, dma_addr_out, split_key_len,
+ 			  LDST_CLASS_2_CCB | FIFOST_TYPE_SPLIT_KEK);
+ 
+@@ -115,10 +114,10 @@ int gen_split_key(struct device *jrdev,
+ 
+ 	dma_unmap_single(jrdev, dma_addr_out, split_key_pad_len,
+ 			 DMA_FROM_DEVICE);
++out_unmap_in:
+ 	dma_unmap_single(jrdev, dma_addr_in, keylen, DMA_TO_DEVICE);
+-
++out_free:
+ 	kfree(desc);
+-
+ 	return ret;
+ }
+ EXPORT_SYMBOL(gen_split_key);
 
---
-Julian Anastasov <ja@ssi.bg>
+
