@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933373AbaKSVEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:04:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56491 "EHLO
+	id S1757831AbaKSWHv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:07:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932860AbaKSVEJ (ORCPT
+	with ESMTP id S933368AbaKSVEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:09 -0500
+	Wed, 19 Nov 2014 16:04:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dwight Engen <dwight.engen@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 011/122] sunvdc: compute vdisk geometry from capacity
-Date: Wed, 19 Nov 2014 12:51:01 -0800
-Message-Id: <20141119205209.195396560@linuxfoundation.org>
+        Greg Kurz <gkurz@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.14 021/122] hwrng: pseries - port to new read API and fix stack corruption
+Date: Wed, 19 Nov 2014 12:51:11 -0800
+Message-Id: <20141119205209.516491832@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,76 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Allen Pais <allen.pais@oracle.com>
+From: Greg Kurz <gkurz@linux.vnet.ibm.com>
 
-[ Upstream commit de5b73f08468b4fc5e2f6d1505f650262622f78b ]
+commit 24c65bc7037e7d0f362c0df70d17dd72ee64b8b9 upstream.
 
-The LDom diskserver doesn't return reliable geometry data. In addition,
-the types for all fields in the vio_disk_geom are u16, which were being
-truncated in the cast into the u8's of the Linux struct hd_geometry.
+The add_early_randomness() function in drivers/char/hw_random/core.c passes
+a 16-byte buffer to pseries_rng_data_read(). Unfortunately, plpar_hcall()
+returns four 64-bit values and trashes 16 bytes on the stack.
 
-Modify vdc_getgeo() to compute the geometry from the disk's capacity in a
-manner consistent with xen-blkfront::blkif_getgeo().
+This bug has been lying around for a long time. It got unveiled by:
 
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+commit d3cc7996473a7bdd33256029988ea690754e4e2a
+Author: Amit Shah <amit.shah@redhat.com>
+Date:   Thu Jul 10 15:42:34 2014 +0530
+
+    hwrng: fetch randomness only after device init
+
+It may trig a oops while loading or unloading the pseries-rng module for both
+PowerVM and PowerKVM guests.
+
+This patch does two things:
+- pass an intermediate well sized buffer to plpar_hcall(). This is acceptalbe
+  since we're not on a hot path.
+- move to the new read API so that we know the return buffer size for sure.
+
+Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/block/sunvdc.c |   23 ++++++++++++++---------
- 1 file changed, 14 insertions(+), 9 deletions(-)
 
---- a/drivers/block/sunvdc.c
-+++ b/drivers/block/sunvdc.c
-@@ -70,7 +70,6 @@ struct vdc_port {
+---
+ drivers/char/hw_random/pseries-rng.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+--- a/drivers/char/hw_random/pseries-rng.c
++++ b/drivers/char/hw_random/pseries-rng.c
+@@ -25,18 +25,21 @@
+ #include <asm/vio.h>
  
- 	char			disk_name[32];
  
--	struct vio_disk_geom	geom;
- 	struct vio_disk_vtoc	label;
+-static int pseries_rng_data_read(struct hwrng *rng, u32 *data)
++static int pseries_rng_read(struct hwrng *rng, void *data, size_t max, bool wait)
+ {
++	u64 buffer[PLPAR_HCALL_BUFSIZE];
++	size_t size = max < 8 ? max : 8;
+ 	int rc;
+ 
+-	rc = plpar_hcall(H_RANDOM, (unsigned long *)data);
++	rc = plpar_hcall(H_RANDOM, (unsigned long *)buffer);
+ 	if (rc != H_SUCCESS) {
+ 		pr_err_ratelimited("H_RANDOM call failed %d\n", rc);
+ 		return -EIO;
+ 	}
++	memcpy(data, buffer, size);
+ 
+ 	/* The hypervisor interface returns 64 bits */
+-	return 8;
++	return size;
+ }
+ 
+ /**
+@@ -55,7 +58,7 @@ static unsigned long pseries_rng_get_des
+ 
+ static struct hwrng pseries_rng = {
+ 	.name		= KBUILD_MODNAME,
+-	.data_read	= pseries_rng_data_read,
++	.read		= pseries_rng_read,
  };
  
-@@ -103,11 +102,15 @@ static inline u32 vdc_tx_dring_avail(str
- static int vdc_getgeo(struct block_device *bdev, struct hd_geometry *geo)
- {
- 	struct gendisk *disk = bdev->bd_disk;
--	struct vdc_port *port = disk->private_data;
-+	sector_t nsect = get_capacity(disk);
-+	sector_t cylinders = nsect;
- 
--	geo->heads = (u8) port->geom.num_hd;
--	geo->sectors = (u8) port->geom.num_sec;
--	geo->cylinders = port->geom.num_cyl;
-+	geo->heads = 0xff;
-+	geo->sectors = 0x3f;
-+	sector_div(cylinders, geo->heads * geo->sectors);
-+	geo->cylinders = cylinders;
-+	if ((sector_t)(geo->cylinders + 1) * geo->heads * geo->sectors < nsect)
-+		geo->cylinders = 0xffff;
- 
- 	return 0;
- }
-@@ -714,16 +717,18 @@ static int probe_disk(struct vdc_port *p
- 		if (port->vdisk_size == -1)
- 			return -ENODEV;
- 	} else {
-+		struct vio_disk_geom geom;
-+
- 		err = generic_request(port, VD_OP_GET_DISKGEOM,
--				      &port->geom, sizeof(port->geom));
-+				      &geom, sizeof(geom));
- 		if (err < 0) {
- 			printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
- 			       "error %d\n", err);
- 			return err;
- 		}
--		port->vdisk_size = ((u64)port->geom.num_cyl *
--				    (u64)port->geom.num_hd *
--				    (u64)port->geom.num_sec);
-+		port->vdisk_size = ((u64)geom.num_cyl *
-+				    (u64)geom.num_hd *
-+				    (u64)geom.num_sec);
- 	}
- 
- 	q = blk_init_queue(do_vdc_request, &port->vio.lock);
+ static int __init pseries_rng_probe(struct vio_dev *dev,
 
 
