@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814AbaKSQHl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:07:41 -0500
-Received: from mga01.intel.com ([192.55.52.88]:9143 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756071AbaKSQHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:07:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,417,1413270000"; 
-   d="scan'208";a="634586597"
-Message-ID: <546CBFF1.8070206@linux.intel.com>
-Date: Wed, 19 Nov 2014 18:06:09 +0200
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S932429AbaKSQII (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:08:08 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:55275 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932381AbaKSQID (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:08:03 -0500
+Date: Wed, 19 Nov 2014 16:07:47 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
+Message-ID: <20141119160747.GH4042@n2100.arm.linux.org.uk>
+References: <20141118172146.3784.81151.stgit@buzz>
+ <20141118173413.GB4042@n2100.arm.linux.org.uk>
+ <546B8C64.3010904@samsung.com>
+ <2041617.Kxhx5O4MMr@wuerfel>
+ <CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
+ <CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
+ <CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com>
 MIME-Version: 1.0
-To: balbi@ti.com, Alan Stern <stern@rowland.harvard.edu>
-CC: Kever Yang <kever.yang@rock-chips.com>,
-        Paul Zimmerman <paulz@synopsys.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>, romain.perier@gmail.com,
-        Heiko Stuebner <heiko@sntech.de>, dianders@chromium.org,
-        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
-        wulf@rock-chips.com, huangtao@rock-chips.com,
-        linux-rockchip@lists.infradead.org, Roy Li <roy.li@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] usb: dwc2: resume root hub when device detect with
- suspend state
-References: <1416273684-11300-1-git-send-email-kever.yang@rock-chips.com> <Pine.LNX.4.44L0.1411181104280.1500-100000@iolanthe.rowland.org> <20141118164100.GD6179@saruman>
-In-Reply-To: <20141118164100.GD6179@saruman>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.11.2014 18:41, Felipe Balbi wrote:
-> On Tue, Nov 18, 2014 at 11:07:34AM -0500, Alan Stern wrote:
->> On Tue, 18 Nov 2014, Kever Yang wrote:
->>
->>> After we implement the bus_suspend/resume, auto suspend id enabled.
->>> The root hub will be auto suspend if there is no device connected,
->>> we need to resume the root hub when a device connect detect.
->>>
->>> This patch tested on rk3288.
->>>
->>> Signed-off-by: Roy Li <roy.li@rock-chips.com>
->>> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
->>> ---
->>>
->>> Changes in v2:
->>> - add definition for hcd structure
->>> - remove check for bus->root_hub
->>>
->>>  drivers/usb/dwc2/hcd_intr.c | 5 +++++
->>>  1 file changed, 5 insertions(+)
->>>
->>> diff --git a/drivers/usb/dwc2/hcd_intr.c b/drivers/usb/dwc2/hcd_intr.c
->>> index 551ba87..680206f 100644
->>> --- a/drivers/usb/dwc2/hcd_intr.c
->>> +++ b/drivers/usb/dwc2/hcd_intr.c
->>> @@ -329,6 +329,7 @@ static void dwc2_port_intr(struct dwc2_hsotg *hsotg)
->>>  {
->>>  	u32 hprt0;
->>>  	u32 hprt0_modify;
->>> +	struct usb_hcd *hcd = (struct usb_hcd *)hsotg->priv;
->>>  
->>>  	dev_vdbg(hsotg->dev, "--Port Interrupt--\n");
->>>  
->>> @@ -354,6 +355,10 @@ static void dwc2_port_intr(struct dwc2_hsotg *hsotg)
->>>  		hsotg->flags.b.port_connect_status = 1;
->>>  		hprt0_modify |= HPRT0_CONNDET;
->>>  
->>> +		/* resume root hub? */
->>> +		if (hcd->state == HC_STATE_SUSPENDED)
->>> +			usb_hcd_resume_root_hub(hcd);
->>
->> You should be aware that it's not safe to use hcd->state for anything 
->> in a host controller driver.  That field is owned by usbcore, not by 
->> the HCD, and it is not protected by any locks.
->>
->> Thus, for example, hcd->state does not get set to HC_STATE_SUSPENDED
->> until some time after the bus_suspend routine has returned.  A
->> port-change interrupt might occur during that time interval.
+On Wed, Nov 19, 2014 at 05:02:40PM +0100, Ard Biesheuvel wrote:
+> On 19 November 2014 16:52, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+> > Do you mean ldr pc, =symbol ?
+> >
+> > In this case I get this error:
+> >
+> > /tmp/ccAHtONU.s: Assembler messages:
+> > /tmp/ccAHtONU.s:220: Error: invalid literal constant: pool needs to be closer
+> >
+> > Probably constant pool doesn't work well in inline assembly.
+> >
+> >
+> > Something like this seems work:
+> >
+> > add     lr, pc, #4
+> > ldr       pc, [pc, #-4]
+> > .long symbol
+> >
 > 
-> In that case, XHCI has a bug :-) Mathias, care to add it to your TODO
-> list ?
+> You can add a '.ltorg' instruction which tells the assembler to dump
+> the literal pool, but you still need to jump over it, i.e.,
 > 
+> adr lr, 0f
+> ldr pc, =symbol
+> .ltorg
+> 0:
 
-I guess I'll need to check it out, thanks for pointing it out.
+Which is not a good idea either, because the compiler needs to know how
+far away its own manually generated literal pool is from the instructions
+which reference it.  The .ltorg statement can end up emitting any number
+of literals at that point, which makes it indeterminant how many words
+are contained within the asm() statement.
 
--Mathias
+Yes, it isn't desirable to waste an entire data cache line per indirect
+call like the original quote above, but I don't see a practical
+alternative.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
