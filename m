@@ -1,60 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766AbaKSOOF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 09:14:05 -0500
-Received: from mga01.intel.com ([192.55.52.88]:30963 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753824AbaKSOOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:14:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,417,1413270000"; 
-   d="scan'208";a="634523840"
-Date: Wed, 19 Nov 2014 16:12:40 +0200
-From: Laurentiu Palcu <laurentiu.palcu@intel.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/2] spi: add support for DLN-2 USB-SPI adapter
-Message-ID: <20141119141239.GE2583@lpalcu-linux>
-References: <1416394031-2663-1-git-send-email-laurentiu.palcu@intel.com>
- <1416402467-26999-1-git-send-email-laurentiu.palcu@intel.com>
- <20141119135121.GF7857@localhost>
+	id S1755141AbaKSOOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 09:14:34 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:43363 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753824AbaKSOOb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 09:14:31 -0500
+X-Listener-Flag: 11101
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Marc Zyngier <marc.zyngier@arm.com>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
+        <devicetree@vger.kernel.org>, <hc.yen@mediatek.com>,
+        <srv_heupstream@mediatek.com>, <yh.chen@mediatek.com>,
+        <linux-kernel@vger.kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh+dt@kernel.org>,
+        <nathan.chung@mediatek.com>, <yingjoe.chen@gmail.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>, <eddie.huang@mediatek.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v7 0/4] ARM: mediatek: Add support for interrupt polarity
+Date: Wed, 19 Nov 2014 22:14:07 +0800
+Message-ID: <1416406451-4578-1-git-send-email-yingjoe.chen@mediatek.com>
+X-Mailer: git-send-email 1.8.1.1.dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141119135121.GF7857@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 02:51:21PM +0100, Johan Hovold wrote:
-> On Wed, Nov 19, 2014 at 03:07:47PM +0200, Laurentiu Palcu wrote:
-> 
-> > +/*
-> > + * Perform one read operation.
-> > + */
-> > +static int dln2_spi_read_one(struct dln2_spi *dln2, u8 *data,
-> > +			     u16 data_len, u8 attr)
-> > +{
-> > +	int ret;
-> > +	struct {
-> > +		u8 port;
-> > +		__le16 size;
-> > +		u8 attr;
-> > +	} __packed tx;
-> > +	struct {
-> > +		__le16 size;
-> > +		u8 buf[DLN2_SPI_MAX_XFER_SIZE];
-> > +	} __packed *rx = dln2->buf;
-> 
-> You said you verified that the dln2 protocol headers did not mess up the
-> alignment, yet they do. Here you have a two byte header.
-I did, only that I mistakenly counted the entire header, including
-dln2_response struct size, which is 10 bytes... :/
+This series is 7th version of interrupt polarity support for MediaTek SoCs.
 
-thanks,
-laurentiu
+I rebased previous version on latest tip/irq/irqdomain and use newly added
+helper function irq_domain_add_hierarchy(). I also changed according to
+Marc's suggestion.
+
+Simplified block diagram for interrupt on my system:
+
+    +-------+      +-------+
+ ---| SYSIRQ|------|ARM GIC|
+ ---|       |------|       |
+ ---|       |------|       |
+ ---|       |------|       |
+ ---|       |------|       |
+    +-------+      +-------+
+
+In device tree, interrupt-parent for other devices is sysirq, child of gic.
+This describe HW better and allow device to specify polarity as it is sent
+by the device.
+
+When using hierarchy irq domain, gic will use irq_domain_add_linear to
+create irqdomain and all interrupt numbers must come from device tree. My
+/proc/interrupts looks like this now:
+
+# cat /proc/interrupts
+           CPU0
+ 16:     149578  MT_SYSIRQ 113  mtk_timer
+ 20:       1082  MT_SYSIRQ  54  serial
+
+Changes in v7:
+ - Rebased to tip/irq/irqdomain
+ - In mtk_sysirq_domain_alloc, use copy of irq_data to workaound of_node
+   check in gic_irq_domain_xlate.
+
+Changes in v6:
+ - Discussed in [1]
+ - Rebased to tip/irq/irqdomain
+
+Changes in v5:
+ - Discussed in [2]
+ - Fix bug on mt6589 reported by Matthias
+ - Fix bug for irq_find_mapping in irq_create_of_mapping
+ - Merge Marc's change to proper handle non-DT case in gic_init_bases
+
+Changes in v4:
+ - Discussed in [3]
+ - Remove arm,hierarchy-irq-domain. When GIC is probed by DT, it will
+support hierarchy irqdomain.
+
+Changes in v3:
+ - Discussed in [4]
+ - First implementation using hierarchy irqdomain
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/302221.html
+[2] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/298161.html
+[3] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296911.html
+[4] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/293766.html
+
+Yingjoe Chen (4):
+  irqchip: gic: Support hierarchy irq domain.
+  ARM: mediatek: Add sysirq interrupt polarity support
+  ARM: mediatek: Add sysirq in mt6589/mt8135/mt8127 dtsi
+  dt-bindings: add bindings for mediatek sysirq
+
+ .../bindings/arm/mediatek/mediatek,sysirq.txt      |  26 ++++
+ arch/arm/boot/dts/mt6589.dtsi                      |  14 +-
+ arch/arm/boot/dts/mt8127.dtsi                      |  14 +-
+ arch/arm/boot/dts/mt8135.dtsi                      |  14 +-
+ drivers/irqchip/Kconfig                            |   1 +
+ drivers/irqchip/Makefile                           |   1 +
+ drivers/irqchip/irq-gic.c                          |  78 ++++++----
+ drivers/irqchip/irq-mtk-sysirq.c                   | 158 +++++++++++++++++++++
+ 8 files changed, 276 insertions(+), 30 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/mediatek/mediatek,sysirq.txt
+ create mode 100644 drivers/irqchip/irq-mtk-sysirq.c
 
