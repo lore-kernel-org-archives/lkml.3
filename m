@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934220AbaKSV0g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:26:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57283 "EHLO
+	id S934243AbaKSV0w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:26:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933697AbaKSVOq (ORCPT
+	with ESMTP id S933836AbaKSVOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:14:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Dwight Engen <dwight.engen@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 08/70] vio: fix reuse of vio_dring slot
-Date: Wed, 19 Nov 2014 12:51:59 -0800
-Message-Id: <20141119205211.194978535@linuxfoundation.org>
+Subject: [PATCH 3.10 06/70] sunvdc: compute vdisk geometry from capacity
+Date: Wed, 19 Nov 2014 12:51:57 -0800
+Message-Id: <20141119205211.124888259@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -29,145 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dwight Engen <dwight.engen@oracle.com>
+From: Allen Pais <allen.pais@oracle.com>
 
-[ Upstream commit d0aedcd4f14a22e23b313f42b7e6e6ebfc0fbc31 ]
+[ Upstream commit de5b73f08468b4fc5e2f6d1505f650262622f78b ]
 
-vio_dring_avail() will allow use of every dring entry, but when the last
-entry is allocated then dr->prod == dr->cons which is indistinguishable from
-the ring empty condition. This causes the next allocation to reuse an entry.
-When this happens in sunvdc, the server side vds driver begins nack'ing the
-messages and ends up resetting the ldc channel. This problem does not effect
-sunvnet since it checks for < 2.
+The LDom diskserver doesn't return reliable geometry data. In addition,
+the types for all fields in the vio_disk_geom are u16, which were being
+truncated in the cast into the u8's of the Linux struct hd_geometry.
 
-The fix here is to just never allocate the very last dring slot so that full
-and empty are not the same condition. The request start path was changed to
-check for the ring being full a bit earlier, and to stop the blk_queue if
-there is no space left. The blk_queue will be restarted once the ring is
-only half full again. The number of ring entries was increased to 512 which
-matches the sunvnet and Solaris vdc drivers, and greatly reduces the
-frequency of hitting the ring full condition and the associated blk_queue
-stop/starting. The checks in sunvent were adjusted to account for
-vio_dring_avail() returning 1 less.
-
-Orabug: 19441666
-OraBZ: 14983
+Modify vdc_getgeo() to compute the geometry from the disk's capacity in a
+manner consistent with xen-blkfront::blkif_getgeo().
 
 Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/vio.h       |    2 -
- drivers/block/sunvdc.c             |   39 +++++++++++++++++++++----------------
- drivers/net/ethernet/sun/sunvnet.c |    4 +--
- 3 files changed, 26 insertions(+), 19 deletions(-)
+ drivers/block/sunvdc.c |   23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
 
---- a/arch/sparc/include/asm/vio.h
-+++ b/arch/sparc/include/asm/vio.h
-@@ -265,7 +265,7 @@ static inline u32 vio_dring_avail(struct
- 				  unsigned int ring_size)
- {
- 	return (dr->pending -
--		((dr->prod - dr->cons) & (ring_size - 1)));
-+		((dr->prod - dr->cons) & (ring_size - 1)) - 1);
- }
- 
- #define VIO_MAX_TYPE_LEN	32
 --- a/drivers/block/sunvdc.c
 +++ b/drivers/block/sunvdc.c
-@@ -33,7 +33,7 @@ MODULE_DESCRIPTION("Sun LDOM virtual dis
- MODULE_LICENSE("GPL");
- MODULE_VERSION(DRV_MODULE_VERSION);
+@@ -70,7 +70,6 @@ struct vdc_port {
  
--#define VDC_TX_RING_SIZE	256
-+#define VDC_TX_RING_SIZE	512
+ 	char			disk_name[32];
  
- #define WAITING_FOR_LINK_UP	0x01
- #define WAITING_FOR_TX_SPACE	0x02
-@@ -283,7 +283,9 @@ static void vdc_end_one(struct vdc_port
+-	struct vio_disk_geom	geom;
+ 	struct vio_disk_vtoc	label;
+ };
  
- 	__blk_end_request(req, (desc->status ? -EIO : 0), desc->size);
- 
--	if (blk_queue_stopped(port->disk->queue))
-+	/* restart blk queue when ring is half emptied */
-+	if (blk_queue_stopped(port->disk->queue) &&
-+	    vdc_tx_dring_avail(dr) * 100 / VDC_TX_RING_SIZE >= 50)
- 		blk_start_queue(port->disk->queue);
- }
- 
-@@ -435,12 +437,6 @@ static int __send_request(struct request
- 	for (i = 0; i < nsg; i++)
- 		len += sg[i].length;
- 
--	if (unlikely(vdc_tx_dring_avail(dr) < 1)) {
--		blk_stop_queue(port->disk->queue);
--		err = -ENOMEM;
--		goto out;
--	}
--
- 	desc = vio_dring_cur(dr);
- 
- 	err = ldc_map_sg(port->vio.lp, sg, nsg,
-@@ -480,21 +476,32 @@ static int __send_request(struct request
- 		port->req_id++;
- 		dr->prod = (dr->prod + 1) & (VDC_TX_RING_SIZE - 1);
- 	}
--out:
- 
- 	return err;
- }
- 
--static void do_vdc_request(struct request_queue *q)
-+static void do_vdc_request(struct request_queue *rq)
+@@ -103,11 +102,15 @@ static inline u32 vdc_tx_dring_avail(str
+ static int vdc_getgeo(struct block_device *bdev, struct hd_geometry *geo)
  {
--	while (1) {
--		struct request *req = blk_fetch_request(q);
-+	struct request *req;
+ 	struct gendisk *disk = bdev->bd_disk;
+-	struct vdc_port *port = disk->private_data;
++	sector_t nsect = get_capacity(disk);
++	sector_t cylinders = nsect;
  
--		if (!req)
-+	while ((req = blk_peek_request(rq)) != NULL) {
-+		struct vdc_port *port;
-+		struct vio_dring_state *dr;
-+
-+		port = req->rq_disk->private_data;
-+		dr = &port->vio.drings[VIO_DRIVER_TX_RING];
-+		if (unlikely(vdc_tx_dring_avail(dr) < 1))
-+			goto wait;
-+
-+		blk_start_request(req);
-+
-+		if (__send_request(req) < 0) {
-+			blk_requeue_request(rq, req);
-+wait:
-+			/* Avoid pointless unplugs. */
-+			blk_stop_queue(rq);
- 			break;
--
--		if (__send_request(req) < 0)
--			__blk_end_request_all(req, -EIO);
-+		}
- 	}
+-	geo->heads = (u8) port->geom.num_hd;
+-	geo->sectors = (u8) port->geom.num_sec;
+-	geo->cylinders = port->geom.num_cyl;
++	geo->heads = 0xff;
++	geo->sectors = 0x3f;
++	sector_div(cylinders, geo->heads * geo->sectors);
++	geo->cylinders = cylinders;
++	if ((sector_t)(geo->cylinders + 1) * geo->heads * geo->sectors < nsect)
++		geo->cylinders = 0xffff;
+ 
+ 	return 0;
  }
+@@ -714,16 +717,18 @@ static int probe_disk(struct vdc_port *p
+ 		if (port->vdisk_size == -1)
+ 			return -ENODEV;
+ 	} else {
++		struct vio_disk_geom geom;
++
+ 		err = generic_request(port, VD_OP_GET_DISKGEOM,
+-				      &port->geom, sizeof(port->geom));
++				      &geom, sizeof(geom));
+ 		if (err < 0) {
+ 			printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
+ 			       "error %d\n", err);
+ 			return err;
+ 		}
+-		port->vdisk_size = ((u64)port->geom.num_cyl *
+-				    (u64)port->geom.num_hd *
+-				    (u64)port->geom.num_sec);
++		port->vdisk_size = ((u64)geom.num_cyl *
++				    (u64)geom.num_hd *
++				    (u64)geom.num_sec);
+ 	}
  
---- a/drivers/net/ethernet/sun/sunvnet.c
-+++ b/drivers/net/ethernet/sun/sunvnet.c
-@@ -656,7 +656,7 @@ static int vnet_start_xmit(struct sk_buf
- 	spin_lock_irqsave(&port->vio.lock, flags);
- 
- 	dr = &port->vio.drings[VIO_DRIVER_TX_RING];
--	if (unlikely(vnet_tx_dring_avail(dr) < 2)) {
-+	if (unlikely(vnet_tx_dring_avail(dr) < 1)) {
- 		if (!netif_queue_stopped(dev)) {
- 			netif_stop_queue(dev);
- 
-@@ -704,7 +704,7 @@ static int vnet_start_xmit(struct sk_buf
- 	dev->stats.tx_bytes += skb->len;
- 
- 	dr->prod = (dr->prod + 1) & (VNET_TX_RING_SIZE - 1);
--	if (unlikely(vnet_tx_dring_avail(dr) < 2)) {
-+	if (unlikely(vnet_tx_dring_avail(dr) < 1)) {
- 		netif_stop_queue(dev);
- 		if (vnet_tx_dring_avail(dr) > VNET_TX_WAKEUP_THRESH(dr))
- 			netif_wake_queue(dev);
+ 	q = blk_init_queue(do_vdc_request, &port->vio.lock);
 
 
