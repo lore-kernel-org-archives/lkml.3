@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791AbaKSMvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 07:51:36 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35262 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753534AbaKSMve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 07:51:34 -0500
-Message-ID: <546C923D.6000800@ti.com>
-Date: Wed, 19 Nov 2014 14:51:09 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753595AbaKSM7y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 07:59:54 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:47766 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759AbaKSM7x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 07:59:53 -0500
 MIME-Version: 1.0
-To: Qiang Chen <qiang2.chen@sonymobile.com>
-CC: <plagnioj@jcrosoft.com>, <linux@arm.linux.org.uk>, <pawel.moll@arm.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <qcwj.lk@gmail.com>
-Subject: Re: [PATCH] video: ARM CLCD: Remove duplicated include in amba-clcd.c
-References: <1416216301-15854-1-git-send-email-qiang2.chen@sonymobile.com>
-In-Reply-To: <1416216301-15854-1-git-send-email-qiang2.chen@sonymobile.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="lHKtTusqfS2bWCjFlCkfEBJ3AQXn0RhPa"
+In-Reply-To: <1416400568-7512-1-git-send-email-b50113@freescale.com>
+References: <1416400568-7512-1-git-send-email-b50113@freescale.com>
+Date: Wed, 19 Nov 2014 10:59:51 -0200
+Message-ID: <CAOMZO5DuJpEPALw60yC3kxEbdE_-fAbUG-3L+hZ+Oo1bd=0Kew@mail.gmail.com>
+Subject: Re: [alsa-devel] [PATCH] ASoC: wm8960: Add shared_lrclk and capless
+ to device tree
+From: Fabio Estevam <festevam@gmail.com>
+To: Zidan Wang <b50113@freescale.com>
+Cc: Mark Brown <broonie@kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, Takashi Iwai <tiwai@suse.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        patches@opensource.wolfsonmicro.com,
+        Liam Girdwood <lgirdwood@gmail.com>, Xiubo Li <Li.Xiubo@freescale.com>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---lHKtTusqfS2bWCjFlCkfEBJ3AQXn0RhPa
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
-
-On 17/11/14 11:25, Qiang Chen wrote:
-> This patch fixes duplicated include dma-mapping.h in
-> drivers/video/fbdev/amba-clcd.c
->=20
-> Signed-off-by: Qiang Chen <qiang2.chen@sonymobile.com>
+On Wed, Nov 19, 2014 at 10:36 AM, Zidan Wang <b50113@freescale.com> wrote:
+> wm8960 codec has a wm8960_data struct which has two fields shared_lrclk and capless.
+> The wm8960_data is get from platform_data and it is reasonable to set it from device
+> tree when platform_data is null.
+> And when shared_lrclk is set, LRCM will be enabled. But the following software reset
+> in wm8960_probe will reset it to the default state. So LRCM operation should after
+> software reset.
+>
+> Signed-off-by: Zidan Wang <b50113@freescale.com>
 > ---
->  drivers/video/fbdev/amba-clcd.c | 1 -
->  1 file changed, 1 deletion(-)
->=20
-> diff --git a/drivers/video/fbdev/amba-clcd.c b/drivers/video/fbdev/amba=
--clcd.c
-> index 6ad23bd..32c0b6b 100644
-> --- a/drivers/video/fbdev/amba-clcd.c
-> +++ b/drivers/video/fbdev/amba-clcd.c
-> @@ -27,7 +27,6 @@
->  #include <linux/bitops.h>
->  #include <linux/clk.h>
->  #include <linux/hardirq.h>
-> -#include <linux/dma-mapping.h>
->  #include <linux/of.h>
->  #include <linux/of_address.h>
->  #include <linux/of_graph.h>
->=20
+>  sound/soc/codecs/wm8960.c | 49 ++++++++++++++++++++++++++++++-----------------
 
-Thanks, queued for 3.19.
-
- Tomi
-
-
-
-
---lHKtTusqfS2bWCjFlCkfEBJ3AQXn0RhPa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUbJI9AAoJEPo9qoy8lh71TIMP/j4N4ijbgcD4kNa/e1fStgdJ
-QcAqYk5a8++vduLHYK7JN6+QB9AgRjidFEpDZVcVGDlZ06wMAmyovqEK9MjvGV8D
-rDz4Zv7nTzNfFTxI+2nnWHN8FeETVKlsQ8wsDFbZo9wOcAFpNUIgxIQo45sbXIr3
-aRU8Tcgbm56WjdHJCUkvIWrGhu9RSyie/LqiUH5S1ne1fafW2HsCdID4ppMMY/bZ
-ziyJUQIQtW+1hdOPdARIlfB96Ehtou/twD10A9pMh7aDluim7agZEeUwY9KjIeoI
-/UZROA2Iy7esCVWqgnIO4RK1+syOWUShSe1sp5uFAUpCbdPpkZAF06BJGIt2iC2m
-MYu0lBRLMg8kZc8vz4i9yj9K3PCxMwiCRY/fmUqGuSpzJLe3ITTwm8I5zVXl9GAa
-Oq9ZhfHuhe36zx+b4PAQsVGqbeogUZGlFuX6c2KCYkA7TxcEm5RIeyiwxoJeP54K
-vKdrS93qatMwMdBJiJkFCeUd0MYiVZ28q90/MpOCbpbJMv+56nRhAkaiMsFSBESt
-PV0wsGoXhmlVswi6TRCWHhbs+0ahYkShPXtNxsFsvq+feb2YJtruEPwwopYU5YmU
-KBUl3PtAaJECv0mkGWnkO6/e4viFc6b3kSYJahYkpoexJLsOZ2ocwhdGToG9WNZs
-XFujtA7IUHA2ystzfkZr
-=0rin
------END PGP SIGNATURE-----
-
---lHKtTusqfS2bWCjFlCkfEBJ3AQXn0RhPa--
+I think you could a add
+Documentation/devicetree/bindings/sound/wm8960.txt in a separate patch
+and document these properties there.
