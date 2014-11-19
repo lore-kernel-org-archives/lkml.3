@@ -1,109 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004AbaKSPHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:07:13 -0500
-Received: from mout.web.de ([212.227.15.14]:57766 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754273AbaKSPHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:07:11 -0500
-Message-ID: <546CB20D.4070808@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 16:06:53 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755291AbaKSPIy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:08:54 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:6272 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753595AbaKSPIx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 10:08:53 -0500
+Date: Wed, 19 Nov 2014 10:08:41 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH 14/26 v5] tracing: Create seq_buf layer in trace_seq
+Message-ID: <20141119100841.316e865f@gandalf.local.home>
+In-Reply-To: <20141119145133.GC2332@dhcp128.suse.cz>
+References: <20141115045847.712848224@goodmis.org>
+	<20141115050602.986728758@goodmis.org>
+	<20141119145133.GC2332@dhcp128.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Doug Thompson <dougthompson@xmission.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Tim Small <tim@buttersideup.com>, linux-edac@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] EDAC: Deletion of unnecessary checks before the function
- call "pci_dev_put"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:4XM5H7YrU7gIVdE964AkFvxxCVmZhBgYmMXfMr11wxUDa1KxRxs
- OIzNEjwd5BliM6lQWS3gdrlMx8uPF4BPfHeB2/1QP5OA9QA+BuRsPnHeEuwRJO/3hi+OnrC
- FdpVoAh2R2Gp8HSEuqQKr+Yti4zhVK3FyVE/j0SdWKhaTHSXtDf4r29Xhw/WY6VKAeiBLaf
- 7CvLswQYrE8dW/TDzlo4g==
-X-UI-Out-Filterresults: notjunk:1;
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 16:00:13 +0100
+On Wed, 19 Nov 2014 15:51:38 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-The pci_dev_put() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+> On Fri 2014-11-14 23:59:01, Steven Rostedt wrote:
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > 
+> > Create a seq_buf layer that trace_seq sits on. The seq_buf will not
+> > be limited to page size. This will allow other usages of seq_buf
+> > instead of a hard set PAGE_SIZE one that trace_seq has.
+> > 
+> > Link: http://lkml.kernel.org/r/20141104160221.864997179@goodmis.org
+> > Link: http://lkml.kernel.org/r/20141114011412.170377300@goodmis.org
+> > 
+> > Tested-by: Jiri Kosina <jkosina@suse.cz>
+> > Acked-by: Jiri Kosina <jkosina@suse.cz>
+> > Reviewed-by: Petr Mladek <pmladek@suse.cz>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  include/linux/seq_buf.h              |  81 +++++++++
+> >  include/linux/trace_seq.h            |  12 +-
+> >  kernel/trace/Makefile                |   1 +
+> >  kernel/trace/seq_buf.c               | 341 +++++++++++++++++++++++++++++++++++
+> >  kernel/trace/trace.c                 |  39 ++--
+> >  kernel/trace/trace_events.c          |   6 +-
+> >  kernel/trace/trace_functions_graph.c |   6 +-
+> >  kernel/trace/trace_seq.c             | 177 +++++++++---------
+> >  8 files changed, 538 insertions(+), 125 deletions(-)
+> >  create mode 100644 include/linux/seq_buf.h
+> >  create mode 100644 kernel/trace/seq_buf.c
+> 
+> [...]
+>  
+> > diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+> > index 100288d10e1f..6d1342ae7a44 100644
+> > --- a/kernel/trace/trace_functions_graph.c
+> > +++ b/kernel/trace/trace_functions_graph.c
+> 
+> [...]
+> 
+> > @@ -163,21 +176,22 @@ EXPORT_SYMBOL_GPL(trace_seq_vprintf);
+> >   */
+> >  void trace_seq_bprintf(struct trace_seq *s, const char *fmt, const u32 *binary)
+> >  {
+> > -	unsigned int len = TRACE_SEQ_BUF_LEFT(s);
+> > +	unsigned int save_len = s->seq.len;
+> >  	int ret;
+> 
+> Last but one small thing. The "ret" is assigned but not longer used.
+> 
+> JFYI, I have skipped this patch yesterday because it was long and already
+> marked as reviewed. I could not help myself and double checked it today.
+> 
 
-This issue was detected by using the Coccinelle software.
+OK, I'll fix that up.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/edac/i3000_edac.c      | 3 +--
- drivers/edac/i3200_edac.c      | 3 +--
- drivers/edac/i82443bxgx_edac.c | 3 +--
- drivers/edac/x38_edac.c        | 3 +--
- 4 files changed, 4 insertions(+), 8 deletions(-)
+> > -	if (s->full || !len)
+> > +	if (s->full)
+> >  		return;
+> >  
+> > -	ret = bstr_printf(s->buffer + s->len, len, fmt, binary);
+> > +	__trace_seq_init(s);
+> > +
+> > +	ret = seq_buf_bprintf(&s->seq, fmt, binary);
+> >  
+> >  	/* If we can't write it all, don't bother writing anything */
+> > -	if (ret >= len) {
+> > +	if (unlikely(seq_buf_has_overflowed(&s->seq))) {
+> > +		s->seq.len = save_len;
+> >  		s->full = 1;
+> >  		return;
+> >  	}
+> > -
+> > -	s->len += ret;
+> >  }
+> >  EXPORT_SYMBOL_GPL(trace_seq_bprintf);
+> 
+> The last small thing is the same unused "ret" in trace_seq_path(). But
+> this one should get fixed in "[PATCH 15/26 v5] tracing: Convert
+> seq_buf_path() to be like seq_path()".
 
-diff --git a/drivers/edac/i3000_edac.c b/drivers/edac/i3000_edac.c
-index cd28b96..5cb36a6 100644
---- a/drivers/edac/i3000_edac.c
-+++ b/drivers/edac/i3000_edac.c
-@@ -542,8 +542,7 @@ fail1:
- 	pci_unregister_driver(&i3000_driver);
- 
- fail0:
--	if (mci_pdev)
--		pci_dev_put(mci_pdev);
-+	pci_dev_put(mci_pdev);
- 
- 	return pci_rc;
- }
-diff --git a/drivers/edac/i3200_edac.c b/drivers/edac/i3200_edac.c
-index aa98b13..4ad062b 100644
---- a/drivers/edac/i3200_edac.c
-+++ b/drivers/edac/i3200_edac.c
-@@ -523,8 +523,7 @@ fail1:
- 	pci_unregister_driver(&i3200_driver);
- 
- fail0:
--	if (mci_pdev)
--		pci_dev_put(mci_pdev);
-+	pci_dev_put(mci_pdev);
- 
- 	return pci_rc;
- }
-diff --git a/drivers/edac/i82443bxgx_edac.c b/drivers/edac/i82443bxgx_edac.c
-index d730e276..b4705d9 100644
---- a/drivers/edac/i82443bxgx_edac.c
-+++ b/drivers/edac/i82443bxgx_edac.c
-@@ -458,8 +458,7 @@ static void __exit i82443bxgx_edacmc_exit(void)
- 	if (!i82443bxgx_registered)
- 		i82443bxgx_edacmc_remove_one(mci_pdev);
- 
--	if (mci_pdev)
--		pci_dev_put(mci_pdev);
-+	pci_dev_put(mci_pdev);
- }
- 
- module_init(i82443bxgx_edacmc_init);
-diff --git a/drivers/edac/x38_edac.c b/drivers/edac/x38_edac.c
-index e644b52..7c5cdc6 100644
---- a/drivers/edac/x38_edac.c
-+++ b/drivers/edac/x38_edac.c
-@@ -500,8 +500,7 @@ fail1:
- 	pci_unregister_driver(&x38_driver);
- 
- fail0:
--	if (mci_pdev)
--		pci_dev_put(mci_pdev);
-+	pci_dev_put(mci_pdev);
- 
- 	return pci_rc;
- }
--- 
-2.1.3
+OK, I'll try to remember that :-)
 
+> 
+> Both these changes are rather cosmetic. Feel free to leave them for
+> some later clean up.
+> 
+> 
+> Eureka, I have finished review of the patchset and am happy with it \o/
+> I am looking forward to see it in the main tree.
+
+Well now it comes down to Linus or Andrew giving me the OK. I've pulled
+all the trace_seq updates into my ftrace/core branch (which will be
+going into my for-next branch shortly). I stopped just before this
+patch. I didn't want to create the seq_buf until I knew it was going to
+be used by something other than trace_seq.
+
+> 
+> Thanks a lot for the hard work.
+> 
+
+Yeah, let's hope that it was worth it.
+
+Thanks for the in depth reviews.
+
+-- Steve
