@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750AbaKSDqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 22:46:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40099 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383AbaKSDqi (ORCPT
+	id S1754818AbaKSDse (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 22:48:34 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:18355 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754168AbaKSDsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 22:46:38 -0500
-Date: Tue, 18 Nov 2014 19:45:18 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Peter Hung <hpeter@gmail.com>
-Cc: jslaby@suse.cz, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hung <hpeter+linux_kernel@gmail.com>
-Subject: Re: [PATCH] serial: fix io address assign method with Fintek
- PCI-to-UART Product
-Message-ID: <20141119034518.GB15293@kroah.com>
-References: <1416364553-29982-1-git-send-email-hpeter+linux_kernel@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416364553-29982-1-git-send-email-hpeter+linux_kernel@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 18 Nov 2014 22:48:31 -0500
+Message-Id: <20141119033331.689278545@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Tue, 18 Nov 2014 22:33:31 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        williams@redhat.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH 0/2] ftrace: Fix stack tracing issues
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 10:35:53AM +0800, Peter Hung wrote:
-> The original driver fixed the io address with 0xe000+idx*8, but real io address assigned from BIOS
-> is dynamically from read PCI configure space 0x24, 0x20, 0x1c.
-> 
-> The Fintek F81504/F81508/F81512 maybe malfunction without this patch and malfunction surely when
-> more the 1 PCI card.
+I ran my ftrace tests on a PREEMPT_RT kernel and one of the tests failed.
+It triggered a race that was in mainline and was fixed by another patch.
+The bug was with the traceoff function trigger.
 
-Please wrap these lines at 72 columns please, like git wants you to.
+I stated testing the other triggers and discovered two other bugs.
+One was caused by my latest changes, but the other one has been in
+mainline for some time. It's been there since 3.16, and I haven't
+tested it further. It's not that big of a bug so I'm not labeling
+it with stable.
 
-> 
-> Signed-off-by: Peter Hung <hpeter+linux_kernel@gmail.com>
-> ---
->  drivers/tty/serial/8250/8250_pci.c | 63 ++++++++++++++++++++++++++++----------
->  1 file changed, 47 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
-> index 0468e15..6dfa227 100644
-> --- a/drivers/tty/serial/8250/8250_pci.c
-> +++ b/drivers/tty/serial/8250/8250_pci.c
-> @@ -1551,28 +1551,51 @@ static int pci_fintek_setup(struct serial_private *priv,
->  {
->  	struct pci_dev *pdev = priv->dev;
->  	unsigned long base;
-> -	unsigned long iobase;
-> +	unsigned long iobase = 0;
+The bug that's been there happens when CONFIG_FRAME_POINTERS is set.
+The ftrace trampoline doesn't set up a frame pointer, and the stack
+trace code will miss the called function. That is if you do:
 
-Why initialize this to 0?  That shouldn't be needed as you set it later
-in the function before you use it, right?
+ echo __kmalloc:stacktrace > set_ftrace_filter
 
-Care to try again?
+It will not show __kmalloc in the trace. This isn't that bad, but if
+fentry is used (compiled with gcc 4.6 and newer on x86), then not only
+is __kmalloc missed, but also the function that called __kmalloc.
+This is a bit more serious, as that is useful information. The reason
+for the difference with fentry, is that the fentry is called before
+the stack frame is set up, so the missing bp frame pointer goes back
+pass the parent.
 
-thanks,
+The second bug is with the new code and dynamic ftrace trampolines.
+There's a check in the stack trace recording to see if the address
+on the stack is kernel code or not. This checks core kernel text as
+well as module address. But it doesn't check if it is a dynamically
+allocated ftrace trampoline. This is much worse than the other bug
+because if FRAME_POINTERS is set, the pointer to the trampoline is
+skipped and the bp frame pointer is never updated. That means, no
+functions will be traced. Makes the stack trace from function tracing
+rather pointless. Luckily, that code is not in mainline yet and this
+fix will make sure mainline doesn't get the bug (except for bisects).
 
-greg k-h
+Enjoy,
+
+-- Steve
+
+
+Steven Rostedt (Red Hat) (2):
+      ftrace/x86: Add frames pointers to trampoline as necessary
+      ftrace/x86/extable: Add is_ftrace_trampoline() function
+
+----
+ arch/x86/kernel/ftrace.c    |  9 +++++++--
+ arch/x86/kernel/mcount_64.S | 41 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/ftrace.h      |  8 ++++++++
+ kernel/extable.c            |  3 +++
+ kernel/trace/ftrace.c       | 26 ++++++++++++++++++++++++++
+ 5 files changed, 85 insertions(+), 2 deletions(-)
