@@ -1,123 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766AbaKSMvW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 07:51:22 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:45116 "EHLO smtp4-g21.free.fr"
+	id S1754791AbaKSMvg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 07:51:36 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35262 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759AbaKSMvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 07:51:20 -0500
-Message-ID: <546C920A.7060800@free.fr>
-Date: Wed, 19 Nov 2014 13:50:18 +0100
-From: Mason <mpeg.blue@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:33.0) Gecko/20100101 Firefox/33.0 SeaMonkey/2.30
+	id S1753534AbaKSMve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 07:51:34 -0500
+Message-ID: <546C923D.6000800@ti.com>
+Date: Wed, 19 Nov 2014 14:51:09 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-        Device Tree <devicetree@vger.kernel.org>,
-        Linux ARM <linux-arm-kernel@lists.infradead.org>
-Subject: Looking for good references for ARM driver development
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Qiang Chen <qiang2.chen@sonymobile.com>
+CC: <plagnioj@jcrosoft.com>, <linux@arm.linux.org.uk>, <pawel.moll@arm.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <qcwj.lk@gmail.com>
+Subject: Re: [PATCH] video: ARM CLCD: Remove duplicated include in amba-clcd.c
+References: <1416216301-15854-1-git-send-email-qiang2.chen@sonymobile.com>
+In-Reply-To: <1416216301-15854-1-git-send-email-qiang2.chen@sonymobile.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="lHKtTusqfS2bWCjFlCkfEBJ3AQXn0RhPa"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+--lHKtTusqfS2bWCjFlCkfEBJ3AQXn0RhPa
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-I've been using several Linux distributions, and writing user-space programs, for 15 years.
-I recently seized an opportunity to move into kernel development, mainly writing drivers
-for an ARM SoC, and I'm finding the transition harder than I expected.
+On 17/11/14 11:25, Qiang Chen wrote:
+> This patch fixes duplicated include dma-mapping.h in
+> drivers/video/fbdev/amba-clcd.c
+>=20
+> Signed-off-by: Qiang Chen <qiang2.chen@sonymobile.com>
+> ---
+>  drivers/video/fbdev/amba-clcd.c | 1 -
+>  1 file changed, 1 deletion(-)
+>=20
+> diff --git a/drivers/video/fbdev/amba-clcd.c b/drivers/video/fbdev/amba=
+-clcd.c
+> index 6ad23bd..32c0b6b 100644
+> --- a/drivers/video/fbdev/amba-clcd.c
+> +++ b/drivers/video/fbdev/amba-clcd.c
+> @@ -27,7 +27,6 @@
+>  #include <linux/bitops.h>
+>  #include <linux/clk.h>
+>  #include <linux/hardirq.h>
+> -#include <linux/dma-mapping.h>
+>  #include <linux/of.h>
+>  #include <linux/of_address.h>
+>  #include <linux/of_graph.h>
+>=20
 
-I'm having a hard time finding good reference material to bring me up to speed on the ins
-and outs of driver development. Sure, I found Documentation/driver-model (eventually) but
-I'm still missing the high-level overview that ties everything together, and makes my
-brain click and "get it".
+Thanks, queued for 3.19.
 
-Many years ago, I read LDD2 and it was an eye-opener. We do have LDD3 at work, but it is
-now almost 10 years old, and it doesn't document things like the platform bus, or the "new"
-driver model, or hwmon, or cpufreq, or device tree, to name a few things on my plate.
-(I'm writing drivers for the 3.14 kernel.)
-
-http://www.xml.com/ldd/chapter/book/
-http://www.makelinux.net/ldd3/
-
-Are there more recent technical references, as good as LDD3, that cover "modern" aspects
-of kernel development?
-
-I've read good things about:
-
-"Writing Linux Device Drivers: a guide with exercises"
-by Jerry Cooperstein (2009)
-originally written for 2.6.31, updated for 3.3
-http://www.coopj.com/
-
-What do kernel devs recommend as the worthy successor to LDD3?
-
-
-To wrap up this (long) message, I'd like to post some of my questions, to highlight some
-of my confusion. I'm writing a driver for a temperature sensor, which is supposed to work
-within the hwmon/lm-sensors framework.
-
-The sensor's API consists of 3 memory-mapped registers, which are accessible over the
-SoC's memory bus. I first wrote a user-space proof-of-concept to interact with the
-sensors, accessing them through /dev/mem O_SYNC + mmap. That works as expected, and
-I now have the code to read the temperature when needed.
-
-Next, I looked at the driver glue required to use these sensors from lm-sensors.
-That's where my troubles started.
-
-1) Which bus should I be using for this driver? Is the platform bus appropriate?
-
-2) platform.txt states
-
-> Some drivers are not fully converted to the driver model, because they take
-> on a non-driver role:  the driver registers its platform device, rather than
-> leaving that for system infrastructure.  Such drivers can't be hotplugged
-> or coldplugged, since those mechanisms require device creation to be in a
-> different system component than the driver.
-
-How do I "leave device registration for the system infrastructure"?
-Where should I put that code?
-Is it a good idea to separate device registration and driver registration
-in the case of a SoC, where the device is embedded in the SoC and is not
-"hot-plugged" (or anything-plugged for that matter, it's just "there").
-
-3) Why is the function used to "destroy a platform device" named
-platform_device_put? Why put?
-Put on a list of things to destroy at a later time?
-
-4) Can I use platform_driver_probe, instead of platform_driver_register?
-The comments in platform.c state:
-> /**
->  * platform_driver_probe - register driver for non-hotpluggable device
->  * @drv: platform driver structure
->  * @probe: the driver probe routine, probably from an __init section
->  *
->  * Use this instead of platform_driver_register() when you know the device
->  * is not hotpluggable and has already been registered, and you want to
->  * remove its run-once probe() infrastructure from memory after the driver
->  * has bound to the device.
->  *
->  * One typical use for this would be with drivers for controllers integrated
->  * into system-on-chip processors, where the controller devices have been
->  * configured as part of board setup.
->  *
->  * Note that this is incompatible with deferred probing.
->  *
->  * Returns zero if the driver registered and bound to a device, else returns
->  * a negative error code and with the driver not registered.
->  */
-
-AFAICT, I need to answer question 2 before I can answer this one.
-How do I get "devices have been configured as part of board setup."?
-
-5) Very hwmon-specific, how often are temperature sensors probed?
-Does the frequency vary? (Through /sys knobs? Or something else?)
+ Tomi
 
 
-That's all I have on my mind at the moment (well, aside from some ARM TLB
-shenanigans, but that's another story for another time).
 
-I shall be eternally grateful to anyone who can enlighten me through advice,
-pointers, references, documentation, voodoo, etc.
 
-Regards.
+--lHKtTusqfS2bWCjFlCkfEBJ3AQXn0RhPa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUbJI9AAoJEPo9qoy8lh71TIMP/j4N4ijbgcD4kNa/e1fStgdJ
+QcAqYk5a8++vduLHYK7JN6+QB9AgRjidFEpDZVcVGDlZ06wMAmyovqEK9MjvGV8D
+rDz4Zv7nTzNfFTxI+2nnWHN8FeETVKlsQ8wsDFbZo9wOcAFpNUIgxIQo45sbXIr3
+aRU8Tcgbm56WjdHJCUkvIWrGhu9RSyie/LqiUH5S1ne1fafW2HsCdID4ppMMY/bZ
+ziyJUQIQtW+1hdOPdARIlfB96Ehtou/twD10A9pMh7aDluim7agZEeUwY9KjIeoI
+/UZROA2Iy7esCVWqgnIO4RK1+syOWUShSe1sp5uFAUpCbdPpkZAF06BJGIt2iC2m
+MYu0lBRLMg8kZc8vz4i9yj9K3PCxMwiCRY/fmUqGuSpzJLe3ITTwm8I5zVXl9GAa
+Oq9ZhfHuhe36zx+b4PAQsVGqbeogUZGlFuX6c2KCYkA7TxcEm5RIeyiwxoJeP54K
+vKdrS93qatMwMdBJiJkFCeUd0MYiVZ28q90/MpOCbpbJMv+56nRhAkaiMsFSBESt
+PV0wsGoXhmlVswi6TRCWHhbs+0ahYkShPXtNxsFsvq+feb2YJtruEPwwopYU5YmU
+KBUl3PtAaJECv0mkGWnkO6/e4viFc6b3kSYJahYkpoexJLsOZ2ocwhdGToG9WNZs
+XFujtA7IUHA2ystzfkZr
+=0rin
+-----END PGP SIGNATURE-----
+
+--lHKtTusqfS2bWCjFlCkfEBJ3AQXn0RhPa--
