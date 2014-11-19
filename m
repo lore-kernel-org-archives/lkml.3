@@ -1,118 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018AbaKSKpO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 05:45:14 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:41014 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755773AbaKSKpK (ORCPT
+	id S1756030AbaKSKp0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 05:45:26 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:48847 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754598AbaKSKpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 05:45:10 -0500
-From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: balbi@ti.com, john.stultz@linaro.org, sumit.semwal@linaro.org,
-        Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-Subject: [PATCH 0/3] usb: phy: hold wakeupsource on usb phy events.
-Date: Wed, 19 Nov 2014 16:13:57 +0530
-Message-Id: <cover.1416390389.git.kiran.kumar@linaro.org>
-X-Mailer: git-send-email 1.8.2.1
+	Wed, 19 Nov 2014 05:45:21 -0500
+Date: Wed, 19 Nov 2014 10:45:15 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com
+Subject: Re: [PATCH] MAINTAINERS: Add ahci_st.c to ARCH/STI architecture
+Message-ID: <20141119104515.GJ13959@x1>
+References: <1416386694-7402-1-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1416386694-7402-1-git-send-email-peter.griffin@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set aims to hold wakeupsource per-PHY on usb connect/disconnect
-events.
+On Wed, 19 Nov 2014, Peter Griffin wrote:
 
-First patch introduces usb_phy_set_event which just sets
-event to phy event.
-In second patch, phy drivers call usb_phy_set_event for each phy event.
-In third patch, wakeupsource is held when usb is enumerated in
-peripheral mode and wakeupsource held temporarily on disconnect
-event(to allow other parts of the system react to disconnect event).
+> This patch adds the ahci_st.c driver found on STMicroelectronics
+> stih41x consumer electronics SoC's into the STI arch section
+> of the maintainers file.
+> 
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> ---
+>  MAINTAINERS | 1 +
+>  1 file changed, 1 insertion(+)
 
-latest patch-set:
-* use USB_PHY_DEFAULT_WAKEUP_SRC_TIMEOUT instead of TEMPORARY_HOLD_TIME
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-v6:
-* Break the patch into three sub patches
-  patch 1: Introduce usb_phy_set_event
-  patch 2: Call usb_phy_set_event from phy drivers
-  patch 3: Hold wakeupsource for connect events and
-            temporarily hold wakeupsource for disconnect events.
-* Include usb_phy_wsource_init and usb_phy_wource_trash functionality
-  in usb_add_phy and usb_remove_phy respectively.
-
-v5:
-* with the new approach,i was able to chnage only 5 phy drivers
-  as mentioned below to use the wakeupsource funtionality.
-
-drivers/phy/phy-omap-control.c
-drivers/usb/phy/phy-ab8500-usb.c
-drivers/usb/phy/phy-tahvo.c
-drivers/usb/phy/phy-mv-usb.c
-drivers/usb/phy/phy-gpio-vbus-usb.c
-
-* Notification method not used any more.
-* introduced usb_phy_set_event in phy.c to hold wakeupsource
-* introduced usb_phy_wsource_init/usb_phy_wsource_trash in phy.c to
-  initialize/relese per-PHY wakeupsource.These interfaces called from
-  probe/remove functions of phy drivers.
-* usb_phy_set_event called from phy drivers where usb enumeration
-  event is handled.
-* usb_phy_set_event expects usb_phy handle where as phy-omap-control.c
-  provides its own type(omap_control_phy), so directly called __pm_stay_awake
-  and  __pm_awake_event from phy-omap-control.c instead of calling
-  usb_phy_set_event.
-
-v4:
-* Temporarily hold wakeupsource patch integrated into main patch.
-* As per feedback,dropped "enabled" module parameter.
-* Introduced otgws_otg_usb3_notifications function to handle event
-  notifications from usb3 phy.
-* Handled wakeupsource initialization,spinlock,registration of notifier block
-  per-PHY.
-* Updated usb_phy structure.
-
-v3:
-* As per the feedback,no global phy pointer used.
-* called the one-liner wakeupsource handling calls
-  directly instead of indirect functions implemented in v2.
-* Removed indirect function get_phy_hook and used usb_get_phy
-  to get the phy handle..
-
-v2:
-* wakeupsource handling implemeted per-PHY
-* Implemented wakeupsource handling calls in phy
-* included Todd's refactoring logic.
-
-v1:
-* changed to "disabled by default" from "enable by default".
-* Kconfig help text modified
-* Included better commit text
-* otgws_nb moved to otg_wakeupsource_init function
-* Introduced get_phy_hook to handle otgws_xceiv per-PHY
-
-Initial RFC:
-* Included build fix from Benoit Goby and Arve Hjønnevåg
-* Removed lock->held field in driver as this mechanism is
-  provided in wakeupsource driver.
-* wakelock(wl) terminology replaced with wakeup_source(ws).
-
-Todd Poynor (3):
-  usb: phy: introduce usb_phy_set_event interface
-  usb: phy: Handle per-PHY event for connect and disconnect events
-  usb: phy: hold wakeupsource when USB is enumerated in peripheral mode
-
- drivers/usb/phy/phy-ab8500-usb.c    | 15 +++++++++++++++
- drivers/usb/phy/phy-gpio-vbus-usb.c |  2 ++
- drivers/usb/phy/phy-mv-usb.c        |  2 ++
- drivers/usb/phy/phy-tahvo.c         |  2 ++
- drivers/usb/phy/phy.c               | 37 +++++++++++++++++++++++++++++++++++++
- include/linux/usb/phy.h             | 10 ++++++++++
- 6 files changed, 68 insertions(+)
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index a20df9b..2b0a53e 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -1430,6 +1430,7 @@ F:	drivers/tty/serial/st-asc.c
+>  F:	drivers/usb/dwc3/dwc3-st.c
+>  F:	drivers/usb/host/ehci-st.c
+>  F:	drivers/usb/host/ohci-st.c
+> +F:	drivers/ata/ahci_st.c
+>  
+>  ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
+>  M:	Lennert Buytenhek <kernel@wantstofly.org>
 
 -- 
-1.8.2.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
