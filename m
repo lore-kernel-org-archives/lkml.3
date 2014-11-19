@@ -1,53 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934084AbaKSVRw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:17:52 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:38900 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932587AbaKSVRt (ORCPT
+	id S934053AbaKSVRm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:17:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57544 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933887AbaKSVPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:17:49 -0500
-Date: Wed, 19 Nov 2014 16:17:44 -0500 (EST)
-Message-Id: <20141119.161744.1661940121298888832.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: viro@zeniv.linux.org.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] situation with csum_and_copy_... API
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
-References: <20141118212307.GU7996@ZenIV.linux.org.uk>
-	<20141119.153136.867017618826698045.davem@davemloft.net>
-	<CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Nov 2014 13:17:48 -0800 (PST)
+	Wed, 19 Nov 2014 16:15:00 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Samu Kallio <samu.kallio@aberdeencloud.com>,
+        Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.10 47/70] netfilter: nf_nat: fix oops on netns removal
+Date: Wed, 19 Nov 2014 12:52:38 -0800
+Message-Id: <20141119205212.488243641@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
+References: <20141119205210.913169042@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 19 Nov 2014 12:40:53 -0800
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-> On Wed, Nov 19, 2014 at 12:31 PM, David Miller <davem@davemloft.net> wrote:
->>
->> But that is just my opinion, and yes I do acknowledge that we've had
->> serious holes in this area in the past.
-> 
-> The serious holes have generally been exactly in the "upper layers
-> already check" camp, and then it turns out that some odd ioctl or
-> other thing ends up doing something odd and interesting.
-> 
-> If Al has actual performance profiles showing that the access_ok() is
-> a real problem, then fine. As a low-level optimization, I agree with
-> it. But not as a "let's just drop them, and make the security rules be
-> non-local and subtle, and require people to know the details of the
-> whole call-chain".
-> 
-> Seeing a "__get_user()" and just being able to glance up in the same
-> function and seeing the "access_ok()" is just a good safety net. And
-> means that people don't have to waste time thinking about or looking
-> for where the hell the security net really is.
+------------------
 
-Fair enough.
+From: Florian Westphal <fw@strlen.de>
+
+commit 945b2b2d259d1a4364a2799e80e8ff32f8c6ee6f upstream.
+
+Quoting Samu Kallio:
+
+ Basically what's happening is, during netns cleanup,
+ nf_nat_net_exit gets called before ipv4_net_exit. As I understand
+ it, nf_nat_net_exit is supposed to kill any conntrack entries which
+ have NAT context (through nf_ct_iterate_cleanup), but for some
+ reason this doesn't happen (perhaps something else is still holding
+ refs to those entries?).
+
+ When ipv4_net_exit is called, conntrack entries (including those
+ with NAT context) are cleaned up, but the
+ nat_bysource hashtable is long gone - freed in nf_nat_net_exit. The
+ bug happens when attempting to free a conntrack entry whose NAT hash
+ 'prev' field points to a slot in the freed hash table (head for that
+ bin).
+
+We ignore conntracks with null nat bindings.  But this is wrong,
+as these are in bysource hash table as well.
+
+Restore nat-cleaning for the netns-is-being-removed case.
+
+bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=65191
+
+Fixes: c2d421e1718 ('netfilter: nf_nat: fix race when unloading protocol modules')
+Reported-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+Debugged-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Tested-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+[samu.kallio@aberdeencloud.com: backport to 3.10-stable]
+Signed-off-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ net/netfilter/nf_nat_core.c |   35 ++++++++++++++++++++++++++++++++++-
+ 1 file changed, 34 insertions(+), 1 deletion(-)
+
+--- a/net/netfilter/nf_nat_core.c
++++ b/net/netfilter/nf_nat_core.c
+@@ -487,6 +487,39 @@ static int nf_nat_proto_remove(struct nf
+ 	return i->status & IPS_NAT_MASK ? 1 : 0;
+ }
+ 
++static int nf_nat_proto_clean(struct nf_conn *ct, void *data)
++{
++	struct nf_conn_nat *nat = nfct_nat(ct);
++
++	if (nf_nat_proto_remove(ct, data))
++		return 1;
++
++	if (!nat || !nat->ct)
++		return 0;
++
++	/* This netns is being destroyed, and conntrack has nat null binding.
++	 * Remove it from bysource hash, as the table will be freed soon.
++	 *
++	 * Else, when the conntrack is destoyed, nf_nat_cleanup_conntrack()
++	 * will delete entry from already-freed table.
++	 */
++	if (!del_timer(&ct->timeout))
++		return 1;
++
++	spin_lock_bh(&nf_nat_lock);
++	hlist_del_rcu(&nat->bysource);
++	ct->status &= ~IPS_NAT_DONE_MASK;
++	nat->ct = NULL;
++	spin_unlock_bh(&nf_nat_lock);
++
++	add_timer(&ct->timeout);
++
++	/* don't delete conntrack.  Although that would make things a lot
++	 * simpler, we'd end up flushing all conntracks on nat rmmod.
++	 */
++	return 0;
++}
++
+ static void nf_nat_l4proto_clean(u8 l3proto, u8 l4proto)
+ {
+ 	struct nf_nat_proto_clean clean = {
+@@ -749,7 +782,7 @@ static void __net_exit nf_nat_net_exit(s
+ {
+ 	struct nf_nat_proto_clean clean = {};
+ 
+-	nf_ct_iterate_cleanup(net, &nf_nat_proto_remove, &clean);
++	nf_ct_iterate_cleanup(net, nf_nat_proto_clean, &clean);
+ 	synchronize_rcu();
+ 	nf_ct_free_hashtable(net->ct.nat_bysource, net->ct.nat_htable_size);
+ }
+
+
