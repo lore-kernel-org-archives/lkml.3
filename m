@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559AbaKSDyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 22:54:49 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:2953 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124AbaKSDys (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 22:54:48 -0500
-Message-ID: <546C12ED.4010908@huawei.com>
-Date: Wed, 19 Nov 2014 11:47:57 +0800
-From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1754685AbaKSD41 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 22:56:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51319 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754023AbaKSD4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 22:56:25 -0500
+Date: Tue, 18 Nov 2014 22:56:10 -0500
+From: Dave Jones <davej@redhat.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: mm: shmem: freeing mlocked page
+Message-ID: <20141119035610.GA14468@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Hugh Dickins <hughd@google.com>,
+	"linux-mm@kvack.org" <linux-mm@kvack.org>,
+	LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
+References: <545C4A36.9050702@oracle.com>
+ <5466142C.60100@oracle.com>
+ <20141118135843.bd711e95d3977c74cf51d803@linux-foundation.org>
+ <546C1202.1020502@oracle.com>
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 08/16] genirq: Introduce callback irq_chip.irq_write_msi_msg
-References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com> <546B4F18.5060705@huawei.com> <alpine.DEB.2.11.1411181518310.3909@nanos> <546B5904.6020200@huawei.com> <546B5D2B.7000206@linux.intel.com>
-In-Reply-To: <546B5D2B.7000206@linux.intel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.136]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546C1202.1020502@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/18 22:52, Jiang Liu wrote:
+On Tue, Nov 18, 2014 at 10:44:02PM -0500, Sasha Levin wrote:
+ > On 11/18/2014 04:58 PM, Andrew Morton wrote:
+ 
+ > >> [ 1027.012856] ? pipe_lock (fs/pipe.c:69)
+ > >> [ 1027.013728] ? write_pipe_buf (fs/splice.c:1534)
+ > >> [ 1027.014756] vmsplice_to_user (fs/splice.c:1574)
+ > >> [ 1027.015725] ? rcu_read_lock_held (kernel/rcu/update.c:169)
+ > >> [ 1027.016757] ? __fget_light (include/linux/fdtable.h:80 fs/file.c:684)
+ > >> [ 1027.017782] SyS_vmsplice (fs/splice.c:1656 fs/splice.c:1639)
+ > >> [ 1027.018863] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
+ > > 
+ > > So what happened here?  Userspace fed some mlocked memory into splice()
+ > > and then, while splice() was running, userspace dropped its reference
+ > > to the memory, leaving splice() with the last reference.  Yet somehow,
+ > > that page was still marked as being mlocked.  I wouldn't expect the
+ > > kernel to permit userspace to drop its reference to the memory without
+ > > first clearing the mlocked state.
+ > > 
+ > > Is it possible to work out from trinity sources what the exact sequence
+ > > was?  Which syscalls are being used, for example?
+ > 
+ > Trinity can't really log anything because attempts to log syscalls slow everything
+ > down to a crawl to the point nothing reproduces.
 
-> On 2014/11/18 22:34, Yun Wu (Abel) wrote:
->> On 2014/11/18 22:19, Thomas Gleixner wrote:
->>
->>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
->>>> On 2014/11/18 21:43, Jiang Liu wrote:
->>>>> 	We provide an irq_chip for each type of interrupt controller
->>>>> instead of devices. For the example mentioned above, if device A
->>>>> and Group B has different interrupt controllers, we just need to
->>>>> implement irq_chip_A and irq_chip_B and set irq_chip.irq_write_msi_msg()
->>>>> to suitable callbacks.
->>>>> 	The framework already achieves what you you want:)
->>>>
->>>> What if device A and group B have the same interrupt controller?
->>>
->>> Well, if write_msg() is different they are hardly the same.
->>>
->>
->> The GICv3 ITS now deals with both PCI and non PCI message interrupts.
->> We can't require the new devices behave writing message in a same way.
->> What we can do is to abstract all the endpoints' behavior, and I
->> provided one abstraction in an earlier reply.
-> It should be easy to extend:)
-> Actually, x86 interrupt remapping drivers already support two types of
-> MSIs, one is PCI MSI/MSIX, another is HPET interrupt.
+If the machine is still alive after /proc/sys/kernel/tainted changes,
+trinity will dump a trinity-post-mortem.log somewhere[*] that should
+contain the last two syscalls each process did. (Even if logging
+is disabled).
 
+It's not perfect however, and knowing that we passed a pointer to
+a syscall isn't always useful unless we also dump the data that pointer
+pointed at.  It's a work in progress. I don't know if I'm going to
+get time to improve it any time soon though.
 
-Well, if there are one hundred types, I don't think it's as easy as you
-thought to extend. Of course we can doubt the possibility of being hundred,
-but tens or twenties is reasonably possible lying under the fact we have
-already startet to integrate the MSI registers (or some other form to store
-information) into the individual devices.
+	Dave
 
-Thanks,
-	Abel
-
+[*] wherever cwd happened to be when the main process exited.
