@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757071AbaKSViN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:38:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57274 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933263AbaKSVOf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933260AbaKSVOf (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 19 Nov 2014 16:14:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57260 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933195AbaKSVOb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 16:14:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.10 13/70] x86, x32, audit: Fix x32s AUDIT_ARCH wrt audit
-Date: Wed, 19 Nov 2014 12:52:04 -0800
-Message-Id: <20141119205211.357371444@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Bob Liu <bob.liu@oracle.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 121/122] mm: vmscan: use proportional scanning during direct reclaim and full scan at DEF_PRIORITY
+Date: Wed, 19 Nov 2014 12:52:51 -0800
+Message-Id: <20141119205212.856184121@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
-References: <20141119205210.913169042@linuxfoundation.org>
+In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
+References: <20141119205208.812884198@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,56 +31,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 81f49a8fd7088cfcb588d182eeede862c0e3303e upstream.
+commit 1a501907bbea8e6ebb0b16cf6db9e9cbf1d2c813 upstream.
 
-is_compat_task() is the wrong check for audit arch; the check should
-be is_ia32_task(): x32 syscalls should be AUDIT_ARCH_X86_64, not
-AUDIT_ARCH_I386.
+Commit "mm: vmscan: obey proportional scanning requirements for kswapd"
+ensured that file/anon lists were scanned proportionally for reclaim from
+kswapd but ignored it for direct reclaim.  The intent was to minimse
+direct reclaim latency but Yuanhan Liu pointer out that it substitutes one
+long stall for many small stalls and distorts aging for normal workloads
+like streaming readers/writers.  Hugh Dickins pointed out that a
+side-effect of the same commit was that when one LRU list dropped to zero
+that the entirety of the other list was shrunk leading to excessive
+reclaim in memcgs.  This patch scans the file/anon lists proportionally
+for direct reclaim to similarly age page whether reclaimed by kswapd or
+direct reclaim but takes care to abort reclaim if one LRU drops to zero
+after reclaiming the requested number of pages.
 
-CONFIG_AUDITSYSCALL is currently incompatible with x32, so this has
-no visible effect.
+Based on ext4 and using the Intel VM scalability test
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/a0138ed8c709882aec06e4acc30bfa9b623b8717.1409954077.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+                                              3.15.0-rc5            3.15.0-rc5
+                                                shrinker            proportion
+Unit  lru-file-readonce    elapsed      5.3500 (  0.00%)      5.4200 ( -1.31%)
+Unit  lru-file-readonce time_range      0.2700 (  0.00%)      0.1400 ( 48.15%)
+Unit  lru-file-readonce time_stddv      0.1148 (  0.00%)      0.0536 ( 53.33%)
+Unit lru-file-readtwice    elapsed      8.1700 (  0.00%)      8.1700 (  0.00%)
+Unit lru-file-readtwice time_range      0.4300 (  0.00%)      0.2300 ( 46.51%)
+Unit lru-file-readtwice time_stddv      0.1650 (  0.00%)      0.0971 ( 41.16%)
+
+The test cases are running multiple dd instances reading sparse files. The results are within
+the noise for the small test machine. The impact of the patch is more noticable from the vmstats
+
+                            3.15.0-rc5  3.15.0-rc5
+                              shrinker  proportion
+Minor Faults                     35154       36784
+Major Faults                       611        1305
+Swap Ins                           394        1651
+Swap Outs                         4394        5891
+Allocation stalls               118616       44781
+Direct pages scanned           4935171     4602313
+Kswapd pages scanned          15921292    16258483
+Kswapd pages reclaimed        15913301    16248305
+Direct pages reclaimed         4933368     4601133
+Kswapd efficiency                  99%         99%
+Kswapd velocity             670088.047  682555.961
+Direct efficiency                  99%         99%
+Direct velocity             207709.217  193212.133
+Percentage direct scans            23%         22%
+Page writes by reclaim        4858.000    6232.000
+Page writes file                   464         341
+Page writes anon                  4394        5891
+
+Note that there are fewer allocation stalls even though the amount
+of direct reclaim scanning is very approximately the same.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Bob Liu <bob.liu@oracle.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/ptrace.c |   11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+ mm/vmscan.c |   36 +++++++++++++++++++++++++-----------
+ 1 file changed, 25 insertions(+), 11 deletions(-)
 
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -1475,15 +1475,6 @@ void send_sigtrap(struct task_struct *ts
- 	force_sig_info(SIGTRAP, &info, tsk);
- }
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2018,13 +2018,27 @@ static void shrink_lruvec(struct lruvec
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+ 	struct blk_plug plug;
+-	bool scan_adjusted = false;
++	bool scan_adjusted;
  
--
--#ifdef CONFIG_X86_32
--# define IS_IA32	1
--#elif defined CONFIG_IA32_EMULATION
--# define IS_IA32	is_compat_task()
--#else
--# define IS_IA32	0
--#endif
--
- /*
-  * We must return the syscall number to actually look up in the table.
-  * This can be -1L to skip running any syscall at all.
-@@ -1521,7 +1512,7 @@ long syscall_trace_enter(struct pt_regs
- 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
- 		trace_sys_enter(regs, regs->orig_ax);
+ 	get_scan_count(lruvec, sc, nr);
  
--	if (IS_IA32)
-+	if (is_ia32_task())
- 		audit_syscall_entry(AUDIT_ARCH_I386,
- 				    regs->orig_ax,
- 				    regs->bx, regs->cx,
+ 	/* Record the original scan target for proportional adjustments later */
+ 	memcpy(targets, nr, sizeof(nr));
+ 
++	/*
++	 * Global reclaiming within direct reclaim at DEF_PRIORITY is a normal
++	 * event that can occur when there is little memory pressure e.g.
++	 * multiple streaming readers/writers. Hence, we do not abort scanning
++	 * when the requested number of pages are reclaimed when scanning at
++	 * DEF_PRIORITY on the assumption that the fact we are direct
++	 * reclaiming implies that kswapd is not keeping up and it is best to
++	 * do a batch of work at once. For memcg reclaim one check is made to
++	 * abort proportional reclaim if either the file or anon lru has already
++	 * dropped to zero at the first pass.
++	 */
++	scan_adjusted = (global_reclaim(sc) && !current_is_kswapd() &&
++			 sc->priority == DEF_PRIORITY);
++
+ 	blk_start_plug(&plug);
+ 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+ 					nr[LRU_INACTIVE_FILE]) {
+@@ -2045,17 +2059,8 @@ static void shrink_lruvec(struct lruvec
+ 			continue;
+ 
+ 		/*
+-		 * For global direct reclaim, reclaim only the number of pages
+-		 * requested. Less care is taken to scan proportionally as it
+-		 * is more important to minimise direct reclaim stall latency
+-		 * than it is to properly age the LRU lists.
+-		 */
+-		if (global_reclaim(sc) && !current_is_kswapd())
+-			break;
+-
+-		/*
+ 		 * For kswapd and memcg, reclaim at least the number of pages
+-		 * requested. Ensure that the anon and file LRUs shrink
++		 * requested. Ensure that the anon and file LRUs are scanned
+ 		 * proportionally what was requested by get_scan_count(). We
+ 		 * stop reclaiming one LRU and reduce the amount scanning
+ 		 * proportional to the original scan target.
+@@ -2063,6 +2068,15 @@ static void shrink_lruvec(struct lruvec
+ 		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
+ 		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
+ 
++		/*
++		 * It's just vindictive to attack the larger once the smaller
++		 * has gone to zero.  And given the way we stop scanning the
++		 * smaller below, this makes sure that we only make one nudge
++		 * towards proportionality once we've got nr_to_reclaim.
++		 */
++		if (!nr_file || !nr_anon)
++			break;
++
+ 		if (nr_file > nr_anon) {
+ 			unsigned long scan_target = targets[LRU_INACTIVE_ANON] +
+ 						targets[LRU_ACTIVE_ANON] + 1;
 
 
