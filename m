@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933590AbaKSX34 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 18:29:56 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:37339 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352AbaKSX3w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 18:29:52 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 0/7] Fixes for ALPS trackstick
-Date: Thu, 20 Nov 2014 00:29:49 +0100
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Yunkang Tang <yunkang.tang@cn.alps.com>,
-        Vadim Klishko <vadim@cirque.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1415993906-13307-1-git-send-email-pali.rohar@gmail.com> <1541270.g199T8YFIC@dtor-glaptop> <201411170839.17504@pali>
-In-Reply-To: <201411170839.17504@pali>
+	id S933551AbaKSX3a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 18:29:30 -0500
+Received: from mga03.intel.com ([134.134.136.65]:22034 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932537AbaKSX3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 18:29:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="488917920"
+Date: Thu, 20 Nov 2014 07:08:57 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Juri Lelli <juri.lelli@arm.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: Re: [PATCH v5] sched/deadline: support dl task migration during cpu
+ hotplug
+Message-ID: <20141119230857.GA15664@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com>
+ <546377FC.4090408@arm.com>
+ <546BD3DB.7050207@gmail.com>
+ <546C6D53.2020007@arm.com>
+ <546C8D7C.4040808@gmail.com>
+ <546C9FE0.9010407@arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1468653.bjLaFNRBS1";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411200029.49547@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546C9FE0.9010407@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1468653.bjLaFNRBS1
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Hi Juri,
+On Wed, Nov 19, 2014 at 01:49:20PM +0000, Juri Lelli wrote:
+[...]
+>>>>>> @@ -1185,8 +1223,9 @@ static int find_later_rq(struct task_struct *task)
+>>>>>>    	 * We have to consider system topology and task affinity
+>>>>>>    	 * first, then we can look for a suitable cpu.
+>>>>>>    	 */
+>>>>>> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
+>>>>>> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
+>>>>>> +	cpumask_copy(later_mask, cpu_active_mask);
+>>>>>> +	if (likely(task_rq(task)->online))
+>>>>>> +		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
+>>>>> So, here you consider the span only when the task_rq is online,
+>>>>> but there might be others cpus still online belonging to the same
+>>>>> rd->span. And you have to consider them when migrating. Actually,
+>>>>> migration must still be restricted to the online cpus of task's
+>>>>> original rd->span, or I fear you can break clustered scheduling.
+>>>> Sorry, what's clustered scheduling?
+>>>>
+>>> It's a scheduling configuration in which you restrict tasks to run in
+>>> disjoint subsets of system CPUs. Translated to what we have, it's what
+>>> you get when you create exclusive cpusets (each one gets a rd) and
+>>> associate tasks to them.
+>>>
+>>> My concern in what above is that you may end up breaking this setup
+>>> if you don't consider the sd->span when one of the CPUs of your
+>>> cpuset is off. But, Pang Xunlei patches may solve this, I still have to
+>>> check :/.
+>> 
+>> Thanks for your explanation. Could you point out which one of Pang's 
+>> patchset solve this? ;-)
+>> 
+>
+>https://lkml.org/lkml/2014/11/17/443 may help with this, although I
+>still have to properly look at it.
+>
 
-On Monday 17 November 2014 08:39:14 Pali Roh=C3=A1r wrote:
-> On Friday 14 November 2014 21:59:31 Dmitry Torokhov wrote:
-> > Hi Pali,
-> >=20
-> > On Friday, November 14, 2014 08:38:19 PM Pali Roh=C3=A1r wrote:
-> > > This patch series fix detection and identifying trackstick
-> > > on machines with ALPS devices. Last patch split trackstick
-> > > and bare PS/2 mouse packets between dev2 and dev3 input
-> > > devices which make sure that driver will send only
-> > > trackstick data to trackstick input device.
-> >=20
-> > Thank you for splitting the change, unfortunately it is now
-> > quite big to apply to 3.18. Any chance you could try
-> > implementing what I suggested in
-> > http://www.spinics.net/lists/linux-input/msg34029.html and
-> > then we can do the more comprehensive solution in 3.19.
-> >=20
-> > Thanks.
->=20
-> Hello, I think that patches 1/7 and 5/7 could do that job. I
-> did not tested them alone (without other patches), but if you
-> think that two patches are ok for 3.18 & stable I can test
-> them...
+Thanks for your pointing out. Btw, could you review below patches of
+mine for deadline? Great thanks for your time. ;-)
 
-Dmitry, ping.
+https://lkml.org/lkml/2014/11/18/1006
+https://lkml.org/lkml/2014/11/19/182
+https://lkml.org/lkml/2014/11/19/187
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Regards,
+Wanpeng Li 
 
---nextPart1468653.bjLaFNRBS1
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlRtJ+0ACgkQi/DJPQPkQ1IB8QCfaIZtGjyfWSYGCYe1NR6UMTvd
-LR0An3kFbFR+MffcNTFxWgVuzOtUVr8M
-=BwJL
------END PGP SIGNATURE-----
-
---nextPart1468653.bjLaFNRBS1--
