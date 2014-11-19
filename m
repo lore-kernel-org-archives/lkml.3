@@ -1,69 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357AbaKSGa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 01:30:59 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54655 "EHLO mail.eperm.de"
+	id S1754494AbaKSGgN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 01:36:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48086 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751076AbaKSGa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 01:30:58 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>, quentin.gouchet@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        ABI/API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v2 01/10] crypto: AF_ALG: add user space interface for AEAD
-Date: Wed, 19 Nov 2014 07:30:52 +0100
-Message-ID: <12318471.ucMNmAKX0e@tachyon.chronox.de>
-User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <20141119042704.GA19258@gondor.apana.org.au>
-References: <5365136.g8vbXlhRyC@tachyon.chronox.de> <2398701.sGeMzIcHaz@tachyon.chronox.de> <20141119042704.GA19258@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751455AbaKSGgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 01:36:12 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>, Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH net] virtio-net: validate features during probe
+Date: Wed, 19 Nov 2014 14:35:39 +0800
+Message-Id: <1416378939-28821-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 19. November 2014, 12:27:04 schrieb Herbert Xu:
+This patch validates feature dependencies during probe and fail the probing
+if a dependency is missed. This fixes the issues of hitting BUG()
+when qemu fails to advertise features correctly. One example is booting
+guest with ctrl_vq=off through qemu.
 
-Hi Herbert,
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/virtio_net.c | 93 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 93 insertions(+)
 
-> On Wed, Nov 19, 2014 at 05:20:42AM +0100, Stephan Mueller wrote:
-> > When looking deeper into skcipher_sendmsg, I see that the input data is
-> > copied into the kernel using memcpy_fromiovec. The memory is allocated
-> > before the memcpy call by skcipher_alloc_sgl.
-> 
-> Zero-copy is done through sendpage.
-
-I am slightly at a loss here -- if you could give me a hint on how you think 
-it can be implemented, I would be grateful.
-
-Let us assume the AD || plaintext buffer is known to the kernel, either 
-through sendpage or sendmsg. The entire buffer is split into chunks of 
-scatterlists with ctx->tsgl. After processing one scatterlist from ctx->tsgl, 
-that scatterlist is released via skcipher_pull_sgl.
-
-Now, for AD, we need to consider:
-
-- AD can span multiple ctx->tsgl chunks
-
-- these AD scatterlist chunks cannot be released after a normal encryption 
-operation. The associated data must be available for multiple operations. So, 
-while plaintext data is still flowing in, we need to keep operating with the 
-same AD.
-
-Thus I am wondering how the rather static nature of the AD can fit with the 
-dynamic nature of the plaintext given the current implementation on how 
-plaintext is handled in the kernel.
-
-To me, AD in league with an IV considering its rather static nature. Having 
-said that, the IV is also not transported via the plaintext interface, but via 
-a setsockopt. Shouldn't the AD be handled the same way?
-> 
-> Cheers,
-
-
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index ec2a8b4..4a0ad46 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1673,6 +1673,95 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
+ };
+ #endif
+ 
++static int virtnet_validate_features(struct virtio_device *dev,
++				     unsigned int *table,
++				     int table_size,
++				     unsigned int feature)
++{
++	int i;
++
++	if (!virtio_has_feature(dev, feature)) {
++		for (i = 0; i < table_size; i++) {
++			unsigned int f = table[i];
++
++			if (virtio_has_feature(dev, f)) {
++				dev_err(&dev->dev,
++					"buggy hyperviser: feature 0x%x was advertised but its dependency 0x%x was not",
++					f, feature);
++				return -EINVAL;
++			}
++		}
++	}
++
++	return 0;
++}
++
++static int virtnet_check_features(struct virtio_device *dev)
++{
++	unsigned int features_for_ctrl_vq[] = {
++		VIRTIO_NET_F_CTRL_RX,
++		VIRTIO_NET_F_CTRL_VLAN,
++		VIRTIO_NET_F_GUEST_ANNOUNCE,
++		VIRTIO_NET_F_MQ,
++		VIRTIO_NET_F_CTRL_MAC_ADDR
++	};
++	unsigned int features_for_guest_csum[] = {
++		VIRTIO_NET_F_GUEST_TSO4,
++		VIRTIO_NET_F_GUEST_TSO6,
++		VIRTIO_NET_F_GUEST_ECN,
++		VIRTIO_NET_F_GUEST_UFO,
++	};
++	unsigned int features_for_host_csum[] = {
++		VIRTIO_NET_F_HOST_TSO4,
++		VIRTIO_NET_F_HOST_TSO6,
++		VIRTIO_NET_F_HOST_ECN,
++		VIRTIO_NET_F_HOST_UFO,
++	};
++	int err;
++
++	err = virtnet_validate_features(dev, features_for_ctrl_vq,
++					ARRAY_SIZE(features_for_ctrl_vq),
++					VIRTIO_NET_F_CTRL_VQ);
++	if (err)
++		return err;
++
++	err = virtnet_validate_features(dev, features_for_guest_csum,
++					ARRAY_SIZE(features_for_guest_csum),
++					VIRTIO_NET_F_GUEST_CSUM);
++	if (err)
++		return err;
++
++	err = virtnet_validate_features(dev, features_for_host_csum,
++					ARRAY_SIZE(features_for_host_csum),
++					VIRTIO_NET_F_CSUM);
++	if (err)
++		return err;
++
++	if (virtio_has_feature(dev, VIRTIO_NET_F_GUEST_ECN) &&
++	    (!virtio_has_feature(dev, VIRTIO_NET_F_GUEST_TSO4) ||
++	     !virtio_has_feature(dev, VIRTIO_NET_F_GUEST_TSO6))) {
++		dev_err(&dev->dev,
++			"buggy hyperviser: feature 0x%x was advertised but its dependency 0x%x or 0x%x was not",
++			VIRTIO_NET_F_GUEST_ECN,
++			VIRTIO_NET_F_GUEST_TSO4,
++			VIRTIO_NET_F_GUEST_TSO6);
++		return -EINVAL;
++	}
++
++	if (virtio_has_feature(dev, VIRTIO_NET_F_HOST_ECN) &&
++	    (!virtio_has_feature(dev, VIRTIO_NET_F_HOST_TSO4) ||
++	     !virtio_has_feature(dev, VIRTIO_NET_F_HOST_TSO6))) {
++		dev_err(&dev->dev,
++			"buggy hyperviser: feature 0x%x was advertised but its dependency 0x%x or 0x%x was not",
++			VIRTIO_NET_F_HOST_ECN,
++			VIRTIO_NET_F_HOST_TSO4,
++			VIRTIO_NET_F_HOST_TSO6);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static int virtnet_probe(struct virtio_device *vdev)
+ {
+ 	int i, err;
+@@ -1680,6 +1769,10 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	struct virtnet_info *vi;
+ 	u16 max_queue_pairs;
+ 
++	err = virtnet_check_features(vdev);
++	if (err)
++		return -EINVAL;
++
+ 	/* Find if host supports multiqueue virtio_net device */
+ 	err = virtio_cread_feature(vdev, VIRTIO_NET_F_MQ,
+ 				   struct virtio_net_config,
 -- 
-Ciao
-Stephan
+1.9.1
+
