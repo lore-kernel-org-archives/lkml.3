@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933185AbaKSVO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:14:29 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:49245 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933107AbaKSVOZ (ORCPT
+	id S933841AbaKSVOq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:14:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57280 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933697AbaKSVOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:25 -0500
+	Wed, 19 Nov 2014 16:14:39 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Yosef Khyal <yosefx.khyal@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 22/70] mac80211: fix use-after-free in defragmentation
+Date: Wed, 19 Nov 2014 12:52:13 -0800
+Message-Id: <20141119205211.658042672@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
+References: <20141119205210.913169042@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <CAL1qeaFcdaxLYQu5y4pz-d29SdRA79TpkrRA9VjUYaMfnoSeVw@mail.gmail.com>
-References: <1416423073-8105-1-git-send-email-dianders@chromium.org>
-	<CAL1qeaGkQVimrFNtGgfTJEHNemG_QUTecQwH4=nXu1_u1rWwhg@mail.gmail.com>
-	<CAD=FV=UjvQ5Sgfv_-WzvZpOvofA=7Vpzh36LavCwqGV1-0_aHQ@mail.gmail.com>
-	<CAL1qeaFcdaxLYQu5y4pz-d29SdRA79TpkrRA9VjUYaMfnoSeVw@mail.gmail.com>
-Date: Wed, 19 Nov 2014 13:14:24 -0800
-X-Google-Sender-Auth: EU7VHkwTtnnFwVtL-593VneNEPE
-Message-ID: <CAD=FV=VrCRztQUb50b3JWyy6fuNvTfPZ5LKTte4O5ZDz5zdedg@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Turn the card clock off at suspend time
-From: Doug Anderson <dianders@chromium.org>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Chris Ball <chris@printf.net>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-On Wed, Nov 19, 2014 at 11:49 AM, Andrew Bresticker
-<abrestic@chromium.org> wrote:
-> Doug,
->
-> On Wed, Nov 19, 2014 at 11:30 AM, Doug Anderson <dianders@chromium.org> wrote:
->> Andrew,
->>
->> On Wed, Nov 19, 2014 at 11:03 AM, Andrew Bresticker
->> <abrestic@chromium.org> wrote:
->>> Doug,
->>>
->>> On Wed, Nov 19, 2014 at 10:51 AM, Doug Anderson <dianders@chromium.org> wrote:
->>>> Since the dw_mmc driver was first added to Linux it's had a TODO in it
->>>> that we should turn off the card clock during suspend.  I have no idea
->>>> for sure why it wasn't done originally, but if I had to guess I'd
->>>> guess it was related to the lack of a common clock framework.  Let's
->>>> do it now.
->>>>
->>>> There is no reason for the card clock to be left on during suspend and
->>>> most systems will eventually turn it off anyway (when whole clock
->>>> trees are disabled).  However, it's good to be explicit that it's
->>>> disabled at the time that the MMC subsystem is disabled.
->>>
->>> Should the bus clock (biu) be disabled as well?
->>
->> Good question.  I'm slightly hesitant to turn biu_clk off in this
->> patch, though.  Specifically interrupts are still enabled at this
->> point in suspend.  I  guess most interrupts shouldn't be going off
->> right now (nobody is accessing storage, right?), but I could imagine
->> that a card detect or an SDIO interrupt at just the wrong time could
->> cause our ISR to go off _after_ this function is called.  The
->> interrupt handling function doesn't know to turn the BIU clock back on
->> so you'd get a hang.
->
-> Perhaps interrupts should be disabled as well across suspend/resume,
-> like the sdhci-based hosts do?
+------------------
 
-Well, interrupts _are_ disabled across suspend/resume.  ...just not at
-the point this function runs.  You're right thought that I could do my
-work in the "no_irq" variant of the function.
+From: Johannes Berg <johannes.berg@intel.com>
 
-> Would would happen if we tried to
-> service an interrupt with the ciu clock disabled?
+commit b8fff407a180286aa683d543d878d98d9fc57b13 upstream.
 
-Hrm, good question.  I was thinking that all would be OK because the
-interrupt would kick off something to the MMC layer which would then
-realize that the system was suspended, but I that's actually not the
-case.
+Upon receiving the last fragment, all but the first fragment
+are freed, but the multicast check for statistics at the end
+of the function refers to the current skb (the last fragment)
+causing a use-after-free bug.
 
-It turns out that the root cause of my problem was actually SDIO
-interrupts coming after suspend and causing problems.  It looks like
-this might not be a problem in mainline Linux but it was a problem in
-my old 3.14-based tree.  Once I fixed that I no longer need this
-patch.  Sorry for the noise.  :(  I've been trying to be in the habit
-of sending stuff upstream immediately (so I don't forget about stuff),
-but a bad side effect of that is some extra noise...  Sigh.
+Since multicast frames cannot be fragmented and we check for
+this early in the function, just modify that check to also
+do the accounting to fix the issue.
 
+Reported-by: Yosef Khyal <yosefx.khyal@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Anyway, I guess I'd say that we should consider this patch abandoned,
-though if someone would like me to submit something that turns off
-"ciu" and "biu" clock in the "noirq" suspend I'm happy to do it.  I
-don't have any strong need now though it would get rid of the TODO
-sitting in the code.  ...or we could just remove the TODO.
+---
+ net/mac80211/rx.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1585,11 +1585,14 @@ ieee80211_rx_h_defragment(struct ieee802
+ 	sc = le16_to_cpu(hdr->seq_ctrl);
+ 	frag = sc & IEEE80211_SCTL_FRAG;
+ 
+-	if (likely((!ieee80211_has_morefrags(fc) && frag == 0) ||
+-		   is_multicast_ether_addr(hdr->addr1))) {
+-		/* not fragmented */
++	if (likely(!ieee80211_has_morefrags(fc) && frag == 0))
++		goto out;
++
++	if (is_multicast_ether_addr(hdr->addr1)) {
++		rx->local->dot11MulticastReceivedFrameCount++;
+ 		goto out;
+ 	}
++
+ 	I802_DEBUG_INC(rx->local->rx_handlers_fragments);
+ 
+ 	if (skb_linearize(rx->skb))
+@@ -1682,10 +1685,7 @@ ieee80211_rx_h_defragment(struct ieee802
+  out:
+ 	if (rx->sta)
+ 		rx->sta->rx_packets++;
+-	if (is_multicast_ether_addr(hdr->addr1))
+-		rx->local->dot11MulticastReceivedFrameCount++;
+-	else
+-		ieee80211_led_rx(rx->local);
++	ieee80211_led_rx(rx->local);
+ 	return RX_CONTINUE;
+ }
+ 
 
 
--Doug
