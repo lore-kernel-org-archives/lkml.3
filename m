@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934398AbaKSVbm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:31:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57274 "EHLO
+	id S964792AbaKSVb7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:31:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57280 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933789AbaKSVOl (ORCPT
+	with ESMTP id S932736AbaKSVOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:41 -0500
+	Wed, 19 Nov 2014 16:14:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Meelis Roos <meelis.roos@ut.ee>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: [PATCH 3.10 28/70] scsi: only re-lock door after EH on devices that were reset
-Date: Wed, 19 Nov 2014 12:52:19 -0800
-Message-Id: <20141119205211.860225083@linuxfoundation.org>
+        David Ramos <daramos@stanford.edu>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH 3.10 26/70] firewire: cdev: prevent kernel stack leaking into ioctl arguments
+Date: Wed, 19 Nov 2014 12:52:17 -0800
+Message-Id: <20141119205211.791284416@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -29,39 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit 48379270fe6808cf4612ee094adc8da2b7a83baa upstream.
+commit eaca2d8e75e90a70a63a6695c9f61932609db212 upstream.
 
-Setups that use the blk-mq I/O path can lock up if a host with a single
-device that has its door locked enters EH.  Make sure to only send the
-command to re-lock the door to devices that actually were reset and thus
-might have lost their state.  Otherwise the EH code might be get blocked
-on blk_get_request as all requests for non-reset devices might be in use.
+Found by the UC-KLEE tool:  A user could supply less input to
+firewire-cdev ioctls than write- or write/read-type ioctl handlers
+expect.  The handlers used data from uninitialized kernel stack then.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Meelis Roos <meelis.roos@ut.ee>
-Tested-by: Meelis Roos <meelis.roos@ut.ee>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+This could partially leak back to the user if the kernel subsequently
+generated fw_cdev_event_'s (to be read from the firewire-cdev fd)
+which notably would contain the _u64 closure field which many of the
+ioctl argument structures contain.
+
+The fact that the handlers would act on random garbage input is a
+lesser issue since all handlers must check their input anyway.
+
+The fix simply always null-initializes the entire ioctl argument buffer
+regardless of the actual length of expected user input.  That is, a
+runtime overhead of memset(..., 40) is added to each firewirew-cdev
+ioctl() call.  [Comment from Clemens Ladisch:  This part of the stack is
+most likely to be already in the cache.]
+
+Remarks:
+  - There was never any leak from kernel stack to the ioctl output
+    buffer itself.  IOW, it was not possible to read kernel stack by a
+    read-type or write/read-type ioctl alone; the leak could at most
+    happen in combination with read()ing subsequent event data.
+  - The actual expected minimum user input of each ioctl from
+    include/uapi/linux/firewire-cdev.h is, in bytes:
+    [0x00] = 32, [0x05] =  4, [0x0a] = 16, [0x0f] = 20, [0x14] = 16,
+    [0x01] = 36, [0x06] = 20, [0x0b] =  4, [0x10] = 20, [0x15] = 20,
+    [0x02] = 20, [0x07] =  4, [0x0c] =  0, [0x11] =  0, [0x16] =  8,
+    [0x03] =  4, [0x08] = 24, [0x0d] = 20, [0x12] = 36, [0x17] = 12,
+    [0x04] = 20, [0x09] = 24, [0x0e] =  4, [0x13] = 40, [0x18] =  4.
+
+Reported-by: David Ramos <daramos@stanford.edu>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_error.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/firewire/core-cdev.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -1689,8 +1689,10 @@ static void scsi_restart_operations(stru
- 	 * is no point trying to lock the door of an off-line device.
- 	 */
- 	shost_for_each_device(sdev, shost) {
--		if (scsi_device_online(sdev) && sdev->locked)
-+		if (scsi_device_online(sdev) && sdev->was_reset && sdev->locked) {
- 			scsi_eh_lock_door(sdev);
-+			sdev->was_reset = 0;
-+		}
- 	}
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -1637,8 +1637,7 @@ static int dispatch_ioctl(struct client
+ 	    _IOC_SIZE(cmd) > sizeof(buffer))
+ 		return -ENOTTY;
  
- 	/*
+-	if (_IOC_DIR(cmd) == _IOC_READ)
+-		memset(&buffer, 0, _IOC_SIZE(cmd));
++	memset(&buffer, 0, sizeof(buffer));
+ 
+ 	if (_IOC_DIR(cmd) & _IOC_WRITE)
+ 		if (copy_from_user(&buffer, arg, _IOC_SIZE(cmd)))
 
 
