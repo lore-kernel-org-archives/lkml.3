@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708AbaKSUxv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:53:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55874 "EHLO
+	id S1758263AbaKSWjS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:39:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55888 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988AbaKSUxs (ORCPT
+	with ESMTP id S1756713AbaKSUxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:53:48 -0500
+	Wed, 19 Nov 2014 15:53:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shuah Khan <shuahkh@osg.samsung.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.17 001/141] x86/build: Add arch/x86/purgatory/ make generated files to gitignore
-Date: Wed, 19 Nov 2014 12:50:24 -0800
-Message-Id: <20141119205150.748238872@linuxfoundation.org>
+        Dwight Engen <dwight.engen@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 021/141] vio: fix reuse of vio_dring slot
+Date: Wed, 19 Nov 2014 12:50:44 -0800
+Message-Id: <20141119205151.354074071@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -28,34 +29,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shuah Khan <shuahkh@osg.samsung.com>
+From: Dwight Engen <dwight.engen@oracle.com>
 
-commit 4ea48a01bb1a99f4185b77cd90cf962730336cc4 upstream.
+[ Upstream commit d0aedcd4f14a22e23b313f42b7e6e6ebfc0fbc31 ]
 
-The following generated files are missing from gitignore
-and show up in git status after x86_64 build. Add them
-to gitignore.
+vio_dring_avail() will allow use of every dring entry, but when the last
+entry is allocated then dr->prod == dr->cons which is indistinguishable from
+the ring empty condition. This causes the next allocation to reuse an entry.
+When this happens in sunvdc, the server side vds driver begins nack'ing the
+messages and ends up resetting the ldc channel. This problem does not effect
+sunvnet since it checks for < 2.
 
-    arch/x86/purgatory/kexec-purgatory.c
-    arch/x86/purgatory/purgatory.ro
+The fix here is to just never allocate the very last dring slot so that full
+and empty are not the same condition. The request start path was changed to
+check for the ring being full a bit earlier, and to stop the blk_queue if
+there is no space left. The blk_queue will be restarted once the ring is
+only half full again. The number of ring entries was increased to 512 which
+matches the sunvnet and Solaris vdc drivers, and greatly reduces the
+frequency of hitting the ring full condition and the associated blk_queue
+stop/starting. The checks in sunvent were adjusted to account for
+vio_dring_avail() returning 1 less.
 
-Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
-Link: http://lkml.kernel.org/r/1412016116-7213-1-git-send-email-shuahkh@osg.samsung.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Orabug: 19441666
+OraBZ: 14983
+
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/.gitignore |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/sparc/include/asm/vio.h       |    2 -
+ drivers/block/sunvdc.c             |   39 +++++++++++++++++++++----------------
+ drivers/net/ethernet/sun/sunvnet.c |    4 +--
+ 3 files changed, 26 insertions(+), 19 deletions(-)
 
---- a/arch/x86/.gitignore
-+++ b/arch/x86/.gitignore
-@@ -1,4 +1,6 @@
- boot/compressed/vmlinux
- tools/test_get_len
- tools/insn_sanity
-+purgatory/kexec-purgatory.c
-+purgatory/purgatory.ro
+--- a/arch/sparc/include/asm/vio.h
++++ b/arch/sparc/include/asm/vio.h
+@@ -265,7 +265,7 @@ static inline u32 vio_dring_avail(struct
+ 				  unsigned int ring_size)
+ {
+ 	return (dr->pending -
+-		((dr->prod - dr->cons) & (ring_size - 1)));
++		((dr->prod - dr->cons) & (ring_size - 1)) - 1);
+ }
  
+ #define VIO_MAX_TYPE_LEN	32
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -33,7 +33,7 @@ MODULE_DESCRIPTION("Sun LDOM virtual dis
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(DRV_MODULE_VERSION);
+ 
+-#define VDC_TX_RING_SIZE	256
++#define VDC_TX_RING_SIZE	512
+ 
+ #define WAITING_FOR_LINK_UP	0x01
+ #define WAITING_FOR_TX_SPACE	0x02
+@@ -283,7 +283,9 @@ static void vdc_end_one(struct vdc_port
+ 
+ 	__blk_end_request(req, (desc->status ? -EIO : 0), desc->size);
+ 
+-	if (blk_queue_stopped(port->disk->queue))
++	/* restart blk queue when ring is half emptied */
++	if (blk_queue_stopped(port->disk->queue) &&
++	    vdc_tx_dring_avail(dr) * 100 / VDC_TX_RING_SIZE >= 50)
+ 		blk_start_queue(port->disk->queue);
+ }
+ 
+@@ -435,12 +437,6 @@ static int __send_request(struct request
+ 	for (i = 0; i < nsg; i++)
+ 		len += sg[i].length;
+ 
+-	if (unlikely(vdc_tx_dring_avail(dr) < 1)) {
+-		blk_stop_queue(port->disk->queue);
+-		err = -ENOMEM;
+-		goto out;
+-	}
+-
+ 	desc = vio_dring_cur(dr);
+ 
+ 	err = ldc_map_sg(port->vio.lp, sg, nsg,
+@@ -480,21 +476,32 @@ static int __send_request(struct request
+ 		port->req_id++;
+ 		dr->prod = (dr->prod + 1) & (VDC_TX_RING_SIZE - 1);
+ 	}
+-out:
+ 
+ 	return err;
+ }
+ 
+-static void do_vdc_request(struct request_queue *q)
++static void do_vdc_request(struct request_queue *rq)
+ {
+-	while (1) {
+-		struct request *req = blk_fetch_request(q);
++	struct request *req;
+ 
+-		if (!req)
++	while ((req = blk_peek_request(rq)) != NULL) {
++		struct vdc_port *port;
++		struct vio_dring_state *dr;
++
++		port = req->rq_disk->private_data;
++		dr = &port->vio.drings[VIO_DRIVER_TX_RING];
++		if (unlikely(vdc_tx_dring_avail(dr) < 1))
++			goto wait;
++
++		blk_start_request(req);
++
++		if (__send_request(req) < 0) {
++			blk_requeue_request(rq, req);
++wait:
++			/* Avoid pointless unplugs. */
++			blk_stop_queue(rq);
+ 			break;
+-
+-		if (__send_request(req) < 0)
+-			__blk_end_request_all(req, -EIO);
++		}
+ 	}
+ }
+ 
+--- a/drivers/net/ethernet/sun/sunvnet.c
++++ b/drivers/net/ethernet/sun/sunvnet.c
+@@ -693,7 +693,7 @@ static int vnet_start_xmit(struct sk_buf
+ 	spin_lock_irqsave(&port->vio.lock, flags);
+ 
+ 	dr = &port->vio.drings[VIO_DRIVER_TX_RING];
+-	if (unlikely(vnet_tx_dring_avail(dr) < 2)) {
++	if (unlikely(vnet_tx_dring_avail(dr) < 1)) {
+ 		if (!netif_queue_stopped(dev)) {
+ 			netif_stop_queue(dev);
+ 
+@@ -749,7 +749,7 @@ static int vnet_start_xmit(struct sk_buf
+ 	dev->stats.tx_bytes += skb->len;
+ 
+ 	dr->prod = (dr->prod + 1) & (VNET_TX_RING_SIZE - 1);
+-	if (unlikely(vnet_tx_dring_avail(dr) < 2)) {
++	if (unlikely(vnet_tx_dring_avail(dr) < 1)) {
+ 		netif_stop_queue(dev);
+ 		if (vnet_tx_dring_avail(dr) > VNET_TX_WAKEUP_THRESH(dr))
+ 			netif_wake_queue(dev);
 
 
