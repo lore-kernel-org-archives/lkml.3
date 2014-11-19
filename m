@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122AbaKSQrg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:47:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43915 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752950AbaKSQre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:47:34 -0500
-Message-ID: <1416415634.4763.9.camel@dcbw.local>
-Subject: Re: [PATCH 1/3] tun: move internal flag defines out of uapi
-From: Dan Williams <dcbw@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, davem@davemloft.net,
-        Jason Wang <jasowang@redhat.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Tom Herbert <therbert@google.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Masatake YAMATO <yamato@redhat.com>, Xi Wang <xii@google.com>,
-        netdev@vger.kernel.org, linux-api@vger.kernel.org
-Date: Wed, 19 Nov 2014 10:47:14 -0600
-In-Reply-To: <1416413891-29562-2-git-send-email-mst@redhat.com>
-References: <1416413891-29562-1-git-send-email-mst@redhat.com>
-	 <1416413891-29562-2-git-send-email-mst@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1756180AbaKSQsF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:48:05 -0500
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:49103 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752950AbaKSQsC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:48:02 -0500
+Message-ID: <546CC9B3.5060405@gmail.com>
+Date: Wed, 19 Nov 2014 08:47:47 -0800
+From: John Fastabend <john.fastabend@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <jhs@mojatatu.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH 1/1] net: sched: Deletion of an unnecessary check before
+ the function call "kfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546BAB93.4010406@users.sourceforge.net>
+In-Reply-To: <546BAB93.4010406@users.sourceforge.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-19 at 18:18 +0200, Michael S. Tsirkin wrote:
-> TUN_ flags are internal and never exposed
-> to userspace. Any application using it is almost
-> certainly buggy.
-
-Except for TUN_TUN_DEV and TUN_TAP_DEV and TUN_TYPE_MASK...  which we're
-using (for some reason) in NetworkManager, though I'll happily convert
-those to IFF_* instead.  It might be worth #defining those to their
-IFF_* equivalents since their usage is not technically broken.
-
-Dan
-
-> Move them out to tun.c, we'll remove them in follow-up patches.
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+On 11/18/2014 12:26 PM, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Tue, 18 Nov 2014 21:21:16 +0100
+>
+> The kfree() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
+>
+> This issue was detected by using the Coccinelle software.
+>
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 > ---
->  include/uapi/linux/if_tun.h | 14 --------------
->  drivers/net/tun.c           | 14 ++++++++++++++
->  2 files changed, 14 insertions(+), 14 deletions(-)
-> 
-> diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
-> index e9502dd..b82c276 100644
-> --- a/include/uapi/linux/if_tun.h
-> +++ b/include/uapi/linux/if_tun.h
-> @@ -23,20 +23,6 @@
->  /* Read queue size */
->  #define TUN_READQ_SIZE	500
->  
-> -/* TUN device flags */
-> -#define TUN_TUN_DEV 	0x0001	
-> -#define TUN_TAP_DEV	0x0002
-> -#define TUN_TYPE_MASK   0x000f
-> -
-> -#define TUN_FASYNC	0x0010
-> -#define TUN_NOCHECKSUM	0x0020
-> -#define TUN_NO_PI	0x0040
-> -/* This flag has no real effect */
-> -#define TUN_ONE_QUEUE	0x0080
-> -#define TUN_PERSIST 	0x0100	
-> -#define TUN_VNET_HDR 	0x0200
-> -#define TUN_TAP_MQ      0x0400
-> -
->  /* Ioctl defines */
->  #define TUNSETNOCSUM  _IOW('T', 200, int) 
->  #define TUNSETDEBUG   _IOW('T', 201, int) 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index 2e18ddd..81735f5 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -103,6 +103,20 @@ do {								\
->  } while (0)
->  #endif
->  
-> +/* TUN device flags */
-> +#define TUN_TUN_DEV 	0x0001
-> +#define TUN_TAP_DEV	0x0002
-> +#define TUN_TYPE_MASK   0x000f
-> +
-> +#define TUN_FASYNC	0x0010
-> +#define TUN_NOCHECKSUM	0x0020
-> +#define TUN_NO_PI	0x0040
-> +/* This flag has no real effect */
-> +#define TUN_ONE_QUEUE	0x0080
-> +#define TUN_PERSIST 	0x0100
-> +#define TUN_VNET_HDR 	0x0200
-> +#define TUN_TAP_MQ      0x0400
-> +
->  #define GOODCOPY_LEN 128
->  
->  #define FLT_EXACT_COUNT 8
+>   net/sched/cls_bpf.c | 3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/net/sched/cls_bpf.c b/net/sched/cls_bpf.c
+> index 0e30d58..f323944 100644
+> --- a/net/sched/cls_bpf.c
+> +++ b/net/sched/cls_bpf.c
+> @@ -212,8 +212,7 @@ static int cls_bpf_modify_existing(struct net *net, struct tcf_proto *tp,
+>
+>   	if (fp_old)
+>   		bpf_prog_destroy(fp_old);
+> -	if (bpf_old)
+> -		kfree(bpf_old);
+> +	kfree(bpf_old);
+>
+>   	return 0;
+>
+>
 
+Maybe I need some coffee but I can't figure out what this
+patch is against...
 
+# grep bpf_old ./net/sched/cls_bpf.c
+#
+
+Marcus, what tree are you looking at?
+
+-- 
+John Fastabend         Intel Corporation
