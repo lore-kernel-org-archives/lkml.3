@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005AbaKSMB6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 07:01:58 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:47777 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753408AbaKSL7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754127AbaKSL7t (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 19 Nov 2014 06:59:49 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:43463 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaKSL7q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 06:59:46 -0500
 From: Johan Hovold <johan@kernel.org>
 To: Florian Fainelli <f.fainelli@gmail.com>
 Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, Bruno Thomsen <bth@kamstrup.dk>,
         Sascha Hauer <s.hauer@pengutronix.de>,
         Mark Rutland <mark.rutland@arm.com>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 06/10] net: phy: micrel: add support for clock-mode select to KSZ8081/KSZ8091
-Date: Wed, 19 Nov 2014 12:59:19 +0100
-Message-Id: <1416398363-32306-7-git-send-email-johan@kernel.org>
+Subject: [PATCH 00/10] net: phy: add device-type abstraction
+Date: Wed, 19 Nov 2014 12:59:13 +0100
+Message-Id: <1416398363-32306-1-git-send-email-johan@kernel.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1416398363-32306-1-git-send-email-johan@kernel.org>
-References: <1416398363-32306-1-git-send-email-johan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Micrel KSZ8081 and KSZ8091 PHYs have the RMII Reference Clock Select
-bit, which is used to select 25 or 50 MHz clock mode.
+This series adds device and device-type abstractions to the micrel
+driver, and enables support for RMII-reference clock selection for
+KSZ8081 and KSZ8091 devices.
 
-Note that on some revisions of the PHY (e.g. KSZ8081RND) the function of
-this bit is inverted so that setting it enables 25 rather than 50 MHz
-mode. Add a new device-tree property
-"micrel,rmii-reference-clock-select-25-mhz" to describe this.
+While adding support for more features for the Micrel PHYs mentioned
+above, it became apparent that the configuration space is much too large
+and that adding type-specific callbacks will simply not scale. Instead I
+added a driver_data field to struct phy_device, which can be used to
+store static device type data that can be parsed and acted on in
+generic driver callbacks. This allows a lot of duplicated code to be
+removed, and should make it much easier to add new features or deal with
+device-type quirks in the future.
 
-Signed-off-by: Johan Hovold <johan@kernel.org>
----
- Documentation/devicetree/bindings/net/micrel.txt |  4 ++--
- drivers/net/phy/micrel.c                         | 11 ++++++-----
- 2 files changed, 8 insertions(+), 7 deletions(-)
+The series has been tested on a dual KSZ8081 setup. Further testing on
+other Micrel PHYs would be much appreciated.
 
-diff --git a/Documentation/devicetree/bindings/net/micrel.txt b/Documentation/devicetree/bindings/net/micrel.txt
-index 30062fae5623..a1bab5eaae02 100644
---- a/Documentation/devicetree/bindings/net/micrel.txt
-+++ b/Documentation/devicetree/bindings/net/micrel.txt
-@@ -22,5 +22,5 @@ Optional properties:
-  - clocks, clock-names: contains clocks according to the common clock bindings.
- 
-               supported clocks:
--	      - KSZ8021, KSZ8031: "rmii-ref": The RMII refence input clock. Used
--		to determine the XI input clock.
-+	      - KSZ8021, KSZ8031, KSZ8081, KSZ8091: "rmii-ref": The RMII
-+		refence input clock. Used to determine the XI input clock.
-diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
-index d2e790cd3651..04fbee846b66 100644
---- a/drivers/net/phy/micrel.c
-+++ b/drivers/net/phy/micrel.c
-@@ -102,6 +102,7 @@ static const struct kszphy_type ksz8051_type = {
- static const struct kszphy_type ksz8081_type = {
- 	.led_mode_reg		= MII_KSZPHY_CTRL_2,
- 	.has_broadcast_disable	= true,
-+	.has_rmii_ref_clk_sel	= true,
- };
- 
- static int kszphy_extended_write(struct phy_device *phydev,
-@@ -548,16 +549,16 @@ static int kszphy_probe(struct phy_device *phydev)
- 	clk = devm_clk_get(&phydev->dev, "rmii-ref");
- 	if (!IS_ERR(clk)) {
- 		unsigned long rate = clk_get_rate(clk);
-+		bool rmii_ref_clk_sel_25_mhz;
- 
- 		priv->rmii_ref_clk_sel = type->has_rmii_ref_clk_sel;
-+		rmii_ref_clk_sel_25_mhz = of_property_read_bool(np,
-+				"micrel,rmii-reference-clock-select-25-mhz");
- 
--		/* FIXME: add support for PHY revisions that have this bit
--		 * inverted (e.g. through new property or based on PHY ID).
--		 */
- 		if (rate > 24500000 && rate < 25500000) {
--			priv->rmii_ref_clk_sel_val = false;
-+			priv->rmii_ref_clk_sel_val = rmii_ref_clk_sel_25_mhz;
- 		} else if (rate > 49500000 && rate < 50500000) {
--			priv->rmii_ref_clk_sel_val = true;
-+			priv->rmii_ref_clk_sel_val = !rmii_ref_clk_sel_25_mhz;
- 		} else {
- 			dev_err(&phydev->dev, "Clock rate out of range: %ld\n", rate);
- 			return -EINVAL;
+The recent commit a95a18afe4c8 ("phy/micrel: KSZ8031RNL RMII clock
+reconfiguration bug") currently prevents KSZ8031 PHYs from using the
+generic config-init. Bruno, who is the author of that patch, has agreed
+to test this series and some follow-up diagnostic patches to determine
+how best to incorporate these devices as well. I intend to send a
+follow-up patch that removes the custom 8031 config-init and documents
+this quirk, but the current series can be applied meanwhile.
+
+These patches are against net-next which contains some already merged
+prerequisite patches to the driver.
+
+Johan
+
+
+Johan Hovold (10):
+  net: phy: add static data field to struct phy_driver
+  net: phy: micrel: add device-type abstraction
+  net: phy: micrel: parse of nodes at probe
+  net: phy: micrel: add has-broadcast-disable flag to type data
+  net: phy: micrel: add generic clock-mode-select support
+  net: phy: micrel: add support for clock-mode select to KSZ8081/KSZ8091
+  dt/bindings: reformat micrel eth-phy documentation
+  dt/bindings: add clock-select function property to micrel phy binding
+  net: phy: micrel: refactor interrupt config
+  net: phy: micrel: add copyright entry
+
+ Documentation/devicetree/bindings/net/micrel.txt |  37 ++--
+ drivers/net/phy/micrel.c                         | 262 ++++++++++++++---------
+ include/linux/micrel_phy.h                       |   1 -
+ include/linux/phy.h                              |   2 +
+ 4 files changed, 184 insertions(+), 118 deletions(-)
+
 -- 
 2.0.4
 
