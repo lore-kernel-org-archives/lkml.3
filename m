@@ -1,125 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418AbaKSFVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 00:21:30 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:40661 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728AbaKSFV2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 00:21:28 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sAJ5LERY019039, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next v2 1/2] r8152: adjust r8152_submit_rx
-Date: Wed, 19 Nov 2014 13:20:41 +0800
-Message-ID: <1394712342-15778-96-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-95-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-88-Taiwan-albertk@realtek.com>
- <1394712342-15778-95-Taiwan-albertk@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+	id S1754940AbaKSFWZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 00:22:25 -0500
+Received: from ozlabs.org ([103.22.144.67]:53113 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754295AbaKSFWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 00:22:23 -0500
+Message-ID: <1416374519.32483.1.camel@concordia>
+Subject: [git pull] Please pull mpe.git for-linus branch (for powerpc)
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        haokexin@gmail.com, scottwood@freescale.com
+Date: Wed, 19 Nov 2014 16:21:59 +1100
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-cFnBl0cYDCIzAbFpCMPS"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The behavior of handling the returned status from r8152_submit_rx()
-is almost same, so let r8152_submit_rx() deal with the error
-directly. This could avoid the duplicate code.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 41 +++++++++++++++++++++--------------------
- 1 file changed, 21 insertions(+), 20 deletions(-)
+--=-cFnBl0cYDCIzAbFpCMPS
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 0a30fd3..df0868b 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -1032,7 +1032,6 @@ static void read_bulk_callback(struct urb *urb)
- 	int status = urb->status;
- 	struct rx_agg *agg;
- 	struct r8152 *tp;
--	int result;
- 
- 	agg = urb->context;
- 	if (!agg)
-@@ -1083,16 +1082,7 @@ static void read_bulk_callback(struct urb *urb)
- 		break;
- 	}
- 
--	result = r8152_submit_rx(tp, agg, GFP_ATOMIC);
--	if (result == -ENODEV) {
--		set_bit(RTL8152_UNPLUG, &tp->flags);
--		netif_device_detach(tp->netdev);
--	} else if (result) {
--		spin_lock(&tp->rx_lock);
--		list_add_tail(&agg->list, &tp->rx_done);
--		spin_unlock(&tp->rx_lock);
--		tasklet_schedule(&tp->tl);
--	}
-+	r8152_submit_rx(tp, agg, GFP_ATOMIC);
- }
- 
- static void write_bulk_callback(struct urb *urb)
-@@ -1680,7 +1670,6 @@ static void rx_bottom(struct r8152 *tp)
- 		int len_used = 0;
- 		struct urb *urb;
- 		u8 *rx_data;
--		int ret;
- 
- 		list_del_init(cursor);
- 
-@@ -1733,13 +1722,7 @@ find_next_rx:
- 		}
- 
- submit:
--		ret = r8152_submit_rx(tp, agg, GFP_ATOMIC);
--		if (ret && ret != -ENODEV) {
--			spin_lock_irqsave(&tp->rx_lock, flags);
--			list_add_tail(&agg->list, &tp->rx_done);
--			spin_unlock_irqrestore(&tp->rx_lock, flags);
--			tasklet_schedule(&tp->tl);
--		}
-+		r8152_submit_rx(tp, agg, GFP_ATOMIC);
- 	}
- }
- 
-@@ -1806,11 +1789,29 @@ static void bottom_half(unsigned long data)
- static
- int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags)
- {
-+	int ret = 0;
-+
- 	usb_fill_bulk_urb(agg->urb, tp->udev, usb_rcvbulkpipe(tp->udev, 1),
- 			  agg->head, agg_buf_sz,
- 			  (usb_complete_t)read_bulk_callback, agg);
- 
--	return usb_submit_urb(agg->urb, mem_flags);
-+	ret = usb_submit_urb(agg->urb, mem_flags);
-+
-+	if (ret == -ENODEV) {
-+		set_bit(RTL8152_UNPLUG, &tp->flags);
-+		netif_device_detach(tp->netdev);
-+	} else if (ret) {
-+		struct urb *urb = agg->urb;
-+		unsigned long flags;
-+
-+		urb->actual_length = 0;
-+		spin_lock_irqsave(&tp->rx_lock, flags);
-+		list_add_tail(&agg->list, &tp->rx_done);
-+		spin_unlock_irqrestore(&tp->rx_lock, flags);
-+		tasklet_schedule(&tp->tl);
-+	}
-+
-+	return ret;
- }
- 
- static void rtl_drop_queued_tx(struct r8152 *tp)
--- 
-1.9.3
+Hi Linus,
+
+Please pull one fix from Scott, he says:
+
+  This patch fixes a crash (introduced in v3.18-rc1) in the FSL MSI driver
+  when threaded IRQs are enabled.
+
+
+The following changes since commit 8a97577a5967c1234ccc3bc1b45e4b1a58b39ea8=
+:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git=
+/mpe/linux (2014-11-04 11:18:29 -0800)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mpe/linux.git for-linus
+
+for you to fetch changes up to d7ce4377494adfaf8afb15ecf4f07d399bbf13d9:
+
+  powerpc/fsl_msi: mark the msi cascade handler IRQF_NO_THREAD (2014-11-17 =
+22:00:30 -0600)
+
+----------------------------------------------------------------
+Kevin Hao (1):
+      powerpc/fsl_msi: mark the msi cascade handler IRQF_NO_THREAD
+
+ arch/powerpc/sysdev/fsl_msi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+
+
+
+--=-cFnBl0cYDCIzAbFpCMPS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAABAgAGBQJUbCkLAAoJEFHr6jzI4aWA2SQP/3c7P3oO3zZrc6JmRtkgwn/D
+LwORvTZDbwQgYMEG9xHS3rM4ZESjxGmfpbFX3Tl4Pa0yUVXDFFpqIw4b8LTNtvak
+SbB/w1DeeiJ02BTns2npSt8Te4Q+B6QybDf6Auu+C5HfqcnMiYLOrJy9qOs1pdUz
++h0UmPt2L8VXlnrBUQhz/O3J2yjvHcqQKD9G1lErC/5RlqmhT6/vALeg4siz0095
+owsE9iMf5U7Ek2wrfIqGvOQSDQvoT+9LYQsG0d2EsFDj6xtMCei/j7jG5OaHiZu8
+uwIihdy/pieEJTz/6UmlhITfgBjO6GiZlylRRruTtUqn6LgK+g7mmPuih3xPSTkh
+H/edOK9FI1bm99NM9F11x+BphXti9OPfnl4/JhZw81F4UkXqqUKntiIUxJ9ls4LI
+7dwWDLS/1us5r3sqIRl1s96g1M7niQ0Rq21G08dps5tiVBkfyrXxehmccMWSO8GV
+9lhZ1ZnRixPkMZ4ae27f8bGuEfbVkAvgWnn5X2EB3Eid6k0QIrgLUZ8fmzW0Hru2
+OQI1OAoc+YO/mgGqQX7bsnf9kellz3KEdNWdvf1lRByzdHgGYPK/gRSXeXRFhEkO
+dr/+J6/eEsH0lSSgsbiOCapZnfF5JWxK1bofBeDgzn7KUEWvFBkzAM/kdfD2jE85
+qu5og4pBwpa+JOacxpNY
+=eEY3
+-----END PGP SIGNATURE-----
+
+--=-cFnBl0cYDCIzAbFpCMPS--
 
