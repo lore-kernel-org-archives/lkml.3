@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934037AbaKSVQu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:16:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57366 "EHLO
+	id S934022AbaKSVQt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:16:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57596 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933955AbaKSVPB (ORCPT
+	with ESMTP id S933957AbaKSVPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:15:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Laine Stump <laine@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Collins <bsderandrew@gmail.com>
-Subject: [PATCH 3.10 48/70] br: fix use of ->rx_handler_data in code executed on non-rx_handler path
-Date: Wed, 19 Nov 2014 12:52:39 -0800
-Message-Id: <20141119205212.520208606@linuxfoundation.org>
+        Jon Medhurst <tixy@linaro.org>, Ben Dooks <ben.dooks@codethink.co.uk>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Wang Nan <wangnan0@huawei.com>
+Subject: [PATCH 3.10 49/70] ARM: probes: fix instruction fetch order with <asm/opcodes.h>
+Date: Wed, 19 Nov 2014 12:52:40 -0800
+Message-Id: <20141119205212.550160275@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -31,79 +30,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Ben Dooks <ben.dooks@codethink.co.uk>
 
-commit 859828c0ea476b42f3a93d69d117aaba90994b6f upstream.
+commit 888be25402021a425da3e85e2d5a954d7509286e upstream.
 
-br_stp_rcv() is reached by non-rx_handler path. That means there is no
-guarantee that dev is bridge port and therefore simple NULL check of
-->rx_handler_data is not enough. There is need to check if dev is really
-bridge port and since only rcu read lock is held here, do it by checking
-->rx_handler pointer.
+If we are running BE8, the data and instruction endianness do not
+match, so use <asm/opcodes.h> to correctly translate memory accesses
+into ARM instructions.
 
-Note that synchronize_net() in netdev_rx_handler_unregister() ensures
-this approach as valid.
-
-Introduced originally by:
-commit f350a0a87374418635689471606454abc7beaa3a
-  "bridge: use rx_handler_data pointer to store net_bridge_port pointer"
-
-Fixed but not in the best way by:
-commit b5ed54e94d324f17c97852296d61a143f01b227a
-  "bridge: fix RCU races with bridge port"
-
-Reintroduced by:
-commit 716ec052d2280d511e10e90ad54a86f5b5d4dcc2
-  "bridge: fix NULL pointer deref of br_port_get_rcu"
-
-Please apply to stable trees as well. Thanks.
-
-RH bugzilla reference: https://bugzilla.redhat.com/show_bug.cgi?id=1025770
-
-Reported-by: Laine Stump <laine@redhat.com>
-Debugged-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Andrew Collins <bsderandrew@gmail.com>
+Acked-by: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+[taras.kondratiuk@linaro.org: fixed Thumb instruction fetch order]
+Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+[wangnan: backport to 3.10 and 3.14:
+ - adjust context
+ - backport all changes on arch/arm/kernel/probes.c to
+   arch/arm/kernel/kprobes-common.c since we don't have
+   commit c18377c303787ded44b7decd7dee694db0f205e9.
+ - After the above adjustments, becomes same to Taras Kondratiuk's
+   original patch:
+     http://lists.linaro.org/pipermail/linaro-kernel/2014-January/010346.html
+]
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/bridge/br_private.h  |   10 ++++++++++
- net/bridge/br_stp_bpdu.c |    2 +-
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ arch/arm/kernel/kprobes-common.c |   19 +++++++++++--------
+ arch/arm/kernel/kprobes-thumb.c  |   20 ++++++++++++--------
+ arch/arm/kernel/kprobes.c        |    9 +++++----
+ 3 files changed, 28 insertions(+), 20 deletions(-)
 
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -429,6 +429,16 @@ extern netdev_features_t br_features_rec
- extern int br_handle_frame_finish(struct sk_buff *skb);
- extern rx_handler_result_t br_handle_frame(struct sk_buff **pskb);
+--- a/arch/arm/kernel/kprobes-common.c
++++ b/arch/arm/kernel/kprobes-common.c
+@@ -14,6 +14,7 @@
+ #include <linux/kernel.h>
+ #include <linux/kprobes.h>
+ #include <asm/system_info.h>
++#include <asm/opcodes.h>
  
-+static inline bool br_rx_handler_check_rcu(const struct net_device *dev)
-+{
-+	return rcu_dereference(dev->rx_handler) == br_handle_frame;
-+}
-+
-+static inline struct net_bridge_port *br_port_get_check_rcu(const struct net_device *dev)
-+{
-+	return br_rx_handler_check_rcu(dev) ? br_port_get_rcu(dev) : NULL;
-+}
-+
- /* br_ioctl.c */
- extern int br_dev_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
- extern int br_ioctl_deviceless_stub(struct net *net, unsigned int cmd, void __user *arg);
---- a/net/bridge/br_stp_bpdu.c
-+++ b/net/bridge/br_stp_bpdu.c
-@@ -153,7 +153,7 @@ void br_stp_rcv(const struct stp_proto *
- 	if (buf[0] != 0 || buf[1] != 0 || buf[2] != 0)
- 		goto err;
+ #include "kprobes.h"
  
--	p = br_port_get_rcu(dev);
-+	p = br_port_get_check_rcu(dev);
- 	if (!p)
- 		goto err;
+@@ -305,7 +306,8 @@ kprobe_decode_ldmstm(kprobe_opcode_t ins
+ 
+ 	if (handler) {
+ 		/* We can emulate the instruction in (possibly) modified form */
+-		asi->insn[0] = (insn & 0xfff00000) | (rn << 16) | reglist;
++		asi->insn[0] = __opcode_to_mem_arm((insn & 0xfff00000) |
++						   (rn << 16) | reglist);
+ 		asi->insn_handler = handler;
+ 		return INSN_GOOD;
+ 	}
+@@ -334,13 +336,14 @@ prepare_emulated_insn(kprobe_opcode_t in
+ #ifdef CONFIG_THUMB2_KERNEL
+ 	if (thumb) {
+ 		u16 *thumb_insn = (u16 *)asi->insn;
+-		thumb_insn[1] = 0x4770; /* Thumb bx lr */
+-		thumb_insn[2] = 0x4770; /* Thumb bx lr */
++		/* Thumb bx lr */
++		thumb_insn[1] = __opcode_to_mem_thumb16(0x4770);
++		thumb_insn[2] = __opcode_to_mem_thumb16(0x4770);
+ 		return insn;
+ 	}
+-	asi->insn[1] = 0xe12fff1e; /* ARM bx lr */
++	asi->insn[1] = __opcode_to_mem_arm(0xe12fff1e); /* ARM bx lr */
+ #else
+-	asi->insn[1] = 0xe1a0f00e; /* mov pc, lr */
++	asi->insn[1] = __opcode_to_mem_arm(0xe1a0f00e); /* mov pc, lr */
+ #endif
+ 	/* Make an ARM instruction unconditional */
+ 	if (insn < 0xe0000000)
+@@ -360,12 +363,12 @@ set_emulated_insn(kprobe_opcode_t insn,
+ 	if (thumb) {
+ 		u16 *ip = (u16 *)asi->insn;
+ 		if (is_wide_instruction(insn))
+-			*ip++ = insn >> 16;
+-		*ip++ = insn;
++			*ip++ = __opcode_to_mem_thumb16(insn >> 16);
++		*ip++ = __opcode_to_mem_thumb16(insn);
+ 		return;
+ 	}
+ #endif
+-	asi->insn[0] = insn;
++	asi->insn[0] = __opcode_to_mem_arm(insn);
+ }
+ 
+ /*
+--- a/arch/arm/kernel/kprobes-thumb.c
++++ b/arch/arm/kernel/kprobes-thumb.c
+@@ -163,9 +163,9 @@ t32_decode_ldmstm(kprobe_opcode_t insn,
+ 	enum kprobe_insn ret = kprobe_decode_ldmstm(insn, asi);
+ 
+ 	/* Fixup modified instruction to have halfwords in correct order...*/
+-	insn = asi->insn[0];
+-	((u16 *)asi->insn)[0] = insn >> 16;
+-	((u16 *)asi->insn)[1] = insn & 0xffff;
++	insn = __mem_to_opcode_arm(asi->insn[0]);
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(insn >> 16);
++	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0xffff);
+ 
+ 	return ret;
+ }
+@@ -1153,7 +1153,7 @@ t16_decode_hiregs(kprobe_opcode_t insn,
+ {
+ 	insn &= ~0x00ff;
+ 	insn |= 0x001; /* Set Rdn = R1 and Rm = R0 */
+-	((u16 *)asi->insn)[0] = insn;
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(insn);
+ 	asi->insn_handler = t16_emulate_hiregs;
+ 	return INSN_GOOD;
+ }
+@@ -1182,8 +1182,10 @@ t16_decode_push(kprobe_opcode_t insn, st
+ 	 * and call it with R9=SP and LR in the register list represented
+ 	 * by R8.
+ 	 */
+-	((u16 *)asi->insn)[0] = 0xe929;		/* 1st half STMDB R9!,{} */
+-	((u16 *)asi->insn)[1] = insn & 0x1ff;	/* 2nd half (register list) */
++	/* 1st half STMDB R9!,{} */
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(0xe929);
++	/* 2nd half (register list) */
++	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0x1ff);
+ 	asi->insn_handler = t16_emulate_push;
+ 	return INSN_GOOD;
+ }
+@@ -1232,8 +1234,10 @@ t16_decode_pop(kprobe_opcode_t insn, str
+ 	 * and call it with R9=SP and PC in the register list represented
+ 	 * by R8.
+ 	 */
+-	((u16 *)asi->insn)[0] = 0xe8b9;		/* 1st half LDMIA R9!,{} */
+-	((u16 *)asi->insn)[1] = insn & 0x1ff;	/* 2nd half (register list) */
++	/* 1st half LDMIA R9!,{} */
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(0xe8b9);
++	/* 2nd half (register list) */
++	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0x1ff);
+ 	asi->insn_handler = insn & 0x100 ? t16_emulate_pop_pc
+ 					 : t16_emulate_pop_nopc;
+ 	return INSN_GOOD;
+--- a/arch/arm/kernel/kprobes.c
++++ b/arch/arm/kernel/kprobes.c
+@@ -26,6 +26,7 @@
+ #include <linux/stop_machine.h>
+ #include <linux/stringify.h>
+ #include <asm/traps.h>
++#include <asm/opcodes.h>
+ #include <asm/cacheflush.h>
+ 
+ #include "kprobes.h"
+@@ -62,10 +63,10 @@ int __kprobes arch_prepare_kprobe(struct
+ #ifdef CONFIG_THUMB2_KERNEL
+ 	thumb = true;
+ 	addr &= ~1; /* Bit 0 would normally be set to indicate Thumb code */
+-	insn = ((u16 *)addr)[0];
++	insn = __mem_to_opcode_thumb16(((u16 *)addr)[0]);
+ 	if (is_wide_instruction(insn)) {
+-		insn <<= 16;
+-		insn |= ((u16 *)addr)[1];
++		u16 inst2 = __mem_to_opcode_thumb16(((u16 *)addr)[1]);
++		insn = __opcode_thumb32_compose(insn, inst2);
+ 		decode_insn = thumb32_kprobe_decode_insn;
+ 	} else
+ 		decode_insn = thumb16_kprobe_decode_insn;
+@@ -73,7 +74,7 @@ int __kprobes arch_prepare_kprobe(struct
+ 	thumb = false;
+ 	if (addr & 0x3)
+ 		return -EINVAL;
+-	insn = *p->addr;
++	insn = __mem_to_opcode_arm(*p->addr);
+ 	decode_insn = arm_kprobe_decode_insn;
+ #endif
  
 
 
