@@ -1,136 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168AbaKSQ6X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:58:23 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:44627 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754598AbaKSQ6W (ORCPT
+	id S1756250AbaKSQ7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:59:23 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:52922 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755047AbaKSQ7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:58:22 -0500
+	Wed, 19 Nov 2014 11:59:22 -0500
+Date: Wed, 19 Nov 2014 11:59:18 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
+In-Reply-To: <20141119165517.GL4042@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.11.1411191158010.11690@knanqh.ubzr>
+References: <20141118173413.GB4042@n2100.arm.linux.org.uk> <546B8C64.3010904@samsung.com> <2041617.Kxhx5O4MMr@wuerfel> <CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com> <CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
+ <CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com> <20141119160747.GH4042@n2100.arm.linux.org.uk> <CAKv+Gu-kvmkhrptmaN0miM3c0K3ZOh4maTFXL=NpYTMi9Q83kA@mail.gmail.com> <CALYGNiN5XC_4MhRbxZmFW5Jmc1N1H32tSZr3kKf_UBFriG71nA@mail.gmail.com>
+ <CAKv+Gu8o_-Q5PeFqdQXW=mcHNYxFcLLnvxjq94y-iG8+JUp=9w@mail.gmail.com> <20141119165517.GL4042@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <546CC0CD.40906@suse.cz>
-References: <502D42E5.7090403@redhat.com>
-	<20120818000312.GA4262@evergreen.ssec.wisc.edu>
-	<502F100A.1080401@redhat.com>
-	<alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
-	<CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
-	<20120822032057.GA30871@google.com>
-	<50345232.4090002@redhat.com>
-	<20130603195003.GA31275@evergreen.ssec.wisc.edu>
-	<20141114163053.GA6547@cosmos.ssec.wisc.edu>
-	<20141117160212.b86d031e1870601240b0131d@linux-foundation.org>
-	<20141118014135.GA17252@cosmos.ssec.wisc.edu>
-	<546AB1F5.6030306@redhat.com>
-	<20141118121936.07b02545a0684b2cc839a10c@linux-foundation.org>
-	<CALYGNiMxnxmy-LyJ4OT9OoFeKwTPPkZMF-bJ-eJDBFXgZQ6AEA@mail.gmail.com>
-	<CALYGNiM_CsjjiK_36JGirZT8rTP+ROYcH0CSyZjghtSNDU8ptw@mail.gmail.com>
-	<546BDB29.9050403@suse.cz>
-	<CALYGNiOHXvyqr3+Jq5FsZ_xscsXwrQ_9YCtL2819i6iRkgms2w@mail.gmail.com>
-	<546CC0CD.40906@suse.cz>
-Date: Wed, 19 Nov 2014 20:58:20 +0400
-Message-ID: <CALYGNiO9_bAVVZ2GdFq=PO2yV3LPs2utsbcb2pFby7MypptLCw@mail.gmail.com>
-Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Tim Hartrick <tim@edgecast.com>, Michal Hocko <mhocko@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 7:09 PM, Vlastimil Babka <vbabka@suse.cz> wrote:
-> On 11/19/2014 03:36 PM, Konstantin Khlebnikov wrote:
->> On Wed, Nov 19, 2014 at 2:50 AM, Vlastimil Babka <vbabka@suse.cz> wrote:
->>> On 11/19/2014 12:02 AM, Konstantin Khlebnikov wrote:
->>>> On Wed, Nov 19, 2014 at 1:15 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->>>>> On Tue, Nov 18, 2014 at 11:19 PM, Andrew Morton
->>>>> <akpm@linux-foundation.org> wrote:
->>>>>> On Mon, 17 Nov 2014 21:41:57 -0500 Rik van Riel <riel@redhat.com> wrote:
->>>>>>
->>>>>>> > Because of the serial forking there does indeed end up being an
->>>>>>> > infinite number of vmas.  The initial vma can never be deleted
->>>>>>> > (even though the initial parent process has long since terminated)
->>>>>>> > because the initial vma is referenced by the children.
->>>>>>>
->>>>>>> There is a finite number of VMAs, but an infite number of
->>>>>>> anon_vmas.
->>>>>>>
->>>>>>> Subtle, yet deadly...
->>>>>>
->>>>>> Well, we clearly have the data structures screwed up.  I've forgotten
->>>>>> enough about this code for me to be unable to work out what the fixed
->>>>>> up data structures would look like :( But surely there is some proper
->>>>>> solution here.  Help?
->>>>>
->>>>> Not sure if it's right but probably we could reuse on fork an old anon_vma
->>>>> from the chain if it's already lost all vmas which points to it.
->>>>> For endlessly forking exploit this should work mostly like proposed patch
->>>>> which stops branching after some depth but without magic constant.
->>>>
->>>> Something like this. I leave proper comment for tomorrow.
->>>
->>> Hmm I'm not sure that will work as it is. If I understand it correctly, your
->>> patch can detect if the parent's anon_vma has no own references at the fork()
->>> time. But at the fork time, the parent is still alive, it only exits after the
->>> fork, right? So I guess it still has own references and the child will still
->>> allocate its new anon_vma, and the problem is not solved.
->>
->> But it could reuse anon_vma from grandparent or older.
->> Count of anon_vmas in chain will be limited with count of alive processes.
->
-> Ah I missed that it can reuse older anon_vma, sorry.
->
->> I think it's better to describe this in terms of sets of anon_vma
->> instead hierarchy:
->> at clone vma inherits pages from parent together with set of anon_vma
->> which they belong.
->> For new pages it might allocate new anon_vma or reuse existing. After
->> my patch vma
->> will try to reuse anon_vma from that set which has no vmas which points to it.
->> As a result there will be no parent-child relation between anon_vma and
->> multiple pages might have equal (anon_vma, index) pair but I see no
->> problems here.
->
-> Hmm I wonder if root anon_vma should be excluded from this reusal. For
-> performance reasons, exclusive pages go to non-root anon_vma (see
-> __page_set_anon_rmap()) and reusing root anon_vma would change this.
+On Wed, 19 Nov 2014, Russell King - ARM Linux wrote:
 
-This is simple, in my patch this can be reached by bumping its nr_vmas
-by one and it'll never be reused.
+> On Wed, Nov 19, 2014 at 05:38:57PM +0100, Ard Biesheuvel wrote:
+> > Numbers are disambiguated by the f and b suffixes, so they can be
+> > reused in the same .s file. So as long as you use a strictly numerical
+> > prefix, you can deal correctly with the case where, for instance,
+> > do_div() is called twice in the same compilation unit, and still not
+> > clash with other inline asm
+> 
+> What's not particularly nice though is to hide these in a macro,
+> which itself may be part of a larger macro or code fragment also
+> using small numbers.
+> 
+> We probably ought to be a bit more inteligent about how we choose
+> these numbers inside macros, rather than just randomly picking some
+> and hoping that they don't clash.
 
-> Also from reading http://lwn.net/Articles/383162/ I understand that correctness
-> also depends on the hierarchy and I wonder if there's a danger of reintroducing
-> a bug like the one described there.
+Maybe in this case, the macro content is so simple that labels are not 
+warranted?  Getting away without them certainly solves the issue.
 
-If I remember right that was fixed by linking non-exclusively mapped pages to
-root anon_vma instead of anon_vma from vma where fault has happened.
-After my patch this still works. Topology hierarchy actually isn't used.
-Here just one selected "root' anon_vma which dies last. That's all.
 
->
-> Vlastimil
->
->>>
->>> So maybe we could detect that the own references dropped to zero when the parent
->>> does exit, and then change mapping of all relevant pages to the root anon_vma,
->>> destroy avc's of children and the anon_vma itself. But that sounds quite
->>> heavyweight :/
->>>
->>> Vlastimil
->>>
->>>>>
->>>>>>
->>>
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>
->
+Nicolas
