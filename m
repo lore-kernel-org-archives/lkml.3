@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838AbaKSXtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 18:49:53 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:61648 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223AbaKSXtv (ORCPT
+	id S1757001AbaKSXuk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 18:50:40 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:64000 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756239AbaKSXuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 18:49:51 -0500
+	Wed, 19 Nov 2014 18:50:39 -0500
+Date: Thu, 20 Nov 2014 00:50:36 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141119235033.GE11386@lerouge>
+References: <20141118215540.GD35311@redhat.com>
+ <20141119021902.GA14216@redhat.com>
+ <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
+ <20141119145902.GA13387@redhat.com>
+ <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
+ <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
+ <20141119190215.GA10796@lerouge>
+ <alpine.DEB.2.11.1411192251120.3909@nanos>
+ <20141119225615.GA11386@lerouge>
+ <alpine.DEB.2.11.1411200002330.3909@nanos>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFx4-WzNQ0e-ZTcCig3b7U7xmt1WB1jzO3TLk9zHD006ng@mail.gmail.com>
-References: <cover.1416352397.git.luto@amacapital.net> <c25e1a64e5b718fa156e141fd9ecbf31011c6059.1416352397.git.luto@amacapital.net>
- <CA+55aFztsw6Vt4CyVs1OsqdKXxQmFrxHdE7z89VMZ_1KwKPcmQ@mail.gmail.com>
- <20141119192928.GL12538@two.firstfloor.org> <CA+55aFwykb6aZYgyZXbU1DQ3OL0umpv8gkHYWykBEC2B7UdMbw@mail.gmail.com>
- <CALCETrXi7vdNAk4RziNDtqX4asPqXxi1VsLzL7pP0zivkjTH4Q@mail.gmail.com> <CA+55aFx4-WzNQ0e-ZTcCig3b7U7xmt1WB1jzO3TLk9zHD006ng@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 19 Nov 2014 15:49:29 -0800
-Message-ID: <CALCETrVJJUcPRfkWRouLJCNUVNRH3aWX0X_K8L62yrUu1aR8Vg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] sched, x86: Check that we're on the right stack in
- schedule and __might_sleep
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1411200002330.3909@nanos>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 3:23 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Nov 19, 2014 at 3:04 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> Does that include nmi?  I'm a bit afraid of touching that code.
->
-> NMI is kind of special, since it's really not supposed to touch
-> 'current' or anything like that, and that's how we do preempt-count
-> (and that's where irq-count is) right now.
->
-> I would prefer to have preempt_count be a percpu variable rather than
-> a per-thread one, but there are historical reasons for that horror. Oh
-> well.
->
->> It's certainly easy enough to bump irq_count in the paranoid entries.
->
-> It definitely shouldn't be done from the assembly code. Usually it's
-> "irq_enter/exit()" that does it, but for NMI you'd presumably just do
-> it explicitly from do_nmi() or similar. But NMI really is nastier than
-> other cases, see above.
+On Thu, Nov 20, 2014 at 12:09:22AM +0100, Thomas Gleixner wrote:
+> On Wed, 19 Nov 2014, Frederic Weisbecker wrote:
+> 
+> > On Wed, Nov 19, 2014 at 10:56:26PM +0100, Thomas Gleixner wrote:
+> > > On Wed, 19 Nov 2014, Frederic Weisbecker wrote:
+> > > > I got a report lately involving context tracking. Not sure if it's
+> > > > the same here but the issue was that context tracking uses per cpu data
+> > > > and per cpu allocation use vmalloc and vmalloc'ed area can fault due to
+> > > > lazy paging.
+> > > 
+> > > This is complete nonsense. pcpu allocations are populated right
+> > > away. Otherwise no single line of kernel code which uses dynamically
+> > > allocated per cpu storage would be safe.
+> > 
+> > Note this isn't faulting because part of the allocation is
+> > swapped. No it's all reserved in the physical memory, but it's a
+> > lazy allocation.  Part of it isn't yet addressed in the
+> > P[UGM?]D. That's what vmalloc_fault() is for.
+> 
+> Sorry, I can't follow your argumentation here.
+> 
+> pcpu_alloc()
+>    ....
+> area_found:
+>    ....
+> 
+>         /* clear the areas and return address relative to base address */
+>         for_each_possible_cpu(cpu)
+>                 memset((void *)pcpu_chunk_addr(chunk, cpu, 0) + off, 0, size);
+> 
+> How would that memset fail to establish the mapping, which is
+> btw. already established via:
+> 
+>      pcpu_populate_chunk()
+>   
+> already before that memset?   	    
+>  
+> Are we talking about different per cpu allocators here or am I missing
+> something completely non obvious?
 
-My only real objection is that it's going to be ugly and error prone.
-It'll have to be something like:
+That's the same allocator yeah. So if the whole memory is dereferenced,
+faults shouldn't happen indeed.
 
-if (!user_mode_vm(regs))
-    irq_enter();
+Maybe that was a bug a few years ago but not anymore.
 
-...
+I'm surprised because I got a report from Dave that very much suggested
+a vmalloc fault. See the discussion "Deadlock in vtime_account_user() vs itself across a page fault":
 
-if (!user_mode_vm(regs))
-    irq_exit();
+http://marc.info/?l=linux-kernel&m=141047612120263&w=2
 
-because the whole point of this series is to make the IST entries not
-be atomic when they come from userspace.  We can wrap this in an
-inline cond_ist_enter/cond_ist_exit or whatever, but still, blech.
+Is it possible that, somehow, some part isn't zeroed by pcpu_alloc()?
+After all it's allocated with vzalloc() so that part could be skipped. The memset(0)
+is passed the whole size though so it looks like the whole is dereferenced.
 
-Tony already sent the follow-up patch that will make do_machine_check
-enable interrupts if it came from userspace.
+(cc'ing Tejun just in case).
 
---Andy
+Now if faults on percpu memory don't happen anymore, perhaps we are accessing some
+other vmalloc'ed area. In the above report from Dave, the fault happened somewhere
+in account_user_time().
 
->
-> (That said, I thought we did it anyway, but now that I look I can't
-> find it. So I was probably just smoking something)
->
->              Linus
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+> 
+> Thanks,
+> 
+> 	tglx
