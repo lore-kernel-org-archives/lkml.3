@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758175AbaKSWXY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:23:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56050 "EHLO
+	id S932571AbaKSWXt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:23:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932518AbaKSUyK (ORCPT
+	with ESMTP id S932487AbaKSUyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:10 -0500
+	Wed, 19 Nov 2014 15:54:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.17 072/141] ARM: dts: am335x-evm: Fix 5th NAND partitions name
-Date: Wed, 19 Nov 2014 12:51:35 -0800
-Message-Id: <20141119205153.028614636@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.17 069/141] drm/radeon: add locking around atombios scratch space usage
+Date: Wed, 19 Nov 2014 12:51:32 -0800
+Message-Id: <20141119205152.926982187@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,35 +29,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit a8ead0ecb9d4ce472f4cdab936d6f18e41e3a9ee upstream.
+commit 1c9498425453bb65ef339a57705c5ef59fe1541d upstream.
 
-The 5th NAND partition should be named "NAND.u-boot-spl-os"
-instead of "NAND.u-boot-spl". This is to be consistent with other
-TI boards as well as u-boot.
+While developing MST support I noticed I often got the wrong data
+back from a transaction, in a racy fashion. I noticed the scratch
+space wasn't locked against concurrent users.
 
-Fixes: 91994facdd2d ("ARM: dts: am335x-evm: NAND: update MTD partition table")
+Based on a patch by Alex, but I've made it a bit more obvious when
+things are locked.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/am335x-evm.dts |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atom.c          |   11 ++++++++++-
+ drivers/gpu/drm/radeon/atom.h          |    2 ++
+ drivers/gpu/drm/radeon/atombios_dp.c   |    4 +++-
+ drivers/gpu/drm/radeon/atombios_i2c.c  |    4 +++-
+ drivers/gpu/drm/radeon/radeon_device.c |    1 +
+ 5 files changed, 19 insertions(+), 3 deletions(-)
 
---- a/arch/arm/boot/dts/am335x-evm.dts
-+++ b/arch/arm/boot/dts/am335x-evm.dts
-@@ -489,7 +489,7 @@
- 			reg = <0x00060000 0x00020000>;
- 		};
- 		partition@4 {
--			label = "NAND.u-boot-spl";
-+			label = "NAND.u-boot-spl-os";
- 			reg = <0x00080000 0x00040000>;
- 		};
- 		partition@5 {
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -1217,7 +1217,7 @@ free:
+ 	return ret;
+ }
+ 
+-int atom_execute_table(struct atom_context *ctx, int index, uint32_t * params)
++int atom_execute_table_scratch_unlocked(struct atom_context *ctx, int index, uint32_t * params)
+ {
+ 	int r;
+ 
+@@ -1238,6 +1238,15 @@ int atom_execute_table(struct atom_conte
+ 	return r;
+ }
+ 
++int atom_execute_table(struct atom_context *ctx, int index, uint32_t * params)
++{
++	int r;
++	mutex_lock(&ctx->scratch_mutex);
++	r = atom_execute_table_scratch_unlocked(ctx, index, params);
++	mutex_unlock(&ctx->scratch_mutex);
++	return r;
++}
++
+ static int atom_iio_len[] = { 1, 2, 3, 3, 3, 3, 4, 4, 4, 3 };
+ 
+ static void atom_index_iio(struct atom_context *ctx, int base)
+--- a/drivers/gpu/drm/radeon/atom.h
++++ b/drivers/gpu/drm/radeon/atom.h
+@@ -125,6 +125,7 @@ struct card_info {
+ struct atom_context {
+ 	struct card_info *card;
+ 	struct mutex mutex;
++	struct mutex scratch_mutex;
+ 	void *bios;
+ 	uint32_t cmd_table, data_table;
+ 	uint16_t *iio;
+@@ -145,6 +146,7 @@ extern int atom_debug;
+ 
+ struct atom_context *atom_parse(struct card_info *, void *);
+ int atom_execute_table(struct atom_context *, int, uint32_t *);
++int atom_execute_table_scratch_unlocked(struct atom_context *, int, uint32_t *);
+ int atom_asic_init(struct atom_context *);
+ void atom_destroy(struct atom_context *);
+ bool atom_parse_data_header(struct atom_context *ctx, int index, uint16_t *size,
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -100,6 +100,7 @@ static int radeon_process_aux_ch(struct
+ 	memset(&args, 0, sizeof(args));
+ 
+ 	mutex_lock(&chan->mutex);
++	mutex_lock(&rdev->mode_info.atom_context->scratch_mutex);
+ 
+ 	base = (unsigned char *)(rdev->mode_info.atom_context->scratch + 1);
+ 
+@@ -113,7 +114,7 @@ static int radeon_process_aux_ch(struct
+ 	if (ASIC_IS_DCE4(rdev))
+ 		args.v2.ucHPD_ID = chan->rec.hpd;
+ 
+-	atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
++	atom_execute_table_scratch_unlocked(rdev->mode_info.atom_context, index, (uint32_t *)&args);
+ 
+ 	*ack = args.v1.ucReplyStatus;
+ 
+@@ -147,6 +148,7 @@ static int radeon_process_aux_ch(struct
+ 
+ 	r = recv_bytes;
+ done:
++	mutex_unlock(&rdev->mode_info.atom_context->scratch_mutex);
+ 	mutex_unlock(&chan->mutex);
+ 
+ 	return r;
+--- a/drivers/gpu/drm/radeon/atombios_i2c.c
++++ b/drivers/gpu/drm/radeon/atombios_i2c.c
+@@ -48,6 +48,7 @@ static int radeon_process_i2c_ch(struct
+ 	memset(&args, 0, sizeof(args));
+ 
+ 	mutex_lock(&chan->mutex);
++	mutex_lock(&rdev->mode_info.atom_context->scratch_mutex);
+ 
+ 	base = (unsigned char *)rdev->mode_info.atom_context->scratch;
+ 
+@@ -82,7 +83,7 @@ static int radeon_process_i2c_ch(struct
+ 	args.ucSlaveAddr = slave_addr << 1;
+ 	args.ucLineNumber = chan->rec.i2c_id;
+ 
+-	atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
++	atom_execute_table_scratch_unlocked(rdev->mode_info.atom_context, index, (uint32_t *)&args);
+ 
+ 	/* error */
+ 	if (args.ucStatus != HW_ASSISTED_I2C_STATUS_SUCCESS) {
+@@ -95,6 +96,7 @@ static int radeon_process_i2c_ch(struct
+ 		radeon_atom_copy_swap(buf, base, num, false);
+ 
+ done:
++	mutex_unlock(&rdev->mode_info.atom_context->scratch_mutex);
+ 	mutex_unlock(&chan->mutex);
+ 
+ 	return r;
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -952,6 +952,7 @@ int radeon_atombios_init(struct radeon_d
+ 	}
+ 
+ 	mutex_init(&rdev->mode_info.atom_context->mutex);
++	mutex_init(&rdev->mode_info.atom_context->scratch_mutex);
+ 	radeon_atom_initialize_bios_scratch_regs(rdev->ddev);
+ 	atom_allocate_fb_scratch(rdev->mode_info.atom_context);
+ 	return 0;
 
 
