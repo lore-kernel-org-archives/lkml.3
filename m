@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780AbaKSKlU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 05:41:20 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:53257 "EHLO mail.skyhub.de"
+	id S1755841AbaKSKlp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 05:41:45 -0500
+Received: from mga01.intel.com ([192.55.52.88]:12708 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754489AbaKSKlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 05:41:19 -0500
-Date: Wed, 19 Nov 2014 11:41:14 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andy Lutomirski <luto@amacapital.net>, Tony Luck <tony.luck@intel.com>
-Subject: Re: [RFC][PATCH 3/3] x86/nmi: Perform a safe NMI stack trace on all
- CPUs
-Message-ID: <20141119104114.GA5684@pd.tnic>
-References: <20141119043917.578498291@goodmis.org>
- <20141119045556.084787418@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141119045556.084787418@goodmis.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755806AbaKSKln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 05:41:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="418550819"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH 1/2] sched/deadline: reduce overhead if there are no scheduling parameters changed
+Date: Wed, 19 Nov 2014 16:35:02 +0800
+Message-Id: <1416386103-90800-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 11:39:20PM -0500, Steven Rostedt wrote:
->  static int
->  arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
->  {
-> @@ -78,12 +157,14 @@ arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
->  	cpu = smp_processor_id();
->  
->  	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
-> -		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
-> +		printk_func_t printk_func_save = this_cpu_read(printk_func);
->  
-> -		arch_spin_lock(&lock);
-> +		/* Replace printk to write into the NMI seq */
-> +		this_cpu_write(printk_func, nmi_vprintk);
->  		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
->  		show_regs(regs);
-> -		arch_spin_unlock(&lock);
-> +		this_cpu_write(printk_func, printk_func_save);
+There is no need to dequeue/enqueue and push/pull if there are
+no scheduling parameters changed for dl class, actually both 
+fair and rt class have already check if parameters changed for 
+them to avoid unnecessary overhead. This patch add the parameters 
+changed verify for dl class in order to reduce overhead.
 
-I'm wondering if this could be used in a generic manner throughout code
-where we could say "ok, I'm in an NMI context, so lemme switch printk's
-and do some printing" so that NMI and NMI-like atomic contexts could use
-printk. Lemme do an mce example:
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+ kernel/sched/core.c | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
-do_machine_check(..)
-{
-	printk_func_t printk_func_save = this_cpu_read(printk_func);
-
-	...
-
-	/* in #MC handler, switch printks */
-	this_cpu_write(printk_func, nmi_vprintk);
-
-	printk("This is a hw error, details: ...\n");
-
-	/* more bla */
-
-	this_cpu_write(printk_func, printk_func_save);
-}
-
-or should we change that in entry.S, before we call the handler?
-
-Because, if we could do something like that, then we finally get to use
-printk in an NMI context which would be a good thing.
-
-:-)
-
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 603c462..f361867 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3402,6 +3402,21 @@ static bool check_same_owner(struct task_struct *p)
+ 	return match;
+ }
+ 
++static bool dl_param_changed(struct task_struct *p,
++			const struct sched_attr *attr)
++{
++	struct sched_dl_entity *dl_se = &p->dl;
++
++	if (dl_se->dl_runtime != attr->sched_runtime ||
++		dl_se->dl_deadline != attr->sched_deadline ||
++		dl_se->dl_period != attr->sched_period ||
++		dl_se->flags != attr->sched_flags ||
++		p->rt_priority != attr->sched_priority)
++		return true;
++
++	return false;
++}
++
+ static int __sched_setscheduler(struct task_struct *p,
+ 				const struct sched_attr *attr,
+ 				bool user)
+@@ -3530,7 +3545,7 @@ recheck:
+ 			goto change;
+ 		if (rt_policy(policy) && attr->sched_priority != p->rt_priority)
+ 			goto change;
+-		if (dl_policy(policy))
++		if (dl_policy(policy) && dl_param_changed(p, attr))
+ 			goto change;
+ 
+ 		p->sched_reset_on_fork = reset_on_fork;
 -- 
-Regards/Gruss,
-    Boris.
+1.9.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
