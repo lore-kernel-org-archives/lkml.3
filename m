@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933075AbaKSU6K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:58:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56276 "EHLO
+	id S933054AbaKSU6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:58:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56279 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932702AbaKSUyW (ORCPT
+	with ESMTP id S932707AbaKSUyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:54:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.17 108/141] NFSv4: Fix races between nfs_remove_bad_delegation() and delegation return
-Date: Wed, 19 Nov 2014 12:52:11 -0800
-Message-Id: <20141119205154.171293413@linuxfoundation.org>
+Subject: [PATCH 3.17 109/141] NFSv4.1: nfs41_clear_delegation_stateid shouldnt trust NFS_DELEGATED_STATE
+Date: Wed, 19 Nov 2014 12:52:12 -0800
+Message-Id: <20141119205154.204277776@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -30,103 +30,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 869f9dfa4d6d57b79e0afc3af14772c2a023eeb1 upstream.
+commit 0c116cadd94b16b30b1dd90d38b2784d9b39b01a upstream.
 
-Any attempt to call nfs_remove_bad_delegation() while a delegation is being
-returned is currently a no-op. This means that we can end up looping
-forever in nfs_end_delegation_return() if something causes the delegation
-to be revoked.
-This patch adds a mechanism whereby the state recovery code can communicate
-to the delegation return code that the delegation is no longer valid and
-that it should not be used when reclaiming state.
-It also changes the return value for nfs4_handle_delegation_recall_error()
-to ensure that nfs_end_delegation_return() does not reattempt the lock
-reclaim before state recovery is done.
+This patch removes the assumption made previously, that we only need to
+check the delegation stateid when it matches the stateid on a cached
+open.
+
+If we believe that we hold a delegation for this file, then we must assume
+that its stateid may have been revoked or expired too. If we don't test it
+then our state recovery process may end up caching open/lock state in a
+situation where it should not.
+We therefore rename the function nfs41_clear_delegation_stateid as
+nfs41_check_delegation_stateid, and change it to always run through the
+delegation stateid test and recovery process as outlined in RFC5661.
 
 http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
 Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/delegation.c |   23 +++++++++++++++++++++--
- fs/nfs/delegation.h |    1 +
- fs/nfs/nfs4proc.c   |    2 +-
- 3 files changed, 23 insertions(+), 3 deletions(-)
+ fs/nfs/nfs4proc.c |   42 +++++++++++++++++-------------------------
+ 1 file changed, 17 insertions(+), 25 deletions(-)
 
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -195,7 +195,11 @@ static int nfs_do_return_delegation(stru
- {
- 	int res = 0;
- 
--	res = nfs4_proc_delegreturn(inode, delegation->cred, &delegation->stateid, issync);
-+	if (!test_bit(NFS_DELEGATION_REVOKED, &delegation->flags))
-+		res = nfs4_proc_delegreturn(inode,
-+				delegation->cred,
-+				&delegation->stateid,
-+				issync);
- 	nfs_free_delegation(delegation);
- 	return res;
- }
-@@ -382,11 +386,13 @@ static int nfs_end_delegation_return(str
- {
- 	struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
- 	struct nfs_inode *nfsi = NFS_I(inode);
--	int err;
-+	int err = 0;
- 
- 	if (delegation == NULL)
- 		return 0;
- 	do {
-+		if (test_bit(NFS_DELEGATION_REVOKED, &delegation->flags))
-+			break;
- 		err = nfs_delegation_claim_opens(inode, &delegation->stateid);
- 		if (!issync || err != -EAGAIN)
- 			break;
-@@ -607,10 +613,23 @@ static void nfs_client_mark_return_unuse
- 	rcu_read_unlock();
- }
- 
-+static void nfs_revoke_delegation(struct inode *inode)
-+{
-+	struct nfs_delegation *delegation;
-+	rcu_read_lock();
-+	delegation = rcu_dereference(NFS_I(inode)->delegation);
-+	if (delegation != NULL) {
-+		set_bit(NFS_DELEGATION_REVOKED, &delegation->flags);
-+		nfs_mark_return_delegation(NFS_SERVER(inode), delegation);
-+	}
-+	rcu_read_unlock();
-+}
-+
- void nfs_remove_bad_delegation(struct inode *inode)
- {
- 	struct nfs_delegation *delegation;
- 
-+	nfs_revoke_delegation(inode);
- 	delegation = nfs_inode_detach_delegation(inode);
- 	if (delegation) {
- 		nfs_inode_find_state_and_recover(inode, &delegation->stateid);
---- a/fs/nfs/delegation.h
-+++ b/fs/nfs/delegation.h
-@@ -31,6 +31,7 @@ enum {
- 	NFS_DELEGATION_RETURN_IF_CLOSED,
- 	NFS_DELEGATION_REFERENCED,
- 	NFS_DELEGATION_RETURNING,
-+	NFS_DELEGATION_REVOKED,
- };
- 
- int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct nfs_openres *res);
 --- a/fs/nfs/nfs4proc.c
 +++ b/fs/nfs/nfs4proc.c
-@@ -1642,7 +1642,7 @@ static int nfs4_handle_delegation_recall
- 			nfs_inode_find_state_and_recover(state->inode,
- 					stateid);
- 			nfs4_schedule_stateid_recovery(server, state);
--			return 0;
-+			return -EAGAIN;
- 		case -NFS4ERR_DELAY:
- 		case -NFS4ERR_GRACE:
- 			set_bit(NFS_DELEGATED_STATE, &state->flags);
+@@ -2120,45 +2120,37 @@ static int nfs40_open_expired(struct nfs
+ }
+ 
+ #if defined(CONFIG_NFS_V4_1)
+-static void nfs41_clear_delegation_stateid(struct nfs4_state *state)
++static void nfs41_check_delegation_stateid(struct nfs4_state *state)
+ {
+ 	struct nfs_server *server = NFS_SERVER(state->inode);
+-	nfs4_stateid *stateid = &state->stateid;
++	nfs4_stateid stateid;
+ 	struct nfs_delegation *delegation;
+-	struct rpc_cred *cred = NULL;
+-	int status = -NFS4ERR_BAD_STATEID;
+-
+-	/* If a state reset has been done, test_stateid is unneeded */
+-	if (test_bit(NFS_DELEGATED_STATE, &state->flags) == 0)
+-		return;
++	struct rpc_cred *cred;
++	int status;
+ 
+ 	/* Get the delegation credential for use by test/free_stateid */
+ 	rcu_read_lock();
+ 	delegation = rcu_dereference(NFS_I(state->inode)->delegation);
+-	if (delegation != NULL &&
+-	    nfs4_stateid_match(&delegation->stateid, stateid)) {
+-		cred = get_rpccred(delegation->cred);
+-		rcu_read_unlock();
+-		status = nfs41_test_stateid(server, stateid, cred);
+-		trace_nfs4_test_delegation_stateid(state, NULL, status);
+-	} else
++	if (delegation == NULL) {
+ 		rcu_read_unlock();
++		return;
++	}
++
++	nfs4_stateid_copy(&stateid, &delegation->stateid);
++	cred = get_rpccred(delegation->cred);
++	rcu_read_unlock();
++	status = nfs41_test_stateid(server, &stateid, cred);
++	trace_nfs4_test_delegation_stateid(state, NULL, status);
+ 
+ 	if (status != NFS_OK) {
+ 		/* Free the stateid unless the server explicitly
+ 		 * informs us the stateid is unrecognized. */
+ 		if (status != -NFS4ERR_BAD_STATEID)
+-			nfs41_free_stateid(server, stateid, cred);
+-		nfs_remove_bad_delegation(state->inode);
+-
+-		write_seqlock(&state->seqlock);
+-		nfs4_stateid_copy(&state->stateid, &state->open_stateid);
+-		write_sequnlock(&state->seqlock);
+-		clear_bit(NFS_DELEGATED_STATE, &state->flags);
++			nfs41_free_stateid(server, &stateid, cred);
++		nfs_finish_clear_delegation_stateid(state);
+ 	}
+ 
+-	if (cred != NULL)
+-		put_rpccred(cred);
++	put_rpccred(cred);
+ }
+ 
+ /**
+@@ -2202,7 +2194,7 @@ static int nfs41_open_expired(struct nfs
+ {
+ 	int status;
+ 
+-	nfs41_clear_delegation_stateid(state);
++	nfs41_check_delegation_stateid(state);
+ 	status = nfs41_check_open_stateid(state);
+ 	if (status != NFS_OK)
+ 		status = nfs4_open_expired(sp, state);
 
 
