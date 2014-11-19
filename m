@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757104AbaKSWKo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:10:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56468 "EHLO
+	id S1757995AbaKSWLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:11:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56498 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933331AbaKSVEH (ORCPT
+	with ESMTP id S933321AbaKSVEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:04:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Luciano Coelho <luciano.coelho@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.17 141/141] iwlwifi: fix RFkill while calibrating
-Date: Wed, 19 Nov 2014 12:52:44 -0800
-Message-Id: <20141119205155.594106411@linuxfoundation.org>
+        Daniel Borkmann <dborkman@redhat.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+Subject: [PATCH 3.17 138/141] net: sctp: fix skb_over_panic when receiving malformed ASCONF chunks
+Date: Wed, 19 Nov 2014 12:52:41 -0800
+Message-Id: <20141119205155.505271906@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -30,140 +32,337 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 31b8b343e019e0a0c57ca9c13520a87f9cab884b upstream.
+commit 9de7922bc709eee2f609cd01d98aaedc4cf5ea74 upstream.
 
-If the RFkill interrupt fires while we calibrate, it would
-make the firmware fail and the driver wasn't able to recover.
-Change the flow so that the driver will kill the firmware
-in that case.
+Commit 6f4c618ddb0 ("SCTP : Add paramters validity check for
+ASCONF chunk") added basic verification of ASCONF chunks, however,
+it is still possible to remotely crash a server by sending a
+special crafted ASCONF chunk, even up to pre 2.6.12 kernels:
 
-Since we have now two flows that are calling
-trans_stop_device (the RFkill interrupt and the
-op_mode_mvm_start function) - we need to better sync this.
-Use the STATUS_DEVICE_ENABLED in the pcie transport in an
-atomic way to achieve this.
+skb_over_panic: text:ffffffffa01ea1c3 len:31056 put:30768
+ head:ffff88011bd81800 data:ffff88011bd81800 tail:0x7950
+ end:0x440 dev:<NULL>
+ ------------[ cut here ]------------
+kernel BUG at net/core/skbuff.c:129!
+[...]
+Call Trace:
+ <IRQ>
+ [<ffffffff8144fb1c>] skb_put+0x5c/0x70
+ [<ffffffffa01ea1c3>] sctp_addto_chunk+0x63/0xd0 [sctp]
+ [<ffffffffa01eadaf>] sctp_process_asconf+0x1af/0x540 [sctp]
+ [<ffffffff8152d025>] ? _read_unlock_bh+0x15/0x20
+ [<ffffffffa01e0038>] sctp_sf_do_asconf+0x168/0x240 [sctp]
+ [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
+ [<ffffffff8147645d>] ? fib_rules_lookup+0xad/0xf0
+ [<ffffffffa01e6b22>] ? sctp_cmp_addr_exact+0x32/0x40 [sctp]
+ [<ffffffffa01e8393>] sctp_assoc_bh_rcv+0xd3/0x180 [sctp]
+ [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
+ [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
+ [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
+ [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
+ [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
+ [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
+ [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
+ [<ffffffff81496ded>] ip_local_deliver_finish+0xdd/0x2d0
+ [<ffffffff81497078>] ip_local_deliver+0x98/0xa0
+ [<ffffffff8149653d>] ip_rcv_finish+0x12d/0x440
+ [<ffffffff81496ac5>] ip_rcv+0x275/0x350
+ [<ffffffff8145c88b>] __netif_receive_skb+0x4ab/0x750
+ [<ffffffff81460588>] netif_receive_skb+0x58/0x60
 
-This fixes: https://bugzilla.kernel.org/show_bug.cgi?id=86231
+This can be triggered e.g., through a simple scripted nmap
+connection scan injecting the chunk after the handshake, for
+example, ...
 
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Reviewed-by: Luciano Coelho <luciano.coelho@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+  -------------- INIT[ASCONF; ASCONF_ACK] ------------->
+  <----------- INIT-ACK[ASCONF; ASCONF_ACK] ------------
+  -------------------- COOKIE-ECHO -------------------->
+  <-------------------- COOKIE-ACK ---------------------
+  ------------------ ASCONF; UNKNOWN ------------------>
+
+... where ASCONF chunk of length 280 contains 2 parameters ...
+
+  1) Add IP address parameter (param length: 16)
+  2) Add/del IP address parameter (param length: 255)
+
+... followed by an UNKNOWN chunk of e.g. 4 bytes. Here, the
+Address Parameter in the ASCONF chunk is even missing, too.
+This is just an example and similarly-crafted ASCONF chunks
+could be used just as well.
+
+The ASCONF chunk passes through sctp_verify_asconf() as all
+parameters passed sanity checks, and after walking, we ended
+up successfully at the chunk end boundary, and thus may invoke
+sctp_process_asconf(). Parameter walking is done with
+WORD_ROUND() to take padding into account.
+
+In sctp_process_asconf()'s TLV processing, we may fail in
+sctp_process_asconf_param() e.g., due to removal of the IP
+address that is also the source address of the packet containing
+the ASCONF chunk, and thus we need to add all TLVs after the
+failure to our ASCONF response to remote via helper function
+sctp_add_asconf_response(), which basically invokes a
+sctp_addto_chunk() adding the error parameters to the given
+skb.
+
+When walking to the next parameter this time, we proceed
+with ...
+
+  length = ntohs(asconf_param->param_hdr.length);
+  asconf_param = (void *)asconf_param + length;
+
+... instead of the WORD_ROUND()'ed length, thus resulting here
+in an off-by-one that leads to reading the follow-up garbage
+parameter length of 12336, and thus throwing an skb_over_panic
+for the reply when trying to sctp_addto_chunk() next time,
+which implicitly calls the skb_put() with that length.
+
+Fix it by using sctp_walk_params() [ which is also used in
+INIT parameter processing ] macro in the verification *and*
+in ASCONF processing: it will make sure we don't spill over,
+that we walk parameters WORD_ROUND()'ed. Moreover, we're being
+more defensive and guard against unknown parameter types and
+missized addresses.
+
+Joint work with Vlad Yasevich.
+
+Fixes: b896b82be4ae ("[SCTP] ADDIP: Support for processing incoming ASCONF_ACK chunks.")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/fw.c       |   10 +++++++++-
- drivers/net/wireless/iwlwifi/mvm/mac80211.c |    1 +
- drivers/net/wireless/iwlwifi/mvm/mvm.h      |    1 +
- drivers/net/wireless/iwlwifi/mvm/ops.c      |   11 ++++++++++-
- drivers/net/wireless/iwlwifi/pcie/trans.c   |    4 ++--
- 5 files changed, 23 insertions(+), 4 deletions(-)
+ include/net/sctp/sm.h    |    6 +-
+ net/sctp/sm_make_chunk.c |   99 ++++++++++++++++++++++++++---------------------
+ net/sctp/sm_statefuns.c  |   18 --------
+ 3 files changed, 60 insertions(+), 63 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/fw.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw.c
-@@ -282,7 +282,7 @@ int iwl_run_init_mvm_ucode(struct iwl_mv
- 
- 	lockdep_assert_held(&mvm->mutex);
- 
--	if (WARN_ON_ONCE(mvm->init_ucode_complete))
-+	if (WARN_ON_ONCE(mvm->init_ucode_complete || mvm->calibrating))
- 		return 0;
- 
- 	iwl_init_notification_wait(&mvm->notif_wait,
-@@ -332,6 +332,8 @@ int iwl_run_init_mvm_ucode(struct iwl_mv
- 		goto out;
- 	}
- 
-+	mvm->calibrating = true;
-+
- 	/* Send TX valid antennas before triggering calibrations */
- 	ret = iwl_send_tx_ant_cfg(mvm, mvm->fw->valid_tx_ant);
- 	if (ret)
-@@ -356,11 +358,17 @@ int iwl_run_init_mvm_ucode(struct iwl_mv
- 			MVM_UCODE_CALIB_TIMEOUT);
- 	if (!ret)
- 		mvm->init_ucode_complete = true;
-+
-+	if (ret && iwl_mvm_is_radio_killed(mvm)) {
-+		IWL_DEBUG_RF_KILL(mvm, "RFKILL while calibrating.\n");
-+		ret = 1;
-+	}
- 	goto out;
- 
- error:
- 	iwl_remove_notification(&mvm->notif_wait, &calib_wait);
- out:
-+	mvm->calibrating = false;
- 	if (iwlmvm_mod_params.init_dbg && !mvm->nvm_data) {
- 		/* we want to debug INIT and we have no NVM - fake */
- 		mvm->nvm_data = kzalloc(sizeof(struct iwl_nvm_data) +
---- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-@@ -778,6 +778,7 @@ static void iwl_mvm_restart_cleanup(stru
- 	iwl_trans_stop_device(mvm->trans);
- 
- 	mvm->scan_status = IWL_MVM_SCAN_NONE;
-+	mvm->calibrating = false;
- 
- 	/* just in case one was running */
- 	ieee80211_remain_on_channel_expired(mvm->hw);
---- a/drivers/net/wireless/iwlwifi/mvm/mvm.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/mvm.h
-@@ -541,6 +541,7 @@ struct iwl_mvm {
- 	enum iwl_ucode_type cur_ucode;
- 	bool ucode_loaded;
- 	bool init_ucode_complete;
-+	bool calibrating;
- 	u32 error_event_table;
- 	u32 log_event_table;
- 	u32 umac_error_event_table;
---- a/drivers/net/wireless/iwlwifi/mvm/ops.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/ops.c
-@@ -745,6 +745,7 @@ void iwl_mvm_set_hw_ctkill_state(struct
- static bool iwl_mvm_set_hw_rfkill_state(struct iwl_op_mode *op_mode, bool state)
- {
- 	struct iwl_mvm *mvm = IWL_OP_MODE_GET_MVM(op_mode);
-+	bool calibrating = ACCESS_ONCE(mvm->calibrating);
- 
- 	if (state)
- 		set_bit(IWL_MVM_STATUS_HW_RFKILL, &mvm->status);
-@@ -753,7 +754,15 @@ static bool iwl_mvm_set_hw_rfkill_state(
- 
- 	wiphy_rfkill_set_hw_state(mvm->hw->wiphy, iwl_mvm_is_radio_killed(mvm));
- 
--	return state && mvm->cur_ucode != IWL_UCODE_INIT;
-+	/* iwl_run_init_mvm_ucode is waiting for results, abort it */
-+	if (calibrating)
-+		iwl_abort_notification_waits(&mvm->notif_wait);
-+
-+	/*
-+	 * Stop the device if we run OPERATIONAL firmware or if we are in the
-+	 * middle of the calibrations.
-+	 */
-+	return state && (mvm->cur_ucode != IWL_UCODE_INIT || calibrating);
+--- a/include/net/sctp/sm.h
++++ b/include/net/sctp/sm.h
+@@ -248,9 +248,9 @@ struct sctp_chunk *sctp_make_asconf_upda
+ 					      int, __be16);
+ struct sctp_chunk *sctp_make_asconf_set_prim(struct sctp_association *asoc,
+ 					     union sctp_addr *addr);
+-int sctp_verify_asconf(const struct sctp_association *asoc,
+-		       struct sctp_paramhdr *param_hdr, void *chunk_end,
+-		       struct sctp_paramhdr **errp);
++bool sctp_verify_asconf(const struct sctp_association *asoc,
++			struct sctp_chunk *chunk, bool addr_param_needed,
++			struct sctp_paramhdr **errp);
+ struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
+ 				       struct sctp_chunk *asconf);
+ int sctp_process_asconf_ack(struct sctp_association *asoc,
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -3113,50 +3113,63 @@ static __be16 sctp_process_asconf_param(
+ 	return SCTP_ERROR_NO_ERROR;
  }
  
- static void iwl_mvm_free_skb(struct iwl_op_mode *op_mode, struct sk_buff *skb)
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -913,7 +913,8 @@ static void iwl_trans_pcie_stop_device(s
- 	 * restart. So don't process again if the device is
- 	 * already dead.
- 	 */
--	if (test_bit(STATUS_DEVICE_ENABLED, &trans->status)) {
-+	if (test_and_clear_bit(STATUS_DEVICE_ENABLED, &trans->status)) {
-+		IWL_DEBUG_INFO(trans, "DEVICE_ENABLED bit was set and is now cleared\n");
- 		iwl_pcie_tx_stop(trans);
- 		iwl_pcie_rx_stop(trans);
+-/* Verify the ASCONF packet before we process it.  */
+-int sctp_verify_asconf(const struct sctp_association *asoc,
+-		       struct sctp_paramhdr *param_hdr, void *chunk_end,
+-		       struct sctp_paramhdr **errp) {
+-	sctp_addip_param_t *asconf_param;
++/* Verify the ASCONF packet before we process it. */
++bool sctp_verify_asconf(const struct sctp_association *asoc,
++			struct sctp_chunk *chunk, bool addr_param_needed,
++			struct sctp_paramhdr **errp)
++{
++	sctp_addip_chunk_t *addip = (sctp_addip_chunk_t *) chunk->chunk_hdr;
+ 	union sctp_params param;
+-	int length, plen;
+-
+-	param.v = (sctp_paramhdr_t *) param_hdr;
+-	while (param.v <= chunk_end - sizeof(sctp_paramhdr_t)) {
+-		length = ntohs(param.p->length);
+-		*errp = param.p;
++	bool addr_param_seen = false;
  
-@@ -943,7 +944,6 @@ static void iwl_trans_pcie_stop_device(s
- 	/* clear all status bits */
- 	clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
- 	clear_bit(STATUS_INT_ENABLED, &trans->status);
--	clear_bit(STATUS_DEVICE_ENABLED, &trans->status);
- 	clear_bit(STATUS_TPOWER_PMI, &trans->status);
- 	clear_bit(STATUS_RFKILL, &trans->status);
+-		if (param.v > chunk_end - length ||
+-		    length < sizeof(sctp_paramhdr_t))
+-			return 0;
++	sctp_walk_params(param, addip, addip_hdr.params) {
++		size_t length = ntohs(param.p->length);
+ 
++		*errp = param.p;
+ 		switch (param.p->type) {
++		case SCTP_PARAM_ERR_CAUSE:
++			break;
++		case SCTP_PARAM_IPV4_ADDRESS:
++			if (length != sizeof(sctp_ipv4addr_param_t))
++				return false;
++			addr_param_seen = true;
++			break;
++		case SCTP_PARAM_IPV6_ADDRESS:
++			if (length != sizeof(sctp_ipv6addr_param_t))
++				return false;
++			addr_param_seen = true;
++			break;
+ 		case SCTP_PARAM_ADD_IP:
+ 		case SCTP_PARAM_DEL_IP:
+ 		case SCTP_PARAM_SET_PRIMARY:
+-			asconf_param = (sctp_addip_param_t *)param.v;
+-			plen = ntohs(asconf_param->param_hdr.length);
+-			if (plen < sizeof(sctp_addip_param_t) +
+-			    sizeof(sctp_paramhdr_t))
+-				return 0;
++			/* In ASCONF chunks, these need to be first. */
++			if (addr_param_needed && !addr_param_seen)
++				return false;
++			length = ntohs(param.addip->param_hdr.length);
++			if (length < sizeof(sctp_addip_param_t) +
++				     sizeof(sctp_paramhdr_t))
++				return false;
+ 			break;
+ 		case SCTP_PARAM_SUCCESS_REPORT:
+ 		case SCTP_PARAM_ADAPTATION_LAYER_IND:
+ 			if (length != sizeof(sctp_addip_param_t))
+-				return 0;
+-
++				return false;
+ 			break;
+ 		default:
+-			break;
++			/* This is unkown to us, reject! */
++			return false;
+ 		}
+-
+-		param.v += WORD_ROUND(length);
+ 	}
+ 
+-	if (param.v != chunk_end)
+-		return 0;
++	/* Remaining sanity checks. */
++	if (addr_param_needed && !addr_param_seen)
++		return false;
++	if (!addr_param_needed && addr_param_seen)
++		return false;
++	if (param.v != chunk->chunk_end)
++		return false;
+ 
+-	return 1;
++	return true;
+ }
+ 
+ /* Process an incoming ASCONF chunk with the next expected serial no. and
+@@ -3165,16 +3178,17 @@ int sctp_verify_asconf(const struct sctp
+ struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
+ 				       struct sctp_chunk *asconf)
+ {
++	sctp_addip_chunk_t *addip = (sctp_addip_chunk_t *) asconf->chunk_hdr;
++	bool all_param_pass = true;
++	union sctp_params param;
+ 	sctp_addiphdr_t		*hdr;
+ 	union sctp_addr_param	*addr_param;
+ 	sctp_addip_param_t	*asconf_param;
+ 	struct sctp_chunk	*asconf_ack;
+-
+ 	__be16	err_code;
+ 	int	length = 0;
+ 	int	chunk_len;
+ 	__u32	serial;
+-	int	all_param_pass = 1;
+ 
+ 	chunk_len = ntohs(asconf->chunk_hdr->length) - sizeof(sctp_chunkhdr_t);
+ 	hdr = (sctp_addiphdr_t *)asconf->skb->data;
+@@ -3202,9 +3216,14 @@ struct sctp_chunk *sctp_process_asconf(s
+ 		goto done;
+ 
+ 	/* Process the TLVs contained within the ASCONF chunk. */
+-	while (chunk_len > 0) {
++	sctp_walk_params(param, addip, addip_hdr.params) {
++		/* Skip preceeding address parameters. */
++		if (param.p->type == SCTP_PARAM_IPV4_ADDRESS ||
++		    param.p->type == SCTP_PARAM_IPV6_ADDRESS)
++			continue;
++
+ 		err_code = sctp_process_asconf_param(asoc, asconf,
+-						     asconf_param);
++						     param.addip);
+ 		/* ADDIP 4.1 A7)
+ 		 * If an error response is received for a TLV parameter,
+ 		 * all TLVs with no response before the failed TLV are
+@@ -3212,28 +3231,20 @@ struct sctp_chunk *sctp_process_asconf(s
+ 		 * the failed response are considered unsuccessful unless
+ 		 * a specific success indication is present for the parameter.
+ 		 */
+-		if (SCTP_ERROR_NO_ERROR != err_code)
+-			all_param_pass = 0;
+-
++		if (err_code != SCTP_ERROR_NO_ERROR)
++			all_param_pass = false;
+ 		if (!all_param_pass)
+-			sctp_add_asconf_response(asconf_ack,
+-						 asconf_param->crr_id, err_code,
+-						 asconf_param);
++			sctp_add_asconf_response(asconf_ack, param.addip->crr_id,
++						 err_code, param.addip);
+ 
+ 		/* ADDIP 4.3 D11) When an endpoint receiving an ASCONF to add
+ 		 * an IP address sends an 'Out of Resource' in its response, it
+ 		 * MUST also fail any subsequent add or delete requests bundled
+ 		 * in the ASCONF.
+ 		 */
+-		if (SCTP_ERROR_RSRC_LOW == err_code)
++		if (err_code == SCTP_ERROR_RSRC_LOW)
+ 			goto done;
+-
+-		/* Move to the next ASCONF param. */
+-		length = ntohs(asconf_param->param_hdr.length);
+-		asconf_param = (void *)asconf_param + length;
+-		chunk_len -= length;
+ 	}
+-
+ done:
+ 	asoc->peer.addip_serial++;
+ 
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -3594,9 +3594,7 @@ sctp_disposition_t sctp_sf_do_asconf(str
+ 	struct sctp_chunk	*asconf_ack = NULL;
+ 	struct sctp_paramhdr	*err_param = NULL;
+ 	sctp_addiphdr_t		*hdr;
+-	union sctp_addr_param	*addr_param;
+ 	__u32			serial;
+-	int			length;
+ 
+ 	if (!sctp_vtag_verify(chunk, asoc)) {
+ 		sctp_add_cmd_sf(commands, SCTP_CMD_REPORT_BAD_TAG,
+@@ -3621,17 +3619,8 @@ sctp_disposition_t sctp_sf_do_asconf(str
+ 	hdr = (sctp_addiphdr_t *)chunk->skb->data;
+ 	serial = ntohl(hdr->serial);
+ 
+-	addr_param = (union sctp_addr_param *)hdr->params;
+-	length = ntohs(addr_param->p.length);
+-	if (length < sizeof(sctp_paramhdr_t))
+-		return sctp_sf_violation_paramlen(net, ep, asoc, type, arg,
+-			   (void *)addr_param, commands);
+-
+ 	/* Verify the ASCONF chunk before processing it. */
+-	if (!sctp_verify_asconf(asoc,
+-			    (sctp_paramhdr_t *)((void *)addr_param + length),
+-			    (void *)chunk->chunk_end,
+-			    &err_param))
++	if (!sctp_verify_asconf(asoc, chunk, true, &err_param))
+ 		return sctp_sf_violation_paramlen(net, ep, asoc, type, arg,
+ 						  (void *)err_param, commands);
+ 
+@@ -3748,10 +3737,7 @@ sctp_disposition_t sctp_sf_do_asconf_ack
+ 	rcvd_serial = ntohl(addip_hdr->serial);
+ 
+ 	/* Verify the ASCONF-ACK chunk before processing it. */
+-	if (!sctp_verify_asconf(asoc,
+-	    (sctp_paramhdr_t *)addip_hdr->params,
+-	    (void *)asconf_ack->chunk_end,
+-	    &err_param))
++	if (!sctp_verify_asconf(asoc, asconf_ack, false, &err_param))
+ 		return sctp_sf_violation_paramlen(net, ep, asoc, type, arg,
+ 			   (void *)err_param, commands);
  
 
 
