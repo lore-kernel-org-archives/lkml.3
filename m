@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903AbaKSIeF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 03:34:05 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:47354 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757AbaKSIeE convert rfc822-to-8bit (ORCPT
+	id S1753833AbaKSIie (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 03:38:34 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:63897 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785AbaKSIid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 03:34:04 -0500
+	Wed, 19 Nov 2014 03:38:33 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Jeremy Kerr <jeremy.kerr@au1.ibm.com>, Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] drivers/core/of: Add symlink to device-tree from devices with an OF node
+Date: Wed, 19 Nov 2014 09:38:13 +0100
+Message-ID: <3422452.OFUjscQXRB@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1416364544.5704.23.camel@kernel.crashing.org>
+References: <1415342031.4925.27.camel@kernel.crashing.org> <546BD8BD.2010605@au1.ibm.com> <1416364544.5704.23.camel@kernel.crashing.org>
 MIME-Version: 1.0
-In-Reply-To: <20141117090915.GE27002@pengutronix.de>
-References: <1360738983-22436-1-git-send-email-gnurou@gmail.com>
- <1360738983-22436-3-git-send-email-gnurou@gmail.com> <20141117090915.GE27002@pengutronix.de>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 19 Nov 2014 17:33:42 +0900
-Message-ID: <CAAVeFuKzP0ADix8TxC31ohb3ZmnEVmNcO5kgzhZ3DcwAhTq=-Q@mail.gmail.com>
-Subject: Re: [PATCH 2/4] gpiolib: use const parameters when possible
-To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:XMTM68TDGK6tp3A3eZZTKq71qWOYssXY9wxnxo4p7XI
+ md+KkH9JLe1ahCy8qEIn3dcx6rNqstgkKKwlcelJ1pL8ev0KgZ
+ j2ofgCLsHCDKS+pnya6XDNskiupKngNdgSbwdKCMiyphlGc3L3
+ B/x1GAXxDNVPI+rQkGHOr7a865/lUcc3zSiv0wUgY1x3wjmu6F
+ oU0RbzdCzYhnCQJWhqAVnpJGw/JviVvzS0BIYohJKmRKHXC3OX
+ zIFwIfr5kZD62yRSp23t6zvuCqKTdzZBco8ygLv0AhfaQlF0fv
+ Spwhl7z66lYh95qpUbKPrFIF4kztIw1PiioKM3CWZPYivp8FLi
+ 8yby6nwAsd6JWwUjd6a4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 6:09 PM, Uwe Kleine-König
-<u.kleine-koenig@pengutronix.de> wrote:
-> Hello,
->
-> On Wed, Feb 13, 2013 at 04:03:00PM +0900, Alexandre Courbot wrote:
->> From: Alexandre Courbot <acourbot@nvidia.com>
->>
->> Constify descriptor parameter of gpiod_* functions for those that
->> should obviously not modify it. This includes value or direction get,
->> cansleep, and IRQ number query.
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> This patch is applied as def634338d3ffb32fbe9b0a2d70cc24ef909cd4f since
-> v3.9-rc2.
->
->>  drivers/gpio/gpiolib.c | 29 ++++++++++++++++-------------
->>  1 file changed, 16 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
->> index 8a2cf9c..ad6df6b 100644
->> --- a/drivers/gpio/gpiolib.c
->> +++ b/drivers/gpio/gpiolib.c
->> @@ -207,7 +208,7 @@ static int gpiochip_find_base(int ngpio)
->>  }
->>
->>  /* caller ensures gpio is valid and requested, chip->get_direction may sleep  */
->> -static int gpiod_get_direction(struct gpio_desc *desc)
->> +static int gpiod_get_direction(const struct gpio_desc *desc)
->>  {
->>       struct gpio_chip        *chip;
->>       unsigned                offset;
->> @@ -223,11 +224,13 @@ static int gpiod_get_direction(struct gpio_desc *desc)
->>       if (status > 0) {
->>               /* GPIOF_DIR_IN, or other positive */
->>               status = 1;
->> -             clear_bit(FLAG_IS_OUT, &desc->flags);
->> +             /* FLAG_IS_OUT is just a cache of the result of get_direction(),
->> +              * so it does not affect constness per se */
->> +             clear_bit(FLAG_IS_OUT, &((struct gpio_desc *)desc)->flags);
-> I think this is worse than not having gpiod_get_direction take a const
-> descriptor.
+On Wednesday 19 November 2014 13:35:44 Benjamin Herrenschmidt wrote:
+> On Wed, 2014-11-19 at 10:39 +1100, Jeremy Kerr wrote:
+> > Hi Rob,
+> > 
+> > >> diff --git a/drivers/base/core.c b/drivers/base/core.c
+> > >> index 20da3ad..8c7b607 100644
+> > >> --- a/drivers/base/core.c
+> > >> +++ b/drivers/base/core.c
+> > >> @@ -493,6 +493,15 @@ static int device_add_attrs(struct device *dev)
+> > >>                         goto err_remove_dev_groups;
+> > >>         }
+> > >>
+> > >> +#ifdef CONFIG_OF
+> > >> +       if (dev->of_node) {
+> > > 
+> > > if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+> > 
+> > struct device doesn't have an of_node member if !CONFIG_OF, so we'll
+> > need to disable this block in the preprocessor.
+> 
+> Actually that's no longer the case since 2.6.39 afaik 
 
-Yeah, this kind of sucks but ultimately gpiod_get_direction() is
-without side-effect to the caller and the const parameter helps
-highlighting that fact.
+I wonder if we should create a small helper for this, like
 
-> I don't know an example for this particular case where this could break,
-> but usually casting away a const is bad and can break in various ways.
->
-> Maybe even drop the public function gpiod_get_direction completely.
-> As of next-20141114 there are only two users of this function (apart
-> from drivers/gpio/gpiolib*) and both are wrong (as discussed in
-> http://thread.gmane.org/gmane.linux.serial/16808/focus=4783).
+static inline struct device_node *dev_of_node(struct device *of_node)
+{
+	if (!IS_ENABLED(CONFIG_OF))
+		return NULL;
 
-Or maybe gpiod_direction_*() should register the last set direction to
-be used by gpiod_get_direction() if the controller does not implement
-the get_direction op? On the other hand callers can also track the
-direction themselves (since they presumably set it), so this function
-is really only useful for users who want to read the *hardware* state
-of a GPIO. Which might still be a useful feature?
+	return dev->of_node;
+}
+
+Adding the IS_ENABLED() in a lot of drivers isn't horrible, but we seem
+to be doing it a lot.
+
+	Arnd
