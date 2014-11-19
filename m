@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278AbaKSPwm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:52:42 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:38003 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932240AbaKSPwk (ORCPT
+	id S932310AbaKSPwo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:52:44 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:35983 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932279AbaKSPwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:52:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
-References: <20141118172146.3784.81151.stgit@buzz>
-	<20141118173413.GB4042@n2100.arm.linux.org.uk>
-	<546B8C64.3010904@samsung.com>
-	<2041617.Kxhx5O4MMr@wuerfel>
-	<CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
-Date: Wed, 19 Nov 2014 19:52:39 +0400
-Message-ID: <CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
-Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 19 Nov 2014 10:52:42 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: [PATCH] arm: perf: Prevent wraparound during overflow
+Date: Wed, 19 Nov 2014 15:52:26 +0000
+Message-Id: <1416412346-8759-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 5:54 PM, Ard Biesheuvel
-<ard.biesheuvel@linaro.org> wrote:
-> On 19 November 2014 14:40, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Tuesday 18 November 2014 21:13:56 Konstantin Khlebnikov wrote:
->>> On 2014-11-18 20:34, Russell King - ARM Linux wrote:
->>> > On Tue, Nov 18, 2014 at 08:21:46PM +0400, Konstantin Khlebnikov wrote:
->>> >> Usually modules are loaded into small area prior to the kernel
->>> >> text because they are linked with the kernel using short calls.
->>> >> Compile-time instrumentation like GCOV or KASAN bloats code a lot,
->>> >> and as a result huge modules no longer fit into reserved area.
->>> >>
->>> >> This patch adds option CONFIG_MODULES_USE_VMALLOC which lifts
->>> >> limitation on amount of loaded modules. It links modules using
->>> >> long-calls (option -mlong-calls) and loads them into vmalloc area.
->>> >>
->>> >> In few places exported symbols are called from inline assembly.
->>> >> This patch adds macro for such call sites: __asmbl and __asmbl_clobber.
->>> >> Call turns into single 'bl' or sequence 'movw; movt; blx' depending on
->>> >> context and state of config option.
->>> >>
->>> >> Unfortunately this option isn't compatible with CONFIG_FUNCTION_TRACER.
->>> >> Compiler emits short calls to profiling function despite of -mlong-calls.
->>> >> This is a bug in GCC, but ftrace anyway needs an update to handle this.
->>> > It also isn't compatible with the older architectures which don't have
->>> > "blx".
->>>
->>> Ok, I'll add "depends on CPU_V6 || CPU_V7" I don't think that it is
->>> necessary for older cpus.
->>
->> Why not just use a different branch instruction for the older CPUs?
->>
->
-> ARMv6 doesn't support movw/movt so this will only work on v7.
->
-> What about doing 'mov lr, pc; ldr pc,=symbol' instead? You clearly
-> don't care about performance in this case, so the performance hit (due
-> to the dcache access and interfering with the return stack predictors)
-> should be tolerable. The only thing to be careful about is thumb2
-> kernels: you would need to set the thumb bit in lr manually but only
-> if the call is made /from/ thumb. You would probably be better off
-> just depending on !THUMB2_KERNEL.
+If the overflow threshold for a counter is set above or near the
+0xffffffff boundary then the kernel may lose track of the overflow
+causing only events that occur *after* the overflow to be recorded.
+Specifically the problem occurs when the value of the performance counter
+overtakes its original programmed value due to wrap around.
 
-Do you mean ldr pc, =symbol ?
+Typical solutions to this problem are either to avoid programming in
+values likely to be overtaken or to treat the overflow bit as the 33rd
+bit of the counter.
 
-In this case I get this error:
+Its somewhat fiddly to refactor the code to correctly handle the 33rd bit
+during irqsave sections (context switches for example) so instead we take
+the simpler approach of avoiding values likely to be overtaken.
 
-/tmp/ccAHtONU.s: Assembler messages:
-/tmp/ccAHtONU.s:220: Error: invalid literal constant: pool needs to be closer
+We set the limit to half of max_period because this matches the limit
+imposed in __hw_perf_event_init(). This causes a doubling of the interrupt
+rate for large threshold values, however even with a very fast counter
+ticking at 4GHz the interrupt rate would only be ~1Hz.
 
-Probably constant pool doesn't work well in inline assembly.
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
 
+Notes:
+    There is similar code in the arm64 tree which retains the assumptions of
+    the original arm code regarding 32-bit wide performance counters. If
+    this patch doesn't get beaten up during review I'll also share a similar
+    patch for arm64.
+    
 
-Something like this seems work:
+ arch/arm/kernel/perf_event.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-add     lr, pc, #4
-ldr       pc, [pc, #-4]
-.long symbol
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 266cba46db3e..b50a770f8c99 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -115,8 +115,14 @@ int armpmu_event_set_period(struct perf_event *event)
+ 		ret = 1;
+ 	}
 
-> Ard.
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+-	if (left > (s64)armpmu->max_period)
+-		left = armpmu->max_period;
++	/*
++	 * Limit the maximum period to prevent the counter value
++	 * from overtaking the one we are about to program. In
++	 * effect we are reducing max_period to account for
++	 * interrupt latency (and we are being very conservative).
++	 */
++	if (left > (s64)(armpmu->max_period >> 1))
++		left = armpmu->max_period >> 1;
+
+ 	local64_set(&hwc->prev_count, (u64)-left);
+
+--
+1.9.3
+
