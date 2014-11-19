@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809AbaKSFPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 00:15:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41647 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663AbaKSFPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 00:15:38 -0500
-Date: Wed, 19 Nov 2014 00:15:24 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141119051524.GA18547@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Don Zickus <dzickus@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	the arch/x86 maintainers <x86@kernel.org>
-References: <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
- <20141118020959.GA2091@redhat.com>
- <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
- <20141118023930.GA2871@redhat.com>
- <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
- <20141118145234.GA7487@redhat.com>
- <alpine.DEB.2.11.1411181914020.3909@nanos>
- <20141118215540.GD35311@redhat.com>
- <20141119021902.GA14216@redhat.com>
- <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
+	id S1754862AbaKSFVd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 00:21:33 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:40662 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaKSFV2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 00:21:28 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sAJ5LFkV019046, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next v2 2/2] r8152: adjust rtl_start_rx
+Date: Wed, 19 Nov 2014 13:20:42 +0800
+Message-ID: <1394712342-15778-97-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <1394712342-15778-95-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-88-Taiwan-albertk@realtek.com>
+ <1394712342-15778-95-Taiwan-albertk@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 08:40:55PM -0800, Linus Torvalds wrote:
+If there is a error for r8152_submit_rx(), add the remaining rx
+buffers to the list. Then the remaining rx buffers could be
+submitted later.
 
- > Hmm, if we are getting soft-lockups here, maybe it suggest too much exit-work.
- > 
- > Some TIF_NOHZ loop, perhaps? You have nohz on, don't you?
- > 
- > That makes me wonder: does the problem go away if you disable NOHZ?
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-Does nohz=off do enough ? I couldn't convince myself after looking at
-dmesg, and still seeing dynticks stuff in there.
-
-I'll do a rebuild with all the CONFIG_NO_HZ stuff off, though it also changes
-some other config stuff wrt timers.
-
-	Dave
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index df0868b..c7acadd 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -2002,6 +2002,25 @@ static int rtl_start_rx(struct r8152 *tp)
+ 			break;
+ 	}
+ 
++	if (ret && ++i < RTL8152_MAX_RX) {
++		struct list_head rx_queue;
++		unsigned long flags;
++
++		INIT_LIST_HEAD(&rx_queue);
++
++		do {
++			struct rx_agg *agg = &tp->rx_info[i++];
++			struct urb *urb = agg->urb;
++
++			urb->actual_length = 0;
++			list_add_tail(&agg->list, &rx_queue);
++		} while (i < RTL8152_MAX_RX);
++
++		spin_lock_irqsave(&tp->rx_lock, flags);
++		list_splice_tail(&rx_queue, &tp->rx_done);
++		spin_unlock_irqrestore(&tp->rx_lock, flags);
++	}
++
+ 	return ret;
+ }
+ 
+-- 
+1.9.3
 
