@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933397AbaKSVEP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:04:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56529 "EHLO
+	id S1756434AbaKSWFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:05:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933341AbaKSVEJ (ORCPT
+	with ESMTP id S933392AbaKSVEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:09 -0500
+	Wed, 19 Nov 2014 16:04:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dwight Engen <dwight.engen@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 012/122] sunvdc: limit each sg segment to a page
-Date: Wed, 19 Nov 2014 12:51:02 -0800
-Message-Id: <20141119205209.225089686@linuxfoundation.org>
+        James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 027/122] ahci: Add Device IDs for Intel Sunrise Point PCH
+Date: Wed, 19 Nov 2014 12:51:17 -0800
+Message-Id: <20141119205209.693740926@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,40 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dwight Engen <dwight.engen@oracle.com>
+From: James Ralston <james.d.ralston@intel.com>
 
-[ Upstream commit 5eed69ffd248c9f68f56c710caf07db134aef28b ]
+commit 690000b930456a98663567d35dd5c54b688d1e3f upstream.
 
-ldc_map_sg() could fail its check that the number of pages referred to
-by the sg scatterlist was <= the number of cookies.
+This patch adds the AHCI-mode SATA Device IDs for the Intel Sunrise Point PCH.
 
-This fixes the issue by doing a similar thing to the xen-blkfront driver,
-ensuring that the scatterlist will only ever contain a segment count <=
-port->ring_cookies, and each segment will be page aligned, and <= page
-size. This ensures that the scatterlist is always mappable.
-
-Orabug: 19347817
-OraBZ: 15945
-
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/block/sunvdc.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
---- a/drivers/block/sunvdc.c
-+++ b/drivers/block/sunvdc.c
-@@ -747,6 +747,10 @@ static int probe_disk(struct vdc_port *p
+---
+ drivers/ata/ahci.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -314,6 +314,11 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H AHCI */
++	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H RAID */
++	{ PCI_VDEVICE(INTEL, 0xa105), board_ahci }, /* Sunrise Point-H RAID */
++	{ PCI_VDEVICE(INTEL, 0xa107), board_ahci }, /* Sunrise Point-H RAID */
++	{ PCI_VDEVICE(INTEL, 0xa10f), board_ahci }, /* Sunrise Point-H RAID */
  
- 	port->disk = g;
- 
-+	/* Each segment in a request is up to an aligned page in size. */
-+	blk_queue_segment_boundary(q, PAGE_SIZE - 1);
-+	blk_queue_max_segment_size(q, PAGE_SIZE);
-+
- 	blk_queue_max_segments(q, port->ring_cookies);
- 	blk_queue_max_hw_sectors(q, port->max_xfer_size);
- 	g->major = vdc_major;
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
