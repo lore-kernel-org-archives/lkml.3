@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757346AbaKSWSu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:18:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56207 "EHLO
+	id S1758073AbaKSWTr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:19:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56046 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932611AbaKSUyO (ORCPT
+	with ESMTP id S932579AbaKSUyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:14 -0500
+	Wed, 19 Nov 2014 15:54:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
-        Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.17 085/141] block: Fix computation of merged request priority
-Date: Wed, 19 Nov 2014 12:51:48 -0800
-Message-Id: <20141119205153.449355863@linuxfoundation.org>
+        Simon Horman <horms+renesas@verge.net.au>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.17 080/141] ata: sata_rcar: Disable DIPM mode for r8a7790 ES1
+Date: Wed, 19 Nov 2014 12:51:43 -0800
+Message-Id: <20141119205153.293877510@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,50 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Simon Horman <horms+renesas@verge.net.au>
 
-commit ece9c72accdc45c3a9484dacb1125ce572647288 upstream.
+commit aa1cf25887099bba68f1f3879c0d394e08b8779f upstream.
 
-Priority of a merged request is computed by ioprio_best(). If one of the
-requests has undefined priority (IOPRIO_CLASS_NONE) and another request
-has priority from IOPRIO_CLASS_BE, the function will return the
-undefined priority which is wrong. Fix the function to properly return
-priority of a request with the defined priority.
+Unlike other SATA R-Car r8a7790 controllers the r8a7790 ES1 SATA R-Car
+controller needs to be run with DIPM disabled.
 
-Fixes: d58cdfb89ce0c6bd5f81ae931a984ef298dbda20
-Signed-off-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/ioprio.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ Documentation/devicetree/bindings/ata/sata_rcar.txt |    3 ++-
+ drivers/ata/sata_rcar.c                             |   10 ++++++++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
---- a/block/ioprio.c
-+++ b/block/ioprio.c
-@@ -157,14 +157,16 @@ out:
+--- a/Documentation/devicetree/bindings/ata/sata_rcar.txt
++++ b/Documentation/devicetree/bindings/ata/sata_rcar.txt
+@@ -3,7 +3,8 @@
+ Required properties:
+ - compatible		: should contain one of the following:
+ 			  - "renesas,sata-r8a7779" for R-Car H1
+-			  - "renesas,sata-r8a7790" for R-Car H2
++			  - "renesas,sata-r8a7790-es1" for R-Car H2 ES1
++			  - "renesas,sata-r8a7790" for R-Car H2 other than ES1
+ 			  - "renesas,sata-r8a7791" for R-Car M2
+ - reg			: address and length of the SATA registers;
+ - interrupts		: must consist of one interrupt specifier.
+--- a/drivers/ata/sata_rcar.c
++++ b/drivers/ata/sata_rcar.c
+@@ -146,6 +146,7 @@
+ enum sata_rcar_type {
+ 	RCAR_GEN1_SATA,
+ 	RCAR_GEN2_SATA,
++	RCAR_R8A7790_ES1_SATA,
+ };
  
- int ioprio_best(unsigned short aprio, unsigned short bprio)
- {
--	unsigned short aclass = IOPRIO_PRIO_CLASS(aprio);
--	unsigned short bclass = IOPRIO_PRIO_CLASS(bprio);
-+	unsigned short aclass;
-+	unsigned short bclass;
+ struct sata_rcar_priv {
+@@ -763,6 +764,9 @@ static void sata_rcar_setup_port(struct
+ 	ap->udma_mask	= ATA_UDMA6;
+ 	ap->flags	|= ATA_FLAG_SATA;
  
--	if (aclass == IOPRIO_CLASS_NONE)
--		aclass = IOPRIO_CLASS_BE;
--	if (bclass == IOPRIO_CLASS_NONE)
--		bclass = IOPRIO_CLASS_BE;
-+	if (!ioprio_valid(aprio))
-+		aprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
-+	if (!ioprio_valid(bprio))
-+		bprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
- 
-+	aclass = IOPRIO_PRIO_CLASS(aprio);
-+	bclass = IOPRIO_PRIO_CLASS(bprio);
- 	if (aclass == bclass)
- 		return min(aprio, bprio);
- 	if (aclass > bclass)
++	if (priv->type == RCAR_R8A7790_ES1_SATA)
++		ap->flags	|= ATA_FLAG_NO_DIPM;
++
+ 	ioaddr->cmd_addr = base + SDATA_REG;
+ 	ioaddr->ctl_addr = base + SSDEVCON_REG;
+ 	ioaddr->scr_addr = base + SCRSSTS_REG;
+@@ -792,6 +796,7 @@ static void sata_rcar_init_controller(st
+ 		sata_rcar_gen1_phy_init(priv);
+ 		break;
+ 	case RCAR_GEN2_SATA:
++	case RCAR_R8A7790_ES1_SATA:
+ 		sata_rcar_gen2_phy_init(priv);
+ 		break;
+ 	default:
+@@ -838,6 +843,10 @@ static struct of_device_id sata_rcar_mat
+ 		.data = (void *)RCAR_GEN2_SATA
+ 	},
+ 	{
++		.compatible = "renesas,sata-r8a7790-es1",
++		.data = (void *)RCAR_R8A7790_ES1_SATA
++	},
++	{
+ 		.compatible = "renesas,sata-r8a7791",
+ 		.data = (void *)RCAR_GEN2_SATA
+ 	},
+@@ -849,6 +858,7 @@ static const struct platform_device_id s
+ 	{ "sata_rcar", RCAR_GEN1_SATA }, /* Deprecated by "sata-r8a7779" */
+ 	{ "sata-r8a7779", RCAR_GEN1_SATA },
+ 	{ "sata-r8a7790", RCAR_GEN2_SATA },
++	{ "sata-r8a7790-es1", RCAR_R8A7790_ES1_SATA },
+ 	{ "sata-r8a7791", RCAR_GEN2_SATA },
+ 	{ },
+ };
 
 
