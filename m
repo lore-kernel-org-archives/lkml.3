@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933538AbaKSW36 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:29:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56061 "EHLO
+	id S934411AbaKSWas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:30:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56050 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413AbaKSUx7 (ORCPT
+	with ESMTP id S1756881AbaKSUx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:53:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 007/141] gre6: Move the setting of dev->iflink into the ndo_init functions.
-Date: Wed, 19 Nov 2014 12:50:30 -0800
-Message-Id: <20141119205150.926196906@linuxfoundation.org>
+Subject: [PATCH 3.17 004/141] ip6_tunnel: Use ip6_tnl_dev_init as the ndo_init function.
+Date: Wed, 19 Nov 2014 12:50:27 -0800
+Message-Id: <20141119205150.837834988@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -31,44 +31,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steffen Klassert <steffen.klassert@secunet.com>
 
-[ Upstream commit f03eb128e3f4276f46442d14f3b8f864f3775821 ]
+[ Upstream commit 6c6151daaf2d8dc2046d9926539feed5f66bf74e ]
 
-Otherwise it gets overwritten by register_netdev().
+ip6_tnl_dev_init() sets the dev->iflink via a call to
+ip6_tnl_link_config(). After that, register_netdevice()
+sets dev->iflink = -1. So we loose the iflink configuration
+for ipv6 tunnels. Fix this by using ip6_tnl_dev_init() as the
+ndo_init function. Then ip6_tnl_dev_init() is called after
+dev->iflink is set to -1 from register_netdevice().
 
 Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_gre.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ net/ipv6/ip6_tunnel.c |   10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
---- a/net/ipv6/ip6_gre.c
-+++ b/net/ipv6/ip6_gre.c
-@@ -957,8 +957,6 @@ static void ip6gre_tnl_link_config(struc
- 	else
- 		dev->flags &= ~IFF_POINTOPOINT;
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -272,9 +272,6 @@ static int ip6_tnl_create2(struct net_de
+ 	int err;
  
--	dev->iflink = p->link;
+ 	t = netdev_priv(dev);
+-	err = ip6_tnl_dev_init(dev);
+-	if (err < 0)
+-		goto out;
+ 
+ 	err = register_netdevice(dev);
+ 	if (err < 0)
+@@ -1462,6 +1459,7 @@ ip6_tnl_change_mtu(struct net_device *de
+ 
+ 
+ static const struct net_device_ops ip6_tnl_netdev_ops = {
++	.ndo_init	= ip6_tnl_dev_init,
+ 	.ndo_uninit	= ip6_tnl_dev_uninit,
+ 	.ndo_start_xmit = ip6_tnl_xmit,
+ 	.ndo_do_ioctl	= ip6_tnl_ioctl,
+@@ -1546,16 +1544,10 @@ static int __net_init ip6_fb_tnl_dev_ini
+ 	struct ip6_tnl *t = netdev_priv(dev);
+ 	struct net *net = dev_net(dev);
+ 	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
+-	int err = ip6_tnl_dev_init_gen(dev);
 -
- 	/* Precalculate GRE options length */
- 	if (t->parms.o_flags&(GRE_CSUM|GRE_KEY|GRE_SEQ)) {
- 		if (t->parms.o_flags&GRE_CSUM)
-@@ -1268,6 +1266,7 @@ static int ip6gre_tunnel_init(struct net
- 		u64_stats_init(&ip6gre_tunnel_stats->syncp);
- 	}
+-	if (err)
+-		return err;
  
-+	dev->iflink = tunnel->parms.link;
+ 	t->parms.proto = IPPROTO_IPV6;
+ 	dev_hold(dev);
  
+-	ip6_tnl_link_config(t);
+-
+ 	rcu_assign_pointer(ip6n->tnls_wc[0], t);
  	return 0;
  }
-@@ -1477,6 +1476,8 @@ static int ip6gre_tap_init(struct net_de
- 	if (!dev->tstats)
- 		return -ENOMEM;
- 
-+	dev->iflink = tunnel->parms.link;
-+
- 	return 0;
- }
- 
 
 
