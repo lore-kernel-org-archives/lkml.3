@@ -1,148 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427AbaKSOdI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 09:33:08 -0500
-Received: from mga02.intel.com ([134.134.136.20]:54829 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752896AbaKSOdF convert rfc822-to-8bit (ORCPT
+	id S1755487AbaKSOgs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 09:36:48 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:61707 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167AbaKSOgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:33:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,417,1413270000"; 
-   d="scan'208";a="639721933"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: Namhyung Kim <namhyung@kernel.org>
-CC: "acme@kernel.org" <acme@kernel.org>, "jolsa@redhat.com" <jolsa@redhat.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "eranian@google.com" <eranian@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: RE: [PATCH V4 1/3] perf tools: enable LBR call stack support
-Thread-Topic: [PATCH V4 1/3] perf tools: enable LBR call stack support
-Thread-Index: AQHQA8c7ODa7l2FB7kKmHK6r8bJvrpxn/6hg
-Date: Wed, 19 Nov 2014 14:32:08 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F07701671D25@SHSMSX103.ccr.corp.intel.com>
-References: <1416346617-3577-1-git-send-email-kan.liang@intel.com>
-	<1416346617-3577-2-git-send-email-kan.liang@intel.com>
- <87r3wzpt4o.fsf@sejong.aot.lge.com>
-In-Reply-To: <87r3wzpt4o.fsf@sejong.aot.lge.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Nov 2014 09:36:46 -0500
 MIME-Version: 1.0
+In-Reply-To: <546BDB29.9050403@suse.cz>
+References: <502D42E5.7090403@redhat.com>
+	<20120818000312.GA4262@evergreen.ssec.wisc.edu>
+	<502F100A.1080401@redhat.com>
+	<alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
+	<CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
+	<20120822032057.GA30871@google.com>
+	<50345232.4090002@redhat.com>
+	<20130603195003.GA31275@evergreen.ssec.wisc.edu>
+	<20141114163053.GA6547@cosmos.ssec.wisc.edu>
+	<20141117160212.b86d031e1870601240b0131d@linux-foundation.org>
+	<20141118014135.GA17252@cosmos.ssec.wisc.edu>
+	<546AB1F5.6030306@redhat.com>
+	<20141118121936.07b02545a0684b2cc839a10c@linux-foundation.org>
+	<CALYGNiMxnxmy-LyJ4OT9OoFeKwTPPkZMF-bJ-eJDBFXgZQ6AEA@mail.gmail.com>
+	<CALYGNiM_CsjjiK_36JGirZT8rTP+ROYcH0CSyZjghtSNDU8ptw@mail.gmail.com>
+	<546BDB29.9050403@suse.cz>
+Date: Wed, 19 Nov 2014 18:36:45 +0400
+Message-ID: <CALYGNiOHXvyqr3+Jq5FsZ_xscsXwrQ_9YCtL2819i6iRkgms2w@mail.gmail.com>
+Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Tim Hartrick <tim@edgecast.com>, Michal Hocko <mhocko@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 19, 2014 at 2:50 AM, Vlastimil Babka <vbabka@suse.cz> wrote:
+> On 11/19/2014 12:02 AM, Konstantin Khlebnikov wrote:
+>> On Wed, Nov 19, 2014 at 1:15 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+>>> On Tue, Nov 18, 2014 at 11:19 PM, Andrew Morton
+>>> <akpm@linux-foundation.org> wrote:
+>>>> On Mon, 17 Nov 2014 21:41:57 -0500 Rik van Riel <riel@redhat.com> wrote:
+>>>>
+>>>>> > Because of the serial forking there does indeed end up being an
+>>>>> > infinite number of vmas.  The initial vma can never be deleted
+>>>>> > (even though the initial parent process has long since terminated)
+>>>>> > because the initial vma is referenced by the children.
+>>>>>
+>>>>> There is a finite number of VMAs, but an infite number of
+>>>>> anon_vmas.
+>>>>>
+>>>>> Subtle, yet deadly...
+>>>>
+>>>> Well, we clearly have the data structures screwed up.  I've forgotten
+>>>> enough about this code for me to be unable to work out what the fixed
+>>>> up data structures would look like :( But surely there is some proper
+>>>> solution here.  Help?
+>>>
+>>> Not sure if it's right but probably we could reuse on fork an old anon_vma
+>>> from the chain if it's already lost all vmas which points to it.
+>>> For endlessly forking exploit this should work mostly like proposed patch
+>>> which stops branching after some depth but without magic constant.
+>>
+>> Something like this. I leave proper comment for tomorrow.
+>
+> Hmm I'm not sure that will work as it is. If I understand it correctly, your
+> patch can detect if the parent's anon_vma has no own references at the fork()
+> time. But at the fork time, the parent is still alive, it only exits after the
+> fork, right? So I guess it still has own references and the child will still
+> allocate its new anon_vma, and the problem is not solved.
 
+But it could reuse anon_vma from grandparent or older.
+Count of anon_vmas in chain will be limited with count of alive processes.
 
-> On Tue, 18 Nov 2014 16:36:55 -0500, kan liang wrote:
-> > From: Kan Liang <kan.liang@intel.com>
-> >
-> > Currently, there are two call chain recording options, fp and dwarf.
-> > Haswell has a new feature that utilizes the existing LBR facility to
-> > record call chains. So it provides the third options to record call
-> > chain. This patch enables the lbr call stack support.
-> >
-> > LBR call stack has some limitations. It reuses current LBR facility,
-> > so LBR call stack and branch record can not be enabled at the same
-> > time. It is only available for user callchain.
-> > However, LBR call stack can work on the user app which doesn't have
-> > frame-pointer or dwarf debug info compiled. It is a good alternative
-> > when nothing else works.
-> 
-> 
-> [SNIP]
-> >  static void
-> > -perf_evsel__config_callgraph(struct perf_evsel *evsel)
-> > +perf_evsel__config_callgraph(struct perf_evsel *evsel,
-> > +			     struct record_opts *opts)
-> >  {
-> >  	bool function = perf_evsel__is_function_event(evsel);
-> >  	struct perf_event_attr *attr = &evsel->attr;
-> >
-> >  	perf_evsel__set_sample_bit(evsel, CALLCHAIN);
-> >
-> > +	if (callchain_param.record_mode == CALLCHAIN_LBR) {
-> > +		if (!opts->branch_stack) {
-> > +			perf_evsel__set_sample_bit(evsel,
-> BRANCH_STACK);
-> > +			attr->branch_sample_type =
-> PERF_SAMPLE_BRANCH_USER |
-> > +
-> 	PERF_SAMPLE_BRANCH_CALL_STACK;
-> > +			if (attr->exclude_user) {
-> > +				attr->exclude_user = 0;
-> > +
-> > +				pr_warning("LBR callstack option is only
-> available"
-> > +					   " to get user callchain
-> information."
-> > +					   " Force exclude_user to 0.\n");
-> > +			}
-> 
-> I'm not sure what's in a higher priority - maybe I missed earlier discussion.
-> IOW what about this?
-> 
-> 			if (attr->exclude_user) {
-> 				pr_warning("LBR callstack option is only
-> available"
-> 					   " to get user callchain
-> information.\n");
+I think it's better to describe this in terms of sets of anon_vma
+instead hierarchy:
+at clone vma inherits pages from parent together with set of anon_vma
+which they belong.
+For new pages it might allocate new anon_vma or reuse existing. After
+my patch vma
+will try to reuse anon_vma from that set which has no vmas which points to it.
+As a result there will be no parent-child relation between anon_vma and
+multiple pages might have equal (anon_vma, index) pair but I see no
+problems here.
 
-I think either is fine. I'd like to add more info "Falling back to framepointers."
-based on your changes.
-So the user know what they will get then.
-
-What do you think?
-
-pr_warning("LBR callstack option is only available"
-	         " to get user callchain information."
-	          " Falling back to framepointers.\n");
-
-pr_ warning ("Cannot use LBR callstack with branch stack"
-                " Falling back to framepointers.\n");
-
-Thanks,
-Kan
-> 			} else {
-> 				perf_evsel__set_sample_bit(evsel,
-> BRANCH_STACK);
-> 				attr->branch_sample_type =
-> PERF_SAMPLE_BRANCH_USER |
-> 
-> 	PERF_SAMPLE_BRANCH_CALL_STACK;
-> 			}
-> 
-> > +		} else
-> > +			 pr_info("Cannot use LBR callstack with branch
-> stack\n");
-> 
-> It seems pr_warning is more appropriate here.
-> 
-> Thanks,
-> Namhyung
-> 
-> 
-> > +	}
-> > +
-> >  	if (callchain_param.record_mode == CALLCHAIN_DWARF) {
-> >  		if (!function) {
-> >  			perf_evsel__set_sample_bit(evsel, REGS_USER);
-> @@ -659,7 +676,7 @@
-> > void perf_evsel__config(struct perf_evsel *evsel, struct record_opts
-> *opts)
-> >  	}
-> >
-> >  	if (callchain_param.enabled && !evsel->no_aux_samples)
-> > -		perf_evsel__config_callgraph(evsel);
-> > +		perf_evsel__config_callgraph(evsel, opts);
-> >
-> >  	if (target__has_cpu(&opts->target))
-> >  		perf_evsel__set_sample_bit(evsel, CPU);
+>
+> So maybe we could detect that the own references dropped to zero when the parent
+> does exit, and then change mapping of all relevant pages to the root anon_vma,
+> destroy avc's of children and the anon_vma itself. But that sounds quite
+> heavyweight :/
+>
+> Vlastimil
+>
+>>>
+>>>>
+>
