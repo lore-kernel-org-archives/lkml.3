@@ -1,104 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158AbaKSHtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 02:49:21 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:55730 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754837AbaKSHtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 02:49:19 -0500
-Message-ID: <1416383379.30131.14.camel@mm-sol.com>
-Subject: Re: [PATCH 3/7] pinctrl: pinconf-generic: Allow driver to specify
- DT params
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-rockchip@lists.infradead.org,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
-Date: Wed, 19 Nov 2014 09:49:39 +0200
-In-Reply-To: <995406b8e0244c63a3ef8e58314e81f6@BL2FFO11FD037.protection.gbl>
-References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
-	 <1415041531-15520-4-git-send-email-soren.brinkmann@xilinx.com>
-	 <CACRpkdYfj2ydLQ4q_FKwXo73jzNsvj9u2Aem9EiuEw-OCvurrg@mail.gmail.com>
-	 <1416300621.30131.6.camel@mm-sol.com>
-	 <995406b8e0244c63a3ef8e58314e81f6@BL2FFO11FD037.protection.gbl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.7-fta1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1755319AbaKSHvn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 02:51:43 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:3231 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824AbaKSHvm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 02:51:42 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 18 Nov 2014 23:50:01 -0800
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH] gpio: remove gpio_descs global array
+Date: Wed, 19 Nov 2014 16:51:27 +0900
+Message-ID: <1416383487-15993-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.1.3
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Replace the ARCH_NR_GPIOS-sized static array of GPIO descriptors by
+dynamically-allocated arrays for each GPIO chip.
 
-On Tue, 2014-11-18 at 09:25 -0800, Sören Brinkmann wrote:
-> On Tue, 2014-11-18 at 10:50AM +0200, Ivan T. Ivanov wrote:
-> > 
-> > On Tue, 2014-11-11 at 15:53 +0100, Linus Walleij wrote:
-> > > On Mon, Nov 3, 2014 at 8:05 PM, Soren Brinkmann
-> > > brinkmann@xilinx.com> wrote:
-> > > 
-> > > > Additionally to the generic DT parameters, allow drivers to 
-> > > > provide driver-specific DT parameters to be used with the 
-> > > > generic parser infrastructure.
-> > > > 
-> > > > Signed-off-by: Soren Brinkmann brinkmann@xilinx.com>
-> > > 
-> > > I like the looks of this, but the patch description is a bit 
-> > > terse. I'd like it to describe some of the refactorings being 
-> > > done
-> > > to the intrinsics, because I have a hard time following the 
-> > > patch.
-> > > 
-> > > First please rebase onto the "devel" branch in the pin control 
-> > > tree, and notice that drivers/pinctrl/qcom/pinctrl-spmi-gpio.c 
-> > > which is merged there is actually doing this already:
-> > > 
-> > > 
-> > >         for_each_child_of_node(np_config, np) {
-> > >                 ret = pinconf_generic_dt_subnode_to_map(pctldev, 
-> > > np, map,
-> > >                                                         &reserv, 
-> > > nmaps, type);
-> > >                 if (ret)
-> > >                         break;
-> > > 
-> > >                 ret = pmic_gpio_dt_subnode_to_map(pctldev, np, 
-> > > map, &reserv,
-> > >                                                   nmaps, type);
-> > >                 if (ret)
-> > >                         break;
-> > >         }
-> > > 
-> > > So it should be patched to illustrate the point of this code.
-> > > 
-> > 
-> > I like the idea, but have issues with implementations :-).
-> >  
-> > It is supposed that additional parameters are not generic,
-> > otherwise they will be part of enum pin_config_param, right?
-> > 
-> > Probably it will be better if clients could pass array with
-> > driver specific dt bindings to pinconf_generic_dt_node_to_map()?
-> 
-> My idea was to hide that API from the driver. You just pass those 
-> parameters as part of the struct pctldev and the parser - whether 
-> this generic one or anything else - would do the right thing. I 
-> don't think calling the parser from the driver is the right approach.
+This change makes gpio_to_desc() perform in O(n) (where n is the number
+of GPIO chips registered) instead of O(1), however since n is rarely
+bigger than 1 or 2 no noticeable performance issue is expected.
+Besides this provides more incentive for GPIO consumers to move to the
+gpiod interface. One could use a O(log(n)) structure to link the GPIO
+chips together, but considering the low limit of n the hypothetical
+performance benefit is probably not worth the added complexity.
 
-Drivers already know about dt_node_to_map(). My proposal will make
-drivers, which register non-standard bindings, little bit simpler.
+This patch uses kcalloc() in gpiochip_add(), which removes the ability
+to add a chip before kcalloc() can operate. I am not aware of such
+cases, but if someone bisects up to this patch then I will be proven
+wrong...
 
-With your approach probably we can remove dt_node_to_map() and
-dt_free_map() callbacks?
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ drivers/gpio/gpiolib.c | 47 +++++++++++++++++++++++++++++++----------------
+ 1 file changed, 31 insertions(+), 16 deletions(-)
 
-Regards,
-Ivan
-
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index eb739a51e774..5619922ebf44 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -47,8 +47,6 @@
+  */
+ DEFINE_SPINLOCK(gpio_lock);
+ 
+-static struct gpio_desc gpio_desc[ARCH_NR_GPIOS];
+-
+ #define GPIO_OFFSET_VALID(chip, offset) (offset >= 0 && offset < chip->ngpio)
+ 
+ static DEFINE_MUTEX(gpio_lookup_lock);
+@@ -65,10 +63,22 @@ static inline void desc_set_label(struct gpio_desc *d, const char *label)
+  */
+ struct gpio_desc *gpio_to_desc(unsigned gpio)
+ {
+-	if (WARN(!gpio_is_valid(gpio), "invalid GPIO %d\n", gpio))
+-		return NULL;
+-	else
+-		return &gpio_desc[gpio];
++	struct gpio_chip *chip;
++	unsigned long flags;
++
++	spin_lock_irqsave(&gpio_lock, flags);
++
++	list_for_each_entry(chip, &gpio_chips, list) {
++		if (chip->base <= gpio && chip->base + chip->ngpio > gpio) {
++			spin_unlock_irqrestore(&gpio_lock, flags);
++			return &chip->desc[gpio - chip->base];
++		}
++	}
++
++	spin_unlock_irqrestore(&gpio_lock, flags);
++
++	WARN(1, "invalid GPIO %d\n", gpio);
++	return NULL;
+ }
+ EXPORT_SYMBOL_GPL(gpio_to_desc);
+ 
+@@ -91,7 +101,7 @@ struct gpio_desc *gpiochip_get_desc(struct gpio_chip *chip,
+  */
+ int desc_to_gpio(const struct gpio_desc *desc)
+ {
+-	return desc - &gpio_desc[0];
++	return desc->chip->base + (desc - &desc->chip->desc[0]);
+ }
+ EXPORT_SYMBOL_GPL(desc_to_gpio);
+ 
+@@ -206,7 +216,7 @@ static int gpiochip_add_to_list(struct gpio_chip *chip)
+ /**
+  * gpiochip_add() - register a gpio_chip
+  * @chip: the chip to register, with chip->base initialized
+- * Context: potentially before irqs or kmalloc will work
++ * Context: potentially before irqs will work
+  *
+  * Returns a negative errno if the chip can't be registered, such as
+  * because the chip->base is invalid or already associated with a
+@@ -226,12 +236,11 @@ int gpiochip_add(struct gpio_chip *chip)
+ 	int		status = 0;
+ 	unsigned	id;
+ 	int		base = chip->base;
++	struct gpio_desc *descs;
+ 
+-	if ((!gpio_is_valid(base) || !gpio_is_valid(base + chip->ngpio - 1))
+-			&& base >= 0) {
+-		status = -EINVAL;
+-		goto fail;
+-	}
++	descs = kcalloc(chip->ngpio, sizeof(descs[0]), GFP_KERNEL);
++	if (!descs)
++		return -ENOMEM;
+ 
+ 	spin_lock_irqsave(&gpio_lock, flags);
+ 
+@@ -247,10 +256,8 @@ int gpiochip_add(struct gpio_chip *chip)
+ 	status = gpiochip_add_to_list(chip);
+ 
+ 	if (status == 0) {
+-		chip->desc = &gpio_desc[chip->base];
+-
+ 		for (id = 0; id < chip->ngpio; id++) {
+-			struct gpio_desc *desc = &chip->desc[id];
++			struct gpio_desc *desc = &descs[id];
+ 			desc->chip = chip;
+ 
+ 			/* REVISIT:  most hardware initializes GPIOs as
+@@ -266,6 +273,8 @@ int gpiochip_add(struct gpio_chip *chip)
+ 		}
+ 	}
+ 
++	chip->desc = descs;
++
+ 	spin_unlock_irqrestore(&gpio_lock, flags);
+ 
+ #ifdef CONFIG_PINCTRL
+@@ -291,6 +300,9 @@ int gpiochip_add(struct gpio_chip *chip)
+ unlock:
+ 	spin_unlock_irqrestore(&gpio_lock, flags);
+ fail:
++	kfree(descs);
++	chip->desc = NULL;
++
+ 	/* failures here can mean systems won't boot... */
+ 	pr_err("%s: GPIOs %d..%d (%s) failed to register\n", __func__,
+ 		chip->base, chip->base + chip->ngpio - 1,
+@@ -331,6 +343,9 @@ void gpiochip_remove(struct gpio_chip *chip)
+ 	list_del(&chip->list);
+ 	spin_unlock_irqrestore(&gpio_lock, flags);
+ 	gpiochip_unexport(chip);
++
++	kfree(chip->desc);
++	chip->desc = NULL;
+ }
+ EXPORT_SYMBOL_GPL(gpiochip_remove);
+ 
+-- 
+2.1.3
 
