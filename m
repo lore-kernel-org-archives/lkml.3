@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138AbaKSWWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:22:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55895 "EHLO
+	id S1758173AbaKSWWx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:22:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56055 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932562AbaKSUyL (ORCPT
+	with ESMTP id S932536AbaKSUyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:11 -0500
+	Wed, 19 Nov 2014 15:54:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.17 076/141] dm thin: grab a virtual cell before looking up the mapping
-Date: Wed, 19 Nov 2014 12:51:39 -0800
-Message-Id: <20141119205153.171682771@linuxfoundation.org>
+        Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.17 073/141] ARM: mvebu: armada xp: Generalize use of i2c quirk
+Date: Wed, 19 Nov 2014 12:51:36 -0800
+Message-Id: <20141119205153.064861665@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -28,75 +31,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Andrew Lunn <andrew@lunn.ch>
 
-commit c822ed967cba38505713d59ed40a114386ef6c01 upstream.
+commit 5129ee22ce4aff7c5907d4c3d67d23f86cd6db9b upstream.
 
-Avoids normal IO racing with discard.
+A second product has come to light which makes use of the A0 stepping
+of the Armada XP SoC. A0 stepping has a hardware bug in the i2c core
+meaning that hardware offload does not work, resulting in the kernel
+failing to boot. The quirk detects that the kernel is running on an A0
+stepping SoC and disables the use of hardware offload.
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Currently the quirk is only enabled for PlatHome Openblocks AX3. The
+AX3 has been produced with both A0 and B0 stepping SoCs. The second
+product is the Lenovo Iomega IX4-300d. It seems likely that this
+device will also swap from A0 to B0 SoC sometime during its life.
+
+If there are two products using A0, it seems likely there are more
+products with A0. Also, since the number of A0 SoCs is limited, these
+products are also likely to transition to B0. Hence detecting at run
+time is the safest option. So enable the quirk for all Armada XP
+boards.
+
+Tested on an AX3 with A0 stepping.
+
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Fixes: 930ab3d403ae: ("i2c: mv64xxx: Add I2C Transaction Generator support")
+Link: https://lkml.kernel.org/r/1406395238-29758-2-git-send-email-andrew@lunn.ch
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ arch/arm/mach-mvebu/board-v7.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -1936,6 +1936,14 @@ static int thin_bio_map(struct dm_target
- 		return DM_MAPIO_SUBMITTED;
- 	}
+--- a/arch/arm/mach-mvebu/board-v7.c
++++ b/arch/arm/mach-mvebu/board-v7.c
+@@ -188,7 +188,7 @@ static void __init thermal_quirk(void)
  
-+	/*
-+	 * We must hold the virtual cell before doing the lookup, otherwise
-+	 * there's a race with discard.
-+	 */
-+	build_virtual_key(tc->td, block, &key);
-+	if (dm_bio_detain(tc->pool->prison, &key, bio, &cell1, &cell_result))
-+		return DM_MAPIO_SUBMITTED;
-+
- 	r = dm_thin_find_block(td, block, 0, &result);
- 
- 	/*
-@@ -1959,13 +1967,10 @@ static int thin_bio_map(struct dm_target
- 			 * shared flag will be set in their case.
- 			 */
- 			thin_defer_bio(tc, bio);
-+			cell_defer_no_holder_no_free(tc, &cell1);
- 			return DM_MAPIO_SUBMITTED;
- 		}
- 
--		build_virtual_key(tc->td, block, &key);
--		if (dm_bio_detain(tc->pool->prison, &key, bio, &cell1, &cell_result))
--			return DM_MAPIO_SUBMITTED;
--
- 		build_data_key(tc->td, result.block, &key);
- 		if (dm_bio_detain(tc->pool->prison, &key, bio, &cell2, &cell_result)) {
- 			cell_defer_no_holder_no_free(tc, &cell1);
-@@ -1986,6 +1991,7 @@ static int thin_bio_map(struct dm_target
- 			 * of doing so.
- 			 */
- 			handle_unserviceable_bio(tc->pool, bio);
-+			cell_defer_no_holder_no_free(tc, &cell1);
- 			return DM_MAPIO_SUBMITTED;
- 		}
- 		/* fall through */
-@@ -1996,6 +2002,7 @@ static int thin_bio_map(struct dm_target
- 		 * provide the hint to load the metadata into cache.
- 		 */
- 		thin_defer_bio(tc, bio);
-+		cell_defer_no_holder_no_free(tc, &cell1);
- 		return DM_MAPIO_SUBMITTED;
- 
- 	default:
-@@ -2005,6 +2012,7 @@ static int thin_bio_map(struct dm_target
- 		 * pool is switched to fail-io mode.
- 		 */
- 		bio_io_error(bio);
-+		cell_defer_no_holder_no_free(tc, &cell1);
- 		return DM_MAPIO_SUBMITTED;
- 	}
- }
+ static void __init mvebu_dt_init(void)
+ {
+-	if (of_machine_is_compatible("plathome,openblocks-ax3-4"))
++	if (of_machine_is_compatible("marvell,armadaxp"))
+ 		i2c_quirk();
+ 	if (of_machine_is_compatible("marvell,a375-db")) {
+ 		external_abort_quirk();
 
 
