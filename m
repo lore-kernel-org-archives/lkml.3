@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934191AbaKSVZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:25:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57274 "EHLO
+	id S934213AbaKSV0R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:26:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57280 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933856AbaKSVOr (ORCPT
+	with ESMTP id S933844AbaKSVOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:14:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.10 41/70] clocksource: Remove "weak" from clocksource_default_clock() declaration
-Date: Wed, 19 Nov 2014 12:52:32 -0800
-Message-Id: <20141119205212.286835945@linuxfoundation.org>
+        Dwight Engen <dwight.engen@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 09/70] sunvdc: dont call VD_OP_GET_VTOC
+Date: Wed, 19 Nov 2014 12:52:00 -0800
+Message-Id: <20141119205211.227307273@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -31,43 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Dwight Engen <dwight.engen@oracle.com>
 
-commit 96a2adbc6f501996418da9f7afe39bf0e4d006a9 upstream.
+[ Upstream commit 85b0c6e62c48bb9179fd5b3e954f362fb346cbd5 ]
 
-kernel/time/jiffies.c provides a default clocksource_default_clock()
-definition explicitly marked "weak".  arch/s390 provides its own definition
-intended to override the default, but the "weak" attribute on the
-declaration applied to the s390 definition as well, so the linker chose one
-based on link order (see 10629d711ed7 ("PCI: Remove __weak annotation from
-pcibios_get_phb_of_node decl")).
+The VD_OP_GET_VTOC operation will succeed only if the vdisk backend has a
+VTOC label, otherwise it will fail. In particular, it will return error
+48 (ENOTSUP) if the disk has an EFI label. VTOC disk labels are already
+handled by directly reading the disk in block/partitions/sun.c (enabled by
+CONFIG_SUN_PARTITION which defaults to y on SPARC). Since port->label is
+unused in the driver, remove the call and the field.
 
-Remove the "weak" attribute from the clocksource_default_clock()
-declaration so we always prefer a non-weak definition over the weak one,
-independent of link order.
-
-Fixes: f1b82746c1e9 ("clocksource: Cleanup clocksource selection")
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: John Stultz <john.stultz@linaro.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/linux/clocksource.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/sunvdc.c |    9 ---------
+ 1 file changed, 9 deletions(-)
 
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -285,7 +285,7 @@ extern struct clocksource* clocksource_g
- extern void clocksource_change_rating(struct clocksource *cs, int rating);
- extern void clocksource_suspend(void);
- extern void clocksource_resume(void);
--extern struct clocksource * __init __weak clocksource_default_clock(void);
-+extern struct clocksource * __init clocksource_default_clock(void);
- extern void clocksource_mark_unstable(struct clocksource *cs);
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -69,8 +69,6 @@ struct vdc_port {
+ 	u8			vdisk_mtype;
  
- extern void
+ 	char			disk_name[32];
+-
+-	struct vio_disk_vtoc	label;
+ };
+ 
+ static inline struct vdc_port *to_vdc_port(struct vio_driver_state *vio)
+@@ -710,13 +708,6 @@ static int probe_disk(struct vdc_port *p
+ 	if (comp.err)
+ 		return comp.err;
+ 
+-	err = generic_request(port, VD_OP_GET_VTOC,
+-			      &port->label, sizeof(port->label));
+-	if (err < 0) {
+-		printk(KERN_ERR PFX "VD_OP_GET_VTOC returns error %d\n", err);
+-		return err;
+-	}
+-
+ 	if (vdc_version_supported(port, 1, 1)) {
+ 		/* vdisk_size should be set during the handshake, if it wasn't
+ 		 * then the underlying disk is reserved by another system
 
 
