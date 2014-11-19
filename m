@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933846AbaKSV6H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:58:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56468 "EHLO
+	id S933826AbaKSV6F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:58:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56595 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933466AbaKSVEW (ORCPT
+	with ESMTP id S933469AbaKSVEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:22 -0500
+	Wed, 19 Nov 2014 16:04:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Meelis Roos <meelis.roos@ut.ee>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: [PATCH 3.14 050/122] scsi: only re-lock door after EH on devices that were reset
-Date: Wed, 19 Nov 2014 12:51:40 -0800
-Message-Id: <20141119205210.467576704@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
+        Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.14 052/122] block: Fix computation of merged request priority
+Date: Wed, 19 Nov 2014 12:51:42 -0800
+Message-Id: <20141119205210.531000507@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,39 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Jan Kara <jack@suse.cz>
 
-commit 48379270fe6808cf4612ee094adc8da2b7a83baa upstream.
+commit ece9c72accdc45c3a9484dacb1125ce572647288 upstream.
 
-Setups that use the blk-mq I/O path can lock up if a host with a single
-device that has its door locked enters EH.  Make sure to only send the
-command to re-lock the door to devices that actually were reset and thus
-might have lost their state.  Otherwise the EH code might be get blocked
-on blk_get_request as all requests for non-reset devices might be in use.
+Priority of a merged request is computed by ioprio_best(). If one of the
+requests has undefined priority (IOPRIO_CLASS_NONE) and another request
+has priority from IOPRIO_CLASS_BE, the function will return the
+undefined priority which is wrong. Fix the function to properly return
+priority of a request with the defined priority.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Meelis Roos <meelis.roos@ut.ee>
-Tested-by: Meelis Roos <meelis.roos@ut.ee>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Fixes: d58cdfb89ce0c6bd5f81ae931a984ef298dbda20
+Signed-off-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_error.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/ioprio.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -1984,8 +1984,10 @@ static void scsi_restart_operations(stru
- 	 * is no point trying to lock the door of an off-line device.
- 	 */
- 	shost_for_each_device(sdev, shost) {
--		if (scsi_device_online(sdev) && sdev->locked)
-+		if (scsi_device_online(sdev) && sdev->was_reset && sdev->locked) {
- 			scsi_eh_lock_door(sdev);
-+			sdev->was_reset = 0;
-+		}
- 	}
+--- a/fs/ioprio.c
++++ b/fs/ioprio.c
+@@ -157,14 +157,16 @@ out:
  
- 	/*
+ int ioprio_best(unsigned short aprio, unsigned short bprio)
+ {
+-	unsigned short aclass = IOPRIO_PRIO_CLASS(aprio);
+-	unsigned short bclass = IOPRIO_PRIO_CLASS(bprio);
++	unsigned short aclass;
++	unsigned short bclass;
+ 
+-	if (aclass == IOPRIO_CLASS_NONE)
+-		aclass = IOPRIO_CLASS_BE;
+-	if (bclass == IOPRIO_CLASS_NONE)
+-		bclass = IOPRIO_CLASS_BE;
++	if (!ioprio_valid(aprio))
++		aprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
++	if (!ioprio_valid(bprio))
++		bprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
+ 
++	aclass = IOPRIO_PRIO_CLASS(aprio);
++	bclass = IOPRIO_PRIO_CLASS(bprio);
+ 	if (aclass == bclass)
+ 		return min(aprio, bprio);
+ 	if (aclass > bclass)
 
 
