@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758310AbaKSWkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:40:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55903 "EHLO
+	id S1758293AbaKSWkL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:40:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55908 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756665AbaKSUxu (ORCPT
+	with ESMTP id S1756686AbaKSUxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:53:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Cochran <richardcochran@gmail.com>,
+        Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>,
+        Richard Guy Briggs <rgb@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 015/141] net: ptp: fix time stamp matching logic for VLAN packets.
-Date: Wed, 19 Nov 2014 12:50:38 -0800
-Message-Id: <20141119205151.175240916@linuxfoundation.org>
+Subject: [PATCH 3.17 016/141] netlink: Properly unbind in error conditions.
+Date: Wed, 19 Nov 2014 12:50:39 -0800
+Message-Id: <20141119205151.204524531@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,58 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Cochran <richardcochran@gmail.com>
+From: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
 
-[ Upstream commit cca04b2854ecfb7cd1b8ee84ab38bc99af59f526 ]
+[ Upstream commit 6251edd932ce3faadbfe27b0a0fe79780e0972e9 ]
 
-Commit ae5c6c6d "ptp: Classify ptp over ip over vlan packets" changed the
-code in two drivers that matches time stamps with PTP frames, with the goal
-of allowing VLAN tagged PTP packets to receive hardware time stamps.
+Even if netlink_kernel_cfg::unbind is implemented the unbind() method is
+not called, because cfg->unbind is omitted in __netlink_kernel_create().
+And fix wrong argument of test_bit() and off by one problem.
 
-However, that commit failed to account for the VLAN header when parsing
-IPv4 packets. This patch fixes those two drivers to correctly match VLAN
-tagged IPv4/UDP PTP messages with their time stamps.
+At this point, no unbind() method is implemented, so there is no real
+issue.
 
-This patch should also be applied to v3.17.
-
-Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+Fixes: 4f520900522f ("netlink: have netlink per-protocol bind function return an error code.")
+Signed-off-by: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>
+Acked-by: Richard Guy Briggs <rgb@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/ti/cpts.c |    2 +-
- drivers/net/phy/dp83640.c      |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ net/netlink/af_netlink.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/ti/cpts.c
-+++ b/drivers/net/ethernet/ti/cpts.c
-@@ -264,7 +264,7 @@ static int cpts_match(struct sk_buff *sk
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -1440,7 +1440,7 @@ static void netlink_unbind(int group, lo
+ 		return;
  
- 	switch (ptp_class & PTP_CLASS_PMASK) {
- 	case PTP_CLASS_IPV4:
--		offset += ETH_HLEN + IPV4_HLEN(data) + UDP_HLEN;
-+		offset += ETH_HLEN + IPV4_HLEN(data + offset) + UDP_HLEN;
- 		break;
- 	case PTP_CLASS_IPV6:
- 		offset += ETH_HLEN + IP6_HLEN + UDP_HLEN;
---- a/drivers/net/phy/dp83640.c
-+++ b/drivers/net/phy/dp83640.c
-@@ -784,7 +784,7 @@ static int match(struct sk_buff *skb, un
+ 	for (undo = 0; undo < group; undo++)
+-		if (test_bit(group, &groups))
++		if (test_bit(undo, &groups))
+ 			nlk->netlink_unbind(undo);
+ }
  
- 	switch (type & PTP_CLASS_PMASK) {
- 	case PTP_CLASS_IPV4:
--		offset += ETH_HLEN + IPV4_HLEN(data) + UDP_HLEN;
-+		offset += ETH_HLEN + IPV4_HLEN(data + offset) + UDP_HLEN;
- 		break;
- 	case PTP_CLASS_IPV6:
- 		offset += ETH_HLEN + IP6_HLEN + UDP_HLEN;
-@@ -927,7 +927,7 @@ static int is_sync(struct sk_buff *skb,
- 
- 	switch (type & PTP_CLASS_PMASK) {
- 	case PTP_CLASS_IPV4:
--		offset += ETH_HLEN + IPV4_HLEN(data) + UDP_HLEN;
-+		offset += ETH_HLEN + IPV4_HLEN(data + offset) + UDP_HLEN;
- 		break;
- 	case PTP_CLASS_IPV6:
- 		offset += ETH_HLEN + IP6_HLEN + UDP_HLEN;
+@@ -1492,7 +1492,7 @@ static int netlink_bind(struct socket *s
+ 			netlink_insert(sk, net, nladdr->nl_pid) :
+ 			netlink_autobind(sock);
+ 		if (err) {
+-			netlink_unbind(nlk->ngroups - 1, groups, nlk);
++			netlink_unbind(nlk->ngroups, groups, nlk);
+ 			return err;
+ 		}
+ 	}
+@@ -2509,6 +2509,7 @@ __netlink_kernel_create(struct net *net,
+ 		nl_table[unit].module = module;
+ 		if (cfg) {
+ 			nl_table[unit].bind = cfg->bind;
++			nl_table[unit].unbind = cfg->unbind;
+ 			nl_table[unit].flags = cfg->flags;
+ 			if (cfg->compare)
+ 				nl_table[unit].compare = cfg->compare;
 
 
