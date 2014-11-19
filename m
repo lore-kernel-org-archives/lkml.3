@@ -1,160 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756189AbaKSRWL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:22:11 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:40620 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751AbaKSRWI (ORCPT
+	id S1756246AbaKSRWh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:22:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52045 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754814AbaKSRWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:22:08 -0500
+	Wed, 19 Nov 2014 12:22:36 -0500
+Date: Wed, 19 Nov 2014 09:22:35 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
+Message-ID: <20141119172235.GA31260@kroah.com>
+References: <20141013022454.289398272@linuxfoundation.org>
+ <20141013112834.GA10826@khazad-dum.debian.net>
+ <20141013082319.175d90bb@as>
 MIME-Version: 1.0
-In-Reply-To: <20141119145902.GA13387@redhat.com>
-References: <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
-	<20141118020959.GA2091@redhat.com>
-	<CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
-	<20141118023930.GA2871@redhat.com>
-	<CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
-	<20141118145234.GA7487@redhat.com>
-	<alpine.DEB.2.11.1411181914020.3909@nanos>
-	<20141118215540.GD35311@redhat.com>
-	<20141119021902.GA14216@redhat.com>
-	<CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
-	<20141119145902.GA13387@redhat.com>
-Date: Wed, 19 Nov 2014 09:22:07 -0800
-X-Google-Sender-Auth: clj6UWN97Wolo1U-3SRckY1l9RE
-Message-ID: <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141013082319.175d90bb@as>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 6:59 AM, Dave Jones <davej@redhat.com> wrote:
-> On Tue, Nov 18, 2014 at 08:40:55PM -0800, Linus Torvalds wrote:
->  >
->  > That makes me wonder: does the problem go away if you disable NOHZ?
->
-> Aparently not.
->
-> NMI watchdog: BUG: soft lockup - CPU#3 stuck for 22s! [trinity-c75:25175]
-> CPU: 3 PID: 25175 Comm: trinity-c75 Not tainted 3.18.0-rc5+ #92 [loadavg: 168.72 151.72 150.38 9/410 27945]
-> RIP: 0010:[<ffffffff94175be7>]  [<ffffffff94175be7>] context_tracking_user_exit+0x57/0x120
-> Call Trace:
->  [<ffffffff94012c25>] syscall_trace_enter_phase1+0x125/0x1a0
->  [<ffffffff9437b3be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->  [<ffffffff947d41bf>] tracesys+0x14/0x4a
+On Mon, Oct 13, 2014 at 08:23:19AM -0500, Chuck Ebbert wrote:
+> On Mon, 13 Oct 2014 08:28:35 -0300
+> Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
+> 
+> > On Mon, 13 Oct 2014, Greg Kroah-Hartman wrote:
+> > > This is the start of the stable review cycle for the 3.17.1
+> > > release. There are 25 patches in this series, all will be posted
+> > > as a response to this one.  If anyone has any issues with these
+> > > being applied, please let me know.
+> > 
+> > Actually, 3.17 is a filesystem killer for some unlucky users due to
+> > the libata blacklist being disabled by a bug.
+> > 
+> > Patch:
+> > https://git.kernel.org/cgit/linux/kernel/git/tj/libata.git/patch/?id=1c40279960bcd7d52dbdf1d466b20d24b99176c8
+> > 1c40279960bcd7d52dbdf1d466b20d24b99176c8 (libata: Un-break ATA
+> > blacklist)
+> > 
+> 
+> There are some more bugs too:
+> 
+> 
+> RCU stalls, fix has been in rcu/urgent for 7 days:
+> https://git.kernel.org/cgit/linux/kernel/git/paulmck/linux-rcu.git/commit/?h=rcu/urgent&id=789cbbeca4eb7141cbd748ee93772471101b507b
 
-Ok, that's just crazy. This is the system call *entry* portion.
+Doesn't build in 3.17 properly :(
 
-Last time it was the system call exit side, which at least made some
-sense, because the "return to user space" thing actually has loops in
-it to handle all events before we return to user space.
+> blk-mq bio merging (still no good fix available):
+> https://lkml.org/lkml/2014/10/9/729
+> (The fix sitting in the block tree:
+> https://git.kernel.org/cgit/linux/kernel/git/axboe/linux-block.git/commit/?h=for-3.18/core&id=764f612c6c3c231b9c12cfae7c328ccc9c453258
+> is wrong according to that message.)
 
-But the whole 'tracesys' part is only entered once, at the very
-beginning of a system call. There's no loop over the work. That whole
-call trace implies that the lockup happened just after we entered the
-system call path from _user_ space.
+Did this ever get resolved?
 
-And in fact, exactly like last time, the code line implies that the
-timer interrupt happened on the return from the instruction, and
-indeed in both cases the code looked like this (the registers
-differed, but the "restore flags, start popping saved regs" was the
-exact same):
+> Stalls when using nohz, requires series of six patches to fix that
+> didn't make 3.17 and weren't marked for -stable:
+> 
+> From a80e49e2cc3145af014a8ae44f575829cc236192 Mon Sep 17 00:00:00 2001
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Subject: nohz: Move nohz full init call to tick init
+> 
+> From c5c38ef3d70377dc504a6a3f611a3ec814bc757b Mon Sep 17 00:00:00 2001
+> From: Peter Zijlstra <peterz@infradead.org>
+> Subject: irq_work: Introduce arch_irq_work_has_interrupt()
+> 
+> From 76a33061b9323b7fdb220ae5fa116c10833ec22e Mon Sep 17 00:00:00 2001
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Subject: irq_work: Force raised irq work to run on irq work interrupt
+> 
+> From 3010279f0fc36f0388872203e63ca49912f648fd Mon Sep 17 00:00:00 2001
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Subject: x86: Tell irq work about self IPI support
+> 
+> From 09f6edd424218eb69078551b2ecfada1f2d098eb Mon Sep 17 00:00:00 2001
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Subject: arm: Tell irq work about self IPI support
+> 
+> From 3631073659d0aafeaa52227bb61a100efaf901dc Mon Sep 17 00:00:00 2001
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+To: 09f6edd424218eb69078551b2ecfada1f2d098eb
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+	linux-kernel@vger.kernel.org, stable@kernel.org
+Bcc: 
+Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
+Reply-To: 
+In-Reply-To: <20141013082319.175d90bb@as>
 
-  26: 53                   push   %rbx
-  27: 9d                   popfq
-  28:* 5b                   pop    %rbx <-- trapping instruction
-  29: 41 5c                 pop    %r12
+On Mon, Oct 13, 2014 at 08:23:19AM -0500, Chuck Ebbert wrote:
+> On Mon, 13 Oct 2014 08:28:35 -0300
+> Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
+> 
+> > On Mon, 13 Oct 2014, Greg Kroah-Hartman wrote:
+> > > This is the start of the stable review cycle for the 3.17.1
+> > > release. There are 25 patches in this series, all will be posted
+> > > as a response to this one.  If anyone has any issues with these
+> > > being applied, please let me know.
+> > 
+> > Actually, 3.17 is a filesystem killer for some unlucky users due to
+> > the libata blacklist being disabled by a bug.
+> > 
+> > Patch:
+> > https://git.kernel.org/cgit/linux/kernel/git/tj/libata.git/patch/?id=1c40279960bcd7d52dbdf1d466b20d24b99176c8
+> > 1c40279960bcd7d52dbdf1d466b20d24b99176c8 (libata: Un-break ATA
+> > blacklist)
+> > 
+> 
+> There are some more bugs too:
+> 
+> 
+> RCU stalls, fix has been in rcu/urgent for 7 days:
+> https://git.kernel.org/cgit/linux/kernel/git/paulmck/linux-rcu.git/commit/?h=rcu/urgent&id=789cbbeca4eb7141cbd748ee93772471101b507b
 
-in both cases, the timer interrupt happened right after the "popfq",
-but in both cases the value in the register that was used to restore
-eflags was invalid. Here %rbx was 0x0000000100000046 (which is a valid
-eflags value, but not the one we've actually restored!), and in your
-previous oops (where it was %r12) it was completely invalid.
+Doesn't build in 3.17 properly :(
 
-So it hasn't actually done the "push %rbx; popfq" part - there must be
-a label at the return part, and context_tracking_user_exit() never
-actually did the local_irq_save/restore at all. Which means that it
-took one of the early exits instead:
+> blk-mq bio merging (still no good fix available):
+> https://lkml.org/lkml/2014/10/9/729
+> (The fix sitting in the block tree:
+> https://git.kernel.org/cgit/linux/kernel/git/axboe/linux-block.git/commit/?h=for-3.18/core&id=764f612c6c3c231b9c12cfae7c328ccc9c453258
+> is wrong according to that message.)
 
-        if (!context_tracking_is_enabled())
-                return;
+Did this ever get resolved?
 
-        if (in_interrupt())
-                return;
+> Stalls when using nohz, requires series of six patches to fix that
+> didn't make 3.17 and weren't marked for -stable:
+> 
+> From a80e49e2cc3145af014a8ae44f575829cc236192 Mon Sep 17 00:00:00 2001
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Subject: nohz: Move nohz full init call to tick init
+> 
+> From c5c38ef3d70377dc504a6a3f611a3ec814bc757b Mon Sep 17 00:00:00 2001
+> From: Peter Zijlstra <peterz@infradead.org>
+> Subject: irq_work: Introduce arch_irq_work_has_interrupt()
+> 
+> From 76a33061b9323b7fdb220ae5fa116c10833ec22e Mon Sep 17 00:00:00 2001
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Subject: irq_work: Force raised irq work to run on irq work interrupt
+> 
+> From 3010279f0fc36f0388872203e63ca49912f648fd Mon Sep 17 00:00:00 2001
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Subject: x86: Tell irq work about self IPI support
+> 
+> From 09f6edd424218eb69078551b2ecfada1f2d098eb Mon Sep 17 00:00:00 2001
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Subject: arm: Tell irq work about self IPI support
+> 
+> From 3631073659d0aafeaa52227bb61a100efaf901dc Mon Sep 17 00:00:00 2001
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Subject: arm64: Tell irq work about self IPI support
 
-So not only does this happen at early system call entry time, the
-function that is claimed to lock up doesn't actually *do* anything.
+These are pretty intrusive, maybe 3.18 is better for people to use :)
 
-Ho humm..
+If Frederic says it's ok for me to backport these, I will, but I want
+his ack first.
 
-Oh, and to make matters worse, the only way this call chain can happen
-is this in syscall_trace_enter_phase1():
+thanks,
 
-        if (work & _TIF_NOHZ) {
-                user_exit();
-                work &= ~TIF_NOHZ;
-        }
-
-so there's still some NOHZ confusion there. It looks like TIF_NOHZ
-gets set regardless of whether NOHZ is enabled or not..
-
-I'm adding Frederic explicitly to the cc too, because this is just
-fishy.  I am starting to blame context tracking, because it has now
-shown up twice in different guises, and TIF_NOHZ seems to be
-implicated.
-
-> CPU: 1 PID: 25164 Comm: trinity-c64 Not tainted 3.18.0-rc5+ #92 [loadavg: 168.72 151.72 150.38 9/410 27945]
-> RIP: 0010:[<ffffffff940fb71e>]  [<ffffffff940fb71e>] generic_exec_single+0xee/0x1a0
-> Call Trace:
->  [<ffffffff940fb89a>] smp_call_function_single+0x6a/0xe0
->  [<ffffffff941671aa>] perf_event_read+0xca/0xd0
->  [<ffffffff94167240>] perf_event_read_value+0x90/0xe0
->  [<ffffffff941689c6>] perf_read+0x226/0x370
->  [<ffffffff941eafff>] vfs_read+0x9f/0x180
-
-Hmm.. We've certainly seen a lot of smp_call, for various different
-reasons in your traces..
-
-I'm wondering if the smp-call ended up corrupting something on CPU3.
-Because even _with_ TIF_NOHZ confusion, I don't see how system call
-*entry* could cause a watchdog event. There are no loops, there are no
-locks I see, there is just *nothing* there I can see.
-
-Let's add Andy L to the cc too, in case he hasn't seen this.  He's
-been changing the lowlevel asm code, including very much this whole
-"syscall_trace_enter_phase1" thing. Maybe he sees something I don't.
-
-Andy?
-
-> CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.18.0-rc5+ #92 [loadavg: 168.72 151.72 150.38 11/410 27945]
-> RIP: 0010:[<ffffffff943dd415>]  [<ffffffff943dd415>] intel_idle+0xd5/0x180
-> CPU: 2 PID: 0 Comm: swapper/2 Not tainted 3.18.0-rc5+ #92 [loadavg: 168.72 151.72 150.38 10/410 27945]
-> RIP: 0010:[<ffffffff943dd415>]  [<ffffffff943dd415>] intel_idle+0xd5/0x180
-
-Nothing there.
-
-> Also, today I learned we can reach the perf_event_read code from
-> read(). Given I had /proc/sys/kernel/perf_event_paranoid set to 1,
-> I'm not sure how this is even possible. The only user of perf_fops
-> is perf_event_open syscall _after_ it's checked that sysctl.
->
-> Oh, there's an ioctl path to perf too. Though trinity
-> doesn't know anything about it, so I find it surprising if it
-> managed to pull the right combination of entropy to make that
-> do the right thing.  Still, that ioctl path probably needs
-> to also be checking that sysctl shouldn't it ?
-
-Hmm. Perf people are already mostly on the list. Peter/Ingo/Arnaldo?
-
-                      Linus
+greg k-h
