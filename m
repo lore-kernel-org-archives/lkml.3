@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933668AbaKSVSj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:18:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57366 "EHLO
+	id S934106AbaKSVS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:18:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57596 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933949AbaKSVPA (ORCPT
+	with ESMTP id S933943AbaKSVO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:15:00 -0500
+	Wed, 19 Nov 2014 16:14:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Houcheng Lin <houcheng@gmail.com>, Florian Westphal <fw@strlen.de>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.10 45/70] netfilter: nf_log: release skbuff on nlmsg put failure
-Date: Wed, 19 Nov 2014 12:52:36 -0800
-Message-Id: <20141119205212.421569709@linuxfoundation.org>
+        azurIt <azurit@pobox.sk>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Subject: [PATCH 3.10 70/70] mm: memcg: handle non-error OOM situations more gracefully
+Date: Wed, 19 Nov 2014 12:53:01 -0800
+Message-Id: <20141119205213.216247752@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -29,66 +32,421 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Houcheng Lin <houcheng@gmail.com>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit b51d3fa364885a2c1e1668f88776c67c95291820 upstream.
+commit 4942642080ea82d99ab5b653abb9a12b7ba31f4a upstream.
 
-The kernel should reserve enough room in the skb so that the DONE
-message can always be appended.  However, in case of e.g. new attribute
-erronously not being size-accounted for, __nfulnl_send() will still
-try to put next nlmsg into this full skbuf, causing the skb to be stuck
-forever and blocking delivery of further messages.
+Commit 3812c8c8f395 ("mm: memcg: do not trap chargers with full
+callstack on OOM") assumed that only a few places that can trigger a
+memcg OOM situation do not return VM_FAULT_OOM, like optional page cache
+readahead.  But there are many more and it's impractical to annotate
+them all.
 
-Fix issue by releasing skb immediately after nlmsg_put error and
-WARN() so we can track down the cause of such size mismatch.
+First of all, we don't want to invoke the OOM killer when the failed
+allocation is gracefully handled, so defer the actual kill to the end of
+the fault handling as well.  This simplifies the code quite a bit for
+added bonus.
 
-[ fw@strlen.de: add tailroom/len info to WARN ]
+Second, since a failed allocation might not be the abrupt end of the
+fault, the memcg OOM handler needs to be re-entrant until the fault
+finishes for subsequent allocation attempts.  If an allocation is
+attempted after the task already OOMed, allow it to bypass the limit so
+that it can quickly finish the fault and invoke the OOM killer.
 
-Signed-off-by: Houcheng Lin <houcheng@gmail.com>
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Reported-by: azurIt <azurit@pobox.sk>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nfnetlink_log.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ include/linux/memcontrol.h |   50 +++-------------
+ include/linux/sched.h      |    7 --
+ mm/filemap.c               |   11 ---
+ mm/memcontrol.c            |  139 ++++++++++++++++-----------------------------
+ mm/memory.c                |   18 +++--
+ mm/oom_kill.c              |    2 
+ 6 files changed, 79 insertions(+), 148 deletions(-)
 
---- a/net/netfilter/nfnetlink_log.c
-+++ b/net/netfilter/nfnetlink_log.c
-@@ -348,26 +348,25 @@ nfulnl_alloc_skb(u32 peer_portid, unsign
- 	return skb;
- }
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -124,47 +124,24 @@ extern void mem_cgroup_print_oom_info(st
+ extern void mem_cgroup_replace_page_cache(struct page *oldpage,
+ 					struct page *newpage);
  
--static int
-+static void
- __nfulnl_send(struct nfulnl_instance *inst)
+-/**
+- * mem_cgroup_toggle_oom - toggle the memcg OOM killer for the current task
+- * @new: true to enable, false to disable
+- *
+- * Toggle whether a failed memcg charge should invoke the OOM killer
+- * or just return -ENOMEM.  Returns the previous toggle state.
+- *
+- * NOTE: Any path that enables the OOM killer before charging must
+- *       call mem_cgroup_oom_synchronize() afterward to finalize the
+- *       OOM handling and clean up.
+- */
+-static inline bool mem_cgroup_toggle_oom(bool new)
++static inline void mem_cgroup_oom_enable(void)
  {
--	int status = -1;
+-	bool old;
 -
- 	if (inst->qlen > 1) {
- 		struct nlmsghdr *nlh = nlmsg_put(inst->skb, 0, 0,
- 						 NLMSG_DONE,
- 						 sizeof(struct nfgenmsg),
- 						 0);
--		if (!nlh)
-+		if (WARN_ONCE(!nlh, "bad nlskb size: %u, tailroom %d\n",
-+			      inst->skb->len, skb_tailroom(inst->skb))) {
-+			kfree_skb(inst->skb);
- 			goto out;
-+		}
- 	}
--	status = nfnetlink_unicast(inst->skb, inst->net, inst->peer_portid,
--				   MSG_DONTWAIT);
+-	old = current->memcg_oom.may_oom;
+-	current->memcg_oom.may_oom = new;
 -
-+	nfnetlink_unicast(inst->skb, inst->net, inst->peer_portid,
-+			  MSG_DONTWAIT);
-+out:
- 	inst->qlen = 0;
- 	inst->skb = NULL;
--out:
--	return status;
+-	return old;
++	WARN_ON(current->memcg_oom.may_oom);
++	current->memcg_oom.may_oom = 1;
  }
  
- static void
+-static inline void mem_cgroup_enable_oom(void)
++static inline void mem_cgroup_oom_disable(void)
+ {
+-	bool old = mem_cgroup_toggle_oom(true);
+-
+-	WARN_ON(old == true);
+-}
+-
+-static inline void mem_cgroup_disable_oom(void)
+-{
+-	bool old = mem_cgroup_toggle_oom(false);
+-
+-	WARN_ON(old == false);
++	WARN_ON(!current->memcg_oom.may_oom);
++	current->memcg_oom.may_oom = 0;
+ }
+ 
+ static inline bool task_in_memcg_oom(struct task_struct *p)
+ {
+-	return p->memcg_oom.in_memcg_oom;
++	return p->memcg_oom.memcg;
+ }
+ 
+-bool mem_cgroup_oom_synchronize(void);
++bool mem_cgroup_oom_synchronize(bool wait);
+ 
+ #ifdef CONFIG_MEMCG_SWAP
+ extern int do_swap_account;
+@@ -389,16 +366,11 @@ static inline void mem_cgroup_end_update
+ {
+ }
+ 
+-static inline bool mem_cgroup_toggle_oom(bool new)
+-{
+-	return false;
+-}
+-
+-static inline void mem_cgroup_enable_oom(void)
++static inline void mem_cgroup_oom_enable(void)
+ {
+ }
+ 
+-static inline void mem_cgroup_disable_oom(void)
++static inline void mem_cgroup_oom_disable(void)
+ {
+ }
+ 
+@@ -407,7 +379,7 @@ static inline bool task_in_memcg_oom(str
+ 	return false;
+ }
+ 
+-static inline bool mem_cgroup_oom_synchronize(void)
++static inline bool mem_cgroup_oom_synchronize(bool wait)
+ {
+ 	return false;
+ }
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1412,11 +1412,10 @@ struct task_struct {
+ 	} memcg_batch;
+ 	unsigned int memcg_kmem_skip_account;
+ 	struct memcg_oom_info {
++		struct mem_cgroup *memcg;
++		gfp_t gfp_mask;
++		int order;
+ 		unsigned int may_oom:1;
+-		unsigned int in_memcg_oom:1;
+-		unsigned int oom_locked:1;
+-		int wakeups;
+-		struct mem_cgroup *wait_on_memcg;
+ 	} memcg_oom;
+ #endif
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1614,7 +1614,6 @@ int filemap_fault(struct vm_area_struct
+ 	struct inode *inode = mapping->host;
+ 	pgoff_t offset = vmf->pgoff;
+ 	struct page *page;
+-	bool memcg_oom;
+ 	pgoff_t size;
+ 	int ret = 0;
+ 
+@@ -1623,11 +1622,7 @@ int filemap_fault(struct vm_area_struct
+ 		return VM_FAULT_SIGBUS;
+ 
+ 	/*
+-	 * Do we have something in the page cache already?  Either
+-	 * way, try readahead, but disable the memcg OOM killer for it
+-	 * as readahead is optional and no errors are propagated up
+-	 * the fault stack.  The OOM killer is enabled while trying to
+-	 * instantiate the faulting page individually below.
++	 * Do we have something in the page cache already?
+ 	 */
+ 	page = find_get_page(mapping, offset);
+ 	if (likely(page) && !(vmf->flags & FAULT_FLAG_TRIED)) {
+@@ -1635,14 +1630,10 @@ int filemap_fault(struct vm_area_struct
+ 		 * We found the page, so try async readahead before
+ 		 * waiting for the lock.
+ 		 */
+-		memcg_oom = mem_cgroup_toggle_oom(false);
+ 		do_async_mmap_readahead(vma, ra, file, page, offset);
+-		mem_cgroup_toggle_oom(memcg_oom);
+ 	} else if (!page) {
+ 		/* No page in the page cache at all */
+-		memcg_oom = mem_cgroup_toggle_oom(false);
+ 		do_sync_mmap_readahead(vma, ra, file, offset);
+-		mem_cgroup_toggle_oom(memcg_oom);
+ 		count_vm_event(PGMAJFAULT);
+ 		mem_cgroup_count_vm_event(vma->vm_mm, PGMAJFAULT);
+ 		ret = VM_FAULT_MAJOR;
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2191,110 +2191,59 @@ static void memcg_oom_recover(struct mem
+ 		memcg_wakeup_oom(memcg);
+ }
+ 
+-/*
+- * try to call OOM killer
+- */
+ static void mem_cgroup_oom(struct mem_cgroup *memcg, gfp_t mask, int order)
+ {
+-	bool locked;
+-	int wakeups;
+-
+ 	if (!current->memcg_oom.may_oom)
+ 		return;
+-
+-	current->memcg_oom.in_memcg_oom = 1;
+-
+ 	/*
+-	 * As with any blocking lock, a contender needs to start
+-	 * listening for wakeups before attempting the trylock,
+-	 * otherwise it can miss the wakeup from the unlock and sleep
+-	 * indefinitely.  This is just open-coded because our locking
+-	 * is so particular to memcg hierarchies.
++	 * We are in the middle of the charge context here, so we
++	 * don't want to block when potentially sitting on a callstack
++	 * that holds all kinds of filesystem and mm locks.
++	 *
++	 * Also, the caller may handle a failed allocation gracefully
++	 * (like optional page cache readahead) and so an OOM killer
++	 * invocation might not even be necessary.
++	 *
++	 * That's why we don't do anything here except remember the
++	 * OOM context and then deal with it at the end of the page
++	 * fault when the stack is unwound, the locks are released,
++	 * and when we know whether the fault was overall successful.
+ 	 */
+-	wakeups = atomic_read(&memcg->oom_wakeups);
+-	mem_cgroup_mark_under_oom(memcg);
+-
+-	locked = mem_cgroup_oom_trylock(memcg);
+-
+-	if (locked)
+-		mem_cgroup_oom_notify(memcg);
+-
+-	if (locked && !memcg->oom_kill_disable) {
+-		mem_cgroup_unmark_under_oom(memcg);
+-		mem_cgroup_out_of_memory(memcg, mask, order);
+-		mem_cgroup_oom_unlock(memcg);
+-		/*
+-		 * There is no guarantee that an OOM-lock contender
+-		 * sees the wakeups triggered by the OOM kill
+-		 * uncharges.  Wake any sleepers explicitely.
+-		 */
+-		memcg_oom_recover(memcg);
+-	} else {
+-		/*
+-		 * A system call can just return -ENOMEM, but if this
+-		 * is a page fault and somebody else is handling the
+-		 * OOM already, we need to sleep on the OOM waitqueue
+-		 * for this memcg until the situation is resolved.
+-		 * Which can take some time because it might be
+-		 * handled by a userspace task.
+-		 *
+-		 * However, this is the charge context, which means
+-		 * that we may sit on a large call stack and hold
+-		 * various filesystem locks, the mmap_sem etc. and we
+-		 * don't want the OOM handler to deadlock on them
+-		 * while we sit here and wait.  Store the current OOM
+-		 * context in the task_struct, then return -ENOMEM.
+-		 * At the end of the page fault handler, with the
+-		 * stack unwound, pagefault_out_of_memory() will check
+-		 * back with us by calling
+-		 * mem_cgroup_oom_synchronize(), possibly putting the
+-		 * task to sleep.
+-		 */
+-		current->memcg_oom.oom_locked = locked;
+-		current->memcg_oom.wakeups = wakeups;
+-		css_get(&memcg->css);
+-		current->memcg_oom.wait_on_memcg = memcg;
+-	}
++	css_get(&memcg->css);
++	current->memcg_oom.memcg = memcg;
++	current->memcg_oom.gfp_mask = mask;
++	current->memcg_oom.order = order;
+ }
+ 
+ /**
+  * mem_cgroup_oom_synchronize - complete memcg OOM handling
++ * @handle: actually kill/wait or just clean up the OOM state
+  *
+- * This has to be called at the end of a page fault if the the memcg
+- * OOM handler was enabled and the fault is returning %VM_FAULT_OOM.
++ * This has to be called at the end of a page fault if the memcg OOM
++ * handler was enabled.
+  *
+- * Memcg supports userspace OOM handling, so failed allocations must
++ * Memcg supports userspace OOM handling where failed allocations must
+  * sleep on a waitqueue until the userspace task resolves the
+  * situation.  Sleeping directly in the charge context with all kinds
+  * of locks held is not a good idea, instead we remember an OOM state
+  * in the task and mem_cgroup_oom_synchronize() has to be called at
+- * the end of the page fault to put the task to sleep and clean up the
+- * OOM state.
++ * the end of the page fault to complete the OOM handling.
+  *
+  * Returns %true if an ongoing memcg OOM situation was detected and
+- * finalized, %false otherwise.
++ * completed, %false otherwise.
+  */
+-bool mem_cgroup_oom_synchronize(void)
++bool mem_cgroup_oom_synchronize(bool handle)
+ {
++	struct mem_cgroup *memcg = current->memcg_oom.memcg;
+ 	struct oom_wait_info owait;
+-	struct mem_cgroup *memcg;
++	bool locked;
+ 
+ 	/* OOM is global, do not handle */
+-	if (!current->memcg_oom.in_memcg_oom)
+-		return false;
+-
+-	/*
+-	 * We invoked the OOM killer but there is a chance that a kill
+-	 * did not free up any charges.  Everybody else might already
+-	 * be sleeping, so restart the fault and keep the rampage
+-	 * going until some charges are released.
+-	 */
+-	memcg = current->memcg_oom.wait_on_memcg;
+ 	if (!memcg)
+-		goto out;
++		return false;
+ 
+-	if (test_thread_flag(TIF_MEMDIE) || fatal_signal_pending(current))
+-		goto out_memcg;
++	if (!handle)
++		goto cleanup;
+ 
+ 	owait.memcg = memcg;
+ 	owait.wait.flags = 0;
+@@ -2303,13 +2252,25 @@ bool mem_cgroup_oom_synchronize(void)
+ 	INIT_LIST_HEAD(&owait.wait.task_list);
+ 
+ 	prepare_to_wait(&memcg_oom_waitq, &owait.wait, TASK_KILLABLE);
+-	/* Only sleep if we didn't miss any wakeups since OOM */
+-	if (atomic_read(&memcg->oom_wakeups) == current->memcg_oom.wakeups)
++	mem_cgroup_mark_under_oom(memcg);
++
++	locked = mem_cgroup_oom_trylock(memcg);
++
++	if (locked)
++		mem_cgroup_oom_notify(memcg);
++
++	if (locked && !memcg->oom_kill_disable) {
++		mem_cgroup_unmark_under_oom(memcg);
++		finish_wait(&memcg_oom_waitq, &owait.wait);
++		mem_cgroup_out_of_memory(memcg, current->memcg_oom.gfp_mask,
++					 current->memcg_oom.order);
++	} else {
+ 		schedule();
+-	finish_wait(&memcg_oom_waitq, &owait.wait);
+-out_memcg:
+-	mem_cgroup_unmark_under_oom(memcg);
+-	if (current->memcg_oom.oom_locked) {
++		mem_cgroup_unmark_under_oom(memcg);
++		finish_wait(&memcg_oom_waitq, &owait.wait);
++	}
++
++	if (locked) {
+ 		mem_cgroup_oom_unlock(memcg);
+ 		/*
+ 		 * There is no guarantee that an OOM-lock contender
+@@ -2318,10 +2279,9 @@ out_memcg:
+ 		 */
+ 		memcg_oom_recover(memcg);
+ 	}
++cleanup:
++	current->memcg_oom.memcg = NULL;
+ 	css_put(&memcg->css);
+-	current->memcg_oom.wait_on_memcg = NULL;
+-out:
+-	current->memcg_oom.in_memcg_oom = 0;
+ 	return true;
+ }
+ 
+@@ -2742,6 +2702,9 @@ static int __mem_cgroup_try_charge(struc
+ 		     || fatal_signal_pending(current)))
+ 		goto bypass;
+ 
++	if (unlikely(task_in_memcg_oom(current)))
++		goto bypass;
++
+ 	/*
+ 	 * We always charge the cgroup the mm_struct belongs to.
+ 	 * The mm_struct's mem_cgroup changes on task migration if the
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3860,15 +3860,21 @@ int handle_mm_fault(struct mm_struct *mm
+ 	 * space.  Kernel faults are handled more gracefully.
+ 	 */
+ 	if (flags & FAULT_FLAG_USER)
+-		mem_cgroup_enable_oom();
++		mem_cgroup_oom_enable();
+ 
+ 	ret = __handle_mm_fault(mm, vma, address, flags);
+ 
+-	if (flags & FAULT_FLAG_USER)
+-		mem_cgroup_disable_oom();
+-
+-	if (WARN_ON(task_in_memcg_oom(current) && !(ret & VM_FAULT_OOM)))
+-		mem_cgroup_oom_synchronize();
++	if (flags & FAULT_FLAG_USER) {
++		mem_cgroup_oom_disable();
++                /*
++                 * The task may have entered a memcg OOM situation but
++                 * if the allocation error was handled gracefully (no
++                 * VM_FAULT_OOM), there is no need to kill anything.
++                 * Just clean up the OOM state peacefully.
++                 */
++                if (task_in_memcg_oom(current) && !(ret & VM_FAULT_OOM))
++                        mem_cgroup_oom_synchronize(false);
++	}
+ 
+ 	return ret;
+ }
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -704,7 +704,7 @@ void pagefault_out_of_memory(void)
+ {
+ 	struct zonelist *zonelist;
+ 
+-	if (mem_cgroup_oom_synchronize())
++	if (mem_cgroup_oom_synchronize(true))
+ 		return;
+ 
+ 	zonelist = node_zonelist(first_online_node, GFP_KERNEL);
 
 
