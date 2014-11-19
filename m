@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934395AbaKSVbE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:31:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57291 "EHLO
+	id S934378AbaKSVbD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:31:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57283 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933790AbaKSVOl (ORCPT
+	with ESMTP id S933787AbaKSVOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:14:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>
-Subject: [PATCH 3.10 29/70] parisc: Use compat layer for msgctl, shmat, shmctl and semtimedop syscalls
-Date: Wed, 19 Nov 2014 12:52:20 -0800
-Message-Id: <20141119205211.899673051@linuxfoundation.org>
+        Daniel Borkmann <dborkman@redhat.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 03/70] net: sctp: fix NULL pointer dereference in af->from_addr_param on malformed packet
+Date: Wed, 19 Nov 2014 12:51:54 -0800
+Message-Id: <20141119205211.026877425@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -28,90 +31,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 2fe749f50b0bec07650ef135b29b1f55bf543869 upstream.
+[ Upstream commit e40607cbe270a9e8360907cb1e62ddf0736e4864 ]
 
-Switch over the msgctl, shmat, shmctl and semtimedop syscalls to use the compat
-layer. The problem was found with the debian procenv package, which called
-	shmctl(0, SHM_INFO, &info);
-in which the shmctl syscall then overwrote parts of the surrounding areas on
-the stack on which the info variable was stored and thus lead to a segfault
-later on.
+An SCTP server doing ASCONF will panic on malformed INIT ping-of-death
+in the form of:
 
-Additionally fix the definition of struct shminfo64 to use unsigned longs like
-the other architectures. This has no impact on userspace since we only have a
-32bit userspace up to now.
+  ------------ INIT[PARAM: SET_PRIMARY_IP] ------------>
 
-Signed-off-by: Helge Deller <deller@gmx.de>
-Cc: John David Anglin <dave.anglin@bell.net>
+While the INIT chunk parameter verification dissects through many things
+in order to detect malformed input, it misses to actually check parameters
+inside of parameters. E.g. RFC5061, section 4.2.4 proposes a 'set primary
+IP address' parameter in ASCONF, which has as a subparameter an address
+parameter.
+
+So an attacker may send a parameter type other than SCTP_PARAM_IPV4_ADDRESS
+or SCTP_PARAM_IPV6_ADDRESS, param_type2af() will subsequently return 0
+and thus sctp_get_af_specific() returns NULL, too, which we then happily
+dereference unconditionally through af->from_addr_param().
+
+The trace for the log:
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
+IP: [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
+PGD 0
+Oops: 0000 [#1] SMP
+[...]
+Pid: 0, comm: swapper Not tainted 2.6.32-504.el6.x86_64 #1 Bochs Bochs
+RIP: 0010:[<ffffffffa01e9c62>]  [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
+[...]
+Call Trace:
+ <IRQ>
+ [<ffffffffa01f2add>] ? sctp_bind_addr_copy+0x5d/0xe0 [sctp]
+ [<ffffffffa01e1fcb>] sctp_sf_do_5_1B_init+0x21b/0x340 [sctp]
+ [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
+ [<ffffffffa01e5c09>] ? sctp_endpoint_lookup_assoc+0xc9/0xf0 [sctp]
+ [<ffffffffa01e61f6>] sctp_endpoint_bh_rcv+0x116/0x230 [sctp]
+ [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
+ [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
+ [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
+ [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
+ [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
+ [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
+ [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
+[...]
+
+A minimal way to address this is to check for NULL as we do on all
+other such occasions where we know sctp_get_af_specific() could
+possibly return with NULL.
+
+Fixes: d6de3097592b ("[SCTP]: Add the handling of "Set Primary IP Address" parameter to INIT")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/parisc/include/uapi/asm/shmbuf.h |   25 +++++++++----------------
- arch/parisc/kernel/syscall_table.S    |    8 ++++----
- 2 files changed, 13 insertions(+), 20 deletions(-)
+ net/sctp/sm_make_chunk.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/parisc/include/uapi/asm/shmbuf.h
-+++ b/arch/parisc/include/uapi/asm/shmbuf.h
-@@ -36,23 +36,16 @@ struct shmid64_ds {
- 	unsigned int		__unused2;
- };
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -2596,6 +2596,9 @@ do_addr_param:
+ 		addr_param = param.v + sizeof(sctp_addip_param_t);
  
--#ifdef CONFIG_64BIT
--/* The 'unsigned int' (formerly 'unsigned long') data types below will
-- * ensure that a 32-bit app calling shmctl(*,IPC_INFO,*) will work on
-- * a wide kernel, but if some of these values are meant to contain pointers
-- * they may need to be 'long long' instead. -PB XXX FIXME
-- */
--#endif
- struct shminfo64 {
--	unsigned int	shmmax;
--	unsigned int	shmmin;
--	unsigned int	shmmni;
--	unsigned int	shmseg;
--	unsigned int	shmall;
--	unsigned int	__unused1;
--	unsigned int	__unused2;
--	unsigned int	__unused3;
--	unsigned int	__unused4;
-+	unsigned long	shmmax;
-+	unsigned long	shmmin;
-+	unsigned long	shmmni;
-+	unsigned long	shmseg;
-+	unsigned long	shmall;
-+	unsigned long	__unused1;
-+	unsigned long	__unused2;
-+	unsigned long	__unused3;
-+	unsigned long	__unused4;
- };
+ 		af = sctp_get_af_specific(param_type2af(param.p->type));
++		if (af == NULL)
++			break;
++
+ 		af->from_addr_param(&addr, addr_param,
+ 				    htons(asoc->peer.port), 0);
  
- #endif /* _PARISC_SHMBUF_H */
---- a/arch/parisc/kernel/syscall_table.S
-+++ b/arch/parisc/kernel/syscall_table.S
-@@ -286,11 +286,11 @@
- 	ENTRY_COMP(msgsnd)
- 	ENTRY_COMP(msgrcv)
- 	ENTRY_SAME(msgget)		/* 190 */
--	ENTRY_SAME(msgctl)
--	ENTRY_SAME(shmat)
-+	ENTRY_COMP(msgctl)
-+	ENTRY_COMP(shmat)
- 	ENTRY_SAME(shmdt)
- 	ENTRY_SAME(shmget)
--	ENTRY_SAME(shmctl)		/* 195 */
-+	ENTRY_COMP(shmctl)		/* 195 */
- 	ENTRY_SAME(ni_syscall)		/* streams1 */
- 	ENTRY_SAME(ni_syscall)		/* streams2 */
- 	ENTRY_SAME(lstat64)
-@@ -323,7 +323,7 @@
- 	ENTRY_SAME(epoll_ctl)		/* 225 */
- 	ENTRY_SAME(epoll_wait)
-  	ENTRY_SAME(remap_file_pages)
--	ENTRY_SAME(semtimedop)
-+	ENTRY_COMP(semtimedop)
- 	ENTRY_COMP(mq_open)
- 	ENTRY_SAME(mq_unlink)		/* 230 */
- 	ENTRY_COMP(mq_timedsend)
 
 
