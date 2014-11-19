@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933219AbaKSXN0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 18:13:26 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:48903 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932658AbaKSXNY (ORCPT
+	id S933240AbaKSXOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 18:14:18 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:61030 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932633AbaKSXOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 18:13:24 -0500
-Date: Thu, 20 Nov 2014 00:13:21 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141119231319.GD11386@lerouge>
-References: <20141118215540.GD35311@redhat.com>
- <20141119021902.GA14216@redhat.com>
- <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
- <20141119145902.GA13387@redhat.com>
- <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
- <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
- <20141119190215.GA10796@lerouge>
- <CALCETrVOW1U8uDKZhChP_PgG40jsJE4F0Jeyfj1BT=qJSFY6yw@mail.gmail.com>
- <20141119230051.GB11386@lerouge>
- <CALCETrVrUNgHnT4ON12oZZbt=dXXaaSBSHHYLtUTvDqDo87hYg@mail.gmail.com>
+	Wed, 19 Nov 2014 18:14:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVrUNgHnT4ON12oZZbt=dXXaaSBSHHYLtUTvDqDo87hYg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALYGNiO9_bAVVZ2GdFq=PO2yV3LPs2utsbcb2pFby7MypptLCw@mail.gmail.com>
+References: <502D42E5.7090403@redhat.com>
+	<20120818000312.GA4262@evergreen.ssec.wisc.edu>
+	<502F100A.1080401@redhat.com>
+	<alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
+	<CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
+	<20120822032057.GA30871@google.com>
+	<50345232.4090002@redhat.com>
+	<20130603195003.GA31275@evergreen.ssec.wisc.edu>
+	<20141114163053.GA6547@cosmos.ssec.wisc.edu>
+	<20141117160212.b86d031e1870601240b0131d@linux-foundation.org>
+	<20141118014135.GA17252@cosmos.ssec.wisc.edu>
+	<546AB1F5.6030306@redhat.com>
+	<20141118121936.07b02545a0684b2cc839a10c@linux-foundation.org>
+	<CALYGNiMxnxmy-LyJ4OT9OoFeKwTPPkZMF-bJ-eJDBFXgZQ6AEA@mail.gmail.com>
+	<CALYGNiM_CsjjiK_36JGirZT8rTP+ROYcH0CSyZjghtSNDU8ptw@mail.gmail.com>
+	<546BDB29.9050403@suse.cz>
+	<CALYGNiOHXvyqr3+Jq5FsZ_xscsXwrQ_9YCtL2819i6iRkgms2w@mail.gmail.com>
+	<546CC0CD.40906@suse.cz>
+	<CALYGNiO9_bAVVZ2GdFq=PO2yV3LPs2utsbcb2pFby7MypptLCw@mail.gmail.com>
+Date: Wed, 19 Nov 2014 15:14:15 -0800
+Message-ID: <CANN689G+y77m2_paF0vBpHG8EsJ2-pEnJvLJSGs-zHf+SqTEjQ@mail.gmail.com>
+Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
+From: Michel Lespinasse <walken@google.com>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Tim Hartrick <tim@edgecast.com>, Michal Hocko <mhocko@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 03:07:17PM -0800, Andy Lutomirski wrote:
-> On Wed, Nov 19, 2014 at 3:00 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > Note that's non-sleeping faults. So probably most places are fine except
-> > a few of them that really don't want exception to mess up some state. I
-> > can imagine some entry code that really don't want that.
-> 
-> Any non-IST fault at all on the kernel_stack reference in system_call
-> is instant root on non-SMAP systems and instant double-fault or more
-> challenging root on SMAP systems.  The issue is that rsp is
-> user-controlled, so the CPU cannot deliver a non-IST fault safely.
+On Wed, Nov 19, 2014 at 8:58 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+> On Wed, Nov 19, 2014 at 7:09 PM, Vlastimil Babka <vbabka@suse.cz> wrote:
+>> Also from reading http://lwn.net/Articles/383162/ I understand that correctness
+>> also depends on the hierarchy and I wonder if there's a danger of reintroducing
+>> a bug like the one described there.
+>
+> If I remember right that was fixed by linking non-exclusively mapped pages to
+> root anon_vma instead of anon_vma from vma where fault has happened.
+> After my patch this still works. Topology hierarchy actually isn't used.
+> Here just one selected "root' anon_vma which dies last. That's all.
 
-Heh.
+That's not how I remember it.
 
-> >
-> > Is kernel stack allocated by vmalloc or alloc_percpu()?
-> 
-> DEFINE_PER_CPU(unsigned long, kernel_stack)
-> 
-> Note that I'm talking about kernel_stack, not the kernel stack itself.
+An anon_vma corresponds to a given vma V, and is used to track all
+vmas (V and descendant vmas) that may include a page that was
+originally mapped in V.
 
-Ah. Note, static allocation like DEFINE_PER_CPU() is probably fine. The
-issue is on dynamic allocations: alloc_percpu().
+Each anon page has a link to the anon_vma corresponding to the vma
+they were originally faulted in, and an offset indicating where the
+page was located relative to that original VMA.
 
-> The actual stack is regular linearly-mapped memory, although I plan on
-> trying to change that, complete with all kinds of care to avoid double
-> faults.
+The anon_vma has an interval tree of struct anon_vma_chain, and each
+struct anon_vma_chain includes a link to a descendent-of-V vma. This
+allows rmap to quickly find all the vmas that may map a given page
+(based on the page's anon_vma and offset).
 
-If you do so, you must really ensure that the resulting memory will never
-fault.
+When forking or splitting vmas, the new vma is a descendent of the
+same vmas as the old one so it must be added to all the anon_vma
+interval trees that were referencing the old one (that is, ancestors
+of the new vma). To that end, all the struct anon_vma_chain pointing
+to a given vma are kept on a linked list, and struct anon_vma_chain
+includes a link to the anon_vma holding the interval tree.
+
+Locking the entire structure is done with a single lock hosted in the
+root anon_vma (that is, a vma that was created by mmap() and not by
+cloning or forking existing vmas).
+
+Limit the length of the ancestors linked list is correct, though it
+has performance implications. In the extreme case, forcing all vmas to
+be added on the root vma's interval tree would be correct, though it
+may re-introduce the performance problems that lead to the
+introduction of anon_vma.
+
+The good thing about Konstantin's proposal is that it does not have
+any magic constant like mine did. However, I think he is mistaken in
+saying that hierarchy isn't used - an ancestor vma will always have
+more descendents than its children, and the reason for the hierarchy
+is to limit the number of vmas that rmap must explore.
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
