@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992AbaKSGKc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 01:10:32 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:63417 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754153AbaKSGK2 (ORCPT
+	id S1754749AbaKSGMy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 01:12:54 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:42021 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753704AbaKSGMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 01:10:28 -0500
+	Wed, 19 Nov 2014 01:12:53 -0500
+Message-ID: <546C34C8.5070907@ti.com>
+Date: Wed, 19 Nov 2014 11:42:24 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Date: Wed, 19 Nov 2014 14:10:27 +0800
-Message-ID: <CAJRGBZwxcZX88KZAs_a9HtBBo-EuxTvi7jONtpo=4DVv+i8n+w@mail.gmail.com>
-Subject: [RFC patch] I don't want to play with 64bit MMIO in 32bit kernel
-From: Luming Yu <luming.yu@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Pengyu Ma <pengyu.ma@windriver.com>
-Content-Type: multipart/mixed; boundary=001a11c2633a71ab550508301148
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: Vivek Gautam <gautamvivek1987@gmail.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        <andrew.kim@intel.com>
+Subject: Re: [PATCHv4 2/6] phy: improved lookup method
+References: <1413556756-5050-1-git-send-email-heikki.krogerus@linux.intel.com> <1413556756-5050-3-git-send-email-heikki.krogerus@linux.intel.com> <CAFp+6iH2oPT-HyJhFCXVCL4eUOQ0AFfxuyGsnXzPv9JTo55+VQ@mail.gmail.com> <5461AFD3.5020302@ti.com> <CAFp+6iGJBSpA5+Q7WQVu0+y-mfoN-E+LmYedipVfgXFZOpr+Cw@mail.gmail.com> <5461CDDF.4090209@ti.com> <CAFp+6iGAQMgX8S6dfPO44U=r6QJ4fT+1FX2uHNF9KK4sYs+=XA@mail.gmail.com> <CAFp+6iHta15CuBbsoQxEo2xr5GyXDgXQ=cg_Q_vOSC7akX0Vcw@mail.gmail.com> <20141117154028.GD7512@kuha.fi.intel.com> <546AD6D6.5070205@ti.com> <20141118153642.GA8881@kuha.fi.intel.com>
+In-Reply-To: <20141118153642.GA8881@kuha.fi.intel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c2633a71ab550508301148
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-hi LKML
+On Tuesday 18 November 2014 09:06 PM, Heikki Krogerus wrote:
+> On Tue, Nov 18, 2014 at 10:49:18AM +0530, Kishon Vijay Abraham I wrote:
+>> On Monday 17 November 2014 09:10 PM, Heikki Krogerus wrote:
+>>> On Thu, Nov 13, 2014 at 07:03:01PM +0530, Vivek Gautam wrote:
+>>>> How about adding the change in attached patch [1] on top of this patch.
+>>>> Just introduced the phy pointer in "phy_lookup" structure, and
+>>>> modified phy_find() accordingly.
+>>>
+>>> I would be fine if we used the phy pointer to match, but if we have
+>>> the pointer to the phy in the lookup, then I would say we need to
+>>> remove the phy_name member.
+>>>
+>>> Otherwise we would have to support two ways of finding the lookups
+>>> (one for the "static" lookups where we match to the phy_name and other
+>>> where we match to the pointer). That means we will also not be able to
+>>> create "static" lookups, but those would be only needed if we wanted to
+>>> create them in board files. I don't think there will ever be need to
+>>> create the lookups in board files, so I'm more then happy to remove
+>>> the static way of creating the lookups.
+>>
+>> Just using the phy pointer sounds good. But interested to know where the phy
+>> pointer will be added to the lookup table.
+> 
+> I'm making assumption that there will not be any (new) platforms where
+> the bindings are not provided in HW descriptions like dt or ACPI
+> tables. That leaves the lookups to be useful only in cases where a
+> driver has to, for whatever reason, pass it's phy's forward, like
+> dwc3 host. ULPI will be an other case where we will need to use them.
 
-There is an on-going development in bugzilla for a patch to move on in
-another direction for people who want to play with 64bits PCI BAR on
-32bit.
+right.
+> 
+> Now the only user for the lookups is twl4030-usb, but since it's
+> actually just ULPI type PHY in cases where we have platform data to
+> deal with (please correct me if I'm wrong), I think we could later
 
-https://bugzilla.kernel.org/show_bug.cgi?id=3D88131
+You mean passing the consumer info using platform data?
+> remove it's need for platform data completely with the help of the
+> ULPI bus I'm working with.
 
-But I send the patch out here to solicit comments for a sable way to
-play with pci devices on modern 64bit machine which usually features
-64bit BAR in a stable 32bit kernel.
+Sure.
 
-The patch attached forced the BAR  memory resource allocation back to
-32bit adress space in acpi root bridge case, then xhci and ixgbe works
-every well based on my testing. So I think it's not necessary to use
-64Bit BAR in 32bit kernel for stable reason.
+I'll be closing my phy tree by friday, so would be great if you can send your
+patches before that with "Tested-by" from Vivek.
 
-Thanks /l
-
-signed-off-by=EF=BC=9A  Luming Yu <luming.yu@intel.com>
-
---001a11c2633a71ab550508301148
-Content-Type: application/octet-stream; name=z
-Content-Disposition: attachment; filename=z
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_i2oahyfr0
-
-ZGlmZiAtLWdpdCBhL2FyY2gveDg2L3BjaS9hY3BpLmMgYi9hcmNoL3g4Ni9wY2kvYWNwaS5jCmlu
-ZGV4IGNmZDFiMTMuLjcyZTc0NjUgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L3BjaS9hY3BpLmMKKysr
-IGIvYXJjaC94ODYvcGNpL2FjcGkuYwpAQCAtMjUxLDcgKzI1MSw5IEBAIHN0YXRpYyBhY3BpX3N0
-YXR1cyByZXNvdXJjZV90b19hZGRyKHN0cnVjdCBhY3BpX3Jlc291cmNlICpyZXNvdXJjZSwKIAkJ
-cmV0dXJuIEFFX09LOwogCWNhc2UgQUNQSV9SRVNPVVJDRV9UWVBFX0FERFJFU1MxNjoKIAljYXNl
-IEFDUElfUkVTT1VSQ0VfVFlQRV9BRERSRVNTMzI6CisjaWYgQklUU19QRVJfTE9ORyA9PSA2NAog
-CWNhc2UgQUNQSV9SRVNPVVJDRV9UWVBFX0FERFJFU1M2NDoKKyNlbmRpZgogCQlzdGF0dXMgPSBh
-Y3BpX3Jlc291cmNlX3RvX2FkZHJlc3M2NChyZXNvdXJjZSwgYWRkcik7CiAJCWlmIChBQ1BJX1NV
-Q0NFU1Moc3RhdHVzKSAmJgogCQkgICAgKGFkZHItPnJlc291cmNlX3R5cGUgPT0gQUNQSV9NRU1P
-UllfUkFOR0UgfHwKQEAgLTI1OSw2ICsyNjEsMTAgQEAgc3RhdGljIGFjcGlfc3RhdHVzIHJlc291
-cmNlX3RvX2FkZHIoc3RydWN0IGFjcGlfcmVzb3VyY2UgKnJlc291cmNlLAogCQkgICAgYWRkci0+
-YWRkcmVzc19sZW5ndGggPiAwKSB7CiAJCQlyZXR1cm4gQUVfT0s7CiAJCX0KKyNpZiBCSVRTX1BF
-Ul9MT05HID09IDMyCisJY2FzZSBBQ1BJX1JFU09VUkNFX1RZUEVfQUREUkVTUzY0OgorCS8qIFdl
-IGRvbid0IHdhbnQgdG8gcGxheSB3aXRoIDY0IGJpdHMgbW1pbyBvbiB4ODYtMzJiaXQgKi8KKyNl
-bmRpZgogCQlicmVhazsKIAl9CiAJcmV0dXJuIEFFX0VSUk9SOwo=
---001a11c2633a71ab550508301148--
+Thanks
+Kishon
