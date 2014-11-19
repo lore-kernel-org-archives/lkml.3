@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934274AbaKSV1u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:27:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57283 "EHLO
+	id S934301AbaKSV2K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:28:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933130AbaKSVOp (ORCPT
+	with ESMTP id S933819AbaKSVOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:45 -0500
+	Wed, 19 Nov 2014 16:14:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.10 39/70] media: ttusb-dec: buffer overflow in ioctl
-Date: Wed, 19 Nov 2014 12:52:30 -0800
-Message-Id: <20141119205212.216376991@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.10 37/70] nfs: Fix use of uninitialized variable in nfs_getattr()
+Date: Wed, 19 Nov 2014 12:52:28 -0800
+Message-Id: <20141119205212.147721036@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -29,31 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Jan Kara <jack@suse.cz>
 
-commit f2e323ec96077642d397bb1c355def536d489d16 upstream.
+commit 16caf5b6101d03335b386e77e9e14136f989be87 upstream.
 
-We need to add a limit check here so we don't overflow the buffer.
+Variable 'err' needn't be initialized when nfs_getattr() uses it to
+check whether it should call generic_fillattr() or not. That can result
+in spurious error returns. Initialize 'err' properly.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/ttusb-dec/ttusbdecfe.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/nfs/inode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/usb/ttusb-dec/ttusbdecfe.c
-+++ b/drivers/media/usb/ttusb-dec/ttusbdecfe.c
-@@ -156,6 +156,9 @@ static int ttusbdecfe_dvbs_diseqc_send_m
- 		   0x00, 0x00, 0x00, 0x00,
- 		   0x00, 0x00 };
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -519,7 +519,7 @@ int nfs_getattr(struct vfsmount *mnt, st
+ {
+ 	struct inode *inode = dentry->d_inode;
+ 	int need_atime = NFS_I(inode)->cache_validity & NFS_INO_INVALID_ATIME;
+-	int err;
++	int err = 0;
  
-+	if (cmd->msg_len > sizeof(b) - 4)
-+		return -EINVAL;
-+
- 	memcpy(&b[4], cmd->msg, cmd->msg_len);
- 
- 	state->config->send_command(fe, 0x72,
+ 	/* Flush out writes to the server in order to update c/mtime.  */
+ 	if (S_ISREG(inode->i_mode)) {
 
 
