@@ -1,46 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343AbaKSTO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 14:14:29 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:54094 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814AbaKSTO2 (ORCPT
+	id S1756511AbaKSTPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 14:15:00 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:38791 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756434AbaKSTO6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 14:14:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141119190824.GM5050@linux.vnet.ibm.com>
-References: <20141119100946.GB4163@osiris>
-	<20141119190824.GM5050@linux.vnet.ibm.com>
-Date: Wed, 19 Nov 2014 14:14:27 -0500
-X-Google-Sender-Auth: kcD51o896-FFNYUIkwQbmyFReHQ
-Message-ID: <CA+5PVA5q+XASnm5Cejde_4c-isYsuPJzd5C=ZvmRw_EEGCgVJA@mail.gmail.com>
-Subject: Re: rcu warning caused by [sched: Fix race between task_group and sched_task_group]
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Kirill Tkhai <ktkhai@parallels.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 19 Nov 2014 14:14:58 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH 2/2] KEYS: request_key() should reget expired keys rather than give EKEYEXPIRED
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <20141119122249.26494.25661.stgit@warthog.procyon.org.uk>
+Date: Wed, 19 Nov 2014 14:14:44 -0500
+Cc: Carl Hetherington <cth@carlh.net>, Neil Brown <neilb@suse.de>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <BBF8B74B-AECA-4984-81A0-408ED5F8F8C8@oracle.com>
+References: <20141119122238.26494.23666.stgit@warthog.procyon.org.uk> <20141119122249.26494.25661.stgit@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+X-Mailer: Apple Mail (2.1878.6)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 2:08 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Wed, Nov 19, 2014 at 11:09:46AM +0100, Heiko Carstens wrote:
->> Hi Kirill,
->>
->> the problem below has already been reported here:
->> https://lkml.org/lkml/2014/11/11/505
->>
->> but seems there is still no fix available upstream?
->> Would be good to have it soon, since this basically renders lockdep unusable.
->
-> This one fixes this bug for me:
->
-> https://lkml.org/lkml/2014/11/4/613
 
-Yes.  It's still not in Linus' tree.
+On Nov 19, 2014, at 7:22 AM, David Howells <dhowells@redhat.com> wrote:
 
-josh
+> Since the keyring facility can be viewed as a cache (at least in some
+> applications), the local expiration time on the key should probably be viewed
+> as a 'needs updating after this time' property rather than an absolute 'anyone
+> now wanting to use this object is out of luck' property.
+> 
+> Since request_key() is the main interface for the usage of keys, this should
+> update or replace an expired key rather than issuing EKEYEXPIRED if the local
+> expiration has been reached (ie. it should refresh the cache).
+> 
+> For absolute conditions where refreshing the cache probably doesn't help, the
+> key can be negatively instantiated using KEYCTL_REJECT_KEY with EKEYEXPIRED
+> given as the error to issue.  This will still cause request_key() to return
+> EKEYEXPIRED as that was explicitly set.
+> 
+> In the future, if the key type has an update op available, we might want to
+> upcall with the expired key and allow the upcall to update it.  We would pass
+> a different operation name (the first column in /etc/request-key.conf) to the
+> request-key program.
+> 
+> request_key() returning EKEYEXPIRED is causing an NFS problem which Chuck
+> Lever describes thusly:
+> 
+> 	After about 10 minutes, my NFSv4 functional tests fail because the
+> 	ownership of the test files goes to "-2". Looking at /proc/keys
+> 	shows that the id_resolv keys that map to my test user ID have
+> 	expired. The ownership problem persists until the expired keys are
+> 	purged from the keyring, and fresh keys are obtained.
+> 
+> 	I bisected the problem to 3.13 commit b2a4df200d57 ("KEYS: Expand
+> 	the capacity of a keyring"). This commit inadvertantly changes the
+> 	API contract of the internal function keyring_search_aux().
+> 
+> 	The root cause appears to be that b2a4df200d57 made "no state check"
+> 	the default behavior. "No state check" means the keyring search
+> 	iterator function skips checking the key's expiry timeout, and
+> 	returns expired keys.  request_key_and_link() depends on getting
+> 	an -EAGAIN result code to know when to perform an upcall to refresh
+> 	an expired key.
+> 
+> This patch can be tested directly by:
+> 
+> 	keyctl request2 user debug:fred a @s
+> 	keyctl timeout %user:debug:fred 3
+> 	sleep 4
+> 	keyctl request2 user debug:fred a @s
+> 
+> Without the patch, the last command gives error EKEYEXPIRED, but with the
+> command it gives a new key.
+> 
+> Reported-by: Carl Hetherington <cth@carlh.net>
+> Reported-by: Chuck Lever <chuck.lever@oracle.com>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+
+Tested-by: Chuck Lever <chuck.lever@oracle.com>
+
+These two patches seem to behave as well as the one I
+proposed a few weeks ago.
+
+> ---
+> 
+> security/keys/internal.h    |    1 +
+> security/keys/keyring.c     |    3 ++-
+> security/keys/request_key.c |    3 ++-
+> 3 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/security/keys/internal.h b/security/keys/internal.h
+> index b8960c4959a5..200e37867336 100644
+> --- a/security/keys/internal.h
+> +++ b/security/keys/internal.h
+> @@ -117,6 +117,7 @@ struct keyring_search_context {
+> #define KEYRING_SEARCH_NO_UPDATE_TIME	0x0004	/* Don't update times */
+> #define KEYRING_SEARCH_NO_CHECK_PERM	0x0008	/* Don't check permissions */
+> #define KEYRING_SEARCH_DETECT_TOO_DEEP	0x0010	/* Give an error on excessive depth */
+> +#define KEYRING_SEARCH_SKIP_EXPIRED	0x0020	/* Ignore expired keys (intention to replace) */
+> 
+> 	int (*iterator)(const void *object, void *iterator_data);
+> 
+> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+> index 238aa172f25b..e72548b5897e 100644
+> --- a/security/keys/keyring.c
+> +++ b/security/keys/keyring.c
+> @@ -546,7 +546,8 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
+> 		}
+> 
+> 		if (key->expiry && ctx->now.tv_sec >= key->expiry) {
+> -			ctx->result = ERR_PTR(-EKEYEXPIRED);
+> +			if (!(ctx->flags & KEYRING_SEARCH_SKIP_EXPIRED))
+> +				ctx->result = ERR_PTR(-EKEYEXPIRED);
+> 			kleave(" = %d [expire]", ctx->skipped_ret);
+> 			goto skipped;
+> 		}
+> diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+> index 0bb23f98e4ca..0c7aea4dea54 100644
+> --- a/security/keys/request_key.c
+> +++ b/security/keys/request_key.c
+> @@ -516,7 +516,8 @@ struct key *request_key_and_link(struct key_type *type,
+> 		.match_data.cmp		= key_default_cmp,
+> 		.match_data.raw_data	= description,
+> 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
+> -		.flags			= KEYRING_SEARCH_DO_STATE_CHECK,
+> +		.flags			= (KEYRING_SEARCH_DO_STATE_CHECK |
+> +					   KEYRING_SEARCH_SKIP_EXPIRED),
+> 	};
+> 	struct key *key;
+> 	key_ref_t key_ref;
+> 
+
+--
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
