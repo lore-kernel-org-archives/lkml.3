@@ -1,115 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111AbaKSPq5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:46:57 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:48268 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756065AbaKSPqy (ORCPT
+	id S1756089AbaKSPqv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:46:51 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33634 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756065AbaKSPqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:46:54 -0500
-From: "pang.xunlei" <pang.xunlei@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        "pang.xunlei" <pang.xunlei@linaro.org>
-Subject: [PATCH v2 2/4] sched/deadline: Fix wrong cpudl_find() in check_preempt_equal_dl()
-Date: Wed, 19 Nov 2014 23:46:20 +0800
-Message-Id: <1416411982-1204-2-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1416411982-1204-1-git-send-email-pang.xunlei@linaro.org>
-References: <1416411982-1204-1-git-send-email-pang.xunlei@linaro.org>
+	Wed, 19 Nov 2014 10:46:50 -0500
+Date: Wed, 19 Nov 2014 15:46:35 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: For the problem when using swiotlb
+Message-ID: <20141119154634.GE7156@e104818-lin.cambridge.arm.com>
+References: <5469E26B.2010905@huawei.com>
+ <1535751.CcvIi3DN4F@wuerfel>
+ <20141119112910.GD7156@e104818-lin.cambridge.arm.com>
+ <1497289.TPKf3qDiKk@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1497289.TPKf3qDiKk@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In check_preempt_equal_dl(), cpudl_find() is called with a NULL later_mask,
-thus cpudl_find() here doesn't check cpudl.free_cpus at all.
+On Wed, Nov 19, 2014 at 12:48:58PM +0000, Arnd Bergmann wrote:
+> On Wednesday 19 November 2014 11:29:10 Catalin Marinas wrote:
+> > > The driver should call 'dma_set_mask_and_coherent()' with the appropriate
+> > > dma mask, and check whether that succeeded. However, the code implementing
+> > > dma_set_mask_and_coherent on arm64 also needs to be changed to look up
+> > > the dma-ranges property (see of_dma_configure()), and check if the mask
+> > > is possible.
+> > 
+> > dma_set_mask_and_coherent() is a generic function. I think the
+> > of_dma_configure() should start with a coherent_dma_mask based on
+> > dma-ranges if given rather than defaulting to DMA_BIT_MASK(32). The
+> > comment in of_dma_configure() says that devices should set up the
+> > supported mask but it's not always up to them but the bus they are
+> > connected to.
+> > 
+> > Something like below, untested:
+> > 
+> > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> > index 3b64d0bf5bba..dff34883db45 100644
+> > --- a/drivers/of/platform.c
+> > +++ b/drivers/of/platform.c
+> > @@ -200,6 +200,10 @@ static void of_dma_configure(struct device *dev)
+> >         /* DMA ranges found. Calculate and set dma_pfn_offset */
+> >         dev->dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
+> >         dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
+> > +
+> > +       /* Set the coherent_dma_mask based on the dma-ranges property */
+> > +       if (size)
+> > +               dev->coherent_dma_mask = DMA_BIT_MASK(ilog2(size));
+> >  }
+> 
+> We have discussed this in the past, and the problem with this is
+> that the actual mask depends both on the capabilities of the
+> device and the bus. In particular, if the device can only do
+> 32-bit DMA, we must not set the mask to something higher.
 
-This patch takles this issue by always passing a non-NULL cpumask to cpudl_find(),
-and assigns later_mask in this function.
+So is the dma-ranges property allowed to specify a size bigger than what
+the device supports?
 
-Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
----
- kernel/sched/cpudeadline.c |   10 ++++------
- kernel/sched/deadline.c    |   10 ++++++----
- 2 files changed, 10 insertions(+), 10 deletions(-)
+> The normal rule here is that a driver that wants to do 64-bit
+> DMA must call dma_set_mask_and_coherent() with the higher mask,
+> while a device that can not access all of the 32-bit address space
+> must call dma_set_mask_and_coherent() with the smaller mask
+> before doing calling any of the other DMA interfaces.
 
-diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
-index c79f0d7..c01b3aa 100644
---- a/kernel/sched/cpudeadline.c
-+++ b/kernel/sched/cpudeadline.c
-@@ -97,7 +97,7 @@ static inline int cpudl_maximum(struct cpudl *cp)
-  * cpudl_find - find the best (later-dl) CPU in the system
-  * @cp: the cpudl max-heap context
-  * @p: the task
-- * @later_mask: a mask to fill in with the selected CPUs (or NULL)
-+ * @later_mask: a mask to fill in with the selected CPUs (not NULL)
-  *
-  * Returns: int - best CPU (heap maximum if suitable)
-  */
-@@ -107,16 +107,14 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
- 	int best_cpu = -1;
- 	const struct sched_dl_entity *dl_se = &p->dl;
- 
--	if (later_mask &&
--	    cpumask_and(later_mask, cp->free_cpus, &p->cpus_allowed) &&
--	    cpumask_and(later_mask, later_mask, cpu_active_mask)) {
-+	cpumask_and(later_mask, cpu_active_mask, &p->cpus_allowed);
-+	if (cpumask_and(later_mask, later_mask, cp->free_cpus)) {
- 		best_cpu = cpumask_any(later_mask);
- 		goto out;
- 	} else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
- 			dl_time_before(dl_se->deadline, cp->elements[0].dl)) {
- 		best_cpu = cpudl_maximum(cp);
--		if (later_mask)
--			cpumask_set_cpu(best_cpu, later_mask);
-+		cpumask_set_cpu(best_cpu, later_mask);
- 	}
- 
- out:
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index bd83272..3ecf838 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -965,14 +965,18 @@ out:
- 	return cpu;
- }
- 
-+static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask_dl);
-+
- static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
- {
-+	struct cpumask *later_mask = this_cpu_cpumask_var_ptr(local_cpu_mask_dl);
-+
- 	/*
- 	 * Current can't be migrated, useless to reschedule,
- 	 * let's hope p can move out.
- 	 */
- 	if (rq->curr->nr_cpus_allowed == 1 ||
--	    cpudl_find(&rq->rd->cpudl, rq->curr, NULL) == -1)
-+	    cpudl_find(&rq->rd->cpudl, rq->curr, later_mask) == -1)
- 		return;
- 
- 	/*
-@@ -980,7 +984,7 @@ static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
- 	 * see if it is pushed or pulled somewhere else.
- 	 */
- 	if (p->nr_cpus_allowed != 1 &&
--	    cpudl_find(&rq->rd->cpudl, p, NULL) != -1)
-+	    cpudl_find(&rq->rd->cpudl, p, later_mask) != -1)
- 		return;
- 
- 	resched_curr(rq);
-@@ -1167,8 +1171,6 @@ next_node:
- 	return NULL;
- }
- 
--static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask_dl);
--
- static int find_later_rq(struct task_struct *task)
- {
- 	struct sched_domain *sd;
+OK, looking at the DMA API docs, it looks like the default mask is
+32-bit and any other value should be explicitly set by the driver.
+
+What we don't have on arm64 yet is taking dma_pfn_offset into account
+when generating the dma address (but so far I haven't seen any request
+for this from hardware vendors; it can easily be fixed). So if that's
+not the case for Ding, I'm not sure dma-ranges property would help.
+
+> However, if the bus is not capable of addressing the entire
+> 32-bit range (as on some modern shmobile machines, or some of the
+> really old machines), we need to limit the mask here already.
+
+Would the limiting be based on the dma-ranges size property? Such
+information is not easily available after of_dma_configure(), maybe we
+could store it somewhere in struct device.
+
+Going back to original topic, the dma_supported() function on arm64
+calls swiotlb_dma_supported() which actually checks whether the swiotlb
+bounce buffer is within the dma mask. This transparent bouncing (unlike
+arm32 where it needs to be explicit) is not always optimal, though
+required for 32-bit only devices on a 64-bit system. The problem is when
+the driver is 64-bit capable but forgets to call
+dma_set_mask_and_coherent() (that's not the only question I got about
+running out of swiotlb buffers).
+
 -- 
-1.7.9.5
-
+Catalin
