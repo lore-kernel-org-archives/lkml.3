@@ -1,83 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277AbaKSQDs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:03:48 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:57486 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350AbaKSQCe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:02:34 -0500
-X-IronPort-AV: E=Sophos;i="5.07,417,1413244800"; 
-   d="scan'208";a="194441039"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <xen-devel@lists.xenproject.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 3/4] x86: allow dma_get_required_mask() to be overridden
-Date: Wed, 19 Nov 2014 16:02:00 +0000
-Message-ID: <1416412921-23671-4-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1416412921-23671-1-git-send-email-david.vrabel@citrix.com>
-References: <1416412921-23671-1-git-send-email-david.vrabel@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+	id S1756567AbaKSQD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:03:56 -0500
+Received: from mail.kernel.org ([198.145.19.201]:51248 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756263AbaKSQDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:03:53 -0500
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Aravinda Prasad <aravinda@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@suse.de>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        Kan Liang <kan.liang@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@iki.fi>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, systemtap@sourceware.org,
+        Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
+        WANG Chao <chaowang@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 00/16] perf/core improvements and fixes
+Date: Wed, 19 Nov 2014 13:03:20 -0300
+Message-Id: <1416413016-19110-1-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dma_ops->get_required_mask() if provided, defaulting to
-dma_get_requried_mask_from_max_pfn().
+Hi Ingo,
 
-This is needed on systems (such as Xen PV guests) where the DMA
-address and the physical address are not equal.
+	Please consider pulling,
 
-ARCH_HAS_DMA_GET_REQUIRED_MASK is defined in asm/device.h instead of
-asm/dma-mapping.h because linux/dma-mapping.h uses the define before
-including asm/dma-mapping.h
+- Arnaldo
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/x86/include/asm/device.h |    2 ++
- arch/x86/kernel/pci-dma.c     |    8 ++++++++
- 2 files changed, 10 insertions(+)
+The following changes since commit 2565711fb7d7c28e0cd93c8971b520d1b10b857c:
 
-diff --git a/arch/x86/include/asm/device.h b/arch/x86/include/asm/device.h
-index 03dd729..10bc628 100644
---- a/arch/x86/include/asm/device.h
-+++ b/arch/x86/include/asm/device.h
-@@ -13,4 +13,6 @@ struct dev_archdata {
- struct pdev_archdata {
- };
- 
-+#define ARCH_HAS_DMA_GET_REQUIRED_MASK
-+
- #endif /* _ASM_X86_DEVICE_H */
-diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
-index a25e202..5154400 100644
---- a/arch/x86/kernel/pci-dma.c
-+++ b/arch/x86/kernel/pci-dma.c
-@@ -140,6 +140,14 @@ void dma_generic_free_coherent(struct device *dev, size_t size, void *vaddr,
- 		free_pages((unsigned long)vaddr, get_order(size));
- }
- 
-+u64 dma_get_required_mask(struct device *dev)
-+{
-+	if (dma_ops->get_required_mask)
-+		return dma_ops->get_required_mask(dev);
-+	return dma_get_required_mask_from_max_pfn(dev);
-+}
-+EXPORT_SYMBOL_GPL(dma_get_required_mask);
-+
- /*
-  * See <Documentation/x86/x86_64/boot-options.txt> for the iommu kernel
-  * parameter documentation.
--- 
-1.7.10.4
+  perf: Improve the perf_sample_data struct layout (2014-11-16 11:42:04 +0100)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
+
+for you to fetch changes up to a84808083688d82d7f1e5786ccf5df0ff7d448cb:
+
+  perf tools: Only override the default :tid comm entry (2014-11-19 12:37:26 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes:
+
+User visible fixes:
+
+- Fallback to kallsyms when using the minimal 'ELF' loader (Arnaldo Carvalho de Melo)
+
+- Fix annotation with kcore (Adrian Hunter)
+
+- Fix up srcline histogram key formatting (Arnaldo Carvalho de Melo)
+
+- Add missing handler for PERF_RECORD_MMAP2 events in 'perf diff' (Kan Liang)
+
+User visible changes/new features:
+
+- Only print base source file for srcline histogram sort key (Andi Kleen)
+
+- Support source line numbers in annotate using a hotkey (Andi Kleen)
+
+Infrastructure:
+
+- Do not poll events that use the system_wide flag (Adrian Hunter)
+
+- Add perf-read-vdso32 and perf-read-vdsox32 to .gitignore (Adrian Hunter)
+
+  perf tools: Only override the default :tid comm entry (Adrian Hunter)
+
+- Factor out adding new call chain entries (Andi Kleen)
+
+- Use al.addr to set up call chain (Andi Kleen)
+
+- Use a common function to resolve symbol or name (Andi Kleen)
+
+- Fix ftrace:function event recording (Jiri Olsa)
+
+- Move disable_buildid_cache() to util/build-id.c (Namhyung Kim)
+
+- Clean up libelf feature support code (Namhyung Kim)
+
+- fix typo in python 'perf test' (WANG Chao)
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Adrian Hunter (4):
+      perf tools: Fix annotation with kcore
+      perf evlist: Do not poll events that use the system_wide flag
+      perf tools: Add perf-read-vdso32 and perf-read-vdsox32 to .gitignore
+      perf tools: Only override the default :tid comm entry
+
+Andi Kleen (5):
+      perf callchain: Factor out adding new call chain entries
+      perf callchain: Use al.addr to set up call chain
+      perf callchain: Use a common function to resolve symbol or name
+      perf tools: Only print base source file for srcline
+      perf annotate: Support source line numbers in annotate
+
+Arnaldo Carvalho de Melo (2):
+      perf symbols: Fallback to kallsyms when using the minimal 'ELF' loader
+      perf hists: Fix up srcline histogram key formatting
+
+Jiri Olsa (1):
+      perf evsel: Fix ftrace:function event recording
+
+Kan Liang (1):
+      perf diff: Add missing handler for PERF_RECORD_MMAP2 events
+
+Namhyung Kim (2):
+      perf build-id: Move disable_buildid_cache() to util/build-id.c
+      perf tools: Clean up libelf feature support code
+
+WANG Chao (1):
+      perf test: fix typo in python test
+
+ tools/perf/.gitignore             |  2 ++
+ tools/perf/Makefile.perf          |  2 --
+ tools/perf/builtin-diff.c         |  1 +
+ tools/perf/config/Makefile        |  5 ++--
+ tools/perf/tests/builtin-test.c   |  2 +-
+ tools/perf/ui/browsers/annotate.c | 13 +++++++++-
+ tools/perf/ui/browsers/hists.c    | 17 -------------
+ tools/perf/ui/gtk/hists.c         | 11 +--------
+ tools/perf/ui/stdio/hist.c        | 23 +++++++-----------
+ tools/perf/util/annotate.c        | 32 ++++++++++++++++++++----
+ tools/perf/util/annotate.h        |  1 +
+ tools/perf/util/build-id.c        | 11 +++++++++
+ tools/perf/util/build-id.h        |  1 +
+ tools/perf/util/callchain.c       | 19 +++++++++++++++
+ tools/perf/util/callchain.h       |  3 +++
+ tools/perf/util/evlist.c          | 10 +++++++-
+ tools/perf/util/evsel.c           |  8 ++++++
+ tools/perf/util/header.c          | 10 +-------
+ tools/perf/util/machine.c         | 51 ++++++++++++++++++++++++---------------
+ tools/perf/util/sort.c            |  2 +-
+ tools/perf/util/srcline.c         |  2 +-
+ tools/perf/util/symbol-minimal.c  |  1 -
+ tools/perf/util/thread.c          |  5 ++--
+ tools/perf/util/util.h            |  1 -
+ 24 files changed, 145 insertions(+), 88 deletions(-)
