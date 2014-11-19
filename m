@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131AbaKSBnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 20:43:09 -0500
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:53309 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004AbaKSBnH (ORCPT
+	id S1754624AbaKSBod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 20:44:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37666 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752917AbaKSBoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 20:43:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <1416327778-17716-1-git-send-email-pagupta@redhat.com>
-References: <1416327778-17716-1-git-send-email-pagupta@redhat.com>
-Date: Tue, 18 Nov 2014 17:43:06 -0800
-Message-ID: <CAADnVQKs6Y-47TuxFedT2Xi6OUAJqwGFKhip40cbVewmtw10wQ@mail.gmail.com>
-Subject: Re: [PATCH net-net 0/4] Increase the limit of tuntap queues
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Pankaj Gupta <pagupta@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Wang <jasowang@redhat.com>, mst@redhat.com, dgibson@redhat.com,
-        Veaceslav Falico <vfalico@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Vladislav Yasevich <vyasevic@redhat.com>, Jerry Chu <hkchu@google.com>,
-        wuzhy@linux.vnet.ibm.com.pnq.redhat.com,
-        Pavel Emelianov <xemul@parallels.com>,
-        Tom Herbert <therbert@google.com>, bhutchings@solarflare.com,
-        xii@google.com, Stephen Hemminger <stephen@networkplumber.org>,
-        =?UTF-8?B?SmnFmcOtIFDDrXJrbw==?= <jiri@resnulli.us>,
-        sergei.shtylyov@cogentembedded.com
-Content-Type: text/plain; charset=UTF-8
+	Tue, 18 Nov 2014 20:44:32 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Vrabel <david.vrabel@citrix.com>, Wang Nan <wangnan0@huawei.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 1/3] x86: Fix typo in mark_rodata_ro
+Date: Tue, 18 Nov 2014 17:44:14 -0800
+Message-Id: <1416361456-11060-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 8:22 AM, Pankaj Gupta <pagupta@redhat.com> wrote:
-> Networking under KVM works best if we allocate a per-vCPU rx and tx
-> queue in a virtual NIC. This requires a per-vCPU queue on the host side.
-...
-> I have done some testing to find out any regression and with sample program
->  which creates tun/tap for single queue / multiqueue device and it seems to be
->  working fine. I will also post the performance numbers.
+In the comment, should use cleanup_highmap().
+and also remove not needed cast for _brk_end, as it is
+unsigned long.
 
-Sounds quite exciting.
-please share recommended setup (queue assignments) and
-performance gains you're seeing.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/mm/init_64.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/arch/x86/mm/init_64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/init_64.c
++++ linux-2.6/arch/x86/mm/init_64.c
+@@ -1145,9 +1145,9 @@ void mark_rodata_ro(void)
+ 	 * of the PMD will remain mapped executable.
+ 	 *
+ 	 * Any PMD which was setup after the one which covers _brk_end
+-	 * has been zapped already via cleanup_highmem().
++	 * has been zapped already via cleanup_highmap().
+ 	 */
+-	all_end = roundup((unsigned long)_brk_end, PMD_SIZE);
++	all_end = roundup(_brk_end, PMD_SIZE);
+ 	set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
+ 
+ 	rodata_test();
