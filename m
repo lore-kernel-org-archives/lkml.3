@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934152AbaKSVXV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:23:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57466 "EHLO
+	id S933667AbaKSVXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:23:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57366 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933870AbaKSVOu (ORCPT
+	with ESMTP id S933873AbaKSVOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:14:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Dave Martin <Dave.Martin@arm.com>, Wang Nan <wangnan0@huawei.com>
-Subject: [PATCH 3.10 55/70] ARM: Correct BUG() assembly to ensure it is endian-agnostic
-Date: Wed, 19 Nov 2014 12:52:46 -0800
-Message-Id: <20141119205212.741833560@linuxfoundation.org>
+        Eugenia Emantayev <eugenia@mellanox.com>,
+        Amir Vadai <amirv@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Vinson Lee <vlee@twopensource.com>
+Subject: [PATCH 3.10 56/70] net/mlx4_en: Fix BlueFlame race
+Date: Wed, 19 Nov 2014 12:52:47 -0800
+Message-Id: <20141119205212.774101181@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -29,94 +31,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Dooks <ben.dooks@codethink.co.uk>
+From: Eugenia Emantayev <eugenia@mellanox.com>
 
-commit 63328070eff2f4fd730c86966a0dbc976147c39f upstream.
+commit 2d4b646613d6b12175b017aca18113945af1faf3 upstream.
 
-Currently BUG() uses .word or .hword to create the necessary illegal
-instructions. However if we are building BE8 then these get swapped
-by the linker into different illegal instructions in the text. This
-means that the BUG() macro does not get trapped properly.
+Fix a race between BlueFlame flow and stamping in post send flow.
+Example:
+	SW: Build WQE 0 on the TX buffer, except the ownership bit
+	SW: Set ownership for WQE 0 on the TX buffer
+	SW: Ring doorbell for WQE 0
+	SW: Build WQE 1 on the TX buffer, except the ownership bit
+	SW: Set ownership for WQE 1 on the TX buffer
+	HW: Read WQE 0 and then WQE 1, before doorbell was rung/BF was done for WQE 1
+	HW: Produce CQEs for WQE 0 and WQE 1
+	SW: Process the CQEs, and stamp WQE 0 and WQE 1 accordingly (on the TX buffer)
+	SW: Copy WQE 1 from the TX buffer to the BF register - ALREADY STAMPED!
+	HW: CQE error with index 0xFFFF  - the BF WQE's control segment is STAMPED,
+		so the BF index is 0xFFFF. Error: Invalid Opcode.
+As a result QP enters the error state and no traffic can be sent.
 
-Change to using <asm/opcodes.h> to provide the necessary ARM instruction
-building as we cannot rely on gcc/gas having the `.inst` instructions
-which where added to try and resolve this issue (reported by Dave Martin
-<Dave.Martin@arm.com>).
+Solution:
+When stamping - do not stamp last completed wqe.
 
-Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-Reviewed-by: Dave Martin <Dave.Martin@arm.com>
-Cc: Wang Nan <wangnan0@huawei.com>
+Signed-off-by: Eugenia Emantayev <eugenia@mellanox.com>
+Signed-off-by: Amir Vadai <amirv@mellanox.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Vinson Lee <vlee@twopensource.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/bug.h |   10 ++++++----
- arch/arm/kernel/traps.c    |    8 +++++---
- 2 files changed, 11 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/en_tx.c |   61 +++++++++++++++++++----------
+ 1 file changed, 42 insertions(+), 19 deletions(-)
 
---- a/arch/arm/include/asm/bug.h
-+++ b/arch/arm/include/asm/bug.h
-@@ -2,6 +2,8 @@
- #define _ASMARM_BUG_H
- 
- #include <linux/linkage.h>
-+#include <linux/types.h>
-+#include <asm/opcodes.h>
- 
- #ifdef CONFIG_BUG
- 
-@@ -12,10 +14,10 @@
-  */
- #ifdef CONFIG_THUMB2_KERNEL
- #define BUG_INSTR_VALUE 0xde02
--#define BUG_INSTR_TYPE ".hword "
-+#define BUG_INSTR(__value) __inst_thumb16(__value)
- #else
- #define BUG_INSTR_VALUE 0xe7f001f2
--#define BUG_INSTR_TYPE ".word "
-+#define BUG_INSTR(__value) __inst_arm(__value)
- #endif
- 
- 
-@@ -33,7 +35,7 @@
- 
- #define __BUG(__file, __line, __value)				\
- do {								\
--	asm volatile("1:\t" BUG_INSTR_TYPE #__value "\n"	\
-+	asm volatile("1:\t" BUG_INSTR(__value) "\n"  \
- 		".pushsection .rodata.str, \"aMS\", %progbits, 1\n" \
- 		"2:\t.asciz " #__file "\n" 			\
- 		".popsection\n" 				\
-@@ -48,7 +50,7 @@ do {								\
- 
- #define __BUG(__file, __line, __value)				\
- do {								\
--	asm volatile(BUG_INSTR_TYPE #__value);			\
-+	asm volatile(BUG_INSTR(__value) "\n");			\
- 	unreachable();						\
- } while (0)
- #endif  /* CONFIG_DEBUG_BUGVERBOSE */
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -347,15 +347,17 @@ void arm_notify_die(const char *str, str
- int is_valid_bugaddr(unsigned long pc)
- {
- #ifdef CONFIG_THUMB2_KERNEL
--	unsigned short bkpt;
-+	u16 bkpt;
-+	u16 insn = __opcode_to_mem_thumb16(BUG_INSTR_VALUE);
- #else
--	unsigned long bkpt;
-+	u32 bkpt;
-+	u32 insn = __opcode_to_mem_arm(BUG_INSTR_VALUE);
- #endif
- 
- 	if (probe_kernel_address((unsigned *)pc, bkpt))
- 		return 0;
- 
--	return bkpt == BUG_INSTR_VALUE;
-+	return bkpt == insn;
+--- a/drivers/net/ethernet/mellanox/mlx4/en_tx.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_tx.c
+@@ -191,6 +191,39 @@ void mlx4_en_deactivate_tx_ring(struct m
+ 		       MLX4_QP_STATE_RST, NULL, 0, 0, &ring->qp);
  }
  
- #endif
++static void mlx4_en_stamp_wqe(struct mlx4_en_priv *priv,
++			      struct mlx4_en_tx_ring *ring, int index,
++			      u8 owner)
++{
++	__be32 stamp = cpu_to_be32(STAMP_VAL | (!!owner << STAMP_SHIFT));
++	struct mlx4_en_tx_desc *tx_desc = ring->buf + index * TXBB_SIZE;
++	struct mlx4_en_tx_info *tx_info = &ring->tx_info[index];
++	void *end = ring->buf + ring->buf_size;
++	__be32 *ptr = (__be32 *)tx_desc;
++	int i;
++
++	/* Optimize the common case when there are no wraparounds */
++	if (likely((void *)tx_desc + tx_info->nr_txbb * TXBB_SIZE <= end)) {
++		/* Stamp the freed descriptor */
++		for (i = 0; i < tx_info->nr_txbb * TXBB_SIZE;
++		     i += STAMP_STRIDE) {
++			*ptr = stamp;
++			ptr += STAMP_DWORDS;
++		}
++	} else {
++		/* Stamp the freed descriptor */
++		for (i = 0; i < tx_info->nr_txbb * TXBB_SIZE;
++		     i += STAMP_STRIDE) {
++			*ptr = stamp;
++			ptr += STAMP_DWORDS;
++			if ((void *)ptr >= end) {
++				ptr = ring->buf;
++				stamp ^= cpu_to_be32(0x80000000);
++			}
++		}
++	}
++}
++
+ 
+ static u32 mlx4_en_free_tx_desc(struct mlx4_en_priv *priv,
+ 				struct mlx4_en_tx_ring *ring,
+@@ -205,8 +238,6 @@ static u32 mlx4_en_free_tx_desc(struct m
+ 	void *end = ring->buf + ring->buf_size;
+ 	int frags = skb_shinfo(skb)->nr_frags;
+ 	int i;
+-	__be32 *ptr = (__be32 *)tx_desc;
+-	__be32 stamp = cpu_to_be32(STAMP_VAL | (!!owner << STAMP_SHIFT));
+ 	struct skb_shared_hwtstamps hwts;
+ 
+ 	if (timestamp) {
+@@ -232,12 +263,6 @@ static u32 mlx4_en_free_tx_desc(struct m
+ 					skb_frag_size(frag), PCI_DMA_TODEVICE);
+ 			}
+ 		}
+-		/* Stamp the freed descriptor */
+-		for (i = 0; i < tx_info->nr_txbb * TXBB_SIZE; i += STAMP_STRIDE) {
+-			*ptr = stamp;
+-			ptr += STAMP_DWORDS;
+-		}
+-
+ 	} else {
+ 		if (!tx_info->inl) {
+ 			if ((void *) data >= end) {
+@@ -263,16 +288,6 @@ static u32 mlx4_en_free_tx_desc(struct m
+ 				++data;
+ 			}
+ 		}
+-		/* Stamp the freed descriptor */
+-		for (i = 0; i < tx_info->nr_txbb * TXBB_SIZE; i += STAMP_STRIDE) {
+-			*ptr = stamp;
+-			ptr += STAMP_DWORDS;
+-			if ((void *) ptr >= end) {
+-				ptr = ring->buf;
+-				stamp ^= cpu_to_be32(0x80000000);
+-			}
+-		}
+-
+ 	}
+ 	dev_kfree_skb_any(skb);
+ 	return tx_info->nr_txbb;
+@@ -318,8 +333,9 @@ static void mlx4_en_process_tx_cq(struct
+ 	struct mlx4_en_tx_ring *ring = &priv->tx_ring[cq->ring];
+ 	struct mlx4_cqe *cqe;
+ 	u16 index;
+-	u16 new_index, ring_index;
++	u16 new_index, ring_index, stamp_index;
+ 	u32 txbbs_skipped = 0;
++	u32 txbbs_stamp = 0;
+ 	u32 cons_index = mcq->cons_index;
+ 	int size = cq->size;
+ 	u32 size_mask = ring->size_mask;
+@@ -335,6 +351,7 @@ static void mlx4_en_process_tx_cq(struct
+ 	index = cons_index & size_mask;
+ 	cqe = &buf[(index << factor) + factor];
+ 	ring_index = ring->cons & size_mask;
++	stamp_index = ring_index;
+ 
+ 	/* Process all completed CQEs */
+ 	while (XNOR(cqe->owner_sr_opcode & MLX4_CQE_OWNER_MASK,
+@@ -359,6 +376,12 @@ static void mlx4_en_process_tx_cq(struct
+ 					priv, ring, ring_index,
+ 					!!((ring->cons + txbbs_skipped) &
+ 					ring->size), timestamp);
++
++			mlx4_en_stamp_wqe(priv, ring, stamp_index,
++					  !!((ring->cons + txbbs_stamp) &
++						ring->size));
++			stamp_index = ring_index;
++			txbbs_stamp = txbbs_skipped;
+ 			packets++;
+ 			bytes += ring->tx_info[ring_index].nr_bytes;
+ 		} while (ring_index != new_index);
 
 
