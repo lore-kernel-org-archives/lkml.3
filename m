@@ -1,190 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319AbaKSToW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 14:44:22 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:37126 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756235AbaKSToT (ORCPT
+	id S1756402AbaKSTo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 14:44:28 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:21097 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756338AbaKSToZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 14:44:19 -0500
-Date: Wed, 19 Nov 2014 11:44:14 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
-Message-ID: <20141119194414.GN5050@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141013022454.289398272@linuxfoundation.org>
- <20141013112834.GA10826@khazad-dum.debian.net>
- <20141013082319.175d90bb@as>
- <20141119172235.GA31260@kroah.com>
+	Wed, 19 Nov 2014 14:44:25 -0500
+Date: Wed, 19 Nov 2014 14:43:50 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Juergen Gross <jgross@suse.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Subject: Re: [PATCH V3 2/8] xen: Delay remapping memory of pv-domain
+Message-ID: <20141119194350.GA18117@laptop.dumpdata.com>
+References: <1415684626-18590-1-git-send-email-jgross@suse.com>
+ <1415684626-18590-3-git-send-email-jgross@suse.com>
+ <20141112214506.GA5922@laptop.dumpdata.com>
+ <54644E48.3040506@suse.com>
+ <20141113195605.GA13039@laptop.dumpdata.com>
+ <54658ABF.5050708@suse.com>
+ <20141114164741.GA8198@laptop.dumpdata.com>
+ <5466385E.6040009@suse.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141119172235.GA31260@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14111919-0033-0000-0000-000002BF44D0
+In-Reply-To: <5466385E.6040009@suse.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 09:22:35AM -0800, Greg Kroah-Hartman wrote:
-> On Mon, Oct 13, 2014 at 08:23:19AM -0500, Chuck Ebbert wrote:
-> > On Mon, 13 Oct 2014 08:28:35 -0300
-> > Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
-> > 
-> > > On Mon, 13 Oct 2014, Greg Kroah-Hartman wrote:
-> > > > This is the start of the stable review cycle for the 3.17.1
-> > > > release. There are 25 patches in this series, all will be posted
-> > > > as a response to this one.  If anyone has any issues with these
-> > > > being applied, please let me know.
-> > > 
-> > > Actually, 3.17 is a filesystem killer for some unlucky users due to
-> > > the libata blacklist being disabled by a bug.
-> > > 
-> > > Patch:
-> > > https://git.kernel.org/cgit/linux/kernel/git/tj/libata.git/patch/?id=1c40279960bcd7d52dbdf1d466b20d24b99176c8
-> > > 1c40279960bcd7d52dbdf1d466b20d24b99176c8 (libata: Un-break ATA
-> > > blacklist)
-> > > 
-> > 
-> > There are some more bugs too:
-> > 
-> > 
-> > RCU stalls, fix has been in rcu/urgent for 7 days:
-> > https://git.kernel.org/cgit/linux/kernel/git/paulmck/linux-rcu.git/commit/?h=rcu/urgent&id=789cbbeca4eb7141cbd748ee93772471101b507b
+On Fri, Nov 14, 2014 at 06:14:06PM +0100, Juergen Gross wrote:
+> On 11/14/2014 05:47 PM, Konrad Rzeszutek Wilk wrote:
+> >On Fri, Nov 14, 2014 at 05:53:19AM +0100, Juergen Gross wrote:
+> >>On 11/13/2014 08:56 PM, Konrad Rzeszutek Wilk wrote:
+> >>>>>>+	mfn_save = virt_to_mfn(buf);
+> >>>>>>+
+> >>>>>>+	while (xen_remap_mfn != INVALID_P2M_ENTRY) {
+> >>>>>
+> >>>>>So the 'list' is constructed by going forward - that is from low-numbered
+> >>>>>PFNs to higher numbered ones. But the 'xen_remap_mfn' is going the
+> >>>>>other way - from the highest PFN to the lowest PFN.
+> >>>>>
+> >>>>>Won't that mean we will restore the chunks of memory in the wrong
+> >>>>>order? That is we will still restore them in chunks size, but the
+> >>>>>chunks will be in descending order instead of ascending?
+> >>>>
+> >>>>No, the information where to put each chunk is contained in the chunk
+> >>>>data. I can add a comment explaining this.
+> >>>
+> >>>Right, the MFNs in a "chunks" are going to be restored in the right order.
+> >>>
+> >>>I was thinking that the "chunks" (so a set of MFNs) will be restored in
+> >>>the opposite order that they are written to.
+> >>>
+> >>>And oddly enough the "chunks" are done in 512-3 = 509 MFNs at once?
+> >>
+> >>More don't fit on a single page due to the other info needed. So: yes.
+> >
+> >But you could use two pages - one for the structure and the other
+> >for the list of MFNs. That would fix the problem of having only
+> >509 MFNs being contingous per chunk when restoring.
 > 
-> Doesn't build in 3.17 properly :(
+> That's no problem (see below).
 > 
-> > blk-mq bio merging (still no good fix available):
-> > https://lkml.org/lkml/2014/10/9/729
-> > (The fix sitting in the block tree:
-> > https://git.kernel.org/cgit/linux/kernel/git/axboe/linux-block.git/commit/?h=for-3.18/core&id=764f612c6c3c231b9c12cfae7c328ccc9c453258
-> > is wrong according to that message.)
+> >Anyhow the point I had that I am worried is that we do not restore the
+> >MFNs in the same order. We do it in "chunk" size which is OK (so the 509 MFNs
+> >at once)- but the order we traverse the restoration process is the opposite of
+> >the save process. Say we have 4MB of contingous MFNs, so two (err, three)
+> >chunks. The first one we iterate is from 0->509, the second is 510->1018, the
+> >last is 1019->1023. When we restore (remap) we start with the last 'chunk'
+> >so we end up restoring them: 1019->1023, 510->1018, 0->509 order.
 > 
-> Did this ever get resolved?
+> No. When building up the chunks we save in each chunk where to put it
+> on remap. So in your example 0-509 should be mapped at <dest>+0,
+> 510-1018 at <dest>+510, and 1019-1023 at <dest>+1019.
 > 
-> > Stalls when using nohz, requires series of six patches to fix that
-> > didn't make 3.17 and weren't marked for -stable:
-> > 
-> > From a80e49e2cc3145af014a8ae44f575829cc236192 Mon Sep 17 00:00:00 2001
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > Subject: nohz: Move nohz full init call to tick init
-> > 
-> > From c5c38ef3d70377dc504a6a3f611a3ec814bc757b Mon Sep 17 00:00:00 2001
-> > From: Peter Zijlstra <peterz@infradead.org>
-> > Subject: irq_work: Introduce arch_irq_work_has_interrupt()
-> > 
-> > From 76a33061b9323b7fdb220ae5fa116c10833ec22e Mon Sep 17 00:00:00 2001
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > Subject: irq_work: Force raised irq work to run on irq work interrupt
-> > 
-> > From 3010279f0fc36f0388872203e63ca49912f648fd Mon Sep 17 00:00:00 2001
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > Subject: x86: Tell irq work about self IPI support
-> > 
-> > From 09f6edd424218eb69078551b2ecfada1f2d098eb Mon Sep 17 00:00:00 2001
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > Subject: arm: Tell irq work about self IPI support
-> > 
-> > From 3631073659d0aafeaa52227bb61a100efaf901dc Mon Sep 17 00:00:00 2001
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
-> To: 09f6edd424218eb69078551b2ecfada1f2d098eb
-> To: Chuck Ebbert <cebbert.lkml@gmail.com>
-> Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-> 	linux-kernel@vger.kernel.org, stable@kernel.org
-> Bcc: 
-> Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
-> Reply-To: 
-> In-Reply-To: <20141013082319.175d90bb@as>
-> 
-> On Mon, Oct 13, 2014 at 08:23:19AM -0500, Chuck Ebbert wrote:
-> > On Mon, 13 Oct 2014 08:28:35 -0300
-> > Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
-> > 
-> > > On Mon, 13 Oct 2014, Greg Kroah-Hartman wrote:
-> > > > This is the start of the stable review cycle for the 3.17.1
-> > > > release. There are 25 patches in this series, all will be posted
-> > > > as a response to this one.  If anyone has any issues with these
-> > > > being applied, please let me know.
-> > > 
-> > > Actually, 3.17 is a filesystem killer for some unlucky users due to
-> > > the libata blacklist being disabled by a bug.
-> > > 
-> > > Patch:
-> > > https://git.kernel.org/cgit/linux/kernel/git/tj/libata.git/patch/?id=1c40279960bcd7d52dbdf1d466b20d24b99176c8
-> > > 1c40279960bcd7d52dbdf1d466b20d24b99176c8 (libata: Un-break ATA
-> > > blacklist)
-> > > 
-> > 
-> > There are some more bugs too:
-> > 
-> > 
-> > RCU stalls, fix has been in rcu/urgent for 7 days:
-> > https://git.kernel.org/cgit/linux/kernel/git/paulmck/linux-rcu.git/commit/?h=rcu/urgent&id=789cbbeca4eb7141cbd748ee93772471101b507b
-> 
-> Doesn't build in 3.17 properly :(
+> When remapping we map 1019-1023 to <dest>+1019, 510-1018 at <dest>+510
+> and last 0-509 at <dest>+0. So we do the mapping in reverse order, but
+> to the correct pfns.
 
-Older kernels can use rcu_note_context_switch() instead of
-rcu_note_voluntary_context_switch(), which didn't show up until quite
-recently.  Please note that rcu_note_context_switch() is quite a bit
-more heavy-weight than is rcu_note_voluntary_context_switch(), but it
-should be OK in this context.
+Excellent! Could a condensed version of that explanation be put in the code ?
 
-							Thanx, Paul
-
-> > blk-mq bio merging (still no good fix available):
-> > https://lkml.org/lkml/2014/10/9/729
-> > (The fix sitting in the block tree:
-> > https://git.kernel.org/cgit/linux/kernel/git/axboe/linux-block.git/commit/?h=for-3.18/core&id=764f612c6c3c231b9c12cfae7c328ccc9c453258
-> > is wrong according to that message.)
 > 
-> Did this ever get resolved?
-> 
-> > Stalls when using nohz, requires series of six patches to fix that
-> > didn't make 3.17 and weren't marked for -stable:
-> > 
-> > From a80e49e2cc3145af014a8ae44f575829cc236192 Mon Sep 17 00:00:00 2001
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > Subject: nohz: Move nohz full init call to tick init
-> > 
-> > From c5c38ef3d70377dc504a6a3f611a3ec814bc757b Mon Sep 17 00:00:00 2001
-> > From: Peter Zijlstra <peterz@infradead.org>
-> > Subject: irq_work: Introduce arch_irq_work_has_interrupt()
-> > 
-> > From 76a33061b9323b7fdb220ae5fa116c10833ec22e Mon Sep 17 00:00:00 2001
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > Subject: irq_work: Force raised irq work to run on irq work interrupt
-> > 
-> > From 3010279f0fc36f0388872203e63ca49912f648fd Mon Sep 17 00:00:00 2001
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > Subject: x86: Tell irq work about self IPI support
-> > 
-> > From 09f6edd424218eb69078551b2ecfada1f2d098eb Mon Sep 17 00:00:00 2001
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > Subject: arm: Tell irq work about self IPI support
-> > 
-> > From 3631073659d0aafeaa52227bb61a100efaf901dc Mon Sep 17 00:00:00 2001
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > Subject: arm64: Tell irq work about self IPI support
-> 
-> These are pretty intrusive, maybe 3.18 is better for people to use :)
-> 
-> If Frederic says it's ok for me to backport these, I will, but I want
-> his ack first.
-> 
-> thanks,
-> 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+> Juergen
