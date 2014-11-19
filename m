@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920AbaKSKmV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 05:42:21 -0500
-Received: from mga01.intel.com ([192.55.52.88]:12737 "EHLO mga01.intel.com"
+	id S1755959AbaKSKmz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 05:42:55 -0500
+Received: from mga01.intel.com ([192.55.52.88]:12708 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755813AbaKSKlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 05:41:46 -0500
+	id S1755819AbaKSKlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 05:41:44 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,415,1413270000"; 
-   d="scan'208";a="624774789"
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="418550840"
 From: Wanpeng Li <wanpeng.li@linux.intel.com>
 To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
 Cc: Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
         linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
 Subject: [PATCH 2/2] sched/deadline: fix pull if dl task who's prio changed is not on queue
-Date: Wed, 19 Nov 2014 18:01:37 +0800
-Message-Id: <1416391297-111305-2-git-send-email-wanpeng.li@linux.intel.com>
+Date: Wed, 19 Nov 2014 16:35:03 +0800
+Message-Id: <1416386103-90800-2-git-send-email-wanpeng.li@linux.intel.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1416391297-111305-1-git-send-email-wanpeng.li@linux.intel.com>
-References: <1416391297-111305-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1416386103-90800-1-git-send-email-wanpeng.li@linux.intel.com>
+References: <1416386103-90800-1-git-send-email-wanpeng.li@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
