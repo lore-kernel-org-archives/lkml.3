@@ -1,66 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438AbaKSUlz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:41:55 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:17462 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932297AbaKSUlx (ORCPT
+	id S1756447AbaKSUoA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:44:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55635 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755821AbaKSUn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:41:53 -0500
-Date: Wed, 19 Nov 2014 15:41:31 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Juergen Gross <jgross@suse.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Subject: Re: [PATCH V3 0/8] xen: Switch to virtual mapped linear p2m list
-Message-ID: <20141119204131.GD18495@laptop.dumpdata.com>
-References: <1415684626-18590-1-git-send-email-jgross@suse.com>
+	Wed, 19 Nov 2014 15:43:59 -0500
+Date: Wed, 19 Nov 2014 12:43:58 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
+Message-ID: <20141119204358.GA10165@kroah.com>
+References: <20141013022454.289398272@linuxfoundation.org>
+ <20141013112834.GA10826@khazad-dum.debian.net>
+ <20141013082319.175d90bb@as>
+ <20141119172235.GA31260@kroah.com>
+ <20141119194414.GN5050@linux.vnet.ibm.com>
+ <20141119201648.GA22775@kroah.com>
+ <20141119203512.GQ5050@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415684626-18590-1-git-send-email-jgross@suse.com>
+In-Reply-To: <20141119203512.GQ5050@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 06:43:38AM +0100, Juergen Gross wrote:
-> Paravirtualized kernels running on Xen use a three level tree for
-> translation of guest specific physical addresses to machine global
-> addresses. This p2m tree is used for construction of page table
-> entries, so the p2m tree walk is performance critical.
+On Wed, Nov 19, 2014 at 12:35:12PM -0800, Paul E. McKenney wrote:
+> On Wed, Nov 19, 2014 at 12:16:48PM -0800, Greg Kroah-Hartman wrote:
+> > On Wed, Nov 19, 2014 at 11:44:14AM -0800, Paul E. McKenney wrote:
+> > > On Wed, Nov 19, 2014 at 09:22:35AM -0800, Greg Kroah-Hartman wrote:
+> > > > On Mon, Oct 13, 2014 at 08:23:19AM -0500, Chuck Ebbert wrote:
+> > > > > On Mon, 13 Oct 2014 08:28:35 -0300
+> > > > > Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
+> > > > > 
+> > > > > > On Mon, 13 Oct 2014, Greg Kroah-Hartman wrote:
+> > > > > > > This is the start of the stable review cycle for the 3.17.1
+> > > > > > > release. There are 25 patches in this series, all will be posted
+> > > > > > > as a response to this one.  If anyone has any issues with these
+> > > > > > > being applied, please let me know.
+> > > > > > 
+> > > > > > Actually, 3.17 is a filesystem killer for some unlucky users due to
+> > > > > > the libata blacklist being disabled by a bug.
+> > > > > > 
+> > > > > > Patch:
+> > > > > > https://git.kernel.org/cgit/linux/kernel/git/tj/libata.git/patch/?id=1c40279960bcd7d52dbdf1d466b20d24b99176c8
+> > > > > > 1c40279960bcd7d52dbdf1d466b20d24b99176c8 (libata: Un-break ATA
+> > > > > > blacklist)
+> > > > > > 
+> > > > > 
+> > > > > There are some more bugs too:
+> > > > > 
+> > > > > 
+> > > > > RCU stalls, fix has been in rcu/urgent for 7 days:
+> > > > > https://git.kernel.org/cgit/linux/kernel/git/paulmck/linux-rcu.git/commit/?h=rcu/urgent&id=789cbbeca4eb7141cbd748ee93772471101b507b
+> > > > 
+> > > > Doesn't build in 3.17 properly :(
+> > > > 
+> > > > > blk-mq bio merging (still no good fix available):
+> > > > > https://lkml.org/lkml/2014/10/9/729
+> > > > > (The fix sitting in the block tree:
+> > > > > https://git.kernel.org/cgit/linux/kernel/git/axboe/linux-block.git/commit/?h=for-3.18/core&id=764f612c6c3c231b9c12cfae7c328ccc9c453258
+> > > > > is wrong according to that message.)
+> > > > 
+> > > > Did this ever get resolved?
+> > > > 
+> > > > > Stalls when using nohz, requires series of six patches to fix that
+> > > > > didn't make 3.17 and weren't marked for -stable:
+> > > > > 
+> > > > > From a80e49e2cc3145af014a8ae44f575829cc236192 Mon Sep 17 00:00:00 2001
+> > > > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > > Subject: nohz: Move nohz full init call to tick init
+> > > > > 
+> > > > > From c5c38ef3d70377dc504a6a3f611a3ec814bc757b Mon Sep 17 00:00:00 2001
+> > > > > From: Peter Zijlstra <peterz@infradead.org>
+> > > > > Subject: irq_work: Introduce arch_irq_work_has_interrupt()
+> > > > > 
+> > > > > From 76a33061b9323b7fdb220ae5fa116c10833ec22e Mon Sep 17 00:00:00 2001
+> > > > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > > Subject: irq_work: Force raised irq work to run on irq work interrupt
+> > > > > 
+> > > > > From 3010279f0fc36f0388872203e63ca49912f648fd Mon Sep 17 00:00:00 2001
+> > > > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > > Subject: x86: Tell irq work about self IPI support
+> > > > > 
+> > > > > From 09f6edd424218eb69078551b2ecfada1f2d098eb Mon Sep 17 00:00:00 2001
+> > > > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > > Subject: arm: Tell irq work about self IPI support
+> > > > > 
+> > > > > From 3631073659d0aafeaa52227bb61a100efaf901dc Mon Sep 17 00:00:00 2001
+> > > > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > To: 09f6edd424218eb69078551b2ecfada1f2d098eb
+> > > > To: Chuck Ebbert <cebbert.lkml@gmail.com>
+> > > > Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+> > > > 	linux-kernel@vger.kernel.org, stable@kernel.org
+> > > > Bcc: 
+> > > > Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
+> > > > Reply-To: 
+> > > > In-Reply-To: <20141013082319.175d90bb@as>
+> > > > 
+> > > > On Mon, Oct 13, 2014 at 08:23:19AM -0500, Chuck Ebbert wrote:
+> > > > > On Mon, 13 Oct 2014 08:28:35 -0300
+> > > > > Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
+> > > > > 
+> > > > > > On Mon, 13 Oct 2014, Greg Kroah-Hartman wrote:
+> > > > > > > This is the start of the stable review cycle for the 3.17.1
+> > > > > > > release. There are 25 patches in this series, all will be posted
+> > > > > > > as a response to this one.  If anyone has any issues with these
+> > > > > > > being applied, please let me know.
+> > > > > > 
+> > > > > > Actually, 3.17 is a filesystem killer for some unlucky users due to
+> > > > > > the libata blacklist being disabled by a bug.
+> > > > > > 
+> > > > > > Patch:
+> > > > > > https://git.kernel.org/cgit/linux/kernel/git/tj/libata.git/patch/?id=1c40279960bcd7d52dbdf1d466b20d24b99176c8
+> > > > > > 1c40279960bcd7d52dbdf1d466b20d24b99176c8 (libata: Un-break ATA
+> > > > > > blacklist)
+> > > > > > 
+> > > > > 
+> > > > > There are some more bugs too:
+> > > > > 
+> > > > > 
+> > > > > RCU stalls, fix has been in rcu/urgent for 7 days:
+> > > > > https://git.kernel.org/cgit/linux/kernel/git/paulmck/linux-rcu.git/commit/?h=rcu/urgent&id=789cbbeca4eb7141cbd748ee93772471101b507b
+> > > > 
+> > > > Doesn't build in 3.17 properly :(
+> > > 
+> > > Older kernels can use rcu_note_context_switch() instead of
+> > > rcu_note_voluntary_context_switch(), which didn't show up until quite
+> > > recently.  Please note that rcu_note_context_switch() is quite a bit
+> > > more heavy-weight than is rcu_note_voluntary_context_switch(), but it
+> > > should be OK in this context.
+> > 
+> > "OK" as in "worth the overhead to fix the known bug"?  Or is this just
+> > not worth backporting to 3.17, 3.14, and 3.10 as no one really hits this
+> > issue there?
 > 
-> By using a linear virtual mapped p2m list accesses to p2m elements
-> can be sped up while even simplifying code. To achieve this goal
-> some p2m related initializations have to be performed later in the
-> boot process, as the final p2m list can be set up only after basic
-> memory management functions are available.
-> 
+> "OK" as in "the added overhead of rcu_note_context_switch() is likely
+> to be down in the noise in this case".  I must confess that I have no
+> idea whether or not people hit this issue in 3.17, 3.14, or 3.10.
 
-Hey Juergen,
+Ah, if no one has noticed this in older kernels, I'm not about to
+backport it :)
 
-I finially finished looking at the patchset. Had some comments,
-some questions that I hope can make it in the patch so that in
-six months or so when somebody looks at the code they can
-understand the subtle pieces.
+Chuck, why do you think this needs to be in 3.17?  And if so there, do
+you think it also needs to be in older kernel trees as well?
 
-Looking forward to the v4! (Thought keep in mind that next week
-is Thanksgiving week so won't be able to look much after Wednesday)
+thanks,
 
->  arch/x86/include/asm/pgtable_types.h |    1 +
->  arch/x86/include/asm/xen/page.h      |   49 +-
->  arch/x86/mm/pageattr.c               |   20 +
->  arch/x86/xen/mmu.c                   |   38 +-
->  arch/x86/xen/p2m.c                   | 1315 ++++++++++++++--------------------
->  arch/x86/xen/setup.c                 |  460 ++++++------
->  arch/x86/xen/xen-ops.h               |    6 +-
->  7 files changed, 854 insertions(+), 1035 deletions(-)
-
-And best of - we are deleting more code!
-
-> 
-> -- 
-> 2.1.2
-> 
+greg k-h
