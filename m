@@ -1,115 +1,388 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862AbaKSRk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:40:29 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:52238 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452AbaKSRk1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:40:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
-References: <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
-	<20141118020959.GA2091@redhat.com>
-	<CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
-	<20141118023930.GA2871@redhat.com>
-	<CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
-	<20141118145234.GA7487@redhat.com>
-	<alpine.DEB.2.11.1411181914020.3909@nanos>
-	<20141118215540.GD35311@redhat.com>
-	<20141119021902.GA14216@redhat.com>
-	<CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
-	<20141119145902.GA13387@redhat.com>
-	<CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
-Date: Wed, 19 Nov 2014 09:40:26 -0800
-X-Google-Sender-Auth: xdobJR1WLTFE8u1S5_aMYMG1flc
-Message-ID: <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
+	id S1755666AbaKSRrW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:47:22 -0500
+Received: from mga01.intel.com ([192.55.52.88]:11537 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754351AbaKSRrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 12:47:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,418,1413270000"; 
+   d="scan'208";a="625002781"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: [PATCH v2] scripts/ksize: Add kernel build size report
+Date: Wed, 19 Nov 2014 09:01:19 -0800
+Message-Id: <feb1cf7e4ae472145b5e29065e56c10de384f2ff.1416416438.git.dvhart@linux.intel.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 9:22 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> So it hasn't actually done the "push %rbx; popfq" part - there must be
-> a label at the return part, and context_tracking_user_exit() never
-> actually did the local_irq_save/restore at all. Which means that it
-> took one of the early exits instead:
->
->         if (!context_tracking_is_enabled())
->                 return;
->
->         if (in_interrupt())
->                 return;
+ksize generates hierarchical build size reports from vmlinux, *.o, and
+built-in.o files.
 
-Ho humm. Interesting. Neither of those should possibly have happened.
+ksize is useful in preparing minimal configurations and comparing
+similar configurations across kernel versions.
 
-We "know" that "context_tracking_is_enabled()" must be true, because
-the only way we get to context_tracking_user_exit() in the first place
-is through "user_exit()", which does:
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-        if (context_tracking_is_enabled())
-                context_tracking_user_exit();
+--
+v2: Drop kernel version detection per feedback from Josh Triplett
+---
+ scripts/ksize | 340 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 340 insertions(+)
+ create mode 100755 scripts/ksize
 
-and we know we shouldn't be in_interrupt(), because the backtrace is
-the system call entry path, for chrissake!
+diff --git a/scripts/ksize b/scripts/ksize
+new file mode 100755
+index 0000000..0a52121
+--- /dev/null
++++ b/scripts/ksize
+@@ -0,0 +1,340 @@
++#!/usr/bin/env python
++#
++# Copyright (c) 2011-2014 Intel Corporation.
++# All rights reserved.
++#
++# This program is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License version 2 as
++# published by the Free Software Foundation.
++#
++# This program is distributed in the hope that it will be useful, but
++# WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++# General Public License for more details.
++#
++# Author: Darren Hart <dvhart@linux.intel.com>
++#
++
++"""
++Display details of the kernel build size.
++
++The generated report is comprised of many sub-reports, starting with vmlinux,
++and descending into each component built-in.o.
++
++The first line of each report block is the table header, including the report
++title and the column labels. Next is the report totals for the top level file
++(vmlinux or built-in.o). This is followed by itemized sizes for any component
++*.o object files and all built-in.o files from one directory down (the
++built-in.o components are labeled with their parent directory to avoid
++displaying "built-in.o" on nearly every line). The final lines display the sum
++of all the itemized components and delta between the total and the sum.
++
++An example report from an x86_64 allnoconfig build follows in part:
++
++Linux Kernel (vmlinux)                  total |       text       data        bss
++--------------------------------------------------------------------------------
++vmlinux                               2201904 |     864548     121612    1215744
++--------------------------------------------------------------------------------
++arch/x86                               282709 |     171021      65448      46240
++kernel                                 249960 |     234355       7201       8404
++mm                                     190369 |     154171      14154      22044
++fs                                     163867 |     160820       1351       1696
++drivers                                 44429 |      41353       2052       1024
++lib                                     37143 |      37053         85          5
++init                                    21535 |       5189      16285         61
++security                                 3674 |       3658          8          8
++net                                       122 |        122          0          0
++--------------------------------------------------------------------------------
++sum                                    993808 |     807742     106584      79482
++delta                                 1208096 |      56806      15028    1136262
++
++...
++
++drivers                                 total |       text       data        bss
++--------------------------------------------------------------------------------
++drivers/built-in.o                      44429 |      41353       2052       1024
++--------------------------------------------------------------------------------
++drivers/base                            32427 |      31267       1060        100
++drivers/char                             9980 |       8412        656        912
++drivers/rtc                              1155 |       1155          0          0
++drivers/clocksource                       674 |        406        256         12
++drivers/video                              62 |         46         16          0
++--------------------------------------------------------------------------------
++sum                                     44298 |      41286       1988       1024
++delta                                     131 |         67         64          0
++
++The report may optionally display an additional level of drivers/* reports:
++
++    drivers/base                        total |       text       data        bss
++    ----------------------------------------------------------------------------
++    drivers/base/built-in.o             32427 |      31267       1060        100
++    ----------------------------------------------------------------------------
++    drivers/base/*.o                    32253 |      31121       1032        100
++    ----------------------------------------------------------------------------
++    sum                                 32253 |      31121       1032        100
++    delta                                 174 |        146         28          0
++
++    ...
++"""
++
++import sys
++import getopt
++import os
++import struct
++import termios
++import fcntl
++import glob
++from subprocess import *
++
++
++def usage():
++    print 'Usage: ksize [OPTION]...'
++    print '  -d,                 display an additional level of drivers detail'
++    print '  -h, --help          display this help and exit'
++    print ''
++    print 'Run ksize from the top-level Linux kernel build directory. Always'
++    print 'perform a "make clean" before running a build to be measured by'
++    print 'ksize to avoid contaminating the report with unassociated build'
++    print 'artifacts'
++
++
++def term_width():
++    """
++    Determine the width of the terminal for formatting the report
++
++    Prefer the COLUMNS environment variable, and fall back to termios.
++    The width will be limited to the range of [70, 100], and will default to 80
++    if none can be determined, or if redirecting to a file.
++    """
++    minw = 70
++    maxw = 100
++
++    if os.environ.has_key('COLUMNS'):
++        return max(minw, min(int(os.environ['COLUMNS']), maxw))
++
++    try:
++        (rows,cols) = struct.unpack('hh', fcntl.ioctl(1, termios.TIOCGWINSZ, "CCRR"))
++        return max(minw, min(cols, maxw))
++    except IOError:
++        # Probably redirecting to a file
++        pass
++    except struct.error, err:
++        print "Error:", err
++        sys.exit(1)
++
++    return 80
++
++
++def fmt_title(title, maxw):
++    """
++    Format the title to fit within a maximum width
++
++    The title will be shifted left and prefixed with a '<' character as
++    necessary to fit within the maximum width.
++
++    Args:
++      title (str): Title to be formatted
++      maxw (int): Maximum width
++    """
++    if len(title) <= maxw:
++        return title
++    else:
++        return "<%s" % (title[-(maxw - 1):])
++
++
++class Sizes(object):
++    """
++    Storage class for 'size -t' output
++    """
++    def __init__(self, title="", files=None):
++        """
++        Create a new Sizes container and populate it with the sum of the sizes
++        from the files list.
++
++        Args:
++          title (str, optional): Title to display via the show method
++          files (list of str, optional): Files to pass to 'size -t'
++        """
++        self.title = title
++        self.text = self.data = self.bss = self.total = 0
++
++        if files:
++            p = Popen("size -t " + " ".join(files),
++                      shell=True, stdout=PIPE, stderr=PIPE)
++            output = p.communicate()[0].splitlines()
++
++            if len(output) > 2:
++                sizes = output[-1].split()[0:4]
++                self.text = int(sizes[0])
++                self.data = int(sizes[1])
++                self.bss = int(sizes[2])
++                self.total = int(sizes[3])
++
++    def __add__(self, that):
++        if not (isinstance(self, Sizes) and isinstance(that, Sizes)):
++            raise TypeError
++        sum = Sizes()
++        sum.text = self.text + that.text
++        sum.data = self.data + that.data
++        sum.bss = self.bss + that.bss
++        sum.total = self.total + that.total
++        return sum
++
++    def __sub__(self, that):
++        if not (isinstance(self, Sizes) and isinstance(that, Sizes)):
++            raise TypeError
++        diff = Sizes()
++        diff.text = self.text - that.text
++        diff.data = self.data - that.data
++        diff.bss = self.bss - that.bss
++        diff.total = self.total - that.total
++        return diff
++
++    def show(self, cols, indent="", alt_title=None):
++        """
++        Print a row in a report for sizes represented by this object
++
++        Args:
++          cols (int): Width of the report in characters
++          indent (str, optional): Literal indentation string, all spaces
++          alt_title (str, optional): An alternate title to display
++        """
++        max_title = cols - 46 - len(indent)
++        if alt_title is not None:
++            title = fmt_title(alt_title, max_title)
++        else:
++            title = fmt_title(self.title, max_title)
++        print "%s%-*s %10d | %10d %10d %10d" % (
++                indent, max_title, title, self.total,
++                self.text, self.data, self.bss)
++
++
++class Report(object):
++    """
++    Container of sizes and sub reports
++    """
++    @staticmethod
++    def create(title, filename, subglobs):
++        """
++        Named constructor to create hierarchies of Report objects
++
++        Args:
++          title (str): Title of the report
++          filename (str): Top level build object filename
++          subglobs (list of str): Shell globs matching the components of the top
++            level filename
++        """
++        r = Report(title, [filename])
++
++        # Create the .o object file report for this level
++        path = os.path.dirname(filename)
++        files = [p for p in glob.iglob(path + "/*.o") if not p.endswith("/built-in.o")]
++        r.parts.append(Report(path + "/*.o", files))
++
++        # Create the sub-reports based on each built-in.o
++        for g in subglobs:
++            for f in glob.glob(g):
++                path = os.path.dirname(f)
++                r.parts.append(Report.create(path, f, [path + "/*/built-in.o"]))
++
++        # Display in descending total size order
++        r.parts.sort(reverse=True)
++
++        # Calculate the sum and deltas from each component report
++        for b in r.parts:
++            r.totals += b.sizes
++        r.totals.title = "sum"
++
++        r.deltas = r.sizes - r.totals
++        r.deltas.title = "delta"
++
++        return r
++
++    def __init__(self, title, files):
++        """
++        Create a new singular Report object, only called by Report.create()
++
++        Args:
++          title (str, optional): Title to display via the show method
++          files (list of str, optional): Files to construct Sizes
++        """
++        self.files = files
++        self.title = title
++        self.parts = list()
++        self.sizes = Sizes(title, files)
++        self.totals = Sizes("sum")
++        self.deltas = Sizes("delta")
++
++    def show(self, cols, indent=""):
++        """
++        Print the Report as a table with Sizes as rows
++
++        Args:
++          cols (int): Width of the report in characters
++          indent (str, optional): Literal indentation string, all spaces
++        """
++        max_title = cols - 46 - len(indent)
++        title = fmt_title(self.title, max_title)
++        rule = str.ljust(indent, cols, '-')
++
++        # Print report table header
++        print "%s%-*s %10s | %10s %10s %10s" % (
++                indent, max_title, title, "total", "text", "data", "bss")
++
++        # Print top level report filename instead of title (usually path)
++        print rule
++        self.sizes.show(cols, indent, self.files[0])
++        print rule
++
++        # Print component sizes (*.o and */built-in.o)
++        for p in self.parts:
++            if p.sizes.total > 0:
++                p.sizes.show(cols, indent)
++        print rule
++
++        # Print the sum of the components, and the delta with the total
++        self.totals.show(cols, indent)
++        self.deltas.show(cols, indent)
++        print "\n"
++
++    def __cmp__(self, that):
++        if not isinstance(that, Report):
++            raise TypeError
++        return cmp(self.sizes.total, that.sizes.total)
++
++
++def main(argv):
++    try:
++        opts, args = getopt.getopt(argv[1:], "dh", ["help"])
++    except getopt.GetoptError, err:
++        print '%s' % str(err)
++        usage()
++        return 2
++
++    driver_detail = False
++    for o, a in opts:
++        if o == '-d':
++            driver_detail = True
++        elif o in ('-h', '--help'):
++            usage()
++            return 0
++        else:
++            assert False, "unhandled option"
++
++    cols = term_width()
++
++    globs = ["arch/*/built-in.o", "*/built-in.o"]
++    vmlinux = Report.create("Linux Kernel (vmlinux)", "vmlinux", globs)
++
++    vmlinux.show(cols)
++    for b in vmlinux.parts:
++        if b.totals.total > 0 and len(b.parts) > 1:
++            b.show(cols)
++        if b.title == "drivers" and driver_detail:
++            for d in b.parts:
++                if d.totals.total > 0 and len(d.parts) > 1:
++                    d.show(cols, "    ")
++
++
++if __name__ == "__main__":
++    sys.exit(main(sys.argv))
+-- 
+2.1.1
 
-So we definitely have some corruption going on. A few possibilities:
-
- - either the register contents are corrupted (%rbx in your dump said
-"0x0000000100000046", but the eflags we restored was 0x246)
-
- - in_interrupt() is wrong, and we've had some irq_count() corruption.
-I'd expect that to result in "scheduling while atomic" messages,
-though, especially if it goes on long enough that you get a watchdog
-event..
-
- - there is something rotten in the land of
-context_tracking_is_enabled(), which uses a static key.
-
- - I have misread the whole trace, and am a moron. But your earlier
-report really had some very similar things, just in
-context_tracking_user_enter() instead of exit.
-
-In your previous oops, the registers that was allegedly used to
-restore %eflags was %r12:
-
-  28: 41 54                 push   %r12
-  2a: 9d                   popfq
-  2b:* 5b                   pop    %rbx <-- trapping instruction
-  2c: 41 5c                 pop    %r12
-  2e: 5d                   pop    %rbp
-  2f: c3                   retq
-
-but:
-
-  R12: ffff880101ee3ec0
-  EFLAGS: 00000282
-
-so again, it looks like we never actually did that "popfq"
-instruction, and it would have exited through the (same) early exits.
-
-But what an odd coincidence that it ended up in both of your reports
-being *exactly* at that instruction after the "popf". If it had
-actually *taken* the popf, I'd not be so surprised ("ok, popf enabled
-interrupts, and there was an interrupt pending"), but since everything
-seems to say that it came there through some control flow that did
-*not* go through the popf, that's just a very odd coincidence.
-
-And both context_tracking_user_enter() and exit() have that exact same
-issue with the early returns. They shouldn't have happened in the
-first place.
-
-                      Linus
