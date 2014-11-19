@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110AbaKSKbp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 05:31:45 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:52460 "EHLO
+	id S932168AbaKSKb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 05:31:57 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:52519 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754949AbaKSKbj (ORCPT
+	with ESMTP id S932118AbaKSKbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 05:31:39 -0500
+	Wed, 19 Nov 2014 05:31:52 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: <linux-arm-kernel@lists.infradead.org>
 CC: <linux-kernel@vger.kernel.org>,
@@ -15,9 +15,9 @@ CC: <linux-kernel@vger.kernel.org>,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>,
         Ludovic Desroches <ludovic.desroches@atmel.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 1/4] ARM: at91: remove at91sam9263 legacy board support
-Date: Wed, 19 Nov 2014 11:31:11 +0100
-Message-ID: <cf26d39a4a251662dbc363092b319b788d223a7b.1416392687.git.nicolas.ferre@atmel.com>
+Subject: [PATCH 2/4] ARM: at91: remove at91sam9260/at91sam9g20 legacy boards files
+Date: Wed, 19 Nov 2014 11:31:12 +0100
+Message-ID: <3a148ab9e0283037a97cb400e0b2bf55963e3891.1416392687.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <cover.1416392687.git.nicolas.ferre@atmel.com>
 References: <cover.1416392687.git.nicolas.ferre@atmel.com>
@@ -27,2228 +27,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove legacy support for at91sam9rl boards.
-This include board files removal plus all legacy code for non DT boards
-support.
-Use the Device Tree for running this board with newer kernels.
+Remove old board files that use at91sam9260 or at91sam9g20 Atmel SoCs. The
+device tree is mature on these SoCs. It must be used now.
 
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/configs/at91sam9263_defconfig   |  151 ---
- arch/arm/mach-at91/Kconfig.non_dt        |   21 -
- arch/arm/mach-at91/Makefile              |    4 -
- arch/arm/mach-at91/at91sam9263.c         |  399 --------
- arch/arm/mach-at91/at91sam9263_devices.c | 1538 ------------------------------
- arch/arm/mach-at91/board-sam9263ek.c     |  493 ----------
- 6 files changed, 2606 deletions(-)
- delete mode 100644 arch/arm/configs/at91sam9263_defconfig
- delete mode 100644 arch/arm/mach-at91/at91sam9263_devices.c
- delete mode 100644 arch/arm/mach-at91/board-sam9263ek.c
+ arch/arm/mach-at91/Makefile             |  19 --
+ arch/arm/mach-at91/board-afeb-9260v1.c  | 223 ------------
+ arch/arm/mach-at91/board-cam60.c        | 199 -----------
+ arch/arm/mach-at91/board-cpu9krea.c     | 386 ---------------------
+ arch/arm/mach-at91/board-flexibity.c    | 171 ----------
+ arch/arm/mach-at91/board-gsia18s.c      | 585 --------------------------------
+ arch/arm/mach-at91/board-pcontrol-g20.c | 228 -------------
+ arch/arm/mach-at91/board-sam9-l9260.c   | 230 -------------
+ arch/arm/mach-at91/board-sam9260ek.c    | 354 -------------------
+ arch/arm/mach-at91/board-sam9g20ek.c    | 429 -----------------------
+ arch/arm/mach-at91/board-snapper9260.c  | 191 -----------
+ arch/arm/mach-at91/board-stamp9g20.c    | 294 ----------------
+ arch/arm/mach-at91/stamp9g20.h          |   7 -
+ 13 files changed, 3316 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/board-afeb-9260v1.c
+ delete mode 100644 arch/arm/mach-at91/board-cam60.c
+ delete mode 100644 arch/arm/mach-at91/board-cpu9krea.c
+ delete mode 100644 arch/arm/mach-at91/board-flexibity.c
+ delete mode 100644 arch/arm/mach-at91/board-gsia18s.c
+ delete mode 100644 arch/arm/mach-at91/board-pcontrol-g20.c
+ delete mode 100644 arch/arm/mach-at91/board-sam9-l9260.c
+ delete mode 100644 arch/arm/mach-at91/board-sam9260ek.c
+ delete mode 100644 arch/arm/mach-at91/board-sam9g20ek.c
+ delete mode 100644 arch/arm/mach-at91/board-snapper9260.c
+ delete mode 100644 arch/arm/mach-at91/board-stamp9g20.c
+ delete mode 100644 arch/arm/mach-at91/stamp9g20.h
 
-diff --git a/arch/arm/configs/at91sam9263_defconfig b/arch/arm/configs/at91sam9263_defconfig
-deleted file mode 100644
-index 8b671c977b81..000000000000
---- a/arch/arm/configs/at91sam9263_defconfig
-+++ /dev/null
-@@ -1,151 +0,0 @@
--# CONFIG_LOCALVERSION_AUTO is not set
--# CONFIG_SWAP is not set
--CONFIG_SYSVIPC=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_LOG_BUF_SHIFT=14
--CONFIG_NAMESPACES=y
--CONFIG_EMBEDDED=y
--CONFIG_SLAB=y
--CONFIG_MODULES=y
--CONFIG_MODULE_UNLOAD=y
--# CONFIG_BLK_DEV_BSG is not set
--# CONFIG_IOSCHED_DEADLINE is not set
--# CONFIG_IOSCHED_CFQ is not set
--CONFIG_ARCH_AT91=y
--CONFIG_ARCH_AT91SAM9263=y
--CONFIG_MACH_AT91SAM9263EK=y
--CONFIG_MTD_AT91_DATAFLASH_CARD=y
--# CONFIG_ARM_THUMB is not set
--CONFIG_AEABI=y
--CONFIG_ZBOOT_ROM_TEXT=0x0
--CONFIG_ZBOOT_ROM_BSS=0x0
--CONFIG_CMDLINE="mem=64M console=ttyS0,115200 initrd=0x21100000,3145728 root=/dev/ram0 rw"
--CONFIG_AUTO_ZRELADDR=y
--CONFIG_NET=y
--CONFIG_PACKET=y
--CONFIG_UNIX=y
--CONFIG_NET_KEY=y
--CONFIG_INET=y
--CONFIG_IP_MULTICAST=y
--CONFIG_IP_ADVANCED_ROUTER=y
--CONFIG_IP_ROUTE_VERBOSE=y
--CONFIG_IP_PNP=y
--CONFIG_IP_PNP_DHCP=y
--CONFIG_IP_PNP_BOOTP=y
--CONFIG_IP_PNP_RARP=y
--CONFIG_NET_IPIP=y
--CONFIG_IP_MROUTE=y
--CONFIG_IP_PIMSM_V1=y
--CONFIG_IP_PIMSM_V2=y
--# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
--# CONFIG_INET_XFRM_MODE_TUNNEL is not set
--# CONFIG_INET_XFRM_MODE_BEET is not set
--# CONFIG_INET_LRO is not set
--# CONFIG_INET_DIAG is not set
--CONFIG_IPV6=y
--# CONFIG_WIRELESS is not set
--CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
--CONFIG_DEVTMPFS=y
--CONFIG_DEVTMPFS_MOUNT=y
--CONFIG_MTD=y
--CONFIG_MTD_CMDLINE_PARTS=y
--CONFIG_MTD_BLOCK=y
--CONFIG_NFTL=y
--CONFIG_NFTL_RW=y
--CONFIG_MTD_DATAFLASH=y
--CONFIG_MTD_BLOCK2MTD=y
--CONFIG_MTD_NAND=y
--CONFIG_MTD_NAND_ATMEL=y
--CONFIG_MTD_UBI=y
--CONFIG_MTD_UBI_GLUEBI=y
--CONFIG_BLK_DEV_LOOP=y
--CONFIG_BLK_DEV_RAM=y
--CONFIG_BLK_DEV_RAM_SIZE=8192
--CONFIG_ATMEL_TCLIB=y
--CONFIG_SCSI=y
--CONFIG_BLK_DEV_SD=y
--CONFIG_NETDEVICES=y
--CONFIG_MACB=y
--CONFIG_SMSC_PHY=y
--# CONFIG_WLAN is not set
--CONFIG_INPUT_POLLDEV=m
--# CONFIG_INPUT_MOUSEDEV is not set
--CONFIG_INPUT_EVDEV=y
--# CONFIG_KEYBOARD_ATKBD is not set
--CONFIG_KEYBOARD_GPIO=y
--# CONFIG_INPUT_MOUSE is not set
--CONFIG_INPUT_TOUCHSCREEN=y
--CONFIG_TOUCHSCREEN_ADS7846=y
--# CONFIG_LEGACY_PTYS is not set
--CONFIG_SERIAL_ATMEL=y
--CONFIG_SERIAL_ATMEL_CONSOLE=y
--CONFIG_HW_RANDOM=y
--CONFIG_I2C=y
--CONFIG_I2C_CHARDEV=y
--CONFIG_I2C_GPIO=y
--CONFIG_SPI=y
--CONFIG_SPI_ATMEL=y
--CONFIG_GPIO_SYSFS=y
--CONFIG_POWER_SUPPLY=y
--CONFIG_POWER_RESET=y
--# CONFIG_HWMON is not set
--CONFIG_WATCHDOG=y
--CONFIG_WATCHDOG_NOWAYOUT=y
--CONFIG_AT91SAM9X_WATCHDOG=y
--CONFIG_FB=y
--CONFIG_FB_ATMEL=y
--CONFIG_BACKLIGHT_LCD_SUPPORT=y
--CONFIG_LCD_CLASS_DEVICE=y
--CONFIG_BACKLIGHT_CLASS_DEVICE=y
--CONFIG_FRAMEBUFFER_CONSOLE=y
--CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
--CONFIG_LOGO=y
--CONFIG_SOUND=y
--CONFIG_SND=y
--CONFIG_SND_SEQUENCER=y
--CONFIG_SND_MIXER_OSS=y
--CONFIG_SND_PCM_OSS=y
--# CONFIG_SND_SUPPORT_OLD_API is not set
--# CONFIG_SND_VERBOSE_PROCFS is not set
--# CONFIG_SND_DRIVERS is not set
--# CONFIG_SND_ARM is not set
--CONFIG_SND_ATMEL_AC97C=y
--# CONFIG_SND_SPI is not set
--CONFIG_SND_USB_AUDIO=m
--CONFIG_USB=y
--CONFIG_USB_MON=y
--CONFIG_USB_OHCI_HCD=y
--CONFIG_USB_STORAGE=y
--CONFIG_USB_GADGET=y
--CONFIG_USB_ATMEL_USBA=y
--CONFIG_USB_G_SERIAL=y
--CONFIG_MMC=y
--CONFIG_SDIO_UART=m
--CONFIG_MMC_ATMELMCI=m
--CONFIG_NEW_LEDS=y
--CONFIG_LEDS_CLASS=y
--CONFIG_LEDS_GPIO=y
--CONFIG_LEDS_PWM=y
--CONFIG_LEDS_TRIGGERS=y
--CONFIG_LEDS_TRIGGER_HEARTBEAT=y
--CONFIG_RTC_CLASS=y
--CONFIG_RTC_DRV_AT91SAM9=y
--CONFIG_PWM=y
--CONFIG_PWM_ATMEL=y
--CONFIG_EXT4_FS=y
--CONFIG_VFAT_FS=y
--CONFIG_TMPFS=y
--CONFIG_UBIFS_FS=y
--CONFIG_UBIFS_FS_ADVANCED_COMPR=y
--CONFIG_NFS_FS=y
--CONFIG_NFS_V3_ACL=y
--CONFIG_NFS_V4=y
--CONFIG_ROOT_NFS=y
--CONFIG_NLS_CODEPAGE_437=y
--CONFIG_NLS_CODEPAGE_850=y
--CONFIG_NLS_ISO8859_1=y
--CONFIG_NLS_UTF8=y
--CONFIG_DEBUG_USER=y
--CONFIG_XZ_DEC=y
--CONFIG_FONTS=y
-diff --git a/arch/arm/mach-at91/Kconfig.non_dt b/arch/arm/mach-at91/Kconfig.non_dt
-index 22963a829e5c..a9458234ab23 100644
---- a/arch/arm/mach-at91/Kconfig.non_dt
-+++ b/arch/arm/mach-at91/Kconfig.non_dt
-@@ -27,12 +27,6 @@ config ARCH_AT91SAM9261
- 	select AT91_USE_OLD_CLK
- 	select OLD_IRQ_AT91
- 
--config ARCH_AT91SAM9263
--	bool "AT91SAM9263"
--	select SOC_AT91SAM9263
--	select AT91_USE_OLD_CLK
--	select OLD_IRQ_AT91
--
- endchoice
- 
- config ARCH_AT91SAM9G20
-@@ -260,21 +254,6 @@ endif
- 
- # ----------------------------------------------------------
- 
--if ARCH_AT91SAM9263
--
--comment "AT91SAM9263 Board Type"
--
--config MACH_AT91SAM9263EK
--	bool "Atmel AT91SAM9263-EK Evaluation Kit"
--	select HAVE_AT91_DATAFLASH_CARD
--	help
--	  Select this if you are using Atmel's AT91SAM9263-EK Evaluation Kit.
--	  <http://www.atmel.com/dyn/products/tools_card.asp?tool_id=4057>
--
--endif
--
--# ----------------------------------------------------------
--
- comment "AT91 Board Options"
- 
- config MTD_AT91_DATAFLASH_CARD
 diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-index ae8aa1a898e8..e0361357e018 100644
+index e0361357e018..88d49248fc5c 100644
 --- a/arch/arm/mach-at91/Makefile
 +++ b/arch/arm/mach-at91/Makefile
-@@ -23,7 +23,6 @@ obj-$(CONFIG_SOC_SAMA5D4)	+= sama5d4.o
- obj-$(CONFIG_ARCH_AT91RM9200)	+= at91rm9200_devices.o
- obj-$(CONFIG_ARCH_AT91SAM9260)	+= at91sam9260_devices.o
- obj-$(CONFIG_ARCH_AT91SAM9261)	+= at91sam9261_devices.o
--obj-$(CONFIG_ARCH_AT91SAM9263)	+= at91sam9263_devices.o
+@@ -39,29 +39,10 @@ obj-$(CONFIG_MACH_YL9200)	+= board-yl-9200.o
+ obj-$(CONFIG_MACH_CPUAT91)	+= board-cpuat91.o
+ obj-$(CONFIG_MACH_ECO920)	+= board-eco920.o
  
- # AT91RM9200 board-specific support
- obj-$(CONFIG_MACH_ONEARM)	+= board-1arm.o
-@@ -52,9 +51,6 @@ obj-$(CONFIG_MACH_FLEXIBITY)	+= board-flexibity.o
+-# AT91SAM9260 board-specific support
+-obj-$(CONFIG_MACH_AT91SAM9260EK) += board-sam9260ek.o
+-obj-$(CONFIG_MACH_CAM60)	+= board-cam60.o
+-obj-$(CONFIG_MACH_SAM9_L9260)	+= board-sam9-l9260.o
+-obj-$(CONFIG_MACH_AFEB9260)	+= board-afeb-9260v1.o
+-obj-$(CONFIG_MACH_CPU9260)	+= board-cpu9krea.o
+-obj-$(CONFIG_MACH_FLEXIBITY)	+= board-flexibity.o
+-
+ # AT91SAM9261 board-specific support
  obj-$(CONFIG_MACH_AT91SAM9261EK) += board-sam9261ek.o
  obj-$(CONFIG_MACH_AT91SAM9G10EK) += board-sam9261ek.o
  
--# AT91SAM9263 board-specific support
--obj-$(CONFIG_MACH_AT91SAM9263EK) += board-sam9263ek.o
+-# AT91SAM9G20 board-specific support
+-obj-$(CONFIG_MACH_AT91SAM9G20EK) += board-sam9g20ek.o
+-obj-$(CONFIG_MACH_CPU9G20)	+= board-cpu9krea.o
+-obj-$(CONFIG_MACH_STAMP9G20)	+= board-stamp9g20.o
+-obj-$(CONFIG_MACH_PORTUXG20)	+= board-stamp9g20.o
+-obj-$(CONFIG_MACH_PCONTROL_G20)	+= board-pcontrol-g20.o board-stamp9g20.o
+-obj-$(CONFIG_MACH_GSIA18S)	+= board-gsia18s.o board-stamp9g20.o
 -
- # AT91SAM9G20 board-specific support
- obj-$(CONFIG_MACH_AT91SAM9G20EK) += board-sam9g20ek.o
- obj-$(CONFIG_MACH_CPU9G20)	+= board-cpu9krea.o
-diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
-index fbff228cc63e..e7ad14864083 100644
---- a/arch/arm/mach-at91/at91sam9263.c
-+++ b/arch/arm/mach-at91/at91sam9263.c
-@@ -10,304 +10,11 @@
-  *
-  */
- 
--#include <linux/module.h>
--#include <linux/platform_device.h>
--#include <linux/clk/at91_pmc.h>
+-# AT91SAM9260/AT91SAM9G20 board-specific support
+-obj-$(CONFIG_MACH_SNAPPER_9260)	+= board-snapper9260.o
 -
--#include <asm/proc-fns.h>
--#include <asm/irq.h>
--#include <asm/mach/arch.h>
--#include <asm/mach/map.h>
- #include <asm/system_misc.h>
--#include <mach/at91sam9263.h>
- #include <mach/hardware.h>
- 
--#include "at91_aic.h"
- #include "soc.h"
- #include "generic.h"
--#include "sam9_smc.h"
--#include "pm.h"
--
--#if defined(CONFIG_OLD_CLK_AT91)
--#include "clock.h"
--/* --------------------------------------------------------------------
-- *  Clocks
-- * -------------------------------------------------------------------- */
--
--/*
-- * The peripheral clocks.
-- */
--static struct clk pioA_clk = {
--	.name		= "pioA_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_PIOA,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk pioB_clk = {
--	.name		= "pioB_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_PIOB,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk pioCDE_clk = {
--	.name		= "pioCDE_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_PIOCDE,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk usart0_clk = {
--	.name		= "usart0_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_US0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk usart1_clk = {
--	.name		= "usart1_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_US1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk usart2_clk = {
--	.name		= "usart2_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_US2,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk mmc0_clk = {
--	.name		= "mci0_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_MCI0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk mmc1_clk = {
--	.name		= "mci1_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_MCI1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk can_clk = {
--	.name		= "can_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_CAN,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk twi_clk = {
--	.name		= "twi_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_TWI,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk spi0_clk = {
--	.name		= "spi0_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_SPI0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk spi1_clk = {
--	.name		= "spi1_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_SPI1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk ssc0_clk = {
--	.name		= "ssc0_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_SSC0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk ssc1_clk = {
--	.name		= "ssc1_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_SSC1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk ac97_clk = {
--	.name		= "ac97_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_AC97C,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk tcb_clk = {
--	.name		= "tcb_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_TCB,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk pwm_clk = {
--	.name		= "pwm_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_PWMC,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk macb_clk = {
--	.name		= "pclk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_EMAC,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk dma_clk = {
--	.name		= "dma_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_DMA,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk twodge_clk = {
--	.name		= "2dge_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_2DGE,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk udc_clk = {
--	.name		= "udc_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_UDP,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk isi_clk = {
--	.name		= "isi_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_ISI,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk lcdc_clk = {
--	.name		= "lcdc_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_LCDC,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk ohci_clk = {
--	.name		= "ohci_clk",
--	.pmc_mask	= 1 << AT91SAM9263_ID_UHP,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--
--static struct clk *periph_clocks[] __initdata = {
--	&pioA_clk,
--	&pioB_clk,
--	&pioCDE_clk,
--	&usart0_clk,
--	&usart1_clk,
--	&usart2_clk,
--	&mmc0_clk,
--	&mmc1_clk,
--	&can_clk,
--	&twi_clk,
--	&spi0_clk,
--	&spi1_clk,
--	&ssc0_clk,
--	&ssc1_clk,
--	&ac97_clk,
--	&tcb_clk,
--	&pwm_clk,
--	&macb_clk,
--	&twodge_clk,
--	&udc_clk,
--	&isi_clk,
--	&lcdc_clk,
--	&dma_clk,
--	&ohci_clk,
--	// irq0 .. irq1
--};
--
--static struct clk_lookup periph_clocks_lookups[] = {
--	/* One additional fake clock for macb_hclk */
--	CLKDEV_CON_ID("hclk", &macb_clk),
--	CLKDEV_CON_DEV_ID("pclk", "at91rm9200_ssc.0", &ssc0_clk),
--	CLKDEV_CON_DEV_ID("pclk", "at91rm9200_ssc.1", &ssc1_clk),
--	CLKDEV_CON_DEV_ID("pclk", "fff98000.ssc", &ssc0_clk),
--	CLKDEV_CON_DEV_ID("pclk", "fff9c000.ssc", &ssc1_clk),
--	CLKDEV_CON_DEV_ID("hclk", "at91sam9263-lcdfb.0", &lcdc_clk),
--	CLKDEV_CON_DEV_ID("mci_clk", "atmel_mci.0", &mmc0_clk),
--	CLKDEV_CON_DEV_ID("mci_clk", "atmel_mci.1", &mmc1_clk),
--	CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.0", &spi0_clk),
--	CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.1", &spi1_clk),
--	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.0", &tcb_clk),
--	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9260.0", &twi_clk),
--	CLKDEV_CON_DEV_ID(NULL, "at91sam9rl-pwm", &pwm_clk),
--	/* fake hclk clock */
--	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
--	CLKDEV_CON_ID("pioA", &pioA_clk),
--	CLKDEV_CON_ID("pioB", &pioB_clk),
--	CLKDEV_CON_ID("pioC", &pioCDE_clk),
--	CLKDEV_CON_ID("pioD", &pioCDE_clk),
--	CLKDEV_CON_ID("pioE", &pioCDE_clk),
--	/* more usart lookup table for DT entries */
--	CLKDEV_CON_DEV_ID("usart", "ffffee00.serial", &mck),
--	CLKDEV_CON_DEV_ID("usart", "fff8c000.serial", &usart0_clk),
--	CLKDEV_CON_DEV_ID("usart", "fff90000.serial", &usart1_clk),
--	CLKDEV_CON_DEV_ID("usart", "fff94000.serial", &usart2_clk),
--	/* more tc lookup table for DT entries */
--	CLKDEV_CON_DEV_ID("t0_clk", "fff7c000.timer", &tcb_clk),
--	CLKDEV_CON_DEV_ID("hclk", "a00000.ohci", &ohci_clk),
--	CLKDEV_CON_DEV_ID("spi_clk", "fffa4000.spi", &spi0_clk),
--	CLKDEV_CON_DEV_ID("spi_clk", "fffa8000.spi", &spi1_clk),
--	CLKDEV_CON_DEV_ID("mci_clk", "fff80000.mmc", &mmc0_clk),
--	CLKDEV_CON_DEV_ID("mci_clk", "fff84000.mmc", &mmc1_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fff88000.i2c", &twi_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffff200.gpio", &pioA_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioB_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioCDE_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioCDE_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffffa00.gpio", &pioCDE_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffb8000.pwm", &pwm_clk),
--};
--
--static struct clk_lookup usart_clocks_lookups[] = {
--	CLKDEV_CON_DEV_ID("usart", "atmel_usart.0", &mck),
--	CLKDEV_CON_DEV_ID("usart", "atmel_usart.1", &usart0_clk),
--	CLKDEV_CON_DEV_ID("usart", "atmel_usart.2", &usart1_clk),
--	CLKDEV_CON_DEV_ID("usart", "atmel_usart.3", &usart2_clk),
--};
--
--/*
-- * The four programmable clocks.
-- * You must configure pin multiplexing to bring these signals out.
-- */
--static struct clk pck0 = {
--	.name		= "pck0",
--	.pmc_mask	= AT91_PMC_PCK0,
--	.type		= CLK_TYPE_PROGRAMMABLE,
--	.id		= 0,
--};
--static struct clk pck1 = {
--	.name		= "pck1",
--	.pmc_mask	= AT91_PMC_PCK1,
--	.type		= CLK_TYPE_PROGRAMMABLE,
--	.id		= 1,
--};
--static struct clk pck2 = {
--	.name		= "pck2",
--	.pmc_mask	= AT91_PMC_PCK2,
--	.type		= CLK_TYPE_PROGRAMMABLE,
--	.id		= 2,
--};
--static struct clk pck3 = {
--	.name		= "pck3",
--	.pmc_mask	= AT91_PMC_PCK3,
--	.type		= CLK_TYPE_PROGRAMMABLE,
--	.id		= 3,
--};
--
--static void __init at91sam9263_register_clocks(void)
--{
--	int i;
--
--	for (i = 0; i < ARRAY_SIZE(periph_clocks); i++)
--		clk_register(periph_clocks[i]);
--
--	clkdev_add_table(periph_clocks_lookups,
--			 ARRAY_SIZE(periph_clocks_lookups));
--	clkdev_add_table(usart_clocks_lookups,
--			 ARRAY_SIZE(usart_clocks_lookups));
--
--	clk_register(&pck0);
--	clk_register(&pck1);
--	clk_register(&pck2);
--	clk_register(&pck3);
--}
--#else
--#define at91sam9263_register_clocks NULL
--#endif
--
--/* --------------------------------------------------------------------
-- *  GPIO
-- * -------------------------------------------------------------------- */
--
--static struct at91_gpio_bank at91sam9263_gpio[] __initdata = {
--	{
--		.id		= AT91SAM9263_ID_PIOA,
--		.regbase	= AT91SAM9263_BASE_PIOA,
--	}, {
--		.id		= AT91SAM9263_ID_PIOB,
--		.regbase	= AT91SAM9263_BASE_PIOB,
--	}, {
--		.id		= AT91SAM9263_ID_PIOCDE,
--		.regbase	= AT91SAM9263_BASE_PIOC,
--	}, {
--		.id		= AT91SAM9263_ID_PIOCDE,
--		.regbase	= AT91SAM9263_BASE_PIOD,
--	}, {
--		.id		= AT91SAM9263_ID_PIOCDE,
--		.regbase	= AT91SAM9263_BASE_PIOE,
--	}
--};
- 
- /* --------------------------------------------------------------------
-  *  AT91SAM9263 processor initialization
-@@ -319,121 +26,15 @@ static void __init at91sam9263_map_io(void)
- 	at91_init_sram(1, AT91SAM9263_SRAM1_BASE, AT91SAM9263_SRAM1_SIZE);
- }
- 
--static void __init at91sam9263_ioremap_registers(void)
--{
--	at91_ioremap_ramc(0, AT91SAM9263_BASE_SDRAMC0, 512);
--	at91_ioremap_ramc(1, AT91SAM9263_BASE_SDRAMC1, 512);
--	at91sam926x_ioremap_pit(AT91SAM9263_BASE_PIT);
--	at91sam9_ioremap_smc(0, AT91SAM9263_BASE_SMC0);
--	at91sam9_ioremap_smc(1, AT91SAM9263_BASE_SMC1);
--	at91_ioremap_matrix(AT91SAM9263_BASE_MATRIX);
--	at91_pm_set_standby(at91sam9_sdram_standby);
--}
--
- static void __init at91sam9263_initialize(void)
- {
- 	arm_pm_idle = at91sam9_idle;
- 
- 	at91_sysirq_mask_rtt(AT91SAM9263_BASE_RTT0);
- 	at91_sysirq_mask_rtt(AT91SAM9263_BASE_RTT1);
--
--	/* Register GPIO subsystem */
--	at91_gpio_init(at91sam9263_gpio, 5);
--}
--
--static struct resource rstc_resources[] = {
--	[0] = {
--		.start  = AT91SAM9263_BASE_RSTC,
--		.end    = AT91SAM9263_BASE_RSTC + SZ_16 - 1,
--		.flags  = IORESOURCE_MEM,
--	},
--	[1] = {
--		.start  = AT91SAM9263_BASE_SDRAMC0,
--		.end    = AT91SAM9263_BASE_SDRAMC0 + SZ_512 - 1,
--		.flags  = IORESOURCE_MEM,
--	},
--};
--
--static struct platform_device rstc_device = {
--	.name           = "at91-sam9260-reset",
--	.resource       = rstc_resources,
--	.num_resources  = ARRAY_SIZE(rstc_resources),
--};
--
--static struct resource shdwc_resources[] = {
--	[0] = {
--		.start  = AT91SAM9263_BASE_SHDWC,
--		.end    = AT91SAM9263_BASE_SHDWC + SZ_16 - 1,
--		.flags  = IORESOURCE_MEM,
--	},
--};
--
--static struct platform_device shdwc_device = {
--	.name           = "at91-poweroff",
--	.resource       = shdwc_resources,
--	.num_resources  = ARRAY_SIZE(shdwc_resources),
--};
--
--static void __init at91sam9263_register_devices(void)
--{
--	platform_device_register(&rstc_device);
--	platform_device_register(&shdwc_device);
--}
--
--/* --------------------------------------------------------------------
-- *  Interrupt initialization
-- * -------------------------------------------------------------------- */
--
--/*
-- * The default interrupt priority levels (0 = lowest, 7 = highest).
-- */
--static unsigned int at91sam9263_default_irq_priority[NR_AIC_IRQS] __initdata = {
--	7,	/* Advanced Interrupt Controller (FIQ) */
--	7,	/* System Peripherals */
--	1,	/* Parallel IO Controller A */
--	1,	/* Parallel IO Controller B */
--	1,	/* Parallel IO Controller C, D and E */
--	0,
--	0,
--	5,	/* USART 0 */
--	5,	/* USART 1 */
--	5,	/* USART 2 */
--	0,	/* Multimedia Card Interface 0 */
--	0,	/* Multimedia Card Interface 1 */
--	3,	/* CAN */
--	6,	/* Two-Wire Interface */
--	5,	/* Serial Peripheral Interface 0 */
--	5,	/* Serial Peripheral Interface 1 */
--	4,	/* Serial Synchronous Controller 0 */
--	4,	/* Serial Synchronous Controller 1 */
--	5,	/* AC97 Controller */
--	0,	/* Timer Counter 0, 1 and 2 */
--	0,	/* Pulse Width Modulation Controller */
--	3,	/* Ethernet */
--	0,
--	0,	/* 2D Graphic Engine */
--	2,	/* USB Device Port */
--	0,	/* Image Sensor Interface */
--	3,	/* LDC Controller */
--	0,	/* DMA Controller */
--	0,
--	2,	/* USB Host port */
--	0,	/* Advanced Interrupt Controller (IRQ0) */
--	0,	/* Advanced Interrupt Controller (IRQ1) */
--};
--
--static void __init at91sam9263_init_time(void)
--{
--	at91sam926x_pit_init(NR_IRQS_LEGACY + AT91_ID_SYS);
- }
- 
- AT91_SOC_START(at91sam9263)
- 	.map_io = at91sam9263_map_io,
--	.default_irq_priority = at91sam9263_default_irq_priority,
--	.extern_irq = (1 << AT91SAM9263_ID_IRQ0) | (1 << AT91SAM9263_ID_IRQ1),
--	.ioremap_registers = at91sam9263_ioremap_registers,
--	.register_clocks = at91sam9263_register_clocks,
--	.register_devices = at91sam9263_register_devices,
- 	.init = at91sam9263_initialize,
--	.init_time = at91sam9263_init_time,
- AT91_SOC_END
-diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
+ # AT91SAM board with device-tree
+ obj-$(CONFIG_MACH_AT91RM9200_DT) += board-dt-rm9200.o
+ obj-$(CONFIG_MACH_AT91SAM9_DT) += board-dt-sam9.o
+diff --git a/arch/arm/mach-at91/board-afeb-9260v1.c b/arch/arm/mach-at91/board-afeb-9260v1.c
 deleted file mode 100644
-index cef0e2f57068..000000000000
---- a/arch/arm/mach-at91/at91sam9263_devices.c
+index e76e35ce81e7..000000000000
+--- a/arch/arm/mach-at91/board-afeb-9260v1.c
 +++ /dev/null
-@@ -1,1538 +0,0 @@
+@@ -1,223 +0,0 @@
 -/*
-- * arch/arm/mach-at91/at91sam9263_devices.c
-- *
-- *  Copyright (C) 2007 Atmel Corporation.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- */
--#include <asm/mach/arch.h>
--#include <asm/mach/map.h>
--
--#include <linux/dma-mapping.h>
--#include <linux/gpio.h>
--#include <linux/platform_device.h>
--#include <linux/i2c-gpio.h>
--
--#include <linux/fb.h>
--#include <video/atmel_lcdc.h>
--
--#include <mach/at91sam9263.h>
--#include <mach/at91sam9263_matrix.h>
--#include <mach/at91_matrix.h>
--#include <mach/at91sam9_smc.h>
--#include <mach/hardware.h>
--
--#include "board.h"
--#include "generic.h"
--#include "gpio.h"
--
--
--/* --------------------------------------------------------------------
-- *  USB Host
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
--static u64 ohci_dmamask = DMA_BIT_MASK(32);
--static struct at91_usbh_data usbh_data;
--
--static struct resource usbh_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_UHP_BASE,
--		.end	= AT91SAM9263_UHP_BASE + SZ_1M - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_UHP,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_UHP,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91_usbh_device = {
--	.name		= "at91_ohci",
--	.id		= -1,
--	.dev		= {
--				.dma_mask		= &ohci_dmamask,
--				.coherent_dma_mask	= DMA_BIT_MASK(32),
--				.platform_data		= &usbh_data,
--	},
--	.resource	= usbh_resources,
--	.num_resources	= ARRAY_SIZE(usbh_resources),
--};
--
--void __init at91_add_device_usbh(struct at91_usbh_data *data)
--{
--	int i;
--
--	if (!data)
--		return;
--
--	/* Enable VBus control for UHP ports */
--	for (i = 0; i < data->ports; i++) {
--		if (gpio_is_valid(data->vbus_pin[i]))
--			at91_set_gpio_output(data->vbus_pin[i],
--					     data->vbus_pin_active_low[i]);
--	}
--
--	/* Enable overcurrent notification */
--	for (i = 0; i < data->ports; i++) {
--		if (gpio_is_valid(data->overcurrent_pin[i]))
--			at91_set_gpio_input(data->overcurrent_pin[i], 1);
--	}
--
--	usbh_data = *data;
--	platform_device_register(&at91_usbh_device);
--}
--#else
--void __init at91_add_device_usbh(struct at91_usbh_data *data) {}
--#endif
--
--
--/* --------------------------------------------------------------------
-- *  USB Device (Gadget)
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_USB_AT91) || defined(CONFIG_USB_AT91_MODULE)
--static struct at91_udc_data udc_data;
--
--static struct resource udc_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_UDP,
--		.end	= AT91SAM9263_BASE_UDP + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_UDP,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_UDP,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91_udc_device = {
--	.name		= "at91_udc",
--	.id		= -1,
--	.dev		= {
--				.platform_data		= &udc_data,
--	},
--	.resource	= udc_resources,
--	.num_resources	= ARRAY_SIZE(udc_resources),
--};
--
--void __init at91_add_device_udc(struct at91_udc_data *data)
--{
--	if (!data)
--		return;
--
--	if (gpio_is_valid(data->vbus_pin)) {
--		at91_set_gpio_input(data->vbus_pin, 0);
--		at91_set_deglitch(data->vbus_pin, 1);
--	}
--
--	/* Pullup pin is handled internally by USB device peripheral */
--
--	udc_data = *data;
--	platform_device_register(&at91_udc_device);
--}
--#else
--void __init at91_add_device_udc(struct at91_udc_data *data) {}
--#endif
--
--
--/* --------------------------------------------------------------------
-- *  Ethernet
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_MACB) || defined(CONFIG_MACB_MODULE)
--static u64 eth_dmamask = DMA_BIT_MASK(32);
--static struct macb_platform_data eth_data;
--
--static struct resource eth_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_EMAC,
--		.end	= AT91SAM9263_BASE_EMAC + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_EMAC,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_EMAC,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91sam9263_eth_device = {
--	.name		= "macb",
--	.id		= -1,
--	.dev		= {
--				.dma_mask		= &eth_dmamask,
--				.coherent_dma_mask	= DMA_BIT_MASK(32),
--				.platform_data		= &eth_data,
--	},
--	.resource	= eth_resources,
--	.num_resources	= ARRAY_SIZE(eth_resources),
--};
--
--void __init at91_add_device_eth(struct macb_platform_data *data)
--{
--	if (!data)
--		return;
--
--	if (gpio_is_valid(data->phy_irq_pin)) {
--		at91_set_gpio_input(data->phy_irq_pin, 0);
--		at91_set_deglitch(data->phy_irq_pin, 1);
--	}
--
--	/* Pins used for MII and RMII */
--	at91_set_A_periph(AT91_PIN_PE21, 0);	/* ETXCK_EREFCK */
--	at91_set_B_periph(AT91_PIN_PC25, 0);	/* ERXDV */
--	at91_set_A_periph(AT91_PIN_PE25, 0);	/* ERX0 */
--	at91_set_A_periph(AT91_PIN_PE26, 0);	/* ERX1 */
--	at91_set_A_periph(AT91_PIN_PE27, 0);	/* ERXER */
--	at91_set_A_periph(AT91_PIN_PE28, 0);	/* ETXEN */
--	at91_set_A_periph(AT91_PIN_PE23, 0);	/* ETX0 */
--	at91_set_A_periph(AT91_PIN_PE24, 0);	/* ETX1 */
--	at91_set_A_periph(AT91_PIN_PE30, 0);	/* EMDIO */
--	at91_set_A_periph(AT91_PIN_PE29, 0);	/* EMDC */
--
--	if (!data->is_rmii) {
--		at91_set_A_periph(AT91_PIN_PE22, 0);	/* ECRS */
--		at91_set_B_periph(AT91_PIN_PC26, 0);	/* ECOL */
--		at91_set_B_periph(AT91_PIN_PC22, 0);	/* ERX2 */
--		at91_set_B_periph(AT91_PIN_PC23, 0);	/* ERX3 */
--		at91_set_B_periph(AT91_PIN_PC27, 0);	/* ERXCK */
--		at91_set_B_periph(AT91_PIN_PC20, 0);	/* ETX2 */
--		at91_set_B_periph(AT91_PIN_PC21, 0);	/* ETX3 */
--		at91_set_B_periph(AT91_PIN_PC24, 0);	/* ETXER */
--	}
--
--	eth_data = *data;
--	platform_device_register(&at91sam9263_eth_device);
--}
--#else
--void __init at91_add_device_eth(struct macb_platform_data *data) {}
--#endif
--
--
--/* --------------------------------------------------------------------
-- *  MMC / SD
-- * -------------------------------------------------------------------- */
--
--#if IS_ENABLED(CONFIG_MMC_ATMELMCI)
--static u64 mmc_dmamask = DMA_BIT_MASK(32);
--static struct mci_platform_data mmc0_data, mmc1_data;
--
--static struct resource mmc0_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_MCI0,
--		.end	= AT91SAM9263_BASE_MCI0 + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_MCI0,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_MCI0,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91sam9263_mmc0_device = {
--	.name		= "atmel_mci",
--	.id		= 0,
--	.dev		= {
--				.dma_mask		= &mmc_dmamask,
--				.coherent_dma_mask	= DMA_BIT_MASK(32),
--				.platform_data		= &mmc0_data,
--	},
--	.resource	= mmc0_resources,
--	.num_resources	= ARRAY_SIZE(mmc0_resources),
--};
--
--static struct resource mmc1_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_MCI1,
--		.end	= AT91SAM9263_BASE_MCI1 + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_MCI1,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_MCI1,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91sam9263_mmc1_device = {
--	.name		= "atmel_mci",
--	.id		= 1,
--	.dev		= {
--				.dma_mask		= &mmc_dmamask,
--				.coherent_dma_mask	= DMA_BIT_MASK(32),
--				.platform_data		= &mmc1_data,
--	},
--	.resource	= mmc1_resources,
--	.num_resources	= ARRAY_SIZE(mmc1_resources),
--};
--
--void __init at91_add_device_mci(short mmc_id, struct mci_platform_data *data)
--{
--	unsigned int i;
--	unsigned int slot_count = 0;
--
--	if (!data)
--		return;
--
--	for (i = 0; i < ATMCI_MAX_NR_SLOTS; i++) {
--
--		if (!data->slot[i].bus_width)
--			continue;
--
--		/* input/irq */
--		if (gpio_is_valid(data->slot[i].detect_pin)) {
--			at91_set_gpio_input(data->slot[i].detect_pin,
--					1);
--			at91_set_deglitch(data->slot[i].detect_pin,
--					1);
--		}
--		if (gpio_is_valid(data->slot[i].wp_pin))
--			at91_set_gpio_input(data->slot[i].wp_pin, 1);
--
--		if (mmc_id == 0) {				/* MCI0 */
--			switch (i) {
--			case 0:					/* slot A */
--				/* CMD */
--				at91_set_A_periph(AT91_PIN_PA1, 1);
--				/* DAT0, maybe DAT1..DAT3 */
--				at91_set_A_periph(AT91_PIN_PA0, 1);
--				if (data->slot[i].bus_width == 4) {
--					at91_set_A_periph(AT91_PIN_PA3, 1);
--					at91_set_A_periph(AT91_PIN_PA4, 1);
--					at91_set_A_periph(AT91_PIN_PA5, 1);
--				}
--				slot_count++;
--				break;
--			case 1:					/* slot B */
--				/* CMD */
--				at91_set_A_periph(AT91_PIN_PA16, 1);
--				/* DAT0, maybe DAT1..DAT3 */
--				at91_set_A_periph(AT91_PIN_PA17, 1);
--				if (data->slot[i].bus_width == 4) {
--					at91_set_A_periph(AT91_PIN_PA18, 1);
--					at91_set_A_periph(AT91_PIN_PA19, 1);
--					at91_set_A_periph(AT91_PIN_PA20, 1);
--				}
--				slot_count++;
--				break;
--			default:
--				printk(KERN_ERR
--				       "AT91: SD/MMC slot %d not available\n", i);
--				break;
--			}
--			if (slot_count) {
--				/* CLK */
--				at91_set_A_periph(AT91_PIN_PA12, 0);
--
--				mmc0_data = *data;
--				platform_device_register(&at91sam9263_mmc0_device);
--			}
--		} else if (mmc_id == 1) {			/* MCI1 */
--			switch (i) {
--			case 0:					/* slot A */
--				/* CMD */
--				at91_set_A_periph(AT91_PIN_PA7, 1);
--				/* DAT0, maybe DAT1..DAT3 */
--				at91_set_A_periph(AT91_PIN_PA8, 1);
--				if (data->slot[i].bus_width == 4) {
--					at91_set_A_periph(AT91_PIN_PA9, 1);
--					at91_set_A_periph(AT91_PIN_PA10, 1);
--					at91_set_A_periph(AT91_PIN_PA11, 1);
--				}
--				slot_count++;
--				break;
--			case 1:					/* slot B */
--				/* CMD */
--				at91_set_A_periph(AT91_PIN_PA21, 1);
--				/* DAT0, maybe DAT1..DAT3 */
--				at91_set_A_periph(AT91_PIN_PA22, 1);
--				if (data->slot[i].bus_width == 4) {
--					at91_set_A_periph(AT91_PIN_PA23, 1);
--					at91_set_A_periph(AT91_PIN_PA24, 1);
--					at91_set_A_periph(AT91_PIN_PA25, 1);
--				}
--				slot_count++;
--				break;
--			default:
--				printk(KERN_ERR
--				       "AT91: SD/MMC slot %d not available\n", i);
--				break;
--			}
--			if (slot_count) {
--				/* CLK */
--				at91_set_A_periph(AT91_PIN_PA6, 0);
--
--				mmc1_data = *data;
--				platform_device_register(&at91sam9263_mmc1_device);
--			}
--		}
--	}
--}
--#else
--void __init at91_add_device_mci(short mmc_id, struct mci_platform_data *data) {}
--#endif
--
--/* --------------------------------------------------------------------
-- *  Compact Flash (PCMCIA or IDE)
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_PATA_AT91) || defined(CONFIG_PATA_AT91_MODULE) || \
--	defined(CONFIG_AT91_CF) || defined(CONFIG_AT91_CF_MODULE)
--
--static struct at91_cf_data cf0_data;
--
--static struct resource cf0_resources[] = {
--	[0] = {
--		.start	= AT91_CHIPSELECT_4,
--		.end	= AT91_CHIPSELECT_4 + SZ_256M - 1,
--		.flags	= IORESOURCE_MEM | IORESOURCE_MEM_8AND16BIT,
--	}
--};
--
--static struct platform_device cf0_device = {
--	.id		= 0,
--	.dev		= {
--				.platform_data	= &cf0_data,
--	},
--	.resource	= cf0_resources,
--	.num_resources	= ARRAY_SIZE(cf0_resources),
--};
--
--static struct at91_cf_data cf1_data;
--
--static struct resource cf1_resources[] = {
--	[0] = {
--		.start	= AT91_CHIPSELECT_5,
--		.end	= AT91_CHIPSELECT_5 + SZ_256M - 1,
--		.flags	= IORESOURCE_MEM | IORESOURCE_MEM_8AND16BIT,
--	}
--};
--
--static struct platform_device cf1_device = {
--	.id		= 1,
--	.dev		= {
--				.platform_data	= &cf1_data,
--	},
--	.resource	= cf1_resources,
--	.num_resources	= ARRAY_SIZE(cf1_resources),
--};
--
--void __init at91_add_device_cf(struct at91_cf_data *data)
--{
--	unsigned long ebi0_csa;
--	struct platform_device *pdev;
--
--	if (!data)
--		return;
--
--	/*
--	 * assign CS4 or CS5 to SMC with Compact Flash logic support,
--	 * we assume SMC timings are configured by board code,
--	 * except True IDE where timings are controlled by driver
--	 */
--	ebi0_csa = at91_matrix_read(AT91_MATRIX_EBI0CSA);
--	switch (data->chipselect) {
--	case 4:
--		at91_set_A_periph(AT91_PIN_PD6, 0);  /* EBI0_NCS4/CFCS0 */
--		ebi0_csa |= AT91_MATRIX_EBI0_CS4A_SMC_CF1;
--		cf0_data = *data;
--		pdev = &cf0_device;
--		break;
--	case 5:
--		at91_set_A_periph(AT91_PIN_PD7, 0);  /* EBI0_NCS5/CFCS1 */
--		ebi0_csa |= AT91_MATRIX_EBI0_CS5A_SMC_CF2;
--		cf1_data = *data;
--		pdev = &cf1_device;
--		break;
--	default:
--		printk(KERN_ERR "AT91 CF: bad chip-select requested (%u)\n",
--		       data->chipselect);
--		return;
--	}
--	at91_matrix_write(AT91_MATRIX_EBI0CSA, ebi0_csa);
--
--	if (gpio_is_valid(data->det_pin)) {
--		at91_set_gpio_input(data->det_pin, 1);
--		at91_set_deglitch(data->det_pin, 1);
--	}
--
--	if (gpio_is_valid(data->irq_pin)) {
--		at91_set_gpio_input(data->irq_pin, 1);
--		at91_set_deglitch(data->irq_pin, 1);
--	}
--
--	if (gpio_is_valid(data->vcc_pin))
--		/* initially off */
--		at91_set_gpio_output(data->vcc_pin, 0);
--
--	/* enable EBI controlled pins */
--	at91_set_A_periph(AT91_PIN_PD5, 1);  /* NWAIT */
--	at91_set_A_periph(AT91_PIN_PD8, 0);  /* CFCE1 */
--	at91_set_A_periph(AT91_PIN_PD9, 0);  /* CFCE2 */
--	at91_set_A_periph(AT91_PIN_PD14, 0); /* CFNRW */
--
--	pdev->name = (data->flags & AT91_CF_TRUE_IDE) ? "pata_at91" : "at91_cf";
--	platform_device_register(pdev);
--}
--#else
--void __init at91_add_device_cf(struct at91_cf_data *data) {}
--#endif
--
--/* --------------------------------------------------------------------
-- *  NAND / SmartMedia
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_MTD_NAND_ATMEL) || defined(CONFIG_MTD_NAND_ATMEL_MODULE)
--static struct atmel_nand_data nand_data;
--
--#define NAND_BASE	AT91_CHIPSELECT_3
--
--static struct resource nand_resources[] = {
--	[0] = {
--		.start	= NAND_BASE,
--		.end	= NAND_BASE + SZ_256M - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= AT91SAM9263_BASE_ECC0,
--		.end	= AT91SAM9263_BASE_ECC0 + SZ_512 - 1,
--		.flags	= IORESOURCE_MEM,
--	}
--};
--
--static struct platform_device at91sam9263_nand_device = {
--	.name		= "atmel_nand",
--	.id		= -1,
--	.dev		= {
--				.platform_data	= &nand_data,
--	},
--	.resource	= nand_resources,
--	.num_resources	= ARRAY_SIZE(nand_resources),
--};
--
--void __init at91_add_device_nand(struct atmel_nand_data *data)
--{
--	unsigned long csa;
--
--	if (!data)
--		return;
--
--	csa = at91_matrix_read(AT91_MATRIX_EBI0CSA);
--	at91_matrix_write(AT91_MATRIX_EBI0CSA, csa | AT91_MATRIX_EBI0_CS3A_SMC_SMARTMEDIA);
--
--	/* enable pin */
--	if (gpio_is_valid(data->enable_pin))
--		at91_set_gpio_output(data->enable_pin, 1);
--
--	/* ready/busy pin */
--	if (gpio_is_valid(data->rdy_pin))
--		at91_set_gpio_input(data->rdy_pin, 1);
--
--	/* card detect pin */
--	if (gpio_is_valid(data->det_pin))
--		at91_set_gpio_input(data->det_pin, 1);
--
--	nand_data = *data;
--	platform_device_register(&at91sam9263_nand_device);
--}
--#else
--void __init at91_add_device_nand(struct atmel_nand_data *data) {}
--#endif
--
--
--/* --------------------------------------------------------------------
-- *  TWI (i2c)
-- * -------------------------------------------------------------------- */
--
--/*
-- * Prefer the GPIO code since the TWI controller isn't robust
-- * (gets overruns and underruns under load) and can only issue
-- * repeated STARTs in one scenario (the driver doesn't yet handle them).
-- */
--#if defined(CONFIG_I2C_GPIO) || defined(CONFIG_I2C_GPIO_MODULE)
--
--static struct i2c_gpio_platform_data pdata = {
--	.sda_pin		= AT91_PIN_PB4,
--	.sda_is_open_drain	= 1,
--	.scl_pin		= AT91_PIN_PB5,
--	.scl_is_open_drain	= 1,
--	.udelay			= 2,		/* ~100 kHz */
--};
--
--static struct platform_device at91sam9263_twi_device = {
--	.name			= "i2c-gpio",
--	.id			= 0,
--	.dev.platform_data	= &pdata,
--};
--
--void __init at91_add_device_i2c(struct i2c_board_info *devices, int nr_devices)
--{
--	at91_set_GPIO_periph(AT91_PIN_PB4, 1);		/* TWD (SDA) */
--	at91_set_multi_drive(AT91_PIN_PB4, 1);
--
--	at91_set_GPIO_periph(AT91_PIN_PB5, 1);		/* TWCK (SCL) */
--	at91_set_multi_drive(AT91_PIN_PB5, 1);
--
--	i2c_register_board_info(0, devices, nr_devices);
--	platform_device_register(&at91sam9263_twi_device);
--}
--
--#elif defined(CONFIG_I2C_AT91) || defined(CONFIG_I2C_AT91_MODULE)
--
--static struct resource twi_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_TWI,
--		.end	= AT91SAM9263_BASE_TWI + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_TWI,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_TWI,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91sam9263_twi_device = {
--	.name		= "i2c-at91sam9260",
--	.id		= 0,
--	.resource	= twi_resources,
--	.num_resources	= ARRAY_SIZE(twi_resources),
--};
--
--void __init at91_add_device_i2c(struct i2c_board_info *devices, int nr_devices)
--{
--	/* pins used for TWI interface */
--	at91_set_A_periph(AT91_PIN_PB4, 0);		/* TWD */
--	at91_set_multi_drive(AT91_PIN_PB4, 1);
--
--	at91_set_A_periph(AT91_PIN_PB5, 0);		/* TWCK */
--	at91_set_multi_drive(AT91_PIN_PB5, 1);
--
--	i2c_register_board_info(0, devices, nr_devices);
--	platform_device_register(&at91sam9263_twi_device);
--}
--#else
--void __init at91_add_device_i2c(struct i2c_board_info *devices, int nr_devices) {}
--#endif
--
--
--/* --------------------------------------------------------------------
-- *  SPI
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_SPI_ATMEL) || defined(CONFIG_SPI_ATMEL_MODULE)
--static u64 spi_dmamask = DMA_BIT_MASK(32);
--
--static struct resource spi0_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_SPI0,
--		.end	= AT91SAM9263_BASE_SPI0 + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_SPI0,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_SPI0,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91sam9263_spi0_device = {
--	.name		= "atmel_spi",
--	.id		= 0,
--	.dev		= {
--				.dma_mask		= &spi_dmamask,
--				.coherent_dma_mask	= DMA_BIT_MASK(32),
--	},
--	.resource	= spi0_resources,
--	.num_resources	= ARRAY_SIZE(spi0_resources),
--};
--
--static const unsigned spi0_standard_cs[4] = { AT91_PIN_PA5, AT91_PIN_PA3, AT91_PIN_PA4, AT91_PIN_PB11 };
--
--static struct resource spi1_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_SPI1,
--		.end	= AT91SAM9263_BASE_SPI1 + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_SPI1,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_SPI1,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91sam9263_spi1_device = {
--	.name		= "atmel_spi",
--	.id		= 1,
--	.dev		= {
--				.dma_mask		= &spi_dmamask,
--				.coherent_dma_mask	= DMA_BIT_MASK(32),
--	},
--	.resource	= spi1_resources,
--	.num_resources	= ARRAY_SIZE(spi1_resources),
--};
--
--static const unsigned spi1_standard_cs[4] = { AT91_PIN_PB15, AT91_PIN_PB16, AT91_PIN_PB17, AT91_PIN_PB18 };
--
--void __init at91_add_device_spi(struct spi_board_info *devices, int nr_devices)
--{
--	int i;
--	unsigned long cs_pin;
--	short enable_spi0 = 0;
--	short enable_spi1 = 0;
--
--	/* Choose SPI chip-selects */
--	for (i = 0; i < nr_devices; i++) {
--		if (devices[i].controller_data)
--			cs_pin = (unsigned long) devices[i].controller_data;
--		else if (devices[i].bus_num == 0)
--			cs_pin = spi0_standard_cs[devices[i].chip_select];
--		else
--			cs_pin = spi1_standard_cs[devices[i].chip_select];
--
--		if (!gpio_is_valid(cs_pin))
--			continue;
--
--		if (devices[i].bus_num == 0)
--			enable_spi0 = 1;
--		else
--			enable_spi1 = 1;
--
--		/* enable chip-select pin */
--		at91_set_gpio_output(cs_pin, 1);
--
--		/* pass chip-select pin to driver */
--		devices[i].controller_data = (void *) cs_pin;
--	}
--
--	spi_register_board_info(devices, nr_devices);
--
--	/* Configure SPI bus(es) */
--	if (enable_spi0) {
--		at91_set_B_periph(AT91_PIN_PA0, 0);	/* SPI0_MISO */
--		at91_set_B_periph(AT91_PIN_PA1, 0);	/* SPI0_MOSI */
--		at91_set_B_periph(AT91_PIN_PA2, 0);	/* SPI0_SPCK */
--
--		platform_device_register(&at91sam9263_spi0_device);
--	}
--	if (enable_spi1) {
--		at91_set_A_periph(AT91_PIN_PB12, 0);	/* SPI1_MISO */
--		at91_set_A_periph(AT91_PIN_PB13, 0);	/* SPI1_MOSI */
--		at91_set_A_periph(AT91_PIN_PB14, 0);	/* SPI1_SPCK */
--
--		platform_device_register(&at91sam9263_spi1_device);
--	}
--}
--#else
--void __init at91_add_device_spi(struct spi_board_info *devices, int nr_devices) {}
--#endif
--
--
--/* --------------------------------------------------------------------
-- *  AC97
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_SND_ATMEL_AC97C) || defined(CONFIG_SND_ATMEL_AC97C_MODULE)
--static u64 ac97_dmamask = DMA_BIT_MASK(32);
--static struct ac97c_platform_data ac97_data;
--
--static struct resource ac97_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_AC97C,
--		.end	= AT91SAM9263_BASE_AC97C + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_AC97C,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_AC97C,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91sam9263_ac97_device = {
--	.name		= "atmel_ac97c",
--	.id		= 0,
--	.dev		= {
--				.dma_mask		= &ac97_dmamask,
--				.coherent_dma_mask	= DMA_BIT_MASK(32),
--				.platform_data		= &ac97_data,
--	},
--	.resource	= ac97_resources,
--	.num_resources	= ARRAY_SIZE(ac97_resources),
--};
--
--void __init at91_add_device_ac97(struct ac97c_platform_data *data)
--{
--	if (!data)
--		return;
--
--	at91_set_A_periph(AT91_PIN_PB0, 0);	/* AC97FS */
--	at91_set_A_periph(AT91_PIN_PB1, 0);	/* AC97CK */
--	at91_set_A_periph(AT91_PIN_PB2, 0);	/* AC97TX */
--	at91_set_A_periph(AT91_PIN_PB3, 0);	/* AC97RX */
--
--	/* reset */
--	if (gpio_is_valid(data->reset_pin))
--		at91_set_gpio_output(data->reset_pin, 0);
--
--	ac97_data = *data;
--	platform_device_register(&at91sam9263_ac97_device);
--}
--#else
--void __init at91_add_device_ac97(struct ac97c_platform_data *data) {}
--#endif
--
--/* --------------------------------------------------------------------
-- *  CAN Controller
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_CAN_AT91) || defined(CONFIG_CAN_AT91_MODULE)
--static struct resource can_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_CAN,
--		.end	= AT91SAM9263_BASE_CAN + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_CAN,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_CAN,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91sam9263_can_device = {
--	.name		= "at91_can",
--	.id		= -1,
--	.resource	= can_resources,
--	.num_resources	= ARRAY_SIZE(can_resources),
--};
--
--void __init at91_add_device_can(struct at91_can_data *data)
--{
--	at91_set_A_periph(AT91_PIN_PA13, 0);	/* CANTX */
--	at91_set_A_periph(AT91_PIN_PA14, 0);	/* CANRX */
--	at91sam9263_can_device.dev.platform_data = data;
--
--	platform_device_register(&at91sam9263_can_device);
--}
--#else
--void __init at91_add_device_can(struct at91_can_data *data) {}
--#endif
--
--/* --------------------------------------------------------------------
-- *  LCD Controller
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_FB_ATMEL) || defined(CONFIG_FB_ATMEL_MODULE)
--static u64 lcdc_dmamask = DMA_BIT_MASK(32);
--static struct atmel_lcdfb_pdata lcdc_data;
--
--static struct resource lcdc_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_LCDC_BASE,
--		.end	= AT91SAM9263_LCDC_BASE + SZ_4K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_LCDC,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_LCDC,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91_lcdc_device = {
--	.name		= "at91sam9263-lcdfb",
--	.id		= 0,
--	.dev		= {
--				.dma_mask		= &lcdc_dmamask,
--				.coherent_dma_mask	= DMA_BIT_MASK(32),
--				.platform_data		= &lcdc_data,
--	},
--	.resource	= lcdc_resources,
--	.num_resources	= ARRAY_SIZE(lcdc_resources),
--};
--
--void __init at91_add_device_lcdc(struct atmel_lcdfb_pdata *data)
--{
--	if (!data)
--		return;
--
--	at91_set_A_periph(AT91_PIN_PC1, 0);	/* LCDHSYNC */
--	at91_set_A_periph(AT91_PIN_PC2, 0);	/* LCDDOTCK */
--	at91_set_A_periph(AT91_PIN_PC3, 0);	/* LCDDEN */
--	at91_set_B_periph(AT91_PIN_PB9, 0);	/* LCDCC */
--	at91_set_A_periph(AT91_PIN_PC6, 0);	/* LCDD2 */
--	at91_set_A_periph(AT91_PIN_PC7, 0);	/* LCDD3 */
--	at91_set_A_periph(AT91_PIN_PC8, 0);	/* LCDD4 */
--	at91_set_A_periph(AT91_PIN_PC9, 0);	/* LCDD5 */
--	at91_set_A_periph(AT91_PIN_PC10, 0);	/* LCDD6 */
--	at91_set_A_periph(AT91_PIN_PC11, 0);	/* LCDD7 */
--	at91_set_A_periph(AT91_PIN_PC14, 0);	/* LCDD10 */
--	at91_set_A_periph(AT91_PIN_PC15, 0);	/* LCDD11 */
--	at91_set_A_periph(AT91_PIN_PC16, 0);	/* LCDD12 */
--	at91_set_B_periph(AT91_PIN_PC12, 0);	/* LCDD13 */
--	at91_set_A_periph(AT91_PIN_PC18, 0);	/* LCDD14 */
--	at91_set_A_periph(AT91_PIN_PC19, 0);	/* LCDD15 */
--	at91_set_A_periph(AT91_PIN_PC22, 0);	/* LCDD18 */
--	at91_set_A_periph(AT91_PIN_PC23, 0);	/* LCDD19 */
--	at91_set_A_periph(AT91_PIN_PC24, 0);	/* LCDD20 */
--	at91_set_B_periph(AT91_PIN_PC17, 0);	/* LCDD21 */
--	at91_set_A_periph(AT91_PIN_PC26, 0);	/* LCDD22 */
--	at91_set_A_periph(AT91_PIN_PC27, 0);	/* LCDD23 */
--
--	lcdc_data = *data;
--	platform_device_register(&at91_lcdc_device);
--}
--#else
--void __init at91_add_device_lcdc(struct atmel_lcdfb_pdata *data) {}
--#endif
--
--
--/* --------------------------------------------------------------------
-- *  Image Sensor Interface
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_VIDEO_AT91_ISI) || defined(CONFIG_VIDEO_AT91_ISI_MODULE)
--
--struct resource isi_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_ISI,
--		.end	= AT91SAM9263_BASE_ISI + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_ISI,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_ISI,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91sam9263_isi_device = {
--	.name		= "at91_isi",
--	.id		= -1,
--	.resource	= isi_resources,
--	.num_resources	= ARRAY_SIZE(isi_resources),
--};
--
--void __init at91_add_device_isi(struct isi_platform_data *data,
--		bool use_pck_as_mck)
--{
--	at91_set_A_periph(AT91_PIN_PE0, 0);	/* ISI_D0 */
--	at91_set_A_periph(AT91_PIN_PE1, 0);	/* ISI_D1 */
--	at91_set_A_periph(AT91_PIN_PE2, 0);	/* ISI_D2 */
--	at91_set_A_periph(AT91_PIN_PE3, 0);	/* ISI_D3 */
--	at91_set_A_periph(AT91_PIN_PE4, 0);	/* ISI_D4 */
--	at91_set_A_periph(AT91_PIN_PE5, 0);	/* ISI_D5 */
--	at91_set_A_periph(AT91_PIN_PE6, 0);	/* ISI_D6 */
--	at91_set_A_periph(AT91_PIN_PE7, 0);	/* ISI_D7 */
--	at91_set_A_periph(AT91_PIN_PE8, 0);	/* ISI_PCK */
--	at91_set_A_periph(AT91_PIN_PE9, 0);	/* ISI_HSYNC */
--	at91_set_A_periph(AT91_PIN_PE10, 0);	/* ISI_VSYNC */
--	at91_set_B_periph(AT91_PIN_PE12, 0);	/* ISI_PD8 */
--	at91_set_B_periph(AT91_PIN_PE13, 0);	/* ISI_PD9 */
--	at91_set_B_periph(AT91_PIN_PE14, 0);	/* ISI_PD10 */
--	at91_set_B_periph(AT91_PIN_PE15, 0);	/* ISI_PD11 */
--
--	if (use_pck_as_mck) {
--		at91_set_B_periph(AT91_PIN_PE11, 0);	/* ISI_MCK (PCK3) */
--
--		/* TODO: register the PCK for ISI_MCK and set its parent */
--	}
--}
--#else
--void __init at91_add_device_isi(struct isi_platform_data *data,
--		bool use_pck_as_mck) {}
--#endif
--
--
--/* --------------------------------------------------------------------
-- *  Timer/Counter block
-- * -------------------------------------------------------------------- */
--
--#ifdef CONFIG_ATMEL_TCLIB
--
--static struct resource tcb_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_TCB0,
--		.end	= AT91SAM9263_BASE_TCB0 + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_TCB,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_TCB,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91sam9263_tcb_device = {
--	.name		= "atmel_tcb",
--	.id		= 0,
--	.resource	= tcb_resources,
--	.num_resources	= ARRAY_SIZE(tcb_resources),
--};
--
--#if defined(CONFIG_OF)
--static struct of_device_id tcb_ids[] = {
--	{ .compatible = "atmel,at91rm9200-tcb" },
--	{ /*sentinel*/ }
--};
--#endif
--
--static void __init at91_add_device_tc(void)
--{
--#if defined(CONFIG_OF)
--	struct device_node *np;
--
--	np = of_find_matching_node(NULL, tcb_ids);
--	if (np) {
--		of_node_put(np);
--		return;
--	}
--#endif
--
--	platform_device_register(&at91sam9263_tcb_device);
--}
--#else
--static void __init at91_add_device_tc(void) { }
--#endif
--
--
--/* --------------------------------------------------------------------
-- *  RTT
-- * -------------------------------------------------------------------- */
--
--static struct resource rtt0_resources[] = {
--	{
--		.start	= AT91SAM9263_BASE_RTT0,
--		.end	= AT91SAM9263_BASE_RTT0 + SZ_16 - 1,
--		.flags	= IORESOURCE_MEM,
--	}, {
--		.flags	= IORESOURCE_MEM,
--	}, {
--		.flags  = IORESOURCE_IRQ,
--	}
--};
--
--static struct platform_device at91sam9263_rtt0_device = {
--	.name		= "at91_rtt",
--	.id		= 0,
--	.resource	= rtt0_resources,
--};
--
--static struct resource rtt1_resources[] = {
--	{
--		.start	= AT91SAM9263_BASE_RTT1,
--		.end	= AT91SAM9263_BASE_RTT1 + SZ_16 - 1,
--		.flags	= IORESOURCE_MEM,
--	}, {
--		.flags	= IORESOURCE_MEM,
--	}, {
--		.flags  = IORESOURCE_IRQ,
--	}
--};
--
--static struct platform_device at91sam9263_rtt1_device = {
--	.name		= "at91_rtt",
--	.id		= 1,
--	.resource	= rtt1_resources,
--};
--
--#if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
--static void __init at91_add_device_rtt_rtc(void)
--{
--	struct platform_device *pdev;
--	struct resource *r;
--
--	switch (CONFIG_RTC_DRV_AT91SAM9_RTT) {
--	case 0:
--		/*
--		 * The second resource is needed only for the chosen RTT:
--		 * GPBR will serve as the storage for RTC time offset
--		 */
--		at91sam9263_rtt0_device.num_resources = 3;
--		at91sam9263_rtt1_device.num_resources = 1;
--		pdev = &at91sam9263_rtt0_device;
--		r = rtt0_resources;
--		break;
--	case 1:
--		at91sam9263_rtt0_device.num_resources = 1;
--		at91sam9263_rtt1_device.num_resources = 3;
--		pdev = &at91sam9263_rtt1_device;
--		r = rtt1_resources;
--		break;
--	default:
--		pr_err("at91sam9263: only supports 2 RTT (%d)\n",
--		       CONFIG_RTC_DRV_AT91SAM9_RTT);
--		return;
--	}
--
--	pdev->name = "rtc-at91sam9";
--	r[1].start = AT91SAM9263_BASE_GPBR + 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
--	r[1].end = r[1].start + 3;
--	r[2].start = NR_IRQS_LEGACY + AT91_ID_SYS;
--	r[2].end = NR_IRQS_LEGACY + AT91_ID_SYS;
--}
--#else
--static void __init at91_add_device_rtt_rtc(void)
--{
--	/* Only one resource is needed: RTT not used as RTC */
--	at91sam9263_rtt0_device.num_resources = 1;
--	at91sam9263_rtt1_device.num_resources = 1;
--}
--#endif
--
--static void __init at91_add_device_rtt(void)
--{
--	at91_add_device_rtt_rtc();
--	platform_device_register(&at91sam9263_rtt0_device);
--	platform_device_register(&at91sam9263_rtt1_device);
--}
--
--
--/* --------------------------------------------------------------------
-- *  Watchdog
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_AT91SAM9X_WATCHDOG) || defined(CONFIG_AT91SAM9X_WATCHDOG_MODULE)
--static struct resource wdt_resources[] = {
--	{
--		.start	= AT91SAM9263_BASE_WDT,
--		.end	= AT91SAM9263_BASE_WDT + SZ_16 - 1,
--		.flags	= IORESOURCE_MEM,
--	}
--};
--
--static struct platform_device at91sam9263_wdt_device = {
--	.name		= "at91_wdt",
--	.id		= -1,
--	.resource	= wdt_resources,
--	.num_resources	= ARRAY_SIZE(wdt_resources),
--};
--
--static void __init at91_add_device_watchdog(void)
--{
--	platform_device_register(&at91sam9263_wdt_device);
--}
--#else
--static void __init at91_add_device_watchdog(void) {}
--#endif
--
--
--/* --------------------------------------------------------------------
-- *  PWM
-- * --------------------------------------------------------------------*/
--
--#if IS_ENABLED(CONFIG_PWM_ATMEL)
--static struct resource pwm_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_PWMC,
--		.end	= AT91SAM9263_BASE_PWMC + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_PWMC,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_PWMC,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91sam9263_pwm0_device = {
--	.name	= "at91sam9rl-pwm",
--	.id	= -1,
--	.resource	= pwm_resources,
--	.num_resources	= ARRAY_SIZE(pwm_resources),
--};
--
--void __init at91_add_device_pwm(u32 mask)
--{
--	if (mask & (1 << AT91_PWM0))
--		at91_set_B_periph(AT91_PIN_PB7, 1);	/* enable PWM0 */
--
--	if (mask & (1 << AT91_PWM1))
--		at91_set_B_periph(AT91_PIN_PB8, 1);	/* enable PWM1 */
--
--	if (mask & (1 << AT91_PWM2))
--		at91_set_B_periph(AT91_PIN_PC29, 1);	/* enable PWM2 */
--
--	if (mask & (1 << AT91_PWM3))
--		at91_set_B_periph(AT91_PIN_PB29, 1);	/* enable PWM3 */
--
--	platform_device_register(&at91sam9263_pwm0_device);
--}
--#else
--void __init at91_add_device_pwm(u32 mask) {}
--#endif
--
--
--/* --------------------------------------------------------------------
-- *  SSC -- Synchronous Serial Controller
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_ATMEL_SSC) || defined(CONFIG_ATMEL_SSC_MODULE)
--static u64 ssc0_dmamask = DMA_BIT_MASK(32);
--
--static struct resource ssc0_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_SSC0,
--		.end	= AT91SAM9263_BASE_SSC0 + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_SSC0,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_SSC0,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91sam9263_ssc0_device = {
--	.name	= "at91rm9200_ssc",
--	.id	= 0,
--	.dev	= {
--		.dma_mask		= &ssc0_dmamask,
--		.coherent_dma_mask	= DMA_BIT_MASK(32),
--	},
--	.resource	= ssc0_resources,
--	.num_resources	= ARRAY_SIZE(ssc0_resources),
--};
--
--static inline void configure_ssc0_pins(unsigned pins)
--{
--	if (pins & ATMEL_SSC_TF)
--		at91_set_B_periph(AT91_PIN_PB0, 1);
--	if (pins & ATMEL_SSC_TK)
--		at91_set_B_periph(AT91_PIN_PB1, 1);
--	if (pins & ATMEL_SSC_TD)
--		at91_set_B_periph(AT91_PIN_PB2, 1);
--	if (pins & ATMEL_SSC_RD)
--		at91_set_B_periph(AT91_PIN_PB3, 1);
--	if (pins & ATMEL_SSC_RK)
--		at91_set_B_periph(AT91_PIN_PB4, 1);
--	if (pins & ATMEL_SSC_RF)
--		at91_set_B_periph(AT91_PIN_PB5, 1);
--}
--
--static u64 ssc1_dmamask = DMA_BIT_MASK(32);
--
--static struct resource ssc1_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_SSC1,
--		.end	= AT91SAM9263_BASE_SSC1 + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_SSC1,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_SSC1,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device at91sam9263_ssc1_device = {
--	.name	= "at91rm9200_ssc",
--	.id	= 1,
--	.dev	= {
--		.dma_mask		= &ssc1_dmamask,
--		.coherent_dma_mask	= DMA_BIT_MASK(32),
--	},
--	.resource	= ssc1_resources,
--	.num_resources	= ARRAY_SIZE(ssc1_resources),
--};
--
--static inline void configure_ssc1_pins(unsigned pins)
--{
--	if (pins & ATMEL_SSC_TF)
--		at91_set_A_periph(AT91_PIN_PB6, 1);
--	if (pins & ATMEL_SSC_TK)
--		at91_set_A_periph(AT91_PIN_PB7, 1);
--	if (pins & ATMEL_SSC_TD)
--		at91_set_A_periph(AT91_PIN_PB8, 1);
--	if (pins & ATMEL_SSC_RD)
--		at91_set_A_periph(AT91_PIN_PB9, 1);
--	if (pins & ATMEL_SSC_RK)
--		at91_set_A_periph(AT91_PIN_PB10, 1);
--	if (pins & ATMEL_SSC_RF)
--		at91_set_A_periph(AT91_PIN_PB11, 1);
--}
--
--/*
-- * SSC controllers are accessed through library code, instead of any
-- * kind of all-singing/all-dancing driver.  For example one could be
-- * used by a particular I2S audio codec's driver, while another one
-- * on the same system might be used by a custom data capture driver.
-- */
--void __init at91_add_device_ssc(unsigned id, unsigned pins)
--{
--	struct platform_device *pdev;
--
--	/*
--	 * NOTE: caller is responsible for passing information matching
--	 * "pins" to whatever will be using each particular controller.
--	 */
--	switch (id) {
--	case AT91SAM9263_ID_SSC0:
--		pdev = &at91sam9263_ssc0_device;
--		configure_ssc0_pins(pins);
--		break;
--	case AT91SAM9263_ID_SSC1:
--		pdev = &at91sam9263_ssc1_device;
--		configure_ssc1_pins(pins);
--		break;
--	default:
--		return;
--	}
--
--	platform_device_register(pdev);
--}
--
--#else
--void __init at91_add_device_ssc(unsigned id, unsigned pins) {}
--#endif
--
--
--/* --------------------------------------------------------------------
-- *  UART
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_SERIAL_ATMEL)
--
--static struct resource dbgu_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_DBGU,
--		.end	= AT91SAM9263_BASE_DBGU + SZ_512 - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91_ID_SYS,
--		.end	= NR_IRQS_LEGACY + AT91_ID_SYS,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct atmel_uart_data dbgu_data = {
--	.use_dma_tx	= 0,
--	.use_dma_rx	= 0,		/* DBGU not capable of receive DMA */
--};
--
--static u64 dbgu_dmamask = DMA_BIT_MASK(32);
--
--static struct platform_device at91sam9263_dbgu_device = {
--	.name		= "atmel_usart",
--	.id		= 0,
--	.dev		= {
--				.dma_mask		= &dbgu_dmamask,
--				.coherent_dma_mask	= DMA_BIT_MASK(32),
--				.platform_data		= &dbgu_data,
--	},
--	.resource	= dbgu_resources,
--	.num_resources	= ARRAY_SIZE(dbgu_resources),
--};
--
--static inline void configure_dbgu_pins(void)
--{
--	at91_set_A_periph(AT91_PIN_PC30, 0);		/* DRXD */
--	at91_set_A_periph(AT91_PIN_PC31, 1);		/* DTXD */
--}
--
--static struct resource uart0_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_US0,
--		.end	= AT91SAM9263_BASE_US0 + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_US0,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_US0,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct atmel_uart_data uart0_data = {
--	.use_dma_tx	= 1,
--	.use_dma_rx	= 1,
--};
--
--static u64 uart0_dmamask = DMA_BIT_MASK(32);
--
--static struct platform_device at91sam9263_uart0_device = {
--	.name		= "atmel_usart",
--	.id		= 1,
--	.dev		= {
--				.dma_mask		= &uart0_dmamask,
--				.coherent_dma_mask	= DMA_BIT_MASK(32),
--				.platform_data		= &uart0_data,
--	},
--	.resource	= uart0_resources,
--	.num_resources	= ARRAY_SIZE(uart0_resources),
--};
--
--static inline void configure_usart0_pins(unsigned pins)
--{
--	at91_set_A_periph(AT91_PIN_PA26, 1);		/* TXD0 */
--	at91_set_A_periph(AT91_PIN_PA27, 0);		/* RXD0 */
--
--	if (pins & ATMEL_UART_RTS)
--		at91_set_A_periph(AT91_PIN_PA28, 0);	/* RTS0 */
--	if (pins & ATMEL_UART_CTS)
--		at91_set_A_periph(AT91_PIN_PA29, 0);	/* CTS0 */
--}
--
--static struct resource uart1_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_US1,
--		.end	= AT91SAM9263_BASE_US1 + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_US1,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_US1,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct atmel_uart_data uart1_data = {
--	.use_dma_tx	= 1,
--	.use_dma_rx	= 1,
--};
--
--static u64 uart1_dmamask = DMA_BIT_MASK(32);
--
--static struct platform_device at91sam9263_uart1_device = {
--	.name		= "atmel_usart",
--	.id		= 2,
--	.dev		= {
--				.dma_mask		= &uart1_dmamask,
--				.coherent_dma_mask	= DMA_BIT_MASK(32),
--				.platform_data		= &uart1_data,
--	},
--	.resource	= uart1_resources,
--	.num_resources	= ARRAY_SIZE(uart1_resources),
--};
--
--static inline void configure_usart1_pins(unsigned pins)
--{
--	at91_set_A_periph(AT91_PIN_PD0, 1);		/* TXD1 */
--	at91_set_A_periph(AT91_PIN_PD1, 0);		/* RXD1 */
--
--	if (pins & ATMEL_UART_RTS)
--		at91_set_B_periph(AT91_PIN_PD7, 0);	/* RTS1 */
--	if (pins & ATMEL_UART_CTS)
--		at91_set_B_periph(AT91_PIN_PD8, 0);	/* CTS1 */
--}
--
--static struct resource uart2_resources[] = {
--	[0] = {
--		.start	= AT91SAM9263_BASE_US2,
--		.end	= AT91SAM9263_BASE_US2 + SZ_16K - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_US2,
--		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_US2,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct atmel_uart_data uart2_data = {
--	.use_dma_tx	= 1,
--	.use_dma_rx	= 1,
--};
--
--static u64 uart2_dmamask = DMA_BIT_MASK(32);
--
--static struct platform_device at91sam9263_uart2_device = {
--	.name		= "atmel_usart",
--	.id		= 3,
--	.dev		= {
--				.dma_mask		= &uart2_dmamask,
--				.coherent_dma_mask	= DMA_BIT_MASK(32),
--				.platform_data		= &uart2_data,
--	},
--	.resource	= uart2_resources,
--	.num_resources	= ARRAY_SIZE(uart2_resources),
--};
--
--static inline void configure_usart2_pins(unsigned pins)
--{
--	at91_set_A_periph(AT91_PIN_PD2, 1);		/* TXD2 */
--	at91_set_A_periph(AT91_PIN_PD3, 0);		/* RXD2 */
--
--	if (pins & ATMEL_UART_RTS)
--		at91_set_B_periph(AT91_PIN_PD5, 0);	/* RTS2 */
--	if (pins & ATMEL_UART_CTS)
--		at91_set_B_periph(AT91_PIN_PD6, 0);	/* CTS2 */
--}
--
--static struct platform_device *__initdata at91_uarts[ATMEL_MAX_UART];	/* the UARTs to use */
--
--void __init at91_register_uart(unsigned id, unsigned portnr, unsigned pins)
--{
--	struct platform_device *pdev;
--	struct atmel_uart_data *pdata;
--
--	switch (id) {
--		case 0:		/* DBGU */
--			pdev = &at91sam9263_dbgu_device;
--			configure_dbgu_pins();
--			break;
--		case AT91SAM9263_ID_US0:
--			pdev = &at91sam9263_uart0_device;
--			configure_usart0_pins(pins);
--			break;
--		case AT91SAM9263_ID_US1:
--			pdev = &at91sam9263_uart1_device;
--			configure_usart1_pins(pins);
--			break;
--		case AT91SAM9263_ID_US2:
--			pdev = &at91sam9263_uart2_device;
--			configure_usart2_pins(pins);
--			break;
--		default:
--			return;
--	}
--	pdata = pdev->dev.platform_data;
--	pdata->num = portnr;		/* update to mapped ID */
--
--	if (portnr < ATMEL_MAX_UART)
--		at91_uarts[portnr] = pdev;
--}
--
--void __init at91_add_device_serial(void)
--{
--	int i;
--
--	for (i = 0; i < ATMEL_MAX_UART; i++) {
--		if (at91_uarts[i])
--			platform_device_register(at91_uarts[i]);
--	}
--}
--#else
--void __init at91_register_uart(unsigned id, unsigned portnr, unsigned pins) {}
--void __init at91_add_device_serial(void) {}
--#endif
--
--
--/* -------------------------------------------------------------------- */
--/*
-- * These devices are always present and don't need any board-specific
-- * setup.
-- */
--static int __init at91_add_standard_devices(void)
--{
--	if (of_have_populated_dt())
--		return 0;
--
--	at91_add_device_rtt();
--	at91_add_device_watchdog();
--	at91_add_device_tc();
--	return 0;
--}
--
--arch_initcall(at91_add_standard_devices);
-diff --git a/arch/arm/mach-at91/board-sam9263ek.c b/arch/arm/mach-at91/board-sam9263ek.c
-deleted file mode 100644
-index d76680f2a209..000000000000
---- a/arch/arm/mach-at91/board-sam9263ek.c
-+++ /dev/null
-@@ -1,493 +0,0 @@
--/*
-- * linux/arch/arm/mach-at91/board-sam9263ek.c
+- * linux/arch/arm/mach-at91/board-afeb-9260v1.c
 - *
 - *  Copyright (C) 2005 SAN People
-- *  Copyright (C) 2007 Atmel Corporation.
+- *  Copyright (C) 2006 Atmel
+- *  Copyright (C) 2008 Sergey Lapin
+- *
+- * A custom board designed as open hardware; PCBs and various information
+- * is available at http://groups.google.com/group/arm9fpga-evolution-board/
+- * Subversion repository: svn://194.85.238.22/home/users/george/svn/arm9eb
 - *
 - * This program is free software; you can redistribute it and/or modify
 - * it under the terms of the GNU General Public License as published by
@@ -2272,16 +132,2070 @@ index d76680f2a209..000000000000
 -#include <linux/module.h>
 -#include <linux/platform_device.h>
 -#include <linux/spi/spi.h>
--#include <linux/spi/ads7846.h>
--#include <linux/platform_data/at24.h>
--#include <linux/fb.h>
+-#include <linux/clk.h>
+-#include <linux/dma-mapping.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static void __init afeb9260_init_early(void)
+-{
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-/*
+- * USB Host port
+- */
+-static struct at91_usbh_data __initdata afeb9260_usbh_data = {
+-	.ports		= 1,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-/*
+- * USB Device port
+- */
+-static struct at91_udc_data __initdata afeb9260_udc_data = {
+-	.vbus_pin	= AT91_PIN_PC5,
+-	.pullup_pin	= -EINVAL,		/* pull-up driven by UDC */
+-};
+-
+-
+-
+-/*
+- * SPI devices.
+- */
+-static struct spi_board_info afeb9260_spi_devices[] = {
+-	{	/* DataFlash chip */
+-		.modalias	= "mtd_dataflash",
+-		.chip_select	= 1,
+-		.max_speed_hz	= 15 * 1000 * 1000,
+-		.bus_num	= 0,
+-	},
+-};
+-
+-
+-/*
+- * MACB Ethernet device
+- */
+-static struct macb_platform_data __initdata afeb9260_macb_data = {
+-	.phy_irq_pin	= AT91_PIN_PA9,
+-	.is_rmii	= 0,
+-};
+-
+-
+-/*
+- * NAND flash
+- */
+-static struct mtd_partition __initdata afeb9260_nand_partition[] = {
+-	{
+-		.name	= "bootloader",
+-		.offset	= 0,
+-		.size	= (640 * SZ_1K),
+-	},
+-	{
+-		.name	= "kernel",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= SZ_2M,
+-	},
+-	{
+-		.name	= "rootfs",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= MTDPART_SIZ_FULL,
+-	},
+-};
+-
+-static struct atmel_nand_data __initdata afeb9260_nand_data = {
+-	.ale		= 21,
+-	.cle		= 22,
+-	.rdy_pin	= AT91_PIN_PC13,
+-	.enable_pin	= AT91_PIN_PC14,
+-	.bus_width_16	= 0,
+-	.ecc_mode	= NAND_ECC_SOFT,
+-	.parts		= afeb9260_nand_partition,
+-	.num_parts	= ARRAY_SIZE(afeb9260_nand_partition),
+-	.det_pin	= -EINVAL,
+-};
+-
+-
+-/*
+- * MCI (SD/MMC)
+- */
+-static struct mci_platform_data __initdata afeb9260_mci0_data = {
+-	.slot[1] = {
+-		.bus_width	= 4,
+-		.detect_pin	= AT91_PIN_PC9,
+-		.wp_pin		= AT91_PIN_PC4,
+-	},
+-};
+-
+-
+-
+-static struct i2c_board_info __initdata afeb9260_i2c_devices[] = {
+-	{
+-		I2C_BOARD_INFO("tlv320aic23", 0x1a),
+-	}, {
+-		I2C_BOARD_INFO("fm3130", 0x68),
+-	}, {
+-		I2C_BOARD_INFO("24c64", 0x50),
+-	},
+-};
+-
+-/*
+- * IDE (CF True IDE mode)
+- */
+-static struct at91_cf_data afeb9260_cf_data = {
+-	.chipselect = 4,
+-	.irq_pin    = AT91_PIN_PA6,
+-	.det_pin	= -EINVAL,
+-	.vcc_pin	= -EINVAL,
+-	.rst_pin    = AT91_PIN_PA7,
+-	.flags      = AT91_CF_TRUE_IDE,
+-};
+-
+-static void __init afeb9260_board_init(void)
+-{
+-	at91_register_devices();
+-
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART0 on ttyS1. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91SAM9260_ID_US0, 1,
+-			     ATMEL_UART_CTS | ATMEL_UART_RTS
+-			   | ATMEL_UART_DTR | ATMEL_UART_DSR
+-			   | ATMEL_UART_DCD | ATMEL_UART_RI);
+-
+-	/* USART1 on ttyS2. (Rx, Tx, RTS, CTS) */
+-	at91_register_uart(AT91SAM9260_ID_US1, 2,
+-			ATMEL_UART_CTS | ATMEL_UART_RTS);
+-	at91_add_device_serial();
+-	/* USB Host */
+-	at91_add_device_usbh(&afeb9260_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&afeb9260_udc_data);
+-	/* SPI */
+-	at91_add_device_spi(afeb9260_spi_devices,
+-			ARRAY_SIZE(afeb9260_spi_devices));
+-	/* NAND */
+-	at91_add_device_nand(&afeb9260_nand_data);
+-	/* Ethernet */
+-	at91_add_device_eth(&afeb9260_macb_data);
+-
+-	/* Standard function's pin assignments are not
+-	 * appropriate for us and generic code provide
+-	 * no API to configure these pins any other way */
+-	at91_set_B_periph(AT91_PIN_PA10, 0);	/* ETX2 */
+-	at91_set_B_periph(AT91_PIN_PA11, 0);	/* ETX3 */
+-	/* MMC */
+-	at91_add_device_mci(0, &afeb9260_mci0_data);
+-	/* I2C */
+-	at91_add_device_i2c(afeb9260_i2c_devices,
+-			ARRAY_SIZE(afeb9260_i2c_devices));
+-	/* Audio */
+-	at91_add_device_ssc(AT91SAM9260_ID_SSC, ATMEL_SSC_TX);
+-	/* IDE */
+-	at91_add_device_cf(&afeb9260_cf_data);
+-}
+-
+-MACHINE_START(AFEB9260, "Custom afeb9260 board")
+-	/* Maintainer: Sergey Lapin <slapin@ossfans.org> */
+-	.init_time	= at91_init_time,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= afeb9260_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= afeb9260_board_init,
+-MACHINE_END
+-
+diff --git a/arch/arm/mach-at91/board-cam60.c b/arch/arm/mach-at91/board-cam60.c
+deleted file mode 100644
+index ae827dd2d0d2..000000000000
+--- a/arch/arm/mach-at91/board-cam60.c
++++ /dev/null
+@@ -1,199 +0,0 @@
+-/*
+- * KwikByte CAM60 (KB9260)
+- *
+- * based on board-sam9260ek.c
+- *   Copyright (C) 2005 SAN People
+- *   Copyright (C) 2006 Atmel
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/spi/spi.h>
+-#include <linux/spi/flash.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/at91sam9_smc.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "sam9_smc.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static void __init cam60_init_early(void)
+-{
+-	/* Initialize processor: 10 MHz crystal */
+-	at91_initialize(10000000);
+-}
+-
+-/*
+- * USB Host
+- */
+-static struct at91_usbh_data __initdata cam60_usbh_data = {
+-	.ports		= 1,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-
+-/*
+- * SPI devices.
+- */
+-#if defined(CONFIG_MTD_DATAFLASH)
+-static struct mtd_partition cam60_spi_partitions[] = {
+-	{
+-		.name	= "BOOT1",
+-		.offset	= 0,
+-		.size	= 4 * 1056,
+-	},
+-	{
+-		.name	= "BOOT2",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= 256 * 1056,
+-	},
+-	{
+-		.name	= "kernel",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= 2222 * 1056,
+-	},
+-	{
+-		.name	= "file system",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= MTDPART_SIZ_FULL,
+-	},
+-};
+-
+-static struct flash_platform_data cam60_spi_flash_platform_data = {
+-	.name		= "spi_flash",
+-	.parts		= cam60_spi_partitions,
+-	.nr_parts	= ARRAY_SIZE(cam60_spi_partitions)
+-};
+-#endif
+-
+-static struct spi_board_info cam60_spi_devices[] __initdata = {
+-#if defined(CONFIG_MTD_DATAFLASH)
+-	{	/* DataFlash chip */
+-		.modalias	= "mtd_dataflash",
+-		.chip_select	= 0,
+-		.max_speed_hz	= 15 * 1000 * 1000,
+-		.bus_num	= 0,
+-		.platform_data	= &cam60_spi_flash_platform_data
+-	},
+-#endif
+-};
+-
+-
+-/*
+- * MACB Ethernet device
+- */
+-static struct macb_platform_data cam60_macb_data __initdata = {
+-	.phy_irq_pin	= AT91_PIN_PB5,
+-	.is_rmii	= 0,
+-};
+-
+-
+-/*
+- * NAND Flash
+- */
+-static struct mtd_partition __initdata cam60_nand_partition[] = {
+-	{
+-		.name	= "nand_fs",
+-		.offset	= 0,
+-		.size	= MTDPART_SIZ_FULL,
+-	},
+-};
+-
+-static struct atmel_nand_data __initdata cam60_nand_data = {
+-	.ale		= 21,
+-	.cle		= 22,
+-	.det_pin	= -EINVAL,
+-	.rdy_pin	= AT91_PIN_PA9,
+-	.enable_pin	= AT91_PIN_PA7,
+-	.ecc_mode	= NAND_ECC_SOFT,
+-	.parts		= cam60_nand_partition,
+-	.num_parts	= ARRAY_SIZE(cam60_nand_partition),
+-};
+-
+-static struct sam9_smc_config __initdata cam60_nand_smc_config = {
+-	.ncs_read_setup		= 0,
+-	.nrd_setup		= 1,
+-	.ncs_write_setup	= 0,
+-	.nwe_setup		= 1,
+-
+-	.ncs_read_pulse		= 3,
+-	.nrd_pulse		= 3,
+-	.ncs_write_pulse	= 3,
+-	.nwe_pulse		= 3,
+-
+-	.read_cycle		= 5,
+-	.write_cycle		= 5,
+-
+-	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE | AT91_SMC_EXNWMODE_DISABLE | AT91_SMC_DBW_8,
+-	.tdf_cycles		= 2,
+-};
+-
+-static void __init cam60_add_device_nand(void)
+-{
+-	/* configure chip-select 3 (NAND) */
+-	sam9_smc_configure(0, 3, &cam60_nand_smc_config);
+-
+-	at91_add_device_nand(&cam60_nand_data);
+-}
+-
+-
+-static void __init cam60_board_init(void)
+-{
+-	at91_register_devices();
+-
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-	at91_add_device_serial();
+-	/* SPI */
+-	at91_add_device_spi(cam60_spi_devices, ARRAY_SIZE(cam60_spi_devices));
+-	/* Ethernet */
+-	at91_add_device_eth(&cam60_macb_data);
+-	/* USB Host */
+-	/* enable USB power supply circuit */
+-	at91_set_gpio_output(AT91_PIN_PB18, 1);
+-	at91_add_device_usbh(&cam60_usbh_data);
+-	/* NAND */
+-	cam60_add_device_nand();
+-}
+-
+-MACHINE_START(CAM60, "KwikByte CAM60")
+-	/* Maintainer: KwikByte */
+-	.init_time	= at91_init_time,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= cam60_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= cam60_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-cpu9krea.c b/arch/arm/mach-at91/board-cpu9krea.c
+deleted file mode 100644
+index 731c8318f4f5..000000000000
+--- a/arch/arm/mach-at91/board-cpu9krea.c
++++ /dev/null
+@@ -1,386 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-cpu9krea.c
+- *
+- *  Copyright (C) 2005 SAN People
+- *  Copyright (C) 2006 Atmel
+- *  Copyright (C) 2009 Eric Benard - eric@eukrea.com
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/clk.h>
 -#include <linux/gpio_keys.h>
 -#include <linux/input.h>
--#include <linux/leds.h>
--#include <linux/pwm.h>
--#include <linux/leds_pwm.h>
+-#include <linux/mtd/physmap.h>
 -
--#include <video/atmel_lcdc.h>
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/hardware.h>
+-#include <mach/at91sam9_smc.h>
+-#include <mach/at91sam9260_matrix.h>
+-#include <mach/at91_matrix.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "sam9_smc.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-static void __init cpu9krea_init_early(void)
+-{
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-/*
+- * USB Host port
+- */
+-static struct at91_usbh_data __initdata cpu9krea_usbh_data = {
+-	.ports		= 2,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-/*
+- * USB Device port
+- */
+-static struct at91_udc_data __initdata cpu9krea_udc_data = {
+-	.vbus_pin	= AT91_PIN_PC8,
+-	.pullup_pin	= -EINVAL,		/* pull-up driven by UDC */
+-};
+-
+-/*
+- * MACB Ethernet device
+- */
+-static struct macb_platform_data __initdata cpu9krea_macb_data = {
+-	.phy_irq_pin	= -EINVAL,
+-	.is_rmii	= 1,
+-};
+-
+-/*
+- * NAND flash
+- */
+-static struct atmel_nand_data __initdata cpu9krea_nand_data = {
+-	.ale		= 21,
+-	.cle		= 22,
+-	.rdy_pin	= AT91_PIN_PC13,
+-	.enable_pin	= AT91_PIN_PC14,
+-	.bus_width_16	= 0,
+-	.det_pin	= -EINVAL,
+-	.ecc_mode	= NAND_ECC_SOFT,
+-};
+-
+-#ifdef CONFIG_MACH_CPU9260
+-static struct sam9_smc_config __initdata cpu9krea_nand_smc_config = {
+-	.ncs_read_setup		= 0,
+-	.nrd_setup		= 1,
+-	.ncs_write_setup	= 0,
+-	.nwe_setup		= 1,
+-
+-	.ncs_read_pulse		= 3,
+-	.nrd_pulse		= 3,
+-	.ncs_write_pulse	= 3,
+-	.nwe_pulse		= 3,
+-
+-	.read_cycle		= 5,
+-	.write_cycle		= 5,
+-
+-	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE
+-		| AT91_SMC_EXNWMODE_DISABLE | AT91_SMC_DBW_8,
+-	.tdf_cycles		= 2,
+-};
+-#else
+-static struct sam9_smc_config __initdata cpu9krea_nand_smc_config = {
+-	.ncs_read_setup		= 0,
+-	.nrd_setup		= 2,
+-	.ncs_write_setup	= 0,
+-	.nwe_setup		= 2,
+-
+-	.ncs_read_pulse		= 4,
+-	.nrd_pulse		= 4,
+-	.ncs_write_pulse	= 4,
+-	.nwe_pulse		= 4,
+-
+-	.read_cycle		= 7,
+-	.write_cycle		= 7,
+-
+-	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE
+-		| AT91_SMC_EXNWMODE_DISABLE | AT91_SMC_DBW_8,
+-	.tdf_cycles		= 3,
+-};
+-#endif
+-
+-static void __init cpu9krea_add_device_nand(void)
+-{
+-	sam9_smc_configure(0, 3, &cpu9krea_nand_smc_config);
+-	at91_add_device_nand(&cpu9krea_nand_data);
+-}
+-
+-/*
+- * NOR flash
+- */
+-static struct physmap_flash_data cpuat9260_nor_data = {
+-	.width		= 2,
+-};
+-
+-#define NOR_BASE	AT91_CHIPSELECT_0
+-#define NOR_SIZE	SZ_64M
+-
+-static struct resource nor_flash_resources[] = {
+-	{
+-		.start	= NOR_BASE,
+-		.end	= NOR_BASE + NOR_SIZE - 1,
+-		.flags	= IORESOURCE_MEM,
+-	}
+-};
+-
+-static struct platform_device cpu9krea_nor_flash = {
+-	.name		= "physmap-flash",
+-	.id		= 0,
+-	.dev		= {
+-		.platform_data	= &cpuat9260_nor_data,
+-	},
+-	.resource	= nor_flash_resources,
+-	.num_resources	= ARRAY_SIZE(nor_flash_resources),
+-};
+-
+-#ifdef CONFIG_MACH_CPU9260
+-static struct sam9_smc_config __initdata cpu9krea_nor_smc_config = {
+-	.ncs_read_setup		= 0,
+-	.nrd_setup		= 1,
+-	.ncs_write_setup	= 0,
+-	.nwe_setup		= 1,
+-
+-	.ncs_read_pulse		= 10,
+-	.nrd_pulse		= 10,
+-	.ncs_write_pulse	= 6,
+-	.nwe_pulse		= 6,
+-
+-	.read_cycle		= 12,
+-	.write_cycle		= 8,
+-
+-	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE
+-			| AT91_SMC_EXNWMODE_DISABLE | AT91_SMC_BAT_WRITE
+-			| AT91_SMC_DBW_16,
+-	.tdf_cycles		= 2,
+-};
+-#else
+-static struct sam9_smc_config __initdata cpu9krea_nor_smc_config = {
+-	.ncs_read_setup		= 0,
+-	.nrd_setup		= 1,
+-	.ncs_write_setup	= 0,
+-	.nwe_setup		= 1,
+-
+-	.ncs_read_pulse		= 13,
+-	.nrd_pulse		= 13,
+-	.ncs_write_pulse	= 8,
+-	.nwe_pulse		= 8,
+-
+-	.read_cycle		= 15,
+-	.write_cycle		= 10,
+-
+-	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE
+-			| AT91_SMC_EXNWMODE_DISABLE | AT91_SMC_BAT_WRITE
+-			| AT91_SMC_DBW_16,
+-	.tdf_cycles		= 2,
+-};
+-#endif
+-
+-static __init void cpu9krea_add_device_nor(void)
+-{
+-	unsigned long csa;
+-
+-	csa = at91_matrix_read(AT91_MATRIX_EBICSA);
+-	at91_matrix_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_VDDIOMSEL_3_3V);
+-
+-	/* configure chip-select 0 (NOR) */
+-	sam9_smc_configure(0, 0, &cpu9krea_nor_smc_config);
+-
+-	platform_device_register(&cpu9krea_nor_flash);
+-}
+-
+-/*
+- * LEDs
+- */
+-static struct gpio_led cpu9krea_leds[] = {
+-	{	/* LED1 */
+-		.name			= "LED1",
+-		.gpio			= AT91_PIN_PC11,
+-		.active_low		= 1,
+-		.default_trigger	= "timer",
+-	},
+-	{	/* LED2 */
+-		.name			= "LED2",
+-		.gpio			= AT91_PIN_PC12,
+-		.active_low		= 1,
+-		.default_trigger	= "heartbeat",
+-	},
+-	{	/* LED3 */
+-		.name			= "LED3",
+-		.gpio			= AT91_PIN_PC7,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-	},
+-	{	/* LED4 */
+-		.name			= "LED4",
+-		.gpio			= AT91_PIN_PC9,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-	}
+-};
+-
+-static struct i2c_board_info __initdata cpu9krea_i2c_devices[] = {
+-	{
+-		I2C_BOARD_INFO("ds1339", 0x68),
+-	},
+-};
+-
+-/*
+- * GPIO Buttons
+- */
+-#if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
+-static struct gpio_keys_button cpu9krea_buttons[] = {
+-	{
+-		.gpio		= AT91_PIN_PC3,
+-		.code		= BTN_0,
+-		.desc		= "BP1",
+-		.active_low	= 1,
+-		.wakeup		= 1,
+-	},
+-	{
+-		.gpio		= AT91_PIN_PB20,
+-		.code		= BTN_1,
+-		.desc		= "BP2",
+-		.active_low	= 1,
+-		.wakeup		= 1,
+-	}
+-};
+-
+-static struct gpio_keys_platform_data cpu9krea_button_data = {
+-	.buttons	= cpu9krea_buttons,
+-	.nbuttons	= ARRAY_SIZE(cpu9krea_buttons),
+-};
+-
+-static struct platform_device cpu9krea_button_device = {
+-	.name		= "gpio-keys",
+-	.id		= -1,
+-	.num_resources	= 0,
+-	.dev		= {
+-		.platform_data	= &cpu9krea_button_data,
+-	}
+-};
+-
+-static void __init cpu9krea_add_device_buttons(void)
+-{
+-	at91_set_gpio_input(AT91_PIN_PC3, 1);	/* BP1 */
+-	at91_set_deglitch(AT91_PIN_PC3, 1);
+-	at91_set_gpio_input(AT91_PIN_PB20, 1);	/* BP2 */
+-	at91_set_deglitch(AT91_PIN_PB20, 1);
+-
+-	platform_device_register(&cpu9krea_button_device);
+-}
+-#else
+-static void __init cpu9krea_add_device_buttons(void)
+-{
+-}
+-#endif
+-
+-/*
+- * MCI (SD/MMC)
+- */
+-static struct mci_platform_data __initdata cpu9krea_mci0_data = {
+-	.slot[0] = {
+-		.bus_width	= 4,
+-		.detect_pin	= AT91_PIN_PA29,
+-		.wp_pin		= -EINVAL,
+-	},
+-};
+-
+-static void __init cpu9krea_board_init(void)
+-{
+-	at91_register_devices();
+-
+-	/* NOR */
+-	cpu9krea_add_device_nor();
+-	/* Serial */
+-	/* DGBU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART0 on ttyS1. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91SAM9260_ID_US0, 1, ATMEL_UART_CTS |
+-		ATMEL_UART_RTS | ATMEL_UART_DTR | ATMEL_UART_DSR |
+-		ATMEL_UART_DCD | ATMEL_UART_RI);
+-
+-	/* USART1 on ttyS2. (Rx, Tx, RTS, CTS) */
+-	at91_register_uart(AT91SAM9260_ID_US1, 2, ATMEL_UART_CTS |
+-		ATMEL_UART_RTS);
+-
+-	/* USART2 on ttyS3. (Rx, Tx, RTS, CTS) */
+-	at91_register_uart(AT91SAM9260_ID_US2, 3, ATMEL_UART_CTS |
+-		ATMEL_UART_RTS);
+-
+-	/* USART3 on ttyS4. (Rx, Tx) */
+-	at91_register_uart(AT91SAM9260_ID_US3, 4, 0);
+-
+-	/* USART4 on ttyS5. (Rx, Tx) */
+-	at91_register_uart(AT91SAM9260_ID_US4, 5, 0);
+-
+-	/* USART5 on ttyS6. (Rx, Tx) */
+-	at91_register_uart(AT91SAM9260_ID_US5, 6, 0);
+-	at91_add_device_serial();
+-	/* USB Host */
+-	at91_add_device_usbh(&cpu9krea_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&cpu9krea_udc_data);
+-	/* NAND */
+-	cpu9krea_add_device_nand();
+-	/* Ethernet */
+-	at91_add_device_eth(&cpu9krea_macb_data);
+-	/* MMC */
+-	at91_add_device_mci(0, &cpu9krea_mci0_data);
+-	/* I2C */
+-	at91_add_device_i2c(cpu9krea_i2c_devices,
+-		ARRAY_SIZE(cpu9krea_i2c_devices));
+-	/* LEDs */
+-	at91_gpio_leds(cpu9krea_leds, ARRAY_SIZE(cpu9krea_leds));
+-	/* Push Buttons */
+-	cpu9krea_add_device_buttons();
+-}
+-
+-#ifdef CONFIG_MACH_CPU9260
+-MACHINE_START(CPUAT9260, "Eukrea CPU9260")
+-#else
+-MACHINE_START(CPUAT9G20, "Eukrea CPU9G20")
+-#endif
+-	/* Maintainer: Eric Benard - EUKREA Electromatique */
+-	.init_time	= at91_init_time,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= cpu9krea_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= cpu9krea_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-flexibity.c b/arch/arm/mach-at91/board-flexibity.c
+deleted file mode 100644
+index a6aa4a2432f2..000000000000
+--- a/arch/arm/mach-at91/board-flexibity.c
++++ /dev/null
+@@ -1,171 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-flexibity.c
+- *
+- *  Copyright (C) 2010-2011 Flexibity
+- *  Copyright (C) 2005 SAN People
+- *  Copyright (C) 2006 Atmel
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/init.h>
+-#include <linux/platform_device.h>
+-#include <linux/spi/spi.h>
+-#include <linux/input.h>
+-#include <linux/gpio.h>
+-
+-#include <asm/mach-types.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/hardware.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-static void __init flexibity_init_early(void)
+-{
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-/* USB Host port */
+-static struct at91_usbh_data __initdata flexibity_usbh_data = {
+-	.ports		= 2,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-/* USB Device port */
+-static struct at91_udc_data __initdata flexibity_udc_data = {
+-	.vbus_pin	= AT91_PIN_PC5,
+-	.pullup_pin	= -EINVAL,		/* pull-up driven by UDC */
+-};
+-
+-/* I2C devices */
+-static struct i2c_board_info __initdata flexibity_i2c_devices[] = {
+-	{
+-		I2C_BOARD_INFO("ds1307", 0x68),
+-	},
+-};
+-
+-/* SPI devices */
+-static struct spi_board_info flexibity_spi_devices[] = {
+-	{	/* DataFlash chip */
+-		.modalias	= "mtd_dataflash",
+-		.chip_select	= 1,
+-		.max_speed_hz	= 15 * 1000 * 1000,
+-		.bus_num	= 0,
+-	},
+-};
+-
+-/* MCI (SD/MMC) */
+-static struct mci_platform_data __initdata flexibity_mci0_data = {
+-	.slot[0] = {
+-		.bus_width	= 4,
+-		.detect_pin	= AT91_PIN_PC9,
+-		.wp_pin		= AT91_PIN_PC4,
+-	},
+-};
+-
+-/* LEDs */
+-static struct gpio_led flexibity_leds[] = {
+-	{
+-		.name			= "usb1:green",
+-		.gpio			= AT91_PIN_PA12,
+-		.active_low		= 1,
+-		.default_trigger	= "default-on",
+-	},
+-	{
+-		.name			= "usb1:red",
+-		.gpio			= AT91_PIN_PA13,
+-		.active_low		= 1,
+-		.default_trigger	= "default-on",
+-	},
+-	{
+-		.name			= "usb2:green",
+-		.gpio			= AT91_PIN_PB26,
+-		.active_low		= 1,
+-		.default_trigger	= "default-on",
+-	},
+-	{
+-		.name			= "usb2:red",
+-		.gpio			= AT91_PIN_PB27,
+-		.active_low		= 1,
+-		.default_trigger	= "default-on",
+-	},
+-	{
+-		.name			= "usb3:green",
+-		.gpio			= AT91_PIN_PC8,
+-		.active_low		= 1,
+-		.default_trigger	= "default-on",
+-	},
+-	{
+-		.name			= "usb3:red",
+-		.gpio			= AT91_PIN_PC6,
+-		.active_low		= 1,
+-		.default_trigger	= "default-on",
+-	},
+-	{
+-		.name			= "usb4:green",
+-		.gpio			= AT91_PIN_PB4,
+-		.active_low		= 1,
+-		.default_trigger	= "default-on",
+-	},
+-	{
+-		.name			= "usb4:red",
+-		.gpio			= AT91_PIN_PB5,
+-		.active_low		= 1,
+-		.default_trigger	= "default-on",
+-	}
+-};
+-
+-static void __init flexibity_board_init(void)
+-{
+-	at91_register_devices();
+-
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-	at91_add_device_serial();
+-	/* USB Host */
+-	at91_add_device_usbh(&flexibity_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&flexibity_udc_data);
+-	/* I2C */
+-	at91_add_device_i2c(flexibity_i2c_devices,
+-		ARRAY_SIZE(flexibity_i2c_devices));
+-	/* SPI */
+-	at91_add_device_spi(flexibity_spi_devices,
+-		ARRAY_SIZE(flexibity_spi_devices));
+-	/* MMC */
+-	at91_add_device_mci(0, &flexibity_mci0_data);
+-	/* LEDs */
+-	at91_gpio_leds(flexibity_leds, ARRAY_SIZE(flexibity_leds));
+-}
+-
+-MACHINE_START(FLEXIBITY, "Flexibity Connect")
+-	/* Maintainer: Maxim Osipov */
+-	.init_time	= at91_init_time,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= flexibity_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= flexibity_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-gsia18s.c b/arch/arm/mach-at91/board-gsia18s.c
+deleted file mode 100644
+index bf5cc55c7db6..000000000000
+--- a/arch/arm/mach-at91/board-gsia18s.c
++++ /dev/null
+@@ -1,585 +0,0 @@
+-/*
+- *  Copyright (C) 2010 Christian Glindkamp <christian.glindkamp@taskit.de>
+- *                     taskit GmbH
+- *                2010 Igor Plyatov <plyatov@gmail.com>
+- *                     GeoSIG Ltd
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/platform_device.h>
+-#include <linux/gpio.h>
+-#include <linux/w1-gpio.h>
+-#include <linux/i2c.h>
+-#include <linux/i2c/pcf857x.h>
+-#include <linux/gpio_keys.h>
+-#include <linux/input.h>
+-
+-#include <asm/mach-types.h>
+-#include <asm/mach/arch.h>
+-
+-#include <mach/at91sam9_smc.h>
+-#include <mach/hardware.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "sam9_smc.h"
+-#include "generic.h"
+-#include "gsia18s.h"
+-#include "stamp9g20.h"
+-#include "gpio.h"
+-
+-static void __init gsia18s_init_early(void)
+-{
+-	stamp9g20_init_early();
+-}
+-
+-/*
+- * Two USB Host ports
+- */
+-static struct at91_usbh_data __initdata usbh_data = {
+-	.ports		= 2,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-/*
+- * USB Device port
+- */
+-static struct at91_udc_data __initdata udc_data = {
+-	.vbus_pin	= AT91_PIN_PA22,
+-	.pullup_pin	= -EINVAL,		/* pull-up driven by UDC */
+-};
+-
+-/*
+- * MACB Ethernet device
+- */
+-static struct macb_platform_data __initdata macb_data = {
+-	.phy_irq_pin	= AT91_PIN_PA28,
+-	.is_rmii	= 1,
+-};
+-
+-/*
+- * LEDs and GPOs
+- */
+-static struct gpio_led gpio_leds[] = {
+-	{
+-		.name			= "gpo:spi1reset",
+-		.gpio			= AT91_PIN_PC1,
+-		.active_low		= 0,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	{
+-		.name			= "gpo:trig_net_out",
+-		.gpio			= AT91_PIN_PB20,
+-		.active_low		= 0,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	{
+-		.name			= "gpo:trig_net_dir",
+-		.gpio			= AT91_PIN_PB19,
+-		.active_low		= 0,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	{
+-		.name			= "gpo:charge_dis",
+-		.gpio			= AT91_PIN_PC2,
+-		.active_low		= 0,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	{
+-		.name			= "led:event",
+-		.gpio			= AT91_PIN_PB17,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	{
+-		.name			= "led:lan",
+-		.gpio			= AT91_PIN_PB18,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	{
+-		.name			= "led:error",
+-		.gpio			= AT91_PIN_PB16,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_ON,
+-	}
+-};
+-
+-static struct gpio_led_platform_data gpio_led_info = {
+-	.leds		= gpio_leds,
+-	.num_leds	= ARRAY_SIZE(gpio_leds),
+-};
+-
+-static struct platform_device leds = {
+-	.name	= "leds-gpio",
+-	.id	= 0,
+-	.dev	= {
+-		.platform_data	= &gpio_led_info,
+-	}
+-};
+-
+-static void __init gsia18s_leds_init(void)
+-{
+-	platform_device_register(&leds);
+-}
+-
+-/* PCF8574 0x20 GPIO - U1 on the GS_IA18-CB_V3 board */
+-static struct gpio_led pcf_gpio_leds1[] = {
+-	{ /* bit 0 */
+-		.name			= "gpo:hdc_power",
+-		.gpio			= PCF_GPIO_HDC_POWER,
+-		.active_low		= 0,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	{ /* bit 1 */
+-		.name			= "gpo:wifi_setup",
+-		.gpio			= PCF_GPIO_WIFI_SETUP,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	{ /* bit 2 */
+-		.name			= "gpo:wifi_enable",
+-		.gpio			= PCF_GPIO_WIFI_ENABLE,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	{ /* bit 3	*/
+-		.name			= "gpo:wifi_reset",
+-		.gpio			= PCF_GPIO_WIFI_RESET,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_ON,
+-	},
+-	/* bit 4 used as GPI	*/
+-	{ /* bit 5 */
+-		.name			= "gpo:gps_setup",
+-		.gpio			= PCF_GPIO_GPS_SETUP,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	{ /* bit 6 */
+-		.name			= "gpo:gps_standby",
+-		.gpio			= PCF_GPIO_GPS_STANDBY,
+-		.active_low		= 0,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_ON,
+-	},
+-	{ /* bit 7 */
+-		.name			= "gpo:gps_power",
+-		.gpio			= PCF_GPIO_GPS_POWER,
+-		.active_low		= 0,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	}
+-};
+-
+-static struct gpio_led_platform_data pcf_gpio_led_info1 = {
+-	.leds		= pcf_gpio_leds1,
+-	.num_leds	= ARRAY_SIZE(pcf_gpio_leds1),
+-};
+-
+-static struct platform_device pcf_leds1 = {
+-	.name	= "leds-gpio", /* GS_IA18-CB_board */
+-	.id	= 1,
+-	.dev	= {
+-		.platform_data	= &pcf_gpio_led_info1,
+-	}
+-};
+-
+-/* PCF8574 0x22 GPIO - U1 on the GS_2G_OPT1-A_V0 board (Alarm) */
+-static struct gpio_led pcf_gpio_leds2[] = {
+-	{ /* bit 0 */
+-		.name			= "gpo:alarm_1",
+-		.gpio			= PCF_GPIO_ALARM1,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	{ /* bit 1 */
+-		.name			= "gpo:alarm_2",
+-		.gpio			= PCF_GPIO_ALARM2,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	{ /* bit 2 */
+-		.name			= "gpo:alarm_3",
+-		.gpio			= PCF_GPIO_ALARM3,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	{ /* bit 3 */
+-		.name			= "gpo:alarm_4",
+-		.gpio			= PCF_GPIO_ALARM4,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-	/* bits 4, 5, 6 not used */
+-	{ /* bit 7 */
+-		.name			= "gpo:alarm_v_relay_on",
+-		.gpio			= PCF_GPIO_ALARM_V_RELAY_ON,
+-		.active_low		= 0,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-};
+-
+-static struct gpio_led_platform_data pcf_gpio_led_info2 = {
+-	.leds		= pcf_gpio_leds2,
+-	.num_leds	= ARRAY_SIZE(pcf_gpio_leds2),
+-};
+-
+-static struct platform_device pcf_leds2 = {
+-	.name	= "leds-gpio",
+-	.id	= 2,
+-	.dev	= {
+-		.platform_data	= &pcf_gpio_led_info2,
+-	}
+-};
+-
+-/* PCF8574 0x24 GPIO U1 on the GS_2G-OPT23-A_V0 board (Modem) */
+-static struct gpio_led pcf_gpio_leds3[] = {
+-	{ /* bit 0 */
+-		.name			= "gpo:modem_power",
+-		.gpio			= PCF_GPIO_MODEM_POWER,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
+-	},
+-		/* bits 1 and 2 not used */
+-	{ /* bit 3 */
+-		.name			= "gpo:modem_reset",
+-		.gpio			= PCF_GPIO_MODEM_RESET,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_ON,
+-	},
+-		/* bits 4, 5 and 6 not used */
+-	{ /* bit 7 */
+-		.name			= "gpo:trx_reset",
+-		.gpio			= PCF_GPIO_TRX_RESET,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-		.default_state		= LEDS_GPIO_DEFSTATE_ON,
+-	}
+-};
+-
+-static struct gpio_led_platform_data pcf_gpio_led_info3 = {
+-	.leds		= pcf_gpio_leds3,
+-	.num_leds	= ARRAY_SIZE(pcf_gpio_leds3),
+-};
+-
+-static struct platform_device pcf_leds3 = {
+-	.name	= "leds-gpio",
+-	.id	= 3,
+-	.dev	= {
+-		.platform_data	= &pcf_gpio_led_info3,
+-	}
+-};
+-
+-static void __init gsia18s_pcf_leds_init(void)
+-{
+-	platform_device_register(&pcf_leds1);
+-	platform_device_register(&pcf_leds2);
+-	platform_device_register(&pcf_leds3);
+-}
+-
+-/*
+- * SPI busses.
+- */
+-static struct spi_board_info gsia18s_spi_devices[] = {
+-	{ /* User accessible spi0, cs0 used for communication with MSP RTC */
+-		.modalias	= "spidev",
+-		.bus_num	= 0,
+-		.chip_select	= 0,
+-		.max_speed_hz	= 580000,
+-		.mode		= SPI_MODE_1,
+-	},
+-	{ /* User accessible spi1, cs0 used for communication with int. DSP */
+-		.modalias	= "spidev",
+-		.bus_num	= 1,
+-		.chip_select	= 0,
+-		.max_speed_hz	= 5600000,
+-		.mode		= SPI_MODE_0,
+-	},
+-	{ /* User accessible spi1, cs1 used for communication with ext. DSP */
+-		.modalias	= "spidev",
+-		.bus_num	= 1,
+-		.chip_select	= 1,
+-		.max_speed_hz	= 5600000,
+-		.mode		= SPI_MODE_0,
+-	},
+-	{ /* User accessible spi1, cs2 used for communication with ext. DSP */
+-		.modalias	= "spidev",
+-		.bus_num	= 1,
+-		.chip_select	= 2,
+-		.max_speed_hz	= 5600000,
+-		.mode		= SPI_MODE_0,
+-	},
+-	{ /* User accessible spi1, cs3 used for communication with ext. DSP */
+-		.modalias	= "spidev",
+-		.bus_num	= 1,
+-		.chip_select	= 3,
+-		.max_speed_hz	= 5600000,
+-		.mode		= SPI_MODE_0,
+-	}
+-};
+-
+-/*
+- * GPI Buttons
+- */
+-static struct gpio_keys_button buttons[] = {
+-	{
+-		.gpio		= GPIO_TRIG_NET_IN,
+-		.code		= BTN_1,
+-		.desc		= "TRIG_NET_IN",
+-		.type		= EV_KEY,
+-		.active_low	= 0,
+-		.wakeup		= 1,
+-	},
+-	{ /* SW80 on the GS_IA18_S-MN board*/
+-		.gpio		= GPIO_CARD_UNMOUNT_0,
+-		.code		= BTN_2,
+-		.desc		= "Card umount 0",
+-		.type		= EV_KEY,
+-		.active_low	= 1,
+-		.wakeup		= 1,
+-	},
+-	{ /* SW79 on the GS_IA18_S-MN board*/
+-		.gpio		= GPIO_CARD_UNMOUNT_1,
+-		.code		= BTN_3,
+-		.desc		= "Card umount 1",
+-		.type		= EV_KEY,
+-		.active_low	= 1,
+-		.wakeup		= 1,
+-	},
+-	{ /* SW280 on the GS_IA18-CB board*/
+-		.gpio		= GPIO_KEY_POWER,
+-		.code		= KEY_POWER,
+-		.desc		= "Power Off Button",
+-		.type		= EV_KEY,
+-		.active_low	= 0,
+-		.wakeup		= 1,
+-	}
+-};
+-
+-static struct gpio_keys_platform_data button_data = {
+-	.buttons	= buttons,
+-	.nbuttons	= ARRAY_SIZE(buttons),
+-};
+-
+-static struct platform_device button_device = {
+-	.name		= "gpio-keys",
+-	.id		= -1,
+-	.num_resources	= 0,
+-	.dev		= {
+-		.platform_data	= &button_data,
+-	}
+-};
+-
+-static void __init gsia18s_add_device_buttons(void)
+-{
+-	at91_set_gpio_input(GPIO_TRIG_NET_IN, 1);
+-	at91_set_deglitch(GPIO_TRIG_NET_IN, 1);
+-	at91_set_gpio_input(GPIO_CARD_UNMOUNT_0, 1);
+-	at91_set_deglitch(GPIO_CARD_UNMOUNT_0, 1);
+-	at91_set_gpio_input(GPIO_CARD_UNMOUNT_1, 1);
+-	at91_set_deglitch(GPIO_CARD_UNMOUNT_1, 1);
+-	at91_set_gpio_input(GPIO_KEY_POWER, 0);
+-	at91_set_deglitch(GPIO_KEY_POWER, 1);
+-
+-	platform_device_register(&button_device);
+-}
+-
+-/*
+- * I2C
+- */
+-static int pcf8574x_0x20_setup(struct i2c_client *client, int gpio,
+-				unsigned int ngpio, void *context)
+-{
+-	int status;
+-
+-	status = gpio_request(gpio + PCF_GPIO_ETH_DETECT, "eth_det");
+-	if (status < 0) {
+-		pr_err("error: can't request GPIO%d\n",
+-			gpio + PCF_GPIO_ETH_DETECT);
+-		return status;
+-	}
+-	status = gpio_direction_input(gpio + PCF_GPIO_ETH_DETECT);
+-	if (status < 0) {
+-		pr_err("error: can't setup GPIO%d as input\n",
+-			gpio + PCF_GPIO_ETH_DETECT);
+-		return status;
+-	}
+-	status = gpio_export(gpio + PCF_GPIO_ETH_DETECT, false);
+-	if (status < 0) {
+-		pr_err("error: can't export GPIO%d\n",
+-			gpio + PCF_GPIO_ETH_DETECT);
+-		return status;
+-	}
+-	status = gpio_sysfs_set_active_low(gpio + PCF_GPIO_ETH_DETECT, 1);
+-	if (status < 0) {
+-		pr_err("error: gpio_sysfs_set active_low(GPIO%d, 1)\n",
+-			gpio + PCF_GPIO_ETH_DETECT);
+-		return status;
+-	}
+-
+-	return 0;
+-}
+-
+-static int pcf8574x_0x20_teardown(struct i2c_client *client, int gpio,
+-					unsigned ngpio, void *context)
+-{
+-	gpio_free(gpio + PCF_GPIO_ETH_DETECT);
+-	return 0;
+-}
+-
+-static struct pcf857x_platform_data pcf20_pdata = {
+-	.gpio_base	= GS_IA18_S_PCF_GPIO_BASE0,
+-	.n_latch	= (1 << 4),
+-	.setup		= pcf8574x_0x20_setup,
+-	.teardown	= pcf8574x_0x20_teardown,
+-};
+-
+-static struct pcf857x_platform_data pcf22_pdata = {
+-	.gpio_base	= GS_IA18_S_PCF_GPIO_BASE1,
+-};
+-
+-static struct pcf857x_platform_data pcf24_pdata = {
+-	.gpio_base	= GS_IA18_S_PCF_GPIO_BASE2,
+-};
+-
+-static struct i2c_board_info __initdata gsia18s_i2c_devices[] = {
+-	{ /* U1 on the GS_IA18-CB_V3 board */
+-		I2C_BOARD_INFO("pcf8574", 0x20),
+-		.platform_data = &pcf20_pdata,
+-	},
+-	{ /* U1 on the GS_2G_OPT1-A_V0 board (Alarm) */
+-		I2C_BOARD_INFO("pcf8574", 0x22),
+-		.platform_data = &pcf22_pdata,
+-	},
+-	{ /* U1 on the GS_2G-OPT23-A_V0 board (Modem) */
+-		I2C_BOARD_INFO("pcf8574", 0x24),
+-		.platform_data = &pcf24_pdata,
+-	},
+-	{ /* U161 on the GS_IA18_S-MN board */
+-		I2C_BOARD_INFO("24c1024", 0x50),
+-	},
+-	{ /* U162 on the GS_IA18_S-MN board */
+-		I2C_BOARD_INFO("24c01", 0x53),
+-	},
+-};
+-
+-/*
+- * Compact Flash
+- */
+-static struct at91_cf_data __initdata gsia18s_cf1_data = {
+-	.irq_pin	= AT91_PIN_PA27,
+-	.det_pin	= AT91_PIN_PB30,
+-	.vcc_pin	= -EINVAL,
+-	.rst_pin	= AT91_PIN_PB31,
+-	.chipselect	= 5,
+-	.flags		= AT91_CF_TRUE_IDE,
+-};
+-
+-/* Power Off by RTC */
+-static void gsia18s_power_off(void)
+-{
+-	pr_notice("Power supply will be switched off automatically now or after 60 seconds without ArmDAS.\n");
+-	at91_set_gpio_output(AT91_PIN_PA25, 1);
+-	/* Spin to death... */
+-	while (1)
+-		;
+-}
+-
+-static int __init gsia18s_power_off_init(void)
+-{
+-	pm_power_off = gsia18s_power_off;
+-	return 0;
+-}
+-
+-/* ---------------------------------------------------------------------------*/
+-
+-static void __init gsia18s_board_init(void)
+-{
+-	/*
+-	 * USART0 on ttyS1 (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI).
+-	 * Used for Internal Analog Modem.
+-	 */
+-	at91_register_uart(AT91SAM9260_ID_US0, 1,
+-				ATMEL_UART_CTS | ATMEL_UART_RTS |
+-				ATMEL_UART_DTR | ATMEL_UART_DSR |
+-				ATMEL_UART_DCD | ATMEL_UART_RI);
+-	/*
+-	 * USART1 on ttyS2 (Rx, Tx, CTS, RTS).
+-	 * Used for GPS or WiFi or Data stream.
+-	 */
+-	at91_register_uart(AT91SAM9260_ID_US1, 2,
+-				ATMEL_UART_CTS | ATMEL_UART_RTS);
+-	/*
+-	 * USART2 on ttyS3 (Rx, Tx, CTS, RTS).
+-	 * Used for External Modem.
+-	 */
+-	at91_register_uart(AT91SAM9260_ID_US2, 3,
+-				ATMEL_UART_CTS | ATMEL_UART_RTS);
+-	/*
+-	 * USART3 on ttyS4 (Rx, Tx, RTS).
+-	 * Used for RS-485.
+-	 */
+-	at91_register_uart(AT91SAM9260_ID_US3, 4, ATMEL_UART_RTS);
+-
+-	/*
+-	 * USART4 on ttyS5 (Rx, Tx).
+-	 * Used for TRX433 Radio Module.
+-	 */
+-	at91_register_uart(AT91SAM9260_ID_US4, 5, 0);
+-	stamp9g20_board_init();
+-	at91_add_device_usbh(&usbh_data);
+-	at91_add_device_udc(&udc_data);
+-	at91_add_device_eth(&macb_data);
+-	gsia18s_leds_init();
+-	gsia18s_pcf_leds_init();
+-	gsia18s_add_device_buttons();
+-	at91_add_device_i2c(gsia18s_i2c_devices,
+-				ARRAY_SIZE(gsia18s_i2c_devices));
+-	at91_add_device_cf(&gsia18s_cf1_data);
+-	at91_add_device_spi(gsia18s_spi_devices,
+-				ARRAY_SIZE(gsia18s_spi_devices));
+-	gsia18s_power_off_init();
+-}
+-
+-MACHINE_START(GSIA18S, "GS_IA18_S")
+-	.init_time	= at91_init_time,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= gsia18s_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= gsia18s_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-pcontrol-g20.c b/arch/arm/mach-at91/board-pcontrol-g20.c
+deleted file mode 100644
+index 9c26b94ce448..000000000000
+--- a/arch/arm/mach-at91/board-pcontrol-g20.c
++++ /dev/null
+@@ -1,228 +0,0 @@
+-/*
+- *  Copyright (C) 2010 Christian Glindkamp <christian.glindkamp@taskit.de>
+- *                     taskit GmbH
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-/*
+- * copied and adjusted from board-stamp9g20.c
+- * by Peter Gsellmann <pgsellmann@portner-elektronik.at>
+- */
+-
+-#include <linux/mm.h>
+-#include <linux/platform_device.h>
+-#include <linux/gpio.h>
+-#include <linux/w1-gpio.h>
+-
+-#include <asm/mach-types.h>
+-#include <asm/mach/arch.h>
+-
+-#include <mach/at91sam9_smc.h>
+-#include <mach/hardware.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "sam9_smc.h"
+-#include "generic.h"
+-#include "stamp9g20.h"
+-#include "gpio.h"
+-
+-
+-static void __init pcontrol_g20_init_early(void)
+-{
+-	stamp9g20_init_early();
+-}
+-
+-static struct sam9_smc_config __initdata pcontrol_smc_config[2] = { {
+-	.ncs_read_setup		= 16,
+-	.nrd_setup		= 18,
+-	.ncs_write_setup	= 16,
+-	.nwe_setup		= 18,
+-
+-	.ncs_read_pulse		= 63,
+-	.nrd_pulse		= 55,
+-	.ncs_write_pulse	= 63,
+-	.nwe_pulse		= 55,
+-
+-	.read_cycle		= 127,
+-	.write_cycle		= 127,
+-
+-	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE
+-			| AT91_SMC_EXNWMODE_DISABLE | AT91_SMC_BAT_SELECT
+-			| AT91_SMC_DBW_8 | AT91_SMC_PS_4
+-			| AT91_SMC_TDFMODE,
+-	.tdf_cycles		= 3,
+-}, {
+-	.ncs_read_setup		= 0,
+-	.nrd_setup		= 0,
+-	.ncs_write_setup	= 0,
+-	.nwe_setup		= 1,
+-
+-	.ncs_read_pulse		= 8,
+-	.nrd_pulse		= 8,
+-	.ncs_write_pulse	= 5,
+-	.nwe_pulse		= 4,
+-
+-	.read_cycle		= 8,
+-	.write_cycle		= 7,
+-
+-	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE
+-			| AT91_SMC_EXNWMODE_DISABLE | AT91_SMC_BAT_SELECT
+-			| AT91_SMC_DBW_16 | AT91_SMC_PS_8
+-			| AT91_SMC_TDFMODE,
+-	.tdf_cycles		= 1,
+-} };
+-
+-static void __init add_device_pcontrol(void)
+-{
+-	/* configure chip-select 4 (IO compatible to 8051  X4 ) */
+-	sam9_smc_configure(0, 4, &pcontrol_smc_config[0]);
+-	/* configure chip-select 7 (FerroRAM 256KiBx16bit MR2A16A  D4 ) */
+-	sam9_smc_configure(0, 7, &pcontrol_smc_config[1]);
+-}
+-
+-
+-/*
+- * USB Host port
+- */
+-static struct at91_usbh_data __initdata usbh_data = {
+-	.ports		= 2,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-
+-/*
+- * USB Device port
+- */
+-static struct at91_udc_data __initdata pcontrol_g20_udc_data = {
+-	.vbus_pin	= AT91_PIN_PA22,	/* Detect +5V bus voltage */
+-	.pullup_pin	= AT91_PIN_PA4,		/* K-state, active low */
+-};
+-
+-
+-/*
+- * MACB Ethernet device
+- */
+-static struct macb_platform_data __initdata macb_data = {
+-	.phy_irq_pin	= AT91_PIN_PA28,
+-	.is_rmii	= 1,
+-};
+-
+-
+-/*
+- * I2C devices: eeprom and phy/switch
+- */
+-static struct i2c_board_info __initdata pcontrol_g20_i2c_devices[] = {
+-{		/* D7  address width=2, 8KiB */
+-	I2C_BOARD_INFO("24c64", 0x50)
+-}, {		/* D8  address width=1, 1 byte has 32 bits! */
+-	I2C_BOARD_INFO("lan9303", 0x0a)
+-}, };
+-
+-
+-/*
+- * LEDs
+- */
+-static struct gpio_led pcontrol_g20_leds[] = {
+-	{
+-		.name			= "LED1",	/* red  H5 */
+-		.gpio			= AT91_PIN_PB18,
+-		.active_low		= 1,
+-		.default_trigger	= "none",	/* supervisor */
+-	}, {
+-		.name			= "LED2",	/* yellow  H7 */
+-		.gpio			= AT91_PIN_PB19,
+-		.active_low		= 1,
+-		.default_trigger	= "mmc0",	/* SD-card activity */
+-	}, {
+-		.name			= "LED3",	/* green  H2 */
+-		.gpio			= AT91_PIN_PB20,
+-		.active_low		= 1,
+-		.default_trigger	= "heartbeat",	/* blinky */
+-	}, {
+-		.name			= "LED4",	/* red  H3 */
+-		.gpio			= AT91_PIN_PC6,
+-		.active_low		= 1,
+-		.default_trigger	= "none",	/* connection lost */
+-	}, {
+-		.name			= "LED5",	/* yellow  H6 */
+-		.gpio			= AT91_PIN_PC7,
+-		.active_low		= 1,
+-		.default_trigger	= "none",	/* unsent data */
+-	}, {
+-		.name			= "LED6",	/* green  H1 */
+-		.gpio			= AT91_PIN_PC9,
+-		.active_low		= 1,
+-		.default_trigger	= "none",	/* snafu */
+-	}
+-};
+-
+-
+-/*
+- * SPI devices
+- */
+-static struct spi_board_info pcontrol_g20_spi_devices[] = {
+-	{
+-		.modalias	= "spidev",	/* HMI port  X4 */
+-		.chip_select	= 1,
+-		.max_speed_hz	= 50 * 1000 * 1000,
+-		.bus_num	= 0,
+-	}, {
+-		.modalias	= "spidev",	/* piggyback  A2 */
+-		.chip_select	= 0,
+-		.max_speed_hz	= 50 * 1000 * 1000,
+-		.bus_num	= 1,
+-	},
+-};
+-
+-
+-static void __init pcontrol_g20_board_init(void)
+-{
+-	/* USART0 on ttyS1. (Rx, Tx, CTS, RTS) piggyback  A2 */
+-	at91_register_uart(AT91SAM9260_ID_US0, 1, ATMEL_UART_CTS
+-						| ATMEL_UART_RTS);
+-
+-	/* USART1 on ttyS2. (Rx, Tx, CTS, RTS) isolated RS485  X5 */
+-	at91_register_uart(AT91SAM9260_ID_US1, 2, ATMEL_UART_CTS
+-						| ATMEL_UART_RTS);
+-
+-	/* USART2 on ttyS3. (Rx, Tx)  9bit-Bus  Multidrop-mode  X4 */
+-	at91_register_uart(AT91SAM9260_ID_US4, 3, 0);
+-	stamp9g20_board_init();
+-	at91_add_device_usbh(&usbh_data);
+-	at91_add_device_eth(&macb_data);
+-	at91_add_device_i2c(pcontrol_g20_i2c_devices,
+-		ARRAY_SIZE(pcontrol_g20_i2c_devices));
+-	add_device_pcontrol();
+-	at91_add_device_spi(pcontrol_g20_spi_devices,
+-		ARRAY_SIZE(pcontrol_g20_spi_devices));
+-	at91_add_device_udc(&pcontrol_g20_udc_data);
+-	at91_gpio_leds(pcontrol_g20_leds,
+-		ARRAY_SIZE(pcontrol_g20_leds));
+-	/* piggyback  A2 */
+-	at91_set_gpio_output(AT91_PIN_PB31, 1);
+-}
+-
+-
+-MACHINE_START(PCONTROL_G20, "PControl G20")
+-	/* Maintainer: pgsellmann@portner-elektronik.at */
+-	.init_time	= at91_init_time,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= pcontrol_g20_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= pcontrol_g20_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-sam9-l9260.c b/arch/arm/mach-at91/board-sam9-l9260.c
+deleted file mode 100644
+index c2166e3a236c..000000000000
+--- a/arch/arm/mach-at91/board-sam9-l9260.c
++++ /dev/null
+@@ -1,230 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-sam9-l9260.c
+- *
+- *  Copyright (C) 2005 SAN People
+- *  Copyright (C) 2006 Atmel
+- *  Copyright (C) 2007 Olimex Ltd
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/spi/spi.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/at91sam9_smc.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "sam9_smc.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static void __init ek_init_early(void)
+-{
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-/*
+- * USB Host port
+- */
+-static struct at91_usbh_data __initdata ek_usbh_data = {
+-	.ports		= 2,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-/*
+- * USB Device port
+- */
+-static struct at91_udc_data __initdata ek_udc_data = {
+-	.vbus_pin	= AT91_PIN_PC5,
+-	.pullup_pin	= -EINVAL,		/* pull-up driven by UDC */
+-};
+-
+-
+-/*
+- * SPI devices.
+- */
+-static struct spi_board_info ek_spi_devices[] = {
+-#if !IS_ENABLED(CONFIG_MMC_ATMELMCI)
+-	{	/* DataFlash chip */
+-		.modalias	= "mtd_dataflash",
+-		.chip_select	= 1,
+-		.max_speed_hz	= 15 * 1000 * 1000,
+-		.bus_num	= 0,
+-	},
+-#if defined(CONFIG_MTD_AT91_DATAFLASH_CARD)
+-	{	/* DataFlash card */
+-		.modalias	= "mtd_dataflash",
+-		.chip_select	= 0,
+-		.max_speed_hz	= 15 * 1000 * 1000,
+-		.bus_num	= 0,
+-	},
+-#endif
+-#endif
+-};
+-
+-
+-/*
+- * MACB Ethernet device
+- */
+-static struct macb_platform_data __initdata ek_macb_data = {
+-	.phy_irq_pin	= AT91_PIN_PA7,
+-	.is_rmii	= 0,
+-};
+-
+-
+-/*
+- * NAND flash
+- */
+-static struct mtd_partition __initdata ek_nand_partition[] = {
+-	{
+-		.name	= "Bootloader Area",
+-		.offset	= 0,
+-		.size	= 10 * SZ_1M,
+-	},
+-	{
+-		.name	= "User Area",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= MTDPART_SIZ_FULL,
+-	},
+-};
+-
+-static struct atmel_nand_data __initdata ek_nand_data = {
+-	.ale		= 21,
+-	.cle		= 22,
+-	.det_pin	= -EINVAL,
+-	.rdy_pin	= AT91_PIN_PC13,
+-	.enable_pin	= AT91_PIN_PC14,
+-	.ecc_mode	= NAND_ECC_SOFT,
+-	.parts		= ek_nand_partition,
+-	.num_parts	= ARRAY_SIZE(ek_nand_partition),
+-};
+-
+-static struct sam9_smc_config __initdata ek_nand_smc_config = {
+-	.ncs_read_setup		= 0,
+-	.nrd_setup		= 1,
+-	.ncs_write_setup	= 0,
+-	.nwe_setup		= 1,
+-
+-	.ncs_read_pulse		= 3,
+-	.nrd_pulse		= 3,
+-	.ncs_write_pulse	= 3,
+-	.nwe_pulse		= 3,
+-
+-	.read_cycle		= 5,
+-	.write_cycle		= 5,
+-
+-	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE | AT91_SMC_EXNWMODE_DISABLE | AT91_SMC_DBW_8,
+-	.tdf_cycles		= 2,
+-};
+-
+-static void __init ek_add_device_nand(void)
+-{
+-	/* configure chip-select 3 (NAND) */
+-	sam9_smc_configure(0, 3, &ek_nand_smc_config);
+-
+-	at91_add_device_nand(&ek_nand_data);
+-}
+-
+-
+-/*
+- * MCI (SD/MMC)
+- */
+-static struct mci_platform_data __initdata ek_mci0_data = {
+-	.slot[1] = {
+-		.bus_width	= 4,
+-		.detect_pin	= AT91_PIN_PC8,
+-		.wp_pin		= AT91_PIN_PC4,
+-	},
+-};
+-
+-/*
+- * LEDs
+- */
+-static struct gpio_led ek_leds[] = {
+-	{	/* D1 */
+-		.name			= "led1",
+-		.gpio			= AT91_PIN_PA9,
+-		.active_low		= 1,
+-		.default_trigger	= "heartbeat",
+-	},
+-	{	/* D2 */
+-		.name			= "led2",
+-		.gpio			= AT91_PIN_PA6,
+-		.active_low		= 1,
+-		.default_trigger	= "timer",
+-	}
+-};
+-
+-static void __init ek_board_init(void)
+-{
+-	at91_register_devices();
+-
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART0 on ttyS1. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91SAM9260_ID_US0, 1, ATMEL_UART_CTS | ATMEL_UART_RTS
+-			   | ATMEL_UART_DTR | ATMEL_UART_DSR | ATMEL_UART_DCD
+-			   | ATMEL_UART_RI);
+-
+-	/* USART1 on ttyS2. (Rx, Tx, CTS, RTS) */
+-	at91_register_uart(AT91SAM9260_ID_US1, 2, ATMEL_UART_CTS | ATMEL_UART_RTS);
+-	at91_add_device_serial();
+-	/* USB Host */
+-	at91_add_device_usbh(&ek_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&ek_udc_data);
+-	/* SPI */
+-	at91_add_device_spi(ek_spi_devices, ARRAY_SIZE(ek_spi_devices));
+-	/* NAND */
+-	ek_add_device_nand();
+-	/* Ethernet */
+-	at91_add_device_eth(&ek_macb_data);
+-	/* MMC */
+-	at91_add_device_mci(0, &ek_mci0_data);
+-	/* I2C */
+-	at91_add_device_i2c(NULL, 0);
+-	/* LEDs */
+-	at91_gpio_leds(ek_leds, ARRAY_SIZE(ek_leds));
+-}
+-
+-MACHINE_START(SAM9_L9260, "Olimex SAM9-L9260")
+-	/* Maintainer: Olimex */
+-	.init_time	= at91_init_time,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= ek_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= ek_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-sam9260ek.c b/arch/arm/mach-at91/board-sam9260ek.c
+deleted file mode 100644
+index bf8a946b4cd0..000000000000
+--- a/arch/arm/mach-at91/board-sam9260ek.c
++++ /dev/null
+@@ -1,354 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-sam9260ek.c
+- *
+- *  Copyright (C) 2005 SAN People
+- *  Copyright (C) 2006 Atmel
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/spi/spi.h>
+-#include <linux/spi/at73c213.h>
+-#include <linux/clk.h>
+-#include <linux/platform_data/at24.h>
+-#include <linux/gpio_keys.h>
+-#include <linux/input.h>
 -
 -#include <asm/setup.h>
 -#include <asm/mach-types.h>
@@ -2304,8 +2218,8 @@ index d76680f2a209..000000000000
 -
 -static void __init ek_init_early(void)
 -{
--	/* Initialize processor: 16.367 MHz crystal */
--	at91_initialize(16367660);
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
 -}
 -
 -/*
@@ -2313,8 +2227,7 @@ index d76680f2a209..000000000000
 - */
 -static struct at91_usbh_data __initdata ek_usbh_data = {
 -	.ports		= 2,
--	.vbus_pin	= { AT91_PIN_PA24, AT91_PIN_PA21 },
--	.vbus_pin_active_low = {1, 1},
+-	.vbus_pin	= {-EINVAL, -EINVAL},
 -	.overcurrent_pin= {-EINVAL, -EINVAL},
 -};
 -
@@ -2322,49 +2235,51 @@ index d76680f2a209..000000000000
 - * USB Device port
 - */
 -static struct at91_udc_data __initdata ek_udc_data = {
--	.vbus_pin	= AT91_PIN_PA25,
+-	.vbus_pin	= AT91_PIN_PC5,
 -	.pullup_pin	= -EINVAL,		/* pull-up driven by UDC */
 -};
 -
 -
 -/*
-- * ADS7846 Touchscreen
+- * Audio
 - */
--#if defined(CONFIG_TOUCHSCREEN_ADS7846) || defined(CONFIG_TOUCHSCREEN_ADS7846_MODULE)
--static int ads7843_pendown_state(void)
--{
--	return !at91_get_gpio_value(AT91_PIN_PA15);	/* Touchscreen PENIRQ */
--}
--
--static struct ads7846_platform_data ads_info = {
--	.model			= 7843,
--	.x_min			= 150,
--	.x_max			= 3830,
--	.y_min			= 190,
--	.y_max			= 3830,
--	.vref_delay_usecs	= 100,
--	.x_plate_ohms		= 450,
--	.y_plate_ohms		= 250,
--	.pressure_max		= 15000,
--	.debounce_max		= 1,
--	.debounce_rep		= 0,
--	.debounce_tol		= (~0),
--	.get_pendown_state	= ads7843_pendown_state,
+-static struct at73c213_board_info at73c213_data = {
+-	.ssc_id		= 0,
+-	.shortname	= "AT91SAM9260-EK external DAC",
 -};
 -
--static void __init ek_add_device_ts(void)
+-#if defined(CONFIG_SND_AT73C213) || defined(CONFIG_SND_AT73C213_MODULE)
+-static void __init at73c213_set_clk(struct at73c213_board_info *info)
 -{
--	at91_set_B_periph(AT91_PIN_PA15, 1);	/* External IRQ1, with pullup */
--	at91_set_gpio_input(AT91_PIN_PA31, 1);	/* Touchscreen BUSY signal */
+-	struct clk *pck0;
+-	struct clk *plla;
+-
+-	pck0 = clk_get(NULL, "pck0");
+-	plla = clk_get(NULL, "plla");
+-
+-	/* AT73C213 MCK Clock */
+-	at91_set_B_periph(AT91_PIN_PC1, 0);	/* PCK0 */
+-
+-	clk_set_parent(pck0, plla);
+-	clk_put(plla);
+-
+-	info->dac_clk = pck0;
 -}
 -#else
--static void __init ek_add_device_ts(void) {}
+-static void __init at73c213_set_clk(struct at73c213_board_info *info) {}
 -#endif
 -
 -/*
 - * SPI devices.
 - */
 -static struct spi_board_info ek_spi_devices[] = {
+-#if !IS_ENABLED(CONFIG_MMC_ATMELMCI)
+-	{	/* DataFlash chip */
+-		.modalias	= "mtd_dataflash",
+-		.chip_select	= 1,
+-		.max_speed_hz	= 15 * 1000 * 1000,
+-		.bus_num	= 0,
+-	},
 -#if defined(CONFIG_MTD_AT91_DATAFLASH_CARD)
 -	{	/* DataFlash card */
 -		.modalias	= "mtd_dataflash",
@@ -2373,28 +2288,17 @@ index d76680f2a209..000000000000
 -		.bus_num	= 0,
 -	},
 -#endif
--#if defined(CONFIG_TOUCHSCREEN_ADS7846) || defined(CONFIG_TOUCHSCREEN_ADS7846_MODULE)
--	{
--		.modalias	= "ads7846",
--		.chip_select	= 3,
--		.max_speed_hz	= 125000 * 26,	/* (max sample rate @ 3V) * (cmd + data + overhead) */
--		.bus_num	= 0,
--		.platform_data	= &ads_info,
--		.irq		= NR_IRQS_LEGACY + AT91SAM9263_ID_IRQ1,
+-#endif
+-#if defined(CONFIG_SND_AT73C213) || defined(CONFIG_SND_AT73C213_MODULE)
+-	{	/* AT73C213 DAC */
+-		.modalias	= "at73c213",
+-		.chip_select	= 0,
+-		.max_speed_hz	= 10 * 1000 * 1000,
+-		.bus_num	= 1,
+-		.mode		= SPI_MODE_1,
+-		.platform_data	= &at73c213_data,
 -	},
 -#endif
--};
--
--
--/*
-- * MCI (SD/MMC)
-- */
--static struct mci_platform_data __initdata mci1_data = {
--	.slot[0] = {
--		.bus_width	= 4,
--		.detect_pin	= AT91_PIN_PE18,
--		.wp_pin		= AT91_PIN_PE19,
--	},
 -};
 -
 -
@@ -2402,7 +2306,7 @@ index d76680f2a209..000000000000
 - * MACB Ethernet device
 - */
 -static struct macb_platform_data __initdata ek_macb_data = {
--	.phy_irq_pin	= AT91_PIN_PE31,
+-	.phy_irq_pin	= AT91_PIN_PA7,
 -	.is_rmii	= 1,
 -};
 -
@@ -2414,7 +2318,7 @@ index d76680f2a209..000000000000
 -	{
 -		.name	= "Partition 1",
 -		.offset	= 0,
--		.size	= SZ_64M,
+-		.size	= SZ_256K,
 -	},
 -	{
 -		.name	= "Partition 2",
@@ -2427,8 +2331,8 @@ index d76680f2a209..000000000000
 -	.ale		= 21,
 -	.cle		= 22,
 -	.det_pin	= -EINVAL,
--	.rdy_pin	= AT91_PIN_PA22,
--	.enable_pin	= AT91_PIN_PD15,
+-	.rdy_pin	= AT91_PIN_PC13,
+-	.enable_pin	= AT91_PIN_PC14,
 -	.ecc_mode	= NAND_ECC_SOFT,
 -	.on_flash_bbt	= 1,
 -	.parts		= ek_nand_partition,
@@ -2470,6 +2374,35 @@ index d76680f2a209..000000000000
 -
 -
 -/*
+- * MCI (SD/MMC)
+- */
+-static struct mci_platform_data __initdata ek_mci0_data = {
+-	.slot[1] = {
+-		.bus_width	= 4,
+-		.detect_pin	= -EINVAL,
+-		.wp_pin		= -EINVAL,
+-	},
+-};
+-
+-
+-/*
+- * LEDs
+- */
+-static struct gpio_led ek_leds[] = {
+-	{	/* "bottom" led, green, userled1 to be defined */
+-		.name			= "ds5",
+-		.gpio			= AT91_PIN_PA6,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-	},
+-	{	/* "power" led, yellow */
+-		.name			= "ds1",
+-		.gpio			= AT91_PIN_PA9,
+-		.default_trigger	= "heartbeat",
+-	}
+-};
+-
+-/*
 - * I2C devices
 - */
 -static struct at24_platform_data at24c512 = {
@@ -2477,7 +2410,6 @@ index d76680f2a209..000000000000
 -	.page_size	= 128,
 -	.flags		= AT24_FLAG_ADDR16,
 -};
--
 -
 -static struct i2c_board_info __initdata ek_i2c_devices[] = {
 -	{
@@ -2487,80 +2419,24 @@ index d76680f2a209..000000000000
 -	/* more devices can be added using expansion connectors */
 -};
 -
--/*
-- * LCD Controller
-- */
--#if defined(CONFIG_FB_ATMEL) || defined(CONFIG_FB_ATMEL_MODULE)
--static struct fb_videomode at91_tft_vga_modes[] = {
--	{
--		.name		= "TX09D50VM1CCA @ 60",
--		.refresh	= 60,
--		.xres		= 240,		.yres		= 320,
--		.pixclock	= KHZ2PICOS(4965),
--
--		.left_margin	= 1,		.right_margin	= 33,
--		.upper_margin	= 1,		.lower_margin	= 0,
--		.hsync_len	= 5,		.vsync_len	= 1,
--
--		.sync		= FB_SYNC_HOR_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
--		.vmode		= FB_VMODE_NONINTERLACED,
--	},
--};
--
--static struct fb_monspecs at91fb_default_monspecs = {
--	.manufacturer	= "HIT",
--	.monitor	= "TX09D70VM1CCA",
--
--	.modedb		= at91_tft_vga_modes,
--	.modedb_len	= ARRAY_SIZE(at91_tft_vga_modes),
--	.hfmin		= 15000,
--	.hfmax		= 64000,
--	.vfmin		= 50,
--	.vfmax		= 150,
--};
--
--#define AT91SAM9263_DEFAULT_LCDCON2 	(ATMEL_LCDC_MEMOR_LITTLE \
--					| ATMEL_LCDC_DISTYPE_TFT \
--					| ATMEL_LCDC_CLKMOD_ALWAYSACTIVE)
--
--static void at91_lcdc_power_control(struct atmel_lcdfb_pdata *pdata, int on)
--{
--	at91_set_gpio_value(AT91_PIN_PA30, on);
--}
--
--/* Driver datas */
--static struct atmel_lcdfb_pdata __initdata ek_lcdc_data = {
--	.lcdcon_is_backlight		= true,
--	.default_bpp			= 16,
--	.default_dmacon			= ATMEL_LCDC_DMAEN,
--	.default_lcdcon2		= AT91SAM9263_DEFAULT_LCDCON2,
--	.default_monspecs		= &at91fb_default_monspecs,
--	.atmel_lcdfb_power_control	= at91_lcdc_power_control,
--	.guard_time			= 1,
--};
--
--#else
--static struct atmel_lcdfb_pdata __initdata ek_lcdc_data;
--#endif
--
 -
 -/*
 - * GPIO Buttons
 - */
 -#if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
 -static struct gpio_keys_button ek_buttons[] = {
--	{	/* BP1, "leftclic" */
--		.code		= BTN_LEFT,
--		.gpio		= AT91_PIN_PC5,
+-	{
+-		.gpio		= AT91_PIN_PA30,
+-		.code		= BTN_3,
+-		.desc		= "Button 3",
 -		.active_low	= 1,
--		.desc		= "left_click",
 -		.wakeup		= 1,
 -	},
--	{	/* BP2, "rightclic" */
--		.code		= BTN_RIGHT,
--		.gpio		= AT91_PIN_PC4,
+-	{
+-		.gpio		= AT91_PIN_PA31,
+-		.code		= BTN_4,
+-		.desc		= "Button 4",
 -		.active_low	= 1,
--		.desc		= "right_click",
 -		.wakeup		= 1,
 -	}
 -};
@@ -2581,10 +2457,10 @@ index d76680f2a209..000000000000
 -
 -static void __init ek_add_device_buttons(void)
 -{
--	at91_set_GPIO_periph(AT91_PIN_PC5, 1);	/* left button */
--	at91_set_deglitch(AT91_PIN_PC5, 1);
--	at91_set_GPIO_periph(AT91_PIN_PC4, 1);	/* right button */
--	at91_set_deglitch(AT91_PIN_PC4, 1);
+-	at91_set_gpio_input(AT91_PIN_PA30, 1);	/* btn3 */
+-	at91_set_deglitch(AT91_PIN_PA30, 1);
+-	at91_set_gpio_input(AT91_PIN_PA31, 1);	/* btn4 */
+-	at91_set_deglitch(AT91_PIN_PA31, 1);
 -
 -	platform_device_register(&ek_button_device);
 -}
@@ -2592,95 +2468,6 @@ index d76680f2a209..000000000000
 -static void __init ek_add_device_buttons(void) {}
 -#endif
 -
--
--/*
-- * AC97
-- * reset_pin is not connected: NRST
-- */
--static struct ac97c_platform_data ek_ac97_data = {
--	.reset_pin	= -EINVAL,
--};
--
--
--/*
-- * LEDs ... these could all be PWM-driven, for variable brightness
-- */
--static struct gpio_led ek_leds[] = {
--	{	/* "right" led, green, userled2 (could be driven by pwm2) */
--		.name			= "ds2",
--		.gpio			= AT91_PIN_PC29,
--		.active_low		= 1,
--		.default_trigger	= "nand-disk",
--	},
--	{	/* "power" led, yellow (could be driven by pwm0) */
--		.name			= "ds3",
--		.gpio			= AT91_PIN_PB7,
--		.default_trigger	= "heartbeat",
--	},
--#if !IS_ENABLED(CONFIG_LEDS_PWM)
--	{
--		.name			= "ds1",
--		.gpio			= AT91_PIN_PB8,
--		.active_low		= 1,
--		.default_trigger	= "none",
--	}
--#endif
--};
--
--/*
-- * PWM Leds
-- */
--static struct pwm_lookup pwm_lookup[] = {
--	PWM_LOOKUP("at91sam9rl-pwm", 1, "leds_pwm", "ds1",
--		   5000, PWM_POLARITY_INVERSED),
--};
--
--#if IS_ENABLED(CONFIG_LEDS_PWM)
--static struct led_pwm pwm_leds[] = {
--	{
--		.name = "ds1",
--		.max_brightness = 255,
--	},
--};
--
--static struct led_pwm_platform_data pwm_data = {
--	.num_leds       = ARRAY_SIZE(pwm_leds),
--	.leds           = pwm_leds,
--};
--
--static struct platform_device leds_pwm = {
--	.name   = "leds_pwm",
--	.id     = -1,
--	.dev    = {
--		.platform_data = &pwm_data,
--	},
--};
--#endif
--
--
--/*
-- * CAN
-- */
--static void sam9263ek_transceiver_switch(int on)
--{
--	if (on) {
--		at91_set_gpio_output(AT91_PIN_PA18, 1); /* CANRXEN */
--		at91_set_gpio_output(AT91_PIN_PA19, 0); /* CANRS */
--	} else {
--		at91_set_gpio_output(AT91_PIN_PA18, 0); /* CANRXEN */
--		at91_set_gpio_output(AT91_PIN_PA19, 1); /* CANRS */
--	}
--}
--
--static struct at91_can_data ek_can_data = {
--	.transceiver_switch = sam9263ek_transceiver_switch,
--};
--
--static struct platform_device *devices[] __initdata = {
--#if IS_ENABLED(CONFIG_LEDS_PWM)
--	&leds_pwm,
--#endif
--};
 -
 -static void __init ek_board_init(void)
 -{
@@ -2690,45 +2477,38 @@ index d76680f2a209..000000000000
 -	/* DBGU on ttyS0. (Rx & Tx only) */
 -	at91_register_uart(0, 0, 0);
 -
--	/* USART0 on ttyS1. (Rx, Tx, RTS, CTS) */
--	at91_register_uart(AT91SAM9263_ID_US0, 1, ATMEL_UART_CTS | ATMEL_UART_RTS);
+-	/* USART0 on ttyS1. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91SAM9260_ID_US0, 1, ATMEL_UART_CTS | ATMEL_UART_RTS
+-			   | ATMEL_UART_DTR | ATMEL_UART_DSR | ATMEL_UART_DCD
+-			   | ATMEL_UART_RI);
+-
+-	/* USART1 on ttyS2. (Rx, Tx, RTS, CTS) */
+-	at91_register_uart(AT91SAM9260_ID_US1, 2, ATMEL_UART_CTS | ATMEL_UART_RTS);
 -	at91_add_device_serial();
 -	/* USB Host */
 -	at91_add_device_usbh(&ek_usbh_data);
 -	/* USB Device */
 -	at91_add_device_udc(&ek_udc_data);
 -	/* SPI */
--	at91_set_gpio_output(AT91_PIN_PE20, 1);		/* select spi0 clock */
 -	at91_add_device_spi(ek_spi_devices, ARRAY_SIZE(ek_spi_devices));
--	/* Touchscreen */
--	ek_add_device_ts();
--	/* MMC */
--	at91_add_device_mci(1, &mci1_data);
--	/* Ethernet */
--	at91_add_device_eth(&ek_macb_data);
 -	/* NAND */
 -	ek_add_device_nand();
+-	/* Ethernet */
+-	at91_add_device_eth(&ek_macb_data);
+-	/* MMC */
+-	at91_add_device_mci(0, &ek_mci0_data);
 -	/* I2C */
 -	at91_add_device_i2c(ek_i2c_devices, ARRAY_SIZE(ek_i2c_devices));
--	/* LCD Controller */
--	at91_add_device_lcdc(&ek_lcdc_data);
--	/* Push Buttons */
--	ek_add_device_buttons();
--	/* AC97 */
--	at91_add_device_ac97(&ek_ac97_data);
+-	/* SSC (to AT73C213) */
+-	at73c213_set_clk(&at73c213_data);
+-	at91_add_device_ssc(AT91SAM9260_ID_SSC, ATMEL_SSC_TX);
 -	/* LEDs */
 -	at91_gpio_leds(ek_leds, ARRAY_SIZE(ek_leds));
--	pwm_add_table(pwm_lookup, ARRAY_SIZE(pwm_lookup));
--#if IS_ENABLED(CONFIG_LEDS_PWM)
--	at91_add_device_pwm(1 << AT91_PWM1);
--#endif
--	/* CAN */
--	at91_add_device_can(&ek_can_data);
--	/* Other platform devices */
--	platform_add_devices(devices, ARRAY_SIZE(devices));
+-	/* Push Buttons */
+-	ek_add_device_buttons();
 -}
 -
--MACHINE_START(AT91SAM9263EK, "Atmel AT91SAM9263-EK")
+-MACHINE_START(AT91SAM9260EK, "Atmel AT91SAM9260-EK")
 -	/* Maintainer: Atmel */
 -	.init_time	= at91_init_time,
 -	.map_io		= at91_map_io,
@@ -2737,6 +2517,951 @@ index d76680f2a209..000000000000
 -	.init_irq	= at91_init_irq_default,
 -	.init_machine	= ek_board_init,
 -MACHINE_END
+diff --git a/arch/arm/mach-at91/board-sam9g20ek.c b/arch/arm/mach-at91/board-sam9g20ek.c
+deleted file mode 100644
+index 49f075213451..000000000000
+--- a/arch/arm/mach-at91/board-sam9g20ek.c
++++ /dev/null
+@@ -1,429 +0,0 @@
+-/*
+- *  Copyright (C) 2005 SAN People
+- *  Copyright (C) 2008 Atmel
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/spi/spi.h>
+-#include <linux/spi/at73c213.h>
+-#include <linux/gpio_keys.h>
+-#include <linux/input.h>
+-#include <linux/clk.h>
+-#include <linux/regulator/machine.h>
+-#include <linux/regulator/fixed.h>
+-#include <linux/regulator/consumer.h>
+-
+-#include <linux/platform_data/at91_adc.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/at91sam9_smc.h>
+-#include <mach/system_rev.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "sam9_smc.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-/*
+- * board revision encoding
+- * bit 0:
+- * 	0 => 1 sd/mmc slot
+- * 	1 => 2 sd/mmc slots connectors (board from revision C)
+- */
+-#define HAVE_2MMC	(1 << 0)
+-static int inline ek_have_2mmc(void)
+-{
+-	return machine_is_at91sam9g20ek_2mmc() || (system_rev & HAVE_2MMC);
+-}
+-
+-
+-static void __init ek_init_early(void)
+-{
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-/*
+- * USB Host port
+- */
+-static struct at91_usbh_data __initdata ek_usbh_data = {
+-	.ports		= 2,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-/*
+- * USB Device port
+- */
+-static struct at91_udc_data __initdata ek_udc_data = {
+-	.vbus_pin	= AT91_PIN_PC5,
+-	.pullup_pin	= -EINVAL,		/* pull-up driven by UDC */
+-};
+-
+-
+-/*
+- * SPI devices.
+- */
+-static struct spi_board_info ek_spi_devices[] = {
+-#if !IS_ENABLED(CONFIG_MMC_ATMELMCI)
+-	{	/* DataFlash chip */
+-		.modalias	= "mtd_dataflash",
+-		.chip_select	= 1,
+-		.max_speed_hz	= 15 * 1000 * 1000,
+-		.bus_num	= 0,
+-	},
+-#if defined(CONFIG_MTD_AT91_DATAFLASH_CARD)
+-	{	/* DataFlash card */
+-		.modalias	= "mtd_dataflash",
+-		.chip_select	= 0,
+-		.max_speed_hz	= 15 * 1000 * 1000,
+-		.bus_num	= 0,
+-	},
+-#endif
+-#endif
+-};
+-
+-
+-/*
+- * MACB Ethernet device
+- */
+-static struct macb_platform_data __initdata ek_macb_data = {
+-	.phy_irq_pin	= AT91_PIN_PA7,
+-	.is_rmii	= 1,
+-};
+-
+-static void __init ek_add_device_macb(void)
+-{
+-	if (ek_have_2mmc())
+-		ek_macb_data.phy_irq_pin = AT91_PIN_PB0;
+-
+-	at91_add_device_eth(&ek_macb_data);
+-}
+-
+-/*
+- * NAND flash
+- */
+-static struct mtd_partition __initdata ek_nand_partition[] = {
+-	{
+-		.name   = "Bootstrap",
+-		.offset = 0,
+-		.size   = 4 * SZ_1M,
+-	},
+-	{
+-		.name	= "Partition 1",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= 60 * SZ_1M,
+-	},
+-	{
+-		.name	= "Partition 2",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= MTDPART_SIZ_FULL,
+-	},
+-};
+-
+-/* det_pin is not connected */
+-static struct atmel_nand_data __initdata ek_nand_data = {
+-	.ale		= 21,
+-	.cle		= 22,
+-	.rdy_pin	= AT91_PIN_PC13,
+-	.enable_pin	= AT91_PIN_PC14,
+-	.det_pin	= -EINVAL,
+-	.ecc_mode	= NAND_ECC_SOFT,
+-	.on_flash_bbt	= 1,
+-	.parts		= ek_nand_partition,
+-	.num_parts	= ARRAY_SIZE(ek_nand_partition),
+-};
+-
+-static struct sam9_smc_config __initdata ek_nand_smc_config = {
+-	.ncs_read_setup		= 0,
+-	.nrd_setup		= 2,
+-	.ncs_write_setup	= 0,
+-	.nwe_setup		= 2,
+-
+-	.ncs_read_pulse		= 4,
+-	.nrd_pulse		= 4,
+-	.ncs_write_pulse	= 4,
+-	.nwe_pulse		= 4,
+-
+-	.read_cycle		= 7,
+-	.write_cycle		= 7,
+-
+-	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE | AT91_SMC_EXNWMODE_DISABLE,
+-	.tdf_cycles		= 3,
+-};
+-
+-static void __init ek_add_device_nand(void)
+-{
+-	ek_nand_data.bus_width_16 = board_have_nand_16bit();
+-	/* setup bus-width (8 or 16) */
+-	if (ek_nand_data.bus_width_16)
+-		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
+-	else
+-		ek_nand_smc_config.mode |= AT91_SMC_DBW_8;
+-
+-	/* configure chip-select 3 (NAND) */
+-	sam9_smc_configure(0, 3, &ek_nand_smc_config);
+-
+-	at91_add_device_nand(&ek_nand_data);
+-}
+-
+-
+-/*
+- * MCI (SD/MMC)
+- * wp_pin and vcc_pin are not connected
+- */
+-static struct mci_platform_data __initdata ek_mmc_data = {
+-	.slot[1] = {
+-		.bus_width	= 4,
+-		.detect_pin	= AT91_PIN_PC9,
+-		.wp_pin		= -EINVAL,
+-	},
+-
+-};
+-
+-static void __init ek_add_device_mmc(void)
+-{
+-	if (ek_have_2mmc()) {
+-		ek_mmc_data.slot[0].bus_width = 4;
+-		ek_mmc_data.slot[0].detect_pin = AT91_PIN_PC2;
+-		ek_mmc_data.slot[0].wp_pin = -1;
+-	}
+-	at91_add_device_mci(0, &ek_mmc_data);
+-}
+-
+-/*
+- * LEDs
+- */
+-static struct gpio_led ek_leds[] = {
+-	{	/* "bottom" led, green, userled1 to be defined */
+-		.name			= "ds5",
+-		.gpio			= AT91_PIN_PA6,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-	},
+-	{	/* "power" led, yellow */
+-		.name			= "ds1",
+-		.gpio			= AT91_PIN_PA9,
+-		.default_trigger	= "heartbeat",
+-	}
+-};
+-
+-static void __init ek_add_device_gpio_leds(void)
+-{
+-	if (ek_have_2mmc()) {
+-		ek_leds[0].gpio = AT91_PIN_PB8;
+-		ek_leds[1].gpio = AT91_PIN_PB9;
+-	}
+-
+-	at91_gpio_leds(ek_leds, ARRAY_SIZE(ek_leds));
+-}
+-
+-/*
+- * GPIO Buttons
+- */
+-#if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
+-static struct gpio_keys_button ek_buttons[] = {
+-	{
+-		.gpio		= AT91_PIN_PA30,
+-		.code		= BTN_3,
+-		.desc		= "Button 3",
+-		.active_low	= 1,
+-		.wakeup		= 1,
+-	},
+-	{
+-		.gpio		= AT91_PIN_PA31,
+-		.code		= BTN_4,
+-		.desc		= "Button 4",
+-		.active_low	= 1,
+-		.wakeup		= 1,
+-	}
+-};
+-
+-static struct gpio_keys_platform_data ek_button_data = {
+-	.buttons	= ek_buttons,
+-	.nbuttons	= ARRAY_SIZE(ek_buttons),
+-};
+-
+-static struct platform_device ek_button_device = {
+-	.name		= "gpio-keys",
+-	.id		= -1,
+-	.num_resources	= 0,
+-	.dev		= {
+-		.platform_data	= &ek_button_data,
+-	}
+-};
+-
+-static void __init ek_add_device_buttons(void)
+-{
+-	at91_set_gpio_input(AT91_PIN_PA30, 1);	/* btn3 */
+-	at91_set_deglitch(AT91_PIN_PA30, 1);
+-	at91_set_gpio_input(AT91_PIN_PA31, 1);	/* btn4 */
+-	at91_set_deglitch(AT91_PIN_PA31, 1);
+-
+-	platform_device_register(&ek_button_device);
+-}
+-#else
+-static void __init ek_add_device_buttons(void) {}
+-#endif
+-
+-/*
+- * ADCs
+- */
+-
+-static struct at91_adc_data ek_adc_data = {
+-	.channels_used = BIT(0) | BIT(1) | BIT(2) | BIT(3),
+-	.use_external_triggers = true,
+-	.vref = 3300,
+-};
+-
+-#if defined(CONFIG_REGULATOR_FIXED_VOLTAGE) || defined(CONFIG_REGULATOR_FIXED_VOLTAGE_MODULE)
+-static struct regulator_consumer_supply ek_audio_consumer_supplies[] = {
+-	REGULATOR_SUPPLY("AVDD", "0-001b"),
+-	REGULATOR_SUPPLY("HPVDD", "0-001b"),
+-	REGULATOR_SUPPLY("DBVDD", "0-001b"),
+-	REGULATOR_SUPPLY("DCVDD", "0-001b"),
+-};
+-
+-static struct regulator_init_data ek_avdd_reg_init_data = {
+-	.constraints	= {
+-		.name	= "3V3",
+-		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+-	},
+-	.consumer_supplies = ek_audio_consumer_supplies,
+-	.num_consumer_supplies = ARRAY_SIZE(ek_audio_consumer_supplies),
+-};
+-
+-static struct fixed_voltage_config ek_vdd_pdata = {
+-	.supply_name	= "board-3V3",
+-	.microvolts	= 3300000,
+-	.gpio		= -EINVAL,
+-	.enabled_at_boot = 0,
+-	.init_data	= &ek_avdd_reg_init_data,
+-};
+-static struct platform_device ek_voltage_regulator = {
+-	.name		= "reg-fixed-voltage",
+-	.id		= -1,
+-	.num_resources	= 0,
+-	.dev		= {
+-		.platform_data	= &ek_vdd_pdata,
+-	},
+-};
+-static void __init ek_add_regulators(void)
+-{
+-	platform_device_register(&ek_voltage_regulator);
+-}
+-#else
+-static void __init ek_add_regulators(void) {}
+-#endif
+-
+-
+-static struct i2c_board_info __initdata ek_i2c_devices[] = {
+-        {
+-                I2C_BOARD_INFO("24c512", 0x50)
+-        },
+-        {
+-                I2C_BOARD_INFO("wm8731", 0x1b)
+-        },
+-};
+-
+-static struct platform_device sam9g20ek_audio_device = {
+-	.name   = "at91sam9g20ek-audio",
+-	.id     = -1,
+-};
+-
+-static void __init ek_add_device_audio(void)
+-{
+-	platform_device_register(&sam9g20ek_audio_device);
+-}
+-
+-
+-static void __init ek_board_init(void)
+-{
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART0 on ttyS1. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91SAM9260_ID_US0, 1, ATMEL_UART_CTS | ATMEL_UART_RTS
+-			   | ATMEL_UART_DTR | ATMEL_UART_DSR | ATMEL_UART_DCD
+-			   | ATMEL_UART_RI);
+-
+-	/* USART1 on ttyS2. (Rx, Tx, RTS, CTS) */
+-	at91_register_uart(AT91SAM9260_ID_US1, 2, ATMEL_UART_CTS | ATMEL_UART_RTS);
+-	at91_add_device_serial();
+-	/* USB Host */
+-	at91_add_device_usbh(&ek_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&ek_udc_data);
+-	/* SPI */
+-	at91_add_device_spi(ek_spi_devices, ARRAY_SIZE(ek_spi_devices));
+-	/* NAND */
+-	ek_add_device_nand();
+-	/* Ethernet */
+-	ek_add_device_macb();
+-	/* Regulators */
+-	ek_add_regulators();
+-	/* MMC */
+-	ek_add_device_mmc();
+-	/* I2C */
+-	at91_add_device_i2c(ek_i2c_devices, ARRAY_SIZE(ek_i2c_devices));
+-	/* LEDs */
+-	ek_add_device_gpio_leds();
+-	/* Push Buttons */
+-	ek_add_device_buttons();
+-	/* ADCs */
+-	at91_add_device_adc(&ek_adc_data);
+-	/* PCK0 provides MCLK to the WM8731 */
+-	at91_set_B_periph(AT91_PIN_PC1, 0);
+-	/* SSC (for WM8731) */
+-	at91_add_device_ssc(AT91SAM9260_ID_SSC, ATMEL_SSC_TX);
+-	ek_add_device_audio();
+-}
+-
+-MACHINE_START(AT91SAM9G20EK, "Atmel AT91SAM9G20-EK")
+-	/* Maintainer: Atmel */
+-	.init_time	= at91_init_time,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= ek_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= ek_board_init,
+-MACHINE_END
+-
+-MACHINE_START(AT91SAM9G20EK_2MMC, "Atmel AT91SAM9G20-EK 2 MMC Slot Mod")
+-	/* Maintainer: Atmel */
+-	.init_time	= at91_init_time,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= ek_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= ek_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-snapper9260.c b/arch/arm/mach-at91/board-snapper9260.c
+deleted file mode 100644
+index b4aff840a1a0..000000000000
+--- a/arch/arm/mach-at91/board-snapper9260.c
++++ /dev/null
+@@ -1,191 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-snapper9260.c
+- *
+- *  Copyright (C) 2010 Bluewater System Ltd
+- *
+- * Author: Andre Renaud <andre@bluewatersys.com>
+- * Author: Ryan Mallon
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- *
+- */
+-
+-#include <linux/init.h>
+-#include <linux/gpio.h>
+-#include <linux/platform_device.h>
+-#include <linux/spi/spi.h>
+-#include <linux/platform_data/pca953x.h>
+-
+-#include <asm/mach-types.h>
+-#include <asm/mach/arch.h>
+-
+-#include <mach/hardware.h>
+-#include <mach/at91sam9_smc.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "sam9_smc.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-#define SNAPPER9260_IO_EXP_GPIO(x)	(NR_BUILTIN_GPIO + (x))
+-
+-static void __init snapper9260_init_early(void)
+-{
+-	at91_initialize(18432000);
+-}
+-
+-static struct at91_usbh_data __initdata snapper9260_usbh_data = {
+-	.ports		= 2,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-static struct at91_udc_data __initdata snapper9260_udc_data = {
+-	.vbus_pin		= SNAPPER9260_IO_EXP_GPIO(5),
+-	.vbus_active_low	= 1,
+-	.vbus_polled		= 1,
+-	.pullup_pin		= -EINVAL,
+-};
+-
+-static struct macb_platform_data snapper9260_macb_data = {
+-	.phy_irq_pin	= -EINVAL,
+-	.is_rmii	= 1,
+-};
+-
+-static struct mtd_partition __initdata snapper9260_nand_partitions[] = {
+-	{
+-		.name	= "Preboot",
+-		.offset	= 0,
+-		.size	= SZ_128K,
+-	},
+-	{
+-		.name	= "Bootloader",
+-		.offset	= MTDPART_OFS_APPEND,
+-		.size	= SZ_256K,
+-	},
+-	{
+-		.name	= "Environment",
+-		.offset	= MTDPART_OFS_APPEND,
+-		.size	= SZ_128K,
+-	},
+-	{
+-		.name	= "Kernel",
+-		.offset	= MTDPART_OFS_APPEND,
+-		.size	= SZ_4M,
+-	},
+-	{
+-		.name	= "Filesystem",
+-		.offset	= MTDPART_OFS_APPEND,
+-		.size	= MTDPART_SIZ_FULL,
+-	},
+-};
+-
+-static struct atmel_nand_data __initdata snapper9260_nand_data = {
+-	.ale		= 21,
+-	.cle		= 22,
+-	.rdy_pin	= AT91_PIN_PC13,
+-	.parts		= snapper9260_nand_partitions,
+-	.num_parts	= ARRAY_SIZE(snapper9260_nand_partitions),
+-	.bus_width_16	= 0,
+-	.enable_pin	= -EINVAL,
+-	.det_pin	= -EINVAL,
+-	.ecc_mode	= NAND_ECC_SOFT,
+-};
+-
+-static struct sam9_smc_config __initdata snapper9260_nand_smc_config = {
+-	.ncs_read_setup		= 0,
+-	.nrd_setup		= 0,
+-	.ncs_write_setup	= 0,
+-	.nwe_setup		= 0,
+-
+-	.ncs_read_pulse		= 5,
+-	.nrd_pulse		= 2,
+-	.ncs_write_pulse	= 5,
+-	.nwe_pulse		= 2,
+-
+-	.read_cycle		= 7,
+-	.write_cycle		= 7,
+-
+-	.mode			= (AT91_SMC_READMODE | AT91_SMC_WRITEMODE |
+-				   AT91_SMC_EXNWMODE_DISABLE),
+-	.tdf_cycles		= 1,
+-};
+-
+-static struct pca953x_platform_data snapper9260_io_expander_data = {
+-	.gpio_base		= SNAPPER9260_IO_EXP_GPIO(0),
+-};
+-
+-static struct i2c_board_info __initdata snapper9260_i2c_devices[] = {
+-	{
+-		/* IO expander */
+-		I2C_BOARD_INFO("max7312", 0x28),
+-		.platform_data = &snapper9260_io_expander_data,
+-	},
+-	{
+-		/* Audio codec */
+-		I2C_BOARD_INFO("tlv320aic23", 0x1a),
+-	},
+-};
+-
+-static struct i2c_board_info __initdata snapper9260_i2c_isl1208 = {
+-		/* RTC */
+-		I2C_BOARD_INFO("isl1208", 0x6f),
+-};
+-
+-static void __init snapper9260_add_device_nand(void)
+-{
+-	at91_set_A_periph(AT91_PIN_PC14, 0);
+-	sam9_smc_configure(0, 3, &snapper9260_nand_smc_config);
+-	at91_add_device_nand(&snapper9260_nand_data);
+-}
+-
+-static void __init snapper9260_board_init(void)
+-{
+-	at91_register_devices();
+-
+-	at91_add_device_i2c(snapper9260_i2c_devices,
+-			    ARRAY_SIZE(snapper9260_i2c_devices));
+-
+-	snapper9260_i2c_isl1208.irq = gpio_to_irq(AT91_PIN_PA31);
+-	i2c_register_board_info(0, &snapper9260_i2c_isl1208, 1);
+-
+-	/* Debug on ttyS0 */
+-	at91_register_uart(0, 0, 0);
+-
+-	at91_register_uart(AT91SAM9260_ID_US0, 1,
+-			   ATMEL_UART_CTS | ATMEL_UART_RTS);
+-	at91_register_uart(AT91SAM9260_ID_US1, 2,
+-			   ATMEL_UART_CTS | ATMEL_UART_RTS);
+-	at91_register_uart(AT91SAM9260_ID_US2, 3, 0);
+-	at91_add_device_serial();
+-	at91_add_device_usbh(&snapper9260_usbh_data);
+-	at91_add_device_udc(&snapper9260_udc_data);
+-	at91_add_device_eth(&snapper9260_macb_data);
+-	at91_add_device_ssc(AT91SAM9260_ID_SSC, (ATMEL_SSC_TF | ATMEL_SSC_TK |
+-						 ATMEL_SSC_TD | ATMEL_SSC_RD));
+-	snapper9260_add_device_nand();
+-}
+-
+-MACHINE_START(SNAPPER_9260, "Bluewater Systems Snapper 9260/9G20 module")
+-	.init_time	= at91_init_time,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= snapper9260_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= snapper9260_board_init,
+-MACHINE_END
+-
+-
+diff --git a/arch/arm/mach-at91/board-stamp9g20.c b/arch/arm/mach-at91/board-stamp9g20.c
+deleted file mode 100644
+index e825641a1dee..000000000000
+--- a/arch/arm/mach-at91/board-stamp9g20.c
++++ /dev/null
+@@ -1,294 +0,0 @@
+-/*
+- *  Copyright (C) 2010 Christian Glindkamp <christian.glindkamp@taskit.de>
+- *                     taskit GmbH
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/mm.h>
+-#include <linux/platform_device.h>
+-#include <linux/gpio.h>
+-#include <linux/w1-gpio.h>
+-
+-#include <asm/mach-types.h>
+-#include <asm/mach/arch.h>
+-
+-#include <mach/at91sam9_smc.h>
+-#include <mach/hardware.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "sam9_smc.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-void __init stamp9g20_init_early(void)
+-{
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-/*
+- * NAND flash
+- */
+-static struct atmel_nand_data __initdata nand_data = {
+-	.ale		= 21,
+-	.cle		= 22,
+-	.rdy_pin	= AT91_PIN_PC13,
+-	.enable_pin	= AT91_PIN_PC14,
+-	.bus_width_16	= 0,
+-	.det_pin	= -EINVAL,
+-	.ecc_mode	= NAND_ECC_SOFT,
+-};
+-
+-static struct sam9_smc_config __initdata nand_smc_config = {
+-	.ncs_read_setup		= 0,
+-	.nrd_setup		= 2,
+-	.ncs_write_setup	= 0,
+-	.nwe_setup		= 2,
+-
+-	.ncs_read_pulse		= 4,
+-	.nrd_pulse		= 4,
+-	.ncs_write_pulse	= 4,
+-	.nwe_pulse		= 4,
+-
+-	.read_cycle		= 7,
+-	.write_cycle		= 7,
+-
+-	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE | AT91_SMC_EXNWMODE_DISABLE | AT91_SMC_DBW_8,
+-	.tdf_cycles		= 3,
+-};
+-
+-static void __init add_device_nand(void)
+-{
+-	/* configure chip-select 3 (NAND) */
+-	sam9_smc_configure(0, 3, &nand_smc_config);
+-
+-	at91_add_device_nand(&nand_data);
+-}
+-
+-
+-/*
+- * MCI (SD/MMC)
+- * det_pin, wp_pin and vcc_pin are not connected
+- */
+-static struct mci_platform_data __initdata mmc_data = {
+-	.slot[0] = {
+-		.bus_width	= 4,
+-		.detect_pin	= -1,
+-		.wp_pin		= -1,
+-	},
+-};
+-
+-
+-/*
+- * USB Host port
+- */
+-static struct at91_usbh_data __initdata usbh_data = {
+-	.ports		= 2,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-
+-/*
+- * USB Device port
+- */
+-static struct at91_udc_data __initdata portuxg20_udc_data = {
+-	.vbus_pin	= AT91_PIN_PC7,
+-	.pullup_pin	= -EINVAL,		/* pull-up driven by UDC */
+-};
+-
+-static struct at91_udc_data __initdata stamp9g20evb_udc_data = {
+-	.vbus_pin	= AT91_PIN_PA22,
+-	.pullup_pin	= -EINVAL,		/* pull-up driven by UDC */
+-};
+-
+-
+-/*
+- * MACB Ethernet device
+- */
+-static struct macb_platform_data __initdata macb_data = {
+-	.phy_irq_pin	= AT91_PIN_PA28,
+-	.is_rmii	= 1,
+-};
+-
+-
+-/*
+- * LEDs
+- */
+-static struct gpio_led portuxg20_leds[] = {
+-	{
+-		.name			= "LED2",
+-		.gpio			= AT91_PIN_PC5,
+-		.default_trigger	= "none",
+-	}, {
+-		.name			= "LED3",
+-		.gpio			= AT91_PIN_PC4,
+-		.default_trigger	= "none",
+-	}, {
+-		.name			= "LED4",
+-		.gpio			= AT91_PIN_PC10,
+-		.default_trigger	= "heartbeat",
+-	}
+-};
+-
+-static struct gpio_led stamp9g20evb_leds[] = {
+-	{
+-		.name			= "D8",
+-		.gpio			= AT91_PIN_PB18,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-	}, {
+-		.name			= "D9",
+-		.gpio			= AT91_PIN_PB19,
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-	}, {
+-		.name			= "D10",
+-		.gpio			= AT91_PIN_PB20,
+-		.active_low		= 1,
+-		.default_trigger	= "heartbeat",
+-	}
+-};
+-
+-
+-/*
+- * SPI devices
+- */
+-static struct spi_board_info portuxg20_spi_devices[] = {
+-	{
+-		.modalias	= "spidev",
+-		.chip_select	= 0,
+-		.max_speed_hz	= 1 * 1000 * 1000,
+-		.bus_num	= 0,
+-	}, {
+-		.modalias	= "spidev",
+-		.chip_select	= 0,
+-		.max_speed_hz	= 1 * 1000 * 1000,
+-		.bus_num	= 1,
+-	},
+-};
+-
+-
+-/*
+- * Dallas 1-Wire
+- */
+-static struct w1_gpio_platform_data w1_gpio_pdata = {
+-	.pin		= AT91_PIN_PA29,
+-	.is_open_drain	= 1,
+-	.ext_pullup_enable_pin	= -EINVAL,
+-};
+-
+-static struct platform_device w1_device = {
+-	.name			= "w1-gpio",
+-	.id			= -1,
+-	.dev.platform_data	= &w1_gpio_pdata,
+-};
+-
+-void add_w1(void)
+-{
+-	at91_set_GPIO_periph(w1_gpio_pdata.pin, 1);
+-	at91_set_multi_drive(w1_gpio_pdata.pin, 1);
+-	platform_device_register(&w1_device);
+-}
+-
+-
+-void __init stamp9g20_board_init(void)
+-{
+-	/* Serial */
+-	/* DGBU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-	at91_add_device_serial();
+-	/* NAND */
+-	add_device_nand();
+-	/* MMC */
+-	at91_add_device_mci(0, &mmc_data);
+-	/* W1 */
+-	add_w1();
+-}
+-
+-static void __init portuxg20_board_init(void)
+-{
+-	/* USART0 on ttyS1. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91SAM9260_ID_US0, 1, ATMEL_UART_CTS | ATMEL_UART_RTS
+-						| ATMEL_UART_DTR | ATMEL_UART_DSR
+-						| ATMEL_UART_DCD | ATMEL_UART_RI);
+-
+-	/* USART1 on ttyS2. (Rx, Tx, CTS, RTS) */
+-	at91_register_uart(AT91SAM9260_ID_US1, 2, ATMEL_UART_CTS | ATMEL_UART_RTS);
+-
+-	/* USART2 on ttyS3. (Rx, Tx, CTS, RTS) */
+-	at91_register_uart(AT91SAM9260_ID_US2, 3, ATMEL_UART_CTS | ATMEL_UART_RTS);
+-
+-	/* USART4 on ttyS5. (Rx, Tx only) */
+-	at91_register_uart(AT91SAM9260_ID_US4, 5, 0);
+-
+-	/* USART5 on ttyS6. (Rx, Tx only) */
+-	at91_register_uart(AT91SAM9260_ID_US5, 6, 0);
+-	stamp9g20_board_init();
+-	/* USB Host */
+-	at91_add_device_usbh(&usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&portuxg20_udc_data);
+-	/* Ethernet */
+-	at91_add_device_eth(&macb_data);
+-	/* I2C */
+-	at91_add_device_i2c(NULL, 0);
+-	/* SPI */
+-	at91_add_device_spi(portuxg20_spi_devices, ARRAY_SIZE(portuxg20_spi_devices));
+-	/* LEDs */
+-	at91_gpio_leds(portuxg20_leds, ARRAY_SIZE(portuxg20_leds));
+-}
+-
+-static void __init stamp9g20evb_board_init(void)
+-{
+-	/* USART0 on ttyS1. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91SAM9260_ID_US0, 1, ATMEL_UART_CTS | ATMEL_UART_RTS
+-						| ATMEL_UART_DTR | ATMEL_UART_DSR
+-						| ATMEL_UART_DCD | ATMEL_UART_RI);
+-	stamp9g20_board_init();
+-	/* USB Host */
+-	at91_add_device_usbh(&usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&stamp9g20evb_udc_data);
+-	/* Ethernet */
+-	at91_add_device_eth(&macb_data);
+-	/* I2C */
+-	at91_add_device_i2c(NULL, 0);
+-	/* LEDs */
+-	at91_gpio_leds(stamp9g20evb_leds, ARRAY_SIZE(stamp9g20evb_leds));
+-}
+-
+-MACHINE_START(PORTUXG20, "taskit PortuxG20")
+-	/* Maintainer: taskit GmbH */
+-	.init_time	= at91_init_time,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= stamp9g20_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= portuxg20_board_init,
+-MACHINE_END
+-
+-MACHINE_START(STAMP9G20, "taskit Stamp9G20")
+-	/* Maintainer: taskit GmbH */
+-	.init_time	= at91_init_time,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= stamp9g20_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= stamp9g20evb_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/stamp9g20.h b/arch/arm/mach-at91/stamp9g20.h
+deleted file mode 100644
+index f62c0abca4b4..000000000000
+--- a/arch/arm/mach-at91/stamp9g20.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-#ifndef __MACH_STAMP9G20_H
+-#define __MACH_STAMP9G20_H
+-
+-void stamp9g20_init_early(void);
+-void stamp9g20_board_init(void);
+-
+-#endif
 -- 
 2.1.3
 
