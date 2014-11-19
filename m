@@ -1,21 +1,19 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177AbaKSGyx (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Wed, 19 Nov 2014 01:54:53 -0500
-Received: from forward2m.mail.yandex.net ([37.140.138.2]:43542 "EHLO
-	forward2m.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755139AbaKSGyw (ORCPT
+	id S932086AbaKSG7Y (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 19 Nov 2014 01:59:24 -0500
+Received: from forward3m.mail.yandex.net ([37.140.138.3]:44460 "EHLO
+	forward3m.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754285AbaKSG7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 01:54:52 -0500
+	Wed, 19 Nov 2014 01:59:23 -0500
 From: Hanover Shriver <hanover.shriver@yandex.com>
 Envelope-From: hanover-shriver@yandex.com
-To: linux-kernel@vger.kernel.org, debian-user@lists.debian.org,
-        debian-vote@lists.debian.org, ubuntu-users@lists.ubuntu.com,
-        ubuntu-devel-discuss@lists.ubuntu.com
-Subject: Matthew Garrett disparages a text-console casino game for Linux/BSD/etc (which is free software)
+To: linux-kernel@vger.kernel.org
+Subject: Matthew Garrett disparages an opensource casino game for Linux/BSD/e
 MIME-Version: 1.0
-Message-Id: <1585311416378854@web29m.yandex.ru>
+Message-Id: <1591031416378933@web29m.yandex.ru>
 X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 19 Nov 2014 08:34:14 +0200
+Date: Wed, 19 Nov 2014 08:35:33 +0200
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
@@ -104,3 +102,4 @@ Do you see much of anything? Maybe some archives for debian.
 That's about the much of it. Anything else you can credit to the
 men who for some reason feel alligence to them and carry their name
 ("male feminists" - lol, if there ever could be such a thing in earnest).
+
