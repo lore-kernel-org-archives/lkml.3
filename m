@@ -1,55 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933665AbaKSVze (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:55:34 -0500
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:38299 "HELO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932991AbaKSVz3 (ORCPT
+	id S933216AbaKSVxm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:53:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933344AbaKSVEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:55:29 -0500
-From: Joe Stringer <joestringer@nicira.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, pshelar@nicira.com, dev@openvswitch.org
-Subject: [PATCHv3 net] openvswitch: Don't validate IPv6 label masks.
-Date: Wed, 19 Nov 2014 13:54:49 -0800
-Message-Id: <1416434089-47062-1-git-send-email-joestringer@nicira.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 19 Nov 2014 16:04:24 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.14 039/122] drm/radeon: make sure mode init is complete in bandwidth_update
+Date: Wed, 19 Nov 2014 12:51:29 -0800
+Message-Id: <20141119205210.055071365@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
+References: <20141119205208.812884198@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When userspace doesn't provide a mask, OVS datapath generates a fully
-unwildcarded mask for the flow by copying the flow and setting all bits
-in all fields. For IPv6 label, this creates a mask that matches on the
-upper 12 bits, causing the following error:
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-openvswitch: netlink: Invalid IPv6 flow label value (value=ffffffff, max=fffff)
+------------------
 
-This patch ignores the label validation check for masks, avoiding this
-error.
+From: Alex Deucher <alexander.deucher@amd.com>
 
-Signed-off-by: Joe Stringer <joestringer@nicira.com>
+commit 8efe82ca908400785253c8f0dfcf301e6bd93488 upstream.
+
+The power management code calls into the display code for
+certain things.  If certain power management sysfs attributes
+are called before the driver has finished initializing all of
+the hardware we can run into problems with uninitialized
+modesetting state.  Add a check to make sure modesetting
+init has completed to the bandwidth update callbacks to
+fix this.  Can be triggered by the tlp and laptop start
+up scripts depending on the timing.
+
+bugs:
+https://bugzilla.kernel.org/show_bug.cgi?id=83611
+https://bugs.freedesktop.org/show_bug.cgi?id=85771
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
-v3: Alternative approach.
-    Was "openvswitch: Fix mask generation for IPv6 labels."
-v2: OR lower 20 bits (upper 12 bits remain from earlier memdup)
----
- net/openvswitch/flow_netlink.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/cik.c       |    3 +++
+ drivers/gpu/drm/radeon/evergreen.c |    3 +++
+ drivers/gpu/drm/radeon/r100.c      |    3 +++
+ drivers/gpu/drm/radeon/rs600.c     |    3 +++
+ drivers/gpu/drm/radeon/rs690.c     |    3 +++
+ drivers/gpu/drm/radeon/rv515.c     |    3 +++
+ drivers/gpu/drm/radeon/si.c        |    3 +++
+ 7 files changed, 21 insertions(+)
 
-diff --git a/net/openvswitch/flow_netlink.c b/net/openvswitch/flow_netlink.c
-index fa4ec2e..089b195 100644
---- a/net/openvswitch/flow_netlink.c
-+++ b/net/openvswitch/flow_netlink.c
-@@ -690,7 +690,7 @@ static int ovs_key_from_nlattrs(struct sw_flow_match *match, u64 attrs,
- 			return -EINVAL;
- 		}
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -8893,6 +8893,9 @@ void dce8_bandwidth_update(struct radeon
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
  
--		if (ipv6_key->ipv6_label & htonl(0xFFF00000)) {
-+		if (!is_mask && ipv6_key->ipv6_label & htonl(0xFFF00000)) {
- 			OVS_NLERR("IPv6 flow label %x is out of range (max=%x).\n",
- 				  ntohl(ipv6_key->ipv6_label), (1 << 20) - 1);
- 			return -EINVAL;
--- 
-1.7.10.4
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	for (i = 0; i < rdev->num_crtc; i++) {
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -2362,6 +2362,9 @@ void evergreen_bandwidth_update(struct r
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	for (i = 0; i < rdev->num_crtc; i++) {
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -3219,6 +3219,9 @@ void r100_bandwidth_update(struct radeon
+ 	uint32_t pixel_bytes1 = 0;
+ 	uint32_t pixel_bytes2 = 0;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled) {
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -890,6 +890,9 @@ void rs600_bandwidth_update(struct radeo
+ 	u32 d1mode_priority_a_cnt, d2mode_priority_a_cnt;
+ 	/* FIXME: implement full support */
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+--- a/drivers/gpu/drm/radeon/rs690.c
++++ b/drivers/gpu/drm/radeon/rs690.c
+@@ -579,6 +579,9 @@ void rs690_bandwidth_update(struct radeo
+ 	u32 d1mode_priority_a_cnt, d1mode_priority_b_cnt;
+ 	u32 d2mode_priority_a_cnt, d2mode_priority_b_cnt;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+--- a/drivers/gpu/drm/radeon/rv515.c
++++ b/drivers/gpu/drm/radeon/rv515.c
+@@ -1276,6 +1276,9 @@ void rv515_bandwidth_update(struct radeo
+ 	struct drm_display_mode *mode0 = NULL;
+ 	struct drm_display_mode *mode1 = NULL;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -2227,6 +2227,9 @@ void dce6_bandwidth_update(struct radeon
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	for (i = 0; i < rdev->num_crtc; i++) {
+
 
