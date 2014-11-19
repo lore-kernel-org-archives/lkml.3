@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933252AbaKSVB2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:01:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56362 "EHLO
+	id S933238AbaKSVBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:01:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56366 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933193AbaKSVBT (ORCPT
+	with ESMTP id S933194AbaKSVBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:01:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Houcheng Lin <houcheng@gmail.com>, Florian Westphal <fw@strlen.de>,
+        Florian Westphal <fw@strlen.de>,
         Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.17 123/141] netfilter: nf_log: account for size of NLMSG_DONE attribute
-Date: Wed, 19 Nov 2014 12:52:26 -0800
-Message-Id: <20141119205154.749395089@linuxfoundation.org>
+Subject: [PATCH 3.17 124/141] netfilter: nfnetlink_log: fix maximum packet length logged to userspace
+Date: Wed, 19 Nov 2014 12:52:27 -0800
+Message-Id: <20141119205154.785060404@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -31,45 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Florian Westphal <fw@strlen.de>
 
-commit 9dfa1dfe4d5e5e66a991321ab08afe69759d797a upstream.
+commit c1e7dc91eed0ed1a51c9b814d648db18bf8fc6e9 upstream.
 
-We currently neither account for the nlattr size, nor do we consider
-the size of the trailing NLMSG_DONE when allocating nlmsg skb.
+don't try to queue payloads > 0xffff - NLA_HDRLEN, it does not work.
+The nla length includes the size of the nla struct, so anything larger
+results in u16 integer overflow.
 
-This can result in nflog to stop working, as __nfulnl_send() re-tries
-sending forever if it failed to append NLMSG_DONE (which will never
-work if buffer is not large enough).
+This patch is similar to
+9cefbbc9c8f9abe (netfilter: nfnetlink_queue: cleanup copy_range usage).
 
-Reported-by: Houcheng Lin <houcheng@gmail.com>
 Signed-off-by: Florian Westphal <fw@strlen.de>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nfnetlink_log.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/netfilter/nfnetlink_log.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
 --- a/net/netfilter/nfnetlink_log.c
 +++ b/net/netfilter/nfnetlink_log.c
-@@ -649,7 +649,8 @@ nfulnl_log_packet(struct net *net,
- 		+ nla_total_size(sizeof(u_int32_t))	/* gid */
- 		+ nla_total_size(plen)			/* prefix */
- 		+ nla_total_size(sizeof(struct nfulnl_msg_packet_hw))
--		+ nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp));
-+		+ nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp))
-+		+ nla_total_size(sizeof(struct nfgenmsg));	/* NLMSG_DONE */
+@@ -43,7 +43,8 @@
+ #define NFULNL_NLBUFSIZ_DEFAULT	NLMSG_GOODSIZE
+ #define NFULNL_TIMEOUT_DEFAULT 	100	/* every second */
+ #define NFULNL_QTHRESH_DEFAULT 	100	/* 100 packets */
+-#define NFULNL_COPY_RANGE_MAX	0xFFFF	/* max packet size is limited by 16-bit struct nfattr nfa_len field */
++/* max packet size is limited by 16-bit struct nfattr nfa_len field */
++#define NFULNL_COPY_RANGE_MAX	(0xFFFF - NLA_HDRLEN)
  
- 	if (in && skb_mac_header_was_set(skb)) {
- 		size +=   nla_total_size(skb->dev->hard_header_len)
-@@ -692,8 +693,7 @@ nfulnl_log_packet(struct net *net,
- 		goto unlock_and_release;
- 	}
+ #define PRINTR(x, args...)	do { if (net_ratelimit()) \
+ 				     printk(x, ## args); } while (0);
+@@ -252,6 +253,8 @@ nfulnl_set_mode(struct nfulnl_instance *
  
--	if (inst->skb &&
--	    size > skb_tailroom(inst->skb) - sizeof(struct nfgenmsg)) {
-+	if (inst->skb && size > skb_tailroom(inst->skb)) {
- 		/* either the queue len is too high or we don't have
- 		 * enough room in the skb left. flush to userspace. */
- 		__nfulnl_flush(inst);
+ 	case NFULNL_COPY_PACKET:
+ 		inst->copy_mode = mode;
++		if (range == 0)
++			range = NFULNL_COPY_RANGE_MAX;
+ 		inst->copy_range = min_t(unsigned int,
+ 					 range, NFULNL_COPY_RANGE_MAX);
+ 		break;
+@@ -679,8 +682,7 @@ nfulnl_log_packet(struct net *net,
+ 		break;
+ 
+ 	case NFULNL_COPY_PACKET:
+-		if (inst->copy_range == 0
+-		    || inst->copy_range > skb->len)
++		if (inst->copy_range > skb->len)
+ 			data_len = skb->len;
+ 		else
+ 			data_len = inst->copy_range;
 
 
