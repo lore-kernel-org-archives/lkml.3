@@ -1,126 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425AbaKSJIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 04:08:18 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:41115 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065AbaKSJIM convert rfc822-to-8bit (ORCPT
+	id S1754273AbaKSJOt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 04:14:49 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:52480 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaKSJOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 04:08:12 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141119090222.GU27002@pengutronix.de>
-References: <1360738983-22436-1-git-send-email-gnurou@gmail.com>
- <1360738983-22436-3-git-send-email-gnurou@gmail.com> <20141117090915.GE27002@pengutronix.de>
- <CAAVeFuKzP0ADix8TxC31ohb3ZmnEVmNcO5kgzhZ3DcwAhTq=-Q@mail.gmail.com>
- <20141119084432.GT27002@pengutronix.de> <CAAVeFuLtQoxt_D_TaRQc49Sh0FZTg=q4y5QorZ7OUK+qPE0CbQ@mail.gmail.com>
- <20141119090222.GU27002@pengutronix.de>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 19 Nov 2014 18:07:50 +0900
-Message-ID: <CAAVeFu+zc6tiM-SvwQ3mQmkMNdY+1+Ysi0F2eThyCjziKVwpOQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4] gpiolib: use const parameters when possible
-To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Nov 2014 04:14:45 -0500
+Date: Wed, 19 Nov 2014 10:14:36 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH net] virtio-net: validate features during probe
+Message-ID: <20141119101436.3b72989c.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141119085939.GB24827@redhat.com>
+References: <1416378939-28821-1-git-send-email-jasowang@redhat.com>
+	<20141119085939.GB24827@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111909-0041-0000-0000-0000022C79A9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On Wed, Nov 19, 2014 at 6:02 PM, Uwe Kleine-König
-<u.kleine-koenig@pengutronix.de> wrote:
-> Hello Alexandre,
->
-> On Wed, Nov 19, 2014 at 05:57:46PM +0900, Alexandre Courbot wrote:
->> On Wed, Nov 19, 2014 at 5:44 PM, Uwe Kleine-König
->> <u.kleine-koenig@pengutronix.de> wrote:
->> > Hello Alexandre,
->> >
->> > On Wed, Nov 19, 2014 at 05:33:42PM +0900, Alexandre Courbot wrote:
->> >> On Mon, Nov 17, 2014 at 6:09 PM, Uwe Kleine-König
->> >> <u.kleine-koenig@pengutronix.de> wrote:
->> >> > Hello,
->> >> >
->> >> > On Wed, Feb 13, 2013 at 04:03:00PM +0900, Alexandre Courbot wrote:
->> >> >> From: Alexandre Courbot <acourbot@nvidia.com>
->> >> >>
->> >> >> Constify descriptor parameter of gpiod_* functions for those that
->> >> >> should obviously not modify it. This includes value or direction get,
->> >> >> cansleep, and IRQ number query.
->> >> >>
->> >> >> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> >> > This patch is applied as def634338d3ffb32fbe9b0a2d70cc24ef909cd4f since
->> >> > v3.9-rc2.
->> >> >
->> >> >>  drivers/gpio/gpiolib.c | 29 ++++++++++++++++-------------
->> >> >>  1 file changed, 16 insertions(+), 13 deletions(-)
->> >> >>
->> >> >> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
->> >> >> index 8a2cf9c..ad6df6b 100644
->> >> >> --- a/drivers/gpio/gpiolib.c
->> >> >> +++ b/drivers/gpio/gpiolib.c
->> >> >> @@ -207,7 +208,7 @@ static int gpiochip_find_base(int ngpio)
->> >> >>  }
->> >> >>
->> >> >>  /* caller ensures gpio is valid and requested, chip->get_direction may sleep  */
->> >> >> -static int gpiod_get_direction(struct gpio_desc *desc)
->> >> >> +static int gpiod_get_direction(const struct gpio_desc *desc)
->> >> >>  {
->> >> >>       struct gpio_chip        *chip;
->> >> >>       unsigned                offset;
->> >> >> @@ -223,11 +224,13 @@ static int gpiod_get_direction(struct gpio_desc *desc)
->> >> >>       if (status > 0) {
->> >> >>               /* GPIOF_DIR_IN, or other positive */
->> >> >>               status = 1;
->> >> >> -             clear_bit(FLAG_IS_OUT, &desc->flags);
->> >> >> +             /* FLAG_IS_OUT is just a cache of the result of get_direction(),
->> >> >> +              * so it does not affect constness per se */
->> >> >> +             clear_bit(FLAG_IS_OUT, &((struct gpio_desc *)desc)->flags);
->> >> > I think this is worse than not having gpiod_get_direction take a const
->> >> > descriptor.
->> >>
->> >> Yeah, this kind of sucks but ultimately gpiod_get_direction() is
->> >> without side-effect to the caller and the const parameter helps
->> >> highlighting that fact.
->> > Does that mean you want to keep the const and take the risk that it
->> > might introduce some hard to debug problem when the compiler changes its
->> > optimisation strategies? I hope you don't.
->>
->> Nope, I would like to keep that const but correctness is more
->> important than prototype aesthetics. I will fix that.
-> Fine.
->
->>
->> >> > I don't know an example for this particular case where this could break,
->> >> > but usually casting away a const is bad and can break in various ways.
->> >> >
->> >> > Maybe even drop the public function gpiod_get_direction completely.
->> >> > As of next-20141114 there are only two users of this function (apart
->> >> > from drivers/gpio/gpiolib*) and both are wrong (as discussed in
->> >> > http://thread.gmane.org/gmane.linux.serial/16808/focus=4783).
->> >>
->> >> Or maybe gpiod_direction_*() should register the last set direction to
->> >> be used by gpiod_get_direction() if the controller does not implement
->> >> the get_direction op? On the other hand callers can also track the
->> >> direction themselves (since they presumably set it), so this function
->> >> is really only useful for users who want to read the *hardware* state
->> >> of a GPIO. Which might still be a useful feature?
->> > I think it's useful to be able to check how a given gpio is configured
->> > in hardware. So you really want to look into the register and not cache
->> > the direction in gpiod_direction_*.
->> > And I'd say having /sys/kernel/debug/gpio is good enough. So IMHO there
->> > is no reason to hide gpiod_get_direction from general misuse.
->>
->> Mmm so are you suggesting that we should keep gpiod_get_direction() in the end?
-> I'd make gpiod_get_direction static and only use it to fill in
-> /sys/kernel/debug/gpio.
+On Wed, 19 Nov 2014 10:59:39 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-That's very tempting. I see only atmel_serial.c using this function,
-and there is no gpio_get_direction() declared anywhere so no user of
-this either. I'm not sure what I was thinking when I decided to export
-it?
 
-So yeah, if you can fix the current users, I agree with your proposal.
+> +bool __virtnet_fail_on_feature(struct virtio_device *vdev, unsigned int fbit,
+> +			       const char *fname)
+> +{
+> +	if (!virtio_has_feature(vdev, fbit))
+> +		return false;
+> +
+> +        dev_err(&dev->dev, "missing requirements for feature bit %d: %s\n",
+> +		fbit, fname);
+
+I'd like the message to point out that this is a hypervisor problem: I
+can imagine that a user would be stumped about what to do about this.
+And printing what requirements are missing would probably be helpful to
+someone trying to fix the hypervisor.
+
+> +
+> +	return true;
+> +}
+> +
+>
+
