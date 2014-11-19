@@ -1,288 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026AbaKSO7k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 09:59:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46313 "EHLO mail.kernel.org"
+	id S1756039AbaKSO7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 09:59:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49665 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755950AbaKSO7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:59:13 -0500
-Date: Tue, 18 Nov 2014 18:13:19 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: kan.liang@intel.com
-Cc: jolsa@redhat.com, namhyung@kernel.org, linux-kernel@vger.kernel.org,
-        ak@linux.intel.com
-Subject: Re: [PATCH V4 3/3] perf tool: Add sort key symoff for perf diff
-Message-ID: <20141118211319.GD3790@kernel.org>
-References: <1416328700-1836-1-git-send-email-kan.liang@intel.com>
- <1416328700-1836-4-git-send-email-kan.liang@intel.com>
+	id S1755047AbaKSO7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 09:59:46 -0500
+Date: Wed, 19 Nov 2014 09:59:02 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141119145902.GA13387@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Don Zickus <dzickus@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	the arch/x86 maintainers <x86@kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>
+References: <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
+ <20141118020959.GA2091@redhat.com>
+ <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
+ <20141118023930.GA2871@redhat.com>
+ <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
+ <20141118145234.GA7487@redhat.com>
+ <alpine.DEB.2.11.1411181914020.3909@nanos>
+ <20141118215540.GD35311@redhat.com>
+ <20141119021902.GA14216@redhat.com>
+ <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416328700-1836-4-git-send-email-kan.liang@intel.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 18, 2014 at 11:38:20AM -0500, kan.liang@intel.com escreveu:
-> From: Kan Liang <kan.liang@intel.com>
-> 
-> Sometime, especially debugging scaling issue, the function level diff
-> may be high granularity. The user may want to do deeper diff analysis
-> for some cache or lock issue. The "symoff" key can let the user sort
-> differential profile by ips. This feature should only work when the
-> perf.data comes from same binary.
+On Tue, Nov 18, 2014 at 08:40:55PM -0800, Linus Torvalds wrote:
+ > On Tue, Nov 18, 2014 at 6:19 PM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > NMI watchdog: BUG: soft lockup - CPU#2 stuck for 21s! [trinity-c42:31480]
+ > > CPU: 2 PID: 31480 Comm: trinity-c42 Not tainted 3.18.0-rc5+ #91 [loadavg: 174.61 150.35 148.64 9/411 32140]
+ > > RIP: 0010:[<ffffffff8a1798b4>]  [<ffffffff8a1798b4>] context_tracking_user_enter+0xa4/0x190
+ > > Call Trace:
+ > >  [<ffffffff8a012fc5>] syscall_trace_leave+0xa5/0x160
+ > >  [<ffffffff8a7d8624>] int_check_syscall_exit_work+0x34/0x3d
+ > 
+ > Hmm, if we are getting soft-lockups here, maybe it suggest too much exit-work.
+ > 
+ > Some TIF_NOHZ loop, perhaps? You have nohz on, don't you?
+ > 
+ > That makes me wonder: does the problem go away if you disable NOHZ?
 
-So, to avoid having people scratching heads, and since we have the
-build-id for both perf.data files, hence for both binaries being
-compared, can we check the build ids and either refuse to do the diff or
-print a big warning about different binaries being compared?
+Aparently not.
 
-- Arnaldo
- 
-> Here is an example.
-> perf diff -s symoff  v1_1_8_1perf.data v1_1_8_2perf.data
-> 
->  Event 'cycles'
-> 
->  Baseline    Delta  Symbol + Offset
->  ........  .......  ...............................
-> 
->      0.00%           __update_cpu_load+0xcc
->                      _raw_spin_lock_irqsave+0x24
->                      _raw_spin_unlock_irqrestore+0xa
->      0.00%           apic_timer_interrupt+0x0
->                      apic_timer_interrupt+0x68
->                      check_preempt_curr+0x1c
->      0.00%           f1+0x20
->      0.03%   +0.03%  f2+0x11
->      0.03%   +0.01%  f2+0x16
->      0.05%           f2+0x1b
->      0.04%   -0.02%  f2+0x20
->      0.03%           f2+0x25
->      0.17%   +0.11%  f2+0x29
->      0.15%           f2+0x2d
->                      f2+0x30
->      0.37%   +0.02%  f3+0x0
->      0.18%   +0.03%  f3+0x1
->      0.01%           f3+0x4
->      0.18%   +0.04%  f3+0xb
->     12.31%   +0.11%  f3+0xd
->      0.03%           f3+0x10
->      0.80%   -0.12%  f3+0x13
->      6.66%   +0.09%  f3+0x17
->      1.81%   -0.36%  f3+0x1b
->      6.35%   +0.24%  f3+0x1d
->      1.42%   -0.22%  f3+0x21
->     66.83%   +0.22%  f3+0x25
->      1.29%   -0.12%  f3+0x27
->      1.22%   -0.04%  f3+0x28
->      0.00%           load_balance+0x96
->      0.00%           native_apic_mem_write+0x0
->      0.00%           native_write_msr_safe+0xa
->      0.00%           native_write_msr_safe+0xd
->      0.00%           rb_erase+0x381
->                      resched_curr+0x5
->                      restore_args+0x4
->      0.00%           run_timer_softirq+0x29f
->                      select_task_rq_fair+0x9
->      0.00%           select_task_rq_fair+0x1d9
->                      task_tick_fair+0x46
->      0.00%           task_tick_fair+0x1ce
->                      task_waking_fair+0x27
->      0.00%           try_to_wake_up+0x158
->                      update_cfs_rq_blocked_load+0x99
->      0.00%           update_cpu_load_active+0x3b
->                      update_group_capacity+0x150
->                      update_wall_time+0x3c6
-> 
-> Signed-off-by: Kan Liang <kan.liang@intel.com>
-> ---
->  tools/perf/Documentation/perf-diff.txt |  8 +++-
->  tools/perf/builtin-diff.c              |  2 +-
->  tools/perf/util/hist.c                 |  5 ++-
->  tools/perf/util/hist.h                 |  1 +
->  tools/perf/util/sort.c                 | 67 ++++++++++++++++++++++++++++++++++
->  tools/perf/util/sort.h                 |  2 +
->  6 files changed, 80 insertions(+), 5 deletions(-)
-> 
-> diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-> index e463caa..9e13911 100644
-> --- a/tools/perf/Documentation/perf-diff.txt
-> +++ b/tools/perf/Documentation/perf-diff.txt
-> @@ -50,8 +50,12 @@ OPTIONS
->  
->  -s::
->  --sort=::
-> -	Sort by key(s): pid, comm, dso, symbol, cpu, parent, srcline.
-> -	Please see description of --sort in the perf-report man page.
-> +	Sort by key(s): pid, comm, dso, symbol, cpu, parent, srcline, symoff.
-> +
-> +	- symoff: exact symbol +  offset address executed at the time of sample.
-> +	(for same binary compare)
-> +
-> +	For other keys, please see description of --sort in the perf-report man page.
->  
->  -t::
->  --field-separator=::
-> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-> index 1ce425d..03a4001 100644
-> --- a/tools/perf/builtin-diff.c
-> +++ b/tools/perf/builtin-diff.c
-> @@ -744,7 +744,7 @@ static const struct option options[] = {
->  	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
->  		   "only consider these symbols"),
->  	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
-> -		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
-> +		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, symoff, ..."
->  		   " Please refer the man page for the complete list."),
->  	OPT_STRING('t', "field-separator", &symbol_conf.field_sep, "separator",
->  		   "separator for columns, no spaces will be added between "
-> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-> index 6e88b9e..3d8a71b 100644
-> --- a/tools/perf/util/hist.c
-> +++ b/tools/perf/util/hist.c
-> @@ -67,13 +67,14 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
->  		symlen = h->ms.sym->namelen + 4;
->  		if (verbose)
->  			symlen += BITS_PER_LONG / 4 + 2 + 3;
-> -		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
->  	} else {
->  		symlen = unresolved_col_width + 4 + 2;
-> -		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
->  		hists__set_unres_dso_col_len(hists, HISTC_DSO);
->  	}
->  
-> +	hists__new_col_len(hists, HISTC_SYMBOL, symlen);
-> +	hists__new_col_len(hists, HISTC_SYMOFF, symlen);
-> +
->  	len = thread__comm_len(h->thread);
->  	if (hists__new_col_len(hists, HISTC_COMM, len))
->  		hists__set_col_len(hists, HISTC_THREAD, len + 6);
-> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-> index d0ef9a1..874b203 100644
-> --- a/tools/perf/util/hist.h
-> +++ b/tools/perf/util/hist.h
-> @@ -24,6 +24,7 @@ enum hist_filter {
->  
->  enum hist_column {
->  	HISTC_SYMBOL,
-> +	HISTC_SYMOFF,
->  	HISTC_DSO,
->  	HISTC_THREAD,
->  	HISTC_COMM,
-> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-> index bea2e07..49ad000 100644
-> --- a/tools/perf/util/sort.c
-> +++ b/tools/perf/util/sort.c
-> @@ -280,6 +280,65 @@ struct sort_entry sort_sym = {
->  	.se_width_idx	= HISTC_SYMBOL,
->  };
->  
-> +static int64_t
-> +sort__symoff_cmp(struct hist_entry *left, struct hist_entry *right)
-> +{
-> +	return _sort__addr_cmp(left->ip, right->ip);
-> +}
-> +
-> +static int64_t
-> +sort__symoff_collapse(struct hist_entry *left, struct hist_entry *right)
-> +{
-> +	struct symbol *sym_l = left->ms.sym;
-> +	struct symbol *sym_r = right->ms.sym;
-> +	u64 symoff_l, symoff_r;
-> +	int64_t ret;
-> +
-> +	if (!sym_l || !sym_r)
-> +		return cmp_null(sym_l, sym_r);
-> +
-> +	ret = strcmp(sym_r->name, sym_l->name);
-> +	if (ret)
-> +		return ret;
-> +
-> +
-> +	symoff_l = left->ip - sym_l->start;
-> +	symoff_r = right->ip - sym_r->start;
-> +
-> +	return (int64_t)(symoff_r - symoff_l);
-> +}
-> +
-> +static int hist_entry__symoff_snprintf(struct hist_entry *he, char *bf,
-> +				    size_t size, unsigned int width)
-> +{
-> +	struct map *map = he->ms.map;
-> +	struct symbol *sym = he->ms.sym;
-> +	size_t ret = 0;
-> +
-> +	if (sym) {
-> +		ret += repsep_snprintf(bf + ret, size - ret, "%s", sym->name);
-> +		ret += repsep_snprintf(bf + ret, size - ret, "+0x%llx",
-> +				       he->ip - sym->start);
-> +
-> +	} else {
-> +		size_t len = BITS_PER_LONG / 4;
-> +
-> +		ret += repsep_snprintf(bf + ret, size - ret, "%-#.*llx", len,
-> +				       map ? map->unmap_ip(map, he->ip) : he->ip);
-> +	}
-> +
-> +	ret += repsep_snprintf(bf + ret, size - ret, "%-*s",
-> +			       width - ret, "");
-> +	return ret;
-> +}
-> +
-> +struct sort_entry sort_symoff = {
-> +	.se_header	= "Symbol + Offset",
-> +	.se_cmp		= sort__symoff_cmp,
-> +	.se_snprintf	= hist_entry__symoff_snprintf,
-> +	.se_width_idx	= HISTC_SYMOFF,
-> +};
-> +
->  /* --sort srcline */
->  
->  static int64_t
-> @@ -1172,6 +1231,7 @@ static struct sort_dimension common_sort_dimensions[] = {
->  	DIM(SORT_COMM, "comm", sort_comm),
->  	DIM(SORT_DSO, "dso", sort_dso),
->  	DIM(SORT_SYM, "symbol", sort_sym),
-> +	DIM(SORT_SYMOFF, "symoff", sort_symoff),
->  	DIM(SORT_PARENT, "parent", sort_parent),
->  	DIM(SORT_CPU, "cpu", sort_cpu),
->  	DIM(SORT_SRCLINE, "srcline", sort_srcline),
-> @@ -1443,6 +1503,13 @@ int sort_dimension__add(const char *tok)
->  
->  		} else if (sd->entry == &sort_dso) {
->  			sort__has_dso = 1;
-> +		} else if (sd->entry == &sort_symoff) {
-> +			/*
-> +			 * For symoff sort key, not only the offset but also the
-> +			 * symbol name should be compared.
-> +			 */
-> +			if (sort__mode == SORT_MODE__DIFF)
-> +				sd->entry->se_collapse = sort__symoff_collapse;
->  		}
->  
->  		return __sort_dimension__add(sd);
-> diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-> index c03e4ff..ea0122f 100644
-> --- a/tools/perf/util/sort.h
-> +++ b/tools/perf/util/sort.h
-> @@ -38,6 +38,7 @@ extern enum sort_mode sort__mode;
->  extern struct sort_entry sort_comm;
->  extern struct sort_entry sort_dso;
->  extern struct sort_entry sort_sym;
-> +extern struct sort_entry sort_symoff;
->  extern struct sort_entry sort_parent;
->  extern struct sort_entry sort_dso_from;
->  extern struct sort_entry sort_dso_to;
-> @@ -161,6 +162,7 @@ enum sort_type {
->  	SORT_COMM,
->  	SORT_DSO,
->  	SORT_SYM,
-> +	SORT_SYMOFF,
->  	SORT_PARENT,
->  	SORT_CPU,
->  	SORT_SRCLINE,
-> -- 
-> 1.8.3.2
+NMI watchdog: BUG: soft lockup - CPU#3 stuck for 22s! [trinity-c75:25175]
+CPU: 3 PID: 25175 Comm: trinity-c75 Not tainted 3.18.0-rc5+ #92 [loadavg: 168.72 151.72 150.38 9/410 27945]
+task: ffff8800364e44d0 ti: ffff880192d2c000 task.ti: ffff880192d2c000
+RIP: 0010:[<ffffffff94175be7>]  [<ffffffff94175be7>] context_tracking_user_exit+0x57/0x120
+RSP: 0018:ffff880192d2fee8  EFLAGS: 00000246
+RAX: 0000000000000000 RBX: 0000000100000046 RCX: 000000336ee35b47
+RDX: 0000000000000001 RSI: ffffffff94ac1e84 RDI: ffffffff94a93725
+RBP: ffff880192d2fef8 R08: 00007f9b74d0b740 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000246 R12: ffffffff940d8503
+R13: ffff880192d2fe98 R14: ffffffff943884e7 R15: ffff880192d2fe48
+FS:  00007f9b74d0b740(0000) GS:ffff880244600000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 000000336f1b7740 CR3: 0000000229a95000 CR4: 00000000001407e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+Stack:
+ ffff880192d30000 0000000000080000 ffff880192d2ff78 ffffffff94012c25
+ 00007f9b747a5000 00007f9b747a5068 0000000000000000 0000000000000000
+ 0000000000000000 ffffffff9437b3be 0000000000000000 0000000000000000
+Call Trace:
+ [<ffffffff94012c25>] syscall_trace_enter_phase1+0x125/0x1a0
+ [<ffffffff9437b3be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff947d41bf>] tracesys+0x14/0x4a
+Code: 42 fd ff 48 c7 c7 7a 1e ac 94 e8 25 29 21 00 65 8b 04 25 34 f7 1c 00 83 f8 01 74 28 f6 c7 02 74 13 0f 1f 00 e8 bb 43 fd ff 53 9d <5b> 41 5c 5d c3 0f 1f 40 00 53 9d e8 89 42 fd ff eb ee 0f 1f 80 
+sending NMI to other CPUs:
+NMI backtrace for cpu 1
+CPU: 1 PID: 25164 Comm: trinity-c64 Not tainted 3.18.0-rc5+ #92 [loadavg: 168.72 151.72 150.38 9/410 27945]
+task: ffff88011600dbc0 ti: ffff8801a99a4000 task.ti: ffff8801a99a4000
+RIP: 0010:[<ffffffff940fb71e>]  [<ffffffff940fb71e>] generic_exec_single+0xee/0x1a0
+RSP: 0018:ffff8801a99a7d18  EFLAGS: 00000202
+RAX: 0000000000000000 RBX: ffff8801a99a7d20 RCX: 0000000000000038
+RDX: 00000000000000ff RSI: 0000000000000008 RDI: 0000000000000000
+RBP: ffff8801a99a7d78 R08: ffff880242b57ce0 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000003
+R13: 0000000000000001 R14: ffff880083c28948 R15: ffffffff94166aa0
+FS:  00007f9b74d0b740(0000) GS:ffff880244200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000001 CR3: 00000001d8611000 CR4: 00000000001407e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+Stack:
+ ffff8801a99a7d28 0000000000000000 ffffffff94166aa0 ffff880083c28948
+ 0000000000000003 00000000e38f9aac ffff880083c28948 00000000ffffffff
+ 0000000000000003 ffffffff94166aa0 ffff880083c28948 0000000000000001
+Call Trace:
+ [<ffffffff94166aa0>] ? perf_swevent_add+0x120/0x120
+ [<ffffffff94166aa0>] ? perf_swevent_add+0x120/0x120
+ [<ffffffff940fb89a>] smp_call_function_single+0x6a/0xe0
+ [<ffffffff940a172b>] ? preempt_count_sub+0x7b/0x100
+ [<ffffffff941671aa>] perf_event_read+0xca/0xd0
+ [<ffffffff94167240>] perf_event_read_value+0x90/0xe0
+ [<ffffffff941689c6>] perf_read+0x226/0x370
+ [<ffffffff942fbfb7>] ? security_file_permission+0x87/0xa0
+ [<ffffffff941eafff>] vfs_read+0x9f/0x180
+ [<ffffffff941ebbd8>] SyS_read+0x58/0xd0
+ [<ffffffff947d42c9>] tracesys_phase2+0xd4/0xd9
+Code: 48 89 de 48 03 14 c5 20 65 d1 94 48 89 df e8 8a 4b 28 00 84 c0 75 46 45 85 ed 74 11 f6 43 18 01 74 0b 0f 1f 00 f3 90 f6 43 18 01 <75> f8 31 c0 48 8b 4d c8 65 48 33 0c 25 28 00 00 00 0f 85 8e 00 
+NMI backtrace for cpu 0
+INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 35.055 msecs
+CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.18.0-rc5+ #92 [loadavg: 168.72 151.72 150.38 11/410 27945]
+task: ffffffff94c164c0 ti: ffffffff94c00000 task.ti: ffffffff94c00000
+RIP: 0010:[<ffffffff943dd415>]  [<ffffffff943dd415>] intel_idle+0xd5/0x180
+RSP: 0018:ffffffff94c03e28  EFLAGS: 00000046
+RAX: 0000000000000032 RBX: 0000000000000010 RCX: 0000000000000001
+RDX: 0000000000000000 RSI: ffffffff94c03fd8 RDI: 0000000000000000
+RBP: ffffffff94c03e58 R08: 000000008baf8b86 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000005
+R13: 0000000000000032 R14: 0000000000000004 R15: ffffffff94c00000
+FS:  0000000000000000(0000) GS:ffff880244000000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f162e060000 CR3: 0000000014c11000 CR4: 00000000001407f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+Stack:
+ 0000000094c03e58 5955c5b31ad5e8cf ffffe8fffee031a8 0000000000000005
+ ffffffff94ca9dc0 0000000000000000 ffffffff94c03ea8 ffffffff94661f05
+ 00001cb7dcf6fd93 ffffffff94ca9f90 ffffffff94c00000 ffffffff94d18870
+Call[31557.908912] NMI backtrace for cpu 2
+INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 68.178 msecs
+CPU: 2 PID: 0 Comm: swapper/2 Not tainted 3.18.0-rc5+ #92 [loadavg: 168.72 151.72 150.38 10/410 27945]
+task: ffff880242b596f0 ti: ffff880242b6c000 task.ti: ffff880242b6c000
+RIP: 0010:[<ffffffff943dd415>]  [<ffffffff943dd415>] intel_idle+0xd5/0x180
+RSP: 0018:ffff880242b6fdf8  EFLAGS: 00000046
+RAX: 0000000000000032 RBX: 0000000000000010 RCX: 0000000000000001
+RDX: 0000000000000000 RSI: ffff880242b6ffd8 RDI: 0000000000000002
+RBP: ffff880242b6fe28 R08: 000000008baf8b86 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000005
+R13: 0000000000000032 R14: 0000000000000004 R15: ffff880242b6c000
+FS:  0000000000000000(0000) GS:ffff880244400000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000000 CR3: 0000000014c11000 CR4: 00000000001407e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+Stack:
+ 0000000242b6fe28 da97aa9b9f42090a ffffe8ffff2031a8 0000000000000005
+ ffffffff94ca9dc0 0000000000000002 ffff880242b6fe78 ffffffff94661f05
+ 00001cb7dcdd1af6 ffffffff94ca9f90 ffff880242b6c000 ffffffff94d18870
+Call Trace:
+ [<ffffffff94661f05>] cpuidle_enter_state+0x55/0x1c0
+ [<ffffffff94662127>] cpuidle_enter+0x17/0x20
+ [<ffffffff940b94a3>] cpu_startup_entry+0x423/0x4d0
+ [<ffffffff9402b763>] start_secondary+0x1a3/0x220
+Code: 31 d2 65 48 8b 34 25 08 ba 00 00 48 8d 86 38 c0 ff ff 48 89 d1 0f 01 c8 48 8b 86 38 c0 ff ff a8 08 75 08 b1 01 4c 89 e8 0f 01 c9 <65> 48 8b 0c 25 08 ba 00 00 f0 80 a1 3a c0 ff ff df 0f ae f0 48 
+INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 95.994 msecs
+
+
+<tangent>
+
+Also, today I learned we can reach the perf_event_read code from
+read(). Given I had /proc/sys/kernel/perf_event_paranoid set to 1,
+I'm not sure how this is even possible. The only user of perf_fops
+is perf_event_open syscall _after_ it's checked that sysctl.
+
+Oh, there's an ioctl path to perf too. Though trinity
+doesn't know anything about it, so I find it surprising if it
+managed to pull the right combination of entropy to make that
+do the right thing.  Still, that ioctl path probably needs
+to also be checking that sysctl shouldn't it ?
+
+	Dave
+
