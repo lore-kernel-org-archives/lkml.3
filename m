@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797AbaKSN4a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 08:56:30 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:38613 "EHLO
+	id S1755076AbaKSN4k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 08:56:40 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:38641 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751547AbaKSN41 (ORCPT
+	with ESMTP id S1753829AbaKSN43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 08:56:27 -0500
+	Wed, 19 Nov 2014 08:56:29 -0500
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
 Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
@@ -19,135 +19,95 @@ Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v8 0/2] drm: add support for Atmel HLCDC Display Controller
-Date: Wed, 19 Nov 2014 14:56:20 +0100
-Message-Id: <1416405382-24692-1-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v8 2/2] drm: add DT bindings documentation for atmel-hlcdc-dc driver
+Date: Wed, 19 Nov 2014 14:56:22 +0100
+Message-Id: <1416405382-24692-3-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416405382-24692-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1416405382-24692-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The Atmel HLCDC (HLCD Controller) IP available on some Atmel SoCs (i.e.
+at91sam9n12, at91sam9x5 family or sama5d3 family) provides a display
+controller device.
 
-This patch series adds support for the Atmel HLCDC Display Controller
-embedded in the HLCDC block.
+The HLCDC block provides a single RGB output port, and only supports LCD
+panels connection to LCD panels for now.
 
-The drivers supports basic CRTC functionalities, several overlays and
-provides an hardware cursor.
+The atmel,panel property link the HLCDC RGB output with the LCD panel
+connected on this port (note that the HLCDC RGB connector implementation
+makes use of the DRM panel framework).
 
-At the moment, it only supports connection to LCD panels through an RGB
-connector (defined as an LVDS connector in my implementation), though
-connection to other kind of devices (like DRM bridges) could be added later.
+Connection to other external devices (DRM bridges) might be added later by
+mean of a new atmel,xxx (atmel,bridge) property.
 
-It also supports several RGB formats on all planes and some YUV formats on
-the HEO overlay plane.
-
-Best Regards,
-
-Boris
-
-Changes since v7:
- - split MFD, PWM and Display Controller drivers in several patch series
- - fix inline documentation (suggested by Nicolas)
- - fix DMA BURST LEN config (suggested by Nicolas)
- - call load and unload in probe and remove functions instead of setting
-   them in drm_driver struct
-
-Changes since v6:
-- move interrupts property from hlcdc display controller node to its
-  parent node (the MFD device)
-- add mode_set_base implementation
-- rework page flip handling to rely on vblank events instead of DMA
-  transfer events (the end of a DMA transfer does not mean the frame
-  is actually flipped: data are first copied to an output FIFO before
-  being sent on the RGB/DPI connector)
-- few minor coding style fixes
-
-Changes since v5:
-- fix Kconfig dependency bug
-- use adjusted mode in crtc config
-- move signal config (clk, hsync, vsync) from connector to crtc mode_set
-  function
-- use standard rotation property
-- check display_mode validity in connecto mode_valid function
-- remove dma_set_coherent mask call (now done in MFD core)
-- do not use drm_platform_init
-
-Changes since v4:
-- fix a few more bugs in rotation handling (rotation was buggy on some
-  formats)
-- return connector_status_unknown until a panel is exposed by the
-  drm_panel infrastructure (prevent fbdev creation until everyting is
-  in place)
-- rework Kconfig MFD_ATMEL_HLCDC selection to simplify the configuration
-  (automatically select this option when selecting the HLCDC PMW or DRM
-  driver, instead of depending on this option)
-
-Changes since v3:
-- rework the layer code to simplify several parts (locking and layer
-  disabling)
-- make use of the drm_flip_work infrastructure
-- rely on default HW cursor implementation using on the cursor plane
-- rework the display controller DT bindings (based on OF graph
-  representation)
-- add rotation support
-- retrive RGB bus format from drm_display_info
-- drop the dynamic pinctrl state selection
-- rework HLCDC output handling (previously specialized to interface
-  with LCD panels)
-- drop ".module = THIS_MODULE" lines
-- change display controller compatible string
-
-Changes since v2:
-- fix coding style issues (macro indentation)
-- make use of GENMASK in several places
-- declare regmap config as a static structure
-- rework hlcdc plane update API
-- rework cursor handling to make use of the new plane update API
-- fix backporch config
-- do not use devm_regmap_init_mmio_clk to avoid extra clk_enable
-  clk disable calls when accessing registers
-- explicitely include regmap and clk headers instead of relying on
-  atmel-hlcdc.h inclusions
-- make the atmel-hlcdc driver depends on CONFIG_OF
-- separate DT bindings documentation from driver implementation
-- support several pin muxing for HLCDC pins on sama5d3 SoCs
-
-Changes since v1:
-- replace the backlight driver by a PWM driver
-- make use of drm_panel infrastructure
-- split driver code in several subsystem: MFD, PWM and DRM
-- add support for overlays
-- add support for hardware cursor
-
-Boris Brezillon (2):
-  drm: add Atmel HLCDC Display Controller support
-  drm: add DT bindings documentation for atmel-hlcdc-dc driver
-
- .../devicetree/bindings/drm/atmel/hlcdc-dc.txt     |  53 ++
- drivers/gpu/drm/Kconfig                            |   2 +
- drivers/gpu/drm/Makefile                           |   1 +
- drivers/gpu/drm/atmel-hlcdc/Kconfig                |  11 +
- drivers/gpu/drm/atmel-hlcdc/Makefile               |   7 +
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_crtc.c     | 406 ++++++++++
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.c       | 579 ++++++++++++++
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.h       | 213 +++++
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.c    | 667 ++++++++++++++++
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.h    | 398 ++++++++++
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_output.c   | 323 ++++++++
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_plane.c    | 856 +++++++++++++++++++++
- 12 files changed, 3516 insertions(+)
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ .../devicetree/bindings/drm/atmel/hlcdc-dc.txt     | 53 ++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/drm/atmel/hlcdc-dc.txt
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/Kconfig
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/Makefile
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_crtc.c
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.c
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.h
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.c
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.h
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_output.c
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_plane.c
 
+diff --git a/Documentation/devicetree/bindings/drm/atmel/hlcdc-dc.txt b/Documentation/devicetree/bindings/drm/atmel/hlcdc-dc.txt
+new file mode 100644
+index 0000000..ebc1a91
+--- /dev/null
++++ b/Documentation/devicetree/bindings/drm/atmel/hlcdc-dc.txt
+@@ -0,0 +1,53 @@
++Device-Tree bindings for Atmel's HLCDC (High LCD Controller) DRM driver
++
++The Atmel HLCDC Display Controller is subdevice of the HLCDC MFD device.
++See ../mfd/atmel-hlcdc.txt for more details.
++
++Required properties:
++ - compatible: value should be "atmel,hlcdc-display-controller"
++ - pinctrl-names: the pin control state names. Should contain "default".
++ - pinctrl-0: should contain the default pinctrl states.
++ - #address-cells: should be set to 1.
++ - #size-cells: should be set to 0.
++
++Required children nodes:
++ Children nodes are encoding available output ports and their connections
++ to external devices using the OF graph reprensentation (see ../graph.txt).
++ At least one port node is required.
++
++Example:
++
++	hlcdc: hlcdc@f0030000 {
++		compatible = "atmel,sama5d3-hlcdc";
++		reg = <0xf0030000 0x2000>;
++		interrupts = <36 IRQ_TYPE_LEVEL_HIGH 0>;
++		clocks = <&lcdc_clk>, <&lcdck>, <&clk32k>;
++		clock-names = "periph_clk","sys_clk", "slow_clk";
++		status = "disabled";
++
++		hlcdc-display-controller {
++			compatible = "atmel,hlcdc-display-controller";
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			port@0 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				reg = <0>;
++
++				hlcdc_panel_output: endpoint@0 {
++					reg = <0>;
++					remote-endpoint = <&panel_input>;
++				};
++			};
++		};
++
++		hlcdc_pwm: hlcdc-pwm {
++			compatible = "atmel,hlcdc-pwm";
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_lcd_pwm>;
++			#pwm-cells = <3>;
++		};
++	};
 -- 
 1.9.1
 
