@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981AbaKSX1P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 18:27:15 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:38185 "EHLO
+	id S932447AbaKSX1Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 18:27:24 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:23108 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754289AbaKSX1L (ORCPT
+	by vger.kernel.org with ESMTP id S1756978AbaKSX1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 18:27:11 -0500
-Message-Id: <20141119232632.737569526@goodmis.org>
+	Wed, 19 Nov 2014 18:27:15 -0500
+Message-Id: <20141119232711.743656286@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Wed, 19 Nov 2014 18:26:32 -0500
+Date: Wed, 19 Nov 2014 18:26:46 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 00/18] tracing: Fixes and trace-seq updates
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Petr Mladek <pmladek@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [for-next][PATCH 14/18] tracing/probes: Do not use return value of trace_seq_printf()
+References: <20141119232632.737569526@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0014-tracing-probes-Do-not-use-return-value-of-trace_seq_.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-for-next
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Head SHA1: 8e2e095cbecad21078332cd83ae7e61ecfe12c59
+The functions trace_seq_printf() and friends will soon not have a return
+value and will only be a void function. Use trace_seq_has_overflowed()
+instead to know if the trace_seq operations succeeded or not.
+
+Link: http://lkml.kernel.org/r/20141114011411.530216306@goodmis.org
+
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_probe.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index d4b9fc22cd27..b983b2fd2ca1 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -40,7 +40,8 @@ const char *reserved_field_names[] = {
+ int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s, const char *name,	\
+ 				void *data, void *ent)			\
+ {									\
+-	return trace_seq_printf(s, " %s=" fmt, name, *(type *)data);	\
++	trace_seq_printf(s, " %s=" fmt, name, *(type *)data);		\
++	return !trace_seq_has_overflowed(s);				\
+ }									\
+ const char PRINT_TYPE_FMT_NAME(type)[] = fmt;				\
+ NOKPROBE_SYMBOL(PRINT_TYPE_FUNC_NAME(type));
+@@ -61,10 +62,11 @@ int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s, const char *name,
+ 	int len = *(u32 *)data >> 16;
+ 
+ 	if (!len)
+-		return trace_seq_printf(s, " %s=(fault)", name);
++		trace_seq_printf(s, " %s=(fault)", name);
+ 	else
+-		return trace_seq_printf(s, " %s=\"%s\"", name,
+-					(const char *)get_loc_data(data, ent));
++		trace_seq_printf(s, " %s=\"%s\"", name,
++				 (const char *)get_loc_data(data, ent));
++	return !trace_seq_has_overflowed(s);
+ }
+ NOKPROBE_SYMBOL(PRINT_TYPE_FUNC_NAME(string));
+ 
+-- 
+2.1.1
 
 
-Steven Rostedt (Red Hat) (18):
-      tracing: Fix race of function probes counting
-      ftrace/x86: Add frames pointers to trampoline as necessary
-      ftrace/x86/extable: Add is_ftrace_trampoline() function
-      x86/kvm/tracing: Use helper function trace_seq_buffer_ptr()
-      RAS/tracing: Use trace_seq_buffer_ptr() helper instead of open coded
-      tracing: Fix trace_seq_bitmask() to start at current position
-      tracing: Add trace_seq_has_overflowed() and trace_handle_return()
-      blktrace/tracing: Use trace_seq_has_overflowed() helper function
-      ring-buffer: Remove check of trace_seq_{puts,printf}() return values
-      tracing: Have branch tracer use trace_handle_return() helper function
-      tracing: Have function_graph use trace_seq_has_overflowed()
-      kprobes/tracing: Use trace_seq_has_overflowed() for overflow checks
-      tracing: Do not check return values of trace_seq_p*() for mmio tracer
-      tracing/probes: Do not use return value of trace_seq_printf()
-      tracing/uprobes: Do not use return values of trace_seq_printf()
-      tracing: Do not use return values of trace_seq_printf() in syscall tracing
-      tracing: Remove return values of most trace_seq_*() functions
-      tracing: Fix return value of ftrace_raw_output_prep()
-
-----
- arch/x86/kernel/ftrace.c             |   9 +-
- arch/x86/kernel/mcount_64.S          |  41 ++++
- arch/x86/kvm/mmutrace.h              |   4 +-
- drivers/firmware/efi/cper.c          |   2 +-
- include/linux/ftrace.h               |   8 +
- include/linux/ftrace_event.h         |  11 +
- include/linux/trace_seq.h            |  49 ++--
- include/trace/ftrace.h               |   8 +-
- kernel/extable.c                     |   7 +-
- kernel/trace/blktrace.c              | 148 ++++++-------
- kernel/trace/ftrace.c                |  38 ++++
- kernel/trace/ring_buffer.c           |  75 +++----
- kernel/trace/trace.c                 |  69 +++---
- kernel/trace/trace.h                 |   3 +-
- kernel/trace/trace_branch.c          |  15 +-
- kernel/trace/trace_functions.c       | 117 ++++++++--
- kernel/trace/trace_functions_graph.c | 382 ++++++++++----------------------
- kernel/trace/trace_kprobe.c          |  42 ++--
- kernel/trace/trace_mmiotrace.c       |  52 ++---
- kernel/trace/trace_output.c          | 417 ++++++++++++++---------------------
- kernel/trace/trace_output.h          |  16 +-
- kernel/trace/trace_probe.c           |  10 +-
- kernel/trace/trace_seq.c             |  86 ++------
- kernel/trace/trace_syscalls.c        |  47 ++--
- kernel/trace/trace_uprobe.c          |  23 +-
- 25 files changed, 768 insertions(+), 911 deletions(-)
