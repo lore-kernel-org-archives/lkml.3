@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621AbaKSUdM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:33:12 -0500
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:38999 "HELO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756026AbaKSUdL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:33:11 -0500
+	id S1756690AbaKSUeg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:34:36 -0500
+Received: from mout.web.de ([212.227.15.3]:49214 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756132AbaKSUef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 15:34:35 -0500
+Message-ID: <546CFECC.8020309@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 21:34:20 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <201411191151.40064.joestringer@nicira.com>
-References: <1416336857-61405-1-git-send-email-joestringer@nicira.com>
-	<201411190948.11857.joestringer@nicira.com>
-	<CALnjE+pQnUGiiuWPGt7fNnBetwdn7SQReDqCHDforX7ykQQR8Q@mail.gmail.com>
-	<201411191151.40064.joestringer@nicira.com>
-Date: Wed, 19 Nov 2014 12:33:10 -0800
-Message-ID: <CALnjE+otirroKNXE7qbUHfoTifipp8LJ6g8yNsLz0dBjm3PUsQ@mail.gmail.com>
-Subject: Re: [ovs-dev] [PATCH net] openvswitch: Fix mask generation for IPv6 labels.
-From: Pravin Shelar <pshelar@nicira.com>
-To: Joe Stringer <joestringer@nicira.com>
-Cc: "dev@openvswitch.org" <dev@openvswitch.org>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Kent Overstreet <kmo@daterainc.com>, Neil Brown <neilb@suse.de>,
+        linux-bcache@vger.kernel.org
+CC: linux-raid@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] bcache: Deletion of an unnecessary check before the function
+ call "kobject_put"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:+i23r35Y7gopum2I3ppdAT9Btj41IAi+rJ4x6jeQVfBl9QQgNQy
+ csF7u2QDHJpqFxUQfCAPzemnVDNIhgEKHGDZAyreBFTnFrKQFQH0ysYtLKs806eU27ZlTA+
+ JZmh+fkGCjX0u04uQUUu/lFgyt1Ln6wLAjs8Qqn+QpJxKwgtlcbzqIKYxshQf2XlNM4u6Eb
+ AKKXumAgJpjC7pNjGqqUA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 11:51 AM, Joe Stringer <joestringer@nicira.com> wrote:
-> On Wednesday, November 19, 2014 11:08:35 Pravin Shelar wrote:
->> On Wed, Nov 19, 2014 at 9:48 AM, Joe Stringer <joestringer@nicira.com>
-> wrote:
->> > On Wednesday, November 19, 2014 00:11:01 Pravin Shelar wrote:
->> >> On Tue, Nov 18, 2014 at 11:25 PM, Joe Stringer <joestringer@nicira.com>
->> >
->> > wrote:
->> >> > On 18 November 2014 22:09, Pravin Shelar <pshelar@nicira.com> wrote:
->> >> >> On Tue, Nov 18, 2014 at 10:54 AM, Joe Stringer
->> >> >> <joestringer@nicira.com>
->> >> >>
->> >> >> wrote:
->> >> >> > When userspace doesn't provide a mask, OVS datapath generates a
->> >> >> > fully unwildcarded mask for the flow. This is done by taking a
->> >> >> > copy of the flow key, then iterating across its attributes,
->> >> >> > setting all values to 0xff. This works for most attributes, as the
->> >> >> > length of the netlink attribute typically matches the length of
->> >> >> > the value. However, IPv6 labels only use the lower 20 bits of the
->> >> >> > field. This patch makes a special case to handle this.
->> >> >> >
->> >> >> > This fixes the following error seen when installing IPv6 flows
->> >> >> > without a mask:
->> >> >> >
->> >> >> > openvswitch: netlink: Invalid IPv6 flow label value
->> >> >> > (value=ffffffff, max=fffff)
->> >> >>
->> >> >> We should allow exact match mask here rather than generating
->> >> >> wildcarded mask. So that ovs can catch invalid ipv6.label.
->> >> >
->> >> > I don't quite follow, I thought this was exact-match? (The existing
->> >> > function sets all bits to 1)
->> >>
->> >> With 0xffffffff value we can exact match on all ipv6.lable bits.
->> >
->> > The label field is only 20 bits. The other bits in the same word of the
->> > IPv6 header are for version (fixed) and traffic class (handled
->> > separately). We don't do anything with the other bits.
->>
->> This is just to make sure that we do not use those field for any thing
->> else. Masking those extra bits can hide incorrect ipv6 key extraction.
->
-> Oh, I see. I meant something more like:
->
-> ipv6_key->ipv6_label &= htonl(0xFFF00000);
-> ipv6_key->ipv6_label |= htonl(0x000FFFFF);
->
-> (Which would propagate the invalid bits from the flow key, but actually produce
-> an exact match).
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 21:25:39 +0100
 
-yes, it can wildcard unused bits.
+The kobject_put() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
+
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/md/bcache/super.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index d4713d0..1443c55 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -2076,8 +2076,7 @@ static void bcache_exit(void)
+ {
+ 	bch_debug_exit();
+ 	bch_request_exit();
+-	if (bcache_kobj)
+-		kobject_put(bcache_kobj);
++	kobject_put(bcache_kobj);
+ 	if (bcache_wq)
+ 		destroy_workqueue(bcache_wq);
+ 	if (bcache_major)
+-- 
+2.1.3
+
