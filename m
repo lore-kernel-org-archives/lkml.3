@@ -1,107 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757691AbaKSWhu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:37:50 -0500
-Received: from mout.gmx.net ([212.227.17.21]:52507 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757492AbaKSWhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 17:37:47 -0500
-Message-ID: <546D1BB5.8010308@gmx.de>
-Date: Wed, 19 Nov 2014 23:37:41 +0100
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29
+	id S1756834AbaKSUxy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:53:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55895 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756705AbaKSUxv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 15:53:51 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dwight Engen <dwight.engen@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 018/141] sunvdc: add cdrom and v1.1 protocol support
+Date: Wed, 19 Nov 2014 12:50:41 -0800
+Message-Id: <20141119205151.263196451@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
+References: <20141119205150.700188369@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>, Jonathan Cameron <jic23@kernel.org>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        GTA04 owners <gta04-owner@goldelico.com>
-Subject: Re: [PATCH] iio: gyro: itg3200: add suspend/resume support.
-References: <20141108111833.3829480c@notabene.brown>
-In-Reply-To: <20141108111833.3829480c@notabene.brown>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Provags-ID: V03:K0:W3Lq04/pQy/JkHzSEHQJptCpeEG6dEpNOFv51y3KGb3ysl1DI53
- a7nGmua9RZkoXbiHMSNEILnm6eO90pxjAscjVT9xQ8ZjS9yZPYVSF3L4TMHpVqXdpG35e+3
- TBJdK/sKHHD2q/sl0g1L8ljAHtEtg9edWzL6Efm+YHoEovdH4uRVcajnLZzfALH32Kh2jC7
- ZhsgtquOn++uDaBDWtMHg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NeilBrown schrieb am 08.11.2014 01:18:
-> 
-> 
-> Unless we put the device to sleep when not it use, it wastes
-> 6mA.
-> 
-> If the device is asleep on probe, the 'id' register
-> sometimes mis-reads - so reset first.  If the device responds
-> at all a command sent to the address, it is almost certainly
-> the correct device already.
-> 
-Hi Neil,
-I still have some question and issues, see inline.
-> Signed-off-by: NeilBrown <neil@brown.name>
-> 
-> diff --git a/drivers/iio/gyro/itg3200_core.c b/drivers/iio/gyro/itg3200_core.c
-> index 6a8020d48140..394667fb23f9 100644
-> --- a/drivers/iio/gyro/itg3200_core.c
-> +++ b/drivers/iio/gyro/itg3200_core.c
-> @@ -223,6 +223,7 @@ static int itg3200_initial_setup(struct iio_dev *indio_dev)
->  	int ret;
->  	u8 val;
->  
-> +	ret = itg3200_reset(indio_dev);
-You should check possible error codes here. Also, there is still another reset issued some lines further down, although in between, there is only the register-read performed, which we see right below here - I would assume this wouldn't change anything in the device to require another reset. So, in conclusion, wouldn't it be sufficient to just move the reset part from further down up here?
->  	ret = itg3200_read_reg_8(indio_dev, ITG3200_REG_ADDRESS, &val);
->  	if (ret)
->  		goto err_ret;
-> @@ -351,6 +352,35 @@ static int itg3200_remove(struct i2c_client *client)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_PM_SLEEP
-> +static int itg3200_suspend(struct device *dev)
-> +{
-> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-> +	struct itg3200 *st = iio_priv(indio_dev);
-> +	int ret;
-> +
-> +	dev_dbg(&st->i2c->dev, "suspend device");
-> +
-> +	ret = itg3200_write_reg_8(indio_dev,
-> +			ITG3200_REG_POWER_MANAGEMENT,
-> +			ITG3200_SLEEP);
-> +	return ret;
-No need for ret, if you do it like this (fixing also some indentation issue):
-	return itg3200_write_reg_8(indio_dev, ITG3200_REG_POWER_MANAGEMENT,
-				   ITG3200_SLEEP);
-> +}
-> +
-> +static int itg3200_resume(struct device *dev)
-> +{
-> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-> +
-> +	itg3200_reset(indio_dev);
-> +	return 0;
-> +}
-> +
-> +static SIMPLE_DEV_PM_OPS(itg3200_pm_ops, itg3200_suspend, itg3200_resume);
-> +#define ITG3200_PM_OPS (&itg3200_pm_ops)
-> +#else
-> +#define ITG3200_PM_OPS NULL
-> +#endif
-> +
->  static const struct i2c_device_id itg3200_id[] = {
->  	{ "itg3200", 0 },
->  	{ }
-> @@ -361,6 +391,7 @@ static struct i2c_driver itg3200_driver = {
->  	.driver = {
->  		.owner  = THIS_MODULE,
->  		.name	= "itg3200",
-> +		.pm	= ITG3200_PM_OPS,
->  	},
->  	.id_table	= itg3200_id,
->  	.probe		= itg3200_probe,
-> 
+3.17-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Allen Pais <allen.pais@oracle.com>
+
+[ Upstream commit 9bce21828d54a95143f1b74619705c2dd8e88b92 ]
+
+Interpret the media type from v1.1 protocol to support CDROM/DVD.
+
+For v1.0 protocol, a disk's size continues to be calculated from the
+geometry returned by the vdisk server. The geometry returned by the server
+can be less than the actual number of sectors available in the backing
+image/device due to the rounding in the division used to compute the
+geometry in the vdisk server.
+
+In v1.1 protocol a disk's actual size in sectors is returned during the
+handshake. Use this size when v1.1 protocol is negotiated. Since this size
+will always be larger than the former geometry computed size, disks created
+under v1.0 will be forwards compatible to v1.1, but not vice versa.
+
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ arch/sparc/include/asm/vio.h |   12 +++-
+ drivers/block/sunvdc.c       |  109 ++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 101 insertions(+), 20 deletions(-)
+
+--- a/arch/sparc/include/asm/vio.h
++++ b/arch/sparc/include/asm/vio.h
+@@ -118,12 +118,18 @@ struct vio_disk_attr_info {
+ 	u8			vdisk_type;
+ #define VD_DISK_TYPE_SLICE	0x01 /* Slice in block device	*/
+ #define VD_DISK_TYPE_DISK	0x02 /* Entire block device	*/
+-	u16			resv1;
++	u8			vdisk_mtype;		/* v1.1 */
++#define VD_MEDIA_TYPE_FIXED	0x01 /* Fixed device */
++#define VD_MEDIA_TYPE_CD	0x02 /* CD Device    */
++#define VD_MEDIA_TYPE_DVD	0x03 /* DVD Device   */
++	u8			resv1;
+ 	u32			vdisk_block_size;
+ 	u64			operations;
+-	u64			vdisk_size;
++	u64			vdisk_size;		/* v1.1 */
+ 	u64			max_xfer_size;
+-	u64			resv2[2];
++	u32			phys_block_size;	/* v1.2 */
++	u32			resv2;
++	u64			resv3[1];
+ };
+ 
+ struct vio_disk_desc {
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -9,6 +9,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/hdreg.h>
+ #include <linux/genhd.h>
++#include <linux/cdrom.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/completion.h>
+@@ -22,8 +23,8 @@
+ 
+ #define DRV_MODULE_NAME		"sunvdc"
+ #define PFX DRV_MODULE_NAME	": "
+-#define DRV_MODULE_VERSION	"1.0"
+-#define DRV_MODULE_RELDATE	"June 25, 2007"
++#define DRV_MODULE_VERSION	"1.1"
++#define DRV_MODULE_RELDATE	"February 13, 2013"
+ 
+ static char version[] =
+ 	DRV_MODULE_NAME ".c:v" DRV_MODULE_VERSION " (" DRV_MODULE_RELDATE ")\n";
+@@ -65,6 +66,7 @@ struct vdc_port {
+ 	u64			operations;
+ 	u32			vdisk_size;
+ 	u8			vdisk_type;
++	u8			vdisk_mtype;
+ 
+ 	char			disk_name[32];
+ 
+@@ -79,9 +81,16 @@ static inline struct vdc_port *to_vdc_po
+ 
+ /* Ordered from largest major to lowest */
+ static struct vio_version vdc_versions[] = {
++	{ .major = 1, .minor = 1 },
+ 	{ .major = 1, .minor = 0 },
+ };
+ 
++static inline int vdc_version_supported(struct vdc_port *port,
++					u16 major, u16 minor)
++{
++	return port->vio.ver.major == major && port->vio.ver.minor >= minor;
++}
++
+ #define VDCBLK_NAME	"vdisk"
+ static int vdc_major;
+ #define PARTITION_SHIFT	3
+@@ -103,9 +112,41 @@ static int vdc_getgeo(struct block_devic
+ 	return 0;
+ }
+ 
++/* Add ioctl/CDROM_GET_CAPABILITY to support cdrom_id in udev
++ * when vdisk_mtype is VD_MEDIA_TYPE_CD or VD_MEDIA_TYPE_DVD.
++ * Needed to be able to install inside an ldom from an iso image.
++ */
++static int vdc_ioctl(struct block_device *bdev, fmode_t mode,
++		     unsigned command, unsigned long argument)
++{
++	int i;
++	struct gendisk *disk;
++
++	switch (command) {
++	case CDROMMULTISESSION:
++		pr_debug(PFX "Multisession CDs not supported\n");
++		for (i = 0; i < sizeof(struct cdrom_multisession); i++)
++			if (put_user(0, (char __user *)(argument + i)))
++				return -EFAULT;
++		return 0;
++
++	case CDROM_GET_CAPABILITY:
++		disk = bdev->bd_disk;
++
++		if (bdev->bd_disk && (disk->flags & GENHD_FL_CD))
++			return 0;
++		return -EINVAL;
++
++	default:
++		pr_debug(PFX "ioctl %08x not supported\n", command);
++		return -EINVAL;
++	}
++}
++
+ static const struct block_device_operations vdc_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.getgeo		= vdc_getgeo,
++	.ioctl		= vdc_ioctl,
+ };
+ 
+ static void vdc_finish(struct vio_driver_state *vio, int err, int waiting_for)
+@@ -165,9 +206,9 @@ static int vdc_handle_attr(struct vio_dr
+ 	struct vio_disk_attr_info *pkt = arg;
+ 
+ 	viodbg(HS, "GOT ATTR stype[0x%x] ops[%llx] disk_size[%llu] disk_type[%x] "
+-	       "xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
++	       "mtype[0x%x] xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
+ 	       pkt->tag.stype, pkt->operations,
+-	       pkt->vdisk_size, pkt->vdisk_type,
++	       pkt->vdisk_size, pkt->vdisk_type, pkt->vdisk_mtype,
+ 	       pkt->xfer_mode, pkt->vdisk_block_size,
+ 	       pkt->max_xfer_size);
+ 
+@@ -192,8 +233,11 @@ static int vdc_handle_attr(struct vio_dr
+ 		}
+ 
+ 		port->operations = pkt->operations;
+-		port->vdisk_size = pkt->vdisk_size;
+ 		port->vdisk_type = pkt->vdisk_type;
++		if (vdc_version_supported(port, 1, 1)) {
++			port->vdisk_size = pkt->vdisk_size;
++			port->vdisk_mtype = pkt->vdisk_mtype;
++		}
+ 		if (pkt->max_xfer_size < port->max_xfer_size)
+ 			port->max_xfer_size = pkt->max_xfer_size;
+ 		port->vdisk_block_size = pkt->vdisk_block_size;
+@@ -663,18 +707,25 @@ static int probe_disk(struct vdc_port *p
+ 		return err;
+ 	}
+ 
+-	err = generic_request(port, VD_OP_GET_DISKGEOM,
+-			      &port->geom, sizeof(port->geom));
+-	if (err < 0) {
+-		printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
+-		       "error %d\n", err);
+-		return err;
++	if (vdc_version_supported(port, 1, 1)) {
++		/* vdisk_size should be set during the handshake, if it wasn't
++		 * then the underlying disk is reserved by another system
++		 */
++		if (port->vdisk_size == -1)
++			return -ENODEV;
++	} else {
++		err = generic_request(port, VD_OP_GET_DISKGEOM,
++				      &port->geom, sizeof(port->geom));
++		if (err < 0) {
++			printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
++			       "error %d\n", err);
++			return err;
++		}
++		port->vdisk_size = ((u64)port->geom.num_cyl *
++				    (u64)port->geom.num_hd *
++				    (u64)port->geom.num_sec);
+ 	}
+ 
+-	port->vdisk_size = ((u64)port->geom.num_cyl *
+-			    (u64)port->geom.num_hd *
+-			    (u64)port->geom.num_sec);
+-
+ 	q = blk_init_queue(do_vdc_request, &port->vio.lock);
+ 	if (!q) {
+ 		printk(KERN_ERR PFX "%s: Could not allocate queue.\n",
+@@ -704,9 +755,32 @@ static int probe_disk(struct vdc_port *p
+ 
+ 	set_capacity(g, port->vdisk_size);
+ 
+-	printk(KERN_INFO PFX "%s: %u sectors (%u MB)\n",
++	if (vdc_version_supported(port, 1, 1)) {
++		switch (port->vdisk_mtype) {
++		case VD_MEDIA_TYPE_CD:
++			pr_info(PFX "Virtual CDROM %s\n", port->disk_name);
++			g->flags |= GENHD_FL_CD;
++			g->flags |= GENHD_FL_REMOVABLE;
++			set_disk_ro(g, 1);
++			break;
++
++		case VD_MEDIA_TYPE_DVD:
++			pr_info(PFX "Virtual DVD %s\n", port->disk_name);
++			g->flags |= GENHD_FL_CD;
++			g->flags |= GENHD_FL_REMOVABLE;
++			set_disk_ro(g, 1);
++			break;
++
++		case VD_MEDIA_TYPE_FIXED:
++			pr_info(PFX "Virtual Hard disk %s\n", port->disk_name);
++			break;
++		}
++	}
++
++	pr_info(PFX "%s: %u sectors (%u MB) protocol %d.%d\n",
+ 	       g->disk_name,
+-	       port->vdisk_size, (port->vdisk_size >> (20 - 9)));
++	       port->vdisk_size, (port->vdisk_size >> (20 - 9)),
++	       port->vio.ver.major, port->vio.ver.minor);
+ 
+ 	add_disk(g);
+ 
+@@ -765,6 +839,7 @@ static int vdc_port_probe(struct vio_dev
+ 	else
+ 		snprintf(port->disk_name, sizeof(port->disk_name),
+ 			 VDCBLK_NAME "%c", 'a' + ((int)vdev->dev_no % 26));
++	port->vdisk_size = -1;
+ 
+ 	err = vio_driver_init(&port->vio, vdev, VDEV_DISK,
+ 			      vdc_versions, ARRAY_SIZE(vdc_versions),
+
 
