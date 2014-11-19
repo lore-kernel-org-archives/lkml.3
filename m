@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934485AbaKSVdX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:33:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57818 "EHLO
+	id S934469AbaKSVdU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:33:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57824 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934438AbaKSVdA (ORCPT
+	with ESMTP id S934439AbaKSVdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:33:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Vlastimil Babka <vbabka@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3.14 104/122] mm: remove read_cache_page_async()
-Date: Wed, 19 Nov 2014 12:52:34 -0800
-Message-Id: <20141119205212.283072302@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 113/122] mm, compaction: terminate async compaction when rescheduling
+Date: Wed, 19 Nov 2014 12:52:43 -0800
+Message-Id: <20141119205212.598753470@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -31,222 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: David Rientjes <rientjes@google.com>
 
-commit 67f9fd91f93c582b7de2ab9325b6e179db77e4d5 upstream.
+commit aeef4b83806f49a0c454b7d4578671b71045bee2 upstream.
 
-This patch removes read_cache_page_async() which wasn't really needed
-anywhere and simplifies the code around it a bit.
+Async compaction terminates prematurely when need_resched(), see
+compact_checklock_irqsave().  This can never trigger, however, if the
+cond_resched() in isolate_migratepages_range() always takes care of the
+scheduling.
 
-read_cache_page_async() is useful when we want to read a page into the
-cache without waiting for it to complete.  This happens when the
-appropriate callback 'filler' doesn't complete its read operation and
-releases the page lock immediately, and instead queues a different
-completion routine to do that.  This never actually happened anywhere in
-the code.
+If the cond_resched() actually triggers, then terminate this pageblock
+scan for async compaction as well.
 
-read_cache_page_async() had 3 different callers:
-
-- read_cache_page() which is the sync version, it would just wait for
-  the requested read to complete using wait_on_page_read().
-
-- JFFS2 would call it from jffs2_gc_fetch_page(), but the filler
-  function it supplied doesn't do any async reads, and would complete
-  before the filler function returns - making it actually a sync read.
-
-- CRAMFS would call it using the read_mapping_page_async() wrapper, with
-  a similar story to JFFS2 - the filler function doesn't do anything that
-  reminds async reads and would always complete before the filler function
-  returns.
-
-To sum it up, the code in mm/filemap.c never took advantage of having
-read_cache_page_async().  While there are filler callbacks that do async
-reads (such as the block one), we always called it with the
-read_cache_page().
-
-This patch adds a mandatory wait for read to complete when adding a new
-page to the cache, and removes read_cache_page_async() and its wrappers.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Vlastimil Babka <vbabka@suse.cz>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cramfs/inode.c       |    3 --
- fs/jffs2/fs.c           |    2 -
- include/linux/pagemap.h |   10 -------
- mm/filemap.c            |   64 +++++++++++++++++-------------------------------
- 4 files changed, 25 insertions(+), 54 deletions(-)
+ mm/compaction.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/fs/cramfs/inode.c
-+++ b/fs/cramfs/inode.c
-@@ -195,8 +195,7 @@ static void *cramfs_read(struct super_bl
- 		struct page *page = NULL;
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -494,8 +494,13 @@ isolate_migratepages_range(struct zone *
+ 			return 0;
+ 	}
  
- 		if (blocknr + i < devsize) {
--			page = read_mapping_page_async(mapping, blocknr + i,
--									NULL);
-+			page = read_mapping_page(mapping, blocknr + i, NULL);
- 			/* synchronous error? */
- 			if (IS_ERR(page))
- 				page = NULL;
---- a/fs/jffs2/fs.c
-+++ b/fs/jffs2/fs.c
-@@ -687,7 +687,7 @@ unsigned char *jffs2_gc_fetch_page(struc
- 	struct inode *inode = OFNI_EDONI_2SFFJ(f);
- 	struct page *pg;
- 
--	pg = read_cache_page_async(inode->i_mapping, offset >> PAGE_CACHE_SHIFT,
-+	pg = read_cache_page(inode->i_mapping, offset >> PAGE_CACHE_SHIFT,
- 			     (void *)jffs2_do_readpage_unlock, inode);
- 	if (IS_ERR(pg))
- 		return (void *)pg;
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -278,8 +278,6 @@ static inline struct page *grab_cache_pa
- 
- extern struct page * grab_cache_page_nowait(struct address_space *mapping,
- 				pgoff_t index);
--extern struct page * read_cache_page_async(struct address_space *mapping,
--				pgoff_t index, filler_t *filler, void *data);
- extern struct page * read_cache_page(struct address_space *mapping,
- 				pgoff_t index, filler_t *filler, void *data);
- extern struct page * read_cache_page_gfp(struct address_space *mapping,
-@@ -287,14 +285,6 @@ extern struct page * read_cache_page_gfp
- extern int read_cache_pages(struct address_space *mapping,
- 		struct list_head *pages, filler_t *filler, void *data);
- 
--static inline struct page *read_mapping_page_async(
--				struct address_space *mapping,
--				pgoff_t index, void *data)
--{
--	filler_t *filler = (filler_t *)mapping->a_ops->readpage;
--	return read_cache_page_async(mapping, index, filler, data);
--}
--
- static inline struct page *read_mapping_page(struct address_space *mapping,
- 				pgoff_t index, void *data)
- {
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2027,6 +2027,18 @@ int generic_file_readonly_mmap(struct fi
- EXPORT_SYMBOL(generic_file_mmap);
- EXPORT_SYMBOL(generic_file_readonly_mmap);
- 
-+static struct page *wait_on_page_read(struct page *page)
-+{
-+	if (!IS_ERR(page)) {
-+		wait_on_page_locked(page);
-+		if (!PageUptodate(page)) {
-+			page_cache_release(page);
-+			page = ERR_PTR(-EIO);
-+		}
++	if (cond_resched()) {
++		/* Async terminates prematurely on need_resched() */
++		if (cc->mode == MIGRATE_ASYNC)
++			return 0;
 +	}
-+	return page;
-+}
 +
- static struct page *__read_cache_page(struct address_space *mapping,
- 				pgoff_t index,
- 				int (*filler)(void *, struct page *),
-@@ -2053,6 +2065,8 @@ repeat:
- 		if (err < 0) {
- 			page_cache_release(page);
- 			page = ERR_PTR(err);
-+		} else {
-+			page = wait_on_page_read(page);
- 		}
- 	}
- 	return page;
-@@ -2089,6 +2103,10 @@ retry:
- 	if (err < 0) {
- 		page_cache_release(page);
- 		return ERR_PTR(err);
-+	} else {
-+		page = wait_on_page_read(page);
-+		if (IS_ERR(page))
-+			return page;
- 	}
- out:
- 	mark_page_accessed(page);
-@@ -2096,40 +2114,25 @@ out:
- }
- 
- /**
-- * read_cache_page_async - read into page cache, fill it if needed
-+ * read_cache_page - read into page cache, fill it if needed
-  * @mapping:	the page's address_space
-  * @index:	the page index
-  * @filler:	function to perform the read
-  * @data:	first arg to filler(data, page) function, often left as NULL
-  *
-- * Same as read_cache_page, but don't wait for page to become unlocked
-- * after submitting it to the filler.
-- *
-  * Read into the page cache. If a page already exists, and PageUptodate() is
-- * not set, try to fill the page but don't wait for it to become unlocked.
-+ * not set, try to fill the page and wait for it to become unlocked.
-  *
-  * If the page does not get brought uptodate, return -EIO.
-  */
--struct page *read_cache_page_async(struct address_space *mapping,
-+struct page *read_cache_page(struct address_space *mapping,
- 				pgoff_t index,
- 				int (*filler)(void *, struct page *),
- 				void *data)
- {
- 	return do_read_cache_page(mapping, index, filler, data, mapping_gfp_mask(mapping));
- }
--EXPORT_SYMBOL(read_cache_page_async);
--
--static struct page *wait_on_page_read(struct page *page)
--{
--	if (!IS_ERR(page)) {
--		wait_on_page_locked(page);
--		if (!PageUptodate(page)) {
--			page_cache_release(page);
--			page = ERR_PTR(-EIO);
--		}
--	}
--	return page;
--}
-+EXPORT_SYMBOL(read_cache_page);
- 
- /**
-  * read_cache_page_gfp - read into page cache, using specified page allocation flags.
-@@ -2148,31 +2151,10 @@ struct page *read_cache_page_gfp(struct
- {
- 	filler_t *filler = (filler_t *)mapping->a_ops->readpage;
- 
--	return wait_on_page_read(do_read_cache_page(mapping, index, filler, NULL, gfp));
-+	return do_read_cache_page(mapping, index, filler, NULL, gfp);
- }
- EXPORT_SYMBOL(read_cache_page_gfp);
- 
--/**
-- * read_cache_page - read into page cache, fill it if needed
-- * @mapping:	the page's address_space
-- * @index:	the page index
-- * @filler:	function to perform the read
-- * @data:	first arg to filler(data, page) function, often left as NULL
-- *
-- * Read into the page cache. If a page already exists, and PageUptodate() is
-- * not set, try to fill the page then wait for it to become unlocked.
-- *
-- * If the page does not get brought uptodate, return -EIO.
-- */
--struct page *read_cache_page(struct address_space *mapping,
--				pgoff_t index,
--				int (*filler)(void *, struct page *),
--				void *data)
--{
--	return wait_on_page_read(read_cache_page_async(mapping, index, filler, data));
--}
--EXPORT_SYMBOL(read_cache_page);
--
- static size_t __iovec_copy_from_user_inatomic(char *vaddr,
- 			const struct iovec *iov, size_t base, size_t bytes)
- {
+ 	/* Time to isolate some pages for migration */
+-	cond_resched();
+ 	for (; low_pfn < end_pfn; low_pfn++) {
+ 		/* give a chance to irqs before checking need_resched() */
+ 		if (locked && !(low_pfn % SWAP_CLUSTER_MAX)) {
 
 
