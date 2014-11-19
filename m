@@ -1,124 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427AbaKSSC3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 13:02:29 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:33029 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755520AbaKSSC2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 13:02:28 -0500
-X-IronPort-AV: E=Sophos;i="5.07,418,1413244800"; 
-   d="scan'208";a="194487346"
-Date: Wed, 19 Nov 2014 17:51:02 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: David Vrabel <david.vrabel@citrix.com>
-CC: <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <x86@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        <xen-devel@lists.xenproject.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: [Xen-devel] [PATCH 4/4] x86/xen: use the maximum MFN to calculate
- the required DMA mask
-In-Reply-To: <1416412921-23671-5-git-send-email-david.vrabel@citrix.com>
-Message-ID: <alpine.DEB.2.02.1411191749110.12596@kaball.uk.xensource.com>
-References: <1416412921-23671-1-git-send-email-david.vrabel@citrix.com> <1416412921-23671-5-git-send-email-david.vrabel@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756538AbaKSSCg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 13:02:36 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48491 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756443AbaKSSCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 13:02:35 -0500
+Message-ID: <546CDB26.9030609@ti.com>
+Date: Wed, 19 Nov 2014 13:02:14 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+To: Dmitry Torokhov <dtor@chromium.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Wolfram Sang <wsa@the-dreams.de>, <linux-pci@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI: keystone: fix error handling of irq_of_parse_and_map
+References: <20141114221903.GA38539@dtor-ws>
+In-Reply-To: <20141114221903.GA38539@dtor-ws>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014, David Vrabel wrote:
-> On a Xen PV guest the DMA addresses and physical addresses are not 1:1
-> (such as Xen PV guests) and the generic dma_get_required_mask() does
-> not return the correct mask (since it uses max_pfn).
-> 
-> Some device drivers (such as mptsas, mpt2sas) use
-> dma_get_required_mask() to set the device's DMA mask to allow them to
-> use only 32-bit DMA addresses in hardware structures.  This results in
-> unnecessary use of the SWIOTLB if DMA addresses are more than 32-bits,
-> impacting performance significantly.
-> 
-> Provide a get_required_mask op that uses the maximum MFN to calculate
-> the DMA mask.
-> 
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+On 11/14/2014 05:19 PM, Dmitry Torokhov wrote:
+> Return value of irq_of_parse_and_map() is unsigned int, with 0
+> indicating failure, so testing for negative result never works.
+>
+> Signed-off-by: Dmitry Torokhov<dtor@chromium.org>
 > ---
->  arch/x86/xen/pci-swiotlb-xen.c |    1 +
->  drivers/xen/swiotlb-xen.c      |   13 +++++++++++++
->  include/xen/swiotlb-xen.h      |    4 ++++
->  3 files changed, 18 insertions(+)
-> 
-> diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
-> index 0e98e5d..a5d180a 100644
-> --- a/arch/x86/xen/pci-swiotlb-xen.c
-> +++ b/arch/x86/xen/pci-swiotlb-xen.c
-> @@ -31,6 +31,7 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
->  	.map_page = xen_swiotlb_map_page,
->  	.unmap_page = xen_swiotlb_unmap_page,
->  	.dma_supported = xen_swiotlb_dma_supported,
-> +	.get_required_mask = xen_swiotlb_get_required_mask,
->  };
->  
->  /*
-> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> index ebd8f21..654587d 100644
-> --- a/drivers/xen/swiotlb-xen.c
-> +++ b/drivers/xen/swiotlb-xen.c
-> @@ -42,9 +42,11 @@
->  #include <xen/page.h>
->  #include <xen/xen-ops.h>
->  #include <xen/hvc-console.h>
-> +#include <xen/interface/memory.h>
->  
->  #include <asm/dma-mapping.h>
->  #include <asm/xen/page-coherent.h>
-> +#include <asm/xen/hypercall.h>
->  
->  #include <trace/events/swiotlb.h>
->  /*
-> @@ -683,3 +685,14 @@ xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask)
->  	return 0;
->  }
->  EXPORT_SYMBOL_GPL(xen_swiotlb_set_dma_mask);
-> +
-> +u64
-> +xen_swiotlb_get_required_mask(struct device *dev)
-> +{
-> +	unsigned long max_mfn;
-> +
-> +	max_mfn = HYPERVISOR_memory_op(XENMEM_maximum_ram_page, NULL);
+>
+> Not tested, found by casual code inspection.
+>
+>   drivers/pci/host/pci-keystone.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c
+> index 8a27078..f2bd48d 100644
+> --- a/drivers/pci/host/pci-keystone.c
+> +++ b/drivers/pci/host/pci-keystone.c
+> @@ -197,7 +197,7 @@ static int ks_pcie_get_irq_controller_info(struct keystone_pcie *ks_pcie,
+>   	 */
+>   	for (temp = 0; temp<  max_host_irqs; temp++) {
+>   		host_irqs[temp] = irq_of_parse_and_map(*np_temp, temp);
+> -		if (host_irqs[temp]<  0)
+> +		if (!host_irqs[temp])
+>   			break;
+>   	}
+>   	if (temp) {
+Good catch!
 
-As Jan pointed out, I think you need to change the prototype of
-HYPERVISOR_memory_op to return long. Please do consistently across all
-relevant archs.
+Acked-By: Murali Karicheri <m-karicheri2@ti.com>
 
-
-> +	return DMA_BIT_MASK(fls_long(max_mfn - 1) + PAGE_SHIFT);
-> +}
-> +EXPORT_SYMBOL_GPL(xen_swiotlb_get_required_mask);
-> diff --git a/include/xen/swiotlb-xen.h b/include/xen/swiotlb-xen.h
-> index 8b2eb93..6408888 100644
-> --- a/include/xen/swiotlb-xen.h
-> +++ b/include/xen/swiotlb-xen.h
-> @@ -58,4 +58,8 @@ xen_swiotlb_dma_supported(struct device *hwdev, u64 mask);
->  
->  extern int
->  xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask);
-> +
-> +extern u64
-> +xen_swiotlb_get_required_mask(struct device *dev);
-> +
->  #endif /* __LINUX_SWIOTLB_XEN_H */
-> -- 
-> 1.7.10.4
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
-> 
+-- 
+Murali Karicheri
+Linux Kernel, Texas Instruments
