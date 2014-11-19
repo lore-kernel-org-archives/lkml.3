@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584AbaKSQLG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:11:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:51513 "EHLO mail.kernel.org"
+	id S1755974AbaKSQEh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:04:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:51467 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756677AbaKSQEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:04:38 -0500
+	id S1756083AbaKSQEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:04:34 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 11/16] perf hists: Fix up srcline histogram key formatting
-Date: Wed, 19 Nov 2014 13:03:31 -0300
-Message-Id: <1416413016-19110-12-git-send-email-acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 10/16] perf annotate: Support source line numbers in annotate
+Date: Wed, 19 Nov 2014 13:03:30 -0300
+Message-Id: <1416413016-19110-11-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416413016-19110-1-git-send-email-acme@kernel.org>
 References: <1416413016-19110-1-git-send-email-acme@kernel.org>
@@ -26,57 +21,223 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Andi Kleen <ak@linux.intel.com>
 
-Problem introduced in:
+With srcline key/sort'ing it's useful to have line numbers in the
+annotate window. This patch implements this.
 
-  commit 5b5916696051 "perf report: Honor column width setting"
+Use objdump -l to request the line numbers and save them in the line
+structure. Then the browser displays them for source lines.
 
-Where the left justification signal was after the width, which ended up,
-when the width was, say, 11, always printing:
+The line numbers are not displayed by default, but can be toggled on
+with 'k'
 
-	%11.11-s
+There is one unfortunate problem with this setup. For lines not
+containing source and which are outside functions objdump -l reports
+line numbers off by a few: it always reports the first line number in
+the next function even for lines that are outside the function.
 
-Instead of src:line left justified and limited to 11 chars.
+I haven't found a nice way to detect/correct this. Probably objdump has
+to be fixed.
 
-Resulting in a like:
+See https://sourceware.org/bugzilla/show_bug.cgi?id=16433
 
-    70.93%  %11.11-s  [.] f2                     tcall
+The line numbers are still useful even with these problems, as most are
+correct and the ones which are not are nearby.
 
-When it should instead be:
+v2: Fix help text. Handle (discriminator...) output in objdump.
+Left align the line numbers.
 
-    70.93%  tcall.c:5    [.] f2                     tcall
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-2xnt0vqkoox52etq2qhyetr0@git.kernel.org
+Link: http://lkml.kernel.org/r/1415844328-4884-9-git-send-email-andi@firstfloor.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/sort.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/ui/browsers/annotate.c | 13 ++++++++++++-
+ tools/perf/util/annotate.c        | 30 +++++++++++++++++++++++++-----
+ tools/perf/util/annotate.h        |  1 +
+ 3 files changed, 38 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 9402885a77f3..82a5596241a7 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -309,7 +309,7 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- static int hist_entry__srcline_snprintf(struct hist_entry *he, char *bf,
- 					size_t size, unsigned int width)
- {
--	return repsep_snprintf(bf, size, "%*.*-s", width, width, he->srcline);
-+	return repsep_snprintf(bf, size, "%-*.*s", width, width, he->srcline);
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index f0697a3aede0..1e0a2fd80115 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -27,6 +27,7 @@ static struct annotate_browser_opt {
+ 	bool hide_src_code,
+ 	     use_offset,
+ 	     jump_arrows,
++	     show_linenr,
+ 	     show_nr_jumps;
+ } annotate_browser__opts = {
+ 	.use_offset	= true,
+@@ -128,7 +129,11 @@ static void annotate_browser__write(struct ui_browser *browser, void *entry, int
+ 	if (!*dl->line)
+ 		slsmg_write_nstring(" ", width - pcnt_width);
+ 	else if (dl->offset == -1) {
+-		printed = scnprintf(bf, sizeof(bf), "%*s  ",
++		if (dl->line_nr && annotate_browser__opts.show_linenr)
++			printed = scnprintf(bf, sizeof(bf), "%-*d ",
++					ab->addr_width + 1, dl->line_nr);
++		else
++			printed = scnprintf(bf, sizeof(bf), "%*s  ",
+ 				    ab->addr_width, " ");
+ 		slsmg_write_nstring(bf, printed);
+ 		slsmg_write_nstring(dl->line, width - printed - pcnt_width + 1);
+@@ -733,6 +738,7 @@ static int annotate_browser__run(struct annotate_browser *browser,
+ 		"o             Toggle disassembler output/simplified view\n"
+ 		"s             Toggle source code view\n"
+ 		"/             Search string\n"
++		"k             Toggle line numbers\n"
+ 		"r             Run available scripts\n"
+ 		"?             Search string backwards\n");
+ 			continue;
+@@ -741,6 +747,10 @@ static int annotate_browser__run(struct annotate_browser *browser,
+ 				script_browse(NULL);
+ 				continue;
+ 			}
++		case 'k':
++			annotate_browser__opts.show_linenr =
++				!annotate_browser__opts.show_linenr;
++			break;
+ 		case 'H':
+ 			nd = browser->curr_hot;
+ 			break;
+@@ -984,6 +994,7 @@ static struct annotate_config {
+ } annotate__configs[] = {
+ 	ANNOTATE_CFG(hide_src_code),
+ 	ANNOTATE_CFG(jump_arrows),
++	ANNOTATE_CFG(show_linenr),
+ 	ANNOTATE_CFG(show_nr_jumps),
+ 	ANNOTATE_CFG(use_offset),
+ };
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 873c8778db20..e5670f1af737 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -17,11 +17,13 @@
+ #include "debug.h"
+ #include "annotate.h"
+ #include "evsel.h"
++#include <regex.h>
+ #include <pthread.h>
+ #include <linux/bitops.h>
+ 
+ const char 	*disassembler_style;
+ const char	*objdump_path;
++static regex_t	 file_lineno;
+ 
+ static struct ins *ins__find(const char *name);
+ static int disasm_line__parse(char *line, char **namep, char **rawp);
+@@ -570,13 +572,15 @@ out_free_name:
+ 	return -1;
  }
  
- struct sort_entry sort_srcline = {
+-static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privsize)
++static struct disasm_line *disasm_line__new(s64 offset, char *line,
++					size_t privsize, int line_nr)
+ {
+ 	struct disasm_line *dl = zalloc(sizeof(*dl) + privsize);
+ 
+ 	if (dl != NULL) {
+ 		dl->offset = offset;
+ 		dl->line = strdup(line);
++		dl->line_nr = line_nr;
+ 		if (dl->line == NULL)
+ 			goto out_delete;
+ 
+@@ -788,13 +792,15 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
+  * The ops.raw part will be parsed further according to type of the instruction.
+  */
+ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+-				      FILE *file, size_t privsize)
++				      FILE *file, size_t privsize,
++				      int *line_nr)
+ {
+ 	struct annotation *notes = symbol__annotation(sym);
+ 	struct disasm_line *dl;
+ 	char *line = NULL, *parsed_line, *tmp, *tmp2, *c;
+ 	size_t line_len;
+ 	s64 line_ip, offset = -1;
++	regmatch_t match[2];
+ 
+ 	if (getline(&line, &line_len, file) < 0)
+ 		return -1;
+@@ -812,6 +818,12 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+ 	line_ip = -1;
+ 	parsed_line = line;
+ 
++	/* /filename:linenr ? Save line number and ignore. */
++	if (regexec(&file_lineno, line, 2, match, 0) == 0) {
++		*line_nr = atoi(line + match[1].rm_so);
++		return 0;
++	}
++
+ 	/*
+ 	 * Strip leading spaces:
+ 	 */
+@@ -842,8 +854,9 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+ 			parsed_line = tmp2 + 1;
+ 	}
+ 
+-	dl = disasm_line__new(offset, parsed_line, privsize);
++	dl = disasm_line__new(offset, parsed_line, privsize, *line_nr);
+ 	free(line);
++	(*line_nr)++;
+ 
+ 	if (dl == NULL)
+ 		return -1;
+@@ -869,6 +882,11 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+ 	return 0;
+ }
+ 
++static __attribute__((constructor)) void symbol__init_regexpr(void)
++{
++	regcomp(&file_lineno, "^/[^:]+:([0-9]+)", REG_EXTENDED);
++}
++
+ static void delete_last_nop(struct symbol *sym)
+ {
+ 	struct annotation *notes = symbol__annotation(sym);
+@@ -904,6 +922,7 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
+ 	char symfs_filename[PATH_MAX];
+ 	struct kcore_extract kce;
+ 	bool delete_extract = false;
++	int lineno = 0;
+ 
+ 	if (filename)
+ 		symbol__join_symfs(symfs_filename, filename);
+@@ -984,7 +1003,7 @@ fallback:
+ 	snprintf(command, sizeof(command),
+ 		 "%s %s%s --start-address=0x%016" PRIx64
+ 		 " --stop-address=0x%016" PRIx64
+-		 " -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
++		 " -l -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
+ 		 objdump_path ? objdump_path : "objdump",
+ 		 disassembler_style ? "-M " : "",
+ 		 disassembler_style ? disassembler_style : "",
+@@ -1001,7 +1020,8 @@ fallback:
+ 		goto out_free_filename;
+ 
+ 	while (!feof(file))
+-		if (symbol__parse_objdump_line(sym, map, file, privsize) < 0)
++		if (symbol__parse_objdump_line(sym, map, file, privsize,
++			    &lineno) < 0)
+ 			break;
+ 
+ 	/*
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index 112d6e268150..0784a9420528 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -58,6 +58,7 @@ struct disasm_line {
+ 	char		    *line;
+ 	char		    *name;
+ 	struct ins	    *ins;
++	int		    line_nr;
+ 	struct ins_operands ops;
+ };
+ 
 -- 
 1.9.3
 
