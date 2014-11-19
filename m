@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664AbaKSLgQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 06:36:16 -0500
-Received: from www.linutronix.de ([62.245.132.108]:44162 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006AbaKSLgN (ORCPT
+	id S1755395AbaKSLgP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 06:36:15 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:45728 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaKSLgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 06:36:13 -0500
-Date: Wed, 19 Nov 2014 12:36:06 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-cc: "H . Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
-        Aubrey Li <aubrey.li@linux.intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        "Kumar P, Mahesh" <mahesh.kumar.p@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 2/3] x86: pmc_atom: don't check for NULL twice
-In-Reply-To: <1415812689-17326-3-git-send-email-andriy.shevchenko@linux.intel.com>
-Message-ID: <alpine.DEB.2.11.1411191224220.3909@nanos>
-References: <1415812689-17326-1-git-send-email-andriy.shevchenko@linux.intel.com> <1415812689-17326-3-git-send-email-andriy.shevchenko@linux.intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+X-Originating-IP: [95.23.100.213]
+In-Reply-To: <000101cffe30$155793a0$4006bae0$%han@samsung.com>
+References: <1414675442-3471-1-git-send-email-gautam.vivek@samsung.com>
+	<1414675442-3471-2-git-send-email-gautam.vivek@samsung.com>
+	<000101cffe30$155793a0$4006bae0$%han@samsung.com>
+Date: Wed, 19 Nov 2014 12:36:11 +0100
+Message-ID: <CABxcv=mams-iVBvACLZ-=Ozcs3KcHSEvxAsRSSV-eKaSnrcXSA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] arm: dts: Exynos5: Use pmu_system_controller
+ phandle for dp phy
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, Kukjin Kim <kgene@kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Sean Paul <seanpaul@google.com>, Ajay Kumar <ajaykumar.rs@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Nov 2014, Andy Shevchenko wrote:
+[adding Kukjin to cc list]
 
-> debugfs_remove_recursive() is NULL-aware, thus, we may safely remove the check
-> here. There is no need to assing NULL to variable since it will be not used
-> anywhere.
-> 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Acked-by: Aubrey Li <aubrey.li@linux.intel.com>
-> ---
->  arch/x86/kernel/pmc_atom.c | 4 ----
->  1 file changed, 4 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-> index 19b8efa..bcc91ea 100644
-> --- a/arch/x86/kernel/pmc_atom.c
-> +++ b/arch/x86/kernel/pmc_atom.c
-> @@ -202,11 +202,7 @@ static const struct file_operations pmc_sleep_tmr_ops = {
->  
->  static void pmc_dbgfs_unregister(struct pmc_dev *pmc)
->  {
-> -	if (!pmc->dbgfs_dir)
-> -		return;
-> -
->  	debugfs_remove_recursive(pmc->dbgfs_dir);
-> -	pmc->dbgfs_dir = NULL;
->  }
+Hello Vivek,
 
-So while the patch is correct per se, the whole function is useless.
+On Wed, Nov 12, 2014 at 5:21 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+> On Thursday, October 30, 2014 10:24 PM, Vivek Gautam wrote:
+>>
+>> DP PHY now require pmu-system-controller to handle PMU register
+>> to control PHY's power isolation. Adding the same to dp-phy
+>> node.
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> Cc: Jingoo Han <jg1.han@samsung.com>
+>
+> Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+>
 
-pmc_dbgfs_register()
+Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
-	dir = debugfs_create_dir("pmc_atom", NULL);
+Kukjin,
 
-	....
-	if (!f)
-		goto err;
+This patch is -rc material and is needed to have display working in
+3.18 again since commit a5ec598 ("phy: exynos-dp-video: Use syscon
+support to control pmu register") landed in 3.18 and broke the Exynos
+Display Port PHY:
 
-	pmc->dbgfs_dir = dir;
-	return 0;
-err:
-	pmc_dbgfs_unregister(pmc);
+exynos-dp-video-phy 10040728.video-phy: Failed to lookup PMU regmap
 
-So pmc->dbgfs_dir is always NULL when this is called....
-
-Aside of that, if DEBUGFS=n the code keeps pmc->regmap ioremapped for
-no reason.
-
-Looking deeper:
-
-The pmc_power_off function is installed _BEFORE_ pmc_hw_reg_setup() is
-called, which might not be called if the ioremap fails ....
-
-Thanks,
-
-	tglx
-
-
+Best regards,
+Javier
