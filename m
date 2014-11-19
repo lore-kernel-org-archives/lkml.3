@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429AbaKSQII (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:08:08 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:55275 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932381AbaKSQID (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:08:03 -0500
-Date: Wed, 19 Nov 2014 16:07:47 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
-Message-ID: <20141119160747.GH4042@n2100.arm.linux.org.uk>
-References: <20141118172146.3784.81151.stgit@buzz>
- <20141118173413.GB4042@n2100.arm.linux.org.uk>
- <546B8C64.3010904@samsung.com>
- <2041617.Kxhx5O4MMr@wuerfel>
- <CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
- <CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
- <CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com>
+	id S932489AbaKSQIn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:08:43 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:57775 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932266AbaKSQFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:05:08 -0500
+Message-ID: <546CBFAC.9040906@free.fr>
+Date: Wed, 19 Nov 2014 17:05:00 +0100
+From: Mason <mpeg.blue@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:33.0) Gecko/20100101 Firefox/33.0 SeaMonkey/2.30
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?UTF-8?Q?Andreas_F=c3=a4rber?= <afaerber@suse.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Device Tree <devicetree@vger.kernel.org>,
+        Linux ARM <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Looking for good references for ARM driver development
+References: <546C920A.7060800@free.fr> <546CB0EB.9080005@suse.de>
+In-Reply-To: <546CB0EB.9080005@suse.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 05:02:40PM +0100, Ard Biesheuvel wrote:
-> On 19 November 2014 16:52, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
-> > Do you mean ldr pc, =symbol ?
-> >
-> > In this case I get this error:
-> >
-> > /tmp/ccAHtONU.s: Assembler messages:
-> > /tmp/ccAHtONU.s:220: Error: invalid literal constant: pool needs to be closer
-> >
-> > Probably constant pool doesn't work well in inline assembly.
-> >
-> >
-> > Something like this seems work:
-> >
-> > add     lr, pc, #4
-> > ldr       pc, [pc, #-4]
-> > .long symbol
-> >
-> 
-> You can add a '.ltorg' instruction which tells the assembler to dump
-> the literal pool, but you still need to jump over it, i.e.,
-> 
-> adr lr, 0f
-> ldr pc, =symbol
-> .ltorg
-> 0:
+Hello Andreas,
 
-Which is not a good idea either, because the compiler needs to know how
-far away its own manually generated literal pool is from the instructions
-which reference it.  The .ltorg statement can end up emitting any number
-of literals at that point, which makes it indeterminant how many words
-are contained within the asm() statement.
+On 19/11/2014 16:02, Andreas Färber wrote:
 
-Yes, it isn't desirable to waste an entire data cache line per indirect
-call like the original quote above, but I don't see a practical
-alternative.
+> Am 19.11.2014 um 13:50 schrieb Mason:
+>
+>> [...] I'm writing a driver for a temperature sensor, which is
+>> supposed to work within the hwmon/lm-sensors framework.
+>>
+>> The sensor's API consists of 3 memory-mapped registers, which are
+>> accessible over the SoC's memory bus. [...]
+>>
+>> 1) Which bus should I be using for this driver?
+>> Is the platform bus appropriate?
+>
+> Probably.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Is there an exhaustive list of available buses (on the ARM platform)
+and an overview of when/where each one is appropriate?
+
+>> 2) platform.txt states
+>>
+>>> Some drivers are not fully converted to the driver model, because
+>>> they take on a non-driver role:  the driver registers its
+>>> platform device, rather than leaving that for system
+>>> infrastructure.  Such drivers can't be hotplugged or coldplugged,
+>>> since those mechanisms require device creation to be in a
+>>> different system component than the driver.
+>>
+>> How do I "leave device registration for the system
+>> infrastructure"? Where should I put that code? Is it a good idea to
+>> separate device registration and driver registration in the case of
+>> a SoC, where the device is embedded in the SoC and is not
+>> "hot-plugged" (or anything-plugged for that matter, it's just
+>> "there").
+>
+> Since this appears to be about an ARM SoC according to your To list,
+> in general, you create a device tree binding, that binding is
+> registered within your platform/... driver code and referenced in the
+> device tree for SoC or board, and then your driver will automatically
+> be probed.
+
+I know nothing about DT (aside from the Wikipedia entry).
+I'll take a closer look at Documentation/devicetree.
+Will that explain what platform/... is?
+
+I see a drivers/platform folder, but nothing ARM-specific there?
+
+>> 4) Can I use platform_driver_probe, instead of
+>> platform_driver_register?
+>
+> Most likely you do not need to call either yourself.
+
+Hmmm, color me even more confused. I had really come to believe that
+driver registration was a mandatory part of the driver, something
+that wasn't left to "infrastructure code".
+
+> Just compare other platform drivers on the one hand, and temperature
+> sensor drivers on the other (such as I2C based gmt,g781 / LM90). Did
+> you already check whether there is a driver that is both?
+
+Please excuse my naive question: what are platform drivers, and where
+are they stored in the kernel source tree?
+
+Regards.
+
