@@ -1,83 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756412AbaKSRy4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:54:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56360 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756224AbaKSRyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:54:54 -0500
-Message-ID: <546CD95F.3090603@redhat.com>
-Date: Wed, 19 Nov 2014 18:54:39 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1756447AbaKSRzT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:55:19 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:47996 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754998AbaKSRzP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 12:55:15 -0500
+Date: Wed, 19 Nov 2014 09:55:10 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Heiko Stuebner <heiko@sntech.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Sonny Rao <sonnyrao@chromium.org>, Chris Zhong <zyw@rock-chips.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] pinctrl: rockchip: Handle wakeup pins
+Message-ID: <20141119175510.GB37989@dtor-ws>
+References: <1416354596-15013-1-git-send-email-dianders@chromium.org>
+ <1416354596-15013-2-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-To: Nicholas Krause <xerofoify@gmail.com>, gleb@kernel.org
-CC: glx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Remove Fix Mes in emulate.c from needing fault addresses
-References: <1416401298-2393-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1416401298-2393-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416354596-15013-2-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 18, 2014 at 03:49:55PM -0800, Doug Anderson wrote:
+> The rockchip pinctrl driver was using irq_gc_set_wake() as its
+> implementation of irq_set_wake() but was totally ignoring everything
+> that irq_gc_set_wake() did (which is to upkeep gc->wake_active).
+> 
+> Let's fix that by setting gc->wake_active as GPIO_INTEN at suspend
+> time and restoring GPIO_INTEN at resume time.
+> 
+> NOTE a few quirks when thinking about this patch:
+> - Rockchip pinctrl hardware supports both "disable/enable" and
+>   "mask/unmask".  Right now we only use "disable/enable" and present
+>   those to Linux as "mask/unmask".  This should be OK because
+>   enable/disable is optional and Linux will implement it in terms of
+>   mask/unmask.  At the moment we always tell hardware all interrupts
+>   are unmasked (the boot default).
+> - At suspend time Linux tries to call "disable" on all interrupts and
+>   also enables wakeup on all wakeup interrupts.  One would think that
+>   since "disable" is implemented as "mask" when "disable" isn't
+>   provided and that since we were ignoring gc->wake_active that
+>   nothing would have woken us up.  That's not the case since Linux
+>   "optimizes" things and just leaves interrutps unmasked, assuming it
+>   could mask them later when they go off.  That meant that at suspend
+>   time all interrupts were actually being left enabled.
+> 
+> With this patch random non-wakeup interrupts no longer wake the system
+> up.  Wakeup interrupts still wake the system up.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
+Seems reasonable to me.
 
-On 19/11/2014 13:48, Nicholas Krause wrote:
-> Removes fix me comments for needing fault addresses to be returned in certain
-> functions if they fail as they are stored and included in this file via the \
-> header file,paging_tmpl.h.
+Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-
-    KVM: x86: Remove FIXMEs in emulate.c
-    
-    Remove fixme comments about needing fault addresses to be returned.  These
-    are propaagated from walk_addr_generic to gva_to_gpa and from there to
-    ops->read_std and ops->write_std.
-
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
 > ---
->  arch/x86/kvm/emulate.c | 4 ----
->  1 file changed, 4 deletions(-)
+>  drivers/pinctrl/pinctrl-rockchip.c | 21 +++++++++++++++++++++
+>  1 file changed, 21 insertions(+)
 > 
-> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-> index 9f8a2fa..f7f21d2 100644
-> --- a/arch/x86/kvm/emulate.c
-> +++ b/arch/x86/kvm/emulate.c
-> @@ -2599,7 +2599,6 @@ static int task_switch_16(struct x86_emulate_ctxt *ctxt,
->  	ret = ops->read_std(ctxt, old_tss_base, &tss_seg, sizeof tss_seg,
->  			    &ctxt->exception);
->  	if (ret != X86EMUL_CONTINUE)
-> -		/* FIXME: need to provide precise fault address */
->  		return ret;
+> diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
+> index ba74f0a..e91e845 100644
+> --- a/drivers/pinctrl/pinctrl-rockchip.c
+> +++ b/drivers/pinctrl/pinctrl-rockchip.c
+> @@ -89,6 +89,7 @@ struct rockchip_iomux {
+>   * @reg_pull: optional separate register for additional pull settings
+>   * @clk: clock of the gpio bank
+>   * @irq: interrupt of the gpio bank
+> + * @saved_enables: Saved content of GPIO_INTEN at suspend time.
+>   * @pin_base: first pin number
+>   * @nr_pins: number of pins in this bank
+>   * @name: name of the bank
+> @@ -107,6 +108,7 @@ struct rockchip_pin_bank {
+>  	struct regmap			*regmap_pull;
+>  	struct clk			*clk;
+>  	int				irq;
+> +	u32				saved_enables;
+>  	u32				pin_base;
+>  	u8				nr_pins;
+>  	char				*name;
+> @@ -1543,6 +1545,23 @@ static int rockchip_irq_set_type(struct irq_data *d, unsigned int type)
+>  	return 0;
+>  }
 >  
->  	save_state_to_tss16(ctxt, &tss_seg);
-> @@ -2607,13 +2606,11 @@ static int task_switch_16(struct x86_emulate_ctxt *ctxt,
->  	ret = ops->write_std(ctxt, old_tss_base, &tss_seg, sizeof tss_seg,
->  			     &ctxt->exception);
->  	if (ret != X86EMUL_CONTINUE)
-> -		/* FIXME: need to provide precise fault address */
->  		return ret;
+> +static void rockchip_irq_suspend(struct irq_data *d)
+> +{
+> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+> +	struct rockchip_pin_bank *bank = gc->private;
+> +
+> +	bank->saved_enables = irq_reg_readl(gc, GPIO_INTEN);
+> +	irq_reg_writel(gc, gc->wake_active, GPIO_INTEN);
+> +}
+> +
+> +static void rockchip_irq_resume(struct irq_data *d)
+> +{
+> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+> +	struct rockchip_pin_bank *bank = gc->private;
+> +
+> +	irq_reg_writel(gc, bank->saved_enables, GPIO_INTEN);
+> +}
+> +
+>  static int rockchip_interrupts_register(struct platform_device *pdev,
+>  						struct rockchip_pinctrl *info)
+>  {
+> @@ -1587,6 +1606,8 @@ static int rockchip_interrupts_register(struct platform_device *pdev,
+>  		gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
+>  		gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
+>  		gc->chip_types[0].chip.irq_set_wake = irq_gc_set_wake;
+> +		gc->chip_types[0].chip.irq_suspend = rockchip_irq_suspend;
+> +		gc->chip_types[0].chip.irq_resume = rockchip_irq_resume;
+>  		gc->chip_types[0].chip.irq_set_type = rockchip_irq_set_type;
+>  		gc->wake_enabled = IRQ_MSK(bank->nr_pins);
 >  
->  	ret = ops->read_std(ctxt, new_tss_base, &tss_seg, sizeof tss_seg,
->  			    &ctxt->exception);
->  	if (ret != X86EMUL_CONTINUE)
-> -		/* FIXME: need to provide precise fault address */
->  		return ret;
->  
->  	if (old_tss_sel != 0xffff) {
-> @@ -2624,7 +2621,6 @@ static int task_switch_16(struct x86_emulate_ctxt *ctxt,
->  				     sizeof tss_seg.prev_task_link,
->  				     &ctxt->exception);
->  		if (ret != X86EMUL_CONTINUE)
-> -			/* FIXME: need to provide precise fault address */
->  			return ret;
->  	}
->  
+> -- 
+> 2.1.0.rc2.206.gedb03e5
 > 
 
-Applied, thanks.
-
-Paolo
+-- 
+Dmitry
