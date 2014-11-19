@@ -1,228 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933209AbaKSXL3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 18:11:29 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:57292 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932375AbaKSXL1 (ORCPT
+	id S1757112AbaKSXNF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 18:13:05 -0500
+Received: from mail-bn1on0147.outbound.protection.outlook.com ([157.56.110.147]:14924
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755849AbaKSXND convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 18:11:27 -0500
-From: Hai Li <hali@codeaurora.org>
-To: dri-devel@lists.freedesktop.org
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robdclark@gmail.com, Hai Li <hali@codeaurora.org>
-Subject: [PATCH 2/2] drm/msm: Add the eDP connector in msm drm driver
-Date: Wed, 19 Nov 2014 18:10:43 -0500
-Message-Id: <1416438643-14250-2-git-send-email-hali@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1416438643-14250-1-git-send-email-hali@codeaurora.org>
-References: <1416438643-14250-1-git-send-email-hali@codeaurora.org>
+	Wed, 19 Nov 2014 18:13:03 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dexuan Cui <decui@microsoft.com>
+Subject: RE: [PATCH v2 1/2] Tools: hv: vssdaemon: report freeze errors
+Thread-Topic: [PATCH v2 1/2] Tools: hv: vssdaemon: report freeze errors
+Thread-Index: AQHP/QSXmC5vQj/BgE2XOkatyKGZIZxooquA
+Date: Wed, 19 Nov 2014 23:12:57 +0000
+Message-ID: <BN1PR0301MB0707937F69B155C862F028FFA0890@BN1PR0301MB0707.namprd03.prod.outlook.com>
+References: <1415637422-27880-1-git-send-email-vkuznets@redhat.com>
+ <1415637422-27880-2-git-send-email-vkuznets@redhat.com>
+In-Reply-To: <1415637422-27880-2-git-send-email-vkuznets@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e8:ed31::3]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0706;UriScan:;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0706;
+x-forefront-prvs: 04004D94E2
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(377454003)(13464003)(199003)(189002)(86362001)(19580395003)(575784001)(19580405001)(97736003)(92566001)(92726001)(1511001)(21056001)(20776003)(86612001)(64706001)(122556002)(120916001)(2561002)(99396003)(101416001)(87936001)(33656002)(2656002)(95666004)(99286002)(105586002)(106116001)(76576001)(107046002)(106356001)(77156002)(77096003)(62966003)(40100003)(31966008)(2421001)(4396001)(76176999)(54206007)(74316001)(50986999)(54606007)(54356999)(46102003)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0706;H:BN1PR0301MB0707.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0628;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modified the hard-coded hdmi connector/encoder implementations in msm drm
-driver to support both edp and hdmi.
 
-Signed-off-by: Hai Li <hali@codeaurora.org>
----
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_encoder.c | 38 +++++++++++++++++++++--
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c     | 47 ++++++++++++++++++++---------
- drivers/gpu/drm/msm/msm_drv.c               |  2 ++
- drivers/gpu/drm/msm/msm_drv.h               |  7 +++++
- 4 files changed, 77 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_encoder.c b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_encoder.c
-index 25c2fcb..f4159c2 100644
---- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_encoder.c
-+++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_encoder.c
-@@ -1,4 +1,5 @@
- /*
-+ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-  * Copyright (C) 2013 Red Hat
-  * Author: Rob Clark <robdclark@gmail.com>
-  *
-@@ -151,11 +152,13 @@ static void mdp5_encoder_mode_set(struct drm_encoder *encoder,
- {
- 	struct mdp5_encoder *mdp5_encoder = to_mdp5_encoder(encoder);
- 	struct mdp5_kms *mdp5_kms = get_kms(encoder);
-+	struct drm_device *dev = encoder->dev;
-+	struct drm_connector *connector;
- 	int intf = mdp5_encoder->intf;
- 	uint32_t dtv_hsync_skew, vsync_period, vsync_len, ctrl_pol;
- 	uint32_t display_v_start, display_v_end;
- 	uint32_t hsync_start_x, hsync_end_x;
--	uint32_t format;
-+	uint32_t format = 0x2100;
- 	unsigned long flags;
- 
- 	mode = adjusted_mode;
-@@ -177,7 +180,28 @@ static void mdp5_encoder_mode_set(struct drm_encoder *encoder,
- 	/* probably need to get DATA_EN polarity from panel.. */
- 
- 	dtv_hsync_skew = 0;  /* get this from panel? */
--	format = 0x213f;     /* get this from panel? */
-+
-+	/* Get color format from panel, default is 8bpc */
-+	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
-+		if (connector->encoder == encoder) {
-+			switch (connector->display_info.bpc) {
-+			case 4:
-+				format |= 0;
-+				break;
-+			case 5:
-+				format |= 0x15;
-+				break;
-+			case 6:
-+				format |= 0x2A;
-+				break;
-+			case 8:
-+			default:
-+				format |= 0x3F;
-+				break;
-+			}
-+			break;
-+		}
-+	}
- 
- 	hsync_start_x = (mode->htotal - mode->hsync_start);
- 	hsync_end_x = mode->htotal - (mode->hsync_start - mode->hdisplay) - 1;
-@@ -187,6 +211,16 @@ static void mdp5_encoder_mode_set(struct drm_encoder *encoder,
- 	display_v_start = (mode->vtotal - mode->vsync_start) * mode->htotal + dtv_hsync_skew;
- 	display_v_end = vsync_period - ((mode->vsync_start - mode->vdisplay) * mode->htotal) + dtv_hsync_skew - 1;
- 
-+	/*
-+	 * For edp only:
-+	 * DISPLAY_V_START = (VBP * HCYCLE) + HBP
-+	 * DISPLAY_V_END = (VBP + VACTIVE) * HCYCLE - 1 - HFP
-+	 */
-+	if (mdp5_encoder->intf_id == INTF_eDP) {
-+		display_v_start += (mode->htotal - mode->hsync_start);
-+		display_v_end -= (mode->hsync_start - mode->hdisplay);
-+	}
-+
- 	spin_lock_irqsave(&mdp5_encoder->intf_lock, flags);
- 
- 	mdp5_write(mdp5_kms, REG_MDP5_INTF_HSYNC_CTL(intf),
-diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
-index ab5f8d2..9d891e2 100644
---- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
-+++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
-@@ -157,7 +157,7 @@ static int modeset_init(struct mdp5_kms *mdp5_kms)
- 	};
- 	struct drm_device *dev = mdp5_kms->dev;
- 	struct msm_drm_private *priv = dev->dev_private;
--	struct drm_encoder *encoder;
-+	struct drm_encoder *edp_encoder = NULL, *hdmi_encoder = NULL;
- 	const struct mdp5_cfg_hw *hw_cfg;
- 	int i, ret;
- 
-@@ -208,14 +208,6 @@ static int modeset_init(struct mdp5_kms *mdp5_kms)
- 		}
- 	}
- 
--	/* Construct encoder for HDMI: */
--	encoder = mdp5_encoder_init(dev, 3, INTF_HDMI);
--	if (IS_ERR(encoder)) {
--		dev_err(dev->dev, "failed to construct encoder\n");
--		ret = PTR_ERR(encoder);
--		goto fail;
--	}
--
- 	/* NOTE: the vsync and error irq's are actually associated with
- 	 * the INTF/encoder.. the easiest way to deal with this (ie. what
- 	 * we do now) is assume a fixed relationship between crtc's and
-@@ -224,20 +216,45 @@ static int modeset_init(struct mdp5_kms *mdp5_kms)
- 	 * care of error and vblank irq's that the crtc has registered,
- 	 * and also update user-requested vblank_mask.
- 	 */
--	encoder->possible_crtcs = BIT(0);
--	mdp5_crtc_set_intf(priv->crtcs[0], 3, INTF_HDMI);
-+	if (priv->hdmi) {
-+		/* Construct encoder for HDMI: */
-+		hdmi_encoder = mdp5_encoder_init(dev, 3, INTF_HDMI);
-+		if (IS_ERR(hdmi_encoder)) {
-+			dev_err(dev->dev, "failed to construct encoder\n");
-+			ret = PTR_ERR(hdmi_encoder);
-+			goto fail;
-+		}
- 
--	priv->encoders[priv->num_encoders++] = encoder;
-+		hdmi_encoder->possible_crtcs = (1 << priv->num_crtcs) - 1;
-+		priv->encoders[priv->num_encoders++] = hdmi_encoder;
- 
--	/* Construct bridge/connector for HDMI: */
--	if (priv->hdmi) {
--		ret = hdmi_modeset_init(priv->hdmi, dev, encoder);
-+		ret = hdmi_modeset_init(priv->hdmi, dev, hdmi_encoder);
- 		if (ret) {
- 			dev_err(dev->dev, "failed to initialize HDMI: %d\n", ret);
- 			goto fail;
- 		}
- 	}
- 
-+	if (priv->edp) {
-+		/* Construct encoder for eDP: */
-+		edp_encoder = mdp5_encoder_init(dev, 0, INTF_eDP);
-+		if (IS_ERR(edp_encoder)) {
-+			dev_err(dev->dev, "failed to construct eDP encoder\n");
-+			ret = PTR_ERR(edp_encoder);
-+			goto fail;
-+		}
-+
-+		edp_encoder->possible_crtcs = (1 << priv->num_crtcs) - 1;
-+		priv->encoders[priv->num_encoders++] = edp_encoder;
-+
-+		ret = msm_edp_modeset_init(priv->edp, dev, edp_encoder);
-+		if (ret) {
-+			dev_err(dev->dev, "failed to initialize eDP: %d\n",
-+									ret);
-+			goto fail;
-+		}
-+	}
-+
- 	return 0;
- 
- fail:
-diff --git a/drivers/gpu/drm/msm/msm_drv.c b/drivers/gpu/drm/msm/msm_drv.c
-index d3b791b..e007a7a 100644
---- a/drivers/gpu/drm/msm/msm_drv.c
-+++ b/drivers/gpu/drm/msm/msm_drv.c
-@@ -1023,6 +1023,7 @@ static struct platform_driver msm_platform_driver = {
- static int __init msm_drm_register(void)
- {
- 	DBG("init");
-+	msm_edp_register();
- 	hdmi_register();
- 	adreno_register();
- 	return platform_driver_register(&msm_platform_driver);
-@@ -1034,6 +1035,7 @@ static void __exit msm_drm_unregister(void)
- 	platform_driver_unregister(&msm_platform_driver);
- 	hdmi_unregister();
- 	adreno_unregister();
-+	msm_edp_unregister();
- }
- 
- module_init(msm_drm_register);
-diff --git a/drivers/gpu/drm/msm/msm_drv.h b/drivers/gpu/drm/msm/msm_drv.h
-index 3b25dd8..1cd0e0c 100644
---- a/drivers/gpu/drm/msm/msm_drv.h
-+++ b/drivers/gpu/drm/msm/msm_drv.h
-@@ -224,6 +224,13 @@ int hdmi_modeset_init(struct hdmi *hdmi, struct drm_device *dev,
- void __init hdmi_register(void);
- void __exit hdmi_unregister(void);
- 
-+struct msm_edp;
-+void __init msm_edp_register(void);
-+void __exit msm_edp_unregister(void);
-+int msm_edp_modeset_init(struct msm_edp *edp, struct drm_device *dev,
-+		struct drm_encoder *encoder);
-+
-+
- #ifdef CONFIG_DEBUG_FS
- void msm_gem_describe(struct drm_gem_object *obj, struct seq_file *m);
- void msm_gem_describe_objects(struct list_head *list, struct seq_file *m);
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> -----Original Message-----
+> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+> Sent: Monday, November 10, 2014 8:37 AM
+> To: KY Srinivasan; Haiyang Zhang; Greg Kroah-Hartman
+> Cc: devel@linuxdriverproject.org; linux-kernel@vger.kernel.org; Dexuan Cui
+> Subject: [PATCH v2 1/2] Tools: hv: vssdaemon: report freeze errors
+> 
+> When ioctl(fd, FIFREEZE, 0) results in an error we cannot report it to syslog
+> instantly since that can cause write to a frozen disk.
+> However, the name of the filesystem which caused the error and errno are
+> valuable and we would like to get a nice human-readable message in the log.
+> Save errno before calling vss_operate(VSS_OP_THAW) and report the error
+> right after.
+> 
+> Unfortunately, FITHAW errors cannot be reported the same way as we need
+> to finish thawing all filesystems before calling syslog().
+> 
+> We should also avoid calling endmntent() for the second time in case we
+> encountered an error during freezing of '/' as it usually results in SEGSEGV.
+> 
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+
+> ---
+>  tools/hv/hv_vss_daemon.c | 16 ++++++++++++----
+>  1 file changed, 12 insertions(+), 4 deletions(-)
+> 
+> diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c index
+> b720d8f..ee44f0d 100644
+> --- a/tools/hv/hv_vss_daemon.c
+> +++ b/tools/hv/hv_vss_daemon.c
+> @@ -82,7 +82,7 @@ static int vss_operate(int operation)
+>  	FILE *mounts;
+>  	struct mntent *ent;
+>  	unsigned int cmd;
+> -	int error = 0, root_seen = 0;
+> +	int error = 0, root_seen = 0, save_errno = 0;
+> 
+>  	switch (operation) {
+>  	case VSS_OP_FREEZE:
+> @@ -114,7 +114,6 @@ static int vss_operate(int operation)
+>  		if (error && operation == VSS_OP_FREEZE)
+>  			goto err;
+>  	}
+> -	endmntent(mounts);
+> 
+>  	if (root_seen) {
+>  		error |= vss_do_freeze("/", cmd);
+> @@ -122,10 +121,19 @@ static int vss_operate(int operation)
+>  			goto err;
+>  	}
+> 
+> -	return error;
+> +	goto out;
+>  err:
+> -	endmntent(mounts);
+> +	save_errno = errno;
+>  	vss_operate(VSS_OP_THAW);
+> +	/* Call syslog after we thaw all filesystems */
+> +	if (ent)
+> +		syslog(LOG_ERR, "FREEZE of %s failed; error:%d %s",
+> +		       ent->mnt_dir, save_errno, strerror(save_errno));
+> +	else
+> +		syslog(LOG_ERR, "FREEZE of / failed; error:%d %s",
+> save_errno,
+> +		       strerror(save_errno));
+> +out:
+> +	endmntent(mounts);
+>  	return error;
+>  }
+> 
+> --
+> 1.9.3
 
