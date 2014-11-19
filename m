@@ -1,93 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144AbaKSSWv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 13:22:51 -0500
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:56875 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452AbaKSSWu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 13:22:50 -0500
-Date: Wed, 19 Nov 2014 13:22:46 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
-In-Reply-To: <CAKv+Gu-q7Vdd=Buaz2x=8HASCpeY5D-RsOm-120bkOqmgtUeTw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.11.1411191312110.11690@knanqh.ubzr>
-References: <20141118173413.GB4042@n2100.arm.linux.org.uk> <546B8C64.3010904@samsung.com> <2041617.Kxhx5O4MMr@wuerfel> <CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com> <CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
- <CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com> <20141119160747.GH4042@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1411191130480.11690@knanqh.ubzr> <20141119164902.GK4042@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1411191152340.11690@knanqh.ubzr>
- <20141119165948.GM4042@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1411191205530.11690@knanqh.ubzr> <CAKv+Gu-q7Vdd=Buaz2x=8HASCpeY5D-RsOm-120bkOqmgtUeTw@mail.gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1755870AbaKSSZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 13:25:58 -0500
+Received: from mout.web.de ([212.227.17.11]:55723 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754554AbaKSSZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 13:25:57 -0500
+Message-ID: <546CE09B.9090101@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 19:25:31 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        linux-rdma@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] InfiniBand: Deletion of unnecessary checks before two
+ function calls
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:HCohZf6pFKPNSVAW3WfaDPLfLHxHmu7y995oGgJkrBuf7RZb9MX
+ 9yJgBi7uxL+v/91JUZZWnD3QXvF4FrKbLrL7AgmkJTKL6o5P/QMBQ+170J8QkCObnDe72oe
+ s5dWl2Ir5OL8ek1+4bNvxNe9sQ44u2uSwesJIbHExjpoCEn7+JlfFL08cCI8TZech7M1cK3
+ BW1zVKAMvfS6uWGaPXY6Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014, Ard Biesheuvel wrote:
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 19:19:21 +0100
 
-> On 19 November 2014 18:12, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> > On Wed, 19 Nov 2014, Russell King - ARM Linux wrote:
-> >
-> >> On Wed, Nov 19, 2014 at 11:57:15AM -0500, Nicolas Pitre wrote:
-> >> > On Wed, 19 Nov 2014, Russell King - ARM Linux wrote:
-> >> > > I don't think I ever did, because its pretty much impossible to do as I
-> >> > > explained in a follow up to this thread.
-> >> > >
-> >> > > We _used_ to do this with the userspace insmod methods, but since we got
-> >> > > this kernel-side linker, it's been pretty much impossible to do without
-> >> > > rewriting the module code.  That's not going to happen on account of one
-> >> > > quirky architecture which Linus doesn't particularly like.
-> >> >
-> >> > Still... We could try adding a hook in the generic module linker code
-> >> > for a pre-relocation pass.  Maybe only ARM would use it, but if the need
-> >> > to load big modules is real then I imagine Linus could be amenable to a
-> >> > compromise.
-> >>
-> >> So, how big a table would you allocate for the trampolines, based upon
-> >> not knowing anything about the module being loaded?  4K?  8K?  64K?
-> >
-> > The idea of a pre-relocation pass is to determine that.  That could be
-> > something similar to calling apply_relocate() twice: once to determine
-> > the number of trampoline entries, and a second time to perform the
-> > actual relocation.
-> >
-> 
-> Well, the veneers shouldn't take more than 3 words each, right?
-> 
-> ldr ip, [pc]
-> bx ip
-> .long symbol
+The functions kfree() and pci_dev_put() test whether their argument is NULL
+and then return immediately. Thus the test around the call is not needed.
 
-You could possibly do:
+This issue was detected by using the Coccinelle software.
 
- ldr pc, [pc, #-4]
- .long symbol
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/infiniband/hw/mlx4/main.c         | 3 +--
+ drivers/infiniband/hw/mthca/mthca_reset.c | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-Or, as RMK suggested a while ago:
+diff --git a/drivers/infiniband/hw/mlx4/main.c b/drivers/infiniband/hw/mlx4/main.c
+index 8b72cf3..50dee1a 100644
+--- a/drivers/infiniband/hw/mlx4/main.c
++++ b/drivers/infiniband/hw/mlx4/main.c
+@@ -2512,8 +2512,7 @@ static void do_slave_init(struct mlx4_ib_dev *ibdev, int slave, int do_init)
+ 		if (!dm[i]) {
+ 			pr_err("failed to allocate memory for tunneling qp update work struct\n");
+ 			for (i = 0; i < dev->caps.num_ports; i++) {
+-				if (dm[i])
+-					kfree(dm[i]);
++				kfree(dm[i]);
+ 			}
+ 			goto out;
+ 		}
+diff --git a/drivers/infiniband/hw/mthca/mthca_reset.c b/drivers/infiniband/hw/mthca/mthca_reset.c
+index 74c6a94..c521654 100644
+--- a/drivers/infiniband/hw/mthca/mthca_reset.c
++++ b/drivers/infiniband/hw/mthca/mthca_reset.c
+@@ -279,8 +279,7 @@ good:
+ 	}
+ 
+ out:
+-	if (bridge)
+-		pci_dev_put(bridge);
++	pci_dev_put(bridge);
+ 	kfree(bridge_header);
+ 	kfree(hca_header);
+ 
+-- 
+2.1.3
 
-.rep 8
-ldr pc, [pc, #(32 - 8)]
-.endr
-.long sym1, sym2, sym3, sym4, sym5, sym6, sym7, sym8
-
-The later is much nicer on the i and d caches.
-
-> and you would need at most one veneer per unique external symbol
-> referenced by one or more R_ARM_CALL relocations. Is there no way to
-> just add that to the static mem footprint as padding, and let the
-> loader populate it as needed at module relocation time?
-
-That's the actual question: how much padding do you need?  Everything 
-converge to that very problem.  We need to determine it without too much 
-impact on the generic module loader code.
-
-
-Nicolas
