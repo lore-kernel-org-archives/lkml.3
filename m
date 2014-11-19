@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511AbaKSWCH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:02:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56595 "EHLO
+	id S933423AbaKSVER (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:04:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56464 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932716AbaKSVET (ORCPT
+	with ESMTP id S933343AbaKSVEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:19 -0500
+	Wed, 19 Nov 2014 16:04:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+        Dwight Engen <dwight.engen@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 005/122] gre6: Move the setting of dev->iflink into the ndo_init functions.
-Date: Wed, 19 Nov 2014 12:50:55 -0800
-Message-Id: <20141119205209.012716998@linuxfoundation.org>
+Subject: [PATCH 3.14 014/122] sunvdc: dont call VD_OP_GET_VTOC
+Date: Wed, 19 Nov 2014 12:51:04 -0800
+Message-Id: <20141119205209.285290543@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,46 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Dwight Engen <dwight.engen@oracle.com>
 
-[ Upstream commit f03eb128e3f4276f46442d14f3b8f864f3775821 ]
+[ Upstream commit 85b0c6e62c48bb9179fd5b3e954f362fb346cbd5 ]
 
-Otherwise it gets overwritten by register_netdev().
+The VD_OP_GET_VTOC operation will succeed only if the vdisk backend has a
+VTOC label, otherwise it will fail. In particular, it will return error
+48 (ENOTSUP) if the disk has an EFI label. VTOC disk labels are already
+handled by directly reading the disk in block/partitions/sun.c (enabled by
+CONFIG_SUN_PARTITION which defaults to y on SPARC). Since port->label is
+unused in the driver, remove the call and the field.
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_gre.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/block/sunvdc.c |    9 ---------
+ 1 file changed, 9 deletions(-)
 
---- a/net/ipv6/ip6_gre.c
-+++ b/net/ipv6/ip6_gre.c
-@@ -962,8 +962,6 @@ static void ip6gre_tnl_link_config(struc
- 	else
- 		dev->flags &= ~IFF_POINTOPOINT;
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -69,8 +69,6 @@ struct vdc_port {
+ 	u8			vdisk_mtype;
  
--	dev->iflink = p->link;
+ 	char			disk_name[32];
 -
- 	/* Precalculate GRE options length */
- 	if (t->parms.o_flags&(GRE_CSUM|GRE_KEY|GRE_SEQ)) {
- 		if (t->parms.o_flags&GRE_CSUM)
-@@ -1273,6 +1271,7 @@ static int ip6gre_tunnel_init(struct net
- 		u64_stats_init(&ip6gre_tunnel_stats->syncp);
- 	}
+-	struct vio_disk_vtoc	label;
+ };
  
-+	dev->iflink = tunnel->parms.link;
+ static inline struct vdc_port *to_vdc_port(struct vio_driver_state *vio)
+@@ -710,13 +708,6 @@ static int probe_disk(struct vdc_port *p
+ 	if (comp.err)
+ 		return comp.err;
  
- 	return 0;
- }
-@@ -1474,6 +1473,8 @@ static int ip6gre_tap_init(struct net_de
- 		u64_stats_init(&ip6gre_tap_stats->syncp);
- 	}
- 
-+	dev->iflink = tunnel->parms.link;
-+
- 	return 0;
- }
- 
+-	err = generic_request(port, VD_OP_GET_VTOC,
+-			      &port->label, sizeof(port->label));
+-	if (err < 0) {
+-		printk(KERN_ERR PFX "VD_OP_GET_VTOC returns error %d\n", err);
+-		return err;
+-	}
+-
+ 	if (vdc_version_supported(port, 1, 1)) {
+ 		/* vdisk_size should be set during the handshake, if it wasn't
+ 		 * then the underlying disk is reserved by another system
 
 
