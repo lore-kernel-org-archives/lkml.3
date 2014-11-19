@@ -1,78 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848AbaKSPCG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:02:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58448 "EHLO mx2.suse.de"
+	id S1755870AbaKSPDl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:03:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51488 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759AbaKSPCF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:02:05 -0500
-Message-ID: <546CB0EB.9080005@suse.de>
-Date: Wed, 19 Nov 2014 16:02:03 +0100
-From: =?windows-1252?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751747AbaKSPDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 10:03:40 -0500
+Date: Wed, 19 Nov 2014 10:03:33 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141119150333.GB2953@redhat.com>
+References: <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
+ <20141118020959.GA2091@redhat.com>
+ <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
+ <20141118023930.GA2871@redhat.com>
+ <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
+ <20141118145234.GA7487@redhat.com>
+ <alpine.DEB.2.11.1411181914020.3909@nanos>
+ <20141118215540.GD35311@redhat.com>
+ <20141118220254.GA2571@redhat.com>
+ <20141119144105.GB108701@redhat.com>
 MIME-Version: 1.0
-To: Mason <mpeg.blue@free.fr>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Device Tree <devicetree@vger.kernel.org>,
-        Linux ARM <linux-arm-kernel@lists.infradead.org>
-Subject: Re: Looking for good references for ARM driver development
-References: <546C920A.7060800@free.fr>
-In-Reply-To: <546C920A.7060800@free.fr>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141119144105.GB108701@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Nov 19, 2014 at 09:41:05AM -0500, Don Zickus wrote:
+> On Tue, Nov 18, 2014 at 05:02:54PM -0500, Dave Jones wrote:
+> > On Tue, Nov 18, 2014 at 04:55:40PM -0500, Don Zickus wrote:
+> > 
+> >  > > So here we mangle CPU3 in and lose the backtrace for cpu0, which might
+> >  > > be the real interesting one ....
+> >  > 
+> >  > Can you provide another dump?  The hope is we get something not mangled?
+> > 
+> > Working on it..
+> > 
+> >  > The other option we have done in RHEL is panic the system and let kdump
+> >  > capture the memory.  Then we can analyze the vmcore for the stack trace
+> >  > cpu0 stored in memory to get a rough idea where it might be if the cpu
+> >  > isn't responding very well.
+> > 
+> > I don't know if it's because of the debug options I typically run with,
+> > or that I'm perpetually cursed, but I've never managed to get kdump to
+> > do anything useful. (The last time I tried it was actively harmful in
+> > that not only did it fail to dump anything, it wedged the machine so
+> > it didn't reboot after panic).
 
-Am 19.11.2014 um 13:50 schrieb Mason:
-> [...] I'm writing a driver for a temperature sensor, which is
-> supposed to work
-> within the hwmon/lm-sensors framework.
+Hi Dave Jones,
+
+Not being able to capture the dump I can understand but having wedged
+the machine so that it does not reboot after dump failure sounds bad.
+So you could not get machine to boot even after a power cycle? Would
+you remember what was failing. I am curious to know what did kdump do
+to make machine unbootable.
+
+> > 
+> > Unless there's some magic step missing from the documentation at
+> > http://fedoraproject.org/wiki/How_to_use_kdump_to_debug_kernel_crashes
+> > then I'm not optimistic it'll be useful.
+
+I had a quick look at it and it basically looks fine. In fedora ideally
+it is just two steps process.
+
+- Reserve memory using crashkernel. Say crashkernel=160M
+- systemctl start kdump
+- Crash the system or wait for it to crash.
+
+So despite your bad experience in the past, I would encourage you to
+give it a try.
+
 > 
-> The sensor's API consists of 3 memory-mapped registers, which are
-> accessible over the
-> SoC's memory bus. [...]
+> Well, I don't know when the last time you ran it, but I know the RH kexec
+> folks have started pursuing a Fedora-first package patch rule a couple of
+> years ago to ensure Fedora had a working kexec/kdump solution.
+
+Yep, now we are putting everything in fedora first so it should be much
+better. Hard to say the same thing about driver authors. Sometimes they
+might have a driver working in rhel and not necessarily upstream. I am
+not sure if you ran into one of those issues.
+
+Also recently I have seen issues with graphics drivers too.
+
 > 
-> 1) Which bus should I be using for this driver? Is the platform bus
-> appropriate?
-
-Probably.
-
-> 2) platform.txt states
+> As for the wedging part, it was a common problem to have the kernel hang
+> while trying to boot the second kernel (and before console output
+> happened).  So the problem makes sense and is unfortunate.  I would
+> encourage you to try again.  :-)
 > 
->> Some drivers are not fully converted to the driver model, because they
->> take
->> on a non-driver role:  the driver registers its platform device,
->> rather than
->> leaving that for system infrastructure.  Such drivers can't be hotplugged
->> or coldplugged, since those mechanisms require device creation to be in a
->> different system component than the driver.
-> 
-> How do I "leave device registration for the system infrastructure"?
-> Where should I put that code?
-> Is it a good idea to separate device registration and driver registration
-> in the case of a SoC, where the device is embedded in the SoC and is not
-> "hot-plugged" (or anything-plugged for that matter, it's just "there").
+> Though, it is transitioning to have the app built into the kernel to deal
+> with the whole secure boot thing, so that might be another can of worms.
 
-Since this appears to be about an ARM SoC according to your To list, in
-general, you create a device tree binding, that binding is registered
-within your platform/... driver code and referenced in the device tree
-for SoC or board, and then your driver will automatically be probed.
+I doubt that secureboot bits will contribute to the failure.
 
-> 4) Can I use platform_driver_probe, instead of platform_driver_register?
-
-Most likely you do not need to call either yourself.
-
-Just compare other platform drivers on the one hand, and temparature
-sensor drivers on the other (such as I2C based gmt,g781 / LM90).
-Did you already check whether there is a driver that is both?
-
-Regards,
-Andreas
-
--- 
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 21284 AG Nürnberg
+Thanks
+Vivek
