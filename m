@@ -1,108 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571AbaKSTFy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 14:05:54 -0500
-Received: from mga02.intel.com ([134.134.136.20]:60964 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754814AbaKSTFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 14:05:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,418,1413270000"; 
-   d="scan'208";a="639894999"
-Date: Wed, 19 Nov 2014 11:05:48 -0800
-From: Kristen Carlson Accardi <kristen@linux.intel.com>
-To: Ethan Zhao <ethan.zhao@oracle.com>
-Cc: <dirk.j.brandewie@intel.com>, <viresh.kumar@linaro.org>,
-        <rjw@rjwysocki.net>, <corbet@lwn.net>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <ethan.kernel@gmail.com>, <joe.jin@oracle.com>,
-        <brian.maly@oracle.com>
-Subject: Re: [PATCH 3/3] intel_pstate: add module and kernel command line
- parameter to ignore ACPI _PPC
-Message-ID: <20141119110548.24a0a808@kcaccard-desk.amr.corp.intel.com>
-In-Reply-To: <1416299826-15813-8-git-send-email-ethan.zhao@oracle.com>
-References: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com>
-	<1416299826-15813-8-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1756211AbaKSTGP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 14:06:15 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:34065 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755722AbaKSTGO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 14:06:14 -0500
+Date: Wed, 19 Nov 2014 19:06:01 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "keescook@chromium.org" <keescook@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 2/6] arm64: ptrace: allow tracer to skip a system call
+Message-ID: <20141119190601.GM15985@arm.com>
+References: <1416273038-15590-1-git-send-email-takahiro.akashi@linaro.org>
+ <1416273038-15590-3-git-send-email-takahiro.akashi@linaro.org>
+ <20141118140425.GM18842@arm.com>
+ <546C58DB.5080204@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546C58DB.5080204@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014 17:37:06 +0900
-Ethan Zhao <ethan.zhao@oracle.com> wrote:
-
-> Add kernel command line parameter
->  intel_pstate = ignore_acpi_ppc
-> and module parameter
->  ignore_acpi_ppc = 1
-> to allow driver to ignore the ACPI _PPC existence even for Sun x86 servers.
-> These parameter could be used for debug\test\workaround etc purpose.
+On Wed, Nov 19, 2014 at 08:46:19AM +0000, AKASHI Takahiro wrote:
+> On 11/18/2014 11:04 PM, Will Deacon wrote:
+> > On Tue, Nov 18, 2014 at 01:10:34AM +0000, AKASHI Takahiro wrote:
+> >>
+> >> +	if (((int)regs->syscallno == -1) && (orig_syscallno == -1)) {
+> >> +		/*
+> >> +		 * user-issued syscall(-1):
+> >> +		 * RESTRICTION: We always return ENOSYS whatever value is
+> >> +		 *   stored in x0 (a return value) at this point.
+> >> +		 * Normally, with ptrace off, syscall(-1) returns -ENOSYS.
+> >> +		 * With ptrace on, however, if a tracer didn't pay any
+> >> +		 * attention to user-issued syscall(-1) and just let it go
+> >> +		 * without a hack here, it would return a value in x0 as in
+> >> +		 * other system call cases. This means that this system call
+> >> +		 * might succeed and see any bogus return value.
+> >> +		 * This should be definitely avoided.
+> >> +		 */
+> >> +		regs->regs[0] = -ENOSYS;
+> >> +	}
+> >
+> > I'm still really uncomfortable with this, and it doesn't seem to match what
+> > arch/arm/ does either.
 > 
-> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+> Yeah, I know but
+> as I mentioned before, syscall(-1) will be signaled on arm, and so we don't
+> have to care about a return value :)
 
-What if we used a more generic parameter like "force" that would bypass
-any vendor specific checks and just load anyway?  This way we don't have
-to add new parameters everything some new thing shows up that we want to
-ignore.
+What does x86 do?
 
-> ---
->  Documentation/kernel-parameters.txt | 3 +++
->  drivers/cpufreq/intel_pstate.c      | 8 +++++++-
->  2 files changed, 10 insertions(+), 1 deletion(-)
+> > Doesn't it also prevent a tracer from skipping syscall(-1)?
 > 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 4c81a86..f502b85 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -1446,6 +1446,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  		       disable
->  		         Do not enable intel_pstate as the default
->  		         scaling driver for the supported processors
-> +		       ignore_acpi_ppc
-> +			 Ignore the existence of ACPI method _PPC for Sun x86 servers
-> +			 and load the driver.
->  
->  	intremap=	[X86-64, Intel-IOMMU]
->  			on	enable Interrupt Remapping (default)
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index 7c5faea..388387b 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -870,6 +870,7 @@ static struct cpufreq_driver intel_pstate_driver = {
->  };
->  
->  static int __initdata no_load;
-> +static unsigned int  ignore_acpi_ppc;
->  
->  static int intel_pstate_msrs_not_valid(void)
->  {
-> @@ -990,7 +991,7 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
->  		    intel_pstate_no_acpi_pss())
->  			return true;
->  		if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
-> -			intel_pstate_has_acpi_ppc())
-> +			intel_pstate_has_acpi_ppc() && !ignore_acpi_ppc)
->  			return true;
->  	}
->  
-> @@ -1066,11 +1067,16 @@ static int __init intel_pstate_setup(char *str)
->  
->  	if (!strcmp(str, "disable"))
->  		no_load = 1;
-> +	if (!strcmp(str, "ignore_acpi_ppc"))
-> +		ignore_acpi_ppc = 1;
->  	return 0;
->  }
->  early_param("intel_pstate", intel_pstate_setup);
->  #endif
->  
-> +module_param(ignore_acpi_ppc, uint, 0644);
-> +MODULE_PARM_DESC(ignore_acpi_ppc,
-> +	"value 0 or non-zero. non-zero -> ignore ACPI _PPC and load this driver");
->  MODULE_AUTHOR("Dirk Brandewie <dirk.j.brandewie@intel.com>");
->  MODULE_DESCRIPTION("'intel_pstate' - P state driver Intel Core processors");
->  MODULE_LICENSE("GPL");
+> Syscall(-1) will return -ENOSYS whether or not a syscallno is explicitly
+> replaced with -1 by a tracer, and, in this sense, it is *skipped*.
 
+Ok, but now userspace sees -ENOSYS for a skipped system call in that case,
+whereas it would usually see whatever the trace put in x0, right?
+
+Will
