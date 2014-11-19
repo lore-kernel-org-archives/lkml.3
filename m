@@ -1,29 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933260AbaKSVOf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:14:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57260 "EHLO
+	id S1757109AbaKSVic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:38:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57280 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933195AbaKSVOb (ORCPT
+	with ESMTP id S933251AbaKSVOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:31 -0500
+	Wed, 19 Nov 2014 16:14:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Bob Liu <bob.liu@oracle.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 121/122] mm: vmscan: use proportional scanning during direct reclaim and full scan at DEF_PRIORITY
-Date: Wed, 19 Nov 2014 12:52:51 -0800
-Message-Id: <20141119205212.856184121@linuxfoundation.org>
+        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 11/70] sparc64: Do irq_{enter,exit}() around generic_smp_call_function*().
+Date: Wed, 19 Nov 2014 12:52:02 -0800
+Message-Id: <20141119205211.290519373@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
-References: <20141119205208.812884198@linuxfoundation.org>
+In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
+References: <20141119205210.913169042@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -31,148 +24,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 1a501907bbea8e6ebb0b16cf6db9e9cbf1d2c813 upstream.
+[ Upstream commit ab5c780913bca0a5763ca05dd5c2cb5cb08ccb26 ]
 
-Commit "mm: vmscan: obey proportional scanning requirements for kswapd"
-ensured that file/anon lists were scanned proportionally for reclaim from
-kswapd but ignored it for direct reclaim.  The intent was to minimse
-direct reclaim latency but Yuanhan Liu pointer out that it substitutes one
-long stall for many small stalls and distorts aging for normal workloads
-like streaming readers/writers.  Hugh Dickins pointed out that a
-side-effect of the same commit was that when one LRU list dropped to zero
-that the entirety of the other list was shrunk leading to excessive
-reclaim in memcgs.  This patch scans the file/anon lists proportionally
-for direct reclaim to similarly age page whether reclaimed by kswapd or
-direct reclaim but takes care to abort reclaim if one LRU drops to zero
-after reclaiming the requested number of pages.
+Otherwise rcu_irq_{enter,exit}() do not happen and we get dumps like:
 
-Based on ext4 and using the Intel VM scalability test
+====================
+[  188.275021] ===============================
+[  188.309351] [ INFO: suspicious RCU usage. ]
+[  188.343737] 3.18.0-rc3-00068-g20f3963-dirty #54 Not tainted
+[  188.394786] -------------------------------
+[  188.429170] include/linux/rcupdate.h:883 rcu_read_lock() used
+illegally while idle!
+[  188.505235]
+other info that might help us debug this:
 
-                                              3.15.0-rc5            3.15.0-rc5
-                                                shrinker            proportion
-Unit  lru-file-readonce    elapsed      5.3500 (  0.00%)      5.4200 ( -1.31%)
-Unit  lru-file-readonce time_range      0.2700 (  0.00%)      0.1400 ( 48.15%)
-Unit  lru-file-readonce time_stddv      0.1148 (  0.00%)      0.0536 ( 53.33%)
-Unit lru-file-readtwice    elapsed      8.1700 (  0.00%)      8.1700 (  0.00%)
-Unit lru-file-readtwice time_range      0.4300 (  0.00%)      0.2300 ( 46.51%)
-Unit lru-file-readtwice time_stddv      0.1650 (  0.00%)      0.0971 ( 41.16%)
+[  188.554230]
+RCU used illegally from idle CPU!
+rcu_scheduler_active = 1, debug_locks = 0
+[  188.637587] RCU used illegally from extended quiescent state!
+[  188.690684] 3 locks held by swapper/7/0:
+[  188.721932]  #0:  (&x->wait#11){......}, at: [<0000000000495de8>] complete+0x8/0x60
+[  188.797994]  #1:  (&p->pi_lock){-.-.-.}, at: [<000000000048510c>] try_to_wake_up+0xc/0x400
+[  188.881343]  #2:  (rcu_read_lock){......}, at: [<000000000048a910>] select_task_rq_fair+0x90/0xb40
+[  188.973043]stack backtrace:
+[  188.993879] CPU: 7 PID: 0 Comm: swapper/7 Not tainted 3.18.0-rc3-00068-g20f3963-dirty #54
+[  189.076187] Call Trace:
+[  189.089719]  [0000000000499360] lockdep_rcu_suspicious+0xe0/0x100
+[  189.147035]  [000000000048a99c] select_task_rq_fair+0x11c/0xb40
+[  189.202253]  [00000000004852d8] try_to_wake_up+0x1d8/0x400
+[  189.252258]  [000000000048554c] default_wake_function+0xc/0x20
+[  189.306435]  [0000000000495554] __wake_up_common+0x34/0x80
+[  189.356448]  [00000000004955b4] __wake_up_locked+0x14/0x40
+[  189.406456]  [0000000000495e08] complete+0x28/0x60
+[  189.448142]  [0000000000636e28] blk_end_sync_rq+0x8/0x20
+[  189.496057]  [0000000000639898] __blk_mq_end_request+0x18/0x60
+[  189.550249]  [00000000006ee014] scsi_end_request+0x94/0x180
+[  189.601286]  [00000000006ee334] scsi_io_completion+0x1d4/0x600
+[  189.655463]  [00000000006e51c4] scsi_finish_command+0xc4/0xe0
+[  189.708598]  [00000000006ed958] scsi_softirq_done+0x118/0x140
+[  189.761735]  [00000000006398ec] __blk_mq_complete_request_remote+0xc/0x20
+[  189.827383]  [00000000004c75d0] generic_smp_call_function_single_interrupt+0x150/0x1c0
+[  189.906581]  [000000000043e514] smp_call_function_single_client+0x14/0x40
+====================
 
-The test cases are running multiple dd instances reading sparse files. The results are within
-the noise for the small test machine. The impact of the patch is more noticable from the vmstats
+Based almost entirely upon a patch by Paul E. McKenney.
 
-                            3.15.0-rc5  3.15.0-rc5
-                              shrinker  proportion
-Minor Faults                     35154       36784
-Major Faults                       611        1305
-Swap Ins                           394        1651
-Swap Outs                         4394        5891
-Allocation stalls               118616       44781
-Direct pages scanned           4935171     4602313
-Kswapd pages scanned          15921292    16258483
-Kswapd pages reclaimed        15913301    16248305
-Direct pages reclaimed         4933368     4601133
-Kswapd efficiency                  99%         99%
-Kswapd velocity             670088.047  682555.961
-Direct efficiency                  99%         99%
-Direct velocity             207709.217  193212.133
-Percentage direct scans            23%         22%
-Page writes by reclaim        4858.000    6232.000
-Page writes file                   464         341
-Page writes anon                  4394        5891
-
-Note that there are fewer allocation stalls even though the amount
-of direct reclaim scanning is very approximately the same.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: Bob Liu <bob.liu@oracle.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reported-by: Meelis Roos <mroos@linux.ee>
+Tested-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/vmscan.c |   36 +++++++++++++++++++++++++-----------
- 1 file changed, 25 insertions(+), 11 deletions(-)
+ arch/sparc/kernel/smp_64.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2018,13 +2018,27 @@ static void shrink_lruvec(struct lruvec
- 	unsigned long nr_reclaimed = 0;
- 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
- 	struct blk_plug plug;
--	bool scan_adjusted = false;
-+	bool scan_adjusted;
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -821,13 +821,17 @@ void arch_send_call_function_single_ipi(
+ void __irq_entry smp_call_function_client(int irq, struct pt_regs *regs)
+ {
+ 	clear_softint(1 << irq);
++	irq_enter();
+ 	generic_smp_call_function_interrupt();
++	irq_exit();
+ }
  
- 	get_scan_count(lruvec, sc, nr);
+ void __irq_entry smp_call_function_single_client(int irq, struct pt_regs *regs)
+ {
+ 	clear_softint(1 << irq);
++	irq_enter();
+ 	generic_smp_call_function_single_interrupt();
++	irq_exit();
+ }
  
- 	/* Record the original scan target for proportional adjustments later */
- 	memcpy(targets, nr, sizeof(nr));
- 
-+	/*
-+	 * Global reclaiming within direct reclaim at DEF_PRIORITY is a normal
-+	 * event that can occur when there is little memory pressure e.g.
-+	 * multiple streaming readers/writers. Hence, we do not abort scanning
-+	 * when the requested number of pages are reclaimed when scanning at
-+	 * DEF_PRIORITY on the assumption that the fact we are direct
-+	 * reclaiming implies that kswapd is not keeping up and it is best to
-+	 * do a batch of work at once. For memcg reclaim one check is made to
-+	 * abort proportional reclaim if either the file or anon lru has already
-+	 * dropped to zero at the first pass.
-+	 */
-+	scan_adjusted = (global_reclaim(sc) && !current_is_kswapd() &&
-+			 sc->priority == DEF_PRIORITY);
-+
- 	blk_start_plug(&plug);
- 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
- 					nr[LRU_INACTIVE_FILE]) {
-@@ -2045,17 +2059,8 @@ static void shrink_lruvec(struct lruvec
- 			continue;
- 
- 		/*
--		 * For global direct reclaim, reclaim only the number of pages
--		 * requested. Less care is taken to scan proportionally as it
--		 * is more important to minimise direct reclaim stall latency
--		 * than it is to properly age the LRU lists.
--		 */
--		if (global_reclaim(sc) && !current_is_kswapd())
--			break;
--
--		/*
- 		 * For kswapd and memcg, reclaim at least the number of pages
--		 * requested. Ensure that the anon and file LRUs shrink
-+		 * requested. Ensure that the anon and file LRUs are scanned
- 		 * proportionally what was requested by get_scan_count(). We
- 		 * stop reclaiming one LRU and reduce the amount scanning
- 		 * proportional to the original scan target.
-@@ -2063,6 +2068,15 @@ static void shrink_lruvec(struct lruvec
- 		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
- 		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
- 
-+		/*
-+		 * It's just vindictive to attack the larger once the smaller
-+		 * has gone to zero.  And given the way we stop scanning the
-+		 * smaller below, this makes sure that we only make one nudge
-+		 * towards proportionality once we've got nr_to_reclaim.
-+		 */
-+		if (!nr_file || !nr_anon)
-+			break;
-+
- 		if (nr_file > nr_anon) {
- 			unsigned long scan_target = targets[LRU_INACTIVE_ANON] +
- 						targets[LRU_ACTIVE_ANON] + 1;
+ static void tsb_sync(void *info)
 
 
