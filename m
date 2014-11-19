@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758154AbaKSWWU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:22:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56064 "EHLO
+	id S1758138AbaKSWWT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:22:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55895 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932556AbaKSUyL (ORCPT
+	with ESMTP id S932562AbaKSUyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:54:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.17 075/141] Fix thinko in iov_iter_single_seg_count
-Date: Wed, 19 Nov 2014 12:51:38 -0800
-Message-Id: <20141119205153.127266902@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.17 076/141] dm thin: grab a virtual cell before looking up the mapping
+Date: Wed, 19 Nov 2014 12:51:39 -0800
+Message-Id: <20141119205153.171682771@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -28,45 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Joe Thornber <ejt@redhat.com>
 
-commit ad0eab9293485d1c06237e9249f6d4dfa3d93d4d upstream.
+commit c822ed967cba38505713d59ed40a114386ef6c01 upstream.
 
-The branches of the if (i->type & ITER_BVEC) statement in
-iov_iter_single_seg_count() are the wrong way around; if ITER_BVEC is
-clear then we use i->bvec, when we should be using i->iov.  This fixes
-it.
+Avoids normal IO racing with discard.
 
-In my case, the symptom that this caused was that a KVM guest doing
-filesystem operations on a virtual disk would result in one of qemu's
-threads on the host going into an infinite loop in
-generic_perform_write().  The loop would hit the copied == 0 case and
-call iov_iter_single_seg_count() to reduce the number of bytes to try
-to process, but because of the error, iov_iter_single_seg_count()
-would just return i->count and the loop made no progress and continued
-forever.
-
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/iov_iter.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/dm-thin.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
---- a/mm/iov_iter.c
-+++ b/mm/iov_iter.c
-@@ -699,9 +699,9 @@ size_t iov_iter_single_seg_count(const s
- 	if (i->nr_segs == 1)
- 		return i->count;
- 	else if (i->type & ITER_BVEC)
--		return min(i->count, i->iov->iov_len - i->iov_offset);
--	else
- 		return min(i->count, i->bvec->bv_len - i->iov_offset);
-+	else
-+		return min(i->count, i->iov->iov_len - i->iov_offset);
- }
- EXPORT_SYMBOL(iov_iter_single_seg_count);
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -1936,6 +1936,14 @@ static int thin_bio_map(struct dm_target
+ 		return DM_MAPIO_SUBMITTED;
+ 	}
  
++	/*
++	 * We must hold the virtual cell before doing the lookup, otherwise
++	 * there's a race with discard.
++	 */
++	build_virtual_key(tc->td, block, &key);
++	if (dm_bio_detain(tc->pool->prison, &key, bio, &cell1, &cell_result))
++		return DM_MAPIO_SUBMITTED;
++
+ 	r = dm_thin_find_block(td, block, 0, &result);
+ 
+ 	/*
+@@ -1959,13 +1967,10 @@ static int thin_bio_map(struct dm_target
+ 			 * shared flag will be set in their case.
+ 			 */
+ 			thin_defer_bio(tc, bio);
++			cell_defer_no_holder_no_free(tc, &cell1);
+ 			return DM_MAPIO_SUBMITTED;
+ 		}
+ 
+-		build_virtual_key(tc->td, block, &key);
+-		if (dm_bio_detain(tc->pool->prison, &key, bio, &cell1, &cell_result))
+-			return DM_MAPIO_SUBMITTED;
+-
+ 		build_data_key(tc->td, result.block, &key);
+ 		if (dm_bio_detain(tc->pool->prison, &key, bio, &cell2, &cell_result)) {
+ 			cell_defer_no_holder_no_free(tc, &cell1);
+@@ -1986,6 +1991,7 @@ static int thin_bio_map(struct dm_target
+ 			 * of doing so.
+ 			 */
+ 			handle_unserviceable_bio(tc->pool, bio);
++			cell_defer_no_holder_no_free(tc, &cell1);
+ 			return DM_MAPIO_SUBMITTED;
+ 		}
+ 		/* fall through */
+@@ -1996,6 +2002,7 @@ static int thin_bio_map(struct dm_target
+ 		 * provide the hint to load the metadata into cache.
+ 		 */
+ 		thin_defer_bio(tc, bio);
++		cell_defer_no_holder_no_free(tc, &cell1);
+ 		return DM_MAPIO_SUBMITTED;
+ 
+ 	default:
+@@ -2005,6 +2012,7 @@ static int thin_bio_map(struct dm_target
+ 		 * pool is switched to fail-io mode.
+ 		 */
+ 		bio_io_error(bio);
++		cell_defer_no_holder_no_free(tc, &cell1);
+ 		return DM_MAPIO_SUBMITTED;
+ 	}
+ }
 
 
