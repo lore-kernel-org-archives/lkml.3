@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369AbaKSNl3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 08:41:29 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:57324 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315AbaKSNl2 (ORCPT
+	id S1755490AbaKSNlk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 08:41:40 -0500
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:61259 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753776AbaKSNlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 08:41:28 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
-Date: Wed, 19 Nov 2014 14:40:49 +0100
-Message-ID: <2041617.Kxhx5O4MMr@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <546B8C64.3010904@samsung.com>
-References: <20141118172146.3784.81151.stgit@buzz> <20141118173413.GB4042@n2100.arm.linux.org.uk> <546B8C64.3010904@samsung.com>
+	Wed, 19 Nov 2014 08:41:37 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:LaoRE/pZPsA4gepHYl6NCBOoE9BQbF3sAxFdCcSca37
- il9Fky2rX5caV4M8aezGi2LBNe6gSkGkwBtb6Oqpkog9A66hnv
- ZE7FKCioIqFGGO/KomM56HX5BaYbbLGHy3M3A0RTbhEgZ4BIkF
- GbXa7J/RoIER/n4SfQrAqH8Jfs7M7y1lFDbntiMd+U7GUuRxcP
- cGwJaVZIpT1YjhKSLud4blekgZPQpv9+T9F9w9Fz4G4y8gdF1P
- HK28oPRLRVM2NLFFf/+zqonR/hOq9CeqqAsu3uEkGX5qhj7uBA
- 3nR6DN/LGVJ6Oo74ssWWJA88sZKoZUEpT+XJY4mAqyy0Qvm/Lp
- Lzkg14olCXJjmaqLpXe0=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <alpine.DEB.2.11.1411181513040.3909@nanos>
+References: <1416309320-7498-1-git-send-email-pang.xunlei@linaro.org>
+	<alpine.DEB.2.11.1411181513040.3909@nanos>
+Date: Wed, 19 Nov 2014 21:41:36 +0800
+Message-ID: <CADcy93U8pc146D35qhFfkDoWhkRh8KQad_uQAp9rwmPKskgmnA@mail.gmail.com>
+Subject: Re: [RFC PATCH v3 0/5] y2038 in-kernel interface changes for drivers/rtc
+From: "pang.xunlei" <pang.xunlei@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 November 2014 21:13:56 Konstantin Khlebnikov wrote:
-> On 2014-11-18 20:34, Russell King - ARM Linux wrote:
-> > On Tue, Nov 18, 2014 at 08:21:46PM +0400, Konstantin Khlebnikov wrote:
-> >> Usually modules are loaded into small area prior to the kernel
-> >> text because they are linked with the kernel using short calls.
-> >> Compile-time instrumentation like GCOV or KASAN bloats code a lot,
-> >> and as a result huge modules no longer fit into reserved area.
-> >>
-> >> This patch adds option CONFIG_MODULES_USE_VMALLOC which lifts
-> >> limitation on amount of loaded modules. It links modules using
-> >> long-calls (option -mlong-calls) and loads them into vmalloc area.
-> >>
-> >> In few places exported symbols are called from inline assembly.
-> >> This patch adds macro for such call sites: __asmbl and __asmbl_clobber.
-> >> Call turns into single 'bl' or sequence 'movw; movt; blx' depending on
-> >> context and state of config option.
-> >>
-> >> Unfortunately this option isn't compatible with CONFIG_FUNCTION_TRACER.
-> >> Compiler emits short calls to profiling function despite of -mlong-calls.
-> >> This is a bug in GCC, but ftrace anyway needs an update to handle this.
-> > It also isn't compatible with the older architectures which don't have
-> > "blx".
-> 
-> Ok, I'll add "depends on CPU_V6 || CPU_V7" I don't think that it is 
-> necessary for older cpus.
+On 18 November 2014 22:13, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Tue, 18 Nov 2014, pang.xunlei wrote:
+>> On 32bit systems, the kernel uses a 32bit signed time_t value
+>> for seconds since 1970-01-01:00:00:00. This will overflow at
+>> 2038-01-19 03:14:08, and is widely known as the y2038 problem.
+>>
+>> To address this, the plan is to create 64bit internal interfaces
+>> which are 2038 safe, mark the unsafe versions as deprecated and
+>> then convert subsystems one by one over to the new interfaces.
+>> Once all users are converted, the deprecated internal functions
+>> will be removed.
+>>
+>> NOTE: In some cases, there are issues with 32bit values that are
+>> unsigned, and thus become y2106 issues. Since its somewhat simpler
+>> to unify the time types, we'll try to convert those usage to 64bit
+>> where it can be easily done. In those cases where a fix would be
+>> overly complicated, we'll simply explicitly mark the limitation.
+>>
+>> This patchset introduces the 64bit interfaces needed to convert
+>> the drivers/rtc subsystem, and to keep it relatively short some
+>> patches to demonstrate how the conversion will be done. If the
+>> feedback is positive on this series, we'll provide the full
+>> conversion series as well.
+>
+> That looks way better than the last attempt.
+Hi Thomas,
 
-Why not just use a different branch instruction for the older CPUs?
+Thanks for your affirmation and former suggestions. I'll send the
+another succeeding patchset later.
 
-	Arnd
+Regards,
+Xunlei
+>
+> Thanks,
+>
+>         tglx
