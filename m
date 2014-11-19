@@ -1,88 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932952AbaKSB0h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 20:26:37 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:29481 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932878AbaKSB0c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 20:26:32 -0500
-X-AuditID: cbfee68d-f79296d000004278-c1-546bf1c604c4
-Message-id: <546BF1C5.3050000@samsung.com>
-Date: Wed, 19 Nov 2014 10:26:29 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Doug Anderson <dianders@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        James Hartley <James.Hartley@imgtec.com>,
-        Ezequiel Garcia <Ezequiel.Garcia@imgtec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH] mmc: dw_mmc: Add support for IMG Pistachio
-References: <1415904621-26800-1-git-send-email-abrestic@chromium.org>
- <CAD=FV=WZx6r5L76Bfn2L8WeSU4hKwNJ=tZq_FoT3ot1Hd2ToeQ@mail.gmail.com>
-In-reply-to: <CAD=FV=WZx6r5L76Bfn2L8WeSU4hKwNJ=tZq_FoT3ot1Hd2ToeQ@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsWyRsSkRPfYx+wQg0e3eSxWvv/LaDHh8nZG
-	i7PLDrJZnHi+iM3i3Ief7BaXd81hszjyv5/R4sP9i8wWx9eGO3B6zG64yOLRs/MMo8eda3vY
-	PG68Wsjk0bdlFaPH501yAWxRXDYpqTmZZalF+nYJXBmt/16xFKxhq2i7oNjA2MjaxcjJISFg
-	IrFizyU2CFtM4sK99UA2F4eQwFJGiQ/9W9lhig78P8sEkZjOKHHoy3kWkISQwGtGiRutmV2M
-	HBy8AloSzXfCQMIsAqoSl9bdAOtlE9CR2P7tOBOILSoQJnGobR6YzSsgKPFj8j0WkFYRoHjz
-	tSqQ8cwCx5kk7vRdYgapERawl3jy/DUzxN4eRonbcy+DDeUUCJY4/74RbBCzgLrEpHmLmCFs
-	eYnNa94yQxz9iF3i/C8tiIMEJL5NPgS2TEJAVmLTAagSSYmDK26wTGAUm4XkpFlIps5CMnUB
-	I/MqRtHUguSC4qT0IkO94sTc4tK8dL3k/NxNjMB4PP3vWe8OxtsHrA8xCnAwKvHwvnibHSLE
-	mlhWXJl7iNEU6IqJzFKiyfnAqM8riTc0NjOyMDUxNTYytzRTEudVlPoZLCSQnliSmp2aWpBa
-	FF9UmpNafIiRiYNTqoFx4bbTMz2719b9O7bd/Ww4i2vio3v2vtwbN01anrmdsyTkidVshabj
-	7IcYtyZtUOWZVS/Jwi7Cya7VVCUm63b/y6MFSW8vLFV/snjrAsESWZUwySdWyuph0TetbQX7
-	Kw9vKc0Om9Z6coqvef+Pb2fdWu+zxj2Y3vhI+KT2yUlTV276+qHHR1dCiaU4I9FQi7moOBEA
-	cDfn5cICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t9jQd1jH7NDDF4vYbVY+f4vo8WEy9sZ
-	Lc4uO8hmceL5IjaLcx9+sltc3jWHzeLI/35Giw/3LzJbHF8b7sDpMbvhIotHz84zjB53ru1h
-	87jxaiGTR9+WVYwenzfJBbBFNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp
-	5CXmptoqufgE6Lpl5gBdpaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHM
-	aP33iqVgDVtF2wXFBsZG1i5GTg4JAROJA//PMkHYYhIX7q1n62Lk4hASmM4ocejLeRaQhJDA
-	a0aJG62ZXYwcHLwCWhLNd8JAwiwCqhKX1t1gB7HZBHQktn87DjZHVCBM4lDbPDCbV0BQ4sfk
-	eywgrSJA8eZrVSDjmQWOM0nc6bvEDFIjLGAv8eT5a2aIvT2MErfnXgYbyikQLHH+fSPYIGYB
-	dYlJ8xYxQ9jyEpvXvGWewCgwC8mOWUjKZiEpW8DIvIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/
-	dxMjON6fSe9gXNVgcYhRgINRiYc3cWpWiBBrYllxZe4hRgkOZiURXsHu7BAh3pTEyqrUovz4
-	otKc1OJDjKbAIJjILCWanA9MRXkl8YbGJmZGlkbmhhZGxuZK4rwHW60DhQTSE0tSs1NTC1KL
-	YPqYODilGhjZAlxz/H7Y2oum7zlbtuxTRsXHU3ue5O8rO1NTdXt9t4XB5ufNJpNdRY31FTND
-	9uX8Oeb4z6AlSitoVcWvBusDqtbPwmdaPe2U1qqc1PVSaHe0pxbP9CxJ5qJHde1iR5WCDZYu
-	vFTp0nU3Za2ge5XRPn4lGSUpNeZdzb4LCnlsGK4pzZqho8RSnJFoqMVcVJwIABlUcXoNAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S933039AbaKSB0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 20:26:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40254 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932882AbaKSB0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 20:26:34 -0500
+Subject: [PATCH v5 4/4] fm10k/igb/ixgbe: Use dma_rmb on Rx descriptor reads
+From: Alexander Duyck <alexander.h.duyck@redhat.com>
+To: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
+        benh@kernel.crashing.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
+        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
+        matthew.vick@intel.com, geert@linux-m68k.org,
+        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
+        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, will.deacon@arm.com,
+        michael@ellerman.id.au, tony.luck@intel.com,
+        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
+        fweisbec@gmail.com, davem@davemloft.net
+Date: Tue, 18 Nov 2014 17:24:30 -0800
+Message-ID: <20141119012430.9563.58999.stgit@ahduyck-server>
+In-Reply-To: <20141119012205.9563.95544.stgit@ahduyck-server>
+References: <20141119012205.9563.95544.stgit@ahduyck-server>
+User-Agent: StGit/0.17-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2014 02:28 AM, Doug Anderson wrote:
-> Andrew,
-> 
-> On Thu, Nov 13, 2014 at 10:50 AM, Andrew Bresticker
-> <abrestic@chromium.org> wrote:
->> Add support for the DW MMC host found on the Imagination Pistachio SoC.
->> Like the DW MMC hosts found on SOCFPGA and Rockchip SoCs, the DW MMC
->> host on Pistachio requires the use of SDMMC_CMD_USE_HOLD_REG.
->>
->> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
->> ---
->>  .../devicetree/bindings/mmc/img-dw-mshc.txt        | 29 ++++++++++++++++++++++
->>  drivers/mmc/host/dw_mmc-pltfm.c                    |  6 +++++
->>  2 files changed, 35 insertions(+)
-> 
-> This seems quite sane to me.
-> 
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
+This change makes it so that dma_rmb is used when reading the Rx
+descriptor.  The advantage of dma_rmb is that it allows for a much
+lower cost barrier on x86, powerpc, arm, and arm64 architectures than a
+traditional memory barrier when dealing with reads that only have to
+synchronize to coherent memory.
 
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+In addition I have updated the code so that it just checks to see if any
+bits have been set instead of just the DD bit since the DD bit will always
+be set as a part of a descriptor write-back so we just need to check for a
+non-zero value being present at that memory location rather than just
+checking for any specific bit.  This allows the code itself to appear much
+cleaner and allows the compiler more room to optimize.
 
-Best Regards,
-Jaehoon Chung
-> 
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Matthew Vick <matthew.vick@intel.com>
+Cc: Don Skidmore <donald.c.skidmore@intel.com>
+Signed-off-by: Alexander Duyck <alexander.h.duyck@redhat.com>
+---
+ drivers/net/ethernet/intel/fm10k/fm10k_main.c |    6 +++---
+ drivers/net/ethernet/intel/igb/igb_main.c     |    6 +++---
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    9 ++++-----
+ 3 files changed, 10 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/net/ethernet/intel/fm10k/fm10k_main.c b/drivers/net/ethernet/intel/fm10k/fm10k_main.c
+index e645af4..06e2d65 100644
+--- a/drivers/net/ethernet/intel/fm10k/fm10k_main.c
++++ b/drivers/net/ethernet/intel/fm10k/fm10k_main.c
+@@ -620,14 +620,14 @@ static bool fm10k_clean_rx_irq(struct fm10k_q_vector *q_vector,
+ 
+ 		rx_desc = FM10K_RX_DESC(rx_ring, rx_ring->next_to_clean);
+ 
+-		if (!fm10k_test_staterr(rx_desc, FM10K_RXD_STATUS_DD))
++		if (!rx_desc->d.staterr)
+ 			break;
+ 
+ 		/* This memory barrier is needed to keep us from reading
+ 		 * any other fields out of the rx_desc until we know the
+-		 * RXD_STATUS_DD bit is set
++		 * descriptor has been written back
+ 		 */
+-		rmb();
++		dma_rmb();
+ 
+ 		/* retrieve a buffer from the ring */
+ 		skb = fm10k_fetch_rx_buffer(rx_ring, rx_desc, skb);
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index a2d72a8..2246f45 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -6918,14 +6918,14 @@ static bool igb_clean_rx_irq(struct igb_q_vector *q_vector, const int budget)
+ 
+ 		rx_desc = IGB_RX_DESC(rx_ring, rx_ring->next_to_clean);
+ 
+-		if (!igb_test_staterr(rx_desc, E1000_RXD_STAT_DD))
++		if (!rx_desc->wb.upper.status_error)
+ 			break;
+ 
+ 		/* This memory barrier is needed to keep us from reading
+ 		 * any other fields out of the rx_desc until we know the
+-		 * RXD_STAT_DD bit is set
++		 * descriptor has been written back
+ 		 */
+-		rmb();
++		dma_rmb();
+ 
+ 		/* retrieve a buffer from the ring */
+ 		skb = igb_fetch_rx_buffer(rx_ring, rx_desc, skb);
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index d2df4e3..d814b58 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -2003,15 +2003,14 @@ static int ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
+ 
+ 		rx_desc = IXGBE_RX_DESC(rx_ring, rx_ring->next_to_clean);
+ 
+-		if (!ixgbe_test_staterr(rx_desc, IXGBE_RXD_STAT_DD))
++		if (!rx_desc->wb.upper.status_error)
+ 			break;
+ 
+-		/*
+-		 * This memory barrier is needed to keep us from reading
++		/* This memory barrier is needed to keep us from reading
+ 		 * any other fields out of the rx_desc until we know the
+-		 * RXD_STAT_DD bit is set
++		 * descriptor has been written back
+ 		 */
+-		rmb();
++		dma_rmb();
+ 
+ 		/* retrieve a buffer from the ring */
+ 		skb = ixgbe_fetch_rx_buffer(rx_ring, rx_desc);
 
