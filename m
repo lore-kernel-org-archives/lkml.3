@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455AbaKSFOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 00:14:49 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:53095 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728AbaKSFOr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 00:14:47 -0500
+	id S1753809AbaKSFPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 00:15:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41647 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751663AbaKSFPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 00:15:38 -0500
+Date: Wed, 19 Nov 2014 00:15:24 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141119051524.GA18547@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Don Zickus <dzickus@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	the arch/x86 maintainers <x86@kernel.org>
+References: <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
+ <20141118020959.GA2091@redhat.com>
+ <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
+ <20141118023930.GA2871@redhat.com>
+ <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
+ <20141118145234.GA7487@redhat.com>
+ <alpine.DEB.2.11.1411181914020.3909@nanos>
+ <20141118215540.GD35311@redhat.com>
+ <20141119021902.GA14216@redhat.com>
+ <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1416367554-15185-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1416367554-15185-1-git-send-email-caesar.wang@rock-chips.com>
-Date: Tue, 18 Nov 2014 21:14:46 -0800
-X-Google-Sender-Auth: yxlhXEEnp-j6jgPyvKZhXHpHfOc
-Message-ID: <CAD=FV=W+WU3j7OWKTxtGUv1Jt7qPesGXSOsoM=bsD5C15jttvA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: fix PWM clock found on RK3288 Socs
-From: Doug Anderson <dianders@chromium.org>
-To: Caesar Wang <caesar.wang@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Kever Yang <kever.yang@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        ZhenFu Fang <fzf@rock-chips.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Chris Zhong <chris.zhong@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Caesar,
+On Tue, Nov 18, 2014 at 08:40:55PM -0800, Linus Torvalds wrote:
 
-On Tue, Nov 18, 2014 at 7:25 PM, Caesar Wang <caesar.wang@rock-chips.com> wrote:
-> We use the new PWM IP on RK3288,but the PWM's clock indeed incorrect.
->
-> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-> ---
->  arch/arm/boot/dts/rk3288.dtsi | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+ > Hmm, if we are getting soft-lockups here, maybe it suggest too much exit-work.
+ > 
+ > Some TIF_NOHZ loop, perhaps? You have nohz on, don't you?
+ > 
+ > That makes me wonder: does the problem go away if you disable NOHZ?
 
-Right, I reported this when Kever was doing his "unused clocks" patch.
-That's why this clock is currently "ignore unused".
+Does nohz=off do enough ? I couldn't convince myself after looking at
+dmesg, and still seeing dynticks stuff in there.
 
-...but though your change is right, I'd rather your change doesn't
-land quite yet.  It totally wrecks havoc with the PWM regulator used
-on many rk3288 boards and will glitch the main "logic" voltage at
-bootup.  I have some patches that are MASSIVELY WIP:
+I'll do a rebuild with all the CONFIG_NO_HZ stuff off, though it also changes
+some other config stuff wrt timers.
 
-https://chromium-review.googlesource.com/230640
-WIP: regulator: pwm: Tell regulator framework that we can't turn off
+	Dave
 
-https://chromium-review.googlesource.com/230641
-WIP: PWM: handle the fact that firmware might have left us enabled
-
-https://chromium-review.googlesource.com/230642
-WIP: pwm-regulator stuff
-
-I think that last one might blow up into several patches.  We need to
-solve the problems from those patches before yours can really land.
-
-
-It's pretty high on my list to finish the above patches, but right now
-suspend/resume issues are higher priority so it's a bit stalled...  If
-someone wants to hijack any of the above patches please let me know--I
-won't be offended.
-
--Doug
