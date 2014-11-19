@@ -1,184 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758585AbaKSWxm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:53:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42842 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754203AbaKSWxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 17:53:40 -0500
-Message-ID: <546D1F71.6030304@suse.cz>
-Date: Wed, 19 Nov 2014 23:53:37 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1756620AbaKSW4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:56:23 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:45216 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754978AbaKSW4V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 17:56:21 -0500
+Date: Wed, 19 Nov 2014 23:56:18 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141119225615.GA11386@lerouge>
+References: <20141118145234.GA7487@redhat.com>
+ <alpine.DEB.2.11.1411181914020.3909@nanos>
+ <20141118215540.GD35311@redhat.com>
+ <20141119021902.GA14216@redhat.com>
+ <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
+ <20141119145902.GA13387@redhat.com>
+ <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
+ <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
+ <20141119190215.GA10796@lerouge>
+ <alpine.DEB.2.11.1411192251120.3909@nanos>
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 5/5] mm, compaction: more focused lru and pcplists draining
-References: <1412696019-21761-1-git-send-email-vbabka@suse.cz> <1412696019-21761-6-git-send-email-vbabka@suse.cz> <20141027074112.GC23379@js1304-P5Q-DELUXE> <545738F1.4010307@suse.cz> <20141104003733.GB8412@js1304-P5Q-DELUXE> <5464A84C.1040903@suse.cz> <20141114070501.GA24817@js1304-P5Q-DELUXE>
-In-Reply-To: <20141114070501.GA24817@js1304-P5Q-DELUXE>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1411192251120.3909@nanos>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2014 08:05 AM, Joonsoo Kim wrote:
->> What about this scenario, with pageblock order:
->> 
->> - record cc->migrate_pfn pointing to pageblock X
->> - isolate_migratepages() skips the pageblock due to e.g. skip bit,
->> or the pageblock being a THP already...
->> - loop to pageblock X+1, last_migrated_pfn is still set to pfn of
->> pageblock X (more precisely the pfn is (X << pageblock_order) - 1
->> per your code, but doesn't matter)
->> - isolate_migratepages isolates something, but ends up somewhere in
->> the middle of pageblock due to COMPACT_CLUSTER_MAX
->> - cc->migrate_pfn points to pageblock X+1 (plus some pages it scanned)
->> - so it will decide that it has fully migrated pageblock X and it's
->> time to drain. But the drain is most likely useless - we didn't
->> migrate anything in pageblock X, we skipped it. And in X+1 we didn't
->> migrate everything yet, so we should drain only after finishing the
->> other part of the pageblock.
+On Wed, Nov 19, 2014 at 10:56:26PM +0100, Thomas Gleixner wrote:
+> On Wed, 19 Nov 2014, Frederic Weisbecker wrote:
+> > I got a report lately involving context tracking. Not sure if it's
+> > the same here but the issue was that context tracking uses per cpu data
+> > and per cpu allocation use vmalloc and vmalloc'ed area can fault due to
+> > lazy paging.
 > 
-> Yes, but, it can be easily fixed.
-> 
->   while (compact_finished()) {
->           unsigned long prev_migrate_pfn = cc->migrate_pfn;
-> 
->           isolate_migratepages()
->           switch case {
->                   NONE:
->                   goto check_drain;
->                   SUCCESS:
->                   if (!last_migrated_pfn)
->                           last_migrated_pfn = prev_migrate_pfn;
->           }
-> 
->           ...
-> 
->           check_drain: (at the end of loop)
->                 ...
-> }
+> This is complete nonsense. pcpu allocations are populated right
+> away. Otherwise no single line of kernel code which uses dynamically
+> allocated per cpu storage would be safe.
 
-Good suggestion, also gets rid of the awkward subtraction of 1 in the
-current patch. Thanks.
- 
->> In short, "last_migrated_pfn" is not "last position of migrate
->> scanner" but "last block where we *actually* migrated".
-> 
-> Okay. Now I get it.
-> Nevertheless, I'd like to change logic like above.
-> 
-> One problem of your approach is that it can't detect some cases.
-> 
-> Let's think about following case.
-> '|' denotes aligned block boundary.
-> '^' denotes migrate_pfn at certain time.
-> 
-> Assume that last_migrated_pfn = 0;
-> 
-> |--------------|-------------|--------------|
->    ^                ^
->   before isolate   after isolate
-> 
-> In this case, your code just records position of second '^' to
-> last_migrated_pfn and skip to flush. But, flush is needed if we
-> migrate some pages because we move away from previous aligned block.
-> 
-> Thanks.
-> 
+Note this isn't faulting because part of the allocation is swapped. No
+it's all reserved in the physical memory, but it's a lazy allocation.
+Part of it isn't yet addressed in the P[UGM?]D. That's what vmalloc_fault() is for.
 
-Right, so the patch below implements your suggestion, and the last_migrated_pfn
-initialization fix. I named the variable "isolate_start_pfn" instead of
-prev_migrate_pfn, as it's where the migrate scanner isolation starts, and having
-both prev_migrate_pfn and last_migrated_pfn would be more confusing I think.
+So it's a non-blocking/sleeping fault which is why it's probably fine
+most of the time except on code that isn't fault-safe. And I suspect that
+most people assume that kernel data won't fault so probably some other
+places have similar issues. 
 
-------8<------
-From: Vlastimil Babka <vbabka@suse.cz>
-Date: Mon, 3 Nov 2014 15:28:01 +0100
-Subject: [PATCH] mm-compaction-more-focused-lru-and-pcplists-draining-fix
+That's a long standing issue. We even had to convert the perf callchain
+allocation to ad-hoc kmalloc() based per cpu allocation to get over vmalloc
+faults. At that time, NMIs couldn't handle faults and many callchains were
+populated in NMIs. We had serious crashes because of per cpu memory faults.
 
-As Joonsoo Kim pointed out, last_migrate_pfn was reset to 0 by mistake at each
-iteration in compact_zone(). This mistake could result in fail to recognize
-immediately draining points for orders smaller than pageblock.
-Joonsoo has also suggested an improvement to detecting cc->order aligned
-block where migration might have occured - before this fix, some of the drain
-opportunities might have been missed.
-
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
----
- mm/compaction.c | 24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index fe43e60..100e6e8 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -1144,6 +1144,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 	unsigned long end_pfn = zone_end_pfn(zone);
- 	const int migratetype = gfpflags_to_migratetype(cc->gfp_mask);
- 	const bool sync = cc->mode != MIGRATE_ASYNC;
-+	unsigned long last_migrated_pfn = 0;
- 
- 	ret = compaction_suitable(zone, cc->order, cc->alloc_flags,
- 							cc->classzone_idx);
-@@ -1189,7 +1190,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 	while ((ret = compact_finished(zone, cc, migratetype)) ==
- 						COMPACT_CONTINUE) {
- 		int err;
--		unsigned long last_migrated_pfn = 0;
-+		unsigned long isolate_start_pfn = cc->migrate_pfn;
- 
- 		switch (isolate_migratepages(zone, cc)) {
- 		case ISOLATE_ABORT:
-@@ -1230,21 +1231,22 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		}
- 
- 		/*
--		 * Record where we have freed pages by migration and not yet
--		 * flushed them to buddy allocator. Subtract 1, because often
--		 * we finish a pageblock and migrate_pfn points to the first
--		 * page* of the next one. In that case we want the drain below
--		 * to happen immediately.
-+		 * Record where we could have freed pages by migration and not
-+		 * yet flushed them to buddy allocator. We use the pfn that
-+		 * isolate_migratepages() started from in this loop iteration
-+		 * - this is the lowest page that could have been isolated and
-+		 * then freed by migration.
- 		 */
- 		if (!last_migrated_pfn)
--			last_migrated_pfn = cc->migrate_pfn - 1;
-+			last_migrated_pfn = isolate_start_pfn;
- 
- check_drain:
- 		/* 
--		 * Have we moved away from the previous cc->order aligned block
--		 * where we migrated from? If yes, flush the pages that were
--		 * freed, so that they can merge and compact_finished() can
--		 * detect immediately if allocation should succeed.
-+		 * Has the migration scanner moved away from the previous
-+		 * cc->order aligned block where we migrated from? If yes,
-+		 * flush the pages that were freed, so that they can merge and
-+		 * compact_finished() can detect immediately if allocation
-+		 * would succeed.
- 		 */
- 		if (cc->order > 0 && last_migrated_pfn) {
- 			int cpu;
--- 
-2.1.2
-
-
+I think that lazy adressing is there for allocation performance reasons. But
+still having faultable per cpu memory is insame IMHO.
 
