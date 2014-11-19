@@ -1,175 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750961AbaKSFEt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 00:04:49 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:38940 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750710AbaKSFEs (ORCPT
+	id S1751455AbaKSFOt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 00:14:49 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:53095 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728AbaKSFOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 00:04:48 -0500
-Date: Wed, 19 Nov 2014 00:04:45 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: Re: [RFC][PATCH 1/3] seq_buf: Move the seq_buf code to lib/
-Message-ID: <20141119000445.4b58b1a0@gandalf.local.home>
-In-Reply-To: <20141119045555.769701022@goodmis.org>
-References: <20141119043917.578498291@goodmis.org>
-	<20141119045555.769701022@goodmis.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 19 Nov 2014 00:14:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+In-Reply-To: <1416367554-15185-1-git-send-email-caesar.wang@rock-chips.com>
+References: <1416367554-15185-1-git-send-email-caesar.wang@rock-chips.com>
+Date: Tue, 18 Nov 2014 21:14:46 -0800
+X-Google-Sender-Auth: yxlhXEEnp-j6jgPyvKZhXHpHfOc
+Message-ID: <CAD=FV=W+WU3j7OWKTxtGUv1Jt7qPesGXSOsoM=bsD5C15jttvA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: dts: fix PWM clock found on RK3288 Socs
+From: Doug Anderson <dianders@chromium.org>
+To: Caesar Wang <caesar.wang@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Kever Yang <kever.yang@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        ZhenFu Fang <fzf@rock-chips.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Chris Zhong <chris.zhong@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the changes are based on my branch, the linux/seq_buf.h file was
-already existing. Thus it's not in this patch set. It may be important
-for you to be able to review that too, so I'm including the file here.
+Caesar,
 
--- Steve
+On Tue, Nov 18, 2014 at 7:25 PM, Caesar Wang <caesar.wang@rock-chips.com> wrote:
+> We use the new PWM IP on RK3288,but the PWM's clock indeed incorrect.
+>
+> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+> ---
+>  arch/arm/boot/dts/rk3288.dtsi | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
 
-------
-#ifndef _LINUX_SEQ_BUF_H
-#define _LINUX_SEQ_BUF_H
+Right, I reported this when Kever was doing his "unused clocks" patch.
+That's why this clock is currently "ignore unused".
 
-#include <linux/fs.h>
+...but though your change is right, I'd rather your change doesn't
+land quite yet.  It totally wrecks havoc with the PWM regulator used
+on many rk3288 boards and will glitch the main "logic" voltage at
+bootup.  I have some patches that are MASSIVELY WIP:
 
-/*
- * Trace sequences are used to allow a function to call several other functions
- * to create a string of data to use.
- */
+https://chromium-review.googlesource.com/230640
+WIP: regulator: pwm: Tell regulator framework that we can't turn off
 
-/**
- * seq_buf - seq buffer structure
- * @buffer:	pointer to the buffer
- * @size:	size of the buffer
- * @len:	the amount of data inside the buffer
- * @readpos:	The next position to read in the buffer.
- */
-struct seq_buf {
-	char			*buffer;
-	size_t			size;
-	size_t			len;
-	loff_t			readpos;
-};
+https://chromium-review.googlesource.com/230641
+WIP: PWM: handle the fact that firmware might have left us enabled
 
-static inline void seq_buf_clear(struct seq_buf *s)
-{
-	s->len = 0;
-	s->readpos = 0;
-}
+https://chromium-review.googlesource.com/230642
+WIP: pwm-regulator stuff
 
-static inline void
-seq_buf_init(struct seq_buf *s, unsigned char *buf, unsigned int size)
-{
-	s->buffer = buf;
-	s->size = size;
-	seq_buf_clear(s);
-}
+I think that last one might blow up into several patches.  We need to
+solve the problems from those patches before yours can really land.
 
-/*
- * seq_buf have a buffer that might overflow. When this happens
- * the len and size are set to be equal.
- */
-static inline bool
-seq_buf_has_overflowed(struct seq_buf *s)
-{
-	return s->len > s->size;
-}
 
-static inline void
-seq_buf_set_overflow(struct seq_buf *s)
-{
-	s->len = s->size + 1;
-}
+It's pretty high on my list to finish the above patches, but right now
+suspend/resume issues are higher priority so it's a bit stalled...  If
+someone wants to hijack any of the above patches please let me know--I
+won't be offended.
 
-/*
- * How much buffer is left on the seq_buf?
- */
-static inline unsigned int
-seq_buf_buffer_left(struct seq_buf *s)
-{
-	if (seq_buf_has_overflowed(s))
-		return 0;
-
-	return s->size - s->len;
-}
-
-/* How much buffer was written? */
-static inline unsigned int seq_buf_used(struct seq_buf *s)
-{
-	return min(s->len, s->size);
-}
-
-/**
- * seq_buf_get_buf - get buffer to write arbitrary data to
- * @s: the seq_buf handle
- * @bufp: the beginning of the buffer is stored here
- *
- * Return the number of bytes available in the buffer, or zero if
- * there's no space.
- */
-static inline size_t seq_buf_get_buf(struct seq_buf *s, char **bufp)
-{
-	WARN_ON(s->len > s->size + 1);
-
-	if (s->len < s->size) {
-		*bufp = s->buffer + s->len;
-		return s->size - s->len;
-	}
-
-	*bufp = NULL;
-	return 0;
-}
-
-/**
- * seq_buf_commit - commit data to the buffer
- * @s: the seq_buf handle
- * @num: the number of bytes to commit
- *
- * Commit @num bytes of data written to a buffer previously acquired
- * by seq_buf_get.  To signal an error condition, or that the data
- * didn't fit in the available space, pass a negative @num value.
- */
-static inline void seq_buf_commit(struct seq_buf *s, int num)
-{
-	if (num < 0) {
-		seq_buf_set_overflow(s);
-	} else {
-		/* num must be negative on overflow */
-		BUG_ON(s->len + num > s->size);
-		s->len += num;
-	}
-}
-
-extern __printf(2, 3)
-int seq_buf_printf(struct seq_buf *s, const char *fmt, ...);
-extern __printf(2, 0)
-int seq_buf_vprintf(struct seq_buf *s, const char *fmt, va_list args);
-extern int seq_buf_print_seq(struct seq_file *m, struct seq_buf *s);
-extern int seq_buf_to_user(struct seq_buf *s, char __user *ubuf,
-			   int cnt);
-extern int seq_buf_puts(struct seq_buf *s, const char *str);
-extern int seq_buf_putc(struct seq_buf *s, unsigned char c);
-extern int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len);
-extern int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
-			      unsigned int len);
-extern int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc);
-
-extern int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
-			   int nmaskbits);
-
-#ifdef CONFIG_BINARY_PRINTF
-extern int
-seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary);
-#endif
-
-#endif /* _LINUX_SEQ_BUF_H */
-
+-Doug
