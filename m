@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933455AbaKSXUF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 18:20:05 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:35467 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518AbaKSXQD (ORCPT
+	id S933468AbaKSXXS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 18:23:18 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:33293 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932143AbaKSXXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 18:16:03 -0500
-From: James Hogan <james.hogan@imgtec.com>
-To: Mike Turquette <mturquette@linaro.org>, linux-metag@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: James Hogan <james.hogan@imgtec.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH 03/15] dt: binding: add binding for tz1090-pll clock
-Date: Wed, 19 Nov 2014 23:15:31 +0000
-Message-Id: <1416438943-11429-4-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1416438943-11429-1-git-send-email-james.hogan@imgtec.com>
-References: <1416438943-11429-1-git-send-email-james.hogan@imgtec.com>
+	Wed, 19 Nov 2014 18:23:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <CALCETrXi7vdNAk4RziNDtqX4asPqXxi1VsLzL7pP0zivkjTH4Q@mail.gmail.com>
+References: <cover.1416352397.git.luto@amacapital.net>
+	<c25e1a64e5b718fa156e141fd9ecbf31011c6059.1416352397.git.luto@amacapital.net>
+	<CA+55aFztsw6Vt4CyVs1OsqdKXxQmFrxHdE7z89VMZ_1KwKPcmQ@mail.gmail.com>
+	<20141119192928.GL12538@two.firstfloor.org>
+	<CA+55aFwykb6aZYgyZXbU1DQ3OL0umpv8gkHYWykBEC2B7UdMbw@mail.gmail.com>
+	<CALCETrXi7vdNAk4RziNDtqX4asPqXxi1VsLzL7pP0zivkjTH4Q@mail.gmail.com>
+Date: Wed, 19 Nov 2014 15:23:16 -0800
+X-Google-Sender-Auth: 8YHi2-qQjml0oKkMhabSv_ElGxU
+Message-ID: <CA+55aFx4-WzNQ0e-ZTcCig3b7U7xmt1WB1jzO3TLk9zHD006ng@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] sched, x86: Check that we're on the right stack in
+ schedule and __might_sleep
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add simple device tree binding for TZ1090 PLL clock. It takes a couple
-of registers, and has a single reference clock source.
+On Wed, Nov 19, 2014 at 3:04 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> Does that include nmi?  I'm a bit afraid of touching that code.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: linux-metag@vger.kernel.org
-Cc: devicetree@vger.kernel.org
----
- .../devicetree/bindings/clock/img,tz1090-pll.txt   | 33 ++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/img,tz1090-pll.txt
+NMI is kind of special, since it's really not supposed to touch
+'current' or anything like that, and that's how we do preempt-count
+(and that's where irq-count is) right now.
 
-diff --git a/Documentation/devicetree/bindings/clock/img,tz1090-pll.txt b/Documentation/devicetree/bindings/clock/img,tz1090-pll.txt
-new file mode 100644
-index 0000000..20aa622
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/img,tz1090-pll.txt
-@@ -0,0 +1,33 @@
-+Binding for TZ1090 Phase-Lock Loop (PLL) clocks.
-+
-+This binding uses the common clock binding[1]. These PLLs are configured with 2
-+registers specified with the reg property. These contain various fields which
-+among other things specify the reference divider value (r), the frequency
-+divider value (f), and the output divider value (od). When enabled, the output
-+clock rate is:
-+
-+    f_out = f_ref / r * (f / 2) / od
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Required properties:
-+- compatible         : Shall be "img,tz1090-pll".
-+- #clock-cells       : From common clock binding; shall be set to 0.
-+- reg                : Address of configuration register pair.
-+- clocks             : From common clock binding.
-+
-+Required source clocks:
-+- 0                  : Reference clock used to generate the output clock
-+                       (doesn't have to be named).
-+
-+Optional properties:
-+- clock-output-names : From common clock binding.
-+
-+Example:
-+	sys_pll {
-+		compatible = "img,tz1090-pll";
-+		#clock-cells = <0>;
-+		clocks = <&sysclk0_sw>;
-+		reg = <0x02005950 0x8>;	/* CR_TOP_SYSPLL_CTL{0,1} */
-+		clock-output-names = "sys_pll";
-+	};
--- 
-2.0.4
+I would prefer to have preempt_count be a percpu variable rather than
+a per-thread one, but there are historical reasons for that horror. Oh
+well.
 
+> It's certainly easy enough to bump irq_count in the paranoid entries.
+
+It definitely shouldn't be done from the assembly code. Usually it's
+"irq_enter/exit()" that does it, but for NMI you'd presumably just do
+it explicitly from do_nmi() or similar. But NMI really is nastier than
+other cases, see above.
+
+(That said, I thought we did it anyway, but now that I look I can't
+find it. So I was probably just smoking something)
+
+             Linus
