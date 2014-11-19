@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933016AbaKSVBO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:01:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56207 "EHLO
+	id S933656AbaKSVEl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:04:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56595 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932674AbaKSUyT (ORCPT
+	with ESMTP id S933587AbaKSVEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:19 -0500
+	Wed, 19 Nov 2014 16:04:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Junjie Mao <eternal.n08@gmail.com>, Kees Cook <keescook@chromium.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Vivek Goyal <vgoyal@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.17 102/141] x86, kaslr: Prevent .bss from overlaping initrd
-Date: Wed, 19 Nov 2014 12:52:05 -0800
-Message-Id: <20141119205153.984265606@linuxfoundation.org>
+        Houcheng Lin <houcheng@gmail.com>, Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.14 081/122] netfilter: nf_log: account for size of NLMSG_DONE attribute
+Date: Wed, 19 Nov 2014 12:52:11 -0800
+Message-Id: <20141119205211.495038058@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
-References: <20141119205150.700188369@linuxfoundation.org>
+In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
+References: <20141119205208.812884198@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -30,222 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Junjie Mao <eternal.n08@gmail.com>
+From: Florian Westphal <fw@strlen.de>
 
-commit e6023367d779060fddc9a52d1f474085b2b36298 upstream.
+commit 9dfa1dfe4d5e5e66a991321ab08afe69759d797a upstream.
 
-When choosing a random address, the current implementation does not take into
-account the reversed space for .bss and .brk sections. Thus the relocated kernel
-may overlap other components in memory. Here is an example of the overlap from a
-x86_64 kernel in qemu (the ranges of physical addresses are presented):
+We currently neither account for the nlattr size, nor do we consider
+the size of the trailing NLMSG_DONE when allocating nlmsg skb.
 
- Physical Address
+This can result in nflog to stop working, as __nfulnl_send() re-tries
+sending forever if it failed to append NLMSG_DONE (which will never
+work if buffer is not large enough).
 
-    0x0fe00000                  --+--------------------+  <-- randomized base
-                               /  |  relocated kernel  |
-                   vmlinux.bin    | (from vmlinux.bin) |
-    0x1336d000    (an ELF file)   +--------------------+--
-                               \  |                    |  \
-    0x1376d870                  --+--------------------+   |
-                                  |    relocs table    |   |
-    0x13c1c2a8                    +--------------------+   .bss and .brk
-                                  |                    |   |
-    0x13ce6000                    +--------------------+   |
-                                  |                    |  /
-    0x13f77000                    |       initrd       |--
-                                  |                    |
-    0x13fef374                    +--------------------+
-
-The initrd image will then be overwritten by the memset during early
-initialization:
-
-[    1.655204] Unpacking initramfs...
-[    1.662831] Initramfs unpacking failed: junk in compressed archive
-
-This patch prevents the above situation by requiring a larger space when looking
-for a random kernel base, so that existing logic can effectively avoids the
-overlap.
-
-[kees: switched to perl to avoid hex translation pain in mawk vs gawk]
-[kees: calculated overlap without relocs table]
-
-Fixes: 82fa9637a2 ("x86, kaslr: Select random position from e820 maps")
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Junjie Mao <eternal.n08@gmail.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Josh Triplett <josh@joshtriplett.org>
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1414762838-13067-1-git-send-email-eternal.n08@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Houcheng Lin <houcheng@gmail.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/boot/compressed/Makefile  |    4 +++-
- arch/x86/boot/compressed/head_32.S |    5 +++--
- arch/x86/boot/compressed/head_64.S |    5 ++++-
- arch/x86/boot/compressed/misc.c    |   13 ++++++++++---
- arch/x86/boot/compressed/mkpiggy.c |    9 +++++++--
- arch/x86/tools/calc_run_size.pl    |   30 ++++++++++++++++++++++++++++++
- 6 files changed, 57 insertions(+), 9 deletions(-)
+ net/netfilter/nfnetlink_log.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -75,8 +75,10 @@ suffix-$(CONFIG_KERNEL_XZ)	:= xz
- suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
- suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
+--- a/net/netfilter/nfnetlink_log.c
++++ b/net/netfilter/nfnetlink_log.c
+@@ -652,7 +652,8 @@ nfulnl_log_packet(struct net *net,
+ 		+ nla_total_size(sizeof(u_int32_t))	/* gid */
+ 		+ nla_total_size(plen)			/* prefix */
+ 		+ nla_total_size(sizeof(struct nfulnl_msg_packet_hw))
+-		+ nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp));
++		+ nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp))
++		+ nla_total_size(sizeof(struct nfgenmsg));	/* NLMSG_DONE */
  
-+RUN_SIZE = $(shell objdump -h vmlinux | \
-+	     perl $(srctree)/arch/x86/tools/calc_run_size.pl)
- quiet_cmd_mkpiggy = MKPIGGY $@
--      cmd_mkpiggy = $(obj)/mkpiggy $< > $@ || ( rm -f $@ ; false )
-+      cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
- 
- targets += piggy.S
- $(obj)/piggy.S: $(obj)/vmlinux.bin.$(suffix-y) $(obj)/mkpiggy FORCE
---- a/arch/x86/boot/compressed/head_32.S
-+++ b/arch/x86/boot/compressed/head_32.S
-@@ -207,7 +207,8 @@ relocated:
-  * Do the decompression, and jump to the new kernel..
-  */
- 				/* push arguments for decompress_kernel: */
--	pushl	$z_output_len	/* decompressed length */
-+	pushl	$z_run_size	/* size of kernel with .bss and .brk */
-+	pushl	$z_output_len	/* decompressed length, end of relocs */
- 	leal	z_extract_offset_negative(%ebx), %ebp
- 	pushl	%ebp		/* output address */
- 	pushl	$z_input_len	/* input_len */
-@@ -217,7 +218,7 @@ relocated:
- 	pushl	%eax		/* heap area */
- 	pushl	%esi		/* real mode pointer */
- 	call	decompress_kernel /* returns kernel location in %eax */
--	addl	$24, %esp
-+	addl	$28, %esp
- 
- /*
-  * Jump to the decompressed kernel.
---- a/arch/x86/boot/compressed/head_64.S
-+++ b/arch/x86/boot/compressed/head_64.S
-@@ -402,13 +402,16 @@ relocated:
-  * Do the decompression, and jump to the new kernel..
-  */
- 	pushq	%rsi			/* Save the real mode argument */
-+	movq	$z_run_size, %r9	/* size of kernel with .bss and .brk */
-+	pushq	%r9
- 	movq	%rsi, %rdi		/* real mode address */
- 	leaq	boot_heap(%rip), %rsi	/* malloc area for uncompression */
- 	leaq	input_data(%rip), %rdx  /* input_data */
- 	movl	$z_input_len, %ecx	/* input_len */
- 	movq	%rbp, %r8		/* output target address */
--	movq	$z_output_len, %r9	/* decompressed length */
-+	movq	$z_output_len, %r9	/* decompressed length, end of relocs */
- 	call	decompress_kernel	/* returns kernel location in %rax */
-+	popq	%r9
- 	popq	%rsi
- 
- /*
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -358,7 +358,8 @@ asmlinkage __visible void *decompress_ke
- 				  unsigned char *input_data,
- 				  unsigned long input_len,
- 				  unsigned char *output,
--				  unsigned long output_len)
-+				  unsigned long output_len,
-+				  unsigned long run_size)
- {
- 	real_mode = rmode;
- 
-@@ -381,8 +382,14 @@ asmlinkage __visible void *decompress_ke
- 	free_mem_ptr     = heap;	/* Heap */
- 	free_mem_end_ptr = heap + BOOT_HEAP_SIZE;
- 
--	output = choose_kernel_location(input_data, input_len,
--					output, output_len);
-+	/*
-+	 * The memory hole needed for the kernel is the larger of either
-+	 * the entire decompressed kernel plus relocation table, or the
-+	 * entire decompressed kernel plus .bss and .brk sections.
-+	 */
-+	output = choose_kernel_location(input_data, input_len, output,
-+					output_len > run_size ? output_len
-+							      : run_size);
- 
- 	/* Validate memory location choices. */
- 	if ((unsigned long)output & (MIN_KERNEL_ALIGN - 1))
---- a/arch/x86/boot/compressed/mkpiggy.c
-+++ b/arch/x86/boot/compressed/mkpiggy.c
-@@ -36,11 +36,13 @@ int main(int argc, char *argv[])
- 	uint32_t olen;
- 	long ilen;
- 	unsigned long offs;
-+	unsigned long run_size;
- 	FILE *f = NULL;
- 	int retval = 1;
- 
--	if (argc < 2) {
--		fprintf(stderr, "Usage: %s compressed_file\n", argv[0]);
-+	if (argc < 3) {
-+		fprintf(stderr, "Usage: %s compressed_file run_size\n",
-+				argv[0]);
- 		goto bail;
+ 	if (in && skb_mac_header_was_set(skb)) {
+ 		size +=   nla_total_size(skb->dev->hard_header_len)
+@@ -695,8 +696,7 @@ nfulnl_log_packet(struct net *net,
+ 		goto unlock_and_release;
  	}
  
-@@ -74,6 +76,7 @@ int main(int argc, char *argv[])
- 	offs += olen >> 12;	/* Add 8 bytes for each 32K block */
- 	offs += 64*1024 + 128;	/* Add 64K + 128 bytes slack */
- 	offs = (offs+4095) & ~4095; /* Round to a 4K boundary */
-+	run_size = atoi(argv[2]);
- 
- 	printf(".section \".rodata..compressed\",\"a\",@progbits\n");
- 	printf(".globl z_input_len\n");
-@@ -85,6 +88,8 @@ int main(int argc, char *argv[])
- 	/* z_extract_offset_negative allows simplification of head_32.S */
- 	printf(".globl z_extract_offset_negative\n");
- 	printf("z_extract_offset_negative = -0x%lx\n", offs);
-+	printf(".globl z_run_size\n");
-+	printf("z_run_size = %lu\n", run_size);
- 
- 	printf(".globl input_data, input_data_end\n");
- 	printf("input_data:\n");
---- /dev/null
-+++ b/arch/x86/tools/calc_run_size.pl
-@@ -0,0 +1,30 @@
-+#!/usr/bin/perl
-+#
-+# Calculate the amount of space needed to run the kernel, including room for
-+# the .bss and .brk sections.
-+#
-+# Usage:
-+# objdump -h a.out | perl calc_run_size.pl
-+use strict;
-+
-+my $mem_size = 0;
-+my $file_offset = 0;
-+
-+my $sections=" *[0-9]+ \.(?:bss|brk) +";
-+while (<>) {
-+	if (/^$sections([0-9a-f]+) +(?:[0-9a-f]+ +){2}([0-9a-f]+)/) {
-+		my $size = hex($1);
-+		my $offset = hex($2);
-+		$mem_size += $size;
-+		if ($file_offset == 0) {
-+			$file_offset = $offset;
-+		} elsif ($file_offset != $offset) {
-+			die ".bss and .brk lack common file offset\n";
-+		}
-+	}
-+}
-+
-+if ($file_offset == 0) {
-+	die "Never found .bss or .brk file offset\n";
-+}
-+printf("%d\n", $mem_size + $file_offset);
+-	if (inst->skb &&
+-	    size > skb_tailroom(inst->skb) - sizeof(struct nfgenmsg)) {
++	if (inst->skb && size > skb_tailroom(inst->skb)) {
+ 		/* either the queue len is too high or we don't have
+ 		 * enough room in the skb left. flush to userspace. */
+ 		__nfulnl_flush(inst);
 
 
