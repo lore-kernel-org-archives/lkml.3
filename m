@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933736AbaKSVYM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:24:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57462 "EHLO
+	id S934186AbaKSVYr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:24:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57283 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933869AbaKSVOt (ORCPT
+	with ESMTP id S933810AbaKSVOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:49 -0500
+	Wed, 19 Nov 2014 16:14:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Hou Pengyang <houpengyang@huawei.com>
-Subject: [PATCH 3.10 54/70] perf/x86/intel: Use proper dTLB-load-misses event on IvyBridge
-Date: Wed, 19 Nov 2014 12:52:45 -0800
-Message-Id: <20141119205212.708219964@linuxfoundation.org>
+        Yoichi Yuasa <yuasa@linux-mips.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Alexandre Oliva <lxoliva@fsfla.org>
+Subject: [PATCH 3.10 51/70] MIPS: Fix forgotten preempt_enable() when CPU has inclusive pcaches
+Date: Wed, 19 Nov 2014 12:52:42 -0800
+Message-Id: <20141119205212.612724282@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -32,44 +31,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vince Weaver <vincent.weaver@maine.edu>
+From: Yoichi Yuasa <yuasa@linux-mips.org>
 
-commit 1996388e9f4e3444db8273bc08d25164d2967c21 upstream.
+commit 5596b0b245fb9d2cefb5023b11061050351c1398 upstream.
 
-This was discussed back in February:
+[    1.904000] BUG: scheduling while atomic: swapper/1/0x00000002
+[    1.908000] Modules linked in:
+[    1.916000] CPU: 0 PID: 1 Comm: swapper Not tainted 3.12.0-rc2-lemote-los.git-5318619-dirty #1
+[    1.920000] Stack : 0000000031aac000 ffffffff810d0000 0000000000000052 ffffffff802730a4
+          0000000000000000 0000000000000001 ffffffff810cdf90 ffffffff810d0000
+          ffffffff8068b968 ffffffff806f5537 ffffffff810cdf90 980000009f0782e8
+          0000000000000001 ffffffff80720000 ffffffff806b0000 980000009f078000
+          980000009f290000 ffffffff805f312c 980000009f05b5d8 ffffffff80233518
+          980000009f05b5e8 ffffffff80274b7c 980000009f078000 ffffffff8068b968
+          0000000000000000 0000000000000000 0000000000000000 0000000000000000
+          0000000000000000 980000009f05b520 0000000000000000 ffffffff805f2f6c
+          0000000000000000 ffffffff80700000 ffffffff80700000 ffffffff806fc758
+          ffffffff80700000 ffffffff8020be98 ffffffff806fceb0 ffffffff805f2f6c
+          ...
+[    2.028000] Call Trace:
+[    2.032000] [<ffffffff8020be98>] show_stack+0x80/0x98
+[    2.036000] [<ffffffff805f2f6c>] __schedule_bug+0x44/0x6c
+[    2.040000] [<ffffffff805fac58>] __schedule+0x518/0x5b0
+[    2.044000] [<ffffffff805f8a58>] schedule_timeout+0x128/0x1f0
+[    2.048000] [<ffffffff80240314>] msleep+0x3c/0x60
+[    2.052000] [<ffffffff80495400>] do_probe+0x238/0x3a8
+[    2.056000] [<ffffffff804958b0>] ide_probe_port+0x340/0x7e8
+[    2.060000] [<ffffffff80496028>] ide_host_register+0x2d0/0x7a8
+[    2.064000] [<ffffffff8049c65c>] ide_pci_init_two+0x4e4/0x790
+[    2.068000] [<ffffffff8049f9b8>] amd74xx_probe+0x148/0x2c8
+[    2.072000] [<ffffffff803f571c>] pci_device_probe+0xc4/0x130
+[    2.076000] [<ffffffff80478f60>] driver_probe_device+0x98/0x270
+[    2.080000] [<ffffffff80479298>] __driver_attach+0xe0/0xe8
+[    2.084000] [<ffffffff80476ab0>] bus_for_each_dev+0x78/0xe0
+[    2.088000] [<ffffffff80478468>] bus_add_driver+0x230/0x310
+[    2.092000] [<ffffffff80479b44>] driver_register+0x84/0x158
+[    2.096000] [<ffffffff80200504>] do_one_initcall+0x104/0x160
 
-	https://lkml.org/lkml/2014/2/18/956
-
-But I never saw a patch come out of it.
-
-On IvyBridge we share the SandyBridge cache event tables, but the
-dTLB-load-miss event is not compatible.  Patch it up after
-the fact to the proper DTLB_LOAD_MISSES.DEMAND_LD_MISS_CAUSES_A_WALK
-
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1407141528200.17214@vincent-weaver-1.umelst.maine.edu
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Hou Pengyang <houpengyang@huawei.com>
+Signed-off-by: Yoichi Yuasa <yuasa@linux-mips.org>
+Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: linux-mips@linux-mips.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Patchwork: https://patchwork.linux-mips.org/patch/5941/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: Alexandre Oliva <lxoliva@fsfla.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/mips/mm/c-r4k.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2172,6 +2172,9 @@ __init int intel_pmu_init(void)
- 	case 62: /* IvyBridge EP */
- 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
- 		       sizeof(hw_cache_event_ids));
-+		/* dTLB-load-misses on IVB is different than SNB */
-+		hw_cache_event_ids[C(DTLB)][C(OP_READ)][C(RESULT_MISS)] = 0x8108; /* DTLB_LOAD_MISSES.DEMAND_LD_MISS_CAUSES_A_WALK */
-+
- 		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs,
- 		       sizeof(hw_cache_extra_regs));
- 
+--- a/arch/mips/mm/c-r4k.c
++++ b/arch/mips/mm/c-r4k.c
+@@ -608,6 +608,7 @@ static void r4k_dma_cache_wback_inv(unsi
+ 			r4k_blast_scache();
+ 		else
+ 			blast_scache_range(addr, addr + size);
++		preempt_enable();
+ 		__sync();
+ 		return;
+ 	}
+@@ -649,6 +650,7 @@ static void r4k_dma_cache_inv(unsigned l
+ 			 */
+ 			blast_inv_scache_range(addr, addr + size);
+ 		}
++		preempt_enable();
+ 		__sync();
+ 		return;
+ 	}
 
 
