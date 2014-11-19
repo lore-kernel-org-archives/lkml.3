@@ -1,61 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165AbaKSQh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:37:59 -0500
-Received: from mout.web.de ([212.227.17.12]:63172 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754398AbaKSQh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:37:57 -0500
-Message-ID: <546CC755.4010804@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 17:37:41 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1756183AbaKSQjA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:39:00 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:35421 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754814AbaKSQi6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:38:58 -0500
 MIME-Version: 1.0
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] DRM-UDL: Deletion of an unnecessary check before the
- function call "vunmap"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:5KRDcRPjPdIijuMQzaemq1s9JfjGwJ/02wN68YO20FTp8H2b2Z2
- 2VBYQ0l2up64qNjmTwLEg34S3yQF8lEFmh2aq5GaTjWVFAhYVTkEWKy5xEsoDApdqEv07vK
- c8MXJMMC7LrKvCijLnG1Vy5Mc1leMXAAwreaCUZdvPgAvG4tQFddqQzQMrbGZk1314mOWAW
- vG50vco3gLV7zjQ6ON6qA==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <CALYGNiN5XC_4MhRbxZmFW5Jmc1N1H32tSZr3kKf_UBFriG71nA@mail.gmail.com>
+References: <20141118172146.3784.81151.stgit@buzz>
+	<20141118173413.GB4042@n2100.arm.linux.org.uk>
+	<546B8C64.3010904@samsung.com>
+	<2041617.Kxhx5O4MMr@wuerfel>
+	<CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
+	<CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
+	<CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com>
+	<20141119160747.GH4042@n2100.arm.linux.org.uk>
+	<CAKv+Gu-kvmkhrptmaN0miM3c0K3ZOh4maTFXL=NpYTMi9Q83kA@mail.gmail.com>
+	<CALYGNiN5XC_4MhRbxZmFW5Jmc1N1H32tSZr3kKf_UBFriG71nA@mail.gmail.com>
+Date: Wed, 19 Nov 2014 17:38:57 +0100
+Message-ID: <CAKv+Gu8o_-Q5PeFqdQXW=mcHNYxFcLLnvxjq94y-iG8+JUp=9w@mail.gmail.com>
+Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 17:33:32 +0100
+On 19 November 2014 17:32, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+> On Wed, Nov 19, 2014 at 7:25 PM, Ard Biesheuvel
+> <ard.biesheuvel@linaro.org> wrote:
+>> On 19 November 2014 17:07, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>>> On Wed, Nov 19, 2014 at 05:02:40PM +0100, Ard Biesheuvel wrote:
+>>>> On 19 November 2014 16:52, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+>>>> > Do you mean ldr pc, =symbol ?
+>>>> >
+>>>> > In this case I get this error:
+>>>> >
+>>>> > /tmp/ccAHtONU.s: Assembler messages:
+>>>> > /tmp/ccAHtONU.s:220: Error: invalid literal constant: pool needs to be closer
+>>>> >
+>>>> > Probably constant pool doesn't work well in inline assembly.
+>>>> >
+>>>> >
+>>>> > Something like this seems work:
+>>>> >
+>>>> > add     lr, pc, #4
+>>>> > ldr       pc, [pc, #-4]
+>>>> > .long symbol
+>>>> >
+>>>>
+>>>> You can add a '.ltorg' instruction which tells the assembler to dump
+>>>> the literal pool, but you still need to jump over it, i.e.,
+>>>>
+>>>> adr lr, 0f
+>>>> ldr pc, =symbol
+>>>> .ltorg
+>>>> 0:
+>>>
+>>> Which is not a good idea either, because the compiler needs to know how
+>>> far away its own manually generated literal pool is from the instructions
+>>> which reference it.  The .ltorg statement can end up emitting any number
+>>> of literals at that point, which makes it indeterminant how many words
+>>> are contained within the asm() statement.
+>>>
+>>
+>> That applies to any inline asm statement in general: the compiler
+>> assumes that the expanded size will not interfere with its ability to
+>> emit literals after the function's return instruction.
+>> Sometimes it will put a literal pool in the middle of the function if
+>> it is very large, and I am not sure if an inline asm by itself would
+>> ever trigger that heuristic to kick in.
+>>
+>> But by the same logic, i.e., due to the fact that GCC manages its own
+>> literals, the literal pool at the assembly level is unlikely to be so
+>> large that you will actually hit this condition.
+>>
+>>> Yes, it isn't desirable to waste an entire data cache line per indirect
+>>> call like the original quote above, but I don't see a practical
+>>> alternative.
+>>>
+>>
+>> We could at least add some labels instead of doing explicit pc arithmetic, i.e.,
+>>
+>> adr lr, 1f
+>> ldr pc, 0f
+>> 0: .long symbol
+>> 1:
+>
+> I think we need some unique prefix here, this macro is used inside
+> bigger inline assembly constructions and probably another macro.
 
-The vunmap() function performes also input parameter validation. Thus the test
-around the call is not needed.
+Numbers are disambiguated by the f and b suffixes, so they can be
+reused in the same .s file. So as long as you use a strictly numerical
+prefix, you can deal correctly with the case where, for instance,
+do_div() is called twice in the same compilation unit, and still not
+clash with other inline asm
 
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/gpu/drm/udl/udl_gem.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/udl/udl_gem.c b/drivers/gpu/drm/udl/udl_gem.c
-index 8044f5f..2979625 100644
---- a/drivers/gpu/drm/udl/udl_gem.c
-+++ b/drivers/gpu/drm/udl/udl_gem.c
-@@ -164,8 +164,7 @@ void udl_gem_vunmap(struct udl_gem_object *obj)
- 		return;
- 	}
- 
--	if (obj->vmapping)
--		vunmap(obj->vmapping);
-+	vunmap(obj->vmapping);
- 
- 	udl_gem_put_pages(obj);
- }
 -- 
-2.1.3
-
+Ard.
