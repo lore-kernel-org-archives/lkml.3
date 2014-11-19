@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789AbaKSL0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 06:26:31 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:37641 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753980AbaKSL0a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 06:26:30 -0500
-Date: Wed, 19 Nov 2014 12:26:26 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        linux-kernel@vger.kernel.org, Nadav Haklai <nadavh@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 0/4] Hot plug support for the Armada 38x SoCs
-Message-ID: <20141119122626.7a3ef761@free-electrons.com>
-In-Reply-To: <1414669184-16785-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1414669184-16785-1-git-send-email-gregory.clement@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1755901AbaKSL1G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 06:27:06 -0500
+Received: from mout.web.de ([212.227.17.11]:57562 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755815AbaKSL1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 06:27:03 -0500
+Message-ID: <546C7E75.9080301@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 12:26:45 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] PM-wakeup: Deletion of an unnecessary check before the
+ function call "wakeup_source_unregister"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:q66CSRNkWUrhm02zFTDoCI5iNIXOjFR1WBKz3w4jx73j44ToTO4
+ nZLaPYsRz2BYxmiMsmtKLZmBYMhMZioo/KyCGvTmpnKdUVOjDJIx8XjweU/ePRCz6YXzPrt
+ lfkeQuz1NHDHqDU7pN+bQoRXvpjg68CtmDdiMfAetVLQ2ocRc8A9dZDVuZY1YJlraSEI51U
+ VGlEElZYAK/caSwRxGd9w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Gregory CLEMENT,
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 12:21:24 +0100
 
-On Thu, 30 Oct 2014 12:39:40 +0100, Gregory CLEMENT wrote:
+The wakeup_source_unregister() function tests whether its argument is NULL
+and then returns immediately. Thus the test around the call is not needed.
 
-> Gregory CLEMENT (4):
->   ARM: mvebu: Clean-up the Armada XP support
->   ARM: mvebu: Move SCU power up in a function
->   ARM: mvebu: Fix the secondary startup for Cortex A9 SoC
->   ARM: mvebu: Implement the CPU hotplug support for the Armada 38x SoCs
+This issue was detected by using the Coccinelle software.
 
-For the entire series:
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/base/power/wakeup.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-  (tested on Armada 385 DB)
-Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-
-Thanks,
-
-Thomas
+diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
+index eb1bd2e..87dfc1d 100644
+--- a/drivers/base/power/wakeup.c
++++ b/drivers/base/power/wakeup.c
+@@ -267,8 +267,7 @@ int device_wakeup_disable(struct device *dev)
+ 		return -EINVAL;
+ 
+ 	ws = device_wakeup_detach(dev);
+-	if (ws)
+-		wakeup_source_unregister(ws);
++	wakeup_source_unregister(ws);
+ 
+ 	return 0;
+ }
 -- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+2.1.3
+
