@@ -1,102 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934040AbaKSVRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:17:19 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56596 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756494AbaKSVRP (ORCPT
+	id S934068AbaKSVRo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:17:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57596 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933952AbaKSVPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:17:15 -0500
-Date: Wed, 19 Nov 2014 21:17:13 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] situation with csum_and_copy_... API
-Message-ID: <20141119211712.GD7996@ZenIV.linux.org.uk>
-References: <20141118084745.GT7996@ZenIV.linux.org.uk>
- <CA+55aFxK0wj2LLp0WmhRsBZch8XfoYbzmbEeJaMpt=SDh5GBvw@mail.gmail.com>
- <20141118212307.GU7996@ZenIV.linux.org.uk>
- <20141119.153136.867017618826698045.davem@davemloft.net>
- <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
+	Wed, 19 Nov 2014 16:15:00 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Willem de Bruijn <willemb@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 46/70] netfilter: xt_bpf: add mising opaque struct sk_filter definition
+Date: Wed, 19 Nov 2014 12:52:37 -0800
+Message-Id: <20141119205212.454947686@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
+References: <20141119205210.913169042@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 12:40:53PM -0800, Linus Torvalds wrote:
-> On Wed, Nov 19, 2014 at 12:31 PM, David Miller <davem@davemloft.net> wrote:
-> >
-> > But that is just my opinion, and yes I do acknowledge that we've had
-> > serious holes in this area in the past.
-> 
-> The serious holes have generally been exactly in the "upper layers
-> already check" camp, and then it turns out that some odd ioctl or
-> other thing ends up doing something odd and interesting.
-> 
-> If Al has actual performance profiles showing that the access_ok() is
-> a real problem, then fine. As a low-level optimization, I agree with
-> it. But not as a "let's just drop them, and make the security rules be
-> non-local and subtle, and require people to know the details of the
-> whole call-chain".
-> 
-> Seeing a "__get_user()" and just being able to glance up in the same
-> function and seeing the "access_ok()" is just a good safety net. And
-> means that people don't have to waste time thinking about or looking
-> for where the hell the security net really is.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Umm...  It's not quite that bad - the thing is, for iov_iter-net series
-we'll need copy_and_csum_{to,from}_iter() anyway and for iovec-backed
-iov_iter instances we already ask the iovec to be validated wrt access_ok().
-And this validation (already done by rw_copy_check_uvector()) is going to
-be next to iov_iter_init() setting the iov_iter up.
+------------------
 
-Moreover, I'm planning to take iov_iter_init() into rw_copy_check_uvector().
-That way setting ->iov is done from the same function that has just checked
-all ranges.  If you look at the callers, you'll see that almost all of them
-are directly followed by iov_iter_init() and folding it in is a fairly
-obvious cleanup.
+From: Pablo Neira <pablo@netfilter.org>
 
-The thing is, with ..._iter() variants added we are left with no other
-in-tree callers of csum_and_copy_{to,from}_user().  I agree that dropping
-those access_ok() is too early at this point - the analysis of paths
-by which a range can reach them is scary right now.  Moreover, it mostly
-parallels the changes later in the series - ones that propagate a pointer
-to iov_iter put into msdghdr in place of ->msg_iov/->msg_iovlen down to
-the new primitives.  _After_ those steps the analysis (see the horrors in
-commit message of 3/5) becomes trivial.
+commit e10038a8ec06ac819b7552bb67aaa6d2d6f850c1 upstream.
 
-So whether we end up removing those access_ok() or not, this is not the
-time to do so.  It still might make sense in the end, but not right now.
+This structure is not exposed to userspace, so fix this by defining
+struct sk_filter; so we skip the casting in kernelspace. This is safe
+since userspace has no way to lurk with that internal pointer.
 
-Frankly, my preference would be to provide __csum_and_copy_...() that do
-not bother with access_ok() (and do so consistently between the architectures),
-and do not bother with zeroing or trying to do an accurate csum in case of
-error.  With uniform implementation of csum_and_copy_...() that does
-access_ok(), tries to call __csum_... variant and, in case of failure,
-does __copy_..._user(), zeroes the tail in the "from" one and calculates
-the csum by source of destination - whichever's kernel-side.  I.e. do what
-ppc64 is doing.  That way we get obviously safe csum_and_copy_.._user(),
-and consistent __ counterparts directly used by ..._iter() primitives.
-Quite a bit of complexity becomes possible to remove from asm code,
-while we are at it - zeroing isn't the worst of it, contortions needed to
-calculate the csum accurately in error case are often nastier.  So much
-that e.g. arm doesn't even bother trying.
+Fixes: e6f30c7 ("netfilter: x_tables: add xt_bpf match")
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Acked-by: Willem de Bruijn <willemb@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Again, this is a separate work - I agree with you regarding the overhead
-being a non-issue for existing callers, and if somebody tries e.g. to send
-64K from 32K-element vector of 2-byte ranges they'll have a _lot_ of other
-overhead that will drown that of those access_ok().  In normal cases the
-price of copying the data itself is going to swamp that of access_ok(),
-of course.
+---
+ include/uapi/linux/netfilter/xt_bpf.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-IOW, consider the access_ok() changes withdrawn for now.  It's too early
-in the series for them and the only reason to pull them that high in
-ordering had been the fear of overhead.  Which is very unlikely to be
-an issue.  They won't come back (if they come back at all) until the
-proof of correctness becomes absolutely trivial.
+--- a/include/uapi/linux/netfilter/xt_bpf.h
++++ b/include/uapi/linux/netfilter/xt_bpf.h
+@@ -6,6 +6,8 @@
+ 
+ #define XT_BPF_MAX_NUM_INSTR	64
+ 
++struct sk_filter;
++
+ struct xt_bpf_info {
+ 	__u16 bpf_program_num_elem;
+ 	struct sock_filter bpf_program[XT_BPF_MAX_NUM_INSTR];
+
+
