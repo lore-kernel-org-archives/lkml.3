@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932994AbaKSU4s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:56:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56287 "EHLO
+	id S932975AbaKSU4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:56:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56046 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932719AbaKSUyX (ORCPT
+	with ESMTP id S932723AbaKSUyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:54:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anish Bhatt <anish@chelsio.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 111/141] cxgb4 : Handle dcb enable correctly
-Date: Wed, 19 Nov 2014 12:52:14 -0800
-Message-Id: <20141119205154.270966486@linuxfoundation.org>
+Subject: [PATCH 3.17 112/141] net: systemport: enable RX interrupts after NAPI
+Date: Wed, 19 Nov 2014 12:52:15 -0800
+Message-Id: <20141119205154.301549641@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,62 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anish Bhatt <anish@chelsio.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
 
-commit 3bb062613b1ecbd0c388106f61344d699f7859ec upstream.
+commit 8edf0047f4b8e03d94ef88f5a7dec146cce03a06 upstream.
 
-Disabling DCBx in firmware automatically enables DCBx for control via host
-lldp agents. Wait for an explicit setstate call from an lldp agents to enable
- DCBx instead.
+There is currently a small window during which the SYSTEMPORT adapter
+enables its RX interrupts without having enabled its NAPI handler, which
+can result in packets to be discarded during interface bringup.
 
-Fixes: 76bcb31efc06 ("cxgb4 : Add DCBx support codebase and dcbnl_ops")
+A similar but more serious window exists in bcm_sysport_resume() during
+which we can have the RDMA engine not fully prepared to receive packets
+and yet having RX interrupts enabled.
 
-Signed-off-by: Anish Bhatt <anish@chelsio.com>
+Fix this my moving the RX interrupt enable down to
+bcm_sysport_netif_start() after napi_enable() for the RX path is called,
+which fixes both call sites: bcm_sysport_open() and
+bcm_sysport_resume().
+
+Fixes: b02e6d9ba7ad ("net: systemport: add bcm_sysport_netif_{enable,stop}")
+Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_dcb.c  |    7 ++++++-
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c |    6 +++++-
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/broadcom/bcmsysport.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_dcb.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_dcb.c
-@@ -80,7 +80,6 @@ void cxgb4_dcb_state_fsm(struct net_devi
- 			/* we're going to use Host DCB */
- 			dcb->state = CXGB4_DCB_STATE_HOST;
- 			dcb->supported = CXGB4_DCBX_HOST_SUPPORT;
--			dcb->enabled = 1;
- 			break;
- 		}
+--- a/drivers/net/ethernet/broadcom/bcmsysport.c
++++ b/drivers/net/ethernet/broadcom/bcmsysport.c
+@@ -1384,6 +1384,9 @@ static void bcm_sysport_netif_start(stru
+ 	/* Enable NAPI */
+ 	napi_enable(&priv->napi);
  
-@@ -349,6 +348,12 @@ static u8 cxgb4_setstate(struct net_devi
- {
- 	struct port_info *pi = netdev2pinfo(dev);
- 
-+	/* If DCBx is host-managed, dcb is enabled by outside lldp agents */
-+	if (pi->dcb.state == CXGB4_DCB_STATE_HOST) {
-+		pi->dcb.enabled = enabled;
-+		return 0;
-+	}
++	/* Enable RX interrupt and TX ring full interrupt */
++	intrl2_0_mask_clear(priv, INTRL2_0_RDMA_MBDONE | INTRL2_0_TX_RING_FULL);
 +
- 	/* Firmware doesn't provide any mechanism to control the DCB state.
- 	 */
- 	if (enabled != (pi->dcb.state == CXGB4_DCB_STATE_FW_ALLSYNCED))
---- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-@@ -688,7 +688,11 @@ int cxgb4_dcb_enabled(const struct net_d
- #ifdef CONFIG_CHELSIO_T4_DCB
- 	struct port_info *pi = netdev_priv(dev);
+ 	phy_start(priv->phydev);
  
--	return pi->dcb.state == CXGB4_DCB_STATE_FW_ALLSYNCED;
-+	if (!pi->dcb.enabled)
-+		return 0;
-+
-+	return ((pi->dcb.state == CXGB4_DCB_STATE_FW_ALLSYNCED) ||
-+		(pi->dcb.state == CXGB4_DCB_STATE_HOST));
- #else
- 	return 0;
- #endif
+ 	/* Enable TX interrupts for the 32 TXQs */
+@@ -1486,9 +1489,6 @@ static int bcm_sysport_open(struct net_d
+ 	if (ret)
+ 		goto out_free_rx_ring;
+ 
+-	/* Enable RX interrupt and TX ring full interrupt */
+-	intrl2_0_mask_clear(priv, INTRL2_0_RDMA_MBDONE | INTRL2_0_TX_RING_FULL);
+-
+ 	/* Turn on TDMA */
+ 	ret = tdma_enable_set(priv, 1);
+ 	if (ret)
+@@ -1872,9 +1872,6 @@ static int bcm_sysport_resume(struct dev
+ 
+ 	netif_device_attach(dev);
+ 
+-	/* Enable RX interrupt and TX ring full interrupt */
+-	intrl2_0_mask_clear(priv, INTRL2_0_RDMA_MBDONE | INTRL2_0_TX_RING_FULL);
+-
+ 	/* RX pipe enable */
+ 	topctrl_writel(priv, 0, RX_FLUSH_CNTL);
+ 
 
 
