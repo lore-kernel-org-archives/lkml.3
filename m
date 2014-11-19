@@ -1,240 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007AbaKSKZB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 05:25:01 -0500
-Received: from smtp-out-035.synserver.de ([212.40.185.35]:1095 "EHLO
-	smtp-out-035.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487AbaKSKY4 (ORCPT
+	id S1755240AbaKSK1e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 05:27:34 -0500
+Received: from regular1.263xmail.com ([211.150.99.133]:58438 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006AbaKSK1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 05:24:56 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 14167
-Message-ID: <546C6FF5.1010803@metafoo.de>
-Date: Wed, 19 Nov 2014 11:24:53 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Wed, 19 Nov 2014 05:27:31 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: caesar.wang@rock-chips.com
+X-FST-TO: sonnyrao@chromium.org
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: caesar.wang@rock-chips.com
+X-UNIQUE-TAG: <408b8315b578fe79ce1dc628650a8f65>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <546C70A1.9090707@rock-chips.com>
+Date: Wed, 19 Nov 2014 18:27:45 +0800
+From: Caesar Wang <caesar.wang@rock-chips.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [alsa-devel] [PATCH 1/4] regmap: ac97: Add generic AC'97 callbacks
-References: <1416336354-32148-1-git-send-email-lars@metafoo.de> <1416336354-32148-2-git-send-email-lars@metafoo.de>
-In-Reply-To: <1416336354-32148-2-git-send-email-lars@metafoo.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Doug Anderson <dianders@chromium.org>
+CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
+        Kever Yang <kever.yang@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        ZhenFu Fang <fzf@rock-chips.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Chris Zhong <chris.zhong@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>
+Subject: Re: [PATCH] ARM: dts: fix PWM clock found on RK3288 Socs
+References: <1416367554-15185-1-git-send-email-caesar.wang@rock-chips.com> <CAD=FV=W+WU3j7OWKTxtGUv1Jt7qPesGXSOsoM=bsD5C15jttvA@mail.gmail.com>
+In-Reply-To: <CAD=FV=W+WU3j7OWKTxtGUv1Jt7qPesGXSOsoM=bsD5C15jttvA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2014 07:45 PM, Lars-Peter Clausen wrote:
-> From: Mark Brown <broonie@linaro.org>
->
-> Use the recently added support for bus operations to provide a standard
-> mapping for AC'97 register I/O.
->
-> Signed-off-by: Mark Brown <broonie@linaro.org>
+Doug,
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+在 2014/11/19 13:14, Doug Anderson 写道:
+> Caesar,
+>
+> On Tue, Nov 18, 2014 at 7:25 PM, Caesar Wang <caesar.wang@rock-chips.com> wrote:
+>> We use the new PWM IP on RK3288,but the PWM's clock indeed incorrect.
+>>
+>> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+>> ---
+>>   arch/arm/boot/dts/rk3288.dtsi | 8 ++++----
+>>   1 file changed, 4 insertions(+), 4 deletions(-)
+> Right, I reported this when Kever was doing his "unused clocks" patch.
+> That's why this clock is currently "ignore unused".
+>
+> ...but though your change is right, I'd rather your change doesn't
+> land quite yet.  It totally wrecks havoc with the PWM regulator used
+> on many rk3288 boards and will glitch the main "logic" voltage at
+> bootup.  I have some patches that are MASSIVELY WIP:
+>
+> https://chromium-review.googlesource.com/230640
+> WIP: regulator: pwm: Tell regulator framework that we can't turn off
+>
+> https://chromium-review.googlesource.com/230641
+> WIP: PWM: handle the fact that firmware might have left us enabled
+>
+> https://chromium-review.googlesource.com/230642
+> WIP: pwm-regulator stuff
+>
+> I think that last one might blow up into several patches.  We need to
+> solve the problems from those patches before yours can really land.
+>
+>
+> It's pretty high on my list to finish the above patches, but right now
+> suspend/resume issues are higher priority so it's a bit stalled...  If
+> someone wants to hijack any of the above patches please let me know--I
+> won't be offended.
 
-Sorry for that.
+OK,I see.
 
-> ---
-> Changes from the original version:
-> 	* Add ac97_regmap_bus and made regmap_ac97_reg_{write,read} static
-> 	* Use ac97->bus->ops instead of passing the ops separately
-> ---
->   drivers/base/regmap/Kconfig       |   5 +-
->   drivers/base/regmap/Makefile      |   1 +
->   drivers/base/regmap/regmap-ac97.c | 114 ++++++++++++++++++++++++++++++++++++++
->   include/linux/regmap.h            |   7 +++
->   4 files changed, 126 insertions(+), 1 deletion(-)
->   create mode 100644 drivers/base/regmap/regmap-ac97.c
+
+> -Doug
 >
-> diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
-> index 8a3f51f..db9d00c3 100644
-> --- a/drivers/base/regmap/Kconfig
-> +++ b/drivers/base/regmap/Kconfig
-> @@ -3,12 +3,15 @@
->   # subsystems should select the appropriate symbols.
 >
->   config REGMAP
-> -	default y if (REGMAP_I2C || REGMAP_SPI || REGMAP_SPMI || REGMAP_MMIO || REGMAP_IRQ)
-> +	default y if (REGMAP_I2C || REGMAP_SPI || REGMAP_SPMI || REGMAP_AC97 || REGMAP_MMIO || REGMAP_IRQ)
->   	select LZO_COMPRESS
->   	select LZO_DECOMPRESS
->   	select IRQ_DOMAIN if REGMAP_IRQ
->   	bool
 >
-> +config REGMAP_AC97
-> +	tristate
-> +
->   config REGMAP_I2C
->   	tristate
->   	depends on I2C
-> diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
-> index a7c670b..0a53365 100644
-> --- a/drivers/base/regmap/Makefile
-> +++ b/drivers/base/regmap/Makefile
-> @@ -1,6 +1,7 @@
->   obj-$(CONFIG_REGMAP) += regmap.o regcache.o
->   obj-$(CONFIG_REGMAP) += regcache-rbtree.o regcache-lzo.o regcache-flat.o
->   obj-$(CONFIG_DEBUG_FS) += regmap-debugfs.o
-> +obj-$(CONFIG_REGMAP_AC97) += regmap-ac97.o
->   obj-$(CONFIG_REGMAP_I2C) += regmap-i2c.o
->   obj-$(CONFIG_REGMAP_SPI) += regmap-spi.o
->   obj-$(CONFIG_REGMAP_SPMI) += regmap-spmi.o
-> diff --git a/drivers/base/regmap/regmap-ac97.c b/drivers/base/regmap/regmap-ac97.c
-> new file mode 100644
-> index 0000000..e4c45d2
-> --- /dev/null
-> +++ b/drivers/base/regmap/regmap-ac97.c
-> @@ -0,0 +1,114 @@
-> +/*
-> + * Register map access API - AC'97 support
-> + *
-> + * Copyright 2013 Linaro Ltd.  All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/err.h>
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/regmap.h>
-> +#include <linux/slab.h>
-> +
-> +#include <sound/ac97_codec.h>
-> +
-> +bool regmap_ac97_default_volatile(struct device *dev, unsigned int reg)
-> +{
-> +	switch (reg) {
-> +	case AC97_RESET:
-> +	case AC97_POWERDOWN:
-> +	case AC97_INT_PAGING:
-> +	case AC97_EXTENDED_ID:
-> +	case AC97_EXTENDED_STATUS:
-> +	case AC97_EXTENDED_MID:
-> +	case AC97_EXTENDED_MSTATUS:
-> +	case AC97_GPIO_STATUS:
-> +	case AC97_MISC_AFE:
-> +	case AC97_VENDOR_ID1:
-> +	case AC97_VENDOR_ID2:
-> +	case AC97_CODEC_CLASS_REV:
-> +	case AC97_PCI_SVID:
-> +	case AC97_PCI_SID:
-> +	case AC97_FUNC_SELECT:
-> +	case AC97_FUNC_INFO:
-> +	case AC97_SENSE_INFO:
-> +		return true;
-> +	default:
-> +		return false;
-> +	}
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_ac97_default_volatile);
-> +
-> +static int regmap_ac97_reg_read(void *context, unsigned int reg,
-> +	unsigned int *val)
-> +{
-> +	struct snd_ac97 *ac97 = context;
-> +
-> +	*val = ac97->bus->ops->read(ac97, reg);
-> +
-> +	return 0;
-> +}
-> +
-> +static int regmap_ac97_reg_write(void *context, unsigned int reg,
-> +	unsigned int val)
-> +{
-> +	struct snd_ac97 *ac97 = context;
-> +
-> +	ac97->bus->ops->write(ac97, reg, val);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct regmap_bus ac97_regmap_bus = {
-> +		.reg_write = regmap_ac97_reg_write,
-> +		.reg_read = regmap_ac97_reg_read,
-> +};
-> +
-> +/**
-> + * regmap_init_ac97(): Initialise AC'97 register map
-> + *
-> + * @ac97: Device that will be interacted with
-> + * @config: Configuration for register map
-> + *
-> + * The return value will be an ERR_PTR() on error or a valid pointer to
-> + * a struct regmap.
-> + */
-> +struct regmap *regmap_init_ac97(struct snd_ac97 *ac97,
-> +				const struct regmap_config *config)
-> +{
-> +	return regmap_init(&ac97->dev, &ac97_regmap_bus, ac97, config);
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_init_ac97);
-> +
-> +/**
-> + * devm_regmap_init_ac97(): Initialise AC'97 register map
-> + *
-> + * @ac97: Device that will be interacted with
-> + * @config: Configuration for register map
-> + *
-> + * The return value will be an ERR_PTR() on error or a valid pointer
-> + * to a struct regmap.  The regmap will be automatically freed by the
-> + * device management code.
-> + */
-> +struct regmap *devm_regmap_init_ac97(struct snd_ac97 *ac97,
-> +				     const struct regmap_config *config)
-> +{
-> +	return devm_regmap_init(&ac97->dev, &ac97_regmap_bus, ac97, config);
-> +}
-> +EXPORT_SYMBOL_GPL(devm_regmap_init_ac97);
-> +
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-> index c5ed83f..4419b99 100644
-> --- a/include/linux/regmap.h
-> +++ b/include/linux/regmap.h
-> @@ -27,6 +27,7 @@ struct spmi_device;
->   struct regmap;
->   struct regmap_range_cfg;
->   struct regmap_field;
-> +struct snd_ac97;
->
->   /* An enum of all the supported cache types */
->   enum regcache_type {
-> @@ -340,6 +341,8 @@ struct regmap *regmap_init_spmi_ext(struct spmi_device *dev,
->   struct regmap *regmap_init_mmio_clk(struct device *dev, const char *clk_id,
->   				    void __iomem *regs,
->   				    const struct regmap_config *config);
-> +struct regmap *regmap_init_ac97(struct snd_ac97 *ac97,
-> +				const struct regmap_config *config);
->
->   struct regmap *devm_regmap_init(struct device *dev,
->   				const struct regmap_bus *bus,
-> @@ -356,6 +359,10 @@ struct regmap *devm_regmap_init_spmi_ext(struct spmi_device *dev,
->   struct regmap *devm_regmap_init_mmio_clk(struct device *dev, const char *clk_id,
->   					 void __iomem *regs,
->   					 const struct regmap_config *config);
-> +struct regmap *devm_regmap_init_ac97(struct snd_ac97 *ac97,
-> +				     const struct regmap_config *config);
-> +
-> +bool regmap_ac97_default_volatile(struct device *dev, unsigned int reg);
->
->   /**
->    * regmap_init_mmio(): Initialise register map
->
+
+-- 
+Best regards,
+Caesar
+
 
