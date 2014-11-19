@@ -1,137 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933663AbaKSXc1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 18:32:27 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:44218 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754452AbaKSX1M (ORCPT
+	id S933690AbaKSXce (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 18:32:34 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:48765 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932694AbaKSXcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 18:27:12 -0500
-Message-Id: <20141119232709.587971857@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Wed, 19 Nov 2014 18:26:34 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        <x86@kernel.org>, <stable@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [for-next][PATCH 02/18] ftrace/x86: Add frames pointers to trampoline as necessary
-References: <20141119232632.737569526@goodmis.org>
+	Wed, 19 Nov 2014 18:32:32 -0500
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 20 Nov 2014 08:32:32 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Karam Lee <karam.lee@lge.com>, Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH] zram: rely on the bi_end_io for zram_rw_page fails
+Message-ID: <20141119233232.GA2627@bbox>
+References: <1415926147-9023-1-git-send-email-minchan@kernel.org>
+ <20141118152336.d58b7b61a711b7d9982deb9d@linux-foundation.org>
+ <20141118235201.GB7393@bbox>
+ <20141119131535.7d848c148535c076a17b9d29@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0002-ftrace-x86-Add-frames-pointers-to-trampoline-as-nece.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141119131535.7d848c148535c076a17b9d29@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Hello,
 
-When CONFIG_FRAME_POINTERS are enabled, it is required that the
-ftrace_caller and ftrace_regs_caller trampolines set up frame pointers
-otherwise a stack trace from a function call wont print the functions
-that called the trampoline. This is due to a check in
-__save_stack_address():
+On Wed, Nov 19, 2014 at 01:15:35PM -0800, Andrew Morton wrote:
+> On Wed, 19 Nov 2014 08:52:01 +0900 Minchan Kim <minchan@kernel.org> wrote:
+> 
+> > > >  
+> > > > -	/*
+> > > > -	 * Return 0 prevents I/O fallback trial caused by rw_page fail
+> > > > -	 * and upper layer can handle this IO error via page error.
+> > > > -	 */
+> > > > +	page_endio(page, rw, 0);
+> > > >  	return 0;
+> > > 
+> > > Losing the comment makes me sad.  The code is somewhat odd-looking.  We
+> > > should add some words explaining why we're not reporting errors at this
+> > > point.
+> > 
+> > Okay. How about this?
+> > 
+> > 
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index decca6f161b8..1d7c90d5e0d0 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -975,6 +975,12 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
+> >  	err = zram_bvec_rw(zram, &bv, index, offset, rw);
+> >  out_unlock:
+> >  	up_read(&zram->init_lock);
+> > +	/*
+> > +	 * If I/O fails, just return error without calling page_endio.
+> > +	 * It causes resubmit the I/O with bio request by rw_page fallback
+> > +	 * and bio I/O complete handler does things to handle the error
+> > +	 * (e.g., set_page_dirty of swap_writepage fail).
+> > +	 */
+> >  	if (err == 0)
+> >  		page_endio(page, rw, 0);
+> >  	return err;
+> 
+> I don't understand the comment :( bdev_read_page() doesn't resubmit the
+> IO if block_device_operations.rw_page() returns zero and it's unclear
 
- #ifdef CONFIG_FRAME_POINTER
-	if (!reliable)
-		return;
- #endif
+It's not bdev_read_page but upper functions.
+(ie, do_mpage_readpage, swap_readpage, __mpage_writepage, __swap_writepage)
 
-The "reliable" variable is only set if the function address is equal to
-contents of the address before the address the frame pointer register
-points to. If the frame pointer is not set up for the ftrace caller
-then this will fail the reliable test. It will miss the function that
-called the trampoline. Worse yet, if fentry is used (gcc 4.6 and
-beyond), it will also miss the parent, as the fentry is called before
-the stack frame is set up. That means the bp frame pointer points
-to the stack of just before the parent function was called.
+> how the bio I/O complete handler (which one?) gets involved.
 
-Link: http://lkml.kernel.org/r/20141119034829.355440340@goodmis.org
+bio->bi_end_io.
 
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: stable@vger.kernel.org # 3.7+
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> It would help in the comment was more specific.  Instead of using vague
+> terms like "rw_page fallback" and "bio I/O complete handler", use
+> actual function names so the reader understand exactly what code we're
+> referring to.
+
+Indeed. I was terrible.
+
+Hope this is better.
+
+>From 635f22cac08f76b909ccc13b2de0b5d437eef5aa Mon Sep 17 00:00:00 2001
+From: Minchan Kim <minchan@kernel.org>
+Date: Wed, 19 Nov 2014 08:57:49 +0900
+Subject: [PATCH] zram: add comment
+
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- arch/x86/kernel/mcount_64.S | 41 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+ drivers/block/zram/zram_drv.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/x86/kernel/mcount_64.S b/arch/x86/kernel/mcount_64.S
-index 42f0cdd20baf..35a793fa4bba 100644
---- a/arch/x86/kernel/mcount_64.S
-+++ b/arch/x86/kernel/mcount_64.S
-@@ -47,14 +47,51 @@ GLOBAL(\trace_label)
- #endif
- .endm
- 
-+#ifdef CONFIG_FRAME_POINTER
-+/*
-+ * Stack traces will stop at the ftrace trampoline if the frame pointer
-+ * is not set up properly. If fentry is used, we need to save a frame
-+ * pointer for the parent as well as the function traced, because the
-+ * fentry is called before the stack frame is set up, where as mcount
-+ * is called afterward.
-+ */
-+.macro create_frame parent rip
-+#ifdef CC_USING_FENTRY
-+	pushq \parent
-+	pushq %rbp
-+	movq %rsp, %rbp
-+#endif
-+	pushq \rip
-+	pushq %rbp
-+	movq %rsp, %rbp
-+.endm
-+
-+.macro restore_frame
-+#ifdef CC_USING_FENTRY
-+	addq $16, %rsp
-+#endif
-+	popq %rbp
-+	addq $8, %rsp
-+.endm
-+#else
-+.macro create_frame parent rip
-+.endm
-+.macro restore_frame
-+.endm
-+#endif /* CONFIG_FRAME_POINTER */
-+
- ENTRY(ftrace_caller)
- 	ftrace_caller_setup ftrace_caller_op_ptr
- 	/* regs go into 4th parameter (but make it NULL) */
- 	movq $0, %rcx
- 
-+	create_frame %rsi, %rdi
-+
- GLOBAL(ftrace_call)
- 	call ftrace_stub
- 
-+	restore_frame
-+
- 	MCOUNT_RESTORE_FRAME
- 
- 	/*
-@@ -105,9 +142,13 @@ ENTRY(ftrace_regs_caller)
- 	/* regs go into 4th parameter */
- 	leaq (%rsp), %rcx
- 
-+	create_frame %rsi, %rdi
-+
- GLOBAL(ftrace_regs_call)
- 	call ftrace_stub
- 
-+	restore_frame
-+
- 	/* Copy flags back to SS, to restore them */
- 	movq EFLAGS(%rsp), %rax
- 	movq %rax, SS(%rsp)
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index decca6f161b8..6f1ceb14e64b 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -975,6 +975,14 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
+ 	err = zram_bvec_rw(zram, &bv, index, offset, rw);
+ out_unlock:
+ 	up_read(&zram->init_lock);
++	/*
++	 * If I/O fails, just return error(ie, non-zero) without
++	 * calling page_endio.
++	 * It causes resubmit the I/O with bio request by upper functions
++	 * of rw_page(e.g., swap_readpage, __swap_writepage) and
++	 * bio->bi_end_io does things to handle the error
++	 * (e.g., SetPageError, set_page_dirty and extra works).
++	 */
+ 	if (err == 0)
+ 		page_endio(page, rw, 0);
+ 	return err;
 -- 
-2.1.1
+2.0.0
 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
+-- 
+Kind regards,
+Minchan Kim
