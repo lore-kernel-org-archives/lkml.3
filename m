@@ -1,85 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598AbaKSNCh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 08:02:37 -0500
-Received: from mta-out1.inet.fi ([62.71.2.203]:38654 "EHLO jenni1.inet.fi"
+	id S1754751AbaKSNDA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 08:03:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54969 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752903AbaKSNCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 08:02:35 -0500
-Date: Wed, 19 Nov 2014 15:02:14 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+	id S1754524AbaKSNC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 08:02:58 -0500
+Date: Wed, 19 Nov 2014 14:02:50 +0100
+From: Petr Mladek <pmladek@suse.cz>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@gentwo.org>,
-        Steve Capper <steve.capper@linaro.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 10/19] thp: PMD splitting without splitting compound page
-Message-ID: <20141119130214.GB29884@node.dhcp.inet.fi>
-References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1415198994-15252-11-git-send-email-kirill.shutemov@linux.intel.com>
- <20141119065823.GA16887@hori1.linux.bs1.fc.nec.co.jp>
+        Jiri Kosina <jkosina@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andy Lutomirski <luto@amacapital.net>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [RFC][PATCH 3/3] x86/nmi: Perform a safe NMI stack trace on all
+ CPUs
+Message-ID: <20141119130250.GA5007@dhcp128.suse.cz>
+References: <20141119043917.578498291@goodmis.org>
+ <20141119045556.084787418@goodmis.org>
+ <20141119104114.GA5684@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141119065823.GA16887@hori1.linux.bs1.fc.nec.co.jp>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <20141119104114.GA5684@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 06:57:47AM +0000, Naoya Horiguchi wrote:
-> On Wed, Nov 05, 2014 at 04:49:45PM +0200, Kirill A. Shutemov wrote:
-> > Current split_huge_page() combines two operations: splitting PMDs into
-> > tables of PTEs and splitting underlying compound page. This patch
-> > changes split_huge_pmd() implementation to split the given PMD without
-> > splitting other PMDs this page mapped with or underlying compound page.
-> > 
-> > In order to do this we have to get rid of tail page refcounting, which
-> > uses _mapcount of tail pages. Tail page refcounting is needed to be able
-> > to split THP page at any point: we always know which of tail pages is
-> > pinned (i.e. by get_user_pages()) and can distribute page count
-> > correctly.
-> > 
-> > We can avoid this by allowing split_huge_page() to fail if the compound
-> > page is pinned. This patch removes all infrastructure for tail page
-> > refcounting and make split_huge_page() to always return -EBUSY. All
-> > split_huge_page() users already know how to handle its fail. Proper
-> > implementation will be added later.
-> > 
-> > Without tail page refcounting, implementation of split_huge_pmd() is
-> > pretty straight-forward.
-> > 
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > ---
-> ...
-> 
-> > diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
-> > index 7e70ae968e5f..e4ba17694b6b 100644
-> > --- a/arch/powerpc/mm/hugetlbpage.c
-> > +++ b/arch/powerpc/mm/hugetlbpage.c
-> > @@ -1022,7 +1022,6 @@ int gup_hugepte(pte_t *ptep, unsigned long sz, unsigned long addr,
+On Wed 2014-11-19 11:41:14, Borislav Petkov wrote:
+> On Tue, Nov 18, 2014 at 11:39:20PM -0500, Steven Rostedt wrote:
+> >  static int
+> >  arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
 > >  {
-> >  	unsigned long mask;
-> >  	unsigned long pte_end;
-> > -	struct page *head, *page, *tail;
-> >  	pte_t pte;
-> >  	int refs;
+> > @@ -78,12 +157,14 @@ arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
+> >  	cpu = smp_processor_id();
 > >  
+> >  	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
+> > -		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
+> > +		printk_func_t printk_func_save = this_cpu_read(printk_func);
+> >  
+> > -		arch_spin_lock(&lock);
+> > +		/* Replace printk to write into the NMI seq */
+> > +		this_cpu_write(printk_func, nmi_vprintk);
+> >  		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
+> >  		show_regs(regs);
+> > -		arch_spin_unlock(&lock);
+> > +		this_cpu_write(printk_func, printk_func_save);
 > 
-> This breaks build of powerpc, so you need keep *head and *page as
-> you do for other architectures.
+> I'm wondering if this could be used in a generic manner throughout code
+> where we could say "ok, I'm in an NMI context, so lemme switch printk's
+> and do some printing" so that NMI and NMI-like atomic contexts could use
+> printk. Lemme do an mce example:
+> 
+> do_machine_check(..)
+> {
+> 	printk_func_t printk_func_save = this_cpu_read(printk_func);
+> 
+> 	...
+> 
+> 	/* in #MC handler, switch printks */
+> 	this_cpu_write(printk_func, nmi_vprintk);
+> 
+> 	printk("This is a hw error, details: ...\n");
+> 
+> 	/* more bla */
+> 
+> 	this_cpu_write(printk_func, printk_func_save);
+> }
+> 
+> or should we change that in entry.S, before we call the handler?
+> 
+> Because, if we could do something like that, then we finally get to use
+> printk in an NMI context which would be a good thing.
 
-Yeah. I've already fixed this localy after 0-DAY kernel testing
-complained.
+Unfortunately, the problem is more complicated. The alternative
+printk_func() just stores the string into the seq_buf. Then someone
+needs to move the data to the main ring buffer, see print_seq_line()
+and the related cycle in this patch.
 
-Thanks.
+The copying needs to be done in the normal context because it will
+need to take the lock for the main ring buffer. Then it will need to
+somehow protect the seq_buf against other accesses from NMI context.
 
--- 
- Kirill A. Shutemov
+By other words, any serious generic solution would end up with implementing
+an alternative ring buffer and lockless operations. It would be
+something similar to my older patch set, see
+https://lkml.org/lkml/2014/5/9/118. It was not
+accepted and it triggered this solution for NMI backtraces.
+
+Note that this patch works because arch_trigger_all_cpu_backtrace() is
+called from normal context and any further calls are ignored until the
+current call is finished. So, there is a safe place to copy the data.
+
+
+I have another idea for the generic solution. Linus was against using
+printk() in NMI context, see https://lkml.org/lkml/2014/6/10/388.
+The backtraces are the only serious usage. Other than
+that there are only few warnings. My proposal is to handle the
+warnings similar way like recursive printk() warning. The recursive
+printk() just sets a flag, the message is dropped, warning about lost
+message is printed within the next printk() call.
+
+Best Regards,
+Petr
