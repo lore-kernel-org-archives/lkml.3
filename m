@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318AbaKSR72 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:59:28 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:49326 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756221AbaKSR70 (ORCPT
+	id S1756469AbaKSR7o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:59:44 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:60112 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756388AbaKSR7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:59:26 -0500
-From: Steven Walter <stevenrwalter@gmail.com>
-To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Steven Walter <stevenrwalter@gmail.com>
-Subject: [PATCH v3] Bluetooth: automatically flushable packets aren't allowed on LE links
-Date: Wed, 19 Nov 2014 12:59:11 -0500
-Message-Id: <1416419951-27659-1-git-send-email-stevenrwalter@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <C7C04F3A-EC21-4E71-9550-68E50901947D@holtmann.org>
-References: <C7C04F3A-EC21-4E71-9550-68E50901947D@holtmann.org>
+	Wed, 19 Nov 2014 12:59:42 -0500
+Message-ID: <546CDA83.5060002@collabora.co.uk>
+Date: Wed, 19 Nov 2014 18:59:31 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>
+CC: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Simon Glass <sjg@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/3] ARM: dts: Add SPI flash node for Peach boards
+References: <1416246184-29071-1-git-send-email-javier.martinez@collabora.co.uk> <1416246184-29071-2-git-send-email-javier.martinez@collabora.co.uk> <CAD=FV=Xkei_wxa3jWb8bPvuynbSyq4o=ezjVD0+e04aOPCAM+Q@mail.gmail.com> <546C6BD2.4020802@collabora.co.uk> <CAD=FV=XpweHvcTsVTMBkv9g4+GxoO8WdngGhfVj0QnOwq3ASdQ@mail.gmail.com> <20141119174709.GF22111@sirena.org.uk>
+In-Reply-To: <20141119174709.GF22111@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bluetooth spec states that automatically flushable packets may not
-be sent over a LE-U link.
+Hello Mark,
 
-Signed-off-by: Steven Walter <stevenrwalter@gmail.com>
----
- net/bluetooth/l2cap_core.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+On 11/19/2014 06:47 PM, Mark Brown wrote:
+> These are bugs.  The device tree should describe the hardware, spidev is
+> a Linux implementation detail.  Provide a compatible string for the
+> device that is there just as you would for any other device.
+>
 
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index 4af3821..7c4350f 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -764,7 +764,7 @@ static void l2cap_send_cmd(struct l2cap_conn *conn, u8 ident, u8 code, u16 len,
- 	if (!skb)
- 		return;
+Thanks a lot for your explanation.
  
--	if (lmp_no_flush_capable(conn->hcon->hdev))
-+	if (lmp_no_flush_capable(conn->hcon->hdev) || conn->hcon->type == LE_LINK)
- 		flags = ACL_START_NO_FLUSH;
- 	else
- 		flags = ACL_START;
-@@ -784,7 +784,7 @@ static bool __chan_is_moving(struct l2cap_chan *chan)
- static void l2cap_do_send(struct l2cap_chan *chan, struct sk_buff *skb)
- {
- 	struct hci_conn *hcon = chan->conn->hcon;
--	u16 flags;
-+	u16 flags = ACL_START;
- 
- 	BT_DBG("chan %p, skb %p len %d priority %u", chan, skb, skb->len,
- 	       skb->priority);
-@@ -798,11 +798,13 @@ static void l2cap_do_send(struct l2cap_chan *chan, struct sk_buff *skb)
- 		return;
- 	}
- 
--	if (!test_bit(FLAG_FLUSHABLE, &chan->flags) &&
--	    lmp_no_flush_capable(hcon->hdev))
-+	if (hcon->type == LE_LINK) {
-+		/* LE-U does not support auto-flushing packets */
- 		flags = ACL_START_NO_FLUSH;
--	else
--		flags = ACL_START;
-+	} else if (!test_bit(FLAG_FLUSHABLE, &chan->flags) &&
-+		    lmp_no_flush_capable(hcon->hdev)) {
-+		flags = ACL_START_NO_FLUSH;
-+	}
- 
- 	bt_cb(skb)->force_active = test_bit(FLAG_FORCE_ACTIVE, &chan->flags);
- 	hci_send_acl(chan->conn->hchan, skb, flags);
--- 
-1.9.1
+>> OK.  Please don't take my comments as a NAK on this patch.  I should
+>> have done the same grep myself before sending--sorry.  I just
+>> remembered the old conversation and looked for that instead.
+> 
+> Please take this as one.
+> 
 
+Ok
+
+Best regards,
+Javier
