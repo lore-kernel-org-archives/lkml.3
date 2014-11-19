@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934186AbaKSVYr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:24:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57283 "EHLO
+	id S933723AbaKSVYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:24:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57280 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933810AbaKSVOs (ORCPT
+	with ESMTP id S933865AbaKSVOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:14:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yoichi Yuasa <yuasa@linux-mips.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Alexandre Oliva <lxoliva@fsfla.org>
-Subject: [PATCH 3.10 51/70] MIPS: Fix forgotten preempt_enable() when CPU has inclusive pcaches
-Date: Wed, 19 Nov 2014 12:52:42 -0800
-Message-Id: <20141119205212.612724282@linuxfoundation.org>
+        Drew Richardson <drew.richardson@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        David Ahern <daahern@cisco.com>
+Subject: [PATCH 3.10 52/70] perf: Handle compat ioctl
+Date: Wed, 19 Nov 2014 12:52:43 -0800
+Message-Id: <20141119205212.643603678@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -31,74 +32,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yoichi Yuasa <yuasa@linux-mips.org>
+From: Pawel Moll <pawel.moll@arm.com>
 
-commit 5596b0b245fb9d2cefb5023b11061050351c1398 upstream.
+commit b3f207855f57b9c8f43a547a801340bb5cbc59e5 upstream.
 
-[    1.904000] BUG: scheduling while atomic: swapper/1/0x00000002
-[    1.908000] Modules linked in:
-[    1.916000] CPU: 0 PID: 1 Comm: swapper Not tainted 3.12.0-rc2-lemote-los.git-5318619-dirty #1
-[    1.920000] Stack : 0000000031aac000 ffffffff810d0000 0000000000000052 ffffffff802730a4
-          0000000000000000 0000000000000001 ffffffff810cdf90 ffffffff810d0000
-          ffffffff8068b968 ffffffff806f5537 ffffffff810cdf90 980000009f0782e8
-          0000000000000001 ffffffff80720000 ffffffff806b0000 980000009f078000
-          980000009f290000 ffffffff805f312c 980000009f05b5d8 ffffffff80233518
-          980000009f05b5e8 ffffffff80274b7c 980000009f078000 ffffffff8068b968
-          0000000000000000 0000000000000000 0000000000000000 0000000000000000
-          0000000000000000 980000009f05b520 0000000000000000 ffffffff805f2f6c
-          0000000000000000 ffffffff80700000 ffffffff80700000 ffffffff806fc758
-          ffffffff80700000 ffffffff8020be98 ffffffff806fceb0 ffffffff805f2f6c
-          ...
-[    2.028000] Call Trace:
-[    2.032000] [<ffffffff8020be98>] show_stack+0x80/0x98
-[    2.036000] [<ffffffff805f2f6c>] __schedule_bug+0x44/0x6c
-[    2.040000] [<ffffffff805fac58>] __schedule+0x518/0x5b0
-[    2.044000] [<ffffffff805f8a58>] schedule_timeout+0x128/0x1f0
-[    2.048000] [<ffffffff80240314>] msleep+0x3c/0x60
-[    2.052000] [<ffffffff80495400>] do_probe+0x238/0x3a8
-[    2.056000] [<ffffffff804958b0>] ide_probe_port+0x340/0x7e8
-[    2.060000] [<ffffffff80496028>] ide_host_register+0x2d0/0x7a8
-[    2.064000] [<ffffffff8049c65c>] ide_pci_init_two+0x4e4/0x790
-[    2.068000] [<ffffffff8049f9b8>] amd74xx_probe+0x148/0x2c8
-[    2.072000] [<ffffffff803f571c>] pci_device_probe+0xc4/0x130
-[    2.076000] [<ffffffff80478f60>] driver_probe_device+0x98/0x270
-[    2.080000] [<ffffffff80479298>] __driver_attach+0xe0/0xe8
-[    2.084000] [<ffffffff80476ab0>] bus_for_each_dev+0x78/0xe0
-[    2.088000] [<ffffffff80478468>] bus_add_driver+0x230/0x310
-[    2.092000] [<ffffffff80479b44>] driver_register+0x84/0x158
-[    2.096000] [<ffffffff80200504>] do_one_initcall+0x104/0x160
+When running a 32-bit userspace on a 64-bit kernel (eg. i386
+application on x86_64 kernel or 32-bit arm userspace on arm64
+kernel) some of the perf ioctls must be treated with special
+care, as they have a pointer size encoded in the command.
 
-Signed-off-by: Yoichi Yuasa <yuasa@linux-mips.org>
-Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: linux-mips@linux-mips.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Patchwork: https://patchwork.linux-mips.org/patch/5941/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: Alexandre Oliva <lxoliva@fsfla.org>
+For example, PERF_EVENT_IOC_ID in 32-bit world will be encoded
+as 0x80042407, but 64-bit kernel will expect 0x80082407. In
+result the ioctl will fail returning -ENOTTY.
+
+This patch solves the problem by adding code fixing up the
+size as compat_ioctl file operation.
+
+Reported-by: Drew Richardson <drew.richardson@arm.com>
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/1402671812-9078-1-git-send-email-pawel.moll@arm.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: David Ahern <daahern@cisco.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/mips/mm/c-r4k.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/events/core.c |   22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
---- a/arch/mips/mm/c-r4k.c
-+++ b/arch/mips/mm/c-r4k.c
-@@ -608,6 +608,7 @@ static void r4k_dma_cache_wback_inv(unsi
- 			r4k_blast_scache();
- 		else
- 			blast_scache_range(addr, addr + size);
-+		preempt_enable();
- 		__sync();
- 		return;
- 	}
-@@ -649,6 +650,7 @@ static void r4k_dma_cache_inv(unsigned l
- 			 */
- 			blast_inv_scache_range(addr, addr + size);
- 		}
-+		preempt_enable();
- 		__sync();
- 		return;
- 	}
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -39,6 +39,7 @@
+ #include <linux/hw_breakpoint.h>
+ #include <linux/mm_types.h>
+ #include <linux/cgroup.h>
++#include <linux/compat.h>
+ 
+ #include "internal.h"
+ 
+@@ -3490,6 +3491,25 @@ static long perf_ioctl(struct file *file
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_COMPAT
++static long perf_compat_ioctl(struct file *file, unsigned int cmd,
++				unsigned long arg)
++{
++	switch (_IOC_NR(cmd)) {
++	case _IOC_NR(PERF_EVENT_IOC_SET_FILTER):
++		/* Fix up pointer size (usually 4 -> 8 in 32-on-64-bit case */
++		if (_IOC_SIZE(cmd) == sizeof(compat_uptr_t)) {
++			cmd &= ~IOCSIZE_MASK;
++			cmd |= sizeof(void *) << IOCSIZE_SHIFT;
++		}
++		break;
++	}
++	return perf_ioctl(file, cmd, arg);
++}
++#else
++# define perf_compat_ioctl NULL
++#endif
++
+ int perf_event_task_enable(void)
+ {
+ 	struct perf_event *event;
+@@ -3961,7 +3981,7 @@ static const struct file_operations perf
+ 	.read			= perf_read,
+ 	.poll			= perf_poll,
+ 	.unlocked_ioctl		= perf_ioctl,
+-	.compat_ioctl		= perf_ioctl,
++	.compat_ioctl		= perf_compat_ioctl,
+ 	.mmap			= perf_mmap,
+ 	.fasync			= perf_fasync,
+ };
 
 
