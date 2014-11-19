@@ -1,397 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457AbaKSSzq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 13:55:46 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:49610 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756109AbaKSSzp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 13:55:45 -0500
-Date: Wed, 19 Nov 2014 10:55:41 -0800
-From: josh@joshtriplett.org
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] scripts/ksize: Add kernel build size report
-Message-ID: <20141119185541.GA15123@cloud>
-References: <feb1cf7e4ae472145b5e29065e56c10de384f2ff.1416416438.git.dvhart@linux.intel.com>
+	id S1756377AbaKSS6g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 13:58:36 -0500
+Received: from mga09.intel.com ([134.134.136.24]:18160 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752736AbaKSS6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 13:58:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,418,1413270000"; 
+   d="scan'208";a="639884035"
+Date: Wed, 19 Nov 2014 10:58:31 -0800
+From: Kristen Carlson Accardi <kristen@linux.intel.com>
+To: Ethan Zhao <ethan.zhao@oracle.com>
+Cc: <dirk.j.brandewie@intel.com>, <viresh.kumar@linaro.org>,
+        <rjw@rjwysocki.net>, <corbet@lwn.net>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <ethan.kernel@gmail.com>, <joe.jin@oracle.com>,
+        <brian.maly@oracle.com>
+Subject: Re: [PATCH 2/3] intel_pstate: allow driver to be built as a module
+Message-ID: <20141119105831.0428235f@kcaccard-desk.amr.corp.intel.com>
+In-Reply-To: <1416299826-15813-7-git-send-email-ethan.zhao@oracle.com>
+References: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com>
+	<1416299826-15813-7-git-send-email-ethan.zhao@oracle.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <feb1cf7e4ae472145b5e29065e56c10de384f2ff.1416416438.git.dvhart@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 09:01:19AM -0800, Darren Hart wrote:
-> ksize generates hierarchical build size reports from vmlinux, *.o, and
-> built-in.o files.
-> 
-> ksize is useful in preparing minimal configurations and comparing
-> similar configurations across kernel versions.
-> 
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+On Tue, 18 Nov 2014 17:37:05 +0900
+Ethan Zhao <ethan.zhao@oracle.com> wrote:
 
-I've applied this patch to tiny/ksize in the tinification tree
-(https://git.kernel.org/cgit/linux/kernel/git/josh/linux.git/), and I
-plan to submit it upstream during the next merge window.
-
-If someone would prefer to take this patch upstream through a different
-tree, please let me know.
-
-- Josh Triplett
-
->  scripts/ksize | 340 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 340 insertions(+)
->  create mode 100755 scripts/ksize
+> From: Brian Maly <brian.maly@oracle.com>
 > 
-> diff --git a/scripts/ksize b/scripts/ksize
-> new file mode 100755
-> index 0000000..0a52121
-> --- /dev/null
-> +++ b/scripts/ksize
-> @@ -0,0 +1,340 @@
-> +#!/usr/bin/env python
-> +#
-> +# Copyright (c) 2011-2014 Intel Corporation.
-> +# All rights reserved.
-> +#
-> +# This program is free software; you can redistribute it and/or modify
-> +# it under the terms of the GNU General Public License version 2 as
-> +# published by the Free Software Foundation.
-> +#
-> +# This program is distributed in the hope that it will be useful, but
-> +# WITHOUT ANY WARRANTY; without even the implied warranty of
-> +# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> +# General Public License for more details.
-> +#
-> +# Author: Darren Hart <dvhart@linux.intel.com>
-> +#
-> +
-> +"""
-> +Display details of the kernel build size.
-> +
-> +The generated report is comprised of many sub-reports, starting with vmlinux,
-> +and descending into each component built-in.o.
-> +
-> +The first line of each report block is the table header, including the report
-> +title and the column labels. Next is the report totals for the top level file
-> +(vmlinux or built-in.o). This is followed by itemized sizes for any component
-> +*.o object files and all built-in.o files from one directory down (the
-> +built-in.o components are labeled with their parent directory to avoid
-> +displaying "built-in.o" on nearly every line). The final lines display the sum
-> +of all the itemized components and delta between the total and the sum.
-> +
-> +An example report from an x86_64 allnoconfig build follows in part:
-> +
-> +Linux Kernel (vmlinux)                  total |       text       data        bss
-> +--------------------------------------------------------------------------------
-> +vmlinux                               2201904 |     864548     121612    1215744
-> +--------------------------------------------------------------------------------
-> +arch/x86                               282709 |     171021      65448      46240
-> +kernel                                 249960 |     234355       7201       8404
-> +mm                                     190369 |     154171      14154      22044
-> +fs                                     163867 |     160820       1351       1696
-> +drivers                                 44429 |      41353       2052       1024
-> +lib                                     37143 |      37053         85          5
-> +init                                    21535 |       5189      16285         61
-> +security                                 3674 |       3658          8          8
-> +net                                       122 |        122          0          0
-> +--------------------------------------------------------------------------------
-> +sum                                    993808 |     807742     106584      79482
-> +delta                                 1208096 |      56806      15028    1136262
-> +
-> +...
-> +
-> +drivers                                 total |       text       data        bss
-> +--------------------------------------------------------------------------------
-> +drivers/built-in.o                      44429 |      41353       2052       1024
-> +--------------------------------------------------------------------------------
-> +drivers/base                            32427 |      31267       1060        100
-> +drivers/char                             9980 |       8412        656        912
-> +drivers/rtc                              1155 |       1155          0          0
-> +drivers/clocksource                       674 |        406        256         12
-> +drivers/video                              62 |         46         16          0
-> +--------------------------------------------------------------------------------
-> +sum                                     44298 |      41286       1988       1024
-> +delta                                     131 |         67         64          0
-> +
-> +The report may optionally display an additional level of drivers/* reports:
-> +
-> +    drivers/base                        total |       text       data        bss
-> +    ----------------------------------------------------------------------------
-> +    drivers/base/built-in.o             32427 |      31267       1060        100
-> +    ----------------------------------------------------------------------------
-> +    drivers/base/*.o                    32253 |      31121       1032        100
-> +    ----------------------------------------------------------------------------
-> +    sum                                 32253 |      31121       1032        100
-> +    delta                                 174 |        146         28          0
-> +
-> +    ...
-> +"""
-> +
-> +import sys
-> +import getopt
-> +import os
-> +import struct
-> +import termios
-> +import fcntl
-> +import glob
-> +from subprocess import *
-> +
-> +
-> +def usage():
-> +    print 'Usage: ksize [OPTION]...'
-> +    print '  -d,                 display an additional level of drivers detail'
-> +    print '  -h, --help          display this help and exit'
-> +    print ''
-> +    print 'Run ksize from the top-level Linux kernel build directory. Always'
-> +    print 'perform a "make clean" before running a build to be measured by'
-> +    print 'ksize to avoid contaminating the report with unassociated build'
-> +    print 'artifacts'
-> +
-> +
-> +def term_width():
-> +    """
-> +    Determine the width of the terminal for formatting the report
-> +
-> +    Prefer the COLUMNS environment variable, and fall back to termios.
-> +    The width will be limited to the range of [70, 100], and will default to 80
-> +    if none can be determined, or if redirecting to a file.
-> +    """
-> +    minw = 70
-> +    maxw = 100
-> +
-> +    if os.environ.has_key('COLUMNS'):
-> +        return max(minw, min(int(os.environ['COLUMNS']), maxw))
-> +
-> +    try:
-> +        (rows,cols) = struct.unpack('hh', fcntl.ioctl(1, termios.TIOCGWINSZ, "CCRR"))
-> +        return max(minw, min(cols, maxw))
-> +    except IOError:
-> +        # Probably redirecting to a file
-> +        pass
-> +    except struct.error, err:
-> +        print "Error:", err
-> +        sys.exit(1)
-> +
-> +    return 80
-> +
-> +
-> +def fmt_title(title, maxw):
-> +    """
-> +    Format the title to fit within a maximum width
-> +
-> +    The title will be shifted left and prefixed with a '<' character as
-> +    necessary to fit within the maximum width.
-> +
-> +    Args:
-> +      title (str): Title to be formatted
-> +      maxw (int): Maximum width
-> +    """
-> +    if len(title) <= maxw:
-> +        return title
-> +    else:
-> +        return "<%s" % (title[-(maxw - 1):])
-> +
-> +
-> +class Sizes(object):
-> +    """
-> +    Storage class for 'size -t' output
-> +    """
-> +    def __init__(self, title="", files=None):
-> +        """
-> +        Create a new Sizes container and populate it with the sum of the sizes
-> +        from the files list.
-> +
-> +        Args:
-> +          title (str, optional): Title to display via the show method
-> +          files (list of str, optional): Files to pass to 'size -t'
-> +        """
-> +        self.title = title
-> +        self.text = self.data = self.bss = self.total = 0
-> +
-> +        if files:
-> +            p = Popen("size -t " + " ".join(files),
-> +                      shell=True, stdout=PIPE, stderr=PIPE)
-> +            output = p.communicate()[0].splitlines()
-> +
-> +            if len(output) > 2:
-> +                sizes = output[-1].split()[0:4]
-> +                self.text = int(sizes[0])
-> +                self.data = int(sizes[1])
-> +                self.bss = int(sizes[2])
-> +                self.total = int(sizes[3])
-> +
-> +    def __add__(self, that):
-> +        if not (isinstance(self, Sizes) and isinstance(that, Sizes)):
-> +            raise TypeError
-> +        sum = Sizes()
-> +        sum.text = self.text + that.text
-> +        sum.data = self.data + that.data
-> +        sum.bss = self.bss + that.bss
-> +        sum.total = self.total + that.total
-> +        return sum
-> +
-> +    def __sub__(self, that):
-> +        if not (isinstance(self, Sizes) and isinstance(that, Sizes)):
-> +            raise TypeError
-> +        diff = Sizes()
-> +        diff.text = self.text - that.text
-> +        diff.data = self.data - that.data
-> +        diff.bss = self.bss - that.bss
-> +        diff.total = self.total - that.total
-> +        return diff
-> +
-> +    def show(self, cols, indent="", alt_title=None):
-> +        """
-> +        Print a row in a report for sizes represented by this object
-> +
-> +        Args:
-> +          cols (int): Width of the report in characters
-> +          indent (str, optional): Literal indentation string, all spaces
-> +          alt_title (str, optional): An alternate title to display
-> +        """
-> +        max_title = cols - 46 - len(indent)
-> +        if alt_title is not None:
-> +            title = fmt_title(alt_title, max_title)
-> +        else:
-> +            title = fmt_title(self.title, max_title)
-> +        print "%s%-*s %10d | %10d %10d %10d" % (
-> +                indent, max_title, title, self.total,
-> +                self.text, self.data, self.bss)
-> +
-> +
-> +class Report(object):
-> +    """
-> +    Container of sizes and sub reports
-> +    """
-> +    @staticmethod
-> +    def create(title, filename, subglobs):
-> +        """
-> +        Named constructor to create hierarchies of Report objects
-> +
-> +        Args:
-> +          title (str): Title of the report
-> +          filename (str): Top level build object filename
-> +          subglobs (list of str): Shell globs matching the components of the top
-> +            level filename
-> +        """
-> +        r = Report(title, [filename])
-> +
-> +        # Create the .o object file report for this level
-> +        path = os.path.dirname(filename)
-> +        files = [p for p in glob.iglob(path + "/*.o") if not p.endswith("/built-in.o")]
-> +        r.parts.append(Report(path + "/*.o", files))
-> +
-> +        # Create the sub-reports based on each built-in.o
-> +        for g in subglobs:
-> +            for f in glob.glob(g):
-> +                path = os.path.dirname(f)
-> +                r.parts.append(Report.create(path, f, [path + "/*/built-in.o"]))
-> +
-> +        # Display in descending total size order
-> +        r.parts.sort(reverse=True)
-> +
-> +        # Calculate the sum and deltas from each component report
-> +        for b in r.parts:
-> +            r.totals += b.sizes
-> +        r.totals.title = "sum"
-> +
-> +        r.deltas = r.sizes - r.totals
-> +        r.deltas.title = "delta"
-> +
-> +        return r
-> +
-> +    def __init__(self, title, files):
-> +        """
-> +        Create a new singular Report object, only called by Report.create()
-> +
-> +        Args:
-> +          title (str, optional): Title to display via the show method
-> +          files (list of str, optional): Files to construct Sizes
-> +        """
-> +        self.files = files
-> +        self.title = title
-> +        self.parts = list()
-> +        self.sizes = Sizes(title, files)
-> +        self.totals = Sizes("sum")
-> +        self.deltas = Sizes("delta")
-> +
-> +    def show(self, cols, indent=""):
-> +        """
-> +        Print the Report as a table with Sizes as rows
-> +
-> +        Args:
-> +          cols (int): Width of the report in characters
-> +          indent (str, optional): Literal indentation string, all spaces
-> +        """
-> +        max_title = cols - 46 - len(indent)
-> +        title = fmt_title(self.title, max_title)
-> +        rule = str.ljust(indent, cols, '-')
-> +
-> +        # Print report table header
-> +        print "%s%-*s %10s | %10s %10s %10s" % (
-> +                indent, max_title, title, "total", "text", "data", "bss")
-> +
-> +        # Print top level report filename instead of title (usually path)
-> +        print rule
-> +        self.sizes.show(cols, indent, self.files[0])
-> +        print rule
-> +
-> +        # Print component sizes (*.o and */built-in.o)
-> +        for p in self.parts:
-> +            if p.sizes.total > 0:
-> +                p.sizes.show(cols, indent)
-> +        print rule
-> +
-> +        # Print the sum of the components, and the delta with the total
-> +        self.totals.show(cols, indent)
-> +        self.deltas.show(cols, indent)
-> +        print "\n"
-> +
-> +    def __cmp__(self, that):
-> +        if not isinstance(that, Report):
-> +            raise TypeError
-> +        return cmp(self.sizes.total, that.sizes.total)
-> +
-> +
-> +def main(argv):
-> +    try:
-> +        opts, args = getopt.getopt(argv[1:], "dh", ["help"])
-> +    except getopt.GetoptError, err:
-> +        print '%s' % str(err)
-> +        usage()
-> +        return 2
-> +
-> +    driver_detail = False
-> +    for o, a in opts:
-> +        if o == '-d':
-> +            driver_detail = True
-> +        elif o in ('-h', '--help'):
-> +            usage()
-> +            return 0
-> +        else:
-> +            assert False, "unhandled option"
-> +
-> +    cols = term_width()
-> +
-> +    globs = ["arch/*/built-in.o", "*/built-in.o"]
-> +    vmlinux = Report.create("Linux Kernel (vmlinux)", "vmlinux", globs)
-> +
-> +    vmlinux.show(cols)
-> +    for b in vmlinux.parts:
-> +        if b.totals.total > 0 and len(b.parts) > 1:
-> +            b.show(cols)
-> +        if b.title == "drivers" and driver_detail:
-> +            for d in b.parts:
-> +                if d.totals.total > 0 and len(d.parts) > 1:
-> +                    d.show(cols, "    ")
-> +
-> +
-> +if __name__ == "__main__":
-> +    sys.exit(main(sys.argv))
-> -- 
-> 2.1.1
+> To provide the flexibility of module, allow this driver to
+> be configured and built as a module.
 > 
+> Signed-off-by: Brian Maly <brian.maly@oracle.com>
+> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+
+I believe the entire concept of being able to use intel_pstate as a
+module just isn't going to work.  There are load order issues - and
+additionally the driver doesn't clean up after itself in any way.
+
+
+> ---
+>  drivers/cpufreq/Kconfig.x86    | 2 +-
+>  drivers/cpufreq/intel_pstate.c | 6 ++++++
+>  2 files changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
+> index 89ae88f..94c9e6b 100644
+> --- a/drivers/cpufreq/Kconfig.x86
+> +++ b/drivers/cpufreq/Kconfig.x86
+> @@ -3,7 +3,7 @@
+>  #
+>  
+>  config X86_INTEL_PSTATE
+> -       bool "Intel P state control"
+> +       tristate "Intel P state control"
+>         depends on X86
+>         help
+>            This driver provides a P state for Intel core processors.
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index 5498eb0..7c5faea 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -590,7 +590,9 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
+>  	if (pstate == cpu->pstate.current_pstate)
+>  		return;
+>  
+> +#ifndef MODULE
+>  	trace_cpu_frequency(pstate * cpu->pstate.scaling, cpu->cpu);
+> +#endif
+>  
+>  	cpu->pstate.current_pstate = pstate;
+>  
+> @@ -705,12 +707,14 @@ static void intel_pstate_timer_func(unsigned long __data)
+>  
+>  	intel_pstate_adjust_busy_pstate(cpu);
+>  
+> +#ifndef MODULE
+>  	trace_pstate_sample(fp_toint(sample->core_pct_busy),
+>  			fp_toint(intel_pstate_get_scaled_busy(cpu)),
+>  			cpu->pstate.current_pstate,
+>  			sample->mperf,
+>  			sample->aperf,
+>  			sample->freq);
+> +#endif
+>  
+>  	intel_pstate_set_sample_time(cpu);
+>  }
+> @@ -1054,6 +1058,7 @@ out:
+>  }
+>  device_initcall(intel_pstate_init);
+>  
+> +#ifndef MODULE
+>  static int __init intel_pstate_setup(char *str)
+>  {
+>  	if (!str)
+> @@ -1064,6 +1069,7 @@ static int __init intel_pstate_setup(char *str)
+>  	return 0;
+>  }
+>  early_param("intel_pstate", intel_pstate_setup);
+> +#endif
+>  
+>  MODULE_AUTHOR("Dirk Brandewie <dirk.j.brandewie@intel.com>");
+>  MODULE_DESCRIPTION("'intel_pstate' - P state driver Intel Core processors");
+
