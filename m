@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934390AbaKSWaq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:30:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55908 "EHLO
+	id S934416AbaKSWbW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:31:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56046 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756883AbaKSUx7 (ORCPT
+	with ESMTP id S1756879AbaKSUx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:53:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 005/141] vti6: Use vti6_dev_init as the ndo_init function.
-Date: Wed, 19 Nov 2014 12:50:28 -0800
-Message-Id: <20141119205150.867436473@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.17 037/141] mfd: max77693: Fix always masked MUIC interrupts
+Date: Wed, 19 Nov 2014 12:51:00 -0800
+Message-Id: <20141119205151.881202577@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,61 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-[ Upstream commit 16a0231bf7dc3fb37e9b1f1cb1a277dc220b5c5e ]
+commit c0acb8144bd6d8d88aee1dab33364b7353e9a903 upstream.
 
-vti6_dev_init() sets the dev->iflink via a call to
-vti6_link_config(). After that, register_netdevice()
-sets dev->iflink = -1. So we loose the iflink configuration
-for vti6 tunnels. Fix this by using vti6_dev_init() as the
-ndo_init function. Then vti6_dev_init() is called after
-dev->iflink is set to -1 from register_netdevice().
+All interrupts coming from MUIC were ignored because interrupt source
+register was masked.
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The Maxim 77693 has a "interrupt source" - a separate register and interrupts
+which give information about PMIC block triggering the individual
+interrupt (charger, topsys, MUIC, flash LED).
+
+By default bootloader could initialize this register to "mask all"
+value. In such case (observed on Trats2 board) MUIC interrupts won't be
+generated regardless of their mask status. Regmap irq chip was unmasking
+individual MUIC interrupts but the source was masked
+
+Before introducing regmap irq chip this interrupt source was unmasked,
+read and acked. Reading and acking is not necessary but unmasking is.
+
+Fixes: 342d669c1ee4 ("mfd: max77693: Handle IRQs using regmap")
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reviewed-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ip6_vti.c |   11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
 
---- a/net/ipv6/ip6_vti.c
-+++ b/net/ipv6/ip6_vti.c
-@@ -172,10 +172,6 @@ static int vti6_tnl_create2(struct net_d
- 	struct vti6_net *ip6n = net_generic(net, vti6_net_id);
- 	int err;
+---
+ drivers/mfd/max77693.c               |   12 ++++++++++++
+ include/linux/mfd/max77693-private.h |    7 +++++++
+ 2 files changed, 19 insertions(+)
+
+--- a/drivers/mfd/max77693.c
++++ b/drivers/mfd/max77693.c
+@@ -247,6 +247,17 @@ static int max77693_i2c_probe(struct i2c
+ 		goto err_irq_muic;
+ 	}
  
--	err = vti6_dev_init(dev);
--	if (err < 0)
--		goto out;
--
- 	err = register_netdevice(dev);
- 	if (err < 0)
- 		goto out;
-@@ -783,6 +779,7 @@ static int vti6_change_mtu(struct net_de
- }
++	/* Unmask interrupts from all blocks in interrupt source register */
++	ret = regmap_update_bits(max77693->regmap,
++				MAX77693_PMIC_REG_INTSRC_MASK,
++				SRC_IRQ_ALL, (unsigned int)~SRC_IRQ_ALL);
++	if (ret < 0) {
++		dev_err(max77693->dev,
++			"Could not unmask interrupts in INTSRC: %d\n",
++			ret);
++		goto err_intsrc;
++	}
++
+ 	pm_runtime_set_active(max77693->dev);
  
- static const struct net_device_ops vti6_netdev_ops = {
-+	.ndo_init	= vti6_dev_init,
- 	.ndo_uninit	= vti6_dev_uninit,
- 	.ndo_start_xmit = vti6_tnl_xmit,
- 	.ndo_do_ioctl	= vti6_ioctl,
-@@ -852,16 +849,10 @@ static int __net_init vti6_fb_tnl_dev_in
- 	struct ip6_tnl *t = netdev_priv(dev);
- 	struct net *net = dev_net(dev);
- 	struct vti6_net *ip6n = net_generic(net, vti6_net_id);
--	int err = vti6_dev_init_gen(dev);
--
--	if (err)
--		return err;
+ 	ret = mfd_add_devices(max77693->dev, -1, max77693_devs,
+@@ -258,6 +269,7 @@ static int max77693_i2c_probe(struct i2c
  
- 	t->parms.proto = IPPROTO_IPV6;
- 	dev_hold(dev);
+ err_mfd:
+ 	mfd_remove_devices(max77693->dev);
++err_intsrc:
+ 	regmap_del_irq_chip(max77693->irq, max77693->irq_data_muic);
+ err_irq_muic:
+ 	regmap_del_irq_chip(max77693->irq, max77693->irq_data_charger);
+--- a/include/linux/mfd/max77693-private.h
++++ b/include/linux/mfd/max77693-private.h
+@@ -262,6 +262,13 @@ enum max77693_irq_source {
+ 	MAX77693_IRQ_GROUP_NR,
+ };
  
--	vti6_link_config(t);
--
- 	rcu_assign_pointer(ip6n->tnls_wc[0], t);
- 	return 0;
- }
++#define SRC_IRQ_CHARGER			BIT(0)
++#define SRC_IRQ_TOP			BIT(1)
++#define SRC_IRQ_FLASH			BIT(2)
++#define SRC_IRQ_MUIC			BIT(3)
++#define SRC_IRQ_ALL			(SRC_IRQ_CHARGER | SRC_IRQ_TOP \
++						| SRC_IRQ_FLASH | SRC_IRQ_MUIC)
++
+ #define LED_IRQ_FLED2_OPEN		BIT(0)
+ #define LED_IRQ_FLED2_SHORT		BIT(1)
+ #define LED_IRQ_FLED1_OPEN		BIT(2)
 
 
