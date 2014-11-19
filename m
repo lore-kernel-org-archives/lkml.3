@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187AbaKSBCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 20:02:40 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54634 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754004AbaKSBCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 20:02:39 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>,
-        Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>, quentin.gouchet@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        ABI/API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v2 02/10] crypto: AF_ALG: user space interface for cipher info
-Date: Wed, 19 Nov 2014 02:02:33 +0100
-Message-ID: <34547475.R7WC8JFgoJ@tachyon.chronox.de>
-User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <20141118140822.GB12100@gondor.apana.org.au>
-References: <5365136.g8vbXlhRyC@tachyon.chronox.de> <2688209.3bGZus2TD9@tachyon.chronox.de> <20141118140822.GB12100@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1755450AbaKSBE7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 20:04:59 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:64946 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754641AbaKSBE5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 20:04:57 -0500
+From: Juston Li <juston.h.li@gmail.com>
+To: oleg.drokin@intel.com
+Cc: devel@driverdev.osuosl.org, andreas.dilger@intel.com,
+        gregkh@linuxfoundation.org, dan.carpenter@oracle.com,
+        linux-kernel@vger.kernel.org, HPDD-discuss@ml01.01.org,
+        Juston Li <juston.h.li@gmail.com>
+Subject: [PATCH v2] staging: lustre: mdc: use __FMODE_EXEC macro
+Date: Tue, 18 Nov 2014 17:03:51 -0800
+Message-Id: <1416359031-7990-1-git-send-email-juston.h.li@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 18. November 2014, 22:08:23 schrieb Herbert Xu:
+FMODE_EXEC is type fmode_t but is used in operations
+with integers which leads to sparse warnings:
+drivers/staging/lustre/lustre/mdc/mdc_lib.c:198:21: warning: restricted fmode_t degrades to integer
+drivers/staging/lustre/lustre/mdc/mdc_locks.c:300:49: warning: restricted fmode_t degrades to integer
 
-Hi Herbert,
+Fix by using __FMODE_EXEC macro defined in fs.h.
 
-> On Sun, Nov 16, 2014 at 03:24:25AM +0100, Stephan Mueller wrote:
-> > The AF_ALG interface allows normal cipher (hash, encrypt, decrypt).
-> > However, it does not allow user space to obtain the following generic
-> > 
-> > information about the currently active cipher:
-> > 	* block size of the cipher
-> > 	
-> > 	* IV size of the cipher
-> > 	
-> > 	* for AEAD, the maximum authentication tag size
-> > 
-> > The patch adds a getsockopt interface for the symmetric ciphers to
-> > answer such information requests from user space.
-> > 
-> > The kernel crypto API function calls are used to obtain the real data.
-> > As all data are simple integer values, the getsockopt handler function
-> > uses put_user() to return the integer value to user space in the
-> > *optval parameter of getsockopt.
-> > 
-> > Signed-off-by: Stephan Mueller <smueller@chronox.de>
-> 
-> We already have crypto_user so you should be extending that to
-> cover what's missing.
+Note the same warnings occurs with other fmode flags
+here but they don't have a corresponding int macro.
 
-Looking into that, I think nothing is missing -- thanks for the pointer. Thus 
-I think I can withdraw that patch and just simply update libkcapi to use that 
-user space netlink interface.
+Changes since v1:
+remove ifdefs. FMODE_EXEC and __FMODE_EXEC should
+always be defined in fs.h
 
-Though, I yet have to try using that interface ;-)
+Signed-off-by: Juston Li <juston.h.li@gmail.com>
+---
+ drivers/staging/lustre/lustre/mdc/mdc_lib.c   | 4 +---
+ drivers/staging/lustre/lustre/mdc/mdc_locks.c | 4 +---
+ 2 files changed, 2 insertions(+), 6 deletions(-)
 
-I am wondering why cryptouser.h is in include/linux -- shouldn't it be in 
-include/uapi/linux? Aren't the definitions in that header file needed for 
-userspace to talk to the netlink socket? I guess that is also the reason why I 
-do not see the interface API details in /usr/linux on my F21 system.
-> 
-> PS These paramters should not vary depending on the implementation,
-> if they do then one of the implementations must be buggy.
-> 
-> Cheers,
-
-
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_lib.c b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
+index e8732cc..4e59995 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_lib.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
+@@ -194,10 +194,8 @@ static __u64 mds_pack_open_flags(__u64 flags, __u32 mode)
+ 		cr_flags |= MDS_OPEN_SYNC;
+ 	if (flags & O_DIRECTORY)
+ 		cr_flags |= MDS_OPEN_DIRECTORY;
+-#ifdef FMODE_EXEC
+-	if (flags & FMODE_EXEC)
++	if (flags & __FMODE_EXEC)
+ 		cr_flags |= MDS_FMODE_EXEC;
+-#endif
+ 	if (cl_is_lov_delay_create(flags))
+ 		cr_flags |= MDS_OPEN_DELAY_CREATE;
+ 
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
+index b58147e..8c9b4f5 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
+@@ -296,10 +296,8 @@ static struct ptlrpc_request *mdc_intent_open_pack(struct obd_export *exp,
+ 		} else {
+ 			if (it->it_flags & (FMODE_WRITE|MDS_OPEN_TRUNC))
+ 				mode = LCK_CW;
+-#ifdef FMODE_EXEC
+-			else if (it->it_flags & FMODE_EXEC)
++			else if (it->it_flags & __FMODE_EXEC)
+ 				mode = LCK_PR;
+-#endif
+ 			else
+ 				mode = LCK_CR;
+ 		}
 -- 
-Ciao
-Stephan
+2.1.3
+
