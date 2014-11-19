@@ -1,134 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757416AbaKSVoL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:44:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57085 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932166AbaKSVLf (ORCPT
+	id S1757445AbaKSVod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:44:33 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:56001 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756996AbaKSVo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:11:35 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>,
-        Mel Gorman <mgorman@suse.de>, Vlastimil Babka <vbabka@suse.cz>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 110/122] mm, compaction: return failed migration target pages back to freelist
-Date: Wed, 19 Nov 2014 12:52:40 -0800
-Message-Id: <20141119205212.497501450@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
-References: <20141119205208.812884198@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 19 Nov 2014 16:44:29 -0500
 MIME-Version: 1.0
+In-Reply-To: <1416276560-3363-1-git-send-email-slaoub@gmail.com>
+References: <1416276560-3363-1-git-send-email-slaoub@gmail.com>
+Date: Wed, 19 Nov 2014 13:44:28 -0800
+Message-ID: <CA+8MBbJ-Vs_h2LXoVuzPmbTLsAGThhHR7UxoA56gNt4Lmjy27g@mail.gmail.com>
+Subject: Re: [PATCH v4 0/2]RAS: add the support for handling UCNA/DEFERRED error
+From: Tony Luck <tony.luck@gmail.com>
+To: Chen Yucong <slaoub@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>, Andi Kleen <ak@linux.intel.com>,
+        aravind.gopalakrishnan@amd.com,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Nov 17, 2014 at 6:09 PM, Chen Yucong <slaoub@gmail.com> wrote:
+> V4:
+> Like MCIP/RIPV/EIPV bits, MCI_STATUS_EN is specific to "machine check exception".
+> As Tony suggested, the severity table entry for the "EN" check should have been
+> skipped when calling from the CMCI/Poll handler.
+>   Link: https://lkml.org/lkml/2014/11/11/765
+>   AMD APM Volume 2: 9.3.2 Error-Reporting Register Banks - MCi_STATUS
 
-------------------
+I've put these in a "ucna" branch at:
+git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git
 
-From: David Rientjes <rientjes@google.com>
+Boris - have you had a chance to research how to fill in the AMD TBD section
+yet?  Or should I just ask Ingo to pull this into tip now to be fixed later?
 
-commit d53aea3d46d64e95da9952887969f7533b9ab25e upstream.
-
-Greg reported that he found isolated free pages were returned back to the
-VM rather than the compaction freelist.  This will cause holes behind the
-free scanner and cause it to reallocate additional memory if necessary
-later.
-
-He detected the problem at runtime seeing that ext4 metadata pages (esp
-the ones read by "sbi->s_group_desc[i] = sb_bread(sb, block)") were
-constantly visited by compaction calls of migrate_pages().  These pages
-had a non-zero b_count which caused fallback_migrate_page() ->
-try_to_release_page() -> try_to_free_buffers() to fail.
-
-Memory compaction works by having a "freeing scanner" scan from one end of
-a zone which isolates pages as migration targets while another "migrating
-scanner" scans from the other end of the same zone which isolates pages
-for migration.
-
-When page migration fails for an isolated page, the target page is
-returned to the system rather than the freelist built by the freeing
-scanner.  This may require the freeing scanner to continue scanning memory
-after suitable migration targets have already been returned to the system
-needlessly.
-
-This patch returns destination pages to the freeing scanner freelist when
-page migration fails.  This prevents unnecessary work done by the freeing
-scanner but also encourages memory to be as compacted as possible at the
-end of the zone.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Greg Thelen <gthelen@google.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/compaction.c |   27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
-
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -790,23 +790,32 @@ static struct page *compaction_alloc(str
- }
- 
- /*
-- * We cannot control nr_migratepages and nr_freepages fully when migration is
-- * running as migrate_pages() has no knowledge of compact_control. When
-- * migration is complete, we count the number of pages on the lists by hand.
-+ * This is a migrate-callback that "frees" freepages back to the isolated
-+ * freelist.  All pages on the freelist are from the same zone, so there is no
-+ * special handling needed for NUMA.
-+ */
-+static void compaction_free(struct page *page, unsigned long data)
-+{
-+	struct compact_control *cc = (struct compact_control *)data;
-+
-+	list_add(&page->lru, &cc->freepages);
-+	cc->nr_freepages++;
-+}
-+
-+/*
-+ * We cannot control nr_migratepages fully when migration is running as
-+ * migrate_pages() has no knowledge of of compact_control.  When migration is
-+ * complete, we count the number of pages on the list by hand.
-  */
- static void update_nr_listpages(struct compact_control *cc)
- {
- 	int nr_migratepages = 0;
--	int nr_freepages = 0;
- 	struct page *page;
- 
- 	list_for_each_entry(page, &cc->migratepages, lru)
- 		nr_migratepages++;
--	list_for_each_entry(page, &cc->freepages, lru)
--		nr_freepages++;
- 
- 	cc->nr_migratepages = nr_migratepages;
--	cc->nr_freepages = nr_freepages;
- }
- 
- /* possible outcome of isolate_migratepages */
-@@ -1016,8 +1025,8 @@ static int compact_zone(struct zone *zon
- 		}
- 
- 		nr_migrate = cc->nr_migratepages;
--		err = migrate_pages(&cc->migratepages, compaction_alloc, NULL,
--				(unsigned long)cc,
-+		err = migrate_pages(&cc->migratepages, compaction_alloc,
-+				compaction_free, (unsigned long)cc,
- 				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC,
- 				MR_COMPACTION);
- 		update_nr_listpages(cc);
-
-
+-Tony
