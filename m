@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934408AbaKSVcf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:32:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57291 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933717AbaKSVOj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933782AbaKSVOj (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 19 Nov 2014 16:14:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57280 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932736AbaKSVOc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 16:14:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 23/70] drm/radeon: add missing crtc unlock when setting up the MC
-Date: Wed, 19 Nov 2014 12:52:14 -0800
-Message-Id: <20141119205211.694013764@linuxfoundation.org>
+        Pranith Kumar <bobby.prani@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.14 089/122] rcu: Use rcu_gp_kthread_wake() to wake up grace period kthreads
+Date: Wed, 19 Nov 2014 12:52:19 -0800
+Message-Id: <20141119205211.770360166@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
-References: <20141119205210.913169042@linuxfoundation.org>
+In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
+References: <20141119205208.812884198@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,32 +27,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
 
-commit f0d7bfb9407fccb6499ec01c33afe43512a439a2 upstream.
+commit 2aa792e6faf1a00f5accf1f69e87e11a390ba2cd upstream.
 
-Need to unlock the crtc after updating the blanking state.
+The rcu_gp_kthread_wake() function checks for three conditions before
+waking up grace period kthreads:
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+*  Is the thread we are trying to wake up the current thread?
+*  Are the gp_flags zero? (all threads wait on non-zero gp_flags condition)
+*  Is there no thread created for this flavour, hence nothing to wake up?
+
+If any one of these condition is true, we do not call wake_up().
+It was found that there are quite a few avoidable wake ups both during
+idle time and under stress induced by rcutorture.
+
+Idle:
+
+Total:66000, unnecessary:66000, case1:61827, case2:66000, case3:0
+Total:68000, unnecessary:68000, case1:63696, case2:68000, case3:0
+
+rcutorture:
+
+Total:254000, unnecessary:254000, case1:199913, case2:254000, case3:0
+Total:256000, unnecessary:256000, case1:201784, case2:256000, case3:0
+
+Here case{1-3} are the cases listed above. We can avoid these wake
+ups by using rcu_gp_kthread_wake() to conditionally wake up the grace
+period kthreads.
+
+There is a comment about an implied barrier supplied by the wake_up()
+logic.  This barrier is necessary for the awakened thread to see the
+updated ->gp_flags.  This flag is always being updated with the root node
+lock held. Also, the awakened thread tries to acquire the root node lock
+before reading ->gp_flags because of which there is proper ordering.
+
+Hence this commit tries to avoid calling wake_up() whenever we can by
+using rcu_gp_kthread_wake() function.
+
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Kamal Mostafa <kamal@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/rcu/tree.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -2379,6 +2379,7 @@ void evergreen_mc_stop(struct radeon_dev
- 					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 					tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
- 					WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 				}
- 			} else {
- 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -1762,7 +1762,7 @@ static void rcu_report_qs_rsp(struct rcu
+ {
+ 	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
+ 	raw_spin_unlock_irqrestore(&rcu_get_root(rsp)->lock, flags);
+-	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
++	rcu_gp_kthread_wake(rsp);
+ }
+ 
+ /*
+@@ -2338,7 +2338,7 @@ static void force_quiescent_state(struct
+ 	}
+ 	rsp->gp_flags |= RCU_GP_FLAG_FQS;
+ 	raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
+-	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
++	rcu_gp_kthread_wake(rsp);
+ }
+ 
+ /*
 
 
