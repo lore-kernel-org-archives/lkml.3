@@ -1,130 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480AbaKSMXE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 07:23:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48938 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754327AbaKSMW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 07:22:59 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 2/2] KEYS: request_key() should reget expired keys rather
- than give EKEYEXPIRED
-From: David Howells <dhowells@redhat.com>
-To: cth@carlh.net, chuck.lever@oracle.com
-Cc: neilb@suse.de, dhowells@redhat.com, linux-nfs@vger.kernel.org,
-        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
-Date: Wed, 19 Nov 2014 12:22:49 +0000
-Message-ID: <20141119122249.26494.25661.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20141119122238.26494.23666.stgit@warthog.procyon.org.uk>
-References: <20141119122238.26494.23666.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
+	id S1753829AbaKSM3E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 07:29:04 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:49302 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751575AbaKSM3C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 07:29:02 -0500
+Message-ID: <546C8CFD.2060200@gmail.com>
+Date: Wed, 19 Nov 2014 20:28:45 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] sched/deadline: reduce overhead if there are no scheduling
+ parameters changed
+References: <1416391297-111305-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1416391297-111305-1-git-send-email-wanpeng.li@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the keyring facility can be viewed as a cache (at least in some
-applications), the local expiration time on the key should probably be viewed
-as a 'needs updating after this time' property rather than an absolute 'anyone
-now wanting to use this object is out of luck' property.
-
-Since request_key() is the main interface for the usage of keys, this should
-update or replace an expired key rather than issuing EKEYEXPIRED if the local
-expiration has been reached (ie. it should refresh the cache).
-
-For absolute conditions where refreshing the cache probably doesn't help, the
-key can be negatively instantiated using KEYCTL_REJECT_KEY with EKEYEXPIRED
-given as the error to issue.  This will still cause request_key() to return
-EKEYEXPIRED as that was explicitly set.
-
-In the future, if the key type has an update op available, we might want to
-upcall with the expired key and allow the upcall to update it.  We would pass
-a different operation name (the first column in /etc/request-key.conf) to the
-request-key program.
-
-request_key() returning EKEYEXPIRED is causing an NFS problem which Chuck
-Lever describes thusly:
-
-	After about 10 minutes, my NFSv4 functional tests fail because the
-	ownership of the test files goes to "-2". Looking at /proc/keys
-	shows that the id_resolv keys that map to my test user ID have
-	expired. The ownership problem persists until the expired keys are
-	purged from the keyring, and fresh keys are obtained.
-
-	I bisected the problem to 3.13 commit b2a4df200d57 ("KEYS: Expand
-	the capacity of a keyring"). This commit inadvertantly changes the
-	API contract of the internal function keyring_search_aux().
-
-	The root cause appears to be that b2a4df200d57 made "no state check"
-	the default behavior. "No state check" means the keyring search
-	iterator function skips checking the key's expiry timeout, and
-	returns expired keys.  request_key_and_link() depends on getting
-	an -EAGAIN result code to know when to perform an upcall to refresh
-	an expired key.
-
-This patch can be tested directly by:
-
-	keyctl request2 user debug:fred a @s
-	keyctl timeout %user:debug:fred 3
-	sleep 4
-	keyctl request2 user debug:fred a @s
-
-Without the patch, the last command gives error EKEYEXPIRED, but with the
-command it gives a new key.
-
-Reported-by: Carl Hetherington <cth@carlh.net>
-Reported-by: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- security/keys/internal.h    |    1 +
- security/keys/keyring.c     |    3 ++-
- security/keys/request_key.c |    3 ++-
- 3 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index b8960c4959a5..200e37867336 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -117,6 +117,7 @@ struct keyring_search_context {
- #define KEYRING_SEARCH_NO_UPDATE_TIME	0x0004	/* Don't update times */
- #define KEYRING_SEARCH_NO_CHECK_PERM	0x0008	/* Don't check permissions */
- #define KEYRING_SEARCH_DETECT_TOO_DEEP	0x0010	/* Give an error on excessive depth */
-+#define KEYRING_SEARCH_SKIP_EXPIRED	0x0020	/* Ignore expired keys (intention to replace) */
- 
- 	int (*iterator)(const void *object, void *iterator_data);
- 
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 238aa172f25b..e72548b5897e 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -546,7 +546,8 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
- 		}
- 
- 		if (key->expiry && ctx->now.tv_sec >= key->expiry) {
--			ctx->result = ERR_PTR(-EKEYEXPIRED);
-+			if (!(ctx->flags & KEYRING_SEARCH_SKIP_EXPIRED))
-+				ctx->result = ERR_PTR(-EKEYEXPIRED);
- 			kleave(" = %d [expire]", ctx->skipped_ret);
- 			goto skipped;
- 		}
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index 0bb23f98e4ca..0c7aea4dea54 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -516,7 +516,8 @@ struct key *request_key_and_link(struct key_type *type,
- 		.match_data.cmp		= key_default_cmp,
- 		.match_data.raw_data	= description,
- 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
--		.flags			= KEYRING_SEARCH_DO_STATE_CHECK,
-+		.flags			= (KEYRING_SEARCH_DO_STATE_CHECK |
-+					   KEYRING_SEARCH_SKIP_EXPIRED),
- 	};
- 	struct key *key;
- 	key_ref_t key_ref;
+Sorry to send out a duplicated patchset, please ignore this one.
+On 11/19/14, 6:01 PM, Wanpeng Li wrote:
+> There is no need to dequeue/enqueue and push/pull if there are
+> no scheduling parameters changed for dl class, actually both
+> fair and rt class have already check if parameters changed for
+> them to avoid unnecessary overhead. This patch add the parameters
+> changed verify for dl class in order to reduce overhead.
+>
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+>   kernel/sched/core.c | 17 ++++++++++++++++-
+>   1 file changed, 16 insertions(+), 1 deletion(-)
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 603c462..f361867 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -3402,6 +3402,21 @@ static bool check_same_owner(struct task_struct *p)
+>   	return match;
+>   }
+>   
+> +static bool dl_param_changed(struct task_struct *p,
+> +			const struct sched_attr *attr)
+> +{
+> +	struct sched_dl_entity *dl_se = &p->dl;
+> +
+> +	if (dl_se->dl_runtime != attr->sched_runtime ||
+> +		dl_se->dl_deadline != attr->sched_deadline ||
+> +		dl_se->dl_period != attr->sched_period ||
+> +		dl_se->flags != attr->sched_flags ||
+> +		p->rt_priority != attr->sched_priority)
+> +		return true;
+> +
+> +	return false;
+> +}
+> +
+>   static int __sched_setscheduler(struct task_struct *p,
+>   				const struct sched_attr *attr,
+>   				bool user)
+> @@ -3530,7 +3545,7 @@ recheck:
+>   			goto change;
+>   		if (rt_policy(policy) && attr->sched_priority != p->rt_priority)
+>   			goto change;
+> -		if (dl_policy(policy))
+> +		if (dl_policy(policy) && dl_param_changed(p, attr))
+>   			goto change;
+>   
+>   		p->sched_reset_on_fork = reset_on_fork;
 
