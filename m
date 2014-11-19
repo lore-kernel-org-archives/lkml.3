@@ -1,62 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704AbaKSE7c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 23:59:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43122 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754233AbaKSE7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 23:59:31 -0500
-Date: Tue, 18 Nov 2014 23:59:17 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141119045917.GA17741@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Don Zickus <dzickus@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	the arch/x86 maintainers <x86@kernel.org>
-References: <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
- <20141118020959.GA2091@redhat.com>
- <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
- <20141118023930.GA2871@redhat.com>
- <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
- <20141118145234.GA7487@redhat.com>
- <alpine.DEB.2.11.1411181914020.3909@nanos>
- <20141118215540.GD35311@redhat.com>
- <20141119021902.GA14216@redhat.com>
- <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
+	id S1750961AbaKSFEt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 00:04:49 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:38940 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750710AbaKSFEs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 00:04:48 -0500
+Date: Wed, 19 Nov 2014 00:04:45 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
+Subject: Re: [RFC][PATCH 1/3] seq_buf: Move the seq_buf code to lib/
+Message-ID: <20141119000445.4b58b1a0@gandalf.local.home>
+In-Reply-To: <20141119045555.769701022@goodmis.org>
+References: <20141119043917.578498291@goodmis.org>
+	<20141119045555.769701022@goodmis.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 08:40:55PM -0800, Linus Torvalds wrote:
- > On Tue, Nov 18, 2014 at 6:19 PM, Dave Jones <davej@redhat.com> wrote:
- > >
- > > NMI watchdog: BUG: soft lockup - CPU#2 stuck for 21s! [trinity-c42:31480]
- > > CPU: 2 PID: 31480 Comm: trinity-c42 Not tainted 3.18.0-rc5+ #91 [loadavg: 174.61 150.35 148.64 9/411 32140]
- > > RIP: 0010:[<ffffffff8a1798b4>]  [<ffffffff8a1798b4>] context_tracking_user_enter+0xa4/0x190
- > > Call Trace:
- > >  [<ffffffff8a012fc5>] syscall_trace_leave+0xa5/0x160
- > >  [<ffffffff8a7d8624>] int_check_syscall_exit_work+0x34/0x3d
- > 
- > Hmm, if we are getting soft-lockups here, maybe it suggest too much exit-work.
- > 
- > Some TIF_NOHZ loop, perhaps? You have nohz on, don't you?
+As the changes are based on my branch, the linux/seq_buf.h file was
+already existing. Thus it's not in this patch set. It may be important
+for you to be able to review that too, so I'm including the file here.
 
-I do.
+-- Steve
 
- > That makes me wonder: does the problem go away if you disable NOHZ?
+------
+#ifndef _LINUX_SEQ_BUF_H
+#define _LINUX_SEQ_BUF_H
 
-I'll give it a try, and see what falls out overnight.
+#include <linux/fs.h>
 
-	Dave
+/*
+ * Trace sequences are used to allow a function to call several other functions
+ * to create a string of data to use.
+ */
+
+/**
+ * seq_buf - seq buffer structure
+ * @buffer:	pointer to the buffer
+ * @size:	size of the buffer
+ * @len:	the amount of data inside the buffer
+ * @readpos:	The next position to read in the buffer.
+ */
+struct seq_buf {
+	char			*buffer;
+	size_t			size;
+	size_t			len;
+	loff_t			readpos;
+};
+
+static inline void seq_buf_clear(struct seq_buf *s)
+{
+	s->len = 0;
+	s->readpos = 0;
+}
+
+static inline void
+seq_buf_init(struct seq_buf *s, unsigned char *buf, unsigned int size)
+{
+	s->buffer = buf;
+	s->size = size;
+	seq_buf_clear(s);
+}
+
+/*
+ * seq_buf have a buffer that might overflow. When this happens
+ * the len and size are set to be equal.
+ */
+static inline bool
+seq_buf_has_overflowed(struct seq_buf *s)
+{
+	return s->len > s->size;
+}
+
+static inline void
+seq_buf_set_overflow(struct seq_buf *s)
+{
+	s->len = s->size + 1;
+}
+
+/*
+ * How much buffer is left on the seq_buf?
+ */
+static inline unsigned int
+seq_buf_buffer_left(struct seq_buf *s)
+{
+	if (seq_buf_has_overflowed(s))
+		return 0;
+
+	return s->size - s->len;
+}
+
+/* How much buffer was written? */
+static inline unsigned int seq_buf_used(struct seq_buf *s)
+{
+	return min(s->len, s->size);
+}
+
+/**
+ * seq_buf_get_buf - get buffer to write arbitrary data to
+ * @s: the seq_buf handle
+ * @bufp: the beginning of the buffer is stored here
+ *
+ * Return the number of bytes available in the buffer, or zero if
+ * there's no space.
+ */
+static inline size_t seq_buf_get_buf(struct seq_buf *s, char **bufp)
+{
+	WARN_ON(s->len > s->size + 1);
+
+	if (s->len < s->size) {
+		*bufp = s->buffer + s->len;
+		return s->size - s->len;
+	}
+
+	*bufp = NULL;
+	return 0;
+}
+
+/**
+ * seq_buf_commit - commit data to the buffer
+ * @s: the seq_buf handle
+ * @num: the number of bytes to commit
+ *
+ * Commit @num bytes of data written to a buffer previously acquired
+ * by seq_buf_get.  To signal an error condition, or that the data
+ * didn't fit in the available space, pass a negative @num value.
+ */
+static inline void seq_buf_commit(struct seq_buf *s, int num)
+{
+	if (num < 0) {
+		seq_buf_set_overflow(s);
+	} else {
+		/* num must be negative on overflow */
+		BUG_ON(s->len + num > s->size);
+		s->len += num;
+	}
+}
+
+extern __printf(2, 3)
+int seq_buf_printf(struct seq_buf *s, const char *fmt, ...);
+extern __printf(2, 0)
+int seq_buf_vprintf(struct seq_buf *s, const char *fmt, va_list args);
+extern int seq_buf_print_seq(struct seq_file *m, struct seq_buf *s);
+extern int seq_buf_to_user(struct seq_buf *s, char __user *ubuf,
+			   int cnt);
+extern int seq_buf_puts(struct seq_buf *s, const char *str);
+extern int seq_buf_putc(struct seq_buf *s, unsigned char c);
+extern int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len);
+extern int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
+			      unsigned int len);
+extern int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc);
+
+extern int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
+			   int nmaskbits);
+
+#ifdef CONFIG_BINARY_PRINTF
+extern int
+seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary);
+#endif
+
+#endif /* _LINUX_SEQ_BUF_H */
+
