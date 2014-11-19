@@ -1,62 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017AbaKSPFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:05:34 -0500
-Received: from 9.mo3.mail-out.ovh.net ([87.98.184.141]:49379 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754238AbaKSPFd (ORCPT
+	id S1755454AbaKSPG7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:06:59 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:48104 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808AbaKSPG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:05:33 -0500
-From: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-To: David Airlie <airlied@linux.ie>, Rob Clark <robdclark@gmail.com>,
-        dri-devel@lists.freedesktop.org (open list:DRM DRIVERS),
-        linux-kernel@vger.kernel.org (open list)
-Cc: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-Subject: [PATCH v2] drm/tilcdc: add missing clk_put in tilcdc_unload()
-Date: Wed, 19 Nov 2014 15:56:46 +0100
-Message-Id: <1416409006-16785-1-git-send-email-julien.chauveau@neo-technologies.fr>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416406400-10564-1-git-send-email-julien.chauveau@neo-technologies.fr>
-References: <1416406400-10564-1-git-send-email-julien.chauveau@neo-technologies.fr>
-X-Ovh-Tracer-Id: 12716476498469191852
-X-Ovh-Remote: 193.248.240.88 (laubervilliers-656-1-116-88.w193-248.abo.wanadoo.fr)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrkeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrkeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Wed, 19 Nov 2014 10:06:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.10.1411191040020.2363@hadrien>
+References: <20141117151420.10739.16342.stgit@buzz>
+	<20141118114920.13498.73584.stgit@buzz>
+	<alpine.DEB.2.10.1411191040020.2363@hadrien>
+Date: Wed, 19 Nov 2014 19:06:55 +0400
+Message-ID: <CALYGNiOiErex4-WfqfCKHuZAMoA6SPvQVHjAx0imeeB6bzcbNQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2 v2] scripts/coccinelle: catch freeing cryptographic
+ structures via kfree
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        kexec@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Eric Biederman <ebiederm@xmission.com>, Michal Marek <mmarek@suse.cz>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, linux-crypto@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to call clk_put on display clock, in the same way as functional clock.
-Also remove the check for priv->clk, since clk_put() is safe against NULL pointers.
+On Wed, Nov 19, 2014 at 12:41 PM, Julia Lawall <julia.lawall@lip6.fr> wrote:
+>> +// Comments: There are false positives in crypto/ where they are
+>> actually freed.
+>
+> I didn't really understand this comment.  I ran the semantic patch and got
+> around 10 results, but it wasn't clear to me how to see which were false
+> positives.
 
-Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
----
-Changes since v1:
-- remove the check for priv->clk, as suggested by Felipe Balbi
+I mean false positives in code inside directory crypto/ where this
+subsystem lives.
 
- drivers/gpu/drm/tilcdc/tilcdc_drv.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+./arch/x86/crypto/fpu.c:143:1-6: WARNING: invalid free of
+crypto_alloc_* allocated data
+./crypto/algapi.c:846:1-6: WARNING: invalid free of crypto_alloc_*
+allocated data
+./crypto/lrw.c:378:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+./crypto/ecb.c:163:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+./crypto/ctr.c:242:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+./crypto/ctr.c:419:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+./crypto/ctr.c:428:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+./crypto/pcbc.c:273:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+./crypto/cts.c:329:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+./crypto/cbc.c:267:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+./crypto/xts.c:340:1-6: WARNING: invalid free of crypto_alloc_* allocated data
 
-diff --git a/drivers/gpu/drm/tilcdc/tilcdc_drv.c b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-index 79a34cb..b0c9687 100644
---- a/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-@@ -136,8 +136,8 @@ static int tilcdc_unload(struct drm_device *dev)
- 			CPUFREQ_TRANSITION_NOTIFIER);
- #endif
- 
--	if (priv->clk)
--		clk_put(priv->clk);
-+	clk_put(priv->disp_clk);
-+	clk_put(priv->clk);
- 
- 	if (priv->mmio)
- 		iounmap(priv->mmio);
--- 
-2.1.0
+This is kfree calls on error paths in constructors or in destructors
+which actually frees memory when crypto_free_* is called.
 
+>
+> I would suggest to extend the rule a little bit to include information
+> about where the allocation call is:
+
+Not sure if this is necessary. This part of crypto-api is simple.
+
+>
+> ///
+> /// Structures allocated by crypto_alloc_* must be freed using crypto_free_*.
+> /// This finds freeing them by kfree.
+> ///
+> // Confidence: Moderate
+> // Copyright: (C) 2014 Konstantin Khlebnikov,  GPLv2.
+> // Comments: There are false positives in crypto/ where they are actually freed.
+> // Keywords: crypto, kfree
+> // Options: --no-includes --include-headers
+>
+> virtual org
+> virtual report
+> virtual context
+>
+> @r depends on context || org || report@
+> expression x;
+> position p1;
+> @@
+>
+> (
+>  x = crypto_alloc_base@p1(...)
+> |
+>  x = crypto_alloc_cipher@p1(...)
+> |
+>  x = crypto_alloc_ablkcipher@p1(...)
+> |
+>  x = crypto_alloc_aead@p1(...)
+> |
+>  x = crypto_alloc_instance@p1(...)
+> |
+>  x = crypto_alloc_instance2@p1(...)
+> |
+>  x = crypto_alloc_comp@p1(...)
+> |
+>  x = crypto_alloc_pcomp@p1(...)
+> |
+>  x = crypto_alloc_hash@p1(...)
+> |
+>  x = crypto_alloc_ahash@p1(...)
+> |
+>  x = crypto_alloc_shash@p1(...)
+> |
+>  x = crypto_alloc_rng@p1(...)
+> )
+>
+> @pb@
+> expression r.x;
+> position p;
+> @@
+>
+> * kfree@p(x)
+>
+> @script:python depends on org@
+> p << pb.p;
+> p1 << r.p1;
+> @@
+>
+> msg="WARNING: invalid free of crypto_alloc_* allocated data"
+> coccilib.org.print_todo(p[0], msg)
+> coccilib.org.print_link(p1[0], "allocation")
+>
+> @script:python depends on report@
+> p << pb.p;
+> p1 << r.p1;
+> @@
+>
+> msg="WARNING: invalid free of crypto_alloc_* allocated data, allocated on line %s" % (p1[0].line)
+> coccilib.report.print_report(p[0], msg)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
