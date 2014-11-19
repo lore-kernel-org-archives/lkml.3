@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021AbaKSWR6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:17:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55895 "EHLO
+	id S1757362AbaKSWR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:17:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56106 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932620AbaKSUyP (ORCPT
+	with ESMTP id S932625AbaKSUyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:54:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve Grubb <sgrubb@redhat.com>, Richard Guy Briggs <rgb@redhat.com>
-Subject: [PATCH 3.17 044/141] audit: correct AUDIT_GET_FEATURE return message type
-Date: Wed, 19 Nov 2014 12:51:07 -0800
-Message-Id: <20141119205152.116641853@linuxfoundation.org>
+        Richard Guy Briggs <rgb@redhat.com>, Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.17 045/141] audit: AUDIT_FEATURE_CHANGE message format missing delimiting space
+Date: Wed, 19 Nov 2014 12:51:08 -0800
+Message-Id: <20141119205152.148547119@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -30,17 +30,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Richard Guy Briggs <rgb@redhat.com>
 
-commit 9ef91514774a140e468f99d73d7593521e6d25dc upstream.
+commit 897f1acbb6702ddaa953e8d8436eee3b12016c7e upstream.
 
-When an AUDIT_GET_FEATURE message is sent from userspace to the kernel, it
-should reply with a message tagged as an AUDIT_GET_FEATURE type with a struct
-audit_feature.  The current reply is a message tagged as an AUDIT_GET
-type with a struct audit_feature.
+Add a space between subj= and feature= fields to make them parsable.
 
-This appears to have been a cut-and-paste-eo in commit b0fed40.
-
-Reported-by: Steve Grubb <sgrubb@redhat.com>
 Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
@@ -49,14 +44,14 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/kernel/audit.c
 +++ b/kernel/audit.c
-@@ -724,7 +724,7 @@ static int audit_get_feature(struct sk_b
+@@ -739,7 +739,7 @@ static void audit_log_feature_change(int
  
- 	seq = nlmsg_hdr(skb)->nlmsg_seq;
- 
--	audit_send_reply(skb, seq, AUDIT_GET, 0, 0, &af, sizeof(af));
-+	audit_send_reply(skb, seq, AUDIT_GET_FEATURE, 0, 0, &af, sizeof(af));
- 
- 	return 0;
- }
+ 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_FEATURE_CHANGE);
+ 	audit_log_task_info(ab, current);
+-	audit_log_format(ab, "feature=%s old=%u new=%u old_lock=%u new_lock=%u res=%d",
++	audit_log_format(ab, " feature=%s old=%u new=%u old_lock=%u new_lock=%u res=%d",
+ 			 audit_feature_names[which], !!old_feature, !!new_feature,
+ 			 !!old_lock, !!new_lock, res);
+ 	audit_log_end(ab);
 
 
