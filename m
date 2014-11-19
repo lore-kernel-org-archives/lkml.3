@@ -1,240 +1,509 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334AbaKSRa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:30:59 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56635 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756109AbaKSRa6 (ORCPT
+	id S1756051AbaKSRdQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:33:16 -0500
+Received: from mail-wi0-f201.google.com ([209.85.212.201]:50557 "EHLO
+	mail-wi0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289AbaKSRdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:30:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <CADcy93WT7LzwU0BLN1ELvVugbGO+UMO6jJoM9JJGeTcNT-egAw@mail.gmail.com>
-References: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org>
- <1415033687-23294-9-git-send-email-vincent.guittot@linaro.org> <CADcy93WT7LzwU0BLN1ELvVugbGO+UMO6jJoM9JJGeTcNT-egAw@mail.gmail.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Wed, 19 Nov 2014 18:30:37 +0100
-Message-ID: <CAKfTPtCGOa9t12MpSr82qarD3FKXxYW8MmeyTCMr8Pev3Kcomg@mail.gmail.com>
-Subject: Re: [PATCH v9 08/10] sched: replace capacity_factor by usage
-To: "pang.xunlei" <pang.xunlei@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 19 Nov 2014 12:33:14 -0500
+From: David Drysdale <drysdale@google.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Oleg Nesterov <oleg@redhat.com>, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        Rich Felker <dalias@aerifal.cx>, Christoph Hellwig <hch@infradead.org>,
+        x86@kernel.org, linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
+        sparclinux@vger.kernel.org, David Drysdale <drysdale@google.com>
+Subject: [PATCHv9 3/5] syscalls: add selftest for execveat(2)
+Date: Wed, 19 Nov 2014 17:27:50 +0000
+Message-Id: <1416418072-18639-4-git-send-email-drysdale@google.com>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1416418072-18639-1-git-send-email-drysdale@google.com>
+References: <1416418072-18639-1-git-send-email-drysdale@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 November 2014 16:15, pang.xunlei <pang.xunlei@linaro.org> wrote:
-> On 4 November 2014 00:54, Vincent Guittot <vincent.guittot@linaro.org> wrote:
+Signed-off-by: David Drysdale <drysdale@google.com>
+---
+ tools/testing/selftests/Makefile        |   1 +
+ tools/testing/selftests/exec/.gitignore |   9 +
+ tools/testing/selftests/exec/Makefile   |  25 ++
+ tools/testing/selftests/exec/execveat.c | 397 ++++++++++++++++++++++++++++++++
+ 4 files changed, 432 insertions(+)
+ create mode 100644 tools/testing/selftests/exec/.gitignore
+ create mode 100644 tools/testing/selftests/exec/Makefile
+ create mode 100644 tools/testing/selftests/exec/execveat.c
 
-[snip]
+diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+index 45f145c6f843..c14893b501a9 100644
+--- a/tools/testing/selftests/Makefile
++++ b/tools/testing/selftests/Makefile
+@@ -15,6 +15,7 @@ TARGETS += user
+ TARGETS += sysctl
+ TARGETS += firmware
+ TARGETS += ftrace
++TARGETS += exec
+ 
+ TARGETS_HOTPLUG = cpu-hotplug
+ TARGETS_HOTPLUG += memory-hotplug
+diff --git a/tools/testing/selftests/exec/.gitignore b/tools/testing/selftests/exec/.gitignore
+new file mode 100644
+index 000000000000..64073e050c6a
+--- /dev/null
++++ b/tools/testing/selftests/exec/.gitignore
+@@ -0,0 +1,9 @@
++subdir*
++script*
++execveat
++execveat.symlink
++execveat.moved
++execveat.path.ephemeral
++execveat.ephemeral
++execveat.denatured
++xxxxxxxx*
+\ No newline at end of file
+diff --git a/tools/testing/selftests/exec/Makefile b/tools/testing/selftests/exec/Makefile
+new file mode 100644
+index 000000000000..66dfc2ce1788
+--- /dev/null
++++ b/tools/testing/selftests/exec/Makefile
+@@ -0,0 +1,25 @@
++CC = $(CROSS_COMPILE)gcc
++CFLAGS = -Wall
++BINARIES = execveat
++DEPS = execveat.symlink execveat.denatured script subdir
++all: $(BINARIES) $(DEPS)
++
++subdir:
++	mkdir -p $@
++script:
++	echo '#!/bin/sh' > $@
++	echo 'exit $$*' >> $@
++	chmod +x $@
++execveat.symlink: execveat
++	ln -s -f $< $@
++execveat.denatured: execveat
++	cp $< $@
++	chmod -x $@
++%: %.c
++	$(CC) $(CFLAGS) -o $@ $^
++
++run_tests: all
++	./execveat
++
++clean:
++	rm -rf $(BINARIES) $(DEPS) subdir.moved execveat.moved xxxxx*
+diff --git a/tools/testing/selftests/exec/execveat.c b/tools/testing/selftests/exec/execveat.c
+new file mode 100644
+index 000000000000..33a5c06d95ca
+--- /dev/null
++++ b/tools/testing/selftests/exec/execveat.c
+@@ -0,0 +1,397 @@
++/*
++ * Copyright (c) 2014 Google, Inc.
++ *
++ * Licensed under the terms of the GNU GPL License version 2
++ *
++ * Selftests for execveat(2).
++ */
++
++#define _GNU_SOURCE  /* to get O_PATH, AT_EMPTY_PATH */
++#include <sys/sendfile.h>
++#include <sys/stat.h>
++#include <sys/syscall.h>
++#include <sys/types.h>
++#include <sys/wait.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <limits.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <unistd.h>
++
++static char longpath[2 * PATH_MAX] = "";
++static char *envp[] = { "IN_TEST=yes", NULL, NULL };
++static char *argv[] = { "execveat", "99", NULL };
++
++static int execveat_(int fd, const char *path, char **argv, char **envp,
++		     int flags)
++{
++#ifdef __NR_execveat
++	return syscall(__NR_execveat, fd, path, argv, envp, flags);
++#else
++	errno = -ENOSYS;
++	return -1;
++#endif
++}
++
++#define check_execveat_fail(fd, path, flags, errno)	\
++	_check_execveat_fail(fd, path, flags, errno, #errno)
++static int _check_execveat_fail(int fd, const char *path, int flags,
++				int expected_errno, const char *errno_str)
++{
++	int rc;
++
++	errno = 0;
++	printf("Check failure of execveat(%d, '%s', %d) with %s... ",
++		fd, path?:"(null)", flags, errno_str);
++	rc = execveat_(fd, path, argv, envp, flags);
++
++	if (rc > 0) {
++		printf("[FAIL] (unexpected success from execveat(2))\n");
++		return 1;
++	}
++	if (errno != expected_errno) {
++		printf("[FAIL] (expected errno %d (%s) not %d (%s)\n",
++			expected_errno, strerror(expected_errno),
++			errno, strerror(errno));
++		return 1;
++	}
++	printf("[OK]\n");
++	return 0;
++}
++
++static int check_execveat_invoked_rc(int fd, const char *path, int flags,
++				     int expected_rc)
++{
++	int status;
++	int rc;
++	pid_t child;
++	int pathlen = path ? strlen(path) : 0;
++
++	if (pathlen > 40)
++		printf("Check success of execveat(%d, '%.20s...%s', %d)... ",
++			fd, path, (path + pathlen - 20), flags);
++	else
++		printf("Check success of execveat(%d, '%s', %d)... ",
++			fd, path?:"(null)", flags);
++	child = fork();
++	if (child < 0) {
++		printf("[FAIL] (fork() failed)\n");
++		return 1;
++	}
++	if (child == 0) {
++		/* Child: do execveat(). */
++		rc = execveat_(fd, path, argv, envp, flags);
++		printf("[FAIL]: execveat() failed, rc=%d errno=%d (%s)\n",
++			rc, errno, strerror(errno));
++		exit(1);  /* should not reach here */
++	}
++	/* Parent: wait for & check child's exit status. */
++	rc = waitpid(child, &status, 0);
++	if (rc != child) {
++		printf("[FAIL] (waitpid(%d,...) returned %d)\n", child, rc);
++		return 1;
++	}
++	if (!WIFEXITED(status)) {
++		printf("[FAIL] (child %d did not exit cleanly, status=%08x)\n",
++			child, status);
++		return 1;
++	}
++	if (WEXITSTATUS(status) != expected_rc) {
++		printf("[FAIL] (child %d exited with %d not %d)\n",
++			child, WEXITSTATUS(status), expected_rc);
++		return 1;
++	}
++	printf("[OK]\n");
++	return 0;
++}
++
++static int check_execveat(int fd, const char *path, int flags)
++{
++	return check_execveat_invoked_rc(fd, path, flags, 99);
++}
++
++static char *concat(const char *left, const char *right)
++{
++	char *result = malloc(strlen(left) + strlen(right) + 1);
++
++	strcpy(result, left);
++	strcat(result, right);
++	return result;
++}
++
++static int open_or_die(const char *filename, int flags)
++{
++	int fd = open(filename, flags);
++
++	if (fd < 0) {
++		printf("Failed to open '%s'; "
++			"check prerequisites are available\n", filename);
++		exit(1);
++	}
++	return fd;
++}
++
++static void exe_cp(const char *src, const char *dest)
++{
++	int in_fd = open_or_die(src, O_RDONLY);
++	int out_fd = open(dest, O_RDWR|O_CREAT|O_TRUNC, 0755);
++	struct stat info;
++
++	fstat(in_fd, &info);
++	sendfile(out_fd, in_fd, NULL, info.st_size);
++	close(in_fd);
++	close(out_fd);
++}
++
++#define XX_DIR_LEN 200
++static int check_execveat_pathmax(int dot_dfd, const char *src, int is_script)
++{
++	int fail = 0;
++	int ii, count, len;
++	char longname[XX_DIR_LEN + 1];
++	int fd;
++
++	if (*longpath == '\0') {
++		/* Create a filename close to PATH_MAX in length */
++		memset(longname, 'x', XX_DIR_LEN - 1);
++		longname[XX_DIR_LEN - 1] = '/';
++		longname[XX_DIR_LEN] = '\0';
++		count = (PATH_MAX - 3) / XX_DIR_LEN;
++		for (ii = 0; ii < count; ii++) {
++			strcat(longpath, longname);
++			mkdir(longpath, 0755);
++		}
++		len = (PATH_MAX - 3) - (count * XX_DIR_LEN);
++		if (len <= 0)
++			len = 1;
++		memset(longname, 'y', len);
++		longname[len] = '\0';
++		strcat(longpath, longname);
++	}
++	exe_cp(src, longpath);
++
++	/*
++	 * Execute as a pre-opened file descriptor, which works whether this is
++	 * a script or not (because the interpreter sees a filename like
++	 * "/dev/fd/20").
++	 */
++	fd = open(longpath, O_RDONLY);
++	if (fd > 0) {
++		printf("Invoke copy of '%s' via filename of length %lu:\n",
++			src, strlen(longpath));
++		fail += check_execveat(fd, "", AT_EMPTY_PATH);
++	} else {
++		printf("Failed to open length %lu filename, errno=%d (%s)\n",
++			strlen(longpath), errno, strerror(errno));
++		fail++;
++	}
++
++	/*
++	 * Execute as a long pathname relative to ".".  If this is a script,
++	 * the interpreter will launch but fail to open the script because its
++	 * name ("/dev/fd/5/xxx....") is bigger than PATH_MAX.
++	 */
++	if (is_script)
++		fail += check_execveat_invoked_rc(dot_dfd, longpath, 0, 127);
++	else
++		fail += check_execveat(dot_dfd, longpath, 0);
++
++	return fail;
++}
++
++static int run_tests(void)
++{
++	int fail = 0;
++	char *fullname = realpath("execveat", NULL);
++	char *fullname_script = realpath("script", NULL);
++	char *fullname_symlink = concat(fullname, ".symlink");
++	int subdir_dfd = open_or_die("subdir", O_DIRECTORY|O_RDONLY);
++	int subdir_dfd_ephemeral = open_or_die("subdir.ephemeral",
++					       O_DIRECTORY|O_RDONLY);
++	int dot_dfd = open_or_die(".", O_DIRECTORY|O_RDONLY);
++	int dot_dfd_path = open_or_die(".", O_DIRECTORY|O_RDONLY|O_PATH);
++	int dot_dfd_cloexec = open_or_die(".", O_DIRECTORY|O_RDONLY|O_CLOEXEC);
++	int fd = open_or_die("execveat", O_RDONLY);
++	int fd_path = open_or_die("execveat", O_RDONLY|O_PATH);
++	int fd_symlink = open_or_die("execveat.symlink", O_RDONLY);
++	int fd_denatured = open_or_die("execveat.denatured", O_RDONLY);
++	int fd_denatured_path = open_or_die("execveat.denatured",
++					    O_RDONLY|O_PATH);
++	int fd_script = open_or_die("script", O_RDONLY);
++	int fd_ephemeral = open_or_die("execveat.ephemeral", O_RDONLY);
++	int fd_ephemeral_path = open_or_die("execveat.path.ephemeral",
++					    O_RDONLY|O_PATH);
++	int fd_script_ephemeral = open_or_die("script.ephemeral", O_RDONLY);
++	int fd_cloexec = open_or_die("execveat", O_RDONLY|O_CLOEXEC);
++	int fd_script_cloexec = open_or_die("script", O_RDONLY|O_CLOEXEC);
++
++	/* Change file position to confirm it doesn't affect anything */
++	lseek(fd, 10, SEEK_SET);
++
++	/* Normal executable file: */
++	/*   dfd + path */
++	fail += check_execveat(subdir_dfd, "../execveat", 0);
++	fail += check_execveat(dot_dfd, "execveat", 0);
++	fail += check_execveat(dot_dfd_path, "execveat", 0);
++	/*   absolute path */
++	fail += check_execveat(AT_FDCWD, fullname, 0);
++	/*   absolute path with nonsense dfd */
++	fail += check_execveat(99, fullname, 0);
++	/*   fd + no path */
++	fail += check_execveat(fd, "", AT_EMPTY_PATH);
++	/*   O_CLOEXEC fd + no path */
++	fail += check_execveat(fd_cloexec, "", AT_EMPTY_PATH);
++	/*   O_PATH fd */
++	fail += check_execveat(fd_path, "", AT_EMPTY_PATH);
++
++	/* Mess with executable file that's already open: */
++	/*   fd + no path to a file that's been renamed */
++	rename("execveat.ephemeral", "execveat.moved");
++	fail += check_execveat(fd_ephemeral, "", AT_EMPTY_PATH);
++	/*   fd + no path to a file that's been deleted */
++	unlink("execveat.moved"); /* remove the file now fd open */
++	fail += check_execveat(fd_ephemeral, "", AT_EMPTY_PATH);
++
++	/* Mess with executable file that's already open with O_PATH */
++	/*   fd + no path to a file that's been deleted */
++	unlink("execveat.path.ephemeral");
++	fail += check_execveat(fd_ephemeral_path, "", AT_EMPTY_PATH);
++
++	/* Invalid argument failures */
++	fail += check_execveat_fail(fd, "", 0, ENOENT);
++	fail += check_execveat_fail(fd, NULL, AT_EMPTY_PATH, EFAULT);
++
++	/* Symlink to executable file: */
++	/*   dfd + path */
++	fail += check_execveat(dot_dfd, "execveat.symlink", 0);
++	fail += check_execveat(dot_dfd_path, "execveat.symlink", 0);
++	/*   absolute path */
++	fail += check_execveat(AT_FDCWD, fullname_symlink, 0);
++	/*   fd + no path, even with AT_SYMLINK_NOFOLLOW (already followed) */
++	fail += check_execveat(fd_symlink, "", AT_EMPTY_PATH);
++	fail += check_execveat(fd_symlink, "",
++			       AT_EMPTY_PATH|AT_SYMLINK_NOFOLLOW);
++
++	/* Symlink fails when AT_SYMLINK_NOFOLLOW set: */
++	/*   dfd + path */
++	fail += check_execveat_fail(dot_dfd, "execveat.symlink",
++				    AT_SYMLINK_NOFOLLOW, ELOOP);
++	fail += check_execveat_fail(dot_dfd_path, "execveat.symlink",
++				    AT_SYMLINK_NOFOLLOW, ELOOP);
++	/*   absolute path */
++	fail += check_execveat_fail(AT_FDCWD, fullname_symlink,
++				    AT_SYMLINK_NOFOLLOW, ELOOP);
++
++	/* Shell script wrapping executable file: */
++	/*   dfd + path */
++	fail += check_execveat(subdir_dfd, "../script", 0);
++	fail += check_execveat(dot_dfd, "script", 0);
++	fail += check_execveat(dot_dfd_path, "script", 0);
++	/*   absolute path */
++	fail += check_execveat(AT_FDCWD, fullname_script, 0);
++	/*   fd + no path */
++	fail += check_execveat(fd_script, "", AT_EMPTY_PATH);
++	fail += check_execveat(fd_script, "",
++			       AT_EMPTY_PATH|AT_SYMLINK_NOFOLLOW);
++	/*   O_CLOEXEC fd fails for a script (as script file inaccessible) */
++	fail += check_execveat_fail(fd_script_cloexec, "", AT_EMPTY_PATH,
++				    ENOENT);
++	fail += check_execveat_fail(dot_dfd_cloexec, "script", 0, ENOENT);
++
++	/* Mess with script file that's already open: */
++	/*   fd + no path to a file that's been renamed */
++	rename("script.ephemeral", "script.moved");
++	fail += check_execveat(fd_script_ephemeral, "", AT_EMPTY_PATH);
++	/*   fd + no path to a file that's been deleted */
++	unlink("script.moved"); /* remove the file while fd open */
++	fail += check_execveat(fd_script_ephemeral, "", AT_EMPTY_PATH);
++
++	/* Rename a subdirectory in the path: */
++	rename("subdir.ephemeral", "subdir.moved");
++	fail += check_execveat(subdir_dfd_ephemeral, "../script", 0);
++	fail += check_execveat(subdir_dfd_ephemeral, "script", 0);
++	/* Remove the subdir and its contents */
++	unlink("subdir.moved/script");
++	unlink("subdir.moved");
++	/* Shell loads via deleted subdir OK because name starts with .. */
++	fail += check_execveat(subdir_dfd_ephemeral, "../script", 0);
++	fail += check_execveat_fail(subdir_dfd_ephemeral, "script", 0, ENOENT);
++
++	/* Flag values other than AT_SYMLINK_NOFOLLOW => EINVAL */
++	fail += check_execveat_fail(dot_dfd, "execveat", 0xFFFF, EINVAL);
++	/* Invalid path => ENOENT */
++	fail += check_execveat_fail(dot_dfd, "no-such-file", 0, ENOENT);
++	fail += check_execveat_fail(dot_dfd_path, "no-such-file", 0, ENOENT);
++	fail += check_execveat_fail(AT_FDCWD, "no-such-file", 0, ENOENT);
++	/* Attempt to execute directory => EACCES */
++	fail += check_execveat_fail(dot_dfd, "", AT_EMPTY_PATH, EACCES);
++	/* Attempt to execute non-executable => EACCES */
++	fail += check_execveat_fail(dot_dfd, "Makefile", 0, EACCES);
++	fail += check_execveat_fail(fd_denatured, "", AT_EMPTY_PATH, EACCES);
++	fail += check_execveat_fail(fd_denatured_path, "", AT_EMPTY_PATH,
++				    EACCES);
++	/* Attempt to execute nonsense FD => EBADF */
++	fail += check_execveat_fail(99, "", AT_EMPTY_PATH, EBADF);
++	fail += check_execveat_fail(99, "execveat", 0, EBADF);
++	/* Attempt to execute relative to non-directory => ENOTDIR */
++	fail += check_execveat_fail(fd, "execveat", 0, ENOTDIR);
++
++	fail += check_execveat_pathmax(dot_dfd, "execveat", 0);
++	fail += check_execveat_pathmax(dot_dfd, "script", 1);
++	return fail;
++}
++
++static void prerequisites(void)
++{
++	int fd;
++	const char *script = "#!/bin/sh\nexit $*\n";
++
++	/* Create ephemeral copies of files */
++	exe_cp("execveat", "execveat.ephemeral");
++	exe_cp("execveat", "execveat.path.ephemeral");
++	exe_cp("script", "script.ephemeral");
++	mkdir("subdir.ephemeral", 0755);
++
++	fd = open("subdir.ephemeral/script", O_RDWR|O_CREAT|O_TRUNC, 0755);
++	write(fd, script, strlen(script));
++	close(fd);
++}
++
++int main(int argc, char **argv)
++{
++	int ii;
++	int rc;
++	const char *verbose = getenv("VERBOSE");
++
++	if (argc >= 2) {
++		/* If we are invoked with an argument, don't run tests. */
++		const char *in_test = getenv("IN_TEST");
++
++		if (verbose) {
++			printf("  invoked with:");
++			for (ii = 0; ii < argc; ii++)
++				printf(" [%d]='%s'", ii, argv[ii]);
++			printf("\n");
++		}
++
++		/* Check expected environment transferred. */
++		if (!in_test || strcmp(in_test, "yes") != 0) {
++			printf("[FAIL] (no IN_TEST=yes in env)\n");
++			return 1;
++		}
++
++		/* Use the final argument as an exit code. */
++		rc = atoi(argv[argc - 1]);
++		fflush(stdout);
++	} else {
++		prerequisites();
++		if (verbose)
++			envp[1] = "VERBOSE=1";
++		rc = run_tests();
++		if (rc > 0)
++			printf("%d tests failed\n", rc);
++	}
++	return rc;
++}
+-- 
+2.1.0.rc2.206.gedb03e5
 
->> +static inline bool
->> +group_has_capacity(struct lb_env *env, struct sg_lb_stats *sgs)
->>  {
->> -       unsigned int capacity_factor, smt, cpus;
->> -       unsigned int capacity, capacity_orig;
->> +       if ((sgs->group_capacity * 100) >
->> +                       (sgs->group_usage * env->sd->imbalance_pct))
-> Hi Vincent,
->
-> In case of when some CPU(s) is used to handle heavy IRQs or RT tasks,
-> get_cpu_usage() will get low usage(capacity), and cpu_capacity gets
-> low as well, so do those of the whole group correspondingly.
-> So in this case, is there any guarantee that this math will return false?
-
-As an example, we will return false whatever the non-zero value of
-group_capacity if there is no CFS tasks in the group
-
-Regards,
-Vincent
-
->
-> Thanks,
-> Xunlei
->> +               return true;
->>
->> -       capacity = group->sgc->capacity;
->> -       capacity_orig = group->sgc->capacity_orig;
->> -       cpus = group->group_weight;
->> +       if (sgs->sum_nr_running < sgs->group_weight)
->> +               return true;
->> +
->> +       return false;
->> +}
->>
->> -       /* smt := ceil(cpus / capacity), assumes: 1 < smt_capacity < 2 */
->> -       smt = DIV_ROUND_UP(SCHED_CAPACITY_SCALE * cpus, capacity_orig);
->> -       capacity_factor = cpus / smt; /* cores */
->> +/*
->> + *  group_is_overloaded returns true if the group has more tasks than it can
->> + *  handle. We consider that a group is overloaded if the number of tasks is
->> + *  greater than the number of CPUs and the tasks already use all available
->> + *  capacity for CFS tasks. For the latter, we use a threshold to stabilize
->> + *  the state, to take into account the variance of tasks' load and to return
->> + *  true if available capacity is no more meaningful for load balancer
->> + */
->> +static inline bool
->> +group_is_overloaded(struct lb_env *env, struct sg_lb_stats *sgs)
->> +{
->> +       if (sgs->sum_nr_running <= sgs->group_weight)
->> +               return false;
->>
->> -       capacity_factor = min_t(unsigned,
->> -               capacity_factor, DIV_ROUND_CLOSEST(capacity, SCHED_CAPACITY_SCALE));
->> -       if (!capacity_factor)
->> -               capacity_factor = fix_small_capacity(env->sd, group);
->> +       if ((sgs->group_capacity * 100) <
->> +                       (sgs->group_usage * env->sd->imbalance_pct))
->> +               return true;
->>
->> -       return capacity_factor;
->> +       return false;
->>  }
->>
->> -static enum group_type
->> -group_classify(struct sched_group *group, struct sg_lb_stats *sgs)
->> +static enum group_type group_classify(struct lb_env *env,
->> +               struct sched_group *group,
->> +               struct sg_lb_stats *sgs)
->>  {
->> -       if (sgs->sum_nr_running > sgs->group_capacity_factor)
->> +       if (sgs->group_no_capacity)
->>                 return group_overloaded;
->>
->>         if (sg_imbalanced(group))
->> @@ -6087,11 +6083,9 @@ static inline void update_sg_lb_stats(struct lb_env *env,
->>                 sgs->load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
->>
->>         sgs->group_weight = group->group_weight;
->> -       sgs->group_capacity_factor = sg_capacity_factor(env, group);
->> -       sgs->group_type = group_classify(group, sgs);
->>
->> -       if (sgs->group_capacity_factor > sgs->sum_nr_running)
->> -               sgs->group_has_free_capacity = 1;
->> +       sgs->group_no_capacity = group_is_overloaded(env, sgs);
->> +       sgs->group_type = group_classify(env, group, sgs);
->>  }
->>
->>  /**
->> @@ -6213,17 +6207,20 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
->>
->>                 /*
->>                  * In case the child domain prefers tasks go to siblings
->> -                * first, lower the sg capacity factor to one so that we'll try
->> +                * first, lower the sg capacity so that we'll try
->>                  * and move all the excess tasks away. We lower the capacity
->>                  * of a group only if the local group has the capacity to fit
->> -                * these excess tasks, i.e. nr_running < group_capacity_factor. The
->> -                * extra check prevents the case where you always pull from the
->> -                * heaviest group when it is already under-utilized (possible
->> -                * with a large weight task outweighs the tasks on the system).
->> +                * these excess tasks. The extra check prevents the case where
->> +                * you always pull from the heaviest group when it is already
->> +                * under-utilized (possible with a large weight task outweighs
->> +                * the tasks on the system).
->>                  */
->>                 if (prefer_sibling && sds->local &&
->> -                   sds->local_stat.group_has_free_capacity)
->> -                       sgs->group_capacity_factor = min(sgs->group_capacity_factor, 1U);
->> +                   group_has_capacity(env, &sds->local_stat) &&
->> +                   (sgs->sum_nr_running > 1)) {
->> +                       sgs->group_no_capacity = 1;
->> +                       sgs->group_type = group_overloaded;
->> +               }
->>
->>                 if (update_sd_pick_busiest(env, sds, sg, sgs)) {
->>                         sds->busiest = sg;
->> @@ -6402,11 +6399,12 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
->>          */
->>         if (busiest->group_type == group_overloaded &&
->>             local->group_type   == group_overloaded) {
->> -               load_above_capacity =
->> -                       (busiest->sum_nr_running - busiest->group_capacity_factor);
->> -
->> -               load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_CAPACITY_SCALE);
->> -               load_above_capacity /= busiest->group_capacity;
->> +               load_above_capacity = busiest->sum_nr_running *
->> +                                       SCHED_LOAD_SCALE;
->> +               if (load_above_capacity > busiest->group_capacity)
->> +                       load_above_capacity -= busiest->group_capacity;
->> +               else
->> +                       load_above_capacity = ~0UL;
->>         }
->>
->>         /*
->> @@ -6469,6 +6467,7 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
->>         local = &sds.local_stat;
->>         busiest = &sds.busiest_stat;
->>
->> +       /* ASYM feature bypasses nice load balance check */
->>         if ((env->idle == CPU_IDLE || env->idle == CPU_NEWLY_IDLE) &&
->>             check_asym_packing(env, &sds))
->>                 return sds.busiest;
->> @@ -6489,8 +6488,8 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
->>                 goto force_balance;
->>
->>         /* SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
->> -       if (env->idle == CPU_NEWLY_IDLE && local->group_has_free_capacity &&
->> -           !busiest->group_has_free_capacity)
->> +       if (env->idle == CPU_NEWLY_IDLE && group_has_capacity(env, local) &&
->> +           busiest->group_no_capacity)
->>                 goto force_balance;
->>
->>         /*
->> @@ -6549,7 +6548,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
->>         int i;
->>
->>         for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
->> -               unsigned long capacity, capacity_factor, wl;
->> +               unsigned long capacity, wl;
->>                 enum fbq_type rt;
->>
->>                 rq = cpu_rq(i);
->> @@ -6578,9 +6577,6 @@ static struct rq *find_busiest_queue(struct lb_env *env,
->>                         continue;
->>
->>                 capacity = capacity_of(i);
->> -               capacity_factor = DIV_ROUND_CLOSEST(capacity, SCHED_CAPACITY_SCALE);
->> -               if (!capacity_factor)
->> -                       capacity_factor = fix_small_capacity(env->sd, group);
->>
->>                 wl = weighted_cpuload(i);
->>
->> @@ -6588,7 +6584,9 @@ static struct rq *find_busiest_queue(struct lb_env *env,
->>                  * When comparing with imbalance, use weighted_cpuload()
->>                  * which is not scaled with the cpu capacity.
->>                  */
->> -               if (capacity_factor && rq->nr_running == 1 && wl > env->imbalance)
->> +
->> +               if (rq->nr_running == 1 && wl > env->imbalance &&
->> +                   !check_cpu_capacity(rq, env->sd))
->>                         continue;
->>
->>                 /*
->> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
->> index aaaa3e4..8fd30c1 100644
->> --- a/kernel/sched/sched.h
->> +++ b/kernel/sched/sched.h
->> @@ -759,7 +759,7 @@ struct sched_group_capacity {
->>          * CPU capacity of this group, SCHED_LOAD_SCALE being max capacity
->>          * for a single CPU.
->>          */
->> -       unsigned int capacity, capacity_orig;
->> +       unsigned int capacity;
->>         unsigned long next_update;
->>         int imbalance; /* XXX unrelated to capacity but shared group state */
->>         /*
->> --
->> 1.9.1
->>
->>
->> _______________________________________________
->> linaro-kernel mailing list
->> linaro-kernel@lists.linaro.org
->> http://lists.linaro.org/mailman/listinfo/linaro-kernel
