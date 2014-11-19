@@ -1,105 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272AbaKSNOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 08:14:44 -0500
-Received: from mail-bn1on0142.outbound.protection.outlook.com ([157.56.110.142]:62089
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750960AbaKSNOn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 08:14:43 -0500
-X-Greylist: delayed 982 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Nov 2014 08:14:43 EST
-From: Dexuan Cui <decui@microsoft.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH] tools: hv: ignore ENOBUFS in the KVP daemon
-Thread-Topic: [PATCH] tools: hv: ignore ENOBUFS in the KVP daemon
-Thread-Index: AQHQA/lzzMovMMzE0U6mTiCuakubnJxn69tQ
-Date: Wed, 19 Nov 2014 13:13:49 +0000
-Message-ID: <F792CF86EFE20D4AB8064279AFBA51C613E4F44B@SIXPRD3002MB028.064d.mgd.msft.net>
-References: <1416394245-31717-1-git-send-email-decui@microsoft.com>
-	<87lhn7forv.fsf@vitty.brq.redhat.com>
-	<F792CF86EFE20D4AB8064279AFBA51C613E4F2FA@SIXPRD3002MB028.064d.mgd.msft.net>
-	<87egszfjn6.fsf@vitty.brq.redhat.com>
-	<F792CF86EFE20D4AB8064279AFBA51C613E4F3AA@SIXPRD3002MB028.064d.mgd.msft.net>
- <87a93nfiif.fsf@vitty.brq.redhat.com>
-In-Reply-To: <87a93nfiif.fsf@vitty.brq.redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [141.251.55.133]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754473AbaKSNQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 08:16:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41140 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753534AbaKSNQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 08:16:07 -0500
+Message-ID: <546C97EC.10905@redhat.com>
+Date: Wed, 19 Nov 2014 14:15:24 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=decui@microsoft.com; 
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(199003)(13464003)(51704005)(41574002)(164054003)(189002)(46406003)(84676001)(2656002)(86362001)(86612001)(86146001)(87936001)(110136001)(92566001)(26826002)(21056001)(68736004)(33656002)(93886004)(20776003)(69596002)(92726001)(44976005)(6806004)(95666004)(120916001)(47776003)(4396001)(64706001)(106116001)(99396003)(31966008)(54356999)(76176999)(46102003)(50986999)(97756001)(62966003)(77096003)(16796002)(66066001)(50466002)(55846006)(97736003)(77156002)(81156004)(107046002)(23726002)(106466001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB1211;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1211;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1211;
-X-Forefront-PRVS: 04004D94E2
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1211;
-X-OriginatorOrg: microsoft.onmicrosoft.com
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@gentwo.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 06/19] mm: store mapcount for compound page separate
+References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com> <1415198994-15252-7-git-send-email-kirill.shutemov@linux.intel.com> <546C761D.6050407@redhat.com> <20141119130050.GA29884@node.dhcp.inet.fi>
+In-Reply-To: <20141119130050.GA29884@node.dhcp.inet.fi>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="D0iXfmHUpo7RM25lPPKt2AucLa8O5rJmI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Vitaly Kuznetsov 
-> >> --
-> >>   Vitaly
-> >
-> > OK, I can add this new check:
-> > (I'll send out the v2 tomorrow in case  people have new comments)
-> >
-> 
-> Thanks!
-> 
-> > --- a/tools/hv/hv_kvp_daemon.c
-> > +++ b/tools/hv/hv_kvp_daemon.c
-> > @@ -1770,8 +1770,15 @@ kvp_done:
-> >
-> >                 len = netlink_send(fd, incoming_cn_msg);
-> >                 if (len < 0) {
-> > +                       int saved_errno = errno;
-> >                         syslog(LOG_ERR, "net_link send failed; error: %d %s", errno,
-> >                                         strerror(errno));
-> > +
-> > +                       if (saved_errno == ENOMEM || saved_errno ==  EAGAIN) {
-> 
-> Sorry for being pushy, but it seems ENOBUFS is also possible here (at
-> least man sendmsg mentions it).
-OK, I'll add this too. :-)
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--D0iXfmHUpo7RM25lPPKt2AucLa8O5rJmI
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-BTW, I realized sendmsg() can't return EAGAIN here as that's for non-blocking
-socket.
+On 11/19/2014 02:00 PM, Kirill A. Shutemov wrote:
+> On Wed, Nov 19, 2014 at 11:51:09AM +0100, Jerome Marchand wrote:
+>> On 11/05/2014 03:49 PM, Kirill A. Shutemov wrote:
+>>> We're going to allow mapping of individual 4k pages of THP compound a=
+nd
+>>> we need a cheap way to find out how many time the compound page is
+>>> mapped with PMD -- compound_mapcount() does this.
+>>>
+>>> page_mapcount() counts both: PTE and PMD mappings of the page.
+>>>
+>>> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+>>> ---
+>>>  include/linux/mm.h   | 17 +++++++++++++++--
+>>>  include/linux/rmap.h |  4 ++--
+>>>  mm/huge_memory.c     | 23 ++++++++++++++---------
+>>>  mm/hugetlb.c         |  4 ++--
+>>>  mm/memory.c          |  2 +-
+>>>  mm/migrate.c         |  2 +-
+>>>  mm/page_alloc.c      | 13 ++++++++++---
+>>>  mm/rmap.c            | 50 ++++++++++++++++++++++++++++++++++++++++++=
++-------
+>>>  8 files changed, 88 insertions(+), 27 deletions(-)
+>>>
+>>> diff --git a/include/linux/mm.h b/include/linux/mm.h
+>>> index 1825c468f158..aef03acff228 100644
+>>> --- a/include/linux/mm.h
+>>> +++ b/include/linux/mm.h
+>>> @@ -435,6 +435,19 @@ static inline struct page *compound_head(struct =
+page *page)
+>>>  	return page;
+>>>  }
+>>> =20
+>>> +static inline atomic_t *compound_mapcount_ptr(struct page *page)
+>>> +{
+>>> +	return (atomic_t *)&page[1].mapping;
+>>> +}
+>>
+>> IIUC your patch overloads the unused mapping field of the first tail
+>> page to store the PMD mapcount. That's a non obvious trick. Why not ma=
+ke
+>> it more explicit by adding a new field (say compound_mapcount - and th=
+e
+>> appropriate comment of course) to the union to which mapping already b=
+elong?
+>=20
+> I don't think we want to bloat struct page description: nobody outside =
+of
+> helpers should use it direcly. And it's exactly what we did to store
+> compound page destructor and compound page order.
 
-Here I simply ignore the error, hoping the other end will re-try.
+Yes, but hiding it might make people think this field is unused when
+it's not. If it has been done that way for a while, maybe it's not as
+much trouble as I think it is, but could you at least add a comment in
+the helper.
 
-> 
-> > +                               syslog(LOG_ERR, "send error: ignored");
-> > +                               continue;
-> > +                       }
-> > +
-> >                         exit(EXIT_FAILURE);
-> >                 }
-> >         }
-> >
-> > Thanks,
-> > -- Dexuan
-> 
->   Vitaly
+>=20
+>> The patch description would benefit from more explanation too.
+>=20
+> Agreed.
+>=20
 
--- Dexuan
+
+
+--D0iXfmHUpo7RM25lPPKt2AucLa8O5rJmI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUbJfsAAoJEHTzHJCtsuoCs2EIAK2Dy9isSBb5uUh9mv2GOBhN
+cgAlRMwQf2dirDILIZMRrbGp3whn7MHQttyuVffvIzipZ5rkzluFCpnJogLuXP+H
+WeCR4XLWAkBvM7mbWLDkve/Xa5RRavqTFgW4jqrpS5OFflLaqKP7YyAlB+PPEe8F
+pKJqTtUZn5VRA8usXJVzv9Abhwi6B2a2ILXhc0Vpg132qlUqnUzqldpn+hxJj1YT
+jQ5ah7TOHkQ0+dr2i+PQXASekKQSgtYoqlxY+dTpubKAyObdX53d/OhvF88lF9KK
+cr8Y2do1oM2Ch9woKvnAbJ+HbmK39hkabwuF+SZQfVebu6WYuYUvACzaE+Hh3nw=
+=NRWw
+-----END PGP SIGNATURE-----
+
+--D0iXfmHUpo7RM25lPPKt2AucLa8O5rJmI--
