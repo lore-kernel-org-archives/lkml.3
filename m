@@ -1,146 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934355AbaKSV3x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:29:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57366 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933800AbaKSVOm (ORCPT
+	id S1756569AbaKSVaM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:30:12 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56626 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756345AbaKSVaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:42 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.10 31/70] dm btree: fix a recursion depth bug in btree walking code
-Date: Wed, 19 Nov 2014 12:52:22 -0800
-Message-Id: <20141119205211.966093584@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
-References: <20141119205210.913169042@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 19 Nov 2014 16:30:08 -0500
+Date: Wed, 19 Nov 2014 21:30:07 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] situation with csum_and_copy_... API
+Message-ID: <20141119213006.GE7996@ZenIV.linux.org.uk>
+References: <20141118212307.GU7996@ZenIV.linux.org.uk>
+ <20141119.153136.867017618826698045.davem@davemloft.net>
+ <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
+ <20141119.161744.1661940121298888832.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141119.161744.1661940121298888832.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Nov 19, 2014 at 04:17:44PM -0500, David Miller wrote:
+> > Seeing a "__get_user()" and just being able to glance up in the same
+> > function and seeing the "access_ok()" is just a good safety net. And
+> > means that people don't have to waste time thinking about or looking
+> > for where the hell the security net really is.
+> 
+> Fair enough.
 
-------------------
+OK, with 3/5 dropped 4/5 get a trivial conflict (removal of function in 4/5
+vs. change in it in 3/5).  With that dealt with, the sucker is in
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-davem
 
-From: Joe Thornber <ejt@redhat.com>
+Shortlog:
+Al Viro (4):
+      separate kernel- and userland-side msghdr
+      {compat_,}verify_iovec(): switch to generic copying of iovecs
+      fold verify_iovec() into copy_msghdr_from_user()
+      bury skb_copy_to_page()
 
-commit 9b460d3699324d570a4d4161c3741431887f102f upstream.
+Diffstat:
+ arch/arm/kernel/sys_oabi-compat.c |    4 +--
+ include/linux/socket.h            |   17 +++++++---
+ include/linux/syscalls.h          |    6 ++--
+ include/net/compat.h              |    5 ++-
+ include/net/sock.h                |   23 -------------
+ net/compat.c                      |   83 +++++++++++++++-------------------------------
+ net/core/iovec.c                  |   47 --------------------------
+ net/socket.c                      |  140 +++++++++++++++++++++++++++++++++++++-----------------------------------------
+ 8 files changed, 114 insertions(+), 211 deletions(-)
 
-The walk code was using a 'ro_spine' to hold it's locked btree nodes.
-But this data structure is designed for the rolling lock scheme, and
-as such automatically unlocks blocks that are two steps up the call
-chain.  This is not suitable for the simple recursive walk algorithm,
-which retraces its steps.
-
-This code is only used by the persistent array code, which in turn is
-only used by dm-cache.  In order to trigger it you need to have a
-mapping tree that is more than 2 levels deep; which equates to 8-16
-million cache blocks.  For instance a 4T ssd with a very small block
-size of 32k only just triggers this bug.
-
-The fix just places the locked blocks on the stack, and stops using
-the ro_spine altogether.
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/persistent-data/dm-btree-internal.h |    6 ++++++
- drivers/md/persistent-data/dm-btree-spine.c    |    2 +-
- drivers/md/persistent-data/dm-btree.c          |   24 ++++++++++--------------
- 3 files changed, 17 insertions(+), 15 deletions(-)
-
---- a/drivers/md/persistent-data/dm-btree-internal.h
-+++ b/drivers/md/persistent-data/dm-btree-internal.h
-@@ -42,6 +42,12 @@ struct btree_node {
- } __packed;
- 
- 
-+/*
-+ * Locks a block using the btree node validator.
-+ */
-+int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
-+		 struct dm_block **result);
-+
- void inc_children(struct dm_transaction_manager *tm, struct btree_node *n,
- 		  struct dm_btree_value_type *vt);
- 
---- a/drivers/md/persistent-data/dm-btree-spine.c
-+++ b/drivers/md/persistent-data/dm-btree-spine.c
-@@ -92,7 +92,7 @@ struct dm_block_validator btree_node_val
- 
- /*----------------------------------------------------------------*/
- 
--static int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
-+int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
- 		 struct dm_block **result)
- {
- 	return dm_tm_read_lock(info->tm, b, &btree_node_validator, result);
---- a/drivers/md/persistent-data/dm-btree.c
-+++ b/drivers/md/persistent-data/dm-btree.c
-@@ -812,22 +812,26 @@ EXPORT_SYMBOL_GPL(dm_btree_find_highest_
-  * FIXME: We shouldn't use a recursive algorithm when we have limited stack
-  * space.  Also this only works for single level trees.
-  */
--static int walk_node(struct ro_spine *s, dm_block_t block,
-+static int walk_node(struct dm_btree_info *info, dm_block_t block,
- 		     int (*fn)(void *context, uint64_t *keys, void *leaf),
- 		     void *context)
- {
- 	int r;
- 	unsigned i, nr;
-+	struct dm_block *node;
- 	struct btree_node *n;
- 	uint64_t keys;
- 
--	r = ro_step(s, block);
--	n = ro_node(s);
-+	r = bn_read_lock(info, block, &node);
-+	if (r)
-+		return r;
-+
-+	n = dm_block_data(node);
- 
- 	nr = le32_to_cpu(n->header.nr_entries);
- 	for (i = 0; i < nr; i++) {
- 		if (le32_to_cpu(n->header.flags) & INTERNAL_NODE) {
--			r = walk_node(s, value64(n, i), fn, context);
-+			r = walk_node(info, value64(n, i), fn, context);
- 			if (r)
- 				goto out;
- 		} else {
-@@ -839,7 +843,7 @@ static int walk_node(struct ro_spine *s,
- 	}
- 
- out:
--	ro_pop(s);
-+	dm_tm_unlock(info->tm, node);
- 	return r;
- }
- 
-@@ -847,15 +851,7 @@ int dm_btree_walk(struct dm_btree_info *
- 		  int (*fn)(void *context, uint64_t *keys, void *leaf),
- 		  void *context)
- {
--	int r;
--	struct ro_spine spine;
--
- 	BUG_ON(info->levels > 1);
--
--	init_ro_spine(&spine, info);
--	r = walk_node(&spine, root, fn, context);
--	exit_ro_spine(&spine);
--
--	return r;
-+	return walk_node(info, root, fn, context);
- }
- EXPORT_SYMBOL_GPL(dm_btree_walk);
-
-
+I'll post more for review after I finally get some sleep - up for bloody 27
+hours by now ;-/
