@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758197AbaKSW0C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:26:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55908 "EHLO
+	id S1758182AbaKSW0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:26:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56055 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932432AbaKSUyG (ORCPT
+	with ESMTP id S932434AbaKSUyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:54:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Auty <mike.auty@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        James Ausmus <james.ausmus@intel.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.17 062/141] drm/i915: safeguard against too high minimum brightness
-Date: Wed, 19 Nov 2014 12:51:25 -0800
-Message-Id: <20141119205152.701534076@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>,
+        Rodrigo Vivi <rodrigo.vivi@intel.com>
+Subject: [PATCH 3.17 063/141] drm/i915: Disable caches for Global GTT.
+Date: Wed, 19 Nov 2014 12:51:26 -0800
+Message-Id: <20141119205152.737584518@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -30,63 +32,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Rodrigo Vivi <rodrigo.vivi@intel.com>
 
-commit e1c412e75754ab7b7002f3e18a2652d999c40d4b upstream.
+commit d6a8b72edc92471283925ceb4ba12799b67c3ff8 upstream.
 
-Never trust (your interpretation of) the VBT. Regression from
+Global GTT doesn't have pat_sel[2:0] so it always point to pat_sel = 000;
+So the only way to avoid screen corruptions is setting PAT 0 to Uncached.
 
-commit 6dda730e55f412a6dfb181cae6784822ba463847
-Author: Jani Nikula <jani.nikula@intel.com>
-Date:   Tue Jun 24 18:27:40 2014 +0300
+MOCS can still be used though. But if userspace is trusting PTE for
+cache selection the safest thing to do is to let caches disabled.
 
-    drm/i915: respect the VBT minimum backlight brightness
+BSpec: "For GGTT, there is NO pat_sel[2:0] from the entry,
+so RTL will always use the value corresponding to pat_sel = 000"
 
-causing div by zero if VBT minimum brightness equals maximum brightness.
+- System agent ggtt writes (i.e. cpu gtt mmaps) already work before
+this patch, i.e. the same uncached + snooping access like on gen6/7
+seems to be in effect.
+- So this just fixes blitter/render access. Again it looks like it's
+not just uncached access, but uncached + snooping. So we can still
+hold onto all our assumptions wrt cpu clflushing on LLC machines.
 
-Despite my attempts I've failed in my detective work to figure out what
-the root cause is. This is not the real fix, but we have to do
-something.
+v2: Cleaner patch as suggested by Chris.
+v3: Add Daniel's comment
 
-Reported-by: Mike Auty <mike.auty@gmail.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=86551
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reference: https://bugs.freedesktop.org/show_bug.cgi?id=85576
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: James Ausmus <james.ausmus@intel.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jani Nikula <jani.nikula@intel.com>
+Tested-by: James Ausmus <james.ausmus@intel.com>
+Reviewed-by: James Ausmus <james.ausmus@intel.com>
+Signed-off-by: Rodrigo Vivi <rodrigo.vivi@intel.com>
 Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_panel.c |   17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_gtt.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -1074,12 +1074,25 @@ static u32 get_backlight_min_vbt(struct
- 	struct drm_device *dev = connector->base.dev;
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	struct intel_panel *panel = &connector->panel;
-+	int min;
+--- a/drivers/gpu/drm/i915/i915_gem_gtt.c
++++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
+@@ -1901,6 +1901,22 @@ static void bdw_setup_private_ppat(struc
+ 	      GEN8_PPAT(6, GEN8_PPAT_WB | GEN8_PPAT_LLCELLC | GEN8_PPAT_AGE(2)) |
+ 	      GEN8_PPAT(7, GEN8_PPAT_WB | GEN8_PPAT_LLCELLC | GEN8_PPAT_AGE(3));
  
- 	WARN_ON(panel->backlight.max == 0);
- 
-+	/*
-+	 * XXX: If the vbt value is 255, it makes min equal to max, which leads
-+	 * to problems. There are such machines out there. Either our
-+	 * interpretation is wrong or the vbt has bogus data. Or both. Safeguard
-+	 * against this by letting the minimum be at most (arbitrarily chosen)
-+	 * 25% of the max.
-+	 */
-+	min = clamp_t(int, dev_priv->vbt.backlight.min_brightness, 0, 64);
-+	if (min != dev_priv->vbt.backlight.min_brightness) {
-+		DRM_DEBUG_KMS("clamping VBT min backlight %d/255 to %d/255\n",
-+			      dev_priv->vbt.backlight.min_brightness, min);
-+	}
++	if (!USES_PPGTT(dev_priv->dev))
++		/* Spec: "For GGTT, there is NO pat_sel[2:0] from the entry,
++		 * so RTL will always use the value corresponding to
++		 * pat_sel = 000".
++		 * So let's disable cache for GGTT to avoid screen corruptions.
++		 * MOCS still can be used though.
++		 * - System agent ggtt writes (i.e. cpu gtt mmaps) already work
++		 * before this patch, i.e. the same uncached + snooping access
++		 * like on gen6/7 seems to be in effect.
++		 * - So this just fixes blitter/render access. Again it looks
++		 * like it's not just uncached access, but uncached + snooping.
++		 * So we can still hold onto all our assumptions wrt cpu
++		 * clflushing on LLC machines.
++		 */
++		pat = GEN8_PPAT(0, GEN8_PPAT_UC);
 +
- 	/* vbt value is a coefficient in range [0..255] */
--	return scale(dev_priv->vbt.backlight.min_brightness, 0, 255,
--		     0, panel->backlight.max);
-+	return scale(min, 0, 255, 0, panel->backlight.max);
- }
- 
- static int bdw_setup_backlight(struct intel_connector *connector)
+ 	/* XXX: spec defines this as 2 distinct registers. It's unclear if a 64b
+ 	 * write would work. */
+ 	I915_WRITE(GEN8_PRIVATE_PAT, pat);
 
 
