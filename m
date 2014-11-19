@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719AbaKSUqB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:46:01 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:39667 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500AbaKSUqA (ORCPT
+	id S932332AbaKSUrJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:47:09 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:48598 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754929AbaKSUrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:46:00 -0500
+	Wed, 19 Nov 2014 15:47:08 -0500
 From: Mariusz Gorski <marius.gorski@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Willy Tarreau <w@1wt.eu>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/9] staging: panel: Refactor panel initialization
-Date: Wed, 19 Nov 2014 21:38:42 +0100
-Message-Id: <1416429531-11088-1-git-send-email-marius.gorski@gmail.com>
+Subject: [PATCH v2 1/9] staging: panel: Set default parport module param value
+Date: Wed, 19 Nov 2014 21:38:43 +0100
+Message-Id: <1416429531-11088-2-git-send-email-marius.gorski@gmail.com>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1416429531-11088-1-git-send-email-marius.gorski@gmail.com>
+References: <1416429531-11088-1-git-send-email-marius.gorski@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set of patches focuses on making current initialization
-process easier to understand - especially it tries to emphasize
-what are the priorities of the params coming from different
-sources (Kconfig values, device profiles and module param values
-set on loading). I paid attention not to change to behaviour of
-the code itself (at least for now), so all hacky places are kept.
+Set default parport module param value to DEFAULT_PARPORT so that
+a if-block can be avoided.
 
-v2: Don't introduce new macros for param value check
+Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
+Acked-by: Willy Tarreau <w@1wt.eu>
+---
+ drivers/staging/panel/panel.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-Mariusz Gorski (9):
-  staging: panel: Set default parport module param value
-  staging: panel: Call init function directly
-  staging: panel: Remove magic numbers
-  staging: panel: Use defined value or checking module params state
-  staging: panel: Start making module params read-only
-  staging: panel: Make two more module params read-only
-  staging: panel: Refactor LCD init code
-  staging: panel: Remove more magic number comparison
-  staging: panel: Move LCD-related state into struct lcd
-
- drivers/staging/panel/panel.c | 669 ++++++++++++++++++++++--------------------
- 1 file changed, 354 insertions(+), 315 deletions(-)
-
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index c6eeddf..3dd318a 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -429,7 +429,7 @@ static struct timer_list scan_timer;
+ 
+ MODULE_DESCRIPTION("Generic parallel port LCD/Keypad driver");
+ 
+-static int parport = -1;
++static int parport = DEFAULT_PARPORT;
+ module_param(parport, int, 0000);
+ MODULE_PARM_DESC(parport, "Parallel port index (0=lpt1, 1=lpt2, ...)");
+ 
+@@ -2231,9 +2231,6 @@ static int panel_init(void)
+ 	if (lcd_type < 0)
+ 		lcd_type = lcd_enabled;
+ 
+-	if (parport < 0)
+-		parport = DEFAULT_PARPORT;
+-
+ 	/* take care of an eventual profile */
+ 	switch (profile) {
+ 	case PANEL_PROFILE_CUSTOM:
 -- 
 2.1.3
 
