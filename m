@@ -1,131 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716AbaKSBHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 20:07:10 -0500
-Received: from mga09.intel.com ([134.134.136.24]:47215 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754928AbaKSBHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 20:07:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,413,1413270000"; 
-   d="scan'208";a="639366224"
-Message-ID: <546BED38.9030707@linux.intel.com>
-Date: Wed, 19 Nov 2014 09:07:04 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755764AbaKSBKH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 20:10:07 -0500
+Received: from regular1.263xmail.com ([211.150.99.135]:54995 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456AbaKSBKE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 20:10:04 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: boris.brezillon@free-electrons.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <420251a43b18a7039c972b940691d778>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <546BEDD9.1000205@rock-chips.com>
+Date: Wed, 19 Nov 2014 09:09:45 +0800
+From: Mark yao <mark.yao@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin marinas <catalin.marinas@arm.com>,
+To: Boris Brezillon <boris.brezillon@free-electrons.com>, heiko@sntech.de,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Robert Richter <robert.richter@caviumnetworks.com>,
-        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-Subject: Re: [PATCH v2 02/13] irqchip: GICv3: Convert to domain hierarchy
-References: <1416336788-22634-1-git-send-email-marc.zyngier@arm.com> <1416336788-22634-3-git-send-email-marc.zyngier@arm.com>
-In-Reply-To: <1416336788-22634-3-git-send-email-marc.zyngier@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, dianders@chromium.org,
+        marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
+        djkurtz@chromium.org, cf@rock-chips.com, xxm@rock-chips.com,
+        huangtao@rock-chips.com, kever.yang@rock-chips.com, yxj@rock-chips.com,
+        xw@rock-chips.com
+Subject: Re: [PATCH v12 1/3] drm: rockchip: Add basic drm driver
+References: <1416297587-18959-1-git-send-email-mark.yao@rock-chips.com> <1416297629-19024-1-git-send-email-mark.yao@rock-chips.com> <20141118083234.GZ25711@phenom.ffwll.local> <20141118142130.6c12ab50@bbrezillon> <20141118142447.GC25711@phenom.ffwll.local>
+In-Reply-To: <20141118142447.GC25711@phenom.ffwll.local>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2014年11月18日 22:24, Daniel Vetter wrote:
+> On Tue, Nov 18, 2014 at 02:21:30PM +0100, Boris Brezillon wrote:
+>> Hi Daniel,
+>>
+>> On Tue, 18 Nov 2014 09:32:34 +0100
+>> Daniel Vetter <daniel@ffwll.ch> wrote:
+>>
+>>> On Tue, Nov 18, 2014 at 04:00:29PM +0800, Mark Yao wrote:
+>>>> From: Mark yao <mark.yao@rock-chips.com>
+>>>>
+>>>> This patch adds the basic structure of a DRM Driver for Rockchip Socs.
+>>>>
+>>>> Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
+>>>> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+>>>> Acked-by: Daniel Vetter <daniel@ffwll.ch>
+>>>> Reviewed-by: Rob Clark <robdclark@gmail.com>
+>>>> ---
+>>>> Changes in v2:
+>>>> - use the component framework to defer main drm driver probe
+>>>>    until all VOP devices have been probed.
+>>>> - use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
+>>>>    master device and each vop device can shared the drm dma mapping.
+>>>> - use drm_crtc_init_with_planes and drm_universal_plane_init.
+>>>> - remove unnecessary middle layers.
+>>>> - add cursor set, move funcs to rockchip drm crtc.
+>>>> - use vop reset at first init
+>>>> - reference framebuffer when used and unreference when swap out vop
+>>>>
+>>>> Changes in v3:
+>>>> - change "crtc->fb" to "crtc->primary-fb"
+>>>> Adviced by Daniel Vetter
+>>>> - init cursor plane with universal api, remove unnecessary cursor set,move
+>>>>
+>>>> Changes in v4:
+>>>> Adviced by David Herrmann
+>>>> - remove drm_platform_*() usage, use register drm device directly.
+>>> Minor fixup for that part below.
+>>>
+>>> [snip]
+>>>
+>>>> +static int rockchip_drm_bind(struct device *dev)
+>>>> +{
+>>>> +	struct drm_device *drm;
+>>>> +	int ret;
+>>>> +
+>>>> +	drm = drm_dev_alloc(&rockchip_drm_driver, dev);
+>>>> +	if (!drm)
+>>>> +		return -ENOMEM;
+>>>> +
+>>>> +	ret = drm_dev_set_unique(drm, "%s", dev_name(dev));
+>>>> +	if (ret)
+>>>> +		goto err_free;
+>>> Please call rockchip_drm_load here directly and don't put it as the ->load
+>>> function into the driver vtable. The point of the alloc/register split is
+>>> that the driver can be completely set up _before_ we register anything.
+>>> But for backwards compat and historical reasons ->load is called somewhere
+>>> in the middle (so that you could access the minor nodes if needed, since
+>>> some drivers do that).
+>> I tried to do the same in the atmel-hlcdc DRM driver, but I need the
+>> primary drm_minor to register the connectors (see this kernel
+>> backtrace [1]), which means I either initialize the connector in the
+>> wrong place (currently part of the drm load process), or I just can't
+>> call atmel_hlcdc_dc_load before registering the drm device...
+> Hm right, wonder who that works with rockchip tbh.
+>
+> We did split up the drm_connector setup into _init and register, so if you
+> want to do this then you need to move the call to drm_connector_register
+> below the call to drm_dev_register.
+>
+> We should probably have a drm_connectors_register_all helper which does
+> this for all connectors on the connector list. And also grabs the
+> appropriate lock.
+>
+> I guess it's somewhat obvious that no one yet actually tried this ;-)
+> -Daniel
+right, I re-test the driver with it, get the same problem with Boris.
+I should move drm_connector_register below the drm_dev_register.
 
-
-On 2014/11/19 2:52, Marc Zyngier wrote:
-> In order to start supporting stacked domains, convert the GICv3
-> code base to the new domain hierarchy framework, which mostly
-> amounts to supporting the new alloc/free callbacks.
-> 
-> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-> ---
->  drivers/irqchip/Kconfig      |  1 +
->  drivers/irqchip/irq-gic-v3.c | 42 +++++++++++++++++++++++++++++++++++++-----
->  2 files changed, 38 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-> index b21f12f..4631685 100644
-> --- a/drivers/irqchip/Kconfig
-> +++ b/drivers/irqchip/Kconfig
-> @@ -14,6 +14,7 @@ config ARM_GIC_V3
->  	bool
->  	select IRQ_DOMAIN
->  	select MULTI_IRQ_HANDLER
-> +	select IRQ_DOMAIN_HIERARCHY
->  
->  config ARM_NVIC
->  	bool
-> diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
-> index aa17ae8..aef4b9e 100644
-> --- a/drivers/irqchip/irq-gic-v3.c
-> +++ b/drivers/irqchip/irq-gic-v3.c
-> @@ -594,14 +594,14 @@ static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
->  	/* PPIs */
->  	if (hw < 32) {
->  		irq_set_percpu_devid(irq);
-> -		irq_set_chip_and_handler(irq, &gic_chip,
-> -					 handle_percpu_devid_irq);
-> +		irq_domain_set_info(d, irq, hw, &gic_chip, d->host_data,
-> +				    handle_percpu_devid_irq, NULL, NULL);
->  		set_irq_flags(irq, IRQF_VALID | IRQF_NOAUTOEN);
->  	}
->  	/* SPIs */
->  	if (hw >= 32 && hw < gic_data.irq_nr) {
-> -		irq_set_chip_and_handler(irq, &gic_chip,
-> -					 handle_fasteoi_irq);
-> +		irq_domain_set_info(d, irq, hw, &gic_chip, d->host_data,
-> +				    handle_fasteoi_irq, NULL, NULL);
->  		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
->  	}
->  	irq_set_chip_data(irq, d->host_data);
-> @@ -633,9 +633,41 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
->  	return 0;
->  }
->  
-> +static int gic_irq_domain_alloc(struct irq_domain *domain, unsigned int virq,
-> +				unsigned int nr_irqs, void *arg)
-> +{
-> +	int i, ret;
-> +	irq_hw_number_t hwirq;
-> +	unsigned int type = IRQ_TYPE_NONE;
-> +	struct of_phandle_args *irq_data = arg;
-> +
-> +	ret = gic_irq_domain_xlate(domain, irq_data->np, irq_data->args,
-> +				   irq_data->args_count, &hwirq, &type);
-> +	if (ret)
-> +		return ret;
-> +
-> +	for (i = 0; i < nr_irqs; i++)
-> +		gic_irq_domain_map(domain, virq + i, hwirq + i);
-> +
-> +	return 0;
-> +}
-> +
-> +static void gic_irq_domain_free(struct irq_domain *domain, unsigned int virq,
-> +				unsigned int nr_irqs)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < nr_irqs; i++) {
-> +		irq_set_handler(virq + i, NULL);
-> +		irq_domain_set_hwirq_and_chip(domain, virq + i, 0, NULL, NULL);
-Please try irq_domain_reset_irq_data() :)
-
-> +	}
-> +}
-> +
-> +
->  static const struct irq_domain_ops gic_irq_domain_ops = {
-> -	.map = gic_irq_domain_map,
->  	.xlate = gic_irq_domain_xlate,
-> +	.alloc = gic_irq_domain_alloc,
-> +	.free = gic_irq_domain_free,
->  };
->  
->  static int __init gic_of_init(struct device_node *node, struct device_node *parent)
-> 
