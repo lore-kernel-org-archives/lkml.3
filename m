@@ -1,93 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034AbaKSJWE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 04:22:04 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:53197 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947AbaKSJWA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 04:22:00 -0500
-Message-ID: <546C6135.90201@linaro.org>
-Date: Wed, 19 Nov 2014 10:21:57 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755265AbaKSJWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 04:22:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43843 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754951AbaKSJWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 04:22:02 -0500
+Message-ID: <546C612A.4080807@redhat.com>
+Date: Wed, 19 Nov 2014 17:21:46 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Roman Byshko <rbyshko@gmail.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] clockevent: sun4i: Fix race condition in the probe code
-References: <1416351573-5815-1-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1416351573-5815-1-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+CC: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH V2 net] virtio-net: validate features during probe
+References: <1416381689-2025-1-git-send-email-jasowang@redhat.com> <20141119095445.32d94d5d.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141119095445.32d94d5d.cornelia.huck@de.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2014 11:59 PM, Maxime Ripard wrote:
-> The interrupts were activated and the handler registered before the clockevent
-> was registered in the probe function.
+On 11/19/2014 04:54 PM, Cornelia Huck wrote:
+> On Wed, 19 Nov 2014 15:21:29 +0800
+> Jason Wang <jasowang@redhat.com> wrote:
 >
-> The interrupt handler, however, was making the assumption that the clockevent
-> device was registered.
+>> This patch validates feature dependencies during probe and fail the probing
+>> if a dependency is missed. This fixes the issues of hitting BUG()
+>> when qemu fails to advertise features correctly. One example is booting
+>> guest with ctrl_vq=off through qemu.
+>>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+>> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>> Changes from V1:
+>> - Drop VIRTIO_NET_F_*_UFO from the checklist, since it was disabled
+>> ---
+>>  drivers/net/virtio_net.c | 91 ++++++++++++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 91 insertions(+)
+>>
+>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>> index ec2a8b4..b16a761 100644
+>> --- a/drivers/net/virtio_net.c
+>> +++ b/drivers/net/virtio_net.c
+>> @@ -1673,6 +1673,93 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
+>>  };
+>>  #endif
+>>
+>> +static int virtnet_validate_features(struct virtio_device *dev,
+>> +				     unsigned int *table,
+>> +				     int table_size,
+>> +				     unsigned int feature)
+>> +{
+>> +	int i;
+>> +
+>> +	if (!virtio_has_feature(dev, feature)) {
+> Do an early return, get rid of one indentation level?
+
+This sounds good.
+>> +		for (i = 0; i < table_size; i++) {
+>> +			unsigned int f = table[i];
+>> +
+>> +			if (virtio_has_feature(dev, f)) {
+>> +				dev_err(&dev->dev,
+>> +					"buggy hyperviser: feature 0x%x was advertised but its dependency 0x%x was not",
+> s/hyperviser/hypervisor/ (also below)
+
+Yes, thanks for the catching.
 >
-> That could cause a null pointer dereferenc if the timer interrupt was firing
-> during this narrow window.
+>> +					f, feature);
+>> +				return -EINVAL;
+>> +			}
+>> +		}
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int virtnet_check_features(struct virtio_device *dev)
+>> +{
+>> +	unsigned int features_for_ctrl_vq[] = {
+>> +		VIRTIO_NET_F_CTRL_RX,
+>> +		VIRTIO_NET_F_CTRL_VLAN,
+>> +		VIRTIO_NET_F_GUEST_ANNOUNCE,
+>> +		VIRTIO_NET_F_MQ,
+>> +		VIRTIO_NET_F_CTRL_MAC_ADDR
+>> +	};
+>> +	unsigned int features_for_guest_csum[] = {
+>> +		VIRTIO_NET_F_GUEST_TSO4,
+>> +		VIRTIO_NET_F_GUEST_TSO6,
+>> +		VIRTIO_NET_F_GUEST_ECN,
+>> +	};
+>> +	unsigned int features_for_host_csum[] = {
+>> +		VIRTIO_NET_F_HOST_TSO4,
+>> +		VIRTIO_NET_F_HOST_TSO6,
+>> +		VIRTIO_NET_F_HOST_ECN,
+>> +	};
+> I'm wondering whether it would be easier to read if you listed all
+> prereqs per feature instead of all features that depend on a feature?
+> It would still be hard to express the v4/v6 or conditions below in
+> tables, though.
+
+For v4 and v6, we could use something like
+
+unsigned int feature_for_host_tso6[] = {
+VIRTIO_NET_F_HOST_ECN,
+};
+
+unsigned int feature_for_host_tso4[] = {
+VIRTIO_NET_F_HOST_ECN,
+}
+
+To avoid the following open-coding for ECN. And probably we need another
+device specific dependency table and let virtio core do this instead.
 >
-> Fix that by moving the clockevent registration before the interrupt is enabled.
+> Or call the arrays features_depending_on_foo?
+
+Yes.
 >
-> Reported-by: Roman Byshko <rbyshko@gmail.com>
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Cc: stable@vger.kernel.org
-
-Applied to my tree as 3.18 fix.
-
-Thanks !
-
-   -- Daniel
-
-> ---
->   drivers/clocksource/sun4i_timer.c | 12 ++++++------
->   1 file changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-> index efb17c3ee120..f4a9c0058b4d 100644
-> --- a/drivers/clocksource/sun4i_timer.c
-> +++ b/drivers/clocksource/sun4i_timer.c
-> @@ -182,6 +182,12 @@ static void __init sun4i_timer_init(struct device_node *node)
->   	/* Make sure timer is stopped before playing with interrupts */
->   	sun4i_clkevt_time_stop(0);
->
-> +	sun4i_clockevent.cpumask = cpu_possible_mask;
-> +	sun4i_clockevent.irq = irq;
-> +
-> +	clockevents_config_and_register(&sun4i_clockevent, rate,
-> +					TIMER_SYNC_TICKS, 0xffffffff);
-> +
->   	ret = setup_irq(irq, &sun4i_timer_irq);
->   	if (ret)
->   		pr_warn("failed to setup irq %d\n", irq);
-> @@ -189,12 +195,6 @@ static void __init sun4i_timer_init(struct device_node *node)
->   	/* Enable timer0 interrupt */
->   	val = readl(timer_base + TIMER_IRQ_EN_REG);
->   	writel(val | TIMER_IRQ_EN(0), timer_base + TIMER_IRQ_EN_REG);
-> -
-> -	sun4i_clockevent.cpumask = cpu_possible_mask;
-> -	sun4i_clockevent.irq = irq;
-> -
-> -	clockevents_config_and_register(&sun4i_clockevent, rate,
-> -					TIMER_SYNC_TICKS, 0xffffffff);
->   }
->   CLOCKSOURCE_OF_DECLARE(sun4i, "allwinner,sun4i-a10-timer",
->   		       sun4i_timer_init);
+>> +	int err;
+>> +
+>> +	err = virtnet_validate_features(dev, features_for_ctrl_vq,
+>> +					ARRAY_SIZE(features_for_ctrl_vq),
+>> +					VIRTIO_NET_F_CTRL_VQ);
+>> +	if (err)
+>> +		return err;
+> If you already print a message that a user may use to fix their
+> hypervisor (or bug someone about it), would it make sense to check all
+> dependencies and print a full list of everything that is broken in the
+> advertised feature bits? I usually hate it if I fix one thing only to
+> hit the next bug when the program could have already told me about
+> everything I need to fix :)
 >
 
+Right this sounds good.
+>> +
+>> +	err = virtnet_validate_features(dev, features_for_guest_csum,
+>> +					ARRAY_SIZE(features_for_guest_csum),
+>> +					VIRTIO_NET_F_GUEST_CSUM);
+>> +	if (err)
+>> +		return err;
+>> +
+>> +	err = virtnet_validate_features(dev, features_for_host_csum,
+>> +					ARRAY_SIZE(features_for_host_csum),
+>> +					VIRTIO_NET_F_CSUM);
+>> +	if (err)
+>> +		return err;
+>> +
+>> +	if (virtio_has_feature(dev, VIRTIO_NET_F_GUEST_ECN) &&
+>> +	    (!virtio_has_feature(dev, VIRTIO_NET_F_GUEST_TSO4) ||
+>> +	     !virtio_has_feature(dev, VIRTIO_NET_F_GUEST_TSO6))) {
+>> +		dev_err(&dev->dev,
+>> +			"buggy hyperviser: feature 0x%x was advertised but its dependency 0x%x or 0x%x was not",
+>> +			VIRTIO_NET_F_GUEST_ECN,
+>> +			VIRTIO_NET_F_GUEST_TSO4,
+>> +			VIRTIO_NET_F_GUEST_TSO6);
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	if (virtio_has_feature(dev, VIRTIO_NET_F_HOST_ECN) &&
+>> +	    (!virtio_has_feature(dev, VIRTIO_NET_F_HOST_TSO4) ||
+>> +	     !virtio_has_feature(dev, VIRTIO_NET_F_HOST_TSO6))) {
+>> +		dev_err(&dev->dev,
+>> +			"buggy hyperviser: feature 0x%x was advertised but its dependency 0x%x or 0x%x was not",
+> "Hypervisor bug: advertised feature <foo> but not <bar> or <baz>"
+>
+> ?
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+More compact, looks good. Thanks
