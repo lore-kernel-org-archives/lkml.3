@@ -1,220 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933646AbaKSXcZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 18:32:25 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:10043 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754766AbaKSX1M (ORCPT
+	id S933713AbaKSXc7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 18:32:59 -0500
+Received: from www.linutronix.de ([62.245.132.108]:48240 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932388AbaKSXc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 18:27:12 -0500
-Message-Id: <20141119232709.430348427@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Wed, 19 Nov 2014 18:26:33 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 01/18] tracing: Fix race of function probes counting
-References: <20141119232632.737569526@goodmis.org>
+	Wed, 19 Nov 2014 18:32:57 -0500
+Date: Thu, 20 Nov 2014 00:32:40 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>,
+        Borislav Petkov <bp@alien8.de>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH v3 3/3] sched, x86: Check that we're on the right stack
+ in schedule and __might_sleep
+In-Reply-To: <CA+55aFx4-WzNQ0e-ZTcCig3b7U7xmt1WB1jzO3TLk9zHD006ng@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1411200025440.3909@nanos>
+References: <cover.1416352397.git.luto@amacapital.net> <c25e1a64e5b718fa156e141fd9ecbf31011c6059.1416352397.git.luto@amacapital.net> <CA+55aFztsw6Vt4CyVs1OsqdKXxQmFrxHdE7z89VMZ_1KwKPcmQ@mail.gmail.com> <20141119192928.GL12538@two.firstfloor.org>
+ <CA+55aFwykb6aZYgyZXbU1DQ3OL0umpv8gkHYWykBEC2B7UdMbw@mail.gmail.com> <CALCETrXi7vdNAk4RziNDtqX4asPqXxi1VsLzL7pP0zivkjTH4Q@mail.gmail.com> <CA+55aFx4-WzNQ0e-ZTcCig3b7U7xmt1WB1jzO3TLk9zHD006ng@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0001-tracing-Fix-race-of-function-probes-counting.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Wed, 19 Nov 2014, Linus Torvalds wrote:
 
-The function probe counting for traceon and traceoff suffered a race
-condition where if the probe was executing on two or more CPUs at the
-same time, it could decrement the counter by more than one when
-disabling (or enabling) the tracer only once.
+> On Wed, Nov 19, 2014 at 3:04 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> >
+> > Does that include nmi?  I'm a bit afraid of touching that code.
+> 
+> NMI is kind of special, since it's really not supposed to touch
+> 'current' or anything like that, and that's how we do preempt-count
+> (and that's where irq-count is) right now.
+> 
+> I would prefer to have preempt_count be a percpu variable rather than
+> a per-thread one, but there are historical reasons for that horror. Oh
+> well.
 
-The way the traceon and traceoff probes are suppose to work is that
-they disable (or enable) tracing once per count. If a user were to
-echo 'schedule:traceoff:3' into set_ftrace_filter, then when the
-schedule function was called, it would disable tracing. But the count
-should only be decremented once (to 2). Then if the user enabled tracing
-again (via tracing_on file), the next call to schedule would disable
-tracing again and the count would be decremented to 1.
+preempt_count is a per cpu variable at least on x86 since:
 
-But if multiple CPUS called schedule at the same time, it is possible
-that the count would be decremented more than once because of the
-simple "count--" used.
+  commit c2daa3bed53a 'sched, x86: Provide a per-cpu preempt_count
+  implementation'
+    
+> > It's certainly easy enough to bump irq_count in the paranoid entries.
+> 
+> It definitely shouldn't be done from the assembly code. Usually it's
+> "irq_enter/exit()" that does it, but for NMI you'd presumably just do
+> it explicitly from do_nmi() or similar. But NMI really is nastier than
+> other cases, see above.
 
-By reading the count into a local variable and using memory barriers
-we can guarantee that the count would only be decremented once per
-disable (or enable).
+do_nmi()
+  nmi_enter()
+    preempt_count_add(NMI_OFFSET + HARDIRQ_OFFSET); 
 
-The stack trace probe had a similar race, but here the stack trace will
-decrement for each time it is called. But this had the read-modify-
-write race, where it could stack trace more than the number of times
-that was specified. This case we use a cmpxchg to stack trace only the
-number of times specified.
+> (That said, I thought we did it anyway, but now that I look I can't
+> find it. So I was probably just smoking something)
 
-The dump probes can still use the old "update_count()" function as
-they only run once, and that is controlled by the dump logic
-itself.
+Certainly something you should not smoke again :)
 
-Link: http://lkml.kernel.org/r/20141118134643.4b550ee4@gandalf.local.home
+Thanks,
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_functions.c | 117 +++++++++++++++++++++++++++++++++--------
- 1 file changed, 96 insertions(+), 21 deletions(-)
-
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index a8e0c7666164..973db52eb070 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -261,37 +261,74 @@ static struct tracer function_trace __tracer_data =
- };
- 
- #ifdef CONFIG_DYNAMIC_FTRACE
--static int update_count(void **data)
-+static void update_traceon_count(void **data, int on)
- {
--	unsigned long *count = (long *)data;
-+	long *count = (long *)data;
-+	long old_count = *count;
- 
--	if (!*count)
--		return 0;
-+	/*
-+	 * Tracing gets disabled (or enabled) once per count.
-+	 * This function can be called at the same time on mulitple CPUs.
-+	 * It is fine if both disable (or enable) tracing, as disabling
-+	 * (or enabling) the second time doesn't do anything as the
-+	 * state of the tracer is already disabled (or enabled).
-+	 * What needs to be synchronized in this case is that the count
-+	 * only gets decremented once, even if the tracer is disabled
-+	 * (or enabled) twice, as the second one is really a nop.
-+	 *
-+	 * The memory barriers guarantee that we only decrement the
-+	 * counter once. First the count is read to a local variable
-+	 * and a read barrier is used to make sure that it is loaded
-+	 * before checking if the tracer is in the state we want.
-+	 * If the tracer is not in the state we want, then the count
-+	 * is guaranteed to be the old count.
-+	 *
-+	 * Next the tracer is set to the state we want (disabled or enabled)
-+	 * then a write memory barrier is used to make sure that
-+	 * the new state is visible before changing the counter by
-+	 * one minus the old counter. This guarantees that another CPU
-+	 * executing this code will see the new state before seeing
-+	 * the new counter value, and would not do anthing if the new
-+	 * counter is seen.
-+	 *
-+	 * Note, there is no synchronization between this and a user
-+	 * setting the tracing_on file. But we currently don't care
-+	 * about that.
-+	 */
-+	if (!old_count)
-+		return;
- 
--	if (*count != -1)
--		(*count)--;
-+	/* Make sure we see count before checking tracing state */
-+	smp_rmb();
- 
--	return 1;
-+	if (on == !!tracing_is_on())
-+		return;
-+
-+	if (on)
-+		tracing_on();
-+	else
-+		tracing_off();
-+
-+	/* unlimited? */
-+	if (old_count == -1)
-+		return;
-+
-+	/* Make sure tracing state is visible before updating count */
-+	smp_wmb();
-+
-+	*count = old_count - 1;
- }
- 
- static void
- ftrace_traceon_count(unsigned long ip, unsigned long parent_ip, void **data)
- {
--	if (tracing_is_on())
--		return;
--
--	if (update_count(data))
--		tracing_on();
-+	update_traceon_count(data, 1);
- }
- 
- static void
- ftrace_traceoff_count(unsigned long ip, unsigned long parent_ip, void **data)
- {
--	if (!tracing_is_on())
--		return;
--
--	if (update_count(data))
--		tracing_off();
-+	update_traceon_count(data, 0);
- }
- 
- static void
-@@ -330,11 +367,49 @@ ftrace_stacktrace(unsigned long ip, unsigned long parent_ip, void **data)
- static void
- ftrace_stacktrace_count(unsigned long ip, unsigned long parent_ip, void **data)
- {
--	if (!tracing_is_on())
--		return;
-+	long *count = (long *)data;
-+	long old_count;
-+	long new_count;
- 
--	if (update_count(data))
--		trace_dump_stack(STACK_SKIP);
-+	/*
-+	 * Stack traces should only execute the number of times the
-+	 * user specified in the counter.
-+	 */
-+	do {
-+
-+		if (!tracing_is_on())
-+			return;
-+
-+		old_count = *count;
-+
-+		if (!old_count)
-+			return;
-+
-+		/* unlimited? */
-+		if (old_count == -1) {
-+			trace_dump_stack(STACK_SKIP);
-+			return;
-+		}
-+
-+		new_count = old_count - 1;
-+		new_count = cmpxchg(count, old_count, new_count);
-+		if (new_count == old_count)
-+			trace_dump_stack(STACK_SKIP);
-+
-+	} while (new_count != old_count);
-+}
-+
-+static int update_count(void **data)
-+{
-+	unsigned long *count = (long *)data;
-+
-+	if (!*count)
-+		return 0;
-+
-+	if (*count != -1)
-+		(*count)--;
-+
-+	return 1;
- }
- 
- static void
--- 
-2.1.1
-
-
+	tglx
