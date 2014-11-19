@@ -1,70 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147AbaKSRM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:12:29 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:61617 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755884AbaKSRMY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:12:24 -0500
-Date: Wed, 19 Nov 2014 12:12:04 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 1/2] tracing: Clean up tracing_fill_pipe_page()
-Message-ID: <20141119121204.47f047d8@gandalf.local.home>
-In-Reply-To: <20141119165149.GF2332@dhcp128.suse.cz>
-References: <20141115045847.712848224@goodmis.org>
-	<20141115050603.904875201@goodmis.org>
-	<20141117123250.10f6f57c@gandalf.local.home>
-	<20141117141108.347a30e5@gandalf.local.home>
-	<20141118161546.GJ23958@pathway.suse.cz>
-	<20141119111718.11df478d@gandalf.local.home>
-	<20141119165149.GF2332@dhcp128.suse.cz>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756124AbaKSRM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:12:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58875 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755666AbaKSRMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 12:12:03 -0500
+Message-ID: <1416417111.4763.10.camel@dcbw.local>
+Subject: Re: [PATCH 1/3] tun: move internal flag defines out of uapi
+From: Dan Williams <dcbw@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, davem@davemloft.net,
+        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Tom Herbert <therbert@google.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Masatake YAMATO <yamato@redhat.com>, Xi Wang <xii@google.com>,
+        netdev@vger.kernel.org, linux-api@vger.kernel.org
+Date: Wed, 19 Nov 2014 11:11:51 -0600
+In-Reply-To: <20141119170835.GA29928@redhat.com>
+References: <1416413891-29562-1-git-send-email-mst@redhat.com>
+	 <1416413891-29562-2-git-send-email-mst@redhat.com>
+	 <1416415634.4763.9.camel@dcbw.local> <20141119165017.GA29759@redhat.com>
+	 <20141119170835.GA29928@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014 17:51:49 +0100
-Petr Mladek <pmladek@suse.cz> wrote:
+On Wed, 2014-11-19 at 19:08 +0200, Michael S. Tsirkin wrote:
+> On Wed, Nov 19, 2014 at 06:50:17PM +0200, Michael S. Tsirkin wrote:
+> > On Wed, Nov 19, 2014 at 10:47:14AM -0600, Dan Williams wrote:
+> > > On Wed, 2014-11-19 at 18:18 +0200, Michael S. Tsirkin wrote:
+> > > > TUN_ flags are internal and never exposed
+> > > > to userspace. Any application using it is almost
+> > > > certainly buggy.
+> > > 
+> > > Except for TUN_TUN_DEV and TUN_TAP_DEV and TUN_TYPE_MASK...  which we're
+> > > using (for some reason) in NetworkManager, though I'll happily convert
+> > > those to IFF_* instead.  It might be worth #defining those to their
+> > > IFF_* equivalents since their usage is not technically broken.
+> > > 
+> > > Dan
+> > 
+> > Hmm you are right, they happen to have the same value.
+> > I'll send v2 leaving these in place.
+> > 
+> 
+> Though I do think userspace shouldn't depend on them generally,
+> so it might be a good idea to stop using them, even though
+> I'll fix up my patches to avoid breaking this usecase.
 
- 
-> OK, I'll put it on my todo list. Let's see who is faster ;-) And I
-> keep my fingers crossed about the OK from Linus and Andrew.
+Yeah, I'm doing an NM patch right now to use IFF_*.
 
-I'll assume they are going to be OK'd. I'll place these patches in a
-separate branch and after I finish testing (and get acks from my
-ftrace/core branch), I'll push them all up to my for-next branch.
+Dan
 
-Then when the merge window opens, I'll push the normal ftrace/core
-code, and then push this one separate, and let Linus decide if he wants
-to pull it or not.
+> 
+> 
+> > > > Move them out to tun.c, we'll remove them in follow-up patches.
+> > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > ---
+> > > >  include/uapi/linux/if_tun.h | 14 --------------
+> > > >  drivers/net/tun.c           | 14 ++++++++++++++
+> > > >  2 files changed, 14 insertions(+), 14 deletions(-)
+> > > > 
+> > > > diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
+> > > > index e9502dd..b82c276 100644
+> > > > --- a/include/uapi/linux/if_tun.h
+> > > > +++ b/include/uapi/linux/if_tun.h
+> > > > @@ -23,20 +23,6 @@
+> > > >  /* Read queue size */
+> > > >  #define TUN_READQ_SIZE	500
+> > > >  
+> > > > -/* TUN device flags */
+> > > > -#define TUN_TUN_DEV 	0x0001	
+> > > > -#define TUN_TAP_DEV	0x0002
+> > > > -#define TUN_TYPE_MASK   0x000f
+> > > > -
+> > > > -#define TUN_FASYNC	0x0010
+> > > > -#define TUN_NOCHECKSUM	0x0020
+> > > > -#define TUN_NO_PI	0x0040
+> > > > -/* This flag has no real effect */
+> > > > -#define TUN_ONE_QUEUE	0x0080
+> > > > -#define TUN_PERSIST 	0x0100	
+> > > > -#define TUN_VNET_HDR 	0x0200
+> > > > -#define TUN_TAP_MQ      0x0400
+> > > > -
+> > > >  /* Ioctl defines */
+> > > >  #define TUNSETNOCSUM  _IOW('T', 200, int) 
+> > > >  #define TUNSETDEBUG   _IOW('T', 201, int) 
+> > > > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> > > > index 2e18ddd..81735f5 100644
+> > > > --- a/drivers/net/tun.c
+> > > > +++ b/drivers/net/tun.c
+> > > > @@ -103,6 +103,20 @@ do {								\
+> > > >  } while (0)
+> > > >  #endif
+> > > >  
+> > > > +/* TUN device flags */
+> > > > +#define TUN_TUN_DEV 	0x0001
+> > > > +#define TUN_TAP_DEV	0x0002
+> > > > +#define TUN_TYPE_MASK   0x000f
+> > > > +
+> > > > +#define TUN_FASYNC	0x0010
+> > > > +#define TUN_NOCHECKSUM	0x0020
+> > > > +#define TUN_NO_PI	0x0040
+> > > > +/* This flag has no real effect */
+> > > > +#define TUN_ONE_QUEUE	0x0080
+> > > > +#define TUN_PERSIST 	0x0100
+> > > > +#define TUN_VNET_HDR 	0x0200
+> > > > +#define TUN_TAP_MQ      0x0400
+> > > > +
+> > > >  #define GOODCOPY_LEN 128
+> > > >  
+> > > >  #define FLT_EXACT_COUNT 8
+> > > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Here's the commits that are in this branch and not in ftrace/core:
 
-+ 1293ffff tracing: Create seq_buf layer in trace_seq
-+ b5e206f2 tracing: Convert seq_buf_path() to be like seq_path()
-+ 79033e01 tracing: Convert seq_buf fields to be like seq_file fields
-+ f1698325 tracing: Add a seq_buf_clear() helper and clear len and readpos in init
-+ 2b644c7f seq_buf: Create seq_buf_used() to find out how much was written
-+ a5c4b79c tracing: Clean up tracing_fill_pipe_page()
-+ 359ba4a9 tracing: Use trace_seq_used() and seq_buf_used() instead of len
-+ 3ae8769e tracing: Add paranoid size check in trace_printk_seq()
-+ e1fb15f1 seq_buf: Add seq_buf_can_fit() helper function
-+ 02f09612 tracing: Have seq_buf use full buffer
-+ d9c7f4b1 tracing: Add seq_buf_get_buf() and seq_buf_commit() helper functions
-+ 678a330a seq-buf: Make seq_buf_bprintf() conditional on CONFIG_BINARY_PRINTF
-+ a3608c5d seq_buf: Move the seq_buf code to lib/
-+ af8f0ef4 printk: Add per_cpu printk func to allow printk to be diverted
-+ a066719f x86/nmi: Perform a safe NMI stack trace on all CPUs
-
-
--- Steve
