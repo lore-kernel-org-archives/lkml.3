@@ -1,77 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818AbaKSDse (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 22:48:34 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:18355 "EHLO
+	id S1754773AbaKSDsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 22:48:33 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:57586 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754168AbaKSDsb (ORCPT
+	by vger.kernel.org with ESMTP id S1754167AbaKSDsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 22:48:31 -0500
-Message-Id: <20141119033331.689278545@goodmis.org>
+Message-Id: <20141119034829.355440340@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Tue, 18 Nov 2014 22:33:31 -0500
+Date: Tue, 18 Nov 2014 22:33:32 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
         williams@redhat.com,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 0/2] ftrace: Fix stack tracing issues
-X-RR-Connecting-IP: 107.14.168.118:25
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        <x86@kernel.org>
+Subject: [PATCH 1/2] ftrace/x86: Add frames pointers to trampoline as necessary
+References: <20141119033331.689278545@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0001-ftrace-x86-Add-frames-pointers-to-trampoline-as-nece.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I ran my ftrace tests on a PREEMPT_RT kernel and one of the tests failed.
-It triggered a race that was in mainline and was fixed by another patch.
-The bug was with the traceoff function trigger.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-I stated testing the other triggers and discovered two other bugs.
-One was caused by my latest changes, but the other one has been in
-mainline for some time. It's been there since 3.16, and I haven't
-tested it further. It's not that big of a bug so I'm not labeling
-it with stable.
+When CONFIG_FRAME_POINTERS are enabled, it is required that the
+ftrace_caller and ftrace_regs_caller trampolines set up frame pointers
+otherwise a stack trace from a function call wont print the functions
+that called the trampoline. This is due to a check in
+__save_stack_address():
 
-The bug that's been there happens when CONFIG_FRAME_POINTERS is set.
-The ftrace trampoline doesn't set up a frame pointer, and the stack
-trace code will miss the called function. That is if you do:
+ #ifdef CONFIG_FRAME_POINTER
+	if (!reliable)
+		return;
+ #endif
 
- echo __kmalloc:stacktrace > set_ftrace_filter
+The "reliable" variable is only set if the function address is equal to
+contents of the address before the address the frame pointer register
+points to. If the frame pointer is not set up for the ftrace caller
+then this will fail the reliable test. It will miss the function that
+called the trampoline. Worse yet, if fentry is used (gcc 4.6 and
+beyond), it will also miss the parent, as the fentry is called before
+the stack frame is set up. That means the bp frame pointer points
+to the stack of just before the parent function was called.
 
-It will not show __kmalloc in the trace. This isn't that bad, but if
-fentry is used (compiled with gcc 4.6 and newer on x86), then not only
-is __kmalloc missed, but also the function that called __kmalloc.
-This is a bit more serious, as that is useful information. The reason
-for the difference with fentry, is that the fentry is called before
-the stack frame is set up, so the missing bp frame pointer goes back
-pass the parent.
-
-The second bug is with the new code and dynamic ftrace trampolines.
-There's a check in the stack trace recording to see if the address
-on the stack is kernel code or not. This checks core kernel text as
-well as module address. But it doesn't check if it is a dynamically
-allocated ftrace trampoline. This is much worse than the other bug
-because if FRAME_POINTERS is set, the pointer to the trampoline is
-skipped and the bp frame pointer is never updated. That means, no
-functions will be traced. Makes the stack trace from function tracing
-rather pointless. Luckily, that code is not in mainline yet and this
-fix will make sure mainline doesn't get the bug (except for bisects).
-
-Enjoy,
-
--- Steve
-
-
-Steven Rostedt (Red Hat) (2):
-      ftrace/x86: Add frames pointers to trampoline as necessary
-      ftrace/x86/extable: Add is_ftrace_trampoline() function
-
-----
- arch/x86/kernel/ftrace.c    |  9 +++++++--
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
  arch/x86/kernel/mcount_64.S | 41 +++++++++++++++++++++++++++++++++++++++++
- include/linux/ftrace.h      |  8 ++++++++
- kernel/extable.c            |  3 +++
- kernel/trace/ftrace.c       | 26 ++++++++++++++++++++++++++
- 5 files changed, 85 insertions(+), 2 deletions(-)
+ 1 file changed, 41 insertions(+)
+
+diff --git a/arch/x86/kernel/mcount_64.S b/arch/x86/kernel/mcount_64.S
+index 42f0cdd20baf..35a793fa4bba 100644
+--- a/arch/x86/kernel/mcount_64.S
++++ b/arch/x86/kernel/mcount_64.S
+@@ -47,14 +47,51 @@ GLOBAL(\trace_label)
+ #endif
+ .endm
+ 
++#ifdef CONFIG_FRAME_POINTER
++/*
++ * Stack traces will stop at the ftrace trampoline if the frame pointer
++ * is not set up properly. If fentry is used, we need to save a frame
++ * pointer for the parent as well as the function traced, because the
++ * fentry is called before the stack frame is set up, where as mcount
++ * is called afterward.
++ */
++.macro create_frame parent rip
++#ifdef CC_USING_FENTRY
++	pushq \parent
++	pushq %rbp
++	movq %rsp, %rbp
++#endif
++	pushq \rip
++	pushq %rbp
++	movq %rsp, %rbp
++.endm
++
++.macro restore_frame
++#ifdef CC_USING_FENTRY
++	addq $16, %rsp
++#endif
++	popq %rbp
++	addq $8, %rsp
++.endm
++#else
++.macro create_frame parent rip
++.endm
++.macro restore_frame
++.endm
++#endif /* CONFIG_FRAME_POINTER */
++
+ ENTRY(ftrace_caller)
+ 	ftrace_caller_setup ftrace_caller_op_ptr
+ 	/* regs go into 4th parameter (but make it NULL) */
+ 	movq $0, %rcx
+ 
++	create_frame %rsi, %rdi
++
+ GLOBAL(ftrace_call)
+ 	call ftrace_stub
+ 
++	restore_frame
++
+ 	MCOUNT_RESTORE_FRAME
+ 
+ 	/*
+@@ -105,9 +142,13 @@ ENTRY(ftrace_regs_caller)
+ 	/* regs go into 4th parameter */
+ 	leaq (%rsp), %rcx
+ 
++	create_frame %rsi, %rdi
++
+ GLOBAL(ftrace_regs_call)
+ 	call ftrace_stub
+ 
++	restore_frame
++
+ 	/* Copy flags back to SS, to restore them */
+ 	movq EFLAGS(%rsp), %rax
+ 	movq %rax, SS(%rsp)
+-- 
+2.1.1
+
+
