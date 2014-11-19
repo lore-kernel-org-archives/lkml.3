@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932571AbaKSWXt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:23:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
+	id S932406AbaKSWXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:23:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55903 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932487AbaKSUyJ (ORCPT
+	with ESMTP id S932502AbaKSUyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:54:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.17 069/141] drm/radeon: add locking around atombios scratch space usage
-Date: Wed, 19 Nov 2014 12:51:32 -0800
-Message-Id: <20141119205152.926982187@linuxfoundation.org>
+        Marc Carino <marc.ceeeee@gmail.com>,
+        Julien Grall <julien.grall@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.17 071/141] ARM: 8191/1: decompressor: ensure I-side picks up relocated code
+Date: Wed, 19 Nov 2014 12:51:34 -0800
+Message-Id: <20141119205152.993671622@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,137 +31,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 1c9498425453bb65ef339a57705c5ef59fe1541d upstream.
+commit 238962ac71910d6c20162ea5230685fead1836a4 upstream.
 
-While developing MST support I noticed I often got the wrong data
-back from a transaction, in a racy fashion. I noticed the scratch
-space wasn't locked against concurrent users.
+To speed up decompression, the decompressor sets up a flat, cacheable
+mapping of memory. However, when there is insufficient space to hold
+the page tables for this mapping, we don't bother to enable the caches
+and subsequently skip all the cache maintenance hooks.
 
-Based on a patch by Alex, but I've made it a bit more obvious when
-things are locked.
+Skipping the cache maintenance before jumping to the relocated code
+allows the processor to predict the branch and populate the I-cache
+with stale data before the relocation loop has completed (since a
+bootloader may have SCTLR.I set, which permits normal, cacheable
+instruction fetches regardless of SCTLR.M).
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This patch moves the cache maintenance check into the maintenance
+routines themselves, allowing the v6/v7 versions to invalidate the
+I-cache regardless of the MMU state.
+
+Reported-by: Marc Carino <marc.ceeeee@gmail.com>
+Tested-by: Julien Grall <julien.grall@linaro.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atom.c          |   11 ++++++++++-
- drivers/gpu/drm/radeon/atom.h          |    2 ++
- drivers/gpu/drm/radeon/atombios_dp.c   |    4 +++-
- drivers/gpu/drm/radeon/atombios_i2c.c  |    4 +++-
- drivers/gpu/drm/radeon/radeon_device.c |    1 +
- 5 files changed, 19 insertions(+), 3 deletions(-)
+ arch/arm/boot/compressed/head.S |   20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atom.c
-+++ b/drivers/gpu/drm/radeon/atom.c
-@@ -1217,7 +1217,7 @@ free:
- 	return ret;
- }
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -397,8 +397,7 @@ dtb_check_done:
+ 		add	sp, sp, r6
+ #endif
  
--int atom_execute_table(struct atom_context *ctx, int index, uint32_t * params)
-+int atom_execute_table_scratch_unlocked(struct atom_context *ctx, int index, uint32_t * params)
- {
- 	int r;
+-		tst	r4, #1
+-		bleq	cache_clean_flush
++		bl	cache_clean_flush
  
-@@ -1238,6 +1238,15 @@ int atom_execute_table(struct atom_conte
- 	return r;
- }
+ 		adr	r0, BSYM(restart)
+ 		add	r0, r0, r6
+@@ -1047,6 +1046,8 @@ cache_clean_flush:
+ 		b	call_cache_fn
  
-+int atom_execute_table(struct atom_context *ctx, int index, uint32_t * params)
-+{
-+	int r;
-+	mutex_lock(&ctx->scratch_mutex);
-+	r = atom_execute_table_scratch_unlocked(ctx, index, params);
-+	mutex_unlock(&ctx->scratch_mutex);
-+	return r;
-+}
-+
- static int atom_iio_len[] = { 1, 2, 3, 3, 3, 3, 4, 4, 4, 3 };
+ __armv4_mpu_cache_flush:
++		tst	r4, #1
++		movne	pc, lr
+ 		mov	r2, #1
+ 		mov	r3, #0
+ 		mcr	p15, 0, ip, c7, c6, 0	@ invalidate D cache
+@@ -1064,6 +1065,8 @@ __armv4_mpu_cache_flush:
+ 		mov	pc, lr
+ 		
+ __fa526_cache_flush:
++		tst	r4, #1
++		movne	pc, lr
+ 		mov	r1, #0
+ 		mcr	p15, 0, r1, c7, c14, 0	@ clean and invalidate D cache
+ 		mcr	p15, 0, r1, c7, c5, 0	@ flush I cache
+@@ -1072,13 +1075,16 @@ __fa526_cache_flush:
  
- static void atom_index_iio(struct atom_context *ctx, int base)
---- a/drivers/gpu/drm/radeon/atom.h
-+++ b/drivers/gpu/drm/radeon/atom.h
-@@ -125,6 +125,7 @@ struct card_info {
- struct atom_context {
- 	struct card_info *card;
- 	struct mutex mutex;
-+	struct mutex scratch_mutex;
- 	void *bios;
- 	uint32_t cmd_table, data_table;
- 	uint16_t *iio;
-@@ -145,6 +146,7 @@ extern int atom_debug;
+ __armv6_mmu_cache_flush:
+ 		mov	r1, #0
+-		mcr	p15, 0, r1, c7, c14, 0	@ clean+invalidate D
++		tst	r4, #1
++		mcreq	p15, 0, r1, c7, c14, 0	@ clean+invalidate D
+ 		mcr	p15, 0, r1, c7, c5, 0	@ invalidate I+BTB
+-		mcr	p15, 0, r1, c7, c15, 0	@ clean+invalidate unified
++		mcreq	p15, 0, r1, c7, c15, 0	@ clean+invalidate unified
+ 		mcr	p15, 0, r1, c7, c10, 4	@ drain WB
+ 		mov	pc, lr
  
- struct atom_context *atom_parse(struct card_info *, void *);
- int atom_execute_table(struct atom_context *, int, uint32_t *);
-+int atom_execute_table_scratch_unlocked(struct atom_context *, int, uint32_t *);
- int atom_asic_init(struct atom_context *);
- void atom_destroy(struct atom_context *);
- bool atom_parse_data_header(struct atom_context *ctx, int index, uint16_t *size,
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -100,6 +100,7 @@ static int radeon_process_aux_ch(struct
- 	memset(&args, 0, sizeof(args));
+ __armv7_mmu_cache_flush:
++		tst	r4, #1
++		bne	iflush
+ 		mrc	p15, 0, r10, c0, c1, 5	@ read ID_MMFR1
+ 		tst	r10, #0xf << 16		@ hierarchical cache (ARMv7)
+ 		mov	r10, #0
+@@ -1139,6 +1145,8 @@ iflush:
+ 		mov	pc, lr
  
- 	mutex_lock(&chan->mutex);
-+	mutex_lock(&rdev->mode_info.atom_context->scratch_mutex);
+ __armv5tej_mmu_cache_flush:
++		tst	r4, #1
++		movne	pc, lr
+ 1:		mrc	p15, 0, r15, c7, c14, 3	@ test,clean,invalidate D cache
+ 		bne	1b
+ 		mcr	p15, 0, r0, c7, c5, 0	@ flush I cache
+@@ -1146,6 +1154,8 @@ __armv5tej_mmu_cache_flush:
+ 		mov	pc, lr
  
- 	base = (unsigned char *)(rdev->mode_info.atom_context->scratch + 1);
+ __armv4_mmu_cache_flush:
++		tst	r4, #1
++		movne	pc, lr
+ 		mov	r2, #64*1024		@ default: 32K dcache size (*2)
+ 		mov	r11, #32		@ default: 32 byte line size
+ 		mrc	p15, 0, r3, c0, c0, 1	@ read cache type
+@@ -1179,6 +1189,8 @@ no_cache_id:
  
-@@ -113,7 +114,7 @@ static int radeon_process_aux_ch(struct
- 	if (ASIC_IS_DCE4(rdev))
- 		args.v2.ucHPD_ID = chan->rec.hpd;
- 
--	atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
-+	atom_execute_table_scratch_unlocked(rdev->mode_info.atom_context, index, (uint32_t *)&args);
- 
- 	*ack = args.v1.ucReplyStatus;
- 
-@@ -147,6 +148,7 @@ static int radeon_process_aux_ch(struct
- 
- 	r = recv_bytes;
- done:
-+	mutex_unlock(&rdev->mode_info.atom_context->scratch_mutex);
- 	mutex_unlock(&chan->mutex);
- 
- 	return r;
---- a/drivers/gpu/drm/radeon/atombios_i2c.c
-+++ b/drivers/gpu/drm/radeon/atombios_i2c.c
-@@ -48,6 +48,7 @@ static int radeon_process_i2c_ch(struct
- 	memset(&args, 0, sizeof(args));
- 
- 	mutex_lock(&chan->mutex);
-+	mutex_lock(&rdev->mode_info.atom_context->scratch_mutex);
- 
- 	base = (unsigned char *)rdev->mode_info.atom_context->scratch;
- 
-@@ -82,7 +83,7 @@ static int radeon_process_i2c_ch(struct
- 	args.ucSlaveAddr = slave_addr << 1;
- 	args.ucLineNumber = chan->rec.i2c_id;
- 
--	atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
-+	atom_execute_table_scratch_unlocked(rdev->mode_info.atom_context, index, (uint32_t *)&args);
- 
- 	/* error */
- 	if (args.ucStatus != HW_ASSISTED_I2C_STATUS_SUCCESS) {
-@@ -95,6 +96,7 @@ static int radeon_process_i2c_ch(struct
- 		radeon_atom_copy_swap(buf, base, num, false);
- 
- done:
-+	mutex_unlock(&rdev->mode_info.atom_context->scratch_mutex);
- 	mutex_unlock(&chan->mutex);
- 
- 	return r;
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -952,6 +952,7 @@ int radeon_atombios_init(struct radeon_d
- 	}
- 
- 	mutex_init(&rdev->mode_info.atom_context->mutex);
-+	mutex_init(&rdev->mode_info.atom_context->scratch_mutex);
- 	radeon_atom_initialize_bios_scratch_regs(rdev->ddev);
- 	atom_allocate_fb_scratch(rdev->mode_info.atom_context);
- 	return 0;
+ __armv3_mmu_cache_flush:
+ __armv3_mpu_cache_flush:
++		tst	r4, #1
++		movne	pc, lr
+ 		mov	r1, #0
+ 		mcr	p15, 0, r1, c7, c0, 0	@ invalidate whole cache v3
+ 		mov	pc, lr
 
 
