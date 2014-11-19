@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979AbaKSL2u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 06:28:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34957 "EHLO mx1.redhat.com"
+	id S1755959AbaKSL2s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 06:28:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34958 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754004AbaKSL2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754007AbaKSL2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 06:28:22 -0500
 From: Gerd Hoffmann <kraxel@redhat.com>
 To: dri-devel@lists.freedesktop.org
 Cc: airlied@redhat.com, Gerd Hoffmann <kraxel@redhat.com>,
         David Airlie <airlied@linux.ie>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 4/4] bochs: add page_flip
-Date: Wed, 19 Nov 2014 12:28:12 +0100
-Message-Id: <1416396492-23214-5-git-send-email-kraxel@redhat.com>
+Subject: [PATCH 3/4] bochs: fix bochsdrmfb mmap
+Date: Wed, 19 Nov 2014 12:28:11 +0100
+Message-Id: <1416396492-23214-4-git-send-email-kraxel@redhat.com>
 In-Reply-To: <1416396492-23214-1-git-send-email-kraxel@redhat.com>
 References: <1416396492-23214-1-git-send-email-kraxel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement crtc page_flip callback for bochsdrm.  The qemu stdvga has no
-vblank signaling, so we have to fake it.  We do so by instantly calling
-drm_send_vblank_event.  Tested with kmscon.
+Remove the mapping offset from the bo backing the fbdev framebuffer.
+Wire up fbdev mmap function to map the backing bo using ttm_fbdev_mmap.
+With that patch in place mmap(/dev/fb0) works as expected.
 
 Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
 ---
- drivers/gpu/drm/bochs/bochs_kms.c | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ drivers/gpu/drm/bochs/bochs_fbdev.c | 18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/bochs/bochs_kms.c b/drivers/gpu/drm/bochs/bochs_kms.c
-index 6b7efcf3..ee2013b 100644
---- a/drivers/gpu/drm/bochs/bochs_kms.c
-+++ b/drivers/gpu/drm/bochs/bochs_kms.c
-@@ -108,11 +108,32 @@ static void bochs_crtc_gamma_set(struct drm_crtc *crtc, u16 *red, u16 *green,
- {
- }
+diff --git a/drivers/gpu/drm/bochs/bochs_fbdev.c b/drivers/gpu/drm/bochs/bochs_fbdev.c
+index fe95d31..61dbf09 100644
+--- a/drivers/gpu/drm/bochs/bochs_fbdev.c
++++ b/drivers/gpu/drm/bochs/bochs_fbdev.c
+@@ -9,6 +9,17 @@
  
-+static int bochs_crtc_page_flip(struct drm_crtc *crtc,
-+				struct drm_framebuffer *fb,
-+				struct drm_pending_vblank_event *event,
-+				uint32_t page_flip_flags)
+ /* ---------------------------------------------------------------------- */
+ 
++static int bochsfb_mmap(struct fb_info *info,
++			struct vm_area_struct *vma)
 +{
++	struct drm_fb_helper *fb_helper = info->par;
 +	struct bochs_device *bochs =
-+		container_of(crtc, struct bochs_device, crtc);
-+	struct drm_framebuffer *old_fb = crtc->primary->fb;
-+	unsigned long irqflags;
++		container_of(fb_helper, struct bochs_device, fb.helper);
++	struct bochs_bo *bo = gem_to_bochs_bo(bochs->fb.gfb.obj);
 +
-+	crtc->primary->fb = fb;
-+	bochs_crtc_mode_set_base(crtc, 0, 0, old_fb);
-+	if (event) {
-+		spin_lock_irqsave(&bochs->dev->event_lock, irqflags);
-+		drm_send_vblank_event(bochs->dev, -1, event);
-+		spin_unlock_irqrestore(&bochs->dev->event_lock, irqflags);
-+	}
-+	return 0;
++	return ttm_fbdev_mmap(vma, &bo->bo);
 +}
 +
- /* These provide the minimum set of functions required to handle a CRTC */
- static const struct drm_crtc_funcs bochs_crtc_funcs = {
- 	.gamma_set = bochs_crtc_gamma_set,
- 	.set_config = drm_crtc_helper_set_config,
- 	.destroy = drm_crtc_cleanup,
-+	.page_flip = bochs_crtc_page_flip,
+ static struct fb_ops bochsfb_ops = {
+ 	.owner = THIS_MODULE,
+ 	.fb_check_var = drm_fb_helper_check_var,
+@@ -19,6 +30,7 @@ static struct fb_ops bochsfb_ops = {
+ 	.fb_pan_display = drm_fb_helper_pan_display,
+ 	.fb_blank = drm_fb_helper_blank,
+ 	.fb_setcmap = drm_fb_helper_setcmap,
++	.fb_mmap = bochsfb_mmap,
  };
  
- static const struct drm_crtc_helper_funcs bochs_helper_funcs = {
+ static int bochsfb_create_object(struct bochs_device *bochs,
+@@ -123,11 +135,9 @@ static int bochsfb_create(struct drm_fb_helper *helper,
+ 	info->screen_base = bo->kmap.virtual;
+ 	info->screen_size = size;
+ 
+-#if 0
+-	/* FIXME: get this right for mmap(/dev/fb0) */
+-	info->fix.smem_start = bochs_bo_mmap_offset(bo);
++	drm_vma_offset_remove(&bo->bo.bdev->vma_manager, &bo->bo.vma_node);
++	info->fix.smem_start = 0;
+ 	info->fix.smem_len = size;
+-#endif
+ 
+ 	ret = fb_alloc_cmap(&info->cmap, 256, 0);
+ 	if (ret) {
 -- 
 1.8.3.1
 
