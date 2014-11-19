@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809AbaKSVhi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:37:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57280 "EHLO
+	id S1757036AbaKSVhx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:37:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57283 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933274AbaKSVOg (ORCPT
+	with ESMTP id S933270AbaKSVOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:14:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.10 15/70] ahci: Add Device IDs for Intel Sunrise Point PCH
-Date: Wed, 19 Nov 2014 12:52:06 -0800
-Message-Id: <20141119205211.420620254@linuxfoundation.org>
+        Miklos Szeredi <mszeredi@suse.cz>, Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.10 14/70] audit: keep inode pinned
+Date: Wed, 19 Nov 2014 12:52:05 -0800
+Message-Id: <20141119205211.388444721@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -28,33 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 690000b930456a98663567d35dd5c54b688d1e3f upstream.
+commit 799b601451b21ebe7af0e6e8f6e2ccd4683c5064 upstream.
 
-This patch adds the AHCI-mode SATA Device IDs for the Intel Sunrise Point PCH.
+Audit rules disappear when an inode they watch is evicted from the cache.
+This is likely not what we want.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+The guilty commit is "fsnotify: allow marks to not pin inodes in core",
+which didn't take into account that audit_tree adds watches with a zero
+mask.
+
+Adding any mask should fix this.
+
+Fixes: 90b1e7a57880 ("fsnotify: allow marks to not pin inodes in core")
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ kernel/audit_tree.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -312,6 +312,11 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H AHCI */
-+	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H RAID */
-+	{ PCI_VDEVICE(INTEL, 0xa105), board_ahci }, /* Sunrise Point-H RAID */
-+	{ PCI_VDEVICE(INTEL, 0xa107), board_ahci }, /* Sunrise Point-H RAID */
-+	{ PCI_VDEVICE(INTEL, 0xa10f), board_ahci }, /* Sunrise Point-H RAID */
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -154,6 +154,7 @@ static struct audit_chunk *alloc_chunk(i
+ 		chunk->owners[i].index = i;
+ 	}
+ 	fsnotify_init_mark(&chunk->mark, audit_tree_destroy_watch);
++	chunk->mark.mask = FS_IN_IGNORED;
+ 	return chunk;
+ }
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
