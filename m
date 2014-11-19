@@ -1,93 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217AbaKSQZo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:25:44 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:52227 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829AbaKSQZn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:25:43 -0500
+	id S1756229AbaKSQ0d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:26:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37951 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752950AbaKSQ0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:26:32 -0500
+Message-ID: <546CC49B.2070109@zytor.com>
+Date: Wed, 19 Nov 2014 08:26:03 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141119160747.GH4042@n2100.arm.linux.org.uk>
-References: <20141118172146.3784.81151.stgit@buzz>
-	<20141118173413.GB4042@n2100.arm.linux.org.uk>
-	<546B8C64.3010904@samsung.com>
-	<2041617.Kxhx5O4MMr@wuerfel>
-	<CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
-	<CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
-	<CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com>
-	<20141119160747.GH4042@n2100.arm.linux.org.uk>
-Date: Wed, 19 Nov 2014 17:25:41 +0100
-Message-ID: <CAKv+Gu-kvmkhrptmaN0miM3c0K3ZOh4maTFXL=NpYTMi9Q83kA@mail.gmail.com>
-Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Greg Thelen <gthelen@google.com>, Junjie Mao <eternal.n08@gmail.com>
+CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Josh Triplett <josh@joshtriplett.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Vivek Goyal <vgoyal@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, stable@vger.kernel.org
+Subject: Re: [PATCH v3] x86, kaslr: Prevent .bss from overlaping initrd
+References: <1414762838-13067-1-git-send-email-eternal.n08@gmail.com> <xr9361ed9rrj.fsf@gthelen.mtv.corp.google.com> <xr934mtx9rgx.fsf@gthelen.mtv.corp.google.com>
+In-Reply-To: <xr934mtx9rgx.fsf@gthelen.mtv.corp.google.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 November 2014 17:07, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Nov 19, 2014 at 05:02:40PM +0100, Ard Biesheuvel wrote:
->> On 19 November 2014 16:52, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->> > Do you mean ldr pc, =symbol ?
->> >
->> > In this case I get this error:
->> >
->> > /tmp/ccAHtONU.s: Assembler messages:
->> > /tmp/ccAHtONU.s:220: Error: invalid literal constant: pool needs to be closer
->> >
->> > Probably constant pool doesn't work well in inline assembly.
->> >
->> >
->> > Something like this seems work:
->> >
->> > add     lr, pc, #4
->> > ldr       pc, [pc, #-4]
->> > .long symbol
->> >
+On 11/17/2014 06:23 PM, Greg Thelen wrote:
+> 
+> On Mon, Nov 17 2014, Greg Thelen wrote:
+> [...]
+>> Given that bss and brk are nobits (i.e. only ALLOC) sections, does
+>> file_offset make sense as a load address.  This fails with gold:
 >>
->> You can add a '.ltorg' instruction which tells the assembler to dump
->> the literal pool, but you still need to jump over it, i.e.,
->>
->> adr lr, 0f
->> ldr pc, =symbol
->> .ltorg
->> 0:
->
-> Which is not a good idea either, because the compiler needs to know how
-> far away its own manually generated literal pool is from the instructions
-> which reference it.  The .ltorg statement can end up emitting any number
-> of literals at that point, which makes it indeterminant how many words
-> are contained within the asm() statement.
->
 
-That applies to any inline asm statement in general: the compiler
-assumes that the expanded size will not interfere with its ability to
-emit literals after the function's return instruction.
-Sometimes it will put a literal pool in the middle of the function if
-it is very large, and I am not sure if an inline asm by itself would
-ever trigger that heuristic to kick in.
+It really doesn't.  We have that information elsewhere.
 
-But by the same logic, i.e., due to the fact that GCC manages its own
-literals, the literal pool at the assembly level is unlikely to be so
-large that you will actually hit this condition.
+	-hpa
 
-> Yes, it isn't desirable to waste an entire data cache line per indirect
-> call like the original quote above, but I don't see a practical
-> alternative.
->
 
-We could at least add some labels instead of doing explicit pc arithmetic, i.e.,
-
-adr lr, 1f
-ldr pc, 0f
-0: .long symbol
-1:
