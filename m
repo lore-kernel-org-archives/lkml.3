@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758386AbaKSWlK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:41:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55895 "EHLO
+	id S1758446AbaKSWll (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:41:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756622AbaKSUxu (ORCPT
+	with ESMTP id S1754183AbaKSUxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:53:50 -0500
+	Wed, 19 Nov 2014 15:53:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 013/141] net: sctp: fix memory leak in auth key management
-Date: Wed, 19 Nov 2014 12:50:36 -0800
-Message-Id: <20141119205151.112089978@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 011/141] net: ppp: Dont call bpf_prog_create() in ppp_lock
+Date: Wed, 19 Nov 2014 12:50:34 -0800
+Message-Id: <20141119205151.044852751@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -31,57 +28,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-[ Upstream commit 4184b2a79a7612a9272ce20d639934584a1f3786 ]
+[ Upstream commit 5748eb8f8e989a9da1ac7c96dc73d68cbdedf7df ]
 
-A very minimal and simple user space application allocating an SCTP
-socket, setting SCTP_AUTH_KEY setsockopt(2) on it and then closing
-the socket again will leak the memory containing the authentication
-key from user space:
+In ppp_ioctl(), bpf_prog_create() is called inside ppp_lock, which
+eventually calls vmalloc() and hits BUG_ON() in vmalloc.c.  This patch
+works around the problem by moving the allocation outside the lock.
 
-unreferenced object 0xffff8800837047c0 (size 16):
-  comm "a.out", pid 2789, jiffies 4296954322 (age 192.258s)
-  hex dump (first 16 bytes):
-    01 00 00 00 04 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff816d7e8e>] kmemleak_alloc+0x4e/0xb0
-    [<ffffffff811c88d8>] __kmalloc+0xe8/0x270
-    [<ffffffffa0870c23>] sctp_auth_create_key+0x23/0x50 [sctp]
-    [<ffffffffa08718b1>] sctp_auth_set_key+0xa1/0x140 [sctp]
-    [<ffffffffa086b383>] sctp_setsockopt+0xd03/0x1180 [sctp]
-    [<ffffffff815bfd94>] sock_common_setsockopt+0x14/0x20
-    [<ffffffff815beb61>] SyS_setsockopt+0x71/0xd0
-    [<ffffffff816e58a9>] system_call_fastpath+0x12/0x17
-    [<ffffffffffffffff>] 0xffffffffffffffff
+The bug was revealed by the recent change in net/core/filter.c, as it
+allocates via vmalloc() instead of kmalloc() now.
 
-This is bad because of two things, we can bring down a machine from
-user space when auth_enable=1, but also we would leave security sensitive
-keying material in memory without clearing it after use. The issue is
-that sctp_auth_create_key() already sets the refcount to 1, but after
-allocation sctp_auth_set_key() does an additional refcount on it, and
-thus leaving it around when we free the socket.
-
-Fixes: 65b07e5d0d0 ("[SCTP]: API updates to suport SCTP-AUTH extensions.")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-and-tested-by: Stefan Seyfried <stefan.seyfried@googlemail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/auth.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/net/ppp/ppp_generic.c |   40 ++++++++++++++++++++--------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
 
---- a/net/sctp/auth.c
-+++ b/net/sctp/auth.c
-@@ -862,8 +862,6 @@ int sctp_auth_set_key(struct sctp_endpoi
- 		list_add(&cur_key->key_list, sh_keys);
+--- a/drivers/net/ppp/ppp_generic.c
++++ b/drivers/net/ppp/ppp_generic.c
+@@ -755,23 +755,23 @@ static long ppp_ioctl(struct file *file,
  
- 	cur_key->key = key;
--	sctp_auth_key_hold(key);
--
- 	return 0;
- nomem:
- 	if (!replace)
+ 		err = get_filter(argp, &code);
+ 		if (err >= 0) {
++			struct bpf_prog *pass_filter = NULL;
+ 			struct sock_fprog_kern fprog = {
+ 				.len = err,
+ 				.filter = code,
+ 			};
+ 
+-			ppp_lock(ppp);
+-			if (ppp->pass_filter) {
+-				bpf_prog_destroy(ppp->pass_filter);
+-				ppp->pass_filter = NULL;
++			err = 0;
++			if (fprog.filter)
++				err = bpf_prog_create(&pass_filter, &fprog);
++			if (!err) {
++				ppp_lock(ppp);
++				if (ppp->pass_filter)
++					bpf_prog_destroy(ppp->pass_filter);
++				ppp->pass_filter = pass_filter;
++				ppp_unlock(ppp);
+ 			}
+-			if (fprog.filter != NULL)
+-				err = bpf_prog_create(&ppp->pass_filter,
+-						      &fprog);
+-			else
+-				err = 0;
+ 			kfree(code);
+-			ppp_unlock(ppp);
+ 		}
+ 		break;
+ 	}
+@@ -781,23 +781,23 @@ static long ppp_ioctl(struct file *file,
+ 
+ 		err = get_filter(argp, &code);
+ 		if (err >= 0) {
++			struct bpf_prog *active_filter = NULL;
+ 			struct sock_fprog_kern fprog = {
+ 				.len = err,
+ 				.filter = code,
+ 			};
+ 
+-			ppp_lock(ppp);
+-			if (ppp->active_filter) {
+-				bpf_prog_destroy(ppp->active_filter);
+-				ppp->active_filter = NULL;
++			err = 0;
++			if (fprog.filter)
++				err = bpf_prog_create(&active_filter, &fprog);
++			if (!err) {
++				ppp_lock(ppp);
++				if (ppp->active_filter)
++					bpf_prog_destroy(ppp->active_filter);
++				ppp->active_filter = active_filter;
++				ppp_unlock(ppp);
+ 			}
+-			if (fprog.filter != NULL)
+-				err = bpf_prog_create(&ppp->active_filter,
+-						      &fprog);
+-			else
+-				err = 0;
+ 			kfree(code);
+-			ppp_unlock(ppp);
+ 		}
+ 		break;
+ 	}
 
 
