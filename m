@@ -1,40 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536AbaKSCeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 21:34:50 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:65405 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754449AbaKSCes (ORCPT
+	id S1754609AbaKSCgD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 21:36:03 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:60005 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754105AbaKSCf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 21:34:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141118065603.22544.88816.stgit@preeti.in.ibm.com>
-References: <20141118065603.22544.88816.stgit@preeti.in.ibm.com>
-From: Joel Stanley <joel@jms.id.au>
-Date: Wed, 19 Nov 2014 13:04:27 +1030
-X-Google-Sender-Auth: dgxiUe8GKJpWZE8fl5R4hYBlwB4
-Message-ID: <CACPK8Xc7G6JgqPYUmGTx8O=a6jxMB0yf1weEraMBu8dcAJibuQ@mail.gmail.com>
-Subject: Re: [PATCH] cpuidle/powernv: Re-enable fastsleep at boot time
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Michael Ellerman <mpe@ellerman.id.au>, Michael Neuling <mikey@neuling.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        rjw@rjwysocki.net
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Nov 2014 21:35:59 -0500
+From: Peter Hung <hpeter@gmail.com>
+X-Google-Original-From: Peter Hung <hpeter+linux_kernel@gmail.com>
+To: gregkh@linuxfoundation.org, jslaby@suse.cz
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Hung <hpeter+linux_kernel@gmail.com>
+Subject: [PATCH] serial: fix io address assign method with Fintek PCI-to-UART Product
+Date: Wed, 19 Nov 2014 10:35:53 +0800
+Message-Id: <1416364553-29982-1-git-send-email-hpeter+linux_kernel@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Preeti,
+The original driver fixed the io address with 0xe000+idx*8, but real io address assigned from BIOS
+is dynamically from read PCI configure space 0x24, 0x20, 0x1c.
 
-On Tue, Nov 18, 2014 at 5:26 PM, Preeti U Murthy
-<preeti@linux.vnet.ibm.com> wrote:
-> Commit dcb18694 "Fix ipi on palmeto" disabled fastsleep at boot time.
+The Fintek F81504/F81508/F81512 maybe malfunction without this patch and malfunction surely when
+more the 1 PCI card.
 
-I couldn't find this commit in any tree; upstream, mpe's next, nor powerkvm.
+Signed-off-by: Peter Hung <hpeter+linux_kernel@gmail.com>
+---
+ drivers/tty/serial/8250/8250_pci.c | 63 ++++++++++++++++++++++++++++----------
+ 1 file changed, 47 insertions(+), 16 deletions(-)
 
-I remember testing this as a workaround for the palmetto, but I don't
-recall sending it upstream.
+diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
+index 0468e15..6dfa227 100644
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1551,28 +1551,51 @@ static int pci_fintek_setup(struct serial_private *priv,
+ {
+ 	struct pci_dev *pdev = priv->dev;
+ 	unsigned long base;
+-	unsigned long iobase;
++	unsigned long iobase = 0;
+ 	unsigned long ciobase = 0;
+ 	u8 config_base;
++	u32 bar_data[3];
+ 
+ 	/*
+-	 * We are supposed to be able to read these from the PCI config space,
+-	 * but the values there don't seem to match what we need to use, so
+-	 * just use these hard-coded values for now, as they are correct.
++	 * Find each UARTs offset in PCI configuraion space
+ 	 */
+ 	switch (idx) {
+-	case 0: iobase = 0xe000; config_base = 0x40; break;
+-	case 1: iobase = 0xe008; config_base = 0x48; break;
+-	case 2: iobase = 0xe010; config_base = 0x50; break;
+-	case 3: iobase = 0xe018; config_base = 0x58; break;
+-	case 4: iobase = 0xe020; config_base = 0x60; break;
+-	case 5: iobase = 0xe028; config_base = 0x68; break;
+-	case 6: iobase = 0xe030; config_base = 0x70; break;
+-	case 7: iobase = 0xe038; config_base = 0x78; break;
+-	case 8: iobase = 0xe040; config_base = 0x80; break;
+-	case 9: iobase = 0xe048; config_base = 0x88; break;
+-	case 10: iobase = 0xe050; config_base = 0x90; break;
+-	case 11: iobase = 0xe058; config_base = 0x98; break;
++	case 0:
++		config_base = 0x40;
++		break;
++	case 1:
++		config_base = 0x48;
++		break;
++	case 2:
++		config_base = 0x50;
++		break;
++	case 3:
++		config_base = 0x58;
++		break;
++	case 4:
++		config_base = 0x60;
++		break;
++	case 5:
++		config_base = 0x68;
++		break;
++	case 6:
++		config_base = 0x70;
++		break;
++	case 7:
++		config_base = 0x78;
++		break;
++	case 8:
++		config_base = 0x80;
++		break;
++	case 9:
++		config_base = 0x88;
++		break;
++	case 10:
++		config_base = 0x90;
++		break;
++	case 11:
++		config_base = 0x98;
++		break;
+ 	default:
+ 		/* Unknown number of ports, get out of here */
+ 		return -EINVAL;
+@@ -1583,6 +1606,14 @@ static int pci_fintek_setup(struct serial_private *priv,
+ 		ciobase = (int)(base + (0x8 * idx));
+ 	}
+ 
++	/* Get the io address dispatch from the BIOS */
++	pci_read_config_dword(pdev, 0x24, &bar_data[0]);
++	pci_read_config_dword(pdev, 0x20, &bar_data[1]);
++	pci_read_config_dword(pdev, 0x1c, &bar_data[2]);
++
++	/* Calculate Real IO Port */
++	iobase = (bar_data[idx/4] & 0xffffffe0) + (idx % 4) * 8;
++
+ 	dev_dbg(&pdev->dev, "%s: idx=%d iobase=0x%lx ciobase=0x%lx config_base=0x%2x\n",
+ 		__func__, idx, iobase, ciobase, config_base);
+ 
+-- 
+1.9.1
 
-Cheers,
-
-Joel
