@@ -1,85 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188AbaKSR2u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:28:50 -0500
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:50856 "EHLO
-	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755772AbaKSR2D (ORCPT
+	id S1756229AbaKSR3I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:29:08 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:44932 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755772AbaKSR3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:28:03 -0500
-From: David Drysdale <drysdale@google.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Oleg Nesterov <oleg@redhat.com>, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rich Felker <dalias@aerifal.cx>, Christoph Hellwig <hch@infradead.org>,
-        x86@kernel.org, linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
-        sparclinux@vger.kernel.org, David Drysdale <drysdale@google.com>
-Subject: [PATCHv9 4/5] sparc: Hook up execveat system call.
-Date: Wed, 19 Nov 2014 17:27:51 +0000
-Message-Id: <1416418072-18639-5-git-send-email-drysdale@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1416418072-18639-1-git-send-email-drysdale@google.com>
-References: <1416418072-18639-1-git-send-email-drysdale@google.com>
+	Wed, 19 Nov 2014 12:29:04 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Cc: namit@cs.technion.ac.il
+Subject: [PATCH] KVM: emulator: remove code duplication in register_address{,_increment}
+Date: Wed, 19 Nov 2014 18:28:55 +0100
+Message-Id: <1416418135-11110-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Drysdale <drysdale@google.com>
-Acked-by: David S. Miller <davem@davemloft.net>
----
- arch/sparc/include/uapi/asm/unistd.h | 3 ++-
- arch/sparc/kernel/systbls_32.S       | 1 +
- arch/sparc/kernel/systbls_64.S       | 2 ++
- 3 files changed, 5 insertions(+), 1 deletion(-)
+register_address has been a duplicate of address_mask ever since the
+ancestor of __linearize was born in 90de84f50b42 (KVM: x86 emulator:
+preserve an operand's segment identity, 2010-11-17).
 
-diff --git a/arch/sparc/include/uapi/asm/unistd.h b/arch/sparc/include/uapi/asm/unistd.h
-index 46d83842eddc..6f35f4df17f2 100644
---- a/arch/sparc/include/uapi/asm/unistd.h
-+++ b/arch/sparc/include/uapi/asm/unistd.h
-@@ -415,8 +415,9 @@
- #define __NR_getrandom		347
- #define __NR_memfd_create	348
- #define __NR_bpf		349
-+#define __NR_execveat		350
+However, we can put it to a better use by including the call to reg_read
+in register_address.  Similarly, the call to reg_rmw can be moved to
+register_address_increment.
+
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ arch/x86/kvm/emulate.c | 23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 19a59f3f702c..43a5b432d06f 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -488,9 +488,9 @@ address_mask(struct x86_emulate_ctxt *ctxt, unsigned long reg)
+ }
  
--#define NR_syscalls		350
-+#define NR_syscalls		351
+ static inline unsigned long
+-register_address(struct x86_emulate_ctxt *ctxt, unsigned long reg)
++register_address(struct x86_emulate_ctxt *ctxt, int reg)
+ {
+-	return address_mask(ctxt, reg);
++	return address_mask(ctxt, reg_read(ctxt, reg));
+ }
  
- /* Bitmask values returned from kern_features system call.  */
- #define KERN_FEATURE_MIXED_MODE_STACK	0x00000001
-diff --git a/arch/sparc/kernel/systbls_32.S b/arch/sparc/kernel/systbls_32.S
-index ad0cdf497b78..e31a9056a303 100644
---- a/arch/sparc/kernel/systbls_32.S
-+++ b/arch/sparc/kernel/systbls_32.S
-@@ -87,3 +87,4 @@ sys_call_table:
- /*335*/	.long sys_syncfs, sys_sendmmsg, sys_setns, sys_process_vm_readv, sys_process_vm_writev
- /*340*/	.long sys_ni_syscall, sys_kcmp, sys_finit_module, sys_sched_setattr, sys_sched_getattr
- /*345*/	.long sys_renameat2, sys_seccomp, sys_getrandom, sys_memfd_create, sys_bpf
-+/*350*/	.long sys_execveat
-diff --git a/arch/sparc/kernel/systbls_64.S b/arch/sparc/kernel/systbls_64.S
-index 580cde9370c9..15069cb35dac 100644
---- a/arch/sparc/kernel/systbls_64.S
-+++ b/arch/sparc/kernel/systbls_64.S
-@@ -88,6 +88,7 @@ sys_call_table32:
- 	.word sys_syncfs, compat_sys_sendmmsg, sys_setns, compat_sys_process_vm_readv, compat_sys_process_vm_writev
- /*340*/	.word sys_kern_features, sys_kcmp, sys_finit_module, sys_sched_setattr, sys_sched_getattr
- 	.word sys32_renameat2, sys_seccomp, sys_getrandom, sys_memfd_create, sys_bpf
-+/*350*/	.word sys_execveat
+ static void masked_increment(ulong *reg, ulong mask, int inc)
+@@ -499,7 +499,7 @@ static void masked_increment(ulong *reg, ulong mask, int inc)
+ }
  
- #endif /* CONFIG_COMPAT */
+ static inline void
+-register_address_increment(struct x86_emulate_ctxt *ctxt, unsigned long *reg, int inc)
++register_address_increment(struct x86_emulate_ctxt *ctxt, int reg, int inc)
+ {
+ 	ulong mask;
  
-@@ -167,3 +168,4 @@ sys_call_table:
- 	.word sys_syncfs, sys_sendmmsg, sys_setns, sys_process_vm_readv, sys_process_vm_writev
- /*340*/	.word sys_kern_features, sys_kcmp, sys_finit_module, sys_sched_setattr, sys_sched_getattr
- 	.word sys_renameat2, sys_seccomp, sys_getrandom, sys_memfd_create, sys_bpf
-+/*350*/	.word sys_execveat
+@@ -507,7 +507,7 @@ register_address_increment(struct x86_emulate_ctxt *ctxt, unsigned long *reg, in
+ 		mask = ~0UL;
+ 	else
+ 		mask = ad_mask(ctxt);
+-	masked_increment(reg, mask, inc);
++	masked_increment(reg_rmw(ctxt, reg), mask, inc);
+ }
+ 
+ static void rsp_increment(struct x86_emulate_ctxt *ctxt, int inc)
+@@ -2910,8 +2910,8 @@ static void string_addr_inc(struct x86_emulate_ctxt *ctxt, int reg,
+ {
+ 	int df = (ctxt->eflags & EFLG_DF) ? -op->count : op->count;
+ 
+-	register_address_increment(ctxt, reg_rmw(ctxt, reg), df * op->bytes);
+-	op->addr.mem.ea = register_address(ctxt, reg_read(ctxt, reg));
++	register_address_increment(ctxt, reg, df * op->bytes);
++	op->addr.mem.ea = register_address(ctxt, reg);
+ }
+ 
+ static int em_das(struct x86_emulate_ctxt *ctxt)
+@@ -3381,7 +3381,7 @@ static int em_loop(struct x86_emulate_ctxt *ctxt)
+ {
+ 	int rc = X86EMUL_CONTINUE;
+ 
+-	register_address_increment(ctxt, reg_rmw(ctxt, VCPU_REGS_RCX), -1);
++	register_address_increment(ctxt, VCPU_REGS_RCX, -1);
+ 	if ((address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) != 0) &&
+ 	    (ctxt->b == 0xe2 || test_cc(ctxt->b ^ 0x5, ctxt->eflags)))
+ 		rc = jmp_rel(ctxt, ctxt->src.val);
+@@ -4280,7 +4280,7 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
+ 		op->type = OP_MEM;
+ 		op->bytes = (ctxt->d & ByteOp) ? 1 : ctxt->op_bytes;
+ 		op->addr.mem.ea =
+-			register_address(ctxt, reg_read(ctxt, VCPU_REGS_RDI));
++			register_address(ctxt, VCPU_REGS_RDI);
+ 		op->addr.mem.seg = VCPU_SREG_ES;
+ 		op->val = 0;
+ 		op->count = 1;
+@@ -4332,7 +4332,7 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
+ 		op->type = OP_MEM;
+ 		op->bytes = (ctxt->d & ByteOp) ? 1 : ctxt->op_bytes;
+ 		op->addr.mem.ea =
+-			register_address(ctxt, reg_read(ctxt, VCPU_REGS_RSI));
++			register_address(ctxt, VCPU_REGS_RSI);
+ 		op->addr.mem.seg = ctxt->seg_override;
+ 		op->val = 0;
+ 		op->count = 1;
+@@ -4341,7 +4341,7 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
+ 		op->type = OP_MEM;
+ 		op->bytes = (ctxt->d & ByteOp) ? 1 : ctxt->op_bytes;
+ 		op->addr.mem.ea =
+-			register_address(ctxt,
++			address_mask(ctxt,
+ 				reg_read(ctxt, VCPU_REGS_RBX) +
+ 				(reg_read(ctxt, VCPU_REGS_RAX) & 0xff));
+ 		op->addr.mem.seg = ctxt->seg_override;
+@@ -4979,8 +4979,7 @@ writeback:
+ 			count = ctxt->src.count;
+ 		else
+ 			count = ctxt->dst.count;
+-		register_address_increment(ctxt, reg_rmw(ctxt, VCPU_REGS_RCX),
+-				-count);
++		register_address_increment(ctxt, VCPU_REGS_RCX, -count);
+ 
+ 		if (!string_insn_completed(ctxt)) {
+ 			/*
 -- 
-2.1.0.rc2.206.gedb03e5
+1.8.3.1
 
