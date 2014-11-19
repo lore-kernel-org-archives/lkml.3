@@ -1,109 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749AbaKSPnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:43:20 -0500
-Received: from relay.variantweb.net ([104.131.199.242]:53867 "EHLO
-	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753829AbaKSPnT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:43:19 -0500
-Date: Wed, 19 Nov 2014 09:43:14 -0600
-From: Seth Jennings <sjennings@variantweb.net>
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Weijie Yang <weijie.yang@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Streetman <ddstreet@ieee.org>, Minchan Kim <minchan@kernel.org>,
-        Bob Liu <bob.liu@oracle.com>,
-        =?utf-8?B?5p2O5bi45Z2k?= <xfishcoder@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: frontswap: invalidate expired data on a dup-store
- failure
-Message-ID: <20141119154314.GA2111@cerebellum.variantweb.net>
-References: <000001d0030d$0505aaa0$0f10ffe0$%yang@samsung.com>
- <20141118222936.GB20945@cerebellum.variantweb.net>
- <CAL1ERfO6qoqCDyfEdJx3OCjdJjrsakSRG4SQhvzA6SL4NxO6uQ@mail.gmail.com>
+	id S1756002AbaKSPne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:43:34 -0500
+Received: from mail.kapsi.fi ([217.30.184.167]:40027 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755541AbaKSPnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 10:43:31 -0500
+Message-ID: <546CBA98.1040607@kapsi.fi>
+Date: Wed, 19 Nov 2014 17:43:20 +0200
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL1ERfO6qoqCDyfEdJx3OCjdJjrsakSRG4SQhvzA6SL4NxO6uQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Eduardo Valentin <edubezval@gmail.com>,
+        Linux PM <linux-pm@vger.kernel.org>
+CC: Caesar Wang <caesar.wang@rock-chips.com>, Wei Ni <wni@nvidia.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        lm-sensors@lm-sensors.org, Rob Herring <robh+dt@kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCHv4 1/1] thermal: of: improve of-thermal sensor registration
+ API
+References: <1416321575-18348-1-git-send-email-edubezval@gmail.com> <1416321575-18348-2-git-send-email-edubezval@gmail.com> <546CBA3C.9020709@kapsi.fi>
+In-Reply-To: <546CBA3C.9020709@kapsi.fi>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 09:06:41PM +0800, Weijie Yang wrote:
-> On Wed, Nov 19, 2014 at 6:29 AM, Seth Jennings <sjennings@variantweb.net> wrote:
-> > On Tue, Nov 18, 2014 at 04:51:36PM +0800, Weijie Yang wrote:
-> >> If a frontswap dup-store failed, it should invalidate the expired page
-> >> in the backend, or it could trigger some data corruption issue.
-> >> Such as:
-> >> 1. use zswap as the frontswap backend with writeback feature
-> >> 2. store a swap page(version_1) to entry A, success
-> >> 3. dup-store a newer page(version_2) to the same entry A, fail
-> >> 4. use __swap_writepage() write version_2 page to swapfile, success
-> >> 5. zswap do shrink, writeback version_1 page to swapfile
-> >> 6. version_2 page is overwrited by version_1, data corrupt.
-> >
-> > Good catch!
-> >
-> >>
-> >> This patch fixes this issue by invalidating expired data immediately
-> >> when meet a dup-store failure.
-> >>
-> >> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-> >> ---
-> >>  mm/frontswap.c |    4 +++-
-> >>  1 files changed, 3 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/mm/frontswap.c b/mm/frontswap.c
-> >> index c30eec5..f2a3571 100644
-> >> --- a/mm/frontswap.c
-> >> +++ b/mm/frontswap.c
-> >> @@ -244,8 +244,10 @@ int __frontswap_store(struct page *page)
-> >>                 the (older) page from frontswap
-> >>                */
-> >>               inc_frontswap_failed_stores();
-> >> -             if (dup)
-> >> +             if (dup) {
-> >>                       __frontswap_clear(sis, offset);
-> >> +                     frontswap_ops->invalidate_page(type, offset);
-> >
-> > Looking at __frontswap_invalidate_page(), should we do
-> > inc_frontswap_invalidates() too?  If so, maybe we should just call
-> > __frontswap_invalidate_page().
-> 
-> The frontswap_invalidate_page() is for swap_entry_free, while here
-> is an inner ops for dup-store, so I think there is no need for
-> inc_frontswap_invalidates().
+On 11/19/2014 05:41 PM, Mikko Perttunen wrote:
+> On 11/18/2014 04:39 PM, Eduardo Valentin wrote:
+>> Different drivers request API extensions in of-thermal. For this reason,
+>> additional callbacks are required to fit the new drivers needs.
+>>
+>> The current API implementation expects the registering sensor driver
+>> to provide a get_temp and get_trend callbacks as function parameters.
+>> As the amount of callbacks is growing, this patch changes the existing
+>> implementation to use a .ops field to hold all the of thermal callbacks
+>> to sensor drivers.
+>>
+>> This patch also changes the existing of-thermal users to fit the new
+>> API design. No functional change is introduced in this patch.
+>>
+>> Cc: Alexandre Courbot <gnurou@gmail.com>
+>> Cc: devicetree@vger.kernel.org
+>> Cc: Grant Likely <grant.likely@linaro.org>
+>> Cc: Guenter Roeck <linux@roeck-us.net>
+>> Cc: Jean Delvare <jdelvare@suse.de>
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: linux-pm@vger.kernel.org
+>> Cc: linux-tegra@vger.kernel.org
+>> Cc: lm-sensors@lm-sensors.org
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Cc: Stephen Warren <swarren@wwwdotorg.org>
+>> Cc: Thierry Reding <thierry.reding@gmail.com>
+>> Cc: Zhang Rui <rui.zhang@intel.com>
+>> Reviewed-by: Lukasz Majewski <l.majewski@samsung.com>
+>> Signed-off-by: Eduardo Valentin <edubezval@gmail.com>
+>> ---
+>>   drivers/hwmon/lm75.c                               |  9 +++--
+>>   drivers/hwmon/ntc_thermistor.c                     |  6 +++-
+>>   drivers/hwmon/tmp102.c                             |  6 +++-
+>>   drivers/thermal/of-thermal.c                       | 40
+>> ++++++++++------------
+>>   drivers/thermal/tegra_soctherm.c                   |  7 ++--
+>>   drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  8 +++--
+>>   include/linux/thermal.h                            | 24 +++++++++----
+>>   7 files changed, 63 insertions(+), 37 deletions(-)
+>> ---
+>> Difference from V3:
+>>    - Keep the same behavior regarding callback checks.
+>>      Change in behavior may be sent in a separate patch.
+>> Difference from V2:
+>>    - Fix wrong assignment in tegra driver.
+>> Difference from V1:
+>>    - Fix error handling when .get_trend is not provided.
+>>
+>> @@ -356,8 +356,8 @@ thermal_zone_of_add_sensor(struct device_node *zone,
+>>    *             than one sensors
+>>    * @data: a private pointer (owned by the caller) that will be passed
+>>    *        back, when a temperature reading is needed.
+>> - * @get_temp: a pointer to a function that reads the sensor temperature.
+>> - * @get_trend: a pointer to a function that reads the sensor
+>> temperature trend.
+>> + * @ops: struct thermal_zone_of_device *. Must contain at least
+>> .get_trend and
+>> + *       .get_temp.
+>
+> This comment seems to be incorrect, as .get_trend is optional.
 
-In my mind, I agree we shouldn't call __frontswap_invalidate_page(),
-just to keep things separated.
+Also, the parameter is of type struct thermal_zone_of_device_ops *, not 
+just thermal_zone_of_device.
 
-Andrew has already pulled it in and it isn't a big deal.  Just a
-statistics thing on a rare situation (dup) counted along with lots
-of frequent situations (normal invalidate).  Which makes me think
-we make want to count dup-invalidates as a separate stat.  But that
-would be a separate patch too :)
+>
+>>    *
+>>    * This function will search the list of thermal zones described in
+>> device
+>>    * tree and look for the zone that refer to the sensor device
+>> pointed by
+>
+> With that minor one fixed,
+>
+> Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+> Reviewed-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+>
+> Cheers,
+> Mikko
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks,
-Seth
-
-> 
-> > Thanks,
-> > Seth
-> >
-> >> +             }
-> >>       }
-> >>       if (frontswap_writethrough_enabled)
-> >>               /* report failure so swap also writes to swap device */
-> >> --
-> >> 1.7.0.4
-> >>
-> >>
-> >> --
-> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >> the body to majordomo@kvack.org.  For more info on Linux MM,
-> >> see: http://www.linux-mm.org/ .
-> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
