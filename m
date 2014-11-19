@@ -1,135 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500AbaKSSfo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 13:35:44 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:27031 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753865AbaKSSfm (ORCPT
+	id S1756344AbaKSShi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 13:37:38 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:60154 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759AbaKSShh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 13:35:42 -0500
-Date: Wed, 19 Nov 2014 13:35:15 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: byungchul.park@lge.com
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, seungho1.park@lge.com,
-        jolsa@redhat.com
-Subject: Re: [PATCH v4 3/3] tracing: add additional marks to signal very
- large delay
-Message-ID: <20141119133515.1caa293e@gandalf.local.home>
-In-Reply-To: <1416290246-882-4-git-send-email-byungchul.park@lge.com>
-References: <1416290246-882-1-git-send-email-byungchul.park@lge.com>
-	<1416290246-882-4-git-send-email-byungchul.park@lge.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 19 Nov 2014 13:37:37 -0500
+Message-ID: <546CE366.1030405@collabora.co.uk>
+Date: Wed, 19 Nov 2014 19:37:26 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mfd: cros_ec: Add Chrome OS EC userspace device interface
+References: <1416238213-15263-1-git-send-email-javier.martinez@collabora.co.uk>	<1416238213-15263-2-git-send-email-javier.martinez@collabora.co.uk> <20141118170001.6256c6df@lxorguk.ukuu.org.uk>
+In-Reply-To: <20141118170001.6256c6df@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014 14:57:26 +0900
-byungchul.park@lge.com wrote:
+Hello Alan,
 
-> From: Byungchul Park <byungchul.park@lge.com>
+Thanks a lot for your feedback.
+
+On 11/18/2014 06:00 PM, One Thousand Gnomes wrote:
+>> +#ifdef CONFIG_COMPAT
+>> +struct compat_cros_ec_command {
+>> +	uint32_t version;
+>> +	uint32_t command;
+>> +	compat_uptr_t outdata;
+>> +	uint32_t outsize;
+>> +	compat_uptr_t indata;
+>> +	uint32_t insize;
+>> +	uint32_t result;
+>> +};
+>> +
+>> +struct compat_cros_ec_readmem {
+>> +	uint32_t offset;
+>> +	uint32_t bytes;
+>> +	compat_uptr_t buffer;
+>> +};
+>> 
 > 
-> Currently, some tracers tracing latency print "!" or "+" just after time
-> to signal overhead, depending on the interval between events. Even it is
-> usually enough to do that, we sometimes need to be signaled for bigger
-> interval than 100 micro seconds.
+> This is a new API - arrange them to be 64bit safe and properly padded,
+> there is no excuse for needing compat crap except for legacy interfaces
+> you can't fix.
 > 
-> Signed-off-by: Byungchul Park <byungchul.park@lge.com>
-> ---
->  Documentation/trace/ftrace.txt |    8 +++++---
->  kernel/trace/trace_output.c    |   23 ++++++++++++++++++-----
->  2 files changed, 23 insertions(+), 8 deletions(-)
-> 
-> diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-> index f827e2f..64efb3e 100644
-> --- a/Documentation/trace/ftrace.txt
-> +++ b/Documentation/trace/ftrace.txt
-> @@ -680,9 +680,11 @@ The above is mostly meaningful for kernel developers.
->  	 needs to be fixed to be only relative to the same CPU.
->  	 The marks are determined by the difference between this
->  	 current trace and the next trace.
-> -	  '!' - greater than preempt_mark_thresh (default 100)
-> -	  '+' - greater than 1 microsecond
-> -	  ' ' - less than or equal to 1 microsecond.
-> +	  '$' - greater than 1 second
-> +	  '#' - greater than 1000 microsecond
-> +	  '!' - greater than 100 microsecond
-> +	  '+' - greater than 10 microsecond
-> +	  ' ' - less than or equal to 10 microsecond.
->  
->    The rest is the same as the 'trace' file.
->  
-> diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-> index c6977d5..3fd3017 100644
-> --- a/kernel/trace/trace_output.c
-> +++ b/kernel/trace/trace_output.c
-> @@ -124,7 +124,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
->  
->  	if (ret == (const char *)(trace_seq_buffer_ptr(p)))
->  		trace_seq_printf(p, "0x%lx", val);
-> -		
-> +
->  	trace_seq_putc(p, 0);
->  
->  	return ret;
-> @@ -471,7 +471,21 @@ lat_print_generic(struct trace_seq *s, struct trace_entry *entry, int cpu)
->  	return trace_print_lat_fmt(s, entry);
->  }
->  
-> -static unsigned long preempt_mark_thresh_us = 100;
-> +#undef MARK
-> +#define MARK(v, s) {.val = v, .sym = s}
-> +static const struct trace_mark mark[] = {
-> +	MARK(1000000000ULL	, '$'), /* 1 sec */
-> +	MARK(1000000ULL		, '#'), /* 1000 usecs */
-> +	MARK(100000ULL		, '!'), /* 100 usecs */
-> +	MARK(10000ULL		, '+'), /* 10 usecs */
-> +	MARK(0ULL		, ' '), /* 0 usecs */
-> +};
-> +#undef MARK
-> +
-> +static inline char find_trace_mark(unsigned long long d)
-> +{
-> +	return trace_duration_mark(d, mark, ARRAY_SIZE(mark));
-> +}
 
-This is the exact same code as in function_graph tracer. Nuke the one
-from function graph and make this one a non static function, and have
-function graph tracer use it. trace_output.c is always compiled with
-tracing.
+Is true that this is a new API for mainline but there is a lot of ChromeOS
+installations that depends on this API which means that just replacing the
+kernel with a mainline one there, will break existing user-space programs.
 
-In fact, remove all the code from trace.h, and move it here. Just
-have this function be global and rename it to:
+But I understand that since those binaries were using a non-ustream kernel
+it is expected that the kernel API could be changed.
 
- trace_find_mark()
+I think it would be great to keep existing binaries working but if changing
+the API is required, then I can certainly do that when doing a re-spin.
 
--- Steve
-
-
->  
->  static int
->  lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
-> @@ -506,8 +520,7 @@ lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
->  		return trace_seq_printf(
->  				s, " %4lldus%c: ",
->  				abs_ts,
-> -				rel_ts > preempt_mark_thresh_us ? '!' :
-> -				  rel_ts > 1 ? '+' : ' ');
-> +				find_trace_mark(rel_ts * NSEC_PER_USEC));
->  	} else { /* !verbose && !in_ns */
->  		return trace_seq_printf(s, " %4lld: ", abs_ts);
->  	}
-> @@ -692,7 +705,7 @@ int register_ftrace_event(struct trace_event *event)
->  				goto out;
->  
->  		} else {
-> -			
-> +
->  			event->type = next_event_type++;
->  			list = &ftrace_event_list;
->  		}
-
+Best regards,
+Javier
