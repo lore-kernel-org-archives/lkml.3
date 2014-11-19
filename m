@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857AbaKSOl4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 09:41:56 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:36202 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754658AbaKSOlz (ORCPT
+	id S1755275AbaKSOoJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 09:44:09 -0500
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:50698 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753459AbaKSOoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:41:55 -0500
-From: Steven Walter <stevenrwalter@gmail.com>
-To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Steven Walter <stevenrwalter@gmail.com>
-Subject: [PATCH v2] l2cap_core: automatically flushable packets aren't allowed on LE links
-Date: Wed, 19 Nov 2014 09:41:17 -0500
-Message-Id: <1416408077-26514-1-git-send-email-stevenrwalter@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <106789BA-48C0-4428-BE3E-D0737F7A0641@holtmann.org>
-References: <106789BA-48C0-4428-BE3E-D0737F7A0641@holtmann.org>
+	Wed, 19 Nov 2014 09:44:08 -0500
+Message-ID: <546CAC92.3020504@st.com>
+Date: Wed, 19 Nov 2014 15:43:30 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: <edubezval@gmail.com>, <kernel@stlinux.com>, <linux-pm@vger.kernel.org>
+Subject: Re: [STLinux Kernel] [PATCH] thermal: sti: Ignore suspend/resume
+ functions when !PM
+References: <1416404939-365-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1416404939-365-1-git-send-email-lee.jones@linaro.org>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.28,0.0.0000
+ definitions=2014-11-19_04:2014-11-19,2014-11-19,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bluetooth spec states that automatically flushable packets may not
-be sent over a LE-U link.
 
-Signed-off-by: Steven Walter <stevenrwalter@gmail.com>
----
- net/bluetooth/l2cap_core.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+On 11/19/2014 02:48 PM, Lee Jones wrote:
+> Prevents build warning:
+>
+> st_thermal.c:278:12:
+>      warning: ‘st_thermal_suspend’ defined but not used [-Wunused-function]
+> st_thermal.c:286:12:
+>      warning: ‘st_thermal_resume’ defined but not used [-Wunused-function]
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+You can add my:
+Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index 4af3821..028fcc6 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -764,7 +764,7 @@ static void l2cap_send_cmd(struct l2cap_conn *conn, u8 ident, u8 code, u16 len,
- 	if (!skb)
- 		return;
- 
--	if (lmp_no_flush_capable(conn->hcon->hdev))
-+	if (lmp_no_flush_capable(conn->hcon->hdev) || (conn->hcon->type == LE_LINK))
- 		flags = ACL_START_NO_FLUSH;
- 	else
- 		flags = ACL_START;
-@@ -798,8 +798,9 @@ static void l2cap_do_send(struct l2cap_chan *chan, struct sk_buff *skb)
- 		return;
- 	}
- 
--	if (!test_bit(FLAG_FLUSHABLE, &chan->flags) &&
--	    lmp_no_flush_capable(hcon->hdev))
-+	if ((hcon->type == LE_LINK) ||
-+	    (!test_bit(FLAG_FLUSHABLE, &chan->flags) &&
-+	    lmp_no_flush_capable(hcon->hdev)))
- 		flags = ACL_START_NO_FLUSH;
- 	else
- 		flags = ACL_START;
--- 
-1.9.1
+Thanks,
+Maxime
+
+> ---
+>   drivers/thermal/st/st_thermal.c | 3 +++
+>   1 file changed, 3 insertions(+)
+>
+> diff --git a/drivers/thermal/st/st_thermal.c b/drivers/thermal/st/st_thermal.c
+> index 90163b3..9841488 100644
+> --- a/drivers/thermal/st/st_thermal.c
+> +++ b/drivers/thermal/st/st_thermal.c
+> @@ -275,6 +275,7 @@ int st_thermal_unregister(struct platform_device *pdev)
+>   }
+>   EXPORT_SYMBOL_GPL(st_thermal_unregister);
+>   
+> +#ifdef CONFIG_PM
+>   static int st_thermal_suspend(struct device *dev)
+>   {
+>   	struct platform_device *pdev = to_platform_device(dev);
+> @@ -305,6 +306,8 @@ static int st_thermal_resume(struct device *dev)
+>   
+>   	return 0;
+>   }
+> +#endif
+> +
+>   SIMPLE_DEV_PM_OPS(st_thermal_pm_ops, st_thermal_suspend, st_thermal_resume);
+>   EXPORT_SYMBOL_GPL(st_thermal_pm_ops);
+>   
 
