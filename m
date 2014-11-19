@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933822AbaKSVOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:14:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57283 "EHLO
+	id S934327AbaKSV3D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:29:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57366 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933288AbaKSVOh (ORCPT
+	with ESMTP id S933815AbaKSVOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:37 -0500
+	Wed, 19 Nov 2014 16:14:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.10 18/70] xtensa: re-wire umount syscall to sys_oldumount
-Date: Wed, 19 Nov 2014 12:52:09 -0800
-Message-Id: <20141119205211.520040738@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.10 36/70] NFS: Dont try to reclaim delegation open state if recovery failed
+Date: Wed, 19 Nov 2014 12:52:27 -0800
+Message-Id: <20141119205212.117023445@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -28,32 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 2651cc6974d47fc43bef1cd8cd26966e4f5ba306 upstream.
+commit f8ebf7a8ca35dde321f0cd385fee6f1950609367 upstream.
 
-Userspace actually passes single parameter (path name) to the umount
-syscall, so new umount just fails. Fix it by requesting old umount
-syscall implementation and re-wiring umount to it.
+If state recovery failed, then we should not attempt to reclaim delegated
+state.
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/include/uapi/asm/unistd.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/nfs/delegation.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/xtensa/include/uapi/asm/unistd.h
-+++ b/arch/xtensa/include/uapi/asm/unistd.h
-@@ -384,7 +384,8 @@ __SYSCALL(174, sys_chroot, 1)
- #define __NR_pivot_root 			175
- __SYSCALL(175, sys_pivot_root, 2)
- #define __NR_umount 				176
--__SYSCALL(176, sys_umount, 2)
-+__SYSCALL(176, sys_oldumount, 1)
-+#define __ARCH_WANT_SYS_OLDUMOUNT
- #define __NR_swapoff 				177
- __SYSCALL(177, sys_swapoff, 1)
- #define __NR_sync 				178
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -108,6 +108,8 @@ again:
+ 			continue;
+ 		if (!test_bit(NFS_DELEGATED_STATE, &state->flags))
+ 			continue;
++		if (!nfs4_valid_open_stateid(state))
++			continue;
+ 		if (!nfs4_stateid_match(&state->stateid, stateid))
+ 			continue;
+ 		get_nfs_open_context(ctx);
 
 
