@@ -1,89 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781AbaKSNL5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 08:11:57 -0500
-Received: from mta-out1.inet.fi ([62.71.2.203]:44844 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752741AbaKSNL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 08:11:56 -0500
-Date: Wed, 19 Nov 2014 15:11:37 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@gentwo.org>,
-        Steve Capper <steve.capper@linaro.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+	id S1754955AbaKSNMi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 08:12:38 -0500
+Received: from mail-bl2on0142.outbound.protection.outlook.com ([65.55.169.142]:30432
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752736AbaKSNMh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 08:12:37 -0500
+From: Dexuan Cui <decui@microsoft.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 16/19] thp: update documentation
-Message-ID: <20141119131137.GD29884@node.dhcp.inet.fi>
-References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1415198994-15252-17-git-send-email-kirill.shutemov@linux.intel.com>
- <20141119080828.GA11447@hori1.linux.bs1.fc.nec.co.jp>
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH] tools: hv: ignore ENOBUFS in the KVP daemon
+Thread-Topic: [PATCH] tools: hv: ignore ENOBUFS in the KVP daemon
+Thread-Index: AQHQA/YJzMovMMzE0U6mTiCuakubnJxn5c5g
+Date: Wed, 19 Nov 2014 12:57:24 +0000
+Message-ID: <F792CF86EFE20D4AB8064279AFBA51C613E4F3AA@SIXPRD3002MB028.064d.mgd.msft.net>
+References: <1416394245-31717-1-git-send-email-decui@microsoft.com>
+	<87lhn7forv.fsf@vitty.brq.redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C613E4F2FA@SIXPRD3002MB028.064d.mgd.msft.net>
+ <87egszfjn6.fsf@vitty.brq.redhat.com>
+In-Reply-To: <87egszfjn6.fsf@vitty.brq.redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [141.251.55.133]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141119080828.GA11447@hori1.linux.bs1.fc.nec.co.jp>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=decui@microsoft.com; 
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(199003)(13464003)(189002)(164054003)(51704005)(377454003)(62966003)(77156002)(93886004)(77096003)(66066001)(20776003)(47776003)(64706001)(107046002)(81156004)(106466001)(97736003)(21056001)(99396003)(46406003)(46102003)(110136001)(87936001)(106116001)(120916001)(33656002)(92566001)(92726001)(54356999)(16796002)(31966008)(26826002)(19580395003)(69596002)(44976005)(86146001)(2656002)(6806004)(86362001)(50986999)(76176999)(86612001)(97756001)(19580405001)(68736004)(23726002)(50466002)(84676001)(55846006)(95666004)(4396001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB278;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB278;
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB278;
+X-Forefront-PRVS: 04004D94E2
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB278;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 08:07:59AM +0000, Naoya Horiguchi wrote:
-> On Wed, Nov 05, 2014 at 04:49:51PM +0200, Kirill A. Shutemov wrote:
-> > The patch updates Documentation/vm/transhuge.txt to reflect changes in
-> > THP design.
-> > 
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > ---
-> >  Documentation/vm/transhuge.txt | 84 +++++++++++++++++++-----------------------
-> >  1 file changed, 38 insertions(+), 46 deletions(-)
-> > 
-> > diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
-> > index df1794a9071f..33465e7b0d9b 100644
-> > --- a/Documentation/vm/transhuge.txt
-> > +++ b/Documentation/vm/transhuge.txt
-> > @@ -200,9 +200,18 @@ thp_collapse_alloc_failed is incremented if khugepaged found a range
-> >  	of pages that should be collapsed into one huge page but failed
-> >  	the allocation.
-> >  
-> > -thp_split is incremented every time a huge page is split into base
-> > +thp_split_page is incremented every time a huge page is split into base
-> >  	pages. This can happen for a variety of reasons but a common
-> >  	reason is that a huge page is old and is being reclaimed.
-> > +	This action implies splitting all PMD the page mapped with.
-> > +
-> > +thp_split_page_failed is is incremented if kernel fails to split huge
+> -----Original Message-----
+> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+> Sent: Wednesday, November 19, 2014 20:41 PM
+> To: Dexuan Cui
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com; Haiyang Zhang
+> Subject: Re: [PATCH] tools: hv: ignore ENOBUFS in the KVP daemon
 > 
-> 'is' appears twice.
+> Dexuan Cui <decui@microsoft.com> writes:
 > 
-> > +	page. This can happen if the page was pinned by somebody.
-> > +
-> > +thp_split_pmd is incremented every time a PMD split into table of PTEs.
-> > +	This can happen, for instance, when application calls mprotect() or
-> > +	munmap() on part of huge page. It doesn't split huge page, only
-> > +	page table entry.
-> >  
-> >  thp_zero_page_alloc is incremented every time a huge zero page is
-> >  	successfully allocated. It includes allocations which where
+> >> -----Original Message-----
+> >> From: Vitaly Kuznetsov
+> >> Sent: Wednesday, November 19, 2014 18:50 PM
+> >> To: Dexuan Cui
+> >> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> driverdev-
+> >> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> >> jasowang@redhat.com; Haiyang Zhang
+> >> Subject: Re: [PATCH] tools: hv: ignore ENOBUFS in the KVP daemon
+> >>
+> >> Dexuan Cui  writes:
+> >>
+> >> > Under high memory pressure and very high KVP R/W test pressure,
+> the netlink
+> >> > recvfrom() may transiently return ENOBUFS to the daemon -- we found
+> this
+> >> > during a 2-week stress test.
+> >> >
+> >> > We'd better not terminate the daemon on this failure, because a
+> typical KVP
+> >> > user can re-try the R/W and hopefully it will succeed next time.
+> >> >
+> >> > diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+> >> > index 22b0764..9f4b303 100644
+> >> > --- a/tools/hv/hv_kvp_daemon.c
+> >> > +++ b/tools/hv/hv_kvp_daemon.c
+> >> > @@ -1559,8 +1559,15 @@ int main(int argc, char *argv[])
+> >> >  				addr_p, &addr_l);
+> >> >
+> >> >  		if (len < 0) {
+> >> > +			int saved_errno = errno;
+> >> >  			syslog(LOG_ERR, "recvfrom failed; pid:%u
+> error:%d %s",
+> >> >  					addr.nl_pid, errno, strerror(errno));
+> >> > +
+> >> > +			if (saved_errno == ENOBUFS) {
+> >>
+> >> is it possible to meet EAGAIN (or EWOULDBLOCK) here as well? I'd
+> suggest
+> >> we ignore these as well in such case. Ignoring ENOMEM here is doubtful,
+> >> I think. But possible.
+> >>
+> >>   Vitaly
+> >
+> > I don't think EAGAIN is possible  because "man recvfrom" says
+> >    "If  no messages are available at the socket, the receive calls wait for a
+> >      message to arrive, unless the socket is nonblocking (see fcntl(2)), in
+> which
+> >      case the value -1 is returned and  the  external variable  errno is set to
+> >     EAGAIN or EWOULDBLOCK".
+> >
+> > The same man page mention ENOMEM for recvmsg(), but not recvfrom().
 > 
-> There is a sentense related to the adjustment on futex code you just
-> removed in patch 15/19 in "get_user_pages and follow_page" section.
+> Ah, sorry, I though your patch patches the other place: call to
+> netlink_send() which does sendmsg() (and my
+> EAGAIN/EWOULDBLOCK/ENOMEM
+> comment was about it). It could also make sense to patch them both as I
+> think it is possible to hit these as well.
 > 
->   ...
->   split_huge_page() to avoid the head and tail pages to disappear from
->   under it, see the futex code to see an example of that, hugetlbfs also
->   needed special handling in futex code for similar reasons).
-> 
-> this seems obsolete, so we need some change on this?
+> > -- Dexuan
+> --
+>   Vitaly
 
-I'll update documentation futher once patchset will be closer to ready
-state.
+OK, I can add this new check:
+(I'll send out the v2 tomorrow in case  people have new comments)
 
--- 
- Kirill A. Shutemov
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -1770,8 +1770,15 @@ kvp_done:
+
+                len = netlink_send(fd, incoming_cn_msg);
+                if (len < 0) {
++                       int saved_errno = errno;
+                        syslog(LOG_ERR, "net_link send failed; error: %d %s", errno,
+                                        strerror(errno));
++
++                       if (saved_errno == ENOMEM || saved_errno == EAGAIN) {
++                               syslog(LOG_ERR, "send error: ignored");
++                               continue;
++                       }
++
+                        exit(EXIT_FAILURE);
+                }
+        }
+
+Thanks,
+-- Dexuan
