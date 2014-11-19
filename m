@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979AbaKSKnH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 05:43:07 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:63926 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755819AbaKSKnD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 05:43:03 -0500
-Date: Wed, 19 Nov 2014 10:42:55 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com, peppe.cavallaro@st.com, kishon@ti.com,
-        arnd@arndb.de, netdev@vger.kernel.org, devicetree@vger.kernel.org,
-        alexandre.torgue@st.com
-Subject: Re: [PATCH 2/7] phy: miphy365x: Pass sysconfig register offsets via
- syscfg dt property.
-Message-ID: <20141119104255.GI13959@x1>
-References: <1416385632-5832-1-git-send-email-peter.griffin@linaro.org>
- <1416385632-5832-3-git-send-email-peter.griffin@linaro.org>
+	id S1755350AbaKSKom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 05:44:42 -0500
+Received: from mout.web.de ([212.227.17.12]:60105 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751487AbaKSKok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 05:44:40 -0500
+Message-ID: <546C748B.1010208@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 11:44:27 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416385632-5832-3-git-send-email-peter.griffin@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ming Lei <ming.lei@canonical.com>
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] firmware class: Deletion of an unnecessary check before
+ the function call "vunmap"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:1j0qKr3CB3P+IbKn4vxpreOGf7OMsPI75Vz3cvLyRRh9wPe0idi
+ K5VdoJu5/xkDG8hmyRfIvahvcRye/ujVQ52Oabk8ZpSf78zH1CDmKfA40jLzKQX3f11lPiN
+ mxT9aQGlVmGqEsi3UU052PU+pGtxmhCUyCQbnnw1YVpLZ5Mk35+N/td+ZhOCZW49wUxkCrw
+ eAg/AwUFSn69fbdJ3ZoBQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014, Peter Griffin wrote:
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 11:38:38 +0100
 
-> Based on Arnds review comments here https://lkml.org/lkml/2014/11/13/161, update
-> the miphy365 phy driver to access sysconfig register offsets via syscfg dt property.
-> 
-> This is because the reg property should not be mixing address spaces like it does
-> currently for miphy365. This change then also aligns us to how other platforms such
-> as keystone and bcm7445 pass there syscon offsets via DT.
-> 
-> This patch breaks DT compatibility, but this platform is considered WIP, and is only
-> used by a few developers who are upstreaming support for it. This change has been done
-> as a single atomic commit to ensure it is bisectable.
+The vunmap() function performes also input parameter validation. Thus the test
+around the call is not needed.
 
-You should wrap your lines sooner (70-75 chars).
+This issue was detected by using the Coccinelle software.
 
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> ---
->  .../devicetree/bindings/phy/phy-miphy365x.txt      | 15 +++++------
->  arch/arm/boot/dts/stih416.dtsi                     | 10 ++++----
->  drivers/phy/phy-miphy365x.c                        | 29 ++++++++--------------
->  3 files changed, 23 insertions(+), 31 deletions(-)
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/base/firmware_class.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-[...]
-
-> diff --git a/drivers/phy/phy-miphy365x.c b/drivers/phy/phy-miphy365x.c
-> index 801afaf..7308afe 100644
-> --- a/drivers/phy/phy-miphy365x.c
-> +++ b/drivers/phy/phy-miphy365x.c
-
-[...]
-
->  		phy_set_drvdata(phy, miphy_dev->phys[port]);
-> +
->  		port++;
-> +		/*sysconfig offsets are not indexed from zero */
-
-You're missing a ' ' afrer '/*'.
-
-Probably better do say what they _are_ indexed from, rather than what
-they're not.
-
-> +		ret = of_property_read_u32_index(np, "st,syscfg", port,
-> +					&miphy_phy->ctrlreg);
-> +		if (ret) {
-> +			dev_err(&pdev->dev, "No sysconfig offset found\n");
-> +			return ret;
-> +		}
->  	}
->  
->  	provider = devm_of_phy_provider_register(&pdev->dev, miphy365x_xlate);
-
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 3d785eb..532662c 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -591,8 +591,7 @@ static int fw_map_pages_buf(struct firmware_buf *buf)
+ 	if (!buf->is_paged_buf)
+ 		return 0;
+ 
+-	if (buf->data)
+-		vunmap(buf->data);
++	vunmap(buf->data);
+ 	buf->data = vmap(buf->pages, buf->nr_pages, 0, PAGE_KERNEL_RO);
+ 	if (!buf->data)
+ 		return -ENOMEM;
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2.1.3
+
