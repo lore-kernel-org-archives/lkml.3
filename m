@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933307AbaKSXRg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 18:17:36 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:35711 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933254AbaKSXQV (ORCPT
+	id S933250AbaKSXQU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 18:16:20 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:41187 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757144AbaKSXQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 18:16:21 -0500
+	Wed, 19 Nov 2014 18:16:14 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: Mike Turquette <mturquette@linaro.org>, linux-metag@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 12/15] clk: tz1090: add PDC clock driver
-Date: Wed, 19 Nov 2014 23:15:40 +0000
-Message-Id: <1416438943-11429-13-git-send-email-james.hogan@imgtec.com>
+Subject: [PATCH 08/15] clk: tz1090: add mux bank clock driver
+Date: Wed, 19 Nov 2014 23:15:36 +0000
+Message-Id: <1416438943-11429-9-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1416438943-11429-1-git-send-email-james.hogan@imgtec.com>
 References: <1416438943-11429-1-git-send-email-james.hogan@imgtec.com>
@@ -21,43 +21,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TZ1090 PDC (PowerDown Controller) clock should be at 32.768KHz, and
-is generated either directly from the XTAL3 clock or by dividing the
-XTAL1 clock. Both the divide and the mux are in a single register which
-also contains GPIO output data, and may need to be used by other
-non-Linux cores and threads, so create a special clock type for this
-clock.
-
-Two subclocks are created, a divider and a mux. The divider wraps the
-generic divider but takes the Meta exclusive lock when setting the rate.
-The mux uses the existing mux wrapper in clk-tz1090-mux-bank.c which
-also takes the Meta exclusive lock when changing the parent.
+Add a clock driver for banks of clock muxes in the TZ1090 SoC. A single
+32 bit register controls up to 32 separate clock muxes. The driver
+instantiates separate generic clock muxes. The clock operations are
+wrapped in order to acquire and release the Meta global exclusive lock
+(__global_lock2) to ensure atomicity with other non-Linux cores and
+threads which may need to control some of the clocks.
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 Cc: Mike Turquette <mturquette@linaro.org>
 Cc: linux-metag@vger.kernel.org
 ---
- drivers/clk/tz1090/Makefile         |   1 +
- drivers/clk/tz1090/clk-tz1090-pdc.c | 185 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 186 insertions(+)
- create mode 100644 drivers/clk/tz1090/clk-tz1090-pdc.c
+ drivers/clk/tz1090/Makefile              |   1 +
+ drivers/clk/tz1090/clk-tz1090-mux-bank.c | 191 +++++++++++++++++++++++++++++++
+ 2 files changed, 192 insertions(+)
+ create mode 100644 drivers/clk/tz1090/clk-tz1090-mux-bank.c
 
 diff --git a/drivers/clk/tz1090/Makefile b/drivers/clk/tz1090/Makefile
-index d17e48c..92e38a8 100644
+index ce36250..ee6a6fe 100644
 --- a/drivers/clk/tz1090/Makefile
 +++ b/drivers/clk/tz1090/Makefile
-@@ -2,4 +2,5 @@
- obj-y		+= clk-tz1090-deleter.o
+@@ -1,3 +1,4 @@
+ # Makefile for TZ1090-specific clocks
  obj-y		+= clk-tz1090-gate-bank.o
- obj-y		+= clk-tz1090-mux-bank.o
-+obj-y		+= clk-tz1090-pdc.o
++obj-y		+= clk-tz1090-mux-bank.o
  obj-y		+= clk-tz1090-pll.o
-diff --git a/drivers/clk/tz1090/clk-tz1090-pdc.c b/drivers/clk/tz1090/clk-tz1090-pdc.c
+diff --git a/drivers/clk/tz1090/clk-tz1090-mux-bank.c b/drivers/clk/tz1090/clk-tz1090-mux-bank.c
 new file mode 100644
-index 0000000..e4ac145
+index 0000000..d9a2345
 --- /dev/null
-+++ b/drivers/clk/tz1090/clk-tz1090-pdc.c
-@@ -0,0 +1,185 @@
++++ b/drivers/clk/tz1090/clk-tz1090-mux-bank.c
+@@ -0,0 +1,191 @@
 +/*
 + * Copyright (C) 2013 Imagination Technologies Ltd.
 + *
@@ -65,7 +59,7 @@ index 0000000..e4ac145
 + * the terms of the GNU General Public License version 2 as published by the
 + * Free Software Foundation.
 + *
-+ * TZ1090 PDC Clock (divider + mux)
++ * TZ1090 Clock mux bank
 + */
 +
 +#include <linux/clk-provider.h>
@@ -77,172 +71,178 @@ index 0000000..e4ac145
 +#include <linux/slab.h>
 +#include <asm/global_lock.h>
 +
-+/* The TZ1090 PDC clock makes use of the TZ1090 mux wrapper (from mux bank) */
-+struct clk *__init
-+clk_register_tz1090_mux(const char *name, const char **parent_names,
-+			unsigned long flags, void __iomem *reg, u8 shift,
-+			u8 clk_mux_flags);
-+
 +/**
-+ * struct clk_tz1090_div - tz1090 divider clock
++ * struct clk_tz1090_mux - tz1090 multiplexer clock
 + *
-+ * @div:	the parent class
++ * @mux:	the parent class
 + * @ops:	pointer to clk_ops of parent class
 + *
-+ * Divider clock whose field shares a register with other fields which may be
-+ * used by multiple threads/cores and other drivers.
++ * Clock with multiple selectable parents. Extends basic mux by using a global
++ * exclusive lock when read-modify-writing the mux field so that multiple
++ * threads/cores can use different fields in the same register.
 + */
-+struct clk_tz1090_div {
-+	struct clk_divider	div;
++struct clk_tz1090_mux {
++	struct clk_mux		mux;
 +	const struct clk_ops	*ops;
 +};
 +
-+static inline struct clk_tz1090_div *to_clk_tz1090_div(struct clk_hw *hw)
++static inline struct clk_tz1090_mux *to_clk_tz1090_mux(struct clk_hw *hw)
 +{
-+	struct clk_divider *div = container_of(hw, struct clk_divider, hw);
++	struct clk_mux *mux = container_of(hw, struct clk_mux, hw);
 +
-+	return container_of(div, struct clk_tz1090_div, div);
++	return container_of(mux, struct clk_tz1090_mux, mux);
 +}
 +
-+static unsigned long clk_tz1090_divider_recalc_rate(struct clk_hw *hw,
-+						    unsigned long parent_rate)
++static u8 clk_tz1090_mux_get_parent(struct clk_hw *hw)
 +{
-+	struct clk_tz1090_div *div = to_clk_tz1090_div(hw);
++	struct clk_tz1090_mux *mux = to_clk_tz1090_mux(hw);
 +
-+	return div->ops->recalc_rate(&div->div.hw, parent_rate);
-+}
-+
-+static long clk_tz1090_divider_round_rate(struct clk_hw *hw, unsigned long rate,
-+					  unsigned long *prate)
-+{
-+	struct clk_tz1090_div *div = to_clk_tz1090_div(hw);
-+
-+	return div->ops->round_rate(&div->div.hw, rate, prate);
++	return mux->ops->get_parent(&mux->mux.hw);
 +}
 +
 +/* Acquire exclusive lock since other cores may access the same register */
-+static int clk_tz1090_divider_set_rate(struct clk_hw *hw, unsigned long rate,
-+				       unsigned long parent_rate)
++static int clk_tz1090_mux_set_parent(struct clk_hw *hw, u8 index)
 +{
-+	struct clk_tz1090_div *div = to_clk_tz1090_div(hw);
++	struct clk_tz1090_mux *mux = to_clk_tz1090_mux(hw);
 +	int ret;
 +	unsigned long flags;
 +
 +	__global_lock2(flags);
-+	ret = div->ops->set_rate(&div->div.hw, rate, parent_rate);
++	ret = mux->ops->set_parent(&mux->mux.hw, index);
 +	__global_unlock2(flags);
 +
 +	return ret;
 +}
 +
-+static const struct clk_ops clk_tz1090_div_ops = {
-+	.recalc_rate = clk_tz1090_divider_recalc_rate,
-+	.round_rate = clk_tz1090_divider_round_rate,
-+	.set_rate = clk_tz1090_divider_set_rate,
++static long clk_tz1090_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
++				     unsigned long *prate,
++				     struct clk **best_parent)
++{
++	struct clk_tz1090_mux *mux = to_clk_tz1090_mux(hw);
++
++	return mux->ops->determine_rate(&mux->mux.hw, rate, prate, best_parent);
++}
++
++static const struct clk_ops clk_tz1090_mux_ops = {
++	.get_parent = clk_tz1090_mux_get_parent,
++	.set_parent = clk_tz1090_mux_set_parent,
++	.determine_rate = clk_tz1090_mux_determine_rate,
 +};
 +
-+static struct clk *__init
-+clk_register_tz1090_divider(const char *name, const char *parent_name,
-+			    unsigned long flags, void __iomem *reg, u8 shift,
-+			    u32 mask, u8 clk_divider_flags)
++struct clk *__init
++clk_register_tz1090_mux(const char *name, const char **parent_names,
++			unsigned long flags, void __iomem *reg, u8 shift,
++			u8 clk_mux_flags)
 +{
-+	struct clk_tz1090_div *div;
++	struct clk_tz1090_mux *mux;
 +	struct clk *clk;
 +	struct clk_init_data init;
 +
-+	/* allocate the divider */
-+	div = kzalloc(sizeof(struct clk_tz1090_div), GFP_KERNEL);
-+	if (!div)
++	/* allocate the mux */
++	mux = kzalloc(sizeof(struct clk_tz1090_mux), GFP_KERNEL);
++	if (!mux)
 +		return ERR_PTR(-ENOMEM);
 +
 +	init.name = name;
-+	init.ops = &clk_tz1090_div_ops;
++	init.ops = &clk_tz1090_mux_ops;
 +	init.flags = flags | CLK_IS_BASIC;
-+	init.parent_names = (parent_name ? &parent_name : NULL);
-+	init.num_parents = (parent_name ? 1 : 0);
++	init.parent_names = parent_names;
++	init.num_parents = 2;
 +
-+	/* struct clk_divider assignments */
-+	div->div.reg = reg;
-+	div->div.shift = shift;
-+	div->div.mask = mask;
-+	div->div.flags = clk_divider_flags;
-+	div->div.hw.init = &init;
++	/* struct clk_mux assignments */
++	mux->mux.reg = reg;
++	mux->mux.shift = shift;
++	mux->mux.mask = 0x1;
++	mux->mux.flags = clk_mux_flags;
++	mux->mux.hw.init = &init;
 +
-+	/* struct clk_tz1090_div assignments */
-+	div->ops = &clk_divider_ops;
++	/* struct clk_tz1090_mux assignments */
++	mux->ops = &clk_mux_ops;
 +
-+	/* register the clock */
-+	clk = clk_register(NULL, &div->div.hw);
++	clk = clk_register(NULL, &mux->mux.hw);
 +
 +	if (IS_ERR(clk))
-+		kfree(div);
++		kfree(mux);
 +
 +	return clk;
 +}
 +
 +/**
-+ * of_tz1090_pdc_clk_setup() - Setup function for PDC 32.768KHz clock in TZ1090
++ * of_tz1090_mux_bank_setup() - Setup function for mux bank in TZ1090
 + */
-+static void __init of_tz1090_pdc_clk_setup(struct device_node *node)
++static void __init of_tz1090_mux_bank_setup(struct device_node *node)
 +{
++	struct clk *clk;
++	const char *clk_name = node->name;
 +	void __iomem *reg;
-+	const char *clk_names[2];
-+	const char *parent_names[2];
-+	unsigned int i;
-+	struct clk_onecell_data *provider_data;
++	const char *parent_name[2];
++	u32 mask;
++	unsigned int shift, i, j;
++	unsigned int successes = 0;
++	struct clk_onecell_data *provider_data = NULL;
++	int count;
++
++	if (of_property_read_u32(node, "bit-mask", &mask))
++		return;
++
++	count = of_property_count_strings(node, "clock-output-names");
++	if (count < 1)
++		return;
 +
 +	reg = of_iomap(node, 0);
 +	if (!reg) {
 +		pr_err("%s(%s): of_iomap failed\n",
-+		       __func__, node->name);
++		       __func__, clk_name);
 +		return;
-+	}
-+
-+	for (i = 0; i < 2; ++i) {
-+		/* input clocks */
-+		parent_names[i] = of_clk_get_parent_name(node, i);
-+		if (!parent_names[i]) {
-+			pr_err("%s(%s): failed to get parent %u\n",
-+			       __func__, node->name, i);
-+			return;
-+		}
-+
-+		/* output clocks */
-+		if (of_property_read_string_index(node, "clock-output-names", i,
-+						  &clk_names[i])) {
-+			pr_err("%s(%s): failed to get clock %u name\n",
-+			       __func__, node->name, i);
-+			return;
-+		}
 +	}
 +
 +	provider_data = kzalloc(sizeof(*provider_data), GFP_KERNEL);
 +	if (!provider_data)
-+		return;
-+	provider_data->clk_num = 2;
-+	provider_data->clks = kzalloc(sizeof(provider_data->clks[0])*2,
++		goto done;
++	provider_data->clks = kcalloc(count, sizeof(provider_data->clks[0]),
 +				      GFP_KERNEL);
-+	if (!provider_data->clks) {
-+		kfree(provider_data);
++	if (!provider_data->clks)
++		goto done;
++
++	for (i = 0; mask && i < count; ++i) {
++		/* Find next set bit in mask */
++		shift = ffs(mask) - 1;
++		mask &= ~BIT(shift);
++
++		if (of_property_read_string_index(node, "clock-output-names", i,
++						  &clk_name))
++			goto done;
++
++
++		for (j = 0; j < 2; ++j) {
++			parent_name[j] = of_clk_get_parent_name(node, i*2 + j);
++			if (!parent_name[j])
++				goto done;
++		}
++
++		++provider_data->clk_num;
++		clk = clk_register_tz1090_mux(clk_name, parent_name,
++					      CLK_SET_RATE_PARENT, reg, shift,
++					      0);
++		if (!IS_ERR(clk))
++			++successes;
++		provider_data->clks[i] = clk;
++	}
++done:
++
++	if (!successes) {
++		if (provider_data) {
++			kfree(provider_data->clks);
++			kfree(provider_data);
++		}
++		iounmap(reg);
 +		return;
 +	}
 +
-+	/* divide 1st parent clock (XTAL1) */
-+	provider_data->clks[0] = clk_register_tz1090_divider(clk_names[0],
-+					parent_names[0], 0, reg,
-+					16,		/* shift */
-+					BIT(11) - 1,	/* mask */
-+					0);
-+	parent_names[0] = clk_names[0];
-+	/* mux divided 1st parent clock (XTAL1) and 2nd parent clock (XTAL3) */
-+	provider_data->clks[1] = clk_register_tz1090_mux(clk_names[1],
-+					parent_names, CLK_SET_RATE_PARENT, reg,
-+					30,		/* bit */
-+					0);
-+
 +	of_clk_add_provider(node, of_clk_src_onecell_get, provider_data);
 +}
-+CLK_OF_DECLARE(tz1090_pdc_clk, "img,tz1090-pdc-clock", of_tz1090_pdc_clk_setup);
++CLK_OF_DECLARE(tz1090_mux_bank_clk, "img,tz1090-mux-bank",
++	       of_tz1090_mux_bank_setup);
 -- 
 2.0.4
 
