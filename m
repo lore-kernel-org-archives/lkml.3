@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216AbaKSPwL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:52:11 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:39529 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754598AbaKSPwI (ORCPT
+	id S932278AbaKSPwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:52:42 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:38003 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932240AbaKSPwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:52:08 -0500
-Date: Wed, 19 Nov 2014 15:52:01 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        edubezval@gmail.com, kernel@stlinux.com, linux-pm@vger.kernel.org
-Subject: Re: [STLinux Kernel] [PATCH] thermal: sti: Ignore suspend/resume
- functions when !PM
-Message-ID: <20141119155201.GC1875@x1>
-References: <1416404939-365-1-git-send-email-lee.jones@linaro.org>
- <546CAC92.3020504@st.com>
+	Wed, 19 Nov 2014 10:52:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <546CAC92.3020504@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
+References: <20141118172146.3784.81151.stgit@buzz>
+	<20141118173413.GB4042@n2100.arm.linux.org.uk>
+	<546B8C64.3010904@samsung.com>
+	<2041617.Kxhx5O4MMr@wuerfel>
+	<CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
+Date: Wed, 19 Nov 2014 19:52:39 +0400
+Message-ID: <CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
+Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014, Maxime Coquelin wrote:
+On Wed, Nov 19, 2014 at 5:54 PM, Ard Biesheuvel
+<ard.biesheuvel@linaro.org> wrote:
+> On 19 November 2014 14:40, Arnd Bergmann <arnd@arndb.de> wrote:
+>> On Tuesday 18 November 2014 21:13:56 Konstantin Khlebnikov wrote:
+>>> On 2014-11-18 20:34, Russell King - ARM Linux wrote:
+>>> > On Tue, Nov 18, 2014 at 08:21:46PM +0400, Konstantin Khlebnikov wrote:
+>>> >> Usually modules are loaded into small area prior to the kernel
+>>> >> text because they are linked with the kernel using short calls.
+>>> >> Compile-time instrumentation like GCOV or KASAN bloats code a lot,
+>>> >> and as a result huge modules no longer fit into reserved area.
+>>> >>
+>>> >> This patch adds option CONFIG_MODULES_USE_VMALLOC which lifts
+>>> >> limitation on amount of loaded modules. It links modules using
+>>> >> long-calls (option -mlong-calls) and loads them into vmalloc area.
+>>> >>
+>>> >> In few places exported symbols are called from inline assembly.
+>>> >> This patch adds macro for such call sites: __asmbl and __asmbl_clobber.
+>>> >> Call turns into single 'bl' or sequence 'movw; movt; blx' depending on
+>>> >> context and state of config option.
+>>> >>
+>>> >> Unfortunately this option isn't compatible with CONFIG_FUNCTION_TRACER.
+>>> >> Compiler emits short calls to profiling function despite of -mlong-calls.
+>>> >> This is a bug in GCC, but ftrace anyway needs an update to handle this.
+>>> > It also isn't compatible with the older architectures which don't have
+>>> > "blx".
+>>>
+>>> Ok, I'll add "depends on CPU_V6 || CPU_V7" I don't think that it is
+>>> necessary for older cpus.
+>>
+>> Why not just use a different branch instruction for the older CPUs?
+>>
+>
+> ARMv6 doesn't support movw/movt so this will only work on v7.
+>
+> What about doing 'mov lr, pc; ldr pc,=symbol' instead? You clearly
+> don't care about performance in this case, so the performance hit (due
+> to the dcache access and interfering with the return stack predictors)
+> should be tolerable. The only thing to be careful about is thumb2
+> kernels: you would need to set the thumb bit in lr manually but only
+> if the call is made /from/ thumb. You would probably be better off
+> just depending on !THUMB2_KERNEL.
 
-> 
-> On 11/19/2014 02:48 PM, Lee Jones wrote:
-> >Prevents build warning:
-> >
-> >st_thermal.c:278:12:
-> >     warning: ‘st_thermal_suspend’ defined but not used [-Wunused-function]
-> >st_thermal.c:286:12:
-> >     warning: ‘st_thermal_resume’ defined but not used [-Wunused-function]
-> >
-> >Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> You can add my:
-> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+Do you mean ldr pc, =symbol ?
 
-Sorry Maxime, I made a booboo!
+In this case I get this error:
 
-Resubmitted.
+/tmp/ccAHtONU.s: Assembler messages:
+/tmp/ccAHtONU.s:220: Error: invalid literal constant: pool needs to be closer
 
-> >---
-> >  drivers/thermal/st/st_thermal.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> >
-> >diff --git a/drivers/thermal/st/st_thermal.c b/drivers/thermal/st/st_thermal.c
-> >index 90163b3..9841488 100644
-> >--- a/drivers/thermal/st/st_thermal.c
-> >+++ b/drivers/thermal/st/st_thermal.c
-> >@@ -275,6 +275,7 @@ int st_thermal_unregister(struct platform_device *pdev)
-> >  }
-> >  EXPORT_SYMBOL_GPL(st_thermal_unregister);
-> >+#ifdef CONFIG_PM
-> >  static int st_thermal_suspend(struct device *dev)
-> >  {
-> >  	struct platform_device *pdev = to_platform_device(dev);
-> >@@ -305,6 +306,8 @@ static int st_thermal_resume(struct device *dev)
-> >  	return 0;
-> >  }
-> >+#endif
-> >+
-> >  SIMPLE_DEV_PM_OPS(st_thermal_pm_ops, st_thermal_suspend, st_thermal_resume);
-> >  EXPORT_SYMBOL_GPL(st_thermal_pm_ops);
-> 
+Probably constant pool doesn't work well in inline assembly.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+Something like this seems work:
+
+add     lr, pc, #4
+ldr       pc, [pc, #-4]
+.long symbol
+
+> Ard.
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
