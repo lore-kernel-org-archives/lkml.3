@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487AbaKSQ77 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:59:59 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:55404 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534AbaKSQ76 (ORCPT
+	id S1756254AbaKSRAL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:00:11 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:59999 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658AbaKSRAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:59:58 -0500
-Date: Wed, 19 Nov 2014 16:59:48 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
-Message-ID: <20141119165948.GM4042@n2100.arm.linux.org.uk>
-References: <20141118173413.GB4042@n2100.arm.linux.org.uk>
- <546B8C64.3010904@samsung.com>
- <2041617.Kxhx5O4MMr@wuerfel>
- <CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
- <CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
- <CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com>
- <20141119160747.GH4042@n2100.arm.linux.org.uk>
- <alpine.LFD.2.11.1411191130480.11690@knanqh.ubzr>
- <20141119164902.GK4042@n2100.arm.linux.org.uk>
- <alpine.LFD.2.11.1411191152340.11690@knanqh.ubzr>
+	Wed, 19 Nov 2014 12:00:07 -0500
+Message-ID: <546CCC89.1040502@collabora.co.uk>
+Date: Wed, 19 Nov 2014 17:59:53 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1411191152340.11690@knanqh.ubzr>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
+        linux-samsung-soc@vger.kernel.org
+CC: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Tomasz Figa <t.figa@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] ARM: dts: Add usb3503 pinctrl to exynos5250-spring
+References: <1416412585-10809-1-git-send-email-afaerber@suse.de> <1416412585-10809-2-git-send-email-afaerber@suse.de>
+In-Reply-To: <1416412585-10809-2-git-send-email-afaerber@suse.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 11:57:15AM -0500, Nicolas Pitre wrote:
-> On Wed, 19 Nov 2014, Russell King - ARM Linux wrote:
-> > I don't think I ever did, because its pretty much impossible to do as I
-> > explained in a follow up to this thread.
-> > 
-> > We _used_ to do this with the userspace insmod methods, but since we got
-> > this kernel-side linker, it's been pretty much impossible to do without
-> > rewriting the module code.  That's not going to happen on account of one
-> > quirky architecture which Linus doesn't particularly like.
-> 
-> Still... We could try adding a hook in the generic module linker code 
-> for a pre-relocation pass.  Maybe only ARM would use it, but if the need 
-> to load big modules is real then I imagine Linus could be amenable to a 
-> compromise.
+Hello Andreas,
 
-So, how big a table would you allocate for the trampolines, based upon
-not knowing anything about the module being loaded?  4K?  8K?  64K?
+On 11/19/2014 04:56 PM, Andreas Färber wrote:
+> Reported-by: Doug Anderson <dianders@chromium.org>
+> Signed-off-by: Andreas Färber <afaerber@suse.de>
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Even though the patch is simple and is true that the subject explains
+the change, I think that is always good to have a commit message anyways.
+
+Patch looks good to me though:
+
+Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+
+Best regards,
+Javier
