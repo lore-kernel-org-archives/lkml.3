@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906AbaKSWJM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:09:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56472 "EHLO
+	id S1757060AbaKSWJK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:09:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56476 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933348AbaKSVEL (ORCPT
+	with ESMTP id S933350AbaKSVEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:04:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Larsson <andreas@gaisler.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 017/122] sparc32: Implement xchg and atomic_xchg using ATOMIC_HASH locks
-Date: Wed, 19 Nov 2014 12:51:07 -0800
-Message-Id: <20141119205209.378199069@linuxfoundation.org>
+        Weijie Yang <weijie.yang@samsung.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
+        Weijie Yang <weijie.yang.kh@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 018/122] zram: avoid kunmap_atomic() of a NULL pointer
+Date: Wed, 19 Nov 2014 12:51:08 -0800
+Message-Id: <20141119205209.410628702@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,100 +34,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Larsson <andreas@gaisler.com>
+From: Weijie Yang <weijie.yang@samsung.com>
 
-[ Upstream commit 1a17fdc4f4ed06b63fac1937470378a5441a663a ]
+commit c406515239376fc93a30d5d03192182160cbd3fb upstream.
 
-Atomicity between xchg and cmpxchg cannot be guaranteed when xchg is
-implemented with a swap and cmpxchg is implemented with locks.
-Without this, e.g. mcs_spin_lock and mcs_spin_unlock are broken.
+zram could kunmap_atomic() a NULL pointer in a rare situation: a zram
+page becomes a full-zeroed page after a partial write io.  The current
+code doesn't handle this case and performs kunmap_atomic() on a NULL
+pointer, which panics the kernel.
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch fixes this issue.
+
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Dan Streetman <ddstreet@ieee.org>
+Cc: Nitin Gupta <ngupta@vflare.org>
+Cc: Weijie Yang <weijie.yang.kh@gmail.com>
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/include/asm/atomic_32.h  |    2 +-
- arch/sparc/include/asm/cmpxchg_32.h |   12 ++----------
- arch/sparc/lib/atomic32.c           |   27 +++++++++++++++++++++++++++
- 3 files changed, 30 insertions(+), 11 deletions(-)
 
---- a/arch/sparc/include/asm/atomic_32.h
-+++ b/arch/sparc/include/asm/atomic_32.h
-@@ -21,7 +21,7 @@
- 
- extern int __atomic_add_return(int, atomic_t *);
- extern int atomic_cmpxchg(atomic_t *, int, int);
--#define atomic_xchg(v, new) (xchg(&((v)->counter), new))
-+extern int atomic_xchg(atomic_t *, int);
- extern int __atomic_add_unless(atomic_t *, int, int);
- extern void atomic_set(atomic_t *, int);
- 
---- a/arch/sparc/include/asm/cmpxchg_32.h
-+++ b/arch/sparc/include/asm/cmpxchg_32.h
-@@ -11,22 +11,14 @@
- #ifndef __ARCH_SPARC_CMPXCHG__
- #define __ARCH_SPARC_CMPXCHG__
- 
--static inline unsigned long xchg_u32(__volatile__ unsigned long *m, unsigned long val)
--{
--	__asm__ __volatile__("swap [%2], %0"
--			     : "=&r" (val)
--			     : "0" (val), "r" (m)
--			     : "memory");
--	return val;
--}
--
-+extern unsigned long __xchg_u32(volatile u32 *m, u32 new);
- extern void __xchg_called_with_bad_pointer(void);
- 
- static inline unsigned long __xchg(unsigned long x, __volatile__ void * ptr, int size)
- {
- 	switch (size) {
- 	case 4:
--		return xchg_u32(ptr, x);
-+		return __xchg_u32(ptr, x);
+---
+ drivers/block/zram/zram_drv.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -447,7 +447,8 @@ static int zram_bvec_write(struct zram *
  	}
- 	__xchg_called_with_bad_pointer();
- 	return x;
---- a/arch/sparc/lib/atomic32.c
-+++ b/arch/sparc/lib/atomic32.c
-@@ -40,6 +40,19 @@ int __atomic_add_return(int i, atomic_t
- }
- EXPORT_SYMBOL(__atomic_add_return);
  
-+int atomic_xchg(atomic_t *v, int new)
-+{
-+	int ret;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(ATOMIC_HASH(v), flags);
-+	ret = v->counter;
-+	v->counter = new;
-+	spin_unlock_irqrestore(ATOMIC_HASH(v), flags);
-+	return ret;
-+}
-+EXPORT_SYMBOL(atomic_xchg);
-+
- int atomic_cmpxchg(atomic_t *v, int old, int new)
- {
- 	int ret;
-@@ -132,3 +145,17 @@ unsigned long __cmpxchg_u32(volatile u32
- 	return (unsigned long)prev;
- }
- EXPORT_SYMBOL(__cmpxchg_u32);
-+
-+unsigned long __xchg_u32(volatile u32 *ptr, u32 new)
-+{
-+	unsigned long flags;
-+	u32 prev;
-+
-+	spin_lock_irqsave(ATOMIC_HASH(ptr), flags);
-+	prev = *ptr;
-+	*ptr = new;
-+	spin_unlock_irqrestore(ATOMIC_HASH(ptr), flags);
-+
-+	return (unsigned long)prev;
-+}
-+EXPORT_SYMBOL(__xchg_u32);
+ 	if (page_zero_filled(uncmem)) {
+-		kunmap_atomic(user_mem);
++		if (user_mem)
++			kunmap_atomic(user_mem);
+ 		/* Free memory associated with this sector now. */
+ 		write_lock(&zram->meta->tb_lock);
+ 		zram_free_page(zram, index);
 
 
