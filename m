@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933930AbaKSVO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:14:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57280 "EHLO
+	id S934145AbaKSVVH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:21:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57544 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933246AbaKSVOw (ORCPT
+	with ESMTP id S933923AbaKSVO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:52 -0500
+	Wed, 19 Nov 2014 16:14:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Joe Perches <joe@perches.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        azurIt <azurit@pobox.sk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 42/70] ipc: always handle a new value of auto_msgmni
-Date: Wed, 19 Nov 2014 12:52:33 -0800
-Message-Id: <20141119205212.324882849@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Subject: [PATCH 3.10 67/70] mm: memcg: enable memcg OOM killer only for user faults
+Date: Wed, 19 Nov 2014 12:52:58 -0800
+Message-Id: <20141119205213.126536266@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -33,63 +35,217 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 1195d94e006b23c6292e78857e154872e33b6d7e upstream.
+commit 519e52473ebe9db5cdef44670d5a97f1fd53d721 upstream.
 
-proc_dointvec_minmax() returns zero if a new value has been set.  So we
-don't need to check all charecters have been handled.
+System calls and kernel faults (uaccess, gup) can handle an out of memory
+situation gracefully and just return -ENOMEM.
 
-Below you can find two examples.  In the new value has not been handled
-properly.
+Enable the memcg OOM killer only for user faults, where it's really the
+only option available.
 
-$ strace ./a.out
-open("/proc/sys/kernel/auto_msgmni", O_WRONLY) = 3
-write(3, "0\n\0", 3)                    = 2
-close(3)                                = 0
-exit_group(0)
-$ cat /sys/kernel/debug/tracing/trace
-
-$strace ./a.out
-open("/proc/sys/kernel/auto_msgmni", O_WRONLY) = 3
-write(3, "0\n", 2)                      = 2
-close(3)                                = 0
-
-$ cat /sys/kernel/debug/tracing/trace
-a.out-697   [000] ....  3280.998235: unregister_ipcns_notifier <-proc_ipcauto_dointvec_minmax
-
-Fixes: 9eefe520c814 ("ipc: do not use a negative value to re-enable msgmni automatic recomputin")
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Cc: Mathias Krause <minipli@googlemail.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: azurIt <azurit@pobox.sk>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/ipc_sysctl.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ include/linux/memcontrol.h |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/sched.h      |    3 +++
+ mm/filemap.c               |   11 ++++++++++-
+ mm/memcontrol.c            |    2 +-
+ mm/memory.c                |   40 ++++++++++++++++++++++++++++++----------
+ 5 files changed, 88 insertions(+), 12 deletions(-)
 
---- a/ipc/ipc_sysctl.c
-+++ b/ipc/ipc_sysctl.c
-@@ -123,7 +123,6 @@ static int proc_ipcauto_dointvec_minmax(
- 	void __user *buffer, size_t *lenp, loff_t *ppos)
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -124,6 +124,37 @@ extern void mem_cgroup_print_oom_info(st
+ extern void mem_cgroup_replace_page_cache(struct page *oldpage,
+ 					struct page *newpage);
+ 
++/**
++ * mem_cgroup_toggle_oom - toggle the memcg OOM killer for the current task
++ * @new: true to enable, false to disable
++ *
++ * Toggle whether a failed memcg charge should invoke the OOM killer
++ * or just return -ENOMEM.  Returns the previous toggle state.
++ */
++static inline bool mem_cgroup_toggle_oom(bool new)
++{
++	bool old;
++
++	old = current->memcg_oom.may_oom;
++	current->memcg_oom.may_oom = new;
++
++	return old;
++}
++
++static inline void mem_cgroup_enable_oom(void)
++{
++	bool old = mem_cgroup_toggle_oom(true);
++
++	WARN_ON(old == true);
++}
++
++static inline void mem_cgroup_disable_oom(void)
++{
++	bool old = mem_cgroup_toggle_oom(false);
++
++	WARN_ON(old == false);
++}
++
+ #ifdef CONFIG_MEMCG_SWAP
+ extern int do_swap_account;
+ #endif
+@@ -347,6 +378,19 @@ static inline void mem_cgroup_end_update
  {
- 	struct ctl_table ipc_table;
--	size_t lenp_bef = *lenp;
- 	int oldval;
- 	int rc;
+ }
  
-@@ -133,7 +132,7 @@ static int proc_ipcauto_dointvec_minmax(
++static inline bool mem_cgroup_toggle_oom(bool new)
++{
++	return false;
++}
++
++static inline void mem_cgroup_enable_oom(void)
++{
++}
++
++static inline void mem_cgroup_disable_oom(void)
++{
++}
++
+ static inline void mem_cgroup_inc_page_stat(struct page *page,
+ 					    enum mem_cgroup_page_stat_item idx)
+ {
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1411,6 +1411,9 @@ struct task_struct {
+ 		unsigned long memsw_nr_pages; /* uncharged mem+swap usage */
+ 	} memcg_batch;
+ 	unsigned int memcg_kmem_skip_account;
++	struct memcg_oom_info {
++		unsigned int may_oom:1;
++	} memcg_oom;
+ #endif
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+ 	atomic_t ptrace_bp_refcnt;
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1614,6 +1614,7 @@ int filemap_fault(struct vm_area_struct
+ 	struct inode *inode = mapping->host;
+ 	pgoff_t offset = vmf->pgoff;
+ 	struct page *page;
++	bool memcg_oom;
+ 	pgoff_t size;
+ 	int ret = 0;
  
- 	rc = proc_dointvec_minmax(&ipc_table, write, buffer, lenp, ppos);
+@@ -1622,7 +1623,11 @@ int filemap_fault(struct vm_area_struct
+ 		return VM_FAULT_SIGBUS;
  
--	if (write && !rc && lenp_bef == *lenp) {
-+	if (write && !rc) {
- 		int newval = *((int *)(ipc_table.data));
- 		/*
- 		 * The file "auto_msgmni" has correctly been set.
+ 	/*
+-	 * Do we have something in the page cache already?
++	 * Do we have something in the page cache already?  Either
++	 * way, try readahead, but disable the memcg OOM killer for it
++	 * as readahead is optional and no errors are propagated up
++	 * the fault stack.  The OOM killer is enabled while trying to
++	 * instantiate the faulting page individually below.
+ 	 */
+ 	page = find_get_page(mapping, offset);
+ 	if (likely(page) && !(vmf->flags & FAULT_FLAG_TRIED)) {
+@@ -1630,10 +1635,14 @@ int filemap_fault(struct vm_area_struct
+ 		 * We found the page, so try async readahead before
+ 		 * waiting for the lock.
+ 		 */
++		memcg_oom = mem_cgroup_toggle_oom(false);
+ 		do_async_mmap_readahead(vma, ra, file, page, offset);
++		mem_cgroup_toggle_oom(memcg_oom);
+ 	} else if (!page) {
+ 		/* No page in the page cache at all */
++		memcg_oom = mem_cgroup_toggle_oom(false);
+ 		do_sync_mmap_readahead(vma, ra, file, offset);
++		mem_cgroup_toggle_oom(memcg_oom);
+ 		count_vm_event(PGMAJFAULT);
+ 		mem_cgroup_count_vm_event(vma->vm_mm, PGMAJFAULT);
+ 		ret = VM_FAULT_MAJOR;
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2613,7 +2613,7 @@ static int mem_cgroup_do_charge(struct m
+ 		return CHARGE_RETRY;
+ 
+ 	/* If we don't need to call oom-killer at el, return immediately */
+-	if (!oom_check)
++	if (!oom_check || !current->memcg_oom.may_oom)
+ 		return CHARGE_NOMEM;
+ 	/* check OOM */
+ 	if (!mem_cgroup_handle_oom(mem_over_limit, gfp_mask, get_order(csize)))
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3754,22 +3754,14 @@ unlock:
+ /*
+  * By the time we get here, we already hold the mm semaphore
+  */
+-int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+-		unsigned long address, unsigned int flags)
++static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
++			     unsigned long address, unsigned int flags)
+ {
+ 	pgd_t *pgd;
+ 	pud_t *pud;
+ 	pmd_t *pmd;
+ 	pte_t *pte;
+ 
+-	__set_current_state(TASK_RUNNING);
+-
+-	count_vm_event(PGFAULT);
+-	mem_cgroup_count_vm_event(mm, PGFAULT);
+-
+-	/* do counter updates before entering really critical section. */
+-	check_sync_rss_stat(current);
+-
+ 	if (unlikely(is_vm_hugetlb_page(vma)))
+ 		return hugetlb_fault(mm, vma, address, flags);
+ 
+@@ -3850,6 +3842,34 @@ retry:
+ 	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
+ }
+ 
++int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
++		    unsigned long address, unsigned int flags)
++{
++	int ret;
++
++	__set_current_state(TASK_RUNNING);
++
++	count_vm_event(PGFAULT);
++	mem_cgroup_count_vm_event(mm, PGFAULT);
++
++	/* do counter updates before entering really critical section. */
++	check_sync_rss_stat(current);
++
++	/*
++	 * Enable the memcg OOM handling for faults triggered in user
++	 * space.  Kernel faults are handled more gracefully.
++	 */
++	if (flags & FAULT_FLAG_USER)
++		mem_cgroup_enable_oom();
++
++	ret = __handle_mm_fault(mm, vma, address, flags);
++
++	if (flags & FAULT_FLAG_USER)
++		mem_cgroup_disable_oom();
++
++	return ret;
++}
++
+ #ifndef __PAGETABLE_PUD_FOLDED
+ /*
+  * Allocate page upper directory.
 
 
