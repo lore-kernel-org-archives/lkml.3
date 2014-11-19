@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921AbaKSWJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:09:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56482 "EHLO
+	id S1757906AbaKSWJM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:09:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56472 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932938AbaKSVEI (ORCPT
+	with ESMTP id S933348AbaKSVEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:08 -0500
+	Wed, 19 Nov 2014 16:04:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dwight Engen <dwight.engen@oracle.com>,
+        Andreas Larsson <andreas@gaisler.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 010/122] sunvdc: add cdrom and v1.1 protocol support
-Date: Wed, 19 Nov 2014 12:51:00 -0800
-Message-Id: <20141119205209.164858460@linuxfoundation.org>
+Subject: [PATCH 3.14 017/122] sparc32: Implement xchg and atomic_xchg using ATOMIC_HASH locks
+Date: Wed, 19 Nov 2014 12:51:07 -0800
+Message-Id: <20141119205209.378199069@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,246 +29,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Allen Pais <allen.pais@oracle.com>
+From: Andreas Larsson <andreas@gaisler.com>
 
-[ Upstream commit 9bce21828d54a95143f1b74619705c2dd8e88b92 ]
+[ Upstream commit 1a17fdc4f4ed06b63fac1937470378a5441a663a ]
 
-Interpret the media type from v1.1 protocol to support CDROM/DVD.
+Atomicity between xchg and cmpxchg cannot be guaranteed when xchg is
+implemented with a swap and cmpxchg is implemented with locks.
+Without this, e.g. mcs_spin_lock and mcs_spin_unlock are broken.
 
-For v1.0 protocol, a disk's size continues to be calculated from the
-geometry returned by the vdisk server. The geometry returned by the server
-can be less than the actual number of sectors available in the backing
-image/device due to the rounding in the division used to compute the
-geometry in the vdisk server.
-
-In v1.1 protocol a disk's actual size in sectors is returned during the
-handshake. Use this size when v1.1 protocol is negotiated. Since this size
-will always be larger than the former geometry computed size, disks created
-under v1.0 will be forwards compatible to v1.1, but not vice versa.
-
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/vio.h |   12 +++-
- drivers/block/sunvdc.c       |  109 ++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 101 insertions(+), 20 deletions(-)
+ arch/sparc/include/asm/atomic_32.h  |    2 +-
+ arch/sparc/include/asm/cmpxchg_32.h |   12 ++----------
+ arch/sparc/lib/atomic32.c           |   27 +++++++++++++++++++++++++++
+ 3 files changed, 30 insertions(+), 11 deletions(-)
 
---- a/arch/sparc/include/asm/vio.h
-+++ b/arch/sparc/include/asm/vio.h
-@@ -118,12 +118,18 @@ struct vio_disk_attr_info {
- 	u8			vdisk_type;
- #define VD_DISK_TYPE_SLICE	0x01 /* Slice in block device	*/
- #define VD_DISK_TYPE_DISK	0x02 /* Entire block device	*/
--	u16			resv1;
-+	u8			vdisk_mtype;		/* v1.1 */
-+#define VD_MEDIA_TYPE_FIXED	0x01 /* Fixed device */
-+#define VD_MEDIA_TYPE_CD	0x02 /* CD Device    */
-+#define VD_MEDIA_TYPE_DVD	0x03 /* DVD Device   */
-+	u8			resv1;
- 	u32			vdisk_block_size;
- 	u64			operations;
--	u64			vdisk_size;
-+	u64			vdisk_size;		/* v1.1 */
- 	u64			max_xfer_size;
--	u64			resv2[2];
-+	u32			phys_block_size;	/* v1.2 */
-+	u32			resv2;
-+	u64			resv3[1];
- };
+--- a/arch/sparc/include/asm/atomic_32.h
++++ b/arch/sparc/include/asm/atomic_32.h
+@@ -21,7 +21,7 @@
  
- struct vio_disk_desc {
---- a/drivers/block/sunvdc.c
-+++ b/drivers/block/sunvdc.c
-@@ -9,6 +9,7 @@
- #include <linux/blkdev.h>
- #include <linux/hdreg.h>
- #include <linux/genhd.h>
-+#include <linux/cdrom.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
- #include <linux/completion.h>
-@@ -22,8 +23,8 @@
+ extern int __atomic_add_return(int, atomic_t *);
+ extern int atomic_cmpxchg(atomic_t *, int, int);
+-#define atomic_xchg(v, new) (xchg(&((v)->counter), new))
++extern int atomic_xchg(atomic_t *, int);
+ extern int __atomic_add_unless(atomic_t *, int, int);
+ extern void atomic_set(atomic_t *, int);
  
- #define DRV_MODULE_NAME		"sunvdc"
- #define PFX DRV_MODULE_NAME	": "
--#define DRV_MODULE_VERSION	"1.0"
--#define DRV_MODULE_RELDATE	"June 25, 2007"
-+#define DRV_MODULE_VERSION	"1.1"
-+#define DRV_MODULE_RELDATE	"February 13, 2013"
+--- a/arch/sparc/include/asm/cmpxchg_32.h
++++ b/arch/sparc/include/asm/cmpxchg_32.h
+@@ -11,22 +11,14 @@
+ #ifndef __ARCH_SPARC_CMPXCHG__
+ #define __ARCH_SPARC_CMPXCHG__
  
- static char version[] =
- 	DRV_MODULE_NAME ".c:v" DRV_MODULE_VERSION " (" DRV_MODULE_RELDATE ")\n";
-@@ -65,6 +66,7 @@ struct vdc_port {
- 	u64			operations;
- 	u32			vdisk_size;
- 	u8			vdisk_type;
-+	u8			vdisk_mtype;
- 
- 	char			disk_name[32];
- 
-@@ -79,9 +81,16 @@ static inline struct vdc_port *to_vdc_po
- 
- /* Ordered from largest major to lowest */
- static struct vio_version vdc_versions[] = {
-+	{ .major = 1, .minor = 1 },
- 	{ .major = 1, .minor = 0 },
- };
- 
-+static inline int vdc_version_supported(struct vdc_port *port,
-+					u16 major, u16 minor)
-+{
-+	return port->vio.ver.major == major && port->vio.ver.minor >= minor;
-+}
-+
- #define VDCBLK_NAME	"vdisk"
- static int vdc_major;
- #define PARTITION_SHIFT	3
-@@ -103,9 +112,41 @@ static int vdc_getgeo(struct block_devic
- 	return 0;
- }
- 
-+/* Add ioctl/CDROM_GET_CAPABILITY to support cdrom_id in udev
-+ * when vdisk_mtype is VD_MEDIA_TYPE_CD or VD_MEDIA_TYPE_DVD.
-+ * Needed to be able to install inside an ldom from an iso image.
-+ */
-+static int vdc_ioctl(struct block_device *bdev, fmode_t mode,
-+		     unsigned command, unsigned long argument)
-+{
-+	int i;
-+	struct gendisk *disk;
-+
-+	switch (command) {
-+	case CDROMMULTISESSION:
-+		pr_debug(PFX "Multisession CDs not supported\n");
-+		for (i = 0; i < sizeof(struct cdrom_multisession); i++)
-+			if (put_user(0, (char __user *)(argument + i)))
-+				return -EFAULT;
-+		return 0;
-+
-+	case CDROM_GET_CAPABILITY:
-+		disk = bdev->bd_disk;
-+
-+		if (bdev->bd_disk && (disk->flags & GENHD_FL_CD))
-+			return 0;
-+		return -EINVAL;
-+
-+	default:
-+		pr_debug(PFX "ioctl %08x not supported\n", command);
-+		return -EINVAL;
-+	}
-+}
-+
- static const struct block_device_operations vdc_fops = {
- 	.owner		= THIS_MODULE,
- 	.getgeo		= vdc_getgeo,
-+	.ioctl		= vdc_ioctl,
- };
- 
- static void vdc_finish(struct vio_driver_state *vio, int err, int waiting_for)
-@@ -165,9 +206,9 @@ static int vdc_handle_attr(struct vio_dr
- 	struct vio_disk_attr_info *pkt = arg;
- 
- 	viodbg(HS, "GOT ATTR stype[0x%x] ops[%llx] disk_size[%llu] disk_type[%x] "
--	       "xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
-+	       "mtype[0x%x] xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
- 	       pkt->tag.stype, pkt->operations,
--	       pkt->vdisk_size, pkt->vdisk_type,
-+	       pkt->vdisk_size, pkt->vdisk_type, pkt->vdisk_mtype,
- 	       pkt->xfer_mode, pkt->vdisk_block_size,
- 	       pkt->max_xfer_size);
- 
-@@ -192,8 +233,11 @@ static int vdc_handle_attr(struct vio_dr
- 		}
- 
- 		port->operations = pkt->operations;
--		port->vdisk_size = pkt->vdisk_size;
- 		port->vdisk_type = pkt->vdisk_type;
-+		if (vdc_version_supported(port, 1, 1)) {
-+			port->vdisk_size = pkt->vdisk_size;
-+			port->vdisk_mtype = pkt->vdisk_mtype;
-+		}
- 		if (pkt->max_xfer_size < port->max_xfer_size)
- 			port->max_xfer_size = pkt->max_xfer_size;
- 		port->vdisk_block_size = pkt->vdisk_block_size;
-@@ -663,18 +707,25 @@ static int probe_disk(struct vdc_port *p
- 		return err;
- 	}
- 
--	err = generic_request(port, VD_OP_GET_DISKGEOM,
--			      &port->geom, sizeof(port->geom));
--	if (err < 0) {
--		printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
--		       "error %d\n", err);
--		return err;
-+	if (vdc_version_supported(port, 1, 1)) {
-+		/* vdisk_size should be set during the handshake, if it wasn't
-+		 * then the underlying disk is reserved by another system
-+		 */
-+		if (port->vdisk_size == -1)
-+			return -ENODEV;
-+	} else {
-+		err = generic_request(port, VD_OP_GET_DISKGEOM,
-+				      &port->geom, sizeof(port->geom));
-+		if (err < 0) {
-+			printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
-+			       "error %d\n", err);
-+			return err;
-+		}
-+		port->vdisk_size = ((u64)port->geom.num_cyl *
-+				    (u64)port->geom.num_hd *
-+				    (u64)port->geom.num_sec);
- 	}
- 
--	port->vdisk_size = ((u64)port->geom.num_cyl *
--			    (u64)port->geom.num_hd *
--			    (u64)port->geom.num_sec);
+-static inline unsigned long xchg_u32(__volatile__ unsigned long *m, unsigned long val)
+-{
+-	__asm__ __volatile__("swap [%2], %0"
+-			     : "=&r" (val)
+-			     : "0" (val), "r" (m)
+-			     : "memory");
+-	return val;
+-}
 -
- 	q = blk_init_queue(do_vdc_request, &port->vio.lock);
- 	if (!q) {
- 		printk(KERN_ERR PFX "%s: Could not allocate queue.\n",
-@@ -704,9 +755,32 @@ static int probe_disk(struct vdc_port *p
++extern unsigned long __xchg_u32(volatile u32 *m, u32 new);
+ extern void __xchg_called_with_bad_pointer(void);
  
- 	set_capacity(g, port->vdisk_size);
+ static inline unsigned long __xchg(unsigned long x, __volatile__ void * ptr, int size)
+ {
+ 	switch (size) {
+ 	case 4:
+-		return xchg_u32(ptr, x);
++		return __xchg_u32(ptr, x);
+ 	}
+ 	__xchg_called_with_bad_pointer();
+ 	return x;
+--- a/arch/sparc/lib/atomic32.c
++++ b/arch/sparc/lib/atomic32.c
+@@ -40,6 +40,19 @@ int __atomic_add_return(int i, atomic_t
+ }
+ EXPORT_SYMBOL(__atomic_add_return);
  
--	printk(KERN_INFO PFX "%s: %u sectors (%u MB)\n",
-+	if (vdc_version_supported(port, 1, 1)) {
-+		switch (port->vdisk_mtype) {
-+		case VD_MEDIA_TYPE_CD:
-+			pr_info(PFX "Virtual CDROM %s\n", port->disk_name);
-+			g->flags |= GENHD_FL_CD;
-+			g->flags |= GENHD_FL_REMOVABLE;
-+			set_disk_ro(g, 1);
-+			break;
++int atomic_xchg(atomic_t *v, int new)
++{
++	int ret;
++	unsigned long flags;
 +
-+		case VD_MEDIA_TYPE_DVD:
-+			pr_info(PFX "Virtual DVD %s\n", port->disk_name);
-+			g->flags |= GENHD_FL_CD;
-+			g->flags |= GENHD_FL_REMOVABLE;
-+			set_disk_ro(g, 1);
-+			break;
++	spin_lock_irqsave(ATOMIC_HASH(v), flags);
++	ret = v->counter;
++	v->counter = new;
++	spin_unlock_irqrestore(ATOMIC_HASH(v), flags);
++	return ret;
++}
++EXPORT_SYMBOL(atomic_xchg);
 +
-+		case VD_MEDIA_TYPE_FIXED:
-+			pr_info(PFX "Virtual Hard disk %s\n", port->disk_name);
-+			break;
-+		}
-+	}
+ int atomic_cmpxchg(atomic_t *v, int old, int new)
+ {
+ 	int ret;
+@@ -132,3 +145,17 @@ unsigned long __cmpxchg_u32(volatile u32
+ 	return (unsigned long)prev;
+ }
+ EXPORT_SYMBOL(__cmpxchg_u32);
 +
-+	pr_info(PFX "%s: %u sectors (%u MB) protocol %d.%d\n",
- 	       g->disk_name,
--	       port->vdisk_size, (port->vdisk_size >> (20 - 9)));
-+	       port->vdisk_size, (port->vdisk_size >> (20 - 9)),
-+	       port->vio.ver.major, port->vio.ver.minor);
- 
- 	add_disk(g);
- 
-@@ -765,6 +839,7 @@ static int vdc_port_probe(struct vio_dev
- 	else
- 		snprintf(port->disk_name, sizeof(port->disk_name),
- 			 VDCBLK_NAME "%c", 'a' + ((int)vdev->dev_no % 26));
-+	port->vdisk_size = -1;
- 
- 	err = vio_driver_init(&port->vio, vdev, VDEV_DISK,
- 			      vdc_versions, ARRAY_SIZE(vdc_versions),
++unsigned long __xchg_u32(volatile u32 *ptr, u32 new)
++{
++	unsigned long flags;
++	u32 prev;
++
++	spin_lock_irqsave(ATOMIC_HASH(ptr), flags);
++	prev = *ptr;
++	*ptr = new;
++	spin_unlock_irqrestore(ATOMIC_HASH(ptr), flags);
++
++	return (unsigned long)prev;
++}
++EXPORT_SYMBOL(__xchg_u32);
 
 
