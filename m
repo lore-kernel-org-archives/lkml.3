@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073AbaKSWTr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:19:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56046 "EHLO
+	id S1758058AbaKSWTo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:19:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56050 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932579AbaKSUyN (ORCPT
+	with ESMTP id S932589AbaKSUyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:54:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Horman <horms+renesas@verge.net.au>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.17 080/141] ata: sata_rcar: Disable DIPM mode for r8a7790 ES1
-Date: Wed, 19 Nov 2014 12:51:43 -0800
-Message-Id: <20141119205153.293877510@linuxfoundation.org>
+        Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.17 081/141] nfs: fix pnfs direct write memory leak
+Date: Wed, 19 Nov 2014 12:51:44 -0800
+Message-Id: <20141119205153.331558068@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -28,80 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Horman <horms+renesas@verge.net.au>
+From: Peng Tao <tao.peng@primarydata.com>
 
-commit aa1cf25887099bba68f1f3879c0d394e08b8779f upstream.
+commit 8c393f9a721c30a030049a680e1bf896669bb279 upstream.
 
-Unlike other SATA R-Car r8a7790 controllers the r8a7790 ES1 SATA R-Car
-controller needs to be run with DIPM disabled.
+For pNFS direct writes, layout driver may dynamically allocate ds_cinfo.buckets.
+So we need to take care to free them when freeing dreq.
 
-Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Ideally this needs to be done inside layout driver where ds_cinfo.buckets
+are allocated. But buckets are attached to dreq and reused across LD IO iterations.
+So I feel it's OK to free them in the generic layer.
+
+Signed-off-by: Peng Tao <tao.peng@primarydata.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/devicetree/bindings/ata/sata_rcar.txt |    3 ++-
- drivers/ata/sata_rcar.c                             |   10 ++++++++++
- 2 files changed, 12 insertions(+), 1 deletion(-)
+ fs/nfs/direct.c         |    1 +
+ include/linux/nfs_xdr.h |   11 +++++++++++
+ 2 files changed, 12 insertions(+)
 
---- a/Documentation/devicetree/bindings/ata/sata_rcar.txt
-+++ b/Documentation/devicetree/bindings/ata/sata_rcar.txt
-@@ -3,7 +3,8 @@
- Required properties:
- - compatible		: should contain one of the following:
- 			  - "renesas,sata-r8a7779" for R-Car H1
--			  - "renesas,sata-r8a7790" for R-Car H2
-+			  - "renesas,sata-r8a7790-es1" for R-Car H2 ES1
-+			  - "renesas,sata-r8a7790" for R-Car H2 other than ES1
- 			  - "renesas,sata-r8a7791" for R-Car M2
- - reg			: address and length of the SATA registers;
- - interrupts		: must consist of one interrupt specifier.
---- a/drivers/ata/sata_rcar.c
-+++ b/drivers/ata/sata_rcar.c
-@@ -146,6 +146,7 @@
- enum sata_rcar_type {
- 	RCAR_GEN1_SATA,
- 	RCAR_GEN2_SATA,
-+	RCAR_R8A7790_ES1_SATA,
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@ -270,6 +270,7 @@ static void nfs_direct_req_free(struct k
+ {
+ 	struct nfs_direct_req *dreq = container_of(kref, struct nfs_direct_req, kref);
+ 
++	nfs_free_pnfs_ds_cinfo(&dreq->ds_cinfo);
+ 	if (dreq->l_ctx != NULL)
+ 		nfs_put_lock_context(dreq->l_ctx);
+ 	if (dreq->ctx != NULL)
+--- a/include/linux/nfs_xdr.h
++++ b/include/linux/nfs_xdr.h
+@@ -1232,11 +1232,22 @@ struct nfs41_free_stateid_res {
+ 	unsigned int			status;
  };
  
- struct sata_rcar_priv {
-@@ -763,6 +764,9 @@ static void sata_rcar_setup_port(struct
- 	ap->udma_mask	= ATA_UDMA6;
- 	ap->flags	|= ATA_FLAG_SATA;
- 
-+	if (priv->type == RCAR_R8A7790_ES1_SATA)
-+		ap->flags	|= ATA_FLAG_NO_DIPM;
++static inline void
++nfs_free_pnfs_ds_cinfo(struct pnfs_ds_commit_info *cinfo)
++{
++	kfree(cinfo->buckets);
++}
 +
- 	ioaddr->cmd_addr = base + SDATA_REG;
- 	ioaddr->ctl_addr = base + SSDEVCON_REG;
- 	ioaddr->scr_addr = base + SCRSSTS_REG;
-@@ -792,6 +796,7 @@ static void sata_rcar_init_controller(st
- 		sata_rcar_gen1_phy_init(priv);
- 		break;
- 	case RCAR_GEN2_SATA:
-+	case RCAR_R8A7790_ES1_SATA:
- 		sata_rcar_gen2_phy_init(priv);
- 		break;
- 	default:
-@@ -838,6 +843,10 @@ static struct of_device_id sata_rcar_mat
- 		.data = (void *)RCAR_GEN2_SATA
- 	},
- 	{
-+		.compatible = "renesas,sata-r8a7790-es1",
-+		.data = (void *)RCAR_R8A7790_ES1_SATA
-+	},
-+	{
- 		.compatible = "renesas,sata-r8a7791",
- 		.data = (void *)RCAR_GEN2_SATA
- 	},
-@@ -849,6 +858,7 @@ static const struct platform_device_id s
- 	{ "sata_rcar", RCAR_GEN1_SATA }, /* Deprecated by "sata-r8a7779" */
- 	{ "sata-r8a7779", RCAR_GEN1_SATA },
- 	{ "sata-r8a7790", RCAR_GEN2_SATA },
-+	{ "sata-r8a7790-es1", RCAR_R8A7790_ES1_SATA },
- 	{ "sata-r8a7791", RCAR_GEN2_SATA },
- 	{ },
+ #else
+ 
+ struct pnfs_ds_commit_info {
  };
+ 
++static inline void
++nfs_free_pnfs_ds_cinfo(struct pnfs_ds_commit_info *cinfo)
++{
++}
++
+ #endif /* CONFIG_NFS_V4_1 */
+ 
+ struct nfs_page;
 
 
