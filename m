@@ -1,86 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175AbaKSOct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 09:32:49 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38922 "EHLO arroyo.ext.ti.com"
+	id S1755427AbaKSOdI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 09:33:08 -0500
+Received: from mga02.intel.com ([134.134.136.20]:54829 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754921AbaKSOcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:32:47 -0500
-Date: Wed, 19 Nov 2014 08:32:59 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-CC: David Airlie <airlied@linux.ie>, Rob Clark <robdclark@gmail.com>,
-        "open list:DRM DRIVERS" <dri-devel@lists.freedesktop.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drm/tilcdc: add missing clk_put in tilcdc_unload()
-Message-ID: <20141119143259.GC4029@saruman>
-Reply-To: <balbi@ti.com>
-References: <1416406400-10564-1-git-send-email-julien.chauveau@neo-technologies.fr>
+	id S1752896AbaKSOdF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 09:33:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,417,1413270000"; 
+   d="scan'208";a="639721933"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Namhyung Kim <namhyung@kernel.org>
+CC: "acme@kernel.org" <acme@kernel.org>, "jolsa@redhat.com" <jolsa@redhat.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "eranian@google.com" <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: RE: [PATCH V4 1/3] perf tools: enable LBR call stack support
+Thread-Topic: [PATCH V4 1/3] perf tools: enable LBR call stack support
+Thread-Index: AQHQA8c7ODa7l2FB7kKmHK6r8bJvrpxn/6hg
+Date: Wed, 19 Nov 2014 14:32:08 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F07701671D25@SHSMSX103.ccr.corp.intel.com>
+References: <1416346617-3577-1-git-send-email-kan.liang@intel.com>
+	<1416346617-3577-2-git-send-email-kan.liang@intel.com>
+ <87r3wzpt4o.fsf@sejong.aot.lge.com>
+In-Reply-To: <87r3wzpt4o.fsf@sejong.aot.lge.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dkEUBIird37B8yKS"
-Content-Disposition: inline
-In-Reply-To: <1416406400-10564-1-git-send-email-julien.chauveau@neo-technologies.fr>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---dkEUBIird37B8yKS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, Nov 19, 2014 at 03:13:20PM +0100, Julien CHAUVEAU wrote:
-> We need to call clk_put on display clock, in the same way as functional c=
-lock.
->=20
-> Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-> ---
->  drivers/gpu/drm/tilcdc/tilcdc_drv.c | 3 +++
->  1 file changed, 3 insertions(+)
->=20
-> diff --git a/drivers/gpu/drm/tilcdc/tilcdc_drv.c b/drivers/gpu/drm/tilcdc=
-/tilcdc_drv.c
-> index 79a34cb..ccc1cdb 100644
-> --- a/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-> +++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-> @@ -136,6 +136,9 @@ static int tilcdc_unload(struct drm_device *dev)
->  			CPUFREQ_TRANSITION_NOTIFIER);
->  #endif
-> =20
-> +	if (priv->disp_clk)
-> +		clk_put(priv->disp_clk);
-> +
->  	if (priv->clk)
->  		clk_put(priv->clk);
 
-we should actually remove the priv->$clk check. clk_put() is safe
-against NULL pointers.
+> On Tue, 18 Nov 2014 16:36:55 -0500, kan liang wrote:
+> > From: Kan Liang <kan.liang@intel.com>
+> >
+> > Currently, there are two call chain recording options, fp and dwarf.
+> > Haswell has a new feature that utilizes the existing LBR facility to
+> > record call chains. So it provides the third options to record call
+> > chain. This patch enables the lbr call stack support.
+> >
+> > LBR call stack has some limitations. It reuses current LBR facility,
+> > so LBR call stack and branch record can not be enabled at the same
+> > time. It is only available for user callchain.
+> > However, LBR call stack can work on the user app which doesn't have
+> > frame-pointer or dwarf debug info compiled. It is a good alternative
+> > when nothing else works.
+> 
+> 
+> [SNIP]
+> >  static void
+> > -perf_evsel__config_callgraph(struct perf_evsel *evsel)
+> > +perf_evsel__config_callgraph(struct perf_evsel *evsel,
+> > +			     struct record_opts *opts)
+> >  {
+> >  	bool function = perf_evsel__is_function_event(evsel);
+> >  	struct perf_event_attr *attr = &evsel->attr;
+> >
+> >  	perf_evsel__set_sample_bit(evsel, CALLCHAIN);
+> >
+> > +	if (callchain_param.record_mode == CALLCHAIN_LBR) {
+> > +		if (!opts->branch_stack) {
+> > +			perf_evsel__set_sample_bit(evsel,
+> BRANCH_STACK);
+> > +			attr->branch_sample_type =
+> PERF_SAMPLE_BRANCH_USER |
+> > +
+> 	PERF_SAMPLE_BRANCH_CALL_STACK;
+> > +			if (attr->exclude_user) {
+> > +				attr->exclude_user = 0;
+> > +
+> > +				pr_warning("LBR callstack option is only
+> available"
+> > +					   " to get user callchain
+> information."
+> > +					   " Force exclude_user to 0.\n");
+> > +			}
+> 
+> I'm not sure what's in a higher priority - maybe I missed earlier discussion.
+> IOW what about this?
+> 
+> 			if (attr->exclude_user) {
+> 				pr_warning("LBR callstack option is only
+> available"
+> 					   " to get user callchain
+> information.\n");
 
---=20
-balbi
+I think either is fine. I'd like to add more info "Falling back to framepointers."
+based on your changes.
+So the user know what they will get then.
 
---dkEUBIird37B8yKS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+What do you think?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+pr_warning("LBR callstack option is only available"
+	         " to get user callchain information."
+	          " Falling back to framepointers.\n");
 
-iQIcBAEBAgAGBQJUbKobAAoJEIaOsuA1yqRETYIP/0Pk2BF6k8ezp8ABBEQgoGpk
-mSnxd0jSscBVEKznRqK6r4XQDR+VyYfDdc9ZdxanOsvyqp08yiQ7XWIoi6Nnp8M9
-cUfJyDRBPaVzOnvMi6lxEf2Y6MAdcWFMBr7rKolMtYVBqmjrk/c0tGxtSvKRlkDz
-cL+s+FqtYhw1BHL+FPhIFIrZr2L1Ox/ReRUrm7RSNLn9bJVVyvXAqdaI5QXNlmUS
-+zC4YRmJda+wKr9aJdutfig78JeOikMO6+OwNNNdViGu6SvHRs/GPfjVla6oRRyl
-WsPiO65a3p23fE76Iwm+bBY9aVe8/UtHUnyMQK8/r+LUPMOzRf5p/DugmSvfXeGX
-EDWAVkN3vwntOGQVrKi4UuB7U/csyYBwj6NoR/w2RWWl3aUPH45Ehcc4S6X2nGuy
-/Tp0LB69Wkbp8Yq1flSIq96144ZUjLqdVmbQ8/gCFSe8JIHLwpxVRqyrNjhTkFeM
-Xrhw05gJyOHcPI80f6VluJrNQ6RNymxQJDpiG8KiD7jJJIEbQQcVLYUefXXyIdcu
-tcEO0NHgWQAMyLLm+neXPGSEi/l7JkhCsRgVnK9BiZhoZLCnsNBZcuHSM0swcuiu
-hCp5tR/I3eDv8055VIqr90FzNTq+eaJn+pKk68yPfuYSDPRLAHfX0JAPowSdE9wO
-Z680muLOcFVVXdj9PXbW
-=PEMw
------END PGP SIGNATURE-----
+pr_ warning ("Cannot use LBR callstack with branch stack"
+                " Falling back to framepointers.\n");
 
---dkEUBIird37B8yKS--
+Thanks,
+Kan
+> 			} else {
+> 				perf_evsel__set_sample_bit(evsel,
+> BRANCH_STACK);
+> 				attr->branch_sample_type =
+> PERF_SAMPLE_BRANCH_USER |
+> 
+> 	PERF_SAMPLE_BRANCH_CALL_STACK;
+> 			}
+> 
+> > +		} else
+> > +			 pr_info("Cannot use LBR callstack with branch
+> stack\n");
+> 
+> It seems pr_warning is more appropriate here.
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+> > +	}
+> > +
+> >  	if (callchain_param.record_mode == CALLCHAIN_DWARF) {
+> >  		if (!function) {
+> >  			perf_evsel__set_sample_bit(evsel, REGS_USER);
+> @@ -659,7 +676,7 @@
+> > void perf_evsel__config(struct perf_evsel *evsel, struct record_opts
+> *opts)
+> >  	}
+> >
+> >  	if (callchain_param.enabled && !evsel->no_aux_samples)
+> > -		perf_evsel__config_callgraph(evsel);
+> > +		perf_evsel__config_callgraph(evsel, opts);
+> >
+> >  	if (target__has_cpu(&opts->target))
+> >  		perf_evsel__set_sample_bit(evsel, CPU);
