@@ -1,53 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150AbaKSRA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:00:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57223 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755804AbaKSRAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:00:54 -0500
-Message-ID: <546CCC9E.7090905@redhat.com>
-Date: Wed, 19 Nov 2014 18:00:14 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755343AbaKSRFG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:05:06 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:51440 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351AbaKSRFD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 12:05:03 -0500
+Date: Wed, 19 Nov 2014 17:04:54 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Flora Fu <flora.fu@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, srv_heupstream@mediatek.com,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Dongdong Cheng <dongdong.cheng@mediatek.com>
+Subject: Re: [PATCH 2/7] mfd: MT6397: Add regmap for MT8135 and MT6397 SoC
+Message-ID: <20141119170454.GJ1875@x1>
+References: <1416210027-5562-1-git-send-email-flora.fu@mediatek.com>
+ <1416210027-5562-3-git-send-email-flora.fu@mediatek.com>
+ <20141118114645.GX24004@x1>
+ <20141118134618.GF30369@pengutronix.de>
 MIME-Version: 1.0
-To: John Fastabend <john.fastabend@gmail.com>
-CC: SF Markus Elfring <elfring@users.sourceforge.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <jhs@mojatatu.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH 1/1] net: sched: Deletion of an unnecessary check before
- the function call "kfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546BAB93.4010406@users.sourceforge.net> <546CC9B3.5060405@gmail.com>
-In-Reply-To: <546CC9B3.5060405@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141118134618.GF30369@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2014 05:47 PM, John Fastabend wrote:
-> On 11/18/2014 12:26 PM, SF Markus Elfring wrote:
->> From: Markus Elfring <elfring@users.sourceforge.net>
-...
->>       if (fp_old)
->>           bpf_prog_destroy(fp_old);
->> -    if (bpf_old)
->> -        kfree(bpf_old);
->> +    kfree(bpf_old);
->>
->>       return 0;
->>
->
-> Maybe I need some coffee but I can't figure out what this
-> patch is against...
->
-> # grep bpf_old ./net/sched/cls_bpf.c
-> #
+On Tue, 18 Nov 2014, Sascha Hauer wrote:
 
-Coffee is always good. :)
+> On Tue, Nov 18, 2014 at 11:46:45AM +0000, Lee Jones wrote:
+> > On Mon, 17 Nov 2014, Flora Fu wrote:
+> > 
+> > > Add PMIC wrapper of MT8135 to access MFD MT6397.
+> > > This is regmap of MT6397 MFD.
+> > > 
+> > > Signed-off-by: Flora Fu <flora.fu@mediatek.com>
+> > > ---
+> > >  drivers/mfd/Kconfig            |   8 +
+> > >  drivers/mfd/Makefile           |   1 +
+> > >  drivers/mfd/mt8135-pmic-wrap.c | 847 +++++++++++++++++++++++++++++++++++++++++
+> > 
+> > All of the PMIC functionality needs removing from MFD and placed
+> > somewhere else.  I suggest either drivers/power or drivers/regulator.
+> 
+> This is no PMIC functionality. The MT8135 has a unit which is is used to
+> access the PMIC (which is not only a PMIC, but also Touchscreen
+> interface and other stuff). This unit is called pmic-wrapper in the
+> docs. See the introductory mail for a nice picture.
 
-Yeah, you actually removed this in commit 1f947bf151e90ec ("net:
-sched: rcu'ify cls_bpf"), so looks like Markus's tree is not
-up to date ...
+I saw the picture, it's very nice.  Whatever this is, it's not an
+MFD.  It's a device which is located on an MFD.  There is far too much
+functional (the operative word here) code contained in this patch.
+
+I'm not sure where this device should live, but I'm keen for MFD not
+to become a dumping ground for ill-fitting devices.  Happy for you to
+create resources and register it from here, but the bulk for the
+functional driver needs to live somewhere else. 
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
