@@ -1,80 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590AbaKSApr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 19:45:47 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:17300 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560AbaKSApq (ORCPT
+	id S1755626AbaKSAsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 19:48:45 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:43956 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754667AbaKSAso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 19:45:46 -0500
-Message-ID: <546BE7F2.3070009@oracle.com>
-Date: Tue, 18 Nov 2014 19:44:34 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 18 Nov 2014 19:48:44 -0500
 MIME-Version: 1.0
-To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-CC: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory debugger.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>	<1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>	<546BD866.5050101@oracle.com> <CAPAsAGxYF27pbNEgsr3PgNJ=uNFzR2qcviLB_7bp=nM3ZD5Jgw@mail.gmail.com>
-In-Reply-To: <CAPAsAGxYF27pbNEgsr3PgNJ=uNFzR2qcviLB_7bp=nM3ZD5Jgw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <4442123.5JIyjOW8pr@vostro.rjw.lan>
+References: <20141015225657.GA818@dtor-ws>
+	<1863054.8ksDvip1yp@vostro.rjw.lan>
+	<CAE_wzQ_keT0zm0iV=S3gM9r94bM73E5kFpbWX85AckRVcC6KSQ@mail.gmail.com>
+	<4442123.5JIyjOW8pr@vostro.rjw.lan>
+Date: Tue, 18 Nov 2014 16:48:42 -0800
+Message-ID: <CAE_wzQ9Y5g+UV2CCfUE80O_0BCBjwHbRaAs153GpiRmZ+pDwAA@mail.gmail.com>
+Subject: Re: [PATCH] ACPI: do not fail suspend if unable to configure wakeup
+From: Dmitry Torokhov <dtor@chromium.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Dmitry Torokhov <dtor@chromium.org>,
+        "Rafael J. Wysocki" <rafael@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Benson Leung <bleung@chromium.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2014 07:09 PM, Andrey Ryabinin wrote:
-> Yes with CONFIG_KASAN_INLINE you will get GPF instead of kasan report.
-> For userspaces addresses we don't have shadow memory. In outline case
-> I just check address itself before checking shadow. In inline case compiler
-> just checks shadow, so there is no way to avoid GPF.
-> 
-> To be able to print report instead of GPF, I need to treat GPFs in a special
-> way if inline instrumentation was enabled, but it's not done yet.
-
-I went ahead and tested it with the test module, which worked perfectly. No
-more complaints here...
-
->> > I remembered that one of the biggest changes in kasan was the introduction of
->> > inline instrumentation, so I went ahead to disable it and see if it helps. But
->> > the only result of that was having the boot process hang pretty early:
+On Tue, Nov 18, 2014 at 5:01 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Tuesday, November 18, 2014 04:14:49 PM Dmitry Torokhov wrote:
+>> On Tue, Nov 18, 2014 at 4:20 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> > It goes again below with a changelog, but since technically it is a regression
+>> > fix, I'd like to push it for "stable" too.  I suppose that the commit that
+>> > things stopped working after is a76e9bd89ae7 (i2c: attach/detach I2C client
+>> > device to the ACPI power domain).  Is that correct?
+>>
+>> Yes.
+>
+> OK
+>
+>> > --
+>> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> > Subject: ACPI / PM: Ignore wakeup setting if the ACPI companion can't wake up
 >> >
->> > [...]
->> > [    0.000000] IOAPIC[0]: apic_id 21, version 17, address 0xfec00000, GSI 0-23
->> > [    0.000000] Processors: 20
->> > [    0.000000] smpboot: Allowing 24 CPUs, 4 hotplug CPUs
->> > [    0.000000] e820: [mem 0xd0000000-0xffffffff] available for PCI devices
->> > [    0.000000] Booting paravirtualized kernel on KVM
->> > [    0.000000] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:24 nr_cpu_ids:24 nr_node_ids:1
->> > [    0.000000] PERCPU: Embedded 491 pages/cpu @ffff8808dce00000 s1971864 r8192 d31080 u2097152
->> > *HANG*
->> >
-> This hang happens only with your error patch above or even without it?
+>> > As reported by Dmitry, on some Chromebooks there are devices with
+>> > corresponding ACPI objects and with unusual system wakeup
+>> > configuration.  Namely, they technically are wakeup-capable, but the
+>> > wakeup is handled via a platform-specific out-of-band mechanism
+>> > rather than by standard ACPI means.
+>>
+>> I think they are using standard ACPI wakeup methods, but in a very perverted
+>> way: there is "shadow" ACPI sleep button corresponding to the GPIO assigned
+>> to the trackpad or touchscreen; it is just not tied to touchpad/touchscreen
+>> device in DSDT.
+>
+> OK
+>
+> This:
+>
+> ---
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: ACPI / PM: Ignore wakeup setting if the ACPI companion can't wake up
+>
+> As reported by Dmitry, on some Chromebooks there are devices with
+> corresponding ACPI objects and with unusual system wakeup
+> configuration.  Namely, they technically are wakeup-capable, but the
+> wakeup is handled via a platform-specific out-of-band mechanism and
+> the ACPI PM layer has no information on the wakeup capability.  As
+> a result, device_may_wakeup(dev) called from acpi_dev_suspend_late()
+> returns 'true' for those devices, but the wakeup.flags.valid flag is
+> unset for the corresponding ACPI device objects, so acpi_device_wakeup()
+> reproducibly fails for them causing acpi_dev_suspend_late() to return
+> an error code.  The entire system suspend is then aborted and the
+> machines in question cannot suspend at all.
+>
+> Address the problem by ignoring the device_may_wakeup(dev) return
+> value in acpi_dev_suspend_late() if the ACPI companion of the device
+> being handled has wakeup.flags.valid unset (in which case it is clear
+> that the wakeup is supposed to be handled by other means).
+>
+> This fixes a regression introduced by commit a76e9bd89ae7 (i2c:
+> attach/detach I2C client device to the ACPI power domain) as the
+> affected systems could suspend and resume successfully before that
+> commit.
+>
+> Fixes: a76e9bd89ae7 (i2c: attach/detach I2C client device to the ACPI power domain)
+> Reported-by: Dmitry Torokhov <dtor@chromium.org>
 
-It happens even without the patch.
+Excellent, thank you Rafael.
 
+Reviewed-by: Dmitry Torokhov <dtor@chromium.org>
 
-Thanks,
-Sasha
+> Cc: 3.13+ <stable@vger.kernel.org>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/acpi/device_pm.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> Index: linux-pm/drivers/acpi/device_pm.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/device_pm.c
+> +++ linux-pm/drivers/acpi/device_pm.c
+> @@ -878,7 +878,7 @@ int acpi_dev_suspend_late(struct device
+>                 return 0;
+>
+>         target_state = acpi_target_system_state();
+> -       wakeup = device_may_wakeup(dev);
+> +       wakeup = device_may_wakeup(dev) && acpi_device_can_wakeup(adev);
+>         error = acpi_device_wakeup(adev, target_state, wakeup);
+>         if (wakeup && error)
+>                 return error;
+>
