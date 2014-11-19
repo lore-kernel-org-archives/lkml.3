@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475AbaKSTXf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 14:23:35 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:60944 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755125AbaKSTXd (ORCPT
+	id S1756602AbaKSTXr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 14:23:47 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:47683 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755995AbaKSTXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 14:23:33 -0500
+	Wed, 19 Nov 2014 14:23:34 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFztsw6Vt4CyVs1OsqdKXxQmFrxHdE7z89VMZ_1KwKPcmQ@mail.gmail.com>
-References: <cover.1416352397.git.luto@amacapital.net> <c25e1a64e5b718fa156e141fd9ecbf31011c6059.1416352397.git.luto@amacapital.net>
- <CA+55aFztsw6Vt4CyVs1OsqdKXxQmFrxHdE7z89VMZ_1KwKPcmQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 19 Nov 2014 11:23:10 -0800
-Message-ID: <CALCETrX+qm6zX9O7dstkSKfS5mJ5yhdpP4tSP664_NEuX0jv8A@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] sched, x86: Check that we're on the right stack in
- schedule and __might_sleep
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Borislav Petkov <bp@alien8.de>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20141119183921.GF37989@dtor-ws>
+References: <20141114222640.GA39748@dtor-ws>
+	<CAN+gG=FaovQETa3+qQsLoBBQnbZ8Q2uoQJD6_XvAmCCvGTHT1g@mail.gmail.com>
+	<CAJBHPojp7JVG6KKgrNfbC-V5ibPs-j6+BnqrSDkxvak0vNGM8w@mail.gmail.com>
+	<20141119181247.GE37989@dtor-ws>
+	<CAJBHPohu71BXqyZ4u74tAiP84UcQhXgto34k8NtNHPgw61WvLQ@mail.gmail.com>
+	<20141119183921.GF37989@dtor-ws>
+Date: Wed, 19 Nov 2014 20:23:32 +0100
+Message-ID: <CAJBHPog3qRMQgNnso_csUOgR30A6eFPx4PkTzfCzkB3Gd5oVfQ@mail.gmail.com>
+Subject: Re: [git pull] Input updates for 3.18-rc4
+From: Marcus Overhagen <marcus.overhagen@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Ulrik De Bie <ulrik.debie-os@e2big.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 10:40 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Nov 18, 2014 at 3:15 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On x86, sleeping while on an IST or irq stack has a surprisingly
->> good chance of working, but it can also fail dramatically.  Add an
->> arch hook to allow schedule and __might_sleep to catch sleeping on
->> the wrong stack.
+Hi Dmitry,
+
+luckily I found some time right now. I haven't reverted the original large
+patch, but I tested your short patch and it fixes the problem for me.
+
+regards
+Marcus
+
+On Wed, Nov 19, 2014 at 7:39 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Wed, Nov 19, 2014 at 07:20:21PM +0100, Marcus Overhagen wrote:
+>> Hi,
+>>
+>> I will try reverting that, but may need until tomorrow or Friday.
+>>
+>> Just now I made a warm reboot from rc3 to rc5 and initially scrolling
+>> behaviour was ok,  but after about a minute it went wrong and I got
+>> this:
+>>
+>> [  179.705362] ------------[ cut here ]------------
+>> [  179.705382] WARNING: CPU: 3 PID: 0 at
+>> drivers/input/mouse/elantech.c:433
+>> elantech_report_trackpoint.isra.5+0x199/0x1b0 [psmouse]()
+>> [  179.705385] psmouse serio1: elantech: Unexpected trackpoint message
 >
-> Why doesn't the normal in_interrupt() test catch this?
-
-It catches scheduling on an irq stack, assuming that all of the
-irq_count stuff is working correctly.  I don't think it catches
-sleeping on an IST stack.
-
---Andy
-
+> Or just this for now:
 >
->           Linus
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+> diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+> index 3fcb6b3..294f613 100644
+> --- a/drivers/input/mouse/elantech.c
+> +++ b/drivers/input/mouse/elantech.c
+> @@ -793,7 +793,7 @@ static int elantech_packet_check_v4(struct psmouse *psmouse)
+>         unsigned char packet_type = packet[3] & 0x03;
+>         bool sanity_check;
+>
+> -       if ((packet[3] & 0x0f) == 0x06)
+> +       if ((packet[3] & 0x0f) == 0x06 && etd->tp_dev)
+>                 return PACKET_TRACKPOINT;
+>
+>         /*
+>
+> --
+> Dmitry
