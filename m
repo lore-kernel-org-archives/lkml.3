@@ -1,102 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520AbaKSLYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 06:24:36 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:58544 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaKSLYe (ORCPT
+	id S1755667AbaKSLZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 06:25:58 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33184 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754327AbaKSLZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 06:24:34 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-fa-546c7def331f
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>
-Cc: "'Chanwoo Choi'" <cw00.choi@samsung.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        "'Vikas Sajjan'" <vikas.sajjan@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1908469.QaqIJlesoD@amdc1032>
-In-reply-to: <1908469.QaqIJlesoD@amdc1032>
-Subject: RE: [PATCH v4] ARM: EXYNOS: add Exynos3250 PMU support
-Date: Wed, 19 Nov 2014 16:54:10 +0530
-Message-id: <000a01d003eb$79fe9630$6dfbc290$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQJ5eE2JiUcqFiQsZiQBdg6gRon+6ZsU5H9g
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsWyRsSkVvd9bU6IwdYnZhYbZ6xntbj+5Tmr
-	Re+Cq2wWZ5vesFtsenyN1eLyrjlsFjPO72OyWLXrD6PFzWfbmRw4PXbOusvusXlJvUffllWM
-	Hp83yQWwRHHZpKTmZJalFunbJXBlXPj4haXgAXvFhBPP2BsY57B1MXJySAiYSHReXwtli0lc
-	uLcezBYSWMoocf1BHUzN1u6nQHEuoPgiRomNE6YxQjh/GSVeXrsJ1sEmoCvx5P1cZhBbRCBJ
-	4s/M3WAdzAIzmCSe/Z3GDDFWU2LnnRfsIDangJbE9LsnwJqFBewldq64CxTn4GARUJV4dKEM
-	JMwrYClxf99tVghbUOLH5HssIDYzUOv6nceZIGx5ic1r3jJDXKogsePsa0aIG4wken9uZoao
-	EZeY9OAhO8g9EgIf2SWu7eoCG8QiICDxbfIhFpC9EgKyEpsOQM2RlDi44gbLBEaJWUhWz0Ky
-	ehaS1bOQrFjAyLKKUTS1ILmgOCm9yFSvODG3uDQvXS85P3cTIzCOT/97NnEH4/0D1ocYBTgY
-	lXh4X77NDhFiTSwrrsw9xGgKdNFEZinR5HxgssgriTc0NjOyMDUxNTYytzRTEufVkf4ZLCSQ
-	nliSmp2aWpBaFF9UmpNafIiRiYNTqoGxx84/PvtT67eoDx/d7TfVbux8pHz4Zpf/BZPKlVkx
-	Cy0uKEnMm7Chs03j3ofYpumLbjRcWha9Tk24LTVV9v2K4zuybgSYrImxX3PisIa5pwNn/dON
-	F329+b1dj5UerGCUqn4ubs1/fEG7XrBLudM+w/vMsybmsTwq8p11hDn8+5peIQZFjsVKLMUZ
-	iYZazEXFiQCgHaqu3gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsVy+t9jAd2XtTkhBntmsVlsnLGe1eL6l+es
-	Fr0LrrJZnG16w26x6fE1VovLu+awWcw4v4/JYtWuP4wWN59tZ3Lg9Ng56y67x+Yl9R59W1Yx
-	enzeJBfAEtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6Dr
-	lpkDdIuSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePCxy8sBQ/YKyac
-	eMbewDiHrYuRk0NCwERia/dTKFtM4sK99UA2F4eQwCJGiY0TpjFCOH8ZJV5euwlWxSagK/Hk
-	/VxmEFtEIEniz8zdYB3MAjOYJJ79nQaWEBLQlNh55wU7iM0poCUx/e4JsGZhAXuJnSvuAsU5
-	OFgEVCUeXSgDCfMKWErc33ebFcIWlPgx+R4LiM0M1Lp+53EmCFteYvOat8wQlypI7Dj7mhHi
-	BiOJ3p+bmSFqxCUmPXjIPoFRaBaSUbOQjJqFZNQsJC0LGFlWMYqmFiQXFCel5xrqFSfmFpfm
-	pesl5+duYgSniWdSOxhXNlgcYhTgYFTi4X3xNjtEiDWxrLgy9xCjBAezkgjv1eqcECHelMTK
-	qtSi/Pii0pzU4kOMpkCPTmSWEk3OB6awvJJ4Q2MTc1NjU0sTCxMzSyVx3gOt1oFCAumJJanZ
-	qakFqUUwfUwcnFINjNzJUZpHSt0vWb80v6N36tzzybcfFYfNFSm9bvq+db+v6oTTFxxFPj0o
-	v/b1eNHStus7FnIGXvm4J+bn5IImse9Xez7cnXrwCov9+pPTZ/Abqz19//bG3xMJO1wjPtz6
-	FpBZ+yJL/2fDx2Dvl9zcfVlTAgONjqqetKjn0/qadvrLu8uB8dEr1ixRYinOSDTUYi4qTgQA
-	QyonqCkDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 19 Nov 2014 06:25:56 -0500
+Date: Wed, 19 Nov 2014 11:25:53 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+Cc: David Long <dave.long@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        William Cohen <wcohen@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/5] arm64: Kprobes with single stepping support
+Message-ID: <20141119112553.GC15985@arm.com>
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org>
+ <1416292375-29560-2-git-send-email-dave.long@linaro.org>
+ <20141118145643.GO18842@arm.com>
+ <CA+b37P337jcTCPTg4Ydxh6TKwqmyMngt-eEowzfsTNBDZ7-NEg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+b37P337jcTCPTg4Ydxh6TKwqmyMngt-eEowzfsTNBDZ7-NEg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 18, 2014 11:05 PM, Bartlomiej Zolnierkiewicz Wrote:
-> This patch prepares the PMU code for the future:
-> - suspend/resume (S2R) support
-> - cpuidle AFTR/W-AFTR modes support
-> on Exynos3250.
+On Wed, Nov 19, 2014 at 11:21:24AM +0000, Sandeepa Prabhu wrote:
+> On 18 November 2014 20:26, Will Deacon <will.deacon@arm.com> wrote:
 > 
-> Cc: Pankaj Dubey <pankaj.dubey@samsung.com>
-> Cc: Vikas Sajjan <vikas.sajjan@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-
-Other than one small nitpick patch looks fine to me. Tested on Exynos3250
-based
-Espresso board and kernel booted fine.
-
-Reviewed-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-
+> > One thing I noticed looking through this patch is that we're effectively
+> > reinventing a bunch of the instruction decoding logic that we already have
+> > in the kernel (introduced since Sandeepa last sent his patch).
+> >
+> > Could you take a look at include/asm/insn.h and kernel/insn.c please, and
+> > see if you can at least consolidate some of this? Some of it should be easy
+> > (i.e. reusing masks, using existing #defines to construct BRK encodings),
+> > but I appreciate there may be places where kprobes needs to add extra bits,
+> > in which case I'd really like to keep this all together if at all possible.
+> >
+> > We're currently in a position where the module loader, BPF jit, ftrace and
+> > the proposed alternative patching scheme are all using the same instruction
+> > manipulation functions, so we should try to continue that trend if we can.
+> Will,
 > 
-> +static void exynos3250_pmu_init(void)
-> +{
-> +	unsigned int value;
-> +
-> +	/*
-> +	 * To prevent form issuing new bus request form L2 memory system
+> kernel/insn.c support generating instruction encodings(forming opcodes
+> with given specifications), so for kprobes, only BRK encoding can use
+> this mechanism.
+> For instruction simulation, the instruction behavior should be
+> simulated on saved pt_regs, which is not supported on insn.c routines,
+> so still need probes-simulate-insn.c. Please point me if I am missing
+> something here.
 
-typo: %s/form/from
+I was thinking of the magic hex numbers in the kprobes decode tables, which
+seem to correspond directly to the instruction classes described in insn.c
 
-> +	 * If core status is power down, should be set '1' to L2 power down
-> +	 */
+Keeping the actual emulation code separate makes sense.
 
-Thanks,
-Pankaj Dubey
-
-> --
-> 1.8.2.3
-
-
+Will
