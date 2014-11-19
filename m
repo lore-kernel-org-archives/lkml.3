@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095AbaKSXDo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 18:03:44 -0500
-Received: from [118.193.159.110] ([118.193.159.110]:1417 "HELO a.suningwo.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with SMTP
-	id S1756493AbaKSXDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 18:03:42 -0500
-X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Nov 2014 18:03:42 EST
-Date: Thu, 20 Nov 2014 07:01:47 +0800
-From: "LED-LENSER flashlight and headlamp Wholesale" <ys6@a.suningwo.com>
-Reply-To: sales1@hk29.eidc.cn
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: LED-LENSER flashlight
-Message-ID: <201411200701477184714@a.suningwo.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S1757774AbaKSXEZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 18:04:25 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:58582 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453AbaKSXEX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 18:04:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+In-Reply-To: <CA+55aFwykb6aZYgyZXbU1DQ3OL0umpv8gkHYWykBEC2B7UdMbw@mail.gmail.com>
+References: <cover.1416352397.git.luto@amacapital.net> <c25e1a64e5b718fa156e141fd9ecbf31011c6059.1416352397.git.luto@amacapital.net>
+ <CA+55aFztsw6Vt4CyVs1OsqdKXxQmFrxHdE7z89VMZ_1KwKPcmQ@mail.gmail.com>
+ <20141119192928.GL12538@two.firstfloor.org> <CA+55aFwykb6aZYgyZXbU1DQ3OL0umpv8gkHYWykBEC2B7UdMbw@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 19 Nov 2014 15:04:00 -0800
+Message-ID: <CALCETrXi7vdNAk4RziNDtqX4asPqXxi1VsLzL7pP0zivkjTH4Q@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] sched, x86: Check that we're on the right stack in
+ schedule and __might_sleep
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAJN3oX2006410
 
-Hi Many thanks for your valuable time to read my letter. 
+On Wed, Nov 19, 2014 at 11:44 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, Nov 19, 2014 at 11:29 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>>
+>> The exception handlers which use the IST stacks don't necessarily
+>> set irq count. Maybe they should.
+>
+> Hmm. I think they should. Since they clearly must not schedule, as
+> they use a percpu stack.
+>
+> Which exceptions use IST?
+>
+> [ grep grep ]
+>
+> Looks like stack, doublefault, nmi, debug and mce. And yes, I really
+> think they should all raise the irq count if they don't already.
+> Rather than add random arch-specific "let's check that we're on the
+> right stack" code to the might-sleep stuff, just use the one we have.
+>
 
-This is Hellen from JRS Technology Co.,Ltd. We do LED LENSER flashlight Wholesale business. Many models are available with competitive price. For more information, please contact us in any time
-it will be our honor to serve you well and be your supplier
-Waitting for your reply. 
+Does that include nmi?  I'm a bit afraid of touching that code.
 
-Thanks and best regards Hellen
+It's certainly easy enough to bump irq_count in the paranoid entries.
 
-JRS Technology Co.,Ltd
+--Andy
 
-E-mail : sales@JRS-Tech.net
-Msn:     techjrsb@msn.cn
-Skype:   techjrsa
-http://www.jrs-tech.net
+>                     Linus
 
-we would be grateful if you will be our led lenser catalogue reserved for your supervisor.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
