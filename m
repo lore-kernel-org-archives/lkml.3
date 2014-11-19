@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749AbaKSGMy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 01:12:54 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:42021 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753704AbaKSGMx (ORCPT
+	id S1754285AbaKSGVo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 01:21:44 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:56626 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455AbaKSGVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 01:12:53 -0500
-Message-ID: <546C34C8.5070907@ti.com>
-Date: Wed, 19 Nov 2014 11:42:24 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 19 Nov 2014 01:21:43 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@kernel.org>,
+        linux-kernel@vger.kernel.org, "Liang\, Kan" <kan.liang@intel.com>
+Subject: Re: Implement lbr-as-callgraph v10
+References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
+	<20141117213457.GE4163@kernel.org>
+	<20141118104416.GE27645@krava.brq.redhat.com>
+	<20141118110007.GF27645@krava.brq.redhat.com>
+Date: Wed, 19 Nov 2014 15:21:39 +0900
+In-Reply-To: <20141118110007.GF27645@krava.brq.redhat.com> (Jiri Olsa's
+	message of "Tue, 18 Nov 2014 12:00:07 +0100")
+Message-ID: <87zjbnpv64.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: Vivek Gautam <gautamvivek1987@gmail.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        <andrew.kim@intel.com>
-Subject: Re: [PATCHv4 2/6] phy: improved lookup method
-References: <1413556756-5050-1-git-send-email-heikki.krogerus@linux.intel.com> <1413556756-5050-3-git-send-email-heikki.krogerus@linux.intel.com> <CAFp+6iH2oPT-HyJhFCXVCL4eUOQ0AFfxuyGsnXzPv9JTo55+VQ@mail.gmail.com> <5461AFD3.5020302@ti.com> <CAFp+6iGJBSpA5+Q7WQVu0+y-mfoN-E+LmYedipVfgXFZOpr+Cw@mail.gmail.com> <5461CDDF.4090209@ti.com> <CAFp+6iGAQMgX8S6dfPO44U=r6QJ4fT+1FX2uHNF9KK4sYs+=XA@mail.gmail.com> <CAFp+6iHta15CuBbsoQxEo2xr5GyXDgXQ=cg_Q_vOSC7akX0Vcw@mail.gmail.com> <20141117154028.GD7512@kuha.fi.intel.com> <546AD6D6.5070205@ti.com> <20141118153642.GA8881@kuha.fi.intel.com>
-In-Reply-To: <20141118153642.GA8881@kuha.fi.intel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Jiri,
 
-On Tuesday 18 November 2014 09:06 PM, Heikki Krogerus wrote:
-> On Tue, Nov 18, 2014 at 10:49:18AM +0530, Kishon Vijay Abraham I wrote:
->> On Monday 17 November 2014 09:10 PM, Heikki Krogerus wrote:
->>> On Thu, Nov 13, 2014 at 07:03:01PM +0530, Vivek Gautam wrote:
->>>> How about adding the change in attached patch [1] on top of this patch.
->>>> Just introduced the phy pointer in "phy_lookup" structure, and
->>>> modified phy_find() accordingly.
->>>
->>> I would be fine if we used the phy pointer to match, but if we have
->>> the pointer to the phy in the lookup, then I would say we need to
->>> remove the phy_name member.
->>>
->>> Otherwise we would have to support two ways of finding the lookups
->>> (one for the "static" lookups where we match to the phy_name and other
->>> where we match to the pointer). That means we will also not be able to
->>> create "static" lookups, but those would be only needed if we wanted to
->>> create them in board files. I don't think there will ever be need to
->>> create the lookups in board files, so I'm more then happy to remove
->>> the static way of creating the lookups.
->>
->> Just using the phy pointer sounds good. But interested to know where the phy
->> pointer will be added to the lookup table.
-> 
-> I'm making assumption that there will not be any (new) platforms where
-> the bindings are not provided in HW descriptions like dt or ACPI
-> tables. That leaves the lookups to be useful only in cases where a
-> driver has to, for whatever reason, pass it's phy's forward, like
-> dwc3 host. ULPI will be an other case where we will need to use them.
+On Tue, 18 Nov 2014 12:00:07 +0100, Jiri Olsa wrote:
+> On Tue, Nov 18, 2014 at 11:44:16AM +0100, Jiri Olsa wrote:
+>> On Mon, Nov 17, 2014 at 06:34:57PM -0300, Arnaldo Carvalho de Melo wrote:
+>> > Em Wed, Nov 12, 2014 at 06:05:18PM -0800, Andi Kleen escreveu:
+>> > > [Reworks to address all the review feedback. Rebased to latest tree]
+>> > > [Just a repost after a rebase]
+>> > > [Even more review feedback and some bugs addressed.]
+>> > > [Only port to changes in perf/core. No other changes.]
+>> > > [Rebase to latest perf/core]
+>> > > [Another rebase. No changes]
+>> > > 
+>> > > This patchkit implements lbr-as-callgraphs in per freport,
+>> > > as an alternative way to present LBR information.
+>> > 
+>> > Ok, I have this in my perf/core branch, but I need to test it further,
+>> > as I couldn't get the output that appears on some of the changelogs.
+>> > 
+>> > If you could take a look at
+>> > 
+>> > git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
+>> > 
+>> > To see if I made some mistake, that would be of help,
+>> > 
+>> 
+>> I'm getting compile error for DEBUG=1
+>
+> looks like the BUILD_BUG_ON_MSG does not work correctly with -O6 we use
 
-right.
-> 
-> Now the only user for the lookups is twl4030-usb, but since it's
-> actually just ULPI type PHY in cases where we have platform data to
-> deal with (please correct me if I'm wrong), I think we could later
+Nope, DEBUG=1 prevents -O6 from applied.  we have below in config/Makefile:
 
-You mean passing the consumer info using platform data?
-> remove it's need for platform data completely with the help of the
-> ULPI bus I'm working with.
+  ifndef DEBUG
+    DEBUG := 0
+  endif
 
-Sure.
+  ifeq ($(DEBUG),0)
+    CFLAGS += -O6
+  endif
 
-I'll be closing my phy tree by friday, so would be great if you can send your
-patches before that with "Tested-by" from Vivek.
 
-Thanks
-Kishon
+Looking at include/linux/bug.h, BUILD_BUG_ON is guarded under
+__OPTIMIZE__ but BUILD_BUG_ON_MSG is not.  What about changing it to
+BUILD_BUG_ON then?
+
+Thanks,
+Namhyung
+
+
