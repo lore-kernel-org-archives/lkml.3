@@ -1,45 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932980AbaKSVM6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:12:58 -0500
-Received: from 1wt.eu ([62.212.114.60]:55783 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932442AbaKSVM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:12:56 -0500
-Date: Wed, 19 Nov 2014 22:12:52 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Mariusz Gorski <marius.gorski@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/9] staging: panel: Refactor panel initialization
-Message-ID: <20141119211252.GH30756@1wt.eu>
-References: <1416429531-11088-1-git-send-email-marius.gorski@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416429531-11088-1-git-send-email-marius.gorski@gmail.com>
-User-Agent: Mutt/1.4.2.3i
+	id S932927AbaKSVLg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:11:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57085 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756485AbaKSVLe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 16:11:34 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 107/122] mm/compaction: clean up unused code lines
+Date: Wed, 19 Nov 2014 12:52:37 -0800
+Message-Id: <20141119205212.392204060@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
+References: <20141119205208.812884198@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mariusz,
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-On Wed, Nov 19, 2014 at 09:38:42PM +0100, Mariusz Gorski wrote:
-> This set of patches focuses on making current initialization
-> process easier to understand - especially it tries to emphasize
-> what are the priorities of the params coming from different
-> sources (Kconfig values, device profiles and module param values
-> set on loading). I paid attention not to change to behaviour of
-> the code itself (at least for now), so all hacky places are kept.
-> 
-> v2: Don't introduce new macros for param value check
+------------------
 
-(...)
+From: Heesub Shin <heesub.shin@samsung.com>
 
-Great work, the code is already significantly cleaner now, thanks
-for doing this work! I've acked all the new patches.
+commit 13fb44e4b0414d7e718433a49e6430d5b76bd46e upstream.
 
-Best regards,
-Willy
+Remove code lines currently not in use or never called.
+
+Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Dongjun Shin <d.j.shin@samsung.com>
+Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Dongjun Shin <d.j.shin@samsung.com>
+Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ mm/compaction.c |   10 ----------
+ 1 file changed, 10 deletions(-)
+
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -208,12 +208,6 @@ static bool compact_checklock_irqsave(sp
+ 	return true;
+ }
+ 
+-static inline bool compact_trylock_irqsave(spinlock_t *lock,
+-			unsigned long *flags, struct compact_control *cc)
+-{
+-	return compact_checklock_irqsave(lock, flags, false, cc);
+-}
+-
+ /* Returns true if the page is within a block suitable for migration to */
+ static bool suitable_migration_target(struct page *page)
+ {
+@@ -736,7 +730,6 @@ static void isolate_freepages(struct zon
+ 			continue;
+ 
+ 		/* Found a block suitable for isolating free pages from */
+-		isolated = 0;
+ 
+ 		/*
+ 		 * Take care when isolating in last pageblock of a zone which
+@@ -1165,9 +1158,6 @@ static void __compact_pgdat(pg_data_t *p
+ 			if (zone_watermark_ok(zone, cc->order,
+ 						low_wmark_pages(zone), 0, 0))
+ 				compaction_defer_reset(zone, cc->order, false);
+-			/* Currently async compaction is never deferred. */
+-			else if (cc->sync)
+-				defer_compaction(zone, cc->order);
+ 		}
+ 
+ 		VM_BUG_ON(!list_empty(&cc->freepages));
+
 
