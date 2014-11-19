@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932945AbaKSVEW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:04:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56468 "EHLO
+	id S933893AbaKSV7O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:59:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933347AbaKSVEK (ORCPT
+	with ESMTP id S933462AbaKSVEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:10 -0500
+	Wed, 19 Nov 2014 16:04:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 016/122] sparc64: Do irq_{enter,exit}() around generic_smp_call_function*().
-Date: Wed, 19 Nov 2014 12:51:06 -0800
-Message-Id: <20141119205209.344952259@linuxfoundation.org>
+        William Cohen <wcohen@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.14 049/122] Correct the race condition in aarch64_insn_patch_text_sync()
+Date: Wed, 19 Nov 2014 12:51:39 -0800
+Message-Id: <20141119205210.435255991@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -28,80 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: William Cohen <wcohen@redhat.com>
 
-[ Upstream commit ab5c780913bca0a5763ca05dd5c2cb5cb08ccb26 ]
+commit 899d5933b2dd2720f2b20b01eaa07871aa6ad096 upstream.
 
-Otherwise rcu_irq_{enter,exit}() do not happen and we get dumps like:
+When experimenting with patches to provide kprobes support for aarch64
+smp machines would hang when inserting breakpoints into kernel code.
+The hangs were caused by a race condition in the code called by
+aarch64_insn_patch_text_sync().  The first processor in the
+aarch64_insn_patch_text_cb() function would patch the code while other
+processors were still entering the function and incrementing the
+cpu_count field.  This resulted in some processors never observing the
+exit condition and exiting the function.  Thus, processors in the
+system hung.
 
-====================
-[  188.275021] ===============================
-[  188.309351] [ INFO: suspicious RCU usage. ]
-[  188.343737] 3.18.0-rc3-00068-g20f3963-dirty #54 Not tainted
-[  188.394786] -------------------------------
-[  188.429170] include/linux/rcupdate.h:883 rcu_read_lock() used
-illegally while idle!
-[  188.505235]
-other info that might help us debug this:
+The first processor to enter the patching function performs the
+patching and signals that the patching is complete with an increment
+of the cpu_count field. When all the processors have incremented the
+cpu_count field the cpu_count will be num_cpus_online()+1 and they
+will return to normal execution.
 
-[  188.554230]
-RCU used illegally from idle CPU!
-rcu_scheduler_active = 1, debug_locks = 0
-[  188.637587] RCU used illegally from extended quiescent state!
-[  188.690684] 3 locks held by swapper/7/0:
-[  188.721932]  #0:  (&x->wait#11){......}, at: [<0000000000495de8>] complete+0x8/0x60
-[  188.797994]  #1:  (&p->pi_lock){-.-.-.}, at: [<000000000048510c>] try_to_wake_up+0xc/0x400
-[  188.881343]  #2:  (rcu_read_lock){......}, at: [<000000000048a910>] select_task_rq_fair+0x90/0xb40
-[  188.973043]stack backtrace:
-[  188.993879] CPU: 7 PID: 0 Comm: swapper/7 Not tainted 3.18.0-rc3-00068-g20f3963-dirty #54
-[  189.076187] Call Trace:
-[  189.089719]  [0000000000499360] lockdep_rcu_suspicious+0xe0/0x100
-[  189.147035]  [000000000048a99c] select_task_rq_fair+0x11c/0xb40
-[  189.202253]  [00000000004852d8] try_to_wake_up+0x1d8/0x400
-[  189.252258]  [000000000048554c] default_wake_function+0xc/0x20
-[  189.306435]  [0000000000495554] __wake_up_common+0x34/0x80
-[  189.356448]  [00000000004955b4] __wake_up_locked+0x14/0x40
-[  189.406456]  [0000000000495e08] complete+0x28/0x60
-[  189.448142]  [0000000000636e28] blk_end_sync_rq+0x8/0x20
-[  189.496057]  [0000000000639898] __blk_mq_end_request+0x18/0x60
-[  189.550249]  [00000000006ee014] scsi_end_request+0x94/0x180
-[  189.601286]  [00000000006ee334] scsi_io_completion+0x1d4/0x600
-[  189.655463]  [00000000006e51c4] scsi_finish_command+0xc4/0xe0
-[  189.708598]  [00000000006ed958] scsi_softirq_done+0x118/0x140
-[  189.761735]  [00000000006398ec] __blk_mq_complete_request_remote+0xc/0x20
-[  189.827383]  [00000000004c75d0] generic_smp_call_function_single_interrupt+0x150/0x1c0
-[  189.906581]  [000000000043e514] smp_call_function_single_client+0x14/0x40
-====================
-
-Based almost entirely upon a patch by Paul E. McKenney.
-
-Reported-by: Meelis Roos <mroos@linux.ee>
-Tested-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: ae16480785de arm64: introduce interfaces to hotpatch kernel and module code
+Signed-off-by: William Cohen <wcohen@redhat.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/smp_64.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
---- a/arch/sparc/kernel/smp_64.c
-+++ b/arch/sparc/kernel/smp_64.c
-@@ -823,13 +823,17 @@ void arch_send_call_function_single_ipi(
- void __irq_entry smp_call_function_client(int irq, struct pt_regs *regs)
- {
- 	clear_softint(1 << irq);
-+	irq_enter();
- 	generic_smp_call_function_interrupt();
-+	irq_exit();
- }
- 
- void __irq_entry smp_call_function_single_client(int irq, struct pt_regs *regs)
- {
- 	clear_softint(1 << irq);
-+	irq_enter();
- 	generic_smp_call_function_single_interrupt();
-+	irq_exit();
- }
- 
- static void tsb_sync(void *info)
+---
+ arch/arm64/kernel/insn.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/arch/arm64/kernel/insn.c
++++ b/arch/arm64/kernel/insn.c
+@@ -156,9 +156,10 @@ static int __kprobes aarch64_insn_patch_
+ 		 * which ends with "dsb; isb" pair guaranteeing global
+ 		 * visibility.
+ 		 */
+-		atomic_set(&pp->cpu_count, -1);
++		/* Notify other processors with an additional increment. */
++		atomic_inc(&pp->cpu_count);
+ 	} else {
+-		while (atomic_read(&pp->cpu_count) != -1)
++		while (atomic_read(&pp->cpu_count) <= num_online_cpus())
+ 			cpu_relax();
+ 		isb();
+ 	}
 
 
