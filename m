@@ -1,97 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239AbaKSQl6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:41:58 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:35515 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215AbaKSQlz (ORCPT
+	id S1756057AbaKSQnU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:43:20 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:63435 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754398AbaKSQnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:41:55 -0500
+	Wed, 19 Nov 2014 11:43:18 -0500
+Date: Wed, 19 Nov 2014 16:43:10 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, broonie@kernel.org,
+        a.zummo@towertech.it, lgirdwood@gmail.com, sbkim73@samsung.com,
+        sameo@linux.intel.com, geunsik.lim@samsung.com, inki.dae@samsung.com,
+        kyungmin.park@samsung.com, k.kozlowski@samsung.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCHv2 3/5] clk: s2mps11: Add the support for S2MPS13 PMIC
+ clock
+Message-ID: <20141119164310.GH1875@x1>
+References: <1416301183-10478-1-git-send-email-cw00.choi@samsung.com>
+ <1416301183-10478-4-git-send-email-cw00.choi@samsung.com>
+ <20141118215926.25314.90810@quantum>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.11.1411191130480.11690@knanqh.ubzr>
-References: <20141118172146.3784.81151.stgit@buzz>
-	<20141118173413.GB4042@n2100.arm.linux.org.uk>
-	<546B8C64.3010904@samsung.com>
-	<2041617.Kxhx5O4MMr@wuerfel>
-	<CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
-	<CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
-	<CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com>
-	<20141119160747.GH4042@n2100.arm.linux.org.uk>
-	<alpine.LFD.2.11.1411191130480.11690@knanqh.ubzr>
-Date: Wed, 19 Nov 2014 17:41:53 +0100
-Message-ID: <CAKv+Gu_USuMfNWfxcj6fSztOva5614v1YTQxFTonh6KRkKvUGg@mail.gmail.com>
-Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141118215926.25314.90810@quantum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 November 2014 17:37, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> On Wed, 19 Nov 2014, Russell King - ARM Linux wrote:
->
->> On Wed, Nov 19, 2014 at 05:02:40PM +0100, Ard Biesheuvel wrote:
->> > On 19 November 2014 16:52, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->> > > Do you mean ldr pc, =symbol ?
->> > >
->> > > In this case I get this error:
->> > >
->> > > /tmp/ccAHtONU.s: Assembler messages:
->> > > /tmp/ccAHtONU.s:220: Error: invalid literal constant: pool needs to be closer
->> > >
->> > > Probably constant pool doesn't work well in inline assembly.
->> > >
->> > >
->> > > Something like this seems work:
->> > >
->> > > add     lr, pc, #4
->> > > ldr       pc, [pc, #-4]
->> > > .long symbol
->> > >
->> >
->> > You can add a '.ltorg' instruction which tells the assembler to dump
->> > the literal pool, but you still need to jump over it, i.e.,
->> >
->> > adr lr, 0f
->> > ldr pc, =symbol
->> > .ltorg
->> > 0:
->>
->> Which is not a good idea either, because the compiler needs to know how
->> far away its own manually generated literal pool is from the instructions
->> which reference it.  The .ltorg statement can end up emitting any number
->> of literals at that point, which makes it indeterminant how many words
->> are contained within the asm() statement.
->>
->> Yes, it isn't desirable to waste an entire data cache line per indirect
->> call like the original quote above, but I don't see a practical
->> alternative.
->
-> Modules could be built without far calls by default, and then the module
-> linker would only have to redirect those calls whose destination is too
-> far away to a dynamically created trampoline table.
->
-> If I remember correctly you even posted some patches to that effect a
-> couple years ago.  Maybe those could be salvaged?
->
-> I would largely recommend a solution where the link process could deal
-> with it automatically and as needed rather than sprinkling yet more
-> manually maintained macros into assembly code.
->
+On Tue, 18 Nov 2014, Mike Turquette wrote:
 
-Yes, that would be preferable. I played around with 'bl symbol@PLT'
-instead of plain 'bl symbol' but unfortunately, our .ko's are not
-proper ELF shared libraries, so that doesn't work.
-But essentially, we just need a (eager) PLT.
+> Quoting Chanwoo Choi (2014-11-18 00:59:41)
+> > This patch adds the support for S2MPS13 PMIC clock which is same with existing
+> > S2MPS14 RTC IP. But, S2MPS13 uses all of clocks (32khz_{ap|bt|cp}).
+> > 
+> > Cc: Mike Turquette <mturquette@linaro.org>
+> > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> > Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> 
+> Applied to clk-next.
+
+I'm pretty sure you can't do that.  You have a dependency on
+linux/mfd/samsung/s2mps13.h, which is satisfied in one of the earlier
+patches in the set.  If you'd care to just provide an Ack for this
+patch, I can send you a pull-request with the decencies met.
+
+> > ---
+> >  drivers/clk/clk-s2mps11.c | 24 ++++++++++++++++++++++++
+> >  1 file changed, 24 insertions(+)
+> > 
+> > diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
+> > index b7797fb..7bb13af 100644
+> > --- a/drivers/clk/clk-s2mps11.c
+> > +++ b/drivers/clk/clk-s2mps11.c
+> > @@ -23,6 +23,7 @@
+> >  #include <linux/clk-provider.h>
+> >  #include <linux/platform_device.h>
+> >  #include <linux/mfd/samsung/s2mps11.h>
+> > +#include <linux/mfd/samsung/s2mps13.h>
+> >  #include <linux/mfd/samsung/s2mps14.h>
+> >  #include <linux/mfd/samsung/s5m8767.h>
+> >  #include <linux/mfd/samsung/core.h>
+> > @@ -120,6 +121,24 @@ static struct clk_init_data s2mps11_clks_init[S2MPS11_CLKS_NUM] = {
+> >         },
+> >  };
+> >  
+> > +static struct clk_init_data s2mps13_clks_init[S2MPS11_CLKS_NUM] = {
+> > +       [S2MPS11_CLK_AP] = {
+> > +               .name = "s2mps13_ap",
+> > +               .ops = &s2mps11_clk_ops,
+> > +               .flags = CLK_IS_ROOT,
+> > +       },
+> > +       [S2MPS11_CLK_CP] = {
+> > +               .name = "s2mps13_cp",
+> > +               .ops = &s2mps11_clk_ops,
+> > +               .flags = CLK_IS_ROOT,
+> > +       },
+> > +       [S2MPS11_CLK_BT] = {
+> > +               .name = "s2mps13_bt",
+> > +               .ops = &s2mps11_clk_ops,
+> > +               .flags = CLK_IS_ROOT,
+> > +       },
+> > +};
+> > +
+> >  static struct clk_init_data s2mps14_clks_init[S2MPS11_CLKS_NUM] = {
+> >         [S2MPS11_CLK_AP] = {
+> >                 .name = "s2mps14_ap",
+> > @@ -184,6 +203,10 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+> >                 s2mps11_reg = S2MPS11_REG_RTC_CTRL;
+> >                 clks_init = s2mps11_clks_init;
+> >                 break;
+> > +       case S2MPS13X:
+> > +               s2mps11_reg = S2MPS13_REG_RTCCTRL;
+> > +               clks_init = s2mps13_clks_init;
+> > +               break;
+> >         case S2MPS14X:
+> >                 s2mps11_reg = S2MPS14_REG_RTCCTRL;
+> >                 clks_init = s2mps14_clks_init;
+> > @@ -279,6 +302,7 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
+> >  
+> >  static const struct platform_device_id s2mps11_clk_id[] = {
+> >         { "s2mps11-clk", S2MPS11X},
+> > +       { "s2mps13-clk", S2MPS13X},
+> >         { "s2mps14-clk", S2MPS14X},
+> >         { "s5m8767-clk", S5M8767X},
+> >         { },
 
 -- 
-Ard.
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
