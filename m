@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933621AbaKSVEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:04:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56468 "EHLO
+	id S933130AbaKSVIy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:08:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933567AbaKSVEb (ORCPT
+	with ESMTP id S933611AbaKSVEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:31 -0500
+	Wed, 19 Nov 2014 16:04:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Harvey Harrison <harvey.harrison@gmail.com>
-Subject: [PATCH 3.14 076/122] kgdb: Remove "weak" from kgdb_arch_pc() declaration
-Date: Wed, 19 Nov 2014 12:52:06 -0800
-Message-Id: <20141119205211.330981742@linuxfoundation.org>
+        Yosef Khyal <yosefx.khyal@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.14 037/122] mac80211: fix use-after-free in defragmentation
+Date: Wed, 19 Nov 2014 12:51:27 -0800
+Message-Id: <20141119205209.996781640@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,40 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 107bcc6d566cb40184068d888637f9aefe6252dd upstream.
+commit b8fff407a180286aa683d543d878d98d9fc57b13 upstream.
 
-kernel/debug/debug_core.c provides a default kgdb_arch_pc() definition
-explicitly marked "weak".  Several architectures provide their own
-definitions intended to override the default, but the "weak" attribute on
-the declaration applied to the arch definitions as well, so the linker
-chose one based on link order (see 10629d711ed7 ("PCI: Remove __weak
-annotation from pcibios_get_phb_of_node decl")).
+Upon receiving the last fragment, all but the first fragment
+are freed, but the multicast check for statistics at the end
+of the function refers to the current skb (the last fragment)
+causing a use-after-free bug.
 
-Remove the "weak" attribute from the declaration so we always prefer a
-non-weak definition over the weak one, independent of link order.
+Since multicast frames cannot be fragmented and we check for
+this early in the function, just modify that check to also
+do the accounting to fix the issue.
 
-Fixes: 688b744d8bc8 ("kgdb: fix signedness mixmatches, add statics, add declaration to header")
-Tested-by: Vineet Gupta <vgupta@synopsys.com>	# for ARC build
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Reviewed-by: Harvey Harrison <harvey.harrison@gmail.com>
+Reported-by: Yosef Khyal <yosefx.khyal@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/kgdb.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/mac80211/rx.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/include/linux/kgdb.h
-+++ b/include/linux/kgdb.h
-@@ -283,7 +283,7 @@ struct kgdb_io {
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1679,11 +1679,14 @@ ieee80211_rx_h_defragment(struct ieee802
+ 	sc = le16_to_cpu(hdr->seq_ctrl);
+ 	frag = sc & IEEE80211_SCTL_FRAG;
  
- extern struct kgdb_arch		arch_kgdb_ops;
+-	if (likely((!ieee80211_has_morefrags(fc) && frag == 0) ||
+-		   is_multicast_ether_addr(hdr->addr1))) {
+-		/* not fragmented */
++	if (likely(!ieee80211_has_morefrags(fc) && frag == 0))
++		goto out;
++
++	if (is_multicast_ether_addr(hdr->addr1)) {
++		rx->local->dot11MulticastReceivedFrameCount++;
+ 		goto out;
+ 	}
++
+ 	I802_DEBUG_INC(rx->local->rx_handlers_fragments);
  
--extern unsigned long __weak kgdb_arch_pc(int exception, struct pt_regs *regs);
-+extern unsigned long kgdb_arch_pc(int exception, struct pt_regs *regs);
+ 	if (skb_linearize(rx->skb))
+@@ -1776,10 +1779,7 @@ ieee80211_rx_h_defragment(struct ieee802
+  out:
+ 	if (rx->sta)
+ 		rx->sta->rx_packets++;
+-	if (is_multicast_ether_addr(hdr->addr1))
+-		rx->local->dot11MulticastReceivedFrameCount++;
+-	else
+-		ieee80211_led_rx(rx->local);
++	ieee80211_led_rx(rx->local);
+ 	return RX_CONTINUE;
+ }
  
- #ifdef CONFIG_SERIAL_KGDB_NMI
- extern int kgdb_register_nmi_console(void);
 
 
