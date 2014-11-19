@@ -1,201 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934022AbaKSVQt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:16:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57596 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933957AbaKSVPB (ORCPT
+	id S934040AbaKSVRT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:17:19 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56596 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756494AbaKSVRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:15:01 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jon Medhurst <tixy@linaro.org>, Ben Dooks <ben.dooks@codethink.co.uk>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Wang Nan <wangnan0@huawei.com>
-Subject: [PATCH 3.10 49/70] ARM: probes: fix instruction fetch order with <asm/opcodes.h>
-Date: Wed, 19 Nov 2014 12:52:40 -0800
-Message-Id: <20141119205212.550160275@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
-References: <20141119205210.913169042@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 19 Nov 2014 16:17:15 -0500
+Date: Wed, 19 Nov 2014 21:17:13 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] situation with csum_and_copy_... API
+Message-ID: <20141119211712.GD7996@ZenIV.linux.org.uk>
+References: <20141118084745.GT7996@ZenIV.linux.org.uk>
+ <CA+55aFxK0wj2LLp0WmhRsBZch8XfoYbzmbEeJaMpt=SDh5GBvw@mail.gmail.com>
+ <20141118212307.GU7996@ZenIV.linux.org.uk>
+ <20141119.153136.867017618826698045.davem@davemloft.net>
+ <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Nov 19, 2014 at 12:40:53PM -0800, Linus Torvalds wrote:
+> On Wed, Nov 19, 2014 at 12:31 PM, David Miller <davem@davemloft.net> wrote:
+> >
+> > But that is just my opinion, and yes I do acknowledge that we've had
+> > serious holes in this area in the past.
+> 
+> The serious holes have generally been exactly in the "upper layers
+> already check" camp, and then it turns out that some odd ioctl or
+> other thing ends up doing something odd and interesting.
+> 
+> If Al has actual performance profiles showing that the access_ok() is
+> a real problem, then fine. As a low-level optimization, I agree with
+> it. But not as a "let's just drop them, and make the security rules be
+> non-local and subtle, and require people to know the details of the
+> whole call-chain".
+> 
+> Seeing a "__get_user()" and just being able to glance up in the same
+> function and seeing the "access_ok()" is just a good safety net. And
+> means that people don't have to waste time thinking about or looking
+> for where the hell the security net really is.
 
-------------------
+Umm...  It's not quite that bad - the thing is, for iov_iter-net series
+we'll need copy_and_csum_{to,from}_iter() anyway and for iovec-backed
+iov_iter instances we already ask the iovec to be validated wrt access_ok().
+And this validation (already done by rw_copy_check_uvector()) is going to
+be next to iov_iter_init() setting the iov_iter up.
 
-From: Ben Dooks <ben.dooks@codethink.co.uk>
+Moreover, I'm planning to take iov_iter_init() into rw_copy_check_uvector().
+That way setting ->iov is done from the same function that has just checked
+all ranges.  If you look at the callers, you'll see that almost all of them
+are directly followed by iov_iter_init() and folding it in is a fairly
+obvious cleanup.
 
-commit 888be25402021a425da3e85e2d5a954d7509286e upstream.
+The thing is, with ..._iter() variants added we are left with no other
+in-tree callers of csum_and_copy_{to,from}_user().  I agree that dropping
+those access_ok() is too early at this point - the analysis of paths
+by which a range can reach them is scary right now.  Moreover, it mostly
+parallels the changes later in the series - ones that propagate a pointer
+to iov_iter put into msdghdr in place of ->msg_iov/->msg_iovlen down to
+the new primitives.  _After_ those steps the analysis (see the horrors in
+commit message of 3/5) becomes trivial.
 
-If we are running BE8, the data and instruction endianness do not
-match, so use <asm/opcodes.h> to correctly translate memory accesses
-into ARM instructions.
+So whether we end up removing those access_ok() or not, this is not the
+time to do so.  It still might make sense in the end, but not right now.
 
-Acked-by: Jon Medhurst <tixy@linaro.org>
-Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-[taras.kondratiuk@linaro.org: fixed Thumb instruction fetch order]
-Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-[wangnan: backport to 3.10 and 3.14:
- - adjust context
- - backport all changes on arch/arm/kernel/probes.c to
-   arch/arm/kernel/kprobes-common.c since we don't have
-   commit c18377c303787ded44b7decd7dee694db0f205e9.
- - After the above adjustments, becomes same to Taras Kondratiuk's
-   original patch:
-     http://lists.linaro.org/pipermail/linaro-kernel/2014-January/010346.html
-]
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/arm/kernel/kprobes-common.c |   19 +++++++++++--------
- arch/arm/kernel/kprobes-thumb.c  |   20 ++++++++++++--------
- arch/arm/kernel/kprobes.c        |    9 +++++----
- 3 files changed, 28 insertions(+), 20 deletions(-)
+Frankly, my preference would be to provide __csum_and_copy_...() that do
+not bother with access_ok() (and do so consistently between the architectures),
+and do not bother with zeroing or trying to do an accurate csum in case of
+error.  With uniform implementation of csum_and_copy_...() that does
+access_ok(), tries to call __csum_... variant and, in case of failure,
+does __copy_..._user(), zeroes the tail in the "from" one and calculates
+the csum by source of destination - whichever's kernel-side.  I.e. do what
+ppc64 is doing.  That way we get obviously safe csum_and_copy_.._user(),
+and consistent __ counterparts directly used by ..._iter() primitives.
+Quite a bit of complexity becomes possible to remove from asm code,
+while we are at it - zeroing isn't the worst of it, contortions needed to
+calculate the csum accurately in error case are often nastier.  So much
+that e.g. arm doesn't even bother trying.
 
---- a/arch/arm/kernel/kprobes-common.c
-+++ b/arch/arm/kernel/kprobes-common.c
-@@ -14,6 +14,7 @@
- #include <linux/kernel.h>
- #include <linux/kprobes.h>
- #include <asm/system_info.h>
-+#include <asm/opcodes.h>
- 
- #include "kprobes.h"
- 
-@@ -305,7 +306,8 @@ kprobe_decode_ldmstm(kprobe_opcode_t ins
- 
- 	if (handler) {
- 		/* We can emulate the instruction in (possibly) modified form */
--		asi->insn[0] = (insn & 0xfff00000) | (rn << 16) | reglist;
-+		asi->insn[0] = __opcode_to_mem_arm((insn & 0xfff00000) |
-+						   (rn << 16) | reglist);
- 		asi->insn_handler = handler;
- 		return INSN_GOOD;
- 	}
-@@ -334,13 +336,14 @@ prepare_emulated_insn(kprobe_opcode_t in
- #ifdef CONFIG_THUMB2_KERNEL
- 	if (thumb) {
- 		u16 *thumb_insn = (u16 *)asi->insn;
--		thumb_insn[1] = 0x4770; /* Thumb bx lr */
--		thumb_insn[2] = 0x4770; /* Thumb bx lr */
-+		/* Thumb bx lr */
-+		thumb_insn[1] = __opcode_to_mem_thumb16(0x4770);
-+		thumb_insn[2] = __opcode_to_mem_thumb16(0x4770);
- 		return insn;
- 	}
--	asi->insn[1] = 0xe12fff1e; /* ARM bx lr */
-+	asi->insn[1] = __opcode_to_mem_arm(0xe12fff1e); /* ARM bx lr */
- #else
--	asi->insn[1] = 0xe1a0f00e; /* mov pc, lr */
-+	asi->insn[1] = __opcode_to_mem_arm(0xe1a0f00e); /* mov pc, lr */
- #endif
- 	/* Make an ARM instruction unconditional */
- 	if (insn < 0xe0000000)
-@@ -360,12 +363,12 @@ set_emulated_insn(kprobe_opcode_t insn,
- 	if (thumb) {
- 		u16 *ip = (u16 *)asi->insn;
- 		if (is_wide_instruction(insn))
--			*ip++ = insn >> 16;
--		*ip++ = insn;
-+			*ip++ = __opcode_to_mem_thumb16(insn >> 16);
-+		*ip++ = __opcode_to_mem_thumb16(insn);
- 		return;
- 	}
- #endif
--	asi->insn[0] = insn;
-+	asi->insn[0] = __opcode_to_mem_arm(insn);
- }
- 
- /*
---- a/arch/arm/kernel/kprobes-thumb.c
-+++ b/arch/arm/kernel/kprobes-thumb.c
-@@ -163,9 +163,9 @@ t32_decode_ldmstm(kprobe_opcode_t insn,
- 	enum kprobe_insn ret = kprobe_decode_ldmstm(insn, asi);
- 
- 	/* Fixup modified instruction to have halfwords in correct order...*/
--	insn = asi->insn[0];
--	((u16 *)asi->insn)[0] = insn >> 16;
--	((u16 *)asi->insn)[1] = insn & 0xffff;
-+	insn = __mem_to_opcode_arm(asi->insn[0]);
-+	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(insn >> 16);
-+	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0xffff);
- 
- 	return ret;
- }
-@@ -1153,7 +1153,7 @@ t16_decode_hiregs(kprobe_opcode_t insn,
- {
- 	insn &= ~0x00ff;
- 	insn |= 0x001; /* Set Rdn = R1 and Rm = R0 */
--	((u16 *)asi->insn)[0] = insn;
-+	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(insn);
- 	asi->insn_handler = t16_emulate_hiregs;
- 	return INSN_GOOD;
- }
-@@ -1182,8 +1182,10 @@ t16_decode_push(kprobe_opcode_t insn, st
- 	 * and call it with R9=SP and LR in the register list represented
- 	 * by R8.
- 	 */
--	((u16 *)asi->insn)[0] = 0xe929;		/* 1st half STMDB R9!,{} */
--	((u16 *)asi->insn)[1] = insn & 0x1ff;	/* 2nd half (register list) */
-+	/* 1st half STMDB R9!,{} */
-+	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(0xe929);
-+	/* 2nd half (register list) */
-+	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0x1ff);
- 	asi->insn_handler = t16_emulate_push;
- 	return INSN_GOOD;
- }
-@@ -1232,8 +1234,10 @@ t16_decode_pop(kprobe_opcode_t insn, str
- 	 * and call it with R9=SP and PC in the register list represented
- 	 * by R8.
- 	 */
--	((u16 *)asi->insn)[0] = 0xe8b9;		/* 1st half LDMIA R9!,{} */
--	((u16 *)asi->insn)[1] = insn & 0x1ff;	/* 2nd half (register list) */
-+	/* 1st half LDMIA R9!,{} */
-+	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(0xe8b9);
-+	/* 2nd half (register list) */
-+	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0x1ff);
- 	asi->insn_handler = insn & 0x100 ? t16_emulate_pop_pc
- 					 : t16_emulate_pop_nopc;
- 	return INSN_GOOD;
---- a/arch/arm/kernel/kprobes.c
-+++ b/arch/arm/kernel/kprobes.c
-@@ -26,6 +26,7 @@
- #include <linux/stop_machine.h>
- #include <linux/stringify.h>
- #include <asm/traps.h>
-+#include <asm/opcodes.h>
- #include <asm/cacheflush.h>
- 
- #include "kprobes.h"
-@@ -62,10 +63,10 @@ int __kprobes arch_prepare_kprobe(struct
- #ifdef CONFIG_THUMB2_KERNEL
- 	thumb = true;
- 	addr &= ~1; /* Bit 0 would normally be set to indicate Thumb code */
--	insn = ((u16 *)addr)[0];
-+	insn = __mem_to_opcode_thumb16(((u16 *)addr)[0]);
- 	if (is_wide_instruction(insn)) {
--		insn <<= 16;
--		insn |= ((u16 *)addr)[1];
-+		u16 inst2 = __mem_to_opcode_thumb16(((u16 *)addr)[1]);
-+		insn = __opcode_thumb32_compose(insn, inst2);
- 		decode_insn = thumb32_kprobe_decode_insn;
- 	} else
- 		decode_insn = thumb16_kprobe_decode_insn;
-@@ -73,7 +74,7 @@ int __kprobes arch_prepare_kprobe(struct
- 	thumb = false;
- 	if (addr & 0x3)
- 		return -EINVAL;
--	insn = *p->addr;
-+	insn = __mem_to_opcode_arm(*p->addr);
- 	decode_insn = arm_kprobe_decode_insn;
- #endif
- 
+Again, this is a separate work - I agree with you regarding the overhead
+being a non-issue for existing callers, and if somebody tries e.g. to send
+64K from 32K-element vector of 2-byte ranges they'll have a _lot_ of other
+overhead that will drown that of those access_ok().  In normal cases the
+price of copying the data itself is going to swamp that of access_ok(),
+of course.
 
-
+IOW, consider the access_ok() changes withdrawn for now.  It's too early
+in the series for them and the only reason to pull them that high in
+ordering had been the fear of overhead.  Which is very unlikely to be
+an issue.  They won't come back (if they come back at all) until the
+proof of correctness becomes absolutely trivial.
