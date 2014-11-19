@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932984AbaKSAKH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 19:10:07 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:36377 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932213AbaKSAKE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 19:10:04 -0500
-Date: Wed, 19 Nov 2014 09:09:54 +0900 (JST)
-Message-Id: <20141119.090954.206625370231465945.konishi.ryusuke@lab.ntt.co.jp>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: linux-nilfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, cocci@systeme.lip6.fr
-Subject: Re: [PATCH 1/1] nilfs2: Deletion of an unnecessary check before
- the function call "iput"
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-In-Reply-To: <546B4E19.8050405@users.sourceforge.net>
-References: <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-	<5317A59D.4@users.sourceforge.net>
-	<546B4E19.8050405@users.sourceforge.net>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S933029AbaKSAN4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 19:13:56 -0500
+Received: from [140.232.255.14] ([140.232.255.14]:58848 "EHLO mail.abrij.org"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932108AbaKSANz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 19:13:55 -0500
+Date: Tue, 18 Nov 2014 19:13:53 -0500
+From: bri <bri@abrij.org>
+To: Antonio Ospite <ao2@ao2.it>
+Cc: Frank Praznik <frank.praznik@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 001/001] hid-sony.c: add sysfs provisioning
+Message-ID: <20141119001353.GA635@abrij.org>
+References: <20141116181846.GA31516@abrij.org>
+ <20141117133518.ee306b3b35a0e0566a255b14@ao2.it>
+ <20141118020144.GB32256@abrij.org>
+ <20141118234349.7b44949197898390d496f1cd@ao2.it>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141118234349.7b44949197898390d496f1cd@ao2.it>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014 14:48:09 +0100, SF Markus Elfring wrote:
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Tue, 18 Nov 2014 14:41:27 +0100
-> 
-> The iput() function tests whether its argument is NULL and then
-> returns immediately. Thus the test around the call is not needed.
-> 
-> This issue was detected by using the Coccinelle software.
-> 
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+On Tue, Nov 18, 2014 at 11:43:49PM +0100, Antonio Ospite wrote:
+> On Mon, 17 Nov 2014 21:01:44 -0500
+> bri <bri@abrij.org> wrote:
+> If you can upload a shell script to the target system you may as well
+> upload a static binary; and if you can use a modified kernel you can
+> compile _for_ the target even if not _on_ the target.
+>
+> And if you need help to write the program which uses the HID ioctls
+> just ask :)
 
-Applied to nilfs2 git tree.  Thanks.
+What, no, that's really super easy for me.  I don't prefer to do it that
+way, personally so I won't -- I'm going to have to heavily mod things
+down through hid-core and up through js to get other behaviors I want,
+anyway.
 
-Ryusuke Konishi
+The point of pushing the patch up here, of course, was so that people
+who could not do many of the above listed things would have an easy
+interface.
 
+Thanks, though.
 
-> ---
->  fs/nilfs2/the_nilfs.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/fs/nilfs2/the_nilfs.c b/fs/nilfs2/the_nilfs.c
-> index 9da25fe..69bd801 100644
-> --- a/fs/nilfs2/the_nilfs.c
-> +++ b/fs/nilfs2/the_nilfs.c
-> @@ -808,8 +808,7 @@ void nilfs_put_root(struct nilfs_root *root)
->  		spin_lock(&nilfs->ns_cptree_lock);
->  		rb_erase(&root->rb_node, &nilfs->ns_cptree);
->  		spin_unlock(&nilfs->ns_cptree_lock);
-> -		if (root->ifile)
-> -			iput(root->ifile);
-> +		iput(root->ifile);
->  
->  		kfree(root);
->  	}
-> -- 
-> 2.1.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nilfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+If I actually end up having the time to get anything working I'll post
+a link to a repo so that if anything looks in there looks interesting
+someone can ask me for a patch submittal.
+
