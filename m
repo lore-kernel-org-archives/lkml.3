@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202AbaKSLLV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 06:11:21 -0500
-Received: from www.linutronix.de ([62.245.132.108]:43991 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaKSLLT (ORCPT
+	id S1755285AbaKSLR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 06:17:56 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:58574 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaKSLRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 06:11:19 -0500
-Date: Wed, 19 Nov 2014 12:11:13 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-cc: Marc Zyngier <marc.zyngier@arm.com>, Jiang Liu <jiang.liu@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 08/16] genirq: Introduce callback
- irq_chip.irq_write_msi_msg
-In-Reply-To: <546C1148.4080102@huawei.com>
-Message-ID: <alpine.DEB.2.11.1411191209400.3909@nanos>
-References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com> <546B4F18.5060705@huawei.com>
- <alpine.DEB.2.11.1411181518310.3909@nanos> <546B5904.6020200@huawei.com> <8761ece85x.fsf@approximate.cambridge.arm.com> <546C1148.4080102@huawei.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 19 Nov 2014 06:17:54 -0500
+Date: Wed, 19 Nov 2014 13:17:44 +0200
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chan-yeol Park <chanyeol.park@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org
+Subject: Re: pull request: bluetooth-next 2014-11-07
+Message-ID: <20141119111744.GA8153@t440s.lan>
+Mail-Followup-To: "Kirill A. Shutemov" <kirill@shutemov.name>,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Chan-yeol Park <chanyeol.park@samsung.com>,
+	Kyungmin Park <kyungmin.park@samsung.com>, linville@tuxdriver.com,
+	linux-wireless@vger.kernel.org
+References: <20141118133459.GB27428@node.dhcp.inet.fi>
+ <20141118180919.GA32128@t440s.P-661HNU-F1>
+ <20141119110654.GA1894@node.dhcp.inet.fi>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141119110654.GA1894@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014, Yun Wu (Abel) wrote:
-> On 2014/11/19 1:21, Marc Zyngier wrote:
-> > This is why the framework gives you the opportunity to provide methods
-> > that:
-> > - compose the message
-> > - program the message into the device
+Hi Kirill,
+
+On Wed, Nov 19, 2014, Kirill A. Shutemov wrote:
+> > From: Johan Hedberg <johan.hedberg@intel.com>
+> > Date: Tue, 18 Nov 2014 20:00:15 +0200
+> > Subject: [PATCH] Bluetooth: Fix setting state back to TASK_RUNNING
 > > 
-> > None of that has to be PCI specific, and gives you a clean
-> > abstraction. The framework only gives you a number of shortcuts for PCI
-> > MSI, because that's what most people care about.
+> > In __hci_cmd_sync_ev() and __hci_req_sync() if the hci_req_run() call
+> > fails and we return from the functions we should ensure that the state
+> > doesn't remain in TASK_INTERRUPTIBLE that we just set it to. This patch
+> > fixes missing calls to set_current_state(TASK_RUNNING) in both places.
 > > 
+> > Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
 > 
-> Indeed, and I never said Jiang's patches don't work, I was just thinking
-> that they were not that perfect.
+> This patch helps -- warning is gone.
 
-But your magic extra layer of indirection is perfect? It's not, it
-just violates sane layering in order to support braindead hardware
-designs.
+Thanks! I've resent it to linux-bluetooth with the appropriate
+Reported-by/Tested-by credits. It'll be included in the next pull
+request for the bluetooth-next tree.
 
-Thanks,
-
-	tglx
+Johan
