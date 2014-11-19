@@ -1,116 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057AbaKSQnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:43:20 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:63435 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754398AbaKSQnS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:43:18 -0500
-Date: Wed, 19 Nov 2014 16:43:10 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, broonie@kernel.org,
-        a.zummo@towertech.it, lgirdwood@gmail.com, sbkim73@samsung.com,
-        sameo@linux.intel.com, geunsik.lim@samsung.com, inki.dae@samsung.com,
-        kyungmin.park@samsung.com, k.kozlowski@samsung.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCHv2 3/5] clk: s2mps11: Add the support for S2MPS13 PMIC
- clock
-Message-ID: <20141119164310.GH1875@x1>
-References: <1416301183-10478-1-git-send-email-cw00.choi@samsung.com>
- <1416301183-10478-4-git-send-email-cw00.choi@samsung.com>
- <20141118215926.25314.90810@quantum>
+	id S1755839AbaKSQor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:44:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33328 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754066AbaKSQoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:44:46 -0500
+Date: Wed, 19 Nov 2014 17:44:40 +0100
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH 2/2] tracing: Use trace_seq_used() and seq_buf_used()
+ instead of len
+Message-ID: <20141119164440.GE2332@dhcp128.suse.cz>
+References: <20141115045847.712848224@goodmis.org>
+ <20141115050603.904875201@goodmis.org>
+ <20141117123250.10f6f57c@gandalf.local.home>
+ <20141117141215.2dbd5f12@gandalf.local.home>
+ <20141118163354.GK23958@pathway.suse.cz>
+ <20141118123732.462b1ad8@gandalf.local.home>
+ <20141119114017.GA2332@dhcp128.suse.cz>
+ <20141119084800.524beb62@gandalf.local.home>
+ <20141119144004.GB2332@dhcp128.suse.cz>
+ <20141119110037.6fafa106@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141118215926.25314.90810@quantum>
+In-Reply-To: <20141119110037.6fafa106@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014, Mike Turquette wrote:
-
-> Quoting Chanwoo Choi (2014-11-18 00:59:41)
-> > This patch adds the support for S2MPS13 PMIC clock which is same with existing
-> > S2MPS14 RTC IP. But, S2MPS13 uses all of clocks (32khz_{ap|bt|cp}).
-> > 
-> > Cc: Mike Turquette <mturquette@linaro.org>
-> > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> > Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+On Wed 2014-11-19 11:00:37, Steven Rostedt wrote:
+> On Wed, 19 Nov 2014 15:40:05 +0100
+> Petr Mladek <pmladek@suse.cz> wrote:
 > 
-> Applied to clk-next.
-
-I'm pretty sure you can't do that.  You have a dependency on
-linux/mfd/samsung/s2mps13.h, which is satisfied in one of the earlier
-patches in the set.  If you'd care to just provide an Ack for this
-patch, I can send you a pull-request with the decencies met.
-
-> > ---
-> >  drivers/clk/clk-s2mps11.c | 24 ++++++++++++++++++++++++
-> >  1 file changed, 24 insertions(+)
+> > > Regardless of overflow or not (or even if trace_seq is full), that if
+> > > statement will prevent this from doing any buffer overflows.
+> > > 
+> > > s->seq.len will never be more than s->seq.size after the test against
+> > > TRACE_MAX_PRINT. So I see no harm here.
 > > 
-> > diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
-> > index b7797fb..7bb13af 100644
-> > --- a/drivers/clk/clk-s2mps11.c
-> > +++ b/drivers/clk/clk-s2mps11.c
-> > @@ -23,6 +23,7 @@
-> >  #include <linux/clk-provider.h>
-> >  #include <linux/platform_device.h>
-> >  #include <linux/mfd/samsung/s2mps11.h>
-> > +#include <linux/mfd/samsung/s2mps13.h>
-> >  #include <linux/mfd/samsung/s2mps14.h>
-> >  #include <linux/mfd/samsung/s5m8767.h>
-> >  #include <linux/mfd/samsung/core.h>
-> > @@ -120,6 +121,24 @@ static struct clk_init_data s2mps11_clks_init[S2MPS11_CLKS_NUM] = {
-> >         },
-> >  };
-> >  
-> > +static struct clk_init_data s2mps13_clks_init[S2MPS11_CLKS_NUM] = {
-> > +       [S2MPS11_CLK_AP] = {
-> > +               .name = "s2mps13_ap",
-> > +               .ops = &s2mps11_clk_ops,
-> > +               .flags = CLK_IS_ROOT,
-> > +       },
-> > +       [S2MPS11_CLK_CP] = {
-> > +               .name = "s2mps13_cp",
-> > +               .ops = &s2mps11_clk_ops,
-> > +               .flags = CLK_IS_ROOT,
-> > +       },
-> > +       [S2MPS11_CLK_BT] = {
-> > +               .name = "s2mps13_bt",
-> > +               .ops = &s2mps11_clk_ops,
-> > +               .flags = CLK_IS_ROOT,
-> > +       },
-> > +};
-> > +
-> >  static struct clk_init_data s2mps14_clks_init[S2MPS11_CLKS_NUM] = {
-> >         [S2MPS11_CLK_AP] = {
-> >                 .name = "s2mps14_ap",
-> > @@ -184,6 +203,10 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
-> >                 s2mps11_reg = S2MPS11_REG_RTC_CTRL;
-> >                 clks_init = s2mps11_clks_init;
-> >                 break;
-> > +       case S2MPS13X:
-> > +               s2mps11_reg = S2MPS13_REG_RTCCTRL;
-> > +               clks_init = s2mps13_clks_init;
-> > +               break;
-> >         case S2MPS14X:
-> >                 s2mps11_reg = S2MPS14_REG_RTCCTRL;
-> >                 clks_init = s2mps14_clks_init;
-> > @@ -279,6 +302,7 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
-> >  
-> >  static const struct platform_device_id s2mps11_clk_id[] = {
-> >         { "s2mps11-clk", S2MPS11X},
-> > +       { "s2mps13-clk", S2MPS13X},
-> >         { "s2mps14-clk", S2MPS14X},
-> >         { "s5m8767-clk", S5M8767X},
-> >         { },
+> > Ah, I see. Well, I would feel more comfortable if it uses
+> > trace_seq_used() or if there is some explanation in a comment.
+> > But you are right, it is safe as it is. Feel free to leave it.
+> > 
+> 
+> OK, I added this just for you:
+>
+> BTW, using trace_seq_used() would not be good enough because it could
+> return s->seq.size. Which would overflow the buffer on the
+> 
+> 	s->buffer[s->seq.len] = 0;
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Great catch!
+
+> -- Steve
+> 
+> From 1922acc9987d23d0b9c1ad28dc3eaafc1cf2d6b7 Mon Sep 17 00:00:00 2001
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> Date: Wed, 19 Nov 2014 10:56:41 -0500
+> Subject: [PATCH] tracing: Add paranoid size check in trace_printk_seq()
+> 
+> To be really paranoid about writing out of bound data in
+> trace_printk_seq(), add another check of len compared to size.
+> 
+> Link: http://lkml.kernel.org/r/20141119144004.GB2332@dhcp128.suse.cz
+> 
+> Suggested-by: Petr Mladek <pmladek@suse.cz>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
+
+Thanks a lot for the addition.
+
+Best Regards,
+Petr
+
+> ---
+>  kernel/trace/trace.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 9023446b2c2b..26facec4625e 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -6656,6 +6656,14 @@ trace_printk_seq(struct trace_seq *s)
+>  	if (s->seq.len >= TRACE_MAX_PRINT)
+>  		s->seq.len = TRACE_MAX_PRINT;
+>  
+> +	/*
+> +	 * More paranoid code. Although the buffer size is set to
+> +	 * PAGE_SIZE, and TRACE_MAX_PRINT is 1000, this is just
+> +	 * an extra layer of protection.
+> +	 */
+> +	if (WARN_ON_ONCE(s->seq.len >= s->seq.size))
+> +		s->seq.len = s->seq.size - 1;
+> +
+>  	/* should be zero ended, but we are paranoid. */
+>  	s->buffer[s->seq.len] = 0;
+>  
+> -- 
+> 1.8.1.4
+> 
