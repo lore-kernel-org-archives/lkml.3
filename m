@@ -1,768 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756569AbaKSUiK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:38:10 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:51092 "EHLO
+	id S1756647AbaKSUjM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:39:12 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51661 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756063AbaKSUiI (ORCPT
+	with ESMTP id S1755749AbaKSUjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:38:08 -0500
-Date: Wed, 19 Nov 2014 15:37:35 -0500
+	Wed, 19 Nov 2014 15:39:11 -0500
+Date: Wed, 19 Nov 2014 15:38:48 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Juergen Gross <jgross@suse.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Subject: Re: [PATCH V3 7/8] xen: switch to linear virtual mapped sparse p2m
- list
-Message-ID: <20141119203735.GA18495@laptop.dumpdata.com>
+Cc: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, boris.ostrovsky@oracle.com,
+        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Subject: Re: [Xen-devel] [PATCH V3 7/8] xen: switch to linear virtual mapped
+ sparse p2m list
+Message-ID: <20141119203848.GB18495@laptop.dumpdata.com>
 References: <1415684626-18590-1-git-send-email-jgross@suse.com>
  <1415684626-18590-8-git-send-email-jgross@suse.com>
+ <54624BCB.9040300@citrix.com>
+ <546477FD.9050800@suse.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415684626-18590-8-git-send-email-jgross@suse.com>
+In-Reply-To: <546477FD.9050800@suse.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 06:43:45AM +0100, Juergen Gross wrote:
-> At start of the day the Xen hypervisor presents a contiguous mfn list
-> to a pv-domain. In order to support sparse memory this mfn list is
-> accessed via a three level p2m tree built early in the boot process.
-> Whenever the system needs the mfn associated with a pfn this tree is
-> used to find the mfn.
+On Thu, Nov 13, 2014 at 10:21:01AM +0100, Juergen Gross wrote:
+> On 11/11/2014 06:47 PM, David Vrabel wrote:
+> >On 11/11/14 05:43, Juergen Gross wrote:
+> >>At start of the day the Xen hypervisor presents a contiguous mfn list
+> >>to a pv-domain. In order to support sparse memory this mfn list is
+> >>accessed via a three level p2m tree built early in the boot process.
+> >>Whenever the system needs the mfn associated with a pfn this tree is
+> >>used to find the mfn.
+> >>
+> >>Instead of using a software walked tree for accessing a specific mfn
+> >>list entry this patch is creating a virtual address area for the
+> >>entire possible mfn list including memory holes. The holes are
+> >>covered by mapping a pre-defined  page consisting only of "invalid
+> >>mfn" entries. Access to a mfn entry is possible by just using the
+> >>virtual base address of the mfn list and the pfn as index into that
+> >>list. This speeds up the (hot) path of determining the mfn of a
+> >>pfn.
+> >>
+> >>Kernel build on a Dell Latitude E6440 (2 cores, HT) in 64 bit Dom0
+> >>showed following improvements:
+> >>
+> >>Elapsed time: 32:50 ->  32:35
+> >>System:       18:07 ->  17:47
+> >>User:        104:00 -> 103:30
+> >>
+> >>Tested on 64 bit dom0 and 32 bit domU.
+> >
+> >Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+> >
+> >Can you please test this with the following guests/scenarios.
+> >
+> >* 64 bit dom0 with PCI devices with high MMIO BARs.
 > 
-> Instead of using a software walked tree for accessing a specific mfn
-> list entry this patch is creating a virtual address area for the
-> entire possible mfn list including memory holes. The holes are
-> covered by mapping a pre-defined  page consisting only of "invalid
-> mfn" entries. Access to a mfn entry is possible by just using the
-> virtual base address of the mfn list and the pfn as index into that
-> list. This speeds up the (hot) path of determining the mfn of a
-> pfn.
+> I'm not sure I have a machine available with this configuration.
 > 
-> Kernel build on a Dell Latitude E6440 (2 cores, HT) in 64 bit Dom0
-> showed following improvements:
+> >* 32 bit domU with PCI devices assigned.
+> >* 32 bit domU with 64 GiB of memory.
+> >* domU that starts pre-ballooned and is subsequently ballooned up.
+> >* 64 bit domU that is saved and restored (or local host migration)
+> >* 32 bit domU that is saved and restored (or local host migration)
+
+I would also add: try 64-bit domU with really bizzare memory sizes that
+are not odd. Like 9765431 or such. And naturally do the migration to
+make sure that the re-hook doesn't miss a page or such.
+
 > 
-> Elapsed time: 32:50 ->  32:35
-> System:       18:07 ->  17:47
-> User:        104:00 -> 103:30
+> I'll try.
 > 
-> Tested on 64 bit dom0 and 32 bit domU.
 > 
-> Signed-off-by: Juergen Gross <jgross@suse.com>
-> ---
->  arch/x86/include/asm/xen/page.h |  14 +-
->  arch/x86/xen/mmu.c              |  32 +-
->  arch/x86/xen/p2m.c              | 732 +++++++++++++++++-----------------------
->  arch/x86/xen/xen-ops.h          |   2 +-
->  4 files changed, 342 insertions(+), 438 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-> index 07d8a7b..4a227ec 100644
-> --- a/arch/x86/include/asm/xen/page.h
-> +++ b/arch/x86/include/asm/xen/page.h
-> @@ -72,7 +72,19 @@ extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn)
->   */
->  static inline unsigned long __pfn_to_mfn(unsigned long pfn)
->  {
-> -	return get_phys_to_machine(pfn);
-> +	unsigned long mfn;
-> +
-> +	if (pfn < xen_p2m_size)
-> +		mfn = xen_p2m_addr[pfn];
-> +	else if (unlikely(pfn < xen_max_p2m_pfn))
-> +		return get_phys_to_machine(pfn);
-> +	else
-> +		return IDENTITY_FRAME(pfn);
-> +
-> +	if (unlikely(mfn == INVALID_P2M_ENTRY))
-> +		return get_phys_to_machine(pfn);
-> +
-> +	return mfn;
->  }
->  
->  static inline unsigned long pfn_to_mfn(unsigned long pfn)
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 31ca515..0b43c45 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1158,20 +1158,16 @@ static void __init xen_cleanhighmap(unsigned long vaddr,
->  	 * instead of somewhere later and be confusing. */
->  	xen_mc_flush();
->  }
-> -static void __init xen_pagetable_p2m_copy(void)
-> +
-> +static void __init xen_pagetable_p2m_free(void)
->  {
->  	unsigned long size;
->  	unsigned long addr;
-> -	unsigned long new_mfn_list;
-> -
-> -	if (xen_feature(XENFEAT_auto_translated_physmap))
-> -		return;
->  
->  	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
->  
-> -	new_mfn_list = xen_revector_p2m_tree();
->  	/* No memory or already called. */
-> -	if (!new_mfn_list || new_mfn_list == xen_start_info->mfn_list)
-> +	if ((unsigned long)xen_p2m_addr == xen_start_info->mfn_list)
->  		return;
->  
->  	/* using __ka address and sticking INVALID_P2M_ENTRY! */
-> @@ -1189,8 +1185,6 @@ static void __init xen_pagetable_p2m_copy(void)
->  
->  	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
->  	memblock_free(__pa(xen_start_info->mfn_list), size);
-> -	/* And revector! Bye bye old array */
-> -	xen_start_info->mfn_list = new_mfn_list;
->  
->  	/* At this stage, cleanup_highmap has already cleaned __ka space
->  	 * from _brk_limit way up to the max_pfn_mapped (which is the end of
-> @@ -1214,12 +1208,26 @@ static void __init xen_pagetable_p2m_copy(void)
->  }
->  #endif
->  
-> -static void __init xen_pagetable_init(void)
-> +static void __init xen_pagetable_p2m_setup(void)
->  {
-> -	paging_init();
-> +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> +		return;
-> +
-> +	xen_vmalloc_p2m_tree();
-> +
->  #ifdef CONFIG_X86_64
-> -	xen_pagetable_p2m_copy();
-> +	xen_pagetable_p2m_free();
->  #endif
-> +	/* And revector! Bye bye old array */
-> +	xen_start_info->mfn_list = (unsigned long)xen_p2m_addr;
-> +}
-> +
-> +static void __init xen_pagetable_init(void)
-> +{
-> +	paging_init();
-> +
-> +	xen_pagetable_p2m_setup();
-> +
->  	/* Allocate and initialize top and mid mfn levels for p2m structure */
->  	xen_build_mfn_list_list();
->  
-> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> index 328875a..7df446d 100644
-> --- a/arch/x86/xen/p2m.c
-> +++ b/arch/x86/xen/p2m.c
-> @@ -3,21 +3,22 @@
->   * guests themselves, but it must also access and update the p2m array
->   * during suspend/resume when all the pages are reallocated.
->   *
-> - * The p2m table is logically a flat array, but we implement it as a
-> - * three-level tree to allow the address space to be sparse.
-> + * The logical flat p2m table is mapped to a linear kernel memory area.
-> + * For accesses by Xen a three-level tree linked via mfns only is set up to
-> + * allow the address space to be sparse.
->   *
-> - *                               Xen
-> - *                                |
-> - *     p2m_top              p2m_top_mfn
-> - *       /  \                   /   \
-> - * p2m_mid p2m_mid	p2m_mid_mfn p2m_mid_mfn
-> - *    / \      / \         /           /
-> - *  p2m p2m p2m p2m p2m p2m p2m ...
-> + *               Xen
-> + *                |
-> + *          p2m_top_mfn
-> + *              /   \
-> + * p2m_mid_mfn p2m_mid_mfn
-> + *         /           /
-> + *  p2m p2m p2m ...
->   *
->   * The p2m_mid_mfn pages are mapped by p2m_top_mfn_p.
->   *
-> - * The p2m_top and p2m_top_mfn levels are limited to 1 page, so the
-> - * maximum representable pseudo-physical address space is:
-> + * The p2m_top_mfn level is limited to 1 page, so the maximum representable
-> + * pseudo-physical address space is:
->   *  P2M_TOP_PER_PAGE * P2M_MID_PER_PAGE * P2M_PER_PAGE pages
->   *
->   * P2M_PER_PAGE depends on the architecture, as a mfn is always
-> @@ -30,6 +31,9 @@
->   * leaf entries, or for the top  root, or middle one, for which there is a void
->   * entry, we assume it is  "missing". So (for example)
->   *  pfn_to_mfn(0x90909090)=INVALID_P2M_ENTRY.
-> + * We have a dedicated page p2m_missing with all entries being
-> + * INVALID_P2M_ENTRY. This page may be referenced multiple times in the p2m
-> + * list/tree in case there are multiple areas with P2M_PER_PAGE invalid pfns.
->   *
->   * We also have the possibility of setting 1-1 mappings on certain regions, so
->   * that:
-> @@ -39,122 +43,20 @@
->   * PCI BARs, or ACPI spaces), we can create mappings easily because we
->   * get the PFN value to match the MFN.
->   *
-> - * For this to work efficiently we have one new page p2m_identity and
-> - * allocate (via reserved_brk) any other pages we need to cover the sides
-> - * (1GB or 4MB boundary violations). All entries in p2m_identity are set to
-> - * INVALID_P2M_ENTRY type (Xen toolstack only recognizes that and MFNs,
-> - * no other fancy value).
-> + * For this to work efficiently we have one new page p2m_identity. All entries
-> + * in p2m_identity are set to INVALID_P2M_ENTRY type (Xen toolstack only
-> + * recognizes that and MFNs, no other fancy value).
->   *
->   * On lookup we spot that the entry points to p2m_identity and return the
->   * identity value instead of dereferencing and returning INVALID_P2M_ENTRY.
->   * If the entry points to an allocated page, we just proceed as before and
-> - * return the PFN.  If the PFN has IDENTITY_FRAME_BIT set we unmask that in
-> + * return the PFN. If the PFN has IDENTITY_FRAME_BIT set we unmask that in
->   * appropriate functions (pfn_to_mfn).
->   *
->   * The reason for having the IDENTITY_FRAME_BIT instead of just returning the
->   * PFN is that we could find ourselves where pfn_to_mfn(pfn)==pfn for a
->   * non-identity pfn. To protect ourselves against we elect to set (and get) the
->   * IDENTITY_FRAME_BIT on all identity mapped PFNs.
-> - *
-> - * This simplistic diagram is used to explain the more subtle piece of code.
-> - * There is also a digram of the P2M at the end that can help.
-> - * Imagine your E820 looking as so:
-> - *
-> - *                    1GB                                           2GB    4GB
-> - * /-------------------+---------\/----\         /----------\    /---+-----\
-> - * | System RAM        | Sys RAM ||ACPI|         | reserved |    | Sys RAM |
-> - * \-------------------+---------/\----/         \----------/    \---+-----/
-> - *                               ^- 1029MB                       ^- 2001MB
-> - *
-> - * [1029MB = 263424 (0x40500), 2001MB = 512256 (0x7D100),
-> - *  2048MB = 524288 (0x80000)]
-> - *
-> - * And dom0_mem=max:3GB,1GB is passed in to the guest, meaning memory past 1GB
-> - * is actually not present (would have to kick the balloon driver to put it in).
-> - *
-> - * When we are told to set the PFNs for identity mapping (see patch: "xen/setup:
-> - * Set identity mapping for non-RAM E820 and E820 gaps.") we pass in the start
-> - * of the PFN and the end PFN (263424 and 512256 respectively). The first step
-> - * is to reserve_brk a top leaf page if the p2m[1] is missing. The top leaf page
-> - * covers 512^2 of page estate (1GB) and in case the start or end PFN is not
-> - * aligned on 512^2*PAGE_SIZE (1GB) we reserve_brk new middle and leaf pages as
-> - * required to split any existing p2m_mid_missing middle pages.
-> - *
-> - * With the E820 example above, 263424 is not 1GB aligned so we allocate a
-> - * reserve_brk page which will cover the PFNs estate from 0x40000 to 0x80000.
-> - * Each entry in the allocate page is "missing" (points to p2m_missing).
-> - *
-> - * Next stage is to determine if we need to do a more granular boundary check
-> - * on the 4MB (or 2MB depending on architecture) off the start and end pfn's.
-> - * We check if the start pfn and end pfn violate that boundary check, and if
-> - * so reserve_brk a (p2m[x][y]) leaf page. This way we have a much finer
-> - * granularity of setting which PFNs are missing and which ones are identity.
-> - * In our example 263424 and 512256 both fail the check so we reserve_brk two
-> - * pages. Populate them with INVALID_P2M_ENTRY (so they both have "missing"
-> - * values) and assign them to p2m[1][2] and p2m[1][488] respectively.
-> - *
-> - * At this point we would at minimum reserve_brk one page, but could be up to
-> - * three. Each call to set_phys_range_identity has at maximum a three page
-> - * cost. If we were to query the P2M at this stage, all those entries from
-> - * start PFN through end PFN (so 1029MB -> 2001MB) would return
-> - * INVALID_P2M_ENTRY ("missing").
-> - *
-> - * The next step is to walk from the start pfn to the end pfn setting
-> - * the IDENTITY_FRAME_BIT on each PFN. This is done in set_phys_range_identity.
-> - * If we find that the middle entry is pointing to p2m_missing we can swap it
-> - * over to p2m_identity - this way covering 4MB (or 2MB) PFN space (and
-> - * similarly swapping p2m_mid_missing for p2m_mid_identity for larger regions).
-> - * At this point we do not need to worry about boundary aligment (so no need to
-> - * reserve_brk a middle page, figure out which PFNs are "missing" and which
-> - * ones are identity), as that has been done earlier.  If we find that the
-> - * middle leaf is not occupied by p2m_identity or p2m_missing, we dereference
-> - * that page (which covers 512 PFNs) and set the appropriate PFN with
-> - * IDENTITY_FRAME_BIT. In our example 263424 and 512256 end up there, and we
-> - * set from p2m[1][2][256->511] and p2m[1][488][0->256] with
-> - * IDENTITY_FRAME_BIT set.
-> - *
-> - * All other regions that are void (or not filled) either point to p2m_missing
-> - * (considered missing) or have the default value of INVALID_P2M_ENTRY (also
-> - * considered missing). In our case, p2m[1][2][0->255] and p2m[1][488][257->511]
-> - * contain the INVALID_P2M_ENTRY value and are considered "missing."
-> - *
-> - * Finally, the region beyond the end of of the E820 (4 GB in this example)
-> - * is set to be identity (in case there are MMIO regions placed here).
-> - *
-> - * This is what the p2m ends up looking (for the E820 above) with this
-> - * fabulous drawing:
-> - *
-> - *    p2m         /--------------\
-> - *  /-----\       | &mfn_list[0],|                           /-----------------\
-> - *  |  0  |------>| &mfn_list[1],|    /---------------\      | ~0, ~0, ..      |
-> - *  |-----|       |  ..., ~0, ~0 |    | ~0, ~0, [x]---+----->| IDENTITY [@256] |
-> - *  |  1  |---\   \--------------/    | [p2m_identity]+\     | IDENTITY [@257] |
-> - *  |-----|    \                      | [p2m_identity]+\\    | ....            |
-> - *  |  2  |--\  \-------------------->|  ...          | \\   \----------------/
-> - *  |-----|   \                       \---------------/  \\
-> - *  |  3  |-\  \                                          \\  p2m_identity [1]
-> - *  |-----|  \  \-------------------->/---------------\   /-----------------\
-> - *  | ..  |\  |                       | [p2m_identity]+-->| ~0, ~0, ~0, ... |
-> - *  \-----/ | |                       | [p2m_identity]+-->| ..., ~0         |
-> - *          | |                       | ....          |   \-----------------/
-> - *          | |                       +-[x], ~0, ~0.. +\
-> - *          | |                       \---------------/ \
-> - *          | |                                          \-> /---------------\
-> - *          | V  p2m_mid_missing       p2m_missing           | IDENTITY[@0]  |
-> - *          | /-----------------\     /------------\         | IDENTITY[@256]|
-> - *          | | [p2m_missing]   +---->| ~0, ~0, ...|         | ~0, ~0, ....  |
-> - *          | | [p2m_missing]   +---->| ..., ~0    |         \---------------/
-> - *          | | ...             |     \------------/
-> - *          | \-----------------/
-> - *          |
-> - *          |     p2m_mid_identity
-> - *          |   /-----------------\
-> - *          \-->| [p2m_identity]  +---->[1]
-> - *              | [p2m_identity]  +---->[1]
-> - *              | ...             |
-> - *              \-----------------/
-> - *
-> - * where ~0 is INVALID_P2M_ENTRY. IDENTITY is (PFN | IDENTITY_BIT)
->   */
->  
->  #include <linux/init.h>
-> @@ -179,6 +81,8 @@
->  #include "multicalls.h"
->  #include "xen-ops.h"
->  
-> +#define PMDS_PER_MID_PAGE	(P2M_MID_PER_PAGE / PTRS_PER_PTE)
-> +
->  static void __init m2p_override_init(void);
->  
->  unsigned long *xen_p2m_addr __read_mostly;
-> @@ -188,22 +92,15 @@ EXPORT_SYMBOL_GPL(xen_p2m_size);
->  unsigned long xen_max_p2m_pfn __read_mostly;
->  EXPORT_SYMBOL_GPL(xen_max_p2m_pfn);
->  
-> +static DEFINE_SPINLOCK(p2m_update_lock);
-> +
->  static unsigned long *p2m_mid_missing_mfn;
->  static unsigned long *p2m_top_mfn;
->  static unsigned long **p2m_top_mfn_p;
-> -
-> -/* Placeholders for holes in the address space */
-> -static RESERVE_BRK_ARRAY(unsigned long, p2m_missing, P2M_PER_PAGE);
-> -static RESERVE_BRK_ARRAY(unsigned long *, p2m_mid_missing, P2M_MID_PER_PAGE);
-> -
-> -static RESERVE_BRK_ARRAY(unsigned long **, p2m_top, P2M_TOP_PER_PAGE);
-> -
-> -static RESERVE_BRK_ARRAY(unsigned long, p2m_identity, P2M_PER_PAGE);
-> -static RESERVE_BRK_ARRAY(unsigned long *, p2m_mid_identity, P2M_MID_PER_PAGE);
-> -
-> -RESERVE_BRK(p2m_mid, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID_PER_PAGE)));
-> -
-> -static int use_brk = 1;
-> +static unsigned long *p2m_missing;
-> +static unsigned long *p2m_identity;
-> +static pte_t *p2m_missing_pte;
-> +static pte_t *p2m_identity_pte;
->  
->  static inline unsigned p2m_top_index(unsigned long pfn)
->  {
-> @@ -221,14 +118,6 @@ static inline unsigned p2m_index(unsigned long pfn)
->  	return pfn % P2M_PER_PAGE;
->  }
->  
-> -static void p2m_top_init(unsigned long ***top)
-> -{
-> -	unsigned i;
-> -
-> -	for (i = 0; i < P2M_TOP_PER_PAGE; i++)
-> -		top[i] = p2m_mid_missing;
-> -}
-> -
->  static void p2m_top_mfn_init(unsigned long *top)
->  {
->  	unsigned i;
-> @@ -245,35 +134,32 @@ static void p2m_top_mfn_p_init(unsigned long **top)
->  		top[i] = p2m_mid_missing_mfn;
->  }
->  
-> -static void p2m_mid_init(unsigned long **mid, unsigned long *leaf)
-> +static void p2m_mid_mfn_init(unsigned long *mid, unsigned long *leaf)
->  {
->  	unsigned i;
->  
->  	for (i = 0; i < P2M_MID_PER_PAGE; i++)
-> -		mid[i] = leaf;
-> +		mid[i] = virt_to_mfn(leaf);
->  }
->  
-> -static void p2m_mid_mfn_init(unsigned long *mid, unsigned long *leaf)
-> +static void p2m_init(unsigned long *p2m)
->  {
->  	unsigned i;
->  
-> -	for (i = 0; i < P2M_MID_PER_PAGE; i++)
-> -		mid[i] = virt_to_mfn(leaf);
-> +	for (i = 0; i < P2M_PER_PAGE; i++)
-> +		p2m[i] = INVALID_P2M_ENTRY;
->  }
->  
-> -static void p2m_init(unsigned long *p2m)
-> +static void p2m_init_identity(unsigned long *p2m, unsigned long pfn)
->  {
->  	unsigned i;
->  
-> -	for (i = 0; i < P2M_MID_PER_PAGE; i++)
-> -		p2m[i] = INVALID_P2M_ENTRY;
-> +	for (i = 0; i < P2M_PER_PAGE; i++)
-> +		p2m[i] = IDENTITY_FRAME(pfn + i);
->  }
->  
->  static void * __ref alloc_p2m_page(void)
->  {
-> -	if (unlikely(use_brk))
-> -		return extend_brk(PAGE_SIZE, PAGE_SIZE);
-> -
->  	if (unlikely(!slab_is_available()))
->  		return alloc_bootmem_align(PAGE_SIZE, PAGE_SIZE);
->  
-> @@ -298,6 +184,9 @@ static void free_p2m_page(void *p)
->  void __ref xen_build_mfn_list_list(void)
->  {
->  	unsigned long pfn;
-> +	pte_t *ptep;
-> +	unsigned int level, topidx, mididx;
-> +	unsigned long *mid_mfn_p;
->  
->  	if (xen_feature(XENFEAT_auto_translated_physmap))
->  		return;
-> @@ -317,20 +206,22 @@ void __ref xen_build_mfn_list_list(void)
->  		p2m_mid_mfn_init(p2m_mid_missing_mfn, p2m_missing);
->  	}
->  
-> -	for (pfn = 0; pfn < xen_max_p2m_pfn; pfn += P2M_PER_PAGE) {
-> -		unsigned topidx = p2m_top_index(pfn);
-> -		unsigned mididx = p2m_mid_index(pfn);
-> -		unsigned long **mid;
-> -		unsigned long *mid_mfn_p;
-> +	for (pfn = 0; pfn < xen_max_p2m_pfn && pfn < MAX_P2M_PFN;
-> +	     pfn += P2M_PER_PAGE) {
-> +		topidx = p2m_top_index(pfn);
-> +		mididx = p2m_mid_index(pfn);
->  
-> -		mid = p2m_top[topidx];
->  		mid_mfn_p = p2m_top_mfn_p[topidx];
-> +		ptep = lookup_address((unsigned long)(xen_p2m_addr + pfn),
-> +				      &level);
-> +		BUG_ON(!ptep || level != PG_LEVEL_4K);
-> +		ptep = (pte_t *)((unsigned long)ptep & ~(PAGE_SIZE - 1));
->  
->  		/* Don't bother allocating any mfn mid levels if
->  		 * they're just missing, just update the stored mfn,
->  		 * since all could have changed over a migrate.
->  		 */
-> -		if (mid == p2m_mid_missing) {
-> +		if (ptep == p2m_missing_pte || ptep == p2m_identity_pte) {
->  			BUG_ON(mididx);
->  			BUG_ON(mid_mfn_p != p2m_mid_missing_mfn);
->  			p2m_top_mfn[topidx] = virt_to_mfn(p2m_mid_missing_mfn);
-> @@ -339,11 +230,6 @@ void __ref xen_build_mfn_list_list(void)
->  		}
->  
->  		if (mid_mfn_p == p2m_mid_missing_mfn) {
-> -			/*
-> -			 * XXX boot-time only!  We should never find
-> -			 * missing parts of the mfn tree after
-> -			 * runtime.
-> -			 */
->  			mid_mfn_p = alloc_p2m_page();
->  			p2m_mid_mfn_init(mid_mfn_p, p2m_missing);
->  
-> @@ -351,7 +237,7 @@ void __ref xen_build_mfn_list_list(void)
->  		}
->  
->  		p2m_top_mfn[topidx] = virt_to_mfn(mid_mfn_p);
-> -		mid_mfn_p[mididx] = virt_to_mfn(mid[mididx]);
-> +		mid_mfn_p[mididx] = virt_to_mfn(xen_p2m_addr + pfn);
->  	}
->  }
->  
-> @@ -370,154 +256,153 @@ void xen_setup_mfn_list_list(void)
->  /* Set up p2m_top to point to the domain-builder provided p2m pages */
->  void __init xen_build_dynamic_phys_to_machine(void)
->  {
-> -	unsigned long *mfn_list;
-> -	unsigned long max_pfn;
->  	unsigned long pfn;
->  
->  	if (xen_feature(XENFEAT_auto_translated_physmap))
->  		return;
->  
->  	xen_p2m_addr = (unsigned long *)xen_start_info->mfn_list;
-> -	mfn_list = (unsigned long *)xen_start_info->mfn_list;
-> -	max_pfn = min(MAX_DOMAIN_PAGES, xen_start_info->nr_pages);
-> -	xen_max_p2m_pfn = max_pfn;
-> -	xen_p2m_size = max_pfn;
-> +	xen_p2m_size = ALIGN(xen_start_info->nr_pages, P2M_PER_PAGE);
->  
-> -	p2m_missing = alloc_p2m_page();
-> -	p2m_init(p2m_missing);
-> -	p2m_identity = alloc_p2m_page();
-> -	p2m_init(p2m_identity);
-> +	for (pfn = xen_start_info->nr_pages; pfn < xen_p2m_size; pfn++)
-> +		xen_p2m_addr[pfn] = INVALID_P2M_ENTRY;
->  
-> -	p2m_mid_missing = alloc_p2m_page();
-> -	p2m_mid_init(p2m_mid_missing, p2m_missing);
-> -	p2m_mid_identity = alloc_p2m_page();
-> -	p2m_mid_init(p2m_mid_identity, p2m_identity);
-> +	xen_max_p2m_pfn = xen_p2m_size;
-
-I recall that in the past we had issues the nr_pages had an odd value
-(say 1025MB or such), we had to be careful about filling the
-xen_p2m_addr with INVALID_P2M_ENTRY - otherwise they would have the
-default of zero. You are doing that - good (note: You need to
-test odd size guests too).
-
-But then you are also increasing the xen_max_p2m_pfn to that
-value. Shouldn't it be min(xen_start_info->nr_pages, MAX_DOMAIN_PAGES)?
-
-That way it will have the exact value of PFNs we should be using?
-
-Hm, I am actually not sure what the right value we should provide
-when we access an PFN > MAX_DOMAIN_PAGES and pfn > nr_pages.
-
-I believe in the past we would just return INVALID_P2M_ENTRY.
-But with your 'xen_rebuild_p2m_list' it would create it with
-the MFN values.
-
-Or should we just remove the MAX_DOMANI_PAGES config option here?
-	
-> +}
->  
-> -	p2m_top = alloc_p2m_page();
-> -	p2m_top_init(p2m_top);
-> +#define P2M_TYPE_IDENTITY	0
-> +#define P2M_TYPE_MISSING	1
-> +#define P2M_TYPE_PFN		2
-> +#define P2M_TYPE_UNKNOWN	3
->  
-> -	/*
-> -	 * The domain builder gives us a pre-constructed p2m array in
-> -	 * mfn_list for all the pages initially given to us, so we just
-> -	 * need to graft that into our tree structure.
-> -	 */
-> -	for (pfn = 0; pfn < max_pfn; pfn += P2M_PER_PAGE) {
-> -		unsigned topidx = p2m_top_index(pfn);
-> -		unsigned mididx = p2m_mid_index(pfn);
-> +static int xen_p2m_elem_type(unsigned long pfn)
-> +{
-> +	unsigned long mfn;
->  
-> -		if (p2m_top[topidx] == p2m_mid_missing) {
-> -			unsigned long **mid = alloc_p2m_page();
-> -			p2m_mid_init(mid, p2m_missing);
-> +	if (pfn >= xen_p2m_size)
-> +		return P2M_TYPE_IDENTITY;
->  
-> -			p2m_top[topidx] = mid;
-> -		}
-> +	mfn = xen_p2m_addr[pfn];
->  
-> -		/*
-> -		 * As long as the mfn_list has enough entries to completely
-> -		 * fill a p2m page, pointing into the array is ok. But if
-> -		 * not the entries beyond the last pfn will be undefined.
-> -		 */
-> -		if (unlikely(pfn + P2M_PER_PAGE > max_pfn)) {
-> -			unsigned long p2midx;
-> +	if (mfn == INVALID_P2M_ENTRY)
-> +		return P2M_TYPE_MISSING;
->  
-> -			p2midx = max_pfn % P2M_PER_PAGE;
-> -			for ( ; p2midx < P2M_PER_PAGE; p2midx++)
-> -				mfn_list[pfn + p2midx] = INVALID_P2M_ENTRY;
-> -		}
-> -		p2m_top[topidx][mididx] = &mfn_list[pfn];
-> -	}
-> +	if (mfn & IDENTITY_FRAME_BIT)
-> +		return P2M_TYPE_IDENTITY;
-> +
-> +	return P2M_TYPE_PFN;
->  }
-> -#ifdef CONFIG_X86_64
-> -unsigned long __init xen_revector_p2m_tree(void)
-> +
-> +static void __init xen_rebuild_p2m_list(unsigned long *p2m)
->  {
-> -	unsigned long va_start;
-> -	unsigned long va_end;
-> +	unsigned int i, chunk;
->  	unsigned long pfn;
-> -	unsigned long pfn_free = 0;
-> -	unsigned long *mfn_list = NULL;
-> -	unsigned long size;
-> -
-> -	use_brk = 0;
-> -	va_start = xen_start_info->mfn_list;
-> -	/*We copy in increments of P2M_PER_PAGE * sizeof(unsigned long),
-> -	 * so make sure it is rounded up to that */
-> -	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
-> -	va_end = va_start + size;
-> -
-> -	/* If we were revectored already, don't do it again. */
-> -	if (va_start <= __START_KERNEL_map && va_start >= __PAGE_OFFSET)
-> -		return 0;
-> -
-> -	mfn_list = alloc_bootmem_align(size, PAGE_SIZE);
-> -	if (!mfn_list) {
-> -		pr_warn("Could not allocate space for a new P2M tree!\n");
-> -		return xen_start_info->mfn_list;
-> -	}
-> -	/* Fill it out with INVALID_P2M_ENTRY value */
-> -	memset(mfn_list, 0xFF, size);
-> -
-> -	for (pfn = 0; pfn < ALIGN(MAX_DOMAIN_PAGES, P2M_PER_PAGE); pfn += P2M_PER_PAGE) {
-> -		unsigned topidx = p2m_top_index(pfn);
-> -		unsigned mididx;
-> -		unsigned long *mid_p;
-> +	unsigned long *mfns;
-> +	pte_t *ptep;
-> +	pmd_t *pmdp;
-> +	int type;
->  
-> -		if (!p2m_top[topidx])
-> -			continue;
-> +	p2m_missing = alloc_p2m_page();
-> +	p2m_init(p2m_missing);
-> +	p2m_identity = alloc_p2m_page();
-> +	p2m_init(p2m_identity);
->  
-> -		if (p2m_top[topidx] == p2m_mid_missing)
-> -			continue;
-> +	p2m_missing_pte = alloc_p2m_page();
-> +	paravirt_alloc_pte(&init_mm, __pa(p2m_missing_pte) >> PAGE_SHIFT);
-> +	p2m_identity_pte = alloc_p2m_page();
-> +	paravirt_alloc_pte(&init_mm, __pa(p2m_identity_pte) >> PAGE_SHIFT);
-> +	for (i = 0; i < PTRS_PER_PTE; i++) {
-> +		set_pte(p2m_missing_pte + i,
-> +			pfn_pte(PFN_DOWN(__pa(p2m_missing)), PAGE_KERNEL));
-
-PAGE_KERNEL_RO?
-> +		set_pte(p2m_identity_pte + i,
-> +			pfn_pte(PFN_DOWN(__pa(p2m_identity)), PAGE_KERNEL));
-
-PAGE_KERNEL_RO ?
-
-(or wait, this is done in the next patch!)
-> +	}
->  
-> -		mididx = p2m_mid_index(pfn);
-> -		mid_p = p2m_top[topidx][mididx];
-> -		if (!mid_p)
-> -			continue;
-> -		if ((mid_p == p2m_missing) || (mid_p == p2m_identity))
-> +	for (pfn = 0; pfn < xen_max_p2m_pfn; pfn += chunk) {
-> +		/*
-> +		 * Try to map missing/identity PMDs or p2m-pages if possible.
-> +		 * We have to respect the structure of the mfn_list_list
-> +		 * which will be built a little bit later.
-
-Could you say exactly when 'little bit later' is?
-
-> +		 * Chunk size to test is one p2m page if we are in the middle
-> +		 * of a mfn_list_list mid page and the complete mid page area
-> +		 * if we are at index 0 of the mid page. Please note that a
-> +		 * mid page might cover more than one PMD, e.g. on 32 bit PAE
-> +		 * kernels.
-> +		 */
-> +		chunk = (pfn & (P2M_PER_PAGE * P2M_MID_PER_PAGE - 1)) ?
-> +			P2M_PER_PAGE : P2M_PER_PAGE * P2M_MID_PER_PAGE;
-> +
-> +		type = xen_p2m_elem_type(pfn);
-> +		i = 0;
-> +		if (type != P2M_TYPE_PFN)
-> +			for (i = 1; i < chunk; i++)
-> +				if (xen_p2m_elem_type(pfn + i) != type)
-> +					break;
-> +		if (i < chunk)
-> +			/* Reset to minimal chunk size. */
-> +			chunk = P2M_PER_PAGE;
-
-Say this is hit, and the values are: i == 3, chunk = 511.
-The next region is an identify (or should be).
-
-The initial xen_p2m_addr + i + pfn has INVALID_P2M_ENTRY (since 
-that is what the xen_build_dynamic_phys_to_machine would
-setup).
-> +
-> +		if (type == P2M_TYPE_PFN || i < chunk) {
-> +			/* Use initial p2m page contents. */
-> +#ifdef CONFIG_X86_64
-> +			mfns = alloc_p2m_page();
-
-And we get here. We allocate the page - which has random values.
-
-> +			copy_page(mfns, xen_p2m_addr + pfn);
-
-And then we copy the whole page over. So the values past the
-pfn+i+xen_p2m_addr will be INVALID_P2M_ENTRY. But should it
-be IDENTIFY?
-
-[edit: I forgot about xen/setup.c calling set_phys_range_identity
-for the last E820 entry, so that will take care of marking
-xen_p2m_addr+pfn+i and past to IDENTIFY]. Wheew !
-
-> +#else
-> +			mfns = xen_p2m_addr + pfn;
-> +#endif
-> +			ptep = populate_extra_pte((unsigned long)(p2m + pfn));
-> +			set_pte(ptep,
-> +				pfn_pte(PFN_DOWN(__pa(mfns)), PAGE_KERNEL));
->  			continue;
-> +		}
->  
-> -		if ((unsigned long)mid_p == INVALID_P2M_ENTRY)
-> +		if (chunk == P2M_PER_PAGE) {
-> +			/* Map complete missing or identity p2m-page. */
-> +			mfns = (type == P2M_TYPE_MISSING) ?
-> +				p2m_missing : p2m_identity;
-> +			ptep = populate_extra_pte((unsigned long)(p2m + pfn));
-> +			set_pte(ptep,
-> +				pfn_pte(PFN_DOWN(__pa(mfns)), PAGE_KERNEL));
->  			continue;
-> +		}
->  
-> -		/* The old va. Rebase it on mfn_list */
-> -		if (mid_p >= (unsigned long *)va_start && mid_p <= (unsigned long *)va_end) {
-> -			unsigned long *new;
-> +		/* Complete missing or identity PMD(s) can be mapped. */
-> +		ptep = (type == P2M_TYPE_MISSING) ?
-> +			p2m_missing_pte : p2m_identity_pte;
-> +		for (i = 0; i < PMDS_PER_MID_PAGE; i++) {
-> +			pmdp = populate_extra_pmd(
-> +				(unsigned long)(p2m + pfn + i * PTRS_PER_PTE));
-> +			set_pmd(pmdp, __pmd(__pa(ptep) | _KERNPG_TABLE));
-> +		}
-> +	}
-> +}
->  
-> -			if (pfn_free  > (size / sizeof(unsigned long))) {
-> -				WARN(1, "Only allocated for %ld pages, but we want %ld!\n",
-> -				     size / sizeof(unsigned long), pfn_free);
-> -				return 0;
-> -			}
-> -			new = &mfn_list[pfn_free];
-> +void __init xen_vmalloc_p2m_tree(void)
-> +{
-> +	static struct vm_struct vm;
->  
-> -			copy_page(new, mid_p);
-> -			p2m_top[topidx][mididx] = &mfn_list[pfn_free];
-> +	vm.flags = VM_ALLOC;
-> +	vm.size = ALIGN(sizeof(unsigned long) * xen_max_p2m_pfn,
-> +			PMD_SIZE * PMDS_PER_MID_PAGE);
-> +	vm_area_register_early(&vm, PMD_SIZE * PMDS_PER_MID_PAGE);
-> +	pr_notice("p2m virtual area at %p, size is %lx\n", vm.addr, vm.size);
-
-What happens if somebody boots with 'vmalloc=1MB' and we boot
-an 400GB guest?
+> Juergen
