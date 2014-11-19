@@ -1,102 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556AbaKSQCq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:02:46 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:48320 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756140AbaKSQCm (ORCPT
+	id S1756334AbaKSQCi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:02:38 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:35772 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756147AbaKSQCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:02:42 -0500
+	Wed, 19 Nov 2014 11:02:36 -0500
+X-IronPort-AV: E=Sophos;i="5.07,417,1413244800"; 
+   d="scan'208";a="194441068"
+From: David Vrabel <david.vrabel@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        <xen-devel@lists.xenproject.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 4/4] x86/xen: use the maximum MFN to calculate the required DMA mask
+Date: Wed, 19 Nov 2014 16:02:01 +0000
+Message-ID: <1416412921-23671-5-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1416412921-23671-1-git-send-email-david.vrabel@citrix.com>
+References: <1416412921-23671-1-git-send-email-david.vrabel@citrix.com>
 MIME-Version: 1.0
-In-Reply-To: <CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
-References: <20141118172146.3784.81151.stgit@buzz>
-	<20141118173413.GB4042@n2100.arm.linux.org.uk>
-	<546B8C64.3010904@samsung.com>
-	<2041617.Kxhx5O4MMr@wuerfel>
-	<CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
-	<CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
-Date: Wed, 19 Nov 2014 17:02:40 +0100
-Message-ID: <CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com>
-Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 November 2014 16:52, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
-> On Wed, Nov 19, 2014 at 5:54 PM, Ard Biesheuvel
-> <ard.biesheuvel@linaro.org> wrote:
->> On 19 November 2014 14:40, Arnd Bergmann <arnd@arndb.de> wrote:
->>> On Tuesday 18 November 2014 21:13:56 Konstantin Khlebnikov wrote:
->>>> On 2014-11-18 20:34, Russell King - ARM Linux wrote:
->>>> > On Tue, Nov 18, 2014 at 08:21:46PM +0400, Konstantin Khlebnikov wrote:
->>>> >> Usually modules are loaded into small area prior to the kernel
->>>> >> text because they are linked with the kernel using short calls.
->>>> >> Compile-time instrumentation like GCOV or KASAN bloats code a lot,
->>>> >> and as a result huge modules no longer fit into reserved area.
->>>> >>
->>>> >> This patch adds option CONFIG_MODULES_USE_VMALLOC which lifts
->>>> >> limitation on amount of loaded modules. It links modules using
->>>> >> long-calls (option -mlong-calls) and loads them into vmalloc area.
->>>> >>
->>>> >> In few places exported symbols are called from inline assembly.
->>>> >> This patch adds macro for such call sites: __asmbl and __asmbl_clobber.
->>>> >> Call turns into single 'bl' or sequence 'movw; movt; blx' depending on
->>>> >> context and state of config option.
->>>> >>
->>>> >> Unfortunately this option isn't compatible with CONFIG_FUNCTION_TRACER.
->>>> >> Compiler emits short calls to profiling function despite of -mlong-calls.
->>>> >> This is a bug in GCC, but ftrace anyway needs an update to handle this.
->>>> > It also isn't compatible with the older architectures which don't have
->>>> > "blx".
->>>>
->>>> Ok, I'll add "depends on CPU_V6 || CPU_V7" I don't think that it is
->>>> necessary for older cpus.
->>>
->>> Why not just use a different branch instruction for the older CPUs?
->>>
->>
->> ARMv6 doesn't support movw/movt so this will only work on v7.
->>
->> What about doing 'mov lr, pc; ldr pc,=symbol' instead? You clearly
->> don't care about performance in this case, so the performance hit (due
->> to the dcache access and interfering with the return stack predictors)
->> should be tolerable. The only thing to be careful about is thumb2
->> kernels: you would need to set the thumb bit in lr manually but only
->> if the call is made /from/ thumb. You would probably be better off
->> just depending on !THUMB2_KERNEL.
->
-> Do you mean ldr pc, =symbol ?
->
-> In this case I get this error:
->
-> /tmp/ccAHtONU.s: Assembler messages:
-> /tmp/ccAHtONU.s:220: Error: invalid literal constant: pool needs to be closer
->
-> Probably constant pool doesn't work well in inline assembly.
->
->
-> Something like this seems work:
->
-> add     lr, pc, #4
-> ldr       pc, [pc, #-4]
-> .long symbol
->
+On a Xen PV guest the DMA addresses and physical addresses are not 1:1
+(such as Xen PV guests) and the generic dma_get_required_mask() does
+not return the correct mask (since it uses max_pfn).
 
-You can add a '.ltorg' instruction which tells the assembler to dump
-the literal pool, but you still need to jump over it, i.e.,
+Some device drivers (such as mptsas, mpt2sas) use
+dma_get_required_mask() to set the device's DMA mask to allow them to
+use only 32-bit DMA addresses in hardware structures.  This results in
+unnecessary use of the SWIOTLB if DMA addresses are more than 32-bits,
+impacting performance significantly.
 
-adr lr, 0f
-ldr pc, =symbol
-.ltorg
-0:
+Provide a get_required_mask op that uses the maximum MFN to calculate
+the DMA mask.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+---
+ arch/x86/xen/pci-swiotlb-xen.c |    1 +
+ drivers/xen/swiotlb-xen.c      |   13 +++++++++++++
+ include/xen/swiotlb-xen.h      |    4 ++++
+ 3 files changed, 18 insertions(+)
+
+diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
+index 0e98e5d..a5d180a 100644
+--- a/arch/x86/xen/pci-swiotlb-xen.c
++++ b/arch/x86/xen/pci-swiotlb-xen.c
+@@ -31,6 +31,7 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
+ 	.map_page = xen_swiotlb_map_page,
+ 	.unmap_page = xen_swiotlb_unmap_page,
+ 	.dma_supported = xen_swiotlb_dma_supported,
++	.get_required_mask = xen_swiotlb_get_required_mask,
+ };
+ 
+ /*
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index ebd8f21..654587d 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -42,9 +42,11 @@
+ #include <xen/page.h>
+ #include <xen/xen-ops.h>
+ #include <xen/hvc-console.h>
++#include <xen/interface/memory.h>
+ 
+ #include <asm/dma-mapping.h>
+ #include <asm/xen/page-coherent.h>
++#include <asm/xen/hypercall.h>
+ 
+ #include <trace/events/swiotlb.h>
+ /*
+@@ -683,3 +685,14 @@ xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask)
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(xen_swiotlb_set_dma_mask);
++
++u64
++xen_swiotlb_get_required_mask(struct device *dev)
++{
++	unsigned long max_mfn;
++
++	max_mfn = HYPERVISOR_memory_op(XENMEM_maximum_ram_page, NULL);
++
++	return DMA_BIT_MASK(fls_long(max_mfn - 1) + PAGE_SHIFT);
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_get_required_mask);
+diff --git a/include/xen/swiotlb-xen.h b/include/xen/swiotlb-xen.h
+index 8b2eb93..6408888 100644
+--- a/include/xen/swiotlb-xen.h
++++ b/include/xen/swiotlb-xen.h
+@@ -58,4 +58,8 @@ xen_swiotlb_dma_supported(struct device *hwdev, u64 mask);
+ 
+ extern int
+ xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask);
++
++extern u64
++xen_swiotlb_get_required_mask(struct device *dev);
++
+ #endif /* __LINUX_SWIOTLB_XEN_H */
 -- 
-Ard.
+1.7.10.4
+
