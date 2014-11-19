@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932752AbaKSUyZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:54:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56046 "EHLO
+	id S932994AbaKSU4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:56:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56287 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756911AbaKSUyF (ORCPT
+	with ESMTP id S932719AbaKSUyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:05 -0500
+	Wed, 19 Nov 2014 15:54:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jouni Malinen <j@w1.fi>, Luciano Coelho <luciano.coelho@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.17 059/141] mac80211: use secondary channel offset IE also beacons during CSA
-Date: Wed, 19 Nov 2014 12:51:22 -0800
-Message-Id: <20141119205152.612033258@linuxfoundation.org>
+        Anish Bhatt <anish@chelsio.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 111/141] cxgb4 : Handle dcb enable correctly
+Date: Wed, 19 Nov 2014 12:52:14 -0800
+Message-Id: <20141119205154.270966486@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,124 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luciano Coelho <luciano.coelho@intel.com>
+From: Anish Bhatt <anish@chelsio.com>
 
-commit 84469a45a1bedec9918e94ab2f78c5dc0739e4a7 upstream.
+commit 3bb062613b1ecbd0c388106f61344d699f7859ec upstream.
 
-If we are switching from an HT40+ to an HT40- channel (or vice-versa),
-we need the secondary channel offset IE to specify what is the
-post-CSA offset to be used.  This applies both to beacons and to probe
-responses.
+Disabling DCBx in firmware automatically enables DCBx for control via host
+lldp agents. Wait for an explicit setstate call from an lldp agents to enable
+ DCBx instead.
 
-In ieee80211_parse_ch_switch_ie() we were ignoring this IE from
-beacons and using the *current* HT information IE instead.  This was
-causing us to use the same offset as before the switch.
+Fixes: 76bcb31efc06 ("cxgb4 : Add DCBx support codebase and dcbnl_ops")
 
-Fix that by using the secondary channel offset IE also for beacons and
-don't ever use the pre-switch offset.  Additionally, remove the
-"beacon" argument from ieee80211_parse_ch_switch_ie(), since it's not
-needed anymore.
-
-Reported-by: Jouni Malinen <j@w1.fi>
-Signed-off-by: Luciano Coelho <luciano.coelho@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Anish Bhatt <anish@chelsio.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/ibss.c        |    2 +-
- net/mac80211/ieee80211_i.h |    3 +--
- net/mac80211/mesh.c        |    2 +-
- net/mac80211/mlme.c        |    2 +-
- net/mac80211/spectmgmt.c   |   18 ++++++------------
- 5 files changed, 10 insertions(+), 17 deletions(-)
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_dcb.c  |    7 ++++++-
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c |    6 +++++-
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/ibss.c
-+++ b/net/mac80211/ibss.c
-@@ -804,7 +804,7 @@ ieee80211_ibss_process_chanswitch(struct
+--- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_dcb.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_dcb.c
+@@ -80,7 +80,6 @@ void cxgb4_dcb_state_fsm(struct net_devi
+ 			/* we're going to use Host DCB */
+ 			dcb->state = CXGB4_DCB_STATE_HOST;
+ 			dcb->supported = CXGB4_DCBX_HOST_SUPPORT;
+-			dcb->enabled = 1;
+ 			break;
+ 		}
  
- 	memset(&params, 0, sizeof(params));
- 	memset(&csa_ie, 0, sizeof(csa_ie));
--	err = ieee80211_parse_ch_switch_ie(sdata, elems, beacon,
-+	err = ieee80211_parse_ch_switch_ie(sdata, elems,
- 					   ifibss->chandef.chan->band,
- 					   sta_flags, ifibss->bssid, &csa_ie);
- 	/* can't switch to destination channel, fail */
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -1639,7 +1639,6 @@ void ieee80211_process_measurement_req(s
-  * ieee80211_parse_ch_switch_ie - parses channel switch IEs
-  * @sdata: the sdata of the interface which has received the frame
-  * @elems: parsed 802.11 elements received with the frame
-- * @beacon: indicates if the frame was a beacon or probe response
-  * @current_band: indicates the current band
-  * @sta_flags: contains information about own capabilities and restrictions
-  *	to decide which channel switch announcements can be accepted. Only the
-@@ -1653,7 +1652,7 @@ void ieee80211_process_measurement_req(s
-  * Return: 0 on success, <0 on error and >0 if there is nothing to parse.
-  */
- int ieee80211_parse_ch_switch_ie(struct ieee80211_sub_if_data *sdata,
--				 struct ieee802_11_elems *elems, bool beacon,
-+				 struct ieee802_11_elems *elems,
- 				 enum ieee80211_band current_band,
- 				 u32 sta_flags, u8 *bssid,
- 				 struct ieee80211_csa_ie *csa_ie);
---- a/net/mac80211/mesh.c
-+++ b/net/mac80211/mesh.c
-@@ -874,7 +874,7 @@ ieee80211_mesh_process_chnswitch(struct
+@@ -349,6 +348,12 @@ static u8 cxgb4_setstate(struct net_devi
+ {
+ 	struct port_info *pi = netdev2pinfo(dev);
  
- 	memset(&params, 0, sizeof(params));
- 	memset(&csa_ie, 0, sizeof(csa_ie));
--	err = ieee80211_parse_ch_switch_ie(sdata, elems, beacon, band,
-+	err = ieee80211_parse_ch_switch_ie(sdata, elems, band,
- 					   sta_flags, sdata->vif.addr,
- 					   &csa_ie);
- 	if (err < 0)
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -1058,7 +1058,7 @@ ieee80211_sta_process_chanswitch(struct
++	/* If DCBx is host-managed, dcb is enabled by outside lldp agents */
++	if (pi->dcb.state == CXGB4_DCB_STATE_HOST) {
++		pi->dcb.enabled = enabled;
++		return 0;
++	}
++
+ 	/* Firmware doesn't provide any mechanism to control the DCB state.
+ 	 */
+ 	if (enabled != (pi->dcb.state == CXGB4_DCB_STATE_FW_ALLSYNCED))
+--- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
+@@ -688,7 +688,11 @@ int cxgb4_dcb_enabled(const struct net_d
+ #ifdef CONFIG_CHELSIO_T4_DCB
+ 	struct port_info *pi = netdev_priv(dev);
  
- 	current_band = cbss->channel->band;
- 	memset(&csa_ie, 0, sizeof(csa_ie));
--	res = ieee80211_parse_ch_switch_ie(sdata, elems, beacon, current_band,
-+	res = ieee80211_parse_ch_switch_ie(sdata, elems, current_band,
- 					   ifmgd->flags,
- 					   ifmgd->associated->bssid, &csa_ie);
- 	if (res	< 0)
---- a/net/mac80211/spectmgmt.c
-+++ b/net/mac80211/spectmgmt.c
-@@ -22,7 +22,7 @@
- #include "wme.h"
- 
- int ieee80211_parse_ch_switch_ie(struct ieee80211_sub_if_data *sdata,
--				 struct ieee802_11_elems *elems, bool beacon,
-+				 struct ieee802_11_elems *elems,
- 				 enum ieee80211_band current_band,
- 				 u32 sta_flags, u8 *bssid,
- 				 struct ieee80211_csa_ie *csa_ie)
-@@ -91,19 +91,13 @@ int ieee80211_parse_ch_switch_ie(struct
- 		return -EINVAL;
- 	}
- 
--	if (!beacon && sec_chan_offs) {
-+	if (sec_chan_offs) {
- 		secondary_channel_offset = sec_chan_offs->sec_chan_offs;
--	} else if (beacon && ht_oper) {
--		secondary_channel_offset =
--			ht_oper->ht_param & IEEE80211_HT_PARAM_CHA_SEC_OFFSET;
- 	} else if (!(sta_flags & IEEE80211_STA_DISABLE_HT)) {
--		/* If it's not a beacon, HT is enabled and the IE not present,
--		 * it's 20 MHz, 802.11-2012 8.5.2.6:
--		 *	This element [the Secondary Channel Offset Element] is
--		 *	present when switching to a 40 MHz channel. It may be
--		 *	present when switching to a 20 MHz channel (in which
--		 *	case the secondary channel offset is set to SCN).
--		 */
-+		/* If the secondary channel offset IE is not present,
-+		 * we can't know what's the post-CSA offset, so the
-+		 * best we can do is use 20MHz.
-+		*/
- 		secondary_channel_offset = IEEE80211_HT_PARAM_CHA_SEC_NONE;
- 	}
- 
+-	return pi->dcb.state == CXGB4_DCB_STATE_FW_ALLSYNCED;
++	if (!pi->dcb.enabled)
++		return 0;
++
++	return ((pi->dcb.state == CXGB4_DCB_STATE_FW_ALLSYNCED) ||
++		(pi->dcb.state == CXGB4_DCB_STATE_HOST));
+ #else
+ 	return 0;
+ #endif
 
 
