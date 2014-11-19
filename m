@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168AbaKSU7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:59:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56064 "EHLO
+	id S933116AbaKSU7o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:59:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56226 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932684AbaKSUyT (ORCPT
+	with ESMTP id S932691AbaKSUyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:19 -0500
+	Wed, 19 Nov 2014 15:54:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.17 103/141] md: Always set RECOVERY_NEEDED when clearing RECOVERY_FROZEN
-Date: Wed, 19 Nov 2014 12:52:06 -0800
-Message-Id: <20141119205154.014293924@linuxfoundation.org>
+        "Liuhua Wang" <lwang@suse.com>, Heinz Mauelshagen <heinzm@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.17 088/141] dm raid: ensure superblocks size matches devices logical block size
+Date: Wed, 19 Nov 2014 12:51:51 -0800
+Message-Id: <20141119205153.544783984@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -28,56 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Heinz Mauelshagen <heinzm@redhat.com>
 
-commit 45eaf45dfa4850df16bc2e8e7903d89021137f40 upstream.
+commit 40d43c4b4cac4c2647bf07110d7b07d35f399a84 upstream.
 
-md_check_recovery will skip any recovery and also clear
-MD_RECOVERY_NEEDED if MD_RECOVERY_FROZEN is set.
-So when we clear _FROZEN, we must set _NEEDED and ensure that
-md_check_recovery gets run.
-Otherwise we could miss out on something that is needed.
+The dm-raid superblock (struct dm_raid_superblock) is padded to 512
+bytes and that size is being used to read it in from the metadata
+device into one preallocated page.
 
-In particular, this can make it impossible to remove a
-failed device from an array is the  'recovery-needed' processing
-didn't happen.
-Suitable for stable kernels since 3.13.
+Reading or writing this on a 512-byte sector device works fine but on
+a 4096-byte sector device this fails.
 
-Reported-and-tested-by: Joe Lawrence <joe.lawrence@stratus.com>
-Fixes: 30b8feb730f9b9b3c5de02580897da03f59b6b16
-Signed-off-by: NeilBrown <neilb@suse.de>
+Set the dm-raid superblock's size to the logical block size of the
+metadata device, because IO at that size is guaranteed too work.  Also
+add a size check to avoid silent partial metadata loss in case the
+superblock should ever grow past the logical block size or PAGE_SIZE.
+
+[includes pointer math fix from Dan Carpenter]
+Reported-by: "Liuhua Wang" <lwang@suse.com>
+Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/md/dm-raid.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -5313,6 +5313,7 @@ static int md_set_readonly(struct mddev
- 		printk("md: %s still in use.\n",mdname(mddev));
- 		if (did_freeze) {
- 			clear_bit(MD_RECOVERY_FROZEN, &mddev->recovery);
-+			set_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
- 			md_wakeup_thread(mddev->thread);
- 		}
- 		err = -EBUSY;
-@@ -5327,6 +5328,8 @@ static int md_set_readonly(struct mddev
- 		mddev->ro = 1;
- 		set_disk_ro(mddev->gendisk, 1);
- 		clear_bit(MD_RECOVERY_FROZEN, &mddev->recovery);
-+		set_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
-+		md_wakeup_thread(mddev->thread);
- 		sysfs_notify_dirent_safe(mddev->sysfs_state);
- 		err = 0;
- 	}
-@@ -5370,6 +5373,7 @@ static int do_md_stop(struct mddev * mdd
- 		mutex_unlock(&mddev->open_mutex);
- 		if (did_freeze) {
- 			clear_bit(MD_RECOVERY_FROZEN, &mddev->recovery);
-+			set_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
- 			md_wakeup_thread(mddev->thread);
- 		}
- 		return -EBUSY;
+--- a/drivers/md/dm-raid.c
++++ b/drivers/md/dm-raid.c
+@@ -785,8 +785,7 @@ struct dm_raid_superblock {
+ 	__le32 layout;
+ 	__le32 stripe_sectors;
+ 
+-	__u8 pad[452];		/* Round struct to 512 bytes. */
+-				/* Always set to 0 when writing. */
++	/* Remainder of a logical block is zero-filled when writing (see super_sync()). */
+ } __packed;
+ 
+ static int read_disk_sb(struct md_rdev *rdev, int size)
+@@ -823,7 +822,7 @@ static void super_sync(struct mddev *mdd
+ 		    test_bit(Faulty, &(rs->dev[i].rdev.flags)))
+ 			failed_devices |= (1ULL << i);
+ 
+-	memset(sb, 0, sizeof(*sb));
++	memset(sb + 1, 0, rdev->sb_size - sizeof(*sb));
+ 
+ 	sb->magic = cpu_to_le32(DM_RAID_MAGIC);
+ 	sb->features = cpu_to_le32(0);	/* No features yet */
+@@ -858,7 +857,11 @@ static int super_load(struct md_rdev *rd
+ 	uint64_t events_sb, events_refsb;
+ 
+ 	rdev->sb_start = 0;
+-	rdev->sb_size = sizeof(*sb);
++	rdev->sb_size = bdev_logical_block_size(rdev->meta_bdev);
++	if (rdev->sb_size < sizeof(*sb) || rdev->sb_size > PAGE_SIZE) {
++		DMERR("superblock size of a logical block is no longer valid");
++		return -EINVAL;
++	}
+ 
+ 	ret = read_disk_sb(rdev, rdev->sb_size);
+ 	if (ret)
 
 
