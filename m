@@ -1,150 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804AbaKSQHQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:07:16 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:61042 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756756AbaKSQFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:05:37 -0500
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-To: catalin.marinas@arm.com, will.deacon@arm.com, bhelgaas@google.com,
-        lorenzo.pieralisi@arm.com, wangyijing@huawei.com, arnd@arndb.de,
-        hanjun.guo@linaro.org, Liviu.Dudau@arm.com, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, rjw@rjwysocki.net
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linaro-acpi@lists.linaro.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: [PATCH 3/6] x86, acpi, pci: Move PCI config space accessors.
-Date: Wed, 19 Nov 2014 17:04:48 +0100
-Message-Id: <1416413091-13452-4-git-send-email-tomasz.nowicki@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416413091-13452-1-git-send-email-tomasz.nowicki@linaro.org>
-References: <1416413091-13452-1-git-send-email-tomasz.nowicki@linaro.org>
+	id S1756814AbaKSQHl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:07:41 -0500
+Received: from mga01.intel.com ([192.55.52.88]:9143 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756071AbaKSQHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:07:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,417,1413270000"; 
+   d="scan'208";a="634586597"
+Message-ID: <546CBFF1.8070206@linux.intel.com>
+Date: Wed, 19 Nov 2014 18:06:09 +0200
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: balbi@ti.com, Alan Stern <stern@rowland.harvard.edu>
+CC: Kever Yang <kever.yang@rock-chips.com>,
+        Paul Zimmerman <paulz@synopsys.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>, romain.perier@gmail.com,
+        Heiko Stuebner <heiko@sntech.de>, dianders@chromium.org,
+        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
+        wulf@rock-chips.com, huangtao@rock-chips.com,
+        linux-rockchip@lists.infradead.org, Roy Li <roy.li@rock-chips.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] usb: dwc2: resume root hub when device detect with
+ suspend state
+References: <1416273684-11300-1-git-send-email-kever.yang@rock-chips.com> <Pine.LNX.4.44L0.1411181104280.1500-100000@iolanthe.rowland.org> <20141118164100.GD6179@saruman>
+In-Reply-To: <20141118164100.GD6179@saruman>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are going to use mmio_config_{} name convention across all architectures.
-Currently it belongs to asm/pci_x86.h header which should be included
-only for x86 specific files. From now on, those accessors are in asm/pci.h
-header which can be included in non-architecture code much easier.
+On 18.11.2014 18:41, Felipe Balbi wrote:
+> On Tue, Nov 18, 2014 at 11:07:34AM -0500, Alan Stern wrote:
+>> On Tue, 18 Nov 2014, Kever Yang wrote:
+>>
+>>> After we implement the bus_suspend/resume, auto suspend id enabled.
+>>> The root hub will be auto suspend if there is no device connected,
+>>> we need to resume the root hub when a device connect detect.
+>>>
+>>> This patch tested on rk3288.
+>>>
+>>> Signed-off-by: Roy Li <roy.li@rock-chips.com>
+>>> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+>>> ---
+>>>
+>>> Changes in v2:
+>>> - add definition for hcd structure
+>>> - remove check for bus->root_hub
+>>>
+>>>  drivers/usb/dwc2/hcd_intr.c | 5 +++++
+>>>  1 file changed, 5 insertions(+)
+>>>
+>>> diff --git a/drivers/usb/dwc2/hcd_intr.c b/drivers/usb/dwc2/hcd_intr.c
+>>> index 551ba87..680206f 100644
+>>> --- a/drivers/usb/dwc2/hcd_intr.c
+>>> +++ b/drivers/usb/dwc2/hcd_intr.c
+>>> @@ -329,6 +329,7 @@ static void dwc2_port_intr(struct dwc2_hsotg *hsotg)
+>>>  {
+>>>  	u32 hprt0;
+>>>  	u32 hprt0_modify;
+>>> +	struct usb_hcd *hcd = (struct usb_hcd *)hsotg->priv;
+>>>  
+>>>  	dev_vdbg(hsotg->dev, "--Port Interrupt--\n");
+>>>  
+>>> @@ -354,6 +355,10 @@ static void dwc2_port_intr(struct dwc2_hsotg *hsotg)
+>>>  		hsotg->flags.b.port_connect_status = 1;
+>>>  		hprt0_modify |= HPRT0_CONNDET;
+>>>  
+>>> +		/* resume root hub? */
+>>> +		if (hcd->state == HC_STATE_SUSPENDED)
+>>> +			usb_hcd_resume_root_hub(hcd);
+>>
+>> You should be aware that it's not safe to use hcd->state for anything 
+>> in a host controller driver.  That field is owned by usbcore, not by 
+>> the HCD, and it is not protected by any locks.
+>>
+>> Thus, for example, hcd->state does not get set to HC_STATE_SUSPENDED
+>> until some time after the bus_suspend routine has returned.  A
+>> port-change interrupt might occur during that time interval.
+> 
+> In that case, XHCI has a bug :-) Mathias, care to add it to your TODO
+> list ?
+> 
 
-Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Tested-by: Hanjun Guo <hanjun.guo@linaro.org>
----
- arch/x86/include/asm/pci.h     | 42 +++++++++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/pci_x86.h | 43 ------------------------------------------
- 2 files changed, 42 insertions(+), 43 deletions(-)
+I guess I'll need to check it out, thanks for pointing it out.
 
-diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-index 0892ea0..5ba3720 100644
---- a/arch/x86/include/asm/pci.h
-+++ b/arch/x86/include/asm/pci.h
-@@ -71,6 +71,48 @@ void pcibios_set_master(struct pci_dev *dev);
- struct irq_routing_table *pcibios_get_irq_routing_table(void);
- int pcibios_set_irq_routing(struct pci_dev *dev, int pin, int irq);
- 
-+/*
-+ * AMD Fam10h CPUs are buggy, and cannot access MMIO config space
-+ * on their northbrige except through the * %eax register. As such, you MUST
-+ * NOT use normal IOMEM accesses, you need to only use the magic mmio-config
-+ * accessor functions.
-+ * In fact just use pci_config_*, nothing else please.
-+ */
-+static inline unsigned char mmio_config_readb(void __iomem *pos)
-+{
-+	u8 val;
-+	asm volatile("movb (%1),%%al" : "=a" (val) : "r" (pos));
-+	return val;
-+}
-+
-+static inline unsigned short mmio_config_readw(void __iomem *pos)
-+{
-+	u16 val;
-+	asm volatile("movw (%1),%%ax" : "=a" (val) : "r" (pos));
-+	return val;
-+}
-+
-+static inline unsigned int mmio_config_readl(void __iomem *pos)
-+{
-+	u32 val;
-+	asm volatile("movl (%1),%%eax" : "=a" (val) : "r" (pos));
-+	return val;
-+}
-+
-+static inline void mmio_config_writeb(void __iomem *pos, u8 val)
-+{
-+	asm volatile("movb %%al,(%1)" : : "a" (val), "r" (pos) : "memory");
-+}
-+
-+static inline void mmio_config_writew(void __iomem *pos, u16 val)
-+{
-+	asm volatile("movw %%ax,(%1)" : : "a" (val), "r" (pos) : "memory");
-+}
-+
-+static inline void mmio_config_writel(void __iomem *pos, u32 val)
-+{
-+	asm volatile("movl %%eax,(%1)" : : "a" (val), "r" (pos) : "memory");
-+}
- 
- #define HAVE_PCI_MMAP
- extern int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
-diff --git a/arch/x86/include/asm/pci_x86.h b/arch/x86/include/asm/pci_x86.h
-index caba141..42e7332 100644
---- a/arch/x86/include/asm/pci_x86.h
-+++ b/arch/x86/include/asm/pci_x86.h
-@@ -121,49 +121,6 @@ extern int __init pcibios_init(void);
- extern int pci_legacy_init(void);
- extern void pcibios_fixup_irqs(void);
- 
--/*
-- * AMD Fam10h CPUs are buggy, and cannot access MMIO config space
-- * on their northbrige except through the * %eax register. As such, you MUST
-- * NOT use normal IOMEM accesses, you need to only use the magic mmio-config
-- * accessor functions.
-- * In fact just use pci_config_*, nothing else please.
-- */
--static inline unsigned char mmio_config_readb(void __iomem *pos)
--{
--	u8 val;
--	asm volatile("movb (%1),%%al" : "=a" (val) : "r" (pos));
--	return val;
--}
--
--static inline unsigned short mmio_config_readw(void __iomem *pos)
--{
--	u16 val;
--	asm volatile("movw (%1),%%ax" : "=a" (val) : "r" (pos));
--	return val;
--}
--
--static inline unsigned int mmio_config_readl(void __iomem *pos)
--{
--	u32 val;
--	asm volatile("movl (%1),%%eax" : "=a" (val) : "r" (pos));
--	return val;
--}
--
--static inline void mmio_config_writeb(void __iomem *pos, u8 val)
--{
--	asm volatile("movb %%al,(%1)" : : "a" (val), "r" (pos) : "memory");
--}
--
--static inline void mmio_config_writew(void __iomem *pos, u16 val)
--{
--	asm volatile("movw %%ax,(%1)" : : "a" (val), "r" (pos) : "memory");
--}
--
--static inline void mmio_config_writel(void __iomem *pos, u32 val)
--{
--	asm volatile("movl %%eax,(%1)" : : "a" (val), "r" (pos) : "memory");
--}
--
- #ifdef CONFIG_PCI
- # ifdef CONFIG_ACPI
- #  define x86_default_pci_init		pci_acpi_init
--- 
-1.9.1
-
+-Mathias
