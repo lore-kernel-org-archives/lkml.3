@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933446AbaKSVEU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:04:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56498 "EHLO
+	id S933969AbaKSWBJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:01:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933342AbaKSVEJ (ORCPT
+	with ESMTP id S933440AbaKSVEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:09 -0500
+	Wed, 19 Nov 2014 16:04:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dwight Engen <dwight.engen@oracle.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 013/122] vio: fix reuse of vio_dring slot
-Date: Wed, 19 Nov 2014 12:51:03 -0800
-Message-Id: <20141119205209.255421817@linuxfoundation.org>
+Subject: [PATCH 3.14 008/122] net: sctp: fix memory leak in auth key management
+Date: Wed, 19 Nov 2014 12:50:58 -0800
+Message-Id: <20141119205209.103578375@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,145 +31,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dwight Engen <dwight.engen@oracle.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit d0aedcd4f14a22e23b313f42b7e6e6ebfc0fbc31 ]
+[ Upstream commit 4184b2a79a7612a9272ce20d639934584a1f3786 ]
 
-vio_dring_avail() will allow use of every dring entry, but when the last
-entry is allocated then dr->prod == dr->cons which is indistinguishable from
-the ring empty condition. This causes the next allocation to reuse an entry.
-When this happens in sunvdc, the server side vds driver begins nack'ing the
-messages and ends up resetting the ldc channel. This problem does not effect
-sunvnet since it checks for < 2.
+A very minimal and simple user space application allocating an SCTP
+socket, setting SCTP_AUTH_KEY setsockopt(2) on it and then closing
+the socket again will leak the memory containing the authentication
+key from user space:
 
-The fix here is to just never allocate the very last dring slot so that full
-and empty are not the same condition. The request start path was changed to
-check for the ring being full a bit earlier, and to stop the blk_queue if
-there is no space left. The blk_queue will be restarted once the ring is
-only half full again. The number of ring entries was increased to 512 which
-matches the sunvnet and Solaris vdc drivers, and greatly reduces the
-frequency of hitting the ring full condition and the associated blk_queue
-stop/starting. The checks in sunvent were adjusted to account for
-vio_dring_avail() returning 1 less.
+unreferenced object 0xffff8800837047c0 (size 16):
+  comm "a.out", pid 2789, jiffies 4296954322 (age 192.258s)
+  hex dump (first 16 bytes):
+    01 00 00 00 04 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff816d7e8e>] kmemleak_alloc+0x4e/0xb0
+    [<ffffffff811c88d8>] __kmalloc+0xe8/0x270
+    [<ffffffffa0870c23>] sctp_auth_create_key+0x23/0x50 [sctp]
+    [<ffffffffa08718b1>] sctp_auth_set_key+0xa1/0x140 [sctp]
+    [<ffffffffa086b383>] sctp_setsockopt+0xd03/0x1180 [sctp]
+    [<ffffffff815bfd94>] sock_common_setsockopt+0x14/0x20
+    [<ffffffff815beb61>] SyS_setsockopt+0x71/0xd0
+    [<ffffffff816e58a9>] system_call_fastpath+0x12/0x17
+    [<ffffffffffffffff>] 0xffffffffffffffff
 
-Orabug: 19441666
-OraBZ: 14983
+This is bad because of two things, we can bring down a machine from
+user space when auth_enable=1, but also we would leave security sensitive
+keying material in memory without clearing it after use. The issue is
+that sctp_auth_create_key() already sets the refcount to 1, but after
+allocation sctp_auth_set_key() does an additional refcount on it, and
+thus leaving it around when we free the socket.
 
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Fixes: 65b07e5d0d0 ("[SCTP]: API updates to suport SCTP-AUTH extensions.")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/vio.h       |    2 -
- drivers/block/sunvdc.c             |   39 +++++++++++++++++++++----------------
- drivers/net/ethernet/sun/sunvnet.c |    4 +--
- 3 files changed, 26 insertions(+), 19 deletions(-)
+ net/sctp/auth.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/arch/sparc/include/asm/vio.h
-+++ b/arch/sparc/include/asm/vio.h
-@@ -265,7 +265,7 @@ static inline u32 vio_dring_avail(struct
- 				  unsigned int ring_size)
- {
- 	return (dr->pending -
--		((dr->prod - dr->cons) & (ring_size - 1)));
-+		((dr->prod - dr->cons) & (ring_size - 1)) - 1);
- }
+--- a/net/sctp/auth.c
++++ b/net/sctp/auth.c
+@@ -862,8 +862,6 @@ int sctp_auth_set_key(struct sctp_endpoi
+ 		list_add(&cur_key->key_list, sh_keys);
  
- #define VIO_MAX_TYPE_LEN	32
---- a/drivers/block/sunvdc.c
-+++ b/drivers/block/sunvdc.c
-@@ -33,7 +33,7 @@ MODULE_DESCRIPTION("Sun LDOM virtual dis
- MODULE_LICENSE("GPL");
- MODULE_VERSION(DRV_MODULE_VERSION);
- 
--#define VDC_TX_RING_SIZE	256
-+#define VDC_TX_RING_SIZE	512
- 
- #define WAITING_FOR_LINK_UP	0x01
- #define WAITING_FOR_TX_SPACE	0x02
-@@ -283,7 +283,9 @@ static void vdc_end_one(struct vdc_port
- 
- 	__blk_end_request(req, (desc->status ? -EIO : 0), desc->size);
- 
--	if (blk_queue_stopped(port->disk->queue))
-+	/* restart blk queue when ring is half emptied */
-+	if (blk_queue_stopped(port->disk->queue) &&
-+	    vdc_tx_dring_avail(dr) * 100 / VDC_TX_RING_SIZE >= 50)
- 		blk_start_queue(port->disk->queue);
- }
- 
-@@ -435,12 +437,6 @@ static int __send_request(struct request
- 	for (i = 0; i < nsg; i++)
- 		len += sg[i].length;
- 
--	if (unlikely(vdc_tx_dring_avail(dr) < 1)) {
--		blk_stop_queue(port->disk->queue);
--		err = -ENOMEM;
--		goto out;
--	}
+ 	cur_key->key = key;
+-	sctp_auth_key_hold(key);
 -
- 	desc = vio_dring_cur(dr);
- 
- 	err = ldc_map_sg(port->vio.lp, sg, nsg,
-@@ -480,21 +476,32 @@ static int __send_request(struct request
- 		port->req_id++;
- 		dr->prod = (dr->prod + 1) & (VDC_TX_RING_SIZE - 1);
- 	}
--out:
- 
- 	return err;
- }
- 
--static void do_vdc_request(struct request_queue *q)
-+static void do_vdc_request(struct request_queue *rq)
- {
--	while (1) {
--		struct request *req = blk_fetch_request(q);
-+	struct request *req;
- 
--		if (!req)
-+	while ((req = blk_peek_request(rq)) != NULL) {
-+		struct vdc_port *port;
-+		struct vio_dring_state *dr;
-+
-+		port = req->rq_disk->private_data;
-+		dr = &port->vio.drings[VIO_DRIVER_TX_RING];
-+		if (unlikely(vdc_tx_dring_avail(dr) < 1))
-+			goto wait;
-+
-+		blk_start_request(req);
-+
-+		if (__send_request(req) < 0) {
-+			blk_requeue_request(rq, req);
-+wait:
-+			/* Avoid pointless unplugs. */
-+			blk_stop_queue(rq);
- 			break;
--
--		if (__send_request(req) < 0)
--			__blk_end_request_all(req, -EIO);
-+		}
- 	}
- }
- 
---- a/drivers/net/ethernet/sun/sunvnet.c
-+++ b/drivers/net/ethernet/sun/sunvnet.c
-@@ -656,7 +656,7 @@ static int vnet_start_xmit(struct sk_buf
- 	spin_lock_irqsave(&port->vio.lock, flags);
- 
- 	dr = &port->vio.drings[VIO_DRIVER_TX_RING];
--	if (unlikely(vnet_tx_dring_avail(dr) < 2)) {
-+	if (unlikely(vnet_tx_dring_avail(dr) < 1)) {
- 		if (!netif_queue_stopped(dev)) {
- 			netif_stop_queue(dev);
- 
-@@ -704,7 +704,7 @@ static int vnet_start_xmit(struct sk_buf
- 	dev->stats.tx_bytes += skb->len;
- 
- 	dr->prod = (dr->prod + 1) & (VNET_TX_RING_SIZE - 1);
--	if (unlikely(vnet_tx_dring_avail(dr) < 2)) {
-+	if (unlikely(vnet_tx_dring_avail(dr) < 1)) {
- 		netif_stop_queue(dev);
- 		if (vnet_tx_dring_avail(dr) > VNET_TX_WAKEUP_THRESH(dr))
- 			netif_wake_queue(dev);
+ 	return 0;
+ nomem:
+ 	if (!replace)
 
 
