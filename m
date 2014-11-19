@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096AbaKSPuD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:50:03 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:34735 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754351AbaKSPuA (ORCPT
+	id S932164AbaKSPuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:50:10 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:35341 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754921AbaKSPuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:50:00 -0500
-Date: Wed, 19 Nov 2014 15:49:54 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, edubezval@gmail.com,
-        kernel@stlinux.com,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] thermal: sti: Ignore suspend/resume functions when !PM
-Message-ID: <20141119154954.GB1875@x1>
-References: <1416404939-365-1-git-send-email-lee.jones@linaro.org>
- <CAOMZO5Dz-vz=zV1r3O_Pv0=WS+_Pk=kaBiK1hb2ttxy_BPwLnQ@mail.gmail.com>
+	Wed, 19 Nov 2014 10:50:06 -0500
+Date: Wed, 19 Nov 2014 10:49:56 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH 18/26 v5] seq_buf: Create seq_buf_used() to find out how
+ much was written
+Message-ID: <20141119104956.14cc30cb@gandalf.local.home>
+In-Reply-To: <20141118150204.GI23958@pathway.suse.cz>
+References: <20141115045847.712848224@goodmis.org>
+	<20141115050603.696625970@goodmis.org>
+	<20141118150204.GI23958@pathway.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMZO5Dz-vz=zV1r3O_Pv0=WS+_Pk=kaBiK1hb2ttxy_BPwLnQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014, Fabio Estevam wrote:
+On Tue, 18 Nov 2014 16:02:04 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-> On Wed, Nov 19, 2014 at 11:48 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > Prevents build warning:
-> >
-> > st_thermal.c:278:12:
-> >     warning: ‘st_thermal_suspend’ defined but not used [-Wunused-function]
-> > st_thermal.c:286:12:
-> >     warning: ‘st_thermal_resume’ defined but not used [-Wunused-function]
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> On Fri 2014-11-14 23:59:05, Steven Rostedt wrote:
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > 
+> > Add a helper function seq_buf_used() that replaces the SEQ_BUF_USED()
+> > private macro to let callers have a method to know how much of the
+> > seq_buf was written to.
+> > 
+> > Link: http://lkml.kernel.org/r/20141114011412.170377300@goodmis.org
+> > Link: http://lkml.kernel.org/r/20141114011413.321654244@goodmis.org
+> > 
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > > ---
-> >  drivers/thermal/st/st_thermal.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> >
-> > diff --git a/drivers/thermal/st/st_thermal.c b/drivers/thermal/st/st_thermal.c
-> > index 90163b3..9841488 100644
-> > --- a/drivers/thermal/st/st_thermal.c
-> > +++ b/drivers/thermal/st/st_thermal.c
-> > @@ -275,6 +275,7 @@ int st_thermal_unregister(struct platform_device *pdev)
+> >  include/linux/seq_buf.h | 6 ++++++
+> >  kernel/trace/seq_buf.c  | 5 +----
+> >  2 files changed, 7 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
+> > index 5d91262433e2..93718e570d4c 100644
+> > --- a/include/linux/seq_buf.h
+> > +++ b/include/linux/seq_buf.h
+> > @@ -64,6 +64,12 @@ seq_buf_buffer_left(struct seq_buf *s)
+> >  	return (s->size - 1) - s->len;
 > >  }
-> >  EXPORT_SYMBOL_GPL(st_thermal_unregister);
-> >
-> > +#ifdef CONFIG_PM
+> >  
+> > +/* How much buffer was written? */
+> > +static inline unsigned int seq_buf_used(struct seq_buf *s)
+> > +{
+> > +	return min(s->len, s->size);
 > 
-> Actually this should be #ifdef CONFIG_PM_SLEEP instead
+> To be precise, it should do
+> 
+> 	return min(s->len, s->size - 1);
+> 
+> at this stage and switch to the above code in ("[PATCH 21/26 v5] tracing: Have
+> seq_buf use full buffer"). Well, it does not cause any big harm. Feel
+> free to add:
 
-You're right, someone already pointed this out, thanks.
+I actually thought about it, but realized that this only replaces the
+original use of s->len, and we are only doing this to avoid buffer
+overflows. If you get garbage, then so be it, as the original code
+would give garbage too. Remember, some of the functions did have real
+content in that last byte, even though it was considered "overflowed".
 
-I will re-submit in ~1min.
+-- Steve
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+> 
+> Reviewed-by: Petr Mladek <pmladek@suse.cz>
+> 
+> for this patch or for the updated one.
+> 
