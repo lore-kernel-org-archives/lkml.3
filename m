@@ -1,157 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183AbaKSCZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 21:25:22 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:30419 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753731AbaKSCZU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 21:25:20 -0500
-Message-ID: <546BFF74.4030101@huawei.com>
-Date: Wed, 19 Nov 2014 10:24:52 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Liviu Dudau" <liviu@dudau.co.uk>,
-        Tony Luck <tony.luck@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
+	id S1754292AbaKSC0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 21:26:17 -0500
+Received: from gate.crashing.org ([63.228.1.57]:55423 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753643AbaKSC0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 21:26:16 -0500
+Message-ID: <1416363953.5704.19.camel@kernel.crashing.org>
+Subject: Re: [RFC] Add of_path property for all devices with a node
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "huxinwei@huawei.com" <huxinwei@huawei.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Wuyun <wuyun.wu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 07/16] PCI: Separate pci_host_bridge creation out
- of pci_create_root_bus()
-References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com> <1416219710-26088-8-git-send-email-wangyijing@huawei.com> <2507218.mHliopJb05@wuerfel> <546B041A.4060403@huawei.com> <20141118144819.GK12037@e106497-lin.cambridge.arm.com>
-In-Reply-To: <20141118144819.GK12037@e106497-lin.cambridge.arm.com>
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Date: Wed, 19 Nov 2014 13:25:53 +1100
+In-Reply-To: <CACxGe6vg8SxwCHZ8HxzLzimQOAf8Q81wd5eO=x2LavD4dv81Rw@mail.gmail.com>
+References: <1415342031.4925.27.camel@kernel.crashing.org>
+	 <1415342117.4925.29.camel@kernel.crashing.org>
+	 <1415596626.5769.14.camel@kernel.crashing.org>
+	 <CAL_JsqKG=vpeGKj3v-2VW9oGQsnmuYMHRfy6LuXDXE=ROjHT4w@mail.gmail.com>
+	 <CACxGe6vg8SxwCHZ8HxzLzimQOAf8Q81wd5eO=x2LavD4dv81Rw@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> We need, some platforms pass NULL pointer as host bridge parent.
+On Tue, 2014-11-18 at 15:18 +0000, Grant Likely wrote:
+> >> So not much reactions here .. a bit more on IRC, where Olof
+> suggested
+> >> that rather than a file containing a path, we could use a symlink
+> since
+> >> the devtree is now in sysfs, so we can do relative links.
+> >
+> > +1 on this. That was part of the motivation to move DT into sysfs.
+> >
+> > Rob
 > 
-> Yijing,
+> I had a patch that did exactly that. I wonder what happened to it...
 > 
-> May I suggest a different approach here? Rather than having to pass an opaque
-> pointer that gets converted by the host bridge driver back to the private
-> structure, what about promoting a new style of usage, that is similar to the
-> way device drivers work? Lets try to promote the embedding of the generic
-> pci_host_bridge structure in the host bridge specific structure! Then we can
-> access the private data doing container_of().
-> 
-> Something like this:
-> 
-> struct pci_controller {
-> 	struct pci_host_bridge bridge;
-> 	/* private host bridge data here */
-> 	.....
-> };
-> 
-> #define PCI_CONTROLLER(bus)	({
-> 	struct pci_host_bridge *hb = to_pci_host_bridge(bus->bridge); \
-> 	container_of(hb, struct pci_controller, bridge); })
-> 
-> 
-> Then we can retrieve the host bridge structure from everywhere we have a device.
+> But regardless, as Frank said in his reply, this data is already in
+> the uevent file for every device.
 
-Hi Liviu, it looks good to me, because this change will involve lots platforms,
-I would think more about it. Thanks for your suggestion very much! :)
+I sent a patch doing the symlink days ago.... I think it's still
+valuable, the patch is triviall and the symlink is a lot easier to deal
+with than parsing the uevent file.
 
+Cheers,
+Ben.
 
-Thanks!
-Yijing.
-
-> 
-> Best regards,
-> Liviu
-> 
->>
->>>
->>>> +	host = kzalloc(sizeof(*host), GFP_KERNEL);
->>>> +	if (!host)
->>>> +		return NULL;
->>>
->>> devm_kzalloc maybe?
->>
->> I don't know much detail about devm_kzalloc(), but we have no pci host driver
->> here, and I found no devm_kzalloc() uses in core PCI code before.
->>
->>>
->>>> +	if (!resources) {
->>>> +		/* Use default IO/MEM/BUS resources*/
->>>> +		pci_add_resource(&host->windows, &ioport_resource);
->>>> +		pci_add_resource(&host->windows, &iomem_resource);
->>>> +		pci_add_resource(&host->windows, &busn_resource);
->>>> +	} else {
->>>> +		list_for_each_entry_safe(window, n, resources, list)
->>>> +			list_move_tail(&window->list, &host->windows);
->>>> +	}
->>>
->>> I think we should assume that the correct resources are passed. You
->>> could add a wrapper around this function to convert old platforms
->>> though.
->>
->> OK, I will move these code out of pci_create_host_bridge, and add a wrapper
->> to setup the default resources.
->>
->>>
->>>> +EXPORT_SYMBOL(pci_create_host_bridge);
->>>
->>> EXPORT_SYMBOL_GPL() maybe?
->>
->> OK, will update it.
->>
->>>
->>>> diff --git a/include/linux/pci.h b/include/linux/pci.h
->>>> index 8b11b38..daa7f40 100644
->>>> --- a/include/linux/pci.h
->>>> +++ b/include/linux/pci.h
->>>> @@ -402,7 +402,12 @@ struct pci_host_bridge_window {
->>>>  struct pci_host_bridge {
->>>>  	struct device dev;
->>>>  	struct pci_bus *bus;		/* root bus */
->>>> +	struct list_head list;
->>>>  	struct list_head windows;	/* pci_host_bridge_windows */
->>>> +	int busnum;
->>>
->>> The busnum should already be implied through the bus resource.
->>
->> Yes, I will consider remove it and introduce a helper function to get the root bus number, thanks!
->>
->> Thanks!
->> Yijing.
->>
->>>
->>> 	Arnd
->>>
->>> .
->>>
->>
->>
->> -- 
->> Thanks!
->> Yijing
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
-
-
--- 
-Thanks!
-Yijing
 
