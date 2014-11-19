@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146AbaKSImG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 03:42:06 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:63268 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755100AbaKSImD (ORCPT
+	id S932426AbaKSImP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 03:42:15 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:62016 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279AbaKSImL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 03:42:03 -0500
+	Wed, 19 Nov 2014 03:42:11 -0500
 From: Dudley Du <dudley.dulixin@gmail.com>
 To: dmitry.torokhov@gmail.com, rydberg@euromail.se
 Cc: Dudley Du <dudley.dulixin@gmail.com>, bleung@google.com,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v11 17/19] input: cyapa: add read sensors raw data debugfs interface support
-Date: Wed, 19 Nov 2014 16:37:49 +0800
-Message-Id: <1416386271-28167-18-git-send-email-dudley.dulixin@gmail.com>
+Subject: [PATCH v11 18/19] input: cyapa: add gen5 trackpad device read raw data function support
+Date: Wed, 19 Nov 2014 16:37:50 +0800
+Message-Id: <1416386271-28167-19-git-send-email-dudley.dulixin@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416386271-28167-1-git-send-email-dudley.dulixin@gmail.com>
 References: <1416386271-28167-1-git-send-email-dudley.dulixin@gmail.com>
@@ -21,170 +21,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add read sensors' raw data from trackpad device interface supported in cyapa
-driver through debugfs raw_data interface.
-Through this interface, user can read difference count map of each sensors
-directly from trackpad device (some customers want). And it's useful to help
-users to find out the root cause when there is performance gap happened.
+Add read raw data function supported for gen5 trackpad device,
+it can be used through debugfs raw_data interface.
 TEST=test on Chromebooks.
 
 Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
 ---
- drivers/input/mouse/cyapa.c | 105 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/input/mouse/cyapa.h |   4 ++
- 2 files changed, 109 insertions(+)
+ drivers/input/mouse/cyapa_gen5.c | 138 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 138 insertions(+)
 
-diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
-index 2e394c0..ca31119 100644
---- a/drivers/input/mouse/cyapa.c
-+++ b/drivers/input/mouse/cyapa.c
-@@ -34,6 +34,7 @@
- #define CYAPA_ADAPTER_FUNC_BOTH   3
+diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
+index aee3e57..52c915b 100644
+--- a/drivers/input/mouse/cyapa_gen5.c
++++ b/drivers/input/mouse/cyapa_gen5.c
+@@ -2363,6 +2363,143 @@ resume_scanning:
+ 	return size;
+ }
  
- #define CYAPA_DEBUGFS_READ_FW	"read_fw"
-+#define CYAPA_DEBUGFS_RAW_DATA	"raw_data"
- #define CYAPA_FW_NAME		"cyapa.bin"
- 
- const char unique_str[] = "CYTRA";
-@@ -604,6 +605,106 @@ static const struct file_operations cyapa_read_fw_fops = {
- 	.read = cyapa_debugfs_read_fw
- };
- 
-+static int cyapa_debugfs_raw_data_open(struct inode *inode, struct file *file)
++static int cyapa_gen5_read_electrodies_rx_tx(struct cyapa *cyapa)
 +{
-+	struct cyapa *cyapa = inode->i_private;
++	u8 cmd[7] = { 0x04, 0x00, 0x05, 0x00, 0x2f, 0x00, 0x71 };
++	u8 resp_data[7];
++	int resp_len;
 +	int error;
 +
-+	if (!cyapa)
-+		return -ENODEV;
++	resp_len = sizeof(resp_data);
++	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
++			cmd, 7,
++			resp_data, &resp_len,
++			150, cyapa_gen5_sort_tsg_pip_app_resp_data, true);
++	if (error || !VALID_CMD_RESP_HEADER(resp_data, 0x71) ||
++		!resp_data[5] || !resp_data[6])
++		return -EINVAL;
 +
-+	/* Start to be supported after Gen5 trackpad devices. */
-+	if (cyapa->gen < CYAPA_GEN5)
-+		return -ENOTSUPP;
-+
-+	error = mutex_lock_interruptible(&cyapa->debugfs_mutex);
-+	if (error)
-+		return error;
-+
-+	if (!get_device(&cyapa->client->dev)) {
-+		error = -ENODEV;
-+		goto out;
-+	}
-+
-+	file->private_data = cyapa;
-+
-+	/*
-+	 * Enale IRQ for raw data read command, and must be enable during
-+	 * the whole process.
-+	 */
-+	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
-+	if (error)
-+		goto out;
-+	cyapa_enable_irq_for_cmd(cyapa);
-+	mutex_unlock(&cyapa->state_sync_lock);
-+out:
-+	mutex_unlock(&cyapa->debugfs_mutex);
-+	return error;
-+}
-+
-+static int cyapa_debugfs_raw_data_release(struct inode *inode,
-+				struct file *file)
-+{
-+	struct cyapa *cyapa = file->private_data;
-+	int error;
-+
-+	if (!cyapa)
-+		return 0;
-+
-+	/* Disable IRQ if enabled when raw_data file was opened. */
-+	mutex_lock(&cyapa->state_sync_lock);
-+	cyapa_disable_irq_for_cmd(cyapa);
-+	mutex_unlock(&cyapa->state_sync_lock);
-+
-+	error = mutex_lock_interruptible(&cyapa->debugfs_mutex);
-+	if (error)
-+		return error;
-+	file->private_data = NULL;
-+	put_device(&cyapa->client->dev);
-+	mutex_unlock(&cyapa->debugfs_mutex);
++	cyapa->electrodes_rx = resp_data[6];
 +
 +	return 0;
 +}
 +
-+/* Always return the sensors' latest raw data from trackpad device. */
-+static ssize_t cyapa_debugfs_read_raw_data(struct file *file,
-+				     char __user *buffer,
-+				     size_t count, loff_t *ppos)
++static int cyapa_gen5_read_raw_data(struct cyapa *cyapa)
 +{
-+	int error;
-+	struct cyapa *cyapa = file->private_data;
++	int raw_cap_mutual_max, raw_cap_mutual_min, raw_cap_mutual_ave;
++	int raw_cap_self_max, raw_cap_self_min, raw_cap_self_ave;
++	int offset;
++	int data_size, max, min, ave;
++	ktime_t time_mono;
++	int error, resume_error;
 +
-+	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
++	offset = 0;
++	if (!cyapa->tp_raw_data) {
++		if (cyapa->state != CYAPA_STATE_GEN5_APP ||
++			!cyapa->electrodes_x || !cyapa->electrodes_y)
++			return  -EINVAL;
++
++		cyapa->tp_raw_data_size = sizeof(s32) * (cyapa->electrodes_x *
++			cyapa->electrodes_y + cyapa->electrodes_x +
++			cyapa->electrodes_y) + GEN5_RAW_DATA_HEAD_SIZE;
++		/*
++		 * This buffer will be hold after used until the driver is
++		 * unloaded, the purpose of it is to improve the performace
++		 * to avoid frequently allocate and release the buffer.
++		 */
++		cyapa->tp_raw_data = devm_kzalloc(&cyapa->client->dev,
++					cyapa->tp_raw_data_size, GFP_KERNEL);
++		if (!cyapa->tp_raw_data)
++			return -ENOMEM;
++	}
++
++	/*
++	 * 1. Suspend Scanning.
++	 *
++	 * After suspend scanning, the raw data will not be updated,
++	 * so the time of the raw data is before scanning suspended.
++	 */
++	time_mono = ktime_get();
++	error = cyapa_gen5_suspend_scanning(cyapa);
 +	if (error)
 +		return error;
 +
-+	if (cyapa->ops->read_raw_data)
-+		error = cyapa->ops->read_raw_data(cyapa);
-+	else
-+		error = -EPERM;
-+	mutex_unlock(&cyapa->state_sync_lock);
++	/* 2. Get the correct electrodes_rx number. */
++	if (cyapa->electrodes_rx == 0) {
++		error = cyapa_gen5_read_electrodies_rx_tx(cyapa);
++		if (error || cyapa->electrodes_rx == 0) {
++			cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
++
++			/*
++			 * Since, old firmware doesn't support the command to
++			 * read the electrodies' Rx and Tx values, so using
++			 * the read global idac interface to get the Rx number,
++			 * this value is useful to analyze and
++			 * display the raw data map in userspace.
++			 */
++			data_size = 0;
++			error = cyapa_gen5_read_idac_data(cyapa,
++					GEN5_CMD_RETRIEVE_DATA_STRUCTURE,
++					GEN5_RETRIEVE_MUTUAL_PWC_DATA,
++					&data_size, &max, &min, &ave);
++			if (error || cyapa->electrodes_rx == 0)
++				goto resume_scanning;
++		}
++	}
++
++	/* 3. Execuate panel scan. It must be executed before read data. */
++	error = cyapa_gen5_execute_panel_scan(cyapa);
 +	if (error)
-+		return error;
++		goto resume_scanning;
 +
-+	if (*ppos >= cyapa->tp_raw_data_size)
-+		return 0;
++	/* 4. Retrieve panel scan, mutual cap raw data. */
++	offset = GEN5_RAW_DATA_HEAD_SIZE;
++	error = cyapa_gen5_read_panel_scan_raw_data(cyapa,
++				GEN5_CMD_RETRIEVE_PANEL_SCAN,
++				GEN5_PANEL_SCAN_MUTUAL_DIFFCOUNT,
++				cyapa->electrodes_x * cyapa->electrodes_y,
++				&raw_cap_mutual_max, &raw_cap_mutual_min,
++				&raw_cap_mutual_ave,
++				cyapa->tp_raw_data + offset);
++	if (error)
++		goto resume_scanning;
 +
-+	if (count + *ppos > cyapa->tp_raw_data_size)
-+		count = cyapa->tp_raw_data_size - *ppos;
++	offset += sizeof(s32) * cyapa->electrodes_x * cyapa->electrodes_y;
 +
-+	if (copy_to_user(buffer, &cyapa->tp_raw_data[*ppos], count))
-+		return -EFAULT;
++	/* 5. Retrieve panel scan, self cap raw data. */
++	error = cyapa_gen5_read_panel_scan_raw_data(cyapa,
++				GEN5_CMD_RETRIEVE_PANEL_SCAN,
++				GEN5_PANEL_SCAN_SELF_DIFFCOUNT,
++				cyapa->electrodes_x + cyapa->electrodes_y,
++				&raw_cap_self_max, &raw_cap_self_min,
++				&raw_cap_self_ave,
++				cyapa->tp_raw_data + offset);
++	if (error)
++		goto resume_scanning;
 +
-+	*ppos += count;
-+	return count;
++	offset += sizeof(s32) * (cyapa->electrodes_x + cyapa->electrodes_y);
++
++resume_scanning:
++	/* 6. Resume Scanning*/
++	resume_error = cyapa_gen5_resume_scanning(cyapa);
++	if (resume_error || error)
++		return resume_error ? resume_error : error;
++
++	*((struct timeval *)&cyapa->tp_raw_data[0]) =
++						ktime_to_timeval(time_mono);
++	cyapa->tp_raw_data[16] = (u8)cyapa->electrodes_x;
++	cyapa->tp_raw_data[17] = (u8)cyapa->electrodes_y;
++	cyapa->tp_raw_data[18] = (u8)cyapa->x_origin;
++	cyapa->tp_raw_data[19] = (u8)cyapa->y_origin;
++	cyapa->tp_raw_data[20] = (u8)sizeof(s32);
++	cyapa->tp_raw_data[21] = (u8)sizeof(s32);
++	cyapa->tp_raw_data[22] = (u8)cyapa->electrodes_rx;
++	cyapa->tp_raw_data[23] = 0;  /* Reserved. */
++
++	cyapa->tp_raw_data_size = offset;
++	return 0;
 +}
 +
-+static const struct file_operations cyapa_read_raw_data_fops = {
-+	.open = cyapa_debugfs_raw_data_open,
-+	.release = cyapa_debugfs_raw_data_release,
-+	.read = cyapa_debugfs_read_raw_data
-+};
-+
- static int cyapa_debugfs_init(struct cyapa *cyapa)
+ static bool cyapa_gen5_sort_system_info_data(struct cyapa *cyapa,
+ 		u8 *buf, int len)
  {
- 	struct device *dev = &cyapa->client->dev;
-@@ -622,6 +723,10 @@ static int cyapa_debugfs_init(struct cyapa *cyapa)
- 	debugfs_create_file(CYAPA_DEBUGFS_READ_FW, S_IRUSR, cyapa->dentry_dev,
- 			    cyapa, &cyapa_read_fw_fops);
+@@ -2776,6 +2913,7 @@ const struct cyapa_dev_ops cyapa_gen5_ops = {
+ 	.calibrate_store = cyapa_gen5_do_calibrate,
  
-+	if (cyapa->gen >= CYAPA_GEN5)
-+		debugfs_create_file(CYAPA_DEBUGFS_RAW_DATA, S_IRUSR,
-+			cyapa->dentry_dev, cyapa, &cyapa_read_raw_data_fops);
-+
- 	return 0;
- }
+ 	.read_fw = cyapa_gen5_read_fw,
++	.read_raw_data = cyapa_gen5_read_raw_data,
  
-diff --git a/drivers/input/mouse/cyapa.h b/drivers/input/mouse/cyapa.h
-index b6e1b22..9dbf92f 100644
---- a/drivers/input/mouse/cyapa.h
-+++ b/drivers/input/mouse/cyapa.h
-@@ -187,6 +187,7 @@ struct cyapa_dev_ops {
- 			struct device_attribute *, const char *, size_t);
- 
- 	int (*read_fw)(struct cyapa *);
-+	int (*read_raw_data)(struct cyapa *);
- 
- 	int (*initialize)(struct cyapa *cyapa);
- 
-@@ -308,6 +309,9 @@ struct cyapa {
- 	struct cyapa_tsg_bin_image_head fw_img_head;
- 	u8 *fw_image;
- 	size_t fw_image_size;
-+	/* Buffer to store sensors' raw data */
-+	u8 *tp_raw_data;
-+	size_t tp_raw_data_size;
- 
- 	const struct cyapa_dev_ops *ops;
+ 	.initialize = cyapa_gen5_initialize,
  
 -- 
 1.9.1
