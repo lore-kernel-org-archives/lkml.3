@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758093AbaKSWUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:20:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59901 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756991AbaKSWUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 17:20:00 -0500
-Date: Wed, 19 Nov 2014 17:18:19 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Don Zickus <dzickus@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141119221819.GA24195@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Don Zickus <dzickus@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	the arch/x86 maintainers <x86@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	=?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-	Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-References: <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
- <20141118145234.GA7487@redhat.com>
- <alpine.DEB.2.11.1411181914020.3909@nanos>
- <20141118215540.GD35311@redhat.com>
- <20141119021902.GA14216@redhat.com>
- <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
- <20141119145902.GA13387@redhat.com>
- <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
- <CALCETrXT3XvfoWvX2hBeW-S2nUHoeLqFFbnW-66H34_aUXKn8g@mail.gmail.com>
- <CA+55aFyRdYDzj_d42paCy-Tg33ysEmkTVVZ+A97b+-0LF_6Yeg@mail.gmail.com>
+	id S1757440AbaKSWTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:19:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56055 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932599AbaKSUyN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 15:54:13 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        William Cohen <wcohen@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.17 082/141] Correct the race condition in aarch64_insn_patch_text_sync()
+Date: Wed, 19 Nov 2014 12:51:45 -0800
+Message-Id: <20141119205153.361365084@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
+References: <20141119205150.700188369@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyRdYDzj_d42paCy-Tg33ysEmkTVVZ+A97b+-0LF_6Yeg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 11:38:09AM -0800, Linus Torvalds wrote:
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
- > > Is it possible that we've managed to return to userspace with
- > > interrupts off somehow?  A loop in userspace that somehow has
- > > interrupts off can cause all kinds of fun lockups.
- > 
- > That sounds unlikely, but if there is some stack corruption going on.
- > 
- > However, it wouldn't even explain things, because even if interrupts
- > had been disabled in user space, and even if that popf got executed,
- > this wouldn't be where they got enabled. That would be the :"sti" in
- > the system call entry path (hidden behind the ENABLE_INTERRUPTS
- > macro).
- > 
- > Of course, maybe Dave has paravirtualization enabled (what a crock
- > _that_ is), and there is something wrong with that whole code.
+------------------
 
-I've had HYPERVISOR_GUEST disabled for a while, which also disables
-the paravirt code afaics.
+From: William Cohen <wcohen@redhat.com>
 
-	Dave
+commit 899d5933b2dd2720f2b20b01eaa07871aa6ad096 upstream.
+
+When experimenting with patches to provide kprobes support for aarch64
+smp machines would hang when inserting breakpoints into kernel code.
+The hangs were caused by a race condition in the code called by
+aarch64_insn_patch_text_sync().  The first processor in the
+aarch64_insn_patch_text_cb() function would patch the code while other
+processors were still entering the function and incrementing the
+cpu_count field.  This resulted in some processors never observing the
+exit condition and exiting the function.  Thus, processors in the
+system hung.
+
+The first processor to enter the patching function performs the
+patching and signals that the patching is complete with an increment
+of the cpu_count field. When all the processors have incremented the
+cpu_count field the cpu_count will be num_cpus_online()+1 and they
+will return to normal execution.
+
+Fixes: ae16480785de arm64: introduce interfaces to hotpatch kernel and module code
+Signed-off-by: William Cohen <wcohen@redhat.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm64/kernel/insn.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/arch/arm64/kernel/insn.c
++++ b/arch/arm64/kernel/insn.c
+@@ -156,9 +156,10 @@ static int __kprobes aarch64_insn_patch_
+ 		 * which ends with "dsb; isb" pair guaranteeing global
+ 		 * visibility.
+ 		 */
+-		atomic_set(&pp->cpu_count, -1);
++		/* Notify other processors with an additional increment. */
++		atomic_inc(&pp->cpu_count);
+ 	} else {
+-		while (atomic_read(&pp->cpu_count) != -1)
++		while (atomic_read(&pp->cpu_count) <= num_online_cpus())
+ 			cpu_relax();
+ 		isb();
+ 	}
+
 
