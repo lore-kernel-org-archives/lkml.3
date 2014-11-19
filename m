@@ -1,20 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933101AbaKSWd5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:33:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
+	id S934473AbaKSWe1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:34:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55895 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756864AbaKSUx5 (ORCPT
+	with ESMTP id S1756859AbaKSUx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:53:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cristian Stoica <cristian.stoica@freescale.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.17 031/141] crypto: caam - fix missing dma unmap on error path
-Date: Wed, 19 Nov 2014 12:50:54 -0800
-Message-Id: <20141119205151.662883764@linuxfoundation.org>
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, Gioh Kim <gioh.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.17 030/141] mm/page_alloc: restrict max order of merging on isolated pageblock
+Date: Wed, 19 Nov 2014 12:50:53 -0800
+Message-Id: <20141119205151.631869492@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,87 +45,223 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cristian Stoica <cristian.stoica@freescale.com>
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-commit 738459e3f88538f2ece263424dafe5d91799e46b upstream.
+commit 3c605096d3158216ba9326a16266f6ba128c2c8d upstream.
 
-If dma mapping for dma_addr_out fails, the descriptor memory is freed
-but the previous dma mapping for dma_addr_in remains.
-This patch resolves the missing dma unmap and groups resource
-allocations at function start.
+Current pageblock isolation logic could isolate each pageblock
+individually.  This causes freepage accounting problem if freepage with
+pageblock order on isolate pageblock is merged with other freepage on
+normal pageblock.  We can prevent merging by restricting max order of
+merging to pageblock order if freepage is on isolate pageblock.
 
-Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+A side-effect of this change is that there could be non-merged buddy
+freepage even if finishing pageblock isolation, because undoing
+pageblock isolation is just to move freepage from isolate buddy list to
+normal buddy list rather than to consider merging.  So, the patch also
+makes undoing pageblock isolation consider freepage merge.  When
+un-isolation, freepage with more than pageblock order and it's buddy are
+checked.  If they are on normal pageblock, instead of just moving, we
+isolate the freepage and free it in order to get merged.
+
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Laura Abbott <lauraa@codeaurora.org>
+Cc: Heesub Shin <heesub.shin@samsung.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Ritesh Harjani <ritesh.list@gmail.com>
+Cc: Gioh Kim <gioh.kim@lge.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/crypto/caam/key_gen.c |   29 ++++++++++++++---------------
- 1 file changed, 14 insertions(+), 15 deletions(-)
+ mm/internal.h       |   25 +++++++++++++++++++++++++
+ mm/page_alloc.c     |   41 ++++++++++++++---------------------------
+ mm/page_isolation.c |   41 +++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 78 insertions(+), 29 deletions(-)
 
---- a/drivers/crypto/caam/key_gen.c
-+++ b/drivers/crypto/caam/key_gen.c
-@@ -48,23 +48,29 @@ int gen_split_key(struct device *jrdev,
- 	u32 *desc;
- 	struct split_key_result result;
- 	dma_addr_t dma_addr_in, dma_addr_out;
--	int ret = 0;
-+	int ret = -ENOMEM;
- 
- 	desc = kmalloc(CAAM_CMD_SZ * 6 + CAAM_PTR_SZ * 2, GFP_KERNEL | GFP_DMA);
- 	if (!desc) {
- 		dev_err(jrdev, "unable to allocate key input memory\n");
--		return -ENOMEM;
-+		return ret;
- 	}
- 
--	init_job_desc(desc, 0);
--
- 	dma_addr_in = dma_map_single(jrdev, (void *)key_in, keylen,
- 				     DMA_TO_DEVICE);
- 	if (dma_mapping_error(jrdev, dma_addr_in)) {
- 		dev_err(jrdev, "unable to map key input memory\n");
--		kfree(desc);
--		return -ENOMEM;
-+		goto out_free;
- 	}
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -108,6 +108,31 @@ extern pmd_t *mm_find_pmd(struct mm_stru
+ /*
+  * in mm/page_alloc.c
+  */
 +
-+	dma_addr_out = dma_map_single(jrdev, key_out, split_key_pad_len,
-+				      DMA_FROM_DEVICE);
-+	if (dma_mapping_error(jrdev, dma_addr_out)) {
-+		dev_err(jrdev, "unable to map key output memory\n");
-+		goto out_unmap_in;
++/*
++ * Locate the struct page for both the matching buddy in our
++ * pair (buddy1) and the combined O(n+1) page they form (page).
++ *
++ * 1) Any buddy B1 will have an order O twin B2 which satisfies
++ * the following equation:
++ *     B2 = B1 ^ (1 << O)
++ * For example, if the starting buddy (buddy2) is #8 its order
++ * 1 buddy is #10:
++ *     B2 = 8 ^ (1 << 1) = 8 ^ 2 = 10
++ *
++ * 2) Any buddy B will have an order O+1 parent P which
++ * satisfies the following equation:
++ *     P = B & ~(1 << O)
++ *
++ * Assumption: *_mem_map is contiguous at least up to MAX_ORDER
++ */
++static inline unsigned long
++__find_buddy_index(unsigned long page_idx, unsigned int order)
++{
++	return page_idx ^ (1 << order);
++}
++
++extern int __isolate_free_page(struct page *page, unsigned int order);
+ extern void __free_pages_bootmem(struct page *page, unsigned int order);
+ extern void prep_compound_page(struct page *page, unsigned long order);
+ #ifdef CONFIG_MEMORY_FAILURE
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -468,29 +468,6 @@ static inline void rmv_page_order(struct
+ }
+ 
+ /*
+- * Locate the struct page for both the matching buddy in our
+- * pair (buddy1) and the combined O(n+1) page they form (page).
+- *
+- * 1) Any buddy B1 will have an order O twin B2 which satisfies
+- * the following equation:
+- *     B2 = B1 ^ (1 << O)
+- * For example, if the starting buddy (buddy2) is #8 its order
+- * 1 buddy is #10:
+- *     B2 = 8 ^ (1 << 1) = 8 ^ 2 = 10
+- *
+- * 2) Any buddy B will have an order O+1 parent P which
+- * satisfies the following equation:
+- *     P = B & ~(1 << O)
+- *
+- * Assumption: *_mem_map is contiguous at least up to MAX_ORDER
+- */
+-static inline unsigned long
+-__find_buddy_index(unsigned long page_idx, unsigned int order)
+-{
+-	return page_idx ^ (1 << order);
+-}
+-
+-/*
+  * This function checks whether a page is free && is the buddy
+  * we can do coalesce a page and its buddy if
+  * (a) the buddy is not in a hole &&
+@@ -570,6 +547,7 @@ static inline void __free_one_page(struc
+ 	unsigned long combined_idx;
+ 	unsigned long uninitialized_var(buddy_idx);
+ 	struct page *buddy;
++	int max_order = MAX_ORDER;
+ 
+ 	VM_BUG_ON(!zone_is_initialized(zone));
+ 
+@@ -578,15 +556,24 @@ static inline void __free_one_page(struc
+ 			return;
+ 
+ 	VM_BUG_ON(migratetype == -1);
+-	if (!is_migrate_isolate(migratetype))
++	if (is_migrate_isolate(migratetype)) {
++		/*
++		 * We restrict max order of merging to prevent merge
++		 * between freepages on isolate pageblock and normal
++		 * pageblock. Without this, pageblock isolation
++		 * could cause incorrect freepage accounting.
++		 */
++		max_order = min(MAX_ORDER, pageblock_order + 1);
++	} else {
+ 		__mod_zone_freepage_state(zone, 1 << order, migratetype);
++	}
+ 
+-	page_idx = pfn & ((1 << MAX_ORDER) - 1);
++	page_idx = pfn & ((1 << max_order) - 1);
+ 
+ 	VM_BUG_ON_PAGE(page_idx & ((1 << order) - 1), page);
+ 	VM_BUG_ON_PAGE(bad_range(zone, page), page);
+ 
+-	while (order < MAX_ORDER-1) {
++	while (order < max_order - 1) {
+ 		buddy_idx = __find_buddy_index(page_idx, order);
+ 		buddy = page + (buddy_idx - page_idx);
+ 		if (!page_is_buddy(page, buddy, order))
+@@ -1487,7 +1474,7 @@ void split_page(struct page *page, unsig
+ }
+ EXPORT_SYMBOL_GPL(split_page);
+ 
+-static int __isolate_free_page(struct page *page, unsigned int order)
++int __isolate_free_page(struct page *page, unsigned int order)
+ {
+ 	unsigned long watermark;
+ 	struct zone *zone;
+--- a/mm/page_isolation.c
++++ b/mm/page_isolation.c
+@@ -76,17 +76,54 @@ void unset_migratetype_isolate(struct pa
+ {
+ 	struct zone *zone;
+ 	unsigned long flags, nr_pages;
++	struct page *isolated_page = NULL;
++	unsigned int order;
++	unsigned long page_idx, buddy_idx;
++	struct page *buddy;
+ 
+ 	zone = page_zone(page);
+ 	spin_lock_irqsave(&zone->lock, flags);
+ 	if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
+ 		goto out;
+-	nr_pages = move_freepages_block(zone, page, migratetype);
+-	__mod_zone_freepage_state(zone, nr_pages, migratetype);
++
++	/*
++	 * Because freepage with more than pageblock_order on isolated
++	 * pageblock is restricted to merge due to freepage counting problem,
++	 * it is possible that there is free buddy page.
++	 * move_freepages_block() doesn't care of merge so we need other
++	 * approach in order to merge them. Isolation and free will make
++	 * these pages to be merged.
++	 */
++	if (PageBuddy(page)) {
++		order = page_order(page);
++		if (order >= pageblock_order) {
++			page_idx = page_to_pfn(page) & ((1 << MAX_ORDER) - 1);
++			buddy_idx = __find_buddy_index(page_idx, order);
++			buddy = page + (buddy_idx - page_idx);
++
++			if (!is_migrate_isolate_page(buddy)) {
++				__isolate_free_page(page, order);
++				set_page_refcounted(page);
++				isolated_page = page;
++			}
++		}
 +	}
 +
-+	init_job_desc(desc, 0);
- 	append_key(desc, dma_addr_in, keylen, CLASS_2 | KEY_DEST_CLASS_REG);
- 
- 	/* Sets MDHA up into an HMAC-INIT */
-@@ -81,13 +87,6 @@ int gen_split_key(struct device *jrdev,
- 	 * FIFO_STORE with the explicit split-key content store
- 	 * (0x26 output type)
- 	 */
--	dma_addr_out = dma_map_single(jrdev, key_out, split_key_pad_len,
--				      DMA_FROM_DEVICE);
--	if (dma_mapping_error(jrdev, dma_addr_out)) {
--		dev_err(jrdev, "unable to map key output memory\n");
--		kfree(desc);
--		return -ENOMEM;
--	}
- 	append_fifo_store(desc, dma_addr_out, split_key_len,
- 			  LDST_CLASS_2_CCB | FIFOST_TYPE_SPLIT_KEK);
- 
-@@ -115,10 +114,10 @@ int gen_split_key(struct device *jrdev,
- 
- 	dma_unmap_single(jrdev, dma_addr_out, split_key_pad_len,
- 			 DMA_FROM_DEVICE);
-+out_unmap_in:
- 	dma_unmap_single(jrdev, dma_addr_in, keylen, DMA_TO_DEVICE);
--
-+out_free:
- 	kfree(desc);
--
- 	return ret;
++	/*
++	 * If we isolate freepage with more than pageblock_order, there
++	 * should be no freepage in the range, so we could avoid costly
++	 * pageblock scanning for freepage moving.
++	 */
++	if (!isolated_page) {
++		nr_pages = move_freepages_block(zone, page, migratetype);
++		__mod_zone_freepage_state(zone, nr_pages, migratetype);
++	}
+ 	set_pageblock_migratetype(page, migratetype);
+ 	zone->nr_isolate_pageblock--;
+ out:
+ 	spin_unlock_irqrestore(&zone->lock, flags);
++	if (isolated_page)
++		__free_pages(isolated_page, order);
  }
- EXPORT_SYMBOL(gen_split_key);
+ 
+ static inline struct page *
 
 
