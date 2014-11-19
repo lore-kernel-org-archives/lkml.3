@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933116AbaKSU7o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:59:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56226 "EHLO
+	id S932682AbaKSUyT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:54:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932691AbaKSUyU (ORCPT
+	with ESMTP id S1756910AbaKSUyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:54:20 -0500
+	Wed, 19 Nov 2014 15:54:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Liuhua Wang" <lwang@suse.com>, Heinz Mauelshagen <heinzm@redhat.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.17 088/141] dm raid: ensure superblocks size matches devices logical block size
-Date: Wed, 19 Nov 2014 12:51:51 -0800
-Message-Id: <20141119205153.544783984@linuxfoundation.org>
+        Sujith Manoharan <sujith@msujith.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.17 058/141] mac80211: properly flush delayed scan work on interface removal
+Date: Wed, 19 Nov 2014 12:51:21 -0800
+Message-Id: <20141119205152.581779027@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -30,66 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heinz Mauelshagen <heinzm@redhat.com>
+From: Johannes Berg <johannes@sipsolutions.net>
 
-commit 40d43c4b4cac4c2647bf07110d7b07d35f399a84 upstream.
+commit 46238845bd609a5c0fbe076e1b82b4c5b33360b2 upstream.
 
-The dm-raid superblock (struct dm_raid_superblock) is padded to 512
-bytes and that size is being used to read it in from the metadata
-device into one preallocated page.
+When an interface is deleted, an ongoing hardware scan is canceled and
+the driver must abort the scan, at the very least reporting completion
+while the interface is removed.
 
-Reading or writing this on a 512-byte sector device works fine but on
-a 4096-byte sector device this fails.
+However, if it scheduled the work that might only run after everything
+is said and done, which leads to cfg80211 warning that the scan isn't
+reported as finished yet; this is no fault of the driver, it already
+did, but mac80211 hasn't processed it.
 
-Set the dm-raid superblock's size to the logical block size of the
-metadata device, because IO at that size is guaranteed too work.  Also
-add a size check to avoid silent partial metadata loss in case the
-superblock should ever grow past the logical block size or PAGE_SIZE.
+To fix this situation, flush the delayed work when the interface being
+removed is the one that was executing the scan.
 
-[includes pointer math fix from Dan Carpenter]
-Reported-by: "Liuhua Wang" <lwang@suse.com>
-Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Reported-by: Sujith Manoharan <sujith@msujith.org>
+Tested-by: Sujith Manoharan <sujith@msujith.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-raid.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ net/mac80211/iface.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-raid.c
-+++ b/drivers/md/dm-raid.c
-@@ -785,8 +785,7 @@ struct dm_raid_superblock {
- 	__le32 layout;
- 	__le32 stripe_sectors;
+--- a/net/mac80211/iface.c
++++ b/net/mac80211/iface.c
+@@ -765,10 +765,12 @@ static void ieee80211_do_stop(struct iee
+ 	int i, flushed;
+ 	struct ps_data *ps;
+ 	struct cfg80211_chan_def chandef;
++	bool cancel_scan;
  
--	__u8 pad[452];		/* Round struct to 512 bytes. */
--				/* Always set to 0 when writing. */
-+	/* Remainder of a logical block is zero-filled when writing (see super_sync()). */
- } __packed;
+ 	clear_bit(SDATA_STATE_RUNNING, &sdata->state);
  
- static int read_disk_sb(struct md_rdev *rdev, int size)
-@@ -823,7 +822,7 @@ static void super_sync(struct mddev *mdd
- 		    test_bit(Faulty, &(rs->dev[i].rdev.flags)))
- 			failed_devices |= (1ULL << i);
+-	if (rcu_access_pointer(local->scan_sdata) == sdata)
++	cancel_scan = rcu_access_pointer(local->scan_sdata) == sdata;
++	if (cancel_scan)
+ 		ieee80211_scan_cancel(local);
  
--	memset(sb, 0, sizeof(*sb));
-+	memset(sb + 1, 0, rdev->sb_size - sizeof(*sb));
+ 	/*
+@@ -990,6 +992,9 @@ static void ieee80211_do_stop(struct iee
  
- 	sb->magic = cpu_to_le32(DM_RAID_MAGIC);
- 	sb->features = cpu_to_le32(0);	/* No features yet */
-@@ -858,7 +857,11 @@ static int super_load(struct md_rdev *rd
- 	uint64_t events_sb, events_refsb;
+ 	ieee80211_recalc_ps(local, -1);
  
- 	rdev->sb_start = 0;
--	rdev->sb_size = sizeof(*sb);
-+	rdev->sb_size = bdev_logical_block_size(rdev->meta_bdev);
-+	if (rdev->sb_size < sizeof(*sb) || rdev->sb_size > PAGE_SIZE) {
-+		DMERR("superblock size of a logical block is no longer valid");
-+		return -EINVAL;
-+	}
++	if (cancel_scan)
++		flush_delayed_work(&local->scan_work);
++
+ 	if (local->open_count == 0) {
+ 		ieee80211_stop_device(local);
  
- 	ret = read_disk_sb(rdev, rdev->sb_size);
- 	if (ret)
 
 
