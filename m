@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934179AbaKSWOC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:14:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56453 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933011AbaKSVEE (ORCPT
+	id S934160AbaKSWOB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:14:01 -0500
+Received: from www.linutronix.de ([62.245.132.108]:47836 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933300AbaKSWN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:04 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.17 093/141] cpufreq: Avoid crash in resume on SMP without OPP
-Date: Wed, 19 Nov 2014 12:51:56 -0800
-Message-Id: <20141119205153.694287427@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
-References: <20141119205150.700188369@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 19 Nov 2014 17:13:59 -0500
+Date: Wed, 19 Nov 2014 23:13:53 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andy Lutomirski <luto@amacapital.net>
+cc: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Don Zickus <dzickus@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] x86, syscall: Fix _TIF_NOHZ handling in
+ syscall_trace_enter_phase1
+In-Reply-To: <a6cd3b60a3f53afb6e1c8081b0ec30ff19003dd7.1416434075.git.luto@amacapital.net>
+Message-ID: <alpine.DEB.2.11.1411192311560.3909@nanos>
+References: <546D0530.8040800@mit.edu> <a6cd3b60a3f53afb6e1c8081b0ec30ff19003dd7.1416434075.git.luto@amacapital.net>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 19 Nov 2014, Andy Lutomirski wrote:
 
-------------------
+> TIF_NOHZ is 19 (i.e. _TIF_SYSCALL_TRACE | _TIF_NOTIFY_RESUME |
+> _TIF_SINGLESTEP), not (1<<19).
+> 
+> This code is involved in Dave's trinity lockup, but I don't see why
+> it would cause any of the problems he's seeing, except inadvertently
+> by causing a different path through entry_64.S's syscall handling.
 
-From: Geert Uytterhoeven <geert+renesas@glider.be>
+Right, while it is wrong it does not explain the wreckage on 3.17,
+which does not have that code.
 
-commit 09712f557b31838092e1f22a5f2dd131a843a3de upstream.
+Thanks,
 
-When resuming from s2ram on an SMP system without cpufreq operating
-points (e.g. there's no "operating-points" property for the CPU node in
-DT, or the platform doesn't use DT yet), the kernel crashes when
-bringing CPU 1 online:
-
-    Enabling non-boot CPUs ...
-    CPU1: Booted secondary processor
-    Unable to handle kernel NULL pointer dereference at virtual address 0000003c
-    pgd = ee5e6b00
-    [0000003c] *pgd=6e579003, *pmd=6e588003, *pte=00000000
-    Internal error: Oops: a07 [#1] SMP ARM
-    Modules linked in:
-    CPU: 0 PID: 1246 Comm: s2ram Tainted: G        W      3.18.0-rc3-koelsch-01614-g0377af242bb175c8-dirty #589
-    task: eeec5240 ti: ee704000 task.ti: ee704000
-    PC is at __cpufreq_add_dev.isra.24+0x24c/0x77c
-    LR is at __cpufreq_add_dev.isra.24+0x244/0x77c
-    pc : [<c0298efc>]    lr : [<c0298ef4>]    psr: 60000153
-    sp : ee705d48  ip : ee705d48  fp : ee705d84
-    r10: c04e0450  r9 : 00000000  r8 : 00000001
-    r7 : c05426a8  r6 : 00000001  r5 : 00000001  r4 : 00000000
-    r3 : 00000000  r2 : 00000000  r1 : 20000153  r0 : c0542734
-
-Verify that policy is not NULL before dereferencing it to fix this.
-
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Fixes: 8414809c6a1e (cpufreq: Preserve policy structure across suspend/resume)
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/cpufreq/cpufreq.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1022,7 +1022,8 @@ static struct cpufreq_policy *cpufreq_po
- 
- 	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
--	policy->governor = NULL;
-+	if (policy)
-+		policy->governor = NULL;
- 
- 	return policy;
- }
-
-
+	tglx
