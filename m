@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541AbaKSVrZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:47:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56595 "EHLO
+	id S1757561AbaKSVrq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:47:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933558AbaKSVEb (ORCPT
+	with ESMTP id S933554AbaKSVEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:31 -0500
+	Wed, 19 Nov 2014 16:04:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Nathan Fontenot <nfont@austin.ibm.com>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 3.14 074/122] memory-hotplug: Remove "weak" from memory_block_size_bytes() declaration
-Date: Wed, 19 Nov 2014 12:52:04 -0800
-Message-Id: <20141119205211.269957103@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.14 073/122] media: ttusb-dec: buffer overflow in ioctl
+Date: Wed, 19 Nov 2014 12:52:03 -0800
+Message-Id: <20141119205211.228997039@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -34,44 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit e0a8400c6923a163265d52798cdd4c33f3f8ab5a upstream.
+commit f2e323ec96077642d397bb1c355def536d489d16 upstream.
 
-drivers/base/memory.c provides a default memory_block_size_bytes()
-definition explicitly marked "weak".  Several architectures provide their
-own definitions intended to override the default, but the "weak" attribute
-on the declaration applied to the arch definitions as well, so the linker
-chose one based on link order (see 10629d711ed7 ("PCI: Remove __weak
-annotation from pcibios_get_phb_of_node decl")).
+We need to add a limit check here so we don't overflow the buffer.
 
-Remove the "weak" attribute from the declaration so we always prefer a
-non-weak definition over the weak one, independent of link order.
-
-Fixes: 41f107266b19 ("drivers: base: Add prototype declaration to the header file")
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Andrew Morton <akpm@linux-foundation.org>
-CC: Rashika Kheria <rashika.kheria@gmail.com>
-CC: Nathan Fontenot <nfont@austin.ibm.com>
-CC: Anton Blanchard <anton@au1.ibm.com>
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/memory.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/usb/ttusb-dec/ttusbdecfe.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/include/linux/memory.h
-+++ b/include/linux/memory.h
-@@ -35,7 +35,7 @@ struct memory_block {
- };
+--- a/drivers/media/usb/ttusb-dec/ttusbdecfe.c
++++ b/drivers/media/usb/ttusb-dec/ttusbdecfe.c
+@@ -156,6 +156,9 @@ static int ttusbdecfe_dvbs_diseqc_send_m
+ 		   0x00, 0x00, 0x00, 0x00,
+ 		   0x00, 0x00 };
  
- int arch_get_memory_phys_device(unsigned long start_pfn);
--unsigned long __weak memory_block_size_bytes(void);
-+unsigned long memory_block_size_bytes(void);
++	if (cmd->msg_len > sizeof(b) - 4)
++		return -EINVAL;
++
+ 	memcpy(&b[4], cmd->msg, cmd->msg_len);
  
- /* These states are exposed to userspace as text strings in sysfs */
- #define	MEM_ONLINE		(1<<0) /* exposed to userspace */
+ 	state->config->send_command(fe, 0x72,
 
 
