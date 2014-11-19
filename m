@@ -1,43 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932541AbaKSQJm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:09:42 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:44807 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755992AbaKSQFA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:05:00 -0500
+	id S1756160AbaKSQJx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:09:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60750 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754153AbaKSQJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:09:52 -0500
+Message-ID: <546CC0CD.40906@suse.cz>
+Date: Wed, 19 Nov 2014 17:09:49 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1416412231-2752-1-git-send-email-lee.jones@linaro.org>
-References: <1416412231-2752-1-git-send-email-lee.jones@linaro.org>
-Date: Wed, 19 Nov 2014 14:04:58 -0200
-Message-ID: <CAOMZO5CwFSRUoVb2j=X=fzaqVN1gUyRki70ewrGrwqLWSHMoAg@mail.gmail.com>
-Subject: Re: [PATCH] thermal: sti: Ignore suspend/resume functions when !PM
-From: Fabio Estevam <festevam@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, edubezval@gmail.com,
-        kernel@stlinux.com,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Tim Hartrick <tim@edgecast.com>, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
+References: <502D42E5.7090403@redhat.com>	<20120818000312.GA4262@evergreen.ssec.wisc.edu>	<502F100A.1080401@redhat.com>	<alpine.LSU.2.00.1208200032450.24855@eggly.anvils>	<CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>	<20120822032057.GA30871@google.com>	<50345232.4090002@redhat.com>	<20130603195003.GA31275@evergreen.ssec.wisc.edu>	<20141114163053.GA6547@cosmos.ssec.wisc.edu>	<20141117160212.b86d031e1870601240b0131d@linux-foundation.org>	<20141118014135.GA17252@cosmos.ssec.wisc.edu>	<546AB1F5.6030306@redhat.com>	<20141118121936.07b02545a0684b2cc839a10c@linux-foundation.org>	<CALYGNiMxnxmy-LyJ4OT9OoFeKwTPPkZMF-bJ-eJDBFXgZQ6AEA@mail.gmail.com>	<CALYGNiM_CsjjiK_36JGirZT8rTP+ROYcH0CSyZjghtSNDU8ptw@mail.gmail.com>	<546BDB29.9050403@suse.cz> <CALYGNiOHXvyqr3+Jq5FsZ_xscsXwrQ_9YCtL2819i6iRkgms2w@mail.gmail.com>
+In-Reply-To: <CALYGNiOHXvyqr3+Jq5FsZ_xscsXwrQ_9YCtL2819i6iRkgms2w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 1:50 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> Prevents build warning:
->
-> st_thermal.c:278:12:
->     warning: ‘st_thermal_suspend’ defined but not used [-Wunused-function]
-> st_thermal.c:286:12:
->     warning: ‘st_thermal_resume’ defined but not used [-Wunused-function]
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->
-> v1 => v2:
->  - CONFIG_PM => CONFIG_PM_SLEEP suggested by David Paris.
+On 11/19/2014 03:36 PM, Konstantin Khlebnikov wrote:
+> On Wed, Nov 19, 2014 at 2:50 AM, Vlastimil Babka <vbabka@suse.cz> wrote:
+>> On 11/19/2014 12:02 AM, Konstantin Khlebnikov wrote:
+>>> On Wed, Nov 19, 2014 at 1:15 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+>>>> On Tue, Nov 18, 2014 at 11:19 PM, Andrew Morton
+>>>> <akpm@linux-foundation.org> wrote:
+>>>>> On Mon, 17 Nov 2014 21:41:57 -0500 Rik van Riel <riel@redhat.com> wrote:
+>>>>>
+>>>>>> > Because of the serial forking there does indeed end up being an
+>>>>>> > infinite number of vmas.  The initial vma can never be deleted
+>>>>>> > (even though the initial parent process has long since terminated)
+>>>>>> > because the initial vma is referenced by the children.
+>>>>>>
+>>>>>> There is a finite number of VMAs, but an infite number of
+>>>>>> anon_vmas.
+>>>>>>
+>>>>>> Subtle, yet deadly...
+>>>>>
+>>>>> Well, we clearly have the data structures screwed up.  I've forgotten
+>>>>> enough about this code for me to be unable to work out what the fixed
+>>>>> up data structures would look like :( But surely there is some proper
+>>>>> solution here.  Help?
+>>>>
+>>>> Not sure if it's right but probably we could reuse on fork an old anon_vma
+>>>> from the chain if it's already lost all vmas which points to it.
+>>>> For endlessly forking exploit this should work mostly like proposed patch
+>>>> which stops branching after some depth but without magic constant.
+>>>
+>>> Something like this. I leave proper comment for tomorrow.
+>>
+>> Hmm I'm not sure that will work as it is. If I understand it correctly, your
+>> patch can detect if the parent's anon_vma has no own references at the fork()
+>> time. But at the fork time, the parent is still alive, it only exits after the
+>> fork, right? So I guess it still has own references and the child will still
+>> allocate its new anon_vma, and the problem is not solved.
+> 
+> But it could reuse anon_vma from grandparent or older.
+> Count of anon_vmas in chain will be limited with count of alive processes.
 
-You should also update the Subject to 'when !PM_SLEEP'
+Ah I missed that it can reuse older anon_vma, sorry.
+
+> I think it's better to describe this in terms of sets of anon_vma
+> instead hierarchy:
+> at clone vma inherits pages from parent together with set of anon_vma
+> which they belong.
+> For new pages it might allocate new anon_vma or reuse existing. After
+> my patch vma
+> will try to reuse anon_vma from that set which has no vmas which points to it.
+> As a result there will be no parent-child relation between anon_vma and
+> multiple pages might have equal (anon_vma, index) pair but I see no
+> problems here.
+
+Hmm I wonder if root anon_vma should be excluded from this reusal. For
+performance reasons, exclusive pages go to non-root anon_vma (see
+__page_set_anon_rmap()) and reusing root anon_vma would change this.
+Also from reading http://lwn.net/Articles/383162/ I understand that correctness
+also depends on the hierarchy and I wonder if there's a danger of reintroducing
+a bug like the one described there.
+
+Vlastimil
+
+>>
+>> So maybe we could detect that the own references dropped to zero when the parent
+>> does exit, and then change mapping of all relevant pages to the root anon_vma,
+>> destroy avc's of children and the anon_vma itself. But that sounds quite
+>> heavyweight :/
+>>
+>> Vlastimil
+>>
+>>>>
+>>>>>
+>>
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
