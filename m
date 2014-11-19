@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934383AbaKSW37 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:29:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56055 "EHLO
+	id S933538AbaKSW36 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:29:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56061 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932349AbaKSUx7 (ORCPT
+	with ESMTP id S932413AbaKSUx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:53:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 006/141] sit: Use ipip6_tunnel_init as the ndo_init function.
-Date: Wed, 19 Nov 2014 12:50:29 -0800
-Message-Id: <20141119205150.897143111@linuxfoundation.org>
+Subject: [PATCH 3.17 007/141] gre6: Move the setting of dev->iflink into the ndo_init functions.
+Date: Wed, 19 Nov 2014 12:50:30 -0800
+Message-Id: <20141119205150.926196906@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -31,73 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steffen Klassert <steffen.klassert@secunet.com>
 
-[ Upstream commit ebe084aafb7e93adf210e80043c9f69adf56820d ]
+[ Upstream commit f03eb128e3f4276f46442d14f3b8f864f3775821 ]
 
-ipip6_tunnel_init() sets the dev->iflink via a call to
-ipip6_tunnel_bind_dev(). After that, register_netdevice()
-sets dev->iflink = -1. So we loose the iflink configuration
-for ipv6 tunnels. Fix this by using ipip6_tunnel_init() as the
-ndo_init function. Then ipip6_tunnel_init() is called after
-dev->iflink is set to -1 from register_netdevice().
+Otherwise it gets overwritten by register_netdev().
 
 Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/sit.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ net/ipv6/ip6_gre.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -195,10 +195,8 @@ static int ipip6_tunnel_create(struct ne
- 	struct sit_net *sitn = net_generic(net, sit_net_id);
- 	int err;
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -957,8 +957,6 @@ static void ip6gre_tnl_link_config(struc
+ 	else
+ 		dev->flags &= ~IFF_POINTOPOINT;
  
--	err = ipip6_tunnel_init(dev);
--	if (err < 0)
--		goto out;
--	ipip6_tunnel_clone_6rd(dev, sitn);
-+	memcpy(dev->dev_addr, &t->parms.iph.saddr, 4);
-+	memcpy(dev->broadcast, &t->parms.iph.daddr, 4);
+-	dev->iflink = p->link;
+-
+ 	/* Precalculate GRE options length */
+ 	if (t->parms.o_flags&(GRE_CSUM|GRE_KEY|GRE_SEQ)) {
+ 		if (t->parms.o_flags&GRE_CSUM)
+@@ -1268,6 +1266,7 @@ static int ip6gre_tunnel_init(struct net
+ 		u64_stats_init(&ip6gre_tunnel_stats->syncp);
+ 	}
  
- 	if ((__force u16)t->parms.i_flags & SIT_ISATAP)
- 		dev->priv_flags |= IFF_ISATAP;
-@@ -207,7 +205,8 @@ static int ipip6_tunnel_create(struct ne
- 	if (err < 0)
- 		goto out;
++	dev->iflink = tunnel->parms.link;
  
--	strcpy(t->parms.name, dev->name);
-+	ipip6_tunnel_clone_6rd(dev, sitn);
+ 	return 0;
+ }
+@@ -1477,6 +1476,8 @@ static int ip6gre_tap_init(struct net_de
+ 	if (!dev->tstats)
+ 		return -ENOMEM;
+ 
++	dev->iflink = tunnel->parms.link;
 +
- 	dev->rtnl_link_ops = &sit_link_ops;
- 
- 	dev_hold(dev);
-@@ -1314,6 +1313,7 @@ static int ipip6_tunnel_change_mtu(struc
+ 	return 0;
  }
  
- static const struct net_device_ops ipip6_netdev_ops = {
-+	.ndo_init	= ipip6_tunnel_init,
- 	.ndo_uninit	= ipip6_tunnel_uninit,
- 	.ndo_start_xmit	= sit_tunnel_xmit,
- 	.ndo_do_ioctl	= ipip6_tunnel_ioctl,
-@@ -1359,9 +1359,7 @@ static int ipip6_tunnel_init(struct net_
- 
- 	tunnel->dev = dev;
- 	tunnel->net = dev_net(dev);
--
--	memcpy(dev->dev_addr, &tunnel->parms.iph.saddr, 4);
--	memcpy(dev->broadcast, &tunnel->parms.iph.daddr, 4);
-+	strcpy(tunnel->parms.name, dev->name);
- 
- 	ipip6_tunnel_bind_dev(dev);
- 	dev->tstats = netdev_alloc_pcpu_stats(struct pcpu_sw_netstats);
-@@ -1386,7 +1384,6 @@ static int __net_init ipip6_fb_tunnel_in
- 
- 	tunnel->dev = dev;
- 	tunnel->net = dev_net(dev);
--	strcpy(tunnel->parms.name, dev->name);
- 
- 	iph->version		= 4;
- 	iph->protocol		= IPPROTO_IPV6;
 
 
