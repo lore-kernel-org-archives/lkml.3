@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933130AbaKSVIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:08:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
+	id S933163AbaKSVJP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:09:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56595 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933611AbaKSVEh (ORCPT
+	with ESMTP id S933603AbaKSVEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:37 -0500
+	Wed, 19 Nov 2014 16:04:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yosef Khyal <yosefx.khyal@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.14 037/122] mac80211: fix use-after-free in defragmentation
-Date: Wed, 19 Nov 2014 12:51:27 -0800
-Message-Id: <20141119205209.996781640@linuxfoundation.org>
+        David Ramos <daramos@stanford.edu>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH 3.14 046/122] firewire: cdev: prevent kernel stack leaking into ioctl arguments
+Date: Wed, 19 Nov 2014 12:51:36 -0800
+Message-Id: <20141119205210.339006507@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,58 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit b8fff407a180286aa683d543d878d98d9fc57b13 upstream.
+commit eaca2d8e75e90a70a63a6695c9f61932609db212 upstream.
 
-Upon receiving the last fragment, all but the first fragment
-are freed, but the multicast check for statistics at the end
-of the function refers to the current skb (the last fragment)
-causing a use-after-free bug.
+Found by the UC-KLEE tool:  A user could supply less input to
+firewire-cdev ioctls than write- or write/read-type ioctl handlers
+expect.  The handlers used data from uninitialized kernel stack then.
 
-Since multicast frames cannot be fragmented and we check for
-this early in the function, just modify that check to also
-do the accounting to fix the issue.
+This could partially leak back to the user if the kernel subsequently
+generated fw_cdev_event_'s (to be read from the firewire-cdev fd)
+which notably would contain the _u64 closure field which many of the
+ioctl argument structures contain.
 
-Reported-by: Yosef Khyal <yosefx.khyal@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+The fact that the handlers would act on random garbage input is a
+lesser issue since all handlers must check their input anyway.
+
+The fix simply always null-initializes the entire ioctl argument buffer
+regardless of the actual length of expected user input.  That is, a
+runtime overhead of memset(..., 40) is added to each firewirew-cdev
+ioctl() call.  [Comment from Clemens Ladisch:  This part of the stack is
+most likely to be already in the cache.]
+
+Remarks:
+  - There was never any leak from kernel stack to the ioctl output
+    buffer itself.  IOW, it was not possible to read kernel stack by a
+    read-type or write/read-type ioctl alone; the leak could at most
+    happen in combination with read()ing subsequent event data.
+  - The actual expected minimum user input of each ioctl from
+    include/uapi/linux/firewire-cdev.h is, in bytes:
+    [0x00] = 32, [0x05] =  4, [0x0a] = 16, [0x0f] = 20, [0x14] = 16,
+    [0x01] = 36, [0x06] = 20, [0x0b] =  4, [0x10] = 20, [0x15] = 20,
+    [0x02] = 20, [0x07] =  4, [0x0c] =  0, [0x11] =  0, [0x16] =  8,
+    [0x03] =  4, [0x08] = 24, [0x0d] = 20, [0x12] = 36, [0x17] = 12,
+    [0x04] = 20, [0x09] = 24, [0x0e] =  4, [0x13] = 40, [0x18] =  4.
+
+Reported-by: David Ramos <daramos@stanford.edu>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rx.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/firewire/core-cdev.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1679,11 +1679,14 @@ ieee80211_rx_h_defragment(struct ieee802
- 	sc = le16_to_cpu(hdr->seq_ctrl);
- 	frag = sc & IEEE80211_SCTL_FRAG;
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -1637,8 +1637,7 @@ static int dispatch_ioctl(struct client
+ 	    _IOC_SIZE(cmd) > sizeof(buffer))
+ 		return -ENOTTY;
  
--	if (likely((!ieee80211_has_morefrags(fc) && frag == 0) ||
--		   is_multicast_ether_addr(hdr->addr1))) {
--		/* not fragmented */
-+	if (likely(!ieee80211_has_morefrags(fc) && frag == 0))
-+		goto out;
-+
-+	if (is_multicast_ether_addr(hdr->addr1)) {
-+		rx->local->dot11MulticastReceivedFrameCount++;
- 		goto out;
- 	}
-+
- 	I802_DEBUG_INC(rx->local->rx_handlers_fragments);
+-	if (_IOC_DIR(cmd) == _IOC_READ)
+-		memset(&buffer, 0, _IOC_SIZE(cmd));
++	memset(&buffer, 0, sizeof(buffer));
  
- 	if (skb_linearize(rx->skb))
-@@ -1776,10 +1779,7 @@ ieee80211_rx_h_defragment(struct ieee802
-  out:
- 	if (rx->sta)
- 		rx->sta->rx_packets++;
--	if (is_multicast_ether_addr(hdr->addr1))
--		rx->local->dot11MulticastReceivedFrameCount++;
--	else
--		ieee80211_led_rx(rx->local);
-+	ieee80211_led_rx(rx->local);
- 	return RX_CONTINUE;
- }
- 
+ 	if (_IOC_DIR(cmd) & _IOC_WRITE)
+ 		if (copy_from_user(&buffer, arg, _IOC_SIZE(cmd)))
 
 
