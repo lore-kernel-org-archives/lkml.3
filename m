@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933637AbaKSVyo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:54:44 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:39188 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933149AbaKSVyl (ORCPT
+	id S933665AbaKSVze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:55:34 -0500
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:38299 "HELO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932991AbaKSVz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:54:41 -0500
-Date: Wed, 19 Nov 2014 16:54:39 -0500 (EST)
-Message-Id: <20141119.165439.1170554636889327742.davem@davemloft.net>
-To: elfring@users.sourceforge.net
-Cc: isdn@linux-pingi.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH 1/1] mISDN: Deletion of unnecessary checks before the
- function call "vfree"
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <546CF5A6.3030305@users.sourceforge.net>
-References: <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-	<5317A59D.4@users.sourceforge.net>
-	<546CF5A6.3030305@users.sourceforge.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Nov 2014 13:54:41 -0800 (PST)
+	Wed, 19 Nov 2014 16:55:29 -0500
+From: Joe Stringer <joestringer@nicira.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, pshelar@nicira.com, dev@openvswitch.org
+Subject: [PATCHv3 net] openvswitch: Don't validate IPv6 label masks.
+Date: Wed, 19 Nov 2014 13:54:49 -0800
+Message-Id: <1416434089-47062-1-git-send-email-joestringer@nicira.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 20:55:18 +0100
+When userspace doesn't provide a mask, OVS datapath generates a fully
+unwildcarded mask for the flow by copying the flow and setting all bits
+in all fields. For IPv6 label, this creates a mask that matches on the
+upper 12 bits, causing the following error:
 
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Wed, 19 Nov 2014 20:48:26 +0100
-> 
-> The vfree() function performs also input parameter validation. Thus the test
-> around the call is not needed.
-> 
-> This issue was detected by using the Coccinelle software.
-> 
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+openvswitch: netlink: Invalid IPv6 flow label value (value=ffffffff, max=fffff)
 
-Applied, thanks.
+This patch ignores the label validation check for masks, avoiding this
+error.
+
+Signed-off-by: Joe Stringer <joestringer@nicira.com>
+---
+v3: Alternative approach.
+    Was "openvswitch: Fix mask generation for IPv6 labels."
+v2: OR lower 20 bits (upper 12 bits remain from earlier memdup)
+---
+ net/openvswitch/flow_netlink.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/openvswitch/flow_netlink.c b/net/openvswitch/flow_netlink.c
+index fa4ec2e..089b195 100644
+--- a/net/openvswitch/flow_netlink.c
++++ b/net/openvswitch/flow_netlink.c
+@@ -690,7 +690,7 @@ static int ovs_key_from_nlattrs(struct sw_flow_match *match, u64 attrs,
+ 			return -EINVAL;
+ 		}
+ 
+-		if (ipv6_key->ipv6_label & htonl(0xFFF00000)) {
++		if (!is_mask && ipv6_key->ipv6_label & htonl(0xFFF00000)) {
+ 			OVS_NLERR("IPv6 flow label %x is out of range (max=%x).\n",
+ 				  ntohl(ipv6_key->ipv6_label), (1 << 20) - 1);
+ 			return -EINVAL;
+-- 
+1.7.10.4
+
