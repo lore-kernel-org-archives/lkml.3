@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406AbaKSSjQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 13:39:16 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:46146 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756228AbaKSSjN (ORCPT
+	id S1756026AbaKSSj2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 13:39:28 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:51851 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756465AbaKSSj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 13:39:13 -0500
-Date: Wed, 19 Nov 2014 13:39:11 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, williams@redhat.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 2/2] ftrace/x86/extable: Add is_ftrace_trampoline()
- function
-Message-ID: <20141119133911.1b030287@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.11.1411191928090.3909@nanos>
-References: <20141119033331.689278545@goodmis.org>
-	<20141119034829.497125839@goodmis.org>
-	<87mw7nppu0.fsf@sejong.aot.lge.com>
-	<20141119103716.1aa83ac3@gandalf.local.home>
-	<alpine.DEB.2.11.1411191928090.3909@nanos>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 19 Nov 2014 13:39:26 -0500
+Date: Wed, 19 Nov 2014 10:39:21 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Marcus Overhagen <marcus.overhagen@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Ulrik De Bie <ulrik.debie-os@e2big.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [git pull] Input updates for 3.18-rc4
+Message-ID: <20141119183921.GF37989@dtor-ws>
+References: <20141114222640.GA39748@dtor-ws>
+ <CAN+gG=FaovQETa3+qQsLoBBQnbZ8Q2uoQJD6_XvAmCCvGTHT1g@mail.gmail.com>
+ <CAJBHPojp7JVG6KKgrNfbC-V5ibPs-j6+BnqrSDkxvak0vNGM8w@mail.gmail.com>
+ <20141119181247.GE37989@dtor-ws>
+ <CAJBHPohu71BXqyZ4u74tAiP84UcQhXgto34k8NtNHPgw61WvLQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJBHPohu71BXqyZ4u74tAiP84UcQhXgto34k8NtNHPgw61WvLQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014 19:29:25 +0100 (CET)
-Thomas Gleixner <tglx@linutronix.de> wrote:
-
-> On Wed, 19 Nov 2014, Steven Rostedt wrote:
-> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> > Date: Tue, 18 Nov 2014 21:14:11 -0500
-> > Subject: [PATCH] ftrace/x86/extable: Add is_ftrace_trampoline() function
-> > 
-> > Stack traces that happen from function tracing check if the address
-> > on the stack is a __kernel_text_address(). That is, is the address
-> > kernel code. This calls core_kernel_text() which returns true
-> > if the address is part of the builtin kernel code. It also calls
-> > is_module_text_address() which returns true if the address belongs
-> > to module code.
-> > 
-> > But what is missing is ftrace dynamically allocated trampolines.
-> > These trampolines are allocated for individual ftrace_ops that
-> > call the ftrace_ops callback functions directly. But if they do a
-> > stack trace, the code checking the stack wont detect them as they
-> > are neither core kernel code nor module address space.
-> > 
-> > Adding another field to ftrace_ops that also stores the size of
-> > the trampoline assigned to it we can create a new function called
-> > is_ftrace_trampoline() that returns true if the address is a
-> > dynamically allocate ftrace trampoline. Note, it ignores trampolines
-> > that are not dynamically allocated as they will return true with
-> > the core_kernel_text() function.
-> > 
-> > Link: http://lkml.kernel.org/r/20141119034829.497125839@goodmis.org
-> > 
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Ingo Molnar <mingo@redhat.com>
-> > Cc: "H. Peter Anvin" <hpa@zytor.com>
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+On Wed, Nov 19, 2014 at 07:20:21PM +0100, Marcus Overhagen wrote:
+> Hi,
 > 
-> Acked-by: Thomas Gleixner <tglx@linutronix.de>
+> I will try reverting that, but may need until tomorrow or Friday.
+> 
+> Just now I made a warm reboot from rc3 to rc5 and initially scrolling
+> behaviour was ok,  but after about a minute it went wrong and I got
+> this:
+> 
+> [  179.705362] ------------[ cut here ]------------
+> [  179.705382] WARNING: CPU: 3 PID: 0 at
+> drivers/input/mouse/elantech.c:433
+> elantech_report_trackpoint.isra.5+0x199/0x1b0 [psmouse]()
+> [  179.705385] psmouse serio1: elantech: Unexpected trackpoint message
 
-Thanks!
+Or just this for now:
 
--- Steve
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index 3fcb6b3..294f613 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -793,7 +793,7 @@ static int elantech_packet_check_v4(struct psmouse *psmouse)
+ 	unsigned char packet_type = packet[3] & 0x03;
+ 	bool sanity_check;
+ 
+-	if ((packet[3] & 0x0f) == 0x06)
++	if ((packet[3] & 0x0f) == 0x06 && etd->tp_dev)
+ 		return PACKET_TRACKPOINT;
+ 
+ 	/*
+
+-- 
+Dmitry
