@@ -1,82 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514AbaKSQJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:09:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:51756 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932206AbaKSQFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:05:03 -0500
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 16/16] perf tools: Only override the default :tid comm entry
-Date: Wed, 19 Nov 2014 13:03:36 -0300
-Message-Id: <1416413016-19110-17-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1416413016-19110-1-git-send-email-acme@kernel.org>
-References: <1416413016-19110-1-git-send-email-acme@kernel.org>
+	id S932541AbaKSQJm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:09:42 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:44807 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755992AbaKSQFA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:05:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <1416412231-2752-1-git-send-email-lee.jones@linaro.org>
+References: <1416412231-2752-1-git-send-email-lee.jones@linaro.org>
+Date: Wed, 19 Nov 2014 14:04:58 -0200
+Message-ID: <CAOMZO5CwFSRUoVb2j=X=fzaqVN1gUyRki70ewrGrwqLWSHMoAg@mail.gmail.com>
+Subject: Re: [PATCH] thermal: sti: Ignore suspend/resume functions when !PM
+From: Fabio Estevam <festevam@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, edubezval@gmail.com,
+        kernel@stlinux.com,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+On Wed, Nov 19, 2014 at 1:50 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> Prevents build warning:
+>
+> st_thermal.c:278:12:
+>     warning: ‘st_thermal_suspend’ defined but not used [-Wunused-function]
+> st_thermal.c:286:12:
+>     warning: ‘st_thermal_resume’ defined but not used [-Wunused-function]
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>
+> v1 => v2:
+>  - CONFIG_PM => CONFIG_PM_SLEEP suggested by David Paris.
 
-Events may still be ordered even if there are no timestamps e.g. if the
-data is recorded per-thread.
-
-Also synthesized COMM events have a timestamp of zero.
-
-Consequently it is better to keep comm entries even if they have a
-timestamp of zero.
-
-However, when a struct thread is created the command string is not known
-and a comm entry with a string of the form ":<tid>" is used.
-
-In that case thread->comm_set is false and the comm entry should be
-overridden.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1415715423-15563-4-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/thread.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index a2157f0ef1df..9ebc8b1f9be5 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -103,15 +103,14 @@ struct comm *thread__exec_comm(const struct thread *thread)
- 	return last;
- }
- 
--/* CHECKME: time should always be 0 if event aren't ordered */
- int __thread__set_comm(struct thread *thread, const char *str, u64 timestamp,
- 		       bool exec)
- {
- 	struct comm *new, *curr = thread__comm(thread);
- 	int err;
- 
--	/* Override latest entry if it had no specific time coverage */
--	if (!curr->start && !curr->exec) {
-+	/* Override the default :tid entry */
-+	if (!thread->comm_set) {
- 		err = comm__override(curr, str, timestamp, exec);
- 		if (err)
- 			return err;
--- 
-1.9.3
-
+You should also update the Subject to 'when !PM_SLEEP'
