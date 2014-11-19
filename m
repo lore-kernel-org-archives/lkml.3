@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933236AbaKSVJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:09:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
+	id S932994AbaKSVKk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:10:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933599AbaKSVEf (ORCPT
+	with ESMTP id S933595AbaKSVEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:35 -0500
+	Wed, 19 Nov 2014 16:04:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Nishanth Menon <nm@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.14 043/122] pinctrl: dra: dt-bindings: Fix output pull up/down
-Date: Wed, 19 Nov 2014 12:51:33 -0800
-Message-Id: <20141119205210.189650491@linuxfoundation.org>
+        Arturo Borrero Gonzalez <arturo.borrero.glez@gmail.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.14 084/122] netfilter: nft_compat: fix wrong target lookup in nft_target_select_ops()
+Date: Wed, 19 Nov 2014 12:52:14 -0800
+Message-Id: <20141119205211.597525958@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,39 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Arturo Borrero <arturo.borrero.glez@gmail.com>
 
-commit 73b3a6657a88ef5348a0d69c9a8107d6f01ae862 upstream.
+commit 7965ee93719921ea5978f331da653dfa2d7b99f5 upstream.
 
-For PIN_OUTPUT_PULLUP and PIN_OUTPUT_PULLDOWN we must not set the
-PULL_DIS bit which disables the PULLs.
+The code looks for an already loaded target, and the correct list to search
+is nft_target_list, not nft_match_list.
 
-PULL_ENA is a 0 and using it in an OR operation is a NOP, so don't
-use it in the PIN_OUTPUT_PULLUP/DOWN macros.
-
-Fixes: 23d9cec07c58 ("pinctrl: dra: dt-bindings: Fix pull enable/disable")
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Arturo Borrero Gonzalez <arturo.borrero.glez@gmail.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/dt-bindings/pinctrl/dra.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/netfilter/nft_compat.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/dt-bindings/pinctrl/dra.h
-+++ b/include/dt-bindings/pinctrl/dra.h
-@@ -40,8 +40,8 @@
+--- a/net/netfilter/nft_compat.c
++++ b/net/netfilter/nft_compat.c
+@@ -678,7 +678,7 @@ nft_target_select_ops(const struct nft_c
+ 	family = ctx->afi->family;
  
- /* Active pin states */
- #define PIN_OUTPUT		(0 | PULL_DIS)
--#define PIN_OUTPUT_PULLUP	(PIN_OUTPUT | PULL_ENA | PULL_UP)
--#define PIN_OUTPUT_PULLDOWN	(PIN_OUTPUT | PULL_ENA)
-+#define PIN_OUTPUT_PULLUP	(PULL_UP)
-+#define PIN_OUTPUT_PULLDOWN	(0)
- #define PIN_INPUT		(INPUT_EN | PULL_DIS)
- #define PIN_INPUT_SLEW		(INPUT_EN | SLEWCONTROL)
- #define PIN_INPUT_PULLUP	(PULL_ENA | INPUT_EN | PULL_UP)
+ 	/* Re-use the existing target if it's already loaded. */
+-	list_for_each_entry(nft_target, &nft_match_list, head) {
++	list_for_each_entry(nft_target, &nft_target_list, head) {
+ 		struct xt_target *target = nft_target->ops.data;
+ 
+ 		if (strcmp(target->name, tg_name) == 0 &&
 
 
