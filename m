@@ -1,108 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932339AbaKSUjl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:39:41 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:51896 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756316AbaKSUjk (ORCPT
+	id S932367AbaKSUk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:40:56 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:56865 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756482AbaKSUky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:39:40 -0500
-Date: Wed, 19 Nov 2014 15:39:14 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Juergen Gross <jgross@suse.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Subject: Re: [PATCH V3 8/8] xen: Speed up set_phys_to_machine() by using
- read-only mappings
-Message-ID: <20141119203914.GC18495@laptop.dumpdata.com>
-References: <1415684626-18590-1-git-send-email-jgross@suse.com>
- <1415684626-18590-9-git-send-email-jgross@suse.com>
+	Wed, 19 Nov 2014 15:40:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415684626-18590-9-git-send-email-jgross@suse.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20141119.153136.867017618826698045.davem@davemloft.net>
+References: <20141118084745.GT7996@ZenIV.linux.org.uk>
+	<CA+55aFxK0wj2LLp0WmhRsBZch8XfoYbzmbEeJaMpt=SDh5GBvw@mail.gmail.com>
+	<20141118212307.GU7996@ZenIV.linux.org.uk>
+	<20141119.153136.867017618826698045.davem@davemloft.net>
+Date: Wed, 19 Nov 2014 12:40:53 -0800
+X-Google-Sender-Auth: ZtAx46F2WLnH4CFoJMB-AAtFfO4
+Message-ID: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
+Subject: Re: [RFC] situation with csum_and_copy_... API
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 06:43:46AM +0100, Juergen Gross wrote:
-> Instead of checking at each call of set_phys_to_machine() whether a
-> new p2m page has to be allocated due to writing an entry in a large
-> invalid or identity area, just map those areas read only and react
-> to a page fault on write by allocating the new page.
-> 
-> This change will make the common path with no allocation much
-> faster as it only requires a single write of the new mfn instead
-> of walking the address translation tables and checking for the
-> special cases.
-> 
-> Suggested-by: David Vrabel <david.vrabel@citrix.com>
-> Signed-off-by: Juergen Gross <jgross@suse.com>
+On Wed, Nov 19, 2014 at 12:31 PM, David Miller <davem@davemloft.net> wrote:
+>
+> But that is just my opinion, and yes I do acknowledge that we've had
+> serious holes in this area in the past.
 
-Clever!
+The serious holes have generally been exactly in the "upper layers
+already check" camp, and then it turns out that some odd ioctl or
+other thing ends up doing something odd and interesting.
 
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/p2m.c | 14 ++++++++------
->  1 file changed, 8 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> index 7df446d..58cf04c 100644
-> --- a/arch/x86/xen/p2m.c
-> +++ b/arch/x86/xen/p2m.c
-> @@ -70,6 +70,7 @@
->  
->  #include <asm/cache.h>
->  #include <asm/setup.h>
-> +#include <asm/uaccess.h>
->  
->  #include <asm/xen/page.h>
->  #include <asm/xen/hypercall.h>
-> @@ -313,9 +314,9 @@ static void __init xen_rebuild_p2m_list(unsigned long *p2m)
->  	paravirt_alloc_pte(&init_mm, __pa(p2m_identity_pte) >> PAGE_SHIFT);
->  	for (i = 0; i < PTRS_PER_PTE; i++) {
->  		set_pte(p2m_missing_pte + i,
-> -			pfn_pte(PFN_DOWN(__pa(p2m_missing)), PAGE_KERNEL));
-> +			pfn_pte(PFN_DOWN(__pa(p2m_missing)), PAGE_KERNEL_RO));
->  		set_pte(p2m_identity_pte + i,
-> -			pfn_pte(PFN_DOWN(__pa(p2m_identity)), PAGE_KERNEL));
-> +			pfn_pte(PFN_DOWN(__pa(p2m_identity)), PAGE_KERNEL_RO));
->  	}
->  
->  	for (pfn = 0; pfn < xen_max_p2m_pfn; pfn += chunk) {
-> @@ -362,7 +363,7 @@ static void __init xen_rebuild_p2m_list(unsigned long *p2m)
->  				p2m_missing : p2m_identity;
->  			ptep = populate_extra_pte((unsigned long)(p2m + pfn));
->  			set_pte(ptep,
-> -				pfn_pte(PFN_DOWN(__pa(mfns)), PAGE_KERNEL));
-> +				pfn_pte(PFN_DOWN(__pa(mfns)), PAGE_KERNEL_RO));
->  			continue;
->  		}
->  
-> @@ -621,6 +622,9 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
->  		return true;
->  	}
->  
-> +	if (likely(!__put_user(mfn, xen_p2m_addr + pfn)))
-> +		return true;
-> +
->  	ptep = lookup_address((unsigned long)(xen_p2m_addr + pfn), &level);
->  	BUG_ON(!ptep || level != PG_LEVEL_4K);
->  
-> @@ -630,9 +634,7 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
->  	if (pte_pfn(*ptep) == PFN_DOWN(__pa(p2m_identity)))
->  		return mfn == IDENTITY_FRAME(pfn);
->  
-> -	xen_p2m_addr[pfn] = mfn;
-> -
-> -	return true;
-> +	return false;
->  }
->  
->  bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
-> -- 
-> 2.1.2
-> 
+If Al has actual performance profiles showing that the access_ok() is
+a real problem, then fine. As a low-level optimization, I agree with
+it. But not as a "let's just drop them, and make the security rules be
+non-local and subtle, and require people to know the details of the
+whole call-chain".
+
+Seeing a "__get_user()" and just being able to glance up in the same
+function and seeing the "access_ok()" is just a good safety net. And
+means that people don't have to waste time thinking about or looking
+for where the hell the security net really is.
+
+                    Linus
