@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979AbaKSQOh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 11:14:37 -0500
-Received: from mout.web.de ([212.227.17.12]:61936 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755182AbaKSQOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 11:14:35 -0500
-Message-ID: <546CC1DE.3020105@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 17:14:22 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755543AbaKSQQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 11:16:27 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:53580 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754319AbaKSQQ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 11:16:26 -0500
+Date: Wed, 19 Nov 2014 17:16:24 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 11/16] perf hists: Fix up srcline histogram key
+ formatting
+Message-ID: <20141119161624.GK12538@two.firstfloor.org>
+References: <1416413016-19110-1-git-send-email-acme@kernel.org>
+ <1416413016-19110-12-git-send-email-acme@kernel.org>
 MIME-Version: 1.0
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] DRM-tilcdc: Deletion of an unnecessary check before the
- function call "drm_fbdev_cma_hotplug_event"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:utBNDBXKvV9wspJ4mSly6uQ6J4EdbGD+iFHetT7K46KDF8PTxnY
- W3DvF0n+tB1Ch4FHrpA0jUieVzEZd+6RBQU3tLXrsm//JKn0PfYah6ExpJMUP+iWYOhBKgr
- c9Q1fHpXiYUkxcKk6LUy6q5++gQ/M03mt7K5OYMCrIJ7xSrADu9DupaQmzK4cXKfVLUOUie
- MhlTpBGZUkMWgU/vqInsw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416413016-19110-12-git-send-email-acme@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 17:05:20 +0100
+On Wed, Nov 19, 2014 at 01:03:31PM -0300, Arnaldo Carvalho de Melo wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> Problem introduced in:
+> 
+>   commit 5b5916696051 "perf report: Honor column width setting"
 
-The drm_fbdev_cma_hotplug_event() function tests whether its argument is NULL
-and then returns immediately. Thus the test around the call is not needed.
+Thanks!
 
-This issue was detected by using the Coccinelle software.
+I'll also check what happens with --gtk.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/gpu/drm/tilcdc/tilcdc_drv.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/tilcdc/tilcdc_drv.c b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-index 000428e..335b1dc 100644
---- a/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-@@ -58,8 +58,7 @@ static struct drm_framebuffer *tilcdc_fb_create(struct drm_device *dev,
- static void tilcdc_fb_output_poll_changed(struct drm_device *dev)
- {
- 	struct tilcdc_drm_private *priv = dev->dev_private;
--	if (priv->fbdev)
--		drm_fbdev_cma_hotplug_event(priv->fbdev);
-+	drm_fbdev_cma_hotplug_event(priv->fbdev);
- }
- 
- static const struct drm_mode_config_funcs mode_config_funcs = {
--- 
-2.1.3
-
+-Andi
