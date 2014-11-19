@@ -1,161 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112AbaKSJWQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 04:22:16 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:57751 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755046AbaKSJWK (ORCPT
+	id S1755034AbaKSJWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 04:22:04 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:53197 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947AbaKSJWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 04:22:10 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: linux-next: build failure after merge of the asm-generic tree
-Date: Wed, 19 Nov 2014 10:21:59 +0100
-Message-ID: <8149639.gnb4MSRbPQ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141119185414.4ab8e35d@canb.auug.org.au>
-References: <20141119185414.4ab8e35d@canb.auug.org.au>
+	Wed, 19 Nov 2014 04:22:00 -0500
+Message-ID: <546C6135.90201@linaro.org>
+Date: Wed, 19 Nov 2014 10:21:57 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:FkhOLkP8pLz/3t1zmCLGTCrS5V9TBs5gukUbfLIhy48
- t5xzz/BGsSoi0hdazWPvaMvdBL9tgZTn5gSM0zWAei+Hjur14H
- Hk9NDdNfbL20d7gts0LIKPS0BEGDktggHOEt90LhU2xCXjkZiD
- ZrO++nVx4bhbd/PZpd+CkZxKama3yGfkl9ZvNssCy1ITvon/29
- CAM6cmKcmbimGAO0ROqk0KKcL6rXq9svFU32p8TH3EKTfkz1Io
- uzcOFKfsWXe2C4CBJLVWYg5V+5P78kraVmZMtSzn8ocDviYyNb
- FU1n61V0xM1y6W77WRqW7xSje019pdCDHUNCkMTo18HWDMrKFK
- ArR9tYKFOe8zqq4a4YC4=
-X-UI-Out-Filterresults: notjunk:1;
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Roman Byshko <rbyshko@gmail.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] clockevent: sun4i: Fix race condition in the probe code
+References: <1416351573-5815-1-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1416351573-5815-1-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 November 2014 18:54:14 Stephen Rothwell wrote:
-> Hi Arnd,
-> 
-> After merging the asm-generic tree, today's linux-next build (sparc
-> defconfig) failed like this:
-> 
-> In file included from include/linux/io.h:22:0,
->                  from include/linux/irq.h:23,
->                  from include/asm-generic/hardirq.h:12,
->                  from arch/sparc/include/asm/hardirq_32.h:10,
->                  from arch/sparc/include/asm/hardirq.h:6,
->                  from include/linux/hardirq.h:8,
->                  from include/linux/memcontrol.h:24,
->                  from include/linux/swap.h:8,
->                  from arch/sparc/include/asm/pgtable_32.h:17,
->                  from arch/sparc/include/asm/pgtable.h:6,
->                  from include/linux/mm.h:52,
->                  from include/linux/pagemap.h:7,
->                  from include/linux/blkdev.h:14,
->                  from init/do_mounts.h:2,
->                  from init/do_mounts_rd.c:21:
-> arch/sparc/include/asm/io.h:14:0: warning: "readb_relaxed" redefined
+On 11/18/2014 11:59 PM, Maxime Ripard wrote:
+> The interrupts were activated and the handler registered before the clockevent
+> was registered in the probe function.
+>
+> The interrupt handler, however, was making the assumption that the clockevent
+> device was registered.
+>
+> That could cause a null pointer dereferenc if the timer interrupt was firing
+> during this narrow window.
+>
+> Fix that by moving the clockevent registration before the interrupt is enabled.
+>
+> Reported-by: Roman Byshko <rbyshko@gmail.com>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Cc: stable@vger.kernel.org
 
-Thanks for the report! I think we had seen this one before, but from what
-I remembered, Will had already fixed all problems like this one. Apparently
-the version I merged did not have the fix, so I applied the patch below
-on top of my branch, and checked that it works on both sparc32 and sparc64.
+Applied to my tree as 3.18 fix.
 
-Let me know if I should fix it differently.
+Thanks !
 
-	Arnd
+   -- Daniel
 
->From 7c3969c3a4f3593bf7963355e10401a8638cb1cb Mon Sep 17 00:00:00 2001
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Wed, 19 Nov 2014 10:15:33 +0100
-Subject: [PATCH] sparc: io: remove duplicate relaxed accessors on sparc32
+> ---
+>   drivers/clocksource/sun4i_timer.c | 12 ++++++------
+>   1 file changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
+> index efb17c3ee120..f4a9c0058b4d 100644
+> --- a/drivers/clocksource/sun4i_timer.c
+> +++ b/drivers/clocksource/sun4i_timer.c
+> @@ -182,6 +182,12 @@ static void __init sun4i_timer_init(struct device_node *node)
+>   	/* Make sure timer is stopped before playing with interrupts */
+>   	sun4i_clkevt_time_stop(0);
+>
+> +	sun4i_clockevent.cpumask = cpu_possible_mask;
+> +	sun4i_clockevent.irq = irq;
+> +
+> +	clockevents_config_and_register(&sun4i_clockevent, rate,
+> +					TIMER_SYNC_TICKS, 0xffffffff);
+> +
+>   	ret = setup_irq(irq, &sun4i_timer_irq);
+>   	if (ret)
+>   		pr_warn("failed to setup irq %d\n", irq);
+> @@ -189,12 +195,6 @@ static void __init sun4i_timer_init(struct device_node *node)
+>   	/* Enable timer0 interrupt */
+>   	val = readl(timer_base + TIMER_IRQ_EN_REG);
+>   	writel(val | TIMER_IRQ_EN(0), timer_base + TIMER_IRQ_EN_REG);
+> -
+> -	sun4i_clockevent.cpumask = cpu_possible_mask;
+> -	sun4i_clockevent.irq = irq;
+> -
+> -	clockevents_config_and_register(&sun4i_clockevent, rate,
+> -					TIMER_SYNC_TICKS, 0xffffffff);
+>   }
+>   CLOCKSOURCE_OF_DECLARE(sun4i, "allwinner,sun4i-a10-timer",
+>   		       sun4i_timer_init);
+>
 
-Commit 1191ccb34cf8 ("sparc: io: implement dummy relaxed accessor
-macros for writes") added the relaxed accessors (readl_relaxed etc) in
-a file that is shared between sparc32 and sparc64. However, the earlier
-e1039fb42609 ("sparc32: introduce asm-generic/io.h") had already changed
-the sparc32 implementation to use asm-generic/io.h, which provides the
-same macros, resulting in lots of build errors.
 
-This moves the definitions from the shared sparc file into the
-sparc64-only file to fix the sparc32 build regression.
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Fixes: 1191ccb34cf8 ("sparc: io: implement dummy relaxed accessor macros for writes")
-
-diff --git a/arch/sparc/include/asm/io.h b/arch/sparc/include/asm/io.h
-index 493f22c4684f..f6902cf3cbe9 100644
---- a/arch/sparc/include/asm/io.h
-+++ b/arch/sparc/include/asm/io.h
-@@ -10,15 +10,6 @@
-  * Defines used for both SPARC32 and SPARC64
-  */
- 
--/* Relaxed accessors for MMIO */
--#define readb_relaxed(__addr)		readb(__addr)
--#define readw_relaxed(__addr)		readw(__addr)
--#define readl_relaxed(__addr)		readl(__addr)
--
--#define writeb_relaxed(__b, __addr)	writeb(__b, __addr)
--#define writew_relaxed(__w, __addr)	writew(__w, __addr)
--#define writel_relaxed(__l, __addr)	writel(__l, __addr)
--
- /* Big endian versions of memory read/write routines */
- #define readb_be(__addr)	__raw_readb(__addr)
- #define readw_be(__addr)	__raw_readw(__addr)
-diff --git a/arch/sparc/include/asm/io_64.h b/arch/sparc/include/asm/io_64.h
-index d50e6127325d..9b672be70dda 100644
---- a/arch/sparc/include/asm/io_64.h
-+++ b/arch/sparc/include/asm/io_64.h
-@@ -101,6 +101,7 @@ static inline void __raw_writeq(u64 q, const volatile void __iomem *addr)
-  * the cache by using ASI_PHYS_BYPASS_EC_E_L
-  */
- #define readb readb
-+#define readb_relaxed readb
- static inline u8 readb(const volatile void __iomem *addr)
- {	u8 ret;
- 
-@@ -112,6 +113,7 @@ static inline u8 readb(const volatile void __iomem *addr)
- }
- 
- #define readw readw
-+#define readw_relaxed readw
- static inline u16 readw(const volatile void __iomem *addr)
- {	u16 ret;
- 
-@@ -124,6 +126,7 @@ static inline u16 readw(const volatile void __iomem *addr)
- }
- 
- #define readl readl
-+#define readl_relaxed readl
- static inline u32 readl(const volatile void __iomem *addr)
- {	u32 ret;
- 
-@@ -149,6 +152,7 @@ static inline u64 readq(const volatile void __iomem *addr)
- }
- 
- #define writeb writeb
-+#define writeb_relaxed writeb
- static inline void writeb(u8 b, volatile void __iomem *addr)
- {
- 	__asm__ __volatile__("stba\t%r0, [%1] %2\t/* pci_writeb */"
-@@ -158,6 +162,7 @@ static inline void writeb(u8 b, volatile void __iomem *addr)
- }
- 
- #define writew writew
-+#define writew_relaxed writew
- static inline void writew(u16 w, volatile void __iomem *addr)
- {
- 	__asm__ __volatile__("stha\t%r0, [%1] %2\t/* pci_writew */"
-@@ -167,6 +172,7 @@ static inline void writew(u16 w, volatile void __iomem *addr)
- }
- 
- #define writel writel
-+#define writel_relaxed writel
- static inline void writel(u32 l, volatile void __iomem *addr)
- {
- 	__asm__ __volatile__("stwa\t%r0, [%1] %2\t/* pci_writel */"
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
