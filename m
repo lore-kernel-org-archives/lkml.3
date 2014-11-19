@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960AbaKSGyJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 01:54:09 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:57430 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754066AbaKSGyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 01:54:08 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>
-CC: <linux@arm.linux.org.uk>, <will.deacon@arm.com>, <dave.long@linaro.org>,
-        <taras.kondratiuk@linaro.org>, <ben.dooks@codethink.co.uk>,
-        <cl@linux.com>, <rabin@rab.in>, <davem@davemloft.net>,
-        <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v9 1/2] kprobes: Pass the original kprobe for preparing optimized kprobe
-Date: Wed, 19 Nov 2014 14:50:43 +0800
-Message-ID: <1416379844-25160-2-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1416379844-25160-1-git-send-email-wangnan0@huawei.com>
-References: <1416379844-25160-1-git-send-email-wangnan0@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020207.546C3E7A.0106,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 0e149c312e69524d28a530aeb6c8b281
+	id S1755213AbaKSGz0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 01:55:26 -0500
+Received: from mout.web.de ([212.227.17.11]:51772 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754924AbaKSGzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 01:55:24 -0500
+From: Soeren Moch <smoch@web.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Soeren Moch <smoch@web.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dts: imx6q-tbs2910: Enable snvs-poweroff
+Date: Wed, 19 Nov 2014 07:54:49 +0100
+Message-Id: <1416380089-6317-1-git-send-email-smoch@web.de>
+X-Mailer: git-send-email 1.9.1
+X-Provags-ID: V03:K0:7wodhH9+LFUxe6lGTNqWWW8pzy4bTZxvtUtQtdQBNEqsXnFhETe
+ kWFC+cVwl3J0bbpPT024pxVSG0fMyWFVVveDaY1/wYU8HHCCPqn7i45eJDc+q7QFQxj7h2B
+ qWpHFqMeguquely1yQvcKmOMuNeHoq4cbvmCFzWKDJgVLSLt0ozSvNKjpZbRB3iJhqi0EtW
+ QpyOX9WwVxNkePxz+f2XQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+This patch enables snvs-poweroff for TBS2910 boards.
 
-Pass the original kprobe for preparing an optimized kprobe arch-dep
-part, since for some architecture (e.g. ARM32) requires the information
-in original kprobe.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Wang Nan <wangnan0@huawei.com>
+Signed-off-by: Soeren Moch <smoch@web.de>
+--
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org
 ---
- arch/x86/kernel/kprobes/opt.c | 3 ++-
- include/linux/kprobes.h       | 3 ++-
- kernel/kprobes.c              | 4 ++--
- 3 files changed, 6 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/imx6q-tbs2910.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
-index f1314d0..7028296 100644
---- a/arch/x86/kernel/kprobes/opt.c
-+++ b/arch/x86/kernel/kprobes/opt.c
-@@ -320,7 +320,8 @@ void arch_remove_optimized_kprobe(struct optimized_kprobe *op)
-  * Target instructions MUST be relocatable (checked inside)
-  * This is called when new aggr(opt)probe is allocated or reused.
-  */
--int arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
-+int arch_prepare_optimized_kprobe(struct optimized_kprobe *op,
-+				  struct kprobe *__unused)
- {
- 	u8 *buf;
- 	int ret;
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index f7296e5..7ab2c93 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -308,7 +308,8 @@ struct optimized_kprobe {
- /* Architecture dependent functions for direct jump optimization */
- extern int arch_prepared_optinsn(struct arch_optimized_insn *optinsn);
- extern int arch_check_optimized_kprobe(struct optimized_kprobe *op);
--extern int arch_prepare_optimized_kprobe(struct optimized_kprobe *op);
-+extern int arch_prepare_optimized_kprobe(struct optimized_kprobe *op,
-+					 struct kprobe *orig);
- extern void arch_remove_optimized_kprobe(struct optimized_kprobe *op);
- extern void arch_optimize_kprobes(struct list_head *oplist);
- extern void arch_unoptimize_kprobes(struct list_head *oplist,
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 3995f54..9f28aa7 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -717,7 +717,7 @@ static void prepare_optimized_kprobe(struct kprobe *p)
- 	struct optimized_kprobe *op;
+diff --git a/arch/arm/boot/dts/imx6q-tbs2910.dts b/arch/arm/boot/dts/imx6q-tbs2910.dts
+index d2a5743..7e7496c 100644
+--- a/arch/arm/boot/dts/imx6q-tbs2910.dts
++++ b/arch/arm/boot/dts/imx6q-tbs2910.dts
+@@ -208,6 +208,10 @@
+ 	status = "okay";
+ };
  
- 	op = container_of(p, struct optimized_kprobe, kp);
--	arch_prepare_optimized_kprobe(op);
-+	arch_prepare_optimized_kprobe(op, p);
- }
- 
- /* Allocate new optimized_kprobe and try to prepare optimized instructions */
-@@ -731,7 +731,7 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
- 
- 	INIT_LIST_HEAD(&op->list);
- 	op->kp.addr = p->addr;
--	arch_prepare_optimized_kprobe(op);
-+	arch_prepare_optimized_kprobe(op, p);
- 
- 	return &op->kp;
- }
++&snvs_poweroff {
++	status = "okay";
++};
++
+ &spdif {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_spdif>;
 -- 
-1.8.4
+1.9.1
 
