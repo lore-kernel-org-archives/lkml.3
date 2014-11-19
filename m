@@ -1,197 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932297AbaKSI3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 03:29:19 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:50180 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755305AbaKSI1X (ORCPT
+	id S1752903AbaKSIeF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 03:34:05 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:47354 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaKSIeE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 03:27:23 -0500
-From: Peter Griffin <peter.griffin@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com, peppe.cavallaro@st.com, kishon@ti.com,
-        arnd@arndb.de
-Cc: peter.griffin@linaro.org, lee.jones@linaro.org, netdev@vger.kernel.org,
-        devicetree@vger.kernel.org, alexandre.torgue@st.com
-Subject: [PATCH 2/7] phy: miphy365x: Pass sysconfig register offsets via syscfg dt property.
-Date: Wed, 19 Nov 2014 08:27:07 +0000
-Message-Id: <1416385632-5832-3-git-send-email-peter.griffin@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416385632-5832-1-git-send-email-peter.griffin@linaro.org>
-References: <1416385632-5832-1-git-send-email-peter.griffin@linaro.org>
+	Wed, 19 Nov 2014 03:34:04 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141117090915.GE27002@pengutronix.de>
+References: <1360738983-22436-1-git-send-email-gnurou@gmail.com>
+ <1360738983-22436-3-git-send-email-gnurou@gmail.com> <20141117090915.GE27002@pengutronix.de>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 19 Nov 2014 17:33:42 +0900
+Message-ID: <CAAVeFuKzP0ADix8TxC31ohb3ZmnEVmNcO5kgzhZ3DcwAhTq=-Q@mail.gmail.com>
+Subject: Re: [PATCH 2/4] gpiolib: use const parameters when possible
+To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on Arnds review comments here https://lkml.org/lkml/2014/11/13/161, update
-the miphy365 phy driver to access sysconfig register offsets via syscfg dt property.
+On Mon, Nov 17, 2014 at 6:09 PM, Uwe Kleine-König
+<u.kleine-koenig@pengutronix.de> wrote:
+> Hello,
+>
+> On Wed, Feb 13, 2013 at 04:03:00PM +0900, Alexandre Courbot wrote:
+>> From: Alexandre Courbot <acourbot@nvidia.com>
+>>
+>> Constify descriptor parameter of gpiod_* functions for those that
+>> should obviously not modify it. This includes value or direction get,
+>> cansleep, and IRQ number query.
+>>
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> This patch is applied as def634338d3ffb32fbe9b0a2d70cc24ef909cd4f since
+> v3.9-rc2.
+>
+>>  drivers/gpio/gpiolib.c | 29 ++++++++++++++++-------------
+>>  1 file changed, 16 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+>> index 8a2cf9c..ad6df6b 100644
+>> --- a/drivers/gpio/gpiolib.c
+>> +++ b/drivers/gpio/gpiolib.c
+>> @@ -207,7 +208,7 @@ static int gpiochip_find_base(int ngpio)
+>>  }
+>>
+>>  /* caller ensures gpio is valid and requested, chip->get_direction may sleep  */
+>> -static int gpiod_get_direction(struct gpio_desc *desc)
+>> +static int gpiod_get_direction(const struct gpio_desc *desc)
+>>  {
+>>       struct gpio_chip        *chip;
+>>       unsigned                offset;
+>> @@ -223,11 +224,13 @@ static int gpiod_get_direction(struct gpio_desc *desc)
+>>       if (status > 0) {
+>>               /* GPIOF_DIR_IN, or other positive */
+>>               status = 1;
+>> -             clear_bit(FLAG_IS_OUT, &desc->flags);
+>> +             /* FLAG_IS_OUT is just a cache of the result of get_direction(),
+>> +              * so it does not affect constness per se */
+>> +             clear_bit(FLAG_IS_OUT, &((struct gpio_desc *)desc)->flags);
+> I think this is worse than not having gpiod_get_direction take a const
+> descriptor.
 
-This is because the reg property should not be mixing address spaces like it does
-currently for miphy365. This change then also aligns us to how other platforms such
-as keystone and bcm7445 pass there syscon offsets via DT.
+Yeah, this kind of sucks but ultimately gpiod_get_direction() is
+without side-effect to the caller and the const parameter helps
+highlighting that fact.
 
-This patch breaks DT compatibility, but this platform is considered WIP, and is only
-used by a few developers who are upstreaming support for it. This change has been done
-as a single atomic commit to ensure it is bisectable.
+> I don't know an example for this particular case where this could break,
+> but usually casting away a const is bad and can break in various ways.
+>
+> Maybe even drop the public function gpiod_get_direction completely.
+> As of next-20141114 there are only two users of this function (apart
+> from drivers/gpio/gpiolib*) and both are wrong (as discussed in
+> http://thread.gmane.org/gmane.linux.serial/16808/focus=4783).
 
-Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
----
- .../devicetree/bindings/phy/phy-miphy365x.txt      | 15 +++++------
- arch/arm/boot/dts/stih416.dtsi                     | 10 ++++----
- drivers/phy/phy-miphy365x.c                        | 29 ++++++++--------------
- 3 files changed, 23 insertions(+), 31 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/phy/phy-miphy365x.txt b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-index 42c8808..9802d5d 100644
---- a/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-+++ b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-@@ -6,8 +6,10 @@ for SATA and PCIe.
- 
- Required properties (controller (parent) node):
- - compatible    : Should be "st,miphy365x-phy"
--- st,syscfg     : Should be a phandle of the system configuration register group
--		  which contain the SATA, PCIe mode setting bits
-+- st,syscfg     : Phandle / integer array property. Phandle of sysconfig group
-+		  containing the miphy registers and integer array should contain
-+		  an entry for each port sub-node, specifying the control
-+		  register offset inside the sysconfig group.
- 
- Required nodes	:  A sub-node is required for each channel the controller
- 		   provides. Address range information including the usual
-@@ -26,7 +28,6 @@ Required properties (port (child) node):
- 		  registers filled in "reg":
- 			- sata:   For SATA devices
- 			- pcie:   For PCIe devices
--			- syscfg: To specify the syscfg based config register
- 
- Optional properties (port (child) node):
- - st,sata-gen	     :	Generation of locally attached SATA IP. Expected values
-@@ -39,20 +40,20 @@ Example:
- 
- 	miphy365x_phy: miphy365x@fe382000 {
- 		compatible      = "st,miphy365x-phy";
--		st,syscfg  	= <&syscfg_rear>;
-+		st,syscfg  	= <&syscfg_rear 0x824 0x828>;
- 		#address-cells	= <1>;
- 		#size-cells	= <1>;
- 		ranges;
- 
- 		phy_port0: port@fe382000 {
--			reg = <0xfe382000 0x100>, <0xfe394000 0x100>, <0x824 0x4>;
--			reg-names = "sata", "pcie", "syscfg";
-+			reg = <0xfe382000 0x100>, <0xfe394000 0x100>;
-+			reg-names = "sata", "pcie";
- 			#phy-cells = <1>;
- 			st,sata-gen = <3>;
- 		};
- 
- 		phy_port1: port@fe38a000 {
--			reg = <0xfe38a000 0x100>, <0xfe804000 0x100>, <0x828 0x4>;;
-+			reg = <0xfe38a000 0x100>, <0xfe804000 0x100>;;
- 			reg-names = "sata", "pcie", "syscfg";
- 			#phy-cells = <1>;
- 			st,pcie-tx-pol-inv;
-diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-index fad9073..6fbde39 100644
---- a/arch/arm/boot/dts/stih416.dtsi
-+++ b/arch/arm/boot/dts/stih416.dtsi
-@@ -283,21 +283,21 @@
- 
- 		miphy365x_phy: phy@fe382000 {
- 			compatible      = "st,miphy365x-phy";
--			st,syscfg  	= <&syscfg_rear>;
-+			st,syscfg  	= <&syscfg_rear 0x824 0x828>;
- 			#address-cells	= <1>;
- 			#size-cells	= <1>;
- 			ranges;
- 
- 			phy_port0: port@fe382000 {
- 				#phy-cells = <1>;
--				reg = <0xfe382000 0x100>, <0xfe394000 0x100>, <0x824 0x4>;
--				reg-names = "sata", "pcie", "syscfg";
-+				reg = <0xfe382000 0x100>, <0xfe394000 0x100>;
-+				reg-names = "sata", "pcie";
- 			};
- 
- 			phy_port1: port@fe38a000 {
- 				#phy-cells = <1>;
--				reg = <0xfe38a000 0x100>, <0xfe804000 0x100>, <0x828 0x4>;
--				reg-names = "sata", "pcie", "syscfg";
-+				reg = <0xfe38a000 0x100>, <0xfe804000 0x100>;
-+				reg-names = "sata", "pcie";
- 			};
- 		};
- 
-diff --git a/drivers/phy/phy-miphy365x.c b/drivers/phy/phy-miphy365x.c
-index 801afaf..7308afe 100644
---- a/drivers/phy/phy-miphy365x.c
-+++ b/drivers/phy/phy-miphy365x.c
-@@ -141,7 +141,7 @@ struct miphy365x_phy {
- 	bool pcie_tx_pol_inv;
- 	bool sata_tx_pol_inv;
- 	u32 sata_gen;
--	u64 ctrlreg;
-+	u32 ctrlreg;
- 	u8 type;
- };
- 
-@@ -179,7 +179,7 @@ static int miphy365x_set_path(struct miphy365x_phy *miphy_phy,
- 	bool sata = (miphy_phy->type == MIPHY_TYPE_SATA);
- 
- 	return regmap_update_bits(miphy_dev->regmap,
--				  (unsigned int)miphy_phy->ctrlreg,
-+				  miphy_phy->ctrlreg,
- 				  SYSCFG_SELECT_SATA_MASK,
- 				  sata << SYSCFG_SELECT_SATA_POS);
- }
-@@ -445,7 +445,6 @@ int miphy365x_get_addr(struct device *dev, struct miphy365x_phy *miphy_phy,
- {
- 	struct device_node *phynode = miphy_phy->phy->dev.of_node;
- 	const char *name;
--	const __be32 *taddr;
- 	int type = miphy_phy->type;
- 	int ret;
- 
-@@ -455,22 +454,6 @@ int miphy365x_get_addr(struct device *dev, struct miphy365x_phy *miphy_phy,
- 		return ret;
- 	}
- 
--	if (!strncmp(name, "syscfg", 6)) {
--		taddr = of_get_address(phynode, index, NULL, NULL);
--		if (!taddr) {
--			dev_err(dev, "failed to fetch syscfg address\n");
--			return -EINVAL;
--		}
--
--		miphy_phy->ctrlreg = of_translate_address(phynode, taddr);
--		if (miphy_phy->ctrlreg == OF_BAD_ADDR) {
--			dev_err(dev, "failed to translate syscfg address\n");
--			return -EINVAL;
--		}
--
--		return 0;
--	}
--
- 	if (!((!strncmp(name, "sata", 4) && type == MIPHY_TYPE_SATA) ||
- 	      (!strncmp(name, "pcie", 4) && type == MIPHY_TYPE_PCIE)))
- 		return 0;
-@@ -606,7 +589,15 @@ static int miphy365x_probe(struct platform_device *pdev)
- 			return ret;
- 
- 		phy_set_drvdata(phy, miphy_dev->phys[port]);
-+
- 		port++;
-+		/*sysconfig offsets are not indexed from zero */
-+		ret = of_property_read_u32_index(np, "st,syscfg", port,
-+					&miphy_phy->ctrlreg);
-+		if (ret) {
-+			dev_err(&pdev->dev, "No sysconfig offset found\n");
-+			return ret;
-+		}
- 	}
- 
- 	provider = devm_of_phy_provider_register(&pdev->dev, miphy365x_xlate);
--- 
-1.9.1
-
+Or maybe gpiod_direction_*() should register the last set direction to
+be used by gpiod_get_direction() if the controller does not implement
+the get_direction op? On the other hand callers can also track the
+direction themselves (since they presumably set it), so this function
+is really only useful for users who want to read the *hardware* state
+of a GPIO. Which might still be a useful feature?
