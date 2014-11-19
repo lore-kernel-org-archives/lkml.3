@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808AbaKSOvp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 09:51:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58275 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753808AbaKSOvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:51:44 -0500
-Date: Wed, 19 Nov 2014 15:51:38 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 14/26 v5] tracing: Create seq_buf layer in trace_seq
-Message-ID: <20141119145133.GC2332@dhcp128.suse.cz>
-References: <20141115045847.712848224@goodmis.org>
- <20141115050602.986728758@goodmis.org>
+	id S1755520AbaKSOyl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 09:54:41 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:37270 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754536AbaKSOyk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 09:54:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141115050602.986728758@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <2041617.Kxhx5O4MMr@wuerfel>
+References: <20141118172146.3784.81151.stgit@buzz>
+	<20141118173413.GB4042@n2100.arm.linux.org.uk>
+	<546B8C64.3010904@samsung.com>
+	<2041617.Kxhx5O4MMr@wuerfel>
+Date: Wed, 19 Nov 2014 15:54:38 +0100
+Message-ID: <CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com>
+Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-11-14 23:59:01, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> Create a seq_buf layer that trace_seq sits on. The seq_buf will not
-> be limited to page size. This will allow other usages of seq_buf
-> instead of a hard set PAGE_SIZE one that trace_seq has.
-> 
-> Link: http://lkml.kernel.org/r/20141104160221.864997179@goodmis.org
-> Link: http://lkml.kernel.org/r/20141114011412.170377300@goodmis.org
-> 
-> Tested-by: Jiri Kosina <jkosina@suse.cz>
-> Acked-by: Jiri Kosina <jkosina@suse.cz>
-> Reviewed-by: Petr Mladek <pmladek@suse.cz>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  include/linux/seq_buf.h              |  81 +++++++++
->  include/linux/trace_seq.h            |  12 +-
->  kernel/trace/Makefile                |   1 +
->  kernel/trace/seq_buf.c               | 341 +++++++++++++++++++++++++++++++++++
->  kernel/trace/trace.c                 |  39 ++--
->  kernel/trace/trace_events.c          |   6 +-
->  kernel/trace/trace_functions_graph.c |   6 +-
->  kernel/trace/trace_seq.c             | 177 +++++++++---------
->  8 files changed, 538 insertions(+), 125 deletions(-)
->  create mode 100644 include/linux/seq_buf.h
->  create mode 100644 kernel/trace/seq_buf.c
+On 19 November 2014 14:40, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 18 November 2014 21:13:56 Konstantin Khlebnikov wrote:
+>> On 2014-11-18 20:34, Russell King - ARM Linux wrote:
+>> > On Tue, Nov 18, 2014 at 08:21:46PM +0400, Konstantin Khlebnikov wrote:
+>> >> Usually modules are loaded into small area prior to the kernel
+>> >> text because they are linked with the kernel using short calls.
+>> >> Compile-time instrumentation like GCOV or KASAN bloats code a lot,
+>> >> and as a result huge modules no longer fit into reserved area.
+>> >>
+>> >> This patch adds option CONFIG_MODULES_USE_VMALLOC which lifts
+>> >> limitation on amount of loaded modules. It links modules using
+>> >> long-calls (option -mlong-calls) and loads them into vmalloc area.
+>> >>
+>> >> In few places exported symbols are called from inline assembly.
+>> >> This patch adds macro for such call sites: __asmbl and __asmbl_clobber.
+>> >> Call turns into single 'bl' or sequence 'movw; movt; blx' depending on
+>> >> context and state of config option.
+>> >>
+>> >> Unfortunately this option isn't compatible with CONFIG_FUNCTION_TRACER.
+>> >> Compiler emits short calls to profiling function despite of -mlong-calls.
+>> >> This is a bug in GCC, but ftrace anyway needs an update to handle this.
+>> > It also isn't compatible with the older architectures which don't have
+>> > "blx".
+>>
+>> Ok, I'll add "depends on CPU_V6 || CPU_V7" I don't think that it is
+>> necessary for older cpus.
+>
+> Why not just use a different branch instruction for the older CPUs?
+>
 
-[...]
- 
-> diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-> index 100288d10e1f..6d1342ae7a44 100644
-> --- a/kernel/trace/trace_functions_graph.c
-> +++ b/kernel/trace/trace_functions_graph.c
+ARMv6 doesn't support movw/movt so this will only work on v7.
 
-[...]
+What about doing 'mov lr, pc; ldr pc,=symbol' instead? You clearly
+don't care about performance in this case, so the performance hit (due
+to the dcache access and interfering with the return stack predictors)
+should be tolerable. The only thing to be careful about is thumb2
+kernels: you would need to set the thumb bit in lr manually but only
+if the call is made /from/ thumb. You would probably be better off
+just depending on !THUMB2_KERNEL.
 
-> @@ -163,21 +176,22 @@ EXPORT_SYMBOL_GPL(trace_seq_vprintf);
->   */
->  void trace_seq_bprintf(struct trace_seq *s, const char *fmt, const u32 *binary)
->  {
-> -	unsigned int len = TRACE_SEQ_BUF_LEFT(s);
-> +	unsigned int save_len = s->seq.len;
->  	int ret;
-
-Last but one small thing. The "ret" is assigned but not longer used.
-
-JFYI, I have skipped this patch yesterday because it was long and already
-marked as reviewed. I could not help myself and double checked it today.
-
-> -	if (s->full || !len)
-> +	if (s->full)
->  		return;
->  
-> -	ret = bstr_printf(s->buffer + s->len, len, fmt, binary);
-> +	__trace_seq_init(s);
-> +
-> +	ret = seq_buf_bprintf(&s->seq, fmt, binary);
->  
->  	/* If we can't write it all, don't bother writing anything */
-> -	if (ret >= len) {
-> +	if (unlikely(seq_buf_has_overflowed(&s->seq))) {
-> +		s->seq.len = save_len;
->  		s->full = 1;
->  		return;
->  	}
-> -
-> -	s->len += ret;
->  }
->  EXPORT_SYMBOL_GPL(trace_seq_bprintf);
-
-The last small thing is the same unused "ret" in trace_seq_path(). But
-this one should get fixed in "[PATCH 15/26 v5] tracing: Convert
-seq_buf_path() to be like seq_path()".
-
-Both these changes are rather cosmetic. Feel free to leave them for
-some later clean up.
-
-
-Eureka, I have finished review of the patchset and am happy with it \o/
-I am looking forward to see it in the main tree.
-
-Thanks a lot for the hard work.
-
-Best Regards,
-Petr
+-- 
+Ard.
