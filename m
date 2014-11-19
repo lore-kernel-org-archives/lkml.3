@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825AbaKSOlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 09:41:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50754 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754641AbaKSOlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:41:21 -0500
-Date: Wed, 19 Nov 2014 09:41:05 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>, vgoyal@redhat.com
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141119144105.GB108701@redhat.com>
-References: <20141117170359.GA1382@redhat.com>
- <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
- <20141118020959.GA2091@redhat.com>
- <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
- <20141118023930.GA2871@redhat.com>
- <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
- <20141118145234.GA7487@redhat.com>
- <alpine.DEB.2.11.1411181914020.3909@nanos>
- <20141118215540.GD35311@redhat.com>
- <20141118220254.GA2571@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141118220254.GA2571@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755857AbaKSOl4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 09:41:56 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:36202 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658AbaKSOlz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 09:41:55 -0500
+From: Steven Walter <stevenrwalter@gmail.com>
+To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Steven Walter <stevenrwalter@gmail.com>
+Subject: [PATCH v2] l2cap_core: automatically flushable packets aren't allowed on LE links
+Date: Wed, 19 Nov 2014 09:41:17 -0500
+Message-Id: <1416408077-26514-1-git-send-email-stevenrwalter@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <106789BA-48C0-4428-BE3E-D0737F7A0641@holtmann.org>
+References: <106789BA-48C0-4428-BE3E-D0737F7A0641@holtmann.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 05:02:54PM -0500, Dave Jones wrote:
-> On Tue, Nov 18, 2014 at 04:55:40PM -0500, Don Zickus wrote:
-> 
->  > > So here we mangle CPU3 in and lose the backtrace for cpu0, which might
->  > > be the real interesting one ....
->  > 
->  > Can you provide another dump?  The hope is we get something not mangled?
-> 
-> Working on it..
-> 
->  > The other option we have done in RHEL is panic the system and let kdump
->  > capture the memory.  Then we can analyze the vmcore for the stack trace
->  > cpu0 stored in memory to get a rough idea where it might be if the cpu
->  > isn't responding very well.
-> 
-> I don't know if it's because of the debug options I typically run with,
-> or that I'm perpetually cursed, but I've never managed to get kdump to
-> do anything useful. (The last time I tried it was actively harmful in
-> that not only did it fail to dump anything, it wedged the machine so
-> it didn't reboot after panic).
-> 
-> Unless there's some magic step missing from the documentation at
-> http://fedoraproject.org/wiki/How_to_use_kdump_to_debug_kernel_crashes
-> then I'm not optimistic it'll be useful.
+The bluetooth spec states that automatically flushable packets may not
+be sent over a LE-U link.
 
-Well, I don't know when the last time you ran it, but I know the RH kexec
-folks have started pursuing a Fedora-first package patch rule a couple of
-years ago to ensure Fedora had a working kexec/kdump solution.
+Signed-off-by: Steven Walter <stevenrwalter@gmail.com>
+---
+ net/bluetooth/l2cap_core.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-As for the wedging part, it was a common problem to have the kernel hang
-while trying to boot the second kernel (and before console output
-happened).  So the problem makes sense and is unfortunate.  I would
-encourage you to try again.  :-)
+diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+index 4af3821..028fcc6 100644
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -764,7 +764,7 @@ static void l2cap_send_cmd(struct l2cap_conn *conn, u8 ident, u8 code, u16 len,
+ 	if (!skb)
+ 		return;
+ 
+-	if (lmp_no_flush_capable(conn->hcon->hdev))
++	if (lmp_no_flush_capable(conn->hcon->hdev) || (conn->hcon->type == LE_LINK))
+ 		flags = ACL_START_NO_FLUSH;
+ 	else
+ 		flags = ACL_START;
+@@ -798,8 +798,9 @@ static void l2cap_do_send(struct l2cap_chan *chan, struct sk_buff *skb)
+ 		return;
+ 	}
+ 
+-	if (!test_bit(FLAG_FLUSHABLE, &chan->flags) &&
+-	    lmp_no_flush_capable(hcon->hdev))
++	if ((hcon->type == LE_LINK) ||
++	    (!test_bit(FLAG_FLUSHABLE, &chan->flags) &&
++	    lmp_no_flush_capable(hcon->hdev)))
+ 		flags = ACL_START_NO_FLUSH;
+ 	else
+ 		flags = ACL_START;
+-- 
+1.9.1
 
-Though, it is transitioning to have the app built into the kernel to deal
-with the whole secure boot thing, so that might be another can of worms.
-
-I cc'd Vivek and he can let us know how well it works with F21.
-
-Cheers,
-Don
