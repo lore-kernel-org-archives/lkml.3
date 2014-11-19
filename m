@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005AbaKSRM0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 12:12:26 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:41204 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754598AbaKSRMD (ORCPT
+	id S1756163AbaKSRNY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 12:13:24 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:46623 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755886AbaKSRMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 12:12:03 -0500
-Message-ID: <1416417120.14060.55.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net] tcp: fix connect() invalid -EADDRNOTAVAIL error
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jon Maxwell <jmaxwell37@gmail.com>
-Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jmaxwell@redhat.com
-Date: Wed, 19 Nov 2014 09:12:00 -0800
-In-Reply-To: <1416379060-15685-1-git-send-email-jmaxwell37@gmail.com>
-References: <1416379060-15685-1-git-send-email-jmaxwell37@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Nov 2014 12:12:25 -0500
+Date: Wed, 19 Nov 2014 12:12:18 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
+In-Reply-To: <20141119165948.GM4042@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.11.1411191205530.11690@knanqh.ubzr>
+References: <20141118173413.GB4042@n2100.arm.linux.org.uk> <546B8C64.3010904@samsung.com> <2041617.Kxhx5O4MMr@wuerfel> <CAKv+Gu-8qhHYOry+LsDzp+LDZqYxVZ5G7cj48E3G2Unp2+=_yg@mail.gmail.com> <CALYGNiMt2A3DP02cOtxqu4RrnmhojrDxkRG7bkHMByUnzG+PeA@mail.gmail.com>
+ <CAKv+Gu-rYWutr-45MsZH6KOhhUyNCVLfkO9JQrqCm1L6ms_DUg@mail.gmail.com> <20141119160747.GH4042@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1411191130480.11690@knanqh.ubzr> <20141119164902.GK4042@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1411191152340.11690@knanqh.ubzr>
+ <20141119165948.GM4042@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-19 at 17:37 +1100, Jon Maxwell wrote:
+On Wed, 19 Nov 2014, Russell King - ARM Linux wrote:
 
-> Prerequisites for this to happen:
-> 1) The local tcp port range must be exhausted.
-> 2) A process must have called bind() followed by connect() for all 
-> local ports.
-
-How the bind() is done exactly ? How SO_REUSEADDR is used ?
-
-> 3) A different process calls connect() only which returns -EADDRNOTAVAIL. 
-> 4) The system more than 1 interface configured.
+> On Wed, Nov 19, 2014 at 11:57:15AM -0500, Nicolas Pitre wrote:
+> > On Wed, 19 Nov 2014, Russell King - ARM Linux wrote:
+> > > I don't think I ever did, because its pretty much impossible to do as I
+> > > explained in a follow up to this thread.
+> > > 
+> > > We _used_ to do this with the userspace insmod methods, but since we got
+> > > this kernel-side linker, it's been pretty much impossible to do without
+> > > rewriting the module code.  That's not going to happen on account of one
+> > > quirky architecture which Linus doesn't particularly like.
+> > 
+> > Still... We could try adding a hook in the generic module linker code 
+> > for a pre-relocation pass.  Maybe only ARM would use it, but if the need 
+> > to load big modules is real then I imagine Linus could be amenable to a 
+> > compromise.
 > 
-> If a system has 2 IP Addresses and all local tcp ports are in use
-> for connection from IP Address (1). Connecting to the same ports 
-> via IP Address (2) should work based on the 4 tuple rule. But it 
-> fails under this condition. 
+> So, how big a table would you allocate for the trampolines, based upon
+> not knowing anything about the module being loaded?  4K?  8K?  64K?
 
-I do not think this is generally true.
-
-If process called bind() to reserve a port, another process should not
-be able to use the same port.
-
-Do you have a test program exhibiting the problem ?
-
-Thanks !
+The idea of a pre-relocation pass is to determine that.  That could be 
+something similar to calling apply_relocate() twice: once to determine 
+the number of trampoline entries, and a second time to perform the 
+actual relocation.
 
 
+Nicolas
