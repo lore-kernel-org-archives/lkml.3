@@ -1,103 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487AbaKSOgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 09:36:48 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:61707 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167AbaKSOgq (ORCPT
+	id S1755206AbaKSOiG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 09:38:06 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:41641 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004AbaKSOiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:36:46 -0500
+	Wed, 19 Nov 2014 09:38:04 -0500
+Message-ID: <546CAB49.8030103@mentor.com>
+Date: Wed, 19 Nov 2014 16:38:01 +0200
+From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-In-Reply-To: <546BDB29.9050403@suse.cz>
-References: <502D42E5.7090403@redhat.com>
-	<20120818000312.GA4262@evergreen.ssec.wisc.edu>
-	<502F100A.1080401@redhat.com>
-	<alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
-	<CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
-	<20120822032057.GA30871@google.com>
-	<50345232.4090002@redhat.com>
-	<20130603195003.GA31275@evergreen.ssec.wisc.edu>
-	<20141114163053.GA6547@cosmos.ssec.wisc.edu>
-	<20141117160212.b86d031e1870601240b0131d@linux-foundation.org>
-	<20141118014135.GA17252@cosmos.ssec.wisc.edu>
-	<546AB1F5.6030306@redhat.com>
-	<20141118121936.07b02545a0684b2cc839a10c@linux-foundation.org>
-	<CALYGNiMxnxmy-LyJ4OT9OoFeKwTPPkZMF-bJ-eJDBFXgZQ6AEA@mail.gmail.com>
-	<CALYGNiM_CsjjiK_36JGirZT8rTP+ROYcH0CSyZjghtSNDU8ptw@mail.gmail.com>
-	<546BDB29.9050403@suse.cz>
-Date: Wed, 19 Nov 2014 18:36:45 +0400
-Message-ID: <CALYGNiOHXvyqr3+Jq5FsZ_xscsXwrQ_9YCtL2819i6iRkgms2w@mail.gmail.com>
-Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Tim Hartrick <tim@edgecast.com>, Michal Hocko <mhocko@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Question about fixed regulator DT properties
+References: <546B5EF9.3080102@mentor.com>
+In-Reply-To: <546B5EF9.3080102@mentor.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [137.202.0.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 2:50 AM, Vlastimil Babka <vbabka@suse.cz> wrote:
-> On 11/19/2014 12:02 AM, Konstantin Khlebnikov wrote:
->> On Wed, Nov 19, 2014 at 1:15 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->>> On Tue, Nov 18, 2014 at 11:19 PM, Andrew Morton
->>> <akpm@linux-foundation.org> wrote:
->>>> On Mon, 17 Nov 2014 21:41:57 -0500 Rik van Riel <riel@redhat.com> wrote:
->>>>
->>>>> > Because of the serial forking there does indeed end up being an
->>>>> > infinite number of vmas.  The initial vma can never be deleted
->>>>> > (even though the initial parent process has long since terminated)
->>>>> > because the initial vma is referenced by the children.
->>>>>
->>>>> There is a finite number of VMAs, but an infite number of
->>>>> anon_vmas.
->>>>>
->>>>> Subtle, yet deadly...
->>>>
->>>> Well, we clearly have the data structures screwed up.  I've forgotten
->>>> enough about this code for me to be unable to work out what the fixed
->>>> up data structures would look like :( But surely there is some proper
->>>> solution here.  Help?
->>>
->>> Not sure if it's right but probably we could reuse on fork an old anon_vma
->>> from the chain if it's already lost all vmas which points to it.
->>> For endlessly forking exploit this should work mostly like proposed patch
->>> which stops branching after some depth but without magic constant.
->>
->> Something like this. I leave proper comment for tomorrow.
->
-> Hmm I'm not sure that will work as it is. If I understand it correctly, your
-> patch can detect if the parent's anon_vma has no own references at the fork()
-> time. But at the fork time, the parent is still alive, it only exits after the
-> fork, right? So I guess it still has own references and the child will still
-> allocate its new anon_vma, and the problem is not solved.
+Hello Mark,
 
-But it could reuse anon_vma from grandparent or older.
-Count of anon_vmas in chain will be limited with count of alive processes.
+On 18.11.2014 17:00, Vladimir Zapolskiy wrote:
+> Hello,
+> 
+> I need to set a GPIO (active high) output high on boot, which enables a
+> power rail supplying some external devices.
+> 
+> I have a question regarding "regulator-boot-on" and "enable-active-high"
+> fixed regulator device tree properties (actually AFAIU it applies to
+> gpio regulator as well, by the way, which one is proper to use in my
+> situation?)
+> 
+> Here is what we have from the code:
+> 
+>   [...]
+>   constraints->boot_on = of_property_read_bool(np, "regulator-boot-on");
+>   [...]
+>   if (init_data->constraints.boot_on)
+>           config->enabled_at_boot = true;
+>   [...]
+>   config->enable_high = of_property_read_bool(np, "enable-active-high");
+>   [...]
+>   cfg.ena_gpio_invert = !config->enable_high;
+>   if (config->enabled_at_boot) {
+>           if (config->enable_high)
+>                   cfg.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
+>           else
+>                   cfg.ena_gpio_flags |= GPIOF_OUT_INIT_LOW;
+>   } else {
+>           if (config->enable_high)
+>                   cfg.ena_gpio_flags |= GPIOF_OUT_INIT_LOW;
+>           else
+>                  cfg.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
+>   }
+>   [...]
+>   ret = gpio_request_one(config->ena_gpio,
+>                          GPIOF_DIR_OUT | config->ena_gpio_flags,
+>                          rdev_get_name(rdev));
+>   [...]
+>   /* Enable GPIO at initial use */
+>   if (pin->enable_count == 0)
+>           gpiod_set_value_cansleep(pin->gpiod,
+>                                   !pin->ena_gpio_invert);
+>   [...]
+> 
+> 
+> If we simplify the matter by assuming GPIOF_OUT_INIT_LOW is inverted
+> GPIOF_OUT_INIT_HIGH and vice versa, then it is easy to compute by
+> running over the variants that GPIO output value is set HIGH (regardless
+> of GPIO active low status) if and only if "regulator-boot-on" is
+> provided and "enable-active-high" has no effect at all.
+> 
+> This fact confuses me, because from the general regulator and fixed
+> regulator device tree bindings documentation I get:
+> 
+>   [...]
+>   - regulator-boot-on: bootloader/firmware enabled regulator
+>   [...]
+>   - enable-active-high: Polarity of GPIO is Active high
+>   If this property is missing, the default assumed is Active low.
+>   [...]
+> 
+> According to the documentation I'd assume that "regulator-boot-on" does
+> not touch gpio output value setting (so, if it is controlled by
+> bootloader or firmware, then it might be out of Linux kernel control).
+> Also my impression of "enable-active-high" property is that is should
+> have some effect on the GPIO output value (but it is not, see above),
+> and actually I don't quite understand why this property exists - there
+> is a high chance that "enable-active-high" and the real GPIO polarity do
+> not coincide, it should be more reliable to get GPIO flags of a
+> particular GPIO right in the regulator driver/framework.
+> 
+> Let's consider two possible configurations:
+> 
+> | regulator-boot-on | enable-active-high | GPIO polarity | GPIO output |
+> +-------------------+--------------------+---------------+-------------+
+> |        no         |         yes        |  active high  |    low      |
+> |        no         |          no        |  active low   |   high      |
+> 
+> I'd rather think that both resulting GPIO outputs are incorrect or
+> better to say do not correspond to my perception of "regulator-boot-on"
+> and "enable-active-high" DTS properties described in the documentation,
+> however above "enable-active-high" and actual GPIO polarity are the same
+> (when they are not, it is another open topic for discussion).
+> 
+> Do I miss something or have a mistake? Is there a problem in the
+> implemented logic?
+> 
+> Should documentation be updated to reflect "regulator-boot-on" role that
+> a regulator is re-enabled by the kernel?
+> 
+> Should "enable-active-high" be replaced by getting GPIO flags directly?
+> 
+> Thank you in advance.
+> 
 
-I think it's better to describe this in terms of sets of anon_vma
-instead hierarchy:
-at clone vma inherits pages from parent together with set of anon_vma
-which they belong.
-For new pages it might allocate new anon_vma or reuse existing. After
-my patch vma
-will try to reuse anon_vma from that set which has no vmas which points to it.
-As a result there will be no parent-child relation between anon_vma and
-multiple pages might have equal (anon_vma, index) pair but I see no
-problems here.
+sorry for non-informative original subject, I would appreciate to get
+any comments from you on the topic, if there is a problem, it may caused
+by your commit 25a53dfbfbf.
 
->
-> So maybe we could detect that the own references dropped to zero when the parent
-> does exit, and then change mapping of all relevant pages to the root anon_vma,
-> destroy avc's of children and the anon_vma itself. But that sounds quite
-> heavyweight :/
->
-> Vlastimil
->
->>>
->>>>
->
+If there is an actual problem, please let me know, I'm always willing to
+improve the kernel.
+
+--
+With best wishes,
+Vladimir
