@@ -1,136 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291AbaKSPIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:08:54 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:6272 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753595AbaKSPIx (ORCPT
+	id S1755585AbaKSPLY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:11:24 -0500
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:33221 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754717AbaKSPLV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:08:53 -0500
-Date: Wed, 19 Nov 2014 10:08:41 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 14/26 v5] tracing: Create seq_buf layer in trace_seq
-Message-ID: <20141119100841.316e865f@gandalf.local.home>
-In-Reply-To: <20141119145133.GC2332@dhcp128.suse.cz>
-References: <20141115045847.712848224@goodmis.org>
-	<20141115050602.986728758@goodmis.org>
-	<20141119145133.GC2332@dhcp128.suse.cz>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Wed, 19 Nov 2014 10:11:21 -0500
+X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat5gNPvy+mM
+X-RZG-CLASS-ID: mo00
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v2 1/5] video: omapdss: Add opa362 driver
+From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+In-Reply-To: <5464DF26.2010707@ti.com>
+Date: Wed, 19 Nov 2014 16:10:26 +0100
+Cc: Marek Belisko <marek@goldelico.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-omap@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-fbdev@vger.kernel.org, gta04-owner@goldelico.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <BF6765C1-8D5C-4ABA-8796-195058C82E17@goldelico.com>
+References: <1415830247-31633-1-git-send-email-marek@goldelico.com> <1415830247-31633-2-git-send-email-marek@goldelico.com> <54649B43.1000801@ti.com> <9FD016B8-4EA2-4A0D-B790-6494AB449B31@goldelico.com> <5464DF26.2010707@ti.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014 15:51:38 +0100
-Petr Mladek <pmladek@suse.cz> wrote:
 
-> On Fri 2014-11-14 23:59:01, Steven Rostedt wrote:
-> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> > 
-> > Create a seq_buf layer that trace_seq sits on. The seq_buf will not
-> > be limited to page size. This will allow other usages of seq_buf
-> > instead of a hard set PAGE_SIZE one that trace_seq has.
-> > 
-> > Link: http://lkml.kernel.org/r/20141104160221.864997179@goodmis.org
-> > Link: http://lkml.kernel.org/r/20141114011412.170377300@goodmis.org
-> > 
-> > Tested-by: Jiri Kosina <jkosina@suse.cz>
-> > Acked-by: Jiri Kosina <jkosina@suse.cz>
-> > Reviewed-by: Petr Mladek <pmladek@suse.cz>
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  include/linux/seq_buf.h              |  81 +++++++++
-> >  include/linux/trace_seq.h            |  12 +-
-> >  kernel/trace/Makefile                |   1 +
-> >  kernel/trace/seq_buf.c               | 341 +++++++++++++++++++++++++++++++++++
-> >  kernel/trace/trace.c                 |  39 ++--
-> >  kernel/trace/trace_events.c          |   6 +-
-> >  kernel/trace/trace_functions_graph.c |   6 +-
-> >  kernel/trace/trace_seq.c             | 177 +++++++++---------
-> >  8 files changed, 538 insertions(+), 125 deletions(-)
-> >  create mode 100644 include/linux/seq_buf.h
-> >  create mode 100644 kernel/trace/seq_buf.c
-> 
-> [...]
->  
-> > diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-> > index 100288d10e1f..6d1342ae7a44 100644
-> > --- a/kernel/trace/trace_functions_graph.c
-> > +++ b/kernel/trace/trace_functions_graph.c
-> 
-> [...]
-> 
-> > @@ -163,21 +176,22 @@ EXPORT_SYMBOL_GPL(trace_seq_vprintf);
-> >   */
-> >  void trace_seq_bprintf(struct trace_seq *s, const char *fmt, const u32 *binary)
-> >  {
-> > -	unsigned int len = TRACE_SEQ_BUF_LEFT(s);
-> > +	unsigned int save_len = s->seq.len;
-> >  	int ret;
-> 
-> Last but one small thing. The "ret" is assigned but not longer used.
-> 
-> JFYI, I have skipped this patch yesterday because it was long and already
-> marked as reviewed. I could not help myself and double checked it today.
-> 
+Am 13.11.2014 um 17:41 schrieb Tomi Valkeinen <tomi.valkeinen@ti.com>:
 
-OK, I'll fix that up.
-
-> > -	if (s->full || !len)
-> > +	if (s->full)
-> >  		return;
-> >  
-> > -	ret = bstr_printf(s->buffer + s->len, len, fmt, binary);
-> > +	__trace_seq_init(s);
-> > +
-> > +	ret = seq_buf_bprintf(&s->seq, fmt, binary);
-> >  
-> >  	/* If we can't write it all, don't bother writing anything */
-> > -	if (ret >= len) {
-> > +	if (unlikely(seq_buf_has_overflowed(&s->seq))) {
-> > +		s->seq.len = save_len;
-> >  		s->full = 1;
-> >  		return;
-> >  	}
-> > -
-> > -	s->len += ret;
-> >  }
-> >  EXPORT_SYMBOL_GPL(trace_seq_bprintf);
+> On 13/11/14 18:25, Dr. H. Nikolaus Schaller wrote:
+>> Hi,
+>> 
+>> Am 13.11.2014 um 12:51 schrieb Tomi Valkeinen <tomi.valkeinen@ti.com>:
+>> 
+>>> On 13/11/14 00:10, Marek Belisko wrote:
+>>>> opa362 is amplifier for video and can be connected to the tvout pads
+>>>> of the OMAP3. It has one gpio control for enable/disable of the output
+>>>> (high impedance).
+>>>> 
+>>>> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.com>
+>>>> ---
+>>>> drivers/video/fbdev/omap2/displays-new/Kconfig     |   6 +
+>>>> drivers/video/fbdev/omap2/displays-new/Makefile    |   1 +
+>>>> .../fbdev/omap2/displays-new/amplifier-opa362.c    | 343 +++++++++++++++++++++
+>>> 
+>>> I think it would be better to rename this to encoder-opa362.c. It's not
+>> 
+>> When developing this driver we did simply rename the encoder-tfp410 file,
+>> but thent hough that it does not fit into the „encoder“ category, because we
+>> would expect something digital or digital to analog „encoding“ which it does not.
 > 
-> The last small thing is the same unused "ret" in trace_seq_path(). But
-> this one should get fixed in "[PATCH 15/26 v5] tracing: Convert
-> seq_buf_path() to be like seq_path()".
-
-OK, I'll try to remember that :-)
-
+> That is true, but we already have other "encoders" like
+> encoder-tpd12s015.c, which also do not encode. "encoder" in this context
+> means something that takes a video input, and has a video output. In
+> contrast to a panel or a connector.
 > 
-> Both these changes are rather cosmetic. Feel free to leave them for
-> some later clean up.
+>>>> +
+>>>> +	in->ops.atv->set_timings(in, &ddata->timings);
+>>>> +	/* fixme: should we receive the invert from our consumer, i.e. the connector? */
+>>>> +	in->ops.atv->invert_vid_out_polarity(in, true);
+>>> 
+>>> Well this does seem to be broken. I don't know what the answer to the
+>>> question above is, but the code doesn't work properly.
+>>> 
+>>> In the opa362_invert_vid_out_polarity function below, you get the invert
+>>> boolean from the connector. This you pass to the OMAP venc. However,
+>>> above you always override that value in venc with true.
+>>> 
+>>> So, either the invert_vid_out_polarity value has to be always true or
+>>> false, because _OPA362_ requires it to be true or false, OR you need use
+>>> the value from the connector.
+>>> 
+>>> Seeing the comment in opa362_invert_vid_out_polarity, my guess is the
+>>> latter, and the call above should be removed.
+>> 
+>> Yes, you are right - this is not systematic.
+>> 
+>> But the problem is that we can’t ask the connector here what it wants
+>> to see. It might (or might not) call our opa362_invert_vid_out_polarity() later
+>> which we can then forward to overwrite the inital state of this opa362_enable().
 > 
+> You don't need to ask. The connector calls invert_vid_out_polarity
+> before enabling the output.
+
+Unfortunately it doesn’t. At least not always.
+
+It does only for pdata systems but not for DT based systems:
+
+	if (!ddata->dev->of_node) {
+		in->ops.atv->set_type(in, ddata->connector_type);
+		in->ops.atv->invert_vid_out_polarity(in,
+			ddata->invert_polarity);
+	}
+
+Not calling is in our case different from calling with ddata->invert_polarity == 0.
+
+> You can just pass it forward inverted, as
+> you already do in this driver. If it doesn't, it's either a bug or you
+> can just rely on the value that is already programmed to venc.
+
+Therefore it is not called with “false” which would make our invert_vid_out_polarity
+invert it and send “true” towards the VENC. So VENC remains non-inverted.
+
+We will also add a patch for the connector-analog.c
+
+>>> We are going to support only DT boot at some point. Thus I think the
+>>> whole platform data code should be left out.
+>> 
+>> Is there already a decision? I think it should not be done before. And it
+>> does not harm to still have it.
 > 
-> Eureka, I have finished review of the patchset and am happy with it \o/
-> I am looking forward to see it in the main tree.
+> It's just a matter of time. I don't accept any new boards using platform
+> data for display, or new display drivers using platform data, because I
+> don't want to spend my time converting them later. And as this is a new
+> driver, no existing board can be using the opa362 platform_data. So we
+> can support DT only.
 
-Well now it comes down to Linus or Andrew giving me the OK. I've pulled
-all the trace_seq updates into my ftrace/core branch (which will be
-going into my for-next branch shortly). I stopped just before this
-patch. I didn't want to create the seq_buf until I knew it was going to
-be used by something other than trace_seq.
+Ok, that looks reasonable - as long as we can rely on that all mainline DSS
+drivers are already fully converted to DT :)
 
-> 
-> Thanks a lot for the hard work.
-> 
+BR,
+Nikolaus
 
-Yeah, let's hope that it was worth it.
-
-Thanks for the in depth reviews.
-
--- Steve
