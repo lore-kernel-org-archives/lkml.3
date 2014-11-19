@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933085AbaKSVNh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:13:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57106 "EHLO
+	id S1756817AbaKSVN5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:13:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57100 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932451AbaKSVLg (ORCPT
+	with ESMTP id S932216AbaKSVLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:11:36 -0500
+	Wed, 19 Nov 2014 16:11:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Vlastimil Babka <vbabka@suse.cz>, Greg Thelen <gthelen@google.com>,
+        David Rientjes <rientjes@google.com>, Vlastimil Babka <vbabka@suse.cz>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 112/122] mm, compaction: embed migration mode in compact_control
-Date: Wed, 19 Nov 2014 12:52:42 -0800
-Message-Id: <20141119205212.567720466@linuxfoundation.org>
+Subject: [PATCH 3.14 111/122] mm, compaction: add per-zone migration pfn cache for async compaction
+Date: Wed, 19 Nov 2014 12:52:41 -0800
+Message-Id: <20141119205212.537551783@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -35,321 +34,204 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Rientjes <rientjes@google.com>
 
-commit e0b9daeb453e602a95ea43853dc12d385558ce1f upstream.
+commit 35979ef3393110ff3c12c6b94552208d3bdf1a36 upstream.
 
-We're going to want to manipulate the migration mode for compaction in the
-page allocator, and currently compact_control's sync field is only a bool.
+Each zone has a cached migration scanner pfn for memory compaction so that
+subsequent calls to memory compaction can start where the previous call
+left off.
 
-Currently, we only do MIGRATE_ASYNC or MIGRATE_SYNC_LIGHT compaction
-depending on the value of this bool.  Convert the bool to enum
-migrate_mode and pass the migration mode in directly.  Later, we'll want
-to avoid MIGRATE_SYNC_LIGHT for thp allocations in the pagefault patch to
-avoid unnecessary latency.
+Currently, the compaction migration scanner only updates the per-zone
+cached pfn when pageblocks were not skipped for async compaction.  This
+creates a dependency on calling sync compaction to avoid having subsequent
+calls to async compaction from scanning an enormous amount of non-MOVABLE
+pageblocks each time it is called.  On large machines, this could be
+potentially very expensive.
 
-This also alters compaction triggered from sysfs, either for the entire
-system or for a node, to force MIGRATE_SYNC.
+This patch adds a per-zone cached migration scanner pfn only for async
+compaction.  It is updated everytime a pageblock has been scanned in its
+entirety and when no pages from it were successfully isolated.  The cached
+migration scanner pfn for sync compaction is updated only when called for
+sync compaction.
 
-[akpm@linux-foundation.org: fix build]
-[iamjoonsoo.kim@lge.com: use MIGRATE_SYNC in alloc_contig_range()]
 Signed-off-by: David Rientjes <rientjes@google.com>
-Suggested-by: Mel Gorman <mgorman@suse.de>
 Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Cc: Greg Thelen <gthelen@google.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/compaction.h |    4 ++--
- mm/compaction.c            |   36 +++++++++++++++++++-----------------
- mm/internal.h              |    2 +-
- mm/page_alloc.c            |   39 +++++++++++++++++----------------------
- 4 files changed, 39 insertions(+), 42 deletions(-)
+ include/linux/mmzone.h |    5 ++-
+ mm/compaction.c        |   66 +++++++++++++++++++++++++++++--------------------
+ 2 files changed, 43 insertions(+), 28 deletions(-)
 
---- a/include/linux/compaction.h
-+++ b/include/linux/compaction.h
-@@ -22,7 +22,7 @@ extern int sysctl_extfrag_handler(struct
- extern int fragmentation_index(struct zone *zone, unsigned int order);
- extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *mask,
--			bool sync, bool *contended);
-+			enum migrate_mode mode, bool *contended);
- extern void compact_pgdat(pg_data_t *pgdat, int order);
- extern void reset_isolation_suitable(pg_data_t *pgdat);
- extern unsigned long compaction_suitable(struct zone *zone, int order);
-@@ -91,7 +91,7 @@ static inline bool compaction_restarting
- #else
- static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *nodemask,
--			bool sync, bool *contended)
-+			enum migrate_mode mode, bool *contended)
- {
- 	return COMPACT_CONTINUE;
- }
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -361,9 +361,10 @@ struct zone {
+ 	/* Set to true when the PG_migrate_skip bits should be cleared */
+ 	bool			compact_blockskip_flush;
+ 
+-	/* pfns where compaction scanners should start */
++	/* pfn where compaction free scanner should start */
+ 	unsigned long		compact_cached_free_pfn;
+-	unsigned long		compact_cached_migrate_pfn;
++	/* pfn where async and sync compaction migration scanner should start */
++	unsigned long		compact_cached_migrate_pfn[2];
+ #endif
+ #ifdef CONFIG_MEMORY_HOTPLUG
+ 	/* see spanned/present_pages for more description */
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -161,7 +161,8 @@ static void update_pageblock_skip(struct
- 			return;
- 		if (pfn > zone->compact_cached_migrate_pfn[0])
- 			zone->compact_cached_migrate_pfn[0] = pfn;
--		if (cc->sync && pfn > zone->compact_cached_migrate_pfn[1])
-+		if (cc->mode != MIGRATE_ASYNC &&
-+		    pfn > zone->compact_cached_migrate_pfn[1])
- 			zone->compact_cached_migrate_pfn[1] = pfn;
- 	} else {
- 		if (cc->finished_update_free)
-@@ -208,7 +209,7 @@ static bool compact_checklock_irqsave(sp
- 		}
+@@ -89,7 +89,8 @@ static void __reset_isolation_suitable(s
+ 	unsigned long end_pfn = zone_end_pfn(zone);
+ 	unsigned long pfn;
  
- 		/* async aborts if taking too long or contended */
--		if (!cc->sync) {
-+		if (cc->mode == MIGRATE_ASYNC) {
- 			cc->contended = true;
- 			return false;
- 		}
-@@ -473,7 +474,8 @@ isolate_migratepages_range(struct zone *
+-	zone->compact_cached_migrate_pfn = start_pfn;
++	zone->compact_cached_migrate_pfn[0] = start_pfn;
++	zone->compact_cached_migrate_pfn[1] = start_pfn;
+ 	zone->compact_cached_free_pfn = end_pfn;
+ 	zone->compact_blockskip_flush = false;
+ 
+@@ -131,9 +132,10 @@ void reset_isolation_suitable(pg_data_t
+  */
+ static void update_pageblock_skip(struct compact_control *cc,
+ 			struct page *page, unsigned long nr_isolated,
+-			bool migrate_scanner)
++			bool set_unsuitable, bool migrate_scanner)
+ {
+ 	struct zone *zone = cc->zone;
++	unsigned long pfn;
+ 
+ 	if (cc->ignore_skip_hint)
+ 		return;
+@@ -141,20 +143,31 @@ static void update_pageblock_skip(struct
+ 	if (!page)
+ 		return;
+ 
+-	if (!nr_isolated) {
+-		unsigned long pfn = page_to_pfn(page);
++	if (nr_isolated)
++		return;
++
++	/*
++	 * Only skip pageblocks when all forms of compaction will be known to
++	 * fail in the near future.
++	 */
++	if (set_unsuitable)
+ 		set_pageblock_skip(page);
+ 
+-		/* Update where compaction should restart */
+-		if (migrate_scanner) {
+-			if (!cc->finished_update_migrate &&
+-			    pfn > zone->compact_cached_migrate_pfn)
+-				zone->compact_cached_migrate_pfn = pfn;
+-		} else {
+-			if (!cc->finished_update_free &&
+-			    pfn < zone->compact_cached_free_pfn)
+-				zone->compact_cached_free_pfn = pfn;
+-		}
++	pfn = page_to_pfn(page);
++
++	/* Update where async and sync compaction should restart */
++	if (migrate_scanner) {
++		if (cc->finished_update_migrate)
++			return;
++		if (pfn > zone->compact_cached_migrate_pfn[0])
++			zone->compact_cached_migrate_pfn[0] = pfn;
++		if (cc->sync && pfn > zone->compact_cached_migrate_pfn[1])
++			zone->compact_cached_migrate_pfn[1] = pfn;
++	} else {
++		if (cc->finished_update_free)
++			return;
++		if (pfn < zone->compact_cached_free_pfn)
++			zone->compact_cached_free_pfn = pfn;
+ 	}
+ }
+ #else
+@@ -166,7 +179,7 @@ static inline bool isolation_suitable(st
+ 
+ static void update_pageblock_skip(struct compact_control *cc,
+ 			struct page *page, unsigned long nr_isolated,
+-			bool migrate_scanner)
++			bool set_unsuitable, bool migrate_scanner)
+ {
+ }
+ #endif /* CONFIG_COMPACTION */
+@@ -323,7 +336,8 @@ isolate_fail:
+ 
+ 	/* Update the pageblock-skip if the whole pageblock was scanned */
+ 	if (blockpfn == end_pfn)
+-		update_pageblock_skip(cc, valid_page, total_isolated, false);
++		update_pageblock_skip(cc, valid_page, total_isolated, true,
++				      false);
+ 
+ 	count_compact_events(COMPACTFREE_SCANNED, nr_scanned);
+ 	if (total_isolated)
+@@ -458,7 +472,7 @@ isolate_migratepages_range(struct zone *
+ 	unsigned long flags;
  	bool locked = false;
  	struct page *page = NULL, *valid_page = NULL;
- 	bool set_unsuitable = true;
--	const isolate_mode_t mode = (!cc->sync ? ISOLATE_ASYNC_MIGRATE : 0) |
-+	const isolate_mode_t mode = (cc->mode == MIGRATE_ASYNC ?
-+					ISOLATE_ASYNC_MIGRATE : 0) |
+-	bool skipped_async_unsuitable = false;
++	bool set_unsuitable = true;
+ 	const isolate_mode_t mode = (!cc->sync ? ISOLATE_ASYNC_MIGRATE : 0) |
  				    (unevictable ? ISOLATE_UNEVICTABLE : 0);
  
- 	/*
-@@ -483,7 +485,7 @@ isolate_migratepages_range(struct zone *
- 	 */
- 	while (unlikely(too_many_isolated(zone))) {
- 		/* async migration should just abort */
--		if (!cc->sync)
-+		if (cc->mode == MIGRATE_ASYNC)
- 			return 0;
- 
- 		congestion_wait(BLK_RW_ASYNC, HZ/10);
-@@ -548,7 +550,8 @@ isolate_migratepages_range(struct zone *
- 			 * the minimum amount of work satisfies the allocation
+@@ -535,8 +549,7 @@ isolate_migratepages_range(struct zone *
  			 */
  			mt = get_pageblock_migratetype(page);
--			if (!cc->sync && !migrate_async_suitable(mt)) {
-+			if (cc->mode == MIGRATE_ASYNC &&
-+			    !migrate_async_suitable(mt)) {
- 				set_unsuitable = false;
+ 			if (!cc->sync && !migrate_async_suitable(mt)) {
+-				cc->finished_update_migrate = true;
+-				skipped_async_unsuitable = true;
++				set_unsuitable = false;
  				goto next_pageblock;
  			}
-@@ -981,6 +984,7 @@ static int compact_zone(struct zone *zon
- 	int ret;
- 	unsigned long start_pfn = zone->zone_start_pfn;
- 	unsigned long end_pfn = zone_end_pfn(zone);
-+	const bool sync = cc->mode != MIGRATE_ASYNC;
+ 		}
+@@ -640,11 +653,10 @@ next_pageblock:
+ 	/*
+ 	 * Update the pageblock-skip information and cached scanner pfn,
+ 	 * if the whole pageblock was scanned without isolating any page.
+-	 * This is not done when pageblock was skipped due to being unsuitable
+-	 * for async compaction, so that eventual sync compaction can try.
+ 	 */
+-	if (low_pfn == end_pfn && !skipped_async_unsuitable)
+-		update_pageblock_skip(cc, valid_page, nr_isolated, true);
++	if (low_pfn == end_pfn)
++		update_pageblock_skip(cc, valid_page, nr_isolated,
++				      set_unsuitable, true);
  
- 	ret = compaction_suitable(zone, cc->order);
- 	switch (ret) {
-@@ -1006,7 +1010,7 @@ static int compact_zone(struct zone *zon
+ 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
+ 
+@@ -868,7 +880,8 @@ static int compact_finished(struct zone
+ 	/* Compaction run completes if the migrate and free scanner meet */
+ 	if (cc->free_pfn <= cc->migrate_pfn) {
+ 		/* Let the next compaction start anew. */
+-		zone->compact_cached_migrate_pfn = zone->zone_start_pfn;
++		zone->compact_cached_migrate_pfn[0] = zone->zone_start_pfn;
++		zone->compact_cached_migrate_pfn[1] = zone->zone_start_pfn;
+ 		zone->compact_cached_free_pfn = zone_end_pfn(zone);
+ 
+ 		/*
+@@ -993,7 +1006,7 @@ static int compact_zone(struct zone *zon
  	 * information on where the scanners should start but check that it
  	 * is initialised by ensuring the values are within zone boundaries.
  	 */
--	cc->migrate_pfn = zone->compact_cached_migrate_pfn[cc->sync];
-+	cc->migrate_pfn = zone->compact_cached_migrate_pfn[sync];
+-	cc->migrate_pfn = zone->compact_cached_migrate_pfn;
++	cc->migrate_pfn = zone->compact_cached_migrate_pfn[cc->sync];
  	cc->free_pfn = zone->compact_cached_free_pfn;
  	if (cc->free_pfn < start_pfn || cc->free_pfn > end_pfn) {
  		cc->free_pfn = end_pfn & ~(pageblock_nr_pages-1);
-@@ -1040,8 +1044,7 @@ static int compact_zone(struct zone *zon
- 
- 		nr_migrate = cc->nr_migratepages;
- 		err = migrate_pages(&cc->migratepages, compaction_alloc,
--				compaction_free, (unsigned long)cc,
--				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC,
-+				compaction_free, (unsigned long)cc, cc->mode,
- 				MR_COMPACTION);
- 		update_nr_listpages(cc);
- 		nr_remaining = cc->nr_migratepages;
-@@ -1074,9 +1077,8 @@ out:
- 	return ret;
- }
- 
--static unsigned long compact_zone_order(struct zone *zone,
--				 int order, gfp_t gfp_mask,
--				 bool sync, bool *contended)
-+static unsigned long compact_zone_order(struct zone *zone, int order,
-+		gfp_t gfp_mask, enum migrate_mode mode, bool *contended)
- {
- 	unsigned long ret;
- 	struct compact_control cc = {
-@@ -1085,7 +1087,7 @@ static unsigned long compact_zone_order(
- 		.order = order,
- 		.migratetype = allocflags_to_migratetype(gfp_mask),
- 		.zone = zone,
--		.sync = sync,
-+		.mode = mode,
- 	};
- 	INIT_LIST_HEAD(&cc.freepages);
- 	INIT_LIST_HEAD(&cc.migratepages);
-@@ -1107,7 +1109,7 @@ int sysctl_extfrag_threshold = 500;
-  * @order: The order of the current allocation
-  * @gfp_mask: The GFP mask of the current allocation
-  * @nodemask: The allowed nodes to allocate from
-- * @sync: Whether migration is synchronous or not
-+ * @mode: The migration mode for async, sync light, or sync migration
-  * @contended: Return value that is true if compaction was aborted due to lock contention
-  * @page: Optionally capture a free page of the requested order during compaction
-  *
-@@ -1115,7 +1117,7 @@ int sysctl_extfrag_threshold = 500;
-  */
- unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *nodemask,
--			bool sync, bool *contended)
-+			enum migrate_mode mode, bool *contended)
- {
- 	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
- 	int may_enter_fs = gfp_mask & __GFP_FS;
-@@ -1140,7 +1142,7 @@ unsigned long try_to_compact_pages(struc
- 								nodemask) {
- 		int status;
- 
--		status = compact_zone_order(zone, order, gfp_mask, sync,
-+		status = compact_zone_order(zone, order, gfp_mask, mode,
- 						contended);
- 		rc = max(status, rc);
- 
-@@ -1190,7 +1192,7 @@ void compact_pgdat(pg_data_t *pgdat, int
- {
- 	struct compact_control cc = {
- 		.order = order,
--		.sync = false,
-+		.mode = MIGRATE_ASYNC,
- 	};
- 
- 	if (!order)
-@@ -1203,7 +1205,7 @@ static void compact_node(int nid)
- {
- 	struct compact_control cc = {
- 		.order = -1,
--		.sync = true,
-+		.mode = MIGRATE_SYNC,
- 		.ignore_skip_hint = true,
- 	};
- 
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -134,7 +134,7 @@ struct compact_control {
- 	unsigned long nr_migratepages;	/* Number of pages to migrate */
- 	unsigned long free_pfn;		/* isolate_freepages search base */
- 	unsigned long migrate_pfn;	/* isolate_migratepages search base */
--	bool sync;			/* Synchronous migration */
-+	enum migrate_mode mode;		/* Async or sync migration mode */
- 	bool ignore_skip_hint;		/* Scan blocks even if marked skip */
- 	bool finished_update_free;	/* True when the zone cached pfns are
- 					 * no longer being updated
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2246,7 +2246,7 @@ static struct page *
- __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
--	int migratetype, bool sync_migration,
-+	int migratetype, enum migrate_mode mode,
- 	bool *contended_compaction, bool *deferred_compaction,
- 	unsigned long *did_some_progress)
- {
-@@ -2260,7 +2260,7 @@ __alloc_pages_direct_compact(gfp_t gfp_m
- 
- 	current->flags |= PF_MEMALLOC;
- 	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
--						nodemask, sync_migration,
-+						nodemask, mode,
- 						contended_compaction);
- 	current->flags &= ~PF_MEMALLOC;
- 
-@@ -2293,7 +2293,7 @@ __alloc_pages_direct_compact(gfp_t gfp_m
- 		 * As async compaction considers a subset of pageblocks, only
- 		 * defer if the failure was a sync compaction failure.
- 		 */
--		if (sync_migration)
-+		if (mode != MIGRATE_ASYNC)
- 			defer_compaction(preferred_zone, order);
- 
- 		cond_resched();
-@@ -2306,9 +2306,8 @@ static inline struct page *
- __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
--	int migratetype, bool sync_migration,
--	bool *contended_compaction, bool *deferred_compaction,
--	unsigned long *did_some_progress)
-+	int migratetype, enum migrate_mode mode, bool *contended_compaction,
-+	bool *deferred_compaction, unsigned long *did_some_progress)
- {
- 	return NULL;
- }
-@@ -2503,7 +2502,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, u
- 	int alloc_flags;
- 	unsigned long pages_reclaimed = 0;
- 	unsigned long did_some_progress;
--	bool sync_migration = false;
-+	enum migrate_mode migration_mode = MIGRATE_ASYNC;
- 	bool deferred_compaction = false;
- 	bool contended_compaction = false;
- 
-@@ -2597,17 +2596,15 @@ rebalance:
- 	 * Try direct compaction. The first pass is asynchronous. Subsequent
- 	 * attempts after direct reclaim are synchronous
- 	 */
--	page = __alloc_pages_direct_compact(gfp_mask, order,
--					zonelist, high_zoneidx,
--					nodemask,
--					alloc_flags, preferred_zone,
--					migratetype, sync_migration,
--					&contended_compaction,
-+	page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
-+					high_zoneidx, nodemask, alloc_flags,
-+					preferred_zone, migratetype,
-+					migration_mode, &contended_compaction,
- 					&deferred_compaction,
- 					&did_some_progress);
- 	if (page)
- 		goto got_pg;
--	sync_migration = true;
-+	migration_mode = MIGRATE_SYNC_LIGHT;
- 
- 	/*
- 	 * If compaction is deferred for high-order allocations, it is because
-@@ -2682,12 +2679,10 @@ rebalance:
- 		 * direct reclaim and reclaim/compaction depends on compaction
- 		 * being called after reclaim so call directly if necessary
- 		 */
--		page = __alloc_pages_direct_compact(gfp_mask, order,
--					zonelist, high_zoneidx,
--					nodemask,
--					alloc_flags, preferred_zone,
--					migratetype, sync_migration,
--					&contended_compaction,
-+		page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
-+					high_zoneidx, nodemask, alloc_flags,
-+					preferred_zone, migratetype,
-+					migration_mode, &contended_compaction,
- 					&deferred_compaction,
- 					&did_some_progress);
- 		if (page)
-@@ -6261,7 +6256,7 @@ static int __alloc_contig_migrate_range(
- 		cc->nr_migratepages -= nr_reclaimed;
- 
- 		ret = migrate_pages(&cc->migratepages, alloc_migrate_target,
--				    NULL, 0, MIGRATE_SYNC, MR_CMA);
-+				    NULL, 0, cc->mode, MR_CMA);
+@@ -1001,7 +1014,8 @@ static int compact_zone(struct zone *zon
  	}
- 	if (ret < 0) {
- 		putback_movable_pages(&cc->migratepages);
-@@ -6300,7 +6295,7 @@ int alloc_contig_range(unsigned long sta
- 		.nr_migratepages = 0,
- 		.order = -1,
- 		.zone = page_zone(pfn_to_page(start)),
--		.sync = true,
-+		.mode = MIGRATE_SYNC,
- 		.ignore_skip_hint = true,
- 	};
- 	INIT_LIST_HEAD(&cc.migratepages);
+ 	if (cc->migrate_pfn < start_pfn || cc->migrate_pfn > end_pfn) {
+ 		cc->migrate_pfn = start_pfn;
+-		zone->compact_cached_migrate_pfn = cc->migrate_pfn;
++		zone->compact_cached_migrate_pfn[0] = cc->migrate_pfn;
++		zone->compact_cached_migrate_pfn[1] = cc->migrate_pfn;
+ 	}
+ 
+ 	trace_mm_compaction_begin(start_pfn, cc->migrate_pfn, cc->free_pfn, end_pfn);
 
 
