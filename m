@@ -1,62 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690AbaKSUeg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 15:34:36 -0500
-Received: from mout.web.de ([212.227.15.3]:49214 "EHLO mout.web.de"
+	id S932213AbaKSUfI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 15:35:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55570 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756132AbaKSUef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:34:35 -0500
-Message-ID: <546CFECC.8020309@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 21:34:20 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1756132AbaKSUfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 15:35:06 -0500
+Date: Wed, 19 Nov 2014 14:34:30 -0600
+From: Seth Jennings <sjenning@redhat.com>
+To: Miroslav Benes <mbenes@suse.cz>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 2/3] kernel: add support for live patching
+Message-ID: <20141119203430.GA12517@cerebellum.variantweb.net>
+References: <1416187764-3341-1-git-send-email-sjenning@redhat.com>
+ <1416187764-3341-3-git-send-email-sjenning@redhat.com>
+ <alpine.LNX.2.00.1411181540580.1117@pobox.suse.cz>
 MIME-Version: 1.0
-To: Kent Overstreet <kmo@daterainc.com>, Neil Brown <neilb@suse.de>,
-        linux-bcache@vger.kernel.org
-CC: linux-raid@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] bcache: Deletion of an unnecessary check before the function
- call "kobject_put"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:+i23r35Y7gopum2I3ppdAT9Btj41IAi+rJ4x6jeQVfBl9QQgNQy
- csF7u2QDHJpqFxUQfCAPzemnVDNIhgEKHGDZAyreBFTnFrKQFQH0ysYtLKs806eU27ZlTA+
- JZmh+fkGCjX0u04uQUUu/lFgyt1Ln6wLAjs8Qqn+QpJxKwgtlcbzqIKYxshQf2XlNM4u6Eb
- AKKXumAgJpjC7pNjGqqUA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1411181540580.1117@pobox.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 21:25:39 +0100
+On Tue, Nov 18, 2014 at 03:45:22PM +0100, Miroslav Benes wrote:
+> 
+> On Sun, 16 Nov 2014, Seth Jennings wrote:
+> 
+> [...]
+> 
+> > diff --git a/include/linux/livepatch.h b/include/linux/livepatch.h
+> > new file mode 100644
+> > index 0000000..8b68fef
+> > --- /dev/null
+> > +++ b/include/linux/livepatch.h
+> > @@ -0,0 +1,68 @@
+> > +/*
+> > + * livepatch.h - Live Kernel Patching Core
+> > + *
+> > + * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License
+> > + * as published by the Free Software Foundation; either version 2
+> > + * of the License, or (at your option) any later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License
+> > + * along with this program; if not, see <http://www.gnu.org/licenses/>.
+> > + */
+> > +
+> > +#ifndef _LINUX_LIVEPATCH_H_
+> > +#define _LINUX_LIVEPATCH_H_
+> > +
+> > +#include <linux/module.h>
+> > +
+> 
+> I think we need something like 
+> 
+> #if IS_ENABLED(CONFIG_LIVE_PATCHING)
+> 
+> here. Otherwise kernel module with live patch itself would be built 
+> even with live patching support disabled (as the structures and needed 
+> functions are declared).
 
-The kobject_put() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+What do you think of this (already includes s/lp/klp/ change)?
 
-This issue was detected by using the Coccinelle software.
+====
+diff --git a/include/linux/livepatch.h b/include/linux/livepatch.h
+index 0143b73..a9821f3 100644
+--- a/include/linux/livepatch.h
++++ b/include/linux/livepatch.h
+@@ -21,6 +21,7 @@
+ #define _LINUX_LIVEPATCH_H_
+ 
+ #include <linux/module.h>
++#include <asm/livepatch.h>
+ 
+ /* TODO: add kernel-doc for structures once agreed upon */
+ 
+@@ -58,11 +59,20 @@ struct klp_patch {
+        struct klp_object *objs;
+ };
+ 
+-int klp_register_patch(struct klp_patch *);
+-int klp_unregister_patch(struct klp_patch *);
+-int klp_enable_patch(struct klp_patch *);
+-int klp_disable_patch(struct klp_patch *);
++#ifdef CONFIG_LIVE_PATCHING
+ 
+-#include <asm/livepatch.h>
++extern int klp_register_patch(struct klp_patch *);
++extern int klp_unregister_patch(struct klp_patch *);
++extern int klp_enable_patch(struct klp_patch *);
++extern int klp_disable_patch(struct klp_patch *);
++
++#else /* !CONFIG_LIVE_PATCHING */
++
++static int klp_register_patch(struct klp_patch *k) { return -ENOSYS; }
++static int klp_unregister_patch(struct klp_patch *k) { return -ENOSYS; }
++static int klp_enable_patch(struct klp_patch *k) { return -ENOSYS; }
++static int klp_disable_patch(struct klp_patch *k) { return -ENOSYS; }
++
++#endif
+====
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/md/bcache/super.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+This seems to be the way many headers handle this.  Patch modules built
+against a kernel that doesn't support live patching will build cleanly,
+but will always fail to load.
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index d4713d0..1443c55 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -2076,8 +2076,7 @@ static void bcache_exit(void)
- {
- 	bch_debug_exit();
- 	bch_request_exit();
--	if (bcache_kobj)
--		kobject_put(bcache_kobj);
-+	kobject_put(bcache_kobj);
- 	if (bcache_wq)
- 		destroy_workqueue(bcache_wq);
- 	if (bcache_major)
--- 
-2.1.3
+Seth
 
+> 
+> > +/* TODO: add kernel-doc for structures once agreed upon */
+> > +
+> > +struct lp_func {
+> > +	const char *old_name; /* function to be patched */
+> > +	void *new_func; /* replacement function in patch module */
+> > +	/*
+> > +	 * The old_addr field is optional and can be used to resolve
+> > +	 * duplicate symbol names in the vmlinux object.  If this
+> > +	 * information is not present, the symbol is located by name
+> > +	 * with kallsyms. If the name is not unique and old_addr is
+> > +	 * not provided, the patch application fails as there is no
+> > +	 * way to resolve the ambiguity.
+> > +	 */
+> > +	unsigned long old_addr;
+> > +};
+> > +
+> > +struct lp_reloc {
+> > +	unsigned long dest;
+> > +	unsigned long src;
+> > +	unsigned long type;
+> > +	const char *name;
+> > +	int addend;
+> > +	int external;
+> > +};
+> > +
+> > +struct lp_object {
+> > +	const char *name; /* "vmlinux" or module name */
+> > +	struct lp_func *funcs;
+> > +	struct lp_reloc *relocs;
+> > +};
+> > +
+> > +struct lp_patch {
+> > +	struct module *mod; /* module containing the patch */
+> > +	struct lp_object *objs;
+> > +};
+> > +
+> > +int lp_register_patch(struct lp_patch *);
+> > +int lp_unregister_patch(struct lp_patch *);
+> > +int lp_enable_patch(struct lp_patch *);
+> > +int lp_disable_patch(struct lp_patch *);
+> > +
+> > +#include <asm/livepatch.h>
+> 
+> and #endif for CONFIG_LIVE_PATCHING here.
+> 
+> > +
+> > +#endif /* _LINUX_LIVEPATCH_H_ */
+> 
+> Thanks,
+> --
+> Miroslav Benes
+> SUSE Labs
