@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314AbaKSNkK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 08:40:10 -0500
-Received: from mx01-fr.bfs.de ([193.174.231.67]:12334 "EHLO mx01-fr.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753300AbaKSNkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 08:40:08 -0500
-Message-ID: <546C9D99.3080001@bfs.de>
-Date: Wed, 19 Nov 2014 14:39:37 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1755369AbaKSNl3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 08:41:29 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:57324 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315AbaKSNl2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 08:41:28 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
+Date: Wed, 19 Nov 2014 14:40:49 +0100
+Message-ID: <2041617.Kxhx5O4MMr@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <546B8C64.3010904@samsung.com>
+References: <20141118172146.3784.81151.stgit@buzz> <20141118173413.GB4042@n2100.arm.linux.org.uk> <546B8C64.3010904@samsung.com>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH 1/1] PM-wakeup: Deletion of an unnecessary check before
- the function call "wakeup_source_unregister"
-References: <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546C7E75.9080301@users.sourceforge.net> <20141119120915.GM4905@mwanda> <546C9319.4040205@bfs.de> <20141119130553.GN4956@mwanda>
-In-Reply-To: <20141119130553.GN4956@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:LaoRE/pZPsA4gepHYl6NCBOoE9BQbF3sAxFdCcSca37
+ il9Fky2rX5caV4M8aezGi2LBNe6gSkGkwBtb6Oqpkog9A66hnv
+ ZE7FKCioIqFGGO/KomM56HX5BaYbbLGHy3M3A0RTbhEgZ4BIkF
+ GbXa7J/RoIER/n4SfQrAqH8Jfs7M7y1lFDbntiMd+U7GUuRxcP
+ cGwJaVZIpT1YjhKSLud4blekgZPQpv9+T9F9w9Fz4G4y8gdF1P
+ HK28oPRLRVM2NLFFf/+zqonR/hOq9CeqqAsu3uEkGX5qhj7uBA
+ 3nR6DN/LGVJ6Oo74ssWWJA88sZKoZUEpT+XJY4mAqyy0Qvm/Lp
+ Lzkg14olCXJjmaqLpXe0=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Am 19.11.2014 14:05, schrieb Dan Carpenter:
-> On Wed, Nov 19, 2014 at 01:54:49PM +0100, walter harms wrote:
->> device_wakeup_detach returns dev->power.wakeup what is never NULL in this case.
->> (not visible here but a few line before exactly this is checked)
+On Tuesday 18 November 2014 21:13:56 Konstantin Khlebnikov wrote:
+> On 2014-11-18 20:34, Russell King - ARM Linux wrote:
+> > On Tue, Nov 18, 2014 at 08:21:46PM +0400, Konstantin Khlebnikov wrote:
+> >> Usually modules are loaded into small area prior to the kernel
+> >> text because they are linked with the kernel using short calls.
+> >> Compile-time instrumentation like GCOV or KASAN bloats code a lot,
+> >> and as a result huge modules no longer fit into reserved area.
+> >>
+> >> This patch adds option CONFIG_MODULES_USE_VMALLOC which lifts
+> >> limitation on amount of loaded modules. It links modules using
+> >> long-calls (option -mlong-calls) and loads them into vmalloc area.
+> >>
+> >> In few places exported symbols are called from inline assembly.
+> >> This patch adds macro for such call sites: __asmbl and __asmbl_clobber.
+> >> Call turns into single 'bl' or sequence 'movw; movt; blx' depending on
+> >> context and state of config option.
+> >>
+> >> Unfortunately this option isn't compatible with CONFIG_FUNCTION_TRACER.
+> >> Compiler emits short calls to profiling function despite of -mlong-calls.
+> >> This is a bug in GCC, but ftrace anyway needs an update to handle this.
+> > It also isn't compatible with the older architectures which don't have
+> > "blx".
 > 
-> Huh?  I don't see a NULL check.
-> 
-> I think you may be confusing "dev->power.can_wakeup" with
-> "dev->power.wakeup"?
-> 
->
+> Ok, I'll add "depends on CPU_V6 || CPU_V7" I don't think that it is 
+> necessary for older cpus.
 
-mea culpa,
-you are right  dev->power.can_wakeup != dev->power.wakeup
+Why not just use a different branch instruction for the older CPUs?
 
-therefore device_wakeup_detach(dev) CAN return NULL
-
-re,
- wh
+	Arnd
