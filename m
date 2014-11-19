@@ -1,118 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756545AbaKSTEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 14:04:13 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:37878 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755427AbaKSTEM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 14:04:12 -0500
+	id S1756571AbaKSTFy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 14:05:54 -0500
+Received: from mga02.intel.com ([134.134.136.20]:60964 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754814AbaKSTFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 14:05:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,418,1413270000"; 
+   d="scan'208";a="639894999"
+Date: Wed, 19 Nov 2014 11:05:48 -0800
+From: Kristen Carlson Accardi <kristen@linux.intel.com>
+To: Ethan Zhao <ethan.zhao@oracle.com>
+Cc: <dirk.j.brandewie@intel.com>, <viresh.kumar@linaro.org>,
+        <rjw@rjwysocki.net>, <corbet@lwn.net>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <ethan.kernel@gmail.com>, <joe.jin@oracle.com>,
+        <brian.maly@oracle.com>
+Subject: Re: [PATCH 3/3] intel_pstate: add module and kernel command line
+ parameter to ignore ACPI _PPC
+Message-ID: <20141119110548.24a0a808@kcaccard-desk.amr.corp.intel.com>
+In-Reply-To: <1416299826-15813-8-git-send-email-ethan.zhao@oracle.com>
+References: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com>
+	<1416299826-15813-8-git-send-email-ethan.zhao@oracle.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141119190215.GA10796@lerouge>
-References: <20141118023930.GA2871@redhat.com> <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
- <20141118145234.GA7487@redhat.com> <alpine.DEB.2.11.1411181914020.3909@nanos>
- <20141118215540.GD35311@redhat.com> <20141119021902.GA14216@redhat.com>
- <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
- <20141119145902.GA13387@redhat.com> <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
- <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com> <20141119190215.GA10796@lerouge>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 19 Nov 2014 11:03:48 -0800
-Message-ID: <CALCETrVOW1U8uDKZhChP_PgG40jsJE4F0Jeyfj1BT=qJSFY6yw@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 11:02 AM, Frederic Weisbecker
-<fweisbec@gmail.com> wrote:
-> On Wed, Nov 19, 2014 at 09:40:26AM -0800, Linus Torvalds wrote:
->> On Wed, Nov 19, 2014 at 9:22 AM, Linus Torvalds
->> <torvalds@linux-foundation.org> wrote:
->> >
->> > So it hasn't actually done the "push %rbx; popfq" part - there must be
->> > a label at the return part, and context_tracking_user_exit() never
->> > actually did the local_irq_save/restore at all. Which means that it
->> > took one of the early exits instead:
->> >
->> >         if (!context_tracking_is_enabled())
->> >                 return;
->> >
->> >         if (in_interrupt())
->> >                 return;
->>
->> Ho humm. Interesting. Neither of those should possibly have happened.
->>
->> We "know" that "context_tracking_is_enabled()" must be true, because
->> the only way we get to context_tracking_user_exit() in the first place
->> is through "user_exit()", which does:
->>
->>         if (context_tracking_is_enabled())
->>                 context_tracking_user_exit();
->>
->> and we know we shouldn't be in_interrupt(), because the backtrace is
->> the system call entry path, for chrissake!
->>
->> So we definitely have some corruption going on. A few possibilities:
->>
->>  - either the register contents are corrupted (%rbx in your dump said
->> "0x0000000100000046", but the eflags we restored was 0x246)
->>
->>  - in_interrupt() is wrong, and we've had some irq_count() corruption.
->> I'd expect that to result in "scheduling while atomic" messages,
->> though, especially if it goes on long enough that you get a watchdog
->> event..
->>
->>  - there is something rotten in the land of
->> context_tracking_is_enabled(), which uses a static key.
->>
->>  - I have misread the whole trace, and am a moron. But your earlier
->> report really had some very similar things, just in
->> context_tracking_user_enter() instead of exit.
->>
->> In your previous oops, the registers that was allegedly used to
->> restore %eflags was %r12:
->>
->>   28: 41 54                 push   %r12
->>   2a: 9d                   popfq
->>   2b:* 5b                   pop    %rbx <-- trapping instruction
->>   2c: 41 5c                 pop    %r12
->>   2e: 5d                   pop    %rbp
->>   2f: c3                   retq
->>
->> but:
->>
->>   R12: ffff880101ee3ec0
->>   EFLAGS: 00000282
->>
->> so again, it looks like we never actually did that "popfq"
->> instruction, and it would have exited through the (same) early exits.
->>
->> But what an odd coincidence that it ended up in both of your reports
->> being *exactly* at that instruction after the "popf". If it had
->> actually *taken* the popf, I'd not be so surprised ("ok, popf enabled
->> interrupts, and there was an interrupt pending"), but since everything
->> seems to say that it came there through some control flow that did
->> *not* go through the popf, that's just a very odd coincidence.
->>
->> And both context_tracking_user_enter() and exit() have that exact same
->> issue with the early returns. They shouldn't have happened in the
->> first place.
->
-> I got a report lately involving context tracking. Not sure if it's
-> the same here but the issue was that context tracking uses per cpu data
-> and per cpu allocation use vmalloc and vmalloc'ed area can fault due to
-> lazy paging.
+On Tue, 18 Nov 2014 17:37:06 +0900
+Ethan Zhao <ethan.zhao@oracle.com> wrote:
 
-Wait, what?  If something like kernel_stack ends with an unmapped pmd,
-we are well and truly screwed.
+> Add kernel command line parameter
+>  intel_pstate = ignore_acpi_ppc
+> and module parameter
+>  ignore_acpi_ppc = 1
+> to allow driver to ignore the ACPI _PPC existence even for Sun x86 servers.
+> These parameter could be used for debug\test\workaround etc purpose.
+> 
+> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
 
---Andy
+What if we used a more generic parameter like "force" that would bypass
+any vendor specific checks and just load anyway?  This way we don't have
+to add new parameters everything some new thing shows up that we want to
+ignore.
+
+> ---
+>  Documentation/kernel-parameters.txt | 3 +++
+>  drivers/cpufreq/intel_pstate.c      | 8 +++++++-
+>  2 files changed, 10 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 4c81a86..f502b85 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1446,6 +1446,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  		       disable
+>  		         Do not enable intel_pstate as the default
+>  		         scaling driver for the supported processors
+> +		       ignore_acpi_ppc
+> +			 Ignore the existence of ACPI method _PPC for Sun x86 servers
+> +			 and load the driver.
+>  
+>  	intremap=	[X86-64, Intel-IOMMU]
+>  			on	enable Interrupt Remapping (default)
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index 7c5faea..388387b 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -870,6 +870,7 @@ static struct cpufreq_driver intel_pstate_driver = {
+>  };
+>  
+>  static int __initdata no_load;
+> +static unsigned int  ignore_acpi_ppc;
+>  
+>  static int intel_pstate_msrs_not_valid(void)
+>  {
+> @@ -990,7 +991,7 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+>  		    intel_pstate_no_acpi_pss())
+>  			return true;
+>  		if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
+> -			intel_pstate_has_acpi_ppc())
+> +			intel_pstate_has_acpi_ppc() && !ignore_acpi_ppc)
+>  			return true;
+>  	}
+>  
+> @@ -1066,11 +1067,16 @@ static int __init intel_pstate_setup(char *str)
+>  
+>  	if (!strcmp(str, "disable"))
+>  		no_load = 1;
+> +	if (!strcmp(str, "ignore_acpi_ppc"))
+> +		ignore_acpi_ppc = 1;
+>  	return 0;
+>  }
+>  early_param("intel_pstate", intel_pstate_setup);
+>  #endif
+>  
+> +module_param(ignore_acpi_ppc, uint, 0644);
+> +MODULE_PARM_DESC(ignore_acpi_ppc,
+> +	"value 0 or non-zero. non-zero -> ignore ACPI _PPC and load this driver");
+>  MODULE_AUTHOR("Dirk Brandewie <dirk.j.brandewie@intel.com>");
+>  MODULE_DESCRIPTION("'intel_pstate' - P state driver Intel Core processors");
+>  MODULE_LICENSE("GPL");
+
