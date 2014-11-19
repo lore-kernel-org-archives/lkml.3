@@ -1,105 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174AbaKSPvP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:51:15 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:58600 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754598AbaKSPvN (ORCPT
+	id S932216AbaKSPwL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:52:11 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:39529 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754598AbaKSPwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 10:51:13 -0500
-Message-ID: <546CBC6B.2040408@atmel.com>
-Date: Wed, 19 Nov 2014 16:51:07 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 19 Nov 2014 10:52:08 -0500
+Date: Wed, 19 Nov 2014 15:52:01 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        edubezval@gmail.com, kernel@stlinux.com, linux-pm@vger.kernel.org
+Subject: Re: [STLinux Kernel] [PATCH] thermal: sti: Ignore suspend/resume
+ functions when !PM
+Message-ID: <20141119155201.GC1875@x1>
+References: <1416404939-365-1-git-send-email-lee.jones@linaro.org>
+ <546CAC92.3020504@st.com>
 MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Peter Korsgaard <jacmet@sunsite.dk>, Matt Mackall <mpm@selenic.com>,
-        "Herbert Xu" <herbert@gondor.apana.org.au>
-CC: <linux-arm-kernel@lists.infradead.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] ARM: at91/dt: add ISI node
-References: <1412093987-30241-1-git-send-email-boris.brezillon@free-electrons.com> <1412093987-30241-7-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1412093987-30241-7-git-send-email-boris.brezillon@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <546CAC92.3020504@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/09/2014 18:19, Boris Brezillon :
-> Add ISI (Image Sensor Interface) DT node.
+On Wed, 19 Nov 2014, Maxime Coquelin wrote:
+
 > 
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> On 11/19/2014 02:48 PM, Lee Jones wrote:
+> >Prevents build warning:
+> >
+> >st_thermal.c:278:12:
+> >     warning: ‘st_thermal_suspend’ defined but not used [-Wunused-function]
+> >st_thermal.c:286:12:
+> >     warning: ‘st_thermal_resume’ defined but not used [-Wunused-function]
+> >
+> >Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> You can add my:
+> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-I take this one for at91-3.19-dt2
+Sorry Maxime, I made a booboo!
 
-Thanks, best regards.
+Resubmitted.
 
-> ---
->  arch/arm/boot/dts/at91sam9g45.dtsi | 32 ++++++++++++++++++++++++++++++++
->  1 file changed, 32 insertions(+)
+> >---
+> >  drivers/thermal/st/st_thermal.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> >
+> >diff --git a/drivers/thermal/st/st_thermal.c b/drivers/thermal/st/st_thermal.c
+> >index 90163b3..9841488 100644
+> >--- a/drivers/thermal/st/st_thermal.c
+> >+++ b/drivers/thermal/st/st_thermal.c
+> >@@ -275,6 +275,7 @@ int st_thermal_unregister(struct platform_device *pdev)
+> >  }
+> >  EXPORT_SYMBOL_GPL(st_thermal_unregister);
+> >+#ifdef CONFIG_PM
+> >  static int st_thermal_suspend(struct device *dev)
+> >  {
+> >  	struct platform_device *pdev = to_platform_device(dev);
+> >@@ -305,6 +306,8 @@ static int st_thermal_resume(struct device *dev)
+> >  	return 0;
+> >  }
+> >+#endif
+> >+
+> >  SIMPLE_DEV_PM_OPS(st_thermal_pm_ops, st_thermal_suspend, st_thermal_resume);
+> >  EXPORT_SYMBOL_GPL(st_thermal_pm_ops);
 > 
-> diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
-> index 790c890..5d8746a 100644
-> --- a/arch/arm/boot/dts/at91sam9g45.dtsi
-> +++ b/arch/arm/boot/dts/at91sam9g45.dtsi
-> @@ -804,6 +804,27 @@
->  					};
->  				};
->  
-> +				isi {
-> +					pinctrl_isi: isi-0 {
-> +						atmel,pins = <AT91_PIOB 8 AT91_PERIPH_B AT91_PINCTRL_NONE /* D8 */
-> +							      AT91_PIOB 9 AT91_PERIPH_B AT91_PINCTRL_NONE /* D9 */
-> +							      AT91_PIOB 10 AT91_PERIPH_B AT91_PINCTRL_NONE /* D10 */
-> +							      AT91_PIOB 11 AT91_PERIPH_B AT91_PINCTRL_NONE /* D11 */
-> +							      AT91_PIOB 20 AT91_PERIPH_A AT91_PINCTRL_NONE /* D0 */
-> +							      AT91_PIOB 21 AT91_PERIPH_A AT91_PINCTRL_NONE /* D1 */
-> +							      AT91_PIOB 22 AT91_PERIPH_A AT91_PINCTRL_NONE /* D2 */
-> +							      AT91_PIOB 23 AT91_PERIPH_A AT91_PINCTRL_NONE /* D3 */
-> +							      AT91_PIOB 24 AT91_PERIPH_A AT91_PINCTRL_NONE /* D4 */
-> +							      AT91_PIOB 25 AT91_PERIPH_A AT91_PINCTRL_NONE /* D5 */
-> +							      AT91_PIOB 26 AT91_PERIPH_A AT91_PINCTRL_NONE /* D6 */
-> +							      AT91_PIOB 27 AT91_PERIPH_A AT91_PINCTRL_NONE /* D7 */
-> +							      AT91_PIOB 28 AT91_PERIPH_A AT91_PINCTRL_NONE /* PCK */
-> +							      AT91_PIOB 29 AT91_PERIPH_A AT91_PINCTRL_NONE /* VSYNC */
-> +							      AT91_PIOB 30 AT91_PERIPH_A AT91_PINCTRL_NONE /* HSYNC */
-> +							      AT91_PIOB 31 AT91_PERIPH_A AT91_PINCTRL_NONE /* MCK */>;
-> +					};
-> +				};
-> +
->  				pioA: gpio@fffff200 {
->  					compatible = "atmel,at91rm9200-gpio";
->  					reg = <0xfffff200 0x200>;
-> @@ -1029,6 +1050,17 @@
->  				};
->  			};
->  
-> +			isi@fffb4000 {
-> +				compatible = "atmel,at91sam9g45-isi";
-> +				reg = <0xfffb4000 0x4000>;
-> +				interrupts = <26 IRQ_TYPE_LEVEL_HIGH 5>;
-> +				clocks = <&isi_clk>;
-> +				clock-names = "isi_clk";
-> +				pinctrl-names = "default";
-> +				pinctrl-0 = <&pinctrl_isi>;
-> +				status = "disabled";
-> +			};
-> +
->  			pwm0: pwm@fffb8000 {
->  				compatible = "atmel,at91sam9rl-pwm";
->  				reg = <0xfffb8000 0x300>;
-> 
-
 
 -- 
-Nicolas Ferre
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
