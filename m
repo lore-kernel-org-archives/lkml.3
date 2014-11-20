@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757780AbaKTTcG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:32:06 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:57769 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757084AbaKTTcE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 14:32:04 -0500
+	id S1757903AbaKTTdy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:33:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:54029 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757820AbaKTTdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 14:33:53 -0500
+Date: Thu, 20 Nov 2014 16:33:47 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        "Liang, Kan" <kan.liang@intel.com>
+Subject: Re: Implement lbr-as-callgraph v10
+Message-ID: <20141120193347.GL3790@kernel.org>
+References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
+ <20141117213457.GE4163@kernel.org>
+ <20141118104416.GE27645@krava.brq.redhat.com>
+ <20141118110007.GF27645@krava.brq.redhat.com>
+ <87zjbnpv64.fsf@sejong.aot.lge.com>
+ <20141119092323.GC2592@krava.brq.redhat.com>
+ <20141119105450.GA22132@krava.brq.redhat.com>
+ <20141119141027.GF3790@kernel.org>
+ <20141119160458.GG3790@kernel.org>
+ <20141119214822.GM12538@two.firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <1416510751.3116.13.camel@localhost>
-References: <CAHse=S_EY3mJ_pdZf+A46joro_uNy=6tXGG1v7Va4NX_YxJu2w@mail.gmail.com>
- <20141119.153001.1273476178846053821.davem@davemloft.net> <CAHse=S-f5o3vbT+b1D5baEWCWMUnDyLSxM88+vwwymFuLrTirg@mail.gmail.com>
- <1416510751.3116.13.camel@localhost>
-From: David Drysdale <drysdale@google.com>
-Date: Thu, 20 Nov 2014 19:31:42 +0000
-Message-ID: <CAHse=S-8uzFfxtXU6Gn0d2ZDL3f=OVZfyqmZphHaCUYZuBAUUQ@mail.gmail.com>
-Subject: Re: sparc: Clashing values for O_PATH and FMODE_NONOTIFY?
-To: Eric Paris <eparis@redhat.com>
-Cc: David Miller <davem@davemloft.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        sparclinux@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141119214822.GM12538@two.firstfloor.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 7:12 PM, Eric Paris <eparis@redhat.com> wrote:
-> On Thu, 2014-11-20 at 12:12 +0000, David Drysdale wrote:
->> [+linux-fsdevel, without the typo this time]
->>
->> On Wed, Nov 19, 2014 at 8:30 PM, David Miller <davem@davemloft.net> wrote:
->> > From: David Drysdale <drysdale@google.com>
->> > Date: Tue, 18 Nov 2014 13:13:51 +0000
->> >
->> >> Hi folks,
->> >>
->> >> It looks like the value for O_PATH on sparc:
->> >>
->> >>   arch/sparc/include/uapi/asm/fcntl.h:37:#define O_PATH 0x1000000
->> >>
->> >> clashes with the arch-independent value for __FMODE_NONOTIFY:
->> >>
->> >>   include/linux/fs.h:137:#define FMODE_NONOTIFY ((__force fmode_t)0x1000000)
->> >>   include/linux/fs.h:2764:#define __FMODE_NONOTIFY ((__force int)
->> >> FMODE_NONOTIFY)
->> >>
->> >> and they are both in the same numbering space, as indicated by the
->> >> comment at the top of include/uapi/asm-generic/fcntl.h and the use in
->> >> fs/notify/fanotify/fanotify_user.c:715.
->> >>
->> >> Presumably this could theoretically cause problems (no notifications for
->> >> O_PATH files on SPARC?), so would it be a good idea to renumber
->> >> FMODE_NONOTIFY?  (I *think* that value is entirely kernel-internal.)
->> >>
->> >> Given that this has happened before (12ed2e36c98aec6c4155 "fanotify:
->> >> FMODE_NONOTIFY and __O_SYNC in sparc conflict") it would probably
->> >> also be a good idea to add __FMODE_NOTIFY to the uniqueness check in
->> >> fs/fcntl.c:fcntl_init().
->> >>
->> >> Thoughts?
->> >
->> > I think you will need to change the internal value, to not clash with
->> > the sparc exported one, for sure.
->>
->> Well, I was sort of hoping someone else might volunteer to make the
->> change :-) --  I don't use fanotify (or sparc for that matter), I just
->> happened to notice the clash in passing.
->>
->> But I'm happy to have a go, although I can't test much.  It would be
->> good to hear from the fanotify maintainers first, though -- Eric?
->
-> It's totally internal.
+Em Wed, Nov 19, 2014 at 10:48:22PM +0100, Andi Kleen escreveu:
+> On Wed, Nov 19, 2014 at 01:04:58PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Wed, Nov 19, 2014 at 11:10:27AM -0300, Arnaldo Carvalho de Melo escreveu:
+> > > Em Wed, Nov 19, 2014 at 11:54:50AM +0100, Jiri Olsa escreveu:
+> > > > > > BUILD_BUG_ON then?
+> > > > > 
+> > > > > sounds gut
+> > > > 
+> > > > hum, acme/perf/core changed and so has the compile error ;-)
+> > > > we dont overload the <linux/bug.h>, so the kernel one got
+> > > > included, which is wrong.. attached patch fixes that
+> > > 
+> > > I had fixed this but not force pushed out, sorry.
+> > > 
+> > > Now I mistakenly tried running:
+> > > 
+> > > perf report --stdio --no-children --branch-history
+> > > 
+> > > on a file that has no BRANCH_STACK, i.e. a perf.data file on a wrong
+ 
+> It works with -g.
 
-OK, thanks, that makes me feel safer about changing its value.
+What works with -g? perf report?
 
-(fatrace still seemed to work (and not report its own activity) after
-I changed the value, which is also reassuring.)
 
-> And was picked to not clash with anyone.  I
-> don't know how to keep it from happening in the future.....
+> Without -g it will just give an error message. I think that is ok, isn't it?
+ 
+> > > directory since I'm comparing the output of --stdio, --tui and --gtk,
+> > > since it looks --gtk is wrong, still unsure about what the problem is in
+> > > that case, but stumbled on:
+> > > 
+> > 
+> > I need to investigate this further, so I created a perf/branch-history
+> > branch that has the patches I need to test more rebased on top of my
+> > perf/core branch I just pushed out to Ingo.
+> 
+> 
+> I tested --gtk and I don't see any differences to the console mode
+> with --branch-history.  What problem do you see?
 
-There's a compile-time check on the number of distinct O_*
-bits at the bottom of fs/fcntl.c -- if we update that to include
-FMODE_NONOTIFY then any future clashes should trigger
-a (cross-)compilation failure.
+The difference is with --tui, but I haven't checked if this is a problem
+introduced by your patchkit or if this is something that was there
+before it was applied.
 
-I'll send out a patch tomorrow.
-
-Thanks,
-David
+- Arnaldo
