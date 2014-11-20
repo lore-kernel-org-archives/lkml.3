@@ -1,63 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758003AbaKTTQr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:16:47 -0500
-Received: from mout.web.de ([212.227.15.14]:62467 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757858AbaKTTQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 14:16:45 -0500
-Message-ID: <546E3DDB.5040508@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 20:15:39 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "James E. J. Bottomley" <JBottomley@parallels.com>,
-        Robert Love <robert.w.love@intel.com>, fcoe-devel@open-fcoe.org,
-        linux-scsi@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] SCSI-libfc: Deletion of an unnecessary check before the
- function call "fc_fcp_ddp_done"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=iso-8859-15
+	id S1758021AbaKTTQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:16:56 -0500
+Received: from smtprelay0180.hostedemail.com ([216.40.44.180]:36583 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757967AbaKTTQq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 14:16:46 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:2:41:69:355:379:541:800:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1535:1593:1594:1730:1747:1777:1792:2197:2198:2199:2200:2393:2559:2562:2828:3138:3139:3140:3141:3142:3355:3653:3743:3865:3866:3867:3870:3871:3874:4049:4118:4605:5007:6261:9592:10004:10848:11026:11232:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12679:12683:13255:14110:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fly24_a5608576f63
+X-Filterd-Recvd-Size: 7026
+Message-ID: <1416511002.6651.20.camel@perches.com>
+Subject: [PATCH] checkpatch: Add ability to --fix (coalesce) string
+ fragments on multiple lines
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 20 Nov 2014 11:16:42 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:+IvuhPx5ks/Wr7Lp6ReYp7XwyucOrLYlqYTGl53OJ6pDdCCLa+k
- 7WaH2LUVTjwbx9rismb+Iu1iS7brlHb16RSHp3jz8Lt1UFTXVYt5qOprtOMxKiS+l8NBij1
- 1CNz1PNo+59iUMuJUjRlp07cgNL/hoaFqifHa8k7OsnmTXVGEifH2w2HjsOSiV8Yq2DeK7r
- C+UhGBDmpnwoXWnyFeiCw==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 20:10:19 +0100
+Add --fix option to coalesce string fragments.
 
-The fc_fcp_ddp_done() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+This does not coalesce string fragments that have
+newline terminations or are otherwise exempted.
 
-This issue was detected by using the Coccinelle software.
+Other miscellanea:
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+o move all the string tests together.
+o fix get_quoted_string function for tab characters
+o fix concatination typo
+
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/scsi/libfc/fc_exch.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ scripts/checkpatch.pl | 112 +++++++++++++++++++++++++++++---------------------
+ 1 file changed, 66 insertions(+), 46 deletions(-)
 
-diff --git a/drivers/scsi/libfc/fc_exch.c b/drivers/scsi/libfc/fc_exch.c
-index 1b3a094..aad6f48 100644
---- a/drivers/scsi/libfc/fc_exch.c
-+++ b/drivers/scsi/libfc/fc_exch.c
-@@ -2120,8 +2120,7 @@ static struct fc_seq *fc_exch_seq_send(struct fc_lport *lport,
- 	spin_unlock_bh(&ep->ex_lock);
- 	return sp;
- err:
--	if (fsp)
--		fc_fcp_ddp_done(fsp);
-+	fc_fcp_ddp_done(fsp);
- 	rc = fc_exch_done_locked(ep);
- 	spin_unlock_bh(&ep->ex_lock);
- 	if (!rc)
--- 
-2.1.3
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 6d85c7b..5a6c2dc 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -946,7 +946,7 @@ sub sanitise_line {
+ sub get_quoted_string {
+ 	my ($line, $rawline) = @_;
+ 
+-	return "" if ($line !~ m/(\"[X]+\")/g);
++	return "" if ($line !~ m/(\"[X\t]+\")/g);
+ 	return substr($rawline, $-[0], $+[0] - $-[0]);
+ }
+ 
+@@ -2413,33 +2413,6 @@ sub process {
+ 			     "line over $max_line_length characters\n" . $herecurr);
+ 		}
+ 
+-# Check for user-visible strings broken across lines, which breaks the ability
+-# to grep for the string.  Make exceptions when the previous string ends in a
+-# newline (multiple lines in one string constant) or '\t', '\r', ';', or '{'
+-# (common in inline assembly) or is a octal \123 or hexadecimal \xaf value
+-		if ($line =~ /^\+\s*"/ &&
+-		    $prevline =~ /"\s*$/ &&
+-		    $prevrawline !~ /(?:\\(?:[ntr]|[0-7]{1,3}|x[0-9a-fA-F]{1,2})|;\s*|\{\s*)"\s*$/) {
+-			WARN("SPLIT_STRING",
+-			     "quoted string split across lines\n" . $hereprev);
+-		}
+-
+-# check for missing a space in a string concatination
+-		if ($prevrawline =~ /[^\\]\w"$/ && $rawline =~ /^\+[\t ]+"\w/) {
+-			WARN('MISSING_SPACE',
+-			     "break quoted strings at a space character\n" . $hereprev);
+-		}
+-
+-# check for spaces before a quoted newline
+-		if ($rawline =~ /^.*\".*\s\\n/) {
+-			if (WARN("QUOTED_WHITESPACE_BEFORE_NEWLINE",
+-				 "unnecessary whitespace before a quoted newline\n" . $herecurr) &&
+-			    $fix) {
+-				$fixed[$fixlinenr] =~ s/^(\+.*\".*)\s+\\n/$1\\n/;
+-			}
+-
+-		}
+-
+ # check for adding lines without a newline.
+ 		if ($line =~ /^\+/ && defined $lines[$linenr] && $lines[$linenr] =~ /^\\ No newline at end of file/) {
+ 			WARN("MISSING_EOF_NEWLINE",
+@@ -4458,6 +4431,53 @@ sub process {
+ 			     "Use of volatile is usually wrong: see Documentation/volatile-considered-harmful.txt\n" . $herecurr);
+ 		}
+ 
++# Check for user-visible strings broken across lines, which breaks the ability
++# to grep for the string.  Make exceptions when the previous string ends in a
++# newline (multiple lines in one string constant) or '\t', '\r', ';', or '{'
++# (common in inline assembly) or is a octal \123 or hexadecimal \xaf value
++		if ($line =~ /^\+\s*"[X\t]*"/ &&
++		    $prevline =~ /"\s*$/ &&
++		    $prevrawline !~ /(?:\\(?:[ntr]|[0-7]{1,3}|x[0-9a-fA-F]{1,2})|;\s*|\{\s*)"\s*$/) {
++			if (WARN("SPLIT_STRING",
++				 "quoted string split across lines\n" . $hereprev) &&
++				     $fix &&
++				     $prevrawline =~ /^\+.*"\s*$/) {
++				my $extracted_string = get_quoted_string($line, $rawline);
++				my $comma_close = "";
++				if ($rawline =~ /\Q$extracted_string\E(\s*\)\s*;\s*$|\s*,\s*)/) {
++					$comma_close = $1;
++				}
++
++				fix_delete_line($fixlinenr - 1, $prevrawline);
++				fix_delete_line($fixlinenr, $rawline);
++				my $fixedline = $prevrawline;
++				$fixedline =~ s/"\s*$//;
++				$fixedline .= substr($extracted_string, 1) . trim($comma_close);
++				fix_insert_line($fixlinenr - 1, $fixedline);
++				$fixedline = $rawline;
++				$fixedline =~ s/\Q$extracted_string\E\Q$comma_close\E//;
++				if ($fixedline !~ /\+\s*$/) {
++					fix_insert_line($fixlinenr, $fixedline);
++				}
++			}
++		}
++
++# check for missing a space in a string concatenation
++		if ($prevrawline =~ /[^\\]\w"$/ && $rawline =~ /^\+[\t ]+"\w/) {
++			WARN('MISSING_SPACE',
++			     "break quoted strings at a space character\n" . $hereprev);
++		}
++
++# check for spaces before a quoted newline
++		if ($rawline =~ /^.*\".*\s\\n/) {
++			if (WARN("QUOTED_WHITESPACE_BEFORE_NEWLINE",
++				 "unnecessary whitespace before a quoted newline\n" . $herecurr) &&
++			    $fix) {
++				$fixed[$fixlinenr] =~ s/^(\+.*\".*)\s+\\n/$1\\n/;
++			}
++
++		}
++
+ # concatenated string without spaces between elements
+ 		if ($line =~ /"X+"[A-Z_]+/ || $line =~ /[A-Z_]+"X+"/) {
+ 			CHK("CONCATENATED_STRING",
+@@ -4470,6 +4490,24 @@ sub process {
+ 			     "Consecutive strings are generally better as a single string\n" . $herecurr);
+ 		}
+ 
++# check for %L{u,d,i} in strings
++		my $string;
++		while ($line =~ /(?:^|")([X\t]*)(?:"|$)/g) {
++			$string = substr($rawline, $-[1], $+[1] - $-[1]);
++			$string =~ s/%%/__/g;
++			if ($string =~ /(?<!%)%L[udi]/) {
++				WARN("PRINTF_L",
++				     "\%Ld/%Lu are not-standard C, use %lld/%llu\n" . $herecurr);
++				last;
++			}
++		}
++
++# check for line continuations in quoted strings with odd counts of "
++		if ($rawline =~ /\\$/ && $rawline =~ tr/"/"/ % 2) {
++			WARN("LINE_CONTINUATIONS",
++			     "Avoid line continuations in quoted strings\n" . $herecurr);
++		}
++
+ # warn about #if 0
+ 		if ($line =~ /^.\s*\#\s*if\s+0\b/) {
+ 			CHK("REDUNDANT_CODE",
+@@ -4754,12 +4792,6 @@ sub process {
+ 			}
+ 		}
+ 
+-# check for line continuations in quoted strings with odd counts of "
+-		if ($rawline =~ /\\$/ && $rawline =~ tr/"/"/ % 2) {
+-			WARN("LINE_CONTINUATIONS",
+-			     "Avoid line continuations in quoted strings\n" . $herecurr);
+-		}
+-
+ # check for struct spinlock declarations
+ 		if ($line =~ /^.\s*\bstruct\s+spinlock\s+\w+\s*;/) {
+ 			WARN("USE_SPINLOCK_T",
+@@ -5169,18 +5201,6 @@ sub process {
+ 			      "#define of '$1' is wrong - use Kconfig variables or standard guards instead\n" . $herecurr);
+ 		}
+ 
+-# check for %L{u,d,i} in strings
+-		my $string;
+-		while ($line =~ /(?:^|")([X\t]*)(?:"|$)/g) {
+-			$string = substr($rawline, $-[1], $+[1] - $-[1]);
+-			$string =~ s/%%/__/g;
+-			if ($string =~ /(?<!%)%L[udi]/) {
+-				WARN("PRINTF_L",
+-				     "\%Ld/%Lu are not-standard C, use %lld/%llu\n" . $herecurr);
+-				last;
+-			}
+-		}
+-
+ # whine mightly about in_atomic
+ 		if ($line =~ /\bin_atomic\s*\(/) {
+ 			if ($realfile =~ m@^drivers/@) {
+
 
