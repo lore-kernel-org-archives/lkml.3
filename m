@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929AbaKTIih (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 03:38:37 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:57445 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756733AbaKTIig (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 03:38:36 -0500
-Message-ID: <546DA795.9080209@huawei.com>
-Date: Thu, 20 Nov 2014 16:34:29 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1756971AbaKTIj6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 03:39:58 -0500
+Received: from mout.web.de ([212.227.17.12]:52435 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751377AbaKTIj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 03:39:57 -0500
+Message-ID: <546DA8BF.70005@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 09:39:27 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: For the problem when using swiotlb
-References: <5469E26B.2010905@huawei.com> <1535751.CcvIi3DN4F@wuerfel> <546D58B1.60108@huawei.com> <2522857.bNQToYpBNt@wuerfel>
-In-Reply-To: <2522857.bNQToYpBNt@wuerfel>
-Content-Type: text/plain; charset="UTF-8"
+To: Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 3/3] [media] si2168: One function call less in si2168_init()
+ after error detection
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546DA419.7050405@users.sourceforge.net>
+In-Reply-To: <546DA419.7050405@users.sourceforge.net>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.246]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020209.546DA881.00E3,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 66a215c03747970b51084b178798d672
+X-Provags-ID: V03:K0:rCRalrcfXkxdxLrAN2C9QNaa7SH3haOq3pAdSkF+np+d6mfyeDW
+ GEmpIbCD21e/ZFdpg82cxyW/6uJjb2MYnR++yOb8plHBvjSUZjXGJaAHMtLj/zCpuVv/72G
+ FZ1KGGezSs9EmgHYCmSW6ASshJ/zGiQWSNrtkIPBaQj6b1cNvQ/k2JFG7kHwnPYubhKdPuw
+ 9xChEinSJ0evx+6l/2JIA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/20 15:40, Arnd Bergmann wrote:
-> On Thursday 20 November 2014 10:57:53 Ding Tianhong wrote:
->> On 2014/11/19 16:45, Arnd Bergmann wrote:
->>> On Wednesday 19 November 2014 11:17:15 Ding Tianhong wrote:
->>>> On 2014/11/18 2:09, Catalin Marinas wrote:
->>>>> On Mon, Nov 17, 2014 at 12:18:42PM +0000, Arnd Bergmann wrote:
->>>> Thanks everyone, I think I found the way to fix it, need to enable DMA_CMA, to reserve a big memory
->>>> for CMA and set coherent mask for dev, then dma_alloc and dma_mapping will not use the swiotlb until
->>>> the memory out of mask or swiotlb_force is enabled.
->>>>
->>>> If I still understand uncorrectly, please inform me.
->>>>
->>>
->>> Please do not use CMA to work around the problem, but fix the underlying bug
->>> instead.
->>>
->>> The driver should call 'dma_set_mask_and_coherent()' with the appropriate
->>> dma mask, and check whether that succeeded. However, the code implementing
->>> dma_set_mask_and_coherent on arm64 also needs to be changed to look up
->>> the dma-ranges property (see of_dma_configure()), and check if the mask
->>> is possible.
->>>
->> The dma_pfn_offset looks only support arm32, but my platform is aarch64 and I check the latest kernel version, 
->> I think the dma-rangs still could not work for aarch64, so maybe we should add dma_pfn_offset for aarch64 first.
->>
-> 
-> I didn't mean the dma_pfn_offset. The problem is that the of_dma_configure
-> code currently doesn't look at the mask. As I explained in my reply to
-> Catalin, it should set the mask to the size of the dma-ranges if that is
-> 32-bit or smaller, and dma_set_mask should look at the same dma-ranges
-> property to decide what to set the mask to when a driver asks for a
-> mask larger than 64-bit.
-> 
-> 	Arnd
-> 
-ok, I think the your reply to catalin is clear, I got it, add a appropriate mask for the dev is
-reasonable, I think it should be fixed later.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 23:23:15 +0100
 
-But in my case, if I don't use the DMA_CMA, the dma_alloc_coherent should use the swiotlb directly which maximum is 16M,
-so unless I use the kmalloc otherwise I have no better idea for that.
+The release_firmware() function was called in some cases by the
+si2168_init() function during error handling even if the passed variable
+contained still a null pointer. This implementation detail could be improved
+by the introduction of another jump label.
 
-Regards
-Ding 
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/media/dvb-frontends/si2168.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-> .
-> 
-
+diff --git a/drivers/media/dvb-frontends/si2168.c b/drivers/media/dvb-frontends/si2168.c
+index 6a455f9..b8c6372 100644
+--- a/drivers/media/dvb-frontends/si2168.c
++++ b/drivers/media/dvb-frontends/si2168.c
+@@ -428,7 +428,7 @@ static int si2168_init(struct dvb_frontend *fe)
+ 			dev_err(&s->client->dev,
+ 					"%s: firmware file '%s' not found\n",
+ 					KBUILD_MODNAME, fw_file);
+-			goto err;
++			goto error_fw_release;
+ 		}
+ 	}
+ 
+@@ -448,7 +448,7 @@ static int si2168_init(struct dvb_frontend *fe)
+ 			dev_err(&s->client->dev,
+ 					"%s: firmware download failed=%d\n",
+ 					KBUILD_MODNAME, ret);
+-			goto err;
++			goto error_fw_release;
+ 		}
+ 	}
+ 
+@@ -468,9 +468,10 @@ static int si2168_init(struct dvb_frontend *fe)
+ 	s->active = true;
+ 
+ 	return 0;
+-err:
+-	release_firmware(fw);
+ 
++error_fw_release:
++	release_firmware(fw);
++err:
+ 	dev_dbg(&s->client->dev, "%s: failed=%d\n", __func__, ret);
+ 	return ret;
+ }
+-- 
+2.1.3
 
