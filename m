@@ -1,116 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756320AbaKTAqw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 19:46:52 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:60322 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754550AbaKTAqu (ORCPT
+	id S1756517AbaKTAt1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 19:49:27 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:65236 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753629AbaKTAt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 19:46:50 -0500
+	Wed, 19 Nov 2014 19:49:26 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxNkD8=1JB0-4EyQTR+Yd0YaofB3+E5J+L3vsfki-RUSQ@mail.gmail.com>
-References: <cover.1416352397.git.luto@amacapital.net> <c25e1a64e5b718fa156e141fd9ecbf31011c6059.1416352397.git.luto@amacapital.net>
- <CA+55aFztsw6Vt4CyVs1OsqdKXxQmFrxHdE7z89VMZ_1KwKPcmQ@mail.gmail.com>
- <20141119192928.GL12538@two.firstfloor.org> <CA+55aFwykb6aZYgyZXbU1DQ3OL0umpv8gkHYWykBEC2B7UdMbw@mail.gmail.com>
- <CALCETrXi7vdNAk4RziNDtqX4asPqXxi1VsLzL7pP0zivkjTH4Q@mail.gmail.com>
- <CA+55aFx4-WzNQ0e-ZTcCig3b7U7xmt1WB1jzO3TLk9zHD006ng@mail.gmail.com>
- <CALCETrVJJUcPRfkWRouLJCNUVNRH3aWX0X_K8L62yrUu1aR8Vg@mail.gmail.com>
- <CA+55aFy0neTJAAm-8KsmPPU33zevyHmYa+vZjPk-DozSPPW_nQ@mail.gmail.com>
- <CALCETrXzMe2WcpY3yX48WtvdRQDvSg7CZRO1T1TdLynmAcJHXg@mail.gmail.com> <CA+55aFxNkD8=1JB0-4EyQTR+Yd0YaofB3+E5J+L3vsfki-RUSQ@mail.gmail.com>
+In-Reply-To: <CA+55aFxi5mNNXFH20AwrgOVsT1HyuU1a63VYm6m+j0jSVr4dGQ@mail.gmail.com>
+References: <20141118145234.GA7487@redhat.com> <alpine.DEB.2.11.1411181914020.3909@nanos>
+ <20141118215540.GD35311@redhat.com> <20141119021902.GA14216@redhat.com>
+ <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
+ <20141119145902.GA13387@redhat.com> <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
+ <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
+ <20141119190215.GA10796@lerouge> <alpine.DEB.2.11.1411192251120.3909@nanos>
+ <20141119225615.GA11386@lerouge> <alpine.DEB.2.11.1411200002330.3909@nanos>
+ <CALCETrXyrk0VBbZy48nsUWnk82wFp6gpv_zw_F=3GKSDAR7T+Q@mail.gmail.com>
+ <alpine.DEB.2.11.1411200059410.3909@nanos> <CALCETrXwjPKcCA6t=wjyKWZbREKFTF9E-n9eRa0C39R5O8Q0PQ@mail.gmail.com>
+ <CA+55aFxi5mNNXFH20AwrgOVsT1HyuU1a63VYm6m+j0jSVr4dGQ@mail.gmail.com>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 19 Nov 2014 16:46:29 -0800
-Message-ID: <CALCETrWBpmS_W3sN3Pf-qRL8jgxoBoQWnQuk3r_TT_eBm9eNqQ@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] sched, x86: Check that we're on the right stack in
- schedule and __might_sleep
+Date: Wed, 19 Nov 2014 16:49:03 -0800
+Message-ID: <CALCETrU2Ag1LNveFq88q54wCxCPLi5onCNZzkOD0A_N3x_x6Tw@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 4:37 PM, Linus Torvalds
+On Wed, Nov 19, 2014 at 4:40 PM, Linus Torvalds
 <torvalds@linux-foundation.org> wrote:
-> On Wed, Nov 19, 2014 at 4:13 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Wed, Nov 19, 2014 at 4:30 PM, Andy Lutomirski <luto@amacapital.net> wrote:
 >>
->> No drugs, just imprecision.  This series doesn't change NMI handling
->> at all.  It only changes machine_check int3, debug, and stack_segment.
->> (Why is #SS using IST stacks anyway?)
+>> This is why I think that the grsec kernels will crash on very large
+>> memory systems.  They don't seem to get this right for the kernel
+>> stack, and a page fault trying to access the stack is a big no-no.
 >
-> .. ok, we were talking about adding an explicit preemption count to
-> nmi, and then you wanted to make that conditional, that kind of
-> freaked me out.
+> For something like a stack, that's trivial, you could just probe it
+> before the actual task switch.
 
-I guess I jumped around in the conversation a bit...
+I thought so for a while, too, but now I disagree.  On PGE hardware,
+it seems entirely possible that the new stack would be in the TLB even
+if it's not visible via cr3.  Then, as soon as the TLB entry expires,
+we double-fault.
 
 >
->> So my point stands: if machine_check is going to be conditionally
->> atomic, then that condition needs to be expressed somewhere.
+> So I wouldn't worry about the kernel stack itself (although I think
+> vmallocing it isn't likely worth it),
+
+I don't want vmalloc to avoid low-order allocations -- I want it to
+have guard pages.  The fact that a user-triggerable stack overflow is
+basically root right now and doesn't reliably OOPS scares me.
+
+> I'd worry more about some other
+> random dynamic percpu allocation. Although they arguably shouldn't
+> happen for low-level code that cannot handle the dynamic
+> pgd-population. And they generally don't.
+
+This issue ought to be limited to nokprobes code, and I doubt that any
+of that code touches dynamic per-cpu things.
+
 >
-> I'd still prefer to keep that knowledge in one place, rather than
-> adding *another* completely ad-hoc thing in addition to what we
-> already have.
+> It's really tracing that tends to be a special case not because of any
+> particular low-level code issue, but because instrumenting itself
+> recursively tends to be a bad idea.
 >
-> Also, I really don't think it should be about the particular stack
-> you're using. Sure, if a debug fault happens in user space, the fault
-> handler could sleep if it runs on the regular stack, but our
-> "might_sleep()" are about catching things that *could* be problematic,
-> even if the sleep never happens. And so, might_sleep() _should_
-> actually trigger, even if it's not using the IST stack, because *if*
-> the debug exception happened in kernel space, then we should warn.
->
-> So I'd actually *prefer* to have special hacks that perhaps then
-> "undo" the preemption count if the code expressly tests for "did this
-> happen in user space, then I know I'm safe". But then it's an
-> *explicit* thing, not something that just magically works because
-> nobody even thought about it, and the trap happened in user space.
->
-> See the argument? I'd *rather* see code like
->
->    /* Magic */
->    if (user_mode(regs)) {
->        .. verify that we're using the normal kernel stack
->        .. enable interrupts, enable preemption
->        .. this is the explicit special case and it is aware
->        .. of being special
->    }
->
-> even if on the face of it it looks hacky. But an *explicit* hack is
-> preferable to something that just "happens" to work only for the
-> user-mode case.
+>                     Linus
 
-So we'd do, in do_machine_check:
 
-irq_enter();
 
-do atomic stuff;
-
-ist_stop_being_atomic(regs);
-local_irq_enable();
-...
-local_irq_disable();
-ist_start_being_atomic_again();
-
-irq_exit();
-
-and we'd have something like:
-
-void ist_stop_being_atomic(struct pt_regs *regs)
-{
-  BUG_ON(!user_mode_vm(regs));
-  --irq_count;
-}
-
-I'm very hesitant to use irq_enter for this, though.  I think we want
-just the irq_count part.  Maybe ist_enter() and ist_exit()?  I think
-that we really don't want to go anywhere near the accounting stuff in
-irq_enter from an IST handler if !user_mode_vm(regs).  Doing it from
-asm is somewhat less error prone, although I guess we already rely on
-the IDT entries themselves being in sync with the paranoid idtentry
-setting.
-
---Andy
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
