@@ -1,60 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461AbaKTFKL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 00:10:11 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:48640 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929AbaKTFKJ (ORCPT
+	id S1751254AbaKTFNO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 00:13:14 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:63649 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752AbaKTFNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 00:10:09 -0500
+	Thu, 20 Nov 2014 00:13:13 -0500
+Message-ID: <546D7860.2010300@linaro.org>
+Date: Thu, 20 Nov 2014 14:13:04 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <546CAF5A.4060901@linaro.org>
-References: <1416292375-29560-1-git-send-email-dave.long@linaro.org>
-	<1416292375-29560-2-git-send-email-dave.long@linaro.org>
-	<20141118145643.GO18842@arm.com>
-	<CA+b37P337jcTCPTg4Ydxh6TKwqmyMngt-eEowzfsTNBDZ7-NEg@mail.gmail.com>
-	<20141119112553.GC15985@arm.com>
-	<546CAF5A.4060901@linaro.org>
-Date: Thu, 20 Nov 2014 10:40:08 +0530
-Message-ID: <CA+b37P1UGDvVsCr_Y5p+N3MZF6fb-w09hb2woHmuy2ZDO84aWg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/5] arm64: Kprobes with single stepping support
-From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-To: David Long <dave.long@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>,
+To: Will Deacon <will.deacon@arm.com>
+CC: "keescook@chromium.org" <keescook@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        William Cohen <wcohen@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH v8 2/6] arm64: ptrace: allow tracer to skip a system call
+References: <1416273038-15590-1-git-send-email-takahiro.akashi@linaro.org> <1416273038-15590-3-git-send-email-takahiro.akashi@linaro.org> <20141118140425.GM18842@arm.com> <546C58DB.5080204@linaro.org> <20141119190601.GM15985@arm.com>
+In-Reply-To: <20141119190601.GM15985@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 November 2014 20:25, David Long <dave.long@linaro.org> wrote:
->> I was thinking of the magic hex numbers in the kprobes decode tables,
->> which
->> seem to correspond directly to the instruction classes described in insn.c
+On 11/20/2014 04:06 AM, Will Deacon wrote:
+> On Wed, Nov 19, 2014 at 08:46:19AM +0000, AKASHI Takahiro wrote:
+>> On 11/18/2014 11:04 PM, Will Deacon wrote:
+>>> On Tue, Nov 18, 2014 at 01:10:34AM +0000, AKASHI Takahiro wrote:
+>>>>
+>>>> +	if (((int)regs->syscallno == -1) && (orig_syscallno == -1)) {
+>>>> +		/*
+>>>> +		 * user-issued syscall(-1):
+>>>> +		 * RESTRICTION: We always return ENOSYS whatever value is
+>>>> +		 *   stored in x0 (a return value) at this point.
+>>>> +		 * Normally, with ptrace off, syscall(-1) returns -ENOSYS.
+>>>> +		 * With ptrace on, however, if a tracer didn't pay any
+>>>> +		 * attention to user-issued syscall(-1) and just let it go
+>>>> +		 * without a hack here, it would return a value in x0 as in
+>>>> +		 * other system call cases. This means that this system call
+>>>> +		 * might succeed and see any bogus return value.
+>>>> +		 * This should be definitely avoided.
+>>>> +		 */
+>>>> +		regs->regs[0] = -ENOSYS;
+>>>> +	}
+>>>
+>>> I'm still really uncomfortable with this, and it doesn't seem to match what
+>>> arch/arm/ does either.
 >>
->> Keeping the actual emulation code separate makes sense.
+>> Yeah, I know but
+>> as I mentioned before, syscall(-1) will be signaled on arm, and so we don't
+>> have to care about a return value :)
+>
+> What does x86 do?
+
+On x86, syscall(-1) returns -ENOSYS if not traced, and we can change a return
+value if traced.
+
+>>> Doesn't it also prevent a tracer from skipping syscall(-1)?
 >>
->> Will
+>> Syscall(-1) will return -ENOSYS whether or not a syscallno is explicitly
+>> replaced with -1 by a tracer, and, in this sense, it is *skipped*.
 >
->
-> Of course that follows the model of the much more complex arm32
-> kprobes/uprobes decoding.  I can have a go at replacing it with insn.c
-> calls.
-well, the magic hex numbers were derived directly from ARMv8 ARM
-Tabled C4.1 thru C4.6 and bit-masking would be faster search, but
-surely you can give a try with insn.c (this would consume lot of
-function calls to arrive at same decision).
-~Sandeepa
->
-> -dl
+> Ok, but now userspace sees -ENOSYS for a skipped system call in that case,
+> whereas it would usually see whatever the trace put in x0, right?
+
+Yes.
+If you don't really like this behavior, how about this patch instead of my [2/6] patch?
+
+diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+index 726b910..1ef57d0 100644
+--- a/arch/arm64/kernel/entry.S
++++ b/arch/arm64/kernel/entry.S
+@@ -668,8 +668,15 @@ ENDPROC(el0_svc)
+          * switches, and waiting for our parent to respond.
+          */
+  __sys_trace:
++       cmp     w8, #-1                         // default errno for invalid
++       b.ne    1f                              // system call
++       mov     x0, #-ENOSYS
++       str     x0, [sp, #S_X0]
++1:
+         mov     x0, sp
+         bl      syscall_trace_enter
++       cmp     w0, #-1                         // skip the syscall?
++       b.eq    __sys_trace_return_skipped
+         adr     lr, __sys_trace_return          // return address
+         uxtw    scno, w0                        // syscall number (possibly new)
+         mov     x1, sp                          // pointer to regs
+@@ -684,6 +691,7 @@ __sys_trace:
+
+  __sys_trace_return:
+         str     x0, [sp]                        // save returned x0
++__sys_trace_return_skipped:
+         mov     x0, sp
+         bl      syscall_trace_exit
+         b       ret_to_user
+
+With this change, I believe, syscall(-1) returns -ENOSYS by default whether traced
+or not, and still you can change a return value when tracing.
+(But a drawback here is that a tracer will see -ENOSYS in x0 even at syscall entry
+for syscall(-1).)
+
+
+-Takahiro AKASHI
+
+
+
+> Will
 >
