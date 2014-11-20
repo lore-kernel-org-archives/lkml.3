@@ -1,85 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063AbaKTL2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 06:28:48 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:61888 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaKTL2n (ORCPT
+	id S1756487AbaKTL3O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 06:29:14 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:50751 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755835AbaKTL3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 06:28:43 -0500
+	Thu, 20 Nov 2014 06:29:12 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141120104223.2cea8043@canb.auug.org.au>
-References: <1416418072-18639-1-git-send-email-drysdale@google.com>
- <1416418072-18639-5-git-send-email-drysdale@google.com> <20141120104223.2cea8043@canb.auug.org.au>
-From: David Drysdale <drysdale@google.com>
-Date: Thu, 20 Nov 2014 11:28:22 +0000
-Message-ID: <CAHse=S--yNmP5sTr2kg_7kb2V8Lh2FioTSH_o23MstVrdt4Wmw@mail.gmail.com>
-Subject: Re: [PATCHv9 4/5] sparc: Hook up execveat system call.
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Miller <davem@davemloft.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
+In-Reply-To: <1416410903-162369-1-git-send-email-heikki.krogerus@linux.intel.com>
+References: <1416410903-162369-1-git-send-email-heikki.krogerus@linux.intel.com>
+Date: Thu, 20 Nov 2014 16:59:11 +0530
+Message-ID: <CAFp+6iGV7QBL7LCGXjN1p5-fFwUZJqEGg-p8rhe1AqwOtnfhVA@mail.gmail.com>
+Subject: Re: [PATCHv5 0/7] phy: simplified phy lookup
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rich Felker <dalias@aerifal.cx>, Christoph Hellwig <hch@infradead.org>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        andrew.kim@intel.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 11:42 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi David,
+Hi,
+
+
+On Wed, Nov 19, 2014 at 8:58 PM, Heikki Krogerus
+<heikki.krogerus@linux.intel.com> wrote:
+> This set will in practice just separate the creation of a phy and
+> binding of it to the consumer. Mapping phys to consumers can be now
+> done with lookups similarly how clocks can be mapped in clkdev.c.
 >
-> On Wed, 19 Nov 2014 17:27:51 +0000 David Drysdale <drysdale@google.com> wrote:
->>
->> diff --git a/arch/sparc/kernel/systbls_64.S b/arch/sparc/kernel/systbls_64.S
->> index 580cde9370c9..15069cb35dac 100644
->> --- a/arch/sparc/kernel/systbls_64.S
->> +++ b/arch/sparc/kernel/systbls_64.S
->> @@ -88,6 +88,7 @@ sys_call_table32:
->>       .word sys_syncfs, compat_sys_sendmmsg, sys_setns, compat_sys_process_vm_readv, compat_sys_process_vm_writev
->>  /*340*/      .word sys_kern_features, sys_kcmp, sys_finit_module, sys_sched_setattr, sys_sched_getattr
->>       .word sys32_renameat2, sys_seccomp, sys_getrandom, sys_memfd_create, sys_bpf
->> +/*350*/      .word sys_execveat
+> Vivek needs to handle the phys of dwc3 also in xhci driver on
+> Exynos5420 SoC, so I'm resending these now.
+
+This set of patches work fine for me.
+Tested on usb-next with this series and my series for 5420 phy calibration:
+[PATCH v7 0/2] Fine tune USB 3.0 PHY on exynos5420
+https://lkml.org/lkml/2014/10/31/266
+
+If you want here's my tested-by, again for entire series.
+
+Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
+
 >
-> Shouldn't this be compat_sys_execveat?
-
-Yeah, that would make sense -- thanks for spotting.
-
-Looking at this more closely, I also wonder if we need a pair of wrappers
-analogous to sys(32|64)_execve -- they include a (pipeline-executed)
-flushw instruction after the jmpl to [compat_]sys_execve, which I guess
-might be needed.  So I could add something like the following to
-arch/sparc/kernel/syscalls.S:
-
-  sys64_execveat:
-      set sys_execveat, %g1
-      jmpl %g1, %g0
-      flushw
-  #ifdef CONFIG_COMPAT
-  sys32_execveat:
-      set compat_sys_execveat, %g1
-      jmpl %g1, %g0
-      flushw
-  #endif
-
-However, I don't speak SPARC and can't run the code -- any thoughts
-out there from someone who does & can?
-
-Or maybe I should stop trying to be helpful with speculative patches, and
-just leave wiring up the sparc stuff to the experts...
-
->>
->>  #endif /* CONFIG_COMPAT */
+> Changes since v4:
+> - Support for static lookups is dropped. The lookups can be now only
+>   be created with phy_create_lookup()
+>
+> Changes since v3:
+> - We can't rely on the order in which the phys are registered, so
+>   using the name of the parent of the phy instance for matching
+>   instead of the phy itself. The parent device is always the actual
+>   physical device.
+> - Using PHY_LOOKUP macro in twl-common.c as suggested by Kishon.
+>
+> Changes since v2:
+> - Calling ida_simple_remove in release function as pointed out by Greg
+>
+>
+> Heikki Krogerus (7):
+>   phy: safer to_phy() macro
+>   phy: improved lookup method
+>   phy: twl4030: use the new lookup method
+>   arm: omap3: twl: remove usb phy init data
+>   phy: remove the old lookup method
+>   base: platform: name the device already during allocation
+>   usb: dwc3: host: convey the PHYs to xhci
+>
+>  Documentation/phy.txt                |  60 ++++++--------------
+>  arch/arm/mach-omap2/twl-common.c     |  12 +---
+>  drivers/base/platform.c              |  69 +++++++++++++----------
+>  drivers/phy/phy-bcm-kona-usb2.c      |   2 +-
+>  drivers/phy/phy-berlin-sata.c        |   2 +-
+>  drivers/phy/phy-core.c               | 105 ++++++++++++++++++++++++-----------
+>  drivers/phy/phy-exynos-dp-video.c    |   2 +-
+>  drivers/phy/phy-exynos-mipi-video.c  |   2 +-
+>  drivers/phy/phy-exynos5-usbdrd.c     |   3 +-
+>  drivers/phy/phy-exynos5250-sata.c    |   2 +-
+>  drivers/phy/phy-hix5hd2-sata.c       |   2 +-
+>  drivers/phy/phy-miphy365x.c          |   2 +-
+>  drivers/phy/phy-mvebu-sata.c         |   2 +-
+>  drivers/phy/phy-omap-usb2.c          |   2 +-
+>  drivers/phy/phy-qcom-apq8064-sata.c  |   3 +-
+>  drivers/phy/phy-qcom-ipq806x-sata.c  |   3 +-
+>  drivers/phy/phy-rcar-gen2.c          |   2 +-
+>  drivers/phy/phy-samsung-usb2.c       |   3 +-
+>  drivers/phy/phy-spear1310-miphy.c    |   2 +-
+>  drivers/phy/phy-spear1340-miphy.c    |   2 +-
+>  drivers/phy/phy-stih407-usb.c        |   2 +-
+>  drivers/phy/phy-stih41x-usb.c        |   2 +-
+>  drivers/phy/phy-sun4i-usb.c          |   2 +-
+>  drivers/phy/phy-ti-pipe3.c           |   2 +-
+>  drivers/phy/phy-twl4030-usb.c        |   9 ++-
+>  drivers/phy/phy-xgene.c              |   2 +-
+>  drivers/pinctrl/pinctrl-tegra-xusb.c |   4 +-
+>  drivers/usb/dwc3/host.c              |  22 ++++++--
+>  include/linux/i2c/twl.h              |   2 -
+>  include/linux/phy/phy.h              |  52 +++++++----------
+>  30 files changed, 195 insertions(+), 186 deletions(-)
 >
 > --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+> 2.1.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
