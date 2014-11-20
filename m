@@ -1,254 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757667AbaKTRwX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:52:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36795 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757543AbaKTRwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 12:52:20 -0500
-Message-ID: <546E2A4E.2040907@suse.cz>
-Date: Thu, 20 Nov 2014 18:52:14 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1757742AbaKTRxU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:53:20 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:57072 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756062AbaKTRxT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 12:53:19 -0500
+Date: Thu, 20 Nov 2014 09:53:16 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Barto <mister.freeman@laposte.net>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: BUG in scsi_lib.c due to a bad commit
+Message-ID: <20141120175316.GA19590@infradead.org>
+References: <20141120060933.GA21432@infradead.org>
+ <546E2880.5070303@laposte.net>
 MIME-Version: 1.0
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-CC: Weijie Yang <weijie.yang@samsung.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: page_alloc: store updated page migratetype to avoid
- misusing stale value
-References: <000301d00253$0fcd0560$2f671020$%yang@samsung.com>	<546D0B78.9010005@suse.cz> <CAL1ERfNJKoAr3_Tx_MCn6KgF2n2Ui9B31W-z4sNiW8A6vaw8vA@mail.gmail.com>
-In-Reply-To: <CAL1ERfNJKoAr3_Tx_MCn6KgF2n2Ui9B31W-z4sNiW8A6vaw8vA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546E2880.5070303@laposte.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2014 02:42 PM, Weijie Yang wrote:
-> On Thu, Nov 20, 2014 at 5:28 AM, Vlastimil Babka <vbabka@suse.cz> wrote:
->> On 11/17/2014 11:40 AM, Weijie Yang wrote:
->>> The commit ad53f92e(fix incorrect isolation behavior by rechecking migratetype)
->>> patch series describe the race between page isolation and free path, and try to
->>> fix the freepage account issues.
->>>
->>> However, there is still a little issue: freed page could have stale migratetype
->>> in the free_list. This would cause some bad behavior if we misuse this stale
->>> value later.
->>> Such as: in __test_page_isolated_in_pageblock() we check the buddy page, if the
->>> page's stale migratetype is not MIGRATE_ISOLATE, which will cause unnecessary
->>> page move action.
->>
->> Hello,
+On Thu, Nov 20, 2014 at 06:44:32PM +0100, Barto wrote:
+> I notice that my motherboard doesn't support "AHCI" mode, my motherboard
+> uses an ICH7 sata controler, ICH7 doesn't support AHCI if I check the
+> technical specifications of this controler,
 > 
-> Hi Vlastimil,
-> Thanks for your reply, that makes me think from a bigger view.
+> it seems that my bios treats SATA devices like IDE devices ( IDE
+> emulation mode ), for example I can read in the bios these lines "IDE 0
+> channel master : "the name of Sata harddisk 1", "IDE 3 channel master :
+> "the name of Sata harddisk 2",
 > 
-> After a careful check according to your said, this patch is not proper, it
-> should be dropped and I will resend a v2 patch.
+> perhaps the bug only occurs when the AHCI mode is not used ?
 
-Thanks.
+Looks like it.  I suspect you device only supports a single outstanding
+command without AHCI, can you confirm this by doing:
 
->> are there other places than __test_page_isolated_in_pageblock(), where
->> freepage_migratetype matters? You make it sound like it's just an example, but I
->> doubt there is any other. All other callers of get_freepage_migratetype() are
->> querying pages on the pcplists, not the buddy lists. There it serves as a cached
->> value for migratetype so it doesn't have to be read again when freeing from
->> pcplists to budy list.
-> 
-> Agree. Now only __test_page_isolated_in_pageblock() matters
-> freepage_migratetype.
-> pages from pcplists have a cached but not 100% accurate migratetype and we
-> will recheck them when drain them to buddy if there is a need(race
-> with isolation);
-
-Yes.
-
-> pages in buddy should have an update and 100% accurate migratetype, or it would
-> cause some bad issue, and that is the aim of this patch.
-
-Yeah, but I question the importance of the only existing "bad issue" which is
-__test_page_isolated_in_pageblock().
-
-> Or, if we make nobody rely on the freepage_migratetype in buddy, we can take no
-> care of the 100% accuracy of the freepage_migratetype in buddy.
-> This is your suggestion, do I understand it correctly?
-
-Yes, I would prefer that.
-
->> Seems to me that __test_page_isolated_in_pageblock() was an exception that tried
->> to rely on freepage_migratetype being valid even after the page has moved from
->> pcplist to buddy list, but this assumption was always broken.
-> 
-> I am not very clear, could you please explain why it always broken?
-
-Well your patch is a proof it was/is broken. The only pages where migratetype is
-valid are those that went through move_freepages() during isolation. Those that
-were being freed during the isolation can be wrong.
-
->> Sure, if all the pages in isolated pageblock are catched by move_freepages()
->> during isolation, then the freetype is correct, but that doesn't always happen
->> due to parallel activity (and that's the core problem that Joonsoo's series
->> dealt with).
-> 
-> Agree. Joonsoo's series fix the race between page freeing and isolation due to
-> not-update freepage_migratetype check, and introduce nr_isolate_pageblock
-> to avoid too much heavy check.
-
-Yes.
-
->> So, in this patch you try to make sure that freepage_migratetype will be correct
->> after page got to buddy list via __free_one_page(). But I don't think that
->> covers all situations. Look at expand(), which puts potentially numerous
->> splitted free pages on free_list, and doesn't set freepage_migratetype. Sure,
->> this ommision doesn't affect __test_page_isolated_in_pageblock(), as expand() is
->> called during allocation, which won't touch ISOLATE pageblocks, and free pages
->> created by expand() *before* setting ISOLATE are processed by move_freepages().
-> 
-> I have to admit I did not think about the page_alloc path(such as
-> expand), I will review
-> the code before I resend the patch.
-> What I thought is setting freepage_migratetype via __free_one_page()
-> is enough because
-> we can ensure them correct from the begining __free_pages_bootmem().
-> 
->> So my point is, you are maybe fixing just the case of
->> __test_page_isolated_in_pageblock() (but not completely I think, see below) by
->> adding extra operation to __free_one_page() which is hot path. And all for a
->> WARN_ON_ONCE. That doesn't seem like a good tradeoff. And to do it consistently,
->> you would need to add the operation also to expand(), another hotpath. So that's
->> a NAK from me.
-> 
-> I agree we should handle hot patch carefully, in my next patch I will
-> consider how to
-> avoid affecting the hot path meanwhile fix the
-> __test_page_isolated_in_pageblock().
-> 
->> I would uggest you throw the __test_page_isolated_in_pageblock() function away
->> completely.
-> 
-> I'm not sure we can throw it completely. There is another check on
-> page_count besides
-> PageBuddy() and hwpoison stuff.
-
-Sure, so just assume the migratetype is correct. For capturing the pages, it
-should only matter if the page is free (i.e. PageBuddy), after all?
-
->> Or just rework it to check for PageBuddy() and hwpoison stuff - the
->> migratetype checks make no sense to me. Or if you insist that this is needed for
->> debugging further possible races in page isolation, then please hide the
->> necessary bits in hot paths being a debugging config option.
-> 
-> Agree.
-> 
->> If you agree, we can even throw away the set_freepage_migratetype() calls from
->> move_freepages() - there's no point to them anymore.
-> 
-> Agree.
-> 
->>> This patch store the page's updated migratetype after free the page to the
->>> free_list to avoid subsequent misusing stale value, and use a WARN_ON_ONCE
->>> to catch a potential undetected race between isolatation and free path.
->>>
->>>
->>> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
->>> ---
->>>  mm/page_alloc.c     |    1 +
->>>  mm/page_isolation.c |   17 +++++------------
->>>  2 files changed, 6 insertions(+), 12 deletions(-)
->>>
->>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->>> index 616a2c9..177fca0 100644
->>> --- a/mm/page_alloc.c
->>> +++ b/mm/page_alloc.c
->>> @@ -622,6 +622,7 @@ static inline void __free_one_page(struct page *page,
->>
->> See here at this point, the function has this code:
->>                         list_add_tail(&page->lru,
->>                                &zone->free_area[order].free_list[migratetype]);
->>                         goto out;
->>
->> You are missing this list_add_tail() path with your patch.
-> 
-> My fault.
-> 
->>>       }
->>>
->>>       list_add(&page->lru, &zone->free_area[order].free_list[migratetype]);
->>> +     set_freepage_migratetype(page, migratetype);
->>>  out:
->>>       zone->free_area[order].nr_free++;
->>>  }
->>> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
->>> index c8778f7..0618071 100644
->>> --- a/mm/page_isolation.c
->>> +++ b/mm/page_isolation.c
->>> @@ -223,19 +223,12 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
->>>               page = pfn_to_page(pfn);
->>>               if (PageBuddy(page)) {
->>>                       /*
->>> -                      * If race between isolatation and allocation happens,
->>> -                      * some free pages could be in MIGRATE_MOVABLE list
->>> -                      * although pageblock's migratation type of the page
->>> -                      * is MIGRATE_ISOLATE. Catch it and move the page into
->>> -                      * MIGRATE_ISOLATE list.
->>> +                      * Use a WARN_ON_ONCE to catch a potential undetected
->>> +                      * race between isolatation and free pages, even if
->>> +                      * we try to avoid this issue.
->>>                        */
->>> -                     if (get_freepage_migratetype(page) != MIGRATE_ISOLATE) {
->>> -                             struct page *end_page;
->>> -
->>> -                             end_page = page + (1 << page_order(page)) - 1;
->>> -                             move_freepages(page_zone(page), page, end_page,
->>> -                                             MIGRATE_ISOLATE);
->>> -                     }
->>> +                     WARN_ON_ONCE(get_freepage_migratetype(page) !=
->>> +                                     MIGRATE_ISOLATE);
->>
->> So yeah as I said, all the trouble and inconsistency for a WARN_ON_ONCE doesn't
->> seem worth it.
-> 
-> May be adding a debug config is better.
-
-Maybe another solution for a debug config would be to walk the free lists
-manually to determine where pages are placed? Slower for sure, but without
-cluttering unrelated page allocation code, so maybe acceptable for debug-only?
-
->>>                       pfn += 1 << page_order(page);
->>>               }
->>
->> BTW, here the function continues like:
->>
->>                 else if (page_count(page) == 0 &&
->>                         get_freepage_migratetype(page) == MIGRATE_ISOLATE)
->>                         pfn += 1;
->>
->> I believe this code tries to check for pages on pcplists? But isn't it bogus? At
->> least currently, page is never added to pcplist with MIGRATE_ISOLATE
->> freepage_migratetype - it goes straight to buddy lists.
-> 
-> I think we can remove this check, how do you think?
-> I cann't find its necessity.
-
-I think so, unless I'm missing something.
-
->> Also, why count pages on pcplists as successfully isolated?
->> isolate_freepages_range() will fail on them.
-> 
-> I think you make a misread, if page's count is not zero we break the while
-> and return fail.
-
-Yeah, but for count == zero it assumes it's on pcplists and that it's fine, I'd
-argue it's not.
-
->>>               else if (page_count(page) == 0 &&
->>>
->>
-> 
+for i in /sys/class/scsi_host/*; do cat $i/can_queue; done
 
