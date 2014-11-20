@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102AbaKTU1j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 15:27:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39572 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756899AbaKTU1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 15:27:37 -0500
-Message-ID: <1416515255.25223.1.camel@linux-0dmf.site>
-Subject: Re: [PATCH v1] Input: elants_i2c: Add Elan touchscreen support
-From: Oliver Neukum <oneukum@suse.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: scott <scott.liu@emc.com.tw>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, Vincent Wang <vincent.wang@emc.com.tw>,
-        Jeff Chuang <jeff.chuang@emc.com.tw>,
-        Benson Leung <bleung@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        David Herrmann <dh.herrmann@gmail.com>
-Date: Thu, 20 Nov 2014 21:27:35 +0100
-In-Reply-To: <20141120174709.GA14798@dtor-glaptop>
-References: <1388146515-19481-1-git-send-email-scott.liu@emc.com.tw>
-	 <20141120081113.GA37534@dtor-ws>
-	 <1416479490.28599.13.camel@linux-0dmf.site>
-	 <20141120174709.GA14798@dtor-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757965AbaKTUad (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 15:30:33 -0500
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:54760 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754716AbaKTUab (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 15:30:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <546DD2DE.9080405@de.ibm.com>
+References: <1415360716-9670-2-git-send-email-borntraeger@de.ibm.com>
+	<54611D86.4040306@de.ibm.com>
+	<CA+55aFyEigSL64RJH8AO86gFBBB84+dgk7eEUPx=CaLwJMcO_w@mail.gmail.com>
+	<546DD2DE.9080405@de.ibm.com>
+Date: Thu, 20 Nov 2014 12:30:30 -0800
+X-Google-Sender-Auth: PJ6lUW2vQ2m5rGZHfXnvoLcK7nE
+Message-ID: <CA+55aFzxSa0qM5iC-aM4mh=qni0r87_gHR3tN6Xzo0miYSrcgw@mail.gmail.com>
+Subject: Re: compiler bug gcc4.6/4.7 with ACCESS_ONCE and workarounds
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andreas Krebbel <Andreas.Krebbel@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-20 at 09:47 -0800, Dmitry Torokhov wrote:
-> Hi Oliver,
-> 
-> On Thu, Nov 20, 2014 at 11:31:30AM +0100, Oliver Neukum wrote:
-> > > +static int elants_i2c_initialize(struct elants_data *ts)
-> > > +{
-> > > +       struct i2c_client *client = ts->client;
-> > > +       int error, retry_cnt;
-> > > +       const u8 hello_packet[] = { 0x55, 0x55, 0x55, 0x55 };
-> > > +       const u8 recov_packet[] = { 0x55, 0x55, 0x80, 0x80 };
-> > > +       u8 buf[HEADER_SIZE];
-> > > +
-> > 
-> > Strictly speaking you should disable preemption here.
-> 
-> Umm, why?
+On Thu, Nov 20, 2014 at 3:39 AM, Christian Borntraeger
+<borntraeger@de.ibm.com> wrote:
+>
+> So It looks like we could make a change to ACCESS_ONCE. Would something like
+>
+> CONFIG_ARCH_SCALAR_ACCESS_ONCE be a good start?
 
-You said the upper bound matters. So you need to protect yourself
-against losing too much time by preemption.
+No, if it's just a handful of places to be fixed, let's not add config
+options for broken cases.
 
-	Regards
-		Oliver
+> This would boil down to
+> Patch1: Provide stricter ACCESS_ONCE if CONFIG_ARCH_SCALAR_ACCESS_ONCE is set + docu update + comments
+> Patch2: Change mm/* to barriers
+> Patch3: Change x86 locks
+> Patch4: Change x86 gup
+> Patch4: Enable CONFIG_ARCH_SCALAR_ACCESS_ONCE for s390x and x86
 
+Just do patches 2-4 first, and then patch 1 unconditionally.
 
+Obviously you'd need to spread the word on linux-arch to see how bad
+it is for other cases, but if other architectures are at all like x86
+and s390, and just require a few trivial patches, let's not make this
+some config option.
+
+                   Linus
