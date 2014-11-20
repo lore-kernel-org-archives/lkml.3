@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaKTKiz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:38:55 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:47364 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbaKTKiw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:38:52 -0500
-Date: Thu, 20 Nov 2014 10:38:44 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Flora Fu <flora.fu@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, srv_heupstream@mediatek.com,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Dongdong Cheng <dongdong.cheng@mediatek.com>
-Subject: Re: [PATCH 2/7] mfd: MT6397: Add regmap for MT8135 and MT6397 SoC
-Message-ID: <20141120103844.GA13269@x1>
-References: <1416210027-5562-1-git-send-email-flora.fu@mediatek.com>
- <1416210027-5562-3-git-send-email-flora.fu@mediatek.com>
- <20141118114645.GX24004@x1>
- <20141118134618.GF30369@pengutronix.de>
- <20141119170454.GJ1875@x1>
- <20141120091943.GJ30369@pengutronix.de>
+	id S1756113AbaKTKjq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 05:39:46 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:37587 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755835AbaKTKjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 05:39:44 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Mel Gorman'" <mgorman@suse.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        "Sasha Levin" <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
+        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
+        Kirill Shutemov <kirill.shutemov@linux.intel.com>
+Subject: RE: [PATCH 03/10] mm: Convert p[te|md]_numa users to
+ p[te|md]_protnone_numa
+Thread-Topic: [PATCH 03/10] mm: Convert p[te|md]_numa users to
+ p[te|md]_protnone_numa
+Thread-Index: AQHQBKvhmjjd2LiLyUSLGQ6oeihg2JxpUtlw
+Date: Thu, 20 Nov 2014 10:38:56 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1C9F48CB@AcuExch.aculab.com>
+References: <1416478790-27522-1-git-send-email-mgorman@suse.de>
+ <1416478790-27522-4-git-send-email-mgorman@suse.de>
+In-Reply-To: <1416478790-27522-4-git-send-email-mgorman@suse.de>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141120091943.GJ30369@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAKAdpu2009519
 
-On Thu, 20 Nov 2014, Sascha Hauer wrote:
+From:  Mel Gorman
+> Convert existing users of pte_numa and friends to the new helper. Note
+> that the kernel is broken after this patch is applied until the other
+> page table modifiers are also altered. This patch layout is to make
+> review easier.
 
-> On Wed, Nov 19, 2014 at 05:04:54PM +0000, Lee Jones wrote:
-> > On Tue, 18 Nov 2014, Sascha Hauer wrote:
-> > 
-> > > On Tue, Nov 18, 2014 at 11:46:45AM +0000, Lee Jones wrote:
-> > > > On Mon, 17 Nov 2014, Flora Fu wrote:
-> > > > 
-> > > > > Add PMIC wrapper of MT8135 to access MFD MT6397.
-> > > > > This is regmap of MT6397 MFD.
-> > > > > 
-> > > > > Signed-off-by: Flora Fu <flora.fu@mediatek.com>
-> > > > > ---
-> > > > >  drivers/mfd/Kconfig            |   8 +
-> > > > >  drivers/mfd/Makefile           |   1 +
-> > > > >  drivers/mfd/mt8135-pmic-wrap.c | 847 +++++++++++++++++++++++++++++++++++++++++
-> > > > 
-> > > > All of the PMIC functionality needs removing from MFD and placed
-> > > > somewhere else.  I suggest either drivers/power or drivers/regulator.
-> > > 
-> > > This is no PMIC functionality. The MT8135 has a unit which is is used to
-> > > access the PMIC (which is not only a PMIC, but also Touchscreen
-> > > interface and other stuff). This unit is called pmic-wrapper in the
-> > > docs. See the introductory mail for a nice picture.
-> > 
-> > I saw the picture, it's very nice.  Whatever this is, it's not an
-> > MFD.  It's a device which is located on an MFD.  There is far too much
-> > functional (the operative word here) code contained in this patch.
-> 
-> The MT6397 is a classical MFD device. It has a PMIC, an audio amp and a
-> RTC. It is very tightly coupled to the SoC via SPI, but the SPI itself
-> is not directly visible on the SoC. It's accessible indirectly via the
-> PMIC-wrapper. Indeed the PMIC-wrapper is not MFD. Another dumping ground
-> that comes to my mind is drivers/soc/. We could move over there.
+Doesn't that break bisection?
 
-Thanks for understanding my point-of-view.  Hopefully there is a
-suitable "dumping ground", or even better a proper place to move the
-PMIC-wrapper to.
+	David
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
