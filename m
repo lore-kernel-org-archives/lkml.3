@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757947AbaKTRjv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:39:51 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:36849
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757843AbaKTRjt (ORCPT
+	id S1758023AbaKTRlB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:41:01 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:7293 "EHLO
+	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757918AbaKTRjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 12:39:49 -0500
+	Thu, 20 Nov 2014 12:39:51 -0500
 X-IronPort-AV: E=Sophos;i="5.07,425,1413237600"; 
-   d="scan'208";a="89679745"
+   d="scan'208";a="89679751"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 To: linux-kernel@vger.kernel.org
 Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/7] gdrom: fix error return code
-Date: Thu, 20 Nov 2014 18:33:56 +0100
-Message-Id: <1416504842-18548-2-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 7/7] parport_sunbpp: fix error return code
+Date: Thu, 20 Nov 2014 18:34:02 +0100
+Message-Id: <1416504842-18548-8-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1416504842-18548-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1416504842-18548-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -49,39 +49,49 @@ ret = 0
 }
 // </smpl>
 
+The patch also removes a newly unnecessary initialization of err, replaces
+spaces by a tab, and pulls an assignment out of a conditional test
+expression.
+
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
 The patches in this series are independent of each other.
 
- drivers/cdrom/gdrom.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/parport/parport_sunbpp.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
-index 584bc31..46ecd95 100644
---- a/drivers/cdrom/gdrom.c
-+++ b/drivers/cdrom/gdrom.c
-@@ -807,16 +807,20 @@ static int probe_gdrom(struct platform_device *devptr)
- 	if (err)
- 		goto probe_fail_cmdirq_register;
- 	gd.gdrom_rq = blk_init_queue(gdrom_request, &gdrom_lock);
--	if (!gd.gdrom_rq)
-+	if (!gd.gdrom_rq) {
+diff --git a/drivers/parport/parport_sunbpp.c b/drivers/parport/parport_sunbpp.c
+index 01cf1c1..14f4cb8 100644
+--- a/drivers/parport/parport_sunbpp.c
++++ b/drivers/parport/parport_sunbpp.c
+@@ -269,7 +269,7 @@ static int bpp_probe(struct platform_device *op)
+ {
+ 	struct parport_operations *ops;
+ 	struct bpp_regs __iomem *regs;
+-	int irq, dma, err = 0, size;
++	int irq, dma, err, size;
+ 	unsigned char value_tcr;
+ 	void __iomem *base;
+ 	struct parport *p;
+@@ -286,12 +286,17 @@ static int bpp_probe(struct platform_device *op)
+ 
+ 	ops = kmemdup(&parport_sunbpp_ops, sizeof(struct parport_operations),
+ 		      GFP_KERNEL);
+-        if (!ops)
++	if (!ops) {
 +		err = -ENOMEM;
- 		goto probe_fail_requestq;
+ 		goto out_unmap;
 +	}
  
- 	err = probe_gdrom_setupqueue();
- 	if (err)
- 		goto probe_fail_toc;
- 
- 	gd.toc = kzalloc(sizeof(struct gdromtoc), GFP_KERNEL);
--	if (!gd.toc)
-+	if (!gd.toc) {
+ 	dprintk(("register_port\n"));
+-	if (!(p = parport_register_port((unsigned long)base, irq, dma, ops)))
++	p = parport_register_port((unsigned long)base, irq, dma, ops);
++	if (!p) {
 +		err = -ENOMEM;
- 		goto probe_fail_toc;
+ 		goto out_free_ops;
 +	}
- 	add_disk(gd.disk);
- 	return 0;
  
+ 	p->size = size;
+ 	p->dev = &op->dev;
 
