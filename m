@@ -1,160 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383AbaKTJXO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 04:23:14 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:63352 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756837AbaKTJXG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 04:23:06 -0500
-Message-ID: <546DB2F5.8070309@linaro.org>
-Date: Thu, 20 Nov 2014 10:23:01 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1757365AbaKTJXL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 04:23:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54376 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756137AbaKTJXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 04:23:07 -0500
+Message-ID: <546DB2E8.10809@redhat.com>
+Date: Thu, 20 Nov 2014 10:22:48 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Sonny Rao <sonnyrao@chromium.org>, linux-arm-kernel@lists.infradead.org
-CC: linux-kernel@vger.kernel.org, dianders@chromium.org,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, stable@vger.kernel.org
-Subject: Re: [PATCH v4] clocksource: arch_timer: Fix code to use physical
- timers when requested
-References: <1412753937-29343-1-git-send-email-sonnyrao@chromium.org>
-In-Reply-To: <1412753937-29343-1-git-send-email-sonnyrao@chromium.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: SF Markus Elfring <elfring@users.sourceforge.net>,
+        John Fastabend <john.fastabend@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <jhs@mojatatu.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
+Subject: Re: net: sched: Deletion of an unnecessary check before the function
+ call "kfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546BAB93.4010406@users.sourceforge.net> <546CC9B3.5060405@gmail.com> <546CE650.6080205@users.sourceforge.net> <alpine.DEB.2.10.1411200947320.2447@hadrien>
+In-Reply-To: <alpine.DEB.2.10.1411200947320.2447@hadrien>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2014 09:38 AM, Sonny Rao wrote:
-> This is a bug fix for using physical arch timers when
-> the arch_timer_use_virtual boolean is false.  It restores the
-> arch_counter_get_cntpct() function after removal in
+On 11/20/2014 09:47 AM, Julia Lawall wrote:
+> On Wed, 19 Nov 2014, SF Markus Elfring wrote:
 >
-> 0d651e4e "clocksource: arch_timer: use virtual counters"
+>>> Marcus, what tree are you looking at?
+>>
+>> I dared to base this update suggestion on the source files
+>> for Linux 3.17.3. Are newer software developments relevant here?
 >
-> We need this on certain ARMv7 systems which are architected like this:
->
-> * The firmware doesn't know and doesn't care about hypervisor mode and
->    we don't want to add the complexity of hypervisor there.
->
-> * The firmware isn't involved in SMP bringup or resume.
->
-> * The ARCH timer come up with an uninitialized offset between the
->    virtual and physical counters.  Each core gets a different random
->    offset.
->
-> * The device boots in "Secure SVC" mode.
->
-> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
->    CNTHCTL.PL1PCTEN (both default to 1 at reset)
->
-> One example of such as system is RK3288 where it is much simpler to
-> use the physical counter since there's nobody managing the offset and
-> each time a core goes down and comes back up it will get reinitialized
-> to some other random value.
->
-> Fixes: 0d651e4e65e9 ("clocksource: arch_timer: use virtual counters")
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-> Acked-by: Olof Johansson <olof@lixom.net>
-> ---
+> You should always use linux-next.  You should update it every day.
 
-Hi Sonny,
+Well, if you send in cleanups to netdev, you should always target
+the net-next tree:
 
-the patch does not apply. Could you refresh it please ?
-
-Thanks
-   -- Daniel
-
-> v2: Add fixes tag to commit message, cc stable, copy Doug's
->      description of the systems which need this in commit message.
-> v3: Don't change the memory-mapped physical timer/counter code
-> v4: remove the memory-mapped physical counter code since it's not used
-> ---
->   arch/arm/include/asm/arch_timer.h    |  9 +++++++++
->   arch/arm64/include/asm/arch_timer.h  | 10 ++++++++++
->   drivers/clocksource/arm_arch_timer.c | 10 +++++++---
->   3 files changed, 26 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
-> index 0704e0c..e72aa4d 100644
-> --- a/arch/arm/include/asm/arch_timer.h
-> +++ b/arch/arm/include/asm/arch_timer.h
-> @@ -78,6 +78,15 @@ static inline u32 arch_timer_get_cntfrq(void)
->   	return val;
->   }
->
-> +static inline u64 arch_counter_get_cntpct(void)
-> +{
-> +	u64 cval;
-> +
-> +	isb();
-> +	asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (cval));
-> +	return cval;
-> +}
-> +
->   static inline u64 arch_counter_get_cntvct(void)
->   {
->   	u64 cval;
-> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
-> index 9400596..58657c4 100644
-> --- a/arch/arm64/include/asm/arch_timer.h
-> +++ b/arch/arm64/include/asm/arch_timer.h
-> @@ -135,6 +135,16 @@ static inline void arch_timer_evtstrm_enable(int divider)
->   #endif
->   }
->
-> +static inline u64 arch_counter_get_cntpct(void)
-> +{
-> +	u64 cval;
-> +
-> +	isb();
-> +	asm volatile("mrs %0, cntpct_el0" : "=r" (cval));
-> +
-> +	return cval;
-> +}
-> +
->   static inline u64 arch_counter_get_cntvct(void)
->   {
->   	u64 cval;
-> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> index 6b50311..799139f 100644
-> --- a/drivers/clocksource/arm_arch_timer.c
-> +++ b/drivers/clocksource/arm_arch_timer.c
-> @@ -429,10 +429,14 @@ static void __init arch_counter_register(unsigned type)
->   	u64 start_count;
->
->   	/* Register the CP15 based counter if we have one */
-> -	if (type & ARCH_CP15_TIMER)
-> -		arch_timer_read_counter = arch_counter_get_cntvct;
-> -	else
-> +	if (type & ARCH_CP15_TIMER) {
-> +		if (arch_timer_use_virtual)
-> +			arch_timer_read_counter = arch_counter_get_cntvct;
-> +		else
-> +			arch_timer_read_counter = arch_counter_get_cntpct;
-> +	} else {
->   		arch_timer_read_counter = arch_counter_get_cntvct_mem;
-> +	}
->
->   	start_count = arch_timer_read_counter();
->   	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git
