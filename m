@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757751AbaKTQWE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 11:22:04 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:31910 "EHLO
+	id S1757772AbaKTQWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 11:22:09 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:31923 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757656AbaKTQWA (ORCPT
+	with ESMTP id S1757529AbaKTQWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 11:22:00 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-85-546e1526e20c
+	Thu, 20 Nov 2014 11:22:05 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-8b-546e152c4163
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>
 Cc: Linux PM list <linux-pm@vger.kernel.org>,
@@ -21,161 +21,108 @@ Cc: Linux PM list <linux-pm@vger.kernel.org>,
         Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
         Caesar Wang <caesar.wang@rock-chips.com>,
         Lukasz Majewski <l.majewski@samsung.com>
-Subject: [PATCH v2 3/4] thermal: of: Extend of-thermal to export table of trip
- points
-Date: Thu, 20 Nov 2014 17:21:27 +0100
-Message-id: <1416500488-7232-4-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH v2 4/4] thermal: of: Extend current of-thermal.c code to allow
+ setting emulated temp
+Date: Thu, 20 Nov 2014 17:21:28 +0100
+Message-id: <1416500488-7232-5-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1416500488-7232-1-git-send-email-l.majewski@samsung.com>
 References: <1412872737-624-1-git-send-email-l.majewski@samsung.com>
  <1416500488-7232-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t9jAV110bwQgy972C0er1nMZLFxxnpW
-	iy+f+9gs5l+5xmqx5q+SxZtH3BZvHm5mtLi8aw6bxefeI4wWTxaeYbJ4cHUam8WTh0Clrw62
-	sVj83DWPxYHPY+esu+wei/e8ZPJYN+0ts0dv8zs2j7+z9rN47PzewO7Rt2UVo8fnTXIeG+eG
-	BnBGcdmkpOZklqUW6dslcGU8+q9fsEC+Yu+U9cwNjMcluxg5OCQETCS2z1LvYuQEMsUkLtxb
-	z9bFyMUhJLCIUWLz+q3sIAkhgS4miQcPQ0FsNgE9ic93nzKB2CIC3hKv901nBGlgFmhnkbh+
-	aDcjSEJYIFxi4s+HTCALWARUJebPCwQJ8wq4SnTvPc4EsUxRovvZBDYQm1PATWLjsmYWiMUN
-	jBIT7rQwTmDkXcDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOHSfSe9gXNVgcYhRgINR
-	iYc3wSI3RIg1say4MvcQowQHs5IIrxx7XogQb0piZVVqUX58UWlOavEhRmkOFiVx3hs3gaoF
-	0hNLUrNTUwtSi2CyTBycUg2MOveeHQ3e3Den64r7I+7T5zzLo8U8O6J+iZ86t9OhOWdRgnhJ
-	66YLXaEsG5fpfquWfLtJ6kadi1DgRwHO6TOKFDP3HWWfHLt+6hlGvzSuZxda+yf6FKi9XvK1
-	xcdvmkzes9e/2mrl9805I8amZxi+ITSALUFvhWkXZ23nvWfvLU2577obd35UYinOSDTUYi4q
-	TgQAwWtbu1kCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t9jAV0d0bwQg0ctHBaP1yxmstg4Yz2r
+	xZfPfWwW869cY7VY81fJ4s0jbos3DzczWlzeNYfN4nPvEUaLJwvPMFk8uDqNzeLJQ6DSVwfb
+	WCx+7prH4sDnsXPWXXaPxXteMnmsm/aW2aO3+R2bx99Z+1k8dn5vYPfo27KK0ePzJjmPjXND
+	AzijuGxSUnMyy1KL9O0SuDI+b+1gLHgmXLFg7zHWBsYNAl2MnBwSAiYSzdffs0PYYhIX7q1n
+	62Lk4hASWMQo0fT3PCuE08Uk8e3gZTaQKjYBPYnPd58ygdgiAt4Sr/dNZwQpYhZoZ5G4fmg3
+	I0hCWCBN4tv2KUANHBwsAqoS22fbgYR5BVwlns6YwgSxTVGi+9kEsJmcAm4SG5c1s0Asa2CU
+	mHCnhXECI+8CRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMEB/Ex6B+OqBotDjAIcjEo8
+	vAkWuSFCrIllxZW5hxglOJiVRHjl2PNChHhTEiurUovy44tKc1KLDzFKc7AoifPeuAlULZCe
+	WJKanZpakFoEk2Xi4JRqYDT5xeh3b+GfdbxvO3InOl39+NHF7IH3w+kWEftXHvwRcWbJf6PW
+	ihZxy2PWD6tPc52ZmRlzs8TXSMh33QcmTvYTjZ0hB95F26jUf8wytTi5h9co8cJ7btlPWW0d
+	H+23PRFzmjlx7Y5JO2drNtza4fN156a4k4+mKdbs4l7kcfyYmoAqc8GWa/VKLMUZiYZazEXF
+	iQC62BQKXAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends the of-thermal.c to export copy of trip points for
-a given thermal zone.
+Before this change it was only possible to set get_temp() and get_trend()
+methods to be used in the common code handling passing parameters via
+device tree to "cpu-thermal" CPU thermal zone device.
 
-Thermal drivers should use of_thermal_get_trip_points() method to get
-pointer to table of thermal trip points.
+Now it is possible to also set emulated value of temperature for debug
+purposes.
 
 Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 ---
 Changes for v2:
-- New patch - as suggested by Eduardo Valentin
+- Rework the emulated temperature setting code to use of_thermal_sensor_ops
+structure
 ---
- drivers/thermal/of-thermal.c   | 33 +++++++++++++++++++++++++++++++++
- drivers/thermal/thermal_core.h |  7 +++++++
- include/linux/thermal.h        | 14 ++++++++++++++
- 3 files changed, 54 insertions(+)
+ drivers/thermal/of-thermal.c | 24 ++++++++++++++++++++++++
+ include/linux/thermal.h      |  1 +
+ 2 files changed, 25 insertions(+)
 
 diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
-index 336af7f..33921c5 100644
+index 33921c5..ad7dc2b 100644
 --- a/drivers/thermal/of-thermal.c
 +++ b/drivers/thermal/of-thermal.c
-@@ -89,6 +89,7 @@ struct __thermal_zone {
- 	/* trip data */
- 	int ntrips;
- 	struct __thermal_trip *trips;
-+	struct thermal_trip *gtrips;
- 
- 	/* cooling binding data */
- 	int num_tbps;
-@@ -152,6 +153,27 @@ bool of_thermal_is_trip_en(struct thermal_zone_device *tz, int trip)
- 	return true;
+@@ -174,6 +174,28 @@ of_thermal_get_trip_points(struct thermal_zone_device *tz)
+ 	return data->gtrips;
  }
  
 +/**
-+ * of_thermal_get_trip_points - function to get access to a globally exported
-+ *				trip points
++ * of_thermal_set_emul_temp - function to set emulated temperature
 + *
 + * @tz:	pointer to a thermal zone
++ * @temp:	temperature to set
 + *
-+ * This function provides a pointer to the copy of trip points table
++ * This function gives the ability to set emulated value of temperature,
++ * which is handy for debugging
 + *
-+ * Return: pointer to trip points table, NULL otherwise
++ * Return: zero on success, error code otherwise
 + */
-+const struct thermal_trip * const
-+of_thermal_get_trip_points(struct thermal_zone_device *tz)
++static int of_thermal_set_emul_temp(struct thermal_zone_device *tz,
++				    unsigned long temp)
 +{
 +	struct __thermal_zone *data = tz->devdata;
 +
-+	if (!data)
-+		return NULL;
++	if (!data->ops || !data->ops->set_emul_temp)
++		return -EINVAL;
 +
-+	return data->gtrips;
++	return data->ops->set_emul_temp(data->sensor_data, temp);
 +}
 +
  static int of_thermal_get_trend(struct thermal_zone_device *tz, int trip,
  				enum thermal_trend *trend)
  {
-@@ -767,6 +789,16 @@ thermal_of_build_thermal_zone(struct device_node *np)
- 			goto free_tbps;
- 	}
+@@ -405,6 +427,7 @@ thermal_zone_of_add_sensor(struct device_node *zone,
  
-+	tz->gtrips = kcalloc(tz->ntrips, sizeof(*tz->gtrips), GFP_KERNEL);
-+	if (!tz->gtrips) {
-+		ret = -ENOMEM;
-+		goto free_tbps;
-+	}
-+
-+	for (i = 0; i < tz->ntrips; i++)
-+		memcpy(&(tz->gtrips[i]), &(tz->trips[i].temperature),
-+		       sizeof(*tz->gtrips));
-+
- finish:
- 	of_node_put(child);
- 	tz->mode = THERMAL_DEVICE_DISABLED;
-@@ -793,6 +825,7 @@ static inline void of_thermal_free_zone(struct __thermal_zone *tz)
- {
- 	int i;
+ 	tzd->ops->get_temp = of_thermal_get_temp;
+ 	tzd->ops->get_trend = of_thermal_get_trend;
++	tzd->ops->set_emul_temp = of_thermal_set_emul_temp;
+ 	mutex_unlock(&tzd->lock);
  
-+	kfree(tz->gtrips);
- 	for (i = 0; i < tz->num_tbps; i++)
- 		of_node_put(tz->tbps[i].cooling_device);
- 	kfree(tz->tbps);
-diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_core.h
-index 466208c..a9580ca 100644
---- a/drivers/thermal/thermal_core.h
-+++ b/drivers/thermal/thermal_core.h
-@@ -91,6 +91,8 @@ int of_parse_thermal_zones(void);
- void of_thermal_destroy_zones(void);
- int of_thermal_get_ntrips(struct thermal_zone_device *);
- bool of_thermal_is_trip_en(struct thermal_zone_device *, int);
-+const struct thermal_trip * const
-+of_thermal_get_trip_points(struct thermal_zone_device *);
- #else
- static inline int of_parse_thermal_zones(void) { return 0; }
- static inline void of_thermal_destroy_zones(void) { }
-@@ -102,6 +104,11 @@ static inline bool of_thermal_is_trip_en(struct thermal_zone_device *, int)
- {
- 	return 0;
- }
-+static inline const struct thermal_trip * const
-+of_thermal_get_trip_points(struct thermal_zone_device *)
-+{
-+	return NULL;
-+}
- #endif
+ 	return tzd;
+@@ -533,6 +556,7 @@ void thermal_zone_of_sensor_unregister(struct device *dev,
+ 	mutex_lock(&tzd->lock);
+ 	tzd->ops->get_temp = NULL;
+ 	tzd->ops->get_trend = NULL;
++	tzd->ops->set_emul_temp = NULL;
  
- #endif /* __THERMAL_CORE_H__ */
+ 	tz->ops = NULL;
+ 	tz->sensor_data = NULL;
 diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index 5bc28a7..88d7249 100644
+index 88d7249..5eb9d44 100644
 --- a/include/linux/thermal.h
 +++ b/include/linux/thermal.h
-@@ -303,6 +303,20 @@ struct thermal_zone_of_device_ops {
+@@ -301,6 +301,7 @@ struct thermal_genl_event {
+ struct thermal_zone_of_device_ops {
+ 	int (*get_temp)(void *, long *);
  	int (*get_trend)(void *, long *);
++	int (*set_emul_temp)(void *, unsigned long);
  };
  
-+/**
-+ * struct thermal_trip - Structure representing themal trip points exported from
-+ *                       of-thermal
-+ *
-+ * @temperature:	trip point temperature
-+ * @hysteresis:		trip point hysteresis
-+ * @type:		trip point type
-+ */
-+struct thermal_trip {
-+	unsigned long int temperature;
-+	unsigned long int hysteresis;
-+	enum thermal_trip_type type;
-+};
-+
- /* Function declarations */
- #ifdef CONFIG_THERMAL_OF
- struct thermal_zone_device *
+ /**
 -- 
 2.0.0.rc2
 
