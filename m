@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203AbaKTXPN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 18:15:13 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53654 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756600AbaKTXPL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 18:15:11 -0500
-Date: Fri, 21 Nov 2014 00:14:20 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Dmitry Vyukov <dvyukov@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory
- debugger.
-In-Reply-To: <20141120150033.4cd1ca25be4a9b00a7074149@linux-foundation.org>
-Message-ID: <alpine.DEB.2.11.1411210011530.6439@nanos>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com> <5461B906.1040803@samsung.com> <20141118125843.434c216540def495d50f3a45@linux-foundation.org> <CAPAsAGwZtfzx5oM73bOi_kw5BqXrwGd_xmt=m6xxU6uECA+H9Q@mail.gmail.com>
- <20141120090356.GA6690@gmail.com> <CACT4Y+aOKzq0AzvSJrRC-iU9LmmtLzxY=pxzu8f4oT-OZk=oLA@mail.gmail.com> <20141120150033.4cd1ca25be4a9b00a7074149@linux-foundation.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1757466AbaKTXPT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 18:15:19 -0500
+Received: from mga11.intel.com ([192.55.52.93]:8350 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756600AbaKTXPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 18:15:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,426,1413270000"; 
+   d="asc'?scan'208";a="635550391"
+Message-ID: <1416525247.2280.11.camel@jtkirshe-mobl>
+Subject: Re: [PATCHv2 net] i40e: Implement ndo_gso_check()
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Joe Stringer <joestringer@nicira.com>
+Cc: netdev@vger.kernel.org, shannon.nelson@intel.com,
+        jesse.brandeburg@intel.com, therbert@google.com, linux.nics@intel.com,
+        linux-kernel@vger.kernel.org, jesse@nicira.com
+Date: Thu, 20 Nov 2014 15:14:07 -0800
+In-Reply-To: <1416525081-27779-1-git-send-email-joestringer@nicira.com>
+References: <1416525081-27779-1-git-send-email-joestringer@nicira.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-6iZJ3TkcRoqhUIQhY9Ez"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Nov 2014, Andrew Morton wrote:
 
-> On Thu, 20 Nov 2014 20:32:30 +0400 Dmitry Vyukov <dvyukov@google.com> wrote:
-> 
-> > Let me provide some background first.
-> 
-> Well that was useful.  Andrey, please slurp Dmitry's info into the 0/n
-> changelog?
+--=-6iZJ3TkcRoqhUIQhY9Ez
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-And into Documentation/UBSan or whatever the favourite place is. 0/n
-lengthy explanations have a tendecy to be hard to retrieve.
+On Thu, 2014-11-20 at 15:11 -0800, Joe Stringer wrote:
+> ndo_gso_check() was recently introduced to allow NICs to report the
+> offloading support that they have on a per-skb basis. Add an
+> implementation for this driver which checks for IPIP, GRE, UDP
+> tunnels.
+>=20
+> Signed-off-by: Joe Stringer <joestringer@nicira.com>
+> ---
+> v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
+>     Add MAX_INNER_LENGTH (as 80).
+> ---
+>  drivers/net/ethernet/intel/i40e/i40e_main.c |   31
+> +++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
 
-Thanks,
+If Jesse is good with the updated patch, I will add it to my queue.
+Thanks Joe!
 
-	tglx
+--=-6iZJ3TkcRoqhUIQhY9Ez
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAABCgAGBQJUbnW/AAoJEOVv75VaS+3OEPkP/3b+YzHaa4/pMJjD5msUbXq9
+H+6N5VmkZG4ZmJtcwk5iAk4oDYSHFOx6/uGQclwYh6yA6mVqd41ZkhL1vdylwgyd
+48Hy6WoF1EXEIsuGAjE0mMGgJFM1iBQLK27H+ryIwe8f+qFvxycnAvtZH5nyas59
+DZT727XMlLRKCRMrqdUIDh3Eg7V60/8rN+74Bb1TYvvERgGQX70i5PYpj5YxxAyw
+eTNgNmaxASvK6btLF1Tvv+EyUz3m8Yuse5BNzr8Gza111usbUEGH5GfHutii9PJk
+t02Kf/0wuPMxP4/6CPQS4oFqoI/MPQ0y3fPqLhoB2stTvclMe8DzE8pFATT5TlMR
+JLFLpKB5E529taE4P8XVS5jhddBtORW/I1p2+vXaxGyG1S6ekFTHLzKIdE6+bhqb
+s2dt2cKc3PeJ+ULEl6Vdfl37d9Qb7dF2FzDFdJWdRZ0qls5JWSQww8Em7a/o3I9K
+zV5+cttrLqNuyFjJzWsEjjI+3ex7nGLhRBE/ptWDpNd8p7/nAuRdq/KVdd8VmLf4
+bCZSKQEt7SUBP4kDjJwDqeVuzrDGzLgDACj4xfmgbLWRu2ERTT9TjUgqu7nsBros
+C6lF2nQkQZtbTuPcyFKf8OOU+7NuoTz+zwGNGqJTEcKr2HswsxlPTv/ehc66j69H
+F9udWlE7iW9tEPh8gseD
+=HSTr
+-----END PGP SIGNATURE-----
+
+--=-6iZJ3TkcRoqhUIQhY9Ez--
 
