@@ -1,117 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716AbaKTMD4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 07:03:56 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:33108 "EHLO bear.ext.ti.com"
+	id S1755887AbaKTMJB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 07:09:01 -0500
+Received: from dliviu.plus.com ([80.229.23.120]:37395 "EHLO smtp.dudau.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750813AbaKTMDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 07:03:54 -0500
-Message-ID: <546DD87B.3080806@ti.com>
-Date: Thu, 20 Nov 2014 14:03:07 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751139AbaKTMI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 07:08:59 -0500
+Date: Thu, 20 Nov 2014 12:08:51 +0000
+From: Liviu Dudau <liviu@dudau.co.uk>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Tony Luck <tony.luck@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-pci@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Suravee.Suthikulpanit@amd.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-ia64@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Wuyun <wuyun.wu@huawei.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [RFC PATCH 00/16] Refine PCI host bridge scan interfaces
+Message-ID: <20141120120850.GD9162@bart.dudau.co.uk>
+References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
+ <1463511.o4kE8TX3Bd@wuerfel>
+ <546DD688.60705@linaro.org>
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>, Arnd Bergmann <arnd@arndb.de>
-CC: Kevin Hilman <khilman@kernel.org>, <ssantosh@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>	<1709760.E0jX3Myv0h@wuerfel>	<546C7FDD.7030906@ti.com>	<2900095.WIocOu7ue2@wuerfel> <CAPDyKFqeZ3YU2OEN4tCOdcQ0pAho67Q8U_eCEOroG9aS0mp+-Q@mail.gmail.com>
-In-Reply-To: <CAPDyKFqeZ3YU2OEN4tCOdcQ0pAho67Q8U_eCEOroG9aS0mp+-Q@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <546DD688.60705@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2014 01:34 PM, Ulf Hansson wrote:
-> On 19 November 2014 14:47, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Wednesday 19 November 2014 13:32:45 Grygorii Strashko wrote:
->>> On 11/18/2014 09:32 PM, Arnd Bergmann wrote:
->>>> On Tuesday 18 November 2014 20:54:36 Grygorii Strashko wrote:
->>>>
->>>> Have one pmdomain driver in the generic code that knows about clocks,
->>>> possibly also regulators and pins and just turns them on when needed.
->>>> You can have a "simple-pmdomain" or "generic-pmdomain" compatible
->>>> string.
->>>>
->>>> I'm a bit surprised that your pmdomain code looks up the clocks from the
->>>> respective device, rather than know about the clocks itself. There is
->>>> probably a good reason for this, but I don't see it yet.
->>>
->>> The keystone 2 uses simple PM schema based on clocks only:
->>> - clocks enabled -> dev is active
->>> - clocks disabled -> dev is suspended
->>>
->>> To achieve explained above the Generic clock manipulation PM callbacks framework (pm_clk) is used.
->>> - list of managed clocks is filled for each device (for non-DT case the con_id list
->>>    is specified by platform code like:
->>>        .con_ids = { "fck", "master", "slave", NULL },
->>>          - or -
->>>        .con_ids = { }, <-- in this case only first clock will be added to pm_clk
->>>    )
+On Thu, Nov 20, 2014 at 12:54:48PM +0100, Tomasz Nowicki wrote:
+> On 17.11.2014 15:13, Arnd Bergmann wrote:
+> >On Monday 17 November 2014 18:21:34 Yijing Wang wrote:
+> >>This series is based Linux 3.18-rc1 and Lorenzo Pieralisi's
+> >>arm PCI domain cleanup patches, link:
+> >>https://patchwork.ozlabs.org/patch/407585/
+> >>
+> >>Current pci scan interfaces like pci_scan_root_bus() and directly
+> >>call pci_create_root_bus()/pci_scan_child_bus() lack flexiblity.
+> >>Some platform infos like PCI domain and msi_chip have to be
+> >>associated to PCI bus by some arch specific function.
+> >>We want to make a generic pci_host_bridge, and make it hold
+> >>the platform infos or hook. Then we could eliminate the lots
+> >>of arch pci_domain_nr, also we could associate some platform
+> >>ops something like pci_get_msi_chip(struct pci_dev *dev)
+> >>with pci_host_bridge to avoid introduce arch weak functions.
+> >>
+> >>This RFC version not for all platforms, just applied the new
+> >>scan interface in x86/arm/powerpc/ia64, I will refresh other
+> >>platforms after the core pci scan interfaces are ok.
+> >
+> >I think overall this is a good direction to take, in particular
+> >moving more things into struct pci_host_bridge so we can
+> >slim down the architecture specific code.
+> >
+> >I don't particularly like the way you use the 'pci_host_info'
+> >to pass callback pointers and some of the generic information.
+> >This duplicates some of the issues we are currently trying
+> >to untangle in the arm32 code to make drivers easier to share
+> >between architectures.
+> >
+> >As a general approach, I'd rather see generic helper functions
+> >being exported by the PCI core that a driver may or may not
+> >call.
+> >The way you split the interface between things that happen
+> >before scanning the buses (pci_create_host_bridge) and
+> >the actual scanning (__pci_create_root_bus, pci_scan_child_bus)
+> >seems very helpful and I think we can expand that concept further:
+> >
+> >- The normal pci_create_host_bridge() function can contain
+> >   all of the DT scanning functions (finding bus/mem/io resources,
+> >   finding the msi-parent), while drivers that don't depend on DT
+> >   for this information can call the same function and fill the
+> >   same things after they have the pci_host_bridge pointer.
 > 
-> According to earlier comments in this thread, device's clocks are
-> split into "functional" and "PM" clocks.
+> How about finding PCI domain number (in the DT way) within
+> pci_create_host_bridge() too ?
+
+It is an idea worth pursuing for the 99% of the cases. I would like
+to understand the 1% of the time when we want a domain number to be
+shared between two host bridges or the time when we want more than
+one domain per bridge.
+
+Is that possible? Is it useful? Is it already in practice?
+
+Best regards,
+Liviu
+
 > 
-> If I understand correctly, a typical platform driver will enable it's
-> "functional" clocks during ->probe() and you want the PM domain to
-> take care of the "PM" clocks, when the device changes runtime PM
-> status.
+> Tomasz
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> How will you describe these different set of device clocks in DT?
 
-True :(  You can dig deeper in the history of this series if you wish.
-- first Geert Uytterhoeven proposed to use CLK_RUNTIME_PM there 
-  https://lkml.org/lkml/2014/11/6/319
-- second I proposed to introduce smth. like "clkops-clocks", "pm-clocks" there
-  https://lkml.org/lkml/2014/6/12/436
- or "fck-clocks"/"opt-clocks" later. 
+-- 
+-------------------
+   .oooO
+   (   )
+    \ (  Oooo.
+     \_) (   )
+          ) /
+         (_/
 
-^failed.
+ One small step
+   for me ...
 
-So, this implementation picks up all clocks for each device, which is ok for
-Keystone 2 and, because it's platform specific.
-
->>
->> Yes, it would definitely solve the problem that I see with the infrastructure
->> code that the current version adds into the platform directory.
->>
->> The exact binding of course should be reviewed by the pmdomain and
->> DT maintainers, to ensure that it is done the best possible way, because
->> I assume we will end up using it a lot, and it would be a shame to get
->> it slightly wrong.
->>
->> One possible variation I can think of would be to just use "simple-pmdomain"
->> as the compatible string, and use properties in the node itself to decide
->> what the domain should control, e.g.
->>
->>          clk_pmdomain: pmdomain {
->>                  compatible = "simple-pmdomain";
->>                  pmdomain-enable-clocks;
->>                  #power-domain-cells = <0>;
->>          };
->>          clk_regulator_pmdomain: pmdomain {
->>                  compatible = "simple-pmdomain";
->>                  pmdomain-enable-clocks;
->>                  pmdomain-enable-regulators;
->>                  #power-domain-cells = <0>;
->>          };
->>
->> and then have each device link to one of the nodes as the pmdomain.
->>
-> 
-> That's seems like a good approach to me.
- 
-Yes, but your previous comment is still actual :(
-
-Regards,
--grygorii
