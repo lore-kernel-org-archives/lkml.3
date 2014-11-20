@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467AbaKTXZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 18:25:59 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:51802 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756935AbaKTXZ5 (ORCPT
+	id S1756982AbaKTXaY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 18:30:24 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:41094 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756515AbaKTXaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 18:25:57 -0500
+	Thu, 20 Nov 2014 18:30:22 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141120102836.GB791@pd.tnic>
-References: <CA+55aFztsw6Vt4CyVs1OsqdKXxQmFrxHdE7z89VMZ_1KwKPcmQ@mail.gmail.com>
- <20141119192928.GL12538@two.firstfloor.org> <CA+55aFwykb6aZYgyZXbU1DQ3OL0umpv8gkHYWykBEC2B7UdMbw@mail.gmail.com>
- <CALCETrXi7vdNAk4RziNDtqX4asPqXxi1VsLzL7pP0zivkjTH4Q@mail.gmail.com>
- <CA+55aFx4-WzNQ0e-ZTcCig3b7U7xmt1WB1jzO3TLk9zHD006ng@mail.gmail.com>
- <CALCETrVJJUcPRfkWRouLJCNUVNRH3aWX0X_K8L62yrUu1aR8Vg@mail.gmail.com>
- <CA+55aFy0neTJAAm-8KsmPPU33zevyHmYa+vZjPk-DozSPPW_nQ@mail.gmail.com>
- <CALCETrXzMe2WcpY3yX48WtvdRQDvSg7CZRO1T1TdLynmAcJHXg@mail.gmail.com>
- <CA+55aFxNkD8=1JB0-4EyQTR+Yd0YaofB3+E5J+L3vsfki-RUSQ@mail.gmail.com>
- <CALCETrWBpmS_W3sN3Pf-qRL8jgxoBoQWnQuk3r_TT_eBm9eNqQ@mail.gmail.com> <20141120102836.GB791@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 20 Nov 2014 15:25:35 -0800
-Message-ID: <CALCETrVKJr9YFoU584didHR=18Fyj3xCevdT6Ro4fEEjzf8kfA@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] sched, x86: Check that we're on the right stack in
- schedule and __might_sleep
-To: Borislav Petkov <bp@alien8.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <alpine.DEB.2.11.1411202355060.6439@nanos>
+References: <546E1771.4030201@arm.com> <20141120215353.GA7987@google.com> <alpine.DEB.2.11.1411202355060.6439@nanos>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 20 Nov 2014 16:30:01 -0700
+Message-ID: <CAErSpo5UOUnPbsvAJX4kCeuKnPVLyRfq6k0FJPpS2W-5ALwisQ@mail.gmail.com>
+Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Marc Zyngier <marc.zyngier@arm.com>, Yijing Wang <wangyijing@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 20, 2014 2:28 AM, "Borislav Petkov" <bp@alien8.de> wrote:
+On Thu, Nov 20, 2014 at 4:10 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Thu, 20 Nov 2014, Bjorn Helgaas wrote:
+>> On Thu, Nov 20, 2014 at 04:31:45PM +0000, Marc Zyngier wrote:
+>> > Bjorn, Yijing,
+>> >
+>> > I've just realized that patch c167caf8d174 (PCI/MSI: Remove useless
+>> > bus->msi assignment) completely breaks MSI on arm64 when using the new
+>> > MSI stacked domain:
+>> >
+>> > This patch relies on architectures to implement either
+>> > pcibios_msi_controller() or arch_setup_msi_irq(). It turns out that with
+>> > stacked domains, none of this is actually necessary, as long as you can
+>> > access to the msi_controller.
+>> >
+>> > And everything was fine until this patch came around (and managed to
+>> > test on a system where the PCI devices are not directly attached to the
+>> > root bus). Of course, everything now breaks, as we cannot get to the MSI
+>> > controller (which contains the domain we allocate the MSIs from).
+>> >
+>> > In short, this patch breaks an important feature on which arm64 relies,
+>> > and I believe this patch should be reverted ASAP.
+>>
+>> I'm happy to revert it from pci/msi, but I think Thomas has already pulled
+>> it into his branch, so he'd have to drop it, too.
+>>
+>> Thomas, let me know if you want to do that.  I suppose we could add a new
+>> patch to add it back, but that would leave bisection broken for the
+>> interval between c167caf8d174 and the patch that adds it back.
 >
-> On Wed, Nov 19, 2014 at 04:46:29PM -0800, Andy Lutomirski wrote:
-> > So we'd do, in do_machine_check:
-> >
-> > irq_enter();
-> >
-> > do atomic stuff;
-> >
-> > ist_stop_being_atomic(regs);
-> > local_irq_enable();
-> > ...
-> > local_irq_disable();
-> > ist_start_being_atomic_again();
+> Fortunately my irq/irqdomain branch is not immutable yet. So we have
+> no problem at that point. I can rebase on your branch until tomorrow
+> night. Or just rebase on mainline and we sort out the merge conflicts
+> later, i.e. delegate them to Linus so his job of pulling stuff gets
+> not completely boring.
 >
-> Well, why would I want to go atomic again? We just do the minimally
-> needed atomic stuff, irq_exit() and then do the rest.
+> What I'm more worried about is whether this intended change is going
+> to inflict a problem on Jiangs intention to deduce the MSI irq domain
+> from the device, which we really need for making DMAR work w/o going
+> through loops and hoops.
+>
+> I have limited knowledge about the actual scope of iommu (DMAR) units
+> versus device/bus/host-controllers, so I would appreciate a proper
+> explanation for that from you or Jiang or both.
+>
+> My guts feeling tells me that anything less granular than the bus
+> level is wrong and according to my limited knowledge Intel even has
+> DMARs which are assigned to a single device it's even more wrong. So
+> the proper change would be not to push it from bus to something above
+> the bus, but instead make it a per device property.
 
-Because ist_exit will get confused otherwise, and you still need to
-call something on the way out for context tracking.
+I'm not an expert, so hopefully Jiang and Marc will clarify this.
 
-Yes, I could rearrange it a bit.  Will ponder.
+My understanding is that Intel VT-d can do MSI remapping on a
+per-function basis, so I agree that pci_msi_controller() should
+probably take a pci_dev instead of a pci_bus.  I think Yijing's series
+only has one caller, which has the pci_dev, so that should be an easy
+change.
 
---Andy
+Marc, does c167caf8d174 break arm64 by itself?  Or does the breakage
+happen later on, after adding more stacked domain stuff?  If the
+former, we should definitely revert c167caf8d174 to preserve
+bisectability, independent of how we fix the pci_msi_controller()
+interface.
 
->
-> >
-> > irq_exit();
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+Bjorn
