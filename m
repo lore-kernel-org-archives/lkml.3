@@ -1,63 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883AbaKTPk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 10:40:59 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:62306 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958AbaKTPk5 (ORCPT
+	id S1756527AbaKTPpE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 10:45:04 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:55861 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257AbaKTPpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 10:40:57 -0500
-From: Grant Likely <grant.likely@linaro.org>
-To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Gaurav Minocha <gaurav.minocha.os@gmail.com>, <stable@vger.kernel.org>
-Subject: [PATCH] of/selftest: Fix testing when /aliases is missing
-Date: Thu, 20 Nov 2014 15:40:30 +0000
-Message-Id: <1416498030-5878-1-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Thu, 20 Nov 2014 10:45:01 -0500
+Date: Thu, 20 Nov 2014 07:44:58 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jan Kara <jack@suse.cz>, axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCHSET block/for-next] writeback: prepare for cgroup
+ writeback support
+Message-ID: <20141120154458.GA5862@infradead.org>
+References: <1416299848-22112-1-git-send-email-tj@kernel.org>
+ <20141120151311.GE2330@quack.suse.cz>
+ <20141120151456.GE14877@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141120151456.GE14877@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The /aliases node isn't always present in the device tree, but the
-unittest code assumes that /aliases is there. Add a check when inserting
-the testcase data to see if of_aliases needs to be updated, and undo the
-settings when the nodes are removed.
+On Thu, Nov 20, 2014 at 10:14:56AM -0500, Tejun Heo wrote:
+> > PS: I've added CC to linux-fsdevel since there's high chance people miss
+> > these patches in lkml...
+> 
+> Will do so when posting the actual series.
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Gaurav Minocha <gaurav.minocha.os@gmail.com>
-Cc: <stable@vger.kernel.org>
----
- drivers/of/selftest.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
-index e6c14dc400e9..e2d79afa9dc6 100644
---- a/drivers/of/selftest.c
-+++ b/drivers/of/selftest.c
-@@ -899,7 +899,11 @@ static void selftest_data_remove(void)
- 	while (last_node_index-- > 0) {
- 		if (nodes[last_node_index]) {
- 			np = of_find_node_by_path(nodes[last_node_index]->full_name);
--			if (strcmp(np->full_name, "/aliases") != 0) {
-+			if (np == nodes[last_node_index]) {
-+				if (of_aliases == np) {
-+					of_node_put(of_aliases);
-+					of_aliases = NULL;
-+				}
- 				detach_node_and_children(np);
- 			} else {
- 				for_each_property_of_node(np, prop) {
-@@ -920,6 +924,8 @@ static int __init of_selftest(void)
- 	res = selftest_data_add();
- 	if (res)
- 		return res;
-+	if (!of_aliases)
-+		of_aliases = of_find_node_by_path("/aliases");
- 
- 	np = of_find_node_by_path("/testcase-data/phandle-tests/consumer-a");
- 	if (!np) {
--- 
-1.9.1
+Please send the prep patches to fsdevel and linux-mm.  Without that I'll
+auto-NAK them :)
 
