@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269AbaKTJxO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 04:53:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34395 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756180AbaKTJxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 04:53:12 -0500
-Message-ID: <546DB9F2.2020806@redhat.com>
-Date: Thu, 20 Nov 2014 17:52:50 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1757307AbaKTJyn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 04:54:43 -0500
+Received: from s250.sam-solutions.net ([217.21.49.219]:51589 "EHLO
+	s250.sam-solutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755623AbaKTJyk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 04:54:40 -0500
+From: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+To: <support.opensource@diasemi.com>, <a.zummo@towertech.it>,
+        <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>
+CC: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+Subject: [PATCH] rtc: da9063: Fix ALARM interrupt registration.
+Date: Thu, 20 Nov 2014 12:54:33 +0300
+Message-ID: <1416477273-975-1-git-send-email-d.lavnikevich@sam-solutions.com>
+X-Mailer: git-send-email 2.1.2
 MIME-Version: 1.0
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-CC: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH net V5] virtio-net: validate features during probe
-References: <1416474185-10981-1-git-send-email-jasowang@redhat.com> <20141120104824.0a9e2060.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141120104824.0a9e2060.cornelia.huck@de.ibm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [192.168.117.165]
+X-ClientProxiedBy: S326.sam-solutions.net (217.21.35.11) To
+ S326.sam-solutions.net (217.21.35.11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2014 05:48 PM, Cornelia Huck wrote:
-> On Thu, 20 Nov 2014 17:03:05 +0800
-> Jason Wang <jasowang@redhat.com> wrote:
->
->> We currently trigger BUG when VIRTIO_NET_F_CTRL_VQ
->> is not set but one of features depending on it is.
->> That's not a friendly way to report errors to
->> hypervisors.
->> Let's check, and fail probe instead.
->>
->> Cc: Rusty Russell <rusty@rustcorp.com.au>
->> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
->> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
->> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> +static bool virtnet_validate_features(struct virtio_device *vdev)
->> +{
->> +	if (!virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ) &&
->> +	    (VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_RX,
->> +			     "VIRTIO_NET_F_CTRL_VQ") ||
->> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_VLAN,
->> +			     "VIRTIO_NET_F_CTRL_VQ") ||
->> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_GUEST_ANNOUNCE,
->> +			     "VIRTIO_NET_F_CTRL_VQ") ||
->> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_MQ, "VIRTIO_NET_F_CTRL_VQ") ||
->> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_MAC_ADDR,
->> +			     "VIRTIO_NET_F_CTRL_VQ"))) {
->> +		return false;
->> +	}
->> +
->> +	return true;
->> +}
-> I still think it may make sense to print all incorrectly set bits, but
-> let's just fix the BUG() trigger for now.
->
-> Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
->
+Call platform_get_irq_byname() returns local IRQ number. Use
+regmap_irq_get_virq() to get VIRQ instead.
+This fixes rtc initialization error:
+da9063-rtc da9063-rtc: Failed to request ALARM IRQ 1: -22
 
-Right, will do it in the future.
+Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+---
+ drivers/rtc/rtc-da9063.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Thanks
+diff --git a/drivers/rtc/rtc-da9063.c b/drivers/rtc/rtc-da9063.c
+index 731ed1a..04743a6 100644
+--- a/drivers/rtc/rtc-da9063.c
++++ b/drivers/rtc/rtc-da9063.c
+@@ -315,6 +315,7 @@ static int da9063_rtc_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, rtc);
+ 
+ 	irq_alarm = platform_get_irq_byname(pdev, "ALARM");
++	irq_alarm = regmap_irq_get_virq(da9063->regmap_irq, irq_alarm);
+ 	ret = devm_request_threaded_irq(&pdev->dev, irq_alarm, NULL,
+ 					da9063_alarm_event,
+ 					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+-- 
+2.1.3
 
