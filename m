@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599AbaKTDxw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 22:53:52 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:58690 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718AbaKTDxv (ORCPT
+	id S1755797AbaKTDzh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 22:55:37 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:41548 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754716AbaKTDzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 22:53:51 -0500
-Message-ID: <546D65C6.3030109@hitachi.com>
-Date: Thu, 20 Nov 2014 12:53:42 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 19 Nov 2014 22:55:36 -0500
 MIME-Version: 1.0
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH 1/1] kprobes: Deletion of an unnecessary check before
- the function call "module_put"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546899CF.8020808@users.sourceforge.net> <5469B08E.90104@hitachi.com> <546C41EF.4040502@users.sourceforge.net>
-In-Reply-To: <546C41EF.4040502@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141120030434.GE24364@ld-irv-0074>
+References: <1416097066-20452-1-git-send-email-cernekee@gmail.com> <20141120030434.GE24364@ld-irv-0074>
+From: Kevin Cernekee <cernekee@gmail.com>
+Date: Wed, 19 Nov 2014 19:55:15 -0800
+Message-ID: <CAJiQ=7C8h-MAuRdgzZqx2=bg8bvy7v9pv7e7tGXWmA9ghYJiqQ@mail.gmail.com>
+Subject: Re: [PATCH V2 00/22] Multiplatform BMIPS kernel
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jon Fraser <jfraser@broadcom.com>, Dmitry Torokhov <dtor@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/19 16:08), SF Markus Elfring wrote:
->>> index 3995f54..f1e7d45 100644
->>> --- a/kernel/kprobes.c
->>> +++ b/kernel/kprobes.c
->>> @@ -1527,8 +1527,7 @@ int register_kprobe(struct kprobe *p)
->>>  out:
->>>  	mutex_unlock(&kprobe_mutex);
->>>  
->>> -	if (probed_mod)
->>> -		module_put(probed_mod);
->>> +	module_put(probed_mod);
->>
->> This is OK, but I you request a comment line over there so that
->> code reader can understand it is safe to pass a NULL pointer to
->> module_put().
-> 
-> Do you want that I replace the shown null pointer check by a short
-> comment which repeats an expectation for the affected function call?
+On Wed, Nov 19, 2014 at 7:04 PM, Brian Norris
+<computersforpeace@gmail.com> wrote:
+> On Sat, Nov 15, 2014 at 04:17:24PM -0800, Kevin Cernekee wrote:
+>> The lack of a reboot handler is annoying; syscon-reboot probably won't work
+>> on STB (because it requires two writes).
+>
+> Can't you reuse drivers/power/reset/brcmstb-reboot.c ?
 
-No, not "want". IMHO, if try_module_get(mod) is done only when mod!=NULL,
-we shouldn't call module_put(mod) when mod==NULL (even if it is possible),
-because those get/put method must be used as a pair, for the better
-understandings.
+Oops, I ran a quick check earlier by grepping for "sun-top-ctrl" and
+looking under drivers/reset, but assumed this driver wasn't merged yet
+when nothing came up in the code.  Thanks for the pointer.
 
-Thank you,
+It looks like the current driver will work for 40nm, but 65nm uses
+different bit positions: RESET_CTRL bit 3 to arm, and SW_RESET bit 31
+to trigger.  I'll add a new "brcm,brcmstb-reboot-65nm" compatible
+string to make this work.
 
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Also, we'll need to take Guenter Roeck's register_restart_handler()
+patch in order to build on MIPS.
