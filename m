@@ -1,163 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756756AbaKTLwU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 06:52:20 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37874 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756344AbaKTLwT (ORCPT
+	id S1756036AbaKTLy6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 06:54:58 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:49753 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885AbaKTLyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 06:52:19 -0500
-Message-ID: <1416484332.2769.1.camel@pengutronix.de>
-Subject: Re: [RFC PATCH] arm: imx: Workaround i.MX6 PMU interrupts muxed to
- one SPI
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Date: Thu, 20 Nov 2014 12:52:12 +0100
-In-Reply-To: <1416483757-24165-1-git-send-email-daniel.thompson@linaro.org>
-References: <1416483757-24165-1-git-send-email-daniel.thompson@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
+	Thu, 20 Nov 2014 06:54:54 -0500
+Message-ID: <546DD688.60705@linaro.org>
+Date: Thu, 20 Nov 2014 12:54:48 +0100
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+CC: Liviu Dudau <liviu@dudau.co.uk>, Tony Luck <tony.luck@intel.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Xinwei Hu <huxinwei@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Suravee.Suthikulpanit@amd.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-ia64@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Wuyun <wuyun.wu@huawei.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [RFC PATCH 00/16] Refine PCI host bridge scan interfaces
+References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com> <1463511.o4kE8TX3Bd@wuerfel>
+In-Reply-To: <1463511.o4kE8TX3Bd@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 20.11.2014, 11:42 +0000 schrieb Daniel Thompson:
-> All PMU interrupts on multi-core i.MX6 devices are muxed onto a single SPI.
-> Should the PMU of any core except 0 (the default affinity for the
-> interrupt) trigger the interrupt then it cannot be serviced and,
-> eventually, the spurious irq detection will forcefully disable the
-> interrupt.
-> 
-> This can be worked around by getting the interrupt handler to change its
-> own affinity if it cannot figure out why it has been triggered. This patch
-> adds logic to rotate the affinity to i.MX6.
-> 
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+On 17.11.2014 15:13, Arnd Bergmann wrote:
+> On Monday 17 November 2014 18:21:34 Yijing Wang wrote:
+>> This series is based Linux 3.18-rc1 and Lorenzo Pieralisi's
+>> arm PCI domain cleanup patches, link:
+>> https://patchwork.ozlabs.org/patch/407585/
+>>
+>> Current pci scan interfaces like pci_scan_root_bus() and directly
+>> call pci_create_root_bus()/pci_scan_child_bus() lack flexiblity.
+>> Some platform infos like PCI domain and msi_chip have to be
+>> associated to PCI bus by some arch specific function.
+>> We want to make a generic pci_host_bridge, and make it hold
+>> the platform infos or hook. Then we could eliminate the lots
+>> of arch pci_domain_nr, also we could associate some platform
+>> ops something like pci_get_msi_chip(struct pci_dev *dev)
+>> with pci_host_bridge to avoid introduce arch weak functions.
+>>
+>> This RFC version not for all platforms, just applied the new
+>> scan interface in x86/arm/powerpc/ia64, I will refresh other
+>> platforms after the core pci scan interfaces are ok.
+>
+> I think overall this is a good direction to take, in particular
+> moving more things into struct pci_host_bridge so we can
+> slim down the architecture specific code.
+>
+> I don't particularly like the way you use the 'pci_host_info'
+> to pass callback pointers and some of the generic information.
+> This duplicates some of the issues we are currently trying
+> to untangle in the arm32 code to make drivers easier to share
+> between architectures.
+>
+> As a general approach, I'd rather see generic helper functions
+> being exported by the PCI core that a driver may or may not
+> call.
+> The way you split the interface between things that happen
+> before scanning the buses (pci_create_host_bridge) and
+> the actual scanning (__pci_create_root_bus, pci_scan_child_bus)
+> seems very helpful and I think we can expand that concept further:
+>
+> - The normal pci_create_host_bridge() function can contain
+>    all of the DT scanning functions (finding bus/mem/io resources,
+>    finding the msi-parent), while drivers that don't depend on DT
+>    for this information can call the same function and fill the
+>    same things after they have the pci_host_bridge pointer.
 
-I've sent almost the same patch a while ago. At this time it was shot
-down due to fears of the measurements being too flaky to be useful with
-all that IRQ dance. While I don't think this is true (I did some
-measurements on a SOLO and a QUAD variants of the i.MX6 with the same
-workload, that were only minimally apart), I believe the IRQ affinity
-dance isn't the best way to handle this.
+How about finding PCI domain number (in the DT way) within 
+pci_create_host_bridge() too ?
 
-I had planned to look into smp_call_function() to distribute the IRQ to
-all CPUs at the same time, but have not got around to it yet. Maybe you
-could investigate whether this is a viable solution to the problem at
-hand?
-
-Regards,
-Lucas
-> ---
-> 
-> Notes:
->     This patch adopts the approach used on the u8500 (db8500_pmu_handler)
->     but the logic has been generalized for any number of CPUs, mostly
->     because the i.MX6 has a both dual and quad core variants.
->     
->     However it might be better to include the generalized logic in the main
->     armpmu code. I think the logic could be deployed automatically on SMP
->     systems with only a single not-percpu IRQ, replacing the
->     plat->handle_irq dance we currently do to hook up this code.
->     
->     Thoughts? (or is there already shared logic to do this that I
->     overlooked)
->     
-> 
->  arch/arm/mach-imx/mach-imx6q.c | 39 ++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 38 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
-> index d51c6e99a2e9..c056b7b97eaa 100644
-> --- a/arch/arm/mach-imx/mach-imx6q.c
-> +++ b/arch/arm/mach-imx/mach-imx6q.c
-> @@ -16,6 +16,7 @@
->  #include <linux/delay.h>
->  #include <linux/export.h>
->  #include <linux/init.h>
-> +#include <linux/interrupt.h>
->  #include <linux/io.h>
->  #include <linux/irq.h>
->  #include <linux/irqchip.h>
-> @@ -33,6 +34,7 @@
->  #include <linux/mfd/syscon/imx6q-iomuxc-gpr.h>
->  #include <asm/mach/arch.h>
->  #include <asm/mach/map.h>
-> +#include <asm/pmu.h>
->  #include <asm/system_misc.h>
-> 
->  #include "common.h"
-> @@ -261,6 +263,40 @@ static void __init imx6q_axi_init(void)
->  	}
->  }
-> 
-> +/*
-> + * The PMU IRQ lines of all cores are muxed onto a single interrupt.
-> + * Rotate the interrupt around the cores if the current CPU cannot
-> + * figure out why the interrupt has been triggered.
-> + */
-> +static irqreturn_t imx6q_pmu_handler(int irq, void *dev, irq_handler_t handler)
-> +{
-> +	irqreturn_t ret = handler(irq, dev);
-> +	int next;
-> +
-> +	if (ret == IRQ_NONE && num_online_cpus() > 1) {
-> +		next = cpumask_next(smp_processor_id(), cpu_online_mask);
-> +		if (next > nr_cpu_ids)
-> +			next = cpumask_next(-1, cpu_online_mask);
-> +		irq_set_affinity(irq, cpumask_of(next));
-> +	}
-> +
-> +	/*
-> +	 * We should be able to get away with the amount of IRQ_NONEs we give,
-> +	 * while still having the spurious IRQ detection code kick in if the
-> +	 * interrupt really starts hitting spuriously.
-> +	 */
-> +	return ret;
-> +}
-> +
-> +static struct arm_pmu_platdata imx6q_pmu_platdata = {
-> +	.handle_irq = imx6q_pmu_handler,
-> +};
-> +
-> +static struct of_dev_auxdata imx6q_auxdata_lookup[] __initdata = {
-> +	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &imx6q_pmu_platdata),
-> +	{},
-> +};
-> +
->  static void __init imx6q_init_machine(void)
->  {
->  	struct device *parent;
-> @@ -276,7 +312,8 @@ static void __init imx6q_init_machine(void)
-> 
->  	imx6q_enet_phy_init();
-> 
-> -	of_platform_populate(NULL, of_default_bus_match_table, NULL, parent);
-> +	of_platform_populate(NULL, of_default_bus_match_table,
-> +			     imx6q_auxdata_lookup, parent);
-> 
->  	imx_anatop_init();
->  	cpu_is_imx6q() ?  imx6q_pm_init() : imx6dl_pm_init();
-> --
-> 1.9.3
-> 
-
--- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
-
+Tomasz
