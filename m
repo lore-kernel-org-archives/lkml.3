@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162AbaKTQxX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 11:53:23 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:57252 "EHLO
+	id S932153AbaKTQxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 11:53:36 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:64509 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756062AbaKTQxV (ORCPT
+	with ESMTP id S1757383AbaKTQxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 11:53:21 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Subject: Re: [PATCH v3 0/2] arm64: Add support for Juno development board
-Date: Thu, 20 Nov 2014 17:52:47 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: arm@kernel.org, Olof Johansson <olof@lixom.net>,
-        Kevin Hilman <khilman@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        device tree <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+	Thu, 20 Nov 2014 11:53:33 -0500
+From: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-References: <1415727131-4572-1-git-send-email-Liviu.Dudau@arm.com>
-In-Reply-To: <1415727131-4572-1-git-send-email-Liviu.Dudau@arm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411201752.47955.arnd@arndb.de>
-X-Provags-ID: V02:K0:/xGdCYTpDZBwz4CW8l/9TyGD1mohODB2p9K9oU+WYbf
- JX5ubH/W4iSpUOhg+9I15Kxcv7Gd3UHKgPECyDHFB1HlsE98rI
- lmIlcl6Sb+3ZSDJKEUzl4AvJrZKoR1fLMW8lJckYl/tdNr3AB5
- SJX7KQ842sH7u468GXRpHISix1cYFSy72/2eadv01tj+85hwYZ
- nPXL5I0Et8KaqrdmtHWGLoyWVhVuUbQ6iWEUZhiigyND+HGbGr
- rMfU7uY2DV9NHZ+PHsMe+hhKxIggVxxuOH+uPBqQJOjItOPNHm
- VUiyAHmzi5idBC/cC9nRIjfQHq1MgUmxr0tR5lcu5V8OIcwmtv
- I/fkWRWgNzltR6hzZnmBKyixolz/gO+iJv+FO2VV/
+        Kumar Gala <galak@codeaurora.org>,
+        Nikolaus Schulz <nikolaus.schulz@avionic-design.de>,
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-kernel@vger.kernel.org (open list)
+Cc: Alban Bedel <alban.bedel@avionic-design.de>
+Subject: [PATCH 1/2] iio: document ti-dac8554 devicetree bindings
+Date: Thu, 20 Nov 2014 17:54:17 +0100
+Message-Id: <1416502461-13980-1-git-send-email-nikolaus.schulz@avionic-design.de>
+X-Mailer: git-send-email 2.1.3
+X-Provags-ID: V02:K0:a6rXiGADCbZrveumO9Au0ntdkGSWUT9ocBx6stN8Z6k
+ UXUonYDW1Xjx4JBci/udTn3hVfxve4koT+OowfyTSUtO0J+xO+
+ XNA8mzfeqsjf/EviTHchLF7RlA/xuJWujeqpKDG4sm2jNRh6YS
+ K+0/KrKeDGWL8zRz1U7tHe/2e//WWsQx5uUK0PFLj8WgkbaO26
+ xh9tGv7NYqRwR7v4YsB9Tt3Bi+SLyGucXUYCfRVSboWTLaFx8t
+ pHl5ekH/LJuniLeUFHKaImXtu3qdj97SLC1QmOS8YFFs0wj0O1
+ b9gkJNXKCpMjDzOSlkWdalNiLPLtoosn9JBgSiVoRoSyfETm7W
+ y0OCu/aT6fT+ejPfF4W/MrtaUCkjyXJpBE0mSJ5It8NJjaYOr5
+ vBaM4C1YJ+deyoJbEa+fHZvcUTz4sjUTjkynQMgvszwqrEcwy8
+ g+XWzsG8rJ/xLGbH49Vh3mJbTOQ==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 November 2014, Liviu Dudau wrote:
-> Hi,
-> 
-> This patchset adds device tree support for ARM's AArch64 Juno development
-> board. It enables use of various peripherals on the board, from USB and
-> networking to I2C and PL011 UART.
-> 
-> The patches can also be found in the repository at:
-> 
->    git://github.com/ARM-software/linux.git juno/dts-for-armsoc
+Signed-off-by: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
+---
+ .../devicetree/bindings/iio/dac/ti-dac8554.txt     | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt
 
-Applied both on the arm64 tree, on top of the directory cleanup branch.
+diff --git a/Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt b/Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt
+new file mode 100644
+index 0000000..16f7178
+--- /dev/null
++++ b/Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt
+@@ -0,0 +1,22 @@
++TI DAC8554 Digital to Analog Converter
++
++This driver supports the SPI bus.
++
++Required properties:
++	- compatible: must be "ti,dac8554"
++	- vref-supply: the vref power supply
++	- address: the additional 2-bit chip address
++
++For required properties on SPI, please consult
++Documentation/devicetree/bindings/spi/spi-bus.txt
++
++Example:
++
++	dac8554@0 {
++		compatible = "ti,dac8554";
++		reg = <0>;
++		spi-max-frequency = <50000000>;
++
++		vref-supply = <&vdd_vref>;
++		address = <0>;
++	};
+-- 
+2.1.3
 
-Thanks,
-
-	Arnd
