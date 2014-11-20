@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870AbaKTI4k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 03:56:40 -0500
-Received: from smtp-out-061.synserver.de ([212.40.185.61]:1078 "EHLO
-	smtp-out-060.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751161AbaKTI4j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 03:56:39 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 16503
-Message-ID: <546DACC2.702@metafoo.de>
-Date: Thu, 20 Nov 2014 09:56:34 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1756964AbaKTI5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 03:57:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46935 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751868AbaKTI5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 03:57:33 -0500
+Message-ID: <546DACEC.1070200@redhat.com>
+Date: Thu, 20 Nov 2014 16:57:16 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Zidan Wang <b50113@freescale.com>, broonie@kernel.org
-CC: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        ckeepax@opensource.wolfsonmicro.com, Li.Xiubo@freescale.com,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+To: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel][PATCH v2 1/2] ASoC: wm8960: Add device tree support
-References: <1416472878-12108-1-git-send-email-b50113@freescale.com>
-In-Reply-To: <1416472878-12108-1-git-send-email-b50113@freescale.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+CC: Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH v4 net] virtio-net: validate features during probe
+References: <1416472043-9875-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1416472043-9875-1-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2014 09:41 AM, Zidan Wang wrote:
-[...][
-> +Optional properties:
-> +  - shared_lrclk: This is a boolean property. If present, the LRCM bit of
-> +	R24 (Additional control 2 ) gets set, indicating that ADCLRC and DACLRC
-> +	will be disabled only when ADC (Left and Right) and DAC (Left and Right)
-> +	are disabled.
+On 11/20/2014 04:27 PM, Jason Wang wrote:
+> We currently trigger BUG when VIRTIO_NET_F_CTRL_VQ
+> is not set but one of features depending on it is.
+> That's not a friendly way to report errors to
+> hypervisors.
+> Let's check, and fail probe instead.
+>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+> Changes from V1:
+> - Drop NETIF_F_*_UFO from checklist
+> Changes from V2:
+> - only check the features for ctrl vq (this fix the real bug)
+> - better error message and simplify API
+> Changes from V3:
+> - pass dbit directly and even better error message
+> - typo fix
+> ---
+>  drivers/net/virtio_net.c | 37 +++++++++++++++++++++++++++++++++++++
+>  1 file changed, 37 insertions(+)
+>
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index ec2a8b4..cc53ff1 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -1673,6 +1673,40 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
+>  };
+>  #endif
+>  
+> +static bool virtnet_fail_on_feature(struct virtio_device *vdev,
+> +				    unsigned int fbit,
+> +				    const char *fname, const char *dname)
+> +{
+> +	if (!virtio_has_feature(vdev, fbit))
+> +		return false;
 > +
-> +  - capless: This is a boolean property. If present, OUT3 will be enabled
-> +	and disabled together with HP_L and HP_R in response to jack detect events.
+> +	dev_err(&vdev->dev, "advertise feature %s but not %s",
+> +		fname, dname);
+> +
+> +	return true;
+> +}
+> +
 
-
-Custom properties need a vendor prefix and properties should use '-' instead 
-of '_'. Also the devicetree describes the hardware and not the driver, so 
-the description should say for which hardware setups this flag should be 
-set, not what the behavior of the driver will be.
-
-- Lars
-
+Michael suggest adding "device" before "advertise", will post V5
