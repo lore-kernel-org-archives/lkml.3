@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028AbaKTRGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:06:09 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:43754 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757768AbaKTRCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758041AbaKTRG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:06:28 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:35831 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076AbaKTRCq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Nov 2014 12:02:46 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
@@ -13,10 +14,11 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v10 18/27] scripts/gdb: Add lx_current convenience function
-Date: Thu, 20 Nov 2014 18:01:55 +0100
-Message-Id: <4ffd20eb4288b8f9f323b2ae5f163594d33d8c1f.1416502923.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
+        Kay Sievers <kay@vrfy.org>
+Subject: [PATCH v10 11/27] scripts/gdb: Add lx-dmesg command
+Date: Thu, 20 Nov 2014 18:01:48 +0100
+Message-Id: <8702a459766adf18a2a69e289b5e9a5f92ccf547.1416502923.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <cover.1416502923.git.jan.kiszka@siemens.com>
 References: <cover.1416502923.git.jan.kiszka@siemens.com>
@@ -26,39 +28,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a shorthand for *$lx_per_cpu("current_task"), i.e. a convenience
-function to retrieve the currently running task of the active context.
+This pokes into the log buffer of the debugged kernel, dumping it to the
+gdb console. Helping in case the target should or can no longer execute
+dmesg itself.
 
+CC: Kay Sievers <kay@vrfy.org>
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/cpus.py | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ scripts/gdb/linux/dmesg.py | 64 ++++++++++++++++++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |  1 +
+ 2 files changed, 65 insertions(+)
+ create mode 100644 scripts/gdb/linux/dmesg.py
 
-diff --git a/scripts/gdb/linux/cpus.py b/scripts/gdb/linux/cpus.py
-index 18337e0..b683da9 100644
---- a/scripts/gdb/linux/cpus.py
-+++ b/scripts/gdb/linux/cpus.py
-@@ -66,3 +66,20 @@ Note that VAR has to be quoted as string."""
- 
- 
- PerCpu()
+diff --git a/scripts/gdb/linux/dmesg.py b/scripts/gdb/linux/dmesg.py
+new file mode 100644
+index 0000000..7650f24
+--- /dev/null
++++ b/scripts/gdb/linux/dmesg.py
+@@ -0,0 +1,64 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  kernel log buffer dump
++#
++# Copyright (c) Siemens AG, 2011, 2012
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
++
++import gdb
++import string
++
++from linux import utils
 +
 +
-+class LxCurrentFunc(gdb.Function):
-+    """Return current task.
-+
-+$lx_current([CPU]): Return the per-cpu task variable for the given CPU
-+number. If CPU is omitted, the CPU of the current context is used."""
++class LxDmesg(gdb.Command):
++    """Print Linux kernel log buffer."""
 +
 +    def __init__(self):
-+        super(LxCurrentFunc, self).__init__("lx_current")
++        super(LxDmesg, self).__init__("lx-dmesg", gdb.COMMAND_DATA)
 +
-+    def invoke(self, cpu=-1):
-+        var_ptr = gdb.parse_and_eval("&current_task")
-+        return per_cpu(var_ptr, cpu).dereference()
++    def invoke(self, arg, from_tty):
++        log_buf_addr = int(str(gdb.parse_and_eval("log_buf")).split()[0], 16)
++        log_first_idx = int(gdb.parse_and_eval("log_first_idx"))
++        log_next_idx = int(gdb.parse_and_eval("log_next_idx"))
++        log_buf_len = int(gdb.parse_and_eval("log_buf_len"))
++
++        inf = gdb.inferiors()[0]
++        start = log_buf_addr + log_first_idx
++        if log_first_idx < log_next_idx:
++            log_buf_2nd_half = -1
++            length = log_next_idx - log_first_idx
++            log_buf = inf.read_memory(start, length)
++        else:
++            log_buf_2nd_half = log_buf_len - log_first_idx
++            log_buf = inf.read_memory(start, log_buf_2nd_half) + \
++                inf.read_memory(log_buf_addr, log_next_idx)
++
++        pos = 0
++        while pos < log_buf.__len__():
++            length = utils.read_u16(log_buf[pos + 8:pos + 10])
++            if length == 0:
++                if log_buf_2nd_half == -1:
++                    gdb.write("Corrupted log buffer!\n")
++                    break
++                pos = log_buf_2nd_half
++                continue
++
++            text_len = utils.read_u16(log_buf[pos + 10:pos + 12])
++            time_stamp = utils.read_u64(log_buf[pos:pos + 8])
++
++            for line in log_buf[pos + 16:pos + 16 + text_len].splitlines():
++                gdb.write("[{time:12.6f}] {line}\n".format(
++                    time=time_stamp / 1000000000.0,
++                    line=line))
++
++            pos += length
 +
 +
-+LxCurrentFunc()
++LxDmesg()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index cf2e716..fa66d23 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -25,3 +25,4 @@ else:
+     import linux.utils
+     import linux.symbols
+     import linux.modules
++    import linux.dmesg
 -- 
 1.8.4.5
 
