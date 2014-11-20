@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527AbaKTWaY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 17:30:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36083 "EHLO mx1.redhat.com"
+	id S1757467AbaKTWaX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 17:30:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48467 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756889AbaKTWaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756063AbaKTWaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Nov 2014 17:30:21 -0500
 From: Seth Jennings <sjenning@redhat.com>
 To: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
@@ -17,142 +17,87 @@ Cc: Christoph Hellwig <hch@infradead.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCHv3 0/3] Kernel Live Patching
-Date: Thu, 20 Nov 2014 16:29:37 -0600
-Message-Id: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
+Subject: [PATCHv3 1/3] kernel: add TAINT_LIVEPATCH
+Date: Thu, 20 Nov 2014 16:29:38 -0600
+Message-Id: <1416522580-5593-2-git-send-email-sjenning@redhat.com>
+In-Reply-To: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
+References: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
+This adds a new taint flag to indicate when the kernel or a kernel
+module has been live patched.  This will provide a clean indication in
+bug reports that live patching was used.
 
-Thanks for all the feedback!
+Additionally, if the crash occurs in a live patched function, the live
+patch module will appear beside the patched function in the backtrace.
 
-changes in v3:
-- merge API and core data structures (Miroslav)
-- replace lp_ and lpc_ prefixes with klp_
-- add ARCH_HAVE_LIVE_PATCHING
-- guard livepatch.h with IS_ENABLED(CONFIG_LIVE_PATCHING)
-- smaller cleanups
-- TODO: FTRACE_OPS_FL_DYNAMIC? allocate fops in core?
-- TODO: kernel-doc for API structs once agreed upon
+Signed-off-by: Seth Jennings <sjenning@redhat.com>
+---
+ Documentation/oops-tracing.txt  | 2 ++
+ Documentation/sysctl/kernel.txt | 1 +
+ include/linux/kernel.h          | 1 +
+ kernel/panic.c                  | 2 ++
+ 4 files changed, 6 insertions(+)
 
-changes in v2:
-- rebase to next-20141113
-- add copyright/license block to livepatch.h
-- add _LINUX prefix to header defines
-- replace semaphore with mutex
-- add LPC_ prefix to state enum
-- convert BUGs to WARNs and handle properly
-- change Kconfig default to n
-- remove [old|new] attrs from function sysfs dir (KASLR leak, no use)
-- disregard user provided old_addr if kernel uses KASLR
-- s/out/err for error path labels
-- s/unregister/disable for uniform terminology
-- s/lp/lpc for module notifier elements
-- replace module ref'ing with unload notifier + mutex protection
-- adjust notifier priority to run before ftrace
-- make LIVE_PATCHING boolean (about to depend on arch stuff)
-- move x86-specific reloc code to arch/x86
-- s/dynrela/reloc/
-- add live patching sysfs documentation
-- add API function kernel-doc
-- TODO: kernel-doc for API structs once agreed upon
-
-Summary:
-
-This patchset implements an ftrace-based mechanism and kernel interface for
-doing live patching of kernel and kernel module functions.  It represents the
-greatest common functionality set between kpatch [1] and kGraft [2] and can
-accept patches built using either method.  This solution was discussed in the
-Live Patching Mini-conference at LPC 2014 [3].
-
-The model consists of a live patching "core" that provides an interface for
-other "patch" kernel modules to register patches with the core.
-
-Patch modules contain the new function code and create an klp_patch structure
-containing the required data about what functions to patch, where the new code
-for each patched function resides, and in which kernel object (vmlinux or
-module) the function to be patch resides.  The patch module then invokes the
-klp_register_patch() function to register with the core, then klp_enable_patch()
-to have the core redirect the execution paths using ftrace.
-
-An example patch module can be found here:
-https://github.com/spartacus06/livepatch/blob/master/patch/patch.c
-
-The live patching core creates a sysfs hierarchy for user-level access to live
-patching information.  The hierarchy is structured like this:
-
-/sys/kernel/livepatch
-/sys/kernel/livepatch/<patch>
-/sys/kernel/livepatch/<patch>/enabled
-/sys/kernel/livepatch/<patch>/<object>
-/sys/kernel/livepatch/<patch>/<object>/<func>
-
-The old function is located using one of two methods: it is either provided by
-the patch module (only possible for a function in vmlinux) or kallsyms lookup.
-Symbol ambiguity results in a failure.
-
-The core takes a reference on the patch module itself to keep it from
-unloading.  This is because, without a mechanism to ensure that no thread is
-currently executing in the patched function, we can not determine whether it is
-safe to unload the patch module.  For this reason, unloading patch modules is
-currently not allowed.
-
-Disabling patches can be done using the "enabled" attribute of the patch:
-
-echo 0 > /sys/kernel/livepatch/<patch>/enabled
-
-If a patch module contains a patch for a module that is not currently loaded,
-there is nothing to patch so the core does nothing for that patch object.
-However, the core registers a module notifier that looks for COMING events so
-that if the module is ever loaded, it is immediately patched.  If a module with
-patch code is removed, the notifier looks for GOING events and disables any
-patched functions for that object before it unloads.  The notifier has a higher
-priority than that of the ftrace notifier so that it runs before the ftrace
-notifier for GOING events and we can cleanly unregister from ftrace.
-
-kpatch and kGraft each have their own mechanisms for ensuring system
-consistency during the patching process. This first version does not implement
-any consistency mechanism that ensures that old and new code do not run
-together.  In practice, ~90% of CVEs are safe to apply in this way, since they
-simply add a conditional check.  However, any function change that can not
-execute safely with the old version of the function can _not_ be safely applied
-for now.
-
-[1] https://github.com/dynup/kpatch
-[2] https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/
-[3] https://etherpad.fr/p/LPC2014_LivePatching
-
-Seth Jennings (3):
-  kernel: add TAINT_LIVEPATCH
-  kernel: add support for live patching
-  kernel: add sysfs documentation for live patching
-
- Documentation/ABI/testing/sysfs-kernel-livepatch |  44 ++
- Documentation/oops-tracing.txt                   |   2 +
- Documentation/sysctl/kernel.txt                  |   1 +
- MAINTAINERS                                      |  13 +
- arch/x86/Kconfig                                 |   3 +
- arch/x86/include/asm/livepatch.h                 |  37 +
- arch/x86/kernel/Makefile                         |   1 +
- arch/x86/kernel/livepatch.c                      |  74 ++
- include/linux/kernel.h                           |   1 +
- include/linux/livepatch.h                        |  96 +++
- kernel/Makefile                                  |   1 +
- kernel/livepatch/Kconfig                         |  18 +
- kernel/livepatch/Makefile                        |   3 +
- kernel/livepatch/core.c                          | 828 +++++++++++++++++++++++
- kernel/panic.c                                   |   2 +
- 15 files changed, 1124 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-kernel-livepatch
- create mode 100644 arch/x86/include/asm/livepatch.h
- create mode 100644 arch/x86/kernel/livepatch.c
- create mode 100644 include/linux/livepatch.h
- create mode 100644 kernel/livepatch/Kconfig
- create mode 100644 kernel/livepatch/Makefile
- create mode 100644 kernel/livepatch/core.c
-
+diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
+index beefb9f..f3ac05c 100644
+--- a/Documentation/oops-tracing.txt
++++ b/Documentation/oops-tracing.txt
+@@ -270,6 +270,8 @@ characters, each representing a particular tainted value.
+ 
+  15: 'L' if a soft lockup has previously occurred on the system.
+ 
++ 16: 'K' if the kernel has been live patched.
++
+ The primary reason for the 'Tainted: ' string is to tell kernel
+ debuggers if this is a clean kernel or if anything unusual has
+ occurred.  Tainting is permanent: even if an offending module is
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 75511ef..83ab256 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -843,6 +843,7 @@ can be ORed together:
+ 8192 - An unsigned module has been loaded in a kernel supporting module
+        signature.
+ 16384 - A soft lockup has previously occurred on the system.
++32768 - The kernel has been live patched.
+ 
+ ==============================================================
+ 
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 5449d2f..d03e3de 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -471,6 +471,7 @@ extern enum system_states {
+ #define TAINT_OOT_MODULE		12
+ #define TAINT_UNSIGNED_MODULE		13
+ #define TAINT_SOFTLOCKUP		14
++#define TAINT_LIVEPATCH			15
+ 
+ extern const char hex_asc[];
+ #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 4d8d6f9..8136ad7 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -226,6 +226,7 @@ static const struct tnt tnts[] = {
+ 	{ TAINT_OOT_MODULE,		'O', ' ' },
+ 	{ TAINT_UNSIGNED_MODULE,	'E', ' ' },
+ 	{ TAINT_SOFTLOCKUP,		'L', ' ' },
++	{ TAINT_LIVEPATCH,		'K', ' ' },
+ };
+ 
+ /**
+@@ -246,6 +247,7 @@ static const struct tnt tnts[] = {
+  *  'O' - Out-of-tree module has been loaded.
+  *  'E' - Unsigned module has been loaded.
+  *  'L' - A soft lockup has previously occurred.
++ *  'K' - Kernel has been live patched.
+  *
+  *	The string is overwritten by the next call to print_tainted().
+  */
 -- 
 1.9.3
 
