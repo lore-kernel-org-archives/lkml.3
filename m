@@ -1,47 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431AbaKTQVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 11:21:13 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:63743 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548AbaKTQVL (ORCPT
+	id S1757472AbaKTPxV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 10:53:21 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:59315 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757413AbaKTPxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 11:21:11 -0500
-Date: Thu, 20 Nov 2014 11:21:05 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCHSET block/for-next] writeback: prepare for cgroup
- writeback support
-Message-ID: <20141120162105.GJ14877@htj.dyndns.org>
-References: <1416299848-22112-1-git-send-email-tj@kernel.org>
- <20141120151311.GE2330@quack.suse.cz>
- <20141120151456.GE14877@htj.dyndns.org>
- <20141120154458.GA5862@infradead.org>
+	Thu, 20 Nov 2014 10:53:19 -0500
+Date: Thu, 20 Nov 2014 07:53:17 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH V4 linux-next RESEND 2] bfa: replace 2
+ kzalloc/copy_from_user by memdup_user
+Message-ID: <20141120155317.GB26189@infradead.org>
+References: <1415990998-29659-1-git-send-email-fabf@skynet.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141120154458.GA5862@infradead.org>
+In-Reply-To: <1415990998-29659-1-git-send-email-fabf@skynet.be>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 07:44:58AM -0800, Christoph Hellwig wrote:
-> On Thu, Nov 20, 2014 at 10:14:56AM -0500, Tejun Heo wrote:
-> > > PS: I've added CC to linux-fsdevel since there's high chance people miss
-> > > these patches in lkml...
-> > 
-> > Will do so when posting the actual series.
-> 
-> Please send the prep patches to fsdevel and linux-mm.  Without that I'll
-> auto-NAK them :)
+Thanks, applied to drivers-for-3.19.
 
-Alright, I'll re-send these w/ Jan's acks added and fsdevel and
-linux-mm cc'd when posting the actual patchset.
-
-Thanks.
-
--- 
-tejun
