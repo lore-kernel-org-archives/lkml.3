@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751080AbaKTFBA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 00:01:00 -0500
-Received: from mga02.intel.com ([134.134.136.20]:31664 "EHLO mga02.intel.com"
+	id S1750973AbaKTFIg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 00:08:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45960 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750885AbaKTFA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 00:00:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="488969896"
-Message-ID: <546D7584.6070505@linux.intel.com>
-Date: Thu, 20 Nov 2014 13:00:52 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1750774AbaKTFIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 00:08:35 -0500
+Message-ID: <546D7751.6060707@suse.com>
+Date: Thu, 20 Nov 2014 06:08:33 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: "Wu, Feng" <feng.wu@intel.com>, "gleb@kernel.org" <gleb@kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/13] KVM: Initialize VT-d Posted-Interrtups Descriptor
-References: <1415600812-27773-1-git-send-email-feng.wu@intel.com> <1415600812-27773-3-git-send-email-feng.wu@intel.com> <546210B1.7060007@linux.intel.com> <E959C4978C3B6342920538CF579893F0022A04CD@SHSMSX104.ccr.corp.intel.com>
-In-Reply-To: <E959C4978C3B6342920538CF579893F0022A04CD@SHSMSX104.ccr.corp.intel.com>
-Content-Type: text/plain; charset=windows-1252
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Subject: Re: [PATCH V3 0/8] xen: Switch to virtual mapped linear p2m list
+References: <1415684626-18590-1-git-send-email-jgross@suse.com> <20141119204131.GD18495@laptop.dumpdata.com>
+In-Reply-To: <20141119204131.GD18495@laptop.dumpdata.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/20 12:53, Wu, Feng wrote:
-> 
-> 
->> -----Original Message-----
-<snit>
->>> +	/*
->>> +	 * Initialize Posted-Interrupt Descriptor
->>> +	 */
->>> +
->>> +	pi_clear_sn(&vmx->pi_desc);
->>> +	vmx->pi_desc.nv = POSTED_INTR_VECTOR;
->>> +
->>> +	/* Physical mode for Notificaiton Event */
->>> +	vmx->pi_desc.ndm = 0;
->>> +	dest = cpu_physical_id(vmx->vcpu.cpu);
->>> +
->>> +	if (x2apic_mode)
->> Hi Feng,
->> 	Could you try to use x2apic_enabled() here so you don't
->> need to export x2apic_mode?
->> Regards!
->> Gerry
-> 
-> In that case, we should also export x2apic_enabled(), right?
-Hi Feng,
-	x2apic_enabled() is a static inline function:)
-Regards!
-Gerry
+On 11/19/2014 09:41 PM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Nov 11, 2014 at 06:43:38AM +0100, Juergen Gross wrote:
+>> Paravirtualized kernels running on Xen use a three level tree for
+>> translation of guest specific physical addresses to machine global
+>> addresses. This p2m tree is used for construction of page table
+>> entries, so the p2m tree walk is performance critical.
+>>
+>> By using a linear virtual mapped p2m list accesses to p2m elements
+>> can be sped up while even simplifying code. To achieve this goal
+>> some p2m related initializations have to be performed later in the
+>> boot process, as the final p2m list can be set up only after basic
+>> memory management functions are available.
+>>
+>
+> Hey Juergen,
+>
+> I finially finished looking at the patchset. Had some comments,
+> some questions that I hope can make it in the patch so that in
+> six months or so when somebody looks at the code they can
+> understand the subtle pieces.
+
+Yep.
+
+OTOH: What was hard to write should be hard to read ;-)
+
+> Looking forward to the v4! (Thought keep in mind that next week
+> is Thanksgiving week so won't be able to look much after Wednesday)
+
+Let's see how testing is going. Setting up the test system wasn't
+very smooth due to some unrelated issues.
+
+>
+>>   arch/x86/include/asm/pgtable_types.h |    1 +
+>>   arch/x86/include/asm/xen/page.h      |   49 +-
+>>   arch/x86/mm/pageattr.c               |   20 +
+>>   arch/x86/xen/mmu.c                   |   38 +-
+>>   arch/x86/xen/p2m.c                   | 1315 ++++++++++++++--------------------
+>>   arch/x86/xen/setup.c                 |  460 ++++++------
+>>   arch/x86/xen/xen-ops.h               |    6 +-
+>>   7 files changed, 854 insertions(+), 1035 deletions(-)
+>
+> And best of - we are deleting more code!
+
+Indeed. But it's a shame the beautiful ASCII-art in p2m.c is part of the
+deletions.
+
+
+Juergen
