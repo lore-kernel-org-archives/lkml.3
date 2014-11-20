@@ -1,136 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757851AbaKTKYP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:24:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50331 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757494AbaKTKUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:20:04 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Linux-MM <linux-mm@kvack.org>,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 07/10] mm: numa: Do not trap faults on the huge zero page
-Date: Thu, 20 Nov 2014 10:19:47 +0000
-Message-Id: <1416478790-27522-8-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1416478790-27522-1-git-send-email-mgorman@suse.de>
-References: <1416478790-27522-1-git-send-email-mgorman@suse.de>
+	id S1757837AbaKTKYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 05:24:14 -0500
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:36220 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757706AbaKTKYK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 05:24:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <546DB5B0.8040105@linaro.org>
+References: <1416312516-4551-1-git-send-email-kiran.kumar@linaro.org>
+	<546B7E21.4000602@linaro.org>
+	<CA+RfmHYe7MJi61h76HPFpoh4bMG8erTGKpVhvQFjr8SaFXgH6w@mail.gmail.com>
+	<546DB5B0.8040105@linaro.org>
+Date: Thu, 20 Nov 2014 15:54:09 +0530
+Message-ID: <CA+RfmHYReASP+C1G1eCKVF0RQmQdaxfnnHUks=uiNwNPP502qw@mail.gmail.com>
+Subject: Re: [RFC] debug: add parameters to prevent entering debug mode on errors
+From: Kiran Raparthy <kiran.kumar@linaro.org>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Faults on the huge zero page are pointless and there is a BUG_ON
-to catch them during fault time. This patch reintroduces a check
-that avoids marking the zero page PAGE_NONE.
+Hi,
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/huge_mm.h |  3 ++-
- mm/huge_memory.c        | 13 ++++++++++++-
- mm/memory.c             |  1 -
- mm/mprotect.c           | 15 ++++++++++++++-
- 4 files changed, 28 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index 554bbe3..ad9051b 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -31,7 +31,8 @@ extern int move_huge_pmd(struct vm_area_struct *vma,
- 			 unsigned long new_addr, unsigned long old_end,
- 			 pmd_t *old_pmd, pmd_t *new_pmd);
- extern int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
--			unsigned long addr, pgprot_t newprot);
-+			unsigned long addr, pgprot_t newprot,
-+			int prot_numa);
- 
- enum transparent_hugepage_flag {
- 	TRANSPARENT_HUGEPAGE_FLAG,
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 668f1a3..3013eb8 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1502,7 +1502,7 @@ out:
-  *  - HPAGE_PMD_NR is protections changed and TLB flush necessary
-  */
- int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
--		unsigned long addr, pgprot_t newprot)
-+		unsigned long addr, pgprot_t newprot, int prot_numa)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	spinlock_t *ptl;
-@@ -1510,6 +1510,17 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 
- 	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
- 		pmd_t entry;
-+
-+		/*
-+		 * Avoid trapping faults against the zero page. The read-only
-+		 * data is likely to be read-cached on the local CPU and
-+		 * local/remote hits to the zero page are not interesting.
-+		 */
-+		if (prot_numa && is_huge_zero_pmd(*pmd)) {
-+			spin_unlock(ptl);
-+			return 0;
-+		}
-+
- 		ret = 1;
- 		entry = pmdp_get_and_clear(mm, addr, pmd);
- 		entry = pmd_modify(entry, newprot);
-diff --git a/mm/memory.c b/mm/memory.c
-index 900127b..a725c08 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3142,7 +3142,6 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		pte_unmap_unlock(ptep, ptl);
- 		return 0;
- 	}
--	BUG_ON(is_zero_pfn(page_to_pfn(page)));
- 
- 	/*
- 	 * Avoid grouping on DSO/COW pages in specific and RO pages
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index dc65c0f..33dfafb 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -75,6 +75,19 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 		oldpte = *pte;
- 		if (pte_present(oldpte)) {
- 			pte_t ptent;
-+
-+			/*
-+			 * Avoid trapping faults against the zero or KSM
-+			 * pages. See similar comment in change_huge_pmd.
-+			 */
-+			if (prot_numa) {
-+				struct page *page;
-+
-+				page = vm_normal_page(vma, addr, oldpte);
-+				if (!page || PageKsm(page))
-+					continue;
-+			}
-+
- 			ptent = ptep_modify_prot_start(mm, addr, pte);
- 			ptent = pte_modify(ptent, newprot);
- 
-@@ -141,7 +154,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 				split_huge_page_pmd(vma, addr, pmd);
- 			else {
- 				int nr_ptes = change_huge_pmd(vma, pmd, addr,
--						newprot);
-+						newprot, prot_numa);
- 
- 				if (nr_ptes) {
- 					if (nr_ptes == HPAGE_PMD_NR) {
--- 
-2.1.2
-
+On 20 November 2014 15:04, Daniel Thompson <daniel.thompson@linaro.org> wrote:
+> On 20/11/14 08:18, Kiran Raparthy wrote:
+>> Hi Daniel,
+>>
+>> On 18 November 2014 22:43, Daniel Thompson <daniel.thompson@linaro.org> wrote:
+>>> On 18/11/14 12:08, Kiran Kumar Raparthy wrote:
+>>>> From: Colin Cross <ccross@android.com>
+>>>>
+>>>> debug: add parameters to prevent entering debug mode on errors
+>>>>
+>>>> On non-developer devices kgdb prevents CONFIG_PANIC_TIMEOUT from rebooting the
+>>>> device after a panic. Add module parameters debug_core.break_on_exception and
+>>>> debug_core.break_on_panic to allow skipping debug on panics and exceptions
+>>>> respectively.  Both default to true to preserve existing behavior.
+>>>
+>>> I am a little unsure about break_on_panic.
+>>>
+>>> It ought to be possible for kgdb/kdb to honour CONFIG_PANIC_TIMEOUT by
+>>> tracking how long it takes for the user to attach a debugger (or to run
+>>> the first kdb command after the panic). As it happens the timeout value
+>>> is already an exported kernel symbol so all the info it there for us to
+>>> use...
+>>>
+>>> Doing so would save us imposing further configuration burden on the user
+>>> (although it would be a good deal more code).
+>>>
+>>> Note that I can't think of an automatic way to handle break_on_exception
+>>> so I'm less worried about that one.
+>> Alright,so it it okay if we have this mechanism limited to "skip debug
+>> on exceptions"?
+>> please let me know if i have misunderstood your point.
+>
+> Spliting it up would certainly stop a review comment from needlessly
+> interfering with good stuff being delivered. That's always a good thing.
+>
+> To be clear though, providing the user a way to prevent kgdb from
+> preventing the machine from rebooting after panic seems to me to be a
+> useful feature. It is simply that I think the existing panic_timeout
+> value could be used to realize it.
+Yeah,got it now.
+>
+>>>> +             return 1;
+>>>> +
+>>>>       memset(ks, 0, sizeof(struct kgdb_state));
+>>>>       ks->cpu                 = raw_smp_processor_id();
+>>>>       ks->ex_vector           = evector;
+>>>> @@ -821,6 +830,9 @@ static int kgdb_panic_event(struct notifier_block *self,
+>>>>                           unsigned long val,
+>>>>                           void *data)
+>>>>  {
+>>>> +     if (!break_on_panic)
+>>>> +             return NOTIFY_DONE;
+>
+> How about simply:
+>
+>         if (panic_timeout)
+>                 return NOTIFY_DONE;
+>
+> (plus a nice comment explaining why)
+>
+> This doesn't implement a timeout and so does not prevent a physically
+> present user from exploiting kgdb. Nevertheless its an accurate
+> interpretation of what the user told us to do and leaves the door open
+> to adding a timeout in the future.
+>
+> Actually it might be a good idea to use panic_timeout to control
+> trap-on-oops as well! If the user wants the machine to reboot itself on
+> panic they certainly don't want it to hang during an oops.
+Okay,I'll resend the patch with suggested modifications.
+Thanks for the inputs.
+Regards,
+Kiran
+>
+> if (panic_timeout)
+>         return NOTIFY_DONE;
+>
+>>>> +
+>>>>       if (dbg_kdb_mode)
+>>>>               kdb_prinf("PANIC: %s\n", (char *)data);
+>>>>       kgdb_breakpoint();
+>>>>
+>>>
+>
