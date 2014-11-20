@@ -1,91 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487AbaKTNtu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:49:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49650 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752046AbaKTNtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:49:47 -0500
-Message-ID: <546DF175.7040009@redhat.com>
-Date: Thu, 20 Nov 2014 14:49:41 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1756826AbaKTNt6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:49:58 -0500
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:56251 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756396AbaKTNty (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 08:49:54 -0500
+Date: Thu, 20 Nov 2014 09:49:52 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Cc: Linux PM <linux-pm@vger.kernel.org>,
+        Caesar Wang <caesar.wang@rock-chips.com>, Wei Ni <wni@nvidia.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        lm-sensors@lm-sensors.org, Rob Herring <robh+dt@kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCHv4 1/1] thermal: of: improve of-thermal sensor
+ registration API
+Message-ID: <20141120134950.GA24778@developer>
+References: <1416321575-18348-1-git-send-email-edubezval@gmail.com>
+ <1416321575-18348-2-git-send-email-edubezval@gmail.com>
+ <546CBA3C.9020709@kapsi.fi>
+ <546CBA98.1040607@kapsi.fi>
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        linux-ia64@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [PATCH] KVM: ia64: remove
-References: <1416431143-31843-1-git-send-email-pbonzini@redhat.com> <20141120133809.GA30792@potion.brq.redhat.com>
-In-Reply-To: <20141120133809.GA30792@potion.brq.redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OXfL5xGRrasGEqWY"
+Content-Disposition: inline
+In-Reply-To: <546CBA98.1040607@kapsi.fi>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--OXfL5xGRrasGEqWY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 20/11/2014 14:38, Radim Krčmář wrote:
-> I propose another removal.
-> (The reasoning below wasn't confirmed with ia64 compiler.
-> I'd remove the ioctls even if they worked.)
+Mikko,
 
-Checked and applied, thanks.
+On Wed, Nov 19, 2014 at 05:43:20PM +0200, Mikko Perttunen wrote:
+> On 11/19/2014 05:41 PM, Mikko Perttunen wrote:
+> > On 11/18/2014 04:39 PM, Eduardo Valentin wrote:
+> >> Different drivers request API extensions in of-thermal. For this reaso=
+n,
+> >> additional callbacks are required to fit the new drivers needs.
+> >>
+> >> The current API implementation expects the registering sensor driver
+> >> to provide a get_temp and get_trend callbacks as function parameters.
+> >> As the amount of callbacks is growing, this patch changes the existing
+> >> implementation to use a .ops field to hold all the of thermal callbacks
+> >> to sensor drivers.
+> >>
+> >> This patch also changes the existing of-thermal users to fit the new
+> >> API design. No functional change is introduced in this patch.
+> >>
+> >> Cc: Alexandre Courbot <gnurou@gmail.com>
+> >> Cc: devicetree@vger.kernel.org
+> >> Cc: Grant Likely <grant.likely@linaro.org>
+> >> Cc: Guenter Roeck <linux@roeck-us.net>
+> >> Cc: Jean Delvare <jdelvare@suse.de>
+> >> Cc: linux-kernel@vger.kernel.org
+> >> Cc: linux-pm@vger.kernel.org
+> >> Cc: linux-tegra@vger.kernel.org
+> >> Cc: lm-sensors@lm-sensors.org
+> >> Cc: Rob Herring <robh+dt@kernel.org>
+> >> Cc: Stephen Warren <swarren@wwwdotorg.org>
+> >> Cc: Thierry Reding <thierry.reding@gmail.com>
+> >> Cc: Zhang Rui <rui.zhang@intel.com>
+> >> Reviewed-by: Lukasz Majewski <l.majewski@samsung.com>
+> >> Signed-off-by: Eduardo Valentin <edubezval@gmail.com>
+> >> ---
+> >>   drivers/hwmon/lm75.c                               |  9 +++--
+> >>   drivers/hwmon/ntc_thermistor.c                     |  6 +++-
+> >>   drivers/hwmon/tmp102.c                             |  6 +++-
+> >>   drivers/thermal/of-thermal.c                       | 40
+> >> ++++++++++------------
+> >>   drivers/thermal/tegra_soctherm.c                   |  7 ++--
+> >>   drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  8 +++--
+> >>   include/linux/thermal.h                            | 24 +++++++++----
+> >>   7 files changed, 63 insertions(+), 37 deletions(-)
+> >> ---
+> >> Difference from V3:
+> >>    - Keep the same behavior regarding callback checks.
+> >>      Change in behavior may be sent in a separate patch.
+> >> Difference from V2:
+> >>    - Fix wrong assignment in tegra driver.
+> >> Difference from V1:
+> >>    - Fix error handling when .get_trend is not provided.
+> >>
+> >> @@ -356,8 +356,8 @@ thermal_zone_of_add_sensor(struct device_node *zon=
+e,
+> >>    *             than one sensors
+> >>    * @data: a private pointer (owned by the caller) that will be passed
+> >>    *        back, when a temperature reading is needed.
+> >> - * @get_temp: a pointer to a function that reads the sensor temperatu=
+re.
+> >> - * @get_trend: a pointer to a function that reads the sensor
+> >> temperature trend.
+> >> + * @ops: struct thermal_zone_of_device *. Must contain at least
+> >> .get_trend and
+> >> + *       .get_temp.
+> >
+> > This comment seems to be incorrect, as .get_trend is optional.
+>=20
+> Also, the parameter is of type struct thermal_zone_of_device_ops *, not=
+=20
+> just thermal_zone_of_device.
+>=20
+> >
+> >>    *
+> >>    * This function will search the list of thermal zones described in
+> >> device
+> >>    * tree and look for the zone that refer to the sensor device
+> >> pointed by
+> >
+> > With that minor one fixed,
+> >
+> > Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+> > Reviewed-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 
-Paolo
+All the comments fixed now. Thanks for reviewing and testing.
 
-> ---8<---
-> KVM: remove buggy ia64 specific ioctls
-> 
-> IA64 is no longer present so new applications shouldn't use them.
-> 
-> The main problem is that they most likely didn't work even before,
-> because we have misused ioctl
-> 
->   #define KVM_SET_GUEST_DEBUG       _IOW(KVMIO,  0x9b, struct kvm_guest_debug)
->   #define KVM_IA64_VCPU_SET_STACK   _IOW(KVMIO,  0x9b, void *)
-> 
-> as
-> 
->   struct kvm_guest_debug {
->   	__u32 control;
->   	__u32 pad;
->   	struct kvm_guest_debug_arch arch;
->   };
-> 
-> and
-> 
->   struct kvm_guest_debug_arch {
->   };
-> 
-> mean that
-> 
->   sizeof(struct kvm_guest_debug) == sizeof(void *) == 8
-> 
-> thus
-> 
->   KVM_SET_GUEST_DEBUG == KVM_IA64_VCPU_SET_STACK
-> 
-> and KVM_SET_GUEST_DEBUG is handled before KVM_IA64_VCPU_SET_STACK.
-> 
-> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-> ---
->  include/uapi/linux/kvm.h | 3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
-> index 6d59e5b..a37fd12 100644
-> --- a/include/uapi/linux/kvm.h
-> +++ b/include/uapi/linux/kvm.h
-> @@ -1099,9 +1099,6 @@ struct kvm_s390_ucas_mapping {
->  #define KVM_X86_SETUP_MCE         _IOW(KVMIO,  0x9c, __u64)
->  #define KVM_X86_GET_MCE_CAP_SUPPORTED _IOR(KVMIO,  0x9d, __u64)
->  #define KVM_X86_SET_MCE           _IOW(KVMIO,  0x9e, struct kvm_x86_mce)
-> -/* IA64 stack access */
-> -#define KVM_IA64_VCPU_GET_STACK   _IOR(KVMIO,  0x9a, void *)
-> -#define KVM_IA64_VCPU_SET_STACK   _IOW(KVMIO,  0x9b, void *)
->  /* Available with KVM_CAP_VCPU_EVENTS */
->  #define KVM_GET_VCPU_EVENTS       _IOR(KVMIO,  0x9f, struct kvm_vcpu_events)
->  #define KVM_SET_VCPU_EVENTS       _IOW(KVMIO,  0xa0, struct kvm_vcpu_events)
-> 
+> >
+> > Cheers,
+> > Mikko
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-tegra" =
+in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>=20
+
+Cheers,
+
+Eduardo Valentin
+
+--OXfL5xGRrasGEqWY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUbfF+AAoJEMLUO4d9pOJW8IEIAJvMZe9zKr47JQ8oKOHRurmp
+rcR9eLeTW1spgbpXC4IOtOz6wzVbkUHsc3rODShgjXx17w7bCS/3zRXlWQ9b8teF
+Hh3U8+7u1vFK7Pw0EM6kiKYXiL+pNyUdAXOKpUKyJlCG7oQRNS47LGGkvIpCPZoU
+fJCXWC033V9ZyYY53kZe9e15Vj7nHYb9XwEu80H8ncaJ0KjcEZO6f/DHlZxoA98v
+UUkhsPLsZ5TURJiM4EPikFaqLKjpsKoJvsSB2pzjeiZfpiASVem3+mLuu7vYYRBT
+ZNkCkJY18s41Tz10OxVmUxLQcA6xId0jPXIBLqV77e/m3Bg3/oPe3jVGdMSpq7A=
+=VrjL
+-----END PGP SIGNATURE-----
+
+--OXfL5xGRrasGEqWY--
