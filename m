@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924AbaKTVr7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 16:47:59 -0500
-Received: from smtp24.services.sfr.fr ([93.17.128.81]:64830 "EHLO
-	smtp24.services.sfr.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756817AbaKTVr4 (ORCPT
+	id S1757222AbaKTVsp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 16:48:45 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38737 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757161AbaKTVsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 16:47:56 -0500
-X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Nov 2014 16:47:55 EST
-Authentication-Results: sfrmc.priv.atos.fr; dkim=none (no signature);
-	dkim-adsp=none (no policy) header.from=mpeg.blue@free.fr
-X-SFR-UUID: 20141120214137806.C4CDD70005B2@msfrf2404.sfr.fr
-Message-ID: <546E600F.8020704@free.fr>
-Date: Thu, 20 Nov 2014 22:41:35 +0100
-From: Mason <mpeg.blue@free.fr>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101
-	Firefox/33.0 SeaMonkey/2.30
+	Thu, 20 Nov 2014 16:48:42 -0500
+Date: Thu, 20 Nov 2014 22:48:38 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Murali Karicheri <m-karicheri2@ti.com>
+Subject: Re: [1/5] i2c: i2c-davinci: switch to use platform_get_irq
+Message-ID: <20141120214838.GA346@pengutronix.de>
+References: <1416477788-5544-2-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
-To: Victor Ascroft <victorascroft@gmail.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: Looking for good references for ARM driver development
-References: <546C920A.7060800@free.fr> <546CCBF6.7070607@gmail.com>
-In-Reply-To: <546CCBF6.7070607@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1416477788-5544-2-git-send-email-grygorii.strashko@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/11/2014 17:57, Victor Ascroft wrote:
+Hello Grygorii,
 
-> On 11/19/2014 06:20 PM, Mason wrote:
+On Thu, Nov 20, 2014 at 12:03:04PM +0200, Grygorii Strashko wrote:
+> Switch Davinci I2C driver to use platform_get_irq(), because
+> - it is not recommened to use
+>   platform_get_resource(pdev, IORESOURCE_IRQ, ..) for requesting IRQ's
+>   resources any more, as they can be not ready yet in case of DT-booting.
+> - it makes code simpler
 > 
->> Are there more recent technical references, as good as LDD3, that
->> cover "modern" aspects of kernel development?
+> CC: Sekhar Nori <nsekhar@ti.com>
+> CC: Kevin Hilman <khilman@deeprootsystems.com>
+> CC: Santosh Shilimkar <ssantosh@kernel.org>
+> CC: Murali Karicheri <m-karicheri2@ti.com>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> ---
+>  drivers/i2c/busses/i2c-davinci.c | 14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
 > 
-> The LDD3 is one of the best there is. A fourth edition is supposed
-> to come out sometime next year.
-> http://www.amazon.com/Linux-Device-Drivers-Jessica-McKellar/dp/1449371612
+> diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
+> index 4d96147..9bbfb8f 100644
+> --- a/drivers/i2c/busses/i2c-davinci.c
+> +++ b/drivers/i2c/busses/i2c-davinci.c
+> @@ -640,13 +640,13 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+>  {
+>  	struct davinci_i2c_dev *dev;
+>  	struct i2c_adapter *adap;
+> -	struct resource *mem, *irq;
+> -	int r;
+> +	struct resource *mem;
+> +	int r, irq;
+>  
+> -	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> -	if (!irq) {
+> -		dev_err(&pdev->dev, "no irq resource?\n");
+> -		return -ENODEV;
+> +	irq = platform_get_irq(pdev, 0);
+One bad thing about platform_get_irq is its unusual handling of irq=0.
+I'm pretty sure you don't want to use this value, so adding something
+like:
 
-That's the best news I've heard this week!
-Hope Jonathan gets well and lives happily ever after.
+	if (!irq)
+		irq = -ENXIO
 
->> How do I "leave device registration for the system infrastructure"?
->> Where should I put that code?
->> Is it a good idea to separate device registration and driver registration
->> in the case of a SoC, where the device is embedded in the SoC and is not
->> "hot-plugged" (or anything-plugged for that matter, it's just "there").
-> 
-> For understanding this you need to understand how the platform infrastructure
-> works and why is it used.
-> http://lwn.net/Articles/448499/
-> http://lwn.net/Articles/448502/
-> and go through some of the relevant drivers.
+would be welcome because the usual value for "invalid irq" is 0 and not
+-ESOMETHING. platform_get_irq is one of the very few functions that
+don't adhere to this convention. With handling <= 0 as error your code
+is immune to changes in this area. Although I notice that
+platform_get_irq got worse in this respect to handle -EPROBE_DEFER. hmm.
 
-More of Jon's (great) work ;-)
-Will definitely read these articles carefully.
+Apart from your change I wonder if platform_get_irq should handle
+of_irq_get returning 0 as an error.
 
->> 3) Why is the function used to "destroy a platform device" named
->> platform_device_put? Why put?
->> Put on a list of things to destroy at a later time?
-> 
-> This should be more clear once you go through LDD3.
+> +	if (irq < 0) {
+> +		dev_err(&pdev->dev, "can't get irq resource ret=%d\n", irq);
+Please don't print an error if irq=-EPROBE_DEFER.
 
-I'm coming up empty.
-AFAICT, it's unrelated to the _put_user* family of functions.
-I see that it has something to do with ref count decrement.
-[more reading...]
-Something about kref.
-https://lwn.net/Articles/336224/
+> +		return irq;
+>  	}
 
-They mention "put" but not *why* it's called "put".
-Is it related to Dijkstra's P and V for semaphores?
-https://cs.nyu.edu/~yap/classes/os/resources/origin_of_PV.html
-Still confused...
-
-Regards.
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
