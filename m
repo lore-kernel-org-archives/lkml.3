@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227AbaKTOZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 09:25:46 -0500
-Received: from mout.web.de ([212.227.15.3]:63252 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757140AbaKTOZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 09:25:43 -0500
-Message-ID: <546DF9D7.6080801@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 15:25:27 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Haiyang Zhang <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
-        netdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] net: Hyper-V: Deletion of an unnecessary check before
- the function call "vfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:CGH1CZHAK29iklR+VssNYWCP/ZGHlKxMce3Zxl2oSv9evPZvwnT
- bhkiMFAiJxj91A1GReH8g7LnzMASF5y9fKq6/gv3vYjxYj2JvUl3qatL2ohSufT/aRfupql
- Qv6IdYFAf5gOpGXjnE+Rofhhs84sIyAFN4hcNIIzhaIYHS1Q2JQnyxcbO8icx11SGszedsC
- VL0BRG63p7Q82DNjraRgg==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1757286AbaKTO02 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 09:26:28 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:32473 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756502AbaKTO01 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 09:26:27 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-33-546dfa11e0b1
+From: Jaewon Kim <jaewon02.kim@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Jaewon Kim <jaewon02.kim@samsung.com>
+Subject: [PATCH 2/2] ARM: dts: Add max77693-haptic node for exynos4412-trats2
+Date: Thu, 20 Nov 2014 23:26:16 +0900
+Message-id: <1416493576-10129-2-git-send-email-jaewon02.kim@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1416493576-10129-1-git-send-email-jaewon02.kim@samsung.com>
+References: <1416493576-10129-1-git-send-email-jaewon02.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsWyRsSkQFfwV26IweslvBbXvzxntdjRcITV
+	onfBVTaLy7vmsFnMOL+PyYHVo2/LKkaPz5vkApiiuGxSUnMyy1KL9O0SuDLuPfrKXHCYtWLu
+	5r2sDYzbWLoYOTkkBEwkfp4+wQZhi0lcuLceyObiEBJYyiix6l0bM0zR/CvHmSAS0xkl1iyd
+	ww7htDFJvDryhQmkik1AW+L7+sWsILaIgJpEz+KtjCBFzAKTGCW+P30ANkpYwFdi3fV9YA0s
+	AqoSTf0bwO7gFfCQ2H7hBVANB9A6BYk5k2xAwpwCnhKrGy8wgthCQCUP+7Yzg8yUEPjOJnFg
+	byMzxBwBiW+TD7FA9MpKbDoAdbWkxMEVN1gmMAovYGRYxSiaWpBcUJyUXmSiV5yYW1yal66X
+	nJ+7iREYtqf/PZuwg/HeAetDjAIcjEo8vAkWuSFCrIllxZW5hxhNgTZMZJYSTc4HRkdeSbyh
+	sZmRhamJqbGRuaWZkjjva6mfwUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoY6zc1f2++6J3n
+	JcR7Otdsol/G4cOxnz7p/zvLcFBC4Gz8P5Z5rq9/Xv6c95LR5/3VTX0Kc25KdAjWb/nsUxiS
+	ffm1zh/m692B1nK8TLvP+/anHldf4a396yHLh12euSk/q17XvbXr1F+kvnmW1XWtc3EvD+W6
+	df9gusBxduUj+UWeGpOfp+yarcRSnJFoqMVcVJwIAOBkzfRWAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+xoK7gr9wQg8ajbBbXvzxntdjRcITV
+	onfBVTaLy7vmsFnMOL+PyYHVo2/LKkaPz5vkApiiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od
+	403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4DWKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1
+	DQmC6zEyQAMJaxgz7j36ylxwmLVi7ua9rA2M21i6GDk5JARMJOZfOc4EYYtJXLi3nq2LkYtD
+	SGA6o8SapXPYIZw2JolXR76AVbEJaEt8X7+YFcQWEVCT6Fm8lRGkiFlgEqPE96cPmEESwgK+
+	Euuu7wNrYBFQlWjq3wC2jlfAQ2L7hRdANRxA6xQk5kyyAQlzCnhKrG68wAhiCwGVPOzbzjyB
+	kXcBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOCoeCa9g3FVg8UhRgEORiUe3gSL3BAh
+	1sSy4srcQ4wSHMxKIrwL3wOFeFMSK6tSi/Lji0pzUosPMZoCHTWRWUo0OR8YsXkl8YbGJmZG
+	lkbmhhZGxuZK4rw3bgI1CaQnlqRmp6YWpBbB9DFxcEo1MIZPDt0/edu9rRf7WkLy7acEfViT
+	8WDpHNdvglo3zIS8hO8+mp1Ufjzc9tfrWXb6sV9WaS6uPOjfG7btSOIK5k3HjyVnztX7wf3z
+	YfXFKrttN8ocG1+eCVrOF3ZBqsNj7e87rr8WOtrfdfXVndbMm9aQOMNs24Y0f4HMwC+8d07u
+	rPzsW3Fveq4SS3FGoqEWc1FxIgCetnUZoAIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 15:15:21 +0100
+This patch adds max77693-haptic node to support for haptic motor driver.
 
-The vfree() function performs also input parameter validation. Thus the test
-around the call is not needed.
-
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
 ---
- drivers/net/hyperv/netvsc.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/arm/boot/dts/exynos4412-trats2.dts |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index da2d346..ffe7481 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -548,8 +548,7 @@ int netvsc_device_remove(struct hv_device *device)
- 	vmbus_close(device->channel);
+diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
+index 72462e8..8ddebbc 100644
+--- a/arch/arm/boot/dts/exynos4412-trats2.dts
++++ b/arch/arm/boot/dts/exynos4412-trats2.dts
+@@ -543,6 +543,12 @@
+ 					regulator-max-microamp = <2580000>;
+ 				};
+ 			};
++
++			max77693_haptic {
++				compatible = "maxim,max77693-haptic";
++				haptic-supply = <&ldo26_reg>;
++				pwms = <&pwm 0 38022 0>;
++			};
+ 		};
+ 	};
  
- 	/* Release all resources */
--	if (net_device->sub_cb_buf)
--		vfree(net_device->sub_cb_buf);
-+	vfree(net_device->sub_cb_buf);
- 
- 	kfree(net_device);
- 	return 0;
 -- 
-2.1.3
+1.7.9.5
 
