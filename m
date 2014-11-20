@@ -1,150 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920AbaKTOfS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 09:35:18 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:44523 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953AbaKTOfP (ORCPT
+	id S1756992AbaKTOgh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 09:36:37 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:38829 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894AbaKTOgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 09:35:15 -0500
-From: Imre Palik <imrep.amz@gmail.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, "Palik, Imre" <imrep@amazon.de>,
-        Matt Wilson <msw@amazon.com>
-Subject: [PATCH RFC] audit: move the tree pruning to a dedicated thread
-Date: Thu, 20 Nov 2014 15:34:21 +0100
-Message-Id: <1416494061-22778-1-git-send-email-imrep.amz@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 20 Nov 2014 09:36:36 -0500
+Date: Thu, 20 Nov 2014 15:36:32 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141120143626.GA2542@lerouge>
+References: <20141118020959.GA2091@redhat.com>
+ <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
+ <20141118023930.GA2871@redhat.com>
+ <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
+ <20141118145234.GA7487@redhat.com>
+ <alpine.DEB.2.11.1411181914020.3909@nanos>
+ <20141118215540.GD35311@redhat.com>
+ <20141119021902.GA14216@redhat.com>
+ <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
+ <20141119051524.GA18547@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141119051524.GA18547@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Palik, Imre" <imrep@amazon.de>
+On Wed, Nov 19, 2014 at 12:15:24AM -0500, Dave Jones wrote:
+> On Tue, Nov 18, 2014 at 08:40:55PM -0800, Linus Torvalds wrote:
+> 
+>  > Hmm, if we are getting soft-lockups here, maybe it suggest too much exit-work.
+>  > 
+>  > Some TIF_NOHZ loop, perhaps? You have nohz on, don't you?
+>  > 
+>  > That makes me wonder: does the problem go away if you disable NOHZ?
+> 
+> Does nohz=off do enough ? I couldn't convince myself after looking at
+> dmesg, and still seeing dynticks stuff in there.
+> 
+> I'll do a rebuild with all the CONFIG_NO_HZ stuff off, though it also changes
+> some other config stuff wrt timers.
 
-When file auditing is enabled, during a low memory situation, a memory
-allocation with __GFP_FS can lead to pruning the inode cache.  Which can,
-in turn lead to audit_tree_freeing_mark() being called.  This can call
-audit_schedule_prune(), that tries to fork a pruning thread, and
-waits until the thread is created.  But forking needs memory, and the
-memory allocations there are done with __GFP_FS.
+You also need to disable context tracking. So you need to deactive also
+CONFIG_RCU_USER_QS and CONFIG_CONTEXT_TRACKING_FORCE and eventually make sure
+nothing else is turning on CONFIG_CONTEXT_TRACKING.
 
-So we are waiting merrily for some __GFP_FS memory allocations to complete,
-while holding some filesystem locks.  This can take a while ...
-
-This patch creates a single thread for pruning the tree from
-audit_tree_init(), and thus avoids the deadlock that the on-demand thread
-creation can cause.
-
-An alternative approach would be to move the thread creation outside of the
-lock.  This would assume that other layers of the filesystem code don't
-hold any locks, and it would need some rewrite of the code to limit the
-amount of threads possibly spawned.
-
-Reported-by: Matt Wilson <msw@amazon.com>
-Cc: Matt Wilson <msw@amazon.com>
-Signed-off-by: Imre Palik <imrep@amazon.de>
----
- kernel/audit_tree.c |   53 ++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 35 insertions(+), 18 deletions(-)
-
-diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
-index 0caf1f8..cf6db88 100644
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -37,6 +37,7 @@ struct audit_chunk {
- 
- static LIST_HEAD(tree_list);
- static LIST_HEAD(prune_list);
-+static struct task_struct *prune_thread;
- 
- /*
-  * One struct chunk is attached to each inode of interest.
-@@ -806,30 +807,39 @@ int audit_tag_tree(char *old, char *new)
-  */
- static int prune_tree_thread(void *unused)
- {
--	mutex_lock(&audit_cmd_mutex);
--	mutex_lock(&audit_filter_mutex);
-+	for (;;) {
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		if (list_empty(&prune_list))
-+			schedule();
-+		__set_current_state(TASK_RUNNING);
- 
--	while (!list_empty(&prune_list)) {
--		struct audit_tree *victim;
-+		mutex_lock(&audit_cmd_mutex);
-+		mutex_lock(&audit_filter_mutex);
- 
--		victim = list_entry(prune_list.next, struct audit_tree, list);
--		list_del_init(&victim->list);
-+		while (!list_empty(&prune_list)) {
-+			struct audit_tree *victim;
- 
--		mutex_unlock(&audit_filter_mutex);
-+			victim = list_entry(prune_list.next,
-+					struct audit_tree, list);
-+			list_del_init(&victim->list);
- 
--		prune_one(victim);
-+			mutex_unlock(&audit_filter_mutex);
- 
--		mutex_lock(&audit_filter_mutex);
--	}
-+			prune_one(victim);
- 
--	mutex_unlock(&audit_filter_mutex);
--	mutex_unlock(&audit_cmd_mutex);
-+			mutex_lock(&audit_filter_mutex);
-+		}
-+
-+		mutex_unlock(&audit_filter_mutex);
-+		mutex_unlock(&audit_cmd_mutex);
-+	}
- 	return 0;
- }
- 
- static void audit_schedule_prune(void)
- {
--	kthread_run(prune_tree_thread, NULL, "audit_prune_tree");
-+	BUG_ON(!prune_thread);
-+	wake_up_process(prune_thread);
- }
- 
- /*
-@@ -896,9 +906,10 @@ static void evict_chunk(struct audit_chunk *chunk)
- 	for (n = 0; n < chunk->count; n++)
- 		list_del_init(&chunk->owners[n].list);
- 	spin_unlock(&hash_lock);
-+	mutex_unlock(&audit_filter_mutex);
- 	if (need_prune)
- 		audit_schedule_prune();
--	mutex_unlock(&audit_filter_mutex);
-+
- }
- 
- static int audit_tree_handle_event(struct fsnotify_group *group,
-@@ -938,10 +949,16 @@ static int __init audit_tree_init(void)
- {
- 	int i;
- 
--	audit_tree_group = fsnotify_alloc_group(&audit_tree_ops);
--	if (IS_ERR(audit_tree_group))
--		audit_panic("cannot initialize fsnotify group for rectree watches");
--
-+	prune_thread = kthread_create(prune_tree_thread, NULL,
-+				"audit_prune_tree");
-+	if (IS_ERR(prune_thread)) {
-+		audit_panic("cannot start thread audit_prune_tree");
-+	} else {
-+		wake_up_process(prune_thread);
-+		audit_tree_group = fsnotify_alloc_group(&audit_tree_ops);
-+		if (IS_ERR(audit_tree_group))
-+			audit_panic("cannot initialize fsnotify group for rectree watches");
-+	}
- 	for (i = 0; i < HASH_SIZE; i++)
- 		INIT_LIST_HEAD(&chunk_hash_heads[i]);
- 
--- 
-1.7.9.5
-
+You can keep CONFIG_NO_HZ_IDLE though, just not CONFIG_NO_HZ_FULL.
