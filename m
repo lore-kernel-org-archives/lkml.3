@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639AbaKTPQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 10:16:34 -0500
-Received: from mout.web.de ([212.227.15.4]:60799 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752008AbaKTPQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 10:16:32 -0500
-Message-ID: <546E05C0.9030703@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 16:16:16 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1757672AbaKTPQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 10:16:59 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:49051 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755854AbaKTPQ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 10:16:57 -0500
 MIME-Version: 1.0
-To: Jan Dumon <j.dumon@option.com>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] net: USB: Deletion of unnecessary checks before the function
- call "kfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:rBBneGfVnTj8Vch8saKVBVQVFbyYb+waQeGTFDblD3qXhHTPzPq
- HvTjykzrZzWe5C6nCFeXZQQ2wUC9iCrR2TqnYs99LrW7ENRSsdF70D+vLTUW792VMwD0sPU
- TMagDp2zUR6/BfiZxg2ciQlEn6DP7xI6MTSZXcRLw5AE2R2kUgdSGuVmYOjCOZ5nTNRyaZJ
- O9zSLU6Ysjqzj1O6Zpl0A==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <8642876.4lpJWZTuhf@wuerfel>
+References: <1414503414-3863-1-git-send-email-suravee.suthikulpanit@amd.com> <8642876.4lpJWZTuhf@wuerfel>
+From: Rob Herring <robherring2@gmail.com>
+Date: Thu, 20 Nov 2014 09:16:31 -0600
+Message-ID: <CAL_Jsq+J3izFDepJ04Lb=caUOKJ4eNja0NrhqowyCOEPBVAPdA@mail.gmail.com>
+Subject: Re: [PATCH V3] arm64: amd-seattle: Adding device tree for AMD Seattle platform
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <mark.rutland@arm.com>, Joel Schopp <Joel.Schopp@amd.com>,
+        Thomas Lendacky <Thomas.Lendacky@amd.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Liviu Dudau <liviu.dudau@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 16:11:56 +0100
+On Thu, Nov 13, 2014 at 5:29 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 28 October 2014 08:36:54 suravee.suthikulpanit@amd.com wrote:
+>> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>>
+>> Initial revision of device tree for AMD Seattle platform
+>
+> Sorry for not looking at this earlier in enough detail.
+>
+>> +     dma0: dma@0500000 {
+>> +             compatible = "arm,pl330", "arm,primecell";
+>> +             reg = <0 0x0500000 0 0x1000>;
+>> +             interrupts =
+>> +                     <0 368 4>,
+>> +                     <0 369 4>,
+>> +                     <0 370 4>,
+>> +                     <0 371 4>,
+>> +                     <0 372 4>,
+>> +                     <0 373 4>,
+>> +                     <0 374 4>,
+>> +                     <0 375 4>;
+>> +             clocks = <&dmaclk_500mhz>;
+>> +             clock-names = "apb_pclk";
+>> +             #dma-cells = <1>;
+>> +     };
+>
+> Is this device cache-coherent?
+>
+> Does it support larger than 32-bit DMA addresses?
 
-The kfree() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+No.
 
-This issue was detected by using the Coccinelle software.
+>
+>> +     sata0: sata@00300000 {
+>> +             compatible = "snps,dwc-ahci";
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/net/usb/asix_devices.c | 3 +--
- drivers/net/usb/hso.c          | 3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+This should have an AMD specific compatible string in addition in case
+you have AMD specific configuration or bugs.
 
-diff --git a/drivers/net/usb/asix_devices.c b/drivers/net/usb/asix_devices.c
-index 5d19409..8a7582b 100644
---- a/drivers/net/usb/asix_devices.c
-+++ b/drivers/net/usb/asix_devices.c
-@@ -499,8 +499,7 @@ static int ax88772_bind(struct usbnet *dev, struct usb_interface *intf)
- 
- static void ax88772_unbind(struct usbnet *dev, struct usb_interface *intf)
- {
--	if (dev->driver_priv)
--		kfree(dev->driver_priv);
-+	kfree(dev->driver_priv);
- }
- 
- static const struct ethtool_ops ax88178_ethtool_ops = {
-diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-index babda7d..9c5aa92 100644
---- a/drivers/net/usb/hso.c
-+++ b/drivers/net/usb/hso.c
-@@ -2746,8 +2746,7 @@ exit:
- 		tty_unregister_device(tty_drv, serial->minor);
- 		kfree(serial);
- 	}
--	if (hso_dev)
--		kfree(hso_dev);
-+	kfree(hso_dev);
- 	return NULL;
- 
- }
--- 
-2.1.3
+>> +             reg = <0 0x300000 0 0x800>;
+>> +             interrupts = <0 355 4>;
+>> +             clocks = <&sataclk_333mhz>;
+>> +             clock-names = "apb_pclk";
 
+This name is obviously wrong and copied from other (ARM Primecell)
+bindings as this IP does not have an APB PCLK. You can drop the name
+as it is optional.
+
+>> +             dma-coherent;
+>> +     };
+>
+> Same here: you list it as coherent, but not 64-bit DMA capable.
+> Is that intentional?
+
+AHCI controllers are probeable as to whether they support 64-bit DMA or not.
+
+Rob
