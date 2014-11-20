@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511AbaKTGLA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 01:11:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42871 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751254AbaKTGK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 01:10:58 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>, Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH net V3] virtio-net: validate features during probe
-Date: Thu, 20 Nov 2014 14:10:35 +0800
-Message-Id: <1416463835-7364-1-git-send-email-jasowang@redhat.com>
+	id S1755957AbaKTGLX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 01:11:23 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49919 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755748AbaKTGLV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 01:11:21 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: byungchul.park@lge.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        seungho1.park@lge.com, jolsa@redhat.com
+Subject: Re: [PATCH v4 3/3] tracing: add additional marks to signal very large delay
+References: <1416290246-882-1-git-send-email-byungchul.park@lge.com>
+	<1416290246-882-4-git-send-email-byungchul.park@lge.com>
+	<20141119133515.1caa293e@gandalf.local.home>
+Date: Thu, 20 Nov 2014 15:11:19 +0900
+In-Reply-To: <20141119133515.1caa293e@gandalf.local.home> (Steven Rostedt's
+	message of "Wed, 19 Nov 2014 13:35:15 -0500")
+Message-ID: <87egsypfjs.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently trigger BUG when VIRTIO_NET_F_CTRL_VQ
-is not set but one of features depending on it is.
-That's not a friendly way to report errors to
-hypervisors.
-Let's check, and fail probe instead.
+On Wed, 19 Nov 2014 13:35:15 -0500, Steven Rostedt wrote:
+> On Tue, 18 Nov 2014 14:57:26 +0900
+> byungchul.park@lge.com wrote:
+>
+>> From: Byungchul Park <byungchul.park@lge.com>
+>> 
+>> Currently, some tracers tracing latency print "!" or "+" just after time
+>> to signal overhead, depending on the interval between events. Even it is
+>> usually enough to do that, we sometimes need to be signaled for bigger
+>> interval than 100 micro seconds.
+>> 
+>> Signed-off-by: Byungchul Park <byungchul.park@lge.com>
+>> ---
+>>  Documentation/trace/ftrace.txt |    8 +++++---
+>>  kernel/trace/trace_output.c    |   23 ++++++++++++++++++-----
+>>  2 files changed, 23 insertions(+), 8 deletions(-)
+>> 
+>> diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+>> index f827e2f..64efb3e 100644
+>> --- a/Documentation/trace/ftrace.txt
+>> +++ b/Documentation/trace/ftrace.txt
+>> @@ -680,9 +680,11 @@ The above is mostly meaningful for kernel developers.
+>>  	 needs to be fixed to be only relative to the same CPU.
+>>  	 The marks are determined by the difference between this
+>>  	 current trace and the next trace.
+>> -	  '!' - greater than preempt_mark_thresh (default 100)
+>> -	  '+' - greater than 1 microsecond
+>> -	  ' ' - less than or equal to 1 microsecond.
+>> +	  '$' - greater than 1 second
+>> +	  '#' - greater than 1000 microsecond
+>> +	  '!' - greater than 100 microsecond
+>> +	  '+' - greater than 10 microsecond
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-Changes from V2:
-- only check the features for ctrl vq (this fix the real bug)
-- better error message and simplify API
----
- drivers/net/virtio_net.c | 37 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
+I've noticed that it's now changed from 1 msec to 10 msec.  Is it okay?
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index ec2a8b4..a6bcfce 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1673,6 +1673,40 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
- };
- #endif
- 
-+static bool virtnet_fail_on_feature(struct virtio_device *vdev,
-+				    unsigned int fbit,
-+				    const char *fname, const char *dname)
-+{
-+	if (!virtio_has_feature(vdev, fbit))
-+		return false;
-+
-+	dev_err(&vdev->dev, "Hypervisor bug: advertise feature %s but not %s",
-+		fname, dname);
-+
-+	return true;
-+}
-+
-+#define VIRTNET_FAIL_ON(vdev, fbit, dbit)			\
-+	virtnet_fail_on_feature(vdev, fbit, #fbit, #dbit)
-+
-+static bool virtnet_validate_features(struct virtio_device *vdev)
-+{
-+	if (!virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ) &&
-+	    (VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_RX,
-+			     VIRTIO_NET_F_CTRL_VQ) ||
-+	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_VLAN,
-+			     VIRTIO_NET_F_CTRL_VQ) ||
-+	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_GUEST_ANNOUNCE,
-+			     VIRTIO_NET_F_TRL_VQ) ||
-+	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_MQ, VIRTIO_NET_F_CTRL_VQ) ||
-+	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_MAC_ADDR,
-+			     VIRTIO_NET_F_CTRL_VQ))) {
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
- static int virtnet_probe(struct virtio_device *vdev)
- {
- 	int i, err;
-@@ -1680,6 +1714,9 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	struct virtnet_info *vi;
- 	u16 max_queue_pairs;
- 
-+	if (!virtnet_validate_features(vdev))
-+		return -EINVAL;
-+
- 	/* Find if host supports multiqueue virtio_net device */
- 	err = virtio_cread_feature(vdev, VIRTIO_NET_F_MQ,
- 				   struct virtio_net_config,
--- 
-1.9.1
+Thanks,
+Namhyung
 
+
+>> +	  ' ' - less than or equal to 10 microsecond.
+>>  
+>>    The rest is the same as the 'trace' file.
