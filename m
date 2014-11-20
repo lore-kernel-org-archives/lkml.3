@@ -1,11 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173AbaKTRJX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:09:23 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:35794 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757077AbaKTRCm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758157AbaKTRJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:09:21 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:43590 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756880AbaKTRCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Nov 2014 12:02:42 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
@@ -14,10 +13,12 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v10 25/27] scripts/gdb: Convert ModuleList to generator function
-Date: Thu, 20 Nov 2014 18:02:02 +0100
-Message-Id: <cc6d38427f0f6c7abdbe136c2e92270eea8561f1.1416502923.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: [PATCH v10 23/27] scripts/gdb: Ignore byte-compiled python files
+Date: Thu, 20 Nov 2014 18:02:00 +0100
+Message-Id: <9372f8bb9ab09ab0c0f15c0a01584a9c23a48d20.1416502923.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <cover.1416502923.git.jan.kiszka@siemens.com>
 References: <cover.1416502923.git.jan.kiszka@siemens.com>
@@ -27,83 +28,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Analogously to the task list, convert the module list to a generator
-function. It noticeably simplifies the code.
+From: Daniel Thompson <daniel.thompson@linaro.org>
 
+Using the gdb scripts leaves byte-compiled python files in the scripts/
+directory. These should be ignored by git and cleaned up by mrproper.
+
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/modules.py | 33 +++++++++++----------------------
- scripts/gdb/linux/symbols.py |  2 +-
- 2 files changed, 12 insertions(+), 23 deletions(-)
+ .gitignore                   | 1 +
+ Makefile                     | 2 +-
+ scripts/gdb/linux/.gitignore | 2 ++
+ 3 files changed, 4 insertions(+), 1 deletion(-)
+ create mode 100644 scripts/gdb/linux/.gitignore
 
-diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
-index 2dbf679..6d49722 100644
---- a/scripts/gdb/linux/modules.py
-+++ b/scripts/gdb/linux/modules.py
-@@ -19,31 +19,20 @@ from linux import cpus, utils
- module_type = utils.CachedType("struct module")
+diff --git a/.gitignore b/.gitignore
+index e213b27..17d4457 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -43,6 +43,7 @@ Module.symvers
+ /TAGS
+ /linux
+ /vmlinux
++/vmlinux-gdb.py
+ /vmlinuz
+ /System.map
+ /Module.markers
+diff --git a/Makefile b/Makefile
+index 5917c1c..e806f73 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1179,7 +1179,7 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
+ 		  signing_key.priv signing_key.x509 x509.genkey		\
+ 		  extra_certificates signing_key.x509.keyid		\
+ 		  signing_key.x509.signer include/linux/version.h	\
+-		  vmlinux-gdb.py
++		  vmlinux-gdb.py scripts/gdb/linux/*.py[co]
  
- 
--class ModuleList:
--    def __init__(self):
--        global module_type
--        self.module_ptr_type = module_type.get_type().pointer()
--        modules = gdb.parse_and_eval("modules")
--        self.curr_entry = modules['next']
--        self.end_of_list = modules.address
--
--    def __iter__(self):
--        return self
--
--    def __next__(self):
--        entry = self.curr_entry
--        if entry != self.end_of_list:
--            self.curr_entry = entry['next']
--            return utils.container_of(entry, self.module_ptr_type, "list")
--        else:
--            raise StopIteration
-+def module_list():
-+    global module_type
-+    module_ptr_type = module_type.get_type().pointer()
-+    modules = gdb.parse_and_eval("modules")
-+    entry = modules['next']
-+    end_of_list = modules.address
- 
--    def next(self):
--        return self.__next__()
-+    while entry != end_of_list:
-+        yield utils.container_of(entry, module_ptr_type, "list")
-+        entry = entry['next']
- 
- 
- def find_module_by_name(name):
--    for module in ModuleList():
-+    for module in module_list():
-         if module['name'].string() == name:
-             return module
-     return None
-@@ -83,7 +72,7 @@ class LxLsmod(gdb.Command):
-             "Address{0}    Module                  Size  Used by\n".format(
-                 "        " if utils.get_long_type().sizeof == 8 else ""))
- 
--        for module in ModuleList():
-+        for module in module_list():
-             ref = 0
-             module_refptr = module['refptr']
-             for cpu in cpus.CpuList("cpu_possible_mask"):
-diff --git a/scripts/gdb/linux/symbols.py b/scripts/gdb/linux/symbols.py
-index ae757fd..bf05e45 100644
---- a/scripts/gdb/linux/symbols.py
-+++ b/scripts/gdb/linux/symbols.py
-@@ -133,7 +133,7 @@ lx-symbols command."""
-         gdb.execute("symbol-file vmlinux")
- 
-         self.loaded_modules = []
--        module_list = modules.ModuleList()
-+        module_list = modules.module_list()
-         if not module_list:
-             gdb.write("no modules found\n")
-         else:
+ # clean - Delete most, but leave enough to build external modules
+ #
+diff --git a/scripts/gdb/linux/.gitignore b/scripts/gdb/linux/.gitignore
+new file mode 100644
+index 0000000..52e4e61
+--- /dev/null
++++ b/scripts/gdb/linux/.gitignore
+@@ -0,0 +1,2 @@
++*.pyc
++*.pyo
 -- 
 1.8.4.5
 
