@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757828AbaKTRK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:10:56 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:43588 "EHLO thoth.sbs.de"
+	id S1757975AbaKTRK5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:10:57 -0500
+Received: from david.siemens.de ([192.35.17.14]:43849 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756860AbaKTRCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756023AbaKTRCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Nov 2014 12:02:42 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
@@ -13,10 +13,12 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v10 10/27] scripts/gdb: Add read_u16/32/64 helpers
-Date: Thu, 20 Nov 2014 18:01:47 +0100
-Message-Id: <e088ccf722b5f16329437704ef9117165879014b.1416502923.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: [PATCH v10 15/27] scripts/gdb: Add internal helper and convenience function to retrieve thread_info
+Date: Thu, 20 Nov 2014 18:01:52 +0100
+Message-Id: <bc0fb92e96ba956f71ae780d6fa64f5f1de587cc.1416502923.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <cover.1416502923.git.jan.kiszka@siemens.com>
 References: <cover.1416502923.git.jan.kiszka@siemens.com>
@@ -26,44 +28,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add helpers for reading integers from target memory buffers. Required
-when caching the memory access is more efficient than reading individual
-values via gdb.
+Add the internal helper get_thread_info that calculates the thread_info
+from a given task variable. Also export this service as a convenience
+function.
 
+Note: ia64 version is untested.
+
+CC: Tony Luck <tony.luck@intel.com>
+CC: Fenghua Yu <fenghua.yu@intel.com>
+CC: linux-ia64@vger.kernel.org
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/utils.py | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ scripts/gdb/linux/tasks.py | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
-index 10a227b..808a265 100644
---- a/scripts/gdb/linux/utils.py
-+++ b/scripts/gdb/linux/utils.py
-@@ -85,3 +85,24 @@ def get_target_endianness():
-         else:
-             raise gdb.GdgError("unknown endianness '{0}'".format(endian))
-     return target_endianness
+diff --git a/scripts/gdb/linux/tasks.py b/scripts/gdb/linux/tasks.py
+index 13bb97c..63cd6c5 100644
+--- a/scripts/gdb/linux/tasks.py
++++ b/scripts/gdb/linux/tasks.py
+@@ -71,3 +71,38 @@ return that task_struct variable which PID matches."""
+ 
+ 
+ LxTaskByPidFunc()
 +
 +
-+def read_u16(buffer):
-+    if get_target_endianness() == LITTLE_ENDIAN:
-+        return ord(buffer[0]) + (ord(buffer[1]) << 8)
++thread_info_type = utils.CachedType("struct thread_info")
++
++ia64_task_size = None
++
++
++def get_thread_info(task):
++    global thread_info_type
++    thread_info_ptr_type = thread_info_type.get_type().pointer()
++    if utils.is_target_arch("ia64"):
++        global ia64_task_size
++        if ia64_task_size is None:
++            ia64_task_size = gdb.parse_and_eval("sizeof(struct task_struct)")
++        thread_info_addr = task.address + ia64_task_size
++        thread_info = thread_info_addr.cast(thread_info_ptr_type)
 +    else:
-+        return ord(buffer[1]) + (ord(buffer[0]) << 8)
++        thread_info = task['stack'].cast(thread_info_ptr_type)
++    return thread_info.dereference()
 +
 +
-+def read_u32(buffer):
-+    if get_target_endianness() == LITTLE_ENDIAN:
-+        return read_u16(buffer[0:2]) + (read_u16(buffer[2:4]) << 16)
-+    else:
-+        return read_u16(buffer[2:4]) + (read_u16(buffer[0:2]) << 16)
++class LxThreadInfoFunc (gdb.Function):
++    """Calculate Linux thread_info from task variable.
++
++$lx_thread_info(TASK): Given TASK, return the corresponding thread_info
++variable."""
++
++    def __init__(self):
++        super(LxThreadInfoFunc, self).__init__("lx_thread_info")
++
++    def invoke(self, task):
++        return get_thread_info(task)
 +
 +
-+def read_u64(buffer):
-+    if get_target_endianness() == LITTLE_ENDIAN:
-+        return read_u32(buffer[0:4]) + (read_u32(buffer[4:8]) << 32)
-+    else:
-+        return read_u32(buffer[4:8]) + (read_u32(buffer[0:4]) << 32)
++LxThreadInfoFunc()
 -- 
 1.8.4.5
 
