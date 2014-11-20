@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066AbaKTTso (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:48:44 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:35520 "EHLO
+	id S1758092AbaKTTs6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:48:58 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:35514 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757783AbaKTTsR (ORCPT
+	with ESMTP id S1757488AbaKTTsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Nov 2014 14:48:17 -0500
 From: Josh Cartwright <joshc@codeaurora.org>
 To: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] regulator: rpm: add support for RPM-controller SMB208
-Date: Thu, 20 Nov 2014 13:41:25 -0600
-Message-Id: <1416512485-7292-4-git-send-email-joshc@codeaurora.org>
+Subject: [PATCH 2/3] mfd: qcom_rpm: add support for IPQ8064
+Date: Thu, 20 Nov 2014 13:41:24 -0600
+Message-Id: <1416512485-7292-3-git-send-email-joshc@codeaurora.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416512485-7292-1-git-send-email-joshc@codeaurora.org>
 References: <1416512485-7292-1-git-send-email-joshc@codeaurora.org>
@@ -22,59 +22,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IPQ8064 reference boards make use of SMB208 regulators which are
-controlled by RPM.  Implement support for these regulators in the RPM
-regulator driver.
+The IPQ8064 also includes an RPM following the same message structure as
+other chips.  In addition, it supports a few new resource types to
+support the NSS fabric clocks and the SMB208/SMB209 regulators found on
+the reference boards.
 
 Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 ---
- drivers/regulator/qcom_rpm-regulator.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ drivers/mfd/qcom_rpm.c | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
-diff --git a/drivers/regulator/qcom_rpm-regulator.c b/drivers/regulator/qcom_rpm-regulator.c
-index b869254..36c39e9 100644
---- a/drivers/regulator/qcom_rpm-regulator.c
-+++ b/drivers/regulator/qcom_rpm-regulator.c
-@@ -183,6 +183,13 @@ static const struct regulator_linear_range ftsmps_ranges[] = {
- 	REGULATOR_LINEAR_RANGE(1500000,  64, 100, 50000),
+diff --git a/drivers/mfd/qcom_rpm.c b/drivers/mfd/qcom_rpm.c
+index 0dd7a6fe..5ead23b 100644
+--- a/drivers/mfd/qcom_rpm.c
++++ b/drivers/mfd/qcom_rpm.c
+@@ -324,10 +324,51 @@ static const struct qcom_rpm_data msm8960_template = {
+ 	.n_resources = ARRAY_SIZE(msm8960_rpm_resource_table),
  };
  
-+static const struct regulator_linear_range smb208_ranges[] = {
-+	REGULATOR_LINEAR_RANGE( 375000,   0,  29, 12500),
-+	REGULATOR_LINEAR_RANGE( 750000,  30,  89, 12500),
-+	REGULATOR_LINEAR_RANGE(1500000,  90, 153, 25000),
-+	REGULATOR_LINEAR_RANGE(3100000, 154, 234, 25000),
++static const struct qcom_rpm_resource ipq806x_rpm_resource_table[] = {
++	[QCOM_RPM_CXO_CLK] =			{ 25, 9, 5, 1 },
++	[QCOM_RPM_PXO_CLK] =			{ 26, 10, 6, 1 },
++	[QCOM_RPM_APPS_FABRIC_CLK] =		{ 27, 11, 8, 1 },
++	[QCOM_RPM_SYS_FABRIC_CLK] =		{ 28, 12, 9, 1 },
++	[QCOM_RPM_NSS_FABRIC_0_CLK] =		{ 29, 13, 10, 1 },
++	[QCOM_RPM_DAYTONA_FABRIC_CLK] =		{ 30, 14, 11, 1 },
++	[QCOM_RPM_SFPB_CLK] =			{ 31, 15, 12, 1 },
++	[QCOM_RPM_CFPB_CLK] =			{ 32, 16, 13, 1 },
++	[QCOM_RPM_NSS_FABRIC_1_CLK] =		{ 33, 17, 14, 1 },
++	[QCOM_RPM_EBI1_CLK] =			{ 34, 18, 16, 1 },
++	[QCOM_RPM_APPS_FABRIC_HALT] =		{ 35, 19, 18, 2 },
++	[QCOM_RPM_APPS_FABRIC_MODE] =		{ 37, 20, 19, 3 },
++	[QCOM_RPM_APPS_FABRIC_IOCTL] =		{ 40, 21, 20, 1 },
++	[QCOM_RPM_APPS_FABRIC_ARB] =		{ 41, 22, 21, 12 },
++	[QCOM_RPM_SYS_FABRIC_HALT] =		{ 53, 23, 22, 2 },
++	[QCOM_RPM_SYS_FABRIC_MODE] =		{ 55, 24, 23, 3 },
++	[QCOM_RPM_SYS_FABRIC_IOCTL] =		{ 58, 25, 24, 1 },
++	[QCOM_RPM_SYS_FABRIC_ARB] =		{ 59, 26, 25, 30 },
++	[QCOM_RPM_MM_FABRIC_HALT] =		{ 89, 27, 26, 2 },
++	[QCOM_RPM_MM_FABRIC_MODE] =		{ 91, 28, 27, 3 },
++	[QCOM_RPM_MM_FABRIC_IOCTL] =		{ 94, 29, 28, 1 },
++	[QCOM_RPM_MM_FABRIC_ARB] =		{ 95, 30, 29, 2 },
++	[QCOM_RPM_CXO_BUFFERS] =		{ 209, 33, 31, 1 },
++	[QCOM_RPM_USB_OTG_SWITCH] =		{ 210, 34, 32, 1 },
++	[QCOM_RPM_HDMI_SWITCH] =		{ 211, 35, 33, 1 },
++	[QCOM_RPM_DDR_DMM] =			{ 212, 36, 34, 2 },
++	[QCOM_RPM_VDDMIN_GPIO] =		{ 215, 40, 39, 1 },
++	[QCOM_RPM_SMB208_S1a] =			{ 216, 41, 90, 2 },
++	[QCOM_RPM_SMB208_S1b] =			{ 218, 43, 91, 2 },
++	[QCOM_RPM_SMB208_S2a] =			{ 220, 45, 92, 2 },
++	[QCOM_RPM_SMB208_S2b] =			{ 222, 47, 93, 2 },
 +};
 +
- static const struct regulator_linear_range ncp_ranges[] = {
- 	REGULATOR_LINEAR_RANGE(1500000,   0,  31, 50000),
- };
-@@ -559,6 +566,16 @@ static const struct qcom_rpm_reg pm8921_switch = {
- 	.parts = &rpm8960_switch_parts,
- };
- 
-+static const struct qcom_rpm_reg smb208_smps = {
-+	.desc.linear_ranges = smb208_ranges,
-+	.desc.n_linear_ranges = ARRAY_SIZE(smb208_ranges),
-+	.desc.n_voltages = 235,
-+	.desc.ops = &uV_ops,
-+	.parts = &rpm8960_smps_parts,
-+	.supports_force_mode_auto = false,
-+	.supports_force_mode_bypass = false,
++static const struct qcom_rpm_data ipq806x_template = {
++	.version = 3,
++	.resource_table = ipq806x_rpm_resource_table,
++	.n_resources = ARRAY_SIZE(ipq806x_rpm_resource_table),
 +};
 +
- static const struct of_device_id rpm_of_match[] = {
- 	{ .compatible = "qcom,rpm-pm8058-pldo",     .data = &pm8058_pldo },
- 	{ .compatible = "qcom,rpm-pm8058-nldo",     .data = &pm8058_nldo },
-@@ -578,6 +595,8 @@ static const struct of_device_id rpm_of_match[] = {
- 	{ .compatible = "qcom,rpm-pm8921-ftsmps",   .data = &pm8921_ftsmps },
- 	{ .compatible = "qcom,rpm-pm8921-ncp",      .data = &pm8921_ncp },
- 	{ .compatible = "qcom,rpm-pm8921-switch",   .data = &pm8921_switch },
-+
-+	{ .compatible = "qcom,rpm-smb208", .data = &smb208_smps },
+ static const struct of_device_id qcom_rpm_of_match[] = {
+ 	{ .compatible = "qcom,rpm-apq8064", .data = &apq8064_template },
+ 	{ .compatible = "qcom,rpm-msm8660", .data = &msm8660_template },
+ 	{ .compatible = "qcom,rpm-msm8960", .data = &msm8960_template },
++	{ .compatible = "qcom,rpm-ipq8064", .data = &ipq806x_template },
  	{ }
  };
- MODULE_DEVICE_TABLE(of, rpm_of_match);
+ MODULE_DEVICE_TABLE(of, qcom_rpm_of_match);
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 a Linux Foundation Collaborative Project
