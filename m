@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757855AbaKTXmG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 18:42:06 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52072 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756879AbaKTXmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 18:42:04 -0500
-Message-ID: <546E7C2D.4040301@zytor.com>
-Date: Thu, 20 Nov 2014 15:41:33 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: nick <xerofoify@gmail.com>, tglx@linutronix.de
-CC: mingo@redhat.com, x86@kernel.org, luto@amacapital.net,
-        rafael.j.wysocki@intel.com, michael.opdenacker@free-electrons.com,
-        feng.tang@intel.com, srivatsa.bhat@linux.vnet.ibm.com,
-        stefani@seibold.ne, linux-kernel@vger.kernel.org
-Subject: Re: Fix Me in hpet.c
-References: <546D58BD.801@gmail.com>
-In-Reply-To: <546D58BD.801@gmail.com>
-Content-Type: text/plain; charset=utf-8
+	id S1757912AbaKTXmZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 18:42:25 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:40335 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757866AbaKTXmX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 18:42:23 -0500
+Message-ID: <1416526940.8629.62.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] tcp: Restore RFC5961-compliant behavior for SYN packets
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Calvin Owens <calvinowens@fb.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>, Eric Dumazet <edumazet@google.com>,
+        kernel-team@fb.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 20 Nov 2014 15:42:20 -0800
+In-Reply-To: <1416524993-26228-1-git-send-email-calvinowens@fb.com>
+References: <1416524993-26228-1-git-send-email-calvinowens@fb.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2014 06:58 PM, nick wrote:
-> Greeting Thomas and other kernel coders,
-> I am wondering about the fix in the code below and whether this is still valid as reading it seems to may no sense as 
-> we are using completion variables and therefore the delayed version of schedule_work_on seems much better in this
-> case. Further more I am pasting the code below from vim in order to make it easier for you.
-> Cheers Nick 
-> static int hpet_cpuhp_notify(struct notifier_block *n,
->                 unsigned long action, void *hcpu)
-> {
->         unsigned long cpu = (unsigned long)hcpu;
->         struct hpet_work_struct work;
->         struct hpet_dev *hdev = per_cpu(cpu_hpet_dev, cpu);
+On Thu, 2014-11-20 at 15:09 -0800, Calvin Owens wrote:
+> Commit c3ae62af8e755 ("tcp: should drop incoming frames without ACK
+> flag set") was created to mitigate a security vulnerability in which a
+> local attacker is able to inject data into locally-opened sockets by
+> using TCP protocol statistics in procfs to quickly find the correct
+> sequence number.
 > 
->         switch (action & 0xf) {
->         case CPU_ONLINE:
->                INIT_DELAYED_WORK_ONSTACK(&work.work, hpet_work);
->                init_completion(&work.complete);
->                  /* FIXME: add schedule_work_on() */
->                  schedule_delayed_work_on(cpu, &work.work, 0);
->                 wait_for_completion(&work.complete);
->                 destroy_delayed_work_on_stack(&work.work);
->                 break;
->         case CPU_DEAD:
->                  if (hdev) {
->                        free_irq(hdev->irq, hdev);
->                         hdev->flags &= ~HPET_DEV_USED;
->                         per_cpu(cpu_hpet_dev, cpu) = NULL;
->                }
->                 break;
->          }
->          return NOTIFY_OK;
-> }
+> This broke the RFC5961 requirement to send a challenge ACK in response
+> to spurious RST packets, which was subsequently fixed by commit
+> 7b514a886ba50 ("tcp: accept RST without ACK flag").
 > 
+> Unfortunately, the RFC5961 requirement that spurious SYN packets be
+> handled in a similar manner remains broken.
+> 
+> RFC5961 section 4 states that:
+> 
+>    ... the handling of the SYN in the synchronized state SHOULD be
+>    performed as follows:
+> 
+>    1) If the SYN bit is set, irrespective of the sequence number, TCP
+>       MUST send an ACK (also referred to as challenge ACK) to the remote
+>       peer:
+> 
+>       <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
+> 
+>       After sending the acknowledgment, TCP MUST drop the unacceptable
+>       segment and stop processing further.
+> 
+>    By sending an ACK, the remote peer is challenged to confirm the loss
+>    of the previous connection and the request to start a new connection.
+>    A legitimate peer, after restart, would not have a TCB in the
+>    synchronized state.  Thus, when the ACK arrives, the peer should send
+>    a RST segment back with the sequence number derived from the ACK
+>    field that caused the RST.
+> 
+>    This RST will confirm that the remote peer has indeed closed the
+>    previous connection.  Upon receipt of a valid RST, the local TCP
+>    endpoint MUST terminate its connection.  The local TCP endpoint
+>    should then rely on SYN retransmission from the remote end to
+>    re-establish the connection.
+> 
+> This patch lets SYN packets through the discard added in c3ae62af8e755,
+> so that spurious SYN packets are properly dealt with as per the RFC.
+> 
+> The challenge ACK is sent unconditionally and is rate-limited, so the
+> original vulnerability is not reintroduced by this patch.
 
-Looks obsolete to me.  It might be interesting to look at the "git
-blame" output for this code.
 
-	-hpa
+I think this patch makes sense. But I wonder if the rate limiting wont
+hurt anyway, as I presume you need that after some server being
+rebooted, and if many connections are attempted in a small amount of
+time, some of them wont get any answer ?
+
+Thanks !
+
 
