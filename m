@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939AbaKTXLt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 18:11:49 -0500
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:35131 "HELO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756792AbaKTXLr (ORCPT
+	id S1757203AbaKTXPN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 18:15:13 -0500
+Received: from www.linutronix.de ([62.245.132.108]:53654 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756600AbaKTXPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 18:11:47 -0500
-From: Joe Stringer <joestringer@nicira.com>
-To: netdev@vger.kernel.org
-Cc: shannon.nelson@intel.com, jesse.brandeburg@intel.com,
-        jeffrey.t.kirsher@intel.com, therbert@google.com, linux.nics@intel.com,
-        linux-kernel@vger.kernel.org, jesse@nicira.com
-Subject: [PATCHv2 net] i40e: Implement ndo_gso_check()
-Date: Thu, 20 Nov 2014 15:11:21 -0800
-Message-Id: <1416525081-27779-1-git-send-email-joestringer@nicira.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 20 Nov 2014 18:15:11 -0500
+Date: Fri, 21 Nov 2014 00:14:20 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Dmitry Vyukov <dvyukov@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory
+ debugger.
+In-Reply-To: <20141120150033.4cd1ca25be4a9b00a7074149@linux-foundation.org>
+Message-ID: <alpine.DEB.2.11.1411210011530.6439@nanos>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com> <5461B906.1040803@samsung.com> <20141118125843.434c216540def495d50f3a45@linux-foundation.org> <CAPAsAGwZtfzx5oM73bOi_kw5BqXrwGd_xmt=m6xxU6uECA+H9Q@mail.gmail.com>
+ <20141120090356.GA6690@gmail.com> <CACT4Y+aOKzq0AzvSJrRC-iU9LmmtLzxY=pxzu8f4oT-OZk=oLA@mail.gmail.com> <20141120150033.4cd1ca25be4a9b00a7074149@linux-foundation.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ndo_gso_check() was recently introduced to allow NICs to report the
-offloading support that they have on a per-skb basis. Add an
-implementation for this driver which checks for IPIP, GRE, UDP tunnels.
+On Thu, 20 Nov 2014, Andrew Morton wrote:
 
-Signed-off-by: Joe Stringer <joestringer@nicira.com>
----
-v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
-    Add MAX_INNER_LENGTH (as 80).
----
- drivers/net/ethernet/intel/i40e/i40e_main.c |   31 +++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+> On Thu, 20 Nov 2014 20:32:30 +0400 Dmitry Vyukov <dvyukov@google.com> wrote:
+> 
+> > Let me provide some background first.
+> 
+> Well that was useful.  Andrey, please slurp Dmitry's info into the 0/n
+> changelog?
 
-diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
-index c3a7f4a..2b01c8d 100644
---- a/drivers/net/ethernet/intel/i40e/i40e_main.c
-+++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
-@@ -7447,6 +7447,36 @@ static int i40e_ndo_fdb_dump(struct sk_buff *skb,
- 
- #endif /* USE_DEFAULT_FDB_DEL_DUMP */
- #endif /* HAVE_FDB_OPS */
-+static bool i40e_gso_check(struct sk_buff *skb, struct net_device *dev)
-+{
-+	if ((skb_shinfo(skb)->gso_type & SKB_GSO_IPIP) &&
-+	    (skb->inner_protocol_type != ENCAP_TYPE_IPPROTO ||
-+	     skb->inner_protocol != htons(IPPROTO_IPIP))) {
-+		return false;
-+	}
-+
-+	if (skb_shinfo(skb)->gso_type & (SKB_GSO_GRE | SKB_GSO_UDP_TUNNEL)) {
-+		unsigned char *ihdr;
-+
-+		if (skb->inner_protocol_type != ENCAP_TYPE_ETHER)
-+			return false;
-+
-+		if (skb->inner_protocol == htons(ETH_P_TEB))
-+			ihdr = skb_inner_mac_header(skb);
-+		else if (skb->inner_protocol == htons(ETH_P_IP) ||
-+			 skb->inner_protocol == htons(ETH_P_IPV6))
-+			ihdr = skb_inner_network_header(skb);
-+		else
-+			return false;
-+
-+#define MAX_TUNNEL_HDR_LEN	80
-+		if (ihdr - skb_transport_header(skb) > MAX_TUNNEL_HDR_LEN)
-+			return false;
-+	}
-+
-+	return true;
-+}
-+
- static const struct net_device_ops i40e_netdev_ops = {
- 	.ndo_open		= i40e_open,
- 	.ndo_stop		= i40e_close,
-@@ -7487,6 +7517,7 @@ static const struct net_device_ops i40e_netdev_ops = {
- 	.ndo_fdb_dump		= i40e_ndo_fdb_dump,
- #endif
- #endif
-+	.ndo_gso_check		= i40e_gso_check,
- };
- 
- /**
--- 
-1.7.10.4
+And into Documentation/UBSan or whatever the favourite place is. 0/n
+lengthy explanations have a tendecy to be hard to retrieve.
+
+Thanks,
+
+	tglx
+
 
