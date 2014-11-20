@@ -1,82 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604AbaKTMXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 07:23:44 -0500
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:35259 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075AbaKTMXn (ORCPT
+	id S1755901AbaKTMZY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 07:25:24 -0500
+Received: from emcscan.emc.com.tw ([192.72.220.5]:36600 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953AbaKTMZW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 07:23:43 -0500
-Date: Thu, 20 Nov 2014 07:23:39 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141120122339.GA14877@htj.dyndns.org>
-References: <20141119021902.GA14216@redhat.com>
- <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
- <20141119145902.GA13387@redhat.com>
- <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
- <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
- <20141119190215.GA10796@lerouge>
- <alpine.DEB.2.11.1411192251120.3909@nanos>
- <20141119225615.GA11386@lerouge>
- <alpine.DEB.2.11.1411200002330.3909@nanos>
- <20141119235033.GE11386@lerouge>
+	Thu, 20 Nov 2014 07:25:22 -0500
+From: =?UTF-8?B?RUxBTiDlionlmInpp78=?= <scott.liu@emc.com.tw>
+To: "'Oliver Neukum'" <oneukum@suse.de>,
+        "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        "'Vincent Wang'" <vincent.wang@emc.com.tw>,
+        "'Jeff Chuang'" <jeff.chuang@emc.com.tw>,
+        "'Benson Leung'" <bleung@chromium.org>,
+        "'Benjamin Tissoires'" <benjamin.tissoires@gmail.com>,
+        "'Henrik Rydberg'" <rydberg@euromail.se>,
+        "'David Herrmann'" <dh.herrmann@gmail.com>
+References: <1388146515-19481-1-git-send-email-scott.liu@emc.com.tw>	 <20141120081113.GA37534@dtor-ws> <1416479490.28599.13.camel@linux-0dmf.site>
+In-Reply-To: <1416479490.28599.13.camel@linux-0dmf.site>
+Subject: RE: [PATCH v1] Input: elants_i2c: Add Elan touchscreen support
+Date: Thu, 20 Nov 2014 20:25:15 +0800
+Message-ID: <000001d004bd$0ad90830$208b1890$@emc.com.tw>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141119235033.GE11386@lerouge>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQGPAtNJZnsxghQAUQdBW7YNhjLKyQLlfmrAAacox4acxwy7AA==
+Content-Language: zh-tw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Thu, Nov 20, 2014 at 12:50:36AM +0100, Frederic Weisbecker wrote:
-> > Are we talking about different per cpu allocators here or am I missing
-> > something completely non obvious?
-> 
-> That's the same allocator yeah. So if the whole memory is dereferenced,
-> faults shouldn't happen indeed.
-> 
-> Maybe that was a bug a few years ago but not anymore.
+Hi Oliver:
 
-It has been always like that tho.  Percpu memory given out is always
-populated and cleared.
+-----Original Message-----
+From: Oliver Neukum [mailto:oneukum@suse.de] 
+Sent: Thursday, November 20, 2014 6:32 PM
+To: Dmitry Torokhov
+Cc: scott; linux-kernel@vger.kernel.org; linux-input@vger.kernel.org; Vincent Wang; Jeff Chuang; Benson Leung; Benjamin Tissoires; Henrik Rydberg; David Herrmann
+Subject: Re: [PATCH v1] Input: elants_i2c: Add Elan touchscreen support
 
-> Is it possible that, somehow, some part isn't zeroed by pcpu_alloc()?
-> After all it's allocated with vzalloc() so that part could be skipped. The memset(0)
 
-The vzalloc call is for the internal allocation bitmap not the actual
-percpu memory area.  The actual address areas for percpu memory are
-obtained using pcpu_get_vm_areas() call and later get populated using
-map_kernel_range_noflush() (flush is performed after mapping is
-complete).
 
-Trying to remember what happens with vmalloc_fault().  Ah okay, so
-when a new PUD gets created for vmalloc area, we don't go through all
-PGDs and update them.  The PGD entries get faulted in lazily.  Percpu
-memory allocator clearing or not clearing the allocated area doesn't
-have anything to do with it.  The memory area is always fully
-populated in the kernel page table.  It's just that the population
-happened while a different PGD was active and this PGD hasn't been
-populated with the new PUD yet.
+> +static int elants_i2c_sw_reset(struct i2c_client *client) {
+> +       const u8 soft_rst_cmd[] = { 0x77, 0x77, 0x77, 0x77 };
+> +       int error;
+> +
+> +       error = elants_i2c_send(client, soft_rst_cmd,
+> +                               sizeof(soft_rst_cmd));
+> +       if (error) {
+> +               dev_err(&client->dev, "software reset failed: %d\n",
+> error);
+> +               return error;
+> +       }
+> +
+> +       /*
+> +        * We should wait at least 10 msec (but no more than 40)
+> before
+> +        * sending fastboot or IAP command to the device.
+> +        */
+> +       msleep(30);
 
-So, yeap, vmalloc_fault() can always happen when accessing vmalloc
-areas and the only way to avoid that would be removing lazy PGD
-population - going through all PGDs and populating new PUDs
-immediately.
+If timing is critical in both ways, you should take our guarantee if sufficient sleep. I suggest you sleep 11msecs.
 
-Thanks.
+Sorry, this is our firmware tricky but it should be sleep longer than 30ms. Actually 70ms.
+(Dmitry, I need to modify this delay time to 70ms. Sorry for the changed over and over again; 
+	because we consider big sensor solution which need to use more ICs and need more longer delay)
 
--- 
-tejun
+thanks,
+Scott
+
+> +static int elants_i2c_initialize(struct elants_data *ts) {
+> +       struct i2c_client *client = ts->client;
+> +       int error, retry_cnt;
+> +       const u8 hello_packet[] = { 0x55, 0x55, 0x55, 0x55 };
+> +       const u8 recov_packet[] = { 0x55, 0x55, 0x80, 0x80 };
+> +       u8 buf[HEADER_SIZE];
+> +
+
+Strictly speaking you should disable preemption here.
+
+
+> +       for (retry_cnt = 0; retry_cnt < MAX_RETRIES; retry_cnt++) {
+> +               error = elants_i2c_sw_reset(client);
+> +               if (error) {
+> +                       /* Continue initializing if it's the last try
+> */
+> +                       if (retry_cnt < MAX_RETRIES - 1)
+> +                               continue;
+> +               }
+
+	Regards
+		Oliver
+
+--
+Oliver Neukum <oneukum@suse.de>
+
+
