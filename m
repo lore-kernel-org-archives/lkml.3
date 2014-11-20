@@ -1,67 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448AbaKTKTx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:19:53 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:48659 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575AbaKTKTu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:19:50 -0500
-From: Grant Likely <grant.likely@linaro.org>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH] of: Properly set the OF_POPULATED_BUS flag on root node
-Date: Thu, 20 Nov 2014 10:19:42 +0000
-Message-Id: <1416478782-5351-1-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S1757482AbaKTKT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 05:19:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50279 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755904AbaKTKT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 05:19:56 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Linux-MM <linux-mm@kvack.org>,
+        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 01/10] mm: numa: Do not dereference pmd outside of the lock during NUMA hinting fault
+Date: Thu, 20 Nov 2014 10:19:41 +0000
+Message-Id: <1416478790-27522-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1416478790-27522-1-git-send-email-mgorman@suse.de>
+References: <1416478790-27522-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_platform_populate() takes a subset of the device tree and turns it
-into a set of platform_devices. At the same time it sets the
-OF_POPULATED_BUS flag in each bus nodes so that of_platform_depopulate()
-can undo the operation at a later time. However, it doesn't set the flag
-on the root of the population tree which means that dynamic modifications
-of the device tree at runtime will not create/destroy devices correctly.
+A transhuge NUMA hinting fault may find the page is migrating and should
+wait until migration completes. The check is race-prone because the pmd
+is deferenced outside of the page lock and while the race is tiny, it'll
+be larger if the PMD is cleared while marking PMDs for hinting fault.
+This patch closes the race.
 
-Fix of_platform_populate() to set the OF_POPULATED_BUS flag on the node
-it is called with.
-
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Pawel Moll <pawel.moll@arm.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- drivers/of/platform.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ include/linux/migrate.h | 4 ----
+ mm/huge_memory.c        | 3 ++-
+ mm/migrate.c            | 6 ------
+ 3 files changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 770a8e0a14f2..69f6dff85d15 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -500,6 +500,7 @@ int of_platform_populate(struct device_node *root,
- 		if (rc)
- 			break;
- 	}
-+	of_node_set_flag(root, OF_POPULATED_BUS);
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index 01aad3e..a3edcdf 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -77,7 +77,6 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
  
- 	of_node_put(root);
- 	return rc;
-@@ -542,7 +543,10 @@ static int of_platform_device_destroy(struct device *dev, void *data)
-  */
- void of_platform_depopulate(struct device *parent)
+ #ifdef CONFIG_NUMA_BALANCING
+ extern bool pmd_trans_migrating(pmd_t pmd);
+-extern void wait_migrate_huge_page(struct anon_vma *anon_vma, pmd_t *pmd);
+ extern int migrate_misplaced_page(struct page *page,
+ 				  struct vm_area_struct *vma, int node);
+ extern bool migrate_ratelimited(int node);
+@@ -86,9 +85,6 @@ static inline bool pmd_trans_migrating(pmd_t pmd)
  {
--	device_for_each_child(parent, NULL, of_platform_device_destroy);
-+	if (parent->of_node && of_node_check_flag(parent->of_node, OF_POPULATED_BUS)) {
-+		device_for_each_child(parent, NULL, of_platform_device_destroy);
-+		of_node_clear_flag(parent->of_node, OF_POPULATED_BUS);
-+	}
+ 	return false;
  }
- EXPORT_SYMBOL_GPL(of_platform_depopulate);
+-static inline void wait_migrate_huge_page(struct anon_vma *anon_vma, pmd_t *pmd)
+-{
+-}
+ static inline int migrate_misplaced_page(struct page *page,
+ 					 struct vm_area_struct *vma, int node)
+ {
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index de98415..38fa6cc 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1284,8 +1284,9 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * check_same as the page may no longer be mapped.
+ 	 */
+ 	if (unlikely(pmd_trans_migrating(*pmdp))) {
++		page = pmd_page(*pmdp);
+ 		spin_unlock(ptl);
+-		wait_migrate_huge_page(vma->anon_vma, pmdp);
++		wait_on_page_locked(page);
+ 		goto out;
+ 	}
  
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 0143995..baaf80e 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1698,12 +1698,6 @@ bool pmd_trans_migrating(pmd_t pmd)
+ 	return PageLocked(page);
+ }
+ 
+-void wait_migrate_huge_page(struct anon_vma *anon_vma, pmd_t *pmd)
+-{
+-	struct page *page = pmd_page(*pmd);
+-	wait_on_page_locked(page);
+-}
+-
+ /*
+  * Attempt to migrate a misplaced page to the specified destination
+  * node. Caller is expected to have an elevated reference count on
 -- 
-1.9.1
+2.1.2
 
