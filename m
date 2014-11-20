@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757892AbaKTRjt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:39:49 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:36849
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757818AbaKTRjr (ORCPT
+	id S1758085AbaKTRmI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:42:08 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:7293 "EHLO
+	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757879AbaKTRju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 12:39:47 -0500
+	Thu, 20 Nov 2014 12:39:50 -0500
 X-IronPort-AV: E=Sophos;i="5.07,425,1413237600"; 
-   d="scan'208";a="89679747"
+   d="scan'208";a="89679746"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Felipe Balbi <balbi@ti.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7] dwc3: dwc3-keystone: fix error return code
-Date: Thu, 20 Nov 2014 18:33:58 +0100
-Message-Id: <1416504842-18548-4-git-send-email-Julia.Lawall@lip6.fr>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH 1/7] umem: fix error return code
+Date: Thu, 20 Nov 2014 18:33:57 +0100
+Message-Id: <1416504842-18548-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1416504842-18548-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1416504842-18548-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -57,19 +54,31 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 The patches in this series are independent of each other.
 
- drivers/usb/dwc3/dwc3-keystone.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/block/umem.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/dwc3/dwc3-keystone.c b/drivers/usb/dwc3/dwc3-keystone.c
-index dd8d2df..fe3b933 100644
---- a/drivers/usb/dwc3/dwc3-keystone.c
-+++ b/drivers/usb/dwc3/dwc3-keystone.c
-@@ -123,6 +123,7 @@ static int kdwc3_probe(struct platform_device *pdev)
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
- 		dev_err(&pdev->dev, "missing irq\n");
-+		error = irq;
- 		goto err_irq;
+diff --git a/drivers/block/umem.c b/drivers/block/umem.c
+index 4cf81b5..371e819 100644
+--- a/drivers/block/umem.c
++++ b/drivers/block/umem.c
+@@ -881,6 +881,7 @@ static int mm_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	if (card->mm_pages[0].desc == NULL ||
+ 	    card->mm_pages[1].desc == NULL) {
+ 		dev_printk(KERN_ERR, &card->dev->dev, "alloc failed\n");
++		ret = -ENOMEM;
+ 		goto failed_alloc;
  	}
+ 	reset_page(&card->mm_pages[0]);
+@@ -891,8 +892,10 @@ static int mm_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	card->biotail = &card->bio;
  
+ 	card->queue = blk_alloc_queue(GFP_KERNEL);
+-	if (!card->queue)
++	if (!card->queue) {
++		ret = -ENOMEM;
+ 		goto failed_alloc;
++	}
+ 
+ 	blk_queue_make_request(card->queue, mm_make_request);
+ 	card->queue->queue_lock = &card->lock;
 
