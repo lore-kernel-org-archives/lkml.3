@@ -1,238 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032AbaKTLpS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 06:45:18 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:38936 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845AbaKTLpQ (ORCPT
+	id S1751680AbaKTLs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 06:48:56 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:60614 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776AbaKTLsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 06:45:16 -0500
-Message-ID: <546DD445.5080108@hitachi.com>
-Date: Thu, 20 Nov 2014 20:45:09 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 20 Nov 2014 06:48:55 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
+        linaro-kernel@lists.linaro.org, Russell King <linux@arm.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, patches@linaro.org,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [RFC PATCH] arm: imx: Workaround i.MX6 PMU interrupts muxed to one SPI
+Date: Thu, 20 Nov 2014 12:48 +0100
+Message-ID: <3404793.vJmOz13jz0@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1416483757-24165-1-git-send-email-daniel.thompson@linaro.org>
+References: <1416483757-24165-1-git-send-email-daniel.thompson@linaro.org>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] tracing: Fix race of function probes counting
-References: <20141118134643.4b550ee4@gandalf.local.home>
-In-Reply-To: <20141118134643.4b550ee4@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:T3FVIlYSTGEaSmCsaWrRStTZwEF35MBoIaIkmA/i9u9
+ ELmc0dSAN6LWV1y1apKHwlffyxXw1FGfs+32L8gyxcNHidQ7m+
+ GZ6JgaX8+QDRYL9gzXa9mkQrC2EqVXwXRG2oSaY29LvSYOFsOF
+ U1Filcjwj8XSjctpbI5uxTi/PwBLoxFEjh5zJ+RvKhPFfajS/r
+ TjjKrb4Ppc5lOkbHZozbydIYOeLAOx9flCq3S6TgrxqJuW8fm2
+ SWjNuVcxl8sqPTPWdpa0fELJ5sy4s4mYogpgfO7iD0q02eJf+j
+ zPiqFln6Kzj/MRrH1oqFlKnnEwjK56NYRJYIx7gQ/+/bPI0sFS
+ bmw5UBAXLMtv+Q3q1aOA=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/19 3:46), Steven Rostedt wrote:
-> 
-> The function probe counting for traceon and traceoff suffered a race
-> condition where if the probe was executing on two or more CPUs at the
-> same time, it could decrement the counter by more than one when
-> disabling (or enabling) the tracer only once.
-> 
-> The way the traceon and traceoff probes are suppose to work is that
-> they disable (or enable) tracing once per count. If a user were to
-> echo 'schedule:traceoff:3' into set_ftrace_filter, then when the
-> schedule function was called, it would disable tracing. But the count
-> should only be decremented once (to 2). Then if the user enabled tracing
-> again (via tracing_on file), the next call to schedule would disable
-> tracing again and the count would be decremented to 1.
-> 
-> But if multiple CPUS called schedule at the same time, it is possible
-> that the count would be decremented more than once because of the
-> simple "count--" used.
-> 
-> By reading the count into a local variable and using memory barriers
-> we can guarantee that the count would only be decremented once per
-> disable (or enable).
-> 
-> The stack trace probe had a similar race, but here the stack trace will
-> decrement for each time it is called. But this had the read-modify-
-> write race, where it could stack trace more than the number of times
-> that was specified. This case we use a cmpxchg to stack trace only the
-> number of times specified.
-> 
-> The dump probes can still use the old "update_count()" function as
-> they only run once, and that is controlled by the dump logic
-> itself.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-I have found a couple of typos, but basically, it looks OK.
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-> ---
->  kernel/trace/trace_functions.c | 117 +++++++++++++++++++++++++++++++++--------
->  1 file changed, 96 insertions(+), 21 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-> index a8e0c7666164..973db52eb070 100644
-> --- a/kernel/trace/trace_functions.c
-> +++ b/kernel/trace/trace_functions.c
-> @@ -261,37 +261,74 @@ static struct tracer function_trace __tracer_data =
->  };
->  
->  #ifdef CONFIG_DYNAMIC_FTRACE
-> -static int update_count(void **data)
-> +static void update_traceon_count(void **data, int on)
-
-btw, why don't you use bool instead of int?
-
->  {
-> -	unsigned long *count = (long *)data;
-> +	long *count = (long *)data;
-> +	long old_count = *count;
->  
-> -	if (!*count)
-> -		return 0;
-> +	/*
-> +	 * Tracing gets disabled (or enabled) once per count.
-> +	 * This function can be called at the same time on mulitple CPUs.
-                                                           ^^^^^^^^ multiple
-
-> +	 * It is fine if both disable (or enable) tracing, as disabling
-> +	 * (or enabling) the second time doesn't do anything as the
-> +	 * state of the tracer is already disabled (or enabled).
-> +	 * What needs to be synchronized in this case is that the count
-> +	 * only gets decremented once, even if the tracer is disabled
-> +	 * (or enabled) twice, as the second one is really a nop.
-> +	 *
-> +	 * The memory barriers guarantee that we only decrement the
-> +	 * counter once. First the count is read to a local variable
-> +	 * and a read barrier is used to make sure that it is loaded
-> +	 * before checking if the tracer is in the state we want.
-> +	 * If the tracer is not in the state we want, then the count
-> +	 * is guaranteed to be the old count.
-> +	 *
-> +	 * Next the tracer is set to the state we want (disabled or enabled)
-> +	 * then a write memory barrier is used to make sure that
-> +	 * the new state is visible before changing the counter by
-> +	 * one minus the old counter. This guarantees that another CPU
-> +	 * executing this code will see the new state before seeing
-> +	 * the new counter value, and would not do anthing if the new
-                                                   ^^^^^^^anything?
-
-> +	 * counter is seen.
-> +	 *
-> +	 * Note, there is no synchronization between this and a user
-> +	 * setting the tracing_on file. But we currently don't care
-> +	 * about that.
-> +	 */
-> +	if (!old_count)
-> +		return;
->  
-> -	if (*count != -1)
-> -		(*count)--;
-> +	/* Make sure we see count before checking tracing state */
-> +	smp_rmb();
->  
-> -	return 1;
-> +	if (on == !!tracing_is_on())
-> +		return;
-> +
-> +	if (on)
-> +		tracing_on();
-> +	else
-> +		tracing_off();
-> +
-> +	/* unlimited? */
-> +	if (old_count == -1)
-> +		return;
-> +
-> +	/* Make sure tracing state is visible before updating count */
-> +	smp_wmb();
-> +
-> +	*count = old_count - 1;
->  }
->  
->  static void
->  ftrace_traceon_count(unsigned long ip, unsigned long parent_ip, void **data)
->  {
-> -	if (tracing_is_on())
-> -		return;
-> -
-> -	if (update_count(data))
-> -		tracing_on();
-> +	update_traceon_count(data, 1);
->  }
->  
->  static void
->  ftrace_traceoff_count(unsigned long ip, unsigned long parent_ip, void **data)
->  {
-> -	if (!tracing_is_on())
-> -		return;
-> -
-> -	if (update_count(data))
-> -		tracing_off();
-> +	update_traceon_count(data, 0);
->  }
->  
->  static void
-> @@ -330,11 +367,49 @@ ftrace_stacktrace(unsigned long ip, unsigned long parent_ip, void **data)
->  static void
->  ftrace_stacktrace_count(unsigned long ip, unsigned long parent_ip, void **data)
->  {
-> -	if (!tracing_is_on())
-> -		return;
-> +	long *count = (long *)data;
-> +	long old_count;
-> +	long new_count;
->  
-> -	if (update_count(data))
-> -		trace_dump_stack(STACK_SKIP);
-> +	/*
-> +	 * Stack traces should only execute the number of times the
-> +	 * user specified in the counter.
-> +	 */
-> +	do {
-> +
-> +		if (!tracing_is_on())
-> +			return;
-> +
-> +		old_count = *count;
-> +
-> +		if (!old_count)
-> +			return;
-> +
-> +		/* unlimited? */
-> +		if (old_count == -1) {
-> +			trace_dump_stack(STACK_SKIP);
-> +			return;
-> +		}
-> +
-> +		new_count = old_count - 1;
-> +		new_count = cmpxchg(count, old_count, new_count);
-> +		if (new_count == old_count)
-> +			trace_dump_stack(STACK_SKIP);
-> +
-> +	} while (new_count != old_count);
-> +}
-> +
-> +static int update_count(void **data)
-> +{
-> +	unsigned long *count = (long *)data;
-> +
-> +	if (!*count)
-> +		return 0;
-> +
-> +	if (*count != -1)
-> +		(*count)--;
-> +
-> +	return 1;
->  }
->  
->  static void
+On Thursday 20 November 2014 11:42:37 Daniel Thompson wrote:
+> Notes:
+>     This patch adopts the approach used on the u8500 (db8500_pmu_handler)
+>     but the logic has been generalized for any number of CPUs, mostly
+>     because the i.MX6 has a both dual and quad core variants.
+>     
+>     However it might be better to include the generalized logic in the main
+>     armpmu code. I think the logic could be deployed automatically on SMP
+>     systems with only a single not-percpu IRQ, replacing the
+>     plat->handle_irq dance we currently do to hook up this code.
+>     
+>     Thoughts? (or is there already shared logic to do this that I
+>     overlooked)
 > 
 
+I would definitely prefer to have this handled in the armpmu implementation,
+given that there are at least two platforms that need the exact same
+hack.
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+	Arnd
