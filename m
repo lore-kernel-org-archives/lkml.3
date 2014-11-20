@@ -1,43 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757365AbaKTJXL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 04:23:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54376 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756137AbaKTJXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 04:23:07 -0500
-Message-ID: <546DB2E8.10809@redhat.com>
-Date: Thu, 20 Nov 2014 10:22:48 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757402AbaKTJXo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 04:23:44 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:45237 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755905AbaKTJXk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 04:23:40 -0500
+Date: Thu, 20 Nov 2014 01:23:36 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
+Subject: Re: [PATCH v4 0/4] mtd: nand: gpmi: add proper raw access support
+Message-ID: <20141120092336.GE3212@norris-Latitude-E6410>
+References: <1413794777-32220-1-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: SF Markus Elfring <elfring@users.sourceforge.net>,
-        John Fastabend <john.fastabend@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <jhs@mojatatu.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
-Subject: Re: net: sched: Deletion of an unnecessary check before the function
- call "kfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546BAB93.4010406@users.sourceforge.net> <546CC9B3.5060405@gmail.com> <546CE650.6080205@users.sourceforge.net> <alpine.DEB.2.10.1411200947320.2447@hadrien>
-In-Reply-To: <alpine.DEB.2.10.1411200947320.2447@hadrien>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413794777-32220-1-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2014 09:47 AM, Julia Lawall wrote:
-> On Wed, 19 Nov 2014, SF Markus Elfring wrote:
->
->>> Marcus, what tree are you looking at?
->>
->> I dared to base this update suggestion on the source files
->> for Linux 3.17.3. Are newer software developments relevant here?
->
-> You should always use linux-next.  You should update it every day.
+On Mon, Oct 20, 2014 at 10:46:13AM +0200, Boris Brezillon wrote:
+> This series provides an implementation for raw accesses taking care of
+> hidding the specific layout used by the GPMI controller.
+> 
+> I also updated the nand_ecc_ctrl struct documentation to clearly state that
+> specific layouts should be hidden when accessing the NAND chip in raw mode.
 
-Well, if you send in cleanups to netdev, you should always target
-the net-next tree:
+Can I get any ack's, tested-by's, or reviewed-by's?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git
+Brian
