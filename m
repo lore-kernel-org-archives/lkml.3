@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750973AbaKTFIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 00:08:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45960 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750774AbaKTFIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 00:08:35 -0500
-Message-ID: <546D7751.6060707@suse.com>
-Date: Thu, 20 Nov 2014 06:08:33 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751461AbaKTFKL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 00:10:11 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:48640 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929AbaKTFKJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 00:10:09 -0500
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Subject: Re: [PATCH V3 0/8] xen: Switch to virtual mapped linear p2m list
-References: <1415684626-18590-1-git-send-email-jgross@suse.com> <20141119204131.GD18495@laptop.dumpdata.com>
-In-Reply-To: <20141119204131.GD18495@laptop.dumpdata.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <546CAF5A.4060901@linaro.org>
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org>
+	<1416292375-29560-2-git-send-email-dave.long@linaro.org>
+	<20141118145643.GO18842@arm.com>
+	<CA+b37P337jcTCPTg4Ydxh6TKwqmyMngt-eEowzfsTNBDZ7-NEg@mail.gmail.com>
+	<20141119112553.GC15985@arm.com>
+	<546CAF5A.4060901@linaro.org>
+Date: Thu, 20 Nov 2014 10:40:08 +0530
+Message-ID: <CA+b37P1UGDvVsCr_Y5p+N3MZF6fb-w09hb2woHmuy2ZDO84aWg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/5] arm64: Kprobes with single stepping support
+From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+To: David Long <dave.long@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        William Cohen <wcohen@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2014 09:41 PM, Konrad Rzeszutek Wilk wrote:
-> On Tue, Nov 11, 2014 at 06:43:38AM +0100, Juergen Gross wrote:
->> Paravirtualized kernels running on Xen use a three level tree for
->> translation of guest specific physical addresses to machine global
->> addresses. This p2m tree is used for construction of page table
->> entries, so the p2m tree walk is performance critical.
+On 19 November 2014 20:25, David Long <dave.long@linaro.org> wrote:
+>> I was thinking of the magic hex numbers in the kprobes decode tables,
+>> which
+>> seem to correspond directly to the instruction classes described in insn.c
 >>
->> By using a linear virtual mapped p2m list accesses to p2m elements
->> can be sped up while even simplifying code. To achieve this goal
->> some p2m related initializations have to be performed later in the
->> boot process, as the final p2m list can be set up only after basic
->> memory management functions are available.
+>> Keeping the actual emulation code separate makes sense.
 >>
+>> Will
 >
-> Hey Juergen,
 >
-> I finially finished looking at the patchset. Had some comments,
-> some questions that I hope can make it in the patch so that in
-> six months or so when somebody looks at the code they can
-> understand the subtle pieces.
-
-Yep.
-
-OTOH: What was hard to write should be hard to read ;-)
-
-> Looking forward to the v4! (Thought keep in mind that next week
-> is Thanksgiving week so won't be able to look much after Wednesday)
-
-Let's see how testing is going. Setting up the test system wasn't
-very smooth due to some unrelated issues.
-
+> Of course that follows the model of the much more complex arm32
+> kprobes/uprobes decoding.  I can have a go at replacing it with insn.c
+> calls.
+well, the magic hex numbers were derived directly from ARMv8 ARM
+Tabled C4.1 thru C4.6 and bit-masking would be faster search, but
+surely you can give a try with insn.c (this would consume lot of
+function calls to arrive at same decision).
+~Sandeepa
 >
->>   arch/x86/include/asm/pgtable_types.h |    1 +
->>   arch/x86/include/asm/xen/page.h      |   49 +-
->>   arch/x86/mm/pageattr.c               |   20 +
->>   arch/x86/xen/mmu.c                   |   38 +-
->>   arch/x86/xen/p2m.c                   | 1315 ++++++++++++++--------------------
->>   arch/x86/xen/setup.c                 |  460 ++++++------
->>   arch/x86/xen/xen-ops.h               |    6 +-
->>   7 files changed, 854 insertions(+), 1035 deletions(-)
+> -dl
 >
-> And best of - we are deleting more code!
-
-Indeed. But it's a shame the beautiful ASCII-art in p2m.c is part of the
-deletions.
-
-
-Juergen
