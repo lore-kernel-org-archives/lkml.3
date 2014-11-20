@@ -1,167 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438AbaKTQcy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 11:32:54 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:47010 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574AbaKTQcw (ORCPT
+	id S1757594AbaKTQdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 11:33:35 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:55833 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754127AbaKTQdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 11:32:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141120090356.GA6690@gmail.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com> <5461B906.1040803@samsung.com>
- <20141118125843.434c216540def495d50f3a45@linux-foundation.org>
- <CAPAsAGwZtfzx5oM73bOi_kw5BqXrwGd_xmt=m6xxU6uECA+H9Q@mail.gmail.com> <20141120090356.GA6690@gmail.com>
-From: Dmitry Vyukov <dvyukov@google.com>
-Date: Thu, 20 Nov 2014 20:32:30 +0400
-Message-ID: <CACT4Y+aOKzq0AzvSJrRC-iU9LmmtLzxY=pxzu8f4oT-OZk=oLA@mail.gmail.com>
-Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory debugger.
-To: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrey Ryabinin <ryabinin.a.a@gmail.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 20 Nov 2014 11:33:33 -0500
+From: Florian Fainelli <f.fainelli@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, edubezval@gmail.com, rui.zhang@intel.com,
+        computersforpeace@gmail.com, Florian Fainelli <f.fainelli@gmail.com>
+Subject: [PATCH v2] thermal: provide an UAPI header file
+Date: Thu, 20 Nov 2014 08:32:57 -0800
+Message-Id: <1416501177-17504-1-git-send-email-f.fainelli@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 12:03 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Andrey Ryabinin <ryabinin.a.a@gmail.com> wrote:
->
->> I've counted 16:
->>
->> aab515d (fib_trie: remove potential out of bound access)
->> 984f173 ([SCSI] sd: Fix potential out-of-bounds access)
->> 5e9ae2e (aio: fix use-after-free in aio_migratepage)
->> 2811eba (ipv6: udp packets following an UFO enqueued packet need also
->> be handled by UFO)
->> 057db84 (tracing: Fix potential out-of-bounds in trace_get_user())
->> 9709674 (ipv4: fix a race in ip4_datagram_release_cb())
->> 4e8d213 (ext4: fix use-after-free in ext4_mb_new_blocks)
->> 624483f (mm: rmap: fix use-after-free in __put_anon_vma)
->> 93b7aca (lib/idr.c: fix out-of-bounds pointer dereference)
->> b4903d6 (mm: debugfs: move rounddown_pow_of_two() out from do_fault path)
->> 40eea80 (net: sendmsg: fix NULL pointer dereference)
->> 10ec947 (ipv4: fix buffer overflow in ip_options_compile())
->> dbf20cb2 (f2fs: avoid use invalid mapping of node_inode when evict meta inode)
->> d6d86c0 (mm/balloon_compaction: redesign ballooned pages management)
->>
->> + 2 recently found, seems minor:
->>     http://lkml.kernel.org/r/1415372020-1871-1-git-send-email-a.ryabinin@samsung.com
->>     (sched/numa: Fix out of bounds read in sched_init_numa())
->>
->>     http://lkml.kernel.org/r/1415458085-12485-1-git-send-email-ryabinin.a.a@gmail.com
->>     (security: smack: fix out-of-bounds access in smk_parse_smack())
->>
->> Note that some functionality is not yet implemented in this
->> patch set. Kasan has possibility to detect out-of-bounds
->> accesses on global/stack variables. Neither
->> kmemcheck/debug_pagealloc or slub_debug could do that.
->>
->> > That's in a 20-year-old code base, so one new minor bug discovered per
->> > three years?  Not worth it!
->> >
->> > Presumably more bugs will be exposed as more people use kasan on
->> > different kernel configs, but will their number and seriousness justify
->> > the maintenance effort?
->> >
->>
->> Yes, AFAIK there are only few users of kasan now, and I guess that
->> only small part of kernel code
->> was covered by it.
->> IMO kasan shouldn't take a lot maintenance efforts, most part of code
->> is isolated and it doesn't
->> have some complex dependencies on in-kernel API.
->> And you could always just poke me, I'd be happy to sort out any issues.
->>
->> > If kasan will permit us to remove kmemcheck/debug_pagealloc/slub_debug
->> > then that tips the balance a little.  What's the feasibility of that?
->> >
->>
->> I think kasan could replace kmemcheck at some point.
->
-> So that angle sounds interesting, because kmemcheck is
-> essentially unmaintained right now: in the last 3 years since
-> v3.0 arch/x86/mm/kmemcheck/ has not seen a single kmemcheck
-> specific change, only 4 incidental changes.
->
-> kmemcheck is also very architecture bound and somewhat fragile
-> due to having to decode instructions, so if generic, compiler
-> driven instrumentation can replace it, that would be a plus.
+include/linux/thermal.h contains definitions for the Thermal generic
+netlink family, but none of the valuable information relevant to
+user-space such as the Genl family name, multicast group, version or
+command set and data types is exported to user-space.
 
-Hi Andrew, Ingo,
+Export all the relevant generic netlink information to user-space to
+make this genl family usable by user-space, and while at it, export
+THERMAL_NAME_LENGTH since it limits name length for thermal_hwmon
+devices.
 
-I understand your concerns about added complexity.
+Kbuild and MAINTAINERS are also updated accordingly to reflect this new
+file: include/uapi/linux/thermal.h.
 
-Let me provide some background first.
-We've developed the set of tools, AddressSanitizer (Asan),
-ThreadSanitizer and MemorySanitizer, for user space. We actively use
-them for testing inside of Google (continuous testing, fuzzing,
-running prod services). To date the tools have found more than 10'000
-scary bugs in Chromium, Google internal codebase and various
-open-source projects (Firefox, OpenSSL, gcc, clang, ffmpeg, MySQL and
-lots of others):
-https://code.google.com/p/address-sanitizer/wiki/FoundBugs
-https://code.google.com/p/thread-sanitizer/wiki/FoundBugs
-https://code.google.com/p/memory-sanitizer/wiki/FoundBugs
-The tools are part of both gcc and clang compilers.
+Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+---
+Changes in v2:
+- rebase against Eduardo's thermal/next tree
 
-We have not yet done massive testing under the Kernel AddressSanitizer
-(it's kind of chicken and egg problem, you need it to be upstream to
-start applying it extensively). To date it has found about 50 bugs.
-Bugs that we've found in upstream kernel are listed here:
-https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel#Trophies
-We've also found ~20 bugs in out internal version of the kernel. Also
-people from Samsung and Oracle have found some. It's somewhat expected
-that when we boot the kernel and run a trivial workload, we do not
-find hundreds of bugs -- most of the harmful bugs in kernel codebase
-were already fixed the hard way (the kernel is quite stable, right).
-Based on our experience with user-space version of the tool, most of
-the bugs will be discovered by continuously testing new code (new bugs
-discovered the easy way), running fuzzers (that can discover existing
-bugs that are not hit frequently enough) and running end-to-end tests
-of production systems.
+ MAINTAINERS                  |  1 +
+ include/linux/thermal.h      | 31 +------------------------------
+ include/uapi/linux/Kbuild    |  1 +
+ include/uapi/linux/thermal.h | 35 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 38 insertions(+), 30 deletions(-)
+ create mode 100644 include/uapi/linux/thermal.h
 
-As others noted, the main feature of AddressSanitizer is its
-performance due to inline compiler instrumentation and simple linear
-shadow memory. User-space Asan has ~2x slowdown on computational
-programs and ~2x memory consumption increase. Taking into account that
-kernel usually consumes only small fraction of CPU and memory when
-running real user-space programs, I would expect that kernel Asan will
-have ~10-30% slowdown and similar memory consumption increase (when we
-finish all tuning).
+diff --git a/MAINTAINERS b/MAINTAINERS
+index c444907ccd69..790752a4fad2 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -9294,6 +9294,7 @@ Q:	https://patchwork.kernel.org/project/linux-pm/list/
+ S:	Supported
+ F:	drivers/thermal/
+ F:	include/linux/thermal.h
++F:	include/uapi/linux/thermal.h
+ F:	include/linux/cpu_cooling.h
+ F:	Documentation/devicetree/bindings/thermal/
+ 
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index 5bc28a70014e..be959e9df06c 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -29,10 +29,10 @@
+ #include <linux/idr.h>
+ #include <linux/device.h>
+ #include <linux/workqueue.h>
++#include <uapi/linux/thermal.h>
+ 
+ #define THERMAL_TRIPS_NONE	-1
+ #define THERMAL_MAX_TRIPS	12
+-#define THERMAL_NAME_LENGTH	20
+ 
+ /* invalid cooling state */
+ #define THERMAL_CSTATE_INVALID -1UL
+@@ -49,11 +49,6 @@
+ #define MILLICELSIUS_TO_DECI_KELVIN_WITH_OFFSET(t, off) (((t) / 100) + (off))
+ #define MILLICELSIUS_TO_DECI_KELVIN(t) MILLICELSIUS_TO_DECI_KELVIN_WITH_OFFSET(t, 2732)
+ 
+-/* Adding event notification support elements */
+-#define THERMAL_GENL_FAMILY_NAME                "thermal_event"
+-#define THERMAL_GENL_VERSION                    0x01
+-#define THERMAL_GENL_MCAST_GROUP_NAME           "thermal_mc_grp"
+-
+ /* Default Thermal Governor */
+ #if defined(CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE)
+ #define DEFAULT_THERMAL_GOVERNOR       "step_wise"
+@@ -86,30 +81,6 @@ enum thermal_trend {
+ 	THERMAL_TREND_DROP_FULL, /* apply lowest cooling action */
+ };
+ 
+-/* Events supported by Thermal Netlink */
+-enum events {
+-	THERMAL_AUX0,
+-	THERMAL_AUX1,
+-	THERMAL_CRITICAL,
+-	THERMAL_DEV_FAULT,
+-};
+-
+-/* attributes of thermal_genl_family */
+-enum {
+-	THERMAL_GENL_ATTR_UNSPEC,
+-	THERMAL_GENL_ATTR_EVENT,
+-	__THERMAL_GENL_ATTR_MAX,
+-};
+-#define THERMAL_GENL_ATTR_MAX (__THERMAL_GENL_ATTR_MAX - 1)
+-
+-/* commands supported by the thermal_genl_family */
+-enum {
+-	THERMAL_GENL_CMD_UNSPEC,
+-	THERMAL_GENL_CMD_EVENT,
+-	__THERMAL_GENL_CMD_MAX,
+-};
+-#define THERMAL_GENL_CMD_MAX (__THERMAL_GENL_CMD_MAX - 1)
+-
+ struct thermal_zone_device_ops {
+ 	int (*bind) (struct thermal_zone_device *,
+ 		     struct thermal_cooling_device *);
+diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
+index 4c94f31a8c99..a1943e2d1264 100644
+--- a/include/uapi/linux/Kbuild
++++ b/include/uapi/linux/Kbuild
+@@ -383,6 +383,7 @@ header-y += tcp.h
+ header-y += tcp_metrics.h
+ header-y += telephony.h
+ header-y += termios.h
++header-y += thermal.h
+ header-y += time.h
+ header-y += times.h
+ header-y += timex.h
+diff --git a/include/uapi/linux/thermal.h b/include/uapi/linux/thermal.h
+new file mode 100644
+index 000000000000..ac5535855982
+--- /dev/null
++++ b/include/uapi/linux/thermal.h
+@@ -0,0 +1,35 @@
++#ifndef _UAPI_LINUX_THERMAL_H
++#define _UAPI_LINUX_THERMAL_H
++
++#define THERMAL_NAME_LENGTH	20
++
++/* Adding event notification support elements */
++#define THERMAL_GENL_FAMILY_NAME                "thermal_event"
++#define THERMAL_GENL_VERSION                    0x01
++#define THERMAL_GENL_MCAST_GROUP_NAME           "thermal_mc_grp"
++
++/* Events supported by Thermal Netlink */
++enum events {
++	THERMAL_AUX0,
++	THERMAL_AUX1,
++	THERMAL_CRITICAL,
++	THERMAL_DEV_FAULT,
++};
++
++/* attributes of thermal_genl_family */
++enum {
++	THERMAL_GENL_ATTR_UNSPEC,
++	THERMAL_GENL_ATTR_EVENT,
++	__THERMAL_GENL_ATTR_MAX,
++};
++#define THERMAL_GENL_ATTR_MAX (__THERMAL_GENL_ATTR_MAX - 1)
++
++/* commands supported by the thermal_genl_family */
++enum {
++	THERMAL_GENL_CMD_UNSPEC,
++	THERMAL_GENL_CMD_EVENT,
++	__THERMAL_GENL_CMD_MAX,
++};
++#define THERMAL_GENL_CMD_MAX (__THERMAL_GENL_CMD_MAX - 1)
++
++#endif /* _UAPI_LINUX_THERMAL_H */
+-- 
+1.9.1
 
-I agree that Asan can well replace kmemcheck. We have plans to start
-working on Kernel MemorySanitizer that finds uses of unitialized
-memory. Asan+Msan will provide feature-parity with kmemcheck. As
-others noted, Asan will unlikely replace debug slab and pagealloc that
-can be enabled at runtime. Asan uses compiler instrumentation, so even
-if it is disabled, it still incurs visible overheads.
-
-Asan technology is easily portable to other architectures. Compiler
-instrumentation is fully portable. Runtime has some arch-dependent
-parts like shadow mapping and atomic operation interception. They are
-relatively easy to port.
-
-Thanks
