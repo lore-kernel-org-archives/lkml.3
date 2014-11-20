@@ -1,146 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715AbaKTRXw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:23:52 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:55115 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757470AbaKTRXr (ORCPT
+	id S1757588AbaKTR2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:28:49 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:39090 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756396AbaKTR2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 12:23:47 -0500
-Date: Thu, 20 Nov 2014 09:23:29 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio_wdt: Add "always_running" feature to GPIO watchdog
-Message-ID: <20141120172329.GA10673@roeck-us.net>
-References: <1416489377-13633-1-git-send-email-mike.looijmans@topic.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416489377-13633-1-git-send-email-mike.looijmans@topic.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.546E23A2.02C2,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 8
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Thu, 20 Nov 2014 12:28:48 -0500
+From: "pang.xunlei" <pang.xunlei@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        "pang.xunlei" <pang.xunlei@linaro.org>
+Subject: [PATCH v3 1/3] sched/deadline: Modify cpudl.free_cpus to reflect rd->span
+Date: Fri, 21 Nov 2014 01:28:03 +0800
+Message-Id: <1416504485-8180-1-git-send-email-pang.xunlei@linaro.org>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 02:16:17PM +0100, Mike Looijmans wrote:
-> On some chips, like the TPS386000, the trigger cannot be disabled
-> and the CPU must keep toggling the line at all times. Add a switch
-> "always_running" to keep toggling the GPIO line regardless of the
-> state of the soft part of the watchdog. The "armed" member keeps
-> track of whether a timeout must also cause a reset.
-> 
-> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
-> ---
->  drivers/watchdog/gpio_wdt.c |   20 +++++++++++++++++---
->  1 file changed, 17 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/watchdog/gpio_wdt.c b/drivers/watchdog/gpio_wdt.c
-> index 220a9e0..921ee67 100644
-> --- a/drivers/watchdog/gpio_wdt.c
-> +++ b/drivers/watchdog/gpio_wdt.c
-> @@ -31,6 +31,8 @@ struct gpio_wdt_priv {
->  	int			gpio;
->  	bool			active_low;
->  	bool			state;
-> +	bool		always_running;
-> +	bool		armed;
->  	unsigned int		hw_algo;
->  	unsigned int		hw_margin;
->  	unsigned long		last_jiffies;
-> @@ -56,6 +58,7 @@ static int gpio_wdt_start(struct watchdog_device *wdd)
->  	gpio_direction_output(priv->gpio, priv->state);
->  	priv->last_jiffies = jiffies;
->  	mod_timer(&priv->timer, priv->last_jiffies + priv->hw_margin);
-> +	priv->armed = true;
->  
->  	return 0;
->  }
-> @@ -64,8 +67,11 @@ static int gpio_wdt_stop(struct watchdog_device *wdd)
->  {
->  	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
->  
-> -	mod_timer(&priv->timer, 0);
-> -	gpio_wdt_disable(priv);
-> +	priv->armed = false;
-> +	if (!priv->always_running) {
-> +		mod_timer(&priv->timer, 0);
-> +		gpio_wdt_disable(priv);
-> +	}
->  
->  	return 0;
->  }
-> @@ -91,7 +97,7 @@ static void gpio_wdt_hwping(unsigned long data)
->  	struct watchdog_device *wdd = (struct watchdog_device *)data;
->  	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
->  
-> -	if (time_after(jiffies, priv->last_jiffies +
-> +	if (priv->armed && time_after(jiffies, priv->last_jiffies +
->  		       msecs_to_jiffies(wdd->timeout * 1000))) {
->  		dev_crit(wdd->dev, "Timer expired. System will reboot soon!\n");
->  		return;
-> @@ -197,6 +203,9 @@ static int gpio_wdt_probe(struct platform_device *pdev)
->  	/* Use safe value (1/2 of real timeout) */
->  	priv->hw_margin = msecs_to_jiffies(hw_margin / 2);
->  
-> +	priv->always_running = of_property_read_bool(pdev->dev.of_node,
-> +				"always_running");
+Currently, cpudl.free_cpus contains all cpus during init(see cpudl_init()),
+so when calling cpudl_find() we have to add rd->span cpumask(cpus_allowed is
+undependable when performing clustered scheduling using the cpuset) to avoid
+selecting the cpu outside current root domain, see find_later_rq().
 
-That will need to be documented in a devicetree bindings document, and be
-reviewed by the fdt maintainers. I may be wrong, but I think devicetree
-properties commonly use '-', not '_'.
+This patch adds cpudl_set_freecpu() to initialize cpudl.free_cpus when doing
+rq_attach_root(), so we can avoid the extra rd->span operation when calling
+cpudl_find().
 
-Guenter
+Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
+---
+ kernel/sched/core.c        |  2 ++
+ kernel/sched/cpudeadline.c | 18 ++++++++++++++----
+ kernel/sched/cpudeadline.h |  1 +
+ kernel/sched/deadline.c    |  3 ---
+ 4 files changed, 17 insertions(+), 7 deletions(-)
 
-> +
->  	watchdog_set_drvdata(&priv->wdd, priv);
->  
->  	priv->wdd.info		= &gpio_wdt_ident;
-> @@ -218,6 +227,11 @@ static int gpio_wdt_probe(struct platform_device *pdev)
->  	if (ret)
->  		watchdog_unregister_device(&priv->wdd);
->  
-> +	if (priv->always_running) {
-> +		gpio_wdt_start(&priv->wdd);
-> +		priv->armed = false;
-> +	}
-> +
->  	return ret;
->  }
->  
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 240157c..1b417de 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5584,6 +5584,8 @@ static void rq_attach_root(struct rq *rq, struct root_domain *rd)
+ 	rq->rd = rd;
+ 
+ 	cpumask_set_cpu(rq->cpu, rd->span);
++	cpudl_set_freecpu(&rd->cpudl, rq->cpu);
++
+ 	if (cpumask_test_cpu(rq->cpu, cpu_active_mask))
+ 		set_rq_online(rq);
+ 
+diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
+index 539ca3c..c79f0d7 100644
+--- a/kernel/sched/cpudeadline.c
++++ b/kernel/sched/cpudeadline.c
+@@ -107,7 +107,9 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
+ 	int best_cpu = -1;
+ 	const struct sched_dl_entity *dl_se = &p->dl;
+ 
+-	if (later_mask && cpumask_and(later_mask, later_mask, cp->free_cpus)) {
++	if (later_mask &&
++	    cpumask_and(later_mask, cp->free_cpus, &p->cpus_allowed) &&
++	    cpumask_and(later_mask, later_mask, cpu_active_mask)) {
+ 		best_cpu = cpumask_any(later_mask);
+ 		goto out;
+ 	} else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
+@@ -186,6 +188,16 @@ out:
+ }
+ 
+ /*
++ * cpudl_set_freecpu - Set the cpudl.free_cpus
++ * @cp: the cpudl max-heap context
++ * @cpu: rd attached cpu
++ */
++void cpudl_set_freecpu(struct cpudl *cp, int cpu)
++{
++	cpumask_set_cpu(cpu, cp->free_cpus);
++}
++
++/*
+  * cpudl_init - initialize the cpudl structure
+  * @cp: the cpudl max-heap context
+  */
+@@ -203,7 +215,7 @@ int cpudl_init(struct cpudl *cp)
+ 	if (!cp->elements)
+ 		return -ENOMEM;
+ 
+-	if (!alloc_cpumask_var(&cp->free_cpus, GFP_KERNEL)) {
++	if (!zalloc_cpumask_var(&cp->free_cpus, GFP_KERNEL)) {
+ 		kfree(cp->elements);
+ 		return -ENOMEM;
+ 	}
+@@ -211,8 +223,6 @@ int cpudl_init(struct cpudl *cp)
+ 	for_each_possible_cpu(i)
+ 		cp->elements[i].idx = IDX_INVALID;
+ 
+-	cpumask_setall(cp->free_cpus);
+-
+ 	return 0;
+ }
+ 
+diff --git a/kernel/sched/cpudeadline.h b/kernel/sched/cpudeadline.h
+index 020039b..4a10a65 100755
+--- a/kernel/sched/cpudeadline.h
++++ b/kernel/sched/cpudeadline.h
+@@ -24,6 +24,7 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
+ 	       struct cpumask *later_mask);
+ void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid);
+ int cpudl_init(struct cpudl *cp);
++void cpudl_set_freecpu(struct cpudl *cp, int cpu);
+ void cpudl_cleanup(struct cpudl *cp);
+ #endif /* CONFIG_SMP */
+ 
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 5285332..bd83272 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -1187,9 +1187,6 @@ static int find_later_rq(struct task_struct *task)
+ 	 * We have to consider system topology and task affinity
+ 	 * first, then we can look for a suitable cpu.
+ 	 */
+-	cpumask_copy(later_mask, task_rq(task)->rd->span);
+-	cpumask_and(later_mask, later_mask, cpu_active_mask);
+-	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+ 	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+ 			task, later_mask);
+ 	if (best_cpu == -1)
+-- 
+2.1.0
+
