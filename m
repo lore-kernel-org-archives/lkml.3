@@ -1,103 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527AbaKTD3b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 22:29:31 -0500
-Received: from mailgw01.mediatek.com ([210.61.82.183]:59938 "EHLO
-	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754327AbaKTD33 (ORCPT
+	id S1756647AbaKTDad (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 22:30:33 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:43159 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238AbaKTDac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 22:29:29 -0500
-X-Listener-Flag: 11101
-Subject: Re: [PATCH v7 3/4] ARM: mediatek: Add sysirq in
- mt6589/mt8135/mt8127 dtsi
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <Pawel.Moll@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "hc.yen@mediatek.com" <hc.yen@mediatek.com>,
-        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
-        "yh.chen@mediatek.com" <yh.chen@mediatek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh+dt@kernel.org>,
-        "nathan.chung@mediatek.com" <nathan.chung@mediatek.com>,
-        "yingjoe.chen@gmail.com" <yingjoe.chen@gmail.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        "eddie.huang@mediatek.com" <eddie.huang@mediatek.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        "linux- arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <87d28jaxmq.fsf@approximate.cambridge.arm.com>
-References: <1416406451-4578-1-git-send-email-yingjoe.chen@mediatek.com>
-	 <1416406451-4578-4-git-send-email-yingjoe.chen@mediatek.com>
-	 <87d28jaxmq.fsf@approximate.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Nov 2014 11:29:21 +0800
-Message-ID: <1416454161.12869.10.camel@mtksdaap41>
+	Wed, 19 Nov 2014 22:30:32 -0500
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-MTK: N
+In-Reply-To: <1416422480-3241-1-git-send-email-mathieu.magnaudet@enac.fr>
+References: <1416422480-3241-1-git-send-email-mathieu.magnaudet@enac.fr>
+Date: Wed, 19 Nov 2014 22:30:31 -0500
+Message-ID: <CAN+gG=GN4dwXr_qEHMfMddGHkMKECZMUwTM+xbNmY_gibthLmA@mail.gmail.com>
+Subject: Re: [PATCH] hid-multitouch: Add quirk for VTL touch panels
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Mathieu Magnaudet <mathieu.magnaudet@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-19 at 17:49 +0000, Marc Zyngier wrote:
-> On Wed, Nov 19 2014 at  2:14:10 pm GMT, Yingjoe Chen <yingjoe.chen@mediatek.com> wrote:
-> > Add sysirq settings for mt6589/mt8135/mt8127
-> > This also correct timer interrupt flag. The old setting works
-> > because boot loader already set polarity for timer interrupt.
-> > Without intpol support, the setting was not changed so gic
-> > can get the irq correctly.
-> >
-> > Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
-> > ---
-> >  arch/arm/boot/dts/mt6589.dtsi | 14 ++++++++++++--
-> >  arch/arm/boot/dts/mt8127.dtsi | 14 ++++++++++++--
-> >  arch/arm/boot/dts/mt8135.dtsi | 14 ++++++++++++--
-> >  3 files changed, 36 insertions(+), 6 deletions(-)
-> >
-> > diff --git a/arch/arm/boot/dts/mt6589.dtsi b/arch/arm/boot/dts/mt6589.dtsi
-> > index e3c7600..c91b2a9 100644
-> > --- a/arch/arm/boot/dts/mt6589.dtsi
-> > +++ b/arch/arm/boot/dts/mt6589.dtsi
-> > @@ -19,7 +19,7 @@
-> >  
-> >  / {
-> >  	compatible = "mediatek,mt6589";
-> > -	interrupt-parent = <&gic>;
-> > +	interrupt-parent = <&sysirq>;
-> 
-> This worries me a bit. Your sysirq cannot handle PPIs, and yet you make
-> it the top-level interrupt controller, without amending any PPI.
-> 
-> Does it mean you do not use *any* PPI? No per-cpu timer, nothing?
+On Wed, Nov 19, 2014 at 1:41 PM, Mathieu Magnaudet
+<mathieu.magnaudet@gmail.com> wrote:
+> VTL panels do not switch to the multitouch mode until the input mode
+> feature is read by the host. This should normally be done by
+> usbhid, but it looks like an other bug prevents usbhid to properly
+> retrieve the feature state. As a workaround, we force the reading of
+> the feature in mt_set_input_mode for such devices.
+>
+> Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> Signed-off-by: Mathieu Magnaudet <mathieu.magnaudet@enac.fr>
+> ---
 
-Matthias had a patch to enable arch timer[1], but that is not merged
-yet. Node using PPI interrupts must add their own interrupt-parent. This
-works if we don't have node that use both PPI & SPI interrupts. For
-timer, we could do this:
+Jiri,
 
-+		timer2: timer {
-+			compatible = "arm,armv7-timer";
-+			interrupt-parent = <&gic>;
-+			interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) |
-IRQ_TYPE_LEVEL_LOW)>,
-+				     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
-+				     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
-+				     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
-+			clock-frequency = <13000000>;
-+		};
+though this patch works for this particular device, I just thought at
+something which may solve the problem in a different way. I asked
+Mathieu to test the different solution, so I'd rather you to wait for
+final confirmation before merging this patch.
 
-[1]
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/277017.html
+Thanks,
+Benjamin
 
-Joe.C
-
-
+>  drivers/hid/hid-ids.h        |  3 +++
+>  drivers/hid/hid-multitouch.c | 27 +++++++++++++++++++++++++++
+>  2 files changed, 30 insertions(+)
+>
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index 7c86373..d6cc6a9 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -931,6 +931,9 @@
+>  #define USB_DEVICE_ID_VERNIER_CYCLOPS  0x0004
+>  #define USB_DEVICE_ID_VERNIER_LCSPEC   0x0006
+>
+> +#define USB_VENDOR_ID_VTL              0x0306
+> +#define USB_DEVICE_ID_VTL_MULTITOUCH_FF3F      0xff3f
+> +
+>  #define USB_VENDOR_ID_WACOM            0x056a
+>  #define USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH 0x81
+>  #define USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH   0x00BD
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 51e25b9..a4bc111 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -67,6 +67,7 @@ MODULE_LICENSE("GPL");
+>  #define MT_QUIRK_IGNORE_DUPLICATES     (1 << 10)
+>  #define MT_QUIRK_HOVERING              (1 << 11)
+>  #define MT_QUIRK_CONTACT_CNT_ACCURATE  (1 << 12)
+> +#define MT_QUIRK_FORCE_GET_FEATURE     (1 << 13)
+>
+>  #define MT_INPUTMODE_TOUCHSCREEN       0x02
+>  #define MT_INPUTMODE_TOUCHPAD          0x03
+> @@ -150,6 +151,7 @@ static void mt_post_parse(struct mt_device *td);
+>  #define MT_CLS_FLATFROG                                0x0107
+>  #define MT_CLS_GENERALTOUCH_TWOFINGERS         0x0108
+>  #define MT_CLS_GENERALTOUCH_PWT_TENFINGERS     0x0109
+> +#define MT_CLS_VTL                             0x0110
+>
+>  #define MT_DEFAULT_MAXCONTACT  10
+>  #define MT_MAX_MAXCONTACT      250
+> @@ -255,6 +257,11 @@ static struct mt_class mt_classes[] = {
+>                 .sn_move = 2048,
+>                 .maxcontacts = 40,
+>         },
+> +       { .name = MT_CLS_VTL,
+> +               .quirks = MT_QUIRK_ALWAYS_VALID |
+> +                       MT_QUIRK_CONTACT_CNT_ACCURATE |
+> +                       MT_QUIRK_FORCE_GET_FEATURE,
+> +       },
+>         { }
+>  };
+>
+> @@ -809,6 +816,9 @@ static void mt_set_input_mode(struct hid_device *hdev)
+>         struct mt_device *td = hid_get_drvdata(hdev);
+>         struct hid_report *r;
+>         struct hid_report_enum *re;
+> +       struct mt_class *cls = &td->mtclass;
+> +       char *buf;
+> +       int report_len;
+>
+>         if (td->inputmode < 0)
+>                 return;
+> @@ -816,6 +826,18 @@ static void mt_set_input_mode(struct hid_device *hdev)
+>         re = &(hdev->report_enum[HID_FEATURE_REPORT]);
+>         r = re->report_id_hash[td->inputmode];
+>         if (r) {
+> +               if (cls->quirks & MT_QUIRK_FORCE_GET_FEATURE) {
+> +                       report_len = ((r->size - 1) >> 3) + 1 + (r->id > 0);
+> +                       buf = kzalloc(report_len, GFP_KERNEL);
+> +                       if (!buf) {
+> +                               hid_err(hdev, "failed to allocate buffer for report\n");
+> +                               return;
+> +                       }
+> +                       hid_hw_raw_request(hdev, r->id, buf, report_len,
+> +                                          HID_FEATURE_REPORT,
+> +                                          HID_REQ_GET_REPORT);
+> +                       kfree(buf);
+> +               }
+>                 r->field[0]->value[td->inputmode_index] = td->inputmode_value;
+>                 hid_hw_request(hdev, r, HID_REQ_SET_REPORT);
+>         }
+> @@ -1281,6 +1303,11 @@ static const struct hid_device_id mt_devices[] = {
+>                 MT_USB_DEVICE(USB_VENDOR_ID_UNITEC,
+>                         USB_DEVICE_ID_UNITEC_USB_TOUCH_0A19) },
+>
+> +       /* VTL panels */
+> +       { .driver_data = MT_CLS_VTL,
+> +               MT_USB_DEVICE(USB_VENDOR_ID_VTL,
+> +                       USB_DEVICE_ID_VTL_MULTITOUCH_FF3F) },
+> +
+>         /* Wistron panels */
+>         { .driver_data = MT_CLS_NSMU,
+>                 MT_USB_DEVICE(USB_VENDOR_ID_WISTRON,
+> --
+> 1.9.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
