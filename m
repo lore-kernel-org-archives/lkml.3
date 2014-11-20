@@ -1,113 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757778AbaKTSEc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 13:04:32 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:59404 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756854AbaKTSEa (ORCPT
+	id S1757910AbaKTSFT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 13:05:19 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59295 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757841AbaKTSFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 13:04:30 -0500
-X-IronPort-AV: E=Sophos;i="5.07,425,1413270000"; 
-   d="scan'208";a="51430310"
-Message-ID: <546E2D2A.6090101@broadcom.com>
-Date: Thu, 20 Nov 2014 19:04:26 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	Thu, 20 Nov 2014 13:05:17 -0500
+Date: Thu, 20 Nov 2014 18:05:03 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrey Konovalov <andreyknvl@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
+        Kostya Serebryany <kcc@google.com>, ktsan@googlegroups.com
+Subject: Re: Potential data race in dput and __d_lookup
+Message-ID: <20141120180503.GN7996@ZenIV.linux.org.uk>
+References: <CAAeHK+zQZ=sJYQA=BKLS2i7hu8NyXn6GXngvDqG9WD96yd9acg@mail.gmail.com>
 MIME-Version: 1.0
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-CC: Brett Rudley <brudley@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
-        <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <kernel-janitors@vger.kernel.org>,
-        "Julia Lawall" <julia.lawall@lip6.fr>
-Subject: Re: [PATCH 1/1] net: brcm80211: Deletion of unnecessary checks before
- two function calls
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546E0DC8.3050906@users.sourceforge.net>
-In-Reply-To: <546E0DC8.3050906@users.sourceforge.net>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAeHK+zQZ=sJYQA=BKLS2i7hu8NyXn6GXngvDqG9WD96yd9acg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/14 16:50, SF Markus Elfring wrote:
-> From: Markus Elfring<elfring@users.sourceforge.net>
-> Date: Thu, 20 Nov 2014 16:42:51 +0100
->
-> The functions brcmu_pkt_buf_free_skb() and release_firmware() test whether
-> their argument is NULL and then return immediately. Thus the test around
-> the call is not needed.
->
-> This issue was detected by using the Coccinelle software.
+On Thu, Nov 20, 2014 at 09:20:14PM +0400, Andrey Konovalov wrote:
 
-Goodo for coccinelle and you for running it.
+> It seems that one thread increments 'dentry->d_lockref.count', while
+> other does 'lockref_put_or_lock(&dentry->d_lockref)'  without any
+> synchronization.
+> 
+> Could you confirm if this is a real race?
 
-Acked-by: Arend van Spriel <arend@broadcom.com>
-> Signed-off-by: Markus Elfring<elfring@users.sourceforge.net>
-> ---
->   drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c | 3 +--
->   drivers/net/wireless/brcm80211/brcmfmac/firmware.c | 3 +--
->   drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c   | 3 +--
->   drivers/net/wireless/brcm80211/brcmsmac/main.c     | 3 +--
->   4 files changed, 4 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-> index f55f625..8ff7037 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-> @@ -2539,8 +2539,7 @@ static void brcmf_sdio_bus_stop(struct device *dev)
->   	brcmu_pktq_flush(&bus->txq, true, NULL, NULL);
->
->   	/* Clear any held glomming stuff */
-> -	if (bus->glomd)
-> -		brcmu_pkt_buf_free_skb(bus->glomd);
-> +	brcmu_pkt_buf_free_skb(bus->glomd);
->   	brcmf_sdio_free_glom(bus);
->
->   	/* Clear rx control and wake any waiters */
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/firmware.c b/drivers/net/wireless/brcm80211/brcmfmac/firmware.c
-> index 8ea9f28..3a2d014 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/firmware.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/firmware.c
-> @@ -262,8 +262,7 @@ static void brcmf_fw_request_nvram_done(const struct firmware *fw, void *ctx)
->
->   fail:
->   	brcmf_dbg(TRACE, "failed: dev=%s\n", dev_name(fwctx->dev));
-> -	if (fwctx->code)
-> -		release_firmware(fwctx->code);
-> +	release_firmware(fwctx->code);
->   	device_release_driver(fwctx->dev);
->   	kfree(fwctx);
->   }
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c b/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
-> index 8f8b937..0cb00dc 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
-> @@ -506,8 +506,7 @@ static int brcmf_msgbuf_query_dcmd(struct brcmf_pub *drvr, int ifidx,
->   		memcpy(buf, skb->data, (len<  msgbuf->ioctl_resp_ret_len) ?
->   				       len : msgbuf->ioctl_resp_ret_len);
->   	}
-> -	if (skb)
-> -		brcmu_pkt_buf_free_skb(skb);
-> +	brcmu_pkt_buf_free_skb(skb);
->
->   	return msgbuf->ioctl_resp_status;
->   }
-> diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-> index 1b47482..ce538a1 100644
-> --- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
-> +++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-> @@ -1009,8 +1009,7 @@ brcms_c_dotxstatus(struct brcms_c_info *wlc, struct tx_status *txs)
->   		if (txh)
->   			trace_brcms_txdesc(&wlc->hw->d11core->dev, txh,
->   					   sizeof(*txh));
-> -		if (p)
-> -			brcmu_pkt_buf_free_skb(p);
-> +		brcmu_pkt_buf_free_skb(p);
->   	}
->
->   	if (dma&&  queue<  NFIFO) {
-
+I can not.  Increment in __d_lookup() is under ->d_lockref.lock (aka
+->d_lock) and lockref_put_or_lock() is atomic wrt that.
