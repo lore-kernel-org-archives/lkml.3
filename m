@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379AbaKTANw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 19:13:52 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:51863 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757365AbaKTANt (ORCPT
+	id S1757414AbaKTAPp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 19:15:45 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:60926 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756738AbaKTAPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 19:13:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFy0neTJAAm-8KsmPPU33zevyHmYa+vZjPk-DozSPPW_nQ@mail.gmail.com>
-References: <cover.1416352397.git.luto@amacapital.net> <c25e1a64e5b718fa156e141fd9ecbf31011c6059.1416352397.git.luto@amacapital.net>
- <CA+55aFztsw6Vt4CyVs1OsqdKXxQmFrxHdE7z89VMZ_1KwKPcmQ@mail.gmail.com>
- <20141119192928.GL12538@two.firstfloor.org> <CA+55aFwykb6aZYgyZXbU1DQ3OL0umpv8gkHYWykBEC2B7UdMbw@mail.gmail.com>
- <CALCETrXi7vdNAk4RziNDtqX4asPqXxi1VsLzL7pP0zivkjTH4Q@mail.gmail.com>
- <CA+55aFx4-WzNQ0e-ZTcCig3b7U7xmt1WB1jzO3TLk9zHD006ng@mail.gmail.com>
- <CALCETrVJJUcPRfkWRouLJCNUVNRH3aWX0X_K8L62yrUu1aR8Vg@mail.gmail.com> <CA+55aFy0neTJAAm-8KsmPPU33zevyHmYa+vZjPk-DozSPPW_nQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 19 Nov 2014 16:13:27 -0800
-Message-ID: <CALCETrXzMe2WcpY3yX48WtvdRQDvSg7CZRO1T1TdLynmAcJHXg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] sched, x86: Check that we're on the right stack in
- schedule and __might_sleep
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 19 Nov 2014 19:15:41 -0500
+X-Original-SENDERIP: 10.177.226.38
+X-Original-MAILFROM: byungchul.park@lge.com
+From: byungchul.park@lge.com
+To: rostedt@goodmis.org
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, seungho1.park@lge.com,
+        jolsa@redhat.com, Byungchul Park <byungchul.park@lge.com>
+Subject: [PATCH v5 1/2] tracing, function_graph: fix micro seconds notation in comment
+Date: Thu, 20 Nov 2014 09:15:34 +0900
+Message-Id: <1416442535-31188-2-git-send-email-byungchul.park@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1416442535-31188-1-git-send-email-byungchul.park@lge.com>
+References: <1416442535-31188-1-git-send-email-byungchul.park@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 3:59 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Nov 19, 2014 at 3:49 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> My only real objection is that it's going to be ugly and error prone.
->> It'll have to be something like:
->
-> No.
->
->> because the whole point of this series is to make the IST entries not
->> be atomic when they come from userspace.
->
-> Andy,  you need to lay off the drugs.
->
+From: Byungchul Park <byungchul.park@lge.com>
 
-No drugs, just imprecision.  This series doesn't change NMI handling
-at all.  It only changes machine_check int3, debug, and stack_segment.
-(Why is #SS using IST stacks anyway?)
+Usually, "msecs" notation means milli-seconds, and "usecs" notation
+means micro-seconds. Since the unit used in the code is micro-seconds,
+the notation should be replaced from msecs to usecs.
 
-So my point stands: if machine_check is going to be conditionally
-atomic, then that condition needs to be expressed somewhere.  And
-machine_check really does need to sleep, and it does so today.  It's
-just that, in current kernels, it pretends to be atomic, but then it
-fakes everyone out before returning (look for sync_regs in entry_64.S)
-and becomes non-atomic part-way through, mediated by a special TIF
-flag.  I think that the current conditional sync_regs thing is even
-crazier than switching stacks depending on regs->cs, so I'm trying to
-reduce craziness.
+Signed-off-by: Byungchul Park <byungchul.park@lge.com>
+---
+ kernel/trace/trace_functions_graph.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-With this series applied, machine_check is honest: if it came from
-user space, it doesn't even pretend to be atomic.
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index f0a0c98..cb33f46 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -759,19 +759,19 @@ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s)
+ {
+ 	unsigned long nsecs_rem = do_div(duration, 1000);
+ 	/* log10(ULONG_MAX) + '\0' */
+-	char msecs_str[21];
++	char usecs_str[21];
+ 	char nsecs_str[5];
+ 	int ret, len;
+ 	int i;
+ 
+-	sprintf(msecs_str, "%lu", (unsigned long) duration);
++	sprintf(usecs_str, "%lu", (unsigned long) duration);
+ 
+ 	/* Print msecs */
+-	ret = trace_seq_printf(s, "%s", msecs_str);
++	ret = trace_seq_printf(s, "%s", usecs_str);
+ 	if (!ret)
+ 		return TRACE_TYPE_PARTIAL_LINE;
+ 
+-	len = strlen(msecs_str);
++	len = strlen(usecs_str);
+ 
+ 	/* Print nsecs (we don't want to exceed 7 numbers) */
+ 	if (len < 7) {
+@@ -822,10 +822,10 @@ print_graph_duration(unsigned long long duration, struct trace_seq *s,
+ 
+ 	/* Signal a overhead of time execution to the output */
+ 	if (flags & TRACE_GRAPH_PRINT_OVERHEAD) {
+-		/* Duration exceeded 100 msecs */
++		/* Duration exceeded 100 usecs */
+ 		if (duration > 100000ULL)
+ 			ret = trace_seq_puts(s, "! ");
+-		/* Duration exceeded 10 msecs */
++		/* Duration exceeded 10 usecs */
+ 		else if (duration > 10000ULL)
+ 			ret = trace_seq_puts(s, "+ ");
+ 	}
+-- 
+1.7.9.5
 
-And I'm not even making these things preemptable by default.  They
-still run with irqs off.  They're just allowed to turn irqs off *if
-user_mode_vm(regs)* if they want.
-
-> NMI absolutely *has* to be atomic. The whole "oh, there's a per-core
-> NMI flag and it disables all other NMI's and interrupts" kind of
-> enforces that.
->
-> Trust me. Talking about being able to preempt the NMI handler is just
-> crazy talk.
-
-I engage in crazy talk all the time, but I'm not *that* crazy.
-
---Andy
