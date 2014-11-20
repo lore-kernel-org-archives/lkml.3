@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757904AbaKTRKe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:10:34 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:43616 "EHLO thoth.sbs.de"
+	id S1757828AbaKTRK4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:10:56 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:43588 "EHLO thoth.sbs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756904AbaKTRCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756860AbaKTRCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Nov 2014 12:02:42 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
         Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v10 13/27] scripts/gdb: Add helper and convenience function to look up tasks
-Date: Thu, 20 Nov 2014 18:01:50 +0100
-Message-Id: <7689a7706fd3f83b737c7121e03c89ab1b877f9a.1416502923.git.jan.kiszka@siemens.com>
+Subject: [PATCH v10 10/27] scripts/gdb: Add read_u16/32/64 helpers
+Date: Thu, 20 Nov 2014 18:01:47 +0100
+Message-Id: <e088ccf722b5f16329437704ef9117165879014b.1416502923.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <cover.1416502923.git.jan.kiszka@siemens.com>
 References: <cover.1416502923.git.jan.kiszka@siemens.com>
@@ -26,59 +26,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the helper task_by_pid that can look up a task by its PID. Also
-export it as a convenience function.
+Add helpers for reading integers from target memory buffers. Required
+when caching the memory access is more efficient than reading individual
+values via gdb.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/tasks.py | 27 +++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py |  1 +
- 2 files changed, 28 insertions(+)
+ scripts/gdb/linux/utils.py | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/scripts/gdb/linux/tasks.py b/scripts/gdb/linux/tasks.py
-index cd25984..13bb97c 100644
---- a/scripts/gdb/linux/tasks.py
-+++ b/scripts/gdb/linux/tasks.py
-@@ -44,3 +44,30 @@ class TaskList:
-                 utils.container_of(t['thread_group']['next'],
-                                    self.task_ptr_type, "thread_group")
-         return t
+diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
+index 10a227b..808a265 100644
+--- a/scripts/gdb/linux/utils.py
++++ b/scripts/gdb/linux/utils.py
+@@ -85,3 +85,24 @@ def get_target_endianness():
+         else:
+             raise gdb.GdgError("unknown endianness '{0}'".format(endian))
+     return target_endianness
 +
 +
-+def get_task_by_pid(pid):
-+    for task in TaskList():
-+        if int(task['pid']) == pid:
-+            return task
-+    return None
++def read_u16(buffer):
++    if get_target_endianness() == LITTLE_ENDIAN:
++        return ord(buffer[0]) + (ord(buffer[1]) << 8)
++    else:
++        return ord(buffer[1]) + (ord(buffer[0]) << 8)
 +
 +
-+class LxTaskByPidFunc(gdb.Function):
-+    """Find Linux task by PID and return the task_struct variable.
-+
-+$lx_task_by_pid(PID): Given PID, iterate over all tasks of the target and
-+return that task_struct variable which PID matches."""
-+
-+    def __init__(self):
-+        super(LxTaskByPidFunc, self).__init__("lx_task_by_pid")
-+
-+    def invoke(self, pid):
-+        task = get_task_by_pid(pid)
-+        if task:
-+            return task.dereference()
-+        else:
-+            raise gdb.GdbError("No task of PID " + str(pid))
++def read_u32(buffer):
++    if get_target_endianness() == LITTLE_ENDIAN:
++        return read_u16(buffer[0:2]) + (read_u16(buffer[2:4]) << 16)
++    else:
++        return read_u16(buffer[2:4]) + (read_u16(buffer[0:2]) << 16)
 +
 +
-+LxTaskByPidFunc()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index fa66d23..4d7eb2c 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -26,3 +26,4 @@ else:
-     import linux.symbols
-     import linux.modules
-     import linux.dmesg
-+    import linux.tasks
++def read_u64(buffer):
++    if get_target_endianness() == LITTLE_ENDIAN:
++        return read_u32(buffer[0:4]) + (read_u32(buffer[4:8]) << 32)
++    else:
++        return read_u32(buffer[4:8]) + (read_u32(buffer[0:4]) << 32)
 -- 
 1.8.4.5
 
