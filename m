@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756992AbaKTOgh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 09:36:37 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:38829 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894AbaKTOgg (ORCPT
+	id S1756647AbaKTOjp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 09:39:45 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:52309 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753977AbaKTOjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 09:36:36 -0500
-Date: Thu, 20 Nov 2014 15:36:32 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141120143626.GA2542@lerouge>
-References: <20141118020959.GA2091@redhat.com>
- <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
- <20141118023930.GA2871@redhat.com>
- <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
- <20141118145234.GA7487@redhat.com>
- <alpine.DEB.2.11.1411181914020.3909@nanos>
- <20141118215540.GD35311@redhat.com>
- <20141119021902.GA14216@redhat.com>
- <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
- <20141119051524.GA18547@redhat.com>
+	Thu, 20 Nov 2014 09:39:43 -0500
+Date: Thu, 20 Nov 2014 22:39:32 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 1/1] crypto-drbg: Deletion of unnecessary checks before
+ the function call "kzfree"
+Message-ID: <20141120143932.GA31996@gondor.apana.org.au>
+References: <530C5E18.1020800@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <546C60E0.1070903@users.sourceforge.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141119051524.GA18547@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <546C60E0.1070903@users.sourceforge.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 12:15:24AM -0500, Dave Jones wrote:
-> On Tue, Nov 18, 2014 at 08:40:55PM -0800, Linus Torvalds wrote:
+On Wed, Nov 19, 2014 at 10:20:32AM +0100, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Wed, 19 Nov 2014 10:11:04 +0100
 > 
->  > Hmm, if we are getting soft-lockups here, maybe it suggest too much exit-work.
->  > 
->  > Some TIF_NOHZ loop, perhaps? You have nohz on, don't you?
->  > 
->  > That makes me wonder: does the problem go away if you disable NOHZ?
+> The kzfree() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
 > 
-> Does nohz=off do enough ? I couldn't convince myself after looking at
-> dmesg, and still seeing dynticks stuff in there.
+> This issue was detected by using the Coccinelle software.
 > 
-> I'll do a rebuild with all the CONFIG_NO_HZ stuff off, though it also changes
-> some other config stuff wrt timers.
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 
-You also need to disable context tracking. So you need to deactive also
-CONFIG_RCU_USER_QS and CONFIG_CONTEXT_TRACKING_FORCE and eventually make sure
-nothing else is turning on CONFIG_CONTEXT_TRACKING.
+Sorry but you're too late as someone else has already fixed this :)
 
-You can keep CONFIG_NO_HZ_IDLE though, just not CONFIG_NO_HZ_FULL.
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
