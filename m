@@ -1,89 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586AbaKTRAg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:00:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49933 "EHLO mx1.redhat.com"
+	id S1757883AbaKTRCt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:02:49 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:43615 "EHLO thoth.sbs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751911AbaKTRAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 12:00:34 -0500
-Date: Thu, 20 Nov 2014 19:00:16 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Jeff Epler <jepler@unpythonic.net>, Jiri Kosina <jkosina@suse.cz>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] virtio_balloon: Convert "vballoon" kthread into a
- workqueue
-Message-ID: <20141120170016.GC7495@redhat.com>
-References: <1416499397-16669-1-git-send-email-pmladek@suse.cz>
- <20141120160746.GI14877@htj.dyndns.org>
- <20141120162543.GA7466@redhat.com>
- <20141120162624.GA7479@redhat.com>
- <20141120162935.GK14877@htj.dyndns.org>
- <20141120165558.GB19165@pathway.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141120165558.GB19165@pathway.suse.cz>
+	id S1756334AbaKTRCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 12:02:42 -0500
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@suse.de>,
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
+Subject: [PATCH v10 20/27] scripts/gdb: Add lx-lsmod command
+Date: Thu, 20 Nov 2014 18:01:57 +0100
+Message-Id: <1a9300902f11cf131c60a04b90f06279f0556b27.1416502923.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <cover.1416502923.git.jan.kiszka@siemens.com>
+References: <cover.1416502923.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1416502923.git.jan.kiszka@siemens.com>
+References: <cover.1416502923.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 05:55:58PM +0100, Petr Mladek wrote:
-> On Thu 2014-11-20 11:29:35, Tejun Heo wrote:
-> > On Thu, Nov 20, 2014 at 06:26:24PM +0200, Michael S. Tsirkin wrote:
-> > > On Thu, Nov 20, 2014 at 06:25:43PM +0200, Michael S. Tsirkin wrote:
-> > > > On Thu, Nov 20, 2014 at 11:07:46AM -0500, Tejun Heo wrote:
-> > > > > On Thu, Nov 20, 2014 at 05:03:17PM +0100, Petr Mladek wrote:
-> > > > > ...
-> > > > > > @@ -476,7 +460,6 @@ static void virtballoon_remove(struct virtio_device *vdev)
-> > > > > >  {
-> > > > > >  	struct virtio_balloon *vb = vdev->priv;
-> > > > > >  
-> > > > > > -	kthread_stop(vb->thread);
-> > > > > >  	remove_common(vb);
-> > > > > >  	kfree(vb);
-> > > > > >  }
-> > > > > 
-> > > > > Shouldn't the work item be flushed before removal is complete?
-> 
-> Great catch!
-> 
-> > > > In fact, flushing it won't help because it can requeue itself, right?
-> > 
-> > There's cancel_work_sync() to stop the self-requeueing ones.
-> 
-> Ah, one more problem is that remove_common(vb) calls leak_balloon()
-> that queues the work if not finished. We would need to add some flag
-> or variant that would disable the queuing when called here.
-> 
+This adds a lsmod-like command to list all currently loaded modules of
+the target.
 
-That's why Tejun suggested cancel_work_sync, IIUC it stops
-the requeuing without need for extra flags.
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ scripts/gdb/linux/modules.py | 46 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 45 insertions(+), 1 deletion(-)
 
-> > > From that POV a dedicated WQ kept it simple.
-> > 
-> > A dedicated wq doesn't do anything for that.  You can't shut down a
-> > workqueue with a pending work item on it.  destroy_workqueue() will
-> > try to drain the target wq, warn if it doesn't finish in certain
-> > number of iterations and just keep trying indefinitely.
-> 
-> I wonder if it is guaranteed that none would trigger
-> stats_request() or virtballoon_changed() when virtballoon_remove() is
-> being called. I guess so because the original code would fail
-> otherwise. The two functions access "vb->config_change"
-> and the structure is freed in virtballoon_remove() without
-> any protection.
-> 
-> I am trying to confirm this by reading the code but it is not that
-> easy.
-> 
-> Best Regards,
-> Petr
-
-It's synchronized through hardware.  remove_common calls reset and
-del_vqs which will prevent new interrupts.
-
+diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
+index 531f763..e7c99e9 100644
+--- a/scripts/gdb/linux/modules.py
++++ b/scripts/gdb/linux/modules.py
+@@ -13,7 +13,7 @@
+ 
+ import gdb
+ 
+-from linux import utils
++from linux import cpus, utils
+ 
+ 
+ module_type = utils.CachedType("struct module")
+@@ -65,3 +65,47 @@ of the target and return that module variable which MODULE matches."""
+ 
+ 
+ LxModule()
++
++
++class LxLsmod(gdb.Command):
++    """List currently loaded modules."""
++
++    _module_use_type = utils.CachedType("struct module_use")
++
++    def __init__(self):
++        super(LxLsmod, self).__init__("lx-lsmod", gdb.COMMAND_DATA)
++
++    def invoke(self, arg, from_tty):
++        gdb.write(
++            "Address{0}    Module                  Size  Used by\n".format(
++                "        " if utils.get_long_type().sizeof == 8 else ""))
++
++        for module in ModuleList():
++            ref = 0
++            module_refptr = module['refptr']
++            for cpu in cpus.CpuList("cpu_possible_mask"):
++                refptr = cpus.per_cpu(module_refptr, cpu)
++                ref += refptr['incs']
++                ref -= refptr['decs']
++
++            gdb.write("{address} {name:<19} {size:>8}  {ref}".format(
++                address=str(module['module_core']).split()[0],
++                name=module['name'].string(),
++                size=module['core_size'],
++                ref=ref))
++
++            source_list = module['source_list']
++            t = self._module_use_type.get_type().pointer()
++            entry = source_list['next']
++            first = True
++            while entry != source_list.address:
++                use = utils.container_of(entry, t, "source_list")
++                gdb.write("{separator}{name}".format(
++                    separator=" " if first else ",",
++                    name=use['source']['name'].string()))
++                first = False
++                entry = entry['next']
++            gdb.write("\n")
++
++
++LxLsmod()
 -- 
-MST
+1.8.4.5
+
