@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014AbaKTVvT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 16:51:19 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:32129 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075AbaKTVvS (ORCPT
+	id S1757069AbaKTVxk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 16:53:40 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:62113 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756500AbaKTVxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 16:51:18 -0500
-Message-ID: <546E6221.5000409@oracle.com>
-Date: Thu, 20 Nov 2014 16:50:25 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Linux-MM <linux-mm@kvack.org>,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 0/10] Replace _PAGE_NUMA with PAGE_NONE protections v2
-References: <1416478790-27522-1-git-send-email-mgorman@suse.de>
-In-Reply-To: <1416478790-27522-1-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 20 Nov 2014 16:53:37 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] Documentation: bindings: add doc for the Berlin USB PHY
+Date: Thu, 20 Nov 2014 22:53:26 +0100
+Message-Id: <1416520406-1852-2-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1416520406-1852-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1416520406-1852-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2014 05:19 AM, Mel Gorman wrote:
-> V1 failed while running under kvm-tools very quickly and a second report
-> indicated that it happens on bare metal as well. This version survived
-> an overnight run of trinity running under kvm-tools here but verification
-> from Sasha would be appreciated.
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
 
-Hi Mel,
+Document the bindings of the Marvell Berlin USB PHY driver.
 
-I tried giving it a spin, but it won't apply at all on the latest -mm
-tree:
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+---
+Split-off patches from latest Berlin USB PHY patches
+  https://lkml.kernel.org/g/1416231347-27193-1-git-send-email-antoine.tenart@free-electrons.com
 
-$ git am -3 numa/*
-Applying: mm: numa: Do not dereference pmd outside of the lock during NUMA hinting fault
-Applying: mm: Add p[te|md] protnone helpers for use by NUMA balancing
-Applying: mm: Convert p[te|md]_numa users to p[te|md]_protnone_numa
-fatal: sha1 information is lacking or useless (mm/huge_memory.c).
-Repository lacks necessary blobs to fall back on 3-way merge.
-Cannot fall back to three-way merge.
+Cc: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ .../devicetree/bindings/phy/berlin-usb-phy.txt     |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
 
-Did I miss a prerequisite?
+diff --git a/Documentation/devicetree/bindings/phy/berlin-usb-phy.txt b/Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
+new file mode 100644
+index 0000000..be33780
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
+@@ -0,0 +1,16 @@
++* Marvell Berlin USB PHY
++
++Required properties:
++- compatible: "marvell,berlin2-usb-phy" or "marvell,berlin2cd-usb-phy"
++- reg: base address and length of the registers
++- #phys-cells: should be 0
++- resets: reference to the reset controller
++
++Example:
++
++	usb-phy@f774000 {
++		compatible = "marvell,berlin2-usb-phy";
++		reg = <0xf774000 0x128>;
++		#phy-cells = <0>;
++		resets = <&chip 0x104 14>;
++	};
+-- 
+1.7.2.5
 
-
-Thanks,
-Sasha
