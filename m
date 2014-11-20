@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757004AbaKTHOF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:14:05 -0500
-Received: from exprod7og128.obsmtp.com ([64.18.2.121]:35142 "EHLO
-	exprod7og128.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756954AbaKTHN7 (ORCPT
+	id S1757038AbaKTHON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:14:13 -0500
+Received: from exprod7og107.obsmtp.com ([64.18.2.167]:54666 "EHLO
+	exprod7og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757010AbaKTHOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:13:59 -0500
+	Thu, 20 Nov 2014 02:14:09 -0500
 From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
 X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 To: jejb@kernel.org, hch@infradead.org
@@ -14,9 +14,9 @@ Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
         JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
         Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
         Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH 05/22] [SCSI] mpt2sas: MPI2 Rev BB (2.00.20) specification and 2.00.35 header files
-Date: Thu, 20 Nov 2014 12:35:38 +0530
-Message-Id: <1416467155-16869-6-git-send-email-Sreekanth.Reddy@avagotech.com>
+Subject: [PATCH 12/22] mpt3sas: Get IOC_FACTS information using handshake protocol only after HBA card gets into READY or Operational state.
+Date: Thu, 20 Nov 2014 12:35:45 +0530
+Message-Id: <1416467155-16869-13-git-send-email-Sreekanth.Reddy@avagotech.com>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
 References: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
@@ -24,98 +24,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change List in this MPI2 specification,
+Driver initialization fails if driver tries to send IOC facts request message when the IOC is in reset or in a fault state.
 
-1. Added SSUTimeout field to MPI2_CONFIG_PAGE_BIOS_1,
-   and more defines for the BiosOptions field.
+This patch will make sure that
+ 1.Driver to send IOC facts request message only if HBA is in operational or ready state.
+ 2.If IOC is in fault state, a diagnostic reset would be issued.
+ 3.If IOC is in reset state then driver will wait for 10 seconds to exit out of reset state.
+   If the HBA continues to be in reset state, then the HBA wouldn't be claimed by the driver.
 
 Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 ---
- drivers/scsi/mpt2sas/mpi/mpi2.h      |  5 +++--
- drivers/scsi/mpt2sas/mpi/mpi2_cnfg.h | 17 ++++++++++++++---
- 2 files changed, 17 insertions(+), 5 deletions(-)
+ drivers/scsi/mpt3sas/mpt3sas_base.c | 65 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
 
-diff --git a/drivers/scsi/mpt2sas/mpi/mpi2.h b/drivers/scsi/mpt2sas/mpi/mpi2.h
-index 76cde3f..7fc6f23 100644
---- a/drivers/scsi/mpt2sas/mpi/mpi2.h
-+++ b/drivers/scsi/mpt2sas/mpi/mpi2.h
-@@ -8,7 +8,7 @@
-  *                  scatter/gather formats.
-  *  Creation Date:  June 21, 2006
-  *
-- *  mpi2.h Version:  02.00.34
-+ *  mpi2.h Version:  02.00.35
-  *
-  *  Version History
-  *  ---------------
-@@ -85,6 +85,7 @@
-  *  08-19-13  02.00.32  Bumped MPI2_HEADER_VERSION_UNIT.
-  *  12-05-13  02.00.33  Bumped MPI2_HEADER_VERSION_UNIT.
-  *  01-08-14  02.00.34  Bumped MPI2_HEADER_VERSION_UNIT.
-+ *  06-13-14  02.00.35  Bumped MPI2_HEADER_VERSION_UNIT.
-  *  --------------------------------------------------------------------------
+diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.c b/drivers/scsi/mpt3sas/mpt3sas_base.c
+index 958a870..527f91b 100644
+--- a/drivers/scsi/mpt3sas/mpt3sas_base.c
++++ b/drivers/scsi/mpt3sas/mpt3sas_base.c
+@@ -3159,6 +3159,9 @@ _base_wait_on_iocstate(struct MPT3SAS_ADAPTER *ioc, u32 ioc_state, int timeout,
+  * Notes: MPI2_HIS_IOC2SYS_DB_STATUS - set to one when IOC writes to doorbell.
   */
- 
-@@ -110,7 +111,7 @@
- #define MPI2_VERSION_02_00                  (0x0200)
- 
- /* versioning for this MPI header set */
--#define MPI2_HEADER_VERSION_UNIT            (0x20)
-+#define MPI2_HEADER_VERSION_UNIT            (0x23)
- #define MPI2_HEADER_VERSION_DEV             (0x00)
- #define MPI2_HEADER_VERSION_UNIT_MASK       (0xFF00)
- #define MPI2_HEADER_VERSION_UNIT_SHIFT      (8)
-diff --git a/drivers/scsi/mpt2sas/mpi/mpi2_cnfg.h b/drivers/scsi/mpt2sas/mpi/mpi2_cnfg.h
-index f055310..d3e4319 100644
---- a/drivers/scsi/mpt2sas/mpi/mpi2_cnfg.h
-+++ b/drivers/scsi/mpt2sas/mpi/mpi2_cnfg.h
-@@ -6,7 +6,7 @@
-  *          Title:  MPI Configuration messages and pages
-  *  Creation Date:  November 10, 2006
-  *
-- *    mpi2_cnfg.h Version:  02.00.28
-+ *    mpi2_cnfg.h Version:  02.00.29
-  *
-  *  Version History
-  *  ---------------
-@@ -169,6 +169,8 @@
-  *			MPI2_CONFIG_PAGE_SAS_ENCLOSURE_0.
-  *  01-08-14  02.00.28  Added more defines for the BiosOptions field of
-  *			MPI2_CONFIG_PAGE_BIOS_1.
-+ *  06-13-14  02.00.29  Added SSUTimeout field to MPI2_CONFIG_PAGE_BIOS_1, and
-+ *			more defines for the BiosOptions field.
-  *  --------------------------------------------------------------------------
-  */
- 
-@@ -1237,7 +1239,9 @@ typedef struct _MPI2_CONFIG_PAGE_BIOS_1
- 	MPI2_CONFIG_PAGE_HEADER Header;                     /* 0x00 */
- 	U32                     BiosOptions;                /* 0x04 */
- 	U32                     IOCSettings;                /* 0x08 */
--	U32                     Reserved1;                  /* 0x0C */
-+	U8			SSUTimeout;		    /* 0x0C */
-+	U8			Reserved1;		    /* 0x0D */
-+	U16			Reserved2;		    /* 0x0E */
- 	U32                     DeviceSettings;             /* 0x10 */
- 	U16                     NumberOfDevices;            /* 0x14 */
- 	U16                     UEFIVersion;                /* 0x16 */
-@@ -1248,9 +1252,16 @@ typedef struct _MPI2_CONFIG_PAGE_BIOS_1
- } MPI2_CONFIG_PAGE_BIOS_1, MPI2_POINTER PTR_MPI2_CONFIG_PAGE_BIOS_1,
-   Mpi2BiosPage1_t, MPI2_POINTER pMpi2BiosPage1_t;
- 
--#define MPI2_BIOSPAGE1_PAGEVERSION                      (0x06)
-+#define MPI2_BIOSPAGE1_PAGEVERSION                      (0x07)
- 
- /* values for BIOS Page 1 BiosOptions field */
-+#define MPI2_BIOSPAGE1_OPTIONS_PNS_MASK			(0x00003800)
-+#define MPI2_BIOSPAGE1_OPTIONS_PNS_PBDHL			(0x00000000)
-+#define MPI2_BIOSPAGE1_OPTIONS_PNS_ENCSLOSURE			(0x00000800)
-+#define MPI2_BIOSPAGE1_OPTIONS_PNS_LWWID			(0x00001000)
-+#define MPI2_BIOSPAGE1_OPTIONS_PNS_PSENS			(0x00001800)
-+#define MPI2_BIOSPAGE1_OPTIONS_PNS_ESPHY			(0x00002000)
+ static int
++_base_diag_reset(struct MPT3SAS_ADAPTER *ioc, int sleep_flag);
 +
- #define MPI2_BIOSPAGE1_OPTIONS_X86_DISABLE_BIOS                 (0x00000400)
++static int
+ _base_wait_for_doorbell_int(struct MPT3SAS_ADAPTER *ioc, int timeout,
+ 	int sleep_flag)
+ {
+@@ -3701,6 +3704,61 @@ _base_get_port_facts(struct MPT3SAS_ADAPTER *ioc, int port, int sleep_flag)
+ }
  
- #define MPI2_BIOSPAGE1_OPTIONS_MASK_REGISTRATION_UEFI_BSD       (0x00000300)
+ /**
++ * _base_wait_for_iocstate - Wait until the card is in READY or OPERATIONAL
++ * @ioc: per adapter object
++ * @timeout:
++ * @sleep_flag: CAN_SLEEP or NO_SLEEP
++ *
++ * Returns 0 for success, non-zero for failure.
++ */
++static int
++_base_wait_for_iocstate(struct MPT3SAS_ADAPTER *ioc, int timeout,
++	int sleep_flag)
++{
++	u32 ioc_state;
++	int rc;
++
++	dinitprintk(ioc, printk(MPT3SAS_FMT "%s\n", ioc->name,
++	    __func__));
++
++	if (ioc->pci_error_recovery)
++		return 0;
++
++	ioc_state = mpt3sas_base_get_iocstate(ioc, 0);
++	dhsprintk(ioc, printk(MPT3SAS_FMT "%s: ioc_state(0x%08x)\n",
++	    ioc->name, __func__, ioc_state));
++
++	if (((ioc_state & MPI2_IOC_STATE_MASK) == MPI2_IOC_STATE_READY) ||
++	    (ioc_state & MPI2_IOC_STATE_MASK) == MPI2_IOC_STATE_OPERATIONAL)
++		return 0;
++
++	if (ioc_state & MPI2_DOORBELL_USED) {
++		dhsprintk(ioc, printk(MPT3SAS_FMT
++		    "unexpected doorbell active!\n", ioc->name));
++		goto issue_diag_reset;
++	}
++
++	if ((ioc_state & MPI2_IOC_STATE_MASK) == MPI2_IOC_STATE_FAULT) {
++		mpt3sas_base_fault_info(ioc, ioc_state &
++		    MPI2_DOORBELL_DATA_MASK);
++		goto issue_diag_reset;
++	}
++
++	ioc_state = _base_wait_on_iocstate(ioc, MPI2_IOC_STATE_READY,
++	    timeout, sleep_flag);
++	if (ioc_state) {
++		dfailprintk(ioc, printk(MPT3SAS_FMT
++		    "%s: failed going to ready state (ioc_state=0x%x)\n",
++		    ioc->name, __func__, ioc_state));
++		return -EFAULT;
++	}
++
++ issue_diag_reset:
++	rc = _base_diag_reset(ioc, sleep_flag);
++	return rc;
++}
++
++/**
+  * _base_get_ioc_facts - obtain ioc facts reply and save in ioc
+  * @ioc: per adapter object
+  * @sleep_flag: CAN_SLEEP or NO_SLEEP
+@@ -3718,6 +3776,13 @@ _base_get_ioc_facts(struct MPT3SAS_ADAPTER *ioc, int sleep_flag)
+ 	dinitprintk(ioc, pr_info(MPT3SAS_FMT "%s\n", ioc->name,
+ 	    __func__));
+ 
++	r = _base_wait_for_iocstate(ioc, 10, sleep_flag);
++	if (r) {
++		dfailprintk(ioc, printk(MPT3SAS_FMT
++		    "%s: failed getting to correct state\n",
++		    ioc->name, __func__));
++		return r;
++	}
+ 	mpi_reply_sz = sizeof(Mpi2IOCFactsReply_t);
+ 	mpi_request_sz = sizeof(Mpi2IOCFactsRequest_t);
+ 	memset(&mpi_request, 0, mpi_request_sz);
 -- 
 2.0.2
 
