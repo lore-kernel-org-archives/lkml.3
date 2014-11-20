@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272AbaKTWLA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 17:11:00 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:45668 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756236AbaKTWK6 (ORCPT
+	id S932266AbaKTWL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 17:11:28 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:33468 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756761AbaKTWL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 17:10:58 -0500
-Date: Thu, 20 Nov 2014 14:10:50 -0800
-From: Omar Sandoval <osandov@osandov.com>
-To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH v7] Move BTRFS RCU string to common library
-Message-ID: <20141120221050.GA15560@mew.dhcp4.washington.edu>
-References: <1415463217.23530.26.camel@perches.com>
- <1415873901-5618-1-git-send-email-osandov@osandov.com>
+	Thu, 20 Nov 2014 17:11:26 -0500
+Date: Thu, 20 Nov 2014 17:11:22 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141120221122.GA25393@htj.dyndns.org>
+References: <20141119145902.GA13387@redhat.com>
+ <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
+ <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
+ <20141119190215.GA10796@lerouge>
+ <alpine.DEB.2.11.1411192251120.3909@nanos>
+ <20141119225615.GA11386@lerouge>
+ <alpine.DEB.2.11.1411200002330.3909@nanos>
+ <20141119235033.GE11386@lerouge>
+ <20141120122339.GA14877@htj.dyndns.org>
+ <alpine.DEB.2.11.1411202204030.3950@nanos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415873901-5618-1-git-send-email-osandov@osandov.com>
+In-Reply-To: <alpine.DEB.2.11.1411202204030.3950@nanos>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 02:18:21AM -0800, Omar Sandoval wrote:
-> The RCU-friendly string API used internally by BTRFS is generic enough for
-> common use. This doesn't add any new functionality, but instead just moves the
-> code and documents the existing API.
-> 
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Omar Sandoval <osandov@osandov.com>
-> ---
-> Alright, here's one more go at it.
-> 
-> v7: Add arguments to kernel doc for printk wrappers, use ##__VA_ARGS
-> v6: Add header dependencies to rcustring.h
-> v5: Rebase against v3.18-rc3
-> v4: Don't return anything from the printk wrappers on the assumption that
-> printk will return void someday
-> v3: Add __rcu annotation to relevant functions, add Paul's ack and Josh's
-> review
-> 
->  fs/btrfs/check-integrity.c |  6 +--
->  fs/btrfs/dev-replace.c     | 19 ++++-----
->  fs/btrfs/disk-io.c         |  6 +--
->  fs/btrfs/extent_io.c       |  4 +-
->  fs/btrfs/ioctl.c           |  4 +-
->  fs/btrfs/raid56.c          |  2 +-
->  fs/btrfs/rcu-string.h      | 56 --------------------------
->  fs/btrfs/scrub.c           | 15 +++----
->  fs/btrfs/super.c           |  2 +-
->  fs/btrfs/volumes.c         | 14 +++----
->  include/linux/rcustring.h  | 99 ++++++++++++++++++++++++++++++++++++++++++++++
->  11 files changed, 136 insertions(+), 91 deletions(-)
->  delete mode 100644 fs/btrfs/rcu-string.h
->  create mode 100644 include/linux/rcustring.h
-> 
-Ping -- does everything look good here?
+On Thu, Nov 20, 2014 at 10:58:26PM +0100, Thomas Gleixner wrote:
+> It's completely undocumented behaviour, whether it has been that way
+> for ever or not. And I agree with Fredric, that it is insane. Actuallu
+> it's beyond insane, really.
+
+This is exactly the same for any address in the vmalloc space.
+
+..
+>    So in the scheduler if the same task gets reselected you check that
+>    sequence count and update the PGD if different. If a task switch
+>    happens then you also need to check the sequence count and act
+>    accordingly.
+
+That isn't enough tho.  What if the percpu allocated pointer gets
+passed to another CPU without task switching?  You'd at least need to
+send IPIs to all CPUs so that all the active PGDs get updated
+synchronously.
+
+> What really frightens me is the potential and well hidden fuckup
+> potential which lurks around the corner and the hard to debug once in
+> a while fallout which might be caused by this.
+
+Lazy vmalloc population through fault is something we accepted as
+reasonable as it works fine for most of the kernel.  If the lazy
+loading can be improved so that it doesn't depend on faulting, great.
+For the time being, we can make percpu accessors complain when called
+from nmi handlers so that the problematic ones can be easily
+identified.
+
+Thanks.
 
 -- 
-Omar
+tejun
