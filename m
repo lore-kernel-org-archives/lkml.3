@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023AbaKTMmN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 07:42:13 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:55410 "EHLO
+	id S1756344AbaKTMoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 07:44:06 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:52608 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaKTMmL (ORCPT
+	with ESMTP id S1751201AbaKTMoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 07:42:11 -0500
+	Thu, 20 Nov 2014 07:44:05 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [GIT PULL] at91: dt for 3.19 #2
-Date: Thu, 20 Nov 2014 13:41:29 +0100
+Subject: Re: [GIT PULL] at91: drivers for 3.19 #1
+Date: Thu, 20 Nov 2014 13:43:10 +0100
 User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
 Cc: Olof Johansson <olof@lixom.net>, arm@kernel.org,
         Linux Kernel list <linux-kernel@vger.kernel.org>,
@@ -18,47 +18,60 @@ Cc: Olof Johansson <olof@lixom.net>, arm@kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>,
         Boris BREZILLON <boris.brezillon@free-electrons.com>,
         "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Vinod Koul <vinod.koul@intel.com>,
+        a.zummo@towertech.it, rtc-linux@googlegroups.com,
+        Johan Hovold <johan@kernel.org>,
         Ludovic Desroches <ludovic.desroches@atmel.com>
-References: <1416415953-31966-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1416415953-31966-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1415976210-3665-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1415976210-3665-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201411201341.30112.arnd@arndb.de>
-X-Provags-ID: V02:K0:S8+aSj2xCo+8v9q+9nsh56brZ4aRE1vUJ5IaNSrxpCK
- CX2keIzVG4K5KbaabKOf3VqnOq28brQY0Aj7OOXdw0KNUkbK8t
- 93IdFQWa131IiOIT9HqQXmvbNMOpd//k9Sl+X21Syvq549Poz4
- tGtjJqNK2dTvZ56qP4BK1Jx4kd/KVHfXmAn/yle/szRd2zJ7Y/
- 4AjIenvYdo9aWBRuTUWAUfu1uDOvdLh40quEky3f4NwONVJSF8
- eWlxp01sXcYhVkNaA5RCcxce5Msob9IoZPRiLYyN/jLFEpXaaN
- qlCee/rRMWuaEiry1QDcEDTjFeobXw2q4VdaaXo9ae1LZALZZJ
- Ru7IvOrelDeIUeH6ormXzhwvs7UvdhyO46nwqoeH/
+Message-Id: <201411201343.11011.arnd@arndb.de>
+X-Provags-ID: V02:K0:LZFQHxFI6tCajS9OzZie/SzAyYD0IbG3qSI/nJ2pziq
+ Mvw84xtAtFDXcg9qNWsNptlM+7IfivSgNpdDfNLy6eZzAiTmy4
+ mYpaa3IWzGMoLYSru9OAHjQfG+yIIsPZ+6IVwdM+LUijqvEdaf
+ I9dVMV756fLSlfBysR/cMAuTW1WmVL6LTdiQQBCPAp5d18Hq0g
+ jhfuF7Csp6na2niys998t2MNZaphhQVdi6RNVWfk9GNYG9gDiW
+ m/JDT6TZ9lZ8N5N7+pVSLfmZfkRcFzl0gdzrjW581d0PDTUqTg
+ qqRRkkjQLXX8VTF2Az/TbBmYhlX58B5cuxcCxpyUu73kVhgIOP
+ PNSali4xelucZ8N9YHLJfDyiXOwJSOoYPsU9pFihk
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 November 2014, Nicolas Ferre wrote:
-> Another DT pull-request for 3.19. For this one, I had to pull one Vinod's topic
-> branch to be able to include the XDMA DT properties. This branch is stable and
-> based on 3.18-rc3 (Cf. http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/304041.html).
-> Note that my previous DT pull-request for 3.19 was based on 3.18-rc2.
-> So, this is what I did:
-> - took a v3.18-rc3 tag
-> - merged the at91-3.19-dt branch that you already have in at91/dt (you'd taken the at91-dt tag)
-> - merged the topic/at_xdmac from Vinod
-> - stacked the new material described above on top of this.
-> Tell me if it's okay for you or if I have to arrange things differently.
+On Friday 14 November 2014, Nicolas Ferre wrote:
+> Arnd, Olof, Kevin,
 > 
-> The content itself is pretty straightforward.
+> This is a pull-request about AT91-related drivers that are easier to take via
+> arm-soc.
 > 
+> There is a little merge conflict with the "cleanup" branch because of removal
+> of at91sam9g45 and at91sam9rl legacy code. The resolution is pretty simple but
+> you can have a look at the resolution example here:
+> https://git.kernel.org/cgit/linux/kernel/git/nferre/linux-at91.git/log/?h=at91-next
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
+> 
+>   Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-drivers
+> 
+> for you to fetch changes up to 2c91e61dc97cce57ffd9dd654a6ee284e1f45a1f:
+> 
+>   rtc: at91sam9: add DT bindings documentation (2014-11-13 16:08:48 +0100)
+> 
+> ----------------------------------------------------------------
+> First batch of drivers for 3.19:
+> It is only about a not so recent driver for old platforms: RTT as RTC driver:
+> - RTT as RTC driver enhancements and machine specific include files removal
+> - RTT as RTC driver conversion to device tree
 
-I've pulled it into a new next/dt2 branch, so we don't have to coordinate the merging
-with Vinod. If he sends the slave-dma tree first, this will be part of the normal
-next/dt submission to Linus, otherwise it will come a few days later.
-
-Thanks,
+Pulled into next/drivers, thanks!
 
 	Arnd
