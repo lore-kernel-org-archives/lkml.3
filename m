@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339AbaKTMe2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 07:34:28 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:58697 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaKTMe1 (ORCPT
+	id S1756601AbaKTMej (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 07:34:39 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:52109 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756446AbaKTMeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 07:34:27 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH V3] arm64: amd-seattle: Adding device tree for AMD Seattle platform
-Date: Thu, 20 Nov 2014 13:33:43 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Lendacky <Thomas.Lendacky@amd.com>,
-        Joel Schopp <Joel.Schopp@amd.com>, arm@kernel.org
-References: <1414503414-3863-1-git-send-email-suravee.suthikulpanit@amd.com> <54616557.1010403@amd.com> <20141113110002.GE20652@localhost>
-In-Reply-To: <20141113110002.GE20652@localhost>
+	Thu, 20 Nov 2014 07:34:37 -0500
+Date: Thu, 20 Nov 2014 12:34:34 +0000
+From: Paul Burton <paul.burton@imgtec.com>
+To: Niklas Svensson <niklas.svensson@axis.com>
+CC: <ralf@linux-mips.org>, <linux-mips@linux-mips.org>,
+        <linux-kernel@vger.kernel.org>, Niklas Svensson <niklass@axis.com>
+Subject: Re: [PATCH] MIPS: mips-cm: CM regions are disabled at boot
+Message-ID: <20141120123434.GW1127@pburton-laptop>
+References: <1416486540-28681-1-git-send-email-niklass@axis.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411201333.44180.arnd@arndb.de>
-X-Provags-ID: V02:K0:W0zcMigFDX0dtvltXAFP1298wm3Y6byC604fot0sS2w
- 4946u59XQk13Oxvemra2Vtxy2NA0svuoOXiEWHGC4a97cw3vD+
- 63pDoEDkNkCeejBx9I4HtFREOL/VElAvNORg4VYxMKLgbr9xMy
- /uKJt73x/dUIGY4LD4AcI6oY2noJ1GYWG6oUueLNWdS5tnkkGw
- cxPDJ6YET3C2axmLl5XF3Lk2afKOS/4SusAPv5yYgSlqPzgHot
- IHoaesfokqHKqVoZQF5n9nkhaz8rrsIJTLtrfxeS1huaOTYEpW
- ks5LoSsqE1UnxvgaFMR5ThIpOWDJkmtkZPFEb12L4ETnT1Nvnk
- Qyln+4f6M5qzZZQNLGsZQ63ux8zsmoOSSJY36Q3LG
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1416486540-28681-1-git-send-email-niklass@axis.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.168.159.42]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 November 2014, Catalin Marinas wrote:
-> On Tue, Nov 11, 2014 at 01:24:39AM +0000, Suravee Suthikulpanit wrote:
-> > Are there any other concerns about this patch?
+On Thu, Nov 20, 2014 at 01:29:00PM +0100, Niklas Svensson wrote:
+> Each CM_REGION_TARGET is set to disabled at boot,
+
+That part is true...
+
+> so there is no need to disable the matching
+> CM_GCR_REG explicitly.
+
+...however there is no guarantee that the bootloader, or another kernel,
+or some other piece of code didn't program the registers differently
+before Linux starts. So I believe this patch to be incorrect.
+
+Thanks,
+    Paul
+
 > 
-> Let's cc the arm-soc guys, they are now handling SoC code for arm64.
-
-Any update on the submission? I had some comments, am now waiting for a new
-version to put into 3.19.
-
-	Arnd
+> Signed-off-by: Niklas Svensson <niklass@axis.com>
+> ---
+>  arch/mips/kernel/mips-cm.c | 10 ----------
+>  1 file changed, 10 deletions(-)
+> 
+> diff --git a/arch/mips/kernel/mips-cm.c b/arch/mips/kernel/mips-cm.c
+> index f76f7a0..a4bbfd9 100644
+> --- a/arch/mips/kernel/mips-cm.c
+> +++ b/arch/mips/kernel/mips-cm.c
+> @@ -104,16 +104,6 @@ int mips_cm_probe(void)
+>  	base_reg |= CM_GCR_BASE_CMDEFTGT_MEM;
+>  	write_gcr_base(base_reg);
+>  
+> -	/* disable CM regions */
+> -	write_gcr_reg0_base(CM_GCR_REGn_BASE_BASEADDR_MSK);
+> -	write_gcr_reg0_mask(CM_GCR_REGn_MASK_ADDRMASK_MSK);
+> -	write_gcr_reg1_base(CM_GCR_REGn_BASE_BASEADDR_MSK);
+> -	write_gcr_reg1_mask(CM_GCR_REGn_MASK_ADDRMASK_MSK);
+> -	write_gcr_reg2_base(CM_GCR_REGn_BASE_BASEADDR_MSK);
+> -	write_gcr_reg2_mask(CM_GCR_REGn_MASK_ADDRMASK_MSK);
+> -	write_gcr_reg3_base(CM_GCR_REGn_BASE_BASEADDR_MSK);
+> -	write_gcr_reg3_mask(CM_GCR_REGn_MASK_ADDRMASK_MSK);
+> -
+>  	/* probe for an L2-only sync region */
+>  	mips_cm_probe_l2sync();
+>  
+> -- 
+> 2.1.3
+> 
