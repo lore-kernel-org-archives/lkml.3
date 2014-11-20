@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757755AbaKTQta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 11:49:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49797 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757723AbaKTQt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 11:49:29 -0500
-Date: Thu, 20 Nov 2014 10:48:51 -0600
-From: Seth Jennings <sjenning@redhat.com>
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
-        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+	id S1757791AbaKTQtj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 11:49:39 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:53177 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757767AbaKTQth (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 11:49:37 -0500
+Date: Thu, 20 Nov 2014 11:49:33 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Petr Mladek <pmladek@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
+        Jeff Epler <jepler@unpythonic.net>, Jiri Kosina <jkosina@suse.cz>,
+        virtualization@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 2/3] kernel: add support for live patching
-Message-ID: <20141120164851.GB13785@cerebellum.variantweb.net>
-References: <1416187764-3341-1-git-send-email-sjenning@redhat.com>
- <1416187764-3341-3-git-send-email-sjenning@redhat.com>
- <20141120151954.GB3370@treble.redhat.com>
+Subject: Re: [PATCH v3] virtio_balloon: Convert "vballoon" kthread into a
+ workqueue
+Message-ID: <20141120164933.GL14877@htj.dyndns.org>
+References: <1416499397-16669-1-git-send-email-pmladek@suse.cz>
+ <20141120160746.GI14877@htj.dyndns.org>
+ <20141120162543.GA7466@redhat.com>
+ <20141120162624.GA7479@redhat.com>
+ <20141120162935.GK14877@htj.dyndns.org>
+ <20141120164711.GA7495@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141120151954.GB3370@treble.redhat.com>
+In-Reply-To: <20141120164711.GA7495@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 09:19:54AM -0600, Josh Poimboeuf wrote:
-> On Sun, Nov 16, 2014 at 07:29:23PM -0600, Seth Jennings wrote:
-> > +static int lpc_module_notify(struct notifier_block *nb, unsigned long action,
-> > +			    void *data)
-> > +{
-> > +	struct module *mod = data;
-> > +	struct lpc_patch *patch;
-> > +	struct lpc_object *obj;
-> > +
-> > +	mutex_lock(&lpc_mutex);
-> > +
-> > +	if (action != MODULE_STATE_COMING && action != MODULE_STATE_GOING)
-> > +		goto out;
+On Thu, Nov 20, 2014 at 06:47:11PM +0200, Michael S. Tsirkin wrote:
+> > There's cancel_work_sync() to stop the self-requeueing ones.
 > 
-> I think we can get the mutex here instead of above so it doesn't block
-> other module actions (and then you can also get rid of the "out" label).
+> What happens if queue_work runs while cancel_work_sync is in progress?
+> Does it fail to queue?
 
-Sure.
+cancel_work_sync() is guaranteed to take self-requeueing work items no
+matter when it's called or what's going on.  External (non-self)
+queueings of course should be stopped in other ways.
 
-Thanks,
-Seth
-
+> > > From that POV a dedicated WQ kept it simple.
+> > 
+> > A dedicated wq doesn't do anything for that.  You can't shut down a
+> > workqueue with a pending work item on it.  destroy_workqueue() will
+> > try to drain the target wq, warn if it doesn't finish in certain
+> > number of iterations and just keep trying indefinitely.
+> > 
+> > Thanks.
 > 
-> > +
-> > +	list_for_each_entry(patch, &lpc_patches, list) {
-> > +		if (patch->state == LPC_DISABLED)
-> > +			continue;
-> > +		list_for_each_entry(obj, &patch->objs, list) {
-> > +			if (strcmp(obj->name, mod->name))
-> > +				continue;
-> > +			if (action == MODULE_STATE_COMING) {
-> > +				obj->mod = mod;
-> > +				lpc_module_notify_coming(patch->mod, obj);
-> > +			} else /* MODULE_STATE_GOING */
-> > +				lpc_module_notify_going(patch->mod, obj);
-> > +			break;
-> > +		}
-> > +	}
-> > +out:
-> > +	mutex_unlock(&lpc_mutex);
-> > +	return 0;
-> > +}
-> 
-> -- 
-> Josh
-> --
-> To unsubscribe from this list: send the line "unsubscribe live-patching" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Right, so eventually we'll stop requeueuing and it will succeed?
+
+Yeah, sure, it's a silly reason to use a separate workqueue tho.
+Don't do it that way.
+
+Thanks.
+
+-- 
+tejun
