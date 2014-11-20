@@ -1,54 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634AbaKTQb4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 11:31:56 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35407 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559AbaKTQby (ORCPT
+	id S1757438AbaKTQcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 11:32:54 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:47010 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754574AbaKTQcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 11:31:54 -0500
-Message-ID: <546E1771.4030201@arm.com>
-Date: Thu, 20 Nov 2014 16:31:45 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Thu, 20 Nov 2014 11:32:52 -0500
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Yijing Wang <wangyijing@huawei.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-pci@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Removal of bus->msi assignment breaks MSI with stacked domains
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141120090356.GA6690@gmail.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com> <5461B906.1040803@samsung.com>
+ <20141118125843.434c216540def495d50f3a45@linux-foundation.org>
+ <CAPAsAGwZtfzx5oM73bOi_kw5BqXrwGd_xmt=m6xxU6uECA+H9Q@mail.gmail.com> <20141120090356.GA6690@gmail.com>
+From: Dmitry Vyukov <dvyukov@google.com>
+Date: Thu, 20 Nov 2014 20:32:30 +0400
+Message-ID: <CACT4Y+aOKzq0AzvSJrRC-iU9LmmtLzxY=pxzu8f4oT-OZk=oLA@mail.gmail.com>
+Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory debugger.
+To: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrey Ryabinin <ryabinin.a.a@gmail.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn, Yijing,
+On Thu, Nov 20, 2014 at 12:03 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Andrey Ryabinin <ryabinin.a.a@gmail.com> wrote:
+>
+>> I've counted 16:
+>>
+>> aab515d (fib_trie: remove potential out of bound access)
+>> 984f173 ([SCSI] sd: Fix potential out-of-bounds access)
+>> 5e9ae2e (aio: fix use-after-free in aio_migratepage)
+>> 2811eba (ipv6: udp packets following an UFO enqueued packet need also
+>> be handled by UFO)
+>> 057db84 (tracing: Fix potential out-of-bounds in trace_get_user())
+>> 9709674 (ipv4: fix a race in ip4_datagram_release_cb())
+>> 4e8d213 (ext4: fix use-after-free in ext4_mb_new_blocks)
+>> 624483f (mm: rmap: fix use-after-free in __put_anon_vma)
+>> 93b7aca (lib/idr.c: fix out-of-bounds pointer dereference)
+>> b4903d6 (mm: debugfs: move rounddown_pow_of_two() out from do_fault path)
+>> 40eea80 (net: sendmsg: fix NULL pointer dereference)
+>> 10ec947 (ipv4: fix buffer overflow in ip_options_compile())
+>> dbf20cb2 (f2fs: avoid use invalid mapping of node_inode when evict meta inode)
+>> d6d86c0 (mm/balloon_compaction: redesign ballooned pages management)
+>>
+>> + 2 recently found, seems minor:
+>>     http://lkml.kernel.org/r/1415372020-1871-1-git-send-email-a.ryabinin@samsung.com
+>>     (sched/numa: Fix out of bounds read in sched_init_numa())
+>>
+>>     http://lkml.kernel.org/r/1415458085-12485-1-git-send-email-ryabinin.a.a@gmail.com
+>>     (security: smack: fix out-of-bounds access in smk_parse_smack())
+>>
+>> Note that some functionality is not yet implemented in this
+>> patch set. Kasan has possibility to detect out-of-bounds
+>> accesses on global/stack variables. Neither
+>> kmemcheck/debug_pagealloc or slub_debug could do that.
+>>
+>> > That's in a 20-year-old code base, so one new minor bug discovered per
+>> > three years?  Not worth it!
+>> >
+>> > Presumably more bugs will be exposed as more people use kasan on
+>> > different kernel configs, but will their number and seriousness justify
+>> > the maintenance effort?
+>> >
+>>
+>> Yes, AFAIK there are only few users of kasan now, and I guess that
+>> only small part of kernel code
+>> was covered by it.
+>> IMO kasan shouldn't take a lot maintenance efforts, most part of code
+>> is isolated and it doesn't
+>> have some complex dependencies on in-kernel API.
+>> And you could always just poke me, I'd be happy to sort out any issues.
+>>
+>> > If kasan will permit us to remove kmemcheck/debug_pagealloc/slub_debug
+>> > then that tips the balance a little.  What's the feasibility of that?
+>> >
+>>
+>> I think kasan could replace kmemcheck at some point.
+>
+> So that angle sounds interesting, because kmemcheck is
+> essentially unmaintained right now: in the last 3 years since
+> v3.0 arch/x86/mm/kmemcheck/ has not seen a single kmemcheck
+> specific change, only 4 incidental changes.
+>
+> kmemcheck is also very architecture bound and somewhat fragile
+> due to having to decode instructions, so if generic, compiler
+> driven instrumentation can replace it, that would be a plus.
 
-I've just realized that patch c167caf8d174 (PCI/MSI: Remove useless
-bus->msi assignment) completely breaks MSI on arm64 when using the new
-MSI stacked domain:
+Hi Andrew, Ingo,
 
-This patch relies on architectures to implement either
-pcibios_msi_controller() or arch_setup_msi_irq(). It turns out that with
-stacked domains, none of this is actually necessary, as long as you can
-access to the msi_controller.
+I understand your concerns about added complexity.
 
-And everything was fine until this patch came around (and managed to
-test on a system where the PCI devices are not directly attached to the
-root bus). Of course, everything now breaks, as we cannot get to the MSI
-controller (which contains the domain we allocate the MSIs from).
+Let me provide some background first.
+We've developed the set of tools, AddressSanitizer (Asan),
+ThreadSanitizer and MemorySanitizer, for user space. We actively use
+them for testing inside of Google (continuous testing, fuzzing,
+running prod services). To date the tools have found more than 10'000
+scary bugs in Chromium, Google internal codebase and various
+open-source projects (Firefox, OpenSSL, gcc, clang, ffmpeg, MySQL and
+lots of others):
+https://code.google.com/p/address-sanitizer/wiki/FoundBugs
+https://code.google.com/p/thread-sanitizer/wiki/FoundBugs
+https://code.google.com/p/memory-sanitizer/wiki/FoundBugs
+The tools are part of both gcc and clang compilers.
 
-In short, this patch breaks an important feature on which arm64 relies,
-and I believe this patch should be reverted ASAP.
+We have not yet done massive testing under the Kernel AddressSanitizer
+(it's kind of chicken and egg problem, you need it to be upstream to
+start applying it extensively). To date it has found about 50 bugs.
+Bugs that we've found in upstream kernel are listed here:
+https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel#Trophies
+We've also found ~20 bugs in out internal version of the kernel. Also
+people from Samsung and Oracle have found some. It's somewhat expected
+that when we boot the kernel and run a trivial workload, we do not
+find hundreds of bugs -- most of the harmful bugs in kernel codebase
+were already fixed the hard way (the kernel is quite stable, right).
+Based on our experience with user-space version of the tool, most of
+the bugs will be discovered by continuously testing new code (new bugs
+discovered the easy way), running fuzzers (that can discover existing
+bugs that are not hit frequently enough) and running end-to-end tests
+of production systems.
 
-Thanks,
+As others noted, the main feature of AddressSanitizer is its
+performance due to inline compiler instrumentation and simple linear
+shadow memory. User-space Asan has ~2x slowdown on computational
+programs and ~2x memory consumption increase. Taking into account that
+kernel usually consumes only small fraction of CPU and memory when
+running real user-space programs, I would expect that kernel Asan will
+have ~10-30% slowdown and similar memory consumption increase (when we
+finish all tuning).
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+I agree that Asan can well replace kmemcheck. We have plans to start
+working on Kernel MemorySanitizer that finds uses of unitialized
+memory. Asan+Msan will provide feature-parity with kmemcheck. As
+others noted, Asan will unlikely replace debug slab and pagealloc that
+can be enabled at runtime. Asan uses compiler instrumentation, so even
+if it is disabled, it still incurs visible overheads.
+
+Asan technology is easily portable to other architectures. Compiler
+instrumentation is fully portable. Runtime has some arch-dependent
+parts like shadow mapping and atomic operation interception. They are
+relatively easy to port.
+
+Thanks
