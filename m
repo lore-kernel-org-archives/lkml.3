@@ -1,112 +1,507 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211AbaKTPvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 10:51:00 -0500
-Received: from mout.web.de ([212.227.15.4]:59144 "EHLO mout.web.de"
+	id S1757503AbaKTQBe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 11:01:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60910 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756904AbaKTPu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 10:50:58 -0500
-Message-ID: <546E0DC8.3050906@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 16:50:32 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755212AbaKTQBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 11:01:33 -0500
+Date: Thu, 20 Nov 2014 17:01:28 +0100
+From: Jan Kara <jack@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, jack@suse.cz,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH 04/10] writeback: move backing_dev_info->wb_lock and
+ ->worklist into bdi_writeback
+Message-ID: <20141120160128.GI2330@quack.suse.cz>
+References: <1416299848-22112-1-git-send-email-tj@kernel.org>
+ <1416299848-22112-5-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Arend van Spriel <arend@broadcom.com>, Brett Rudley <brudley@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] net: brcm80211: Deletion of unnecessary checks before
- two function calls
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:kHFd/DaYUgPdTA+tIG+kg7YFtjTkOvJslt/kJPmWnEIpacSVo9P
- xn8m4Re3BtiJGzCweeW4hetKyxzwkxcYA1eEWNCnT9NanLJRLqvUz0RqK/yK08pAMO12O3a
- 7O/BAYAYU18fkP4TocGp19S3d85kmEsnT+WdY0bjG00+MNLzWTCVyDkMypiFcr1t88yptnS
- zuss9GIWRA6cpvfnpR04w==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416299848-22112-5-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 16:42:51 +0100
+On Tue 18-11-14 03:37:22, Tejun Heo wrote:
+> Currently, a bdi (backing_dev_info) embeds single wb (bdi_writeback)
+> and the role of the separation is unclear.  For cgroup support for
+> writeback IOs, a bdi will be updated to host multiple wb's where each
+> wb serves writeback IOs of a different cgroup on the bdi.  To achieve
+> that, a wb should carry all states necessary for servicing writeback
+> IOs for a cgroup independently.
+> 
+> This patch moves bdi->wb_lock and ->worklist into wb.
+> 
+> * The lock protects bdi->worklist and bdi->wb.dwork scheduling.  While
+>   moving, rename it to wb->work_lock as wb->wb_lock is confusing.
+>   Also, move wb->dwork downwards so that it's colocated with the new
+>   ->work_lock and ->work_list fields.
+> 
+> * bdi_writeback_workfn()		-> wb_workfn()
+>   bdi_wakeup_thread_delayed(bdi)	-> wb_wakeup_delayed(wb)
+>   bdi_wakeup_thread(bdi)		-> wb_wakeup(wb)
+>   bdi_queue_work(bdi, ...)		-> wb_queue_work(wb, ...)
+>   __bdi_start_writeback(bdi, ...)	-> __wb_start_writeback(wb, ...)
+>   get_next_work_item(bdi)		-> get_next_work_item(wb)
+> 
+> * bdi_wb_shutdown() is renamed to wb_shutdown() and now takes @wb.
+>   The function contained parts which belong to the containing bdi
+>   rather than the wb itself - testing cap_writeback_dirty and
+>   bdi_remove_from_list() invocation.  Those are moved to
+>   bdi_unregister().
+> 
+> * bdi_wb_{init|exit}() are renamed to wb_{init|exit}().
+>   Initializations of the moved bdi->wb_lock and ->work_list are
+>   relocated from bdi_init() to wb_init().
+> 
+> * As there's still only one bdi_writeback per backing_dev_info, all
+>   uses of bdi->state are mechanically replaced with bdi->wb.state
+>   introducing no behavior changes.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: Wu Fengguang <fengguang.wu@intel.com>
+  Does this mean you want to have per-device, per-cgroup flusher workqueues?
+Otherwise this change doesn't make sense...
 
-The functions brcmu_pkt_buf_free_skb() and release_firmware() test whether
-their argument is NULL and then return immediately. Thus the test around
-the call is not needed.
+								Honza
 
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c | 3 +--
- drivers/net/wireless/brcm80211/brcmfmac/firmware.c | 3 +--
- drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c   | 3 +--
- drivers/net/wireless/brcm80211/brcmsmac/main.c     | 3 +--
- 4 files changed, 4 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-index f55f625..8ff7037 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-@@ -2539,8 +2539,7 @@ static void brcmf_sdio_bus_stop(struct device *dev)
- 	brcmu_pktq_flush(&bus->txq, true, NULL, NULL);
- 
- 	/* Clear any held glomming stuff */
--	if (bus->glomd)
--		brcmu_pkt_buf_free_skb(bus->glomd);
-+	brcmu_pkt_buf_free_skb(bus->glomd);
- 	brcmf_sdio_free_glom(bus);
- 
- 	/* Clear rx control and wake any waiters */
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/firmware.c b/drivers/net/wireless/brcm80211/brcmfmac/firmware.c
-index 8ea9f28..3a2d014 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/firmware.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/firmware.c
-@@ -262,8 +262,7 @@ static void brcmf_fw_request_nvram_done(const struct firmware *fw, void *ctx)
- 
- fail:
- 	brcmf_dbg(TRACE, "failed: dev=%s\n", dev_name(fwctx->dev));
--	if (fwctx->code)
--		release_firmware(fwctx->code);
-+	release_firmware(fwctx->code);
- 	device_release_driver(fwctx->dev);
- 	kfree(fwctx);
- }
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c b/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
-index 8f8b937..0cb00dc 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
-@@ -506,8 +506,7 @@ static int brcmf_msgbuf_query_dcmd(struct brcmf_pub *drvr, int ifidx,
- 		memcpy(buf, skb->data, (len < msgbuf->ioctl_resp_ret_len) ?
- 				       len : msgbuf->ioctl_resp_ret_len);
- 	}
--	if (skb)
--		brcmu_pkt_buf_free_skb(skb);
-+	brcmu_pkt_buf_free_skb(skb);
- 
- 	return msgbuf->ioctl_resp_status;
- }
-diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-index 1b47482..ce538a1 100644
---- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-@@ -1009,8 +1009,7 @@ brcms_c_dotxstatus(struct brcms_c_info *wlc, struct tx_status *txs)
- 		if (txh)
- 			trace_brcms_txdesc(&wlc->hw->d11core->dev, txh,
- 					   sizeof(*txh));
--		if (p)
--			brcmu_pkt_buf_free_skb(p);
-+		brcmu_pkt_buf_free_skb(p);
- 	}
- 
- 	if (dma && queue < NFIFO) {
+> ---
+>  fs/fs-writeback.c           | 84 +++++++++++++++++++++------------------------
+>  include/linux/backing-dev.h | 12 +++----
+>  mm/backing-dev.c            | 64 +++++++++++++++++-----------------
+>  3 files changed, 77 insertions(+), 83 deletions(-)
+> 
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index daa91ae..41c9f1e 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -91,34 +91,33 @@ static inline struct inode *wb_inode(struct list_head *head)
+>  
+>  EXPORT_TRACEPOINT_SYMBOL_GPL(wbc_writepage);
+>  
+> -static void bdi_wakeup_thread(struct backing_dev_info *bdi)
+> +static void wb_wakeup(struct bdi_writeback *wb)
+>  {
+> -	spin_lock_bh(&bdi->wb_lock);
+> -	if (test_bit(WB_registered, &bdi->wb.state))
+> -		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
+> -	spin_unlock_bh(&bdi->wb_lock);
+> +	spin_lock_bh(&wb->work_lock);
+> +	if (test_bit(WB_registered, &wb->state))
+> +		mod_delayed_work(bdi_wq, &wb->dwork, 0);
+> +	spin_unlock_bh(&wb->work_lock);
+>  }
+> -static void bdi_queue_work(struct backing_dev_info *bdi,
+> -			   struct wb_writeback_work *work)
+> +static void wb_queue_work(struct bdi_writeback *wb,
+> +			  struct wb_writeback_work *work)
+>  {
+> -	trace_writeback_queue(bdi, work);
+> +	trace_writeback_queue(wb->bdi, work);
+>  
+> -	spin_lock_bh(&bdi->wb_lock);
+> -	if (!test_bit(WB_registered, &bdi->wb.state)) {
+> +	spin_lock_bh(&wb->work_lock);
+> +	if (!test_bit(WB_registered, &wb->state)) {
+>  		if (work->done)
+>  			complete(work->done);
+>  		goto out_unlock;
+>  	}
+> -	list_add_tail(&work->list, &bdi->work_list);
+> -	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
+> +	list_add_tail(&work->list, &wb->work_list);
+> +	mod_delayed_work(bdi_wq, &wb->dwork, 0);
+>  out_unlock:
+> -	spin_unlock_bh(&bdi->wb_lock);
+> +	spin_unlock_bh(&wb->work_lock);
+>  }
+>  
+> -static void
+> -__bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+> -		      bool range_cyclic, enum wb_reason reason)
+> +static void __wb_start_writeback(struct bdi_writeback *wb, long nr_pages,
+> +				 bool range_cyclic, enum wb_reason reason)
+>  {
+>  	struct wb_writeback_work *work;
+>  
+> @@ -128,8 +127,8 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+>  	 */
+>  	work = kzalloc(sizeof(*work), GFP_ATOMIC);
+>  	if (!work) {
+> -		trace_writeback_nowork(bdi);
+> -		bdi_wakeup_thread(bdi);
+> +		trace_writeback_nowork(wb->bdi);
+> +		wb_wakeup(wb);
+>  		return;
+>  	}
+>  
+> @@ -138,7 +137,7 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+>  	work->range_cyclic = range_cyclic;
+>  	work->reason	= reason;
+>  
+> -	bdi_queue_work(bdi, work);
+> +	wb_queue_work(wb, work);
+>  }
+>  
+>  /**
+> @@ -156,7 +155,7 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+>  void bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+>  			enum wb_reason reason)
+>  {
+> -	__bdi_start_writeback(bdi, nr_pages, true, reason);
+> +	__wb_start_writeback(&bdi->wb, nr_pages, true, reason);
+>  }
+>  
+>  /**
+> @@ -176,7 +175,7 @@ void bdi_start_background_writeback(struct backing_dev_info *bdi)
+>  	 * writeback as soon as there is no other work to do.
+>  	 */
+>  	trace_writeback_wake_background(bdi);
+> -	bdi_wakeup_thread(bdi);
+> +	wb_wakeup(&bdi->wb);
+>  }
+>  
+>  /*
+> @@ -848,7 +847,7 @@ static long wb_writeback(struct bdi_writeback *wb,
+>  		 * after the other works are all done.
+>  		 */
+>  		if ((work->for_background || work->for_kupdate) &&
+> -		    !list_empty(&wb->bdi->work_list))
+> +		    !list_empty(&wb->work_list))
+>  			break;
+>  
+>  		/*
+> @@ -919,18 +918,17 @@ static long wb_writeback(struct bdi_writeback *wb,
+>  /*
+>   * Return the next wb_writeback_work struct that hasn't been processed yet.
+>   */
+> -static struct wb_writeback_work *
+> -get_next_work_item(struct backing_dev_info *bdi)
+> +static struct wb_writeback_work *get_next_work_item(struct bdi_writeback *wb)
+>  {
+>  	struct wb_writeback_work *work = NULL;
+>  
+> -	spin_lock_bh(&bdi->wb_lock);
+> -	if (!list_empty(&bdi->work_list)) {
+> -		work = list_entry(bdi->work_list.next,
+> +	spin_lock_bh(&wb->work_lock);
+> +	if (!list_empty(&wb->work_list)) {
+> +		work = list_entry(wb->work_list.next,
+>  				  struct wb_writeback_work, list);
+>  		list_del_init(&work->list);
+>  	}
+> -	spin_unlock_bh(&bdi->wb_lock);
+> +	spin_unlock_bh(&wb->work_lock);
+>  	return work;
+>  }
+>  
+> @@ -1002,14 +1000,13 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
+>   */
+>  static long wb_do_writeback(struct bdi_writeback *wb)
+>  {
+> -	struct backing_dev_info *bdi = wb->bdi;
+>  	struct wb_writeback_work *work;
+>  	long wrote = 0;
+>  
+>  	set_bit(WB_writeback_running, &wb->state);
+> -	while ((work = get_next_work_item(bdi)) != NULL) {
+> +	while ((work = get_next_work_item(wb)) != NULL) {
+>  
+> -		trace_writeback_exec(bdi, work);
+> +		trace_writeback_exec(wb->bdi, work);
+>  
+>  		wrote += wb_writeback(wb, work);
+>  
+> @@ -1037,43 +1034,42 @@ static long wb_do_writeback(struct bdi_writeback *wb)
+>   * Handle writeback of dirty data for the device backed by this bdi. Also
+>   * reschedules periodically and does kupdated style flushing.
+>   */
+> -void bdi_writeback_workfn(struct work_struct *work)
+> +void wb_workfn(struct work_struct *work)
+>  {
+>  	struct bdi_writeback *wb = container_of(to_delayed_work(work),
+>  						struct bdi_writeback, dwork);
+> -	struct backing_dev_info *bdi = wb->bdi;
+>  	long pages_written;
+>  
+> -	set_worker_desc("flush-%s", dev_name(bdi->dev));
+> +	set_worker_desc("flush-%s", dev_name(wb->bdi->dev));
+>  	current->flags |= PF_SWAPWRITE;
+>  
+>  	if (likely(!current_is_workqueue_rescuer() ||
+>  		   !test_bit(WB_registered, &wb->state))) {
+>  		/*
+> -		 * The normal path.  Keep writing back @bdi until its
+> +		 * The normal path.  Keep writing back @wb until its
+>  		 * work_list is empty.  Note that this path is also taken
+> -		 * if @bdi is shutting down even when we're running off the
+> +		 * if @wb is shutting down even when we're running off the
+>  		 * rescuer as work_list needs to be drained.
+>  		 */
+>  		do {
+>  			pages_written = wb_do_writeback(wb);
+>  			trace_writeback_pages_written(pages_written);
+> -		} while (!list_empty(&bdi->work_list));
+> +		} while (!list_empty(&wb->work_list));
+>  	} else {
+>  		/*
+>  		 * bdi_wq can't get enough workers and we're running off
+>  		 * the emergency worker.  Don't hog it.  Hopefully, 1024 is
+>  		 * enough for efficient IO.
+>  		 */
+> -		pages_written = writeback_inodes_wb(&bdi->wb, 1024,
+> +		pages_written = writeback_inodes_wb(wb, 1024,
+>  						    WB_REASON_FORKER_THREAD);
+>  		trace_writeback_pages_written(pages_written);
+>  	}
+>  
+> -	if (!list_empty(&bdi->work_list))
+> +	if (!list_empty(&wb->work_list))
+>  		mod_delayed_work(bdi_wq, &wb->dwork, 0);
+>  	else if (wb_has_dirty_io(wb) && dirty_writeback_interval)
+> -		bdi_wakeup_thread_delayed(bdi);
+> +		wb_wakeup_delayed(wb);
+>  
+>  	current->flags &= ~PF_SWAPWRITE;
+>  }
+> @@ -1093,7 +1089,7 @@ void wakeup_flusher_threads(long nr_pages, enum wb_reason reason)
+>  	list_for_each_entry_rcu(bdi, &bdi_list, bdi_list) {
+>  		if (!bdi_has_dirty_io(bdi))
+>  			continue;
+> -		__bdi_start_writeback(bdi, nr_pages, false, reason);
+> +		__wb_start_writeback(&bdi->wb, nr_pages, false, reason);
+>  	}
+>  	rcu_read_unlock();
+>  }
+> @@ -1228,7 +1224,7 @@ void __mark_inode_dirty(struct inode *inode, int flags)
+>  			spin_unlock(&bdi->wb.list_lock);
+>  
+>  			if (wakeup_bdi)
+> -				bdi_wakeup_thread_delayed(bdi);
+> +				wb_wakeup_delayed(&bdi->wb);
+>  			return;
+>  		}
+>  	}
+> @@ -1318,7 +1314,7 @@ void writeback_inodes_sb_nr(struct super_block *sb,
+>  	if (sb->s_bdi == &noop_backing_dev_info)
+>  		return;
+>  	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+> -	bdi_queue_work(sb->s_bdi, &work);
+> +	wb_queue_work(&sb->s_bdi->wb, &work);
+>  	wait_for_completion(&done);
+>  }
+>  EXPORT_SYMBOL(writeback_inodes_sb_nr);
+> @@ -1402,7 +1398,7 @@ void sync_inodes_sb(struct super_block *sb)
+>  		return;
+>  	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+>  
+> -	bdi_queue_work(sb->s_bdi, &work);
+> +	wb_queue_work(&sb->s_bdi->wb, &work);
+>  	wait_for_completion(&done);
+>  
+>  	wait_sb_inodes(sb);
+> diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+> index a077a8d..6aba0d3 100644
+> --- a/include/linux/backing-dev.h
+> +++ b/include/linux/backing-dev.h
+> @@ -52,7 +52,6 @@ struct bdi_writeback {
+>  	unsigned long state;		/* Always use atomic bitops on this */
+>  	unsigned long last_old_flush;	/* last old data flush */
+>  
+> -	struct delayed_work dwork;	/* work item used for writeback */
+>  	struct list_head b_dirty;	/* dirty inodes */
+>  	struct list_head b_io;		/* parked for writeback */
+>  	struct list_head b_more_io;	/* parked for more writeback */
+> @@ -77,6 +76,10 @@ struct bdi_writeback {
+>  
+>  	struct fprop_local_percpu completions;
+>  	int dirty_exceeded;
+> +
+> +	spinlock_t work_lock;		/* protects work_list & dwork scheduling */
+> +	struct list_head work_list;
+> +	struct delayed_work dwork;	/* work item used for writeback */
+>  };
+>  
+>  struct backing_dev_info {
+> @@ -92,9 +95,6 @@ struct backing_dev_info {
+>  	unsigned int max_ratio, max_prop_frac;
+>  
+>  	struct bdi_writeback wb;  /* default writeback info for this bdi */
+> -	spinlock_t wb_lock;	  /* protects work_list & wb.dwork scheduling */
+> -
+> -	struct list_head work_list;
+>  
+>  	struct device *dev;
+>  
+> @@ -118,9 +118,9 @@ int __must_check bdi_setup_and_register(struct backing_dev_info *, char *, unsig
+>  void bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+>  			enum wb_reason reason);
+>  void bdi_start_background_writeback(struct backing_dev_info *bdi);
+> -void bdi_writeback_workfn(struct work_struct *work);
+> +void wb_workfn(struct work_struct *work);
+>  int bdi_has_dirty_io(struct backing_dev_info *bdi);
+> -void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi);
+> +void wb_wakeup_delayed(struct bdi_writeback *wb);
+>  
+>  extern spinlock_t bdi_lock;
+>  extern struct list_head bdi_list;
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index 7b9b10e..4904456 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -278,7 +278,7 @@ int bdi_has_dirty_io(struct backing_dev_info *bdi)
+>  }
+>  
+>  /*
+> - * This function is used when the first inode for this bdi is marked dirty. It
+> + * This function is used when the first inode for this wb is marked dirty. It
+>   * wakes-up the corresponding bdi thread which should then take care of the
+>   * periodic background write-out of dirty inodes. Since the write-out would
+>   * starts only 'dirty_writeback_interval' centisecs from now anyway, we just
+> @@ -291,15 +291,15 @@ int bdi_has_dirty_io(struct backing_dev_info *bdi)
+>   * We have to be careful not to postpone flush work if it is scheduled for
+>   * earlier. Thus we use queue_delayed_work().
+>   */
+> -void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
+> +void wb_wakeup_delayed(struct bdi_writeback *wb)
+>  {
+>  	unsigned long timeout;
+>  
+>  	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
+> -	spin_lock_bh(&bdi->wb_lock);
+> -	if (test_bit(WB_registered, &bdi->wb.state))
+> -		queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
+> -	spin_unlock_bh(&bdi->wb_lock);
+> +	spin_lock_bh(&wb->work_lock);
+> +	if (test_bit(WB_registered, &wb->state))
+> +		queue_delayed_work(bdi_wq, &wb->dwork, timeout);
+> +	spin_unlock_bh(&wb->work_lock);
+>  }
+>  
+>  /*
+> @@ -352,30 +352,22 @@ EXPORT_SYMBOL(bdi_register_dev);
+>  /*
+>   * Remove bdi from the global list and shutdown any threads we have running
+>   */
+> -static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+> +static void wb_shutdown(struct bdi_writeback *wb)
+>  {
+> -	if (!bdi_cap_writeback_dirty(bdi))
+> -		return;
+> -
+> -	/*
+> -	 * Make sure nobody finds us on the bdi_list anymore
+> -	 */
+> -	bdi_remove_from_list(bdi);
+> -
+>  	/* Make sure nobody queues further work */
+> -	spin_lock_bh(&bdi->wb_lock);
+> -	clear_bit(WB_registered, &bdi->wb.state);
+> -	spin_unlock_bh(&bdi->wb_lock);
+> +	spin_lock_bh(&wb->work_lock);
+> +	clear_bit(WB_registered, &wb->state);
+> +	spin_unlock_bh(&wb->work_lock);
+>  
+>  	/*
+> -	 * Drain work list and shutdown the delayed_work.  At this point,
+> -	 * @bdi->bdi_list is empty telling bdi_Writeback_workfn() that @bdi
+> -	 * is dying and its work_list needs to be drained no matter what.
+> +	 * Drain work list and shutdown the delayed_work.  !WB_registered
+> +	 * tells wb_workfn() that @wb is dying and its work_list needs to
+> +	 * be drained no matter what.
+>  	 */
+> -	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
+> -	flush_delayed_work(&bdi->wb.dwork);
+> -	WARN_ON(!list_empty(&bdi->work_list));
+> -	WARN_ON(delayed_work_pending(&bdi->wb.dwork));
+> +	mod_delayed_work(bdi_wq, &wb->dwork, 0);
+> +	flush_delayed_work(&wb->dwork);
+> +	WARN_ON(!list_empty(&wb->work_list));
+> +	WARN_ON(delayed_work_pending(&wb->dwork));
+>  }
+>  
+>  /*
+> @@ -400,7 +392,12 @@ void bdi_unregister(struct backing_dev_info *bdi)
+>  		trace_writeback_bdi_unregister(bdi);
+>  		bdi_prune_sb(bdi);
+>  
+> -		bdi_wb_shutdown(bdi);
+> +		if (bdi_cap_writeback_dirty(bdi)) {
+> +			/* make sure nobody finds us on the bdi_list anymore */
+> +			bdi_remove_from_list(bdi);
+> +			wb_shutdown(&bdi->wb);
+> +		}
+> +
+>  		bdi_debug_unregister(bdi);
+>  		device_unregister(bdi->dev);
+>  		bdi->dev = NULL;
+> @@ -413,7 +410,7 @@ EXPORT_SYMBOL(bdi_unregister);
+>   */
+>  #define INIT_BW		(100 << (20 - PAGE_SHIFT))
+>  
+> -static int bdi_wb_init(struct bdi_writeback *wb, struct backing_dev_info *bdi)
+> +static int wb_init(struct bdi_writeback *wb, struct backing_dev_info *bdi)
+>  {
+>  	int i, err;
+>  
+> @@ -425,7 +422,6 @@ static int bdi_wb_init(struct bdi_writeback *wb, struct backing_dev_info *bdi)
+>  	INIT_LIST_HEAD(&wb->b_io);
+>  	INIT_LIST_HEAD(&wb->b_more_io);
+>  	spin_lock_init(&wb->list_lock);
+> -	INIT_DELAYED_WORK(&wb->dwork, bdi_writeback_workfn);
+>  
+>  	wb->bw_time_stamp = jiffies;
+>  	wb->balanced_dirty_ratelimit = INIT_BW;
+> @@ -433,6 +429,10 @@ static int bdi_wb_init(struct bdi_writeback *wb, struct backing_dev_info *bdi)
+>  	wb->write_bandwidth = INIT_BW;
+>  	wb->avg_write_bandwidth = INIT_BW;
+>  
+> +	spin_lock_init(&wb->work_lock);
+> +	INIT_LIST_HEAD(&wb->work_list);
+> +	INIT_DELAYED_WORK(&wb->dwork, wb_workfn);
+> +
+>  	err = fprop_local_init_percpu(&wb->completions, GFP_KERNEL);
+>  	if (err)
+>  		return err;
+> @@ -450,7 +450,7 @@ static int bdi_wb_init(struct bdi_writeback *wb, struct backing_dev_info *bdi)
+>  	return 0;
+>  }
+>  
+> -static void bdi_wb_exit(struct bdi_writeback *wb)
+> +static void wb_exit(struct bdi_writeback *wb)
+>  {
+>  	int i;
+>  
+> @@ -471,11 +471,9 @@ int bdi_init(struct backing_dev_info *bdi)
+>  	bdi->min_ratio = 0;
+>  	bdi->max_ratio = 100;
+>  	bdi->max_prop_frac = FPROP_FRAC_BASE;
+> -	spin_lock_init(&bdi->wb_lock);
+>  	INIT_LIST_HEAD(&bdi->bdi_list);
+> -	INIT_LIST_HEAD(&bdi->work_list);
+>  
+> -	err = bdi_wb_init(&bdi->wb, bdi);
+> +	err = wb_init(&bdi->wb, bdi);
+>  	if (err)
+>  		return err;
+>  
+> @@ -510,7 +508,7 @@ void bdi_destroy(struct backing_dev_info *bdi)
+>  	}
+>  
+>  	bdi_unregister(bdi);
+> -	bdi_wb_exit(&bdi->wb);
+> +	wb_exit(&bdi->wb);
+>  }
+>  EXPORT_SYMBOL(bdi_destroy);
+>  
+> -- 
+> 1.9.3
+> 
 -- 
-2.1.3
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
