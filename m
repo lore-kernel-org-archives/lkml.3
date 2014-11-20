@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493AbaKTP1f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 10:27:35 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:7721 "EHLO
+	id S932454AbaKTP1e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 10:27:34 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:62952 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757404AbaKTP1U (ORCPT
+	by vger.kernel.org with ESMTP id S1757382AbaKTP1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 10:27:20 -0500
-Message-Id: <20141120152717.230678989@goodmis.org>
+	Thu, 20 Nov 2014 10:27:19 -0500
+Message-Id: <20141120152717.083069310@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 20 Nov 2014 10:21:30 -0500
+Date: Thu, 20 Nov 2014 10:21:29 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: [for-next][PATCH 10/15] tracing: Have seq_buf use full buffer
+Subject: [for-next][PATCH 09/15] seq_buf: Add seq_buf_can_fit() helper function
 References: <20141120152120.168868031@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0010-tracing-Have-seq_buf-use-full-buffer.patch
+Content-Disposition: inline; filename=0009-seq_buf-Add-seq_buf_can_fit-helper-function.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,82 +27,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Currently seq_buf is full when all but one byte of the buffer is
-filled. Change it so that the seq_buf is full when all of the
-buffer is filled.
+Add a seq_buf_can_fit() helper function that removes the possible mistakes
+of comparing the seq_buf length plus added data compared to the size of
+the buffer.
 
-Some of the functions would fill the buffer completely and report
-everything was fine. This was inconsistent with the max of size - 1.
-Changing this to be max of size makes all functions consistent.
+Link: http://lkml.kernel.org/r/20141118164025.GL23958@pathway.suse.cz
 
-Link: http://lkml.kernel.org/r/20141104160222.502133196@goodmis.org
-Link: http://lkml.kernel.org/r/20141114011412.811957882@goodmis.org
-
-Tested-by: Jiri Kosina <jkosina@suse.cz>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
 Reviewed-by: Petr Mladek <pmladek@suse.cz>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/seq_buf.h | 6 +++---
- kernel/trace/seq_buf.c  | 9 ++++++---
- 2 files changed, 9 insertions(+), 6 deletions(-)
+ kernel/trace/seq_buf.c | 23 ++++++++++++++++++-----
+ 1 file changed, 18 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
-index 93718e570d4c..0800a24b4348 100644
---- a/include/linux/seq_buf.h
-+++ b/include/linux/seq_buf.h
-@@ -43,13 +43,13 @@ seq_buf_init(struct seq_buf *s, unsigned char *buf, unsigned int size)
- static inline bool
- seq_buf_has_overflowed(struct seq_buf *s)
- {
--	return s->len == s->size;
-+	return s->len > s->size;
- }
- 
- static inline void
- seq_buf_set_overflow(struct seq_buf *s)
- {
--	s->len = s->size;
-+	s->len = s->size + 1;
- }
- 
- /*
-@@ -61,7 +61,7 @@ seq_buf_buffer_left(struct seq_buf *s)
- 	if (seq_buf_has_overflowed(s))
- 		return 0;
- 
--	return (s->size - 1) - s->len;
-+	return s->size - s->len;
- }
- 
- /* How much buffer was written? */
 diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
-index 6fc9d021cbef..c53f1d5088e8 100644
+index ce17f65268ed..6fc9d021cbef 100644
 --- a/kernel/trace/seq_buf.c
 +++ b/kernel/trace/seq_buf.c
-@@ -26,7 +26,7 @@
-  */
- static bool seq_buf_can_fit(struct seq_buf *s, size_t len)
- {
--	return s->len + len < s->size;
-+	return s->len + len <= s->size;
- }
+@@ -17,6 +17,19 @@
+ #include <linux/seq_buf.h>
  
  /**
-@@ -110,8 +110,11 @@ int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
++ * seq_buf_can_fit - can the new data fit in the current buffer?
++ * @s: the seq_buf descriptor
++ * @len: The length to see if it can fit in the current buffer
++ *
++ * Returns true if there's enough unused space in the seq_buf buffer
++ * to fit the amount of new data according to @len.
++ */
++static bool seq_buf_can_fit(struct seq_buf *s, size_t len)
++{
++	return s->len + len < s->size;
++}
++
++/**
+  * seq_buf_print_seq - move the contents of seq_buf into a seq_file
+  * @m: the seq_file descriptor that is the destination
+  * @s: the seq_buf descriptor that is the source.
+@@ -48,7 +61,7 @@ int seq_buf_vprintf(struct seq_buf *s, const char *fmt, va_list args)
+ 
+ 	if (s->len < s->size) {
+ 		len = vsnprintf(s->buffer + s->len, s->size - s->len, fmt, args);
+-		if (s->len + len < s->size) {
++		if (seq_buf_can_fit(s, len)) {
+ 			s->len += len;
+ 			return 0;
+ 		}
+@@ -137,7 +150,7 @@ int seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary)
+ 
+ 	if (s->len < s->size) {
+ 		ret = bstr_printf(s->buffer + s->len, len, fmt, binary);
+-		if (s->len + ret < s->size) {
++		if (seq_buf_can_fit(s, ret)) {
+ 			s->len += ret;
+ 			return 0;
+ 		}
+@@ -161,7 +174,7 @@ int seq_buf_puts(struct seq_buf *s, const char *str)
+ 
  	WARN_ON(s->size == 0);
  
- 	/*
--	 * The last byte of the buffer is used to determine if we
--	 * overflowed or not.
-+	 * Note, because bitmap_scnprintf() only returns the number of bytes
-+	 * written and not the number that would be written, we use the last
-+	 * byte of the buffer to let us know if we overflowed. There's a small
-+	 * chance that the bitmap could have fit exactly inside the buffer, but
-+	 * it's not that critical if that does happen.
- 	 */
- 	if (len > 1) {
- 		ret = bitmap_scnprintf(s->buffer + s->len, len, maskp, nmaskbits);
+-	if (s->len + len < s->size) {
++	if (seq_buf_can_fit(s, len)) {
+ 		memcpy(s->buffer + s->len, str, len);
+ 		s->len += len;
+ 		return 0;
+@@ -183,7 +196,7 @@ int seq_buf_putc(struct seq_buf *s, unsigned char c)
+ {
+ 	WARN_ON(s->size == 0);
+ 
+-	if (s->len + 1 < s->size) {
++	if (seq_buf_can_fit(s, 1)) {
+ 		s->buffer[s->len++] = c;
+ 		return 0;
+ 	}
+@@ -207,7 +220,7 @@ int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len)
+ {
+ 	WARN_ON(s->size == 0);
+ 
+-	if (s->len + len < s->size) {
++	if (seq_buf_can_fit(s, len)) {
+ 		memcpy(s->buffer + s->len, mem, len);
+ 		s->len += len;
+ 		return 0;
 -- 
 2.1.1
 
