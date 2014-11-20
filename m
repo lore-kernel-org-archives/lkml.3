@@ -1,112 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400AbaKTWyN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 17:54:13 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:34332 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757222AbaKTWyI (ORCPT
+	id S1757331AbaKTXAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 18:00:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48056 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756141AbaKTXAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 17:54:08 -0500
-Message-ID: <546E7120.5080505@gmail.com>
-Date: Thu, 20 Nov 2014 14:54:24 -0800
-From: Rajat Jain <rajatxjain@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-CC: Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>,
-        Rajat Jain <rajatxjain@gmail.com>
-Subject: [PATCH v2] PCI: pciehp: Check link state before accessing device
- during removal
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 20 Nov 2014 18:00:36 -0500
+Date: Thu, 20 Nov 2014 15:00:33 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dmitry Vyukov <dvyukov@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrey Ryabinin <ryabinin.a.a@gmail.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory
+ debugger.
+Message-Id: <20141120150033.4cd1ca25be4a9b00a7074149@linux-foundation.org>
+In-Reply-To: <CACT4Y+aOKzq0AzvSJrRC-iU9LmmtLzxY=pxzu8f4oT-OZk=oLA@mail.gmail.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+	<1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
+	<5461B906.1040803@samsung.com>
+	<20141118125843.434c216540def495d50f3a45@linux-foundation.org>
+	<CAPAsAGwZtfzx5oM73bOi_kw5BqXrwGd_xmt=m6xxU6uECA+H9Q@mail.gmail.com>
+	<20141120090356.GA6690@gmail.com>
+	<CACT4Y+aOKzq0AzvSJrRC-iU9LmmtLzxY=pxzu8f4oT-OZk=oLA@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While removing a card, we can't assume the presence to mean that the
-access to card is OK. That is because the cause of removal may be a
-link down event, and the card may still be physically present. Thus,
-instead of presence, use the link state to decide whether or not it is
-OK to access the card devices.
+On Thu, 20 Nov 2014 20:32:30 +0400 Dmitry Vyukov <dvyukov@google.com> wrote:
 
-Here are the problem symptoms:
-During the removal of a card due to link down, sometimes the following
-error is seen (because pciehp_unconfigure_device() reads 0xFF from
-bridge control register as the link is down, which cause it to assume
-that the VGA bit is set):
+> Let me provide some background first.
 
-pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
-pciehp 0000:21:05.0:pcie24: Data Link Layer State change
-pciehp 0000:21:05.0:pcie24: slot(5): Link Down event
-pciehp 0000:21:05.0:pcie24: Disabling domain:bus:device=0000:60:00
-pciehp 0000:21:05.0:pcie24: pciehp_unconfigure_device: domain:bus:dev = 0000:60:00
-pciehp 0000:21:05.0:pcie24: Cannot remove display device 0000:60:00.0
+Well that was useful.  Andrey, please slurp Dmitry's info into the 0/n
+changelog?
 
-Ofcourse, when the link comes back up, the device addition fails too:
+Also, some quantitative info about the kmemleak overhead would be
+useful.
 
-pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
-pciehp 0000:21:05.0:pcie24: Data Link Layer State change
-pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
-pciehp 0000:21:05.0:pcie24: slot(5): Link Up event
-pciehp 0000:21:05.0:pcie24: Enabling domain:bus:device=0000:60:00
-pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
-pciehp 0000:21:05.0:pcie24: pciehp_check_link_status: lnk_status = 6011
-pciehp 0000:21:05.0:pcie24: Device 0000:60:00.0 already exists at 0000:60:00, cannot hot-add
-pciehp 0000:21:05.0:pcie24: Cannot add device at 0000:60:00
+In this discussion you've mentioned a few planned kasan enhancements. 
+Please also list those and attempt to describe the amount of effort and
+complexity levels.  Partly so other can understand the plans and partly
+so we can see what we're semi-committing ourselves to if we merge this
+stuff.
 
-The problem is not seen with this patch applied. The device removal and
-insertion works as expected.
-
-Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-Signed-off-by: Guenter Roeck <groeck@juniper.net>
----
-v2: Use the already initialized "ctrl" instead of "p_slot->ctrl"
-
- drivers/pci/hotplug/pciehp_pci.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
-index 9e69403..911f85b 100644
---- a/drivers/pci/hotplug/pciehp_pci.c
-+++ b/drivers/pci/hotplug/pciehp_pci.c
-@@ -77,7 +77,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
- {
- 	int rc = 0;
- 	u8 bctl = 0;
--	u8 presence = 0;
-+	bool link_active = false;
- 	struct pci_dev *dev, *temp;
- 	struct pci_bus *parent = p_slot->ctrl->pcie->port->subordinate;
- 	u16 command;
-@@ -85,7 +85,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
- 
- 	ctrl_dbg(ctrl, "%s: domain:bus:dev = %04x:%02x:00\n",
- 		 __func__, pci_domain_nr(parent), parent->number);
--	pciehp_get_adapter_status(p_slot, &presence);
-+	link_active = pciehp_check_link_active(ctrl);
- 
- 	pci_lock_rescan_remove();
- 
-@@ -98,7 +98,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
- 	list_for_each_entry_safe_reverse(dev, temp, &parent->devices,
- 					 bus_list) {
- 		pci_dev_get(dev);
--		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && presence) {
-+		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && link_active) {
- 			pci_read_config_byte(dev, PCI_BRIDGE_CONTROL, &bctl);
- 			if (bctl & PCI_BRIDGE_CTL_VGA) {
- 				ctrl_err(ctrl,
-@@ -114,7 +114,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
- 		 * Ensure that no new Requests will be generated from
- 		 * the device.
- 		 */
--		if (presence) {
-+		if (link_active) {
- 			pci_read_config_word(dev, PCI_COMMAND, &command);
- 			command &= ~(PCI_COMMAND_MASTER | PCI_COMMAND_SERR);
- 			command |= PCI_COMMAND_INTX_DISABLE;
--- 
-1.7.9.5
 
