@@ -1,143 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551AbaKTBFm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 20:05:42 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54118 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756174AbaKTBFk convert rfc822-to-8bit (ORCPT
+	id S1756648AbaKTBGN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 20:06:13 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:14547 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756538AbaKTBGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 20:05:40 -0500
-Content-Type: text/plain; charset="utf-8"
+	Wed, 19 Nov 2014 20:06:12 -0500
+Date: Wed, 19 Nov 2014 20:06:04 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: byungchul.park@lge.com
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, seungho1.park@lge.com,
+        jolsa@redhat.com
+Subject: Re: [PATCH v5 2/2] tracing: add additional marks to signal very
+ large time
+Message-ID: <20141119200604.6b57266d@gandalf.local.home>
+In-Reply-To: <1416442535-31188-3-git-send-email-byungchul.park@lge.com>
+References: <1416442535-31188-1-git-send-email-byungchul.park@lge.com>
+	<1416442535-31188-3-git-send-email-byungchul.park@lge.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Scott Branden <sbranden@broadcom.com>,
-        "Christian Daudt" <bcm@fixthebug.org>,
-        "Matt Porter" <mporter@linaro.org>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        bcm-kernel-feedback-list@broadcom.com, "Alex Elder" <elder@linaro.org>,
-        "Rob Herring" <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Joe Perches" <joe@perches.com>,
-        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
-        "Antti Palosaari" <crope@iki.fi>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1414538111-11668-3-git-send-email-sbranden@broadcom.com>
-Cc: "JD Zheng" <jdzheng@broadcom.com>, "Ray Jui" <rjui@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        "Jonathan Richardson" <jonathar@broadcom.com>,
-        "Scott Branden" <sbranden@broadcom.com>
-References: <Scott Branden <sbranden@broadcom.com>
- <1414538111-11668-1-git-send-email-sbranden@broadcom.com>
- <1414538111-11668-3-git-send-email-sbranden@broadcom.com>
-Message-ID: <20141120010534.12298.10042@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v9 2/8] dt-bindings: Document Broadcom Cygnus SoC and clocks
-Date: Wed, 19 Nov 2014 17:05:34 -0800
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Scott Branden (2014-10-28 16:15:05)
-> From: Jonathan Richardson <jonathar@broadcom.com>
+On Thu, 20 Nov 2014 09:15:35 +0900
+byungchul.park@lge.com wrote:
+
+> From: Byungchul Park <byungchul.park@lge.com>
 > 
-> Reviewed-by: Arun Parameswaran <aparames@broadcom.com>
-> Tested-by: Jonathan Richardson <jonathar@broadcom.com>
-> Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
-> Reviewed-by: Ray Jui <rjui@broadcom.com>
-> Signed-off-by: Scott Branden <sbranden@broadcom.com>
+> Currently, function graph tracer prints "!" or "+" just before
+> function execution time to signal a function overhead, depending
+> on the time. And some tracers tracing latency also print "!" or
+> "+" just after time to signal overhead, depending on the interval
+> between events. Even it is usually enough to do that, we sometimes
+> need to be signaled for bigger execution time than 100 micro seconds.
+> 
+> For example, I used function graph tracer to detect if there is
+> any case that exit_mm() takes too much time. I did following steps
+> in /sys/kernel/debug/tracing. It was easier to detect very big
+> excution time with patched kernel than with original kernel.
+> 
+> $ echo exit_mm > set_graph_function
+> $ echo function_graph > current_tracer
+> $ echo > trace
+> $ cat trace_pipe > $LOGFILE
+>  ... (do something and terminate logging)
+> $ grep "\\$" $LOGFILE
+>  3) $ 22082032 us |                      } /* kernel_map_pages */
+>  3) $ 22082040 us |                    } /* free_pages_prepare */
+>  3) $ 22082113 us |                  } /* free_hot_cold_page */
+>  3) $ 22083455 us |                } /* free_hot_cold_page_list */
+>  3) $ 22083895 us |              } /* release_pages */
+>  3) $ 22177873 us |            } /* free_pages_and_swap_cache */
+>  3) $ 22178929 us |          } /* unmap_single_vma */
+>  3) $ 22198885 us |        } /* unmap_vmas */
+>  3) $ 22206949 us |      } /* exit_mmap */
+>  3) $ 22207659 us |    } /* mmput */
+>  3) $ 22207793 us |  } /* exit_mm */
+> 
+> And then, it was easy to find out that a schedule-out occured by
+> sub_preempt_count() within kernel_map_pages().
+> 
+> To detect very large function exection time caused by either problematic
+> function implementation or scheduling issues, this patch can be useful.
 
-Acked-by: Michael Turquette <mturquette@linaro.org>
+Hi,
 
+Can you rebase this off of my for-next branch at:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+
+
+Also some comments below.
+
+> 
+> Signed-off-by: Byungchul Park <byungchul.park@lge.com>
 > ---
->  .../devicetree/bindings/arm/bcm/cygnus.txt         |   31 ++++++++++++++++++
->  .../devicetree/bindings/clock/bcm-cygnus-clock.txt |   34 ++++++++++++++++++++
->  2 files changed, 65 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/bcm/cygnus.txt
->  create mode 100644 Documentation/devicetree/bindings/clock/bcm-cygnus-clock.txt
+>  Documentation/trace/ftrace.txt       |   10 +++++++---
+>  kernel/trace/trace.h                 |    2 ++
+>  kernel/trace/trace_functions_graph.c |    7 +------
+>  kernel/trace/trace_output.c          |   35 +++++++++++++++++++++++++++++-----
+>  4 files changed, 40 insertions(+), 14 deletions(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/arm/bcm/cygnus.txt b/Documentation/devicetree/bindings/arm/bcm/cygnus.txt
-> new file mode 100644
-> index 0000000..4c77169
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/bcm/cygnus.txt
-> @@ -0,0 +1,31 @@
-> +Broadcom Cygnus device tree bindings
-> +------------------------------------
+> diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+> index 4da4261..64efb3e 100644
+> --- a/Documentation/trace/ftrace.txt
+> +++ b/Documentation/trace/ftrace.txt
+> @@ -680,9 +680,11 @@ The above is mostly meaningful for kernel developers.
+>  	 needs to be fixed to be only relative to the same CPU.
+>  	 The marks are determined by the difference between this
+>  	 current trace and the next trace.
+> -	  '!' - greater than preempt_mark_thresh (default 100)
+> -	  '+' - greater than 1 microsecond
+> -	  ' ' - less than or equal to 1 microsecond.
+> +	  '$' - greater than 1 second
+> +	  '#' - greater than 1000 microsecond
+> +	  '!' - greater than 100 microsecond
+> +	  '+' - greater than 10 microsecond
+> +	  ' ' - less than or equal to 10 microsecond.
+>  
+>    The rest is the same as the 'trace' file.
+>  
+> @@ -1951,6 +1953,8 @@ want, depending on your needs.
+>  
+>    + means that the function exceeded 10 usecs.
+>    ! means that the function exceeded 100 usecs.
+> +  # means that the function exceeded 1000 usecs.
+> +  $ means that the function exceeded 1 sec.
+>  
+>  
+>  - The task/pid field displays the thread cmdline and pid which
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 385391f..0aaf10d 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -719,6 +719,8 @@ enum print_line_t print_trace_line(struct trace_iterator *iter);
+>  
+>  extern unsigned long trace_flags;
+>  
+> +extern char trace_find_mark(unsigned long long duration);
 > +
+>  /* Standard output formatting function used for function return traces */
+>  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+>  
+> diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+> index cb33f46..1ecb1ad 100644
+> --- a/kernel/trace/trace_functions_graph.c
+> +++ b/kernel/trace/trace_functions_graph.c
+> @@ -822,12 +822,7 @@ print_graph_duration(unsigned long long duration, struct trace_seq *s,
+>  
+>  	/* Signal a overhead of time execution to the output */
+>  	if (flags & TRACE_GRAPH_PRINT_OVERHEAD) {
+> -		/* Duration exceeded 100 usecs */
+> -		if (duration > 100000ULL)
+> -			ret = trace_seq_puts(s, "! ");
+> -		/* Duration exceeded 10 usecs */
+> -		else if (duration > 10000ULL)
+> -			ret = trace_seq_puts(s, "+ ");
+> +		ret = trace_seq_printf(s, "%c ", trace_find_mark(duration));
+>  	}
+
+The brackets are no longer necessary. Also if you base this off of my
+for-next branch, you'll see this code changed.
+
+But you can get rid of the "duration_printed" and make the code look
+like this:
+
+	if (flags & TRACE_GRAPH_PRINT_OVERHEAD)
+		trace_seq_printf(s, "%c ", trace_find_mark(duration);
+	else
+		trace_seq_puts(s, "  ");
+
+
+>  
+>  	/*
+> diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+> index c6977d5..8d19f3d 100644
+> --- a/kernel/trace/trace_output.c
+> +++ b/kernel/trace/trace_output.c
+> @@ -124,7 +124,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
+>  
+>  	if (ret == (const char *)(trace_seq_buffer_ptr(p)))
+>  		trace_seq_printf(p, "0x%lx", val);
+> -		
 > +
-> +Boards with Cygnus SoCs shall have the following properties:
+
+Thanks for the white space clean up :-)
+
+>  	trace_seq_putc(p, 0);
+>  
+>  	return ret;
+> @@ -471,7 +471,33 @@ lat_print_generic(struct trace_seq *s, struct trace_entry *entry, int cpu)
+>  	return trace_print_lat_fmt(s, entry);
+>  }
+>  
+> -static unsigned long preempt_mark_thresh_us = 100;
+> +#undef MARK
+> +#define MARK(v, s) {.val = v, .sym = s}
+> +/* trace overhead mark */
+> +static const struct trace_mark {
+> +	unsigned long long	val; /* unit: nsec */
+> +	char			sym;
+> +} mark[] = {
+> +	MARK(1000000000ULL	, '$'), /* 1 sec */
+> +	MARK(1000000ULL		, '#'), /* 1000 usecs */
+> +	MARK(100000ULL		, '!'), /* 100 usecs */
+> +	MARK(10000ULL		, '+'), /* 10 usecs */
+> +	MARK(0ULL		, ' '), /* 0 usecs */
+> +};
+> +#undef MARK
 > +
-> +Required root node property:
+> +char trace_find_mark(unsigned long long d)
+> +{
+> +	int i;
+> +	int size = ARRAY_SIZE(mark);
 > +
-> +BCM11300
-> +compatible = "brcm,bcm11300", "brcm,cygnus";
+> +	for (i = 0; i < size; i++) {
+> +		if (d >= mark[i].val)
+> +			break;
+> +	}
 > +
-> +BCM11320
-> +compatible = "brcm,bcm11320", "brcm,cygnus";
+> +	return (i == size)? ' ' : mark[i].sym;
+
+Change this to:
+
+	/* The break from loop must have been hit */
+	if (WARN_ON_ONCE(i == size))
+		return ' ';
+
+	return mark[i].sym;
+
+-- Steve
+
+
+> +}
+>  
+>  static int
+>  lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
+> @@ -506,8 +532,7 @@ lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
+>  		return trace_seq_printf(
+>  				s, " %4lldus%c: ",
+>  				abs_ts,
+> -				rel_ts > preempt_mark_thresh_us ? '!' :
+> -				  rel_ts > 1 ? '+' : ' ');
+> +				trace_find_mark(rel_ts * NSEC_PER_USEC));
+>  	} else { /* !verbose && !in_ns */
+>  		return trace_seq_printf(s, " %4lld: ", abs_ts);
+>  	}
+> @@ -692,7 +717,7 @@ int register_ftrace_event(struct trace_event *event)
+>  				goto out;
+>  
+>  		} else {
+> -			
 > +
-> +BCM11350
-> +compatible = "brcm,bcm11350", "brcm,cygnus";
-> +
-> +BCM11360
-> +compatible = "brcm,bcm11360", "brcm,cygnus";
-> +
-> +BCM58300
-> +compatible = "brcm,bcm58300", "brcm,cygnus";
-> +
-> +BCM58302
-> +compatible = "brcm,bcm58302", "brcm,cygnus";
-> +
-> +BCM58303
-> +compatible = "brcm,bcm58303", "brcm,cygnus";
-> +
-> +BCM58305
-> +compatible = "brcm,bcm58305", "brcm,cygnus";
-> diff --git a/Documentation/devicetree/bindings/clock/bcm-cygnus-clock.txt b/Documentation/devicetree/bindings/clock/bcm-cygnus-clock.txt
-> new file mode 100644
-> index 0000000..00d26ed
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/bcm-cygnus-clock.txt
-> @@ -0,0 +1,34 @@
-> +Broadcom Cygnus Clocks
-> +
-> +This binding uses the common clock binding:
-> +Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +
-> +Currently various "fixed" clocks are declared for peripheral drivers that use
-> +the common clock framework to reference their core clocks. Proper support of
-> +these clocks will be added later
-> +
-> +Device tree example:
-> +
-> +       clocks {
-> +               #address-cells = <1>;
-> +               #size-cells = <1>;
-> +               ranges;
-> +
-> +               osc: oscillator {
-> +                       compatible = "fixed-clock";
-> +                       #clock-cells = <1>;
-> +                       clock-frequency = <25000000>;
-> +               };
-> +
-> +               apb_clk: apb_clk {
-> +                       compatible = "fixed-clock";
-> +                       #clock-cells = <0>;
-> +                       clock-frequency = <1000000000>;
-> +               };
-> +
-> +               periph_clk: periph_clk {
-> +                       compatible = "fixed-clock";
-> +                       #clock-cells = <0>;
-> +                       clock-frequency = <500000000>;
-> +               };
-> +       };
-> -- 
-> 1.7.9.5
-> 
+>  			event->type = next_event_type++;
+>  			list = &ftrace_event_list;
+>  		}
+
