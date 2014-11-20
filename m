@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531AbaKTAkw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 19:40:52 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37242 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753629AbaKTAku (ORCPT
+	id S1756446AbaKTAnu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 19:43:50 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:46379 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754641AbaKTAns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 19:40:50 -0500
+	Wed, 19 Nov 2014 19:43:48 -0500
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXwjPKcCA6t=wjyKWZbREKFTF9E-n9eRa0C39R5O8Q0PQ@mail.gmail.com>
-References: <20141118145234.GA7487@redhat.com>
-	<alpine.DEB.2.11.1411181914020.3909@nanos>
-	<20141118215540.GD35311@redhat.com>
-	<20141119021902.GA14216@redhat.com>
-	<CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
-	<20141119145902.GA13387@redhat.com>
-	<CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com>
-	<CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
-	<20141119190215.GA10796@lerouge>
-	<alpine.DEB.2.11.1411192251120.3909@nanos>
-	<20141119225615.GA11386@lerouge>
-	<alpine.DEB.2.11.1411200002330.3909@nanos>
-	<CALCETrXyrk0VBbZy48nsUWnk82wFp6gpv_zw_F=3GKSDAR7T+Q@mail.gmail.com>
-	<alpine.DEB.2.11.1411200059410.3909@nanos>
-	<CALCETrXwjPKcCA6t=wjyKWZbREKFTF9E-n9eRa0C39R5O8Q0PQ@mail.gmail.com>
-Date: Wed, 19 Nov 2014 16:40:49 -0800
-X-Google-Sender-Auth: MJnQxOZlza18z_Yv1dVxDnMkIsY
-Message-ID: <CA+55aFxi5mNNXFH20AwrgOVsT1HyuU1a63VYm6m+j0jSVr4dGQ@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
+In-Reply-To: <CAK=WgbZE7_WrsNz5E+MDX7j2tAGEjv91zeCgqhB=Jsiu0+d8vw@mail.gmail.com>
+References: <1410553499-55951-1-git-send-email-s-anna@ti.com>
+	<1410553499-55951-6-git-send-email-s-anna@ti.com>
+	<CAK=WgbZE7_WrsNz5E+MDX7j2tAGEjv91zeCgqhB=Jsiu0+d8vw@mail.gmail.com>
+Date: Wed, 19 Nov 2014 16:43:46 -0800
+Message-ID: <CAJAp7OisV3UrL45UgRb0tMudyCJHe-xsmsRYV0uGG3P4PReHnA@mail.gmail.com>
+Subject: Re: [PATCHv6 5/5] hwspinlock/omap: add support for dt nodes
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Suman Anna <s-anna@ti.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 4:30 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+On Wed, Nov 12, 2014 at 11:14 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> Hi Suman,
+[..]
 >
-> This is why I think that the grsec kernels will crash on very large
-> memory systems.  They don't seem to get this right for the kernel
-> stack, and a page fault trying to access the stack is a big no-no.
+> Does this mean you allow nodes not to have the base_id property? How
+> do we protect against multiple nodes not having a base_id property
+> then?
+>
+> Implicitly assuming a base_id value (zero in this case) may not be always safe.
+>
 
-For something like a stack, that's trivial, you could just probe it
-before the actual task switch.
+Hi Ohad,
 
-So I wouldn't worry about the kernel stack itself (although I think
-vmallocing it isn't likely worth it), I'd worry more about some other
-random dynamic percpu allocation. Although they arguably shouldn't
-happen for low-level code that cannot handle the dynamic
-pgd-population. And they generally don't.
+I still have a huge problem understanding the awesomeness with the
+"base_id". If you have a SoC with 2 hwlock blocks; say 8+8 locks, used
+for interaction with e.g. a modem and a video core respectively.
+Why would you in either remote system offset the locks with 8?
+Wouldn't e.g the modem use locks hwlock0:0-7 and video core use locks
+hwlock1:0-7?
 
-It's really tracing that tends to be a special case not because of any
-particular low-level code issue, but because instrumenting itself
-recursively tends to be a bad idea.
+What systems use more than one hwlock block and do you know of any
+reasons why these hwlocks are globally numbered?
 
-                    Linus
+Regards,
+Bjorn
