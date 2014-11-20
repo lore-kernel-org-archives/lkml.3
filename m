@@ -1,106 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757724AbaKTRR2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:17:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35369 "EHLO mx2.suse.de"
+	id S1757649AbaKTRTY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:19:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59111 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755887AbaKTRR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 12:17:27 -0500
-Date: Thu, 20 Nov 2014 18:17:32 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Jeff Epler <jepler@unpythonic.net>, Jiri Kosina <jkosina@suse.cz>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] virtio_balloon: Convert "vballoon" kthread into a
- workqueue
-Message-ID: <20141120171732.GC19165@pathway.suse.cz>
-References: <1416499397-16669-1-git-send-email-pmladek@suse.cz>
- <20141120160746.GI14877@htj.dyndns.org>
- <20141120162543.GA7466@redhat.com>
- <20141120162624.GA7479@redhat.com>
- <20141120162935.GK14877@htj.dyndns.org>
- <20141120165558.GB19165@pathway.suse.cz>
- <20141120170016.GC7495@redhat.com>
+	id S1756334AbaKTRTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 12:19:23 -0500
+Message-ID: <546E2296.1070709@redhat.com>
+Date: Thu, 20 Nov 2014 17:19:18 +0000
+From: Steven Whitehouse <swhiteho@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141120170016.GC7495@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org
+CC: cluster-devel@redhat.com
+Subject: Re: [Cluster-devel] gfs2: gfs2_dir_get_hash_table(): avoiding deferred
+ vfree() is easy here...
+References: <20141120051947.GG7996@ZenIV.linux.org.uk>
+In-Reply-To: <20141120051947.GG7996@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-11-20 19:00:16, Michael S. Tsirkin wrote:
-> On Thu, Nov 20, 2014 at 05:55:58PM +0100, Petr Mladek wrote:
-> > On Thu 2014-11-20 11:29:35, Tejun Heo wrote:
-> > > On Thu, Nov 20, 2014 at 06:26:24PM +0200, Michael S. Tsirkin wrote:
-> > > > On Thu, Nov 20, 2014 at 06:25:43PM +0200, Michael S. Tsirkin wrote:
-> > > > > On Thu, Nov 20, 2014 at 11:07:46AM -0500, Tejun Heo wrote:
-> > > > > > On Thu, Nov 20, 2014 at 05:03:17PM +0100, Petr Mladek wrote:
-> > > > > > ...
-> > > > > > > @@ -476,7 +460,6 @@ static void virtballoon_remove(struct virtio_device *vdev)
-> > > > > > >  {
-> > > > > > >  	struct virtio_balloon *vb = vdev->priv;
-> > > > > > >  
-> > > > > > > -	kthread_stop(vb->thread);
-> > > > > > >  	remove_common(vb);
-> > > > > > >  	kfree(vb);
-> > > > > > >  }
-> > > > > > 
-> > > > > > Shouldn't the work item be flushed before removal is complete?
-> > 
-> > Great catch!
-> > 
-> > > > > In fact, flushing it won't help because it can requeue itself, right?
-> > > 
-> > > There's cancel_work_sync() to stop the self-requeueing ones.
-> > 
-> > Ah, one more problem is that remove_common(vb) calls leak_balloon()
-> > that queues the work if not finished. We would need to add some flag
-> > or variant that would disable the queuing when called here.
-> > 
-> 
-> That's why Tejun suggested cancel_work_sync, IIUC it stops
-> the requeuing without need for extra flags.
+Hi,
 
-But he also wrote that it handles only self-queuing. The queuing from
-external locations need to be prevented other ways.
+All five patches now in the GFS2 -nmw tree. Thanks,
 
-> > > > From that POV a dedicated WQ kept it simple.
-> > > 
-> > > A dedicated wq doesn't do anything for that.  You can't shut down a
-> > > workqueue with a pending work item on it.  destroy_workqueue() will
-> > > try to drain the target wq, warn if it doesn't finish in certain
-> > > number of iterations and just keep trying indefinitely.
-> > 
-> > I wonder if it is guaranteed that none would trigger
-> > stats_request() or virtballoon_changed() when virtballoon_remove() is
-> > being called. I guess so because the original code would fail
-> > otherwise. The two functions access "vb->config_change"
-> > and the structure is freed in virtballoon_remove() without
-> > any protection.
-> > 
-> > I am trying to confirm this by reading the code but it is not that
-> > easy.
-> > 
-> > Best Regards,
-> > Petr
-> 
-> It's synchronized through hardware.  remove_common calls reset and
-> del_vqs which will prevent new interrupts.
+Steve.
 
-I see, it means that stats_request() or virtballoon_changed() can be
-called until vb->vdev->config->reset(vb->vdev); is called in
-remove_common().
+On 20/11/14 05:19, Al Viro wrote:
+> vfree() is allowed under spinlock these days, but it's cheaper when
+> it doesn't step into deferred case and here it's very easy to avoid.
+>
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> ---
+>   fs/gfs2/dir.c |    7 ++++---
+>   1 file changed, 4 insertions(+), 3 deletions(-)
+>
+> diff --git a/fs/gfs2/dir.c b/fs/gfs2/dir.c
+> index c247fed..c5a34f0 100644
+> --- a/fs/gfs2/dir.c
+> +++ b/fs/gfs2/dir.c
+> @@ -370,11 +370,12 @@ static __be64 *gfs2_dir_get_hash_table(struct gfs2_inode *ip)
+>   	}
+>   
+>   	spin_lock(&inode->i_lock);
+> -	if (ip->i_hash_cache)
+> -		kvfree(hc);
+> -	else
+> +	if (likely(!ip->i_hash_cache)) {
+>   		ip->i_hash_cache = hc;
+> +		hc = NULL;
+> +	}
+>   	spin_unlock(&inode->i_lock);
+> +	kvfree(hc);
+>   
+>   	return ip->i_hash_cache;
+>   }
 
-It means that fill_balloon() can be queued and proceed after we leak
-all pages and before we reset the devices in remove_common(). I have
-to think about a way how to avoid this. Maybe add some flag into
-struct virtio_balloon that would signalize that the balloon is being
-removed and new operations should not longer be queued. But there
-might be a more elegant solution.
-
-Best Regards,
-Petr
