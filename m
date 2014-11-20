@@ -1,111 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757098AbaKTOZe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 09:25:34 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:34695 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756062AbaKTOY3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 09:24:29 -0500
-Message-ID: <546DF961.3050509@roeck-us.net>
-Date: Thu, 20 Nov 2014 06:23:29 -0800
-From: Guenter Roeck <linux@roeck-us.net>
+	id S1757227AbaKTOZq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 09:25:46 -0500
+Received: from mout.web.de ([212.227.15.3]:63252 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757140AbaKTOZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 09:25:43 -0500
+Message-ID: <546DF9D7.6080801@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 15:25:27 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Eduardo Valentin <edubezval@gmail.com>,
-        Linux PM <linux-pm@vger.kernel.org>
-CC: Caesar Wang <caesar.wang@rock-chips.com>, Wei Ni <wni@nvidia.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Jean Delvare <jdelvare@suse.de>, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, lm-sensors@lm-sensors.org,
-        Rob Herring <robh+dt@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCHv5 1/1] thermal: of: improve of-thermal sensor registration
- API
-References: <1416492733-1624-1-git-send-email-edubezval@gmail.com> <1416492733-1624-2-git-send-email-edubezval@gmail.com> <20141120141806.GA1746@developer>
-In-Reply-To: <20141120141806.GA1746@developer>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
+        netdev@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] net: Hyper-V: Deletion of an unnecessary check before
+ the function call "vfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.546DF99C.0309,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 15
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-Provags-ID: V03:K0:CGH1CZHAK29iklR+VssNYWCP/ZGHlKxMce3Zxl2oSv9evPZvwnT
+ bhkiMFAiJxj91A1GReH8g7LnzMASF5y9fKq6/gv3vYjxYj2JvUl3qatL2ohSufT/aRfupql
+ Qv6IdYFAf5gOpGXjnE+Rofhhs84sIyAFN4hcNIIzhaIYHS1Q2JQnyxcbO8icx11SGszedsC
+ VL0BRG63p7Q82DNjraRgg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2014 06:18 AM, Eduardo Valentin wrote:
-> Hi Guenter,
->
-> On Thu, Nov 20, 2014 at 10:12:13AM -0400, Eduardo Valentin wrote:
->> Different drivers request API extensions in of-thermal. For this reason,
->> additional callbacks are required to fit the new drivers needs.
->>
->> The current API implementation expects the registering sensor driver
->> to provide a get_temp and get_trend callbacks as function parameters.
->> As the amount of callbacks is growing, this patch changes the existing
->> implementation to use a .ops field to hold all the of thermal callbacks
->> to sensor drivers.
->>
->> This patch also changes the existing of-thermal users to fit the new
->> API design. No functional change is introduced in this patch.
->>
->> Cc: Alexandre Courbot <gnurou@gmail.com>
->> Cc: devicetree@vger.kernel.org
->> Cc: Grant Likely <grant.likely@linaro.org>
->> Cc: Guenter Roeck <linux@roeck-us.net>
->> Cc: Jean Delvare <jdelvare@suse.de>
->> Cc: linux-kernel@vger.kernel.org
->> Cc: linux-pm@vger.kernel.org
->> Cc: linux-tegra@vger.kernel.org
->> Cc: lm-sensors@lm-sensors.org
->> Cc: Rob Herring <robh+dt@kernel.org>
->> Cc: Stephen Warren <swarren@wwwdotorg.org>
->> Cc: Thierry Reding <thierry.reding@gmail.com>
->> Cc: Zhang Rui <rui.zhang@intel.com>
->> Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
->> Reviewed-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
->> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
->> Reviewed-by: Lukasz Majewski <l.majewski@samsung.com>
->> Signed-off-by: Eduardo Valentin <edubezval@gmail.com>
->> ---
->>   drivers/hwmon/lm75.c                               |  9 +++--
->>   drivers/hwmon/ntc_thermistor.c                     |  6 +++-
->>   drivers/hwmon/tmp102.c                             |  6 +++-
->
-> Do you have objections if I queue this one for 3.19?
->
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 15:15:21 +0100
 
-No.
+The vfree() function performs also input parameter validation. Thus the test
+around the call is not needed.
 
-Guenter
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/net/hyperv/netvsc.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index da2d346..ffe7481 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -548,8 +548,7 @@ int netvsc_device_remove(struct hv_device *device)
+ 	vmbus_close(device->channel);
+ 
+ 	/* Release all resources */
+-	if (net_device->sub_cb_buf)
+-		vfree(net_device->sub_cb_buf);
++	vfree(net_device->sub_cb_buf);
+ 
+ 	kfree(net_device);
+ 	return 0;
+-- 
+2.1.3
 
