@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238AbaKTP1c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 10:27:32 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:33117 "EHLO
+	id S932426AbaKTP1a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 10:27:30 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:7562 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757412AbaKTP1U (ORCPT
+	by vger.kernel.org with ESMTP id S1757419AbaKTP1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 10:27:20 -0500
-Message-Id: <20141120152717.384414622@goodmis.org>
+	Thu, 20 Nov 2014 10:27:21 -0500
+Message-Id: <20141120152717.725803185@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 20 Nov 2014 10:21:31 -0500
+Date: Thu, 20 Nov 2014 10:21:32 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: [for-next][PATCH 11/15] tracing: Add seq_buf_get_buf() and seq_buf_commit() helper functions
+Subject: [for-next][PATCH 12/15] seq-buf: Make seq_buf_bprintf() conditional on CONFIG_BINARY_PRINTF
 References: <20141120152120.168868031@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0011-tracing-Add-seq_buf_get_buf-and-seq_buf_commit-helpe.patch
+Content-Disposition: inline; filename=0012-seq-buf-Make-seq_buf_bprintf-conditional-on-CONFIG_B.patch
 X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,100 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Add two helper functions; seq_buf_get_buf() and seq_buf_commit() that
-are used by seq_buf_path(). This makes the code similar to the
-seq_file: seq_path() function, and will help to be able to consolidate
-the functions between seq_file and trace_seq.
+The function bstr_printf() from lib/vsprnintf.c is only available if
+CONFIG_BINARY_PRINTF is defined. This is due to the only user currently
+being the tracing infrastructure, which needs to select this config
+when tracing is configured. Until there is another user of the binary
+printf formats, this will continue to be the case.
 
-Link: http://lkml.kernel.org/r/20141104160222.644881406@goodmis.org
-Link: http://lkml.kernel.org/r/20141114011412.977571447@goodmis.org
+Since seq_buf.c is now lives in lib/ and is compiled even without
+tracing, it must encompass its use of bstr_printf() which is used
+by seq_buf_printf(). This too is only used by the tracing infrastructure
+and is still encapsulated by the CONFIG_BINARY_PRINTF.
+
+Link: http://lkml.kernel.org/r/20141104160222.969013383@goodmis.org
 
 Tested-by: Jiri Kosina <jkosina@suse.cz>
 Acked-by: Jiri Kosina <jkosina@suse.cz>
 Reviewed-by: Petr Mladek <pmladek@suse.cz>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/seq_buf.h | 41 +++++++++++++++++++++++++++++++++++++++++
- kernel/trace/seq_buf.c  |  7 +++----
- 2 files changed, 44 insertions(+), 4 deletions(-)
+ include/linux/seq_buf.h | 7 +++++--
+ kernel/trace/seq_buf.c  | 2 ++
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
-index 0800a24b4348..12c64282aa98 100644
+index 12c64282aa98..9aafe0e24c68 100644
 --- a/include/linux/seq_buf.h
 +++ b/include/linux/seq_buf.h
-@@ -70,6 +70,47 @@ static inline unsigned int seq_buf_used(struct seq_buf *s)
- 	return min(s->len, s->size);
- }
- 
-+/**
-+ * seq_buf_get_buf - get buffer to write arbitrary data to
-+ * @s: the seq_buf handle
-+ * @bufp: the beginning of the buffer is stored here
-+ *
-+ * Return the number of bytes available in the buffer, or zero if
-+ * there's no space.
-+ */
-+static inline size_t seq_buf_get_buf(struct seq_buf *s, char **bufp)
-+{
-+	WARN_ON(s->len > s->size + 1);
-+
-+	if (s->len < s->size) {
-+		*bufp = s->buffer + s->len;
-+		return s->size - s->len;
-+	}
-+
-+	*bufp = NULL;
-+	return 0;
-+}
-+
-+/**
-+ * seq_buf_commit - commit data to the buffer
-+ * @s: the seq_buf handle
-+ * @num: the number of bytes to commit
-+ *
-+ * Commit @num bytes of data written to a buffer previously acquired
-+ * by seq_buf_get.  To signal an error condition, or that the data
-+ * didn't fit in the available space, pass a negative @num value.
-+ */
-+static inline void seq_buf_commit(struct seq_buf *s, int num)
-+{
-+	if (num < 0) {
-+		seq_buf_set_overflow(s);
-+	} else {
-+		/* num must be negative on overflow */
-+		BUG_ON(s->len + num > s->size);
-+		s->len += num;
-+	}
-+}
-+
- extern __printf(2, 3)
+@@ -115,8 +115,6 @@ extern __printf(2, 3)
  int seq_buf_printf(struct seq_buf *s, const char *fmt, ...);
  extern __printf(2, 0)
+ int seq_buf_vprintf(struct seq_buf *s, const char *fmt, va_list args);
+-extern int
+-seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary);
+ extern int seq_buf_print_seq(struct seq_file *m, struct seq_buf *s);
+ extern int seq_buf_to_user(struct seq_buf *s, char __user *ubuf,
+ 			   int cnt);
+@@ -130,4 +128,9 @@ extern int seq_buf_path(struct seq_buf *s, const struct path *path, const char *
+ extern int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
+ 			   int nmaskbits);
+ 
++#ifdef CONFIG_BINARY_PRINTF
++extern int
++seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary);
++#endif
++
+ #endif /* _LINUX_SEQ_BUF_H */
 diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
-index c53f1d5088e8..086f594ac890 100644
+index 086f594ac890..4eedfedb9e31 100644
 --- a/kernel/trace/seq_buf.c
 +++ b/kernel/trace/seq_buf.c
-@@ -293,8 +293,8 @@ int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
-  */
- int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
- {
--	char *buf = s->buffer + s->len;
--	size_t size = seq_buf_buffer_left(s);
-+	char *buf;
-+	size_t size = seq_buf_get_buf(s, &buf);
- 	int res = -1;
- 
- 	WARN_ON(s->size == 0);
-@@ -307,8 +307,7 @@ int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
- 				res = end - buf;
- 		}
- 	}
--	if (res > 0)
--		s->len += res;
-+	seq_buf_commit(s, res);
- 
- 	return res;
+@@ -127,6 +127,7 @@ int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
+ 	return -1;
  }
+ 
++#ifdef CONFIG_BINARY_PRINTF
+ /**
+  * seq_buf_bprintf - Write the printf string from binary arguments
+  * @s: seq_buf descriptor
+@@ -161,6 +162,7 @@ int seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary)
+ 	seq_buf_set_overflow(s);
+ 	return -1;
+ }
++#endif /* CONFIG_BINARY_PRINTF */
+ 
+ /**
+  * seq_buf_puts - sequence printing of simple string
 -- 
 2.1.1
 
