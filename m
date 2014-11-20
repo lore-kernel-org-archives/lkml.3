@@ -1,92 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758016AbaKTU07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 15:26:59 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:49782 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291AbaKTU05 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 15:26:57 -0500
+	id S1758069AbaKTU1Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 15:27:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48478 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756845AbaKTU1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 15:27:13 -0500
+Date: Thu, 20 Nov 2014 15:27:06 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH block/for-next 3/4] cgroup, block: implement
+ task_get_css() and use it in bio_associate_current()
+Message-ID: <20141120202706.GD11595@redhat.com>
+References: <20141117211321.GD23126@htj.dyndns.org>
+ <20141117211357.GE23126@htj.dyndns.org>
+ <20141117211546.GF23126@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <7hh9xtr5ac.fsf@deeprootsystems.com>
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
-	<1709760.E0jX3Myv0h@wuerfel>
-	<546C7FDD.7030906@ti.com>
-	<2900095.WIocOu7ue2@wuerfel>
-	<CAPDyKFqeZ3YU2OEN4tCOdcQ0pAho67Q8U_eCEOroG9aS0mp+-Q@mail.gmail.com>
-	<546DD87B.3080806@ti.com>
-	<CAPDyKFrBhZyqozM98_4pPdW0EMFt5W6VX1X7cz6Z=yNhW4vYTA@mail.gmail.com>
-	<CAMuHMdWtHT7QX3Kpa-GCLa49ToGODwjnNVgfxDzJzcM-FU1ffg@mail.gmail.com>
-	<546E0970.5090301@ti.com>
-	<7hh9xtr5ac.fsf@deeprootsystems.com>
-Date: Thu, 20 Nov 2014 21:26:55 +0100
-X-Google-Sender-Auth: VwDmOm1-R3_XoyChmV17acRqfKg
-Message-ID: <CAMuHMdV7zASj8_NtLRir1VubXEKTkq0vBGMXeYXDACu8UC2tZA@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        ssantosh@kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141117211546.GF23126@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+On Mon, Nov 17, 2014 at 04:15:46PM -0500, Tejun Heo wrote:
+> bio_associate_current() currently open codes task_css() and
+> css_tryget_online() to find and pin $current's blkcg css.  Abstract it
+> into task_get_css() which is implemented from cgroup side.  As a task
+> is always associated with an online css for every subsystem except
+> while the css_set update is propagating, task_get_css() retries till
+> css_tryget_online() succeeds.
+> 
+> This is a cleanup and shouldn't lead to noticeable behavior changes.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
 
-On Thu, Nov 20, 2014 at 9:22 PM, Kevin Hilman <khilman@kernel.org> wrote:
-> Grygorii Strashko <grygorii.strashko@ti.com> writes:
->> On 11/20/2014 03:32 PM, Geert Uytterhoeven wrote:
->>> On Thu, Nov 20, 2014 at 2:12 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->
-> [...]
->
->>>> So I really think we need to decide on how to address the split of the
->>>> device clocks. Before that's done, I don't think it make sense to add
->>>> a "simple-pmdomain" compatible, since it will likely not be that many
->>>> SoC that can use it.
->>>>
->>>> So, does anyone have a suggestion on how to deal with the split of the
->>>> device clocks into "functional" clocks and into "PM" clocks?
->>
->> Would it be better to say "functional" and "optional"? In my opinion
->> "PM" == "functional". Also, such clock's separation is used in TRM/DM/UMs on HW.
->
-> Yes!  I really don't like the name "PM" clock, since it's not at all
-> obvious what that means.  To me, "PM" == "functional" as well.
->
-> So what exactly are we talking about with "PM" clocks, and why are they
-> "special" when it comes to PM domains?  IOW, why are the clocks to be
-> managed during PM domain transitions for a given device any different
-> than the clocks that need to be managed for a runtime suspend/resume (or
-> system suspend/resume) sequence for the same device?
+Looks good to me.
 
-(Speaking for my case, shmobile)
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-They're not. The clocks to be managed during PM domain transitions are the
-same as the clocks that need to be managed for a runtime suspend/resume
-(or system suspend/resume) sequence.
+Vivek
 
-The special thing is that this is more a platform than a driver thing: the same
-module may have a "PM/functional" clock (that is documented to enable/disable
-the module) on one Soc, but not on another.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> ---
+> Hello,
+> 
+> This one can be routed through either cgroup or block tree but I think
+> it'd be easier to route this through block as there will be more block
+> changes in the area.
+> 
+> Thanks.
+> 
+>  block/bio.c            |   11 +----------
+>  include/linux/cgroup.h |   25 +++++++++++++++++++++++++
+>  2 files changed, 26 insertions(+), 10 deletions(-)
+> 
+> --- a/block/bio.c
+> +++ b/block/bio.c
+> @@ -1997,7 +1997,6 @@ EXPORT_SYMBOL(bioset_create_nobvec);
+>  int bio_associate_current(struct bio *bio)
+>  {
+>  	struct io_context *ioc;
+> -	struct cgroup_subsys_state *css;
+>  
+>  	if (bio->bi_ioc)
+>  		return -EBUSY;
+> @@ -2006,17 +2005,9 @@ int bio_associate_current(struct bio *bi
+>  	if (!ioc)
+>  		return -ENOENT;
+>  
+> -	/* acquire active ref on @ioc and associate */
+>  	get_io_context_active(ioc);
+>  	bio->bi_ioc = ioc;
+> -
+> -	/* associate blkcg if exists */
+> -	rcu_read_lock();
+> -	css = task_css(current, blkio_cgrp_id);
+> -	if (css && css_tryget_online(css))
+> -		bio->bi_css = css;
+> -	rcu_read_unlock();
+> -
+> +	bio->bi_css = task_get_css(current, blkio_cgrp_id);
+>  	return 0;
+>  }
+>  
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -748,6 +748,31 @@ static inline struct cgroup_subsys_state
+>  }
+>  
+>  /**
+> + * task_get_css - find and get the css for (task, subsys)
+> + * @task: the target task
+> + * @subsys_id: the target subsystem ID
+> + *
+> + * Find the css for the (@task, @subsys_id) combination, increment a
+> + * reference on and return it.  This function is guaranteed to return a
+> + * valid css.
+> + */
+> +static inline struct cgroup_subsys_state *
+> +task_get_css(struct task_struct *task, int subsys_id)
+> +{
+> +	struct cgroup_subsys_state *css;
+> +
+> +	rcu_read_lock();
+> +	while (true) {
+> +		css = task_css(task, subsys_id);
+> +		if (likely(css_tryget_online(css)))
+> +			break;
+> +		cpu_relax();
+> +	}
+> +	rcu_read_unlock();
+> +	return css;
+> +}
+> +
+> +/**
+>   * task_css_is_root - test whether a task belongs to the root css
+>   * @task: the target task
+>   * @subsys_id: the target subsystem ID
