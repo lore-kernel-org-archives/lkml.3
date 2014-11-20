@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757565AbaKTSOi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 13:14:38 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:43057 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755887AbaKTSOh (ORCPT
+	id S1757813AbaKTSQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 13:16:26 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:48880 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757419AbaKTSQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 13:14:37 -0500
-Date: Thu, 20 Nov 2014 10:14:33 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
-Subject: Re: [PATCH v4 2/4] mtd: nand: gpmi: add gpmi_move_bits function
-Message-ID: <20141120181433.GF24364@ld-irv-0074>
-References: <1413794777-32220-1-git-send-email-boris.brezillon@free-electrons.com>
- <1413794777-32220-3-git-send-email-boris.brezillon@free-electrons.com>
- <20141120092209.GD3212@norris-Latitude-E6410>
- <20141120104253.23b543d8@bbrezillon>
+	Thu, 20 Nov 2014 13:16:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141120104253.23b543d8@bbrezillon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <546DD783.2030902@collabora.co.uk>
+References: <1416238213-15263-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1416238213-15263-3-git-send-email-javier.martinez@collabora.co.uk>
+ <20141118142645.GD24004@x1> <546DD783.2030902@collabora.co.uk>
+From: Bill Richardson <wfrichar@chromium.org>
+Date: Thu, 20 Nov 2014 10:16:03 -0800
+X-Google-Sender-Auth: uB1vrhszeBXEWPrjE_gV6Q9czq4
+Message-ID: <CAEgFhe+DQrJ6HqGF1_OWZ77Qs-hZLNgX1bHpx5FOt-y-3xh8gA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] mfd: cros_ec: Create sysfs attributes for the
+ ChromeOS EC.
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 10:42:53AM +0100, Boris Brezillon wrote:
-> On Thu, 20 Nov 2014 01:22:09 -0800 Brian Norris <computersforpeace@gmail.com> wrote:
-> > On Mon, Oct 20, 2014 at 10:46:15AM +0200, Boris Brezillon wrote:
-> > > Add a new function to move bits (not bytes) from a memory region to
-> > > another one.
-> > > This function is similar to memmove except it acts at bit level.
-> > > This function is needed to implement GPMI raw access functions, given the
-> > > fact that ECC engine does not pad ECC bits to the next byte boundary.
-> > > 
-> > > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > > ---
-> > >  drivers/mtd/nand/gpmi-nand/gpmi-lib.c  | 129 +++++++++++++++++++++++++++++++++
-> > >  drivers/mtd/nand/gpmi-nand/gpmi-nand.h |   4 +
-> > >  2 files changed, 133 insertions(+)
-> > > 
-> > > diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> > > index 87e658c..5d4f140 100644
-> > > --- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> > > +++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> > > @@ -1353,3 +1353,132 @@ int gpmi_read_page(struct gpmi_nand_data *this,
-> > >  	set_dma_type(this, DMA_FOR_READ_ECC_PAGE);
-> > >  	return start_dma_with_bch_irq(this, desc);
-> > >  }
-> > > +
-> > > +void gpmi_move_bits(u8 *dst, size_t dst_bit_off,
-> > > +		    const u8 *src, size_t src_bit_off,
-> > > +		    size_t nbits)
-> > 
-> > Two things:
-> > 
-> >  1) Yikes! This function is a little hairy.
-> 
-> Yes I know, and if you see a much simpler algorithm to do that, I'm
-> really interested :-).
+On Thu, Nov 20, 2014 at 3:58 AM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+>
+> I don't really know why there are two interfaces for this but I guess
+> that different user-space utilities use one or another. Maybe the
+> ChromiumOS folks can comment on this.
 
-No ideas at the moment :)
+The /dev/cros_ec interface responds to ioctls and is the primary means
+by which userspace applications talk to the EC (replacing three really
+awkward bus-specific libraries). It emits a simplified version string
+when read so that humans can tell if the EC is alive and speaking the
+same protocol that the userspace app expects.
 
-> >  2) This function really deserves a full comment header (kerneldoc?); it
-> >  needs to have clearly-documented high-level semantics.
-> 
-> I'll add a kernel doc header.
-> 
-> > 
-> > I'm not sure how to address #1, as the complexity is necessary. Did you
-> > run this through some unit tests, at least?
-> 
-> No, but I did test it with several ECC configs.
-> Anyway, if I develop such unit tests, do you want me to put them in the
-> driver code (under an #ifdef section) ?
+The /sys/class/chromeos/cros_ec/* tree was originally envisioned as a
+way to provide additional human-readable interfaces to a subset of the
+EC commands, but except for the lightbar it's not often used. The
+version component here shows all the version-related info that the EC
+can provide.
 
-I dunno, that seems like it might just clutter the file more, and I'm
-not sure if anyone is likely to run them. I was mostly curious how you've
-verified it.
+I apologize for the poor kernel conventions used here. In my
+ignorance, I apparently chose the worst code possible to use as a
+template, and then invented some new stupidness of my own.
 
-Brian
+
+Bill
+-- 
+Art for Art's Sake
+Engineering for Money
