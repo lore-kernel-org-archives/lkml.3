@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757858AbaKTTyJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:54:09 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:50893 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406AbaKTTyH (ORCPT
+	id S1758031AbaKTTys (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:54:48 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:57090 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757064AbaKTTyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 14:54:07 -0500
+	Thu, 20 Nov 2014 14:54:47 -0500
+Date: Thu, 20 Nov 2014 13:54:59 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Todd Poynor <toddpoynor@google.com>
+CC: Kiran Kumar Raparthy <kiran.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, <balbi@ti.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Benoit Goby <benoit@android.com>
+Subject: Re: [PATCH 1/3] usb: phy: introduce usb_phy_set_event interface
+Message-ID: <20141120195459.GI23217@saruman>
+Reply-To: <balbi@ti.com>
+References: <cover.1416390389.git.kiran.kumar@linaro.org>
+ <40513430786f3190776ee4a180c2486812048a6b.1416390389.git.kiran.kumar@linaro.org>
+ <CAAW3YpYnnvM5thnGDEt+OkhpPF5+CP3yb9vJS=AZ_5RgyPsejQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1416478790-27522-3-git-send-email-mgorman@suse.de>
-References: <1416478790-27522-1-git-send-email-mgorman@suse.de>
-	<1416478790-27522-3-git-send-email-mgorman@suse.de>
-Date: Thu, 20 Nov 2014 11:54:06 -0800
-X-Google-Sender-Auth: nSHvSs04_oyxov732_5jCdXsEhs
-Message-ID: <CA+55aFwV80r66w4RmtY-MAUGkwmfBJe+C5KFD3ZnNgYb_KbBpQ@mail.gmail.com>
-Subject: Re: [PATCH 02/10] mm: Add p[te|md] protnone helpers for use by NUMA balancing
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="h22Fi9ANawrtbNPX"
+Content-Disposition: inline
+In-Reply-To: <CAAW3YpYnnvM5thnGDEt+OkhpPF5+CP3yb9vJS=AZ_5RgyPsejQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 2:19 AM, Mel Gorman <mgorman@suse.de> wrote:
-> This is a preparatory patch that introduces protnone helpers for automatic
-> NUMA balancing.
+--h22Fi9ANawrtbNPX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Oh, I hadn't noticed that you had renamed these things. It was
-probably already true in your V1 version.
+On Wed, Nov 19, 2014 at 08:36:22AM -0800, Todd Poynor wrote:
+> On Wed, Nov 19, 2014 at 2:43 AM, Kiran Kumar Raparthy
+> <kiran.kumar@linaro.org> wrote:
+> > From: Todd Poynor <toddpoynor@google.com>
+> >
+> > usb: phy: introduce usb_phy_set_event interface
+>=20
+> Hi Kiran, this is new stuff that is all your own work and you deserve
+> the credit.
+>=20
+> Thanks for working to get this feature in shape for mainline!
 
-I do *not* think that "pte_protnone_numa()" makes sense as a name. It
-only confuses people to think that there is still/again something
-NUMA-special about the PTE. The whole point of the protnone changes
-was to make it really very very clear that from a hardware standpoint,
-this is *exactly* about protnone, and nothing else.
+Kiran, what Todd is saying is that $subject is From: Kiran, do you want
+to resend with that change ? I think this is ready to be moved into my
+testing/next otherwise.
 
-The fact that we then use protnone PTE's for numa faults is a VM
-internal issue, it should *not* show up in the architecture page table
-helpers.
+--=20
+balbi
 
-I'm not NAK'ing this name, but I really think it's a very important
-part of the whole patch series - to stop the stupid confusion about
-NUMA entries. As far as the page tables are concerned, this has
-absolutely _zero_ to do with NUMA.
+--h22Fi9ANawrtbNPX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-We made that mistake once. We're fixing it. Let the naming *show* that
-it's fixed, and this is "pte_protnone()".
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-The places that use this for NUMA handling might have a comment or
-something. But they'll be in the VM where this matters, not in the
-architecture page table description files. The comment would be
-something like "if the vma is accessible, but the PTE is marked
-protnone, this is a autonuma entry".
+iQIcBAEBAgAGBQJUbkcTAAoJEIaOsuA1yqREaccP/0N/2WFhe2Vl4mQlZUK+BNEW
+p+zk36xpaPAA9avCdemt8TbxvCIhQkkEU/eNnG2ZYkREWXQ6pq+1fx2lnOMPWS51
+W+yguzezCd+h9Xml1gB9mj28f+0ruPO/alt4kUYvovW3wp4Z0eYdiok0FIanrbGI
+TNHiQTBobMfBpRGDbwAreb7xULGiDOARL1N/skH/Ah5nHf87sHqwwRxWNfsuKi5/
+DmtQrSUnJUNV1sHaAlS9vRVdG9vvBfouu+dz2XxYngQre8RDxhyvsCJWmWZ+eRNO
+Q5W4QHlyduSqnN+zsup+aajVifIhxDEFsqtnmt+d4FPVvJWE5Lw4gEuyMZMKAdEG
+1zPibYkCvaaBvJI9a0HnX1JDoc2HSW9iVyYilzAGCBxtWi56PjW1vPMVlGo73tH0
+Zalu6P3aJT2ByyPeJCvX4VJ6NIKFEyEAee6Wbc8uMiiph4J2NhuXg3zkenENcWIV
+T6Fog2fltEjPvsQcVrVIL9gMH0EhGw/7+U9rNfksohCeG4l8CDx+0c/4z0ayexBG
+GyJdrn1t/L1v5QfAIQi7XSyAscB0Ehx0LsOeoGHBcSeeCV6SK/KYVyzDCmvyFn53
+B41jCMSA5Msp81QAulZqd4fHMrzPnxy3d4sgeqm0iITq/0ymvEWr6/GgY6KPhk0V
+Fm9JmRXv6ojH0ne4745W
+=BL/g
+-----END PGP SIGNATURE-----
 
-                    Linus
+--h22Fi9ANawrtbNPX--
