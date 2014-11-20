@@ -1,81 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757663AbaKTNcp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:32:45 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:58085 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000AbaKTNc0 (ORCPT
+	id S1757578AbaKTNdW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:33:22 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:46197 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756132AbaKTNcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:32:26 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-e0-546ded662b82
-From: Jaewon Kim <jaewon02.kim@samsung.com>
-To: Kukjin Kim <kgene.kim@samsung.com>,
+	Thu, 20 Nov 2014 08:32:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAPDyKFrBhZyqozM98_4pPdW0EMFt5W6VX1X7cz6Z=yNhW4vYTA@mail.gmail.com>
+References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
+	<1709760.E0jX3Myv0h@wuerfel>
+	<546C7FDD.7030906@ti.com>
+	<2900095.WIocOu7ue2@wuerfel>
+	<CAPDyKFqeZ3YU2OEN4tCOdcQ0pAho67Q8U_eCEOroG9aS0mp+-Q@mail.gmail.com>
+	<546DD87B.3080806@ti.com>
+	<CAPDyKFrBhZyqozM98_4pPdW0EMFt5W6VX1X7cz6Z=yNhW4vYTA@mail.gmail.com>
+Date: Thu, 20 Nov 2014 14:32:41 +0100
+X-Google-Sender-Auth: kTlBLKsQyl-i7MahgoQj2QWDoVY
+Message-ID: <CAMuHMdWtHT7QX3Kpa-GCLa49ToGODwjnNVgfxDzJzcM-FU1ffg@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@kernel.org>,
+        ssantosh@kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Jaewon Kim <jaewon02.kim@samsung.com>
-Subject: [PATCH 2/2] ARM: dts: Add regulator-haptic device node for
- exynos3250-rinato
-Date: Thu, 20 Nov 2014 22:31:40 +0900
-Message-id: <1416490300-28865-3-git-send-email-jaewon02.kim@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1416490300-28865-1-git-send-email-jaewon02.kim@samsung.com>
-References: <1416490300-28865-1-git-send-email-jaewon02.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsWyRsSkWDftbW6Iwfan2hbXvzxntTi86AWj
-	xY6GI6wWvQuuslnc/PSN1eLyrjlsFjPO72NyYPfYOesuu0ffllWMHp83yQUwR3HZpKTmZJal
-	FunbJXBlHO95yVSwjrWi5+IH9gbGLSxdjJwcEgImEs9+74ayxSQu3FvP1sXIxSEksJRRYsqt
-	DUwwRf8WzmOFSExnlNjTto4dwmljkvj+7TxYO5uAtsT39YtZQWwRgVCJ3tefwYqYBTYySnyd
-	cwMsISwQLrFk7XtmEJtFQFXif+8edhCbV8BD4seVXsYuRg6gdQoScybZgIQ5BTwl+t+/YgSx
-	hYBKFqw5xwIyU0Kgm13izatuRog5AhLfJh9igeiVldh0gBniakmJgytusExgFF7AyLCKUTS1
-	ILmgOCm9yESvODG3uDQvXS85P3cTIzCoT/97NmEH470D1ocYBTgYlXh4EyxyQ4RYE8uKK3MP
-	MZoCbZjILCWanA+MnbySeENjMyMLUxNTYyNzSzMlcd7XUj+DhQTSE0tSs1NTC1KL4otKc1KL
-	DzEycXBKNTCmHokN2jtPZ+62U+z3vF6JMtyb8vuxglfJK20efTuji/7/7J69LOfeE/RMfMoe
-	Dg/vX5xcGUZRP5Y67b0149iU3geT5+kUrb66tuqLvfLMkx/M72cVrHvrp7LB6TSHz3v1M1Ov
-	f5nV3n9o3mw9bvEvXtJcsuxXLP6/bJnr5FD/JmTumxMTpEu+KbEUZyQaajEXFScCAH4yCPFl	AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDIsWRmVeSWpSXmKPExsVy+t9jQd20t7khBh3tqhbXvzxntTi86AWj
-	xY6GI6wWvQuuslnc/PSN1eLyrjlsFjPO72NyYPfYOesuu0ffllWMHp83yQUwRzUw2mSkJqak
-	Fimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVdSKEvMKQUKBSQW
-	Fyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZhzveclUsI61oufiB/YGxi0sXYycHBICJhL/
-	Fs5jhbDFJC7cW8/WxcjFISQwnVFiT9s6dginjUni+7fzYB1sAtoS39cvBusQEQiV6H39GayI
-	WWAjo8TXOTfAEsIC4RJL1r5nBrFZBFQl/vfuYQexeQU8JH5c6WXsYuQAWqcgMWeSDUiYU8BT
-	ov/9K0YQWwioZMGacywTGHkXMDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiOmWdSOxhX
-	NlgcYhTgYFTi4U2wyA0RYk0sK67MPcQowcGsJMKrsRMoxJuSWFmVWpQfX1Sak1p8iNEU6KiJ
-	zFKiyfnAeM4riTc0NjEzsjQyN7QwMjZXEue9cROoSSA9sSQ1OzW1ILUIpo+Jg1OqgdFYM+Xn
-	4Ukp++b+NV4oJSLzc1eiWk5yavhVh+0bjY5de1uZc3f6IuNfs5/o7d91qcHK/4TPqty3zzOV
-	V4p/4yk+kXs+dOL9DVERG8Kzk/ZP2rfkjvX+rzuvnV6r3/rRJ7JPu2mWkBLXR/PfTqukL9f9
-	/885ecdNlr9Z03LCn7YVqwnv3N2m471NiaU4I9FQi7moOBEAxkODEK8CAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds regulator-haptic device node controlled by regulator.
+On Thu, Nov 20, 2014 at 2:12 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>>> According to earlier comments in this thread, device's clocks are
+>>> split into "functional" and "PM" clocks.
+>>>
+>>> If I understand correctly, a typical platform driver will enable it's
+>>> "functional" clocks during ->probe() and you want the PM domain to
+>>> take care of the "PM" clocks, when the device changes runtime PM
+>>> status.
+>>>
+>>> How will you describe these different set of device clocks in DT?
+>>
+>> True :(  You can dig deeper in the history of this series if you wish.
+>> - first Geert Uytterhoeven proposed to use CLK_RUNTIME_PM there
+>>   https://lkml.org/lkml/2014/11/6/319
+>> - second I proposed to introduce smth. like "clkops-clocks", "pm-clocks" there
+>>   https://lkml.org/lkml/2014/6/12/436
+>>  or "fck-clocks"/"opt-clocks" later.
+>>
+>> ^failed.
+>>
+>> So, this implementation picks up all clocks for each device, which is ok for
+>> Keystone 2 and, because it's platform specific.
+>>
+>>>>
+>>>> Yes, it would definitely solve the problem that I see with the infrastructure
+>>>> code that the current version adds into the platform directory.
+>>>>
+>>>> The exact binding of course should be reviewed by the pmdomain and
+>>>> DT maintainers, to ensure that it is done the best possible way, because
+>>>> I assume we will end up using it a lot, and it would be a shame to get
+>>>> it slightly wrong.
+>>>>
+>>>> One possible variation I can think of would be to just use "simple-pmdomain"
+>>>> as the compatible string, and use properties in the node itself to decide
+>>>> what the domain should control, e.g.
+>>>>
+>>>>          clk_pmdomain: pmdomain {
+>>>>                  compatible = "simple-pmdomain";
+>>>>                  pmdomain-enable-clocks;
+>>>>                  #power-domain-cells = <0>;
+>>>>          };
+>>>>          clk_regulator_pmdomain: pmdomain {
+>>>>                  compatible = "simple-pmdomain";
+>>>>                  pmdomain-enable-clocks;
+>>>>                  pmdomain-enable-regulators;
+>>>>                  #power-domain-cells = <0>;
+>>>>          };
+>>>>
+>>>> and then have each device link to one of the nodes as the pmdomain.
+>>>>
+>>>
+>>> That's seems like a good approach to me.
+>>
+>> Yes, but your previous comment is still actual :(
+>
+> Agree!
+>
+> So I really think we need to decide on how to address the split of the
+> device clocks. Before that's done, I don't think it make sense to add
+> a "simple-pmdomain" compatible, since it will likely not be that many
+> SoC that can use it.
+>
+> So, does anyone have a suggestion on how to deal with the split of the
+> device clocks into "functional" clocks and into "PM" clocks?
 
-Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
----
- arch/arm/boot/dts/exynos3250-rinato.dts |    7 +++++++
- 1 file changed, 7 insertions(+)
+That's indeed the tricky part.
 
-diff --git a/arch/arm/boot/dts/exynos3250-rinato.dts b/arch/arm/boot/dts/exynos3250-rinato.dts
-index 84380fa..8172815 100644
---- a/arch/arm/boot/dts/exynos3250-rinato.dts
-+++ b/arch/arm/boot/dts/exynos3250-rinato.dts
-@@ -104,6 +104,13 @@
- 			};
- 		};
- 	};
-+
-+	regulator-haptic {
-+		compatible = "regulator-haptic";
-+		haptic-supply = <&motor_reg>;
-+		min-microvolt = <1100000>;
-+		max-microvolt = <2700000>;
-+	};
- };
- 
- &adc {
--- 
-1.7.9.5
+On shmobile, we just use the "NULL" clock, i.e. the first clock, for historical
+reasons.
 
+Using clock-names (e.g. "fck" and "pm") will conflict with existing bindings
+for devices that already mandate specific clock names.
+
+As the clock being a "PM" clock is a property of the clock provider
+(at last on shmobile), I originally came up with not handling it in DT,
+but advertising it in the clock provider driver:
+
+> > - first Geert Uytterhoeven proposed to use CLK_RUNTIME_PM there
+> >   https://lkml.org/lkml/2014/11/6/319
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
