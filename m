@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854AbaKTEma (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 23:42:30 -0500
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:42803
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575AbaKTEm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 23:42:29 -0500
-x-originating-ip: 72.167.245.219
-From: Dexuan Cui <decui@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com
-Cc: kys@microsoft.com, haiyangz@microsoft.com, vkuznets@redhat.com
-Subject: [PATCH v2] tools: hv: ignore ENOBUFS and ENOMEM in the KVP daemon
-Date: Wed, 19 Nov 2014 21:51:22 -0800
-Message-Id: <1416462682-28236-1-git-send-email-decui@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756016AbaKTErC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 23:47:02 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:51963 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753718AbaKTErA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 23:47:00 -0500
+Date: Thu, 20 Nov 2014 12:46:50 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+        Daniel Borkmann <dborkman@redhat.com>, quentin.gouchet@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        ABI/API <linux-api@vger.kernel.org>
+Subject: crypto: user - Allow get request with empty driver name
+Message-ID: <20141120044650.GA28691@gondor.apana.org.au>
+References: <5365136.g8vbXlhRyC@tachyon.chronox.de>
+ <1886827.KUDIsNtfuk@tachyon.chronox.de>
+ <20141120041824.GA28612@gondor.apana.org.au>
+ <3538055.XH2t7HNEVj@tachyon.chronox.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3538055.XH2t7HNEVj@tachyon.chronox.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under high memory pressure and very high KVP R/W test pressure, the netlink
-recvfrom() may transiently return ENOBUFS to the daemon -- we found this
-during a 2-week stress test.
+On Thu, Nov 20, 2014 at 05:23:23AM +0100, Stephan Mueller wrote:
+> 
+> Here is the code:
+> 
+> static int crypto_report(struct sk_buff *in_skb, struct nlmsghdr *in_nlh,
+> 			 struct nlattr **attrs)
+> {
+> ...
+> 	if (!p->cru_driver_name[0])
+> 		return -EINVAL;
 
-We'd better not terminate the daemon on the failure, because a typical KVP
-user will re-try the R/W and hopefully it will succeed next time.
+OK let's fix this.
 
-We can also ignore the errors on sending.
+crypto: user - Allow get request with empty driver name
+    
+Currently all get requests with an empty driver name fail with
+EINVAL.  Since most users actually want to supply an empty driver
+name this patch removes this check.
 
-Cc: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Dexuan Cui <decui@microsoft.com>
----
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 
-v2: I also ignore the errors on sending, as Vitaly suggested.
-
- tools/hv/hv_kvp_daemon.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 22b0764..6a6432a 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -1559,8 +1559,15 @@ int main(int argc, char *argv[])
- 				addr_p, &addr_l);
+diff --git a/crypto/crypto_user.c b/crypto/crypto_user.c
+index e2a34fe..0bb30ac 100644
+--- a/crypto/crypto_user.c
++++ b/crypto/crypto_user.c
+@@ -201,10 +201,7 @@ static int crypto_report(struct sk_buff *in_skb, struct nlmsghdr *in_nlh,
+ 	if (!null_terminated(p->cru_name) || !null_terminated(p->cru_driver_name))
+ 		return -EINVAL;
  
- 		if (len < 0) {
-+			int saved_errno = errno;
- 			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s",
- 					addr.nl_pid, errno, strerror(errno));
-+
-+			if (saved_errno == ENOBUFS) {
-+				syslog(LOG_ERR, "receive error: ignored");
-+				continue;
-+			}
-+
- 			close(fd);
- 			return -1;
- 		}
-@@ -1763,8 +1770,15 @@ kvp_done:
+-	if (!p->cru_driver_name[0])
+-		return -EINVAL;
+-
+-	alg = crypto_alg_match(p, 1);
++	alg = crypto_alg_match(p, 0);
+ 	if (!alg)
+ 		return -ENOENT;
  
- 		len = netlink_send(fd, incoming_cn_msg);
- 		if (len < 0) {
-+			int saved_errno = errno;
- 			syslog(LOG_ERR, "net_link send failed; error: %d %s", errno,
- 					strerror(errno));
-+
-+			if (saved_errno == ENOMEM || saved_errno == ENOBUFS) {
-+				syslog(LOG_ERR, "send error: ignored");
-+				continue;
-+			}
-+
- 			exit(EXIT_FAILURE);
- 		}
- 	}
+Cheers,
 -- 
-1.9.1
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
