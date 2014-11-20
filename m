@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723AbaKTABT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 19:01:19 -0500
-Received: from www.linutronix.de ([62.245.132.108]:48314 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755100AbaKTAA6 (ORCPT
+	id S1756753AbaKTAH1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 19:07:27 -0500
+Received: from relay.variantweb.net ([104.131.199.242]:53870 "EHLO
+	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756402AbaKTAHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 19:00:58 -0500
-Date: Thu, 20 Nov 2014 01:00:51 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andy Lutomirski <luto@amacapital.net>
-cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <CALCETrXyrk0VBbZy48nsUWnk82wFp6gpv_zw_F=3GKSDAR7T+Q@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1411200059410.3909@nanos>
-References: <20141118145234.GA7487@redhat.com> <alpine.DEB.2.11.1411181914020.3909@nanos> <20141118215540.GD35311@redhat.com> <20141119021902.GA14216@redhat.com> <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com> <20141119145902.GA13387@redhat.com>
- <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com> <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com> <20141119190215.GA10796@lerouge> <alpine.DEB.2.11.1411192251120.3909@nanos> <20141119225615.GA11386@lerouge>
- <alpine.DEB.2.11.1411200002330.3909@nanos> <CALCETrXyrk0VBbZy48nsUWnk82wFp6gpv_zw_F=3GKSDAR7T+Q@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 19 Nov 2014 19:07:25 -0500
+Date: Wed, 19 Nov 2014 18:07:22 -0600
+From: Seth Jennings <sjennings@variantweb.net>
+To: Peter Foley <pefoley2@pefoley.com>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: v3.18-rc5 build failure on ppc64 in Documentation/mic/mpssd/mpssd.o
+Message-ID: <20141120000722.GA10693@cerebellum.variantweb.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014, Andy Lutomirski wrote:
-> On Wed, Nov 19, 2014 at 3:09 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > Sorry, I can't follow your argumentation here.
-> >
-> > pcpu_alloc()
-> >    ....
-> > area_found:
-> >    ....
-> >
-> >         /* clear the areas and return address relative to base address */
-> >         for_each_possible_cpu(cpu)
-> >                 memset((void *)pcpu_chunk_addr(chunk, cpu, 0) + off, 0, size);
-> >
-> > How would that memset fail to establish the mapping, which is
-> > btw. already established via:
-> >
-> >      pcpu_populate_chunk()
-> >
-> > already before that memset?
-> 
-> I think that this will map them into init_mm->pgd and
-> current->active_mm->pgd, but it won't necessarily map them into the
-> rest of the pgds.
+One or more in the following commit set in the 3.18 merge window is causing
+build failure on ppc64 with the default config:
 
-And why would mapping them into the kernel mapping, i.e. init_mm not
-be sufficient?
+7b345771ba921361b318e95bf21b257c65ac141c Documentation: update include path for mpssd
+8c2b0dc83d9840da4d993a5dbb15c5974ad5a188 Documentation: support glibc versions without htole macros
+6ab0e475f1f38b6be90aff4ef3ebf928c4a73dc8 Documentation: fix misc. warnings
+adb19fb66eeebac07fe37d968725bb8906dadb8e Documentation: add makefiles for more targets
 
-We are talking about kernel memory and not some random user space
-mapping.
+Building v3.18-rc5 and I have glibc 2.17.
+
+The problem is that for big endian, the htole* macros are not simple compile
+time transforms by the precompiler, but rather block code that must be executed
+in function context.
+
+Build errors:
+===
+  HOSTCC  Documentation/mic/mpssd/mpssd.o
+In file included from /usr/include/bits/byteswap.h:34:0,
+                 from /usr/include/endian.h:60,
+                 from /usr/include/bits/waitstatus.h:64,
+                 from /usr/include/stdlib.h:42,
+                 from Documentation/mic/mpssd/mpssd.c:23:
+Documentation/mic/mpssd/mpssd.c:93:10: error: braced-group within expression allowed only inside a function
+   .num = htole16(MIC_VRING_ENTRIES),
+          ^
+Documentation/mic/mpssd/mpssd.c:96:10: error: braced-group within expression allowed only inside a function
+   .num = htole16(MIC_VRING_ENTRIES),
+          ^
+Documentation/mic/mpssd/mpssd.c:113:10: error: braced-group within expression allowed only inside a function
+   .num = htole16(MIC_VRING_ENTRIES),
+          ^
+Documentation/mic/mpssd/mpssd.c:116:10: error: braced-group within expression allowed only inside a function
+   .num = htole16(MIC_VRING_ENTRIES),
+          ^
+Documentation/mic/mpssd/mpssd.c:119:3: error: initializer element is not constant
+   .host_features = htole32(
+   ^
+Documentation/mic/mpssd/mpssd.c:119:3: error: (near initialization for ‘virtnet_dev_page.host_features’)
+In file included from /usr/include/bits/byteswap.h:34:0,
+                 from /usr/include/endian.h:60,
+                 from /usr/include/bits/waitstatus.h:64,
+                 from /usr/include/stdlib.h:42,
+                 from Documentation/mic/mpssd/mpssd.c:23:
+Documentation/mic/mpssd/mpssd.c:146:10: error: braced-group within expression allowed only inside a function
+   .num = htole16(MIC_VRING_ENTRIES),
+          ^
+Documentation/mic/mpssd/mpssd.c:149:3: error: initializer element is not constant
+   htole32(1<<VIRTIO_BLK_F_SEG_MAX),
+   ^
+Documentation/mic/mpssd/mpssd.c:149:3: error: (near initialization for ‘virtblk_dev_page.host_features’)
+Documentation/mic/mpssd/mpssd.c:151:3: error: initializer element is not constant
+   .seg_max = htole32(MIC_VRING_ENTRIES - 2),
+   ^
+Documentation/mic/mpssd/mpssd.c:151:3: error: (near initialization for ‘virtblk_dev_page.blk_config.seg_max’)
+Documentation/mic/mpssd/mpssd.c:152:3: error: initializer element is not constant
+   .capacity = htole64(0),
+   ^
+Documentation/mic/mpssd/mpssd.c:152:3: error: (near initialization for ‘virtblk_dev_page.blk_config.capacity’)
+make[3]: *** [Documentation/mic/mpssd/mpssd.o] Error 1
+===
+
+Reverting the commits fixes the issue, however, a more targeted approach could
+just skip make on Documentation/mic/mpssd/ until the endianness issue is
+resolved. Or something else...
 
 Thanks,
-
-	tglx
+Seth
