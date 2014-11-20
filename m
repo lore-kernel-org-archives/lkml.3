@@ -1,129 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794AbaKTIOE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 03:14:04 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:54223 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755145AbaKTIOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 03:14:00 -0500
-Message-ID: <1416470777.28873.1.camel@mm-sol.com>
-Subject: Re: [PATCH 3/7] pinctrl: pinconf-generic: Allow driver to specify
- DT params
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-rockchip@lists.infradead.org,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
-Date: Thu, 20 Nov 2014 10:06:17 +0200
-In-Reply-To: <84517404cda34124930ec838a639f538@BL2FFO11FD030.protection.gbl>
-References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
-	 <1415041531-15520-4-git-send-email-soren.brinkmann@xilinx.com>
-	 <CACRpkdYfj2ydLQ4q_FKwXo73jzNsvj9u2Aem9EiuEw-OCvurrg@mail.gmail.com>
-	 <1416300621.30131.6.camel@mm-sol.com>
-	 <995406b8e0244c63a3ef8e58314e81f6@BL2FFO11FD037.protection.gbl>
-	 <1416383379.30131.14.camel@mm-sol.com>
-	 <84517404cda34124930ec838a639f538@BL2FFO11FD030.protection.gbl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.7-fta1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1756700AbaKTIOD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 03:14:03 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58065 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754270AbaKTIN7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 03:13:59 -0500
+Date: Thu, 20 Nov 2014 08:13:57 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Eli Cohen <eli@mellanox.com>
+Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: mlx5: don't duplicate kvfree()
+Message-ID: <20141120081357.GI7996@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ drivers/infiniband/hw/mlx5/cq.c                     |    8 ++++----
+ drivers/infiniband/hw/mlx5/mr.c                     |    4 ++--
+ drivers/infiniband/hw/mlx5/qp.c                     |    8 ++++----
+ drivers/infiniband/hw/mlx5/srq.c                    |    6 +++---
+ drivers/net/ethernet/mellanox/mlx5/core/eq.c        |    4 ++--
+ drivers/net/ethernet/mellanox/mlx5/core/pagealloc.c |    4 ++--
+ drivers/net/ethernet/mellanox/mlx5/core/port.c      |    4 ++--
+ include/linux/mlx5/driver.h                         |    8 --------
+ 9 files changed, 21 insertions(+), 35 deletions(-)
 
-On Wed, 2014-11-19 at 07:35 -0800, Sören Brinkmann wrote:
-> Hi Ivan,
-> 
-> On Wed, 2014-11-19 at 09:49AM +0200, Ivan T. Ivanov wrote:
-> > On Tue, 2014-11-18 at 09:25 -0800, Sören Brinkmann wrote:
-> > > On Tue, 2014-11-18 at 10:50AM +0200, Ivan T. Ivanov wrote:
-> > > > On Tue, 2014-11-11 at 15:53 +0100, Linus Walleij wrote:
-> > > > > On Mon, Nov 3, 2014 at 8:05 PM, Soren Brinkmann
-> > > > > brinkmann@xilinx.com> wrote:
-> > > > > 
-> > > > > > Additionally to the generic DT parameters, allow drivers to
-> > > > > > provide driver-specific DT parameters to be used with the
-> > > > > > generic parser infrastructure.
-> > > > > > 
-> > > > > > Signed-off-by: Soren Brinkmann brinkmann@xilinx.com>
-> > > > > 
-> > > > > I like the looks of this, but the patch description is a bit
-> > > > > terse. I'd like it to describe some of the refactorings being
-> > > > > done
-> > > > > to the intrinsics, because I have a hard time following the
-> > > > > patch.
-> > > > > 
-> > > > > First please rebase onto the "devel" branch in the pin control
-> > > > > tree, and notice that drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
-> > > > > which is merged there is actually doing this already:
-> > > > > 
-> > > > > 
-> > > > >         for_each_child_of_node(np_config, np) {
-> > > > >                 ret = pinconf_generic_dt_subnode_to_map(pctldev,
-> > > > > np, map,
-> > > > >                                                         &reserv,
-> > > > > nmaps, type);
-> > > > >                 if (ret)
-> > > > >                         break;
-> > > > > 
-> > > > >                 ret = pmic_gpio_dt_subnode_to_map(pctldev, np,
-> > > > > map, &reserv,
-> > > > >                                                   nmaps, type);
-> > > > >                 if (ret)
-> > > > >                         break;
-> > > > >         }
-> > > > > 
-> > > > > So it should be patched to illustrate the point of this code.
-> > > > > 
-> > > > 
-> > > > I like the idea, but have issues with implementations :-).
-> > > > 
-> > > > It is supposed that additional parameters are not generic,
-> > > > otherwise they will be part of enum pin_config_param, right?
-> > > > 
-> > > > Probably it will be better if clients could pass array with
-> > > > driver specific dt bindings to pinconf_generic_dt_node_to_map()?
-> > > 
-> > > My idea was to hide that API from the driver. You just pass those
-> > > parameters as part of the struct pctldev and the parser - whether
-> > > this generic one or anything else - would do the right thing. I
-> > > don't think calling the parser from the driver is the right approach.
-> > 
-> > Drivers already know about dt_node_to_map(). My proposal will make
-> > drivers, which register non-standard bindings, little bit simpler.
-> 
-> And I think this is not the best solution. Those drivers essentially
-> still do the DT parsing themselves, 
-
-Yes, and this could be avoided if there API which allow them to pass 
-non-standard configuration maps.
-
-> just call some common helpers. I
-> think that should be well separated. 
-
-Around 27 of 30 drivers are using custom dt_node_to_map(). And this is
-because most of them are using custom "x,pins", "x,functions" and 'x,groups"
-properties and I think that this is bigger issue, how this is addressed
-in this patch?
-
-> The pinctrl driver just assembles
-> some data structure that has the information regarding custom properties
-> and the core handles the rest. 
-
-Yup, that is nice. What will be really nice if it also handle custom, 
-"function", "groups" and "pins" properties. Otherwise most of the drivers
-will not be able to benefit from this. 
-
-I just wanted to share my opinion.
-
-Regards,
-Ivan
+diff --git a/drivers/infiniband/hw/mlx5/cq.c b/drivers/infiniband/hw/mlx5/cq.c
+index 10cfce5..c463e7b 100644
+--- a/drivers/infiniband/hw/mlx5/cq.c
++++ b/drivers/infiniband/hw/mlx5/cq.c
+@@ -805,14 +805,14 @@ struct ib_cq *mlx5_ib_create_cq(struct ib_device *ibdev, int entries,
+ 		}
+ 
+ 
+-	mlx5_vfree(cqb);
++	kvfree(cqb);
+ 	return &cq->ibcq;
+ 
+ err_cmd:
+ 	mlx5_core_destroy_cq(dev->mdev, &cq->mcq);
+ 
+ err_cqb:
+-	mlx5_vfree(cqb);
++	kvfree(cqb);
+ 	if (context)
+ 		destroy_cq_user(cq, context);
+ 	else
+@@ -1159,11 +1159,11 @@ int mlx5_ib_resize_cq(struct ib_cq *ibcq, int entries, struct ib_udata *udata)
+ 	}
+ 	mutex_unlock(&cq->resize_mutex);
+ 
+-	mlx5_vfree(in);
++	kvfree(in);
+ 	return 0;
+ 
+ ex_alloc:
+-	mlx5_vfree(in);
++	kvfree(in);
+ 
+ ex_resize:
+ 	if (udata)
+diff --git a/drivers/infiniband/hw/mlx5/mr.c b/drivers/infiniband/hw/mlx5/mr.c
+index 8ee7cb4..4c89b64 100644
+--- a/drivers/infiniband/hw/mlx5/mr.c
++++ b/drivers/infiniband/hw/mlx5/mr.c
+@@ -853,14 +853,14 @@ static struct mlx5_ib_mr *reg_create(struct ib_pd *pd, u64 virt_addr,
+ 		goto err_2;
+ 	}
+ 	mr->umem = umem;
+-	mlx5_vfree(in);
++	kvfree(in);
+ 
+ 	mlx5_ib_dbg(dev, "mkey = 0x%x\n", mr->mmr.key);
+ 
+ 	return mr;
+ 
+ err_2:
+-	mlx5_vfree(in);
++	kvfree(in);
+ 
+ err_1:
+ 	kfree(mr);
+diff --git a/drivers/infiniband/hw/mlx5/qp.c b/drivers/infiniband/hw/mlx5/qp.c
+index e261a53..0e2ef9f 100644
+--- a/drivers/infiniband/hw/mlx5/qp.c
++++ b/drivers/infiniband/hw/mlx5/qp.c
+@@ -647,7 +647,7 @@ err_unmap:
+ 	mlx5_ib_db_unmap_user(context, &qp->db);
+ 
+ err_free:
+-	mlx5_vfree(*in);
++	kvfree(*in);
+ 
+ err_umem:
+ 	if (qp->umem)
+@@ -761,7 +761,7 @@ err_wrid:
+ 	kfree(qp->rq.wrid);
+ 
+ err_free:
+-	mlx5_vfree(*in);
++	kvfree(*in);
+ 
+ err_buf:
+ 	mlx5_buf_free(dev->mdev, &qp->buf);
+@@ -971,7 +971,7 @@ static int create_qp_common(struct mlx5_ib_dev *dev, struct ib_pd *pd,
+ 		goto err_create;
+ 	}
+ 
+-	mlx5_vfree(in);
++	kvfree(in);
+ 	/* Hardware wants QPN written in big-endian order (after
+ 	 * shifting) for send doorbell.  Precompute this value to save
+ 	 * a little bit when posting sends.
+@@ -988,7 +988,7 @@ err_create:
+ 	else if (qp->create_type == MLX5_QP_KERNEL)
+ 		destroy_qp_kernel(dev, qp);
+ 
+-	mlx5_vfree(in);
++	kvfree(in);
+ 	return err;
+ }
+ 
+diff --git a/drivers/infiniband/hw/mlx5/srq.c b/drivers/infiniband/hw/mlx5/srq.c
+index 97cc1ba..41fec66 100644
+--- a/drivers/infiniband/hw/mlx5/srq.c
++++ b/drivers/infiniband/hw/mlx5/srq.c
+@@ -141,7 +141,7 @@ static int create_srq_user(struct ib_pd *pd, struct mlx5_ib_srq *srq,
+ 	return 0;
+ 
+ err_in:
+-	mlx5_vfree(*in);
++	kvfree(*in);
+ 
+ err_umem:
+ 	ib_umem_release(srq->umem);
+@@ -209,7 +209,7 @@ static int create_srq_kernel(struct mlx5_ib_dev *dev, struct mlx5_ib_srq *srq,
+ 	return 0;
+ 
+ err_in:
+-	mlx5_vfree(*in);
++	kvfree(*in);
+ 
+ err_buf:
+ 	mlx5_buf_free(dev->mdev, &srq->buf);
+@@ -306,7 +306,7 @@ struct ib_srq *mlx5_ib_create_srq(struct ib_pd *pd,
+ 	in->ctx.pd = cpu_to_be32(to_mpd(pd)->pdn);
+ 	in->ctx.db_record = cpu_to_be64(srq->db.dma);
+ 	err = mlx5_core_create_srq(dev->mdev, &srq->msrq, in, inlen);
+-	mlx5_vfree(in);
++	kvfree(in);
+ 	if (err) {
+ 		mlx5_ib_dbg(dev, "create SRQ failed, err %d\n", err);
+ 		goto err_usr_kern_srq;
+diff --git a/drivers/net/ethernet/mellanox/mlx5/core/eq.c b/drivers/net/ethernet/mellanox/mlx5/core/eq.c
+index a278238..eb3aa15 100644
+--- a/drivers/net/ethernet/mellanox/mlx5/core/eq.c
++++ b/drivers/net/ethernet/mellanox/mlx5/core/eq.c
+@@ -391,7 +391,7 @@ int mlx5_create_map_eq(struct mlx5_core_dev *dev, struct mlx5_eq *eq, u8 vecidx,
+ 	 */
+ 	eq_update_ci(eq, 1);
+ 
+-	mlx5_vfree(in);
++	kvfree(in);
+ 	return 0;
+ 
+ err_irq:
+@@ -401,7 +401,7 @@ err_eq:
+ 	mlx5_cmd_destroy_eq(dev, eq->eqn);
+ 
+ err_in:
+-	mlx5_vfree(in);
++	kvfree(in);
+ 
+ err_buf:
+ 	mlx5_buf_free(dev, &eq->buf);
+diff --git a/drivers/net/ethernet/mellanox/mlx5/core/pagealloc.c b/drivers/net/ethernet/mellanox/mlx5/core/pagealloc.c
+index d476918..4fdaae9 100644
+--- a/drivers/net/ethernet/mellanox/mlx5/core/pagealloc.c
++++ b/drivers/net/ethernet/mellanox/mlx5/core/pagealloc.c
+@@ -349,7 +349,7 @@ out_4k:
+ 	for (i--; i >= 0; i--)
+ 		free_4k(dev, be64_to_cpu(in->pas[i]));
+ out_free:
+-	mlx5_vfree(in);
++	kvfree(in);
+ 	return err;
+ }
+ 
+@@ -400,7 +400,7 @@ static int reclaim_pages(struct mlx5_core_dev *dev, u32 func_id, int npages,
+ 	}
+ 
+ out_free:
+-	mlx5_vfree(out);
++	kvfree(out);
+ 	return err;
+ }
+ 
+diff --git a/drivers/net/ethernet/mellanox/mlx5/core/port.c b/drivers/net/ethernet/mellanox/mlx5/core/port.c
+index 3139658..72c2d00 100644
+--- a/drivers/net/ethernet/mellanox/mlx5/core/port.c
++++ b/drivers/net/ethernet/mellanox/mlx5/core/port.c
+@@ -68,9 +68,9 @@ int mlx5_core_access_reg(struct mlx5_core_dev *dev, void *data_in,
+ 		memcpy(data_out, out->data, size_out);
+ 
+ ex2:
+-	mlx5_vfree(out);
++	kvfree(out);
+ ex1:
+-	mlx5_vfree(in);
++	kvfree(in);
+ 	return err;
+ }
+ EXPORT_SYMBOL_GPL(mlx5_core_access_reg);
+diff --git a/include/linux/mlx5/driver.h b/include/linux/mlx5/driver.h
+index 246310d..b1bf415 100644
+--- a/include/linux/mlx5/driver.h
++++ b/include/linux/mlx5/driver.h
+@@ -633,14 +633,6 @@ static inline void *mlx5_vzalloc(unsigned long size)
+ 	return rtn;
+ }
+ 
+-static inline void mlx5_vfree(const void *addr)
+-{
+-	if (addr && is_vmalloc_addr(addr))
+-		vfree(addr);
+-	else
+-		kfree(addr);
+-}
+-
+ static inline u32 mlx5_base_mkey(const u32 key)
+ {
+ 	return key & 0xffffff00u;
+-- 
+1.7.10.4
 
