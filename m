@@ -1,107 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255AbaKTLeE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 06:34:04 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:39253 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921AbaKTLeB (ORCPT
+	id S1753356AbaKTLiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 06:38:25 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:61266 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953AbaKTLiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 06:34:01 -0500
+	Thu, 20 Nov 2014 06:38:23 -0500
+Date: Thu, 20 Nov 2014 13:38:13 +0200
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: Steven Walter <stevenrwalter@gmail.com>
+Cc: marcel@holtmann.org, gustavo@padovan.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Bluetooth: automatically flushable packets aren't
+ allowed on LE links
+Message-ID: <20141120113813.GA23288@t440s.lan>
+Mail-Followup-To: Steven Walter <stevenrwalter@gmail.com>,
+	marcel@holtmann.org, gustavo@padovan.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1416419951-27659-1-git-send-email-stevenrwalter@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <2900095.WIocOu7ue2@wuerfel>
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
-	<1709760.E0jX3Myv0h@wuerfel>
-	<546C7FDD.7030906@ti.com>
-	<2900095.WIocOu7ue2@wuerfel>
-Date: Thu, 20 Nov 2014 12:34:00 +0100
-Message-ID: <CAPDyKFqeZ3YU2OEN4tCOdcQ0pAho67Q8U_eCEOroG9aS0mp+-Q@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Kevin Hilman <khilman@kernel.org>, ssantosh@kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416419951-27659-1-git-send-email-stevenrwalter@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 November 2014 14:47, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 19 November 2014 13:32:45 Grygorii Strashko wrote:
->> On 11/18/2014 09:32 PM, Arnd Bergmann wrote:
->> > On Tuesday 18 November 2014 20:54:36 Grygorii Strashko wrote:
->> >
->> > Have one pmdomain driver in the generic code that knows about clocks,
->> > possibly also regulators and pins and just turns them on when needed.
->> > You can have a "simple-pmdomain" or "generic-pmdomain" compatible
->> > string.
->> >
->> > I'm a bit surprised that your pmdomain code looks up the clocks from the
->> > respective device, rather than know about the clocks itself. There is
->> > probably a good reason for this, but I don't see it yet.
->>
->> The keystone 2 uses simple PM schema based on clocks only:
->> - clocks enabled -> dev is active
->> - clocks disabled -> dev is suspended
->>
->> To achieve explained above the Generic clock manipulation PM callbacks framework (pm_clk) is used.
->> - list of managed clocks is filled for each device (for non-DT case the con_id list
->>   is specified by platform code like:
->>       .con_ids = { "fck", "master", "slave", NULL },
->>         - or -
->>       .con_ids = { }, <-- in this case only first clock will be added to pm_clk
->>   )
+Hi Steven,
 
-According to earlier comments in this thread, device's clocks are
-split into "functional" and "PM" clocks.
+On Wed, Nov 19, 2014, Steven Walter wrote:
+> The bluetooth spec states that automatically flushable packets may not
+> be sent over a LE-U link.
+> 
+> Signed-off-by: Steven Walter <stevenrwalter@gmail.com>
+> ---
+>  net/bluetooth/l2cap_core.c | 14 ++++++++------
+>  1 file changed, 8 insertions(+), 6 deletions(-)
+> 
+> diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+> index 4af3821..7c4350f 100644
+> --- a/net/bluetooth/l2cap_core.c
+> +++ b/net/bluetooth/l2cap_core.c
+> @@ -764,7 +764,7 @@ static void l2cap_send_cmd(struct l2cap_conn *conn, u8 ident, u8 code, u16 len,
+>  	if (!skb)
+>  		return;
+>  
+> -	if (lmp_no_flush_capable(conn->hcon->hdev))
+> +	if (lmp_no_flush_capable(conn->hcon->hdev) || conn->hcon->type == LE_LINK)
+>  		flags = ACL_START_NO_FLUSH;
+>  	else
+>  		flags = ACL_START;
+> @@ -784,7 +784,7 @@ static bool __chan_is_moving(struct l2cap_chan *chan)
+>  static void l2cap_do_send(struct l2cap_chan *chan, struct sk_buff *skb)
+>  {
+>  	struct hci_conn *hcon = chan->conn->hcon;
+> -	u16 flags;
+> +	u16 flags = ACL_START;
+>  
+>  	BT_DBG("chan %p, skb %p len %d priority %u", chan, skb, skb->len,
+>  	       skb->priority);
+> @@ -798,11 +798,13 @@ static void l2cap_do_send(struct l2cap_chan *chan, struct sk_buff *skb)
+>  		return;
+>  	}
+>  
+> -	if (!test_bit(FLAG_FLUSHABLE, &chan->flags) &&
+> -	    lmp_no_flush_capable(hcon->hdev))
+> +	if (hcon->type == LE_LINK) {
+> +		/* LE-U does not support auto-flushing packets */
+>  		flags = ACL_START_NO_FLUSH;
+> -	else
+> -		flags = ACL_START;
+> +	} else if (!test_bit(FLAG_FLUSHABLE, &chan->flags) &&
+> +		    lmp_no_flush_capable(hcon->hdev)) {
+> +		flags = ACL_START_NO_FLUSH;
+> +	}
 
-If I understand correctly, a typical platform driver will enable it's
-"functional" clocks during ->probe() and you want the PM domain to
-take care of the "PM" clocks, when the device changes runtime PM
-status.
+I think Marcel was after just providing a clarifying code comment in
+both places - having two branches of an if-statement doing exactly the
+same thing looks a bit weird to me. To make thins completely clear I'd
+suggest adding a simple helper function that you can call from both
+places to get the needed flags, something like the following:
 
-How will you describe these different set of device clocks in DT?
+static u16 get_acl_flags(struct hci_conn *hcon, struct l2cap_chan *chan)
+{
+	/* LE-U does not support auto-flushing packets */
+	if (hcon->type == LE_LINK)
+		return ACL_START_NO_FLUSH;
 
-[...]
+	/* If non-flushable packets are not supported don't request them */
+	if (!lmp_no_flush_capable(hcon->hdev))
+		 return ACL_START;
 
->
-> Yes, it would definitely solve the problem that I see with the infrastructure
-> code that the current version adds into the platform directory.
->
-> The exact binding of course should be reviewed by the pmdomain and
-> DT maintainers, to ensure that it is done the best possible way, because
-> I assume we will end up using it a lot, and it would be a shame to get
-> it slightly wrong.
->
-> One possible variation I can think of would be to just use "simple-pmdomain"
-> as the compatible string, and use properties in the node itself to decide
-> what the domain should control, e.g.
->
->         clk_pmdomain: pmdomain {
->                 compatible = "simple-pmdomain";
->                 pmdomain-enable-clocks;
->                 #power-domain-cells = <0>;
->         };
->         clk_regulator_pmdomain: pmdomain {
->                 compatible = "simple-pmdomain";
->                 pmdomain-enable-clocks;
->                 pmdomain-enable-regulators;
->                 #power-domain-cells = <0>;
->         };
->
-> and then have each device link to one of the nodes as the pmdomain.
->
+	/* If the chan has requested auto-flushing go with that */
+	if (chan && test_bit(FLAG_FLUSHABLE, &chan->flags))
+		return ACL_START;
 
-That's seems like a good approach to me.
+	/* Otherwise go with a non-flushable packet */
+        return ACL_START_NO_FLUSH;
+}
 
-Kind regards
-Uffe
+This way we'd avoid complex if-statements and can clearly document each
+condition independently.
+
+Johan
