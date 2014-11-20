@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757390AbaKTKPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:15:10 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40099 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756009AbaKTKPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:15:07 -0500
-Date: Thu, 20 Nov 2014 11:15:05 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "ruiv.wang@gmail.com" <ruiv.wang@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
-        "Wang, Rui Y" <rui.y.wang@intel.com>
-Subject: Re: [PATCH v3] x86/mce: Try printing all machine check banks known
- before panic
-Message-ID: <20141120101505.GA791@pd.tnic>
-References: <1416388961-24159-1-git-send-email-ruiv.wang@gmail.com>
- <20141119102954.GA5617@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F3294198E@ORSMSX114.amr.corp.intel.com>
+	id S1757443AbaKTKRX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 05:17:23 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58278 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755623AbaKTKRU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 05:17:20 -0500
+Date: Thu, 20 Nov 2014 11:17:18 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Pali Roh?r <pali.rohar@gmail.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg,
+        Sakari Ailus <sakari.ailus@iki.fi>
+Subject: Re: voice calls on N900 working (off-line) was Re: N900 modem
+ support in 3.18-rc1
+Message-ID: <20141120101718.GA8128@amd>
+References: <20141106180335.GA21513@earth.universe>
+ <20141106225005.GA14002@amd>
+ <201411070001.46481@pali>
+ <545C6F14.8050303@gmail.com>
+ <20141113162420.GB8512@xo-6d-61-c0.localdomain>
+ <5465A977.4030605@gmail.com>
+ <20141114172008.GB12250@earth.universe>
+ <54665E02.8050108@gmail.com>
+ <20141114215749.GA19023@earth.universe>
+ <20141120101320.GA6356@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3294198E@ORSMSX114.amr.corp.intel.com>
+In-Reply-To: <20141120101320.GA6356@amd>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 11:34:10PM +0000, Luck, Tony wrote:
-> The SDM has this to say about EN=0 (in section 15.10.4.1 of volume 3B):
+Hi!
+
+> Ok, so realtime audio does not work due to some pulseaudio problems,
+> but I was able to record a (silent) call and then replay it with 
 > 
->    When the EN flag is zero but the VAL and UC flags are one in
->    the IA32_MCi_STATUS register, the reported uncorrected error
->    in this bank is not enabled. As uncorrected errors with the
->    EN flag = 0 are not the source of machine check exceptions,
->    the MCE handler should log and clear non-enabled errors when
->    the S bit is set and should continue searching for enabled
->    errors from the other IA32_MCi_STATUS registers. Note that
->    when IA32_MCG_CAP [24] is 0, any uncorrected error condition
->    (VAL =1 and UC=1) including the one with the EN flag cleared
->    are fatal and the handler must signal the operating system to
->    reset the system. For the errors that do not generate machine
->    check exceptions, the EN flag has no meaning.
+> pacat --rate 4000 ../../../pulseaudio2.raw
 > 
-> Note the "should log and clear".  We just clear ... just need to shuffle some code
-> in mce.c to add the logging.
+> on my PC. I have yet to do some testing on the microphone side.
 
-Sure, we can log those.
+Did someone get pulseaudio to work on n900?
 
-> But we still need something like Rui's patch - calling mcelog()
-> doesn't ensure that we see something on the console about possible
-> cause of the problem.
+It somehow works for me, but not enough to actually produce sound.
 
-So you're saying we should drain the mcelog buffer to the console in
-such situations before we panic? If so, there's drain_mcelog_buffer()
-which could be changed to call print_mce() instead of going to the
-x86_mce_decoder_chain.
+root@n900:/my# pacat /my/pulseaudio2.raw 
+Connection failure: Connection refused
+pa_context_connect() failed: Connection refused
+root@n900:/my# pacmd
+Welcome to PulseAudio! Use "help" for usage information.
+>>> list-modules
+22 module(s) loaded.
+    index: 0
+    name: <module-device-restore>
+    argument: <>
+    used: -1
+    load once: yes
+...
+
+mpg123 actually works ok after adjusting the mixers.
+
+Any ideas?
+
+								Pavel
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
