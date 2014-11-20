@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269AbaKTQrb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 11:47:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53704 "EHLO mx1.redhat.com"
+	id S1757532AbaKTQrr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 11:47:47 -0500
+Received: from mout.web.de ([212.227.17.12]:51077 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754913AbaKTQra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 11:47:30 -0500
-Date: Thu, 20 Nov 2014 18:47:11 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Petr Mladek <pmladek@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
-        Jeff Epler <jepler@unpythonic.net>, Jiri Kosina <jkosina@suse.cz>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] virtio_balloon: Convert "vballoon" kthread into a
- workqueue
-Message-ID: <20141120164711.GA7495@redhat.com>
-References: <1416499397-16669-1-git-send-email-pmladek@suse.cz>
- <20141120160746.GI14877@htj.dyndns.org>
- <20141120162543.GA7466@redhat.com>
- <20141120162624.GA7479@redhat.com>
- <20141120162935.GK14877@htj.dyndns.org>
+	id S1757402AbaKTQrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 11:47:46 -0500
+Message-ID: <546E1B21.2070206@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 17:47:29 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141120162935.GK14877@htj.dyndns.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, Scott Murray <scott@spiteful.org>,
+        linux-pci@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] PCI: hotplug: Deletion of an unnecessary check before
+ the function call "pci_dev_put"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:HwHPzuRrFxKlvjeZffSwq2855e3brNNTdunVscDHtGNrJcJgBgG
+ jXmRHe6dmUNXtYI/lT1uUPF0JeStPdnfXRwwgf03qW5m9bU9FSxXHagHM851ISCtby0Vqn3
+ B4eJRGOQABeqOWN6RQb3bJCqjsIhPYeI1aCLftPe5yFy8vmqvRtDpsMtwBTapLjrtH5fV1X
+ 1cvbiPah3oV4hJH+1lDQg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 11:29:35AM -0500, Tejun Heo wrote:
-> On Thu, Nov 20, 2014 at 06:26:24PM +0200, Michael S. Tsirkin wrote:
-> > On Thu, Nov 20, 2014 at 06:25:43PM +0200, Michael S. Tsirkin wrote:
-> > > On Thu, Nov 20, 2014 at 11:07:46AM -0500, Tejun Heo wrote:
-> > > > On Thu, Nov 20, 2014 at 05:03:17PM +0100, Petr Mladek wrote:
-> > > > ...
-> > > > > @@ -476,7 +460,6 @@ static void virtballoon_remove(struct virtio_device *vdev)
-> > > > >  {
-> > > > >  	struct virtio_balloon *vb = vdev->priv;
-> > > > >  
-> > > > > -	kthread_stop(vb->thread);
-> > > > >  	remove_common(vb);
-> > > > >  	kfree(vb);
-> > > > >  }
-> > > > 
-> > > > Shouldn't the work item be flushed before removal is complete?
-> > > 
-> > > In fact, flushing it won't help because it can requeue itself, right?
-> 
-> There's cancel_work_sync() to stop the self-requeueing ones.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 17:42:23 +0100
 
-What happens if queue_work runs while cancel_work_sync is in progress?
-Does it fail to queue?
+The pci_dev_put() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-> > From that POV a dedicated WQ kept it simple.
-> 
-> A dedicated wq doesn't do anything for that.  You can't shut down a
-> workqueue with a pending work item on it.  destroy_workqueue() will
-> try to drain the target wq, warn if it doesn't finish in certain
-> number of iterations and just keep trying indefinitely.
-> 
-> Thanks.
+This issue was detected by using the Coccinelle software.
 
-Right, so eventually we'll stop requeueuing and it will succeed?
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/pci/hotplug/cpci_hotplug_core.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> -- 
-> tejun
+diff --git a/drivers/pci/hotplug/cpci_hotplug_core.c b/drivers/pci/hotplug/cpci_hotplug_core.c
+index e09cf78..82c969b 100644
+--- a/drivers/pci/hotplug/cpci_hotplug_core.c
++++ b/drivers/pci/hotplug/cpci_hotplug_core.c
+@@ -211,8 +211,7 @@ static void release_slot(struct hotplug_slot *hotplug_slot)
+ 
+ 	kfree(slot->hotplug_slot->info);
+ 	kfree(slot->hotplug_slot);
+-	if (slot->dev)
+-		pci_dev_put(slot->dev);
++	pci_dev_put(slot->dev);
+ 	kfree(slot);
+ }
+ 
+-- 
+2.1.3
+
