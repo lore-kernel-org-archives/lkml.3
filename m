@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361AbaKTJzP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 04:55:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33299 "EHLO mx1.redhat.com"
+	id S1757413AbaKTJzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 04:55:47 -0500
+Received: from mout.web.de ([212.227.17.12]:55892 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757157AbaKTJzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 04:55:11 -0500
-Date: Thu, 20 Nov 2014 17:54:54 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>, vgoyal@redhat.com
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141120095454.GA5108@dhcp-16-198.nay.redhat.com>
-References: <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
- <20141118020959.GA2091@redhat.com>
- <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
- <20141118023930.GA2871@redhat.com>
- <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
- <20141118145234.GA7487@redhat.com>
- <alpine.DEB.2.11.1411181914020.3909@nanos>
- <20141118215540.GD35311@redhat.com>
- <20141118220254.GA2571@redhat.com>
- <20141119144105.GB108701@redhat.com>
+	id S1757290AbaKTJzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 04:55:45 -0500
+Message-ID: <546DBA8E.6080401@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 10:55:26 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141119144105.GB108701@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux-media@vger.kernel.org, linux1394-devel@lists.sourceforge.net
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] [media] firewire: Deletion of an unnecessary check before
+ the function call "dvb_unregister_device"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:ql/VlIxjaTLF3IaYHmvZrdYr9MoezCarSfzXWooO14HC6FQF50g
+ Yr2AR4QFjxHj/xwBIU0aa688pov+8WjKz4FPgOHcB5CAsPofOxXkyrmrhLQFhLwOtbr0kcb
+ Norh5/b7IdPOU+xC/4WpdID3o4GBzpCW0qSpzfXfUzA0ljO7ELGR6nSZH3ysyrI9PmPF1LX
+ VvZV0RJnjxPEm3tevrzZQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/14 at 09:41am, Don Zickus wrote:
-> On Tue, Nov 18, 2014 at 05:02:54PM -0500, Dave Jones wrote:
-> > On Tue, Nov 18, 2014 at 04:55:40PM -0500, Don Zickus wrote:
-> > 
-> >  > > So here we mangle CPU3 in and lose the backtrace for cpu0, which might
-> >  > > be the real interesting one ....
-> >  > 
-> >  > Can you provide another dump?  The hope is we get something not mangled?
-> > 
-> > Working on it..
-> > 
-> >  > The other option we have done in RHEL is panic the system and let kdump
-> >  > capture the memory.  Then we can analyze the vmcore for the stack trace
-> >  > cpu0 stored in memory to get a rough idea where it might be if the cpu
-> >  > isn't responding very well.
-> > 
-> > I don't know if it's because of the debug options I typically run with,
-> > or that I'm perpetually cursed, but I've never managed to get kdump to
-> > do anything useful. (The last time I tried it was actively harmful in
-> > that not only did it fail to dump anything, it wedged the machine so
-> > it didn't reboot after panic).
-> > 
-> > Unless there's some magic step missing from the documentation at
-> > http://fedoraproject.org/wiki/How_to_use_kdump_to_debug_kernel_crashes
-> > then I'm not optimistic it'll be useful.
-> 
-> Well, I don't know when the last time you ran it, but I know the RH kexec
-> folks have started pursuing a Fedora-first package patch rule a couple of
-> years ago to ensure Fedora had a working kexec/kdump solution.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 10:49:07 +0100
 
-It started from Fedora 17, I think for Fedora pre F17 kdump support is very
-limited, it is becoming better.
+The dvb_unregister_device() function tests whether its argument is NULL
+and then returns immediately. Thus the test around the call is not needed.
 
-> 
-> As for the wedging part, it was a common problem to have the kernel hang
-> while trying to boot the second kernel (and before console output
-> happened).  So the problem makes sense and is unfortunate.  I would
-> encourage you to try again.  :-)
+This issue was detected by using the Coccinelle software.
 
-In fedora we will have more such issues than RHEL because the kernel is updated
-frequestly. There's ocasinaly new problems in upstream kernel, such as kaslr
-feature in X86.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/media/firewire/firedtv-ci.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Problem for Fedora is it is not by default enabled, so user need explictly
-specify kerenl cmdline for crashkernel reservation and enable kdump serivce.
+diff --git a/drivers/media/firewire/firedtv-ci.c b/drivers/media/firewire/firedtv-ci.c
+index e5ebdbf..e63f582 100644
+--- a/drivers/media/firewire/firedtv-ci.c
++++ b/drivers/media/firewire/firedtv-ci.c
+@@ -253,6 +253,5 @@ int fdtv_ca_register(struct firedtv *fdtv)
+ 
+ void fdtv_ca_release(struct firedtv *fdtv)
+ {
+-	if (fdtv->cadev)
+-		dvb_unregister_device(fdtv->cadev);
++	dvb_unregister_device(fdtv->cadev);
+ }
+-- 
+2.1.3
 
-There's very few bugs reported from Fedora user. So I guess it is not well tested
-in Fedora community. Since Dave bring up this issue I think it's at least a good
-news to us that someone is using it. We can address the problem case by case then.
-
-Probably a good way to get more testing is to add kdump anaconda addon by default
-at installation phase so user can choose to enable kdump or not.
-
-Thanks
-Dave
