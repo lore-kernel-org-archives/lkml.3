@@ -1,206 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021AbaKTTQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:16:56 -0500
-Received: from smtprelay0180.hostedemail.com ([216.40.44.180]:36583 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757967AbaKTTQq (ORCPT
+	id S1758020AbaKTTRm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:17:42 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35659 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756755AbaKTTRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 14:16:46 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:2:41:69:355:379:541:800:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1535:1593:1594:1730:1747:1777:1792:2197:2198:2199:2200:2393:2559:2562:2828:3138:3139:3140:3141:3142:3355:3653:3743:3865:3866:3867:3870:3871:3874:4049:4118:4605:5007:6261:9592:10004:10848:11026:11232:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12679:12683:13255:14110:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fly24_a5608576f63
-X-Filterd-Recvd-Size: 7026
-Message-ID: <1416511002.6651.20.camel@perches.com>
-Subject: [PATCH] checkpatch: Add ability to --fix (coalesce) string
- fragments on multiple lines
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 20 Nov 2014 11:16:42 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Nov 2014 14:17:41 -0500
+Date: Thu, 20 Nov 2014 19:17:38 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "keescook@chromium.org" <keescook@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 2/6] arm64: ptrace: allow tracer to skip a system call
+Message-ID: <20141120191738.GV19126@arm.com>
+References: <1416273038-15590-1-git-send-email-takahiro.akashi@linaro.org>
+ <1416273038-15590-3-git-send-email-takahiro.akashi@linaro.org>
+ <20141118140425.GM18842@arm.com>
+ <546C58DB.5080204@linaro.org>
+ <20141119190601.GM15985@arm.com>
+ <546D7860.2010300@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546D7860.2010300@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add --fix option to coalesce string fragments.
+On Thu, Nov 20, 2014 at 05:13:04AM +0000, AKASHI Takahiro wrote:
+> On 11/20/2014 04:06 AM, Will Deacon wrote:
+> > On Wed, Nov 19, 2014 at 08:46:19AM +0000, AKASHI Takahiro wrote:
+> >> Syscall(-1) will return -ENOSYS whether or not a syscallno is explicitly
+> >> replaced with -1 by a tracer, and, in this sense, it is *skipped*.
+> >
+> > Ok, but now userspace sees -ENOSYS for a skipped system call in that case,
+> > whereas it would usually see whatever the trace put in x0, right?
+> 
+> If you don't really like this behavior, how about this patch instead of my [2/6] patch?
+> 
+> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+> index 726b910..1ef57d0 100644
+> --- a/arch/arm64/kernel/entry.S
+> +++ b/arch/arm64/kernel/entry.S
+> @@ -668,8 +668,15 @@ ENDPROC(el0_svc)
+>           * switches, and waiting for our parent to respond.
+>           */
+>   __sys_trace:
+> +       cmp     w8, #-1                         // default errno for invalid
+> +       b.ne    1f                              // system call
+> +       mov     x0, #-ENOSYS
+> +       str     x0, [sp, #S_X0]
+> +1:
+>          mov     x0, sp
+>          bl      syscall_trace_enter
+> +       cmp     w0, #-1                         // skip the syscall?
+> +       b.eq    __sys_trace_return_skipped
+>          adr     lr, __sys_trace_return          // return address
+>          uxtw    scno, w0                        // syscall number (possibly new)
+>          mov     x1, sp                          // pointer to regs
+> @@ -684,6 +691,7 @@ __sys_trace:
+> 
+>   __sys_trace_return:
+>          str     x0, [sp]                        // save returned x0
+> +__sys_trace_return_skipped:
+>          mov     x0, sp
+>          bl      syscall_trace_exit
+>          b       ret_to_user
+> 
+> With this change, I believe, syscall(-1) returns -ENOSYS by default whether traced
+> or not, and still you can change a return value when tracing.
+> (But a drawback here is that a tracer will see -ENOSYS in x0 even at syscall entry
+> for syscall(-1).)
 
-This does not coalesce string fragments that have
-newline terminations or are otherwise exempted.
+But it's exactly these drawbacks that I'm objected to. syscall(-1) shouldn't
+be treated any differently to syscall(42) with respect to restarting,
+exactly like x86.
 
-Other miscellanea:
-
-o move all the string tests together.
-o fix get_quoted_string function for tab characters
-o fix concatination typo
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 112 +++++++++++++++++++++++++++++---------------------
- 1 file changed, 66 insertions(+), 46 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 6d85c7b..5a6c2dc 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -946,7 +946,7 @@ sub sanitise_line {
- sub get_quoted_string {
- 	my ($line, $rawline) = @_;
- 
--	return "" if ($line !~ m/(\"[X]+\")/g);
-+	return "" if ($line !~ m/(\"[X\t]+\")/g);
- 	return substr($rawline, $-[0], $+[0] - $-[0]);
- }
- 
-@@ -2413,33 +2413,6 @@ sub process {
- 			     "line over $max_line_length characters\n" . $herecurr);
- 		}
- 
--# Check for user-visible strings broken across lines, which breaks the ability
--# to grep for the string.  Make exceptions when the previous string ends in a
--# newline (multiple lines in one string constant) or '\t', '\r', ';', or '{'
--# (common in inline assembly) or is a octal \123 or hexadecimal \xaf value
--		if ($line =~ /^\+\s*"/ &&
--		    $prevline =~ /"\s*$/ &&
--		    $prevrawline !~ /(?:\\(?:[ntr]|[0-7]{1,3}|x[0-9a-fA-F]{1,2})|;\s*|\{\s*)"\s*$/) {
--			WARN("SPLIT_STRING",
--			     "quoted string split across lines\n" . $hereprev);
--		}
--
--# check for missing a space in a string concatination
--		if ($prevrawline =~ /[^\\]\w"$/ && $rawline =~ /^\+[\t ]+"\w/) {
--			WARN('MISSING_SPACE',
--			     "break quoted strings at a space character\n" . $hereprev);
--		}
--
--# check for spaces before a quoted newline
--		if ($rawline =~ /^.*\".*\s\\n/) {
--			if (WARN("QUOTED_WHITESPACE_BEFORE_NEWLINE",
--				 "unnecessary whitespace before a quoted newline\n" . $herecurr) &&
--			    $fix) {
--				$fixed[$fixlinenr] =~ s/^(\+.*\".*)\s+\\n/$1\\n/;
--			}
--
--		}
--
- # check for adding lines without a newline.
- 		if ($line =~ /^\+/ && defined $lines[$linenr] && $lines[$linenr] =~ /^\\ No newline at end of file/) {
- 			WARN("MISSING_EOF_NEWLINE",
-@@ -4458,6 +4431,53 @@ sub process {
- 			     "Use of volatile is usually wrong: see Documentation/volatile-considered-harmful.txt\n" . $herecurr);
- 		}
- 
-+# Check for user-visible strings broken across lines, which breaks the ability
-+# to grep for the string.  Make exceptions when the previous string ends in a
-+# newline (multiple lines in one string constant) or '\t', '\r', ';', or '{'
-+# (common in inline assembly) or is a octal \123 or hexadecimal \xaf value
-+		if ($line =~ /^\+\s*"[X\t]*"/ &&
-+		    $prevline =~ /"\s*$/ &&
-+		    $prevrawline !~ /(?:\\(?:[ntr]|[0-7]{1,3}|x[0-9a-fA-F]{1,2})|;\s*|\{\s*)"\s*$/) {
-+			if (WARN("SPLIT_STRING",
-+				 "quoted string split across lines\n" . $hereprev) &&
-+				     $fix &&
-+				     $prevrawline =~ /^\+.*"\s*$/) {
-+				my $extracted_string = get_quoted_string($line, $rawline);
-+				my $comma_close = "";
-+				if ($rawline =~ /\Q$extracted_string\E(\s*\)\s*;\s*$|\s*,\s*)/) {
-+					$comma_close = $1;
-+				}
-+
-+				fix_delete_line($fixlinenr - 1, $prevrawline);
-+				fix_delete_line($fixlinenr, $rawline);
-+				my $fixedline = $prevrawline;
-+				$fixedline =~ s/"\s*$//;
-+				$fixedline .= substr($extracted_string, 1) . trim($comma_close);
-+				fix_insert_line($fixlinenr - 1, $fixedline);
-+				$fixedline = $rawline;
-+				$fixedline =~ s/\Q$extracted_string\E\Q$comma_close\E//;
-+				if ($fixedline !~ /\+\s*$/) {
-+					fix_insert_line($fixlinenr, $fixedline);
-+				}
-+			}
-+		}
-+
-+# check for missing a space in a string concatenation
-+		if ($prevrawline =~ /[^\\]\w"$/ && $rawline =~ /^\+[\t ]+"\w/) {
-+			WARN('MISSING_SPACE',
-+			     "break quoted strings at a space character\n" . $hereprev);
-+		}
-+
-+# check for spaces before a quoted newline
-+		if ($rawline =~ /^.*\".*\s\\n/) {
-+			if (WARN("QUOTED_WHITESPACE_BEFORE_NEWLINE",
-+				 "unnecessary whitespace before a quoted newline\n" . $herecurr) &&
-+			    $fix) {
-+				$fixed[$fixlinenr] =~ s/^(\+.*\".*)\s+\\n/$1\\n/;
-+			}
-+
-+		}
-+
- # concatenated string without spaces between elements
- 		if ($line =~ /"X+"[A-Z_]+/ || $line =~ /[A-Z_]+"X+"/) {
- 			CHK("CONCATENATED_STRING",
-@@ -4470,6 +4490,24 @@ sub process {
- 			     "Consecutive strings are generally better as a single string\n" . $herecurr);
- 		}
- 
-+# check for %L{u,d,i} in strings
-+		my $string;
-+		while ($line =~ /(?:^|")([X\t]*)(?:"|$)/g) {
-+			$string = substr($rawline, $-[1], $+[1] - $-[1]);
-+			$string =~ s/%%/__/g;
-+			if ($string =~ /(?<!%)%L[udi]/) {
-+				WARN("PRINTF_L",
-+				     "\%Ld/%Lu are not-standard C, use %lld/%llu\n" . $herecurr);
-+				last;
-+			}
-+		}
-+
-+# check for line continuations in quoted strings with odd counts of "
-+		if ($rawline =~ /\\$/ && $rawline =~ tr/"/"/ % 2) {
-+			WARN("LINE_CONTINUATIONS",
-+			     "Avoid line continuations in quoted strings\n" . $herecurr);
-+		}
-+
- # warn about #if 0
- 		if ($line =~ /^.\s*\#\s*if\s+0\b/) {
- 			CHK("REDUNDANT_CODE",
-@@ -4754,12 +4792,6 @@ sub process {
- 			}
- 		}
- 
--# check for line continuations in quoted strings with odd counts of "
--		if ($rawline =~ /\\$/ && $rawline =~ tr/"/"/ % 2) {
--			WARN("LINE_CONTINUATIONS",
--			     "Avoid line continuations in quoted strings\n" . $herecurr);
--		}
--
- # check for struct spinlock declarations
- 		if ($line =~ /^.\s*\bstruct\s+spinlock\s+\w+\s*;/) {
- 			WARN("USE_SPINLOCK_T",
-@@ -5169,18 +5201,6 @@ sub process {
- 			      "#define of '$1' is wrong - use Kconfig variables or standard guards instead\n" . $herecurr);
- 		}
- 
--# check for %L{u,d,i} in strings
--		my $string;
--		while ($line =~ /(?:^|")([X\t]*)(?:"|$)/g) {
--			$string = substr($rawline, $-[1], $+[1] - $-[1]);
--			$string =~ s/%%/__/g;
--			if ($string =~ /(?<!%)%L[udi]/) {
--				WARN("PRINTF_L",
--				     "\%Ld/%Lu are not-standard C, use %lld/%llu\n" . $herecurr);
--				last;
--			}
--		}
--
- # whine mightly about in_atomic
- 		if ($line =~ /\bin_atomic\s*\(/) {
- 			if ($realfile =~ m@^drivers/@) {
-
-
+Will
