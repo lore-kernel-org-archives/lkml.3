@@ -1,70 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341AbaKTJWX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 04:22:23 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:57010 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755511AbaKTJWO (ORCPT
+	id S1757383AbaKTJXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 04:23:14 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:63352 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756837AbaKTJXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 04:22:14 -0500
-Date: Thu, 20 Nov 2014 01:22:09 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
-Subject: Re: [PATCH v4 2/4] mtd: nand: gpmi: add gpmi_move_bits function
-Message-ID: <20141120092209.GD3212@norris-Latitude-E6410>
-References: <1413794777-32220-1-git-send-email-boris.brezillon@free-electrons.com>
- <1413794777-32220-3-git-send-email-boris.brezillon@free-electrons.com>
+	Thu, 20 Nov 2014 04:23:06 -0500
+Message-ID: <546DB2F5.8070309@linaro.org>
+Date: Thu, 20 Nov 2014 10:23:01 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413794777-32220-3-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sonny Rao <sonnyrao@chromium.org>, linux-arm-kernel@lists.infradead.org
+CC: linux-kernel@vger.kernel.org, dianders@chromium.org,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, stable@vger.kernel.org
+Subject: Re: [PATCH v4] clocksource: arch_timer: Fix code to use physical
+ timers when requested
+References: <1412753937-29343-1-git-send-email-sonnyrao@chromium.org>
+In-Reply-To: <1412753937-29343-1-git-send-email-sonnyrao@chromium.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 10:46:15AM +0200, Boris Brezillon wrote:
-> Add a new function to move bits (not bytes) from a memory region to
-> another one.
-> This function is similar to memmove except it acts at bit level.
-> This function is needed to implement GPMI raw access functions, given the
-> fact that ECC engine does not pad ECC bits to the next byte boundary.
-> 
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+On 10/08/2014 09:38 AM, Sonny Rao wrote:
+> This is a bug fix for using physical arch timers when
+> the arch_timer_use_virtual boolean is false.  It restores the
+> arch_counter_get_cntpct() function after removal in
+>
+> 0d651e4e "clocksource: arch_timer: use virtual counters"
+>
+> We need this on certain ARMv7 systems which are architected like this:
+>
+> * The firmware doesn't know and doesn't care about hypervisor mode and
+>    we don't want to add the complexity of hypervisor there.
+>
+> * The firmware isn't involved in SMP bringup or resume.
+>
+> * The ARCH timer come up with an uninitialized offset between the
+>    virtual and physical counters.  Each core gets a different random
+>    offset.
+>
+> * The device boots in "Secure SVC" mode.
+>
+> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
+>    CNTHCTL.PL1PCTEN (both default to 1 at reset)
+>
+> One example of such as system is RK3288 where it is much simpler to
+> use the physical counter since there's nobody managing the offset and
+> each time a core goes down and comes back up it will get reinitialized
+> to some other random value.
+>
+> Fixes: 0d651e4e65e9 ("clocksource: arch_timer: use virtual counters")
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+> Acked-by: Olof Johansson <olof@lixom.net>
 > ---
->  drivers/mtd/nand/gpmi-nand/gpmi-lib.c  | 129 +++++++++++++++++++++++++++++++++
->  drivers/mtd/nand/gpmi-nand/gpmi-nand.h |   4 +
->  2 files changed, 133 insertions(+)
-> 
-> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> index 87e658c..5d4f140 100644
-> --- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> @@ -1353,3 +1353,132 @@ int gpmi_read_page(struct gpmi_nand_data *this,
->  	set_dma_type(this, DMA_FOR_READ_ECC_PAGE);
->  	return start_dma_with_bch_irq(this, desc);
->  }
-> +
-> +void gpmi_move_bits(u8 *dst, size_t dst_bit_off,
-> +		    const u8 *src, size_t src_bit_off,
-> +		    size_t nbits)
 
-Two things:
+Hi Sonny,
 
- 1) Yikes! This function is a little hairy.
+the patch does not apply. Could you refresh it please ?
 
- 2) This function really deserves a full comment header (kerneldoc?); it
- needs to have clearly-documented high-level semantics.
+Thanks
+   -- Daniel
 
-I'm not sure how to address #1, as the complexity is necessary. Did you
-run this through some unit tests, at least?
-
+> v2: Add fixes tag to commit message, cc stable, copy Doug's
+>      description of the systems which need this in commit message.
+> v3: Don't change the memory-mapped physical timer/counter code
+> v4: remove the memory-mapped physical counter code since it's not used
+> ---
+>   arch/arm/include/asm/arch_timer.h    |  9 +++++++++
+>   arch/arm64/include/asm/arch_timer.h  | 10 ++++++++++
+>   drivers/clocksource/arm_arch_timer.c | 10 +++++++---
+>   3 files changed, 26 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+> index 0704e0c..e72aa4d 100644
+> --- a/arch/arm/include/asm/arch_timer.h
+> +++ b/arch/arm/include/asm/arch_timer.h
+> @@ -78,6 +78,15 @@ static inline u32 arch_timer_get_cntfrq(void)
+>   	return val;
+>   }
+>
+> +static inline u64 arch_counter_get_cntpct(void)
 > +{
-[snip]
+> +	u64 cval;
+> +
+> +	isb();
+> +	asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (cval));
+> +	return cval;
 > +}
+> +
+>   static inline u64 arch_counter_get_cntvct(void)
+>   {
+>   	u64 cval;
+> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+> index 9400596..58657c4 100644
+> --- a/arch/arm64/include/asm/arch_timer.h
+> +++ b/arch/arm64/include/asm/arch_timer.h
+> @@ -135,6 +135,16 @@ static inline void arch_timer_evtstrm_enable(int divider)
+>   #endif
+>   }
+>
+> +static inline u64 arch_counter_get_cntpct(void)
+> +{
+> +	u64 cval;
+> +
+> +	isb();
+> +	asm volatile("mrs %0, cntpct_el0" : "=r" (cval));
+> +
+> +	return cval;
+> +}
+> +
+>   static inline u64 arch_counter_get_cntvct(void)
+>   {
+>   	u64 cval;
+> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+> index 6b50311..799139f 100644
+> --- a/drivers/clocksource/arm_arch_timer.c
+> +++ b/drivers/clocksource/arm_arch_timer.c
+> @@ -429,10 +429,14 @@ static void __init arch_counter_register(unsigned type)
+>   	u64 start_count;
+>
+>   	/* Register the CP15 based counter if we have one */
+> -	if (type & ARCH_CP15_TIMER)
+> -		arch_timer_read_counter = arch_counter_get_cntvct;
+> -	else
+> +	if (type & ARCH_CP15_TIMER) {
+> +		if (arch_timer_use_virtual)
+> +			arch_timer_read_counter = arch_counter_get_cntvct;
+> +		else
+> +			arch_timer_read_counter = arch_counter_get_cntpct;
+> +	} else {
+>   		arch_timer_read_counter = arch_counter_get_cntvct_mem;
+> +	}
+>
+>   	start_count = arch_timer_read_counter();
+>   	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
+>
 
-Brian
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
