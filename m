@@ -1,101 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697AbaKTGJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 01:09:40 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:42737 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaKTGJi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 01:09:38 -0500
-Date: Wed, 19 Nov 2014 22:09:33 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Barto <mister.freeman@laposte.net>
-Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: BUG in scsi_lib.c due to a bad commit
-Message-ID: <20141120060933.GA21432@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1755511AbaKTGLA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 01:11:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42871 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751254AbaKTGK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 01:10:58 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>, Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH net V3] virtio-net: validate features during probe
+Date: Thu, 20 Nov 2014 14:10:35 +0800
+Message-Id: <1416463835-7364-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I
+We currently trigger BUG when VIRTIO_NET_F_CTRL_VQ
+is not set but one of features depending on it is.
+That's not a friendly way to report errors to
+hypervisors.
+Let's check, and fail probe instead.
 
-Hi Barto,
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+Changes from V2:
+- only check the features for ctrl vq (this fix the real bug)
+- better error message and simplify API
+---
+ drivers/net/virtio_net.c | 37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
-sorry for the late reply, and thanks for drilling down the exact
-conditions.
-
-I think we have some issues with the lack of the host lock vs error
-handling, but I still don't undertand the details.
-
-I've got a test patch for you that just adds the host lock back in a few
-places while keeing the atomic_t.  Can you try to reproduce with that
-one?
-
-When breaking an existing setup in software it's always the softwares
-fault, btw..
-
-
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 994eb08..99b77f7 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -311,16 +311,16 @@ void scsi_device_unbusy(struct scsi_device *sdev)
- 	struct scsi_target *starget = scsi_target(sdev);
- 	unsigned long flags;
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index ec2a8b4..a6bcfce 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1673,6 +1673,40 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
+ };
+ #endif
  
-+	spin_lock_irqsave(shost->host_lock, flags);
- 	atomic_dec(&shost->host_busy);
- 	if (starget->can_queue > 0)
- 		atomic_dec(&starget->target_busy);
- 
- 	if (unlikely(scsi_host_in_recovery(shost) &&
- 		     (shost->host_failed || shost->host_eh_scheduled))) {
--		spin_lock_irqsave(shost->host_lock, flags);
- 		scsi_eh_wakeup(shost);
--		spin_unlock_irqrestore(shost->host_lock, flags);
- 	}
-+	spin_unlock_irqrestore(shost->host_lock, flags);
- 
- 	atomic_dec(&sdev->device_busy);
- }
-@@ -1504,6 +1504,8 @@ static inline int scsi_host_queue_ready(struct request_queue *q,
- 	if (scsi_host_in_recovery(shost))
- 		return 0;
- 
-+	spin_lock_irq(shost->host_lock);
++static bool virtnet_fail_on_feature(struct virtio_device *vdev,
++				    unsigned int fbit,
++				    const char *fname, const char *dname)
++{
++	if (!virtio_has_feature(vdev, fbit))
++		return false;
 +
- 	busy = atomic_inc_return(&shost->host_busy) - 1;
- 	if (atomic_read(&shost->host_blocked) > 0) {
- 		if (busy)
-@@ -1527,21 +1529,19 @@ static inline int scsi_host_queue_ready(struct request_queue *q,
++	dev_err(&vdev->dev, "Hypervisor bug: advertise feature %s but not %s",
++		fname, dname);
++
++	return true;
++}
++
++#define VIRTNET_FAIL_ON(vdev, fbit, dbit)			\
++	virtnet_fail_on_feature(vdev, fbit, #fbit, #dbit)
++
++static bool virtnet_validate_features(struct virtio_device *vdev)
++{
++	if (!virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ) &&
++	    (VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_RX,
++			     VIRTIO_NET_F_CTRL_VQ) ||
++	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_VLAN,
++			     VIRTIO_NET_F_CTRL_VQ) ||
++	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_GUEST_ANNOUNCE,
++			     VIRTIO_NET_F_TRL_VQ) ||
++	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_MQ, VIRTIO_NET_F_CTRL_VQ) ||
++	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_MAC_ADDR,
++			     VIRTIO_NET_F_CTRL_VQ))) {
++		return false;
++	}
++
++	return true;
++}
++
+ static int virtnet_probe(struct virtio_device *vdev)
+ {
+ 	int i, err;
+@@ -1680,6 +1714,9 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	struct virtnet_info *vi;
+ 	u16 max_queue_pairs;
  
- 	/* We're OK to process the command, so we can't be starved */
- 	if (!list_empty(&sdev->starved_entry)) {
--		spin_lock_irq(shost->host_lock);
- 		if (!list_empty(&sdev->starved_entry))
- 			list_del_init(&sdev->starved_entry);
--		spin_unlock_irq(shost->host_lock);
- 	}
- 
-+	spin_unlock_irq(shost->host_lock);
- 	return 1;
- 
- starved:
--	spin_lock_irq(shost->host_lock);
- 	if (list_empty(&sdev->starved_entry))
- 		list_add_tail(&sdev->starved_entry, &shost->starved_list);
--	spin_unlock_irq(shost->host_lock);
- out_dec:
- 	atomic_dec(&shost->host_busy);
-+	spin_unlock_irq(shost->host_lock);
- 	return 0;
- }
- 
++	if (!virtnet_validate_features(vdev))
++		return -EINVAL;
++
+ 	/* Find if host supports multiqueue virtio_net device */
+ 	err = virtio_cread_feature(vdev, VIRTIO_NET_F_MQ,
+ 				   struct virtio_net_config,
+-- 
+1.9.1
+
