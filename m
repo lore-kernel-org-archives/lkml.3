@@ -1,372 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046AbaKTL6J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 06:58:09 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:47481 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaKTL6H (ORCPT
+	id S1756141AbaKTL6R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 06:58:17 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:10849 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238AbaKTL6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 06:58:07 -0500
-Message-ID: <546DD746.1020704@hitachi.com>
-Date: Thu, 20 Nov 2014 20:57:58 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Wang Nan <wangnan0@huawei.com>
-Cc: tixy@linaro.org, linux@arm.linux.org.uk, will.deacon@arm.com,
-        dave.long@linaro.org, taras.kondratiuk@linaro.org,
-        ben.dooks@codethink.co.uk, cl@linux.com, rabin@rab.in,
-        davem@davemloft.net, lizefan@huawei.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/3] ARM: kprobes: introduces checker
-References: <1416291582-74982-1-git-send-email-wangnan0@huawei.com> <1416291582-74982-2-git-send-email-wangnan0@huawei.com>
-In-Reply-To: <1416291582-74982-2-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Nov 2014 06:58:13 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-47-546dd752147a
+Date: Thu, 20 Nov 2014 12:58:04 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/33] thermal: exynos: convert the driver to use
+ per-SoC type operations
+Message-id: <20141120125804.5248eb61@amdc2363>
+In-reply-to: <1415890888-8881-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1415890888-8881-1-git-send-email-b.zolnierkie@samsung.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t9jAd2g67khBq1/+S0aroZYbJyxntVi
+	/pVrrBZnm96wW1zeNYfN4nPvEUaLGef3MVk8edjH5sDhsXPWXXaPxXteMnn0bVnF6PF5k1wA
+	SxSXTUpqTmZZapG+XQJXxp+jD1gLtitWfJ05nbGBcYV0FyMnh4SAicS2mR0sELaYxIV769m6
+	GLk4hAQWMUpMevaIEcL5xSjR82IVM0gVi4CqxLze5UwgNpuAnsTnu0/BbBEBLYkTl7YzgTQw
+	C0xjkrizciMbSEJYIEniYNMrVhCbF6jh05smRhCbU8BD4tXUv2C2kIC7xLVH78AW8AtISrT/
+	+8EMcZKdxLlPG9ghegUlfky+B3YqM9CyzduaWCFseYnNa94yT2AUnIWkbBaSsllIyhYwMq9i
+	FE0tSC4oTkrPNdIrTswtLs1L10vOz93ECA7/Z9I7GFc1WBxiFOBgVOLhTbDIDRFiTSwrrsw9
+	xCjBwawkwquxEyjEm5JYWZValB9fVJqTWnyIUZqDRUmc99A1oJRAemJJanZqakFqEUyWiYNT
+	qoFRXUOU26Njcs7pCHZDnnX2Vg5v3HRlRfnOxjLc66v3sgm8tnffdp89BcLCCTfiNzptNije
+	urfb0ECtk9+gap/RhOls/Ab5R2aU3+cPvSqvePV0irjVxeIf2plFiwSK+aczP5uw1OOjHtua
+	c819R6rLlj1y5vpz1SxgcdriMz+XS6j/3211Q0CJpTgj0VCLuag4EQBP4hTrewIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/18 15:19), Wang Nan wrote:
-> This patch introdces 'checker' to decoding phase, and calls checkers
-> when instruction decoding. This allows further decoding for specific
-> instructions.
+Hi Eduardo,
+
+> Hi,
 > 
-> v1 -> v2:
->  - kprobe checker stubs are introduced in this patch.
+> This patch series replaces the hardware registers abstractions in
+> the Exynos thermal driver by the usage of per-SoC type operations.
+> Such solution provides simpler, easier to understand code and
+> allows removal of ~250 LOCs (~11% of the whole source code) from
+> the driver.  Some other driver improvements are now also possible
+> thanks to these changes but are scheduled at later time (like
+> consolidating code for clearing IRQs using INTCLEAR register).
+> 
+> The patchset should not cause any functionality changes.  This
+> means that unless there are some bugs in the patches itself there
+> should be no behavior changes for the driver (this also includes
+> lack of changes in the way hardware is accessed by the driver).
+> 
+> All testing was done on (Exynos4412 SoC based) ODROID U3 board
+> (some additional patches are needed to make the Exynos thermal
+> driver work on this hardware).
 
-Hmm, could you state this patch just introduce a "stub" call of the
-checker in the patch description? (not only version comment)
+For the whole patch series:
 
-Other parts are OK to me.
+Repository:
+kernel_linux-soc-thermal/next
+SHA1: 4027494124fd88e5d51127eebba315de5d8d57c8
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Test HW:
 
-Thank you,
+Trats2 - Exynos4412
+Tested-by: Lukasz Majewski <l.majewski@samsung.com>
+
+Trats - Exynos4210
+Tested-by: Lukasz Majewski <l.majewski@samsung.com>
+
+ARNDALE(SMDK) - Exynos5250
+Tested-by: Lukasz Majewski <l.majewski@samsung.com>
+
+ARNDALE OCTA - Exynos5420
+Tested-by: Lukasz Majewski <l.majewski@samsung.com>
+
 
 > 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> ---
->  arch/arm/kernel/kprobes-arm.c   |  2 ++
->  arch/arm/kernel/kprobes-thumb.c |  3 +++
->  arch/arm/kernel/kprobes.c       |  6 ++++-
->  arch/arm/kernel/kprobes.h       |  7 ++++--
->  arch/arm/kernel/probes-arm.c    |  5 ++--
->  arch/arm/kernel/probes-arm.h    |  3 ++-
->  arch/arm/kernel/probes-thumb.c  | 10 ++++----
->  arch/arm/kernel/probes-thumb.h  |  6 +++--
->  arch/arm/kernel/probes.c        | 51 ++++++++++++++++++++++++++++++++++++++++-
->  arch/arm/kernel/probes.h        | 11 ++++++++-
->  arch/arm/kernel/uprobes.c       |  2 +-
->  11 files changed, 91 insertions(+), 15 deletions(-)
+> Depends on:
+> - 'next' branch of linux-soc-thermal.git kernel tree from Eduardo
 > 
-> diff --git a/arch/arm/kernel/kprobes-arm.c b/arch/arm/kernel/kprobes-arm.c
-> index ac300c6..5a81275 100644
-> --- a/arch/arm/kernel/kprobes-arm.c
-> +++ b/arch/arm/kernel/kprobes-arm.c
-> @@ -341,3 +341,5 @@ const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
->  	[PROBES_BRANCH] = {.handler = simulate_bbl},
->  	[PROBES_LDMSTM] = {.decoder = kprobe_decode_ldmstm}
->  };
-> +
-> +const struct decode_checker *kprobes_arm_checkers[] = {NULL};
-> diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
-> index 9495d7f..b8ba7d2 100644
-> --- a/arch/arm/kernel/kprobes-thumb.c
-> +++ b/arch/arm/kernel/kprobes-thumb.c
-> @@ -664,3 +664,6 @@ const union decode_action kprobes_t32_actions[NUM_PROBES_T32_ACTIONS] = {
->  	[PROBES_T32_MUL_ADD_LONG] = {
->  		.handler = t32_emulate_rdlo12rdhi8rn16rm0_noflags},
->  };
-> +
-> +const struct decode_checker *kprobes_t32_checkers[] = {NULL};
-> +const struct decode_checker *kprobes_t16_checkers[] = {NULL};
-> diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
-> index 6d64420..f114a3f 100644
-> --- a/arch/arm/kernel/kprobes.c
-> +++ b/arch/arm/kernel/kprobes.c
-> @@ -61,6 +61,7 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
->  	kprobe_decode_insn_t *decode_insn;
->  	const union decode_action *actions;
->  	int is;
-> +	const struct decode_checker **checkers;
->  
->  	if (in_exception_text(addr))
->  		return -EINVAL;
-> @@ -74,9 +75,11 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
->  		insn = __opcode_thumb32_compose(insn, inst2);
->  		decode_insn = thumb32_probes_decode_insn;
->  		actions = kprobes_t32_actions;
-> +		checkers = kprobes_t32_checkers;
->  	} else {
->  		decode_insn = thumb16_probes_decode_insn;
->  		actions = kprobes_t16_actions;
-> +		checkers = kprobes_t16_checkers;
->  	}
->  #else /* !CONFIG_THUMB2_KERNEL */
->  	thumb = false;
-> @@ -85,12 +88,13 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
->  	insn = __mem_to_opcode_arm(*p->addr);
->  	decode_insn = arm_probes_decode_insn;
->  	actions = kprobes_arm_actions;
-> +	checkers = kprobes_arm_checkers;
->  #endif
->  
->  	p->opcode = insn;
->  	p->ainsn.insn = tmp_insn;
->  
-> -	switch ((*decode_insn)(insn, &p->ainsn, true, actions)) {
-> +	switch ((*decode_insn)(insn, &p->ainsn, true, actions, NULL)) {
->  	case INSN_REJECTED:	/* not supported */
->  		return -EINVAL;
->  
-> diff --git a/arch/arm/kernel/kprobes.h b/arch/arm/kernel/kprobes.h
-> index 9a2712e..05f3b40 100644
-> --- a/arch/arm/kernel/kprobes.h
-> +++ b/arch/arm/kernel/kprobes.h
-> @@ -36,16 +36,19 @@ kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_probes_insn *asi,
->  typedef enum probes_insn (kprobe_decode_insn_t)(probes_opcode_t,
->  						struct arch_probes_insn *,
->  						bool,
-> -						const union decode_action *);
-> +						const union decode_action *,
-> +						const struct decode_checker *[*]);
->  
->  #ifdef CONFIG_THUMB2_KERNEL
->  
->  extern const union decode_action kprobes_t32_actions[];
->  extern const union decode_action kprobes_t16_actions[];
-> -
-> +extern const struct decode_checker *kprobes_t32_checkers[];
-> +extern const struct decode_checker *kprobes_t16_checkers[];
->  #else /* !CONFIG_THUMB2_KERNEL */
->  
->  extern const union decode_action kprobes_arm_actions[];
-> +extern const struct decode_checker *kprobes_arm_checkers[];
->  
->  #endif
->  
-> diff --git a/arch/arm/kernel/probes-arm.c b/arch/arm/kernel/probes-arm.c
-> index 8eaef81..125feda 100644
-> --- a/arch/arm/kernel/probes-arm.c
-> +++ b/arch/arm/kernel/probes-arm.c
-> @@ -725,10 +725,11 @@ static void __kprobes arm_singlestep(probes_opcode_t insn,
->   */
->  enum probes_insn __kprobes
->  arm_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
-> -		       bool emulate, const union decode_action *actions)
-> +		       bool emulate, const union decode_action *actions,
-> +		       const struct decode_checker *checkers[])
->  {
->  	asi->insn_singlestep = arm_singlestep;
->  	asi->insn_check_cc = probes_condition_checks[insn>>28];
->  	return probes_decode_insn(insn, asi, probes_decode_arm_table, false,
-> -				  emulate, actions);
-> +				  emulate, actions, checkers);
->  }
-> diff --git a/arch/arm/kernel/probes-arm.h b/arch/arm/kernel/probes-arm.h
-> index ace6572..8b11ec4 100644
-> --- a/arch/arm/kernel/probes-arm.h
-> +++ b/arch/arm/kernel/probes-arm.h
-> @@ -68,6 +68,7 @@ extern const union decode_item probes_decode_arm_table[];
->  
->  enum probes_insn arm_probes_decode_insn(probes_opcode_t,
->  		struct arch_probes_insn *, bool emulate,
-> -		const union decode_action *actions);
-> +		const union decode_action *actions,
-> +		const struct decode_checker *checkers[]);
->  
->  #endif
-> diff --git a/arch/arm/kernel/probes-thumb.c b/arch/arm/kernel/probes-thumb.c
-> index 4131351..a5022b4 100644
-> --- a/arch/arm/kernel/probes-thumb.c
-> +++ b/arch/arm/kernel/probes-thumb.c
-> @@ -863,20 +863,22 @@ static void __kprobes thumb32_singlestep(probes_opcode_t opcode,
->  
->  enum probes_insn __kprobes
->  thumb16_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
-> -			   bool emulate, const union decode_action *actions)
-> +			   bool emulate, const union decode_action *actions,
-> +			   const struct decode_checker *checkers[])
->  {
->  	asi->insn_singlestep = thumb16_singlestep;
->  	asi->insn_check_cc = thumb_check_cc;
->  	return probes_decode_insn(insn, asi, probes_decode_thumb16_table, true,
-> -				  emulate, actions);
-> +				  emulate, actions, checkers);
->  }
->  
->  enum probes_insn __kprobes
->  thumb32_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
-> -			   bool emulate, const union decode_action *actions)
-> +			   bool emulate, const union decode_action *actions,
-> +			   const struct decode_checker *checkers[])
->  {
->  	asi->insn_singlestep = thumb32_singlestep;
->  	asi->insn_check_cc = thumb_check_cc;
->  	return probes_decode_insn(insn, asi, probes_decode_thumb32_table, true,
-> -				  emulate, actions);
-> +				  emulate, actions, checkers);
->  }
-> diff --git a/arch/arm/kernel/probes-thumb.h b/arch/arm/kernel/probes-thumb.h
-> index 7c6f6eb..ccfe3e4 100644
-> --- a/arch/arm/kernel/probes-thumb.h
-> +++ b/arch/arm/kernel/probes-thumb.h
-> @@ -89,9 +89,11 @@ extern const union decode_item probes_decode_thumb16_table[];
->  
->  enum probes_insn __kprobes
->  thumb16_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
-> -		bool emulate, const union decode_action *actions);
-> +		bool emulate, const union decode_action *actions,
-> +		const struct decode_checker *checkers[]);
->  enum probes_insn __kprobes
->  thumb32_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
-> -		bool emulate, const union decode_action *actions);
-> +		bool emulate, const union decode_action *actions,
-> +		const struct decode_checker *checkers[]);
->  
->  #endif
-> diff --git a/arch/arm/kernel/probes.c b/arch/arm/kernel/probes.c
-> index a8ab540..02598da 100644
-> --- a/arch/arm/kernel/probes.c
-> +++ b/arch/arm/kernel/probes.c
-> @@ -342,6 +342,31 @@ static const int decode_struct_sizes[NUM_DECODE_TYPES] = {
->  	[DECODE_TYPE_REJECT]	= sizeof(struct decode_reject)
->  };
->  
-> +static int run_checkers(const struct decode_checker *checkers[],
-> +		int action, probes_opcode_t insn,
-> +		struct arch_probes_insn *asi,
-> +		const struct decode_header *h)
-> +{
-> +	const struct decode_checker **p;
-> +
-> +	if (!checkers)
-> +		return INSN_GOOD;
-> +
-> +	p = checkers;
-> +	while (*p != NULL) {
-> +		int retval;
-> +		probes_check_t *checker_func = (*p)[action].checker;
-> +
-> +		retval = INSN_GOOD;
-> +		if (checker_func)
-> +			retval = checker_func(insn, asi, h);
-> +		if (retval == INSN_REJECTED)
-> +			return retval;
-> +		p++;
-> +	}
-> +	return INSN_GOOD;
-> +}
-> +
->  /*
->   * probes_decode_insn operates on data tables in order to decode an ARM
->   * architecture instruction onto which a kprobe has been placed.
-> @@ -388,11 +413,17 @@ static const int decode_struct_sizes[NUM_DECODE_TYPES] = {
->  int __kprobes
->  probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
->  		   const union decode_item *table, bool thumb,
-> -		   bool emulate, const union decode_action *actions)
-> +		   bool emulate, const union decode_action *actions,
-> +		   const struct decode_checker *checkers[])
->  {
->  	const struct decode_header *h = (struct decode_header *)table;
->  	const struct decode_header *next;
->  	bool matched = false;
-> +	/*
-> +	 * @insn can be modified by decode_regs. Save its original
-> +	 * value for checkers.
-> +	 */
-> +	probes_opcode_t origin_insn = insn;
->  
->  	if (emulate)
->  		insn = prepare_emulated_insn(insn, asi, thumb);
-> @@ -422,18 +453,36 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
->  		}
->  
->  		case DECODE_TYPE_CUSTOM: {
-> +			int err;
->  			struct decode_custom *d = (struct decode_custom *)h;
-> +			int action = d->decoder.action;
-> +
-> +			err = run_checkers(checkers, action, origin_insn, asi, h);
-> +			if (err == INSN_REJECTED)
-> +				return INSN_REJECTED;
->  			return actions[d->decoder.action].decoder(insn, asi, h);
->  		}
->  
->  		case DECODE_TYPE_SIMULATE: {
-> +			int err;
->  			struct decode_simulate *d = (struct decode_simulate *)h;
-> +			int action = d->handler.action;
-> +
-> +			err = run_checkers(checkers, action, origin_insn, asi, h);
-> +			if (err == INSN_REJECTED)
-> +				return INSN_REJECTED;
->  			asi->insn_handler = actions[d->handler.action].handler;
->  			return INSN_GOOD_NO_SLOT;
->  		}
->  
->  		case DECODE_TYPE_EMULATE: {
-> +			int err;
->  			struct decode_emulate *d = (struct decode_emulate *)h;
-> +			int action = d->handler.action;
-> +
-> +			err = run_checkers(checkers, action, origin_insn, asi, h);
-> +			if (err == INSN_REJECTED)
-> +				return INSN_REJECTED;
->  
->  			if (!emulate)
->  				return actions[d->handler.action].decoder(insn,
-> diff --git a/arch/arm/kernel/probes.h b/arch/arm/kernel/probes.h
-> index dba9f24..b4bf1f5 100644
-> --- a/arch/arm/kernel/probes.h
-> +++ b/arch/arm/kernel/probes.h
-> @@ -314,6 +314,14 @@ union decode_action {
->  	probes_custom_decode_t	*decoder;
->  };
->  
-> +typedef enum probes_insn (probes_check_t)(probes_opcode_t,
-> +					   struct arch_probes_insn *,
-> +					   const struct decode_header *);
-> +
-> +struct decode_checker {
-> +	probes_check_t	*checker;
-> +};
-> +
->  #define DECODE_END			\
->  	{.bits = DECODE_TYPE_END}
->  
-> @@ -402,6 +410,7 @@ probes_insn_handler_t probes_emulate_none;
->  int __kprobes
->  probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
->  		const union decode_item *table, bool thumb, bool emulate,
-> -		const union decode_action *actions);
-> +		const union decode_action *actions,
-> +		const struct decode_checker **checkers);
->  
->  #endif
-> diff --git a/arch/arm/kernel/uprobes.c b/arch/arm/kernel/uprobes.c
-> index 56adf9c..372585a 100644
-> --- a/arch/arm/kernel/uprobes.c
-> +++ b/arch/arm/kernel/uprobes.c
-> @@ -88,7 +88,7 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
->  	auprobe->ixol[1] = __opcode_to_mem_arm(UPROBE_SS_ARM_INSN);
->  
->  	ret = arm_probes_decode_insn(insn, &auprobe->asi, false,
-> -				     uprobes_probes_actions);
-> +				     uprobes_probes_actions, NULL);
->  	switch (ret) {
->  	case INSN_REJECTED:
->  		return -EINVAL;
+> Changes since v1 (https://lkml.org/lkml/2014/9/18/305):
+> - rebased on top of the current linux-soc-thermal kernel
 > 
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+> 
+> 
+> Bartlomiej Zolnierkiewicz (33):
+>   thermal: exynos: remove needless triminfo_data abstraction
+>   thermal: exynos: remove needless tmu_status abstraction
+>   thermal: exynos: remove needless threshold_temp abstraction
+>   thermal: exynos: remove needless triminfo_ctrl abstraction
+>   thermal: exynos: remove needless test_mux_addr_shift abstraction
+>   thermal: exynos: remove needless therm_trip_[mode,mask]_shift
+>     abstractions
+>   thermal: exynos: remove needless therm_trip_en_shift abstraction
+>   thermal: exynos: remove needless emul_temp_shift abstraction
+>   thermal: exynos: remove needless emul_time_shift abstraction
+>   thermal: exynos: replace tmu_irqstatus check by Exynos5440 one
+>   thermal: exynos: replace tmu_pmin check by Exynos5440 one
+>   thermal: exynos: simplify HW_TRIP level setting
+>   thermal: exynos: replace threshold_falling check by Exynos SoC type
+>     one
+>   thermal: exynos: remove TMU_SUPPORT_READY_STATUS flag
+>   thermal: exynos: remove TMU_SUPPORT_TRIM_RELOAD flag
+>   thermal: exynos: add sanitize_temp_error() helper
+>   thermal: exynos: add get_th_reg() helper
+>   thermal: exynos: add ->tmu_initialize method
+>   thermal: exynos: add get_con_reg() helper
+>   thermal: exynos: add ->tmu_control method
+>   thermal: exynos: add ->tmu_read method
+>   thermal: exynos: add get_emul_con_reg() helper
+>   thermal: exynos: add ->tmu_set_emulation method
+>   thermal: exynos: add ->tmu_clear_irqs method
+>   thermal: exynos: remove TMU_SUPPORT_FALLING_TRIP flag
+>   thermal: exynos: remove TMU_SUPPORT_EMUL_TIME flag
+>   thermal: exynos: remove TMU_SUPPORT_EMULATION flag
+>   thermal: exynos: remove TMU_SUPPORT_ADDRESS_MULTIPLE flag
+>   thermal: exynos: remove TMU_SUPPORT_MULTI_INST flag
+>   thermal: exynos: remove test_mux pdata field
+>   thermal: exynos: remove SoC type ifdefs
+>   thermal: exynos: remove __EXYNOS5420_TMU_DATA macro
+>   thermal: exynos: remove exynos_tmu_data.h include
+> 
+>  drivers/thermal/samsung/exynos_thermal_common.h |   1 -
+>  drivers/thermal/samsung/exynos_tmu.c            | 692
+> ++++++++++++++++--------
+> drivers/thermal/samsung/exynos_tmu.h            | 123 +----
+> drivers/thermal/samsung/exynos_tmu_data.c       | 239 +-------
+> drivers/thermal/samsung/exynos_tmu_data.h       | 159 ------ 5 files
+> changed, 485 insertions(+), 729 deletions(-) delete mode 100644
+> drivers/thermal/samsung/exynos_tmu_data.h
+> 
+
 
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Best regards,
 
+Lukasz Majewski
 
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
