@@ -1,101 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758110AbaKTUbB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 15:31:01 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:44151 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291AbaKTUa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 15:30:59 -0500
-Date: Thu, 20 Nov 2014 15:30:21 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, Ian.Campbell@citrix.com,
-        david.vrabel@citrix.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, catalin.marinas@arm.com
-Subject: Re: [PATCH v9 12/13] swiotlb-xen: pass dev_addr to
- xen_dma_unmap_page and xen_dma_sync_single_for_cpu
-Message-ID: <20141120203020.GJ31889@laptop.dumpdata.com>
-References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
- <1415792454-23161-12-git-send-email-stefano.stabellini@eu.citrix.com>
- <20141119210703.GE20440@laptop.dumpdata.com>
- <alpine.DEB.2.02.1411201033460.12596@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1411201046110.12596@kaball.uk.xensource.com>
+	id S1758129AbaKTUbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 15:31:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60057 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756291AbaKTUbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 15:31:17 -0500
+Date: Thu, 20 Nov 2014 22:30:44 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
+        hch@infradead.org, rusty@rustcorp.com.au, dm-devel@redhat.com
+Subject: Re: [PATCH] virtio_blk: fix defaults for max_hw_sectors and
+ max_segment_size
+Message-ID: <20141120203044.GA9078@redhat.com>
+References: <20141120190058.GA31214@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1411201046110.12596@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20141120190058.GA31214@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 10:47:51AM +0000, Stefano Stabellini wrote:
-> On Thu, 20 Nov 2014, Stefano Stabellini wrote:
-> > On Wed, 19 Nov 2014, Konrad Rzeszutek Wilk wrote:
-> > > On Wed, Nov 12, 2014 at 11:40:53AM +0000, Stefano Stabellini wrote:
-> > > > xen_dma_unmap_page and xen_dma_sync_single_for_cpu take a dma_addr_t
-> > > > handle as argument, not a physical address.
-> > > 
-> > > Ouch. Should this also go on stable tree?
-> > 
-> > Good idea
+On Thu, Nov 20, 2014 at 02:00:59PM -0500, Mike Snitzer wrote:
+> virtio_blk incorrectly established -1U as the default for these
+> queue_limits.  Set these limits to sane default values to avoid crashing
+> the kernel.  But the virtio-blk protocol should probably be extended to
+> allow proper stacking of the disk's limits from the host.
 > 
-> Also can I take that as an Acked-by for this patch?
+> This change fixes a crash that was reported when virtio-blk was used to
+> test linux-dm.git commit 604ea90641b4 ("dm thin: adjust max_sectors_kb
+> based on thinp blocksize") that will initially set max_sectors to
+> max_hw_sectors and then rounddown to the first power-of-2 factor of the
+> DM thin-pool's blocksize.  Basically that commit assumes drivers don't
+> suck when establishing max_hw_sectors so it acted like a canary in the
+> coal mine.
+> 
+> In the case of a DM thin-pool built ontop of virtio-blk data device
+> these are the insane limits that were established for the DM thin-pool:
+> 
+>   # cat /sys/block/dm-6/queue/max_sectors_kb
+>   1073741824
+>   # cat /sys/block/dm-6/queue/max_hw_sectors_kb
+>   2147483647
+> 
+> by stacking the virtio-blk device's limits:
+> 
+>   # cat /sys/block/vdb/queue/max_sectors_kb
+>   512
+>   # cat /sys/block/vdb/queue/max_hw_sectors_kb
+>   2147483647
+> 
+> Attempting to mkfs.xfs against a thin device from this thin-pool quickly
+> resulted in fs/direct-io.c:dio_send_cur_page()'s BUG_ON.
 
-Yes.
-> 
-> 
-> There is one last bit of common and x86 changes in this series:
-> patch #7 adds a paramter to xen_dma_map_page, even though the x86
-> implementation is empty:
-> 
-> http://marc.info/?l=xen-devel&m=141579253829808&w=2
-> 
-> is that OK for you?
+Why exactly does it BUG_ON?
+Did some memory allocation fail?
 
-Yes.
+Will it still BUG_ON if host gives us high values?
+
+If linux makes assumptions about hardware limits, won't
+it be better to put them in blk core and not in
+individual drivers?
+
+
+> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/block/virtio_blk.c |    9 ++++++---
+>  1 files changed, 6 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+> index c6a27d5..68efbdc 100644
+> --- a/drivers/block/virtio_blk.c
+> +++ b/drivers/block/virtio_blk.c
+> @@ -674,8 +674,11 @@ static int virtblk_probe(struct virtio_device *vdev)
+>  	/* No need to bounce any requests */
+>  	blk_queue_bounce_limit(q, BLK_BOUNCE_ANY);
 >  
+> -	/* No real sector limit. */
+> -	blk_queue_max_hw_sectors(q, -1U);
+> +	/*
+> +	 * Limited by disk's max_hw_sectors in host, but
+> +	 * without that info establish a sane default.
+> +	 */
+> +	blk_queue_max_hw_sectors(q, BLK_DEF_MAX_SECTORS);
+
+I see
+drivers/usb/storage/scsiglue.c: blk_queue_max_hw_sectors(sdev->request_queue, 0x7FFFFF);
+
+so maybe we should go higher, and use INT_MAX too?
+
+
 >  
-> > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > > Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-> > > > ---
-> > > >  drivers/xen/swiotlb-xen.c |    6 +++---
-> > > >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> > > > index 3725ee4..498b654 100644
-> > > > --- a/drivers/xen/swiotlb-xen.c
-> > > > +++ b/drivers/xen/swiotlb-xen.c
-> > > > @@ -449,7 +449,7 @@ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
-> > > >  
-> > > >  	BUG_ON(dir == DMA_NONE);
-> > > >  
-> > > > -	xen_dma_unmap_page(hwdev, paddr, size, dir, attrs);
-> > > > +	xen_dma_unmap_page(hwdev, dev_addr, size, dir, attrs);
-> > > >  
-> > > >  	/* NOTE: We use dev_addr here, not paddr! */
-> > > >  	if (is_xen_swiotlb_buffer(dev_addr)) {
-> > > > @@ -497,14 +497,14 @@ xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
-> > > >  	BUG_ON(dir == DMA_NONE);
-> > > >  
-> > > >  	if (target == SYNC_FOR_CPU)
-> > > > -		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
-> > > > +		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
-> > > >  
-> > > >  	/* NOTE: We use dev_addr here, not paddr! */
-> > > >  	if (is_xen_swiotlb_buffer(dev_addr))
-> > > >  		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
-> > > >  
-> > > >  	if (target == SYNC_FOR_DEVICE)
-> > > > -		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
-> > > > +		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
-> > > >  
-> > > >  	if (dir != DMA_FROM_DEVICE)
-> > > >  		return;
-> > > > -- 
-> > > > 1.7.10.4
-> > > > 
-> > > 
-> > 
+>  	/* Host can optionally specify maximum segment size and number of
+>  	 * segments. */
+> @@ -684,7 +687,7 @@ static int virtblk_probe(struct virtio_device *vdev)
+>  	if (!err)
+>  		blk_queue_max_segment_size(q, v);
+>  	else
+> -		blk_queue_max_segment_size(q, -1U);
+> +		blk_queue_max_segment_size(q, BLK_MAX_SEGMENT_SIZE);
+>  
+>  	/* Host can optionally specify the block size of the device */
+>  	err = virtio_cread_feature(vdev, VIRTIO_BLK_F_BLK_SIZE,
+
+Here too, I see some drivers asking for more:
+drivers/block/mtip32xx/mtip32xx.c: blk_queue_max_segment_size(dd->queue, 0x400000);
+
+
+
+
+> -- 
+> 1.7.4.4
