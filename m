@@ -1,50 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616AbaKTAuR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 19:50:17 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:13367 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756388AbaKTAuQ (ORCPT
+	id S1756664AbaKTAun (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 19:50:43 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:55979 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756555AbaKTAum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 19:50:16 -0500
-Date: Wed, 19 Nov 2014 19:50:06 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: byungchul.park@lge.com
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, seungho1.park@lge.com,
-        jolsa@redhat.com
-Subject: Re: [PATCH v5 1/2] tracing, function_graph: fix micro seconds
- notation in comment
-Message-ID: <20141119195006.42b26d46@gandalf.local.home>
-In-Reply-To: <1416442535-31188-2-git-send-email-byungchul.park@lge.com>
-References: <1416442535-31188-1-git-send-email-byungchul.park@lge.com>
-	<1416442535-31188-2-git-send-email-byungchul.park@lge.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 19 Nov 2014 19:50:42 -0500
+Date: Wed, 19 Nov 2014 16:50:39 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+cc: akpm@linux-foundation.org, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/numa balancing: Rearrange Kconfig entry
+In-Reply-To: <1413425935-24767-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.10.1411191650180.9079@chino.kir.corp.google.com>
+References: <1413425935-24767-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Nov 2014 09:15:34 +0900
-byungchul.park@lge.com wrote:
+On Thu, 16 Oct 2014, Aneesh Kumar K.V wrote:
 
-> From: Byungchul Park <byungchul.park@lge.com>
+> Add the default enable config option after the NUMA_BALANCING option
+> so that it appears related in the nconfig interface.
 > 
-> Usually, "msecs" notation means milli-seconds, and "usecs" notation
-> means micro-seconds. Since the unit used in the code is micro-seconds,
-> the notation should be replaced from msecs to usecs.
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-Hi,
+Acked-by: David Rientjes <rientjes@google.com>
 
-You don't need to resend this patch because I already applied it. You
-may have seen my 'for-next' patch series with it.
-
-If this is different than what I applied, let me know.
-
-Thanks,
-
--- Steve
-
+Hasn't hit Linus's tree yet, so there's still time to ack!
