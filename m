@@ -1,173 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594AbaKTQdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 11:33:35 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:55833 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127AbaKTQdd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 11:33:33 -0500
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, edubezval@gmail.com, rui.zhang@intel.com,
-        computersforpeace@gmail.com, Florian Fainelli <f.fainelli@gmail.com>
-Subject: [PATCH v2] thermal: provide an UAPI header file
-Date: Thu, 20 Nov 2014 08:32:57 -0800
-Message-Id: <1416501177-17504-1-git-send-email-f.fainelli@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1756862AbaKTQj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 11:39:29 -0500
+Received: from dliviu.plus.com ([80.229.23.120]:38891 "EHLO smtp.dudau.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754574AbaKTQjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 11:39:25 -0500
+Date: Thu, 20 Nov 2014 16:39:18 +0000
+From: Liviu Dudau <liviu@dudau.co.uk>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Tony Luck <tony.luck@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-pci@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Suravee.Suthikulpanit@amd.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-ia64@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Wuyun <wuyun.wu@huawei.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [RFC PATCH 00/16] Refine PCI host bridge scan interfaces
+Message-ID: <20141120163918.GE9162@bart.dudau.co.uk>
+References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
+ <1463511.o4kE8TX3Bd@wuerfel>
+ <546DD688.60705@linaro.org>
+ <20141120120850.GD9162@bart.dudau.co.uk>
+ <546DE45C.6010306@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <546DE45C.6010306@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-include/linux/thermal.h contains definitions for the Thermal generic
-netlink family, but none of the valuable information relevant to
-user-space such as the Genl family name, multicast group, version or
-command set and data types is exported to user-space.
+On Thu, Nov 20, 2014 at 01:53:48PM +0100, Tomasz Nowicki wrote:
+> On 20.11.2014 13:08, Liviu Dudau wrote:
+> >On Thu, Nov 20, 2014 at 12:54:48PM +0100, Tomasz Nowicki wrote:
+> >>On 17.11.2014 15:13, Arnd Bergmann wrote:
+> >>>On Monday 17 November 2014 18:21:34 Yijing Wang wrote:
+> >>>>This series is based Linux 3.18-rc1 and Lorenzo Pieralisi's
+> >>>>arm PCI domain cleanup patches, link:
+> >>>>https://patchwork.ozlabs.org/patch/407585/
+> >>>>
+> >>>>Current pci scan interfaces like pci_scan_root_bus() and directly
+> >>>>call pci_create_root_bus()/pci_scan_child_bus() lack flexiblity.
+> >>>>Some platform infos like PCI domain and msi_chip have to be
+> >>>>associated to PCI bus by some arch specific function.
+> >>>>We want to make a generic pci_host_bridge, and make it hold
+> >>>>the platform infos or hook. Then we could eliminate the lots
+> >>>>of arch pci_domain_nr, also we could associate some platform
+> >>>>ops something like pci_get_msi_chip(struct pci_dev *dev)
+> >>>>with pci_host_bridge to avoid introduce arch weak functions.
+> >>>>
+> >>>>This RFC version not for all platforms, just applied the new
+> >>>>scan interface in x86/arm/powerpc/ia64, I will refresh other
+> >>>>platforms after the core pci scan interfaces are ok.
+> >>>
+> >>>I think overall this is a good direction to take, in particular
+> >>>moving more things into struct pci_host_bridge so we can
+> >>>slim down the architecture specific code.
+> >>>
+> >>>I don't particularly like the way you use the 'pci_host_info'
+> >>>to pass callback pointers and some of the generic information.
+> >>>This duplicates some of the issues we are currently trying
+> >>>to untangle in the arm32 code to make drivers easier to share
+> >>>between architectures.
+> >>>
+> >>>As a general approach, I'd rather see generic helper functions
+> >>>being exported by the PCI core that a driver may or may not
+> >>>call.
+> >>>The way you split the interface between things that happen
+> >>>before scanning the buses (pci_create_host_bridge) and
+> >>>the actual scanning (__pci_create_root_bus, pci_scan_child_bus)
+> >>>seems very helpful and I think we can expand that concept further:
+> >>>
+> >>>- The normal pci_create_host_bridge() function can contain
+> >>>   all of the DT scanning functions (finding bus/mem/io resources,
+> >>>   finding the msi-parent), while drivers that don't depend on DT
+> >>>   for this information can call the same function and fill the
+> >>>   same things after they have the pci_host_bridge pointer.
+> >>
+> >>How about finding PCI domain number (in the DT way) within
+> >>pci_create_host_bridge() too ?
+> >
+> >It is an idea worth pursuing for the 99% of the cases. I would like
+> >to understand the 1% of the time when we want a domain number to be
+> >shared between two host bridges or the time when we want more than
+> >one domain per bridge.
+> Even though we have shared domain, this should be resolved via DT calls, do
+> I miss something ?
 
-Export all the relevant generic netlink information to user-space to
-make this genl family usable by user-space, and while at it, export
-THERMAL_NAME_LENGTH since it limits name length for thermal_hwmon
-devices.
+If we only going to hold one domain number per host bridge, then no, you're
+not missing anything.
 
-Kbuild and MAINTAINERS are also updated accordingly to reflect this new
-file: include/uapi/linux/thermal.h.
+> 
+> >
+> >Is that possible? Is it useful? Is it already in practice?
+> This is good question... IMO:
+> 1. Two host bridges can shared domain number if they are children of the
+> same parent host bridge.
+> 2. But I can not find good explanation for more than one domain per bridge.
 
-Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
----
-Changes in v2:
-- rebase against Eduardo's thermal/next tree
+Splitting a root bus into two or more "segments" ?
 
- MAINTAINERS                  |  1 +
- include/linux/thermal.h      | 31 +------------------------------
- include/uapi/linux/Kbuild    |  1 +
- include/uapi/linux/thermal.h | 35 +++++++++++++++++++++++++++++++++++
- 4 files changed, 38 insertions(+), 30 deletions(-)
- create mode 100644 include/uapi/linux/thermal.h
+Best regards,
+Liviu
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index c444907ccd69..790752a4fad2 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -9294,6 +9294,7 @@ Q:	https://patchwork.kernel.org/project/linux-pm/list/
- S:	Supported
- F:	drivers/thermal/
- F:	include/linux/thermal.h
-+F:	include/uapi/linux/thermal.h
- F:	include/linux/cpu_cooling.h
- F:	Documentation/devicetree/bindings/thermal/
- 
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index 5bc28a70014e..be959e9df06c 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -29,10 +29,10 @@
- #include <linux/idr.h>
- #include <linux/device.h>
- #include <linux/workqueue.h>
-+#include <uapi/linux/thermal.h>
- 
- #define THERMAL_TRIPS_NONE	-1
- #define THERMAL_MAX_TRIPS	12
--#define THERMAL_NAME_LENGTH	20
- 
- /* invalid cooling state */
- #define THERMAL_CSTATE_INVALID -1UL
-@@ -49,11 +49,6 @@
- #define MILLICELSIUS_TO_DECI_KELVIN_WITH_OFFSET(t, off) (((t) / 100) + (off))
- #define MILLICELSIUS_TO_DECI_KELVIN(t) MILLICELSIUS_TO_DECI_KELVIN_WITH_OFFSET(t, 2732)
- 
--/* Adding event notification support elements */
--#define THERMAL_GENL_FAMILY_NAME                "thermal_event"
--#define THERMAL_GENL_VERSION                    0x01
--#define THERMAL_GENL_MCAST_GROUP_NAME           "thermal_mc_grp"
--
- /* Default Thermal Governor */
- #if defined(CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE)
- #define DEFAULT_THERMAL_GOVERNOR       "step_wise"
-@@ -86,30 +81,6 @@ enum thermal_trend {
- 	THERMAL_TREND_DROP_FULL, /* apply lowest cooling action */
- };
- 
--/* Events supported by Thermal Netlink */
--enum events {
--	THERMAL_AUX0,
--	THERMAL_AUX1,
--	THERMAL_CRITICAL,
--	THERMAL_DEV_FAULT,
--};
--
--/* attributes of thermal_genl_family */
--enum {
--	THERMAL_GENL_ATTR_UNSPEC,
--	THERMAL_GENL_ATTR_EVENT,
--	__THERMAL_GENL_ATTR_MAX,
--};
--#define THERMAL_GENL_ATTR_MAX (__THERMAL_GENL_ATTR_MAX - 1)
--
--/* commands supported by the thermal_genl_family */
--enum {
--	THERMAL_GENL_CMD_UNSPEC,
--	THERMAL_GENL_CMD_EVENT,
--	__THERMAL_GENL_CMD_MAX,
--};
--#define THERMAL_GENL_CMD_MAX (__THERMAL_GENL_CMD_MAX - 1)
--
- struct thermal_zone_device_ops {
- 	int (*bind) (struct thermal_zone_device *,
- 		     struct thermal_cooling_device *);
-diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-index 4c94f31a8c99..a1943e2d1264 100644
---- a/include/uapi/linux/Kbuild
-+++ b/include/uapi/linux/Kbuild
-@@ -383,6 +383,7 @@ header-y += tcp.h
- header-y += tcp_metrics.h
- header-y += telephony.h
- header-y += termios.h
-+header-y += thermal.h
- header-y += time.h
- header-y += times.h
- header-y += timex.h
-diff --git a/include/uapi/linux/thermal.h b/include/uapi/linux/thermal.h
-new file mode 100644
-index 000000000000..ac5535855982
---- /dev/null
-+++ b/include/uapi/linux/thermal.h
-@@ -0,0 +1,35 @@
-+#ifndef _UAPI_LINUX_THERMAL_H
-+#define _UAPI_LINUX_THERMAL_H
-+
-+#define THERMAL_NAME_LENGTH	20
-+
-+/* Adding event notification support elements */
-+#define THERMAL_GENL_FAMILY_NAME                "thermal_event"
-+#define THERMAL_GENL_VERSION                    0x01
-+#define THERMAL_GENL_MCAST_GROUP_NAME           "thermal_mc_grp"
-+
-+/* Events supported by Thermal Netlink */
-+enum events {
-+	THERMAL_AUX0,
-+	THERMAL_AUX1,
-+	THERMAL_CRITICAL,
-+	THERMAL_DEV_FAULT,
-+};
-+
-+/* attributes of thermal_genl_family */
-+enum {
-+	THERMAL_GENL_ATTR_UNSPEC,
-+	THERMAL_GENL_ATTR_EVENT,
-+	__THERMAL_GENL_ATTR_MAX,
-+};
-+#define THERMAL_GENL_ATTR_MAX (__THERMAL_GENL_ATTR_MAX - 1)
-+
-+/* commands supported by the thermal_genl_family */
-+enum {
-+	THERMAL_GENL_CMD_UNSPEC,
-+	THERMAL_GENL_CMD_EVENT,
-+	__THERMAL_GENL_CMD_MAX,
-+};
-+#define THERMAL_GENL_CMD_MAX (__THERMAL_GENL_CMD_MAX - 1)
-+
-+#endif /* _UAPI_LINUX_THERMAL_H */
+> 
+> Tomasz
+> 
+> 
+
 -- 
-1.9.1
+-------------------
+   .oooO
+   (   )
+    \ (  Oooo.
+     \_) (   )
+          ) /
+         (_/
+
+ One small step
+   for me ...
 
