@@ -1,156 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332AbaKTHSc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:18:32 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:30665 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904AbaKTHSa (ORCPT
+	id S1756640AbaKTHUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:20:23 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:43052 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbaKTHUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:18:30 -0500
-From: Yao Dongdong <yaodongdong@huawei.com>
-To: <peterz@infradead.org>, <mingo@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, <agk@redhat.com>, <snitzer@redhat.com>,
-        <dm-devel@redhat.com>, <lizefan@huawei.com>
-Subject: [PATCH] sched, cleanup, dm bufio: Replace dm_bufio_cond_resched with might_resched
-Date: Thu, 20 Nov 2014 07:35:40 +0000
-Message-ID: <1416468940-8398-1-git-send-email-yaodongdong@huawei.com>
-X-Mailer: git-send-email 1.8.3.4
+	Thu, 20 Nov 2014 02:20:22 -0500
+Message-ID: <546D962F.3080309@hitachi.com>
+Date: Thu, 20 Nov 2014 16:20:15 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.189]
-X-CFilter-Loop: Reflected
+To: Will Deacon <will.deacon@arm.com>
+Cc: David Long <dave.long@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        William Cohen <wcohen@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 5/5] arm64: Add HAVE_REGS_AND_STACK_ACCESS_API feature
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org> <1416292375-29560-6-git-send-email-dave.long@linaro.org> <20141118145228.GN18842@arm.com>
+In-Reply-To: <20141118145228.GN18842@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The judge of need_resched() before _cond_resched() in dm_bufio_cond_resched()
-is no need. Because _cond_resched() itself judges should_resched() which means
-need and can resched. In addition, might_resched() can do all these.
+(2014/11/18 23:52), Will Deacon wrote:
+> Hi David,
+> 
+> On Tue, Nov 18, 2014 at 06:32:55AM +0000, David Long wrote:
+>> From: "David A. Long" <dave.long@linaro.org>
+>>
+>> Add HAVE_REGS_AND_STACK_ACCESS_API feature for arm64.
+> 
+> [...]
+> 
+>> diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
+>> index d3e782a..24cc048 100644
+>> --- a/arch/arm64/include/asm/ptrace.h
+>> +++ b/arch/arm64/include/asm/ptrace.h
+>> @@ -111,6 +111,8 @@ struct pt_regs {
+>>  	u64 syscallno;
+>>  };
+>>  
+>> +#define MAX_REG_OFFSET (offsetof(struct pt_regs, orig_x0))
+> 
+> Is orig_x0 actually useful to this API? If not, we could instead operate on
+> the user_pt_regs structure, and define the maximum offset in terms of sizeof
+> that.
 
-Signed-off-by: Yao Dongdong <yaodongdong@huawei.com>
----
- drivers/md/dm-bufio.c | 35 +++++++++++------------------------
- 1 file changed, 11 insertions(+), 24 deletions(-)
+It depends on the architecture, but this patch provides the common interface
+for kprobe-tracer. I think this code looks OK, since kprobe-tracer doesn't
+use user_pt_regs.
 
-diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-index afe7971..3660a24 100644
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -186,19 +186,6 @@ static void dm_bufio_unlock(struct dm_bufio_client *c)
- 	mutex_unlock(&c->lock);
- }
- 
--/*
-- * FIXME Move to sched.h?
-- */
--#ifdef CONFIG_PREEMPT_VOLUNTARY
--#  define dm_bufio_cond_resched()		\
--do {						\
--	if (unlikely(need_resched()))		\
--		_cond_resched();		\
--} while (0)
--#else
--#  define dm_bufio_cond_resched()                do { } while (0)
--#endif
--
- /*----------------------------------------------------------------*/
- 
- /*
-@@ -648,7 +635,7 @@ static void __flush_write_list(struct list_head *write_list)
- 			list_entry(write_list->next, struct dm_buffer, write_list);
- 		list_del(&b->write_list);
- 		submit_io(b, WRITE, b->block, write_endio);
--		dm_bufio_cond_resched();
-+		might_resched();
- 	}
- 	blk_finish_plug(&plug);
- }
-@@ -687,7 +674,7 @@ static struct dm_buffer *__get_unclaimed_buffer(struct dm_bufio_client *c)
- 			__unlink_buffer(b);
- 			return b;
- 		}
--		dm_bufio_cond_resched();
-+		might_resched();
- 	}
- 
- 	list_for_each_entry_reverse(b, &c->lru[LIST_DIRTY], lru_list) {
-@@ -698,7 +685,7 @@ static struct dm_buffer *__get_unclaimed_buffer(struct dm_bufio_client *c)
- 			__unlink_buffer(b);
- 			return b;
- 		}
--		dm_bufio_cond_resched();
-+		might_resched();
- 	}
- 
- 	return NULL;
-@@ -830,7 +817,7 @@ static void __write_dirty_buffers_async(struct dm_bufio_client *c, int no_wait,
- 			return;
- 
- 		__write_dirty_buffer(b, write_list);
--		dm_bufio_cond_resched();
-+		might_resched();
- 	}
- }
- 
-@@ -880,7 +867,7 @@ static void __check_watermark(struct dm_bufio_client *c,
- 			return;
- 
- 		__free_buffer_wake(b);
--		dm_bufio_cond_resched();
-+		might_resched();
- 	}
- 
- 	if (c->n_buffers[LIST_DIRTY] > threshold_buffers)
-@@ -896,7 +883,7 @@ static struct dm_buffer *__find(struct dm_bufio_client *c, sector_t block)
- 
- 	hlist_for_each_entry(b, &c->cache_hash[DM_BUFIO_HASH(block)],
- 			     hash_list) {
--		dm_bufio_cond_resched();
-+		might_resched();
- 		if (b->block == block)
- 			return b;
- 	}
-@@ -1090,7 +1077,7 @@ void dm_bufio_prefetch(struct dm_bufio_client *c,
- 				submit_io(b, READ, b->block, read_endio);
- 			dm_bufio_release(b);
- 
--			dm_bufio_cond_resched();
-+			might_resched();
- 
- 			if (!n_blocks)
- 				goto flush_plug;
-@@ -1211,7 +1198,7 @@ again:
- 		    !test_bit(B_WRITING, &b->state))
- 			__relink_lru(b, LIST_CLEAN);
- 
--		dm_bufio_cond_resched();
-+		might_resched();
- 
- 		/*
- 		 * If we dropped the lock, the list is no longer consistent,
-@@ -1473,7 +1460,7 @@ static long __scan(struct dm_bufio_client *c, unsigned long nr_to_scan,
- 			freed += __cleanup_old_buffer(b, gfp_mask, 0);
- 			if (!--nr_to_scan)
- 				return freed;
--			dm_bufio_cond_resched();
-+			might_resched();
- 		}
- 	}
- 	return freed;
-@@ -1704,11 +1691,11 @@ static void cleanup_old_buffers(void)
- 				       struct dm_buffer, lru_list);
- 			if (!__cleanup_old_buffer(b, 0, max_age * HZ))
- 				break;
--			dm_bufio_cond_resched();
-+			might_resched();
- 		}
- 
- 		dm_bufio_unlock(c);
--		dm_bufio_cond_resched();
-+		might_resched();
- 	}
- 	mutex_unlock(&dm_bufio_clients_lock);
- }
+> 
+>> +#define ARM_cpsr	pstate
+>> +#define ARM_pc		pc
+>> +#define ARM_sp		sp
+>> +#define ARM_lr		regs[30]
+>> +#define ARM_fp		regs[29]
+>> +#define ARM_x28		regs[28]
+>> +#define ARM_x27		regs[27]
+> 
+> [...]
+> 
+> I don't think we need these #defines.
+
+Agreed.
+
+Thank you,
+
+
 -- 
-1.8.3.4
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
