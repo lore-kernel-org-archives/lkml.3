@@ -1,158 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756688AbaKTCz3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 21:55:29 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:56591 "EHLO
+	id S1756703AbaKTC6M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 21:58:12 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:58331 "EHLO
 	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756601AbaKTCz1 (ORCPT
+	with ESMTP id S1754289AbaKTC6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 21:55:27 -0500
-Message-ID: <546D57E5.3080803@huawei.com>
-Date: Thu, 20 Nov 2014 10:54:29 +0800
-From: zhanghailiang <zhang.zhanghailiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Wed, 19 Nov 2014 21:58:10 -0500
+Message-ID: <546D58B1.60108@huawei.com>
+Date: Thu, 20 Nov 2014 10:57:53 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: "Dr. David Alan Gilbert" <dgilbert@redhat.com>, <qemu-devel@nongnu.org>,
-        <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Dave Hansen <dave@sr71.net>, Paolo Bonzini <pbonzini@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Hugh Dickins" <hughd@google.com>, Peter Feiner <pfeiner@google.com>,
-        "Christopher Covington" <cov@codeaurora.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Android Kernel Team" <kernel-team@android.com>,
-        Robert Love <rlove@google.com>,
-        "Dmitry Adamushko" <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, "Mike Hommey" <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Michel Lespinasse" <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>, "Keith Packard" <keithp@keithp.com>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Juan Quintela <quintela@redhat.com>
-Subject: Re: [PATCH 00/17] RFC: userfault v2
-References: <1412356087-16115-1-git-send-email-aarcange@redhat.com> <544E1143.1080905@huawei.com> <20141029174607.GK19606@redhat.com> <545221A4.9030606@huawei.com> <20141030124950.GJ2376@work-vm> <5452E531.4070205@huawei.com> <20141119184938.GE803@redhat.com>
-In-Reply-To: <20141119184938.GE803@redhat.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: For the problem when using swiotlb
+References: <5469E26B.2010905@huawei.com> <20141117180947.GI29595@e104818-lin.cambridge.arm.com> <546C0BBB.9070000@huawei.com> <1535751.CcvIi3DN4F@wuerfel>
+In-Reply-To: <1535751.CcvIi3DN4F@wuerfel>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.69]
+X-Originating-IP: [10.177.22.246]
 X-CFilter-Loop: Reflected
 X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020204.546D57F2.0103,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	refid=str=0001.0A020204.546D58B5.0134,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
 	ip=0.0.0.0,
 	so=2013-05-26 15:14:31,
 	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 7c291665cc8459ec8f29e79875df6f44
+X-Mirapoint-Loop-Id: 66a215c03747970b51084b178798d672
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/20 2:49, Andrea Arcangeli wrote:
-> Hi Zhang,
->
-> On Fri, Oct 31, 2014 at 09:26:09AM +0800, zhanghailiang wrote:
->> On 2014/10/30 20:49, Dr. David Alan Gilbert wrote:
->>> * zhanghailiang (zhang.zhanghailiang@huawei.com) wrote:
->>>> On 2014/10/30 1:46, Andrea Arcangeli wrote:
->>>>> Hi Zhanghailiang,
+On 2014/11/19 16:45, Arnd Bergmann wrote:
+> On Wednesday 19 November 2014 11:17:15 Ding Tianhong wrote:
+>> On 2014/11/18 2:09, Catalin Marinas wrote:
+>>> On Mon, Nov 17, 2014 at 12:18:42PM +0000, Arnd Bergmann wrote:
+>>>> On Monday 17 November 2014 19:56:27 Ding Tianhong wrote:
+>>>>>         The commit 3690951fc6d42f3a0903987677d0e592c49dd8db(arm64: Use swiotlb late initialisation)
+>>>>> switches the DMA mapping code to swiotlb_tlb_late_init_with_default_size(), this will occur a problem
+>>>>> when I run the scsi stress tests, the message as below:
 >>>>>
->>>>> On Mon, Oct 27, 2014 at 05:32:51PM +0800, zhanghailiang wrote:
->>>>>> Hi Andrea,
->>>>>>
->>>>>> Thanks for your hard work on userfault;)
->>>>>>
->>>>>> This is really a useful API.
->>>>>>
->>>>>> I want to confirm a question:
->>>>>> Can we support distinguishing between writing and reading memory for userfault?
->>>>>> That is, we can decide whether writing a page, reading a page or both trigger userfault.
->>>>>>
->>>>>> I think this will help supporting vhost-scsi,ivshmem for migration,
->>>>>> we can trace dirty page in userspace.
->>>>>>
->>>>>> Actually, i'm trying to relize live memory snapshot based on pre-copy and userfault,
->>>>>> but reading memory from migration thread will also trigger userfault.
->>>>>> It will be easy to implement live memory snapshot, if we support configuring
->>>>>> userfault for writing memory only.
+>>>>>         sas_controller b1000000.sas: swiotlb buffer is full (sz: 65536 bytes)..
+>>>>>         DMA: Out of SW-IOMMU space for 65536 bytes at device b1000000.sas
 >>>>>
->>>>> Mail is going to be long enough already so I'll just assume tracking
->>>>> dirty memory in userland (instead of doing it in kernel) is worthy
->>>>> feature to have here.
+>>>>> The reason is that the swiotlb_tlb_late_init_with_default_size() could only alloc 16M memory for DMA-mapping,
+>>>>> and the param in cmdline "swiotlb=xxx" is useless because the get_free_pages() only use the buddy to assigned a
+>>>>> maximum memory of 16M(The MAX_ORDER is 13 for 4k pages), obviously 16M is too small in many scenes, but
+>>>>> the swiotlb_init() which could reserved a bigger memory as wished could work well for most drivers.
 >>>>>
->>>>> After some chat during the KVMForum I've been already thinking it
->>>>> could be beneficial for some usage to give userland the information
->>>>> about the fault being read or write, combined with the ability of
->>>>> mapping pages wrprotected to mcopy_atomic (that would work without
->>>>> false positives only with MADV_DONTFORK also set, but it's already set
->>>>> in qemu). That will require "vma->vm_flags & VM_USERFAULT" to be
->>>>> checked also in the wrprotect faults, not just in the not present
->>>>> faults, but it's not a massive change. Returning the read/write
->>>>> information is also a not massive change. This will then payoff mostly
->>>>> if there's also a way to remove the memory atomically (kind of
->>>>> remap_anon_pages).
->>>>>
->>>>> Would that be enough? I mean are you still ok if non present read
->>>>> fault traps too (you'd be notified it's a read) and you get
->>>>> notification for both wrprotect and non present faults?
->>>>>
->>>> Hi Andrea,
+>>>>> I could not get a better way to fix this problem except to revert this patch, so could you please give me some
+>>>>> advise and help me, thanks very much.
 >>>>
->>>> Thanks for your reply, and your patience;)
+>>>> In general, you should not need to use swiotlb for most devices, in
+>>>> particular for high-performance devices like network or block.
 >>>>
->>>> Er, maybe i didn't describe clearly. What i really need for live memory snapshot
->>>> is only wrprotect fault, like kvm's dirty tracing mechanism, *only tracing write action*.
->>>>
->>>> My initial solution scheme for live memory snapshot is:
->>>> (1) pause VM
->>>> (2) using userfaultfd to mark all memory of VM is wrprotect (readonly)
->>>> (3) save deivce state to snapshot file
->>>> (4) resume VM
->>>> (5) snapshot thread begin to save page of memory to snapshot file
->>>> (6) VM is going to run, and it is OK for VM or other thread to read ram (no fault trap),
->>>>       but if VM try to write page (dirty the page), there will be
->>>>       a userfault trap notification.
->>>> (7) a fault-handle-thread reads the page request from userfaultfd,
->>>>       it will copy content of the page to some buffers, and then remove the page's
->>>>       wrprotect limit(still using the userfaultfd to tell kernel).
->>>> (8) after step (7), VM can continue to write the page which is now can be write.
->>>> (9) snapshot thread save the page cached in step (7)
->>>> (10) repeat step (5)~(9) until all VM's memory is saved to snapshot file.
+>>>> Please make sure that you have set up the dma-ranges properties in
+>>>> your DT properly to allow 64-bit DMA if the device supports it.
 >>>
->>> Hmm, I can see the same process being useful for the fault-tolerance schemes
->>> like COLO, it needs a memory state snapshot.
->>>
->>>> So, what i need for userfault is supporting only wrprotect fault. i don't
->>>> want to get notification for non present reading faults, it will influence
->>>> VM's performance and the efficiency of doing snapshot.
->>>
->>> What pages would be non-present at this point - just balloon?
+>>> That's the problem indeed, the DMA API ends up using swiotlb bounce
+>>> buffers because the physical address of the pages passed to (or
+>>> allocated by) the driver are beyond 32-bit limit (which is the default
+>>> dma mask).
 >>>
 >>
->> Er, sorry, it should be 'no-present page faults';)
->
-> Could you elaborate? The balloon pages or not yet allocated pages in
-> the guest, if they fault too (in addition to the wrprotect faults) it
-> doesn't sound a big deal, as it's not so common (balloon especially
-> shouldn't happen except during balloon deflating during the live
+>> Thanks everyone, I think I found the way to fix it, need to enable DMA_CMA, to reserve a big memory
+>> for CMA and set coherent mask for dev, then dma_alloc and dma_mapping will not use the swiotlb until
+>> the memory out of mask or swiotlb_force is enabled.
+>>
+>> If I still understand uncorrectly, please inform me.
+>>
+> 
+> Please do not use CMA to work around the problem, but fix the underlying bug
+> instead.
+> 
+> The driver should call 'dma_set_mask_and_coherent()' with the appropriate
+> dma mask, and check whether that succeeded. However, the code implementing
+> dma_set_mask_and_coherent on arm64 also needs to be changed to look up
+> the dma-ranges property (see of_dma_configure()), and check if the mask
+> is possible.
+> 
+> 	Arnd
+> 
 
-> snapshotting). We could bypass non-present faults though, and only
-> track strict wrprotect faults.
->
+The dma_pfn_offset looks only support arm32, but my platform is aarch64 and I check the latest kernel version, 
+I think the dma-rangs still could not work for aarch64, so maybe we should add dma_pfn_offset for aarch64 first.
 
-Yes, you are right. This is what i really want, bypass all non-present faults
-and only track strict wrprotect faults. ;)
+Ding
 
-So, do you plan to support that in the userfault API?
-
-Thanks,
-zhanghailiang
+> .
+> 
 
 
