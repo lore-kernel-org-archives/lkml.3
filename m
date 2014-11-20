@@ -1,105 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757374AbaKTWmt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 17:42:49 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53526 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756515AbaKTWmr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 17:42:47 -0500
-Date: Thu, 20 Nov 2014 23:42:42 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <tj@kernel.org>
-cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <20141120221122.GA25393@htj.dyndns.org>
-Message-ID: <alpine.DEB.2.11.1411202315230.3950@nanos>
-References: <20141119145902.GA13387@redhat.com> <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com> <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com> <20141119190215.GA10796@lerouge> <alpine.DEB.2.11.1411192251120.3909@nanos>
- <20141119225615.GA11386@lerouge> <alpine.DEB.2.11.1411200002330.3909@nanos> <20141119235033.GE11386@lerouge> <20141120122339.GA14877@htj.dyndns.org> <alpine.DEB.2.11.1411202204030.3950@nanos> <20141120221122.GA25393@htj.dyndns.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1757503AbaKTWrY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 17:47:24 -0500
+Received: from mout.web.de ([212.227.15.14]:63554 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756640AbaKTWrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 17:47:22 -0500
+Message-ID: <546E6F5C.6050604@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 23:46:52 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        "James E. J. Bottomley" <JBottomley@parallels.com>,
+        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>,
+        linux-scsi@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] SCSI-bfa: Deletion of an unnecessary check before the
+ function call "vfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:l171mLqymcw2XQHe8PgiPMBogmz6PiIcjTRcE67p1pEi6OnUmsx
+ Id6RWWxD9SiYXGcfIoOGcK0XaE9laETk3K6Jwwip6exE0TnXxDNROiRTdXeww0aeihiQaym
+ gdpfjkZ5FyKt9EKtNHWoL4KTnOjJFIqyk7/rt1Na5col6DUav7k2DfXOQ47gPkIre4sZ25y
+ WXZILM00I4DypSSAmNhCA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Nov 2014, Tejun Heo wrote:
-> On Thu, Nov 20, 2014 at 10:58:26PM +0100, Thomas Gleixner wrote:
-> > It's completely undocumented behaviour, whether it has been that way
-> > for ever or not. And I agree with Fredric, that it is insane. Actuallu
-> > it's beyond insane, really.
-> 
-> This is exactly the same for any address in the vmalloc space.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 23:43:17 +0100
 
-I know, but I really was not aware of the fact that dynamically
-allocated percpu stuff is vmalloc based and therefor exposed to the
-same issues.
+The vfree() function performs also input parameter validation. Thus the test
+around the call is not needed.
 
-The normal vmalloc space simply does not have the problems which are
-generated by percpu allocations which have no documented access
-restrictions.
+This issue was detected by using the Coccinelle software.
 
-You created a special case and that special case is clever but not
-very well thought out considering the use cases of percpu variables
-and the completely undocumented limitations you introduced silently.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/scsi/bfa/bfad_debugfs.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Just admit it and dont try to educate me about trivial vmalloc
-properties.
-
-> ..
-> >    So in the scheduler if the same task gets reselected you check that
-> >    sequence count and update the PGD if different. If a task switch
-> >    happens then you also need to check the sequence count and act
-> >    accordingly.
-> 
-> That isn't enough tho.  What if the percpu allocated pointer gets
-> passed to another CPU without task switching?  You'd at least need to
-> send IPIs to all CPUs so that all the active PGDs get updated
-> synchronously.
-
-You obviously did not even take the time to carefully read what I
-wrote:
-
-   "Now after that increment the allocation side needs to wait for a
-    scheduling cycle on all cpus (we have mechanisms for that)"
-
-That's exactly stating what you claim to be 'not enough'. 
-
-> > What really frightens me is the potential and well hidden fuckup
-> > potential which lurks around the corner and the hard to debug once in
-> > a while fallout which might be caused by this.
-> 
-> Lazy vmalloc population through fault is something we accepted as
-> reasonable as it works fine for most of the kernel. 
-
-Emphasis on most.
-
-I'm well aware about the lazy vmalloc population, but I was definitely
-not aware about the implications chosen by the dynamic percpu
-allocator. I do not care about random discussion threads on LKML or
-random slides you produced for a conference. All I care about is that
-I cannot find a single word of documentation about that in the source
-tree. Neither in the percpu implementation nor in Documentation/
-
-> For the time being, we can make percpu accessors complain when
-> called from nmi handlers so that the problematic ones can be easily
-> identified.
-
-You should have done that in the very first place instead of letting
-other people run into issues which you should have thought of from the
-very beginning.
-
-Thanks,
-
-	tglx
+diff --git a/drivers/scsi/bfa/bfad_debugfs.c b/drivers/scsi/bfa/bfad_debugfs.c
+index 8e83d04..a72170f 100644
+--- a/drivers/scsi/bfa/bfad_debugfs.c
++++ b/drivers/scsi/bfa/bfad_debugfs.c
+@@ -399,8 +399,7 @@ bfad_debugfs_release_fwtrc(struct inode *inode, struct file *file)
+ 	if (!fw_debug)
+ 		return 0;
+ 
+-	if (fw_debug->debug_buffer)
+-		vfree(fw_debug->debug_buffer);
++	vfree(fw_debug->debug_buffer);
+ 
+ 	file->private_data = NULL;
+ 	kfree(fw_debug);
+-- 
+2.1.3
 
