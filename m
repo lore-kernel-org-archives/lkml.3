@@ -1,141 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516AbaKTMwr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 07:52:47 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:43923 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750885AbaKTMwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 07:52:45 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-metag@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH 15/15] metag: tz1090: add TZ1090 clocks to device tree
-Date: Thu, 20 Nov 2014 13:56:24 +0100
-Message-ID: <2363265.Y6kZ4TuTy5@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1416438943-11429-16-git-send-email-james.hogan@imgtec.com>
-References: <1416438943-11429-1-git-send-email-james.hogan@imgtec.com> <1416438943-11429-16-git-send-email-james.hogan@imgtec.com>
+	id S1756600AbaKTMxz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 07:53:55 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:54034 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418AbaKTMxx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 07:53:53 -0500
+Message-ID: <546DE45C.6010306@linaro.org>
+Date: Thu, 20 Nov 2014 13:53:48 +0100
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Liviu Dudau <liviu@dudau.co.uk>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Tony Luck <tony.luck@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-pci@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Suravee.Suthikulpanit@amd.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-ia64@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Wuyun <wuyun.wu@huawei.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [RFC PATCH 00/16] Refine PCI host bridge scan interfaces
+References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com> <1463511.o4kE8TX3Bd@wuerfel> <546DD688.60705@linaro.org> <20141120120850.GD9162@bart.dudau.co.uk>
+In-Reply-To: <20141120120850.GD9162@bart.dudau.co.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On 20.11.2014 13:08, Liviu Dudau wrote:
+> On Thu, Nov 20, 2014 at 12:54:48PM +0100, Tomasz Nowicki wrote:
+>> On 17.11.2014 15:13, Arnd Bergmann wrote:
+>>> On Monday 17 November 2014 18:21:34 Yijing Wang wrote:
+>>>> This series is based Linux 3.18-rc1 and Lorenzo Pieralisi's
+>>>> arm PCI domain cleanup patches, link:
+>>>> https://patchwork.ozlabs.org/patch/407585/
+>>>>
+>>>> Current pci scan interfaces like pci_scan_root_bus() and directly
+>>>> call pci_create_root_bus()/pci_scan_child_bus() lack flexiblity.
+>>>> Some platform infos like PCI domain and msi_chip have to be
+>>>> associated to PCI bus by some arch specific function.
+>>>> We want to make a generic pci_host_bridge, and make it hold
+>>>> the platform infos or hook. Then we could eliminate the lots
+>>>> of arch pci_domain_nr, also we could associate some platform
+>>>> ops something like pci_get_msi_chip(struct pci_dev *dev)
+>>>> with pci_host_bridge to avoid introduce arch weak functions.
+>>>>
+>>>> This RFC version not for all platforms, just applied the new
+>>>> scan interface in x86/arm/powerpc/ia64, I will refresh other
+>>>> platforms after the core pci scan interfaces are ok.
+>>>
+>>> I think overall this is a good direction to take, in particular
+>>> moving more things into struct pci_host_bridge so we can
+>>> slim down the architecture specific code.
+>>>
+>>> I don't particularly like the way you use the 'pci_host_info'
+>>> to pass callback pointers and some of the generic information.
+>>> This duplicates some of the issues we are currently trying
+>>> to untangle in the arm32 code to make drivers easier to share
+>>> between architectures.
+>>>
+>>> As a general approach, I'd rather see generic helper functions
+>>> being exported by the PCI core that a driver may or may not
+>>> call.
+>>> The way you split the interface between things that happen
+>>> before scanning the buses (pci_create_host_bridge) and
+>>> the actual scanning (__pci_create_root_bus, pci_scan_child_bus)
+>>> seems very helpful and I think we can expand that concept further:
+>>>
+>>> - The normal pci_create_host_bridge() function can contain
+>>>    all of the DT scanning functions (finding bus/mem/io resources,
+>>>    finding the msi-parent), while drivers that don't depend on DT
+>>>    for this information can call the same function and fill the
+>>>    same things after they have the pci_host_bridge pointer.
+>>
+>> How about finding PCI domain number (in the DT way) within
+>> pci_create_host_bridge() too ?
+>
+> It is an idea worth pursuing for the 99% of the cases. I would like
+> to understand the 1% of the time when we want a domain number to be
+> shared between two host bridges or the time when we want more than
+> one domain per bridge.
+Even though we have shared domain, this should be resolved via DT calls, 
+do I miss something ?
 
-interestingly I only got the cover-letter, so had to find the other patches 
-through my list-archive :-) .
+>
+> Is that possible? Is it useful? Is it already in practice?
+This is good question... IMO:
+1. Two host bridges can shared domain number if they are children of the 
+same parent host bridge.
+2. But I can not find good explanation for more than one domain per bridge.
 
+Tomasz
 
-Am Mittwoch, 19. November 2014, 23:15:43 schrieb James Hogan:
-> Enable the common clock framework for the TZ1090 SoC, add a tz1090_clk
-> device tree file describing the clocks, and connect the Meta core clock
-> so that the rate of the Meta timer can be determined.
-> 
-> Most of the clock tree is described apart from some AFE clocks which
-> aren't usually of much interest to Linux. These are represented with
-> placeholder clocks.
-> 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Cc: linux-metag@vger.kernel.org
-> Cc: devicetree@vger.kernel.org
-> ---
-
-
-I don't know enough about your clock structure, but it looks quite a bit like 
-Mike's mail from May [0] may apply here too.
-
-The register layout also suggests that it is indeed one clock ip-block:
-
-0x02005908 0x4	CR_TOP_CLKSWITCH 
-0x0200590c 0x4	CR_TOP_CLKENAB
-0x02005950 0x4	CR_TOP_SYSPLL_CTL0
-0x02005954 0x4	CR_TOP_SYSPLL_CTL1
-0x02005988 0x4	CR_TOP_CLKSWITCH2
-0x0200598c 0x4	CR_TOP_CLKENAB2
-...
-
-
-[0] https://lkml.org/lkml/2014/5/14/715
-
-
-
->  arch/metag/Kconfig.soc              |   1 +
->  arch/metag/boot/dts/tz1090.dtsi     |   4 +
->  arch/metag/boot/dts/tz1090_clk.dtsi | 784
-> ++++++++++++++++++++++++++++++++++++ 3 files changed, 789 insertions(+)
->  create mode 100644 arch/metag/boot/dts/tz1090_clk.dtsi
-> 
-> diff --git a/arch/metag/Kconfig.soc b/arch/metag/Kconfig.soc
-> index 973640f..93c21c3 100644
-> --- a/arch/metag/Kconfig.soc
-> +++ b/arch/metag/Kconfig.soc
-> @@ -17,6 +17,7 @@ config META21_FPGA
->  config SOC_TZ1090
->  	bool "Toumaz Xenif TZ1090 SoC (Comet)"
->  	select ARCH_WANT_OPTIONAL_GPIOLIB
-> +	select COMMON_CLK
->  	select IMGPDC_IRQ
->  	select METAG_LNKGET_AROUND_CACHE
->  	select METAG_META21
-> diff --git a/arch/metag/boot/dts/tz1090.dtsi
-> b/arch/metag/boot/dts/tz1090.dtsi index 24ea7d2..9e8ef8b 100644
-> --- a/arch/metag/boot/dts/tz1090.dtsi
-> +++ b/arch/metag/boot/dts/tz1090.dtsi
-> @@ -9,12 +9,16 @@
->  #include "skeleton.dtsi"
-> 
->  #include <dt-bindings/interrupt-controller/irq.h>
-> +#include "tz1090_clk.dtsi"
-> 
->  / {
->  	compatible = "toumaz,tz1090", "img,meta";
-> 
->  	interrupt-parent = <&intc>;
-> 
-> +	clocks = <&meta_core_clk>;
-> +	clock-names = "core";
-> +
->  	intc: interrupt-controller {
->  		compatible = "img,meta-intc";
->  		interrupt-controller;
-> diff --git a/arch/metag/boot/dts/tz1090_clk.dtsi
-> b/arch/metag/boot/dts/tz1090_clk.dtsi new file mode 100644
-> index 0000000..e21362d
-> --- /dev/null
-> +++ b/arch/metag/boot/dts/tz1090_clk.dtsi
-> @@ -0,0 +1,784 @@
-> +/*
-> + * Copyright (C) 2013 Imagination Technologies Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +/*
-> + * ============ CLOCK SPECIFIER DEFINITIONS ============
-> + */
-> +
-> +#define CLK_XTAL1_DIV	&pdc_clk	0
-> +#define CLK_32KHZ	&pdc_clk	1
-> +
-> +#define CLK_SYSCLK0_SW	&top_clkswitch	0	/* bit 0 */
-
-I think the more established way is to specify only the index bit as named 
-constant, not the whole phandle+index.
-
-
-Heiko
