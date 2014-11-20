@@ -1,62 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757992AbaKTRDL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:03:11 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:45096 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757974AbaKTRDG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 12:03:06 -0500
-Date: Thu, 20 Nov 2014 18:03:13 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Patrick Frisch <patrick@mekufemo6lbi9soa.myfritz.net>,
-        Aaron Campbell <aaron@arbor.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-unionfs@vger.kernel.org
-Subject: [RFC/RFT] multi-layer support for overlay filesystem
-Message-ID: <20141120170313.GC3596@tucsk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757950AbaKTRDA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:03:00 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:43849 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756334AbaKTRC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 12:02:57 -0500
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@suse.de>,
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: [PATCH v10 01/27] scripts/gdb: Add infrastructure
+Date: Thu, 20 Nov 2014 18:01:38 +0100
+Message-Id: <0b1a0a304bc91e3db0a0878aeb6077013a94d8e2.1416502923.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <cover.1416502923.git.jan.kiszka@siemens.com>
+References: <cover.1416502923.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1416502923.git.jan.kiszka@siemens.com>
+References: <cover.1416502923.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's the latest patchset to support multiple read-only layers for overlayfs.
-Diffstat is against overlayfs-current branch.
+This provides the basic infrastructure to load kernel-specific python
+helper scripts when debugging the kernel in gdb.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs-next
+The loading mechanism is based on gdb loading for <objfile>-gdb.py when
+opening <objfile>. Therefore, this places a corresponding link to the
+main helper script into the output directory that contains vmlinux.
 
-I hope to have this included in 3.19.
+The main scripts will pull in submodules containing Linux specific gdb
+commands and functions. To avoid polluting the source directory with
+compiled python modules, we link to them from the object directory.
 
-Please review and test (I can post the full patchset if someone wants that).
+Due to gdb.parse_and_eval and string redirection for gdb.execute, we
+depend on gdb >= 7.2.
 
-Thanks,
-Miklos
+This feature is enabled via CONFIG_GDB_SCRIPTS.
 
+CC: Michal Marek <mmarek@suse.cz>
+CC: linux-kbuild@vger.kernel.org
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
-Miklos Szeredi (12):
-      ovl: check whiteout while reading directory
-      ovl: make path-type a bitmap
-      ovl: dont replace opaque dir
-      ovl: add mutli-layer infrastructure
-      ovl: helper to iterate layers
-      ovl: multi-layer readdir
-      ovl: multi-layer lookup
-      ovl: allow statfs if no upper layer
-      ovl: mount: change order of initialization
-      ovl: improve mount helpers
-      ovl: make upperdir optional
-      ovl: support multiple lower layers
+ Makefile                      |  6 +++++-
+ lib/Kconfig.debug             | 11 +++++++++++
+ scripts/Makefile              |  3 ++-
+ scripts/gdb/Makefile          |  1 +
+ scripts/gdb/linux/Makefile    | 11 +++++++++++
+ scripts/gdb/linux/__init__.py |  0
+ scripts/gdb/vmlinux-gdb.py    | 23 +++++++++++++++++++++++
+ 7 files changed, 53 insertions(+), 2 deletions(-)
+ create mode 100644 scripts/gdb/Makefile
+ create mode 100644 scripts/gdb/linux/Makefile
+ create mode 100644 scripts/gdb/linux/__init__.py
+ create mode 100644 scripts/gdb/vmlinux-gdb.py
 
----
- Documentation/filesystems/overlayfs.txt |  12 +
- fs/overlayfs/copy_up.c                  |   4 +-
- fs/overlayfs/dir.c                      |  24 +-
- fs/overlayfs/inode.c                    |   9 +-
- fs/overlayfs/overlayfs.h                |  14 +-
- fs/overlayfs/readdir.c                  | 120 +++-----
- fs/overlayfs/super.c                    | 521 ++++++++++++++++++++------------
- 7 files changed, 427 insertions(+), 277 deletions(-)
+diff --git a/Makefile b/Makefile
+index 00d618b..5917c1c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -920,6 +920,9 @@ endif
+ ifdef CONFIG_BUILD_DOCSRC
+ 	$(Q)$(MAKE) $(build)=Documentation
+ endif
++ifdef CONFIG_GDB_SCRIPTS
++	$(Q)ln -fsn `cd $(srctree) && /bin/pwd`/scripts/gdb/vmlinux-gdb.py
++endif
+ 	+$(call if_changed,link-vmlinux)
+ 
+ # The actual objects are generated when descending,
+@@ -1175,7 +1178,8 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
+ 		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
+ 		  signing_key.priv signing_key.x509 x509.genkey		\
+ 		  extra_certificates signing_key.x509.keyid		\
+-		  signing_key.x509.signer include/linux/version.h
++		  signing_key.x509.signer include/linux/version.h	\
++		  vmlinux-gdb.py
+ 
+ # clean - Delete most, but leave enough to build external modules
+ #
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 4e35a5d..33e1974 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -167,6 +167,17 @@ config DEBUG_INFO_DWARF4
+ 	  But it significantly improves the success of resolving
+ 	  variables in gdb on optimized code.
+ 
++config GDB_SCRIPTS
++	bool "Provide GDB scripts for kernel debugging"
++	select DEBUG_INFO
++	help
++	  This creates the required links to GDB helper scripts in the
++	  build directory. If you load vmlinux into gdb, the helper
++	  scripts will be automatically imported by gdb as well, and
++	  additional functions are available to analyze a Linux kernel
++	  instance. See Documentation/gdb-kernel-debugging.txt for further
++	  details.
++
+ config ENABLE_WARN_DEPRECATED
+ 	bool "Enable __deprecated logic"
+ 	default y
+diff --git a/scripts/Makefile b/scripts/Makefile
+index 72902b5..7413b1b 100644
+--- a/scripts/Makefile
++++ b/scripts/Makefile
+@@ -36,6 +36,7 @@ subdir-$(CONFIG_MODVERSIONS) += genksyms
+ subdir-y                     += mod
+ subdir-$(CONFIG_SECURITY_SELINUX) += selinux
+ subdir-$(CONFIG_DTC)         += dtc
++subdir-$(CONFIG_GDB_SCRIPTS) += gdb
+ 
+ # Let clean descend into subdirs
+-subdir-	+= basic kconfig package
++subdir-	+= basic kconfig package gdb
+diff --git a/scripts/gdb/Makefile b/scripts/gdb/Makefile
+new file mode 100644
+index 0000000..62f5f65
+--- /dev/null
++++ b/scripts/gdb/Makefile
+@@ -0,0 +1 @@
++subdir-y := linux
+diff --git a/scripts/gdb/linux/Makefile b/scripts/gdb/linux/Makefile
+new file mode 100644
+index 0000000..dcb63ab
+--- /dev/null
++++ b/scripts/gdb/linux/Makefile
+@@ -0,0 +1,11 @@
++always := gdb-scripts
++
++SRCTREE := $(shell cd $(srctree) && /bin/pwd)
++
++$(obj)/gdb-scripts:
++ifneq ($(KBUILD_SRC),)
++	$(Q)ln -fsn $(SRCTREE)/$(obj)/*.py $(objtree)/$(obj)
++endif
++	@:
++
++clean-files := *.pyc $(if $(KBUILD_SRC),*.py)
+diff --git a/scripts/gdb/linux/__init__.py b/scripts/gdb/linux/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+new file mode 100644
+index 0000000..c1d90ce
+--- /dev/null
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -0,0 +1,23 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  loader module
++#
++# Copyright (c) Siemens AG, 2012, 2013
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
++
++import os
++
++sys.path.insert(0, os.path.dirname(__file__) + "/scripts/gdb")
++
++try:
++    gdb.parse_and_eval("0")
++    gdb.execute("", to_string=True)
++except:
++    gdb.write("NOTE: gdb 7.2 or later required for Linux helper scripts to "
++              "work.\n")
+-- 
+1.8.4.5
+
