@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594AbaKTXej (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 18:34:39 -0500
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:55966 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756779AbaKTXei (ORCPT
+	id S1757645AbaKTXgX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 18:36:23 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33163 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756600AbaKTXgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 18:34:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
-References: <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
-	<20141119190215.GA10796@lerouge>
-	<alpine.DEB.2.11.1411192251120.3909@nanos>
-	<20141119225615.GA11386@lerouge>
-	<alpine.DEB.2.11.1411200002330.3909@nanos>
-	<20141119235033.GE11386@lerouge>
-	<20141120122339.GA14877@htj.dyndns.org>
-	<alpine.DEB.2.11.1411202204030.3950@nanos>
-	<20141120221122.GA25393@htj.dyndns.org>
-	<alpine.DEB.2.11.1411202315230.3950@nanos>
-	<20141120230514.GB25393@htj.dyndns.org>
-	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
-Date: Thu, 20 Nov 2014 15:34:37 -0800
-X-Google-Sender-Auth: SIxhfM4nljciq4kGwtL3oRrG1ac
-Message-ID: <CA+55aFzcDABV6cXZB6fPGbi005SH5=swCVbcHTf7dcDkTQqVSw@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 20 Nov 2014 18:36:22 -0500
+Message-ID: <1416526571.7215.6.camel@decadent.org.uk>
+Subject: Re: [PATCH] Revert "staging: sm7xxfb: remove driver"
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        Teddy Wang <teddy.wang@siliconmotion.com.cn>,
+        Markos Chandras <Markos.Chandras@imgtec.com>
+Date: Thu, 20 Nov 2014 23:36:11 +0000
+In-Reply-To: <20141120170925.5a435436@gandalf.local.home>
+References: <20141120170925.5a435436@gandalf.local.home>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-sDr8Exxsg5KLkUUFxplz"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 3:08 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> What's the issue with nmi?  Page faults are supposed to nest correctly
-> inside nmi, right?
 
-They should, now, yes. There used to be issues with the whole "that
-re-enables NMI".
+--=-sDr8Exxsg5KLkUUFxplz
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Which reminds me. We never took your patches that use ljmp to handle
-the return-to-kernel mode. You did them for performance reasons, but I
-think the bigger deal was that it would have cleaned up that whole
-special case.
+On Thu, 2014-11-20 at 17:09 -0500, Steven Rostedt wrote:
+> Someone reported a bug in the function graph tracer for MIPS. As I'm
+> still waiting on my USB serial for my Imagination MIPS board, I decided
+> to bring my Lemote Yeeloong laptop back up to the latest kernel. This
+> is where I noticed that the screen no longer displays anything.
+>=20
+> I ran a bisect, which came across a staging commit that removed the
+> sm7xxfb driver. When I reverted it on a v3.18-rc5 kernel and booted it
+> on my Lemote laptop, the display worked again.
+>=20
+> I then did a search for this commit and found that Debian reverted it
+> too. Seems that there's still some Debian users of this laptop. (RMS?)
+[...]
 
-Or did they have other problems? The ones to return to user space were
-admittedly more fun, but just a tad too crazy (and not _quite_ in the
-"crazy like a fox" camp ;)
+I reverted the removal for our 3.16 branch only, as that's going into
+the Debian 8 'jessie' release.  It's not included in our 3.17 packages
+and won't come back unless someone supports it upstream.  That gives any
+interested developers another couple of years to rescue it if they want
+it in Debian 9 'stretch'.
 
-            Linus
+Ben.
+
+--=20
+Ben Hutchings
+Man invented language to satisfy his deep need to complain. - Lily Tomlin
+
+--=-sDr8Exxsg5KLkUUFxplz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAVG566+e/yOyVhhEJAQor0hAApXKd7oDBc47uypiP1e8ZRQv+9AiCEMKt
+2gk8Z3cL47beWSPUb06Fm/q5q1VeXRBffg87mJ9/bGytLIpebhteXz5oS/SJj1Ka
+mNQFNkUqCfhlMGJ31lr/EosiNSgfA478kbuTVSpcEIvRGW5LyCoL8wJumLCnD52M
+MQ2rtgNohcvJUpSe4l7eDXSjEOmbJWGI51BnRWhk3Zd452EFknTtvkvVvOfix1Sc
+hCvgIltgunLIQwi/AIbDHllWrdJ3pXmWcx9lza8FB0tvBJlHFfx4uSq/mzQQDfkv
+pMGS7+xfhzsYxKZlyNmY6Evy2825SWvu5Tdk254gVQBPo031BM2MEi/7OMFnFQRZ
+1bXSVzuJyO/TG/kyYM1eer74Pgys37U+1ODkSvdQS9l271zFdox5KF3rwUo4dB2W
+V7VubjWUzM06iW0e5+46zgImoqpuBK+mg8zhsZHbsy5l4ghF2RTwoWPOpz8NtEGD
+lQmagJ/ax9gBr5OGFoB+YzvRmP26Tmq7FgAru/cRayN0wXwCrIJk0KlQi70gX9XF
+Ku6ZNXlh3kz1U5SFW+wucrxWnk6p8YseShIvUAqvvqWe/NO1DtYxNUNeMsA0dsc8
+jLk+6cGrlbCiboGzOADqAR/N+ZCCt3syjOSriEAxN41i6+Q6sYH35PMaf1Q5DpzD
+zvcQ3Jxo+JM=
+=L5/d
+-----END PGP SIGNATURE-----
+
+--=-sDr8Exxsg5KLkUUFxplz--
