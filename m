@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838AbaKTIYn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 03:24:43 -0500
-Received: from exprod7og129.obsmtp.com ([64.18.2.122]:40553 "EHLO
-	exprod7og129.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377AbaKTIYl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 03:24:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141107005034.GA8448@alexpilon.ca>
-References: <20141107005034.GA8448@alexpilon.ca>
-Date: Thu, 20 Nov 2014 13:54:19 +0530
-Message-ID: <CAK=zhgoM=0aN52M8ejf9j7fB509nxOazgeYR9BMCF6PG31VFHw@mail.gmail.com>
-Subject: Re: [PATCH] scsi: mpt2sas: Fix spelling.
-From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-To: Alex Pilon <alp+linux@alexpilon.ca>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        MPT-FusionLinux.pdl@avagotech.com, trivial@kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756740AbaKTI2W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 03:28:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44700 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750838AbaKTI2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 03:28:20 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>, Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH v4 net] virtio-net: validate features during probe
+Date: Thu, 20 Nov 2014 16:27:23 +0800
+Message-Id: <1416472043-9875-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+We currently trigger BUG when VIRTIO_NET_F_CTRL_VQ
+is not set but one of features depending on it is.
+That's not a friendly way to report errors to
+hypervisors.
+Let's check, and fail probe instead.
 
-Please consider this patch as Acked-by: "Sreekanth Reddy"
-<Sreekanth.Reddy@avagotech.com>.
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+Changes from V1:
+- Drop NETIF_F_*_UFO from checklist
+Changes from V2:
+- only check the features for ctrl vq (this fix the real bug)
+- better error message and simplify API
+Changes from V3:
+- pass dbit directly and even better error message
+- typo fix
+---
+ drivers/net/virtio_net.c | 37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
-Regards,
-Sreekanth.
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index ec2a8b4..cc53ff1 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1673,6 +1673,40 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
+ };
+ #endif
+ 
++static bool virtnet_fail_on_feature(struct virtio_device *vdev,
++				    unsigned int fbit,
++				    const char *fname, const char *dname)
++{
++	if (!virtio_has_feature(vdev, fbit))
++		return false;
++
++	dev_err(&vdev->dev, "advertise feature %s but not %s",
++		fname, dname);
++
++	return true;
++}
++
++#define VIRTNET_FAIL_ON(vdev, fbit, dbit)			\
++	virtnet_fail_on_feature(vdev, fbit, #fbit, dbit)
++
++static bool virtnet_validate_features(struct virtio_device *vdev)
++{
++	if (!virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ) &&
++	    (VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_RX,
++			     "VIRTIO_NET_F_CTRL_VQ") ||
++	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_VLAN,
++			     "VIRTIO_NET_F_CTRL_VQ") ||
++	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_GUEST_ANNOUNCE,
++			     "VIRTIO_NET_F_CTRL_VQ") ||
++	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_MQ, "VIRTIO_NET_F_CTRL_VQ") ||
++	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_MAC_ADDR,
++			     "VIRTIO_NET_F_CTRL_VQ"))) {
++		return false;
++	}
++
++	return true;
++}
++
+ static int virtnet_probe(struct virtio_device *vdev)
+ {
+ 	int i, err;
+@@ -1680,6 +1714,9 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	struct virtnet_info *vi;
+ 	u16 max_queue_pairs;
+ 
++	if (!virtnet_validate_features(vdev))
++		return -EINVAL;
++
+ 	/* Find if host supports multiqueue virtio_net device */
+ 	err = virtio_cread_feature(vdev, VIRTIO_NET_F_MQ,
+ 				   struct virtio_net_config,
+-- 
+1.9.1
 
-On Fri, Nov 7, 2014 at 6:20 AM, Alex Pilon <alp+linux@alexpilon.ca> wrote:
-> Fix 'ioctl' spelling.
->
-> Signed-off-by: Alex Pilon <alp+linux@alexpilon.ca>
-> ---
->  drivers/scsi/mpt2sas/mpt2sas_ctl.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/scsi/mpt2sas/mpt2sas_ctl.h b/drivers/scsi/mpt2sas/mpt2sas_ctl.h
-> index fa0567c..7f842c8 100644
-> --- a/drivers/scsi/mpt2sas/mpt2sas_ctl.h
-> +++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.h
-> @@ -224,7 +224,7 @@ struct mpt2_ioctl_eventreport {
->  };
->
->  /**
-> - * struct mpt2_ioctl_command - generic mpt firmware passthru ioclt
-> + * struct mpt2_ioctl_command - generic mpt firmware passthru ioctl
->   * @hdr - generic header
->   * @timeout - command timeout in seconds. (if zero then use driver default
->   *  value).
-> --
-> 2.1.3
->
