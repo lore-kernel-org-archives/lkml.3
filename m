@@ -1,97 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945AbaKTTgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:36:09 -0500
-Received: from omr2.cc.vt.edu ([198.82.141.100]:57606 "EHLO omr2.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756313AbaKTTgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 14:36:07 -0500
-X-Greylist: delayed 852 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Nov 2014 14:36:07 EST
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Mitch Williams <mitch.a.williams@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Catherine Sullivan <catherine.sullivan@intel.com>,
-        Shannon Nelson <shannon.nelson@intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: i40e/i40e_ethtool.c weirdness?
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1416511307_39511P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 20 Nov 2014 14:21:47 -0500
-Message-ID: <51793.1416511307@turing-police.cc.vt.edu>
+	id S1757879AbaKTTje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:39:34 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:56426 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664AbaKTTjd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 14:39:33 -0500
+Date: Thu, 20 Nov 2014 13:39:49 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Arjun Sreedharan <arjun024@gmail.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb:phy: propagate __of_usb_find_phy()'s error on failure
+Message-ID: <20141120193949.GC23217@saruman>
+Reply-To: <balbi@ti.com>
+References: <1416498816-3292-1-git-send-email-arjun024@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jy6Sn24JjFx/iggw"
+Content-Disposition: inline
+In-Reply-To: <1416498816-3292-1-git-send-email-arjun024@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1416511307_39511P
+--jy6Sn24JjFx/iggw
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-(spotted while looking at a 'git bisect visualize' for something else)
+On Thu, Nov 20, 2014 at 09:23:36PM +0530, Arjun Sreedharan wrote:
+> When __of_usb_find_phy() fails, it returns -ENODEV - its
+> error code has to be returned by devm_usb_get_phy_by_phandle().
+> Only when the former function succeeds and try_module_get()
+> fails should -EPROBE_DEFER be returned.
+>=20
+> Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+> ---
+>  drivers/usb/phy/phy.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
+> index 045cd30..0310112 100644
+> --- a/drivers/usb/phy/phy.c
+> +++ b/drivers/usb/phy/phy.c
+> @@ -191,7 +191,9 @@ struct usb_phy *devm_usb_get_phy_by_phandle(struct de=
+vice *dev,
+> =20
+>  	phy =3D __of_usb_find_phy(node);
+>  	if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
+> -		phy =3D ERR_PTR(-EPROBE_DEFER);
+> +		if (!IS_ERR(phy))
+> +			phy =3D ERR_PTR(-EPROBE_DEFER);
+> +	=09
 
-After this commit:
+trailing whitespace here. I'll fix it myself this time, but next time be
+more careful.
 
-Author: Mitch Williams <mitch.a.williams@intel.com>  2014-09-13 03:40:47
-Committer: Jeff Kirsher <jeffrey.t.kirsher@intel.com>  2014-10-23 23:38:04
+cheers
 
-    i40e: Add 10GBaseT support
+--=20
+balbi
 
-    Add driver support for 10GBaseT device.
-
-we have the following chunk of code in i40e_ethtool.c:
-
-        case I40E_PHY_TYPE_10GBASE_SFPP_CU:
-                ecmd->supported = SUPPORTED_10000baseT_Full;
-                break;
-        case I40E_PHY_TYPE_1000BASE_KX:
-        case I40E_PHY_TYPE_1000BASE_T:
-                ecmd->supported = SUPPORTED_Autoneg |
-                                  SUPPORTED_10000baseT_Full |
-                                  SUPPORTED_1000baseT_Full |
-                                  SUPPORTED_100baseT_Full;
-                ecmd->advertising = ADVERTISED_Autoneg |
-                                    ADVERTISED_10000baseT_Full |
-                                    ADVERTISED_1000baseT_Full |
-                                    ADVERTISED_100baseT_Full;
-                break;
-        case I40E_PHY_TYPE_100BASE_TX:
-                ecmd->supported = SUPPORTED_Autoneg |
-                                  SUPPORTED_10000baseT_Full |
-                                  SUPPORTED_1000baseT_Full |
-                                  SUPPORTED_100baseT_Full;
-                ecmd->advertising = ADVERTISED_Autoneg |
-                                    ADVERTISED_10000baseT_Full |
-                                    ADVERTISED_1000baseT_Full |
-                                    ADVERTISED_100baseT_Full;
-                break;
-        case I40E_PHY_TYPE_SGMII:
-                ecmd->supported = SUPPORTED_Autoneg |
-
-I'm confused by the fact that 2 cases that by name are 100M and 1G parts
-got bits saying that 10G is "supported" - was that intentional?
-
-
---==_Exmh_1416511307_39511P
-Content-Type: application/pgp-signature
+--jy6Sn24JjFx/iggw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
 
-iQIVAwUBVG4/SwdmEQWDXROgAQLgjQ/+L2qhxanGR07/AnEpt6AgcW5jTmlYe7A1
-24yIsR/BSsQBhnY2Du7OmlP5BFfMRONU+gEpVRha+ydhNyhJdfBFgy/9hWjATH/M
-Zu/C2H74shG7aXS8LsuOpgPOXndgMukYtwsBNCH/5h7I8ndVbjBGIUbcmd0auA5K
-lCT7JTrUX4m+QQzyuR06Irwl+XcyhVTuqtjWmtWBmjVqVeMJ4rJG4eoZCHd0FT/c
-AE6C+CoaesLQ2cM5QAQX8HInuHBFdT7dllHe3SumjiBzkUKkr2QWWUDIzc0FJXTe
-Qs8fizKEgobqZ9IeMpnoXY32hKzrQGon4yLERGZX+VOMHZKqIKimVZ38ujpvfvib
-9ocX8oWYdeCfyLgZy5TZag7oqjctMA/TIcfvWuu7A1XSMJsgMU7nZXRiBm5GUV56
-qJm1t1/l3pbEhKN9YxKJJPoeH/BufnFkgo6zNuMacg8foSwtfhY8HZFBHNf2fDgP
-Z7BB54e/v+0ZzZd8NZ8btYdfpAsJtqNPws97vASHO+EH2lAKWiNxFbcsM8BcG18M
-GjBBhE/mi/dL4dkLEtebBoIQ67kfkw5Hg/xCDaB8lZ3+t2x3FPTC5hofQty6q5a8
-px7SY8wF7IXWWeEjEr4XE+MVO37+uW0UZRHzgdqnKTkVT64NnKbx7QCheQ1fCgD9
-mRi6ms7KPms=
-=oct8
+iQIcBAEBAgAGBQJUbkOFAAoJEIaOsuA1yqRE7JwQAI2xHHx/ZC7dSoGfuR9TWwF5
+XCnBcU4phnYdQBmxkXTZcRf/idPolg6WQb6x++CrGdBtUYal2+EZhGzVyUZ9Apjj
+MfJ5F3909f4xlmUPzM0C5BXqU3FQFxwv+c94VRWz+FRPW6Y6dNuhjhLe40GTowpy
+N5K+KwA2TUq5dzylf5gw3yZcZJAJPQjh76arHoaDnvhWS/ztLfkT5z70Qh75gVlG
+quP7QVSpNi94MJRC8DJ5oJCt7JdB2TiE9w2/EcFglajHO1koEXFD6wQhsBQlrq/j
+3tUNBpoo1sWDDwl3peonvTTRHfzj3+fLIkiwgsRohQg7bac8yAnhJVgdEjrgh+SY
+GhFkd9x/Q505YLOq4d1vA+wmDOh/QU0OLXgeNf3jBXlEaVteDLNDxBx3fU5O1D0C
+cxvYigCbyHeoe8PjL98qtY7kJ3bhQhjQKCO6uZIJeIOXYOtbMmRDNzs1QgD85Eqp
+5iEpAybZig1w4HKExuh67yr7iz0P4lfIfKxjNaZg6Edzu4T3BKgL0v+8/4KxV99K
+EpBRK2b+scQpwgv7s+UYtEldr18qBy5jjFYWNMf/H6Gt5MSDAp8iFUvD34wUAd2r
+5usOnNYqXVX1rqaJM8E+8UYCP/BBuKAxI0Ad8PNDaJQ7KLYr3xEEsTbDDh3sEKQE
+gRAgEHdmOe+diAiTduPI
+=jlPG
 -----END PGP SIGNATURE-----
 
---==_Exmh_1416511307_39511P--
+--jy6Sn24JjFx/iggw--
