@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758040AbaKTTSO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:18:14 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:65088 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223AbaKTTSM (ORCPT
+	id S1757780AbaKTTcG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:32:06 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:57769 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757084AbaKTTcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 14:18:12 -0500
-X-IronPort-AV: E=Sophos;i="5.07,425,1413270000"; 
-   d="scan'208";a="51255234"
-From: Scott Branden <sbranden@broadcom.com>
-To: Scott Branden <sbranden@broadcom.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: Ray Jui <rjui@broadcom.com>, Corneliu Doban <cdoban@broadcom.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mtd: nand: added nand_shutdown
-Date: Thu, 20 Nov 2014 11:18:05 -0800
-Message-ID: <1416511085-3930-1-git-send-email-sbranden@broadcom.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <Scott Branden <sbranden@broadcom.com>
-References: <Scott Branden <sbranden@broadcom.com>
+	Thu, 20 Nov 2014 14:32:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1416510751.3116.13.camel@localhost>
+References: <CAHse=S_EY3mJ_pdZf+A46joro_uNy=6tXGG1v7Va4NX_YxJu2w@mail.gmail.com>
+ <20141119.153001.1273476178846053821.davem@davemloft.net> <CAHse=S-f5o3vbT+b1D5baEWCWMUnDyLSxM88+vwwymFuLrTirg@mail.gmail.com>
+ <1416510751.3116.13.camel@localhost>
+From: David Drysdale <drysdale@google.com>
+Date: Thu, 20 Nov 2014 19:31:42 +0000
+Message-ID: <CAHse=S-8uzFfxtXU6Gn0d2ZDL3f=OVZfyqmZphHaCUYZuBAUUQ@mail.gmail.com>
+Subject: Re: sparc: Clashing values for O_PATH and FMODE_NONOTIFY?
+To: Eric Paris <eparis@redhat.com>
+Cc: David Miller <davem@davemloft.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        sparclinux@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add nand_shutdown to wait for current nand operations to finish and prevent
-further operations by changing the nand flash state to FL_SHUTDOWN.
+On Thu, Nov 20, 2014 at 7:12 PM, Eric Paris <eparis@redhat.com> wrote:
+> On Thu, 2014-11-20 at 12:12 +0000, David Drysdale wrote:
+>> [+linux-fsdevel, without the typo this time]
+>>
+>> On Wed, Nov 19, 2014 at 8:30 PM, David Miller <davem@davemloft.net> wrote:
+>> > From: David Drysdale <drysdale@google.com>
+>> > Date: Tue, 18 Nov 2014 13:13:51 +0000
+>> >
+>> >> Hi folks,
+>> >>
+>> >> It looks like the value for O_PATH on sparc:
+>> >>
+>> >>   arch/sparc/include/uapi/asm/fcntl.h:37:#define O_PATH 0x1000000
+>> >>
+>> >> clashes with the arch-independent value for __FMODE_NONOTIFY:
+>> >>
+>> >>   include/linux/fs.h:137:#define FMODE_NONOTIFY ((__force fmode_t)0x1000000)
+>> >>   include/linux/fs.h:2764:#define __FMODE_NONOTIFY ((__force int)
+>> >> FMODE_NONOTIFY)
+>> >>
+>> >> and they are both in the same numbering space, as indicated by the
+>> >> comment at the top of include/uapi/asm-generic/fcntl.h and the use in
+>> >> fs/notify/fanotify/fanotify_user.c:715.
+>> >>
+>> >> Presumably this could theoretically cause problems (no notifications for
+>> >> O_PATH files on SPARC?), so would it be a good idea to renumber
+>> >> FMODE_NONOTIFY?  (I *think* that value is entirely kernel-internal.)
+>> >>
+>> >> Given that this has happened before (12ed2e36c98aec6c4155 "fanotify:
+>> >> FMODE_NONOTIFY and __O_SYNC in sparc conflict") it would probably
+>> >> also be a good idea to add __FMODE_NOTIFY to the uniqueness check in
+>> >> fs/fcntl.c:fcntl_init().
+>> >>
+>> >> Thoughts?
+>> >
+>> > I think you will need to change the internal value, to not clash with
+>> > the sparc exported one, for sure.
+>>
+>> Well, I was sort of hoping someone else might volunteer to make the
+>> change :-) --  I don't use fanotify (or sparc for that matter), I just
+>> happened to notice the clash in passing.
+>>
+>> But I'm happy to have a go, although I can't test much.  It would be
+>> good to hear from the fanotify maintainers first, though -- Eric?
+>
+> It's totally internal.
 
-This is addressing a problem observed during reboot tests using UBIFS
-root file system: NAND erase operations that are in progress during
-system reboot/shutdown are causing partial erased blocks. Although UBI should
-be able to detect and recover from this error, this change will avoid
-the creation of partial erased blocks on reboot in the middle of a NAND erase
-operation.
+OK, thanks, that makes me feel safer about changing its value.
 
-Signed-off-by: Scott Branden <sbranden@broadcom.com>
----
- drivers/mtd/nand/nand_base.c | 11 +++++++++++
- include/linux/mtd/nand.h     |  7 +++++++
- 2 files changed, 18 insertions(+)
+(fatrace still seemed to work (and not report its own activity) after
+I changed the value, which is also reassuring.)
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 5b5c627..100a967 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -4236,6 +4236,17 @@ void nand_release(struct mtd_info *mtd)
- }
- EXPORT_SYMBOL_GPL(nand_release);
- 
-+/**
-+ * nand_shutdown - [NAND Interface] finish the current nand operation and
-+ *                 prevent further operations
-+ * @mtd: MTD device structure
-+ */
-+int nand_shutdown(struct mtd_info *mtd)
-+{
-+	return nand_get_device(mtd, FL_SHUTDOWN);
-+}
-+EXPORT_SYMBOL_GPL(nand_shutdown);
-+
- static int __init nand_base_init(void)
- {
- 	led_trigger_register_simple("nand-disk", &nand_led_trigger);
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index e4d451e..80e4367 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -48,6 +48,13 @@ extern int nand_lock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
- /* unlocks specified locked blocks */
- extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
- 
-+/*
-+ * Internal helper for board drivers which need to make sure that the current
-+ * nand operation is finished and further operations are prevented before
-+ * rebooting the system.
-+ */
-+extern int nand_shutdown(struct mtd_info *mtd);
-+
- /* The maximum number of NAND chips in an array */
- #define NAND_MAX_CHIPS		8
- 
--- 
-2.1.3
+> And was picked to not clash with anyone.  I
+> don't know how to keep it from happening in the future.....
 
+There's a compile-time check on the number of distinct O_*
+bits at the bottom of fs/fcntl.c -- if we update that to include
+FMODE_NONOTIFY then any future clashes should trigger
+a (cross-)compilation failure.
+
+I'll send out a patch tomorrow.
+
+Thanks,
+David
