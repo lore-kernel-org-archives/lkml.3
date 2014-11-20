@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757055AbaKTOoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 09:44:10 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:39126 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaKTOoI (ORCPT
+	id S1757330AbaKTOoZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 09:44:25 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:40536 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757267AbaKTOoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 09:44:08 -0500
+	Thu, 20 Nov 2014 09:44:22 -0500
+Date: Thu, 20 Nov 2014 22:43:49 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mpm@selenic.com, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        robh+dt@kernel.org, mark.rutland@arm.com, linux-crypto@vger.kernel.org,
+        devicetree@vger.kernel.org, peter@korsgaard.com
+Subject: Re: [PATCH RESEND v2 0/4] hwrng: atmel: add DT support
+Message-ID: <20141120144349.GC32061@gondor.apana.org.au>
+References: <cover.1416475860.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <20141119210552.GA5464@lantern>
-References: <20141114222640.GA39748@dtor-ws>
-	<CAN+gG=FaovQETa3+qQsLoBBQnbZ8Q2uoQJD6_XvAmCCvGTHT1g@mail.gmail.com>
-	<CAJBHPojp7JVG6KKgrNfbC-V5ibPs-j6+BnqrSDkxvak0vNGM8w@mail.gmail.com>
-	<20141119181247.GE37989@dtor-ws>
-	<CAJBHPohu71BXqyZ4u74tAiP84UcQhXgto34k8NtNHPgw61WvLQ@mail.gmail.com>
-	<20141119183921.GF37989@dtor-ws>
-	<CAJBHPog3qRMQgNnso_csUOgR30A6eFPx4PkTzfCzkB3Gd5oVfQ@mail.gmail.com>
-	<20141119210552.GA5464@lantern>
-Date: Thu, 20 Nov 2014 09:44:07 -0500
-Message-ID: <CAN+gG=G6_ZXJQ5+3Oyf5pbVGOgyoqk_cOb_+EAADo4GecJ0yww@mail.gmail.com>
-Subject: Re: [git pull] Input updates for 3.18-rc4
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Ulrik De Bie <ulrik.debie-os@e2big.org>
-Cc: Marcus Overhagen <marcus.overhagen@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-input <linux-input@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1416475860.git.nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 4:05 PM,  <ulrik.debie-os@e2big.org> wrote:
-> Hi,
->
-> Thanks Dmitry, the fix you provided will mitigate the regression. But
-> there might be more that is going on for v4 hardware. The detection
-> of PACKET_TRACKPOINT can be made more strict.
-> Thank you Marcus and Benjamin for the reports.
->
-> Sorry for the regression, it was not expected that lowest nibble of packet[3]
-> is 0x6 for non-trackpoint packets.
->
-> So we have two laptops where
-> 1) according to the msb of the capabilities has no trackpoint
-> Benjamin, can you give feedback if the laptop has actually a trackpoint/stick/
-> how else one calls that strange but convenient thing in the middle of the
-> keyboard ?
+On Thu, Nov 20, 2014 at 10:43:21AM +0100, Nicolas Ferre wrote:
+> This is the patch series that Boris sent yesterday. I've just collected
+> "Acked-by" tags and resend it with updated cover letter.
+> 
+> This series adds DT support for the TRNG (True Random Generator) block and adds
+> missing trng nodes to at91sam9g45 dtsi files.
+> 
+> Herbert,
+> As you said that you can take this series, here is the latest vertion ready for you to
+> pick it up. Thanks for your help.
+> 
+> Bye,
+> 
+> Boris Brezillon (4):
+>   hwrng: atmel: use clk_prepapre_enable/_disable_unprepare
+>   hwrng: atmel: add DT support
+>   hwrng: atmel: Add TRNG DT binding doc
+>   ARM: at91/dt: add trng node to at91sam9g45
 
-
-Ulrik, the reporter said that there is no trackstick on his device.
-The exact reference is Samsung Notebook NP900X3E-A01SE.
-
-Cheers,
-Benjamin
+All applied.  Thanks!
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
