@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756355AbaKTAhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 19:37:16 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:50181 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754641AbaKTAhO (ORCPT
+	id S1756485AbaKTAi5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 19:38:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32865 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755100AbaKTAi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 19:37:14 -0500
+	Wed, 19 Nov 2014 19:38:56 -0500
+Date: Wed, 19 Nov 2014 16:38:55 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
+Message-ID: <20141120003855.GA10271@kroah.com>
+References: <20141013022454.289398272@linuxfoundation.org>
+ <20141013112834.GA10826@khazad-dum.debian.net>
+ <20141013082319.175d90bb@as>
+ <20141119172235.GA31260@kroah.com>
+ <20141120001324.GA11882@lerouge>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXzMe2WcpY3yX48WtvdRQDvSg7CZRO1T1TdLynmAcJHXg@mail.gmail.com>
-References: <cover.1416352397.git.luto@amacapital.net>
-	<c25e1a64e5b718fa156e141fd9ecbf31011c6059.1416352397.git.luto@amacapital.net>
-	<CA+55aFztsw6Vt4CyVs1OsqdKXxQmFrxHdE7z89VMZ_1KwKPcmQ@mail.gmail.com>
-	<20141119192928.GL12538@two.firstfloor.org>
-	<CA+55aFwykb6aZYgyZXbU1DQ3OL0umpv8gkHYWykBEC2B7UdMbw@mail.gmail.com>
-	<CALCETrXi7vdNAk4RziNDtqX4asPqXxi1VsLzL7pP0zivkjTH4Q@mail.gmail.com>
-	<CA+55aFx4-WzNQ0e-ZTcCig3b7U7xmt1WB1jzO3TLk9zHD006ng@mail.gmail.com>
-	<CALCETrVJJUcPRfkWRouLJCNUVNRH3aWX0X_K8L62yrUu1aR8Vg@mail.gmail.com>
-	<CA+55aFy0neTJAAm-8KsmPPU33zevyHmYa+vZjPk-DozSPPW_nQ@mail.gmail.com>
-	<CALCETrXzMe2WcpY3yX48WtvdRQDvSg7CZRO1T1TdLynmAcJHXg@mail.gmail.com>
-Date: Wed, 19 Nov 2014 16:37:13 -0800
-X-Google-Sender-Auth: EQiy30zMbLWSZ_tf_FKF0o-AC9Q
-Message-ID: <CA+55aFxNkD8=1JB0-4EyQTR+Yd0YaofB3+E5J+L3vsfki-RUSQ@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] sched, x86: Check that we're on the right stack in
- schedule and __might_sleep
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141120001324.GA11882@lerouge>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 4:13 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> No drugs, just imprecision.  This series doesn't change NMI handling
-> at all.  It only changes machine_check int3, debug, and stack_segment.
-> (Why is #SS using IST stacks anyway?)
+On Thu, Nov 20, 2014 at 01:13:27AM +0100, Frederic Weisbecker wrote:
+> On Wed, Nov 19, 2014 at 09:22:35AM -0800, Greg Kroah-Hartman wrote:
+> > > From a80e49e2cc3145af014a8ae44f575829cc236192 Mon Sep 17 00:00:00 2001
+> > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > Subject: nohz: Move nohz full init call to tick init
+> > > 
+> > > From c5c38ef3d70377dc504a6a3f611a3ec814bc757b Mon Sep 17 00:00:00 2001
+> > > From: Peter Zijlstra <peterz@infradead.org>
+> > > Subject: irq_work: Introduce arch_irq_work_has_interrupt()
+> > > 
+> > > From 76a33061b9323b7fdb220ae5fa116c10833ec22e Mon Sep 17 00:00:00 2001
+> > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > Subject: irq_work: Force raised irq work to run on irq work interrupt
+> > > 
+> > > From 3010279f0fc36f0388872203e63ca49912f648fd Mon Sep 17 00:00:00 2001
+> > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > Subject: x86: Tell irq work about self IPI support
+> > > 
+> > > From 09f6edd424218eb69078551b2ecfada1f2d098eb Mon Sep 17 00:00:00 2001
+> > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > Subject: arm: Tell irq work about self IPI support
+> > > 
+> > > From 3631073659d0aafeaa52227bb61a100efaf901dc Mon Sep 17 00:00:00 2001
+> > > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > > Subject: arm64: Tell irq work about self IPI support
+> > 
+> > These are pretty intrusive, maybe 3.18 is better for people to use :)
+> > 
+> > If Frederic says it's ok for me to backport these, I will, but I want
+> > his ack first.
+> 
+> Ah, not the whole lot is needed, only these (in the order):
+> 
+> irq_work: Introduce arch_irq_work_has_interrupt()
+> irq_work: Force raised irq work to run on irq work interrupt
+> x86: Tell irq work about self IPI support
+> arm: Tell irq work about self IPI support
+> 
+> You've applied them on your previous 3.17-stable release. They
+> just lacked stable tags upstream because we decided to backport them
+> after they got merged so you cherry-picked them directly :-)
 
-.. ok, we were talking about adding an explicit preemption count to
-nmi, and then you wanted to make that conditional, that kind of
-freaked me out.
+So I already did this work?  Great, I like it when that happens :)
 
-> So my point stands: if machine_check is going to be conditionally
-> atomic, then that condition needs to be expressed somewhere.
-
-I'd still prefer to keep that knowledge in one place, rather than
-adding *another* completely ad-hoc thing in addition to what we
-already have.
-
-Also, I really don't think it should be about the particular stack
-you're using. Sure, if a debug fault happens in user space, the fault
-handler could sleep if it runs on the regular stack, but our
-"might_sleep()" are about catching things that *could* be problematic,
-even if the sleep never happens. And so, might_sleep() _should_
-actually trigger, even if it's not using the IST stack, because *if*
-the debug exception happened in kernel space, then we should warn.
-
-So I'd actually *prefer* to have special hacks that perhaps then
-"undo" the preemption count if the code expressly tests for "did this
-happen in user space, then I know I'm safe". But then it's an
-*explicit* thing, not something that just magically works because
-nobody even thought about it, and the trap happened in user space.
-
-See the argument? I'd *rather* see code like
-
-   /* Magic */
-   if (user_mode(regs)) {
-       .. verify that we're using the normal kernel stack
-       .. enable interrupts, enable preemption
-       .. this is the explicit special case and it is aware
-       .. of being special
-   }
-
-even if on the face of it it looks hacky. But an *explicit* hack is
-preferable to something that just "happens" to work only for the
-user-mode case.
-
-                   Linus
