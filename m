@@ -1,108 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195AbaKTJeu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 04:34:50 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:50041 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849AbaKTJer (ORCPT
+	id S1757251AbaKTJfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 04:35:37 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:45268 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756779AbaKTJfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 04:34:47 -0500
-Message-ID: <546DB5B0.8040105@linaro.org>
-Date: Thu, 20 Nov 2014 09:34:40 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 20 Nov 2014 04:35:34 -0500
+Date: Thu, 20 Nov 2014 10:35:30 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
+Subject: Re: [PATCH v4 3/4] mtd: nand: gpmi: add proper raw access support
+Message-ID: <20141120103530.4c40daf9@bbrezillon>
+In-Reply-To: <20141120090807.GC3212@norris-Latitude-E6410>
+References: <1413794777-32220-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1413794777-32220-4-git-send-email-boris.brezillon@free-electrons.com>
+	<20141120090807.GC3212@norris-Latitude-E6410>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Kiran Raparthy <kiran.kumar@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: Re: [RFC] debug: add parameters to prevent entering debug mode on
- errors
-References: <1416312516-4551-1-git-send-email-kiran.kumar@linaro.org>	<546B7E21.4000602@linaro.org> <CA+RfmHYe7MJi61h76HPFpoh4bMG8erTGKpVhvQFjr8SaFXgH6w@mail.gmail.com>
-In-Reply-To: <CA+RfmHYe7MJi61h76HPFpoh4bMG8erTGKpVhvQFjr8SaFXgH6w@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/11/14 08:18, Kiran Raparthy wrote:
-> Hi Daniel,
+Hi Brian,
+
+On Thu, 20 Nov 2014 01:08:07 -0800
+Brian Norris <computersforpeace@gmail.com> wrote:
+
+> On Mon, Oct 20, 2014 at 10:46:16AM +0200, Boris Brezillon wrote:
+> > Several MTD users (either in user or kernel space) expect a valid raw
+> > access support to NAND chip devices.
+> > This is particularly true for testing tools which are often touching the
+> > data stored in a NAND chip in raw mode to artificially generate errors.
+> > 
+> > The GPMI drivers do not implemenent raw access functions, and thus rely on
+> > default HW_ECC scheme implementation.
+> > The default implementation consider the data and OOB area as properly
+> > separated in their respective NAND section, which is not true for the GPMI
+> > controller.
+> > In this driver/controller some OOB data are stored at the beginning of the
+> > NAND data area (these data are called metadata in the driver), then ECC
+> > bytes are interleaved with data chunk (which is similar to the
+> > HW_ECC_SYNDROME scheme), and eventually the remaining bytes are used as
+> > OOB data.
+> > 
+> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > ---
+> >  drivers/mtd/nand/gpmi-nand/gpmi-nand.c | 128 +++++++++++++++++++++++++++++++++
+> >  drivers/mtd/nand/gpmi-nand/gpmi-nand.h |   2 +
+> >  2 files changed, 130 insertions(+)
+> > 
+> > diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+> > index 959cb9b..bd4dedc 100644
+> > --- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+> > +++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+> > @@ -791,6 +791,7 @@ static void gpmi_free_dma_buffer(struct gpmi_nand_data *this)
+> >  					this->page_buffer_phys);
+> >  	kfree(this->cmd_buffer);
+> >  	kfree(this->data_buffer_dma);
+> > +	kfree(this->raw_buffer);
+> >  
+> >  	this->cmd_buffer	= NULL;
+> >  	this->data_buffer_dma	= NULL;
+> > @@ -837,6 +838,9 @@ static int gpmi_alloc_dma_buffer(struct gpmi_nand_data *this)
+> >  	if (!this->page_buffer_virt)
+> >  		goto error_alloc;
+> >  
+> > +	this->raw_buffer = kzalloc(mtd->writesize + mtd->oobsize, GFP_KERNEL);
+> > +	if (!this->raw_buffer)
+> > +		goto error_alloc;
+> >  
+> >  	/* Slice up the page buffer. */
+> >  	this->payload_virt = this->page_buffer_virt;
+> > @@ -1347,6 +1351,128 @@ gpmi_ecc_write_oob(struct mtd_info *mtd, struct nand_chip *chip, int page)
+> >  	return status & NAND_STATUS_FAIL ? -EIO : 0;
+> >  }
+> >  
+> > +static int gpmi_ecc_read_page_raw(struct mtd_info *mtd,
+> > +				  struct nand_chip *chip, uint8_t *buf,
+> > +				  int oob_required, int page)
 > 
-> On 18 November 2014 22:43, Daniel Thompson <daniel.thompson@linaro.org> wrote:
->> On 18/11/14 12:08, Kiran Kumar Raparthy wrote:
->>> From: Colin Cross <ccross@android.com>
->>>
->>> debug: add parameters to prevent entering debug mode on errors
->>>
->>> On non-developer devices kgdb prevents CONFIG_PANIC_TIMEOUT from rebooting the
->>> device after a panic. Add module parameters debug_core.break_on_exception and
->>> debug_core.break_on_panic to allow skipping debug on panics and exceptions
->>> respectively.  Both default to true to preserve existing behavior.
->>
->> I am a little unsure about break_on_panic.
->>
->> It ought to be possible for kgdb/kdb to honour CONFIG_PANIC_TIMEOUT by
->> tracking how long it takes for the user to attach a debugger (or to run
->> the first kdb command after the panic). As it happens the timeout value
->> is already an exported kernel symbol so all the info it there for us to
->> use...
->>
->> Doing so would save us imposing further configuration burden on the user
->> (although it would be a good deal more code).
->>
->> Note that I can't think of an automatic way to handle break_on_exception
->> so I'm less worried about that one.
-> Alright,so it it okay if we have this mechanism limited to "skip debug
-> on exceptions"?
-> please let me know if i have misunderstood your point.
+> I think I follow what this function is doing, and gpmi-nand notes the
+> ECC layout elsewhere in the driver, but can you put a few comments at
+> above this function to describe what it's doing? Refer to existing
+> comments as needed. And maybe note the tricky parts inline with the
+> code.
 
-Spliting it up would certainly stop a review comment from needlessly
-interfering with good stuff being delivered. That's always a good thing.
+Sure, I'll add some comments.
 
-To be clear though, providing the user a way to prevent kgdb from
-preventing the machine from rebooting after panic seems to me to be a
-useful feature. It is simply that I think the existing panic_timeout
-value could be used to realize it.
+> 
+> > +{
+> > +	struct gpmi_nand_data *this = chip->priv;
+> > +	struct bch_geometry *nfc_geo = &this->bch_geometry;
+> > +	int eccsize = nfc_geo->ecc_chunk_size;
+> > +	int eccbits = nfc_geo->ecc_strength * nfc_geo->gf_len;
+> > +	u8 *tmp_buf = this->raw_buffer;
+> > +	size_t src_bit_off;
+> > +	size_t oob_bit_off;
+> > +	size_t oob_byte_off;
+> > +	uint8_t *oob = chip->oob_poi;
+> > +	int step;
+> > +
+> > +	chip->read_buf(mtd, tmp_buf,
+> > +		       mtd->writesize + mtd->oobsize);
+> > +
+> > +	if (this->swap_block_mark) {
+> > +		u8 swap = tmp_buf[0];
+> > +
+> > +		tmp_buf[0] = tmp_buf[mtd->writesize];
+> > +		tmp_buf[mtd->writesize] = swap;
+> > +	}
+> > +
+> > +	if (oob_required)
+> > +		memcpy(oob, tmp_buf, nfc_geo->metadata_size);
+> > +
+> > +	oob_bit_off = nfc_geo->metadata_size * 8;
+> > +	src_bit_off = oob_bit_off;
+> > +
+> > +	for (step = 0; step < nfc_geo->ecc_chunk_count; step++) {
+> > +		if (buf)
+> 
+> Can buf ever be zero here?
 
->>> +             return 1;
->>> +
->>>       memset(ks, 0, sizeof(struct kgdb_state));
->>>       ks->cpu                 = raw_smp_processor_id();
->>>       ks->ex_vector           = evector;
->>> @@ -821,6 +830,9 @@ static int kgdb_panic_event(struct notifier_block *self,
->>>                           unsigned long val,
->>>                           void *data)
->>>  {
->>> +     if (!break_on_panic)
->>> +             return NOTIFY_DONE;
+Actually, I call this function with a NULL buf in my 4th patch (to dump
+the oob area).
 
-How about simply:
+> 
+> > +			gpmi_move_bits(buf, step * eccsize * 8,
+> > +				       tmp_buf, src_bit_off,
+> > +				       eccsize * 8);
+> > +		src_bit_off += eccsize * 8;
+> > +
+> > +		if (oob_required)
+> > +			gpmi_move_bits(oob, oob_bit_off,
+> > +				       tmp_buf, src_bit_off,
+> > +				       eccbits);
+> > +
+> > +		src_bit_off += eccbits;
+> > +		oob_bit_off += eccbits;
+> > +	}
+> > +
+> > +	if (oob_required) {
+> > +		if (oob_bit_off % 8)
+> > +			oob[oob_bit_off / 8] &= GENMASK(oob_bit_off - 1, 0);
+> 
+> So you're manufacturing a few 0 bits here, right? Is that safe? Would we
+> prefer to manufacture 1 bits, as if they are "erased"?
 
-	if (panic_timeout)
-		return NOTIFY_DONE;
+AFAIR this is what the controller is doing (but I'll have to re-check
+that one).
 
-(plus a nice comment explaining why)
+> 
+> > +
+> > +		oob_byte_off = DIV_ROUND_UP(oob_bit_off, 8);
+> > +
+> > +		if (oob_byte_off  < mtd->oobsize)
+> 
+> Extra whitespace before '<'.
 
-This doesn't implement a timeout and so does not prevent a physically
-present user from exploiting kgdb. Nevertheless its an accurate
-interpretation of what the user told us to do and leaves the door open
-to adding a timeout in the future.
+I'll Fix that.
 
-Actually it might be a good idea to use panic_timeout to control
-trap-on-oops as well! If the user wants the machine to reboot itself on
-panic they certainly don't want it to hang during an oops.
+Thanks for the review.
 
-if (panic_timeout)
-	return NOTIFY_DONE;
+Regards,
 
->>> +
->>>       if (dbg_kdb_mode)
->>>               kdb_prinf("PANIC: %s\n", (char *)data);
->>>       kgdb_breakpoint();
->>>
->>
+Boris
 
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
