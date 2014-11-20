@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308AbaKTVs7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 16:48:59 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:47261 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757149AbaKTVsn (ORCPT
+	id S1757014AbaKTVvT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 16:51:19 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:32129 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075AbaKTVvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 16:48:43 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        ssantosh@kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
-	<1709760.E0jX3Myv0h@wuerfel> <546C7FDD.7030906@ti.com>
-	<2900095.WIocOu7ue2@wuerfel>
-	<CAPDyKFqeZ3YU2OEN4tCOdcQ0pAho67Q8U_eCEOroG9aS0mp+-Q@mail.gmail.com>
-	<546DD87B.3080806@ti.com>
-	<CAPDyKFrBhZyqozM98_4pPdW0EMFt5W6VX1X7cz6Z=yNhW4vYTA@mail.gmail.com>
-	<CAMuHMdWtHT7QX3Kpa-GCLa49ToGODwjnNVgfxDzJzcM-FU1ffg@mail.gmail.com>
-	<546E0970.5090301@ti.com> <7hh9xtr5ac.fsf@deeprootsystems.com>
-	<CAMuHMdV7zASj8_NtLRir1VubXEKTkq0vBGMXeYXDACu8UC2tZA@mail.gmail.com>
-Date: Thu, 20 Nov 2014 13:48:40 -0800
-In-Reply-To: <CAMuHMdV7zASj8_NtLRir1VubXEKTkq0vBGMXeYXDACu8UC2tZA@mail.gmail.com>
-	(Geert Uytterhoeven's message of "Thu, 20 Nov 2014 21:26:55 +0100")
-Message-ID: <7hbno1r1af.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 20 Nov 2014 16:51:18 -0500
+Message-ID: <546E6221.5000409@oracle.com>
+Date: Thu, 20 Nov 2014 16:50:25 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mel Gorman <mgorman@suse.de>, Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Linux-MM <linux-mm@kvack.org>,
+        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/10] Replace _PAGE_NUMA with PAGE_NONE protections v2
+References: <1416478790-27522-1-git-send-email-mgorman@suse.de>
+In-Reply-To: <1416478790-27522-1-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+On 11/20/2014 05:19 AM, Mel Gorman wrote:
+> V1 failed while running under kvm-tools very quickly and a second report
+> indicated that it happens on bare metal as well. This version survived
+> an overnight run of trinity running under kvm-tools here but verification
+> from Sasha would be appreciated.
 
-> Hi Kevin,
->
-> On Thu, Nov 20, 2014 at 9:22 PM, Kevin Hilman <khilman@kernel.org> wrote:
->> Grygorii Strashko <grygorii.strashko@ti.com> writes:
->>> On 11/20/2014 03:32 PM, Geert Uytterhoeven wrote:
->>>> On Thu, Nov 20, 2014 at 2:12 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->>
->> [...]
->>
->>>>> So I really think we need to decide on how to address the split of the
->>>>> device clocks. Before that's done, I don't think it make sense to add
->>>>> a "simple-pmdomain" compatible, since it will likely not be that many
->>>>> SoC that can use it.
->>>>>
->>>>> So, does anyone have a suggestion on how to deal with the split of the
->>>>> device clocks into "functional" clocks and into "PM" clocks?
->>>
->>> Would it be better to say "functional" and "optional"? In my opinion
->>> "PM" == "functional". Also, such clock's separation is used in TRM/DM/UMs on HW.
->>
->> Yes!  I really don't like the name "PM" clock, since it's not at all
->> obvious what that means.  To me, "PM" == "functional" as well.
->>
->> So what exactly are we talking about with "PM" clocks, and why are they
->> "special" when it comes to PM domains?  IOW, why are the clocks to be
->> managed during PM domain transitions for a given device any different
->> than the clocks that need to be managed for a runtime suspend/resume (or
->> system suspend/resume) sequence for the same device?
->
-> (Speaking for my case, shmobile)
->
-> They're not. The clocks to be managed during PM domain transitions are the
-> same as the clocks that need to be managed for a runtime suspend/resume
-> (or system suspend/resume) sequence.
->
-> The special thing is that this is more a platform than a driver thing: the same
-> module may have a "PM/functional" clock (that is documented to enable/disable
-> the module) on one Soc, but not on another.
+Hi Mel,
 
-So why isn't the presence or absence of the clock described in the .dtsi
-for the SoC instead of being handled by special PM domain logic?
+I tried giving it a spin, but it won't apply at all on the latest -mm
+tree:
 
-Kevin
+$ git am -3 numa/*
+Applying: mm: numa: Do not dereference pmd outside of the lock during NUMA hinting fault
+Applying: mm: Add p[te|md] protnone helpers for use by NUMA balancing
+Applying: mm: Convert p[te|md]_numa users to p[te|md]_protnone_numa
+fatal: sha1 information is lacking or useless (mm/huge_memory.c).
+Repository lacks necessary blobs to fall back on 3-way merge.
+Cannot fall back to three-way merge.
+
+Did I miss a prerequisite?
+
+
+Thanks,
+Sasha
