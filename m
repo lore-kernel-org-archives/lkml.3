@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758162AbaKTV3I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 16:29:08 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:65496 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756884AbaKTV3F (ORCPT
+	id S1758189AbaKTV3N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 16:29:13 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:55860 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758125AbaKTV3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 16:29:05 -0500
+	Thu, 20 Nov 2014 16:29:08 -0500
 From: Alexander Kochetkov <al.kochet@gmail.com>
 To: linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org, al.kochet@gmail.com
 Cc: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>,
         Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 1/4] i2c: omap: cleanup register definitions
-Date: Fri, 21 Nov 2014 01:28:42 +0400
-Message-Id: <1416518925-20679-2-git-send-email-al.kochet@gmail.com>
+Subject: [PATCH 4/4] i2c: omap: add notes related to i2c multimaster mode
+Date: Fri, 21 Nov 2014 01:28:45 +0400
+Message-Id: <1416518925-20679-5-git-send-email-al.kochet@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1416518925-20679-1-git-send-email-al.kochet@gmail.com>
 References: <1416518925-20679-1-git-send-email-al.kochet@gmail.com>
@@ -22,52 +22,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete STAT_AD0 mask as unrelated to current IP (omap1?).
-Delete DEBUG conditional around SYSTEST masks group.
-Add SYSTEST functional mode masks for SCL and SDA.
-Add STAT_BF mask.
+No functional changes.
 
 Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
 ---
- drivers/i2c/busses/i2c-omap.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/i2c/busses/i2c-omap.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index 9af7095..a021733 100644
+index 47103e7..4e3642c 100644
 --- a/drivers/i2c/busses/i2c-omap.c
 +++ b/drivers/i2c/busses/i2c-omap.c
-@@ -102,7 +102,7 @@ enum {
- #define OMAP_I2C_STAT_ROVR	(1 << 11)	/* Receive overrun */
- #define OMAP_I2C_STAT_XUDF	(1 << 10)	/* Transmit underflow */
- #define OMAP_I2C_STAT_AAS	(1 << 9)	/* Address as slave */
--#define OMAP_I2C_STAT_AD0	(1 << 8)	/* Address zero */
-+#define OMAP_I2C_STAT_BF	(1 << 8)	/* Bus Free */
- #define OMAP_I2C_STAT_XRDY	(1 << 4)	/* Transmit data ready */
- #define OMAP_I2C_STAT_RRDY	(1 << 3)	/* Receive data ready */
- #define OMAP_I2C_STAT_ARDY	(1 << 2)	/* Register access ready */
-@@ -150,16 +150,20 @@ enum {
- #define OMAP_I2C_SCLH_HSSCLH	8
+@@ -304,6 +304,12 @@ static void __omap_i2c_init(struct omap_i2c_dev *dev)
+ 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, OMAP_I2C_CON_EN);
  
- /* I2C System Test Register (OMAP_I2C_SYSTEST): */
--#ifdef DEBUG
- #define OMAP_I2C_SYSTEST_ST_EN		(1 << 15)	/* System test enable */
- #define OMAP_I2C_SYSTEST_FREE		(1 << 14)	/* Free running mode */
- #define OMAP_I2C_SYSTEST_TMODE_MASK	(3 << 12)	/* Test mode select */
- #define OMAP_I2C_SYSTEST_TMODE_SHIFT	(12)		/* Test mode select */
-+/* Functional mode */
-+#define OMAP_I2C_SYSTEST_SCL_I_FUNC	(1 << 8)	/* SCL line input value */
-+#define OMAP_I2C_SYSTEST_SCL_O_FUNC	(1 << 7)	/* SCL line output value */
-+#define OMAP_I2C_SYSTEST_SDA_I_FUNC	(1 << 6)	/* SDA line input value */
-+#define OMAP_I2C_SYSTEST_SDA_O_FUNC	(1 << 5)	/* SDA line output value */
-+/* SDA/SCL IO mode */
- #define OMAP_I2C_SYSTEST_SCL_I		(1 << 3)	/* SCL line sense in */
- #define OMAP_I2C_SYSTEST_SCL_O		(1 << 2)	/* SCL line drive out */
- #define OMAP_I2C_SYSTEST_SDA_I		(1 << 1)	/* SDA line sense in */
- #define OMAP_I2C_SYSTEST_SDA_O		(1 << 0)	/* SDA line drive out */
--#endif
+ 	/*
++	 * NOTE: right after setting CON_EN, STAT_BB could be 0 while the
++	 * bus is busy. It will be changed to 1 on the next IP FCLK clock.
++	 * udelay(1) will be enough to fix that.
++	 */
++
++	/*
+ 	 * Don't write to this register if the IE state is 0 as it can
+ 	 * cause deadlock.
+ 	 */
+@@ -664,7 +670,11 @@ static int omap_i2c_xfer_msg(struct i2c_adapter *adap,
  
- /* OCP_SYSSTATUS bit definitions */
- #define SYSS_RESETDONE_MASK		(1 << 0)
+ 	if (!dev->b_hw && stop)
+ 		w |= OMAP_I2C_CON_STP;
+-
++	/*
++	 * NOTE: STAT_BB bit could became 1 here if another master occupy
++	 * the bus. IP successfully complete transfer when the bus will be
++	 * free again (BB reset to 0).
++	 */
+ 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, w);
+ 
+ 	/*
 -- 
 1.7.9.5
 
