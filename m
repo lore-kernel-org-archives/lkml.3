@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625AbaKTCWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 21:22:21 -0500
-Received: from mga09.intel.com ([134.134.136.24]:42382 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754272AbaKTCWT convert rfc822-to-8bit (ORCPT
+	id S1756506AbaKTC3i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 21:29:38 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:33126 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658AbaKTC3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 21:22:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,421,1413270000"; 
-   d="scan'208";a="610849396"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: RE: [PATCH 1/6] ACPI/EC: Introduce STARTED/STOPPED flags to replace
- BLOCKED flag.
-Thread-Topic: [PATCH 1/6] ACPI/EC: Introduce STARTED/STOPPED flags to
- replace BLOCKED flag.
-Thread-Index: AQHP9yVTyINIm6IIIUqyDtdpynBt3JxRS4XwgBarhsKAAOm2sA==
-Date: Thu, 20 Nov 2014 02:20:53 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88026A3D69@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1414988981.git.lv.zheng@intel.com>
- <1AE640813FDE7649BE1B193DEA596E8802689778@SHSMSX101.ccr.corp.intel.com>
- <20141118132328.GA27428@node.dhcp.inet.fi>
- <4486101.LWS7CexbAj@vostro.rjw.lan> <20141119121615.GA2514@node.dhcp.inet.fi>
-In-Reply-To: <20141119121615.GA2514@node.dhcp.inet.fi>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Nov 2014 21:29:36 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sAK2TNwC022005, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next v3 0/2] r8152: adjust rx functions
+Date: Thu, 20 Nov 2014 10:29:04 +0800
+Message-ID: <1394712342-15778-98-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <1394712342-15778-88-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-88-Taiwan-albertk@realtek.com>
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since you have environment to trigger this.
-Could you also help to check if the fix can work?
-I've just sent them as RFC to this thread.
+v3:
+For patch #1, remove unnecessary initialization for ret and
+unnecessary blank line in r8152_submit_rx().
 
-Thanks and best regards
--Lv
+v2:
+For patch #1, set actual_length to 0 before adding the rx to the
+list, when a error occurs.
 
-> From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
-> Sent: Wednesday, November 19, 2014 8:16 PM
-> To: Rafael J. Wysocki
-> Cc: Zheng, Lv; Wysocki, Rafael J; Brown, Len; Lv Zheng; linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org
-> Subject: Re: [PATCH 1/6] ACPI/EC: Introduce STARTED/STOPPED flags to replace BLOCKED flag.
-> 
-> On Tue, Nov 18, 2014 at 10:20:11PM +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, November 18, 2014 03:23:28 PM Kirill A. Shutemov wrote:
-> > > On Wed, Nov 05, 2014 at 02:52:36AM +0000, Zheng, Lv wrote:
-> >
-> > [cut]
-> >
-> > >
-> > > Here's lockdep warning I see on -next:
-> >
-> > Is patch [1/6] sufficient to trigger this or do you need all [1-4/6]?
-> 
-> I only saw it on -next. I've tried to apply patches directly on -rc5 and
-> don't see the warning. I don't have time for proper bisecting, sorry.
-> 
-> --
->  Kirill A. Shutemov
+For patch #2, change the flow. Stop submitting the rx if a error
+occurs, and add the remaining rx to the list for submitting later.
+
+v1:
+Adjust some flows and codes which are relative to r8152_submit_rx()
+and rtl_start_rx().
+
+Hayes Wang (2):
+  r8152: adjust r8152_submit_rx
+  r8152: adjust rtl_start_rx
+
+ drivers/net/usb/r8152.c | 60 ++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 40 insertions(+), 20 deletions(-)
+
+--
+1.9.3
+
