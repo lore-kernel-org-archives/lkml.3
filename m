@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757064AbaKTHOX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:14:23 -0500
-Received: from exprod7og119.obsmtp.com ([64.18.2.16]:52040 "EHLO
-	exprod7og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757042AbaKTHOS (ORCPT
+	id S1757102AbaKTHOg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:14:36 -0500
+Received: from exprod7og109.obsmtp.com ([64.18.2.171]:47879 "EHLO
+	exprod7og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757075AbaKTHOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:14:18 -0500
+	Thu, 20 Nov 2014 02:14:33 -0500
 From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
 X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 To: jejb@kernel.org, hch@infradead.org
@@ -14,89 +14,184 @@ Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
         JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
         Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
         Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH 00/22] mpt2sas, mpt3sas: SAS2 Phase 19,20 and SAS3 Phase 4,5 patches
-Date: Thu, 20 Nov 2014 12:35:33 +0530
-Message-Id: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+Subject: [PATCH 15/22] [SCSI] mpt3sas: MPI 2.5 Rev I (2.5.4) specifications.
+Date: Thu, 20 Nov 2014 12:35:48 +0530
+Message-Id: <1416467155-16869-16-git-send-email-Sreekanth.Reddy@avagotech.com>
 X-Mailer: git-send-email 2.0.2
+In-Reply-To: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+References: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please consider this Patch set for next kernel release.
+Update MPI 2.5 Release: MPI 2.5 Rev I (2.5.4) specification and 2.00.33 header files
 
-Highlights of this patch set:
-- 96 MSIX vector support for SAS3 HBA's,
-- Log Temperature threshold exceeds message for any temperature sensor,
-- Updating the copy right information,
-- Provide physical location of target drives by printing Enclosure level,
-  Enclosure address, Slot number etc,
-- Displaying OEM's HBA branding String,
-- MPI file's update,
-- Some driver fixes.
+Below is the change set from the MPI specification for I Rev
 
-Sreekanth Reddy (22):
-  [SCSI] mpt2sas: MPI2 Rev AA (2.00.19) specifications
-  [SCSI] mpt2sas, mpt3sas: Added support to log message when Temperature
-    Threshold exceeds for any Sensor
-  mpt2sas, mpt3sas: Fail the host reset initiated due to discovery
-    related I/O timeouts at driver load time
-  [SCSI] mpt2sas: Bump driver version to 19.100.00.00
-  [SCSI] mpt2sas: MPI2 Rev BB (2.00.20) specification and 2.00.35 header
-    files
-  [SCSI] mpt2sas, mpt3sas: Removing uppper boundary restriction for the
-    module parameter max_sgl_entries
-  [SCSI] mpt2sas: Complete the SCSI command with DID_RESET status for
-    log_info value 0x0x32010081
-  [SCSI] mpt2sas, mpt3sas: Update Attribution Language to Avago
-  [SCSI] mpt2sas, mpt3sas: Added a support to set cpu affinity for each
-    MSIX vector enabled by the HBA
-  [SCSI] mpt2sas: Bump driver version to 20.100.00.00
-  [SCSI] mpt3sas: Added Combined Reply Queue feature to extend up-to 96
-    MSIX vector support
-  mpt3sas: Get IOC_FACTS information using handshake protocol only after
-    HBA card gets into READY or Operational state.
-  [SCSI] mpt3sas: Added module parameter 'unblock_io' to unblock IO's
-    during disk addition
-  [SCSI] mpt2sas, mpt3sas: Remove redundancy code while freeing the
-    controller resources.
-  [SCSI] mpt3sas: MPI 2.5 Rev I (2.5.4) specifications.
-  [SCSI] mpt3sas: Provides the physical location of sas drives
-  [SCSI] mpt3sas: Bump mpt3sas Driver version to v5.100.00.00
-  [SCSI] mpt3sas: Update MPI2 strings to MPI2.5
-  [SCSI] mpt3sas: MPI 2.5 Rev J (2.5.5) specification and 2.00.34 header
-    files
-  [SCSI] mpt3sas: Add branding string support for OEM's HBA
-  mpt3sas: Add branding string support for OEM custom HBA
-  [SCSI] mpt3sas: Bump mpt3sas driver version to v6.100.00.00
+1) Added Base Enclosure Level bit to the Flags field of Manufacturing Page 7.
+2) Updated description of the MaxTargetPortConnectTime field of SAS IO Unit Page 1.
+3) Added EnclosureLevel and ConnectorName fields to SAS Device Page 0. Also, added EnclosureLevel and ConnectorName Valid bit to the Flags field.
+4) Added EnclosureLevel field to SAS Enclosure Page 0. Also, added EnclosureLevel Valid bit to the Flags field.
+5) Added value for BIOS image to HashImageType.
 
- drivers/scsi/mpt2sas/mpi/mpi2.h             |   7 +-
- drivers/scsi/mpt2sas/mpi/mpi2_cnfg.h        |  51 ++++-
- drivers/scsi/mpt2sas/mpi/mpi2_ioc.h         |   4 +-
- drivers/scsi/mpt2sas/mpi/mpi2_tool.h        |   6 +-
- drivers/scsi/mpt2sas/mpt2sas_base.c         |  79 +++++--
- drivers/scsi/mpt2sas/mpt2sas_base.h         |  15 +-
- drivers/scsi/mpt2sas/mpt2sas_config.c       |  39 +++-
- drivers/scsi/mpt2sas/mpt2sas_ctl.c          |   3 +-
- drivers/scsi/mpt2sas/mpt2sas_ctl.h          |   3 +-
- drivers/scsi/mpt2sas/mpt2sas_debug.h        |   3 +-
- drivers/scsi/mpt2sas/mpt2sas_scsih.c        |  47 +++-
- drivers/scsi/mpt2sas/mpt2sas_transport.c    |   3 +-
- drivers/scsi/mpt3sas/mpi/mpi2.h             |   7 +-
- drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h        |  39 +++-
- drivers/scsi/mpt3sas/mpi/mpi2_ioc.h         |   4 +-
- drivers/scsi/mpt3sas/mpi/mpi2_tool.h        |   4 +-
- drivers/scsi/mpt3sas/mpt3sas_base.c         | 282 ++++++++++++++++++++---
- drivers/scsi/mpt3sas/mpt3sas_base.h         |  51 ++++-
- drivers/scsi/mpt3sas/mpt3sas_config.c       |  39 +++-
- drivers/scsi/mpt3sas/mpt3sas_ctl.c          |   3 +-
- drivers/scsi/mpt3sas/mpt3sas_ctl.h          |   3 +-
- drivers/scsi/mpt3sas/mpt3sas_debug.h        |   3 +-
- drivers/scsi/mpt3sas/mpt3sas_scsih.c        | 343 ++++++++++++++++++++++++----
- drivers/scsi/mpt3sas/mpt3sas_transport.c    |  17 +-
- drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c |   3 +-
- drivers/scsi/mpt3sas/mpt3sas_trigger_diag.h |   3 +-
- 26 files changed, 913 insertions(+), 148 deletions(-)
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+---
+ drivers/scsi/mpt3sas/mpi/mpi2.h      |  6 ++++--
+ drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h | 27 +++++++++++++++++++++------
+ drivers/scsi/mpt3sas/mpi/mpi2_ioc.h  |  4 +++-
+ 3 files changed, 28 insertions(+), 9 deletions(-)
 
+diff --git a/drivers/scsi/mpt3sas/mpi/mpi2.h b/drivers/scsi/mpt3sas/mpi/mpi2.h
+index c34c115..d730c5c 100644
+--- a/drivers/scsi/mpt3sas/mpi/mpi2.h
++++ b/drivers/scsi/mpt3sas/mpi/mpi2.h
+@@ -8,7 +8,7 @@
+  *                 scatter/gather formats.
+  * Creation Date:  June 21, 2006
+  *
+- * mpi2.h Version:  02.00.31
++ * mpi2.h Version:  02.00.33
+  *
+  * NOTE: Names (typedefs, defines, etc.) beginning with an MPI25 or Mpi25
+  *       prefix are for use only on MPI v2.5 products, and must not be used
+@@ -88,6 +88,8 @@
+  *                     Added MPI25_SUP_REPLY_POST_HOST_INDEX_OFFSET.
+  * 04-09-13  02.00.30  Bumped MPI2_HEADER_VERSION_UNIT.
+  * 04-17-13  02.00.31  Bumped MPI2_HEADER_VERSION_UNIT.
++ * 08-19-13  02.00.32  Bumped MPI2_HEADER_VERSION_UNIT.
++ * 12-05-13  02.00.33  Bumped MPI2_HEADER_VERSION_UNIT.
+  * --------------------------------------------------------------------------
+  */
+ 
+@@ -121,7 +123,7 @@
+ #define MPI2_VERSION_02_05                  (0x0205)
+ 
+ /*Unit and Dev versioning for this MPI header set */
+-#define MPI2_HEADER_VERSION_UNIT            (0x1F)
++#define MPI2_HEADER_VERSION_UNIT            (0x21)
+ #define MPI2_HEADER_VERSION_DEV             (0x00)
+ #define MPI2_HEADER_VERSION_UNIT_MASK       (0xFF00)
+ #define MPI2_HEADER_VERSION_UNIT_SHIFT      (8)
+diff --git a/drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h b/drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h
+index e261a31..62dfbf6 100644
+--- a/drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h
++++ b/drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h
+@@ -6,7 +6,7 @@
+  *         Title:  MPI Configuration messages and pages
+  * Creation Date:  November 10, 2006
+  *
+- *   mpi2_cnfg.h Version:  02.00.26
++ *   mpi2_cnfg.h Version:  02.00.27
+  *
+  * NOTE: Names (typedefs, defines, etc.) beginning with an MPI25 or Mpi25
+  *       prefix are for use only on MPI v2.5 products, and must not be used
+@@ -165,6 +165,16 @@
+  *                     match the specification.
+  * 08-19-13  02.00.26  Added reserved words to MPI2_CONFIG_PAGE_IO_UNIT_7 for
+  *			future use.
++ * 12-05-13  02.00.27  Added MPI2_MANPAGE7_FLAG_BASE_ENCLOSURE_LEVEL for
++ *		       MPI2_CONFIG_PAGE_MAN_7.
++ *		       Added EnclosureLevel and ConnectorName fields to
++ *		       MPI2_CONFIG_PAGE_SAS_DEV_0.
++ *		       Added MPI2_SAS_DEVICE0_FLAGS_ENCL_LEVEL_VALID for
++ *		       MPI2_CONFIG_PAGE_SAS_DEV_0.
++ *		       Added EnclosureLevel field to
++ *		       MPI2_CONFIG_PAGE_SAS_ENCLOSURE_0.
++ *		       Added MPI2_SAS_ENCLS0_FLAGS_ENCL_LEVEL_VALID for
++ *		       MPI2_CONFIG_PAGE_SAS_ENCLOSURE_0.
+  * --------------------------------------------------------------------------
+  */
+ 
+@@ -724,6 +734,7 @@ typedef struct _MPI2_CONFIG_PAGE_MAN_7 {
+ #define MPI2_MANUFACTURING7_PAGEVERSION                 (0x01)
+ 
+ /*defines for the Flags field */
++#define MPI2_MANPAGE7_FLAG_BASE_ENCLOSURE_LEVEL         (0x00000008)
+ #define MPI2_MANPAGE7_FLAG_EVENTREPLAY_SLOT_ORDER       (0x00000002)
+ #define MPI2_MANPAGE7_FLAG_USE_SLOT_INFO                (0x00000001)
+ 
+@@ -2633,9 +2644,9 @@ typedef struct _MPI2_CONFIG_PAGE_SAS_DEV_0 {
+ 	U8
+ 		ControlGroup;           /*0x2E */
+ 	U8
+-		Reserved1;              /*0x2F */
++		EnclosureLevel;		/*0x2F */
+ 	U32
+-		Reserved2;              /*0x30 */
++		ConnectorName[4];	/*0x30 */
+ 	U32
+ 		Reserved3;              /*0x34 */
+ } MPI2_CONFIG_PAGE_SAS_DEV_0,
+@@ -2643,7 +2654,7 @@ typedef struct _MPI2_CONFIG_PAGE_SAS_DEV_0 {
+ 	Mpi2SasDevicePage0_t,
+ 	*pMpi2SasDevicePage0_t;
+ 
+-#define MPI2_SASDEVICE0_PAGEVERSION         (0x08)
++#define MPI2_SASDEVICE0_PAGEVERSION         (0x09)
+ 
+ /*values for SAS Device Page 0 AccessStatus field */
+ #define MPI2_SAS_DEVICE0_ASTATUS_NO_ERRORS                  (0x00)
+@@ -2683,6 +2694,7 @@ typedef struct _MPI2_CONFIG_PAGE_SAS_DEV_0 {
+ #define MPI2_SAS_DEVICE0_FLAGS_SATA_NCQ_SUPPORTED           (0x0020)
+ #define MPI2_SAS_DEVICE0_FLAGS_SATA_FUA_SUPPORTED           (0x0010)
+ #define MPI2_SAS_DEVICE0_FLAGS_PORT_SELECTOR_ATTACH         (0x0008)
++#define MPI2_SAS_DEVICE0_FLAGS_ENCL_LEVEL_VALID             (0x0002)
+ #define MPI2_SAS_DEVICE0_FLAGS_DEVICE_PRESENT               (0x0001)
+ 
+ 
+@@ -3019,8 +3031,10 @@ typedef struct _MPI2_CONFIG_PAGE_SAS_ENCLOSURE_0 {
+ 		NumSlots;                   /*0x18 */
+ 	U16
+ 		StartSlot;                  /*0x1A */
+-	U16
++	U8
+ 		Reserved2;                  /*0x1C */
++	U8
++		EnclosureLevel;		    /*0x1D */
+ 	U16
+ 		SEPDevHandle;               /*0x1E */
+ 	U32
+@@ -3031,9 +3045,10 @@ typedef struct _MPI2_CONFIG_PAGE_SAS_ENCLOSURE_0 {
+ 	*PTR_MPI2_CONFIG_PAGE_SAS_ENCLOSURE_0,
+ 	Mpi2SasEnclosurePage0_t, *pMpi2SasEnclosurePage0_t;
+ 
+-#define MPI2_SASENCLOSURE0_PAGEVERSION      (0x03)
++#define MPI2_SASENCLOSURE0_PAGEVERSION      (0x04)
+ 
+ /*values for SAS Enclosure Page 0 Flags field */
++#define MPI2_SAS_ENCLS0_FLAGS_ENCL_LEVEL_VALID      (0x0010)
+ #define MPI2_SAS_ENCLS0_FLAGS_MNG_MASK              (0x000F)
+ #define MPI2_SAS_ENCLS0_FLAGS_MNG_UNKNOWN           (0x0000)
+ #define MPI2_SAS_ENCLS0_FLAGS_MNG_IOC_SES           (0x0001)
+diff --git a/drivers/scsi/mpt3sas/mpi/mpi2_ioc.h b/drivers/scsi/mpt3sas/mpi/mpi2_ioc.h
+index 4908309..d7598cc 100644
+--- a/drivers/scsi/mpt3sas/mpi/mpi2_ioc.h
++++ b/drivers/scsi/mpt3sas/mpi/mpi2_ioc.h
+@@ -6,7 +6,7 @@
+  *         Title:  MPI IOC, Port, Event, FW Download, and FW Upload messages
+  * Creation Date:  October 11, 2006
+  *
+- * mpi2_ioc.h Version:  02.00.23
++ * mpi2_ioc.h Version:  02.00.24
+  *
+  * NOTE: Names (typedefs, defines, etc.) beginning with an MPI25 or Mpi25
+  *       prefix are for use only on MPI v2.5 products, and must not be used
+@@ -132,6 +132,7 @@
+  *			Added MPI2_IOCFACTS_CAPABILITY_RDPQ_ARRAY_CAPABLE.
+  *			Added MPI2_FW_DOWNLOAD_ITYPE_PUBLIC_KEY.
+  *			Added Encrypted Hash Extended Image.
++ * 12-05-13  02.00.24  Added MPI25_HASH_IMAGE_TYPE_BIOS.
+  * --------------------------------------------------------------------------
+  */
+ 
+@@ -1598,6 +1599,7 @@ Mpi25EncryptedHashEntry_t, *pMpi25EncryptedHashEntry_t;
+ /* values for HashImageType */
+ #define MPI25_HASH_IMAGE_TYPE_UNUSED		(0x00)
+ #define MPI25_HASH_IMAGE_TYPE_FIRMWARE		(0x01)
++#define MPI25_HASH_IMAGE_TYPE_BIOS              (0x02)
+ 
+ /* values for HashAlgorithm */
+ #define MPI25_HASH_ALGORITHM_UNUSED		(0x00)
 -- 
 2.0.2
 
