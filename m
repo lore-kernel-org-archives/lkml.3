@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581AbaKTN3u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:29:50 -0500
-Received: from mga02.intel.com ([134.134.136.20]:11689 "EHLO mga02.intel.com"
+	id S1757282AbaKTNZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:25:59 -0500
+Received: from mga02.intel.com ([134.134.136.20]:21311 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757293AbaKTN0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:26:01 -0500
+	id S1757217AbaKTNZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 08:25:56 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,424,1413270000"; 
-   d="scan'208";a="611097044"
+   d="scan'208";a="611096846"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V2 14/22] perf itrace: Add a hashtable for caching decoded instructions
-Date: Thu, 20 Nov 2014 15:23:20 +0200
-Message-Id: <1416489808-4489-15-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V2 10/22] perf itrace: Add helpers for Instruction Tracing errors
+Date: Thu, 20 Nov 2014 15:23:16 +0200
+Message-Id: <1416489808-4489-11-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416489808-4489-1-git-send-email-adrian.hunter@intel.com>
 References: <1416489808-4489-1-git-send-email-adrian.hunter@intel.com>
@@ -27,179 +27,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Decoding Instruction Trace data may involve walking object
-code.  Rather than repetitively decoding the same instructions,
-a cache can be used to cache the results.
+Add functions to synthesize, count and print
+Instruction Tracing error events.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/itrace.c | 123 +++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/itrace.h |  14 ++++++
- 2 files changed, 137 insertions(+)
+ tools/perf/util/itrace.c | 55 ++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/itrace.h | 16 ++++++++++++++
+ 2 files changed, 71 insertions(+)
 
 diff --git a/tools/perf/util/itrace.c b/tools/perf/util/itrace.c
-index eb43a7f..fd67a9a 100644
+index 2a3a7ce..b063c26 100644
 --- a/tools/perf/util/itrace.c
 +++ b/tools/perf/util/itrace.c
-@@ -37,6 +37,8 @@
- #include "thread_map.h"
+@@ -22,6 +22,7 @@
+ #include <linux/types.h>
+ 
+ #include <stdlib.h>
++#include <stdio.h>
+ #include <string.h>
+ #include <errno.h>
+ 
+@@ -33,6 +34,7 @@
  #include "itrace.h"
  
-+#include <linux/hash.h>
-+
  #include "event.h"
- #include "session.h"
++#include "session.h"
  #include "debug.h"
-@@ -916,3 +918,124 @@ int itrace_mmap__read(struct itrace_mmap *mm, struct itrace_record *itr,
+ #include "parse-options.h"
  
- 	return 1;
+@@ -157,6 +159,28 @@ struct itrace_record * __weak itrace_record__init(int *err)
+ 	return NULL;
  }
-+
-+/**
-+ * struct itrace_cache - hash table to cache decoded instruction blocks
-+ * @hashtable: the hashtable
-+ * @sz: hashtable size (number of hlists)
-+ * @entry_size: size of an entry
-+ * @limit: limit the number of entries to this maximum, when reached the cache
-+ *         is dropped and caching begins again with an empty cache
-+ * @cnt: current number of entries
-+ * @bits: hashtable size (@sz = 2^@bits)
-+ */
-+struct itrace_cache {
-+	struct hlist_head *hashtable;
-+	size_t sz;
-+	size_t entry_size;
-+	size_t limit;
-+	size_t cnt;
-+	unsigned int bits;
-+};
-+
-+struct itrace_cache *itrace_cache__new(unsigned int bits, size_t entry_size,
-+				       unsigned int limit_percent)
+ 
++void itrace_synth_error(struct itrace_error_event *itrace_error, int type,
++			int code, int cpu, pid_t pid, pid_t tid, u64 ip,
++			const char *msg)
 +{
-+	struct itrace_cache *c;
-+	struct hlist_head *ht;
-+	size_t sz, i;
++	size_t size;
 +
-+	c = zalloc(sizeof(struct itrace_cache));
-+	if (!c)
-+		return NULL;
++	memset(itrace_error, 0, sizeof(struct itrace_error_event));
 +
-+	sz = 1UL << bits;
++	itrace_error->header.type = PERF_RECORD_ITRACE_ERROR;
++	itrace_error->type = type;
++	itrace_error->code = code;
++	itrace_error->cpu = cpu;
++	itrace_error->pid = pid;
++	itrace_error->tid = tid;
++	itrace_error->ip = ip;
++	strlcpy(itrace_error->msg, msg, MAX_ITRACE_ERROR_MSG);
 +
-+	ht = calloc(sz, sizeof(struct hlist_head));
-+	if (!ht)
-+		goto out_free;
-+
-+	for (i = 0; i < sz; i++)
-+		INIT_HLIST_HEAD(&ht[i]);
-+
-+	c->hashtable = ht;
-+	c->sz = sz;
-+	c->entry_size = entry_size;
-+	c->limit = (c->sz * limit_percent) / 100;
-+	c->bits = bits;
-+
-+	return c;
-+
-+out_free:
-+	free(c);
-+	return NULL;
++	size = (void *)itrace_error->msg - (void *)itrace_error +
++	       strlen(itrace_error->msg) + 1;
++	itrace_error->header.size = PERF_ALIGN(size, sizeof(u64));
 +}
 +
-+static void itrace_cache__drop(struct itrace_cache *c)
+ int perf_event__synthesize_itrace_info(struct itrace_record *itr,
+ 				       struct perf_tool *tool,
+ 				       struct perf_session *session,
+@@ -336,6 +360,37 @@ out_err:
+ 	return -EINVAL;
+ }
+ 
++size_t perf_event__fprintf_itrace_error(union perf_event *event, FILE *fp)
 +{
-+	struct itrace_cache_entry *entry;
-+	struct hlist_node *tmp;
-+	size_t i;
++	struct itrace_error_event *e = &event->itrace_error;
++	int ret;
 +
-+	if (!c)
-+		return;
-+
-+	for (i = 0; i < c->sz; i++) {
-+		hlist_for_each_entry_safe(entry, tmp, &c->hashtable[i], hash) {
-+			hlist_del(&entry->hash);
-+			itrace_cache__free_entry(c, entry);
-+		}
-+	}
-+
-+	c->cnt = 0;
++	ret = fprintf(fp, " Instruction trace error type %u", e->type);
++	ret += fprintf(fp, " cpu %d pid %d tid %d ip %#"PRIx64" code %u: %s\n",
++		       e->cpu, e->pid, e->tid, e->ip, e->code, e->msg);
++	return ret;
 +}
 +
-+void itrace_cache__free(struct itrace_cache *c)
++int perf_event__process_itrace_error(struct perf_tool *tool __maybe_unused,
++				     union perf_event *event,
++				     struct perf_session *session)
 +{
-+	if (!c)
-+		return;
++	if (session->itrace)
++		session->itrace->error_count += 1;
 +
-+	itrace_cache__drop(c);
-+	free(c->hashtable);
-+	free(c);
-+}
-+
-+void *itrace_cache__alloc_entry(struct itrace_cache *c)
-+{
-+	return malloc(c->entry_size);
-+}
-+
-+void itrace_cache__free_entry(struct itrace_cache *c __maybe_unused,
-+			      void *entry)
-+{
-+	free(entry);
-+}
-+
-+int itrace_cache__add(struct itrace_cache *c, u32 key,
-+		      struct itrace_cache_entry *entry)
-+{
-+	if (c->limit && ++c->cnt > c->limit)
-+		itrace_cache__drop(c);
-+
-+	entry->key = key;
-+	hlist_add_head(&entry->hash, &c->hashtable[hash_32(key, c->bits)]);
-+
++	perf_event__fprintf_itrace_error(event, stdout);
 +	return 0;
 +}
 +
-+void *itrace_cache__lookup(struct itrace_cache *c, u32 key)
++int perf_event__count_itrace_error(struct perf_tool *tool __maybe_unused,
++				   union perf_event *event __maybe_unused,
++				   struct perf_session *session)
 +{
-+	struct itrace_cache_entry *entry;
-+	struct hlist_head *hlist;
-+
-+	if (!c)
-+		return NULL;
-+
-+	hlist = &c->hashtable[hash_32(key, c->bits)];
-+	hlist_for_each_entry(entry, hlist, hash) {
-+		if (entry->key == key)
-+			return entry;
-+	}
-+
-+	return NULL;
++	if (session->itrace)
++		session->itrace->error_count += 1;
++	return 0;
 +}
++
+ int itrace_mmap__read(struct itrace_mmap *mm, struct itrace_record *itr,
+ 		      struct perf_tool *tool, process_itrace_t fn)
+ {
 diff --git a/tools/perf/util/itrace.h b/tools/perf/util/itrace.h
-index 575037c..e67fa34 100644
+index 76e70ea..8275afd 100644
 --- a/tools/perf/util/itrace.h
 +++ b/tools/perf/util/itrace.h
-@@ -316,6 +316,20 @@ int itrace_heap__add(struct itrace_heap *heap, unsigned int queue_nr,
- void itrace_heap__pop(struct itrace_heap *heap);
- void itrace_heap__free(struct itrace_heap *heap);
+@@ -33,6 +33,10 @@ struct option;
+ struct record_opts;
+ struct itrace_info_event;
  
-+struct itrace_cache_entry {
-+	struct hlist_node hash;
-+	u32 key;
++enum itrace_error_type {
++	PERF_ITRACE_DECODER_ERROR = 1,
 +};
 +
-+struct itrace_cache *itrace_cache__new(unsigned int bits, size_t entry_size,
-+				       unsigned int limit_percent);
-+void itrace_cache__free(struct itrace_cache *itrace_cache);
-+void *itrace_cache__alloc_entry(struct itrace_cache *c);
-+void itrace_cache__free_entry(struct itrace_cache *c, void *entry);
-+int itrace_cache__add(struct itrace_cache *c, u32 key,
-+		      struct itrace_cache_entry *entry);
-+void *itrace_cache__lookup(struct itrace_cache *c, u32 key);
-+
- struct itrace_record *itrace_record__init(int *err);
+ enum itrace_period_type {
+ 	PERF_ITRACE_PERIOD_INSTRUCTIONS,
+ 	PERF_ITRACE_PERIOD_TICKS,
+@@ -202,6 +206,10 @@ int itrace_record__info_fill(struct itrace_record *itr,
+ void itrace_record__free(struct itrace_record *itr);
+ u64 itrace_record__reference(struct itrace_record *itr);
  
- int itrace_record__options(struct itrace_record *itr,
++void itrace_synth_error(struct itrace_error_event *itrace_error, int type,
++			int code, int cpu, pid_t pid, pid_t tid, u64 ip,
++			const char *msg);
++
+ int perf_event__synthesize_itrace_info(struct itrace_record *itr,
+ 				       struct perf_tool *tool,
+ 				       struct perf_session *session,
+@@ -210,10 +218,18 @@ int perf_event__synthesize_itrace(struct perf_tool *tool,
+ 				  perf_event__handler_t process,
+ 				  size_t size, u64 offset, u64 ref, int idx,
+ 				  u32 tid, u32 cpu);
++int perf_event__process_itrace_error(struct perf_tool *tool,
++				     union perf_event *event,
++				     struct perf_session *session);
++int perf_event__count_itrace_error(struct perf_tool *tool __maybe_unused,
++				   union perf_event *event __maybe_unused,
++				   struct perf_session *session);
+ int itrace_parse_synth_opts(const struct option *opt, const char *str,
+ 			    int unset);
+ void itrace_synth_opts__set_default(struct itrace_synth_opts *synth_opts);
+ 
++size_t perf_event__fprintf_itrace_error(union perf_event *event, FILE *fp);
++
+ static inline int itrace__process_event(struct perf_session *session,
+ 					union perf_event *event,
+ 					struct perf_sample *sample,
 -- 
 1.9.1
 
