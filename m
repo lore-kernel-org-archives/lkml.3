@@ -1,105 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362AbaKTFsF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 00:48:05 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:53587 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754735AbaKTFsD (ORCPT
+	id S1755791AbaKTFsJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 00:48:09 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:47891 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754735AbaKTFsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 00:48:03 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-b6-546d8083bd98
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org
-Cc: kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
-        pankaj.dubey@samsung.com,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: [PATCH v3 3/5] driver: soc: exynos-pmu: Add an API to be called after
- wakeup
-Date: Thu, 20 Nov 2014 11:09:26 +0530
-Message-id: <1416461968-2057-4-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1416461968-2057-1-git-send-email-amit.daniel@samsung.com>
-References: <1416461968-2057-1-git-send-email-amit.daniel@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsWyRsSkVrelITfEYPd0NouGqyEWvQuuslls
-	enyN1eLyrjlsFjPO72OyWLT1C7sDm8fmJfUefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlTH9
-	yB7WgpW8FTe7H7A1MK7g7mLk5JAQMJF4tWkDO4QtJnHh3nq2LkYuDiGBpYwS09puMsEUTX9w
-	jQXEFhJYxCgxeysLRNEEJonORUfAutkEjCV+7twPZHNwiAh4Syy/pghSwyzQxChxbt5lVpAa
-	YYFwiV9du8HqWQRUJb7//Aa2gFfATeL777ssIL0SAgoScybZgIQ5Bdwlnn/awwix103i1IrF
-	TCAzJQSa2SU+3LzIBjFHQOLb5ENQvbISmw4wQ9wsKXFwxQ2WCYzCCxgZVjGKphYkFxQnpReZ
-	6BUn5haX5qXrJefnbmIEhvDpf88m7GC8d8D6EKMAB6MSD2+CRW6IEGtiWXFl7iFGU6ANE5ml
-	RJPzgZGSVxJvaGxmZGFqYmpsZG5ppiTO+1rqZ7CQQHpiSWp2ampBalF8UWlOavEhRiYOTqkG
-	xhhpO3s9u9UrTVZd0b5f06h0INpxWX2dDPNir/zuqPt7Pkl+LbTjsUyUWPZ3tkZHqa14mFgu
-	/5vpMw+euvFXJXO/wA4Nxec29lnr91577Ndsr6DnJvHUxe8Nw/2zpkzGXiav+45qFL66/21p
-	0/YTC++zC7X1OW67ZFb87H2A18e4lZtuzqnTU2Ipzkg01GIuKk4EABOWgTRcAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsVy+t9jAd3mhtwQg38LrS0aroZY9C64ymax
-	6fE1VovLu+awWcw4v4/JYtHWL+wObB6bl9R79G1ZxejxeZNcAHNUA6NNRmpiSmqRQmpecn5K
-	Zl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBaJYWyxJxSoFBAYnGxkr4dpgmh
-	IW66FjCNEbq+IUFwPUYGaCBhDWPG9CN7WAtW8lbc7H7A1sC4gruLkZNDQsBEYvqDaywQtpjE
-	hXvr2UBsIYFFjBKztwLFuYDsCUwSnYuOsIMk2ASMJX7u3A9kc3CICHhLLL+mCFLDLNDEKHFu
-	3mVWkBphgXCJX127wepZBFQlvv/8xgRi8wq4SXz/fZcFpFdCQEFiziQbkDCngLvE8097GCH2
-	ukmcWrGYaQIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwRHyTHoH46oGi0OMAhyM
-	Sjy8CRa5IUKsiWXFlbmHGCU4mJVEeD9VAoV4UxIrq1KL8uOLSnNSiw8xmgIdNZFZSjQ5Hxi9
-	eSXxhsYm5qbGppYmFiZmlkrivAdbrQOFBNITS1KzU1MLUotg+pg4OKUaGB3TTi5xypJYc733
-	ar55kukplzQFvrmCP1XFTupePMJ70drGpezdJaaWBa8ElL5e2rpLOUj81aEkw0DR4LYpBU6v
-	9cy+he0R9ptiEnVeYMPl3xcvHjt3S0TRKU9syo9Jtgun83Ebipt2CU9d7fr33U+pU1oywiyK
-	K168vLJdaO/pwJunTjOXWimxFGckGmoxFxUnAgABxq9RpgIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 20 Nov 2014 00:48:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141120025517.12298.7391@quantum>
+References: <1414747777-12625-1-git-send-email-kever.yang@rock-chips.com>
+	<CAD=FV=VByf=YKw7q4L2493C-z9uJ3dTSk9WZyCFdOkSjD2XoDw@mail.gmail.com>
+	<20141120025517.12298.7391@quantum>
+Date: Wed, 19 Nov 2014 21:48:05 -0800
+X-Google-Sender-Auth: V_Vd9NSAq6h98g3Ql014L9pYTQk
+Message-ID: <CAD=FV=V3x61CG_gGXQ8g4hERX0=3G3LtzF37+t3Z=A_ciVL=vw@mail.gmail.com>
+Subject: Re: [PATCH] clk: rockchip: change hierarchy for some clocks
+From: Doug Anderson <dianders@chromium.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Kever Yang <kever.yang@rock-chips.com>,
+        "Heiko Stuebner <heiko@sntech.de>," <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an API exynos_sys_powerup_conf to be called after system sleep
-wakeup. This will useful for exynos7 SoC to perform resume related
-initialisations. This is similar to currently existing API
-exynos_sys_powerdown_conf.
+Mike,
 
-Reviewed-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
----
- drivers/soc/samsung/exynos-pmu.c       |    9 +++++++++
- include/linux/soc/samsung/exynos-pmu.h |    1 +
- 2 files changed, 10 insertions(+)
+On Wed, Nov 19, 2014 at 6:55 PM, Mike Turquette <mturquette@linaro.org> wrote:
+> Quoting Doug Anderson (2014-11-04 13:32:49)
+>> Kever
+>>
+>> On Fri, Oct 31, 2014 at 2:29 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+>> > This patch change the hierarchy for some clocks, to met the following
+>> > bus hierarchy:
+>> > hclk_usb_peri is bus clock for
+>> > |- hclk_otg0,
+>> > |- hclk_host0,
+>> > |- hclk_host1,
+>> > |- hclk_hsic
+>> >
+>> > hclk_emem is bus clock for
+>> > |- hclk_nandc0
+>> > |- hclk_nandc1
+>> >
+>> > hclk_mem is bus clock for
+>> > |- hclk_sdmmc
+>> > |- hclk_sdio0
+>> > |- hclk_sdio1
+>> > |- hclk_emmc
+>>
+>> So as I understand it the "parent" clocks aren't really parents but
+>> are actually peer clocks.  That is if "hclk_usb_peri" is gated
+>> "hclk_otg0" continues to run.  ...but the OTG periperhal is useless
+>> without "hclk_usb_peri" also being enabled.
+>>
+>> There doesn't seem to be any real downside to modeling thing as you
+>> have done it, though it's not quite a true representation of the
+>> world.  A slightly more true representation would be to make it so
+>> that whenever "hclk_otg0" is enabled/disabled that it makes an
+>> enable/disable call to "hclk_usb_peri".  I think you'd have to
+>> subclass the gate clock and patch your stuff in the "enable" function.
+>>
+>> I'm personally OK with things landing as you've described it (I can
+>> see no downside), but it seems like this at least deserves a comment
+>> (either in the code or the commit message).
+>>
+>> If Mike T. thinks that we should use a more truthful model or if
+>> there's some better way to express this, you should of course listen
+>> to him and not to me.
+>
+> I'm coming back to this thread sort of late (V2 is posted but the
+> discussion is here in V1). I strongly believe that we should model the
+> hardware closely, unless there is a convincing reason to do otherwise.
+> That makes it more maintainable and more debuggable (e.g. the code
+> matches the data sheet).
+>
+> Seems like there isn't a reason to make these clocks follow a
+> parent/child relationship except for convenience?
+>
+> To clarify further, the requirement for enabling/maintaining the clocks
+> isn't really about the clocks themselves, but about the downstream IP
+> that consumes the clocks, right? In that case it is the downstream
+> driver's responsibility to enable/disable these clocks to spec, not the
+> clock driver's job to hide these details.
 
-diff --git a/drivers/soc/samsung/exynos-pmu.c b/drivers/soc/samsung/exynos-pmu.c
-index aa43e04..f8896bc 100644
---- a/drivers/soc/samsung/exynos-pmu.c
-+++ b/drivers/soc/samsung/exynos-pmu.c
-@@ -29,6 +29,7 @@ struct exynos_pmu_data {
- 
- 	void (*pmu_init)(void);
- 	void (*powerdown_conf)(enum sys_powerdown);
-+	void (*powerup_conf)(enum sys_powerdown);
- };
- 
- struct exynos_pmu_context {
-@@ -637,6 +638,14 @@ void exynos_sys_powerdown_conf(enum sys_powerdown mode)
- 	}
- }
- 
-+void exynos_sys_powerup_conf(enum sys_powerdown mode)
-+{
-+	const struct exynos_pmu_data *pmu_data = pmu_context->pmu_data;
-+
-+	if (pmu_data->powerup_conf)
-+		pmu_data->powerup_conf(mode);
-+}
-+
- static void exynos5250_pmu_init(void)
- {
- 	unsigned int value;
-diff --git a/include/linux/soc/samsung/exynos-pmu.h b/include/linux/soc/samsung/exynos-pmu.h
-index a2ab0d5..b497712 100644
---- a/include/linux/soc/samsung/exynos-pmu.h
-+++ b/include/linux/soc/samsung/exynos-pmu.h
-@@ -20,5 +20,6 @@ enum sys_powerdown {
- };
- 
- extern void exynos_sys_powerdown_conf(enum sys_powerdown mode);
-+extern void exynos_sys_powerup_conf(enum sys_powerdown mode);
- 
- #endif /* __EXYNOS_PMU_H */
--- 
-1.7.9.5
+I don't think it's the downstream driver's job in this case.  Let me
+see if I can describe it as I understand it:
 
+1. We've got 4 different USB IP blocks _plus_ an IP block that all 4
+blocks are connected to that helps interconnect them to the rest of
+the system.
+
+2. The USB IP blocks are not accessible unless the interconnect is clocked.
+
+3. The Interconnect's clock is not truly the parent of the USB IP blocks.
+
+You could maybe draw it like this (assumes fixed width)
+
+                        clk_interconnect
+                                |
+            +------+       +---------+
+-clk_usb1---| USB1 |==bus==|         |
+            +------+       |         |
+            +------+       |         |
+-clk_usb2---| USB2 |==bus==| inter-  |==bus==
+            +------+       | connect |
+            +------+       |         |
+-clk_usb3---| USB3 |==bus==|         |
+            +------+       +---------+
+
+
+The USB driver shouldn't need to know that there is an interconnect
+hooking up the USB block to the rest of the system.  It's an artifact
+of the SoC.  The USB driver should just turn on its bus clock.
+
+In a pure sense we should have it so that if we turn on any of
+clk_usb1, clk_usb2, or clk_usb3 we should tun on the interconnect.
+...but we shouldn't describe them as parents because in the hardware
+there's no real parent child relationship.
+
+...but since we don't care about the rate of the clk_interconnect (we
+can't control it separately) and if we list clk_usb1, clk_usb2, and
+clk_usb3 as children of clk_interconnect we magically get everything
+we want...
+
+
+-Doug
