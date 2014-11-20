@@ -1,103 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740AbaKTI2W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 03:28:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44700 "EHLO mx1.redhat.com"
+	id S1756774AbaKTI3s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 03:29:48 -0500
+Received: from mout.web.de ([212.227.17.12]:52803 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838AbaKTI2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 03:28:20 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>, Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH v4 net] virtio-net: validate features during probe
-Date: Thu, 20 Nov 2014 16:27:23 +0800
-Message-Id: <1416472043-9875-1-git-send-email-jasowang@redhat.com>
+	id S1755854AbaKTI3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 03:29:46 -0500
+Message-ID: <546DA65E.4020100@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 09:29:18 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 2/3] [media] m88ds3103: One function call less in m88ds3103_init()
+ after error detection
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546DA419.7050405@users.sourceforge.net>
+In-Reply-To: <546DA419.7050405@users.sourceforge.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:MJcsOqb1fLelhqyL+CS2hkbYUJPcePrTFkdKcXC0FG5/r324Rir
+ k/bgGSqURdoya7IfqPf1Spq7gUUHSpOeODBY2JPll5tWk0OGnkxaA+/LgJBICJgDv59jpC1
+ wb60OMYpzJPxzMHqykGlAQ+8UgEtQyAZxt68rodtTS7rhj5IkvE19i59denepxIDHXpErR3
+ wzosSKxsaRGX7yerHKgzg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently trigger BUG when VIRTIO_NET_F_CTRL_VQ
-is not set but one of features depending on it is.
-That's not a friendly way to report errors to
-hypervisors.
-Let's check, and fail probe instead.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Wed, 19 Nov 2014 23:20:51 +0100
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-Changes from V1:
-- Drop NETIF_F_*_UFO from checklist
-Changes from V2:
-- only check the features for ctrl vq (this fix the real bug)
-- better error message and simplify API
-Changes from V3:
-- pass dbit directly and even better error message
-- typo fix
----
- drivers/net/virtio_net.c | 37 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
+The release_firmware() function was called in some cases by the
+m88ds3103_init() function during error handling even if the passed variable
+contained still a null pointer. This implementation detail could be improved
+by the introduction of another jump label.
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index ec2a8b4..cc53ff1 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1673,6 +1673,40 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
- };
- #endif
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/media/dvb-frontends/m88ds3103.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/media/dvb-frontends/m88ds3103.c b/drivers/media/dvb-frontends/m88ds3103.c
+index e88f0f6..82da715 100644
+--- a/drivers/media/dvb-frontends/m88ds3103.c
++++ b/drivers/media/dvb-frontends/m88ds3103.c
+@@ -590,7 +590,7 @@ static int m88ds3103_init(struct dvb_frontend *fe)
  
-+static bool virtnet_fail_on_feature(struct virtio_device *vdev,
-+				    unsigned int fbit,
-+				    const char *fname, const char *dname)
-+{
-+	if (!virtio_has_feature(vdev, fbit))
-+		return false;
-+
-+	dev_err(&vdev->dev, "advertise feature %s but not %s",
-+		fname, dname);
-+
-+	return true;
-+}
-+
-+#define VIRTNET_FAIL_ON(vdev, fbit, dbit)			\
-+	virtnet_fail_on_feature(vdev, fbit, #fbit, dbit)
-+
-+static bool virtnet_validate_features(struct virtio_device *vdev)
-+{
-+	if (!virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ) &&
-+	    (VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_RX,
-+			     "VIRTIO_NET_F_CTRL_VQ") ||
-+	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_VLAN,
-+			     "VIRTIO_NET_F_CTRL_VQ") ||
-+	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_GUEST_ANNOUNCE,
-+			     "VIRTIO_NET_F_CTRL_VQ") ||
-+	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_MQ, "VIRTIO_NET_F_CTRL_VQ") ||
-+	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_MAC_ADDR,
-+			     "VIRTIO_NET_F_CTRL_VQ"))) {
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
- static int virtnet_probe(struct virtio_device *vdev)
- {
- 	int i, err;
-@@ -1680,6 +1714,9 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	struct virtnet_info *vi;
- 	u16 max_queue_pairs;
+ 	ret = m88ds3103_wr_reg(priv, 0xb2, 0x01);
+ 	if (ret)
+-		goto err;
++		goto error_fw_release;
  
-+	if (!virtnet_validate_features(vdev))
-+		return -EINVAL;
-+
- 	/* Find if host supports multiqueue virtio_net device */
- 	err = virtio_cread_feature(vdev, VIRTIO_NET_F_MQ,
- 				   struct virtio_net_config,
+ 	for (remaining = fw->size; remaining > 0;
+ 			remaining -= (priv->cfg->i2c_wr_max - 1)) {
+@@ -604,13 +604,13 @@ static int m88ds3103_init(struct dvb_frontend *fe)
+ 			dev_err(&priv->i2c->dev,
+ 					"%s: firmware download failed=%d\n",
+ 					KBUILD_MODNAME, ret);
+-			goto err;
++			goto error_fw_release;
+ 		}
+ 	}
+ 
+ 	ret = m88ds3103_wr_reg(priv, 0xb2, 0x00);
+ 	if (ret)
+-		goto err;
++		goto error_fw_release;
+ 
+ 	release_firmware(fw);
+ 	fw = NULL;
+@@ -636,9 +636,10 @@ skip_fw_download:
+ 	priv->warm = true;
+ 
+ 	return 0;
+-err:
+-	release_firmware(fw);
+ 
++error_fw_release:
++	release_firmware(fw);
++err:
+ 	dev_dbg(&priv->i2c->dev, "%s: failed=%d\n", __func__, ret);
+ 	return ret;
+ }
 -- 
-1.9.1
+2.1.3
 
