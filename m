@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813AbaKTNtL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:49:11 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:7106 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756062AbaKTNtK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:49:10 -0500
-Date: Thu, 20 Nov 2014 08:49:00 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Byungchul Park <byungchul.park@lge.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, seungho1.park@lge.com, jolsa@redhat.com
-Subject: Re: [PATCH v5 2/2] tracing: add additional marks to signal very
- large time
-Message-ID: <20141120084900.10c8a2f5@gandalf.local.home>
-In-Reply-To: <20141120063846.GD27177@byungchulpark-X58A-UD3R>
-References: <1416442535-31188-1-git-send-email-byungchul.park@lge.com>
-	<1416442535-31188-3-git-send-email-byungchul.park@lge.com>
-	<20141119200604.6b57266d@gandalf.local.home>
-	<87ioiapft4.fsf@sejong.aot.lge.com>
-	<20141120063846.GD27177@byungchulpark-X58A-UD3R>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1756487AbaKTNtu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:49:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49650 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752046AbaKTNtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 08:49:47 -0500
+Message-ID: <546DF175.7040009@redhat.com>
+Date: Thu, 20 Nov 2014 14:49:41 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-ia64@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [PATCH] KVM: ia64: remove
+References: <1416431143-31843-1-git-send-email-pbonzini@redhat.com> <20141120133809.GA30792@potion.brq.redhat.com>
+In-Reply-To: <20141120133809.GA30792@potion.brq.redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Nov 2014 15:38:46 +0900
-Byungchul Park <byungchul.park@lge.com> wrote:
 
 
-> > I think it's impossible since it's always true that 'd >= 0'.
-> > 
+On 20/11/2014 14:38, Radim Krčmář wrote:
+> I propose another removal.
+> (The reasoning below wasn't confirmed with ia64 compiler.
+> I'd remove the ioctls even if they worked.)
+
+Checked and applied, thanks.
+
+Paolo
+
+> ---8<---
+> KVM: remove buggy ia64 specific ioctls
 > 
-> If someone won't define "MARK(0ULL, ' ')", then i think it can happen. :)
+> IA64 is no longer present so new applications shouldn't use them.
 > 
-
-Actually, remove the "MARK(0ULL, ' ')" and keep the return value as is.
-But clean it up a little like this:
-
-	return (i == size) ? ' ' : mark[i].sym;
-
-Notice the space between "size)" and "?"
-
--- Steve
+> The main problem is that they most likely didn't work even before,
+> because we have misused ioctl
+> 
+>   #define KVM_SET_GUEST_DEBUG       _IOW(KVMIO,  0x9b, struct kvm_guest_debug)
+>   #define KVM_IA64_VCPU_SET_STACK   _IOW(KVMIO,  0x9b, void *)
+> 
+> as
+> 
+>   struct kvm_guest_debug {
+>   	__u32 control;
+>   	__u32 pad;
+>   	struct kvm_guest_debug_arch arch;
+>   };
+> 
+> and
+> 
+>   struct kvm_guest_debug_arch {
+>   };
+> 
+> mean that
+> 
+>   sizeof(struct kvm_guest_debug) == sizeof(void *) == 8
+> 
+> thus
+> 
+>   KVM_SET_GUEST_DEBUG == KVM_IA64_VCPU_SET_STACK
+> 
+> and KVM_SET_GUEST_DEBUG is handled before KVM_IA64_VCPU_SET_STACK.
+> 
+> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+> ---
+>  include/uapi/linux/kvm.h | 3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+> index 6d59e5b..a37fd12 100644
+> --- a/include/uapi/linux/kvm.h
+> +++ b/include/uapi/linux/kvm.h
+> @@ -1099,9 +1099,6 @@ struct kvm_s390_ucas_mapping {
+>  #define KVM_X86_SETUP_MCE         _IOW(KVMIO,  0x9c, __u64)
+>  #define KVM_X86_GET_MCE_CAP_SUPPORTED _IOR(KVMIO,  0x9d, __u64)
+>  #define KVM_X86_SET_MCE           _IOW(KVMIO,  0x9e, struct kvm_x86_mce)
+> -/* IA64 stack access */
+> -#define KVM_IA64_VCPU_GET_STACK   _IOR(KVMIO,  0x9a, void *)
+> -#define KVM_IA64_VCPU_SET_STACK   _IOW(KVMIO,  0x9b, void *)
+>  /* Available with KVM_CAP_VCPU_EVENTS */
+>  #define KVM_GET_VCPU_EVENTS       _IOR(KVMIO,  0x9f, struct kvm_vcpu_events)
+>  #define KVM_SET_VCPU_EVENTS       _IOW(KVMIO,  0xa0, struct kvm_vcpu_events)
+> 
