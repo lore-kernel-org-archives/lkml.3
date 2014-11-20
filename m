@@ -1,70 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758219AbaKTV3r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 16:29:47 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:49677 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758095AbaKTV3H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 16:29:07 -0500
-From: Alexander Kochetkov <al.kochet@gmail.com>
-To: linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, al.kochet@gmail.com
-Cc: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3/4] i2c: omap: don't reset controller if Arbitration Lost detected
-Date: Fri, 21 Nov 2014 01:28:44 +0400
-Message-Id: <1416518925-20679-4-git-send-email-al.kochet@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1416518925-20679-1-git-send-email-al.kochet@gmail.com>
-References: <1416518925-20679-1-git-send-email-al.kochet@gmail.com>
+	id S1758236AbaKTV3w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 16:29:52 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758095AbaKTV3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 16:29:50 -0500
+Message-ID: <546E5D46.4070805@nod.at>
+Date: Thu, 20 Nov 2014 22:29:42 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+CC: "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mateusz Guzik <mguzik@redhat.com>, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH v8 1/2] procfs: show hierarchy of pid namespace
+References: <1416303013-13762-1-git-send-email-chenhanxiao@cn.fujitsu.com> <1416303013-13762-2-git-send-email-chenhanxiao@cn.fujitsu.com> <5871495633F38949900D2BF2DC04883E73748A47@G08CNEXMBPEKD03.g08.fujitsu.local>
+In-Reply-To: <5871495633F38949900D2BF2DC04883E73748A47@G08CNEXMBPEKD03.g08.fujitsu.local>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arbitration Lost is a expected situation in a multimaster environment.
-IP correctly detect it.
+Am 20.11.2014 um 10:57 schrieb Chen, Hanxiao:
+> 
+> 
+>> -----Original Message-----
+>> From: containers-bounces@lists.linux-foundation.org
+>> [mailto:containers-bounces@lists.linux-foundation.org] On Behalf Of Chen
+>> Hanxiao
+>> Sent: Tuesday, November 18, 2014 5:30 PM
+>> To: Eric W. Biederman; Serge Hallyn; Oleg Nesterov; Richard Weinberger
+>> Cc: containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org;
+>> Mateusz Guzik; David Howells
+>> Subject: [PATCH v8 1/2] procfs: show hierarchy of pid namespace
+>>
+>> We lack of pid hierarchy information, and this will lead to:
+>> a) we don't know pids' relationship, who is whose child:
+>>    /proc/PID/ns/pid only tell us whether two pids live in different ns
+>> b) bring trouble to nested lxc container check/restore/migration
+>> c) bring trouble to pid translation between containers;
+>>
+>> This patch will show the hierarchy of pid namespace
+>> by pidns_hierarchy like:
+>>
+>> <init_PID> <parent_of_init_PID> <relative PID level>
+>>
+>> Ex:
+>> [root@localhost ~]#cat /proc/pidns_hierarchy
+>> 18060 1 1
+>> 18102 18060 2
+>> 1534  18102 3
+>> 1600  18102 3
+>> 1550  1 1
+>> *Note: numbers represent the pid 1 in different ns
+>>
+>> It shows the pid hierarchy below:
+>>
+>>       init_pid_ns 1
+>>               │
+>> ┌────────────┐
+>> ns1                      ns2
+>> │                        │
+>> 1550                    18060
+>>                           │
+>>                           │
+>>                          ns3
+>>                           │
+>>                         18102
+>>                           │
+>>                  ┌──────────┐
+>>                  ns4                   ns5
+>>                  │                    │
+>>                 1534                  1600
+>>
+>> Every pid printed in pidns_hierarchy
+>> is the init pid of that pid ns level.
+>>
+>> Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+>> ---
+>> v8: fix some improper comments
+>>     use max() from kernel.h
+>> v7: change stype to be consistent with current interface like
+>>     <init_PID> <parent_of_init_PID> <relative PID level>
+>>     remove EXPERT dependent in Kconfig
+>> v6: fix a get_pid leak and do some cleanups;
+>> v5: collect pid by find_ge_pid;
+>>     use local list inside nslist_proc_show;
+>>     use get_pid, remove mutex lock.
+>> v4: simplify pid collection and some performance optimizamtion
+>>     fix another race issue.
+>> v3: fix a race issue and memory leak issue
+>> v2: use a procfs text file instead of dirs under /proc
+>>
+> 
+> Hi,
+> 
+> Any comments?
 
-The only reason for reseting IP in the AL case is to be sure to
-avoid advisory 1.94 (omap3) and errata i595 (omap4):
-"I2C: After an Arbitration is Lost the Module Incorrectly Starts
-the Next Transfer" with workaround: "The MST and STT bits inside
-I2C_CON should be set to 1 at the same moment (avoid setting the
-MST bit to 1 while STT = 0)."
+FWIW, Acked-by: Richard Weinberer <richard@nod.at>
 
-The driver never writes MST and STT bits separately and doesn't
-create condition for errata. So the reset is not necessary.
+The more challenging question is who will pickup this series?
+Eric? Andrew?
 
-Tested on Beagleboard XM C.
-
-Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
----
- drivers/i2c/busses/i2c-omap.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index 3ffb9c0..47103e7 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -707,13 +707,17 @@ static int omap_i2c_xfer_msg(struct i2c_adapter *adap,
- 		return 0;
- 
- 	/* We have an error */
--	if (dev->cmd_err & (OMAP_I2C_STAT_AL | OMAP_I2C_STAT_ROVR |
-+	if (dev->cmd_err & (OMAP_I2C_STAT_ROVR |
- 			    OMAP_I2C_STAT_XUDF)) {
- 		omap_i2c_reset(dev);
- 		__omap_i2c_init(dev);
- 		return -EIO;
- 	}
- 
-+	if (dev->cmd_err & OMAP_I2C_STAT_AL) {
-+		return -EIO;
-+	}
-+
- 	if (dev->cmd_err & OMAP_I2C_STAT_NACK) {
- 		if (msg->flags & I2C_M_IGNORE_NAK)
- 			return 0;
--- 
-1.7.9.5
-
+Thanks,
+//richard
