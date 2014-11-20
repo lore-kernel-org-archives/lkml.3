@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205AbaKTRJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:09:28 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:35793 "EHLO
+	id S1758173AbaKTRJX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:09:23 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:35794 "EHLO
 	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757069AbaKTRCm (ORCPT
+	with ESMTP id S1757077AbaKTRCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Nov 2014 12:02:42 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
@@ -15,9 +15,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
         Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v10 08/27] scripts/gdb: Add internal helper and convenience function to look up a module
-Date: Thu, 20 Nov 2014 18:01:45 +0100
-Message-Id: <e7d96138cd2d9f1b019a3153131cb8e7f5f3a36e.1416502923.git.jan.kiszka@siemens.com>
+Subject: [PATCH v10 25/27] scripts/gdb: Convert ModuleList to generator function
+Date: Thu, 20 Nov 2014 18:02:02 +0100
+Message-Id: <cc6d38427f0f6c7abdbe136c2e92270eea8561f1.1416502923.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <cover.1416502923.git.jan.kiszka@siemens.com>
 References: <cover.1416502923.git.jan.kiszka@siemens.com>
@@ -27,61 +27,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the internal helper get_module_by_name to obtain the module
-structure corresponding to the given name. Also export this service as a
-convenience function.
+Analogously to the task list, convert the module list to a generator
+function. It noticeably simplifies the code.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/modules.py | 28 ++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py   |  1 +
- 2 files changed, 29 insertions(+)
+ scripts/gdb/linux/modules.py | 33 +++++++++++----------------------
+ scripts/gdb/linux/symbols.py |  2 +-
+ 2 files changed, 12 insertions(+), 23 deletions(-)
 
 diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
-index 8a65c3d..531f763 100644
+index 2dbf679..6d49722 100644
 --- a/scripts/gdb/linux/modules.py
 +++ b/scripts/gdb/linux/modules.py
-@@ -37,3 +37,31 @@ class ModuleList:
-             return utils.container_of(entry, self.module_ptr_type, "list")
+@@ -19,31 +19,20 @@ from linux import cpus, utils
+ module_type = utils.CachedType("struct module")
+ 
+ 
+-class ModuleList:
+-    def __init__(self):
+-        global module_type
+-        self.module_ptr_type = module_type.get_type().pointer()
+-        modules = gdb.parse_and_eval("modules")
+-        self.curr_entry = modules['next']
+-        self.end_of_list = modules.address
+-
+-    def __iter__(self):
+-        return self
+-
+-    def __next__(self):
+-        entry = self.curr_entry
+-        if entry != self.end_of_list:
+-            self.curr_entry = entry['next']
+-            return utils.container_of(entry, self.module_ptr_type, "list")
+-        else:
+-            raise StopIteration
++def module_list():
++    global module_type
++    module_ptr_type = module_type.get_type().pointer()
++    modules = gdb.parse_and_eval("modules")
++    entry = modules['next']
++    end_of_list = modules.address
+ 
+-    def next(self):
+-        return self.__next__()
++    while entry != end_of_list:
++        yield utils.container_of(entry, module_ptr_type, "list")
++        entry = entry['next']
+ 
+ 
+ def find_module_by_name(name):
+-    for module in ModuleList():
++    for module in module_list():
+         if module['name'].string() == name:
+             return module
+     return None
+@@ -83,7 +72,7 @@ class LxLsmod(gdb.Command):
+             "Address{0}    Module                  Size  Used by\n".format(
+                 "        " if utils.get_long_type().sizeof == 8 else ""))
+ 
+-        for module in ModuleList():
++        for module in module_list():
+             ref = 0
+             module_refptr = module['refptr']
+             for cpu in cpus.CpuList("cpu_possible_mask"):
+diff --git a/scripts/gdb/linux/symbols.py b/scripts/gdb/linux/symbols.py
+index ae757fd..bf05e45 100644
+--- a/scripts/gdb/linux/symbols.py
++++ b/scripts/gdb/linux/symbols.py
+@@ -133,7 +133,7 @@ lx-symbols command."""
+         gdb.execute("symbol-file vmlinux")
+ 
+         self.loaded_modules = []
+-        module_list = modules.ModuleList()
++        module_list = modules.module_list()
+         if not module_list:
+             gdb.write("no modules found\n")
          else:
-             raise StopIteration
-+
-+
-+def find_module_by_name(name):
-+    for module in ModuleList():
-+        if module['name'].string() == name:
-+            return module
-+    return None
-+
-+
-+class LxModule(gdb.Function):
-+    """Find module by name and return the module variable.
-+
-+$lx_module("MODULE"): Given the name MODULE, iterate over all loaded modules
-+of the target and return that module variable which MODULE matches."""
-+
-+    def __init__(self):
-+        super(LxModule, self).__init__("lx_module")
-+
-+    def invoke(self, mod_name):
-+        mod_name = mod_name.string()
-+        module = find_module_by_name(mod_name)
-+        if module:
-+            return module.dereference()
-+        else:
-+            raise gdb.GdbError("Unable to find MODULE " + mod_name)
-+
-+
-+LxModule()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index 0b0faa4..cf2e716 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -24,3 +24,4 @@ except:
- else:
-     import linux.utils
-     import linux.symbols
-+    import linux.modules
 -- 
 1.8.4.5
 
