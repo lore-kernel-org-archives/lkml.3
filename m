@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880AbaKTHjn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:39:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43865 "EHLO
+	id S1756942AbaKTHkM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:40:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43892 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727AbaKTHjl (ORCPT
+	with ESMTP id S1754238AbaKTHkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:39:41 -0500
-Date: Wed, 19 Nov 2014 23:39:30 -0800
-From: tip-bot for Kan Liang <tipbot@zytor.com>
-Message-ID: <tip-68ca9d65b88420c2c97948a0640bad13405129e7@git.kernel.org>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        ak@linux.intel.com, kan.liang@intel.com, jolsa@redhat.com,
-        mingo@kernel.org, namhyung@kernel.org, acme@redhat.com
-Reply-To: tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        kan.liang@intel.com, ak@linux.intel.com, jolsa@redhat.com,
-        mingo@kernel.org, namhyung@kernel.org, acme@redhat.com
-In-Reply-To: <1416328700-1836-2-git-send-email-kan.liang@intel.com>
-References: <1416328700-1836-2-git-send-email-kan.liang@intel.com>
+	Thu, 20 Nov 2014 02:40:07 -0500
+Date: Wed, 19 Nov 2014 23:39:46 -0800
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-f140373bc904d9541e3f8e985d3810864e34c735@git.kernel.org>
+Cc: paulus@samba.org, cjashfor@linux.vnet.ibm.com, jolsa@kernel.org,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, dsahern@gmail.com,
+        acme@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        tglx@linutronix.de, rostedt@goodmis.org, hpa@zytor.com,
+        fweisbec@gmail.com
+Reply-To: paulus@samba.org, cjashfor@linux.vnet.ibm.com, jolsa@kernel.org,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, acme@redhat.com,
+        linux-kernel@vger.kernel.org, dsahern@gmail.com, rostedt@goodmis.org,
+        namhyung@kernel.org, tglx@linutronix.de, hpa@zytor.com,
+        fweisbec@gmail.com
+In-Reply-To: <1415899263-24820-1-git-send-email-jolsa@kernel.org>
+References: <1415899263-24820-1-git-send-email-jolsa@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf diff:
-  Add missing handler for PERF_RECORD_MMAP2 events
-Git-Commit-ID: 68ca9d65b88420c2c97948a0640bad13405129e7
+Subject: [tip:perf/core] perf evsel: Fix ftrace:function event recording
+Git-Commit-ID: f140373bc904d9541e3f8e985d3810864e34c735
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,38 +37,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  68ca9d65b88420c2c97948a0640bad13405129e7
-Gitweb:     http://git.kernel.org/tip/68ca9d65b88420c2c97948a0640bad13405129e7
-Author:     Kan Liang <kan.liang@intel.com>
-AuthorDate: Tue, 18 Nov 2014 11:38:18 -0500
+Commit-ID:  f140373bc904d9541e3f8e985d3810864e34c735
+Gitweb:     http://git.kernel.org/tip/f140373bc904d9541e3f8e985d3810864e34c735
+Author:     Jiri Olsa <jolsa@kernel.org>
+AuthorDate: Thu, 13 Nov 2014 18:21:03 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Wed, 19 Nov 2014 12:33:48 -0300
 
-perf diff: Add missing handler for PERF_RECORD_MMAP2 events
+perf evsel: Fix ftrace:function event recording
 
-Without mmap2, perf diff fails to find the symbol name. The default
-symbol sort key doesn't work well.
+Following patch fails (-EINVAL) ftrace:function with enabled user
+space callchains:
+  cfa77bc4af2c perf: Disallow user-space callchains for function trace events
 
-Signed-off-by: Kan Liang <kan.liang@intel.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
+We need to follow in perf tool itself and explicitly set the
+perf_event_attr::exclude_callchain_user flag for ftrace:function
+event.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1416328700-1836-2-git-send-email-kan.liang@intel.com
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1415899263-24820-1-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c | 1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/util/evsel.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 25114c9..1ce425d 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -357,6 +357,7 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
- static struct perf_tool tool = {
- 	.sample	= diff__process_sample_event,
- 	.mmap	= perf_event__process_mmap,
-+	.mmap2	= perf_event__process_mmap2,
- 	.comm	= perf_event__process_comm,
- 	.exit	= perf_event__process_exit,
- 	.fork	= perf_event__process_fork,
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 34344ff..f2dc91f 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -658,6 +658,14 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 		attr->mmap_data = track;
+ 	}
+ 
++	/*
++	 * We don't allow user space callchains for  function trace
++	 * event, due to issues with page faults while tracing page
++	 * fault handler and its overall trickiness nature.
++	 */
++	if (perf_evsel__is_function_event(evsel))
++		evsel->attr.exclude_callchain_user = 1;
++
+ 	if (callchain_param.enabled && !evsel->no_aux_samples)
+ 		perf_evsel__config_callgraph(evsel);
+ 
