@@ -1,103 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536AbaKTN2q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:28:46 -0500
-Received: from mout.web.de ([212.227.17.12]:55160 "EHLO mout.web.de"
+	id S1757552AbaKTN3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:29:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56312 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756884AbaKTN2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:28:41 -0500
-Message-ID: <546DEC79.9050807@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 14:28:25 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751517AbaKTN26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 08:28:58 -0500
+Date: Thu, 20 Nov 2014 14:28:53 +0100
+From: Jan Kara <jack@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ted Tso <tytso@mit.edu>
+Subject: Re: ext4: kill ext4_kvfree()
+Message-ID: <20141120132853.GB2330@quack.suse.cz>
+References: <20141120081004.GH7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] IBM-EMAC: Deletion of unnecessary checks before the function
- call "of_dev_put"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:cbpCimLd1DMxUxqPYV8zUz7lHR3/PwW+CclEzswW7QwWDfcLE0B
- zI7Ck9/oCoJPAtmZO3998Odhx8xbvQUM7o+Ikc3CxjfKHEwV+EUbczTwmpwcfC6jELhSL9H
- xVq156vnwnrfdRJhvSdvv28w6vGzupKlFlp12jJpBUdsofPMkuXRS9nqV15SrOP37kn3bmI
- zZL5tYbS8HiNTWULbdctw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141120081004.GH7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 14:22:47 +0100
+On Thu 20-11-14 08:10:05, Al Viro wrote:
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+  Looks good. Added Ted (ext4 maintainer) to CC.
 
-The of_dev_put() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/net/ethernet/ibm/emac/core.c | 24 ++++++++----------------
- 1 file changed, 8 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/net/ethernet/ibm/emac/core.c b/drivers/net/ethernet/ibm/emac/core.c
-index 87bd953..3f3fba9 100644
---- a/drivers/net/ethernet/ibm/emac/core.c
-+++ b/drivers/net/ethernet/ibm/emac/core.c
-@@ -2323,16 +2323,11 @@ static int emac_check_deps(struct emac_instance *dev,
- 
- static void emac_put_deps(struct emac_instance *dev)
- {
--	if (dev->mal_dev)
--		of_dev_put(dev->mal_dev);
--	if (dev->zmii_dev)
--		of_dev_put(dev->zmii_dev);
--	if (dev->rgmii_dev)
--		of_dev_put(dev->rgmii_dev);
--	if (dev->mdio_dev)
--		of_dev_put(dev->mdio_dev);
--	if (dev->tah_dev)
--		of_dev_put(dev->tah_dev);
-+	of_dev_put(dev->mal_dev);
-+	of_dev_put(dev->zmii_dev);
-+	of_dev_put(dev->rgmii_dev);
-+	of_dev_put(dev->mdio_dev);
-+	of_dev_put(dev->tah_dev);
- }
- 
- static int emac_of_bus_notify(struct notifier_block *nb, unsigned long action,
-@@ -2371,8 +2366,7 @@ static int emac_wait_deps(struct emac_instance *dev)
- 	bus_unregister_notifier(&platform_bus_type, &emac_of_bus_notifier);
- 	err = emac_check_deps(dev, deps) ? 0 : -ENODEV;
- 	for (i = 0; i < EMAC_DEP_COUNT; i++) {
--		if (deps[i].node)
--			of_node_put(deps[i].node);
-+		of_node_put(deps[i].node);
- 		if (err && deps[i].ofdev)
- 			of_dev_put(deps[i].ofdev);
- 	}
-@@ -2383,8 +2377,7 @@ static int emac_wait_deps(struct emac_instance *dev)
- 		dev->tah_dev = deps[EMAC_DEP_TAH_IDX].ofdev;
- 		dev->mdio_dev = deps[EMAC_DEP_MDIO_IDX].ofdev;
- 	}
--	if (deps[EMAC_DEP_PREV_IDX].ofdev)
--		of_dev_put(deps[EMAC_DEP_PREV_IDX].ofdev);
-+	of_dev_put(deps[EMAC_DEP_PREV_IDX].ofdev);
- 	return err;
- }
- 
-@@ -3113,8 +3106,7 @@ static void __exit emac_exit(void)
- 
- 	/* Destroy EMAC boot list */
- 	for (i = 0; i < EMAC_BOOT_LIST_SIZE; i++)
--		if (emac_boot_list[i])
--			of_node_put(emac_boot_list[i]);
-+		of_node_put(emac_boot_list[i]);
- }
- 
- module_init(emac_init);
+								Honza
+> ---
+>  fs/ext4/ext4.h    |    1 -
+>  fs/ext4/mballoc.c |    6 +++---
+>  fs/ext4/resize.c  |    6 +++---
+>  fs/ext4/super.c   |   19 +++++--------------
+>  4 files changed, 11 insertions(+), 21 deletions(-)
+> 
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index c55a1fa..21a3b38 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -2192,7 +2192,6 @@ extern int ext4_calculate_overhead(struct super_block *sb);
+>  extern void ext4_superblock_csum_set(struct super_block *sb);
+>  extern void *ext4_kvmalloc(size_t size, gfp_t flags);
+>  extern void *ext4_kvzalloc(size_t size, gfp_t flags);
+> -extern void ext4_kvfree(void *ptr);
+>  extern int ext4_alloc_flex_bg_array(struct super_block *sb,
+>  				    ext4_group_t ngroup);
+>  extern const char *ext4_decode_error(struct super_block *sb, int errno,
+> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+> index dbfe15c..004d0ff 100644
+> --- a/fs/ext4/mballoc.c
+> +++ b/fs/ext4/mballoc.c
+> @@ -2358,7 +2358,7 @@ int ext4_mb_alloc_groupinfo(struct super_block *sb, ext4_group_t ngroups)
+>  	if (sbi->s_group_info) {
+>  		memcpy(new_groupinfo, sbi->s_group_info,
+>  		       sbi->s_group_info_size * sizeof(*sbi->s_group_info));
+> -		ext4_kvfree(sbi->s_group_info);
+> +		kvfree(sbi->s_group_info);
+>  	}
+>  	sbi->s_group_info = new_groupinfo;
+>  	sbi->s_group_info_size = size / sizeof(*sbi->s_group_info);
+> @@ -2495,7 +2495,7 @@ err_freebuddy:
+>  		kfree(sbi->s_group_info[i]);
+>  	iput(sbi->s_buddy_cache);
+>  err_freesgi:
+> -	ext4_kvfree(sbi->s_group_info);
+> +	kvfree(sbi->s_group_info);
+>  	return -ENOMEM;
+>  }
+>  
+> @@ -2708,7 +2708,7 @@ int ext4_mb_release(struct super_block *sb)
+>  			EXT4_DESC_PER_BLOCK_BITS(sb);
+>  		for (i = 0; i < num_meta_group_infos; i++)
+>  			kfree(sbi->s_group_info[i]);
+> -		ext4_kvfree(sbi->s_group_info);
+> +		kvfree(sbi->s_group_info);
+>  	}
+>  	kfree(sbi->s_mb_offsets);
+>  	kfree(sbi->s_mb_maxs);
+> diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
+> index ca45883..bf76f40 100644
+> --- a/fs/ext4/resize.c
+> +++ b/fs/ext4/resize.c
+> @@ -856,7 +856,7 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
+>  	n_group_desc[gdb_num] = gdb_bh;
+>  	EXT4_SB(sb)->s_group_desc = n_group_desc;
+>  	EXT4_SB(sb)->s_gdb_count++;
+> -	ext4_kvfree(o_group_desc);
+> +	kvfree(o_group_desc);
+>  
+>  	le16_add_cpu(&es->s_reserved_gdt_blocks, -1);
+>  	err = ext4_handle_dirty_super(handle, sb);
+> @@ -866,7 +866,7 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
+>  	return err;
+>  
+>  exit_inode:
+> -	ext4_kvfree(n_group_desc);
+> +	kvfree(n_group_desc);
+>  	brelse(iloc.bh);
+>  exit_dind:
+>  	brelse(dind);
+> @@ -909,7 +909,7 @@ static int add_new_gdb_meta_bg(struct super_block *sb,
+>  	n_group_desc[gdb_num] = gdb_bh;
+>  	EXT4_SB(sb)->s_group_desc = n_group_desc;
+>  	EXT4_SB(sb)->s_gdb_count++;
+> -	ext4_kvfree(o_group_desc);
+> +	kvfree(o_group_desc);
+>  	BUFFER_TRACE(gdb_bh, "get_write_access");
+>  	err = ext4_journal_get_write_access(handle, gdb_bh);
+>  	if (unlikely(err))
+> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+> index 2c9e686..4b79f39 100644
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -176,15 +176,6 @@ void *ext4_kvzalloc(size_t size, gfp_t flags)
+>  	return ret;
+>  }
+>  
+> -void ext4_kvfree(void *ptr)
+> -{
+> -	if (is_vmalloc_addr(ptr))
+> -		vfree(ptr);
+> -	else
+> -		kfree(ptr);
+> -
+> -}
+> -
+>  ext4_fsblk_t ext4_block_bitmap(struct super_block *sb,
+>  			       struct ext4_group_desc *bg)
+>  {
+> @@ -811,8 +802,8 @@ static void ext4_put_super(struct super_block *sb)
+>  
+>  	for (i = 0; i < sbi->s_gdb_count; i++)
+>  		brelse(sbi->s_group_desc[i]);
+> -	ext4_kvfree(sbi->s_group_desc);
+> -	ext4_kvfree(sbi->s_flex_groups);
+> +	kvfree(sbi->s_group_desc);
+> +	kvfree(sbi->s_flex_groups);
+>  	percpu_counter_destroy(&sbi->s_freeclusters_counter);
+>  	percpu_counter_destroy(&sbi->s_freeinodes_counter);
+>  	percpu_counter_destroy(&sbi->s_dirs_counter);
+> @@ -1939,7 +1930,7 @@ int ext4_alloc_flex_bg_array(struct super_block *sb, ext4_group_t ngroup)
+>  		memcpy(new_groups, sbi->s_flex_groups,
+>  		       (sbi->s_flex_groups_allocated *
+>  			sizeof(struct flex_groups)));
+> -		ext4_kvfree(sbi->s_flex_groups);
+> +		kvfree(sbi->s_flex_groups);
+>  	}
+>  	sbi->s_flex_groups = new_groups;
+>  	sbi->s_flex_groups_allocated = size / sizeof(struct flex_groups);
+> @@ -4224,7 +4215,7 @@ failed_mount7:
+>  failed_mount6:
+>  	ext4_mb_release(sb);
+>  	if (sbi->s_flex_groups)
+> -		ext4_kvfree(sbi->s_flex_groups);
+> +		kvfree(sbi->s_flex_groups);
+>  	percpu_counter_destroy(&sbi->s_freeclusters_counter);
+>  	percpu_counter_destroy(&sbi->s_freeinodes_counter);
+>  	percpu_counter_destroy(&sbi->s_dirs_counter);
+> @@ -4253,7 +4244,7 @@ failed_mount3:
+>  failed_mount2:
+>  	for (i = 0; i < db_count; i++)
+>  		brelse(sbi->s_group_desc[i]);
+> -	ext4_kvfree(sbi->s_group_desc);
+> +	kvfree(sbi->s_group_desc);
+>  failed_mount:
+>  	if (sbi->s_chksum_driver)
+>  		crypto_free_shash(sbi->s_chksum_driver);
+> -- 
+> 1.7.10.4
+> 
 -- 
-2.1.3
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
