@@ -1,81 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757903AbaKTTdy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:33:54 -0500
-Received: from mail.kernel.org ([198.145.19.201]:54029 "EHLO mail.kernel.org"
+	id S1757945AbaKTTgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:36:09 -0500
+Received: from omr2.cc.vt.edu ([198.82.141.100]:57606 "EHLO omr2.cc.vt.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757820AbaKTTdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 14:33:53 -0500
-Date: Thu, 20 Nov 2014 16:33:47 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        "Liang, Kan" <kan.liang@intel.com>
-Subject: Re: Implement lbr-as-callgraph v10
-Message-ID: <20141120193347.GL3790@kernel.org>
-References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
- <20141117213457.GE4163@kernel.org>
- <20141118104416.GE27645@krava.brq.redhat.com>
- <20141118110007.GF27645@krava.brq.redhat.com>
- <87zjbnpv64.fsf@sejong.aot.lge.com>
- <20141119092323.GC2592@krava.brq.redhat.com>
- <20141119105450.GA22132@krava.brq.redhat.com>
- <20141119141027.GF3790@kernel.org>
- <20141119160458.GG3790@kernel.org>
- <20141119214822.GM12538@two.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141119214822.GM12538@two.firstfloor.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756313AbaKTTgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 14:36:07 -0500
+X-Greylist: delayed 852 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Nov 2014 14:36:07 EST
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Mitch Williams <mitch.a.williams@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Catherine Sullivan <catherine.sullivan@intel.com>,
+        Shannon Nelson <shannon.nelson@intel.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: i40e/i40e_ethtool.c weirdness?
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1416511307_39511P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 20 Nov 2014 14:21:47 -0500
+Message-ID: <51793.1416511307@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Nov 19, 2014 at 10:48:22PM +0100, Andi Kleen escreveu:
-> On Wed, Nov 19, 2014 at 01:04:58PM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Wed, Nov 19, 2014 at 11:10:27AM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > Em Wed, Nov 19, 2014 at 11:54:50AM +0100, Jiri Olsa escreveu:
-> > > > > > BUILD_BUG_ON then?
-> > > > > 
-> > > > > sounds gut
-> > > > 
-> > > > hum, acme/perf/core changed and so has the compile error ;-)
-> > > > we dont overload the <linux/bug.h>, so the kernel one got
-> > > > included, which is wrong.. attached patch fixes that
-> > > 
-> > > I had fixed this but not force pushed out, sorry.
-> > > 
-> > > Now I mistakenly tried running:
-> > > 
-> > > perf report --stdio --no-children --branch-history
-> > > 
-> > > on a file that has no BRANCH_STACK, i.e. a perf.data file on a wrong
- 
-> It works with -g.
+--==_Exmh_1416511307_39511P
+Content-Type: text/plain; charset=us-ascii
 
-What works with -g? perf report?
+(spotted while looking at a 'git bisect visualize' for something else)
+
+After this commit:
+
+Author: Mitch Williams <mitch.a.williams@intel.com>  2014-09-13 03:40:47
+Committer: Jeff Kirsher <jeffrey.t.kirsher@intel.com>  2014-10-23 23:38:04
+
+    i40e: Add 10GBaseT support
+
+    Add driver support for 10GBaseT device.
+
+we have the following chunk of code in i40e_ethtool.c:
+
+        case I40E_PHY_TYPE_10GBASE_SFPP_CU:
+                ecmd->supported = SUPPORTED_10000baseT_Full;
+                break;
+        case I40E_PHY_TYPE_1000BASE_KX:
+        case I40E_PHY_TYPE_1000BASE_T:
+                ecmd->supported = SUPPORTED_Autoneg |
+                                  SUPPORTED_10000baseT_Full |
+                                  SUPPORTED_1000baseT_Full |
+                                  SUPPORTED_100baseT_Full;
+                ecmd->advertising = ADVERTISED_Autoneg |
+                                    ADVERTISED_10000baseT_Full |
+                                    ADVERTISED_1000baseT_Full |
+                                    ADVERTISED_100baseT_Full;
+                break;
+        case I40E_PHY_TYPE_100BASE_TX:
+                ecmd->supported = SUPPORTED_Autoneg |
+                                  SUPPORTED_10000baseT_Full |
+                                  SUPPORTED_1000baseT_Full |
+                                  SUPPORTED_100baseT_Full;
+                ecmd->advertising = ADVERTISED_Autoneg |
+                                    ADVERTISED_10000baseT_Full |
+                                    ADVERTISED_1000baseT_Full |
+                                    ADVERTISED_100baseT_Full;
+                break;
+        case I40E_PHY_TYPE_SGMII:
+                ecmd->supported = SUPPORTED_Autoneg |
+
+I'm confused by the fact that 2 cases that by name are 100M and 1G parts
+got bits saying that 10G is "supported" - was that intentional?
 
 
-> Without -g it will just give an error message. I think that is ok, isn't it?
- 
-> > > directory since I'm comparing the output of --stdio, --tui and --gtk,
-> > > since it looks --gtk is wrong, still unsure about what the problem is in
-> > > that case, but stumbled on:
-> > > 
-> > 
-> > I need to investigate this further, so I created a perf/branch-history
-> > branch that has the patches I need to test more rebased on top of my
-> > perf/core branch I just pushed out to Ingo.
-> 
-> 
-> I tested --gtk and I don't see any differences to the console mode
-> with --branch-history.  What problem do you see?
+--==_Exmh_1416511307_39511P
+Content-Type: application/pgp-signature
 
-The difference is with --tui, but I haven't checked if this is a problem
-introduced by your patchkit or if this is something that was there
-before it was applied.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
 
-- Arnaldo
+iQIVAwUBVG4/SwdmEQWDXROgAQLgjQ/+L2qhxanGR07/AnEpt6AgcW5jTmlYe7A1
+24yIsR/BSsQBhnY2Du7OmlP5BFfMRONU+gEpVRha+ydhNyhJdfBFgy/9hWjATH/M
+Zu/C2H74shG7aXS8LsuOpgPOXndgMukYtwsBNCH/5h7I8ndVbjBGIUbcmd0auA5K
+lCT7JTrUX4m+QQzyuR06Irwl+XcyhVTuqtjWmtWBmjVqVeMJ4rJG4eoZCHd0FT/c
+AE6C+CoaesLQ2cM5QAQX8HInuHBFdT7dllHe3SumjiBzkUKkr2QWWUDIzc0FJXTe
+Qs8fizKEgobqZ9IeMpnoXY32hKzrQGon4yLERGZX+VOMHZKqIKimVZ38ujpvfvib
+9ocX8oWYdeCfyLgZy5TZag7oqjctMA/TIcfvWuu7A1XSMJsgMU7nZXRiBm5GUV56
+qJm1t1/l3pbEhKN9YxKJJPoeH/BufnFkgo6zNuMacg8foSwtfhY8HZFBHNf2fDgP
+Z7BB54e/v+0ZzZd8NZ8btYdfpAsJtqNPws97vASHO+EH2lAKWiNxFbcsM8BcG18M
+GjBBhE/mi/dL4dkLEtebBoIQ67kfkw5Hg/xCDaB8lZ3+t2x3FPTC5hofQty6q5a8
+px7SY8wF7IXWWeEjEr4XE+MVO37+uW0UZRHzgdqnKTkVT64NnKbx7QCheQ1fCgD9
+mRi6ms7KPms=
+=oct8
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1416511307_39511P--
