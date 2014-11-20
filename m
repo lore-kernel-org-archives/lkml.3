@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331AbaKTXAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 18:00:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48056 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756141AbaKTXAg (ORCPT
+	id S1757064AbaKTXFU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 18:05:20 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:52680 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756500AbaKTXFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 18:00:36 -0500
-Date: Thu, 20 Nov 2014 15:00:33 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dmitry Vyukov <dvyukov@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrey Ryabinin <ryabinin.a.a@gmail.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
+	Thu, 20 Nov 2014 18:05:18 -0500
+Date: Thu, 20 Nov 2014 18:05:14 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory
- debugger.
-Message-Id: <20141120150033.4cd1ca25be4a9b00a7074149@linux-foundation.org>
-In-Reply-To: <CACT4Y+aOKzq0AzvSJrRC-iU9LmmtLzxY=pxzu8f4oT-OZk=oLA@mail.gmail.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-	<1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
-	<5461B906.1040803@samsung.com>
-	<20141118125843.434c216540def495d50f3a45@linux-foundation.org>
-	<CAPAsAGwZtfzx5oM73bOi_kw5BqXrwGd_xmt=m6xxU6uECA+H9Q@mail.gmail.com>
-	<20141120090356.GA6690@gmail.com>
-	<CACT4Y+aOKzq0AzvSJrRC-iU9LmmtLzxY=pxzu8f4oT-OZk=oLA@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Andy Lutomirski <luto@amacapital.net>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141120230514.GB25393@htj.dyndns.org>
+References: <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
+ <20141119190215.GA10796@lerouge>
+ <alpine.DEB.2.11.1411192251120.3909@nanos>
+ <20141119225615.GA11386@lerouge>
+ <alpine.DEB.2.11.1411200002330.3909@nanos>
+ <20141119235033.GE11386@lerouge>
+ <20141120122339.GA14877@htj.dyndns.org>
+ <alpine.DEB.2.11.1411202204030.3950@nanos>
+ <20141120221122.GA25393@htj.dyndns.org>
+ <alpine.DEB.2.11.1411202315230.3950@nanos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1411202315230.3950@nanos>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Nov 2014 20:32:30 +0400 Dmitry Vyukov <dvyukov@google.com> wrote:
+Hello,
 
-> Let me provide some background first.
+On Thu, Nov 20, 2014 at 11:42:42PM +0100, Thomas Gleixner wrote:
+> On Thu, 20 Nov 2014, Tejun Heo wrote:
+> > On Thu, Nov 20, 2014 at 10:58:26PM +0100, Thomas Gleixner wrote:
+> > > It's completely undocumented behaviour, whether it has been that way
+> > > for ever or not. And I agree with Fredric, that it is insane. Actuallu
+> > > it's beyond insane, really.
+> > 
+> > This is exactly the same for any address in the vmalloc space.
+> 
+> I know, but I really was not aware of the fact that dynamically
+> allocated percpu stuff is vmalloc based and therefor exposed to the
+> same issues.
+> 
+> The normal vmalloc space simply does not have the problems which are
+> generated by percpu allocations which have no documented access
+> restrictions.
+>
+> You created a special case and that special case is clever but not
+> very well thought out considering the use cases of percpu variables
+> and the completely undocumented limitations you introduced silently.
+> 
+> Just admit it and dont try to educate me about trivial vmalloc
+> properties.
 
-Well that was useful.  Andrey, please slurp Dmitry's info into the 0/n
-changelog?
+Why are you always so overly dramatic?  How is this productive?  Sure,
+this could have been better but I missed it at the beginning and this
+is the first time I hear about this issue.  Shits happen and we fix
+them.
 
-Also, some quantitative info about the kmemleak overhead would be
-useful.
+> > That isn't enough tho.  What if the percpu allocated pointer gets
+> > passed to another CPU without task switching?  You'd at least need to
+> > send IPIs to all CPUs so that all the active PGDs get updated
+> > synchronously.
+> 
+> You obviously did not even take the time to carefully read what I
+> wrote:
+> 
+>    "Now after that increment the allocation side needs to wait for a
+>     scheduling cycle on all cpus (we have mechanisms for that)"
+> 
+> That's exactly stating what you claim to be 'not enough'. 
 
-In this discussion you've mentioned a few planned kasan enhancements. 
-Please also list those and attempt to describe the amount of effort and
-complexity levels.  Partly so other can understand the plans and partly
-so we can see what we're semi-committing ourselves to if we merge this
-stuff.
+Missed that.  Sorry.
 
+> > For the time being, we can make percpu accessors complain when
+> > called from nmi handlers so that the problematic ones can be easily
+> > identified.
+> 
+> You should have done that in the very first place instead of letting
+> other people run into issues which you should have thought of from the
+> very beginning.
 
+Sure, it would have been better if I noticed that from the get-go, but
+I couldn't think of the NMI case that time and neither did anybody who
+reviewed the code.  It'd be awesome if we could have avoided it but it
+didn't go that way, so let's fix it.  Can we please stay technical?
+
+So, for now, all we need is adding nmi check in percpu accessors,
+right?
+
+-- 
+tejun
