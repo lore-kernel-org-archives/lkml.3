@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757392AbaKTWOt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 17:14:49 -0500
-Received: from ns.gsystem.sk ([62.176.172.50]:41164 "EHLO gsystem.sk"
+	id S1757458AbaKTWPn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 17:15:43 -0500
+Received: from mta-out1.inet.fi ([62.71.2.203]:48116 "EHLO jenni2.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756063AbaKTWOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 17:14:48 -0500
-From: Ondrej Zary <linux@rainbow-software.org>
-To: platform-driver-x86@vger.kernel.org
-Cc: Azael Avalos <coproscefalo@gmail.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [PATCH] [RESEND] toshiba-acpi: Add missing ID (TOS6207)
-Date: Thu, 20 Nov 2014 23:14:36 +0100
-Message-Id: <1416521676-15084-1-git-send-email-linux@rainbow-software.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756063AbaKTWPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 17:15:42 -0500
+Date: Fri, 21 Nov 2014 00:15:35 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: "Zheng, Lv" <lv.zheng@intel.com>
+Cc: Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>
+Subject: Re: [RFC PATCH v4] ACPICA/Events: Add support to ensure GPE is
+ disabled by default for handlers.
+Message-ID: <20141120221535.GA13547@node.dhcp.inet.fi>
+References: <20141119121615.GA2514@node.dhcp.inet.fi>
+ <ce3ab540463bc5d97e527f24ca7d7d82b2952fae.1416459350.git.lv.zheng@intel.com>
+ <1AE640813FDE7649BE1B193DEA596E88026A3E81@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88026A3E81@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-toshiba-acpi was always missing TOS6207 ID so it did not load automatically
-on some laptops (such as Portege R100). But it worked fine if loaded manually.
-Commit 135740de7764 ("toshiba_acpi: Convert to use acpi_driver") broke that
-and the driver does not work even when loaded manually since then.
+On Thu, Nov 20, 2014 at 06:47:16AM +0000, Zheng, Lv wrote:
+> Hi, Kirill
+> 
+> Could also help to confirm if this patch can also fix the issue.
+> Please help to validate the 2 fix patchsets separately.
 
-Add TOS6207 ID to fix it.
-
-Tested on Toshiba Portege R100.
-
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
----
- drivers/platform/x86/toshiba_acpi.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index ab6151f..0ce2129 100644
---- a/drivers/platform/x86/toshiba_acpi.c
-+++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -186,6 +186,7 @@ static struct toshiba_acpi_dev *toshiba_acpi;
- 
- static const struct acpi_device_id toshiba_device_ids[] = {
- 	{"TOS6200", 0},
-+	{"TOS6207", 0},
- 	{"TOS6208", 0},
- 	{"TOS1900", 0},
- 	{"", 0},
+I've applied it on top of other two and still set the issue. 
 -- 
-Ondrej Zary
-
+ Kirill A. Shutemov
