@@ -1,110 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621AbaKTWdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 17:33:10 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:58776 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756099AbaKTWdH (ORCPT
+	id S1757014AbaKTWhZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 17:37:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47465 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756409AbaKTWhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 17:33:07 -0500
-Message-ID: <546E6C32.6090909@gmail.com>
-Date: Thu, 20 Nov 2014 14:33:22 -0800
-From: Rajat Jain <rajatxjain@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>,
-        Rajat Jain <rajatxjain@gmail.com>
-Subject: [PATCH] PCI: pciehp: Check link state before accessing device during
- removal
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 20 Nov 2014 17:37:24 -0500
+Date: Thu, 20 Nov 2014 14:37:22 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Aaron Tomlin <atomlin@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 1/3] exit: reparent: avoid find_new_reaper() if no
+ children
+Message-Id: <20141120143722.af15074e6922108962e84649@linux-foundation.org>
+In-Reply-To: <20141120183423.GA10270@redhat.com>
+References: <20141120183400.GA9622@redhat.com>
+	<20141120183423.GA10270@redhat.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While removing a card, we can't assume the presence to mean that the
-access to card is OK. That is because the cause of removal may be a
-link down event, and the card may still be physically present. Thus,
-instead of presence, use the link state to decide whether or not it is
-OK to access the card devices.
+On Thu, 20 Nov 2014 19:34:23 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
 
-Here are the problem symptoms:
-During the removal of a card due to link down, sometimes the following
-error is seen (because pciehp_unconfigure_device() reads 0xFF from
-bridge control register as the link is down, which cause it to assume
-that the VGA bit is set):
+> $ time ./test 16 16536 shows:
+> 
+> 		real		user		sys
+> 	-	5m37.628s	0m4.437s	8m5.560s
+> 	+	0m50.032s	0m7.130s	1m4.927s
 
-pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
-pciehp 0000:21:05.0:pcie24: Data Link Layer State change
-pciehp 0000:21:05.0:pcie24: slot(5): Link Down event
-pciehp 0000:21:05.0:pcie24: Disabling domain:bus:device=0000:60:00
-pciehp 0000:21:05.0:pcie24: pciehp_unconfigure_device: domain:bus:dev = 0000:60:00
-pciehp 0000:21:05.0:pcie24: Cannot remove display device 0000:60:00.0
+Is that the best you can do?
 
-Ofcourse, when the link comes back up, the device addition fails too:
-
-pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
-pciehp 0000:21:05.0:pcie24: Data Link Layer State change
-pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
-pciehp 0000:21:05.0:pcie24: slot(5): Link Up event
-pciehp 0000:21:05.0:pcie24: Enabling domain:bus:device=0000:60:00
-pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
-pciehp 0000:21:05.0:pcie24: pciehp_check_link_status: lnk_status = 6011
-pciehp 0000:21:05.0:pcie24: Device 0000:60:00.0 already exists at 0000:60:00, cannot hot-add
-pciehp 0000:21:05.0:pcie24: Cannot add device at 0000:60:00
-
-The problem is not seen with this patch applied. The device removal and
-insertion works as expected.
-
-Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-Signed-off-by: Guenter Roeck <groeck@juniper.net>
----
- drivers/pci/hotplug/pciehp_pci.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
-index 9e69403..8572af6 100644
---- a/drivers/pci/hotplug/pciehp_pci.c
-+++ b/drivers/pci/hotplug/pciehp_pci.c
-@@ -77,7 +77,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
- {
- 	int rc = 0;
- 	u8 bctl = 0;
--	u8 presence = 0;
-+	bool link_active = false;
- 	struct pci_dev *dev, *temp;
- 	struct pci_bus *parent = p_slot->ctrl->pcie->port->subordinate;
- 	u16 command;
-@@ -85,7 +85,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
- 
- 	ctrl_dbg(ctrl, "%s: domain:bus:dev = %04x:%02x:00\n",
- 		 __func__, pci_domain_nr(parent), parent->number);
--	pciehp_get_adapter_status(p_slot, &presence);
-+	link_active = pciehp_check_link_active(p_slot->ctrl);
- 
- 	pci_lock_rescan_remove();
- 
-@@ -98,7 +98,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
- 	list_for_each_entry_safe_reverse(dev, temp, &parent->devices,
- 					 bus_list) {
- 		pci_dev_get(dev);
--		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && presence) {
-+		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && link_active) {
- 			pci_read_config_byte(dev, PCI_BRIDGE_CONTROL, &bctl);
- 			if (bctl & PCI_BRIDGE_CTL_VGA) {
- 				ctrl_err(ctrl,
-@@ -114,7 +114,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
- 		 * Ensure that no new Requests will be generated from
- 		 * the device.
- 		 */
--		if (presence) {
-+		if (link_active) {
- 			pci_read_config_word(dev, PCI_COMMAND, &command);
- 			command &= ~(PCI_COMMAND_MASTER | PCI_COMMAND_SERR);
- 			command |= PCI_COMMAND_INTX_DISABLE;
--- 
-1.7.9.5
-
+(I assume the increase in user time was a glitch?)
