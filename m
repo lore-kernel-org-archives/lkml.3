@@ -1,128 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862AbaKTQj3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 11:39:29 -0500
-Received: from dliviu.plus.com ([80.229.23.120]:38891 "EHLO smtp.dudau.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754574AbaKTQjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 11:39:25 -0500
-Date: Thu, 20 Nov 2014 16:39:18 +0000
-From: Liviu Dudau <liviu@dudau.co.uk>
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Tony Luck <tony.luck@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-pci@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Suravee.Suthikulpanit@amd.com,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Yijing Wang <wangyijing@huawei.com>, linux-ia64@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Wuyun <wuyun.wu@huawei.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [RFC PATCH 00/16] Refine PCI host bridge scan interfaces
-Message-ID: <20141120163918.GE9162@bart.dudau.co.uk>
-References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
- <1463511.o4kE8TX3Bd@wuerfel>
- <546DD688.60705@linaro.org>
- <20141120120850.GD9162@bart.dudau.co.uk>
- <546DE45C.6010306@linaro.org>
+	id S1757241AbaKTQme (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 11:42:34 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:56229 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756276AbaKTQmd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 11:42:33 -0500
+Date: Thu, 20 Nov 2014 17:42:30 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141120164228.GG2542@lerouge>
+References: <20141114213124.GB3344@redhat.com>
+ <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
+ <20141115213405.GA31971@redhat.com>
+ <20141116014006.GA5016@redhat.com>
+ <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
+ <20141117170359.GA1382@redhat.com>
+ <20141120150757.GE2542@lerouge>
+ <20141120161925.GB8309@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <546DE45C.6010306@linaro.org>
+In-Reply-To: <20141120161925.GB8309@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 01:53:48PM +0100, Tomasz Nowicki wrote:
-> On 20.11.2014 13:08, Liviu Dudau wrote:
-> >On Thu, Nov 20, 2014 at 12:54:48PM +0100, Tomasz Nowicki wrote:
-> >>On 17.11.2014 15:13, Arnd Bergmann wrote:
-> >>>On Monday 17 November 2014 18:21:34 Yijing Wang wrote:
-> >>>>This series is based Linux 3.18-rc1 and Lorenzo Pieralisi's
-> >>>>arm PCI domain cleanup patches, link:
-> >>>>https://patchwork.ozlabs.org/patch/407585/
-> >>>>
-> >>>>Current pci scan interfaces like pci_scan_root_bus() and directly
-> >>>>call pci_create_root_bus()/pci_scan_child_bus() lack flexiblity.
-> >>>>Some platform infos like PCI domain and msi_chip have to be
-> >>>>associated to PCI bus by some arch specific function.
-> >>>>We want to make a generic pci_host_bridge, and make it hold
-> >>>>the platform infos or hook. Then we could eliminate the lots
-> >>>>of arch pci_domain_nr, also we could associate some platform
-> >>>>ops something like pci_get_msi_chip(struct pci_dev *dev)
-> >>>>with pci_host_bridge to avoid introduce arch weak functions.
-> >>>>
-> >>>>This RFC version not for all platforms, just applied the new
-> >>>>scan interface in x86/arm/powerpc/ia64, I will refresh other
-> >>>>platforms after the core pci scan interfaces are ok.
-> >>>
-> >>>I think overall this is a good direction to take, in particular
-> >>>moving more things into struct pci_host_bridge so we can
-> >>>slim down the architecture specific code.
-> >>>
-> >>>I don't particularly like the way you use the 'pci_host_info'
-> >>>to pass callback pointers and some of the generic information.
-> >>>This duplicates some of the issues we are currently trying
-> >>>to untangle in the arm32 code to make drivers easier to share
-> >>>between architectures.
-> >>>
-> >>>As a general approach, I'd rather see generic helper functions
-> >>>being exported by the PCI core that a driver may or may not
-> >>>call.
-> >>>The way you split the interface between things that happen
-> >>>before scanning the buses (pci_create_host_bridge) and
-> >>>the actual scanning (__pci_create_root_bus, pci_scan_child_bus)
-> >>>seems very helpful and I think we can expand that concept further:
-> >>>
-> >>>- The normal pci_create_host_bridge() function can contain
-> >>>   all of the DT scanning functions (finding bus/mem/io resources,
-> >>>   finding the msi-parent), while drivers that don't depend on DT
-> >>>   for this information can call the same function and fill the
-> >>>   same things after they have the pci_host_bridge pointer.
-> >>
-> >>How about finding PCI domain number (in the DT way) within
-> >>pci_create_host_bridge() too ?
-> >
-> >It is an idea worth pursuing for the 99% of the cases. I would like
-> >to understand the 1% of the time when we want a domain number to be
-> >shared between two host bridges or the time when we want more than
-> >one domain per bridge.
-> Even though we have shared domain, this should be resolved via DT calls, do
-> I miss something ?
+On Thu, Nov 20, 2014 at 11:19:25AM -0500, Dave Jones wrote:
+> On Thu, Nov 20, 2014 at 04:08:00PM +0100, Frederic Weisbecker wrote:
+>  
+>  > > Great start to the week: I decided to confirm my recollection that .17
+>  > > was ok, only to hit this within 10 minutes.
+>  > > 
+>  > > Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 3
+>  > > CPU: 3 PID: 17176 Comm: trinity-c95 Not tainted 3.17.0+ #87
+>  > >  0000000000000000 00000000f3a61725 ffff880244606bf0 ffffffff9583e9fa
+>  > >  ffffffff95c67918 ffff880244606c78 ffffffff9583bcc0 0000000000000010
+>  > >  ffff880244606c88 ffff880244606c20 00000000f3a61725 0000000000000000
+>  > > Call Trace:
+>  > >  <NMI>  [<ffffffff9583e9fa>] dump_stack+0x4e/0x7a
+>  > >  [<ffffffff9583bcc0>] panic+0xd4/0x207
+>  > >  [<ffffffff95150908>] watchdog_overflow_callback+0x118/0x120
+>  > >  [<ffffffff95193dbe>] __perf_event_overflow+0xae/0x340
+>  > >  [<ffffffff95192230>] ? perf_event_task_disable+0xa0/0xa0
+>  > >  [<ffffffff9501a7bf>] ? x86_perf_event_set_period+0xbf/0x150
+>  > >  [<ffffffff95194be4>] perf_event_overflow+0x14/0x20
+>  > >  [<ffffffff95020676>] intel_pmu_handle_irq+0x206/0x410
+>  > >  [<ffffffff9501966b>] perf_event_nmi_handler+0x2b/0x50
+>  > >  [<ffffffff95007bb2>] nmi_handle+0xd2/0x390
+>  > >  [<ffffffff95007ae5>] ? nmi_handle+0x5/0x390
+>  > >  [<ffffffff958489b0>] ? _raw_spin_lock_irqsave+0x80/0x90
+>  > >  [<ffffffff950080a2>] default_do_nmi+0x72/0x1c0
+>  > >  [<ffffffff950082a8>] do_nmi+0xb8/0x100
+>  > >  [<ffffffff9584b9aa>] end_repeat_nmi+0x1e/0x2e
+>  > >  [<ffffffff958489b0>] ? _raw_spin_lock_irqsave+0x80/0x90
+>  > >  [<ffffffff958489b0>] ? _raw_spin_lock_irqsave+0x80/0x90
+>  > >  [<ffffffff958489b0>] ? _raw_spin_lock_irqsave+0x80/0x90
+>  > >  <<EOE>>  <IRQ>  [<ffffffff95101685>] lock_hrtimer_base.isra.18+0x25/0x50
+>  > >  [<ffffffff951019d3>] hrtimer_try_to_cancel+0x33/0x1f0
+>  > 
+>  > Ah that one got fixed in the merge window and in -stable, right?
+>  
+> If that's true, that changes everything, and this might be more
+> bisectable.  I did the test above on 3.17, but perhaps I should
+> try a run on 3.17.3
 
-If we only going to hold one domain number per host bridge, then no, you're
-not missing anything.
+It might not be easier to bisect because stable is a seperate branch than the next -rc1.
+And that above got fixed in -rc1, perhaps in the same merge window where the new different
+issues were introduced. So you'll probably need to shutdown the above issue in order to
+bisect the others.
 
-> 
-> >
-> >Is that possible? Is it useful? Is it already in practice?
-> This is good question... IMO:
-> 1. Two host bridges can shared domain number if they are children of the
-> same parent host bridge.
-> 2. But I can not find good explanation for more than one domain per bridge.
+What you can do is to bisect and then before every build apply the patches that
+fix the above issue in -stable, those that I just enumerated to gregkh in our
+discussion with him. There are only 4. Just try to apply all of them before each
+build, unless they are already.
 
-Splitting a root bus into two or more "segments" ?
-
-Best regards,
-Liviu
-
-> 
-> Tomasz
-> 
-> 
-
--- 
--------------------
-   .oooO
-   (   )
-    \ (  Oooo.
-     \_) (   )
-          ) /
-         (_/
-
- One small step
-   for me ...
-
+I could give you a much simpler hack but I fear it may chaoticly apply depending if
+the real fixes are applied, halfway or not at all, all that with unpredictable results.
+So lets rather stick to what we know to work.
