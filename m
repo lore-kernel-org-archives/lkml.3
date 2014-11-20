@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaKTLs4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 06:48:56 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:60614 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776AbaKTLsz (ORCPT
+	id S1756063AbaKTLuh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 06:50:37 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:55564 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949AbaKTLuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 06:48:55 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
-        linaro-kernel@lists.linaro.org, Russell King <linux@arm.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, patches@linaro.org,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: Re: [RFC PATCH] arm: imx: Workaround i.MX6 PMU interrupts muxed to one SPI
-Date: Thu, 20 Nov 2014 12:48 +0100
-Message-ID: <3404793.vJmOz13jz0@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1416483757-24165-1-git-send-email-daniel.thompson@linaro.org>
-References: <1416483757-24165-1-git-send-email-daniel.thompson@linaro.org>
+	Thu, 20 Nov 2014 06:50:35 -0500
+X-IronPort-AV: E=Sophos;i="5.07,423,1413244800"; 
+   d="scan'208";a="194755369"
+From: David Vrabel <david.vrabel@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        <xen-devel@lists.xenproject.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 3/4] x86: allow dma_get_required_mask() to be overridden
+Date: Thu, 20 Nov 2014 11:50:24 +0000
+Message-ID: <1416484225-28054-4-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1416484225-28054-1-git-send-email-david.vrabel@citrix.com>
+References: <1416484225-28054-1-git-send-email-david.vrabel@citrix.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:T3FVIlYSTGEaSmCsaWrRStTZwEF35MBoIaIkmA/i9u9
- ELmc0dSAN6LWV1y1apKHwlffyxXw1FGfs+32L8gyxcNHidQ7m+
- GZ6JgaX8+QDRYL9gzXa9mkQrC2EqVXwXRG2oSaY29LvSYOFsOF
- U1Filcjwj8XSjctpbI5uxTi/PwBLoxFEjh5zJ+RvKhPFfajS/r
- TjjKrb4Ppc5lOkbHZozbydIYOeLAOx9flCq3S6TgrxqJuW8fm2
- SWjNuVcxl8sqPTPWdpa0fELJ5sy4s4mYogpgfO7iD0q02eJf+j
- zPiqFln6Kzj/MRrH1oqFlKnnEwjK56NYRJYIx7gQ/+/bPI0sFS
- bmw5UBAXLMtv+Q3q1aOA=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 November 2014 11:42:37 Daniel Thompson wrote:
-> Notes:
->     This patch adopts the approach used on the u8500 (db8500_pmu_handler)
->     but the logic has been generalized for any number of CPUs, mostly
->     because the i.MX6 has a both dual and quad core variants.
->     
->     However it might be better to include the generalized logic in the main
->     armpmu code. I think the logic could be deployed automatically on SMP
->     systems with only a single not-percpu IRQ, replacing the
->     plat->handle_irq dance we currently do to hook up this code.
->     
->     Thoughts? (or is there already shared logic to do this that I
->     overlooked)
-> 
+Use dma_ops->get_required_mask() if provided, defaulting to
+dma_get_requried_mask_from_max_pfn().
 
-I would definitely prefer to have this handled in the armpmu implementation,
-given that there are at least two platforms that need the exact same
-hack.
+This is needed on systems (such as Xen PV guests) where the DMA
+address and the physical address are not equal.
 
-	Arnd
+ARCH_HAS_DMA_GET_REQUIRED_MASK is defined in asm/device.h instead of
+asm/dma-mapping.h because linux/dma-mapping.h uses the define before
+including asm/dma-mapping.h
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/x86/include/asm/device.h |    2 ++
+ arch/x86/kernel/pci-dma.c     |    8 ++++++++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/arch/x86/include/asm/device.h b/arch/x86/include/asm/device.h
+index 03dd729..10bc628 100644
+--- a/arch/x86/include/asm/device.h
++++ b/arch/x86/include/asm/device.h
+@@ -13,4 +13,6 @@ struct dev_archdata {
+ struct pdev_archdata {
+ };
+ 
++#define ARCH_HAS_DMA_GET_REQUIRED_MASK
++
+ #endif /* _ASM_X86_DEVICE_H */
+diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+index a25e202..5154400 100644
+--- a/arch/x86/kernel/pci-dma.c
++++ b/arch/x86/kernel/pci-dma.c
+@@ -140,6 +140,14 @@ void dma_generic_free_coherent(struct device *dev, size_t size, void *vaddr,
+ 		free_pages((unsigned long)vaddr, get_order(size));
+ }
+ 
++u64 dma_get_required_mask(struct device *dev)
++{
++	if (dma_ops->get_required_mask)
++		return dma_ops->get_required_mask(dev);
++	return dma_get_required_mask_from_max_pfn(dev);
++}
++EXPORT_SYMBOL_GPL(dma_get_required_mask);
++
+ /*
+  * See <Documentation/x86/x86_64/boot-options.txt> for the iommu kernel
+  * parameter documentation.
+-- 
+1.7.10.4
+
