@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485AbaKTKDn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:03:43 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:56190 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757318AbaKTKDi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:03:38 -0500
-Date: Thu, 20 Nov 2014 10:03:29 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        pankaj.dubey@samsung.com, kgene.kim@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/5] drivers: soc: Add support for Exynos PMU driver
-Message-ID: <20141120100328.GO4042@n2100.arm.linux.org.uk>
-References: <1416461968-2057-1-git-send-email-amit.daniel@samsung.com>
- <1416461968-2057-3-git-send-email-amit.daniel@samsung.com>
+	id S1757371AbaKTKDY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 05:03:24 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60432 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755849AbaKTKDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 05:03:20 -0500
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Grygorii Strashko" <grygorii.strashko@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>,
+        "Kevin Hilman" <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Murali Karicheri <m-karicheri2@ti.com>
+Subject: [PATCH 0/5] i2c: davinci improvements and fixes
+Date: Thu, 20 Nov 2014 12:03:03 +0200
+Message-ID: <1416477788-5544-1-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416461968-2057-3-git-send-email-amit.daniel@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 11:09:25AM +0530, Amit Daniel Kachhap wrote:
-> diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile
-> index 063113d..44d220d 100644
-> --- a/drivers/soc/Makefile
-> +++ b/drivers/soc/Makefile
-> @@ -6,3 +6,4 @@ obj-$(CONFIG_ARCH_QCOM)		+= qcom/
->  obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
->  obj-$(CONFIG_SOC_TI)		+= ti/
->  obj-$(CONFIG_PLAT_VERSATILE)	+= versatile/
-> +obj-$(CONFIG_ARCH_EXYNOS)	+= samsung/
+This series contains some fixes and improvements for Davinci I2C:
+patch 1 - small improvement
+patch 2 - fixes "Bus busy" state for some case (was reported long time ago:()
 
-Is ARCH_EXYNOS appropriate here, or is your new SOC_SAMSUNG better?
+patch 3-5 - converts driver to use I2C bus recovery infrastructure and
+adds Davinci I2C bus recovery mechanizm based on using ICPFUNC registers.
+These patches are combination of two patches from Ben Gardiner [1] and
+Mike Looijmans [2] which i've reworked to use I2C bus recovery infrastructure
 
-> diff --git a/drivers/soc/samsung/Kconfig b/drivers/soc/samsung/Kconfig
-> new file mode 100644
-> index 0000000..a424ebc
-> --- /dev/null
-> +++ b/drivers/soc/samsung/Kconfig
-> @@ -0,0 +1,20 @@
-> +#
-> +# SAMSUNG SOC drivers
-> +#
-> +menuconfig SOC_SAMSUNG
-> +	bool "Samsung SOC drivers support"
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2011-April/047305.html
+"[PATCH 0/6] i2c-davinci gpio pulsed SCL recovery with ICPFUNC"
+[2] https://lkml.org/lkml/2014/2/28/133
+"[PATCH] i2c-davinci: Implement a bus recovery that actually works"
 
-If you intend to select SOC_SAMSUNG, is there any point in making this
-a user-visible symbol?
+CC: Sekhar Nori <nsekhar@ti.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>
+CC: Santosh Shilimkar <ssantosh@kernel.org>
+CC: Murali Karicheri <m-karicheri2@ti.com> 
+
+Grygorii Strashko (5):
+  i2c: i2c-davinci: switch to use platform_get_irq
+  i2c: davinci: query STP always when NACK is received
+  i2c: recovery: change input parameter to i2c_adapter for
+    prepare/unprepare_recovery
+  i2c: davinci: use bus recovery infrastructure
+  i2c: davinci: use ICPFUNC to toggle I2C as gpio for bus recovery
+
+ drivers/i2c/busses/i2c-davinci.c          | 196 ++++++++++++++++++++++--------
+ drivers/i2c/i2c-core.c                    |   4 +-
+ include/linux/i2c.h                       |   4 +-
+ include/linux/platform_data/i2c-davinci.h |   1 +
+ 4 files changed, 148 insertions(+), 57 deletions(-)
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.9.1
+
