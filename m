@@ -1,162 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826AbaKTNt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:49:58 -0500
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:56251 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756396AbaKTNty (ORCPT
+	id S1756839AbaKTNub (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:50:31 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:60457 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932AbaKTNua convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:49:54 -0500
-Date: Thu, 20 Nov 2014 09:49:52 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Cc: Linux PM <linux-pm@vger.kernel.org>,
-        Caesar Wang <caesar.wang@rock-chips.com>, Wei Ni <wni@nvidia.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Rob Herring <robh+dt@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCHv4 1/1] thermal: of: improve of-thermal sensor
- registration API
-Message-ID: <20141120134950.GA24778@developer>
-References: <1416321575-18348-1-git-send-email-edubezval@gmail.com>
- <1416321575-18348-2-git-send-email-edubezval@gmail.com>
- <546CBA3C.9020709@kapsi.fi>
- <546CBA98.1040607@kapsi.fi>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OXfL5xGRrasGEqWY"
-Content-Disposition: inline
-In-Reply-To: <546CBA98.1040607@kapsi.fi>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Thu, 20 Nov 2014 08:50:30 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: [PATCH v3] Bluetooth: automatically flushable packets aren't allowed on LE links
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20141120113813.GA23288@t440s.lan>
+Date: Thu, 20 Nov 2014 21:50:18 +0800
+Cc: Steven Walter <stevenrwalter@gmail.com>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        BlueZ development <linux-bluetooth@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <80321467-10AB-489E-A47E-44B0ECEE4BE1@holtmann.org>
+References: <1416419951-27659-1-git-send-email-stevenrwalter@gmail.com> <20141120113813.GA23288@t440s.lan>
+To: Johan Hedberg <johan.hedberg@gmail.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Johan,
 
---OXfL5xGRrasGEqWY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>> The bluetooth spec states that automatically flushable packets may not
+>> be sent over a LE-U link.
+>> 
+>> Signed-off-by: Steven Walter <stevenrwalter@gmail.com>
+>> ---
+>> net/bluetooth/l2cap_core.c | 14 ++++++++------
+>> 1 file changed, 8 insertions(+), 6 deletions(-)
+>> 
+>> diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+>> index 4af3821..7c4350f 100644
+>> --- a/net/bluetooth/l2cap_core.c
+>> +++ b/net/bluetooth/l2cap_core.c
+>> @@ -764,7 +764,7 @@ static void l2cap_send_cmd(struct l2cap_conn *conn, u8 ident, u8 code, u16 len,
+>> 	if (!skb)
+>> 		return;
+>> 
+>> -	if (lmp_no_flush_capable(conn->hcon->hdev))
+>> +	if (lmp_no_flush_capable(conn->hcon->hdev) || conn->hcon->type == LE_LINK)
+>> 		flags = ACL_START_NO_FLUSH;
+>> 	else
+>> 		flags = ACL_START;
+>> @@ -784,7 +784,7 @@ static bool __chan_is_moving(struct l2cap_chan *chan)
+>> static void l2cap_do_send(struct l2cap_chan *chan, struct sk_buff *skb)
+>> {
+>> 	struct hci_conn *hcon = chan->conn->hcon;
+>> -	u16 flags;
+>> +	u16 flags = ACL_START;
+>> 
+>> 	BT_DBG("chan %p, skb %p len %d priority %u", chan, skb, skb->len,
+>> 	       skb->priority);
+>> @@ -798,11 +798,13 @@ static void l2cap_do_send(struct l2cap_chan *chan, struct sk_buff *skb)
+>> 		return;
+>> 	}
+>> 
+>> -	if (!test_bit(FLAG_FLUSHABLE, &chan->flags) &&
+>> -	    lmp_no_flush_capable(hcon->hdev))
+>> +	if (hcon->type == LE_LINK) {
+>> +		/* LE-U does not support auto-flushing packets */
+>> 		flags = ACL_START_NO_FLUSH;
+>> -	else
+>> -		flags = ACL_START;
+>> +	} else if (!test_bit(FLAG_FLUSHABLE, &chan->flags) &&
+>> +		    lmp_no_flush_capable(hcon->hdev)) {
+>> +		flags = ACL_START_NO_FLUSH;
+>> +	}
+> 
+> I think Marcel was after just providing a clarifying code comment in
+> both places - having two branches of an if-statement doing exactly the
+> same thing looks a bit weird to me. To make thins completely clear I'd
+> suggest adding a simple helper function that you can call from both
+> places to get the needed flags, something like the following:
 
-Mikko,
+I am actually fine with just adding a comment explaining the complex if statement on why it is correct. It is just a helper for everybody to understand what and why it is done that way.
 
-On Wed, Nov 19, 2014 at 05:43:20PM +0200, Mikko Perttunen wrote:
-> On 11/19/2014 05:41 PM, Mikko Perttunen wrote:
-> > On 11/18/2014 04:39 PM, Eduardo Valentin wrote:
-> >> Different drivers request API extensions in of-thermal. For this reaso=
-n,
-> >> additional callbacks are required to fit the new drivers needs.
-> >>
-> >> The current API implementation expects the registering sensor driver
-> >> to provide a get_temp and get_trend callbacks as function parameters.
-> >> As the amount of callbacks is growing, this patch changes the existing
-> >> implementation to use a .ops field to hold all the of thermal callbacks
-> >> to sensor drivers.
-> >>
-> >> This patch also changes the existing of-thermal users to fit the new
-> >> API design. No functional change is introduced in this patch.
-> >>
-> >> Cc: Alexandre Courbot <gnurou@gmail.com>
-> >> Cc: devicetree@vger.kernel.org
-> >> Cc: Grant Likely <grant.likely@linaro.org>
-> >> Cc: Guenter Roeck <linux@roeck-us.net>
-> >> Cc: Jean Delvare <jdelvare@suse.de>
-> >> Cc: linux-kernel@vger.kernel.org
-> >> Cc: linux-pm@vger.kernel.org
-> >> Cc: linux-tegra@vger.kernel.org
-> >> Cc: lm-sensors@lm-sensors.org
-> >> Cc: Rob Herring <robh+dt@kernel.org>
-> >> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> >> Cc: Thierry Reding <thierry.reding@gmail.com>
-> >> Cc: Zhang Rui <rui.zhang@intel.com>
-> >> Reviewed-by: Lukasz Majewski <l.majewski@samsung.com>
-> >> Signed-off-by: Eduardo Valentin <edubezval@gmail.com>
-> >> ---
-> >>   drivers/hwmon/lm75.c                               |  9 +++--
-> >>   drivers/hwmon/ntc_thermistor.c                     |  6 +++-
-> >>   drivers/hwmon/tmp102.c                             |  6 +++-
-> >>   drivers/thermal/of-thermal.c                       | 40
-> >> ++++++++++------------
-> >>   drivers/thermal/tegra_soctherm.c                   |  7 ++--
-> >>   drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  8 +++--
-> >>   include/linux/thermal.h                            | 24 +++++++++----
-> >>   7 files changed, 63 insertions(+), 37 deletions(-)
-> >> ---
-> >> Difference from V3:
-> >>    - Keep the same behavior regarding callback checks.
-> >>      Change in behavior may be sent in a separate patch.
-> >> Difference from V2:
-> >>    - Fix wrong assignment in tegra driver.
-> >> Difference from V1:
-> >>    - Fix error handling when .get_trend is not provided.
-> >>
-> >> @@ -356,8 +356,8 @@ thermal_zone_of_add_sensor(struct device_node *zon=
-e,
-> >>    *             than one sensors
-> >>    * @data: a private pointer (owned by the caller) that will be passed
-> >>    *        back, when a temperature reading is needed.
-> >> - * @get_temp: a pointer to a function that reads the sensor temperatu=
-re.
-> >> - * @get_trend: a pointer to a function that reads the sensor
-> >> temperature trend.
-> >> + * @ops: struct thermal_zone_of_device *. Must contain at least
-> >> .get_trend and
-> >> + *       .get_temp.
-> >
-> > This comment seems to be incorrect, as .get_trend is optional.
->=20
-> Also, the parameter is of type struct thermal_zone_of_device_ops *, not=
-=20
-> just thermal_zone_of_device.
->=20
-> >
-> >>    *
-> >>    * This function will search the list of thermal zones described in
-> >> device
-> >>    * tree and look for the zone that refer to the sensor device
-> >> pointed by
-> >
-> > With that minor one fixed,
-> >
-> > Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-> > Reviewed-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+> static u16 get_acl_flags(struct hci_conn *hcon, struct l2cap_chan *chan)
+> {
 
-All the comments fixed now. Thanks for reviewing and testing.
+If we do it with a helper functions, then it should only provide the l2cap_chan since we can get the hci_conn from there.
 
-> >
-> > Cheers,
-> > Mikko
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-tegra" =
-in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->=20
+> 	/* LE-U does not support auto-flushing packets */
+> 	if (hcon->type == LE_LINK)
+> 		return ACL_START_NO_FLUSH;
+> 
+> 	/* If non-flushable packets are not supported don't request them */
+> 	if (!lmp_no_flush_capable(hcon->hdev))
+> 		 return ACL_START;
+> 
+> 	/* If the chan has requested auto-flushing go with that */
+> 	if (chan && test_bit(FLAG_FLUSHABLE, &chan->flags))
+> 		return ACL_START;
 
-Cheers,
+This seems to be a bit too much. The FLAG_FLUSABLE is only settable if the controller supports it. I wonder why we need the LMP features check here in the first place. Can we not just trust the flag on the channel is set correctly and enforce it before setting the flag.
+> 
+> 	/* Otherwise go with a non-flushable packet */
+>        return ACL_START_NO_FLUSH;
+> }
+> 
+> This way we'd avoid complex if-statements and can clearly document each
+> condition independently.
 
-Eduardo Valentin
+Regards
 
---OXfL5xGRrasGEqWY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Marcel
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUbfF+AAoJEMLUO4d9pOJW8IEIAJvMZe9zKr47JQ8oKOHRurmp
-rcR9eLeTW1spgbpXC4IOtOz6wzVbkUHsc3rODShgjXx17w7bCS/3zRXlWQ9b8teF
-Hh3U8+7u1vFK7Pw0EM6kiKYXiL+pNyUdAXOKpUKyJlCG7oQRNS47LGGkvIpCPZoU
-fJCXWC033V9ZyYY53kZe9e15Vj7nHYb9XwEu80H8ncaJ0KjcEZO6f/DHlZxoA98v
-UUkhsPLsZ5TURJiM4EPikFaqLKjpsKoJvsSB2pzjeiZfpiASVem3+mLuu7vYYRBT
-ZNkCkJY18s41Tz10OxVmUxLQcA6xId0jPXIBLqV77e/m3Bg3/oPe3jVGdMSpq7A=
-=VrjL
------END PGP SIGNATURE-----
-
---OXfL5xGRrasGEqWY--
