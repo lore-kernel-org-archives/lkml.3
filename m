@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757813AbaKTSQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 13:16:26 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:48880 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757419AbaKTSQZ (ORCPT
+	id S1757897AbaKTSSc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 13:18:32 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:39690 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756740AbaKTSSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 13:16:25 -0500
+	Thu, 20 Nov 2014 13:18:30 -0500
 MIME-Version: 1.0
-In-Reply-To: <546DD783.2030902@collabora.co.uk>
-References: <1416238213-15263-1-git-send-email-javier.martinez@collabora.co.uk>
- <1416238213-15263-3-git-send-email-javier.martinez@collabora.co.uk>
- <20141118142645.GD24004@x1> <546DD783.2030902@collabora.co.uk>
-From: Bill Richardson <wfrichar@chromium.org>
-Date: Thu, 20 Nov 2014 10:16:03 -0800
-X-Google-Sender-Auth: uB1vrhszeBXEWPrjE_gV6Q9czq4
-Message-ID: <CAEgFhe+DQrJ6HqGF1_OWZ77Qs-hZLNgX1bHpx5FOt-y-3xh8gA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] mfd: cros_ec: Create sysfs attributes for the
- ChromeOS EC.
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@google.com>,
-        Gwendal Grignou <gwendal@google.com>,
+In-Reply-To: <87egsxnbth.fsf@x220.int.ebiederm.org>
+References: <6b6bef0eb7328d466e8deef3d2c186a79633e0a7.1416121601.git.josh@joshtriplett.org>
+ <87egsxnbth.fsf@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 20 Nov 2014 10:18:08 -0800
+Message-ID: <CALCETrXxqcJd9=9c+HNMYmO5V+pV+EpjTA0NVvC6peGv_CyWuQ@mail.gmail.com>
+Subject: Re: [PATCH] Add supplementary UIDs, and getusers/setusers system calls
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-man <linux-man@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 3:58 AM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
+On Nov 20, 2014 7:16 AM, "Eric W. Biederman" <ebiederm@xmission.com> wrote:
 >
-> I don't really know why there are two interfaces for this but I guess
-> that different user-space utilities use one or another. Maybe the
-> ChromiumOS folks can comment on this.
+> Josh Triplett <josh@joshtriplett.org> writes:
+>
+> > Analogous to the supplementary GID list, the supplementary UID list
+> > provides a set of additional user credentials that a process can act as.
+> > A process with CAP_SETUID can set its UID list arbitrarily; a process
+> > without CAP_SETUID can only reduce its UID list.
+> >
+> > This allows each user to have a set of UIDs that they can then use to
+> > further sandbox individual child processes without first escalating to
+> > root to change UIDs.  For instance, a PAM module could give each user a
+> > block of UIDs to work with.
+>
+> A couple of quick comments on this patch.
+>
+> 1) user namespaces already allow you to do this.
 
-The /dev/cros_ec interface responds to ioctls and is the primary means
-by which userspace applications talk to the EC (replacing three really
-awkward bus-specific libraries). It emits a simplified version string
-when read so that humans can tell if the EC is alive and speaking the
-same protocol that the userspace app expects.
+I thought you could only map your fsuid. Can you set fsuid to a
+supplementary group?
 
-The /sys/class/chromeos/cros_ec/* tree was originally envisioned as a
-way to provide additional human-readable interfaces to a subset of the
-EC commands, but except for the lightbar it's not often used. The
-version component here shows all the version-related info that the EC
-can provide.
-
-I apologize for the poor kernel conventions used here. In my
-ignorance, I apparently chose the worst code possible to use as a
-template, and then invented some new stupidness of my own.
-
-
-Bill
--- 
-Art for Art's Sake
-Engineering for Money
+>
+> 2) After having looked at the group case I am afraid this intersects in
+>    an unfortunate way with user namespaces.
+>
+> 3) This intersects in a very unfortunate way with setresuid.
+>    Applications that today know they are dropping all privileges
+>    won't be dropping all privielges with this change.  Which sounds like
+>    a recipe for a security exploit to me.
+>
+> Eric
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-api" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
