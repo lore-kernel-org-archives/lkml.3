@@ -1,96 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046AbaKTRlL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:41:11 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35560 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757553AbaKTRlG (ORCPT
+	id S1758078AbaKTRll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:41:41 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:36849
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757819AbaKTRjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 12:41:06 -0500
-Date: Thu, 20 Nov 2014 17:41:01 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Andrey Konovalov <andreyknvl@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Vyukov <dvyukov@google.com>, Kostya Serebryany <kcc@google.com>,
-        "ktsan@googlegroups.com" <ktsan@googlegroups.com>
-Subject: Re: Potential data race in dput and __d_lookup
-Message-ID: <20141120174101.GT19126@arm.com>
-References: <CAAeHK+zQZ=sJYQA=BKLS2i7hu8NyXn6GXngvDqG9WD96yd9acg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAeHK+zQZ=sJYQA=BKLS2i7hu8NyXn6GXngvDqG9WD96yd9acg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 20 Nov 2014 12:39:51 -0500
+X-IronPort-AV: E=Sophos;i="5.07,425,1413237600"; 
+   d="scan'208";a="89679744"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: linux-arm-kernel@lists.infradead.org
+Cc: kernel-janitors@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: [PATCH 0/7] fix error return code
+Date: Thu, 20 Nov 2014 18:33:55 +0100
+Message-Id: <1416504842-18548-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 05:20:14PM +0000, Andrey Konovalov wrote:
-> Hi
-> 
-> We are working on a dynamic data race detector for Linux kernel called
-> KernelThreadSanitizer (ktsan)
-> (https://code.google.com/p/thread-sanitizer/wiki/ThreadSanitizerForKernel).
-> 
-> Here is a report we got while running ktsan (upstream revision
-> fc14f9c1272f62c3e8d01300f52467c0d9af50f9, Linux 3.18-rc5):
-> 
-> ==================================================================
-> ThreadSanitizer: data-race in lockref_put_or_lock
-> 
-> Read of size 8 by thread T575 (K814):
->  [<ffffffff8152067f>] lockref_put_or_lock+0x1f/0xe0 /lib/lockref.c:122
->  [<ffffffff8126965e>] dput+0x2e/0x2b0 /fs/dcache.c:626
->  [<     inlined    >] link_path_walk+0xddd/0x1d40 path_to_nameidata
-> /fs/namei.c:677
->  [<     inlined    >] link_path_walk+0xddd/0x1d40 walk_component
-> /fs/namei.c:1571
->  [<ffffffff81257d7d>] link_path_walk+0xddd/0x1d40 /fs/namei.c:1805
->  [<ffffffff8125e344>] path_openat+0xe4/0xb10 /fs/namei.c:3206
->  [<ffffffff81260911>] do_filp_open+0x51/0xd0 /fs/namei.c:3259
->  [<ffffffff81242003>] do_sys_open+0x183/0x2d0 /fs/open.c:998
->  [<     inlined    >] SyS_open+0x35/0x50 SYSC_open /fs/open.c:1016
->  [<ffffffff81242185>] SyS_open+0x35/0x50 /fs/open.c:1011
->  [<ffffffff81e39fe9>] system_call_fastpath+0x12/0x17
-> /arch/x86/kernel/entry_64.S:422
-> DBG: cpu = ffffe8ffffc010b0
-> 
-> Previous write of size 4 by thread T574 (K813):
->  [<ffffffff8126e22f>] __d_lookup+0x27f/0x2d0 /fs/dcache.c:2185
->  [<ffffffff812543c9>] lookup_fast+0x299/0x5a0 /fs/namei.c:1427
->  [<     inlined    >] link_path_walk+0x25c/0x1d40 walk_component
-> /fs/namei.c:1546
->  [<ffffffff812571fc>] link_path_walk+0x25c/0x1d40 /fs/namei.c:1805
->  [<ffffffff8125e344>] path_openat+0xe4/0xb10 /fs/namei.c:3206
->  [<ffffffff81260911>] do_filp_open+0x51/0xd0 /fs/namei.c:3259
->  [<ffffffff81242003>] do_sys_open+0x183/0x2d0 /fs/open.c:998
->  [<     inlined    >] SyS_open+0x35/0x50 SYSC_open /fs/open.c:1016
->  [<ffffffff81242185>] SyS_open+0x35/0x50 /fs/open.c:1011
->  [<ffffffff81e39fe9>] system_call_fastpath+0x12/0x17
-> /arch/x86/kernel/entry_64.S:422
-> DBG: cpu = 0
-> 
-> DBG: addr: ffff8801148e91f0
-> DBG: first offset: 4, second offset: 0
-> DBG: T575 clock: {T575: 27630, T574: 25486}
-> DBG: T574 clock: {T574: 25539}
-> ==================================================================
-> 
-> It seems that one thread increments 'dentry->d_lockref.count', while
-> other does 'lockref_put_or_lock(&dentry->d_lockref)'  without any
-> synchronization.
-> 
-> Could you confirm if this is a real race?
+The complate semantic patch that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-I think it should be fine. d_lock is #defined as d_lockref.lock, and the
-whole way the lockref works is that you can either cmpxchg the lock and the
-counter, or take the lock and do what you like.
+// <smpl>
+@ok exists@
+identifier f,ret,i;
+expression e;
+constant c;
+@@
 
-So in this case, the increment is done with the lock held, which will
-cause a competing lockref_put_or_lock to fail on the cmpxchg path.
+// identify a function that returns a negative return value at least once.
+f(...) {
+... when any
+(
+return -c@i;
+|
+ret = -c@i;
+... when != ret = e
+return ret;
+|
+if (ret < 0) { ... return ret; }
+)
+... when any
+}
 
-Will
+@r exists@
+identifier ret,ok.f,fn;
+expression e1,e2,e3,e4,e5,e6,x;
+statement S,S1;
+position p1,p2,p3;
+@@
+
+// identify a case where the return variable is set to a non-negative value
+// and then returned in error-handling code
+f(...) {
+... when any
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != \(ret = e1\|ret++\|ret--\|ret+=e1\|ret-=e1\)
+    when != &ret
+    when any
+(
+ if (<+... ret = e5 ...+>) S1
+|
+ if (<+... &ret ...+>) S1
+|
+if@p2(<+...x = fn(...)...+>)
+ {
+  ... when != ret = e6
+      when forall
+ return@p3 ret;
+}
+|
+break;
+|
+x = fn(...)
+... when != \(ret = e4\|ret++\|ret--\|ret+=e4\|ret-=e4\)
+    when != &ret
+(
+ if (<+... ret = e3 ...+>) S
+|
+ if (<+... &ret ...+>) S
+|
+if@p2(<+...\(x != 0\|x < 0\|x == NULL\|IS_ERR(x)\)...+>)
+ {
+  ... when != ret = e2
+      when forall
+ return@p3 ret;
+}
+)
+)
+... when any
+}
+
+@printer depends on r@
+position p;
+identifier ok.f,pr;
+constant char [] c;
+@@
+
+f(...) { <...pr@p(...,c,...)...> }
+
+@bad0 exists@
+identifier r.ret,ok.f,g != {ERR_PTR,IS_ERR};
+position p != printer.p;
+@@
+
+f(...) { ... when any
+g@p(...,ret,...)
+... when any
+ }
+
+@bad depends on !bad0 exists@
+position r.p1,r.p2;
+statement S1,S2;
+identifier r.ret;
+expression e1;
+@@
+
+// ignore the above if there is some path where the variable is set to
+// something else
+(
+if@p1 (\(ret < 0\|ret != 0\)) S1
+|
+ret@p1 = 0
+)
+... when any
+ \(ret = e1\|ret++\|ret--\|ret+=e1\|ret-=e1\|&ret\)
+... when any
+if@p2(...) S2
+
+@bad1 depends on !bad0 && !bad exists@
+position r.p2;
+statement S2;
+identifier r.ret;
+expression e1;
+constant c;
+@@
+
+ret = -c
+... when != \(ret = e1\|ret++\|ret--\|ret+=e1\|ret-=e1\)
+    when != &ret
+    when any
+if@p2(...) S2
+
+@bad2 depends on !bad0 && !bad && !bad1 exists@
+position r.p1,r.p2;
+identifier r.ret;
+expression e1;
+statement S2;
+constant c;
+@@
+
+// likewise ignore it if there has been an intervening return
+ret@p1 = 0
+... when != if (...) { ... ret = e1 ... return ret; }
+    when != if (...) { ... return -c; }
+    when any
+if@p2(...) S2
+
+
+@script:python depends on !bad0 && !bad && !bad1 && !bad2@
+p1 << r.p1;
+p2 << r.p2;
+p3 << r.p3;
+@@
+
+cocci.print_main("",p1)
+cocci.print_secs("",p2)
+cocci.print_secs("",p3)
+
+// </smpl>
+
