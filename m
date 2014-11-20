@@ -1,45 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804AbaKTAH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 19:07:56 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:55769 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756149AbaKTAHz (ORCPT
+	id S1756990AbaKTAKy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 19:10:54 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:60868 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756683AbaKTAKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 19:07:55 -0500
-Date: Thu, 20 Nov 2014 00:07:36 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        Ian Campbell <Ian.Campbell@citrix.com>, david.vrabel@citrix.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        catalin.marinas@arm.com
-Subject: Re: [PATCH v9 05/13] arm: introduce is_device_dma_coherent
-Message-ID: <20141120000736.GN4042@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
- <1415792454-23161-5-git-send-email-stefano.stabellini@eu.citrix.com>
- <alpine.DEB.2.02.1411141158560.26318@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1411181649000.27247@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1411181649000.27247@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 19 Nov 2014 19:10:51 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kenneth Westfield <kwestfie@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Rajendra Nayak <rnayak@codeaurora.org>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH 1/7] clk: Add __clk_mux_determine_rate_closest
+Date: Wed, 19 Nov 2014 16:10:39 -0800
+Message-Id: <1416442245-21967-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.1.0.61.ge50deb1
+In-Reply-To: <1416442245-21967-1-git-send-email-sboyd@codeaurora.org>
+References: <1416442245-21967-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 04:49:21PM +0000, Stefano Stabellini wrote:
-> ping?
+Some clock drivers want to find the closest rate on the input of
+a mux instead of a rate that's less than or equal to the desired
+rate. Add a generic mux function to support this.
 
-Sending something which wants my attention _To:_ me is always a good idea :)
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clk/clk.c            | 47 +++++++++++++++++++++++++++++++++++---------
+ include/linux/clk-provider.h |  9 +++++++--
+ 2 files changed, 45 insertions(+), 11 deletions(-)
 
-The patch is fine in itself, but I have a niggle about the
-is_device_dma_coherent() - provided this is only used in architecture
-specific code, that should be fine.  It could probably do with a comment
-to that effect in an attempt to discourage drivers using it (thereby
-becoming less portable to other architectures.)
-
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 4896ae9e23da..675f37a7329f 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -700,14 +700,20 @@ struct clk *__clk_lookup(const char *name)
+ 	return NULL;
+ }
+ 
+-/*
+- * Helper for finding best parent to provide a given frequency. This can be used
+- * directly as a determine_rate callback (e.g. for a mux), or from a more
+- * complex clock that may combine a mux with other operations.
+- */
+-long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
+-			      unsigned long *best_parent_rate,
+-			      struct clk **best_parent_p)
++static bool mux_is_better_rate(unsigned long rate, unsigned long now,
++			   unsigned long best, unsigned long flags)
++{
++	if (flags & CLK_MUX_ROUND_CLOSEST)
++		return abs(now - rate) < abs(best - rate);
++
++	return now <= rate && now > best;
++}
++
++static long
++clk_mux_determine_rate_flags(struct clk_hw *hw, unsigned long rate,
++			     unsigned long *best_parent_rate,
++			     struct clk **best_parent_p,
++			     unsigned long flags)
+ {
+ 	struct clk *clk = hw->clk, *parent, *best_parent = NULL;
+ 	int i, num_parents;
+@@ -735,7 +741,7 @@ long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
+ 			parent_rate = __clk_round_rate(parent, rate);
+ 		else
+ 			parent_rate = __clk_get_rate(parent);
+-		if (parent_rate <= rate && parent_rate > best) {
++		if (mux_is_better_rate(rate, parent_rate, best, flags)) {
+ 			best_parent = parent;
+ 			best = parent_rate;
+ 		}
+@@ -748,8 +754,31 @@ out:
+ 
+ 	return best;
+ }
++
++/*
++ * Helper for finding best parent to provide a given frequency. This can be used
++ * directly as a determine_rate callback (e.g. for a mux), or from a more
++ * complex clock that may combine a mux with other operations.
++ */
++long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
++			      unsigned long *best_parent_rate,
++			      struct clk **best_parent_p)
++{
++	return clk_mux_determine_rate_flags(hw, rate, best_parent_rate,
++					    best_parent_p, 0);
++}
+ EXPORT_SYMBOL_GPL(__clk_mux_determine_rate);
+ 
++long __clk_mux_determine_rate_closest(struct clk_hw *hw, unsigned long rate,
++			      unsigned long *best_parent_rate,
++			      struct clk **best_parent_p)
++{
++	return clk_mux_determine_rate_flags(hw, rate, best_parent_rate,
++					    best_parent_p,
++					    CLK_MUX_ROUND_CLOSEST);
++}
++EXPORT_SYMBOL_GPL(__clk_mux_determine_rate_closest);
++
+ /***        clk api        ***/
+ 
+ void __clk_unprepare(struct clk *clk)
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index be21af149f11..446faed3f79f 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -383,6 +383,8 @@ struct clk *clk_register_divider_table(struct device *dev, const char *name,
+  *	register, and mask of mux bits are in higher 16-bit of this register.
+  *	While setting the mux bits, higher 16-bit should also be updated to
+  *	indicate changing mux bits.
++ * CLK_MUX_ROUND_CLOSEST - Use the parent rate that is closest to the desired
++ *	frequency.
+  */
+ struct clk_mux {
+ 	struct clk_hw	hw;
+@@ -397,7 +399,8 @@ struct clk_mux {
+ #define CLK_MUX_INDEX_ONE		BIT(0)
+ #define CLK_MUX_INDEX_BIT		BIT(1)
+ #define CLK_MUX_HIWORD_MASK		BIT(2)
+-#define CLK_MUX_READ_ONLY	BIT(3) /* mux setting cannot be changed */
++#define CLK_MUX_READ_ONLY		BIT(3) /* mux can't be changed */
++#define CLK_MUX_ROUND_CLOSEST		BIT(4)
+ 
+ extern const struct clk_ops clk_mux_ops;
+ extern const struct clk_ops clk_mux_ro_ops;
+@@ -555,7 +558,9 @@ struct clk *__clk_lookup(const char *name);
+ long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
+ 			      unsigned long *best_parent_rate,
+ 			      struct clk **best_parent_p);
+-
++long __clk_mux_determine_rate_closest(struct clk_hw *hw, unsigned long rate,
++			      unsigned long *best_parent_rate,
++			      struct clk **best_parent_p);
+ /*
+  * FIXME clock api without lock protection
+  */
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
+
