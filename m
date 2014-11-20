@@ -1,91 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297AbaKTKu6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:50:58 -0500
-Received: from mout.web.de ([212.227.15.4]:63539 "EHLO mout.web.de"
+	id S1751932AbaKTKxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 05:53:15 -0500
+Received: from mail.kernel.org ([198.145.19.201]:53507 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750949AbaKTKuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:50:55 -0500
-Message-ID: <546DC778.8050204@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 11:50:32 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-CC: linux-samsung-soc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] [media] platform: Deletion of unnecessary checks before
- two function calls
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:XpwYI29tuMAa9iSZ2JKmC2ImugrvRHulB2R1cpCWyQwca30wtdf
- jYzl5m0g3+V8vWnhVw3XmoDJG1oryW/Am9mpm5R/j9aj/gRzZpkvN48YhcCFz+SHWvy6d8O
- 1aPsIP9lyOWjki1bzkACgRd2FeRrFf9igzoeKSbmH23KUjDRKIaS4d/70cixKPuUF81c4pH
- cXIYNMr43mY3sB8OFZ0uw==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1750776AbaKTKxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 05:53:14 -0500
+From: Lee Jones <lee@kernel.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arm@kernel.org, Matthias Klein <matthias.klein@linux.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH] ARM: bcm2835: Add device tree for Raspberry Pi model B+
+Date: Thu, 20 Nov 2014 10:52:45 +0000
+Message-Id: <1416480765-13449-1-git-send-email-lee@kernel.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 11:44:20 +0100
+From: Matthias Klein <matthias.klein@linux.com>
 
-The functions i2c_put_adapter() and release_firmware() test whether their
-argument is NULL and then return immediately. Thus the test around the call
-is not needed.
+The model B and B+ differ in the GPIO lines for ACT and PWR leds, and the
+I2S interface.
 
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: Matthias Klein <matthias.klein@linux.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/media/platform/exynos4-is/fimc-is.c   | 6 ++----
- drivers/media/platform/s3c-camif/camif-core.c | 3 +--
- 2 files changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/media/platform/exynos4-is/fimc-is.c b/drivers/media/platform/exynos4-is/fimc-is.c
-index 5476dce..a1db27b 100644
---- a/drivers/media/platform/exynos4-is/fimc-is.c
-+++ b/drivers/media/platform/exynos4-is/fimc-is.c
-@@ -428,8 +428,7 @@ static void fimc_is_load_firmware(const struct firmware *fw, void *context)
- 	 * needed around for copying to the IS working memory every
- 	 * time before the Cortex-A5 is restarted.
- 	 */
--	if (is->fw.f_w)
--		release_firmware(is->fw.f_w);
-+	release_firmware(is->fw.f_w);
- 	is->fw.f_w = fw;
- done:
- 	mutex_unlock(&is->lock);
-@@ -937,8 +936,7 @@ static int fimc_is_remove(struct platform_device *pdev)
- 	vb2_dma_contig_cleanup_ctx(is->alloc_ctx);
- 	fimc_is_put_clocks(is);
- 	fimc_is_debugfs_remove(is);
--	if (is->fw.f_w)
--		release_firmware(is->fw.f_w);
-+	release_firmware(is->fw.f_w);
- 	fimc_is_free_cpu_memory(is);
+As requested by Arnd.
+
+ arch/arm/boot/dts/Makefile               |  1 +
+ arch/arm/boot/dts/bcm2835-rpi-b-plus.dts | 30 +++++++++++++++++++
+ arch/arm/boot/dts/bcm2835-rpi-b.dts      | 46 ++--------------------------
+ arch/arm/boot/dts/bcm2835-rpi.dtsi       | 51 ++++++++++++++++++++++++++++++++
+ 4 files changed, 85 insertions(+), 43 deletions(-)
+ create mode 100644 arch/arm/boot/dts/bcm2835-rpi-b-plus.dts
+ create mode 100644 arch/arm/boot/dts/bcm2835-rpi.dtsi
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 38c89ca..cbf7db6 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -54,6 +54,7 @@ dtb-$(CONFIG_ARCH_AT91)	+= at91-sama5d4ek.dtb
+ dtb-$(CONFIG_ARCH_ATLAS6) += atlas6-evb.dtb
+ dtb-$(CONFIG_ARCH_AXXIA) += axm5516-amarillo.dtb
+ dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
++dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b-plus.dtb
+ dtb-$(CONFIG_ARCH_BCM_5301X) += bcm4708-netgear-r6250.dtb
+ dtb-$(CONFIG_ARCH_BCM_63XX) += bcm963138dvt.dtb
+ dtb-$(CONFIG_ARCH_BCM_MOBILE) += bcm28155-ap.dtb \
+diff --git a/arch/arm/boot/dts/bcm2835-rpi-b-plus.dts b/arch/arm/boot/dts/bcm2835-rpi-b-plus.dts
+new file mode 100644
+index 0000000..e479515
+--- /dev/null
++++ b/arch/arm/boot/dts/bcm2835-rpi-b-plus.dts
+@@ -0,0 +1,30 @@
++/dts-v1/;
++/include/ "bcm2835-rpi.dtsi"
++
++/ {
++	compatible = "raspberrypi,model-b-plus", "brcm,bcm2835";
++	model = "Raspberry Pi Model B+";
++
++	leds {
++		act {
++			gpios = <&gpio 47 0>;
++		};
++
++		pwr {
++			label = "PWR";
++			gpios = <&gpio 35 0>;
++			default-state = "keep";
++			linux,default-trigger = "default-on";
++		};
++	};
++};
++
++&gpio {
++	pinctrl-0 = <&gpioout &alt0 &i2s_alt0 &alt3>;
++
++	/* I2S interface */
++	i2s_alt0: i2s_alt0 {
++		brcm,pins = <18 19 20 21>;
++		brcm,function = <4>; /* alt0 */
++	};
++};
+diff --git a/arch/arm/boot/dts/bcm2835-rpi-b.dts b/arch/arm/boot/dts/bcm2835-rpi-b.dts
+index 58a0d60..bafa46f 100644
+--- a/arch/arm/boot/dts/bcm2835-rpi-b.dts
++++ b/arch/arm/boot/dts/bcm2835-rpi-b.dts
+@@ -1,63 +1,23 @@
+ /dts-v1/;
+-/include/ "bcm2835.dtsi"
++/include/ "bcm2835-rpi.dtsi"
  
- 	return 0;
-diff --git a/drivers/media/platform/s3c-camif/camif-core.c b/drivers/media/platform/s3c-camif/camif-core.c
-index b385747..3b09b5b 100644
---- a/drivers/media/platform/s3c-camif/camif-core.c
-+++ b/drivers/media/platform/s3c-camif/camif-core.c
-@@ -256,8 +256,7 @@ static void camif_unregister_sensor(struct camif_dev *camif)
- 	v4l2_device_unregister_subdev(sd);
- 	camif->sensor.sd = NULL;
- 	i2c_unregister_device(client);
--	if (adapter)
--		i2c_put_adapter(adapter);
-+	i2c_put_adapter(adapter);
- }
+ / {
+ 	compatible = "raspberrypi,model-b", "brcm,bcm2835";
+ 	model = "Raspberry Pi Model B";
  
- static int camif_create_media_links(struct camif_dev *camif)
+-	memory {
+-		reg = <0 0x10000000>;
+-	};
+-
+ 	leds {
+-		compatible = "gpio-leds";
+-
+ 		act {
+-			label = "ACT";
+ 			gpios = <&gpio 16 1>;
+-			default-state = "keep";
+-			linux,default-trigger = "heartbeat";
+ 		};
+ 	};
+ };
+ 
+ &gpio {
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&gpioout &alt0 &alt2 &alt3>;
+-
+-	gpioout: gpioout {
+-		brcm,pins = <6>;
+-		brcm,function = <1>; /* GPIO out */
+-	};
+-
+-	alt0: alt0 {
+-		brcm,pins = <0 1 2 3 4 5 7 8 9 10 11 14 15 40 45>;
+-		brcm,function = <4>; /* alt0 */
+-	};
+-
+-	alt3: alt3 {
+-		brcm,pins = <48 49 50 51 52 53>;
+-		brcm,function = <7>; /* alt3 */
+-	};
++	pinctrl-0 = <&gpioout &alt0 &i2s_alt2 &alt3>;
+ 
+ 	/* I2S interface */
+-	alt2: alt2 {
++	i2s_alt2: i2s_alt2 {
+ 		brcm,pins = <28 29 30 31>;
+ 		brcm,function = <6>; /* alt2 */
+ 	};
+ };
+-
+-&i2c0 {
+-	status = "okay";
+-	clock-frequency = <100000>;
+-};
+-
+-&i2c1 {
+-	status = "okay";
+-	clock-frequency = <100000>;
+-};
+-
+-&sdhci {
+-	status = "okay";
+-	bus-width = <4>;
+-};
+diff --git a/arch/arm/boot/dts/bcm2835-rpi.dtsi b/arch/arm/boot/dts/bcm2835-rpi.dtsi
+new file mode 100644
+index 0000000..c706448
+--- /dev/null
++++ b/arch/arm/boot/dts/bcm2835-rpi.dtsi
+@@ -0,0 +1,51 @@
++/include/ "bcm2835.dtsi"
++
++/ {
++	memory {
++		reg = <0 0x10000000>;
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		act {
++			label = "ACT";
++			default-state = "keep";
++			linux,default-trigger = "heartbeat";
++		};
++	};
++};
++
++&gpio {
++	pinctrl-names = "default";
++
++	gpioout: gpioout {
++		brcm,pins = <6>;
++		brcm,function = <1>; /* GPIO out */
++	};
++
++	alt0: alt0 {
++		brcm,pins = <0 1 2 3 4 5 7 8 9 10 11 14 15 40 45>;
++		brcm,function = <4>; /* alt0 */
++	};
++
++	alt3: alt3 {
++		brcm,pins = <48 49 50 51 52 53>;
++		brcm,function = <7>; /* alt3 */
++	};
++};
++
++&i2c0 {
++	status = "okay";
++	clock-frequency = <100000>;
++};
++
++&i2c1 {
++	status = "okay";
++	clock-frequency = <100000>;
++};
++
++&sdhci {
++	status = "okay";
++	bus-width = <4>;
++};
 -- 
-2.1.3
+1.9.1
 
