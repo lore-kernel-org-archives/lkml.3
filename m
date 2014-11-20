@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383AbaKTP12 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 10:27:28 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:42635 "EHLO
+	id S932332AbaKTP10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 10:27:26 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:33117 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757425AbaKTP1V (ORCPT
+	by vger.kernel.org with ESMTP id S932137AbaKTP1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Nov 2014 10:27:21 -0500
-Message-Id: <20141120152717.892163273@goodmis.org>
+Message-Id: <20141120152718.204600835@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 20 Nov 2014 10:21:33 -0500
+Date: Thu, 20 Nov 2014 10:21:35 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: [for-next][PATCH 13/15] seq_buf: Move the seq_buf code to lib/
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [for-next][PATCH 15/15] x86/nmi: Perform a safe NMI stack trace on all CPUs
 References: <20141120152120.168868031@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0013-seq_buf-Move-the-seq_buf-code-to-lib.patch
+Content-Disposition: inline; filename=0015-x86-nmi-Perform-a-safe-NMI-stack-trace-on-all-CPUs.patch
 X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,796 +28,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The seq_buf functions are rather useful outside of tracing. Instead
-of having it be dependent on CONFIG_TRACING, move the code into lib/
-and allow other users to have access to it even when tracing is not
-configured.
+When trigger_all_cpu_backtrace() is called on x86, it will trigger an
+NMI on each CPU and call show_regs(). But this can lead to a hard lock
+up if the NMI comes in on another printk().
 
-The seq_buf utility is similar to the seq_file utility, but instead of
-writing sending data back up to userland, it writes it into a buffer
-defined at seq_buf_init(). This allows us to send a descriptor around
-that writes printf() formatted strings into it that can be retrieved
-later.
+In order to avoid this, when the NMI triggers, it switches the printk
+routine for that CPU to call a NMI safe printk function that records the
+printk in a per_cpu seq_buf descriptor. After all NMIs have finished
+recording its data, the seq_bufs are printed in a safe context.
 
-It is currently used by the tracing facility for such things like trace
-events to convert its binary saved data in the ring buffer into an
-ASCII human readable context to be displayed in /sys/kernel/debug/trace.
-
-It can also be used for doing NMI prints safely from NMI context into
-the seq_buf and retrieved later and dumped to printk() safely. Doing
-printk() from an NMI context is dangerous because an NMI can preempt
-a current printk() and deadlock on it.
-
-Link: http://lkml.kernel.org/p/20140619213952.058255809@goodmis.org
+Link: http://lkml.kernel.org/p/20140619213952.360076309@goodmis.org
+Link: http://lkml.kernel.org/r/20141115050605.055232587@goodmis.org
 
 Tested-by: Jiri Kosina <jkosina@suse.cz>
 Acked-by: Jiri Kosina <jkosina@suse.cz>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Reviewed-by: Petr Mladek <pmladek@suse.cz>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/Makefile  |   1 -
- kernel/trace/seq_buf.c | 359 -------------------------------------------------
- lib/Makefile           |   2 +-
- lib/seq_buf.c          | 359 +++++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 360 insertions(+), 361 deletions(-)
- delete mode 100644 kernel/trace/seq_buf.c
- create mode 100644 lib/seq_buf.c
+ arch/x86/kernel/apic/hw_nmi.c | 91 ++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 86 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
-index edc98c72a634..67d6369ddf83 100644
---- a/kernel/trace/Makefile
-+++ b/kernel/trace/Makefile
-@@ -29,7 +29,6 @@ obj-$(CONFIG_RING_BUFFER_BENCHMARK) += ring_buffer_benchmark.o
- obj-$(CONFIG_TRACING) += trace.o
- obj-$(CONFIG_TRACING) += trace_output.o
- obj-$(CONFIG_TRACING) += trace_seq.o
--obj-$(CONFIG_TRACING) += seq_buf.o
- obj-$(CONFIG_TRACING) += trace_stat.o
- obj-$(CONFIG_TRACING) += trace_printk.o
- obj-$(CONFIG_CONTEXT_SWITCH_TRACER) += trace_sched_switch.o
-diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
-deleted file mode 100644
-index 4eedfedb9e31..000000000000
---- a/kernel/trace/seq_buf.c
-+++ /dev/null
-@@ -1,359 +0,0 @@
--/*
-- * seq_buf.c
-- *
-- * Copyright (C) 2014 Red Hat Inc, Steven Rostedt <srostedt@redhat.com>
-- *
-- * The seq_buf is a handy tool that allows you to pass a descriptor around
-- * to a buffer that other functions can write to. It is similar to the
-- * seq_file functionality but has some differences.
-- *
-- * To use it, the seq_buf must be initialized with seq_buf_init().
-- * This will set up the counters within the descriptor. You can call
-- * seq_buf_init() more than once to reset the seq_buf to start
-- * from scratch.
-- */
--#include <linux/uaccess.h>
--#include <linux/seq_file.h>
--#include <linux/seq_buf.h>
--
--/**
-- * seq_buf_can_fit - can the new data fit in the current buffer?
-- * @s: the seq_buf descriptor
-- * @len: The length to see if it can fit in the current buffer
-- *
-- * Returns true if there's enough unused space in the seq_buf buffer
-- * to fit the amount of new data according to @len.
-- */
--static bool seq_buf_can_fit(struct seq_buf *s, size_t len)
--{
--	return s->len + len <= s->size;
--}
--
--/**
-- * seq_buf_print_seq - move the contents of seq_buf into a seq_file
-- * @m: the seq_file descriptor that is the destination
-- * @s: the seq_buf descriptor that is the source.
-- *
-- * Returns zero on success, non zero otherwise
-- */
--int seq_buf_print_seq(struct seq_file *m, struct seq_buf *s)
--{
--	unsigned int len = seq_buf_used(s);
--
--	return seq_write(m, s->buffer, len);
--}
--
--/**
-- * seq_buf_vprintf - sequence printing of information.
-- * @s: seq_buf descriptor
-- * @fmt: printf format string
-- * @args: va_list of arguments from a printf() type function
-- *
-- * Writes a vnprintf() format into the sequencce buffer.
-- *
-- * Returns zero on success, -1 on overflow.
-- */
--int seq_buf_vprintf(struct seq_buf *s, const char *fmt, va_list args)
--{
--	int len;
--
--	WARN_ON(s->size == 0);
--
--	if (s->len < s->size) {
--		len = vsnprintf(s->buffer + s->len, s->size - s->len, fmt, args);
--		if (seq_buf_can_fit(s, len)) {
--			s->len += len;
--			return 0;
--		}
--	}
--	seq_buf_set_overflow(s);
--	return -1;
--}
--
--/**
-- * seq_buf_printf - sequence printing of information
-- * @s: seq_buf descriptor
-- * @fmt: printf format string
-- *
-- * Writes a printf() format into the sequence buffer.
-- *
-- * Returns zero on success, -1 on overflow.
-- */
--int seq_buf_printf(struct seq_buf *s, const char *fmt, ...)
--{
--	va_list ap;
--	int ret;
--
--	va_start(ap, fmt);
--	ret = seq_buf_vprintf(s, fmt, ap);
--	va_end(ap);
--
--	return ret;
--}
--
--/**
-- * seq_buf_bitmask - write a bitmask array in its ASCII representation
-- * @s:		seq_buf descriptor
-- * @maskp:	points to an array of unsigned longs that represent a bitmask
-- * @nmaskbits:	The number of bits that are valid in @maskp
-- *
-- * Writes a ASCII representation of a bitmask string into @s.
-- *
-- * Returns zero on success, -1 on overflow.
-- */
--int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
--		    int nmaskbits)
--{
--	unsigned int len = seq_buf_buffer_left(s);
--	int ret;
--
--	WARN_ON(s->size == 0);
--
--	/*
--	 * Note, because bitmap_scnprintf() only returns the number of bytes
--	 * written and not the number that would be written, we use the last
--	 * byte of the buffer to let us know if we overflowed. There's a small
--	 * chance that the bitmap could have fit exactly inside the buffer, but
--	 * it's not that critical if that does happen.
--	 */
--	if (len > 1) {
--		ret = bitmap_scnprintf(s->buffer + s->len, len, maskp, nmaskbits);
--		if (ret < len) {
--			s->len += ret;
--			return 0;
--		}
--	}
--	seq_buf_set_overflow(s);
--	return -1;
--}
--
--#ifdef CONFIG_BINARY_PRINTF
--/**
-- * seq_buf_bprintf - Write the printf string from binary arguments
-- * @s: seq_buf descriptor
-- * @fmt: The format string for the @binary arguments
-- * @binary: The binary arguments for @fmt.
-- *
-- * When recording in a fast path, a printf may be recorded with just
-- * saving the format and the arguments as they were passed to the
-- * function, instead of wasting cycles converting the arguments into
-- * ASCII characters. Instead, the arguments are saved in a 32 bit
-- * word array that is defined by the format string constraints.
-- *
-- * This function will take the format and the binary array and finish
-- * the conversion into the ASCII string within the buffer.
-- *
-- * Returns zero on success, -1 on overflow.
-- */
--int seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary)
--{
--	unsigned int len = seq_buf_buffer_left(s);
--	int ret;
--
--	WARN_ON(s->size == 0);
--
--	if (s->len < s->size) {
--		ret = bstr_printf(s->buffer + s->len, len, fmt, binary);
--		if (seq_buf_can_fit(s, ret)) {
--			s->len += ret;
--			return 0;
--		}
--	}
--	seq_buf_set_overflow(s);
--	return -1;
--}
--#endif /* CONFIG_BINARY_PRINTF */
--
--/**
-- * seq_buf_puts - sequence printing of simple string
-- * @s: seq_buf descriptor
-- * @str: simple string to record
-- *
-- * Copy a simple string into the sequence buffer.
-- *
-- * Returns zero on success, -1 on overflow
-- */
--int seq_buf_puts(struct seq_buf *s, const char *str)
--{
--	unsigned int len = strlen(str);
--
--	WARN_ON(s->size == 0);
--
--	if (seq_buf_can_fit(s, len)) {
--		memcpy(s->buffer + s->len, str, len);
--		s->len += len;
--		return 0;
--	}
--	seq_buf_set_overflow(s);
--	return -1;
--}
--
--/**
-- * seq_buf_putc - sequence printing of simple character
-- * @s: seq_buf descriptor
-- * @c: simple character to record
-- *
-- * Copy a single character into the sequence buffer.
-- *
-- * Returns zero on success, -1 on overflow
-- */
--int seq_buf_putc(struct seq_buf *s, unsigned char c)
--{
--	WARN_ON(s->size == 0);
--
--	if (seq_buf_can_fit(s, 1)) {
--		s->buffer[s->len++] = c;
--		return 0;
--	}
--	seq_buf_set_overflow(s);
--	return -1;
--}
--
--/**
-- * seq_buf_putmem - write raw data into the sequenc buffer
-- * @s: seq_buf descriptor
-- * @mem: The raw memory to copy into the buffer
-- * @len: The length of the raw memory to copy (in bytes)
-- *
-- * There may be cases where raw memory needs to be written into the
-- * buffer and a strcpy() would not work. Using this function allows
-- * for such cases.
-- *
-- * Returns zero on success, -1 on overflow
-- */
--int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len)
--{
--	WARN_ON(s->size == 0);
--
--	if (seq_buf_can_fit(s, len)) {
--		memcpy(s->buffer + s->len, mem, len);
--		s->len += len;
--		return 0;
--	}
--	seq_buf_set_overflow(s);
--	return -1;
--}
--
--#define MAX_MEMHEX_BYTES	8U
--#define HEX_CHARS		(MAX_MEMHEX_BYTES*2 + 1)
--
--/**
-- * seq_buf_putmem_hex - write raw memory into the buffer in ASCII hex
-- * @s: seq_buf descriptor
-- * @mem: The raw memory to write its hex ASCII representation of
-- * @len: The length of the raw memory to copy (in bytes)
-- *
-- * This is similar to seq_buf_putmem() except instead of just copying the
-- * raw memory into the buffer it writes its ASCII representation of it
-- * in hex characters.
-- *
-- * Returns zero on success, -1 on overflow
-- */
--int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
--		       unsigned int len)
--{
--	unsigned char hex[HEX_CHARS];
--	const unsigned char *data = mem;
--	unsigned int start_len;
--	int i, j;
--
--	WARN_ON(s->size == 0);
--
--	while (len) {
--		start_len = min(len, HEX_CHARS - 1);
--#ifdef __BIG_ENDIAN
--		for (i = 0, j = 0; i < start_len; i++) {
--#else
--		for (i = start_len-1, j = 0; i >= 0; i--) {
--#endif
--			hex[j++] = hex_asc_hi(data[i]);
--			hex[j++] = hex_asc_lo(data[i]);
--		}
--		if (WARN_ON_ONCE(j == 0 || j/2 > len))
--			break;
--
--		/* j increments twice per loop */
--		len -= j / 2;
--		hex[j++] = ' ';
--
--		seq_buf_putmem(s, hex, j);
--		if (seq_buf_has_overflowed(s))
--			return -1;
--	}
--	return 0;
--}
--
--/**
-- * seq_buf_path - copy a path into the sequence buffer
-- * @s: seq_buf descriptor
-- * @path: path to write into the sequence buffer.
-- * @esc: set of characters to escape in the output
-- *
-- * Write a path name into the sequence buffer.
-- *
-- * Returns the number of written bytes on success, -1 on overflow
-- */
--int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
--{
--	char *buf;
--	size_t size = seq_buf_get_buf(s, &buf);
--	int res = -1;
--
--	WARN_ON(s->size == 0);
--
--	if (size) {
--		char *p = d_path(path, buf, size);
--		if (!IS_ERR(p)) {
--			char *end = mangle_path(buf, p, esc);
--			if (end)
--				res = end - buf;
--		}
--	}
--	seq_buf_commit(s, res);
--
--	return res;
--}
--
--/**
-- * seq_buf_to_user - copy the squence buffer to user space
-- * @s: seq_buf descriptor
-- * @ubuf: The userspace memory location to copy to
-- * @cnt: The amount to copy
-- *
-- * Copies the sequence buffer into the userspace memory pointed to
-- * by @ubuf. It starts from the last read position (@s->readpos)
-- * and writes up to @cnt characters or till it reaches the end of
-- * the content in the buffer (@s->len), which ever comes first.
-- *
-- * On success, it returns a positive number of the number of bytes
-- * it copied.
-- *
-- * On failure it returns -EBUSY if all of the content in the
-- * sequence has been already read, which includes nothing in the
-- * sequence (@s->len == @s->readpos).
-- *
-- * Returns -EFAULT if the copy to userspace fails.
-- */
--int seq_buf_to_user(struct seq_buf *s, char __user *ubuf, int cnt)
--{
--	int len;
--	int ret;
--
--	if (!cnt)
--		return 0;
--
--	if (s->len <= s->readpos)
--		return -EBUSY;
--
--	len = seq_buf_used(s) - s->readpos;
--	if (cnt > len)
--		cnt = len;
--	ret = copy_to_user(ubuf, s->buffer + s->readpos, cnt);
--	if (ret == cnt)
--		return -EFAULT;
--
--	cnt -= ret;
--
--	s->readpos += cnt;
--	return cnt;
--}
-diff --git a/lib/Makefile b/lib/Makefile
-index 7512dc978f18..a1aa1e81ed36 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o flex_proportions.o ratelimit.o show_mem.o \
- 	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
--	 earlycpio.o
-+	 earlycpio.o seq_buf.o
- 
- obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
- lib-$(CONFIG_MMU) += ioremap.o
-diff --git a/lib/seq_buf.c b/lib/seq_buf.c
-new file mode 100644
-index 000000000000..4eedfedb9e31
---- /dev/null
-+++ b/lib/seq_buf.c
-@@ -0,0 +1,359 @@
-+/*
-+ * seq_buf.c
-+ *
-+ * Copyright (C) 2014 Red Hat Inc, Steven Rostedt <srostedt@redhat.com>
-+ *
-+ * The seq_buf is a handy tool that allows you to pass a descriptor around
-+ * to a buffer that other functions can write to. It is similar to the
-+ * seq_file functionality but has some differences.
-+ *
-+ * To use it, the seq_buf must be initialized with seq_buf_init().
-+ * This will set up the counters within the descriptor. You can call
-+ * seq_buf_init() more than once to reset the seq_buf to start
-+ * from scratch.
-+ */
-+#include <linux/uaccess.h>
-+#include <linux/seq_file.h>
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index 6a1e71bde323..c95c3e9ce196 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -18,6 +18,7 @@
+ #include <linux/nmi.h>
+ #include <linux/module.h>
+ #include <linux/delay.h>
 +#include <linux/seq_buf.h>
+ 
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ u64 hw_nmi_get_sample_period(int watchdog_thresh)
+@@ -29,14 +30,35 @@ u64 hw_nmi_get_sample_period(int watchdog_thresh)
+ #ifdef arch_trigger_all_cpu_backtrace
+ /* For reliability, we're prepared to waste bits here. */
+ static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
++static cpumask_var_t printtrace_mask;
 +
-+/**
-+ * seq_buf_can_fit - can the new data fit in the current buffer?
-+ * @s: the seq_buf descriptor
-+ * @len: The length to see if it can fit in the current buffer
-+ *
-+ * Returns true if there's enough unused space in the seq_buf buffer
-+ * to fit the amount of new data according to @len.
-+ */
-+static bool seq_buf_can_fit(struct seq_buf *s, size_t len)
++#define NMI_BUF_SIZE		4096
++
++struct nmi_seq_buf {
++	unsigned char		buffer[NMI_BUF_SIZE];
++	struct seq_buf		seq;
++};
++
++/* Safe printing in NMI context */
++static DEFINE_PER_CPU(struct nmi_seq_buf, nmi_print_seq);
+ 
+ /* "in progress" flag of arch_trigger_all_cpu_backtrace */
+ static unsigned long backtrace_flag;
+ 
++static void print_seq_line(struct nmi_seq_buf *s, int start, int end)
 +{
-+	return s->len + len <= s->size;
++	const char *buf = s->buffer + start;
++
++	printk("%.*s", (end - start) + 1, buf);
 +}
 +
-+/**
-+ * seq_buf_print_seq - move the contents of seq_buf into a seq_file
-+ * @m: the seq_file descriptor that is the destination
-+ * @s: the seq_buf descriptor that is the source.
-+ *
-+ * Returns zero on success, non zero otherwise
-+ */
-+int seq_buf_print_seq(struct seq_file *m, struct seq_buf *s)
-+{
-+	unsigned int len = seq_buf_used(s);
-+
-+	return seq_write(m, s->buffer, len);
-+}
-+
-+/**
-+ * seq_buf_vprintf - sequence printing of information.
-+ * @s: seq_buf descriptor
-+ * @fmt: printf format string
-+ * @args: va_list of arguments from a printf() type function
-+ *
-+ * Writes a vnprintf() format into the sequencce buffer.
-+ *
-+ * Returns zero on success, -1 on overflow.
-+ */
-+int seq_buf_vprintf(struct seq_buf *s, const char *fmt, va_list args)
-+{
+ void arch_trigger_all_cpu_backtrace(bool include_self)
+ {
++	struct nmi_seq_buf *s;
 +	int len;
++	int cpu;
+ 	int i;
+-	int cpu = get_cpu();
++	int this_cpu = get_cpu();
+ 
+ 	if (test_and_set_bit(0, &backtrace_flag)) {
+ 		/*
+@@ -49,7 +71,17 @@ void arch_trigger_all_cpu_backtrace(bool include_self)
+ 
+ 	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
+ 	if (!include_self)
+-		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
++		cpumask_clear_cpu(this_cpu, to_cpumask(backtrace_mask));
 +
-+	WARN_ON(s->size == 0);
-+
-+	if (s->len < s->size) {
-+		len = vsnprintf(s->buffer + s->len, s->size - s->len, fmt, args);
-+		if (seq_buf_can_fit(s, len)) {
-+			s->len += len;
-+			return 0;
-+		}
-+	}
-+	seq_buf_set_overflow(s);
-+	return -1;
-+}
-+
-+/**
-+ * seq_buf_printf - sequence printing of information
-+ * @s: seq_buf descriptor
-+ * @fmt: printf format string
-+ *
-+ * Writes a printf() format into the sequence buffer.
-+ *
-+ * Returns zero on success, -1 on overflow.
-+ */
-+int seq_buf_printf(struct seq_buf *s, const char *fmt, ...)
-+{
-+	va_list ap;
-+	int ret;
-+
-+	va_start(ap, fmt);
-+	ret = seq_buf_vprintf(s, fmt, ap);
-+	va_end(ap);
-+
-+	return ret;
-+}
-+
-+/**
-+ * seq_buf_bitmask - write a bitmask array in its ASCII representation
-+ * @s:		seq_buf descriptor
-+ * @maskp:	points to an array of unsigned longs that represent a bitmask
-+ * @nmaskbits:	The number of bits that are valid in @maskp
-+ *
-+ * Writes a ASCII representation of a bitmask string into @s.
-+ *
-+ * Returns zero on success, -1 on overflow.
-+ */
-+int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
-+		    int nmaskbits)
-+{
-+	unsigned int len = seq_buf_buffer_left(s);
-+	int ret;
-+
-+	WARN_ON(s->size == 0);
-+
++	cpumask_copy(printtrace_mask, to_cpumask(backtrace_mask));
 +	/*
-+	 * Note, because bitmap_scnprintf() only returns the number of bytes
-+	 * written and not the number that would be written, we use the last
-+	 * byte of the buffer to let us know if we overflowed. There's a small
-+	 * chance that the bitmap could have fit exactly inside the buffer, but
-+	 * it's not that critical if that does happen.
++	 * Set up per_cpu seq_buf buffers that the NMIs running on the other
++	 * CPUs will write to.
 +	 */
-+	if (len > 1) {
-+		ret = bitmap_scnprintf(s->buffer + s->len, len, maskp, nmaskbits);
-+		if (ret < len) {
-+			s->len += ret;
-+			return 0;
++	for_each_cpu(cpu, to_cpumask(backtrace_mask)) {
++		s = &per_cpu(nmi_print_seq, cpu);
++		seq_buf_init(&s->seq, s->buffer, NMI_BUF_SIZE);
++	}
+ 
+ 	if (!cpumask_empty(to_cpumask(backtrace_mask))) {
+ 		pr_info("sending NMI to %s CPUs:\n",
+@@ -65,11 +97,58 @@ void arch_trigger_all_cpu_backtrace(bool include_self)
+ 		touch_softlockup_watchdog();
+ 	}
+ 
++	/*
++	 * Now that all the NMIs have triggered, we can dump out their
++	 * back traces safely to the console.
++	 */
++	for_each_cpu(cpu, printtrace_mask) {
++		int last_i = 0;
++
++		s = &per_cpu(nmi_print_seq, cpu);
++		len = seq_buf_used(&s->seq);
++		if (!len)
++			continue;
++
++		/* Print line by line. */
++		for (i = 0; i < len; i++) {
++			if (s->buffer[i] == '\n') {
++				print_seq_line(s, last_i, i);
++				last_i = i + 1;
++			}
++		}
++		/* Check if there was a partial line. */
++		if (last_i < len) {
++			print_seq_line(s, last_i, len - 1);
++			pr_cont("\n");
 +		}
 +	}
-+	seq_buf_set_overflow(s);
-+	return -1;
-+}
 +
-+#ifdef CONFIG_BINARY_PRINTF
-+/**
-+ * seq_buf_bprintf - Write the printf string from binary arguments
-+ * @s: seq_buf descriptor
-+ * @fmt: The format string for the @binary arguments
-+ * @binary: The binary arguments for @fmt.
+ 	clear_bit(0, &backtrace_flag);
+ 	smp_mb__after_atomic();
+ 	put_cpu();
+ }
+ 
++/*
++ * It is not safe to call printk() directly from NMI handlers.
++ * It may be fine if the NMI detected a lock up and we have no choice
++ * but to do so, but doing a NMI on all other CPUs to get a back trace
++ * can be done with a sysrq-l. We don't want that to lock up, which
++ * can happen if the NMI interrupts a printk in progress.
 + *
-+ * When recording in a fast path, a printf may be recorded with just
-+ * saving the format and the arguments as they were passed to the
-+ * function, instead of wasting cycles converting the arguments into
-+ * ASCII characters. Instead, the arguments are saved in a 32 bit
-+ * word array that is defined by the format string constraints.
-+ *
-+ * This function will take the format and the binary array and finish
-+ * the conversion into the ASCII string within the buffer.
-+ *
-+ * Returns zero on success, -1 on overflow.
++ * Instead, we redirect the vprintk() to this nmi_vprintk() that writes
++ * the content into a per cpu seq_buf buffer. Then when the NMIs are
++ * all done, we can safely dump the contents of the seq_buf to a printk()
++ * from a non NMI context.
 + */
-+int seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary)
++static int nmi_vprintk(const char *fmt, va_list args)
 +{
-+	unsigned int len = seq_buf_buffer_left(s);
-+	int ret;
++	struct nmi_seq_buf *s = this_cpu_ptr(&nmi_print_seq);
++	unsigned int len = seq_buf_used(&s->seq);
 +
-+	WARN_ON(s->size == 0);
-+
-+	if (s->len < s->size) {
-+		ret = bstr_printf(s->buffer + s->len, len, fmt, binary);
-+		if (seq_buf_can_fit(s, ret)) {
-+			s->len += ret;
-+			return 0;
-+		}
-+	}
-+	seq_buf_set_overflow(s);
-+	return -1;
-+}
-+#endif /* CONFIG_BINARY_PRINTF */
-+
-+/**
-+ * seq_buf_puts - sequence printing of simple string
-+ * @s: seq_buf descriptor
-+ * @str: simple string to record
-+ *
-+ * Copy a simple string into the sequence buffer.
-+ *
-+ * Returns zero on success, -1 on overflow
-+ */
-+int seq_buf_puts(struct seq_buf *s, const char *str)
-+{
-+	unsigned int len = strlen(str);
-+
-+	WARN_ON(s->size == 0);
-+
-+	if (seq_buf_can_fit(s, len)) {
-+		memcpy(s->buffer + s->len, str, len);
-+		s->len += len;
-+		return 0;
-+	}
-+	seq_buf_set_overflow(s);
-+	return -1;
++	seq_buf_vprintf(&s->seq, fmt, args);
++	return seq_buf_used(&s->seq) - len;
 +}
 +
-+/**
-+ * seq_buf_putc - sequence printing of simple character
-+ * @s: seq_buf descriptor
-+ * @c: simple character to record
-+ *
-+ * Copy a single character into the sequence buffer.
-+ *
-+ * Returns zero on success, -1 on overflow
-+ */
-+int seq_buf_putc(struct seq_buf *s, unsigned char c)
-+{
-+	WARN_ON(s->size == 0);
+ static int
+ arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
+ {
+@@ -78,12 +157,14 @@ arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
+ 	cpu = smp_processor_id();
+ 
+ 	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
+-		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
++		printk_func_t printk_func_save = this_cpu_read(printk_func);
+ 
+-		arch_spin_lock(&lock);
++		/* Replace printk to write into the NMI seq */
++		this_cpu_write(printk_func, nmi_vprintk);
+ 		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
+ 		show_regs(regs);
+-		arch_spin_unlock(&lock);
++		this_cpu_write(printk_func, printk_func_save);
 +
-+	if (seq_buf_can_fit(s, 1)) {
-+		s->buffer[s->len++] = c;
-+		return 0;
-+	}
-+	seq_buf_set_overflow(s);
-+	return -1;
-+}
-+
-+/**
-+ * seq_buf_putmem - write raw data into the sequenc buffer
-+ * @s: seq_buf descriptor
-+ * @mem: The raw memory to copy into the buffer
-+ * @len: The length of the raw memory to copy (in bytes)
-+ *
-+ * There may be cases where raw memory needs to be written into the
-+ * buffer and a strcpy() would not work. Using this function allows
-+ * for such cases.
-+ *
-+ * Returns zero on success, -1 on overflow
-+ */
-+int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len)
-+{
-+	WARN_ON(s->size == 0);
-+
-+	if (seq_buf_can_fit(s, len)) {
-+		memcpy(s->buffer + s->len, mem, len);
-+		s->len += len;
-+		return 0;
-+	}
-+	seq_buf_set_overflow(s);
-+	return -1;
-+}
-+
-+#define MAX_MEMHEX_BYTES	8U
-+#define HEX_CHARS		(MAX_MEMHEX_BYTES*2 + 1)
-+
-+/**
-+ * seq_buf_putmem_hex - write raw memory into the buffer in ASCII hex
-+ * @s: seq_buf descriptor
-+ * @mem: The raw memory to write its hex ASCII representation of
-+ * @len: The length of the raw memory to copy (in bytes)
-+ *
-+ * This is similar to seq_buf_putmem() except instead of just copying the
-+ * raw memory into the buffer it writes its ASCII representation of it
-+ * in hex characters.
-+ *
-+ * Returns zero on success, -1 on overflow
-+ */
-+int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
-+		       unsigned int len)
-+{
-+	unsigned char hex[HEX_CHARS];
-+	const unsigned char *data = mem;
-+	unsigned int start_len;
-+	int i, j;
-+
-+	WARN_ON(s->size == 0);
-+
-+	while (len) {
-+		start_len = min(len, HEX_CHARS - 1);
-+#ifdef __BIG_ENDIAN
-+		for (i = 0, j = 0; i < start_len; i++) {
-+#else
-+		for (i = start_len-1, j = 0; i >= 0; i--) {
-+#endif
-+			hex[j++] = hex_asc_hi(data[i]);
-+			hex[j++] = hex_asc_lo(data[i]);
-+		}
-+		if (WARN_ON_ONCE(j == 0 || j/2 > len))
-+			break;
-+
-+		/* j increments twice per loop */
-+		len -= j / 2;
-+		hex[j++] = ' ';
-+
-+		seq_buf_putmem(s, hex, j);
-+		if (seq_buf_has_overflowed(s))
-+			return -1;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * seq_buf_path - copy a path into the sequence buffer
-+ * @s: seq_buf descriptor
-+ * @path: path to write into the sequence buffer.
-+ * @esc: set of characters to escape in the output
-+ *
-+ * Write a path name into the sequence buffer.
-+ *
-+ * Returns the number of written bytes on success, -1 on overflow
-+ */
-+int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
-+{
-+	char *buf;
-+	size_t size = seq_buf_get_buf(s, &buf);
-+	int res = -1;
-+
-+	WARN_ON(s->size == 0);
-+
-+	if (size) {
-+		char *p = d_path(path, buf, size);
-+		if (!IS_ERR(p)) {
-+			char *end = mangle_path(buf, p, esc);
-+			if (end)
-+				res = end - buf;
-+		}
-+	}
-+	seq_buf_commit(s, res);
-+
-+	return res;
-+}
-+
-+/**
-+ * seq_buf_to_user - copy the squence buffer to user space
-+ * @s: seq_buf descriptor
-+ * @ubuf: The userspace memory location to copy to
-+ * @cnt: The amount to copy
-+ *
-+ * Copies the sequence buffer into the userspace memory pointed to
-+ * by @ubuf. It starts from the last read position (@s->readpos)
-+ * and writes up to @cnt characters or till it reaches the end of
-+ * the content in the buffer (@s->len), which ever comes first.
-+ *
-+ * On success, it returns a positive number of the number of bytes
-+ * it copied.
-+ *
-+ * On failure it returns -EBUSY if all of the content in the
-+ * sequence has been already read, which includes nothing in the
-+ * sequence (@s->len == @s->readpos).
-+ *
-+ * Returns -EFAULT if the copy to userspace fails.
-+ */
-+int seq_buf_to_user(struct seq_buf *s, char __user *ubuf, int cnt)
-+{
-+	int len;
-+	int ret;
-+
-+	if (!cnt)
-+		return 0;
-+
-+	if (s->len <= s->readpos)
-+		return -EBUSY;
-+
-+	len = seq_buf_used(s) - s->readpos;
-+	if (cnt > len)
-+		cnt = len;
-+	ret = copy_to_user(ubuf, s->buffer + s->readpos, cnt);
-+	if (ret == cnt)
-+		return -EFAULT;
-+
-+	cnt -= ret;
-+
-+	s->readpos += cnt;
-+	return cnt;
-+}
+ 		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
+ 		return NMI_HANDLED;
+ 	}
 -- 
 2.1.1
 
