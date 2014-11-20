@@ -1,56 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757408AbaKTN0b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:26:31 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:60105 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757336AbaKTN0H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:26:07 -0500
-Date: Thu, 20 Nov 2014 13:26:00 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Bill Richardson <wfrichar@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@google.com>,
-        Gwendal Grignou <gwendal@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mfd: cros_ec: Add Chrome OS EC userspace device
- interface
-Message-ID: <20141120132600.GD13269@x1>
-References: <1416238213-15263-1-git-send-email-javier.martinez@collabora.co.uk>
- <1416238213-15263-2-git-send-email-javier.martinez@collabora.co.uk>
- <20141118141827.GB24004@x1>
- <546DD00E.4000704@collabora.co.uk>
- <20141120115817.GC13269@x1>
- <546DDAE9.7010602@collabora.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <546DDAE9.7010602@collabora.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757422AbaKTN1J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:27:09 -0500
+Received: from mga02.intel.com ([134.134.136.20]:11689 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757316AbaKTN0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 08:26:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,424,1413270000"; 
+   d="scan'208";a="611097374"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH V2 20/22] perf inject: Add Instruction Tracing support
+Date: Thu, 20 Nov 2014 15:23:26 +0200
+Message-Id: <1416489808-4489-21-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416489808-4489-1-git-send-email-adrian.hunter@intel.com>
+References: <1416489808-4489-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I know how the device driver model works.  I'm asking where the
-> > 'device' is registered from, not the 'driver' i.e. platform data, DT,
-> > ACPI?
-> > 
-> 
-> Right, sorry for misunderstanding your question and the silly comment then.
-> 
-> $Subject adds a "cros-ec-dev" mfd cell to the cros ec mfd driver.
-> So the device is registered from DT when the cros ec device node is
-> matched (e.g: "google,cros-ec-spi" or "google,cros-ec-i2c") and the
-> cros ec mfd driver probe function calls mfd_add_devices().
+Add support for decoding an Instruction Trace.  The
+Instruction Tracing events are stripped and replaced
+by synthesized events.
 
-Ah, so it's registered from another MFD device.  That's okay then.
-That answers my question.  FWIW I was going to ask about the missing
-match table, but that's not required in this case.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/Documentation/perf-inject.txt | 27 ++++++++++++
+ tools/perf/builtin-inject.c              | 71 +++++++++++++++++++++++++++++++-
+ 2 files changed, 96 insertions(+), 2 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-inject.txt b/tools/perf/Documentation/perf-inject.txt
+index dc7442c..9f49c43 100644
+--- a/tools/perf/Documentation/perf-inject.txt
++++ b/tools/perf/Documentation/perf-inject.txt
+@@ -44,6 +44,33 @@ OPTIONS
+ --kallsyms=<file>::
+ 	kallsyms pathname
+ 
++-Z::
++--itrace::
++	Decode Instruction Tracing data, replacing it with synthesized events.
++	Options are:
++
++		i	synthesize instructions events
++		b	synthesize branches events
++		c	synthesize branches events (calls only)
++		r	synthesize branches events (returns only)
++		e	synthesize error events
++		d	create a debug log
++		g	synthesize a call chain for instructions events
++
++	The default is all events i.e. the same as -Zibe
++
++	In addition, the period (default 1000) for instructions events can be
++	specified in units of:
++
++		i	instructions (default)
++		t	ticks
++		ms	milliseconds
++		us	microseconds
++		ns	nanoseconds
++
++	Also the call chain size (default 16, max. 1024) for instructions
++	events can be specified.
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-report[1], linkperf:perf-archive[1]
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 29e0840..c3323ea 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -16,6 +16,7 @@
+ #include "util/debug.h"
+ #include "util/build-id.h"
+ #include "util/data.h"
++#include "util/itrace.h"
+ 
+ #include "util/parse-options.h"
+ 
+@@ -30,6 +31,7 @@ struct perf_inject {
+ 	struct perf_data_file	output;
+ 	u64			bytes_written;
+ 	struct list_head	samples;
++	struct itrace_synth_opts itrace_synth_opts;
+ };
+ 
+ struct event_entry {
+@@ -198,6 +200,32 @@ static int perf_event__repipe_fork(struct perf_tool *tool,
+ 	return err;
+ }
+ 
++static int perf_event__repipe_comm(struct perf_tool *tool,
++				   union perf_event *event,
++				   struct perf_sample *sample,
++				   struct machine *machine)
++{
++	int err;
++
++	err = perf_event__process_comm(tool, event, sample, machine);
++	perf_event__repipe(tool, event, sample, machine);
++
++	return err;
++}
++
++static int perf_event__repipe_exit(struct perf_tool *tool,
++				   union perf_event *event,
++				   struct perf_sample *sample,
++				   struct machine *machine)
++{
++	int err;
++
++	err = perf_event__process_exit(tool, event, sample, machine);
++	perf_event__repipe(tool, event, sample, machine);
++
++	return err;
++}
++
+ static int perf_event__repipe_tracing_data(struct perf_tool *tool,
+ 					   union perf_event *event,
+ 					   struct perf_session *session)
+@@ -210,6 +238,18 @@ static int perf_event__repipe_tracing_data(struct perf_tool *tool,
+ 	return err;
+ }
+ 
++static int perf_event__repipe_id_index(struct perf_tool *tool,
++				       union perf_event *event,
++				       struct perf_session *session)
++{
++	int err;
++
++	perf_event__repipe_synth(tool, event);
++	err = perf_event__process_id_index(tool, event, session);
++
++	return err;
++}
++
+ static int dso__read_build_id(struct dso *dso)
+ {
+ 	if (dso->has_build_id)
+@@ -393,16 +433,20 @@ static int __cmd_inject(struct perf_inject *inject)
+ 	int ret = -EINVAL;
+ 	struct perf_session *session = inject->session;
+ 	struct perf_data_file *file_out = &inject->output;
++	u64 output_data_offset;
+ 
+ 	signal(SIGINT, sig_handler);
+ 
+-	if (inject->build_ids || inject->sched_stat) {
++	if (inject->build_ids || inject->sched_stat ||
++	    inject->itrace_synth_opts.set) {
+ 		inject->tool.mmap	  = perf_event__repipe_mmap;
+ 		inject->tool.mmap2	  = perf_event__repipe_mmap2;
+ 		inject->tool.fork	  = perf_event__repipe_fork;
+ 		inject->tool.tracing_data = perf_event__repipe_tracing_data;
+ 	}
+ 
++	output_data_offset = session->header.data_offset;
++
+ 	if (inject->build_ids) {
+ 		inject->tool.sample = perf_event__inject_buildid;
+ 	} else if (inject->sched_stat) {
+@@ -423,10 +467,22 @@ static int __cmd_inject(struct perf_inject *inject)
+ 			else if (!strncmp(name, "sched:sched_stat_", 17))
+ 				evsel->handler = perf_inject__sched_stat;
+ 		}
++	} else if (inject->itrace_synth_opts.set) {
++		session->itrace_synth_opts = &inject->itrace_synth_opts;
++		inject->itrace_synth_opts.inject = true;
++		inject->tool.comm	    = perf_event__repipe_comm;
++		inject->tool.exit	    = perf_event__repipe_exit;
++		inject->tool.id_index	    = perf_event__repipe_id_index;
++		inject->tool.itrace_info    = perf_event__process_itrace_info;
++		inject->tool.itrace	    = perf_event__process_itrace;
++		inject->tool.ordered_events = true;
++		inject->tool.ordering_requires_timestamps = true;
++		/* Allow space in the header for new attributes */
++		output_data_offset = 4096;
+ 	}
+ 
+ 	if (!file_out->is_pipe)
+-		lseek(file_out->fd, session->header.data_offset, SEEK_SET);
++		lseek(file_out->fd, output_data_offset, SEEK_SET);
+ 
+ 	ret = perf_session__process_events(session, &inject->tool);
+ 
+@@ -434,6 +490,14 @@ static int __cmd_inject(struct perf_inject *inject)
+ 		if (inject->build_ids)
+ 			perf_header__set_feat(&session->header,
+ 					      HEADER_BUILD_ID);
++		/*
++		 * The instruction traces have been removed and replaced with
++		 * synthesized hardware events, so clear the feature flag.
++		 */
++		if (inject->itrace_synth_opts.set)
++			perf_header__clear_feat(&session->header,
++						HEADER_ITRACE);
++		session->header.data_offset = output_data_offset;
+ 		session->header.data_size = inject->bytes_written;
+ 		perf_session__write_header(session, session->evlist, file_out->fd, true);
+ 	}
+@@ -490,6 +554,9 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			 "be more verbose (show build ids, etc)"),
+ 		OPT_STRING(0, "kallsyms", &symbol_conf.kallsyms_name, "file",
+ 			   "kallsyms pathname"),
++		OPT_CALLBACK_OPTARG('Z', "itrace", &inject.itrace_synth_opts,
++				    NULL, "opts", "Instruction Tracing options",
++				    itrace_parse_synth_opts),
+ 		OPT_END()
+ 	};
+ 	const char * const inject_usage[] = {
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
