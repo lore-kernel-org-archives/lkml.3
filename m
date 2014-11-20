@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561AbaKTNCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:02:30 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54686 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755748AbaKTNC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:02:28 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
-        Daniel Borkmann <dborkman@redhat.com>, quentin.gouchet@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        ABI/API <linux-api@vger.kernel.org>
-Subject: Re: crypto: user - Allow get request with empty driver name
-Date: Thu, 20 Nov 2014 14:02:21 +0100
-Message-ID: <1706209.Hbu17X87TM@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.3-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20141120044650.GA28691@gondor.apana.org.au>
-References: <5365136.g8vbXlhRyC@tachyon.chronox.de> <3538055.XH2t7HNEVj@tachyon.chronox.de> <20141120044650.GA28691@gondor.apana.org.au>
+	id S1755212AbaKTNFU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:05:20 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:61185 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075AbaKTNFT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 08:05:19 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [95.23.100.213]
+In-Reply-To: <201411201354.52679.arnd@arndb.de>
+References: <1416254107-29326-1-git-send-email-soren.brinkmann@xilinx.com>
+	<201411201354.52679.arnd@arndb.de>
+Date: Thu, 20 Nov 2014 14:05:15 +0100
+Message-ID: <CABxcv=mTMi=yOD_ZmO73P7V9skhuedf8yfxbPbQuoreJMRdCoQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: multi_v7_defconfig: Enable cgroups
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Olof Johansson <olof@lixom.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 20. November 2014, 12:46:50 schrieb Herbert Xu:
+Hello,
 
-Hi Herbert,
+On Thu, Nov 20, 2014 at 1:54 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 17 November 2014, Soren Brinkmann wrote:
+>> This allows booting the kernel with systemd-based root file systems.
+>>
+>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>> ---
+>> Hi,
+>>
+>> I don't know whether I'm the only one, but I use a initramfs with
+>> systemd as init, which requires cgroup support in the kernel to fully
+>> boot.
+>>
+>
+> You probably are at this time, but I expect it to get more common
+> in the future, I don't think enabling this is controversial at all.
+>
 
-> On Thu, Nov 20, 2014 at 05:23:23AM +0100, Stephan Mueller wrote:
-> > Here is the code:
-> > 
-> > static int crypto_report(struct sk_buff *in_skb, struct nlmsghdr *in_nlh,
-> > 
-> > 			 struct nlattr **attrs)
-> > 
-> > {
-> > ...
-> > 
-> > 	if (!p->cru_driver_name[0])
-> > 	
-> > 		return -EINVAL;
-> 
-> OK let's fix this.
-> 
-> crypto: user - Allow get request with empty driver name
-> 
-> Currently all get requests with an empty driver name fail with
-> EINVAL.  Since most users actually want to supply an empty driver
-> name this patch removes this check.
-> 
-> Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Others are using it but with SoC specific defconfig and not multi_v7.
 
-Acked-by: Stephan Mueller <smueller@chronox.de>
-> 
-> diff --git a/crypto/crypto_user.c b/crypto/crypto_user.c
-> index e2a34fe..0bb30ac 100644
-> --- a/crypto/crypto_user.c
-> +++ b/crypto/crypto_user.c
-> @@ -201,10 +201,7 @@ static int crypto_report(struct sk_buff *in_skb, struct
-> nlmsghdr *in_nlh, if (!null_terminated(p->cru_name) ||
-> !null_terminated(p->cru_driver_name)) return -EINVAL;
-> 
-> -	if (!p->cru_driver_name[0])
-> -		return -EINVAL;
-> -
-> -	alg = crypto_alg_match(p, 1);
-> +	alg = crypto_alg_match(p, 0);
->  	if (!alg)
->  		return -ENOENT;
-> 
-> Cheers,
+Newer version of systemd needs more config symbols to be enabled
+besides cgroups, the full list is at
+http://cgit.freedesktop.org/systemd/systemd/tree/README.
 
+Tony recently added the recommended support to OMAP2+ defconfig so
+something along these lines should be added to multi_v7 as a
+follow-up:
 
--- 
-Ciao
-Stephan
+673ce00c ("ARM: omap2plus_defconfig: Add support for distros with systemd")
+
+Best regards,
+Javier
