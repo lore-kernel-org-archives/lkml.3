@@ -1,62 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438AbaKTLu7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 06:50:59 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:65309 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756270AbaKTLu4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 06:50:56 -0500
-Date: Thu, 20 Nov 2014 06:50:52 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Boaz Harrosh <boaz@plexistor.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH vfs 2/2] {block|char}_dev: remove inode->i_devices
-Message-ID: <20141120115052.GA32237@htj.dyndns.org>
-References: <20141113220927.GF2598@htj.dyndns.org>
- <20141113221139.GG2598@htj.dyndns.org>
- <546DC5AD.3040606@plexistor.com>
+	id S1756725AbaKTLvi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 06:51:38 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:2355 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751161AbaKTLuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 06:50:35 -0500
+X-IronPort-AV: E=Sophos;i="5.07,423,1413244800"; 
+   d="scan'208";a="193231391"
+From: David Vrabel <david.vrabel@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        <xen-devel@lists.xenproject.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        <linux-ia64@vger.kernel.org>
+Subject: [PATCH 2/4] ia64: use common dma_get_required_mask_from_pfn()
+Date: Thu, 20 Nov 2014 11:50:23 +0000
+Message-ID: <1416484225-28054-3-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1416484225-28054-1-git-send-email-david.vrabel@citrix.com>
+References: <1416484225-28054-1-git-send-email-david.vrabel@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546DC5AD.3040606@plexistor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Boaz.
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
+---
+ arch/ia64/include/asm/machvec.h      |    2 +-
+ arch/ia64/include/asm/machvec_init.h |    1 -
+ arch/ia64/pci/pci.c                  |   20 --------------------
+ 3 files changed, 1 insertion(+), 22 deletions(-)
 
-On Thu, Nov 20, 2014 at 12:42:53PM +0200, Boaz Harrosh wrote:
-> if I understand correctly the motivation here is that the allocation
-> of the internal element is done GFP_KERNEL at this call
-> 
-> Then the add() below can be under the spin_lock.
-> 
-> So why don't you just return an element here to caller and give it to
-> add below. No Preemption-disable, no percpu variable, simple. Like:
-
-Hmmm... mostly because preloading is more convenient and but also
-because it provides better separation from internal implementation
-details.  e.g. This may be implemented using a different data
-structure (e.g. bonsai tree) which may require differing number of new
-elements even on success.  With the scheme you're describing, the
-operation would be constantly allocating and freeing memory areas
-(which may be multiple) unnecessarily.
-
-One thing which is debatable is how to handle preloading errors.  We
-can have the preload fail and then assume that the later insertion
-won't fail with -ENOMEM (often through BUG/WARN_ON()); however, it
-often, but not always, is that those insertion operations may fail
-with different error codes too and requires error handling anyway, so
-overall it seems better to defer the allocation error to the actual
-insertion point.  It also makes conceptual sense.  The preloading
-simply upgrades the allocation mask the insertion operation uses.
-
-Thanks.
-
+diff --git a/arch/ia64/include/asm/machvec.h b/arch/ia64/include/asm/machvec.h
+index 9c39bdf..beaa47d 100644
+--- a/arch/ia64/include/asm/machvec.h
++++ b/arch/ia64/include/asm/machvec.h
+@@ -287,7 +287,7 @@ extern struct dma_map_ops *dma_get_ops(struct device *);
+ # define platform_dma_get_ops		dma_get_ops
+ #endif
+ #ifndef platform_dma_get_required_mask
+-# define  platform_dma_get_required_mask	ia64_dma_get_required_mask
++# define  platform_dma_get_required_mask	dma_get_required_mask_from_max_pfn
+ #endif
+ #ifndef platform_irq_to_vector
+ # define platform_irq_to_vector		__ia64_irq_to_vector
+diff --git a/arch/ia64/include/asm/machvec_init.h b/arch/ia64/include/asm/machvec_init.h
+index 37a4698..ef964b2 100644
+--- a/arch/ia64/include/asm/machvec_init.h
++++ b/arch/ia64/include/asm/machvec_init.h
+@@ -3,7 +3,6 @@
+ 
+ extern ia64_mv_send_ipi_t ia64_send_ipi;
+ extern ia64_mv_global_tlb_purge_t ia64_global_tlb_purge;
+-extern ia64_mv_dma_get_required_mask ia64_dma_get_required_mask;
+ extern ia64_mv_irq_to_vector __ia64_irq_to_vector;
+ extern ia64_mv_local_vector_to_irq __ia64_local_vector_to_irq;
+ extern ia64_mv_pci_get_legacy_mem_t ia64_pci_get_legacy_mem;
+diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+index 291a582..79da21b 100644
+--- a/arch/ia64/pci/pci.c
++++ b/arch/ia64/pci/pci.c
+@@ -791,26 +791,6 @@ static void __init set_pci_dfl_cacheline_size(void)
+ 	pci_dfl_cache_line_size = (1 << cci.pcci_line_size) / 4;
+ }
+ 
+-u64 ia64_dma_get_required_mask(struct device *dev)
+-{
+-	u32 low_totalram = ((max_pfn - 1) << PAGE_SHIFT);
+-	u32 high_totalram = ((max_pfn - 1) >> (32 - PAGE_SHIFT));
+-	u64 mask;
+-
+-	if (!high_totalram) {
+-		/* convert to mask just covering totalram */
+-		low_totalram = (1 << (fls(low_totalram) - 1));
+-		low_totalram += low_totalram - 1;
+-		mask = low_totalram;
+-	} else {
+-		high_totalram = (1 << (fls(high_totalram) - 1));
+-		high_totalram += high_totalram - 1;
+-		mask = (((u64)high_totalram) << 32) + 0xffffffff;
+-	}
+-	return mask;
+-}
+-EXPORT_SYMBOL_GPL(ia64_dma_get_required_mask);
+-
+ u64 dma_get_required_mask(struct device *dev)
+ {
+ 	return platform_dma_get_required_mask(dev);
 -- 
-tejun
+1.7.10.4
+
