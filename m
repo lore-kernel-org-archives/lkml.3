@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758062AbaKTTns (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:43:48 -0500
-Received: from mout.web.de ([212.227.17.11]:63018 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757530AbaKTTnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 14:43:47 -0500
-Message-ID: <546E441B.7040004@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 20:42:19 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "James E. J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] SCSI-eata_pio: Deletion of an unnecessary check before
- the function call "pci_dev_put"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:ButwcOmAY+h8/fV6rqKOMR2gSYbwVe9DYYg+2BAo+yhmYqZccg5
- x46eN+UE4ogX5b8LU30WV8OE6FHcKW0ZOUOpoFBoqFWTEdPMChV7E0C+4+vqkM2Kub1Gela
- GGa1l5fygYNQIYjU1DigkB3cFdS8fe8vyk4KwDD9pUvgBvbZkeq3DHFfY55y5UAIrWOFWhb
- dM97/zliWlzpyLMYbRBsA==
-X-UI-Out-Filterresults: notjunk:1;
+	id S932279AbaKTTsT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:48:19 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:35505 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756313AbaKTTsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 14:48:16 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        linux-kernel@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
+Subject: [PATCH 1/3] mfd: devicetree: qcom_rpm: document IPQ8064 resources
+Date: Thu, 20 Nov 2014 13:41:23 -0600
+Message-Id: <1416512485-7292-2-git-send-email-joshc@codeaurora.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1416512485-7292-1-git-send-email-joshc@codeaurora.org>
+References: <1416512485-7292-1-git-send-email-joshc@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 20:37:30 +0100
+The IPQ8064 SoC has several RPM-controlled resources, an NSS fabrick
+clock and four regulator resources.  Provide definitions for them.
 
-The pci_dev_put() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
-
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 ---
- drivers/scsi/eata_pio.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ Documentation/devicetree/bindings/mfd/qcom-rpm.txt | 6 +++++-
+ include/dt-bindings/mfd/qcom-rpm.h                 | 6 ++++++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/eata_pio.c b/drivers/scsi/eata_pio.c
-index 8319d2b..707f64d 100644
---- a/drivers/scsi/eata_pio.c
-+++ b/drivers/scsi/eata_pio.c
-@@ -122,8 +122,7 @@ static int eata_pio_release(struct Scsi_Host *sh)
- 			release_region(sh->io_port, sh->n_io_port);
- 	}
- 	/* At this point the PCI reference can go */
--	if (hd->pdev)
--		pci_dev_put(hd->pdev);
-+	pci_dev_put(hd->pdev);
- 	return 1;
- }
+diff --git a/Documentation/devicetree/bindings/mfd/qcom-rpm.txt b/Documentation/devicetree/bindings/mfd/qcom-rpm.txt
+index 4264021..6d4e3ec 100644
+--- a/Documentation/devicetree/bindings/mfd/qcom-rpm.txt
++++ b/Documentation/devicetree/bindings/mfd/qcom-rpm.txt
+@@ -12,6 +12,7 @@ frequencies.
+ 		    "qcom,rpm-apq8064"
+ 		    "qcom,rpm-msm8660"
+ 		    "qcom,rpm-msm8960"
++		    "qcom,rpm-ipq8064"
  
+ - reg:
+ 	Usage: required
+@@ -67,6 +68,7 @@ of valid subnodes that can operate on these resources.
+ 		    "qcom,rpm-pm8901-ftsmps"
+ 		    "qcom,rpm-pm8921-smps"
+ 		    "qcom,rpm-pm8921-ftsmps"
++		    "qcom,rpm-smb208"
+ 
+ - reg:
+ 	Usage: required
+@@ -76,7 +78,9 @@ of valid subnodes that can operate on these resources.
+ 		    QCOM_RPM_PM8058_SMPS0 - QCOM_RPM_PM8058_SMPS4,
+ 		    QCOM_RPM_PM8821_SMPS1 - QCOM_RPM_PM8821_SMPS2,
+ 		    QCOM_RPM_PM8901_SMPS0 - QCOM_RPM_PM8901_SMPS4,
+-		    QCOM_RPM_PM8921_SMPS1 - QCOM_RPM_PM8921_SMPS8
++		    QCOM_RPM_PM8921_SMPS1 - QCOM_RPM_PM8921_SMPS8,
++		    QCOM_RPM_SMB208_S1a, QCOM_RPM_SMB208_S1b,
++		    QCOM_RPM_SMB208_S2a, QCOM_RPM_SMB208_S2b
+ 
+ - bias-pull-down:
+ 	Usage: optional
+diff --git a/include/dt-bindings/mfd/qcom-rpm.h b/include/dt-bindings/mfd/qcom-rpm.h
+index 388a6f3..13a9d4b 100644
+--- a/include/dt-bindings/mfd/qcom-rpm.h
++++ b/include/dt-bindings/mfd/qcom-rpm.h
+@@ -141,6 +141,12 @@
+ #define QCOM_RPM_SYS_FABRIC_MODE		131
+ #define QCOM_RPM_USB_OTG_SWITCH			132
+ #define QCOM_RPM_VDDMIN_GPIO			133
++#define QCOM_RPM_NSS_FABRIC_0_CLK		134
++#define QCOM_RPM_NSS_FABRIC_1_CLK		135
++#define QCOM_RPM_SMB208_S1a			136
++#define QCOM_RPM_SMB208_S1b			137
++#define QCOM_RPM_SMB208_S2a			138
++#define QCOM_RPM_SMB208_S2b			139
+ 
+ /*
+  * Constants used to select force mode for regulators.
 -- 
-2.1.3
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
