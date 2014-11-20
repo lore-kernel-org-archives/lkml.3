@@ -1,111 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953AbaKTTAc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:00:32 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:47572 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291AbaKTTAa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 14:00:30 -0500
-Date: Thu, 20 Nov 2014 15:00:27 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincenzo Frascino <vincenzo.frascino@st.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/8] thermal:cpu cooling:ti: Provide deferred probing for
- ti drivers
-Message-ID: <20141120190025.GB26794@developer>
-References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-7-git-send-email-l.majewski@samsung.com>
+	id S1757973AbaKTTBi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:01:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52731 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757268AbaKTTBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 14:01:37 -0500
+Date: Thu, 20 Nov 2014 14:00:59 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
+        hch@infradead.org, mst@redhat.com, rusty@rustcorp.com.au,
+        dm-devel@redhat.com
+Subject: [PATCH] virtio_blk: fix defaults for max_hw_sectors and
+ max_segment_size
+Message-ID: <20141120190058.GA31214@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1UWUbFP1cBYEclgG"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415898165-27406-7-git-send-email-l.majewski@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+virtio_blk incorrectly established -1U as the default for these
+queue_limits.  Set these limits to sane default values to avoid crashing
+the kernel.  But the virtio-blk protocol should probably be extended to
+allow proper stacking of the disk's limits from the host.
 
---1UWUbFP1cBYEclgG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This change fixes a crash that was reported when virtio-blk was used to
+test linux-dm.git commit 604ea90641b4 ("dm thin: adjust max_sectors_kb
+based on thinp blocksize") that will initially set max_sectors to
+max_hw_sectors and then rounddown to the first power-of-2 factor of the
+DM thin-pool's blocksize.  Basically that commit assumes drivers don't
+suck when establishing max_hw_sectors so it acted like a canary in the
+coal mine.
 
-Lukaz,
+In the case of a DM thin-pool built ontop of virtio-blk data device
+these are the insane limits that were established for the DM thin-pool:
 
-On Thu, Nov 13, 2014 at 06:02:43PM +0100, Lukasz Majewski wrote:
-> When CPU freq is used as a thermal zone cooling device, one needs to wait
-> until cpufreq subsystem is properly initialized.
->=20
-> This code is similar to the one already available in imx_thermal.c file.
->=20
-> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> ---
->  drivers/thermal/ti-soc-thermal/ti-bandgap.c | 7 +++++++
->  1 file changed, 7 insertions(+)
->=20
-> diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/therma=
-l/ti-soc-thermal/ti-bandgap.c
-> index 634b6ce..0ac5ead 100644
-> --- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
-> +++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
-> @@ -40,6 +40,7 @@
->  #include <linux/of_irq.h>
->  #include <linux/of_gpio.h>
->  #include <linux/io.h>
-> +#include <linux/cpufreq.h>
-> =20
->  #include "ti-bandgap.h"
-> =20
-> @@ -1196,6 +1197,12 @@ int ti_bandgap_probe(struct platform_device *pdev)
->  	struct ti_bandgap *bgp;
->  	int clk_rate, ret =3D 0, i;
-> =20
-> +#ifdef CONFIG_CPU_THERMAL
-> +	if (!cpufreq_get_current_driver()) {
-> +		dev_dbg(&pdev->dev, "no cpufreq driver!");
-> +		return -EPROBE_DEFER;
-> +	}
-> +#endif
+  # cat /sys/block/dm-6/queue/max_sectors_kb
+  1073741824
+  # cat /sys/block/dm-6/queue/max_hw_sectors_kb
+  2147483647
 
-This is part of drivers/thermal/ti-soc-thermal/ti-thermal-common.c. So,
-no need to duplicate it in here.
+by stacking the virtio-blk device's limits:
 
->  	bgp =3D ti_bandgap_build(pdev);
->  	if (IS_ERR(bgp)) {
->  		dev_err(&pdev->dev, "failed to fetch platform data\n");
-> --=20
-> 2.0.0.rc2
->=20
+  # cat /sys/block/vdb/queue/max_sectors_kb
+  512
+  # cat /sys/block/vdb/queue/max_hw_sectors_kb
+  2147483647
 
---1UWUbFP1cBYEclgG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Attempting to mkfs.xfs against a thin device from this thin-pool quickly
+resulted in fs/direct-io.c:dio_send_cur_page()'s BUG_ON.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/block/virtio_blk.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-iQEcBAEBAgAGBQJUbjpJAAoJEMLUO4d9pOJWMIYH/iEQsBZN4A/BdVTIzD9IxQZL
-myAd1rF7obgvE/34GI9erJKHNZLPy555MttvsAlzjDLc5mDn5dSL3tRTH7+5xLOG
-akkOLE5SoRDch8sNHoQnPt5090p60hIg3gz+8TRzcmkmqS3WN+hycZ02hEHCR+oz
-m2EWy7eDYvPuZoMw6HFMLkN5p/kqVsli5y3Uk/QSqrcmNI07ReAZTzujT6eVv3FW
-tOSGdEXSMH1+FnVjoY1+2qQD19GGroGy4tSG6asa4lj9WsrmigMMcUVy2d2XcJQu
-gCx38k8L7OqCBDbYPdaJNok4aRUQtMYcwX48Vm73Lvt6icFKB9b9GLIW36IwH/w=
-=SEfc
------END PGP SIGNATURE-----
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index c6a27d5..68efbdc 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -674,8 +674,11 @@ static int virtblk_probe(struct virtio_device *vdev)
+ 	/* No need to bounce any requests */
+ 	blk_queue_bounce_limit(q, BLK_BOUNCE_ANY);
+ 
+-	/* No real sector limit. */
+-	blk_queue_max_hw_sectors(q, -1U);
++	/*
++	 * Limited by disk's max_hw_sectors in host, but
++	 * without that info establish a sane default.
++	 */
++	blk_queue_max_hw_sectors(q, BLK_DEF_MAX_SECTORS);
+ 
+ 	/* Host can optionally specify maximum segment size and number of
+ 	 * segments. */
+@@ -684,7 +687,7 @@ static int virtblk_probe(struct virtio_device *vdev)
+ 	if (!err)
+ 		blk_queue_max_segment_size(q, v);
+ 	else
+-		blk_queue_max_segment_size(q, -1U);
++		blk_queue_max_segment_size(q, BLK_MAX_SEGMENT_SIZE);
+ 
+ 	/* Host can optionally specify the block size of the device */
+ 	err = virtio_cread_feature(vdev, VIRTIO_BLK_F_BLK_SIZE,
+-- 
+1.7.4.4
 
---1UWUbFP1cBYEclgG--
