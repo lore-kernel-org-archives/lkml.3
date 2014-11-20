@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270AbaKTKo6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:44:58 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:64042 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbaKTKo4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:44:56 -0500
+	id S1754913AbaKTKr3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 05:47:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51370 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750880AbaKTKr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 05:47:28 -0500
+Date: Thu, 20 Nov 2014 10:47:22 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
+        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
+        Kirill Shutemov <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH 03/10] mm: Convert p[te|md]_numa users to
+ p[te|md]_protnone_numa
+Message-ID: <20141120104722.GL2725@suse.de>
+References: <1416478790-27522-1-git-send-email-mgorman@suse.de>
+ <1416478790-27522-4-git-send-email-mgorman@suse.de>
+ <063D6719AE5E284EB5DD2968C1650D6D1C9F48CB@AcuExch.aculab.com>
 MIME-Version: 1.0
-In-Reply-To: <CABgxDoK=Maxzw-=+pHZ4gdgBSJbdkgx_Q7rHNcwEBywBE3btCQ@mail.gmail.com>
-References: <1415885699-1465-1-git-send-email-user@radxa>
-	<1415885699-1465-2-git-send-email-user@radxa>
-	<20141113205528.77414C40BC2@trevor.secretlab.ca>
-	<CABgxDoL-N9bitxTU0=pD_69DLBovXPSKhHjmArVOHFdokvnEJA@mail.gmail.com>
-	<CABgxDoK=Maxzw-=+pHZ4gdgBSJbdkgx_Q7rHNcwEBywBE3btCQ@mail.gmail.com>
-Date: Thu, 20 Nov 2014 11:44:55 +0100
-Message-ID: <CABgxDo+Pgaw_XJX8BkwuDaqfiybBF2hLwDxNczPwEH_-C9aEeQ@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] of: Rename "poweroff-source" property to "system-power-controller"
-From: Romain Perier <romain.perier@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>, robh <robh@kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Johan Hovold <johan@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Felipe Balbi <balbi@ti.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1C9F48CB@AcuExch.aculab.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping
+On Thu, Nov 20, 2014 at 10:38:56AM +0000, David Laight wrote:
+> From:  Mel Gorman
+> > Convert existing users of pte_numa and friends to the new helper. Note
+> > that the kernel is broken after this patch is applied until the other
+> > page table modifiers are also altered. This patch layout is to make
+> > review easier.
+> 
+> Doesn't that break bisection?
+> 
 
-2014-11-17 11:51 GMT+01:00 Romain Perier <romain.perier@gmail.com>:
-> @Most of the people who were ranting about this serie:  could you send
-> feedbacks please ?
->
-> 2014-11-14 8:22 GMT+01:00 Romain Perier <romain.perier@gmail.com>:
->> Hi,
->>
->> Who should merge this serie ? as Mark merged the previous one it would
->> probably make sense to do the same here (at least, in my opinion)
->>
->> Thanks for your feedbacks.
->>
->> Have a nice day,
->> Romain
->>
->> 2014-11-13 21:55 GMT+01:00 Grant Likely <grant.likely@linaro.org>:
->> igned-off-by: Romain Perier <romain.perier@gmail.com>
->>>
->>> Acked-by: Grant Likely <grant.likely@linaro.org>
->>>
->>> Please merge via whichever tree needs this change.
->>>
->>> g.
+Yes, for automatic NUMA balancing at least. The patch structure is to
+to make reviewers job easier and besides, bisecting within patches 2-6
+is pointless. If desired, I can collapse patches 2-6 together for the
+final submission.
+
+-- 
+Mel Gorman
+SUSE Labs
