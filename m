@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757647AbaKTKUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:20:36 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:25511 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757627AbaKTKUe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:20:34 -0500
-Message-ID: <546DC00B.30509@imgtec.com>
-Date: Thu, 20 Nov 2014 07:18:51 -0300
-From: Ezequiel Garcia <ezequiel.garcia@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1757676AbaKTKUw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 05:20:52 -0500
+Received: from mout.web.de ([212.227.15.4]:53402 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757623AbaKTKUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 05:20:47 -0500
+Message-ID: <546DC06D.5020706@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 11:20:29 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>, James Hogan <james.hogan@imgtec.com>
-CC: Andrew Bresticker <abrestic@chromium.org>,
-        James Hartley <james.hartley@imgtec.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c: img-scb: Allow building for MIPS
-References: <1416355113-8942-1-git-send-email-abrestic@chromium.org> <20141119000308.GL1739@jhogan-linux.le.imgtec.org> <20141119090728.GA1439@katana>
-In-Reply-To: <20141119090728.GA1439@katana>
-Content-Type: text/plain; charset="windows-1252"
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-media@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] [media] i2c: Deletion of an unnecessary check before
+ the function call "rc_unregister_device"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.100.200.143]
+X-Provags-ID: V03:K0:QWIc9OACHji+T3qF+YDoKrtq1XLObx7DrUpNiT1HdWyaxfWds0J
+ J581MDwRSvnmYM5zrKYJo8ulMUIeWpDWTQtqwBgGiYJZMZRSxyLGXFXDH1TniAm9rC15F7D
+ HIosjUHozH59rijrk8QiMtUt0aty6zLlZEDsX1l+/Khb/MYx3x4Sf4Pk2riNhA+l6pGc74x
+ 05NcLBsQeO0DoFfhzhs6w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 11:13:16 +0100
 
+The rc_unregister_device() function tests whether its argument is NULL
+and then returns immediately. Thus the test around the call is not needed.
 
+This issue was detected by using the Coccinelle software.
 
-On 11/19/2014 06:07 AM, Wolfram Sang wrote:
-> On Wed, Nov 19, 2014 at 12:03:08AM +0000, James Hogan wrote:
->> On Tue, Nov 18, 2014 at 03:58:33PM -0800, Andrew Bresticker
->> wrote:
->>> The SCB is present on IMG SoCs other than the META-based
->>> TZ1090, such as the MIPS-based Pistachio SoC.  Relax the
->>> Kconfig dependency so that it can be built on any MIPS or META
->>> machine.
->>> 
->>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
->> 
->> Looks good to me.
->> 
->> Acked-by: James Hogan <james.hogan@imgtec.com>
->> 
->> Cheers James
->> 
-> 
-> Applied to for-next, thanks!
-> 
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/media/i2c/ir-kbd-i2c.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Can't find this one, maybe it wasn't pushed yet?
-- -- 
-Ezequiel
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+diff --git a/drivers/media/i2c/ir-kbd-i2c.c b/drivers/media/i2c/ir-kbd-i2c.c
+index 8311f1a..175a761 100644
+--- a/drivers/media/i2c/ir-kbd-i2c.c
++++ b/drivers/media/i2c/ir-kbd-i2c.c
+@@ -464,8 +464,7 @@ static int ir_remove(struct i2c_client *client)
+ 	cancel_delayed_work_sync(&ir->work);
+ 
+ 	/* unregister device */
+-	if (ir->rc)
+-		rc_unregister_device(ir->rc);
++	rc_unregister_device(ir->rc);
+ 
+ 	/* free memory */
+ 	return 0;
+-- 
+2.1.3
 
-iQIcBAEBAgAGBQJUbcALAAoJEIOKbhOEIHKi5U4P+gJ/JwXOFFCbWxhA8SQZShWC
-Rwx8RSlvhbsOPPc7G596mMu0nfFBQFVBOII1Pw6UByPlUpi5FaLxQtEnxdWYNGbX
-nQ7opxx/r0Ml5z5FsNQnBZ8olaoBfzZb1o/yl91cavul8JND1DCiyljAhvFzwRkv
-ggnb8e6VY4ezqhYeS7HxNeVVjl+a3VQRHXnRfKYY/yFzVGO8/p1dPEXgm30hbIiK
-NW9DoTq7HRkgtPtEJR1/pR0OnRvE3nA7kgi0u5ZUA8zjlzMwDm1Bpn/MQugX/4Lq
-bRCbF67AMYDQAbifimZoxG/mlXRXpaKvcS/o4yagoTdXQuWFPNrRZyRvz9fSaGuZ
-GD3sE6IGYwhXIP+o6CIHL/6SUPT50+5hGCcuBivwr3fiBw3SzPDJXAG29gUXo0v7
-vW4RTV+mouEgJX4YKdjtLaeCdOrru6zwXEVlhpCky8mczAoYFahK2nm7BhL/aC2y
-7nrPNLGAaEg0MXuaWwmgBeYqIHkJyf4TAmL2A5uj4kb8zH7QlzyNSa4ETwL1VqkE
-krEOjfr6KsQ2YW9MNEUK8S7ti9WB3ezUOQYEOKGn/w6ZAiynzev6YRg+sWyDhsK2
-qZ065wYttrSB/ShHagbQbKt+4F+WXEkLl+T72ZNqwj+02G3/cU9i5BjH8XTsPfJu
-Qp66n26U/8ynz4N5rafo
-=qMRD
------END PGP SIGNATURE-----
