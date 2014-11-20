@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757962AbaKTTQK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:16:10 -0500
-Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:51250 "HELO
-	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757781AbaKTTQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 14:16:08 -0500
-From: Joe Stringer <joestringer@nicira.com>
-To: Jesse Gross <jesse@nicira.com>
-Subject: Re: [PATCH net 2/5] i40e: Implement ndo_gso_check()
-Date: Thu, 20 Nov 2014 11:16:03 -0800
-User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
-Cc: netdev <netdev@vger.kernel.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>, linux.nics@intel.com,
-        Tom Herbert <therbert@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shannon Nelson <shannon.nelson@intel.com>, jesse.brandeburg@intel.com
-References: <1415138202-1197-1-git-send-email-joestringer@nicira.com> <1415138202-1197-3-git-send-email-joestringer@nicira.com> <CAEP_g=8rbJF5z92LV_c14KooU=i3x=9WpikocctcEUOdw5-oLA@mail.gmail.com>
-In-Reply-To: <CAEP_g=8rbJF5z92LV_c14KooU=i3x=9WpikocctcEUOdw5-oLA@mail.gmail.com>
+	id S1758003AbaKTTQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:16:47 -0500
+Received: from mout.web.de ([212.227.15.14]:62467 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757858AbaKTTQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 14:16:45 -0500
+Message-ID: <546E3DDB.5040508@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 20:15:39 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: "James E. J. Bottomley" <JBottomley@parallels.com>,
+        Robert Love <robert.w.love@intel.com>, fcoe-devel@open-fcoe.org,
+        linux-scsi@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] SCSI-libfc: Deletion of an unnecessary check before the
+ function call "fc_fcp_ddp_done"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=iso-8859-15
 Content-Transfer-Encoding: 7bit
-Message-Id: <201411201116.04406.joestringer@nicira.com>
+X-Provags-ID: V03:K0:+IvuhPx5ks/Wr7Lp6ReYp7XwyucOrLYlqYTGl53OJ6pDdCCLa+k
+ 7WaH2LUVTjwbx9rismb+Iu1iS7brlHb16RSHp3jz8Lt1UFTXVYt5qOprtOMxKiS+l8NBij1
+ 1CNz1PNo+59iUMuJUjRlp07cgNL/hoaFqifHa8k7OsnmTXVGEifH2w2HjsOSiV8Yq2DeK7r
+ C+UhGBDmpnwoXWnyFeiCw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 04, 2014 15:45:22 Jesse Gross wrote:
-> On Tue, Nov 4, 2014 at 1:56 PM, Joe Stringer <joestringer@nicira.com> wrote:
-> > diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c
-> > b/drivers/net/ethernet/intel/i40e/i40e_main.c index c3a7f4a..21829b5
-> > 100644
-> > --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
-> > +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
-> > +static bool i40e_gso_check(struct sk_buff *skb, struct net_device *dev)
-> > +{
-> > +       if ((skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) &&
-> > +           (skb->inner_protocol_type != ENCAP_TYPE_ETHER ||
-> > +            skb->inner_protocol != htons(ETH_P_TEB) ||
-> > +            skb_inner_mac_header(skb) - skb_transport_header(skb) > 64))
-> > +               return false;
-> 
-> I think it may be possible to even support a few more things here.
-> According to the datasheet here:
-> http://www.intel.com/content/dam/www/public/us/en/documents/datasheets/xl71
-> 0-10-40-controller-datasheet.pdf
-> 
-> This can actually support 64 bytes beyond the tunnel header, which
-> would make for a total of 80 bytes. It looks like it can also support
-> IPv4 or IPv6 beyond just Ethernet as the encapsulated protocol.
-> 
-> Intel guys, can you confirm that this is correct?
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 20:10:19 +0100
 
-I'm just respinning this for v4/6 beyond GRE/UDP tunnel and IPIP, and I found 
-the description of max protocol parsing size of 480B (with individual header 
-limit of 255B). I couldn't find where you get this 64/80 number or which 
-headers it maps to. Could you (or one of the intel guys) expand on this?
+The fc_fcp_ddp_done() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
+
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/scsi/libfc/fc_exch.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/libfc/fc_exch.c b/drivers/scsi/libfc/fc_exch.c
+index 1b3a094..aad6f48 100644
+--- a/drivers/scsi/libfc/fc_exch.c
++++ b/drivers/scsi/libfc/fc_exch.c
+@@ -2120,8 +2120,7 @@ static struct fc_seq *fc_exch_seq_send(struct fc_lport *lport,
+ 	spin_unlock_bh(&ep->ex_lock);
+ 	return sp;
+ err:
+-	if (fsp)
+-		fc_fcp_ddp_done(fsp);
++	fc_fcp_ddp_done(fsp);
+ 	rc = fc_exch_done_locked(ep);
+ 	spin_unlock_bh(&ep->ex_lock);
+ 	if (!rc)
+-- 
+2.1.3
+
