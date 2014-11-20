@@ -1,92 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757034AbaKTPZw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 10:25:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60246 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756195AbaKTPZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 10:25:50 -0500
-Date: Thu, 20 Nov 2014 10:25:09 -0500
-From: Dave Jones <davej@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141120152509.GA5412@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Don Zickus <dzickus@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	the arch/x86 maintainers <x86@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>
-References: <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
- <20141118023930.GA2871@redhat.com>
- <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
- <20141118145234.GA7487@redhat.com>
- <alpine.DEB.2.11.1411181914020.3909@nanos>
- <20141118215540.GD35311@redhat.com>
- <20141119021902.GA14216@redhat.com>
- <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
- <20141119145902.GA13387@redhat.com>
- <546D0530.8040800@mit.edu>
+	id S1757003AbaKTP1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 10:27:07 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:38176 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753776AbaKTP1F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 10:27:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546D0530.8040800@mit.edu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALYGNiOC4dEzzVzSQXGC4oxLbgp=8TC=A+duJs67jT97TWQ++g@mail.gmail.com>
+References: <502D42E5.7090403@redhat.com>
+	<20120818000312.GA4262@evergreen.ssec.wisc.edu>
+	<502F100A.1080401@redhat.com>
+	<alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
+	<CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
+	<20120822032057.GA30871@google.com>
+	<50345232.4090002@redhat.com>
+	<20130603195003.GA31275@evergreen.ssec.wisc.edu>
+	<20141114163053.GA6547@cosmos.ssec.wisc.edu>
+	<20141117160212.b86d031e1870601240b0131d@linux-foundation.org>
+	<20141118014135.GA17252@cosmos.ssec.wisc.edu>
+	<546AB1F5.6030306@redhat.com>
+	<20141118121936.07b02545a0684b2cc839a10c@linux-foundation.org>
+	<CALYGNiMxnxmy-LyJ4OT9OoFeKwTPPkZMF-bJ-eJDBFXgZQ6AEA@mail.gmail.com>
+	<CALYGNiM_CsjjiK_36JGirZT8rTP+ROYcH0CSyZjghtSNDU8ptw@mail.gmail.com>
+	<546BDB29.9050403@suse.cz>
+	<CALYGNiOHXvyqr3+Jq5FsZ_xscsXwrQ_9YCtL2819i6iRkgms2w@mail.gmail.com>
+	<546CC0CD.40906@suse.cz>
+	<CALYGNiO9_bAVVZ2GdFq=PO2yV3LPs2utsbcb2pFby7MypptLCw@mail.gmail.com>
+	<CANN689G+y77m2_paF0vBpHG8EsJ2-pEnJvLJSGs-zHf+SqTEjQ@mail.gmail.com>
+	<CALYGNiOC4dEzzVzSQXGC4oxLbgp=8TC=A+duJs67jT97TWQ++g@mail.gmail.com>
+Date: Thu, 20 Nov 2014 16:27:03 +0100
+Message-ID: <CANN689E2DEOF4JryO3soCr4jTZM-oWCjafvSiFpRkSi31TNeUg@mail.gmail.com>
+Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
+From: Michel Lespinasse <walken@google.com>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Tim Hartrick <tim@edgecast.com>, Michal Hocko <mhocko@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 01:01:36PM -0800, Andy Lutomirski wrote:
- 
- > TIF_NOHZ is not the same thing as NOHZ.  Can you try a kernel with
- > CONFIG_CONTEXT_TRACKING=n?  Doing that may involve fiddling with RCU
- > settings a bit.  The normal no HZ idle stuff has nothing to do with
- > TIF_NOHZ, and you either have TIF_NOHZ set or you have some kind of
- > thread_info corruption going on here.
+On Thu, Nov 20, 2014 at 3:42 PM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+> On Thu, Nov 20, 2014 at 2:14 AM, Michel Lespinasse <walken@google.com> wrote:
+>> On Wed, Nov 19, 2014 at 8:58 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+>>> On Wed, Nov 19, 2014 at 7:09 PM, Vlastimil Babka <vbabka@suse.cz> wrote:
+>>>> Also from reading http://lwn.net/Articles/383162/ I understand that correctness
+>>>> also depends on the hierarchy and I wonder if there's a danger of reintroducing
+>>>> a bug like the one described there.
+>>>
+>>> If I remember right that was fixed by linking non-exclusively mapped pages to
+>>> root anon_vma instead of anon_vma from vma where fault has happened.
+>>> After my patch this still works. Topology hierarchy actually isn't used.
+>>> Here just one selected "root' anon_vma which dies last. That's all.
+>>
+>> That's not how I remember it.
+>
+> ??? That at the end of lwn article:
+>
+> [quote]
+> The fix is straightforward; when linking an existing page to an
+> anon_vma structure,
+> the kernel needs to pick the one which is highest in the process hierarchy;
+> that guarantees that the anon_vma will not go away prematurely.
+> [/quote]
+>
+> nowdays this happens in __page_set_anon_rmap():
+>
+> /*
+> * If the page isn't exclusively mapped into this vma,
+> * we must use the _oldest_ possible anon_vma for the
+> * page mapping!
+> */
+> if (!exclusive)
+>     anon_vma = anon_vma->root;
+>
+> The rest treeish of topology affects only performance.
 
-Disabling CONTEXT_TRACKING didn't change the problem.
-Unfortunatly the full trace didn't make it over usb-serial this time. Grr.
+Ah, I see what you mean.
 
-Here's what came over serial..
+IIRC the !exclusive bit is for pages coming back from swap, where we
+don't have enough tracking info to remember where the page was first
+created so we have to assume the worst case (i.e. that it was created
+in the root anon_vma). My understanding was that we don't exercise
+this in the non-swap case. Looking back into it, it seems that we are
+now doing this with ksm and migrate as well, though.
 
-NMI watchdog: BUG: soft lockup - CPU#2 stuck for 22s! [trinity-c35:11634]
-CPU: 2 PID: 11634 Comm: trinity-c35 Not tainted 3.18.0-rc5+ #94 [loadavg: 164.79 157.30 155.90 37/409 11893]
-task: ffff88014e0d96f0 ti: ffff880220eb4000 task.ti: ffff880220eb4000
-RIP: 0010:[<ffffffff88379605>]  [<ffffffff88379605>] copy_user_enhanced_fast_string+0x5/0x10
-RSP: 0018:ffff880220eb7ef0  EFLAGS: 00010283
-RAX: ffff880220eb4000 RBX: ffffffff887dac64 RCX: 0000000000006a18
-RDX: 000000000000e02f RSI: 00007f766f466620 RDI: ffff88016f6a7617
-RBP: ffff880220eb7f78 R08: 8000000000000063 R09: 0000000000000004
-R10: 0000000000000010 R11: 0000000000000000 R12: ffffffff880bf50d
-R13: 0000000000000001 R14: ffff880220eb4000 R15: 0000000000000001
-FS:  00007f766f459740(0000) GS:ffff880244400000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f766f461000 CR3: 000000018b00e000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-Stack:
- ffffffff882f4225 ffff880183db5a00 0000000001743440 00007f766f0fb000
- fffffffffffffeff 0000000000000000 0000000000008d79 00007f766f45f000
- ffffffff8837adae 00ff880220eb7f38 000000003203f1ac 0000000000000001
-Call Trace:
- [<ffffffff882f4225>] ? SyS_add_key+0xd5/0x240
- [<ffffffff8837adae>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff887da092>] system_call_fastpath+0x12/0x17
-Code: 48 ff c6 48 ff c7 ff c9 75 f2 89 d1 c1 e9 03 83 e2 07 f3 48 a5 89 d1 f3 a4 31 c0 0f 1f 00 c3 0f 1f 80 00 00 00 00 0f 1f 00 89 d1 <f3> a4 31 c0 0f 1f 00 c3 90 90 90 0f 1f 00 83 fa 08 0f 82 95 00 
-sending NMI to other CPUs:
+The point remains though that moving pages higher than necessary in
+the anon_vma hierarchy is OK from a correctness perspective but could
+have bad implications from a performance perspective.
 
-
-Here's a crappy phonecam pic of the screen. 
-http://codemonkey.org.uk/junk/IMG_4311.jpg
-There's a bit of trace missing between the above and what was on
-the screen, so we missed some CPUs.
-
-	Dave
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
