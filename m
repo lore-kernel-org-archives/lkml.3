@@ -1,73 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016AbaKTErC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 23:47:02 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:51963 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718AbaKTErA (ORCPT
+	id S1755511AbaKTExK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 23:53:10 -0500
+Received: from mga11.intel.com ([192.55.52.93]:64917 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754203AbaKTExI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 23:47:00 -0500
-Date: Thu, 20 Nov 2014 12:46:50 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
-        Daniel Borkmann <dborkman@redhat.com>, quentin.gouchet@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        ABI/API <linux-api@vger.kernel.org>
-Subject: crypto: user - Allow get request with empty driver name
-Message-ID: <20141120044650.GA28691@gondor.apana.org.au>
-References: <5365136.g8vbXlhRyC@tachyon.chronox.de>
- <1886827.KUDIsNtfuk@tachyon.chronox.de>
- <20141120041824.GA28612@gondor.apana.org.au>
- <3538055.XH2t7HNEVj@tachyon.chronox.de>
+	Wed, 19 Nov 2014 23:53:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="419065008"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>, "gleb@kernel.org" <gleb@kernel.org>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [PATCH 02/13] KVM: Initialize VT-d Posted-Interrtups Descriptor
+Thread-Topic: [PATCH 02/13] KVM: Initialize VT-d Posted-Interrtups Descriptor
+Thread-Index: AQHP/bRlfZiiiYnIRDaRHWh0ykj5wJxo/8RA
+Date: Thu, 20 Nov 2014 04:53:00 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F0022A04CD@SHSMSX104.ccr.corp.intel.com>
+References: <1415600812-27773-1-git-send-email-feng.wu@intel.com>
+ <1415600812-27773-3-git-send-email-feng.wu@intel.com>
+ <546210B1.7060007@linux.intel.com>
+In-Reply-To: <546210B1.7060007@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3538055.XH2t7HNEVj@tachyon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 05:23:23AM +0100, Stephan Mueller wrote:
+
+
+> -----Original Message-----
+> From: Jiang Liu [mailto:jiang.liu@linux.intel.com]
+> Sent: Tuesday, November 11, 2014 9:36 PM
+> To: Wu, Feng; gleb@kernel.org; pbonzini@redhat.com;
+> dwmw2@infradead.org; joro@8bytes.org; tglx@linutronix.de;
+> mingo@redhat.com; hpa@zytor.com; x86@kernel.org
+> Cc: kvm@vger.kernel.org; iommu@lists.linux-foundation.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 02/13] KVM: Initialize VT-d Posted-Interrtups Descriptor
 > 
-> Here is the code:
-> 
-> static int crypto_report(struct sk_buff *in_skb, struct nlmsghdr *in_nlh,
-> 			 struct nlattr **attrs)
-> {
-> ...
-> 	if (!p->cru_driver_name[0])
-> 		return -EINVAL;
+> On 2014/11/10 14:26, Feng Wu wrote:
+> > This patch initialize the VT-d Posted-interrupt Descritpor.
+> >
+> > Signed-off-by: Feng Wu <feng.wu@intel.com>
+> > ---
+> >  arch/x86/include/asm/irq_remapping.h |    1 +
+> >  arch/x86/kernel/apic/apic.c          |    1 +
+> >  arch/x86/kvm/vmx.c                   |   56
+> ++++++++++++++++++++++++++++++++-
+> >  3 files changed, 56 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/arch/x86/include/asm/irq_remapping.h
+> b/arch/x86/include/asm/irq_remapping.h
+> > index b7747c4..a3cc437 100644
+> > --- a/arch/x86/include/asm/irq_remapping.h
+> > +++ b/arch/x86/include/asm/irq_remapping.h
+> > @@ -57,6 +57,7 @@ extern bool setup_remapped_irq(int irq,
+> >  			       struct irq_chip *chip);
+> >
+> >  void irq_remap_modify_chip_defaults(struct irq_chip *chip);
+> > +extern int irq_post_enabled;
+> >
+> >  #else  /* CONFIG_IRQ_REMAP */
+> >
+> > diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> > index ba6cc04..987408d 100644
+> > --- a/arch/x86/kernel/apic/apic.c
+> > +++ b/arch/x86/kernel/apic/apic.c
+> > @@ -162,6 +162,7 @@ __setup("apicpmtimer", setup_apicpmtimer);
+> >  #endif
+> >
+> >  int x2apic_mode;
+> > +EXPORT_SYMBOL_GPL(x2apic_mode);
+> >  #ifdef CONFIG_X86_X2APIC
+> >  /* x2apic enabled before OS handover */
+> >  int x2apic_preenabled;
+> > diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> > index 3e556c6..a4670d3 100644
+> > --- a/arch/x86/kvm/vmx.c
+> > +++ b/arch/x86/kvm/vmx.c
+> > @@ -45,6 +45,7 @@
+> >  #include <asm/perf_event.h>
+> >  #include <asm/debugreg.h>
+> >  #include <asm/kexec.h>
+> > +#include <asm/irq_remapping.h>
+> >
+> >  #include "trace.h"
+> >
+> > @@ -408,13 +409,32 @@ struct nested_vmx {
+> >  };
+> >
+> >  #define POSTED_INTR_ON  0
+> > +#define POSTED_INTR_SN  1
+> > +
+> >  /* Posted-Interrupt Descriptor */
+> >  struct pi_desc {
+> >  	u32 pir[8];     /* Posted interrupt requested */
+> > -	u32 control;	/* bit 0 of control is outstanding notification bit */
+> > -	u32 rsvd[7];
+> > +	union {
+> > +		struct {
+> > +			u64	on	: 1,
+> > +				sn	: 1,
+> > +				rsvd_1	: 13,
+> > +				ndm	: 1,
+> > +				nv	: 8,
+> > +				rsvd_2	: 8,
+> > +				ndst	: 32;
+> > +		};
+> > +		u64 control;
+> > +	};
+> > +	u32 rsvd[6];
+> >  } __aligned(64);
+> >
+> > +static void pi_clear_sn(struct pi_desc *pi_desc)
+> > +{
+> > +	return clear_bit(POSTED_INTR_SN,
+> > +			(unsigned long *)&pi_desc->control);
+> > +}
+> > +
+> >  static bool pi_test_and_set_on(struct pi_desc *pi_desc)
+> >  {
+> >  	return test_and_set_bit(POSTED_INTR_ON,
+> > @@ -4396,6 +4416,33 @@ static void ept_set_mmio_spte_mask(void)
+> >  	kvm_mmu_set_mmio_spte_mask((0x3ull << 62) | 0x6ull);
+> >  }
+> >
+> > +static bool pi_desc_init(struct vcpu_vmx *vmx)
+> > +{
+> > +	unsigned int dest;
+> > +
+> > +	if (irq_post_enabled == 0)
+> > +		return true;
+> > +
+> > +	/*
+> > +	 * Initialize Posted-Interrupt Descriptor
+> > +	 */
+> > +
+> > +	pi_clear_sn(&vmx->pi_desc);
+> > +	vmx->pi_desc.nv = POSTED_INTR_VECTOR;
+> > +
+> > +	/* Physical mode for Notificaiton Event */
+> > +	vmx->pi_desc.ndm = 0;
+> > +	dest = cpu_physical_id(vmx->vcpu.cpu);
+> > +
+> > +	if (x2apic_mode)
+> Hi Feng,
+> 	Could you try to use x2apic_enabled() here so you don't
+> need to export x2apic_mode?
+> Regards!
+> Gerry
 
-OK let's fix this.
+In that case, we should also export x2apic_enabled(), right?
 
-crypto: user - Allow get request with empty driver name
-    
-Currently all get requests with an empty driver name fail with
-EINVAL.  Since most users actually want to supply an empty driver
-name this patch removes this check.
+Thanks,
+Feng
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-
-diff --git a/crypto/crypto_user.c b/crypto/crypto_user.c
-index e2a34fe..0bb30ac 100644
---- a/crypto/crypto_user.c
-+++ b/crypto/crypto_user.c
-@@ -201,10 +201,7 @@ static int crypto_report(struct sk_buff *in_skb, struct nlmsghdr *in_nlh,
- 	if (!null_terminated(p->cru_name) || !null_terminated(p->cru_driver_name))
- 		return -EINVAL;
- 
--	if (!p->cru_driver_name[0])
--		return -EINVAL;
--
--	alg = crypto_alg_match(p, 1);
-+	alg = crypto_alg_match(p, 0);
- 	if (!alg)
- 		return -ENOENT;
- 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> > +		vmx->pi_desc.ndst = dest;
+> > +	else
+> > +		vmx->pi_desc.ndst = (dest << 8) & 0xFF00;
+> > +
+> > +	return true;
+> > +}
+> > +
+> > +
+> >  /*
+> >   * Sets up the vmcs for emulated real mode.
+> >   */
+> > @@ -4439,6 +4486,11 @@ static int vmx_vcpu_setup(struct vcpu_vmx
+> *vmx)
+> >
+> >  		vmcs_write64(POSTED_INTR_NV, POSTED_INTR_VECTOR);
+> >  		vmcs_write64(POSTED_INTR_DESC_ADDR, __pa((&vmx->pi_desc)));
+> > +
+> > +		if (!pi_desc_init(vmx)) {
+> > +			printk(KERN_ERR "Initialize PI descriptor error!\n");
+> > +			return 1;
+> > +		}
+> >  	}
+> >
+> >  	if (ple_gap) {
+> >
