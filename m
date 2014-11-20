@@ -1,70 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152AbaKTPUc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 10:20:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54525 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754127AbaKTPUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 10:20:31 -0500
-Date: Thu, 20 Nov 2014 09:19:54 -0600
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Seth Jennings <sjenning@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
-        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 2/3] kernel: add support for live patching
-Message-ID: <20141120151954.GB3370@treble.redhat.com>
-References: <1416187764-3341-1-git-send-email-sjenning@redhat.com>
- <1416187764-3341-3-git-send-email-sjenning@redhat.com>
+	id S1757276AbaKTPWP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 10:22:15 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:65221 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756223AbaKTPWN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 10:22:13 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: netdev@vger.kernel.org
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>, Roger Pao <rpao@paonet.org>,
+        linux-kernel@vger.kernel.org, linux-pcmcia@lists.infradead.org
+Subject: [PATCH 2/2] pcmcia: remove pcmcia_request_exclusive_irq
+Date: Thu, 20 Nov 2014 16:21:56 +0100
+Message-ID: <2369529.fZhWQAcXLX@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <4353896.15JnC91eLO@wuerfel>
+References: <4353896.15JnC91eLO@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1416187764-3341-3-git-send-email-sjenning@redhat.com>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:7/xEbZKo1qBc376cm9lnJa/4EqYpAqC1phOcD36n1ih
+ u5kENxOZf35Jm10j+VCIcMiTy2PKmBDpMnA4wEp9lxXvB5TyZl
+ OAFxLwRx4KlTj/i6NV5fPSIYcvmm7af3/3gBPQdaOs3J6uyv2d
+ LY/fXocZWAK5gWjdGG+FPGWFlzLkkSh7zV7fJNF0aMWO/2gTLW
+ IEEo9FjDZBSLg44wr2yhL7BoP2+xThi4LISOVeTWEF0Wooz76U
+ iXI/kLCVSQyzglfumpd/zINrHum4lPgUPpVBVFatXsTwf3YRjm
+ 0/PUPzv4M4cTj5L5koFEbNhlduLo25zVtTuuSNr4Gj/cOV+QfJ
+ JLS+jSnPAVgFQ8BgUlVw=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 16, 2014 at 07:29:23PM -0600, Seth Jennings wrote:
-> +static int lpc_module_notify(struct notifier_block *nb, unsigned long action,
-> +			    void *data)
-> +{
-> +	struct module *mod = data;
-> +	struct lpc_patch *patch;
-> +	struct lpc_object *obj;
-> +
-> +	mutex_lock(&lpc_mutex);
-> +
-> +	if (action != MODULE_STATE_COMING && action != MODULE_STATE_GOING)
-> +		goto out;
+The last user of the deprecated pcmcia_request_exclusive_irq function,
+was removed in 5f5316fcd08e ("am2150: Update nmclan_cs.c to use update
+PCMCIA API"), so we can clean up the core code and remove the interface
+and its documentation.
 
-I think we can get the mutex here instead of above so it doesn't block
-other module actions (and then you can also get rid of the "out" label).
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ Documentation/pcmcia/driver-changes.txt |  3 ---
+ drivers/pcmcia/pcmcia_resource.c        | 39 ---------------------------------------
+ include/pcmcia/ds.h                     | 10 ----------
+ 3 files changed, 0 insertions(+), 52 deletions(-)
 
-> +
-> +	list_for_each_entry(patch, &lpc_patches, list) {
-> +		if (patch->state == LPC_DISABLED)
-> +			continue;
-> +		list_for_each_entry(obj, &patch->objs, list) {
-> +			if (strcmp(obj->name, mod->name))
-> +				continue;
-> +			if (action == MODULE_STATE_COMING) {
-> +				obj->mod = mod;
-> +				lpc_module_notify_coming(patch->mod, obj);
-> +			} else /* MODULE_STATE_GOING */
-> +				lpc_module_notify_going(patch->mod, obj);
-> +			break;
-> +		}
-> +	}
-> +out:
-> +	mutex_unlock(&lpc_mutex);
-> +	return 0;
-> +}
+---
+The patch that removed the last user was merged in 3.18-rc1, so this
+should be safe to apply independently now.
 
--- 
-Josh
+diff --git a/Documentation/pcmcia/driver-changes.txt b/Documentation/pcmcia/driver-changes.txt
+index dd04361dd361..78355c4c268a 100644
+--- a/Documentation/pcmcia/driver-changes.txt
++++ b/Documentation/pcmcia/driver-changes.txt
+@@ -46,9 +46,6 @@ This file details changes in 2.6 which affect PCMCIA card driver authors:
+    - use pcmcia_request_irq(p_dev, handler_t); the PCMCIA core will
+      clean up automatically on calls to pcmcia_disable_device() or
+      device ejection.
+-   - drivers still not capable of IRQF_SHARED (or not telling us so) may
+-     use the deprecated pcmcia_request_exclusive_irq() for the time
+-     being; they might receive a shared IRQ nonetheless.
+ 
+ * no cs_error / CS_CHECK / CONFIG_PCMCIA_DEBUG (as of 2.6.33)
+    Instead of the cs_error() callback or the CS_CHECK() macro, please use
+diff --git a/drivers/pcmcia/pcmcia_resource.c b/drivers/pcmcia/pcmcia_resource.c
+index e8c19def1b0f..23a123da3dd7 100644
+--- a/drivers/pcmcia/pcmcia_resource.c
++++ b/drivers/pcmcia/pcmcia_resource.c
+@@ -712,45 +712,6 @@ int __must_check pcmcia_request_irq(struct pcmcia_device *p_dev,
+ }
+ EXPORT_SYMBOL(pcmcia_request_irq);
+ 
+-
+-/**
+- * pcmcia_request_exclusive_irq() - attempt to request an exclusive IRQ first
+- * @p_dev: the associated PCMCIA device
+- * @handler: IRQ handler to register
+- *
+- * pcmcia_request_exclusive_irq() is a wrapper around request_irq() which
+- * attempts first to request an exclusive IRQ. If it fails, it also accepts
+- * a shared IRQ, but prints out a warning. PCMCIA drivers should allow for
+- * IRQ sharing and either use request_irq directly (then they need to call
+- * free_irq() themselves, too), or the pcmcia_request_irq() function.
+- */
+-int __must_check
+-__pcmcia_request_exclusive_irq(struct pcmcia_device *p_dev,
+-			irq_handler_t handler)
+-{
+-	int ret;
+-
+-	if (!p_dev->irq)
+-		return -EINVAL;
+-
+-	ret = request_irq(p_dev->irq, handler, 0, p_dev->devname, p_dev->priv);
+-	if (ret) {
+-		ret = pcmcia_request_irq(p_dev, handler);
+-		dev_printk(KERN_WARNING, &p_dev->dev, "pcmcia: "
+-			"request for exclusive IRQ could not be fulfilled.\n");
+-		dev_printk(KERN_WARNING, &p_dev->dev, "pcmcia: the driver "
+-			"needs updating to supported shared IRQ lines.\n");
+-	}
+-	if (ret)
+-		dev_printk(KERN_INFO, &p_dev->dev, "request_irq() failed\n");
+-	else
+-		p_dev->_irq = 1;
+-
+-	return ret;
+-} /* pcmcia_request_exclusive_irq */
+-EXPORT_SYMBOL(__pcmcia_request_exclusive_irq);
+-
+-
+ #ifdef CONFIG_PCMCIA_PROBE
+ 
+ /* mask of IRQs already reserved by other cards, we should avoid using them */
+diff --git a/include/pcmcia/ds.h b/include/pcmcia/ds.h
+index 2d56e428506c..3037157855f0 100644
+--- a/include/pcmcia/ds.h
++++ b/include/pcmcia/ds.h
+@@ -206,16 +206,6 @@ int pcmcia_write_config_byte(struct pcmcia_device *p_dev, off_t where, u8 val);
+ /* device configuration */
+ int pcmcia_request_io(struct pcmcia_device *p_dev);
+ 
+-int __must_check
+-__pcmcia_request_exclusive_irq(struct pcmcia_device *p_dev,
+-				irq_handler_t handler);
+-static inline __must_check __deprecated int
+-pcmcia_request_exclusive_irq(struct pcmcia_device *p_dev,
+-				irq_handler_t handler)
+-{
+-	return __pcmcia_request_exclusive_irq(p_dev, handler);
+-}
+-
+ int __must_check pcmcia_request_irq(struct pcmcia_device *p_dev,
+ 				irq_handler_t handler);
+ 
+
