@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950AbaKTRDA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:03:00 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:43849 "EHLO thoth.sbs.de"
+	id S1758017AbaKTREp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:04:45 -0500
+Received: from david.siemens.de ([192.35.17.14]:43936 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756334AbaKTRC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 12:02:57 -0500
+	id S1756062AbaKTRCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 12:02:49 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -13,11 +13,10 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: [PATCH v10 01/27] scripts/gdb: Add infrastructure
-Date: Thu, 20 Nov 2014 18:01:38 +0100
-Message-Id: <0b1a0a304bc91e3db0a0878aeb6077013a94d8e2.1416502923.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
+Subject: [PATCH v10 02/27] scripts/gdb: Add cache for type objects
+Date: Thu, 20 Nov 2014 18:01:39 +0100
+Message-Id: <2a7e2b3ee8ca62284bac8a8aeeca99aebd7f7bae.1416502923.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <cover.1416502923.git.jan.kiszka@siemens.com>
 References: <cover.1416502923.git.jan.kiszka@siemens.com>
@@ -27,137 +26,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides the basic infrastructure to load kernel-specific python
-helper scripts when debugging the kernel in gdb.
+Type lookups are very slow in gdb-python which is often noticeable when
+iterating over a number of objects. Introduce the helper class
+CachedType that keeps a reference to a gdb.Type object but also
+refreshes it after an object file has been loaded.
 
-The loading mechanism is based on gdb loading for <objfile>-gdb.py when
-opening <objfile>. Therefore, this places a corresponding link to the
-main helper script into the output directory that contains vmlinux.
-
-The main scripts will pull in submodules containing Linux specific gdb
-commands and functions. To avoid polluting the source directory with
-compiled python modules, we link to them from the object directory.
-
-Due to gdb.parse_and_eval and string redirection for gdb.execute, we
-depend on gdb >= 7.2.
-
-This feature is enabled via CONFIG_GDB_SCRIPTS.
-
-CC: Michal Marek <mmarek@suse.cz>
-CC: linux-kbuild@vger.kernel.org
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- Makefile                      |  6 +++++-
- lib/Kconfig.debug             | 11 +++++++++++
- scripts/Makefile              |  3 ++-
- scripts/gdb/Makefile          |  1 +
- scripts/gdb/linux/Makefile    | 11 +++++++++++
- scripts/gdb/linux/__init__.py |  0
- scripts/gdb/vmlinux-gdb.py    | 23 +++++++++++++++++++++++
- 7 files changed, 53 insertions(+), 2 deletions(-)
- create mode 100644 scripts/gdb/Makefile
- create mode 100644 scripts/gdb/linux/Makefile
- create mode 100644 scripts/gdb/linux/__init__.py
- create mode 100644 scripts/gdb/vmlinux-gdb.py
+ scripts/gdb/linux/utils.py | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+ create mode 100644 scripts/gdb/linux/utils.py
 
-diff --git a/Makefile b/Makefile
-index 00d618b..5917c1c 100644
---- a/Makefile
-+++ b/Makefile
-@@ -920,6 +920,9 @@ endif
- ifdef CONFIG_BUILD_DOCSRC
- 	$(Q)$(MAKE) $(build)=Documentation
- endif
-+ifdef CONFIG_GDB_SCRIPTS
-+	$(Q)ln -fsn `cd $(srctree) && /bin/pwd`/scripts/gdb/vmlinux-gdb.py
-+endif
- 	+$(call if_changed,link-vmlinux)
- 
- # The actual objects are generated when descending,
-@@ -1175,7 +1178,8 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
- 		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
- 		  signing_key.priv signing_key.x509 x509.genkey		\
- 		  extra_certificates signing_key.x509.keyid		\
--		  signing_key.x509.signer include/linux/version.h
-+		  signing_key.x509.signer include/linux/version.h	\
-+		  vmlinux-gdb.py
- 
- # clean - Delete most, but leave enough to build external modules
- #
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 4e35a5d..33e1974 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -167,6 +167,17 @@ config DEBUG_INFO_DWARF4
- 	  But it significantly improves the success of resolving
- 	  variables in gdb on optimized code.
- 
-+config GDB_SCRIPTS
-+	bool "Provide GDB scripts for kernel debugging"
-+	select DEBUG_INFO
-+	help
-+	  This creates the required links to GDB helper scripts in the
-+	  build directory. If you load vmlinux into gdb, the helper
-+	  scripts will be automatically imported by gdb as well, and
-+	  additional functions are available to analyze a Linux kernel
-+	  instance. See Documentation/gdb-kernel-debugging.txt for further
-+	  details.
-+
- config ENABLE_WARN_DEPRECATED
- 	bool "Enable __deprecated logic"
- 	default y
-diff --git a/scripts/Makefile b/scripts/Makefile
-index 72902b5..7413b1b 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -36,6 +36,7 @@ subdir-$(CONFIG_MODVERSIONS) += genksyms
- subdir-y                     += mod
- subdir-$(CONFIG_SECURITY_SELINUX) += selinux
- subdir-$(CONFIG_DTC)         += dtc
-+subdir-$(CONFIG_GDB_SCRIPTS) += gdb
- 
- # Let clean descend into subdirs
--subdir-	+= basic kconfig package
-+subdir-	+= basic kconfig package gdb
-diff --git a/scripts/gdb/Makefile b/scripts/gdb/Makefile
+diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
 new file mode 100644
-index 0000000..62f5f65
+index 0000000..f883611
 --- /dev/null
-+++ b/scripts/gdb/Makefile
-@@ -0,0 +1 @@
-+subdir-y := linux
-diff --git a/scripts/gdb/linux/Makefile b/scripts/gdb/linux/Makefile
-new file mode 100644
-index 0000000..dcb63ab
---- /dev/null
-+++ b/scripts/gdb/linux/Makefile
-@@ -0,0 +1,11 @@
-+always := gdb-scripts
-+
-+SRCTREE := $(shell cd $(srctree) && /bin/pwd)
-+
-+$(obj)/gdb-scripts:
-+ifneq ($(KBUILD_SRC),)
-+	$(Q)ln -fsn $(SRCTREE)/$(obj)/*.py $(objtree)/$(obj)
-+endif
-+	@:
-+
-+clean-files := *.pyc $(if $(KBUILD_SRC),*.py)
-diff --git a/scripts/gdb/linux/__init__.py b/scripts/gdb/linux/__init__.py
-new file mode 100644
-index 0000000..e69de29
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-new file mode 100644
-index 0000000..c1d90ce
---- /dev/null
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -0,0 +1,23 @@
++++ b/scripts/gdb/linux/utils.py
+@@ -0,0 +1,34 @@
 +#
 +# gdb helper commands and functions for Linux kernel debugging
 +#
-+#  loader module
++#  common utilities
 +#
-+# Copyright (c) Siemens AG, 2012, 2013
++# Copyright (c) Siemens AG, 2011-2013
 +#
 +# Authors:
 +#  Jan Kiszka <jan.kiszka@siemens.com>
@@ -165,16 +56,27 @@ index 0000000..c1d90ce
 +# This work is licensed under the terms of the GNU GPL version 2.
 +#
 +
-+import os
++import gdb
 +
-+sys.path.insert(0, os.path.dirname(__file__) + "/scripts/gdb")
 +
-+try:
-+    gdb.parse_and_eval("0")
-+    gdb.execute("", to_string=True)
-+except:
-+    gdb.write("NOTE: gdb 7.2 or later required for Linux helper scripts to "
-+              "work.\n")
++class CachedType:
++    def __init__(self, name):
++        self._type = None
++        self._name = name
++
++    def _new_objfile_handler(self, event):
++        self._type = None
++        gdb.events.new_objfile.disconnect(self._new_objfile_handler)
++
++    def get_type(self):
++        if self._type is None:
++            self._type = gdb.lookup_type(self._name)
++            if self._type is None:
++                raise gdb.GdbError(
++                    "cannot resolve type '{0}'".format(self._name))
++            if hasattr(gdb, 'events') and hasattr(gdb.events, 'new_objfile'):
++                gdb.events.new_objfile.connect(self._new_objfile_handler)
++        return self._type
 -- 
 1.8.4.5
 
