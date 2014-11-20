@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540AbaKTKUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:20:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50331 "EHLO mx2.suse.de"
+	id S1757793AbaKTKXg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 05:23:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50343 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757483AbaKTKUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:20:00 -0500
+	id S1757516AbaKTKUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 05:20:05 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>,
@@ -19,9 +19,9 @@ Cc: Linux-MM <linux-mm@kvack.org>,
         Paul Mackerras <paulus@samba.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 04/10] ppc64: Add paranoid warnings for unexpected DSISR_PROTFAULT
-Date: Thu, 20 Nov 2014 10:19:44 +0000
-Message-Id: <1416478790-27522-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 08/10] x86: mm: Restore original pte_special check
+Date: Thu, 20 Nov 2014 10:19:48 +0000
+Message-Id: <1416478790-27522-9-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1416478790-27522-1-git-send-email-mgorman@suse.de>
 References: <1416478790-27522-1-git-send-email-mgorman@suse.de>
@@ -29,83 +29,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ppc64 should not be depending on DSISR_PROTFAULT and it's unexpected
-if they are triggered. This patch adds warnings just in case they
-are being accidentally depended upon.
+Commit b38af4721f59 ("x86,mm: fix pte_special versus pte_numa") adjusted
+the pte_special check to take into account that a special pte had SPECIAL
+and neither PRESENT nor PROTNONE. Now that NUMA hinting PTEs are no
+longer modifying _PAGE_PRESENT it should be safe to restore the original
+pte_special behaviour.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- arch/powerpc/mm/copro_fault.c |  8 ++++++--
- arch/powerpc/mm/fault.c       | 20 +++++++++-----------
- 2 files changed, 15 insertions(+), 13 deletions(-)
+ arch/x86/include/asm/pgtable.h | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
-index 5a236f0..0450d68 100644
---- a/arch/powerpc/mm/copro_fault.c
-+++ b/arch/powerpc/mm/copro_fault.c
-@@ -64,10 +64,14 @@ int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
- 		if (!(vma->vm_flags & VM_WRITE))
- 			goto out_unlock;
- 	} else {
--		if (dsisr & DSISR_PROTFAULT)
--			goto out_unlock;
- 		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
- 			goto out_unlock;
-+		/*
-+		 * protfault should only happen due to us
-+		 * mapping a region readonly temporarily. PROT_NONE
-+		 * is also covered by the VMA check above.
-+		 */
-+		WARN_ON_ONCE(dsisr & DSISR_PROTFAULT);
- 	}
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index f8799e0..5241332 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -131,13 +131,7 @@ static inline int pte_exec(pte_t pte)
  
- 	ret = 0;
-diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
-index 5007497..9d6e0b3 100644
---- a/arch/powerpc/mm/fault.c
-+++ b/arch/powerpc/mm/fault.c
-@@ -396,17 +396,6 @@ good_area:
- #endif /* CONFIG_8xx */
+ static inline int pte_special(pte_t pte)
+ {
+-	/*
+-	 * See CONFIG_NUMA_BALANCING pte_numa in include/asm-generic/pgtable.h.
+-	 * On x86 we have _PAGE_BIT_NUMA == _PAGE_BIT_GLOBAL+1 ==
+-	 * __PAGE_BIT_SOFTW1 == _PAGE_BIT_SPECIAL.
+-	 */
+-	return (pte_flags(pte) & _PAGE_SPECIAL) &&
+-		(pte_flags(pte) & (_PAGE_PRESENT|_PAGE_PROTNONE));
++	return pte_flags(pte) & _PAGE_SPECIAL;
+ }
  
- 	if (is_exec) {
--#ifdef CONFIG_PPC_STD_MMU
--		/* Protection fault on exec go straight to failure on
--		 * Hash based MMUs as they either don't support per-page
--		 * execute permission, or if they do, it's handled already
--		 * at the hash level. This test would probably have to
--		 * be removed if we change the way this works to make hash
--		 * processors use the same I/D cache coherency mechanism
--		 * as embedded.
--		 */
--#endif /* CONFIG_PPC_STD_MMU */
--
- 		/*
- 		 * Allow execution from readable areas if the MMU does not
- 		 * provide separate controls over reading and executing.
-@@ -421,6 +410,14 @@ good_area:
- 		    (cpu_has_feature(CPU_FTR_NOEXECUTE) ||
- 		     !(vma->vm_flags & (VM_READ | VM_WRITE))))
- 			goto bad_area;
-+#ifdef CONFIG_PPC_STD_MMU
-+		/*
-+		 * protfault should only happen due to us
-+		 * mapping a region readonly temporarily. PROT_NONE
-+		 * is also covered by the VMA check above.
-+		 */
-+		WARN_ON_ONCE(error_code & DSISR_PROTFAULT);
-+#endif /* CONFIG_PPC_STD_MMU */
- 	/* a write */
- 	} else if (is_write) {
- 		if (!(vma->vm_flags & VM_WRITE))
-@@ -430,6 +427,7 @@ good_area:
- 	} else {
- 		if (!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)))
- 			goto bad_area;
-+		WARN_ON_ONCE(error_code & DSISR_PROTFAULT);
- 	}
- 
- 	/*
+ static inline unsigned long pte_pfn(pte_t pte)
 -- 
 2.1.2
 
