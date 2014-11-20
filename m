@@ -1,215 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757462AbaKTKDh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:03:37 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:60080 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757318AbaKTKDd (ORCPT
+	id S1757485AbaKTKDn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 05:03:43 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:56190 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757318AbaKTKDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:03:33 -0500
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Ben Gardiner <bengardiner@nanometrics.ca>,
-        Mike Looijmans <milo-software@users.sourceforge.net>
-Subject: [PATCH 5/5] i2c: davinci: use ICPFUNC to toggle I2C as gpio for bus recovery
-Date: Thu, 20 Nov 2014 12:03:08 +0200
-Message-ID: <1416477788-5544-6-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416477788-5544-1-git-send-email-grygorii.strashko@ti.com>
-References: <1416477788-5544-1-git-send-email-grygorii.strashko@ti.com>
+	Thu, 20 Nov 2014 05:03:38 -0500
+Date: Thu, 20 Nov 2014 10:03:29 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        pankaj.dubey@samsung.com, kgene.kim@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/5] drivers: soc: Add support for Exynos PMU driver
+Message-ID: <20141120100328.GO4042@n2100.arm.linux.org.uk>
+References: <1416461968-2057-1-git-send-email-amit.daniel@samsung.com>
+ <1416461968-2057-3-git-send-email-amit.daniel@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416461968-2057-3-git-send-email-amit.daniel@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Having a board where the I2C bus locks up occasionally made it clear
-that the bus recovery in the i2c-davinci driver will only work on
-some boards, because on regular boards, this will only toggle GPIO
-lines that aren't muxed to the actual pins.
+On Thu, Nov 20, 2014 at 11:09:25AM +0530, Amit Daniel Kachhap wrote:
+> diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile
+> index 063113d..44d220d 100644
+> --- a/drivers/soc/Makefile
+> +++ b/drivers/soc/Makefile
+> @@ -6,3 +6,4 @@ obj-$(CONFIG_ARCH_QCOM)		+= qcom/
+>  obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
+>  obj-$(CONFIG_SOC_TI)		+= ti/
+>  obj-$(CONFIG_PLAT_VERSATILE)	+= versatile/
+> +obj-$(CONFIG_ARCH_EXYNOS)	+= samsung/
 
-The I2C controller on SoCs like da850 (and da830), Keystone 2 has the
-built-in capability to bit-bang its lines by using the ICPFUNC registers
-of the i2c controller.
-Implement the suggested procedure by toggling SCL and checking SDA using
-the ICPFUNC registers of the I2C controller when present. Allow platforms
-to indicate the presence of the ICPFUNC registers with a has_pfunc platform
-data flag and enable this mode for platforms which supports DT
-(da850 and Keystone 2 are two SoCs which supports DT now and also
-support ICPFUNC registers).
+Is ARCH_EXYNOS appropriate here, or is your new SOC_SAMSUNG better?
 
-CC: Sekhar Nori <nsekhar@ti.com>
-CC: Kevin Hilman <khilman@deeprootsystems.com>
-CC: Santosh Shilimkar <ssantosh@kernel.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>
-Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
-Signed-off-by: Mike Looijmans <milo-software@users.sourceforge.net>
-[grygorii.strashko@ti.com: combined patches from Ben Gardiner and
-Mike Looijmans and reimplemented ICPFUNC bus recovery using I2C
-bus recovery infrastructure]
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
- drivers/i2c/busses/i2c-davinci.c          | 100 +++++++++++++++++++++++++++++-
- include/linux/platform_data/i2c-davinci.h |   1 +
- 2 files changed, 100 insertions(+), 1 deletion(-)
+> diff --git a/drivers/soc/samsung/Kconfig b/drivers/soc/samsung/Kconfig
+> new file mode 100644
+> index 0000000..a424ebc
+> --- /dev/null
+> +++ b/drivers/soc/samsung/Kconfig
+> @@ -0,0 +1,20 @@
+> +#
+> +# SAMSUNG SOC drivers
+> +#
+> +menuconfig SOC_SAMSUNG
+> +	bool "Samsung SOC drivers support"
 
-diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
-index db2a2cd..6cf96fb 100644
---- a/drivers/i2c/busses/i2c-davinci.c
-+++ b/drivers/i2c/busses/i2c-davinci.c
-@@ -64,6 +64,12 @@
- #define DAVINCI_I2C_IVR_REG	0x28
- #define DAVINCI_I2C_EMDR_REG	0x2c
- #define DAVINCI_I2C_PSC_REG	0x30
-+#define DAVINCI_I2C_FUNC_REG	0x48
-+#define DAVINCI_I2C_DIR_REG	0x4c
-+#define DAVINCI_I2C_DIN_REG	0x50
-+#define DAVINCI_I2C_DOUT_REG	0x54
-+#define DAVINCI_I2C_DSET_REG	0x58
-+#define DAVINCI_I2C_DCLR_REG	0x5c
- 
- #define DAVINCI_I2C_IVR_AAS	0x07
- #define DAVINCI_I2C_IVR_SCD	0x06
-@@ -97,6 +103,29 @@
- #define DAVINCI_I2C_IMR_NACK	BIT(1)
- #define DAVINCI_I2C_IMR_AL	BIT(0)
- 
-+/* set SDA and SCL as GPIO */
-+#define DAVINCI_I2C_FUNC_PFUNC0	BIT(0)
-+
-+/* set SCL as output when used as GPIO*/
-+#define DAVINCI_I2C_DIR_PDIR0	BIT(0)
-+/* set SDA as output when used as GPIO*/
-+#define DAVINCI_I2C_DIR_PDIR1	BIT(1)
-+
-+/* read SCL GPIO level */
-+#define DAVINCI_I2C_DIN_PDIN0 BIT(0)
-+/* read SDA GPIO level */
-+#define DAVINCI_I2C_DIN_PDIN1 BIT(1)
-+
-+/*set the SCL GPIO high */
-+#define DAVINCI_I2C_DSET_PDSET0	BIT(0)
-+/*set the SDA GPIO high */
-+#define DAVINCI_I2C_DSET_PDSET1	BIT(1)
-+
-+/* set the SCL GPIO low */
-+#define DAVINCI_I2C_DCLR_PDCLR0	BIT(0)
-+/* set the SDA GPIO low */
-+#define DAVINCI_I2C_DCLR_PDCLR1	BIT(1)
-+
- struct davinci_i2c_dev {
- 	struct device           *dev;
- 	void __iomem		*base;
-@@ -256,6 +285,72 @@ static struct i2c_bus_recovery_info davinci_i2c_gpio_recovery_info = {
- 	.prepare_recovery = davinci_i2c_prepare_recovery,
- 	.unprepare_recovery = davinci_i2c_unprepare_recovery,
- };
-+
-+static void davinci_i2c_set_scl(struct i2c_adapter *adap, int val)
-+{
-+	struct davinci_i2c_dev *dev = i2c_get_adapdata(adap);
-+
-+	if (val)
-+		davinci_i2c_write_reg(dev, DAVINCI_I2C_DSET_REG,
-+				      DAVINCI_I2C_DSET_PDSET0);
-+	else
-+		davinci_i2c_write_reg(dev, DAVINCI_I2C_DCLR_REG,
-+				      DAVINCI_I2C_DCLR_PDCLR0);
-+}
-+
-+static int davinci_i2c_get_scl(struct i2c_adapter *adap)
-+{
-+	struct davinci_i2c_dev *dev = i2c_get_adapdata(adap);
-+	int val;
-+
-+	/* read the state of SCL */
-+	val = davinci_i2c_read_reg(dev, DAVINCI_I2C_DIN_REG);
-+	return val & DAVINCI_I2C_DIN_PDIN0;
-+}
-+
-+static int davinci_i2c_get_sda(struct i2c_adapter *adap)
-+{
-+	struct davinci_i2c_dev *dev = i2c_get_adapdata(adap);
-+	int val;
-+
-+	/* read the state of SDA */
-+	val = davinci_i2c_read_reg(dev, DAVINCI_I2C_DIN_REG);
-+	return val & DAVINCI_I2C_DIN_PDIN1;
-+}
-+
-+static void davinci_i2c_scl_prepare_recovery(struct i2c_adapter *adap)
-+{
-+	struct davinci_i2c_dev *dev = i2c_get_adapdata(adap);
-+
-+	davinci_i2c_prepare_recovery(adap);
-+
-+	/* SCL output, SDA input */
-+	davinci_i2c_write_reg(dev, DAVINCI_I2C_DIR_REG, DAVINCI_I2C_DIR_PDIR0);
-+
-+	/* change to GPIO mode */
-+	davinci_i2c_write_reg(dev, DAVINCI_I2C_FUNC_REG,
-+			      DAVINCI_I2C_FUNC_PFUNC0);
-+}
-+
-+static void davinci_i2c_scl_unprepare_recovery(struct i2c_adapter *adap)
-+{
-+	struct davinci_i2c_dev *dev = i2c_get_adapdata(adap);
-+
-+	/* change back to I2C mode */
-+	davinci_i2c_write_reg(dev, DAVINCI_I2C_FUNC_REG, 0);
-+
-+	davinci_i2c_unprepare_recovery(adap);
-+}
-+
-+static struct i2c_bus_recovery_info davinci_i2c_scl_recovery_info = {
-+	.recover_bus = i2c_generic_scl_recovery,
-+	.set_scl = davinci_i2c_set_scl,
-+	.get_scl = davinci_i2c_get_scl,
-+	.get_sda = davinci_i2c_get_sda,
-+	.prepare_recovery = davinci_i2c_scl_prepare_recovery,
-+	.unprepare_recovery = davinci_i2c_scl_unprepare_recovery,
-+};
-+
- /*
-  * Waiting for bus not busy
-  */
-@@ -664,6 +759,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
- 		if (!of_property_read_u32(pdev->dev.of_node, "clock-frequency",
- 			&prop))
- 			dev->pdata->bus_freq = prop / 1000;
-+		dev->pdata->has_pfunc = true;
- 	} else if (!dev->pdata) {
- 		dev->pdata = &davinci_i2c_platform_data_default;
- 	}
-@@ -705,7 +801,9 @@ static int davinci_i2c_probe(struct platform_device *pdev)
- 	adap->timeout = DAVINCI_I2C_TIMEOUT;
- 	adap->dev.of_node = pdev->dev.of_node;
- 
--	if (dev->pdata->scl_pin) {
-+	if (dev->pdata->has_pfunc)
-+		adap->bus_recovery_info = &davinci_i2c_scl_recovery_info;
-+	else if (dev->pdata->scl_pin) {
- 		adap->bus_recovery_info = &davinci_i2c_gpio_recovery_info;
- 		adap->bus_recovery_info->scl_gpio = dev->pdata->scl_pin;
- 		adap->bus_recovery_info->sda_gpio = dev->pdata->sda_pin;
-diff --git a/include/linux/platform_data/i2c-davinci.h b/include/linux/platform_data/i2c-davinci.h
-index 2312d19..89fd347 100644
---- a/include/linux/platform_data/i2c-davinci.h
-+++ b/include/linux/platform_data/i2c-davinci.h
-@@ -18,6 +18,7 @@ struct davinci_i2c_platform_data {
- 	unsigned int	bus_delay;	/* post-transaction delay (usec) */
- 	unsigned int    sda_pin;        /* GPIO pin ID to use for SDA */
- 	unsigned int    scl_pin;        /* GPIO pin ID to use for SCL */
-+	bool		has_pfunc;	/*chip has a ICPFUNC register */
- };
- 
- /* for board setup code */
+If you intend to select SOC_SAMSUNG, is there any point in making this
+a user-visible symbol?
+
 -- 
-1.9.1
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
