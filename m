@@ -1,148 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756950AbaKTJA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 04:00:29 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:35721 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727AbaKTJA2 (ORCPT
+	id S1757060AbaKTJDT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 04:03:19 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:57342 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161AbaKTJDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 04:00:28 -0500
-Message-ID: <546DADA4.4050604@gmail.com>
-Date: Thu, 20 Nov 2014 17:00:20 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 20 Nov 2014 04:03:16 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ding Tianhong <dingtianhong@huawei.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: For the problem when using swiotlb
+Date: Thu, 20 Nov 2014 10:02:38 +0100
+Message-ID: <2121725.INdNoXW7GO@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <546DA795.9080209@huawei.com>
+References: <5469E26B.2010905@huawei.com> <2522857.bNQToYpBNt@wuerfel> <546DA795.9080209@huawei.com>
 MIME-Version: 1.0
-To: "pang.xunlei" <pang.xunlei@linaro.org>, linux-kernel@vger.kernel.org
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: Re: [PATCH v2 1/4] sched/deadline: Modify cpudl.free_cpus to reflect
- rd->span
-References: <1416411982-1204-1-git-send-email-pang.xunlei@linaro.org>
-In-Reply-To: <1416411982-1204-1-git-send-email-pang.xunlei@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:XugvtVpKo4IhXqR4xro8PAqJKik3XG8rd3uw45RbVtY
+ MDrXPX2Z91H8QQOUnG1iZ0Bvw9tqfV59m/TEIBxTAavfmUNjiB
+ 7TET4EWTvkGiL2RAQN/CSvS4wnMJzIfguvTXXAEaIAhKW9g6PZ
+ XFQrrAV+74TyIsM3lKvD9dTX0CRI8vTrChnH6zVzjUiaARPEoO
+ zpLWx7szEjq1TIMu29ceXunBjPcykY2Kx7Csc813h+NzxIwujR
+ yt8ldIv70LMuWpCzqw0aDGGUxkY+TGZMOZXNcocBsAbpaG8aSe
+ K25Nr4RQMnLXCDNg1UhCzHd/rTMwOCnSNT1OP8HJzRWpUU59nY
+ 0YoRVU+beG4YkZoBhRd8=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On 11/19/14, 11:46 PM, pang.xunlei wrote:
-> Currently, cpudl.free_cpus contains all cpus during init(see cpudl_init()),
-> so when calling cpudl_find() we have to add rd->span cpumask(cpus_allowed is
-> undependable when performing clustered scheduling using the cpuset) to avoid
-> selecting the cpu outside current root domain, see find_later_rq().
->
-> This patch adds cpudl_set_freecpu() to initialize cpudl.free_cpus when doing
-> rq_attach_root(), so we can avoid the extra rd->span operation when calling
-> cpudl_find().
->
-> Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
+On Thursday 20 November 2014 16:34:29 Ding Tianhong wrote:
+> > 
+> > I didn't mean the dma_pfn_offset. The problem is that the of_dma_configure
+> > code currently doesn't look at the mask. As I explained in my reply to
+> > Catalin, it should set the mask to the size of the dma-ranges if that is
+> > 32-bit or smaller, and dma_set_mask should look at the same dma-ranges
+> > property to decide what to set the mask to when a driver asks for a
+> > mask larger than 64-bit.
+> > 
+> ok, I think the your reply to catalin is clear, I got it, add a
+> appropriate mask for the dev is
+> reasonable, I think it should be fixed later.
+> 
+> But in my case, if I don't use the DMA_CMA, the dma_alloc_coherent
+> should use the swiotlb directly which maximum is 16M,
+> so unless I use the kmalloc otherwise I have no better idea for that.
 
-Reviewed-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+But if you just change your driver to set the 64-bit DMA mask,
+it will no longer use the swiotlb and work much faster without
+that. You have to do it anyway, even once we fix the architecture
+code.
 
-I think this patch solve one problem I meet in my progress to handle dl 
-task migration during cpu hotplug. 
-https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg770579.html
+The fix in the architecture code is just required so things don't
+break if you have a 64-bit DMA capable device on a 32-bit bus.
 
-Regards,
-Wanpeng Li
+On a related note, we should really fix the network and scsi core
+code not lot just look at PCI_DMA_BUS_IS_PHYS but check the presence
+of an IOMMU for devices that are limited to 32-bit DMA, so we fall
+back to block bounce and lowmem SKB instead of swiotlb for IOMMU-less
+devices.
 
-> ---
->   kernel/sched/core.c        |    2 ++
->   kernel/sched/cpudeadline.c |   18 ++++++++++++++----
->   kernel/sched/cpudeadline.h |    1 +
->   kernel/sched/deadline.c    |    3 ---
->   4 files changed, 17 insertions(+), 7 deletions(-)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 240157c..1b417de 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -5584,6 +5584,8 @@ static void rq_attach_root(struct rq *rq, struct root_domain *rd)
->   	rq->rd = rd;
->   
->   	cpumask_set_cpu(rq->cpu, rd->span);
-> +	cpudl_set_freecpu(&rd->cpudl, rq->cpu);
-> +
->   	if (cpumask_test_cpu(rq->cpu, cpu_active_mask))
->   		set_rq_online(rq);
->   
-> diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
-> index 539ca3c..c79f0d7 100644
-> --- a/kernel/sched/cpudeadline.c
-> +++ b/kernel/sched/cpudeadline.c
-> @@ -107,7 +107,9 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
->   	int best_cpu = -1;
->   	const struct sched_dl_entity *dl_se = &p->dl;
->   
-> -	if (later_mask && cpumask_and(later_mask, later_mask, cp->free_cpus)) {
-> +	if (later_mask &&
-> +	    cpumask_and(later_mask, cp->free_cpus, &p->cpus_allowed) &&
-> +	    cpumask_and(later_mask, later_mask, cpu_active_mask)) {
->   		best_cpu = cpumask_any(later_mask);
->   		goto out;
->   	} else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
-> @@ -186,6 +188,16 @@ out:
->   }
->   
->   /*
-> + * cpudl_set_freecpu - Set the cpudl.free_cpus
-> + * @cp: the cpudl max-heap context
-> + * @cpu: rd attached cpu
-> + */
-> +void cpudl_set_freecpu(struct cpudl *cp, int cpu)
-> +{
-> +	cpumask_set_cpu(cpu, cp->free_cpus);
-> +}
-> +
-> +/*
->    * cpudl_init - initialize the cpudl structure
->    * @cp: the cpudl max-heap context
->    */
-> @@ -203,7 +215,7 @@ int cpudl_init(struct cpudl *cp)
->   	if (!cp->elements)
->   		return -ENOMEM;
->   
-> -	if (!alloc_cpumask_var(&cp->free_cpus, GFP_KERNEL)) {
-> +	if (!zalloc_cpumask_var(&cp->free_cpus, GFP_KERNEL)) {
->   		kfree(cp->elements);
->   		return -ENOMEM;
->   	}
-> @@ -211,8 +223,6 @@ int cpudl_init(struct cpudl *cp)
->   	for_each_possible_cpu(i)
->   		cp->elements[i].idx = IDX_INVALID;
->   
-> -	cpumask_setall(cp->free_cpus);
-> -
->   	return 0;
->   }
->   
-> diff --git a/kernel/sched/cpudeadline.h b/kernel/sched/cpudeadline.h
-> index 020039b..4a10a65 100644
-> --- a/kernel/sched/cpudeadline.h
-> +++ b/kernel/sched/cpudeadline.h
-> @@ -24,6 +24,7 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
->   	       struct cpumask *later_mask);
->   void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid);
->   int cpudl_init(struct cpudl *cp);
-> +void cpudl_set_freecpu(struct cpudl *cp, int cpu);
->   void cpudl_cleanup(struct cpudl *cp);
->   #endif /* CONFIG_SMP */
->   
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index 5285332..bd83272 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -1187,9 +1187,6 @@ static int find_later_rq(struct task_struct *task)
->   	 * We have to consider system topology and task affinity
->   	 * first, then we can look for a suitable cpu.
->   	 */
-> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
-> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
-> -	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
->   	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
->   			task, later_mask);
->   	if (best_cpu == -1)
+Which driver are you using BTW?
 
+	Arnd
