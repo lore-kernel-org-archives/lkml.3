@@ -1,437 +1,874 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757917AbaKTTGN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:06:13 -0500
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:37240 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757084AbaKTTGL (ORCPT
+	id S932175AbaKTTJm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:09:42 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:40326 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755125AbaKTTJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 14:06:11 -0500
-Message-ID: <1416510365.3179.1.camel@u64>
-Subject: [PATCH v2] Perf Bench: Locking Microbenchmark
-From: Tuan Bui <tuan.d.bui@hp.com>
-To: linux-kernel@vger.kernel.org
-Cc: dbueso@suse.de, a.p.zijlstra@chello.nl, paulus@samba.org, acme@kernel.org,
-        artagnon@gmail.com, jolsa@redhat.com, dvhart@linux.intel.com,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org,
-        mingo@kernel.org, Tuan Bui <tuan.d.bui@hp.com>
-Date: Thu, 20 Nov 2014 11:06:05 -0800
-Organization: HP
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Nov 2014 14:09:40 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-76-546e3c71c62a
+Message-id: <546E3C70.9070904@samsung.com>
+Date: Thu, 20 Nov 2014 20:09:36 +0100
+From: Karol Wrona <k.wrona@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Antonio Borneo <borneo.antonio@gmail.com>
+Cc: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        linux-iio@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH v4 1/1] misc: st32fwu: Add stm32 upgrade protocol handling
+References: <1415453352-14842-1-git-send-email-k.wrona@samsung.com>
+ <1415453352-14842-2-git-send-email-k.wrona@samsung.com>
+ <CAAj6DX2RjezJBdgkcY3+ewEXu0bN0LuXz4YQ2oQNaC=-9XmqOQ@mail.gmail.com>
+In-reply-to: <CAAj6DX2RjezJBdgkcY3+ewEXu0bN0LuXz4YQ2oQNaC=-9XmqOQ@mail.gmail.com>
+Content-type: text/plain; charset=utf-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t/xa7qFNnkhBheX6lj8nXSM3WLjjPWs
+	FgdXLmOyeNC0isli1/83zBZnm96wW8w78o7F4vKuOWwOHB6/f01i9Ng56y67x4ePcR6bVnWy
+	efRtWcXo8XmTXABbFJdNSmpOZllqkb5dAlfG+Ukf2Aq+PGKsaNzUwN7AuGYeYxcjJ4eEgInE
+	3A8foWwxiQv31rN1MXJxCAksZZSYOW0PE4TziVHiQ+MDJpAqXgEtiXmPX4F1sAioSqz49YsF
+	xGYTUJdo3rGYGcQWFYiQuLJmDiNEvaDEj8n3wGpEBHQlDvdfBZrDwcEssJpJ4ok/iCks4Cfx
+	fpIhxKojjBKPrx5lAynnFAiWuPjvOdhaZgEziS8vD7NC2PISm9e8ZZ7AKDALyYZZSMpmISlb
+	wMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMk9L/uYFx6zOoQowAHoxIP74VZuSFCrIll
+	xZW5hxglOJiVRHjl2PNChHhTEiurUovy44tKc1KLDzEycXBKNTC2tfuqsnrHPziv1Ja8qXZz
+	ZeuKr+9u7rgha2g8J2LF8RyvjczG/SqV35+aMKreuJw43UwjdLK25eO9VTUrvQOe1W0rsS1N
+	+8nr6fui/XNIraGJR9erPRFnv2u8L3tj8+bddqaae6K3r930eT/jQX6TaP6H/CiLxgeKO6Zo
+	r3xyXPHzdd7sxS+VWIozEg21mIuKEwHtgWwcWwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: [PATCH] Perf Bench: Locking Microbenchmark
+On 11/20/2014 07:18 AM, Antonio Borneo wrote:
+> On Sat, Nov 8, 2014 at 9:29 PM, Karol Wrona <k.wrona@samsung.com> wrote:
+>> Adds stm32 bootloader protocol handling.
+>>
+>
+> Hi Karol,
+>
+> Sorry for not being able to reply earlier. I'm finally back after a
+> period off-line.
+>
+> I have implemented a first version of SPI flash upgrade in the
+> user-mode tool "stm32flash". I will submit it upstream after further
+> cleanup.
+> Anyway, now I have much clear idea about the SPI bootloader protocol
+> and differences with I2C and UART variants (already in "stm32flash").
+>
+> There are few details in your driver that don't match the bootloader
+> protocol over SPI described in AN4268.
+> Can you please check with the documents you have and with your HW?
+> I'm using the document Rev.2 available in ST website at
+> http://www.st.com/web/en/resource/technical/document/application_note/DM00081379.pdf
+> Cannot find a previous revision to compare them.
 
-In response to this thread https://lkml.org/lkml/2014/2/11/93, this is
-a micro benchmark that stresses locking contention in the kernel with
-creat(2) system call by spawning multiple processes to spam this system
-call.  This workload generate similar results and contentions in AIM7
-fserver workload but can generate outputs within seconds.
+Ok, I will add an information about protocol version because it seems that there 
+is a difference between v1.0 and v1.1 (Table 3 of
+http://www.st.com/web/en/resource/technical/document/application_note/DM00081379.pdf) 
+and ACK procedure is different. My bootcode says that it is 1.0 but there is 
+some probability that this bootcode was customized for Samsung. The main problem 
+is that ST did not publish what was exactly changed and I can not be sure about 
+ABI but everything is very similar to 1.1 beside ACK path. I think the next step 
+would be an implementation of 1.1 version as
+described in doc and my implementation as some kind of Samsung mode or version 
+1.0 as soon as I will asure about these things.
 
-With the creat system call the contention vary on what locks are used
-in the particular file system. I have ran this benchmark only on ext4
-and xfs file system.
+>
+>> SPI transfers are done using DMA safe buffer which is allocated once per
+>> spi upgrade life cycle. Now it supports only SPI bus but it looks that UART
+>> or I2C are quite similar and it can be used as start platform for implementing
+>> their handling.
+>>
+>> It was tested on STM32F401 MCU.
+>>
+>> Change-Id: I5e5b441310c897ff822e65041531d80ea0e7426c
+>> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>   drivers/misc/Kconfig               |    1 +
+>>   drivers/misc/Makefile              |    1 +
+>>   drivers/misc/stm32fwu/Kconfig      |    6 +
+>>   drivers/misc/stm32fwu/Makefile     |    1 +
+>>   drivers/misc/stm32fwu/stm32_core.c |  403 ++++++++++++++++++++++++++++++++++++
+>>   drivers/misc/stm32fwu/stm32_core.h |   81 ++++++++
+>>   drivers/misc/stm32fwu/stm32_spi.c  |  108 ++++++++++
+>>   include/linux/stm32fwu.h           |   49 +++++
+>>   8 files changed, 650 insertions(+)
+>>   create mode 100644 drivers/misc/stm32fwu/Kconfig
+>>   create mode 100644 drivers/misc/stm32fwu/Makefile
+>>   create mode 100644 drivers/misc/stm32fwu/stm32_core.c
+>>   create mode 100644 drivers/misc/stm32fwu/stm32_core.h
+>>   create mode 100644 drivers/misc/stm32fwu/stm32_spi.c
+>>   create mode 100644 include/linux/stm32fwu.h
+>>
+>> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+>> index bbeb451..b2e68c1 100644
+>> --- a/drivers/misc/Kconfig
+>> +++ b/drivers/misc/Kconfig
+>> @@ -528,4 +528,5 @@ source "drivers/misc/mic/Kconfig"
+>>   source "drivers/misc/genwqe/Kconfig"
+>>   source "drivers/misc/echo/Kconfig"
+>>   source "drivers/misc/cxl/Kconfig"
+>> +source "drivers/misc/stm32fwu/Kconfig"
+>>   endmenu
+>> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+>> index 7d5c4cd..88c8999 100644
+>> --- a/drivers/misc/Makefile
+>> +++ b/drivers/misc/Makefile
+>> @@ -56,3 +56,4 @@ obj-$(CONFIG_GENWQE)          += genwqe/
+>>   obj-$(CONFIG_ECHO)             += echo/
+>>   obj-$(CONFIG_VEXPRESS_SYSCFG)  += vexpress-syscfg.o
+>>   obj-$(CONFIG_CXL_BASE)         += cxl/
+>> +obj-$(CONFIG_STM32_UPGRADE_PROTOCOL)   += stm32fwu/
+>> diff --git a/drivers/misc/stm32fwu/Kconfig b/drivers/misc/stm32fwu/Kconfig
+>> new file mode 100644
+>> index 0000000..1484441
+>> --- /dev/null
+>> +++ b/drivers/misc/stm32fwu/Kconfig
+>> @@ -0,0 +1,6 @@
+>> +config STM32_UPGRADE_PROTOCOL
+>> +       tristate "STM32 upgrade protocol support"
+>> +       depends on SPI
+>> +       help
+>> +         STM32 microcontroller bootloader upgrade protocol.
+>> +         Say Y if you want to use it.
+>> diff --git a/drivers/misc/stm32fwu/Makefile b/drivers/misc/stm32fwu/Makefile
+>> new file mode 100644
+>> index 0000000..1617530
+>> --- /dev/null
+>> +++ b/drivers/misc/stm32fwu/Makefile
+>> @@ -0,0 +1 @@
+>> +obj-$(CONFIG_STM32_UPGRADE_PROTOCOL) += stm32_core.o stm32_spi.o
+>> diff --git a/drivers/misc/stm32fwu/stm32_core.c b/drivers/misc/stm32fwu/stm32_core.c
+>> new file mode 100644
+>> index 0000000..4c48cd8
+>> --- /dev/null
+>> +++ b/drivers/misc/stm32fwu/stm32_core.c
+>> @@ -0,0 +1,403 @@
+>> +/*
+>> + *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
+>> + *
+>> + *  This program is free software; you can redistribute it and/or modify
+>> + *  it under the terms of the GNU General Public License as published by
+>> + *  the Free Software Foundation; either version 2 of the License, or
+>> + *  (at your option) any later version.
+>> + *
+>> + *  This program is distributed in the hope that it will be useful,
+>> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + *  GNU General Public License for more details.
+>> + *
+>> + */
+>> +
+>> +#include <linux/delay.h>
+>> +#include <linux/device.h>
+>> +#include <linux/module.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/stm32fwu.h>
+>> +#include "stm32_core.h"
+>> +
+>> +static inline int stm32fwu_wait_for_ack(struct stm32fwu_fw *fw, u32 retries)
+>> +{
+>> +       return fw->wait_for_ack(fw, retries);
+>> +}
+>> +
+>> +static inline int stm32fwu_send_cmd(struct stm32fwu_fw *fw, u8 cmd,
+>> +                                   u32 timeout)
+>> +{
+>> +       struct stm32fwu_cmd cm = {
+>> +               .cmd = cmd,
+>> +               .neg_cmd = ~cmd,
+>> +               .timeout  = timeout,
+>> +       };
+>> +
+>> +       return fw->send_cmd(fw, &cm);
+>> +}
+>> +
+>> +static inline int stm32fwu_write(struct stm32fwu_fw *fw, const u8 *buf,
+>> +                                u32 len)
+>> +{
+>> +       return fw->write(fw, buf, len);
+>> +}
+>> +
+>> +static inline int stm32fwu_read(struct stm32fwu_fw *fw, u8 *buf, u32 len)
+>> +{
+>> +       return fw->read(fw, buf, len);
+>> +}
+>> +
+>> +static int send_addr(struct stm32fwu_fw *fw, u32 addr)
+>> +{
+>> +       int ret;
+>> +       u8 *buffer = fw->buffer;
+>> +
+>> +       buffer[0] = addr >> 24;
+>> +       buffer[1] = addr >> 16;
+>> +       buffer[2] = addr >> 8;
+>> +       buffer[3] = addr;
+>> +       buffer[4] = buffer[0] ^ buffer[1] ^ buffer[2] ^ buffer[3];
+>> +
+>> +       ret = stm32fwu_write(fw, buffer, STM32FWU_ADDR_LEN);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       return stm32fwu_wait_for_ack(fw, STM32FWU_COMMON_COUNT);
+>> +}
+>> +
+>> +static int fwu_write(struct stm32fwu_fw *fw, u32 addr, const u8 *buffer,
+>> +                    u32 len)
+>> +{
+>> +       u8 *sbuf = fw->buffer;
+>> +       u8 xor = 0;
+>> +       int ret;
+>> +       u32 i, aligned_len = len;
+>> +
+>> +       if (len > STM32FWU_MAX_TRANSFER_SIZE) {
+>> +               dev_err(fw->dev, "More than 256 bytes per transfer\n");
+>> +               return -EINVAL;
+>> +       }
+>> +
+>> +       ret = stm32fwu_send_cmd(fw, STM32FWU_WRITE_MEM_CMD,
+>> +                               STM32FWU_CMD_COUNT);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       ret = send_addr(fw, addr);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       /*
+>> +        * the same buffer is used for commands and data so the order really
+>> +        * matters here
+>> +        */
+>> +       memcpy(&sbuf[1], buffer, len);
+>> +
+>> +       /*
+>> +        * Just in case - check if chunk is a multiple of 4
+>> +        * generally the most of writes will be 256 bytes long.
+>> +        * I wonder if bootcode should worry about alignment.
+>> +        * According AN4286 it should be a multiple of 2 but other notes
+>> +        * say that it should be 4
+>> +        */
+>> +       if (!IS_ALIGNED(len, 4)) {
+>> +               aligned_len = ALIGN(len, 4);
+>> +               for (i = aligned_len; i > len; --i)
+>> +                       sbuf[i] = 0xff;
+>> +       }
+>> +
+>> +       /*
+>> +        * according AN4286 here is sent 0 < N < 255, it looks like max index,
+>> +        * not size
+>> +        */
+>> +       sbuf[0] = aligned_len - 1;
+>> +
+>> +       /* compute checksum */
+>> +       for (i = 0; i < aligned_len + 1; ++i)
+>> +               xor ^= sbuf[i];
+>> +       sbuf[aligned_len + 1] = xor;
+>> +
+>> +       /* NOTE AN4286: in some conditions the master has to wait 1 ms here */
+>> +       usleep_range(1000, 1100);
+>
+> I cannot find this 1 ms delay in AN4286.
+> Is it really needed?
+> By the way, here we are in the core file. You claim that the delay is
+> required by SPI only (NOTE AN4286), so it should go in SPI files.
+>
 
-Running the creat workload on ext4 show contention in the mutex lock
-that is used by ext4_orphan_add() and ext4_orphan_del() to add or delete
-an inode from the list of inodes. At the same time running the creat
-workload on xfs show contention in the spinlock that is used by
-xsf_log_commit_cil() to commit a transaction to the Committed Item List.
+>> +
+>> +       ret = stm32fwu_write(fw, sbuf, aligned_len + 2);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       return stm32fwu_wait_for_ack(fw, STM32FWU_COMMON_COUNT);
+>> +}
+>> +
+>> +static int fwu_erase(struct stm32fwu_fw *fw)
+>> +{
+>> +       int ret;
+>> +       u8 *sbuf = fw->buffer;
+>> +
+>> +       ret = stm32fwu_send_cmd(fw, STM32FWU_ERASE_CMD, STM32FWU_CMD_COUNT);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       /* global erase */
+>> +       sbuf[0] = 0xff;
+>> +       sbuf[1] = 0xff;
+>> +       sbuf[2] = 0x00;
+>> +
+>> +       ret = stm32fwu_write(fw, sbuf, STM32FWU_ERASE_CMD_LEN);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       return stm32fwu_wait_for_ack(fw, STM32FWU_ERASE_COUNT);
+>> +}
+>> +
+>> +/**
+>> + * stm32fwu_get() - gets bootloader information frame
+>> + * @fw:                fw object.
+>> + *
+>> + * Read bootloader information:
+>> + *
+>> + * Byte  1 bootloader version (0 < version < 255), example: 0x10 = version 1.0.
+>> + *
+>> + * Byte  2 0x00 (Get command)
+>> + *
+>> + * Byte  3 0x01 (Get Version)
+>> + *
+>> + * Byte  4 0x02 (Get ID)
+>> + *
+>> + * Byte  5 0x11 (Read Memory command)
+>> + *
+>> + * Byte  6 0x21 (Go command)
+>> + *
+>> + * Byte  7 0x31 (Write Memory command)
+>> + *
+>> + * Byte  8 0x44 (Erase command)
+>> + *
+>> + * Byte  9 0x63 (Write Protect command)
+>> + *
+>> + * Byte 10 0x73 (Write Unprotect command)
+>> + *
+>> + * Byte 11 0x82 (Readout Protect command)
+>> + *
+>> + * Byte 12 0x92 (Readout Unprotect command)
+>> + *
+>> + * Return:     read byte count or error code.
+>> + */
+>> +int stm32fwu_get(struct stm32fwu_fw *fw)
+>> +{
+>> +       int ret, count;
+>> +
+>> +       ret = stm32fwu_send_cmd(fw, STM32FWU_GET_CMD, STM32FWU_CMD_COUNT);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       ret = stm32fwu_read(fw, &fw->buffer[STM32FWU_MAX_BUFFER_SIZE], 1);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       count = fw->buffer[STM32FWU_MAX_BUFFER_SIZE];
+>> +       if (count >= STM32FWU_MAX_TRANSFER_SIZE)
+>> +               return -EINVAL;
+>
+> AN4286 specifies that a dummy byte have to be read before reading data
+> (page 7, Figure 5).
+> With current code you would get the dummy byte as first byte in the buffer.
+> This dummy byte is specific for SPI so the byte skip should better be
+> in SPI files.
+Yes, this is to fix.
+>
+>> +
+>> +       ret = stm32fwu_read(fw, &fw->buffer[STM32FWU_MAX_BUFFER_SIZE], count);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       ret = stm32fwu_wait_for_ack(fw, STM32FWU_COMMON_COUNT);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       return count;
+>> +}
+>> +EXPORT_SYMBOL(stm32fwu_get);
+>> +
+>> +/**
+>> + * stm32fwu_get_version() - gets bootloader information frame
+>> + * @fw:                fw object.
+>> + *
+>> + * Return: < 0 - error code, any positive value means success.
+>> + */
+>> +int stm32fwu_get_version(struct stm32fwu_fw *fw)
+>> +{
+>> +       int ret;
+>> +
+>> +       ret = stm32fwu_send_cmd(fw, STM32FWU_GET_CMD, STM32FWU_CMD_COUNT);
+>> +       if (ret < 0)
+>> +               return ret;
+>
+> Also here, as for stm32fwu_get(), you need to skip one byte before
+> reading the data.
+>
+>> +
+>> +       ret = stm32fwu_read(fw, &fw->buffer[STM32FWU_MAX_BUFFER_SIZE], 1);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       ret = stm32fwu_wait_for_ack(fw, STM32FWU_COMMON_COUNT);
+>> +       if (ret < 0)
+>> +               return ret;
+>>
+Here is my own bug - I've already fixed that.
+>> +       return fw->buffer[STM32FWU_MAX_BUFFER_SIZE];
+>> +}
+>> +EXPORT_SYMBOL(stm32fwu_get_version);
+>> +
+>> +/**
+>> + * stm32fwu_send_sync() - sends bootloader synchronization frame
+>> + * @fw:        fw object.
+>> + *
+>> + * It is used during SPI upgrade.
+>> + *
+>> + * Return:     if succeed the number of ack waiting cycles or error code.
+>> + */
+>
+> This sync is specific for SPI. Should be in another file.
+>
+>> +int stm32fwu_send_sync(struct stm32fwu_fw *fw)
+>> +{
+>> +       int ret;
+>> +
+>> +       dev_info(fw->dev, "send sync byte for upgrade\n");
+>> +
+>> +       fw->buffer[0] = STM32FWU_SPI_SOF;
+>> +
+>> +       ret = stm32fwu_write(fw, fw->buffer, 1);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       return  stm32fwu_wait_for_ack(fw, STM32FWU_CMD_COUNT);
+>> +}
+>> +EXPORT_SYMBOL(stm32fwu_send_sync);
+>> +
+>> +/**
+>> + * stm32fwu_update() - runs all firmware update work
+>> + * @fw:                fw object.
+>> + *
+>> + * Return:     status code < 0 if error.
+>> + */
+>> +int stm32fwu_update(struct stm32fwu_fw *fw)
+>> +{
+>> +       int ret = 0;
+>> +       u32 pos = 0;
+>> +       u32 fw_addr = STM32FWU_APP_ADDR;
+>> +       u32 block = STM32FWU_MAX_TRANSFER_SIZE;
+>> +       u32 count = 0, err_count = 0, retry_count = 0, remaining = fw->fw_len;
+>> +
+>> +       dev_info(fw->dev, "%s start\n", __func__);
+>> +
+>> +       ret = fwu_erase(fw);
+>> +       if (ret < 0) {
+>> +               dev_err(fw->dev, "%s, fw_erase_stm failed %d\n", __func__,
+>> +                       ret);
+>> +               return ret;
+>> +       }
+>> +
+>> +       while (remaining > 0) {
+>> +               if (block > remaining)
+>> +                       block = remaining;
+>> +
+>> +               while (retry_count < 3) {
+>> +                       ret = fwu_write(fw, fw_addr, fw->fw_data + pos, block);
+>> +                       if (ret < 0) {
+>> +                               dev_err(fw->dev,
+>> +                                       "Err %d writing to addr 0x%08X\n", ret,
+>> +                                       fw_addr);
+>> +                               retry_count++;
+>> +                               err_count++;
+>> +                               continue;
+>> +                       }
+>> +                       retry_count = 0;
+>> +                       break;
+>> +               }
+>> +
+>> +               if (ret < 0) {
+>> +                       dev_err(fw->dev,
+>> +                               "Writing MEM failed: %d, retry count: %d\n",
+>> +                               ret, err_count);
+>> +                       return ret;
+>> +               }
+>> +
+>> +               remaining -= block;
+>> +               pos += block;
+>> +               fw_addr += block;
+>> +               if (count++ == 20) {
+>> +                       dev_info(fw->dev, "Updated %u bytes / %u bytes\n",
+>> +                                pos, fw->fw_len);
+>> +                       count = 0;
+>> +               }
+>> +       }
+>> +
+>> +       dev_info(fw->dev,
+>> +                "Firmware download success.(%d bytes, retry %d)\n", pos,
+>> +                err_count);
+>> +
+>> +       ret = stm32fwu_send_cmd(fw, STM32FWU_GO_ADDR_CMD, STM32FWU_CMD_COUNT);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       return send_addr(fw, STM32FWU_APP_ADDR);
+>> +}
+>> +EXPORT_SYMBOL(stm32fwu_update);
+>> +
+>> +/**
+>> + * stm32fwu_init() - creates firmware upgrade instance
+>> + * @dev:       Pointer to device.
+>> + * @iface:     Interface type.
+>> + * @data:      Pointer to firmware data.
+>> + * @len:       Length of firmware data in bytes.
+>> + *
+>> + * It allocates the place for fwu structure and transfer buffer so it should
+>> + * be deinitialized by stm32fw_destroy(). Firmware upgrade is simple operation
+>> + * and it was assumed that it will be called from one context so there is no
+>> + * locking for fwu functions.
+>> + *
+>> + * Return:     Pointer to firmware upgrade structure.
+>> + */
+>> +struct stm32fwu_fw *stm32fwu_init(struct device *dev,
+>> +                                 enum stm32fwu_iface iface, const u8 *data,
+>> +                                 u32 len)
+>> +{
+>> +       struct stm32fwu_fw *fw;
+>> +
+>> +       if (iface >= STM32_MAX || iface < 0) {
+>> +               dev_err(dev, "wrong iface type\n");
+>> +               return NULL;
+>> +       }
+>> +
+>> +       fw = devm_kzalloc(dev, sizeof(*fw), GFP_KERNEL);
+>> +       if (fw == NULL)
+>> +               return NULL;
+>> +
+>> +       /* 2 times for tx and rx buffer */
+>> +       fw->buffer = devm_kzalloc(dev, 2 * STM32FWU_MAX_BUFFER_SIZE,
+>> +                            GFP_KERNEL | GFP_DMA);
+>> +       if (fw->buffer == NULL) {
+>> +               devm_kfree(dev, fw);
+>> +               return NULL;
+>> +       }
+>> +
+>> +       fw->dev = dev;
+>> +       fw->fw_len = len;
+>> +       fw->fw_data = data;
+>> +
+>> +       switch (iface) {
+>> +       case STM32_SPI:
+>> +               stm32fwu_spi_init(fw);
+>> +               break;
+>> +       default:
+>> +               pr_err("wrong interface\n");
+>> +               goto _err;
+>> +       }
+>> +
+>> +       return fw;
+>> +_err:
+>> +       devm_kfree(dev, fw->buffer);
+>> +       devm_kfree(dev, fw);
+>> +       return NULL;
+>> +}
+>> +EXPORT_SYMBOL(stm32fwu_init);
+>> +
+>> +/**
+>> + * stm32fwu_destroy() - cleans up fwu structure and buffer.
+>> + * @fw:                Pointer to fwu structure.
+>> + */
+>> +void stm32fwu_destroy(struct stm32fwu_fw *fw)
+>> +{
+>> +       devm_kfree(fw->dev, fw->buffer);
+>> +       devm_kfree(fw->dev, fw);
+>> +}
+>> +EXPORT_SYMBOL(stm32fwu_destroy);
+>> +
+>> +MODULE_AUTHOR("Karol Wrona <k.wrona@samsung.com>");
+>> +MODULE_DESCRIPTION("STM32 upgrade protocol");
+>> +MODULE_LICENSE("GPL");
+>> diff --git a/drivers/misc/stm32fwu/stm32_core.h b/drivers/misc/stm32fwu/stm32_core.h
+>> new file mode 100644
+>> index 0000000..9624327
+>> --- /dev/null
+>> +++ b/drivers/misc/stm32fwu/stm32_core.h
+>> @@ -0,0 +1,81 @@
+>> +/*
+>> + *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
+>> + *
+>> + *  This program is free software; you can redistribute it and/or modify
+>> + *  it under the terms of the GNU General Public License as published by
+>> + *  the Free Software Foundation; either version 2 of the License, or
+>> + *  (at your option) any later version.
+>> + *
+>> + *  This program is distributed in the hope that it will be useful,
+>> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + *  GNU General Public License for more details.
+>> + *
+>> + */
+>> +
+>> +#ifndef _STM32_CORE_H_
+>> +#define _STM32_CORE_H_
+>> +
+>> +#define STM32FWU_ADDR_LEN              5
+>> +#define STM32FWU_ERASE_CMD_LEN         3
+>> +
+>> +/* Protocol */
+>> +#define STM32FWU_SPI_SOF               0x5a
+>> +#define STM32FWU_ACK                   0x79
+>> +#define STM32FWU_ACK2                  0xf9
+>
+> I cannot find any reference to this ACK2 0xf9 in any STM32 document.
+> Can you please point to the right document?
+>
+>> +#define STM32FWU_NACK                  0x1f
+>> +
+>> +#define STM32FWU_MAX_TRANSFER_SIZE     256
+>> +#define STM32FWU_MAX_BUFFER_SIZE       260
+>> +
+>> +#define STM32FWU_APP_ADDR              0x08000000
+>> +
+>> +/* Retries counts */
+>> +#define STM32FWU_ERASE_COUNT           18000
+>> +#define STM32FWU_CMD_COUNT             30
+>> +#define STM32FWU_COMMON_COUNT          20
+>> +
+>> +/* Commands */
+>> +#define STM32FWU_WRITE_MEM_CMD         0x31
+>> +#define STM32FWU_GO_ADDR_CMD           0x21
+>> +#define STM32FWU_ERASE_CMD             0x44
+>> +#define STM32FWU_GET_CMD               0x00
+>> +#define STM32FWU_GET_VERSION_CMD       0x01
+>> +
+>> +/**
+>> + * struct stm32fwu_cmd - Upgrade command
+>> + * @cmd:       Fwu command.
+>> + * @neg_cmd:   Bit negation of Fwu command used xor'ed in STM.
+>> + * @timeout:   Number of retries.
+>> + */
+>> +struct stm32fwu_cmd {
+>> +       u8 cmd;
+>> +       u8 neg_cmd;
+>> +       u32 timeout;
+>> +};
+>> +
+>> +/**
+>> + * struct stm32fwu_fw - Generic representation for STM32 fw upgrade
+>> + * @dev:               Pointer to device.
+>> + * @wait_for_ack:      ACK callback.
+>> + * @send_cmd:          Command callback.
+>> + * @write:             Write callback.
+>> + * @read:              Read callback.
+>> + * @fw_data:           Pointer to firmware binary.
+>> + * @fw_len:            The length of fw bin.
+>> + * @buffer:            Pointer to SPI buffer: should be DMA safe
+>> + */
+>> +struct stm32fwu_fw {
+>> +       int (*wait_for_ack)(struct stm32fwu_fw *fw, u32 retries);
+>> +       int (*send_cmd)(struct stm32fwu_fw *fw, struct stm32fwu_cmd *cmd);
+>> +       int (*write)(struct stm32fwu_fw *fw, const u8 *buf, u32 len);
+>> +       int (*read)(struct stm32fwu_fw *fw, u8 *buf, u32 len);
+>> +       const u8 *fw_data;
+>> +       u32 fw_len;
+>> +       u8 *buffer;
+>> +       struct device *dev;
+>> +};
+>> +
+>> +void stm32fwu_spi_init(struct stm32fwu_fw *fw);
+>> +
+>> +#endif /*_STM32_CORE_H_ */
+>> diff --git a/drivers/misc/stm32fwu/stm32_spi.c b/drivers/misc/stm32fwu/stm32_spi.c
+>> new file mode 100644
+>> index 0000000..7905baf
+>> --- /dev/null
+>> +++ b/drivers/misc/stm32fwu/stm32_spi.c
+>> @@ -0,0 +1,108 @@
+>> +/*
+>> + *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
+>> + *
+>> + *  This program is free software; you can redistribute it and/or modify
+>> + *  it under the terms of the GNU General Public License as published by
+>> + *  the Free Software Foundation; either version 2 of the License, or
+>> + *  (at your option) any later version.
+>> + *
+>> + *  This program is distributed in the hope that it will be useful,
+>> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + *  GNU General Public License for more details.
+>> + *
+>> + */
+>> +
+>> +#include <linux/delay.h>
+>> +#include <linux/module.h>
+>> +#include <linux/spi/spi.h>
+>> +#include <linux/stm32fwu.h>
+>> +#include "stm32_core.h"
+>> +
+>> +static int stm32fwu_spi_write(struct stm32fwu_fw *fw, const u8 *buf, u32 len)
+>> +{
+>> +       struct spi_device *sdev = to_spi_device(fw->dev);
+>> +
+>> +       struct spi_message m;
+>> +       struct spi_transfer t = {
+>> +               .len = len,
+>> +               .tx_buf = buf,
+>> +               .bits_per_word = 8,
+>> +       };
+>> +
+>> +       spi_message_init(&m);
+>> +       spi_message_add_tail(&t, &m);
+>> +       return spi_sync(sdev, &m);
+>> +}
+>> +
+>> +static int stm32fwu_spi_read(struct stm32fwu_fw *fw, u8 *buf, u32 len)
+>> +{
+>> +       struct spi_device *sdev = to_spi_device(fw->dev);
+>> +
+>> +       struct spi_message m;
+>> +       struct spi_transfer t = {
+>> +               .len = len,
+>> +               .rx_buf = buf,
+>> +               .bits_per_word = 8,
+>> +       };
+>> +
+>> +       spi_message_init(&m);
+>> +       spi_message_add_tail(&t, &m);
+>
+> This is the proper place in SPI specific file where you should skip
+> the first dummy byte before read data.
+> But then you cannot re-use this function to wait for the ACK; need
+> another read function for it.
+>
+>> +       return spi_sync(sdev, &m);
+>> +}
+>> +
+>> +static int stm32fwu_spi_wait_for_ack(struct stm32fwu_fw *fw, u32 retries)
+>> +{
+>> +       int ret, i = 0;
+>> +       u8 *buf = &fw->buffer[STM32FWU_MAX_BUFFER_SIZE];
+>> +
+>
+> According to AN4286, here you should first skip one dummy byte, then
+> read ACK (and then send back ACK).
+> In the loop below you skip everything that is not ACK (or ACK2), so
+> probably it works fine and skips the dummy byte too.
+> But AN4286 does not specify the value of the dummy byte to skip. What
+> if it is equal to ACK?
+>
+Here is what I missed in new doc. Adding here 0x0 byte write will break ACK.
+So in the next step we can add another wait for ack fun for 1.1.
 
-Here is a comparison of this benchmark with AIM7 running fserver workload
-at 500-1000 users along with a perf trace running on ext4 file system.
-
-Test machine is a 8-sockets 80 cores Westmere system HT-off on v3.17-rc6.
-
-	AIM7		AIM7		perf-bench	perf-bench
-Users	Jobs/min	Jobs/min/child	Ops/sec		Ops/sec/child
-500	119668.25	239.34		104249		208
-600	126074.90	210.12		106136		176
-700	128662.42	183.80		106175		151
-800	119822.05	149.78		106290		132
-900	106150.25	117.94		105230		116
-1000	104681.29	104.68		106489		106
-
-Perf trace for AIM7 fserver:
-14.51%	reaim  		[kernel.kallsyms]	[k] osq_lock
-4.98%	reaim  		reaim			[.] add_long
-4.98%	reaim  		reaim			[.] add_int
-4.31%	reaim  		[kernel.kallsyms]	[k] mutex_spin_on_owner
-...
-
-Perf trace of perf bench creat
-22.37%	locking-creat  [kernel.kallsyms]	[k] osq_lock
-5.77%	locking-creat  [kernel.kallsyms]	[k] mutex_spin_on_owner
-5.31%	locking-creat  [kernel.kallsyms]	[k] _raw_spin_lock
-5.15%	locking-creat  [jbd2]			[k] jbd2_journal_put_journal_head
-...
-
-Changes since v1:
-- Added -j options to specified jobs per processes.
-- Change name of microbenchmark from creat to vfs.
-- Change all instances of threads to proccess.
-
-Signed-off-by: Tuan Bui <tuan.d.bui@hp.com>
----
- tools/perf/Documentation/perf-bench.txt |   8 +
- tools/perf/Makefile.perf                |   1 +
- tools/perf/bench/bench.h                |   1 +
- tools/perf/bench/locking.c              | 261 ++++++++++++++++++++++++++++++++
- tools/perf/builtin-bench.c              |   8 +
- 5 files changed, 279 insertions(+)
- create mode 100644 tools/perf/bench/locking.c
-
-diff --git a/tools/perf/Documentation/perf-bench.txt b/tools/perf/Documentation/perf-bench.txt
-index f6480cb..31144af 100644
---- a/tools/perf/Documentation/perf-bench.txt
-+++ b/tools/perf/Documentation/perf-bench.txt
-@@ -58,6 +58,9 @@ SUBSYSTEM
- 'futex'::
- 	Futex stressing benchmarks.
- 
-+'locking'::
-+        Locking stressing benchmarks that produce similiar result as AIM7 fserver.
-+
- 'all'::
- 	All benchmark subsystems.
- 
-@@ -213,6 +216,11 @@ Suite for evaluating wake calls.
- *requeue*::
- Suite for evaluating requeue calls.
- 
-+SUITES FOR 'locking'
-+~~~~~~~~~~~~~~~~~~
-+*vfs*::
-+Suite for evaluating vfs locking contention through creat(2).
-+
- SEE ALSO
- --------
- linkperf:perf[1]
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 262916f..c8bee04 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -443,6 +443,7 @@ BUILTIN_OBJS += $(OUTPUT)bench/mem-memset.o
- BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
- BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
- BUILTIN_OBJS += $(OUTPUT)bench/futex-requeue.o
-+BUILTIN_OBJS += $(OUTPUT)bench/locking.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
- BUILTIN_OBJS += $(OUTPUT)builtin-evlist.o
-diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
-index 3c4dd44..19468c5 100644
---- a/tools/perf/bench/bench.h
-+++ b/tools/perf/bench/bench.h
-@@ -34,6 +34,7 @@ extern int bench_mem_memset(int argc, const char **argv, const char *prefix);
- extern int bench_futex_hash(int argc, const char **argv, const char *prefix);
- extern int bench_futex_wake(int argc, const char **argv, const char *prefix);
- extern int bench_futex_requeue(int argc, const char **argv, const char *prefix);
-+extern int bench_locking_vfs(int argc, const char **argv, const char *prefix);
- 
- #define BENCH_FORMAT_DEFAULT_STR	"default"
- #define BENCH_FORMAT_DEFAULT		0
-diff --git a/tools/perf/bench/locking.c b/tools/perf/bench/locking.c
-new file mode 100644
-index 0000000..97cb07a
---- /dev/null
-+++ b/tools/perf/bench/locking.c
-@@ -0,0 +1,261 @@
-+/*
-+ * locking.c
-+ *
-+ * Simple micro benchmark that stress kernel locking contention with
-+ * creat(2) system call by spawning multiple processes to call
-+ * this system call.
-+ *
-+ * Results output are average operations/sec for all processes and
-+ * average operations/sec per process.
-+ *
-+ * Tuan Bui <tuan.d.bui@hp.com>
-+ */
-+
-+#include "../perf.h"
-+#include "../util/util.h"
-+#include "../util/stat.h"
-+#include "../util/parse-options.h"
-+#include "../util/header.h"
-+#include "bench.h"
-+
-+#include <err.h>
-+#include <stdlib.h>
-+#include <sys/time.h>
-+#include <unistd.h>
-+#include <sys/resource.h>
-+#include <linux/futex.h>
-+#include <sys/mman.h>
-+#include <sys/syscall.h>
-+#include <sys/types.h>
-+#include <signal.h>
-+#include <dirent.h>
-+
-+#define NOTSET -1
-+struct worker {
-+	pid_t pid;
-+	unsigned int order_id;
-+	char str[50];
-+};
-+
-+struct timeval start, end, total;
-+static unsigned int start_nr = 100;
-+static unsigned int end_nr = 1100;
-+static unsigned int increment_by = 100;
-+static int bench_dur = NOTSET;
-+static int num_jobs = NOTSET;
-+static bool run_jobs;
-+
-+/* Shared variables between fork processes*/
-+unsigned int *finished, *setup;
-+unsigned long long *shared_workers;
-+/* all processes will block on the same futex */
-+u_int32_t *futex;
-+
-+static const struct option options[] = {
-+	OPT_UINTEGER('s', "start", &start_nr, "Number of processes to start"),
-+	OPT_UINTEGER('e', "end", &end_nr, "Number of processes to end"),
-+	OPT_UINTEGER('i', "increment", &increment_by, "Numbers of processes to increment)"),
-+	OPT_INTEGER('r', "runtime", &bench_dur, "Specify benchmark runtime in seconds"),
-+	OPT_INTEGER('j', "jobs", &num_jobs, "Specify number of jobs per process"),
-+	OPT_END()
-+};
-+
-+static const char * const bench_locking_vfs_usage[] = {
-+	"perf bench locking vfs <options>",
-+	NULL
-+};
-+
-+/* Running bench vfs workload */
-+static void *run_bench_vfs(struct worker *workers)
-+{
-+	int fd;
-+	unsigned long long nr_ops = 0;
-+	int ret;
-+	int jobs = num_jobs;
-+
-+	sprintf(workers->str, "%d-XXXXXX", getpid());
-+	ret = mkstemp(workers->str);
-+	if (ret < 0)
-+		err(EXIT_FAILURE, "mkstemp");
-+
-+	/* Signal to parent process and wait till all processes/ are ready run */
-+	setup[workers->order_id] = 1;
-+	syscall(SYS_futex, futex, FUTEX_WAIT, 0, NULL, NULL, 0);
-+
-+	/* Start of the benchmark keep looping till parent process signal completion */
-+	while ((run_jobs ? jobs : (!*finished))) {
-+		fd = creat(workers->str, S_IRWXU);
-+		if (fd < 0)
-+			err(EXIT_FAILURE, "creat");
-+		nr_ops++;
-+		if (run_jobs)
-+			jobs--;
-+		close(fd);
-+	}
-+
-+	unlink(workers->str);
-+	shared_workers[workers->order_id] = nr_ops;
-+	setup[workers->order_id] = 0;
-+	exit(0);
-+}
-+
-+/* Setting shared variable finished and shared_workers */
-+static void setup_shared(void)
-+{
-+	unsigned int *finished_tmp, *setup_tmp;
-+	unsigned long long *shared_workers_tmp;
-+	u_int32_t *futex_tmp;
-+
-+	/* finished shared var is use to signal start and end of benchmark */
-+	finished_tmp = (void *)mmap(0, sizeof(unsigned int), PROT_READ|PROT_WRITE,
-+			MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-+	if (finished_tmp == (void *) -1)
-+		err(EXIT_FAILURE, "mmap finished");
-+	finished = finished_tmp;
-+
-+	/* shared_workers is an array of ops perform by each process */
-+	shared_workers_tmp = (void *)mmap(0, sizeof(unsigned long long)*end_nr,
-+			PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-+	if (shared_workers_tmp == (void *) -1)
-+		err(EXIT_FAILURE, "mmap shared_workers");
-+	shared_workers = shared_workers_tmp;
-+
-+	/* setup is use for each processes to signal that it is done
-+	 * setting up for the benchmark and is ready to run */
-+	setup_tmp = (void *)mmap(0, sizeof(unsigned int)*end_nr,
-+			PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-+	if (setup_tmp == (void *) -1)
-+		err(EXIT_FAILURE, "mmap shared_workers");
-+	setup = setup_tmp;
-+
-+	/* Processes will sleep on this futex until all other processes
-+	 * are done setting up and are ready to run */
-+	futex_tmp = (void *)mmap(0, sizeof(u_int32_t *), PROT_READ|PROT_WRITE,
-+			MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-+	if (futex_tmp == (void *) -1)
-+		err(EXIT_FAILURE, "mmap finished");
-+	futex = futex_tmp;
-+	(*futex) = 0;
-+}
-+
-+/* Freeing shared variables */
-+static void free_resources(void)
-+{
-+	if ((munmap(finished, sizeof(unsigned int)) == -1))
-+		err(EXIT_FAILURE, "munmap finished");
-+
-+	if ((munmap(shared_workers, sizeof(unsigned long long) * end_nr) == -1))
-+		err(EXIT_FAILURE, "munmap shared_workers");
-+
-+	if ((munmap(setup, sizeof(unsigned int) * end_nr) == -1))
-+		err(EXIT_FAILURE, "munmap shared_workers");
-+
-+	if ((munmap(futex, sizeof(u_int32_t))) == -1)
-+		err(EXIT_FAILURE, "munmap finished");
-+}
-+
-+/* Start to spawn workers and wait till all workers have been
-+ * created before starting workload */
-+static void spawn_workers(void *(*bench_ptr) (struct worker *))
-+{
-+	pid_t parent, child;
-+	unsigned int i, j, k;
-+	struct worker workers;
-+	unsigned long long total_ops;
-+	unsigned int total_workers;
-+
-+	parent = getpid();
-+	setup_shared();
-+
-+	/* This loop through all the run each is increment by increment_by */
-+	for (i = start_nr; i <= end_nr; i += increment_by) {
-+
-+		for (j = 0; j < i; j++) {
-+			if (!fork())
-+				break;
-+		}
-+
-+		child = getpid();
-+		/* Initialize child worker struct and run benchmark */
-+		if (child != parent) {
-+			workers.order_id = j;
-+			workers.pid = child;
-+			bench_ptr(&workers);
-+		}
-+		/* Parent to sleep during the duration of benchmark */
-+		else{
-+			/* Make sure all child process are created and setup
-+			 * before starting benchmark for bench_dur durations */
-+			do {
-+				total_workers = 0;
-+				for (k = 0; k < i; k++)
-+					total_workers = total_workers + setup[k];
-+			} while (total_workers != i);
-+
-+			/* Wake up all sleeping process to run the benchmark */
-+			(*futex) = 1;
-+			syscall(SYS_futex, futex, FUTEX_WAKE, i, NULL, NULL, 0);
-+
-+			/* If run time parameters is set */
-+			if (!run_jobs) {
-+				/* All proccesses are ready signal them to run */
-+				gettimeofday(&start, NULL);
-+				sleep(bench_dur);
-+				(*finished) = 1;
-+				gettimeofday(&end, NULL);
-+				timersub(&end, &start, &total);
-+
-+				for (k = 0; k < i; k++)
-+					wait(NULL);
-+			}
-+			/* If jobs per proccesses is set */
-+			else {
-+				/* All proccesses are ready signal them to run */
-+				gettimeofday(&start, NULL);
-+				/* Wait for all process to terminate before getting outputs */
-+				for (k = 0; k < i; k++)
-+					wait(NULL);
-+				gettimeofday(&end, NULL);
-+				timersub(&end, &start, &total);
-+			}
-+
-+			/* Sum up all the ops by each process and report */
-+			total_ops = 0;
-+			for (k = 0; k < i; k++)
-+				total_ops = total_ops + shared_workers[k];
-+
-+			printf("\n%6d processes: throughput = %llu average opts/sec all processes\n",
-+				i, (total_ops / (!total.tv_sec ? 1 : total.tv_sec)));
-+
-+			printf("%6d processes: throughput = %llu average opts/sec per process\n",
-+				i, ((total_ops/(!total.tv_sec ? 1 : total.tv_sec))/(!i ? 1 : i)));
-+
-+			/* Reset back to 0 for next run */
-+			(*finished) = 0;
-+			(*futex) = 0;
-+		}
-+	}
-+}
-+
-+int bench_locking_vfs(int argc, const char **argv,
-+			const char *prefix __maybe_unused)
-+{
-+	argc = parse_options(argc, argv, options, bench_locking_vfs_usage, 0);
-+
-+	/* If errors parsing options or if both run time and job options is set */
-+	if (argc || ((bench_dur != NOTSET) && (num_jobs != NOTSET))) {
-+		fprintf(stderr, "\n runtime and jobs options can not both be specified\n");
-+		usage_with_options(bench_locking_vfs_usage, options);
-+		exit(EXIT_FAILURE);
-+	}
-+	/* If both run time and jobs options is not set default to run time only*/
-+	if ((bench_dur == NOTSET) && (num_jobs == NOTSET))
-+		bench_dur = 5;
-+
-+	if (num_jobs != NOTSET)
-+		run_jobs = true;
-+
-+	spawn_workers(run_bench_vfs);
-+	free_resources();
-+	return 0;
-+}
-diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
-index b9a56fa..fdfb089 100644
---- a/tools/perf/builtin-bench.c
-+++ b/tools/perf/builtin-bench.c
-@@ -63,6 +63,13 @@ static struct bench futex_benchmarks[] = {
- 	{ NULL,		NULL,						NULL			}
- };
- 
-+static struct bench locking_benchmarks[] = {
-+	{ "vfs",	"Benchmark vfs using creat(2)",			bench_locking_vfs	},
-+	{ "all",        "Run all benchmarks in this suite",		NULL			},
-+	{ NULL,		NULL,						NULL			}
-+};
-+
-+
- struct collection {
- 	const char	*name;
- 	const char	*summary;
-@@ -76,6 +83,7 @@ static struct collection collections[] = {
- 	{ "numa",	"NUMA scheduling and MM benchmarks",		numa_benchmarks		},
- #endif
- 	{"futex",       "Futex stressing benchmarks",                   futex_benchmarks        },
-+	{"locking",     "Kernel locking benchmarks",                    locking_benchmarks      },
- 	{ "all",	"All benchmarks",				NULL			},
- 	{ NULL,		NULL,						NULL			}
- };
--- 
-1.9.1
-
-
+>> +       while (i < retries) {
+>> +               ret = stm32fwu_spi_read(fw, buf, 1);
+>> +               if (ret < 0) {
+>> +                       dev_err(fw->dev,
+>> +                               "firmware upgrade wait for ack fail\n");
+>> +                       return ret;
+>> +               }
+>> +
+>> +               if (fw->buffer[STM32FWU_MAX_BUFFER_SIZE] == STM32FWU_ACK ||
+>> +                   fw->buffer[STM32FWU_MAX_BUFFER_SIZE] == STM32FWU_ACK2) {
+>
+> Again, no evidence of ACK2 in documentation.
+>
+> Also, you cannot just return. AN4286 (figure 2) requires to send back
+> a byte ACK to the bootloader.
+>
+>> +                       return i;
+>> +               }
+>> +
+>> +               if (fw->buffer[STM32FWU_MAX_BUFFER_SIZE] == STM32FWU_NACK)
+>
+> Also here, send back a byte ACK to bootloader before return.
+>
+> Regards,
+> Antonio
+>
+>> +                       return -EPROTO;
+>> +
+>> +               usleep_range(1000, 1100);
+>> +               i++;
+>> +       }
+>> +
+>> +       dev_err(fw->dev, "fw ack timeout\n");
+>> +
+>> +       return -ETIMEDOUT;
+>> +}
+>> +
+>> +static int stm32fwu_spi_send_cmd(struct stm32fwu_fw *fw,
+>> +                                struct stm32fwu_cmd *cmd)
+>> +{
+>> +       int ret;
+>> +
+>> +       fw->buffer[0] = STM32FWU_SPI_SOF;
+>> +       fw->buffer[1] = cmd->cmd;
+>> +       fw->buffer[2] = cmd->neg_cmd;
+>> +
+>> +       ret = stm32fwu_spi_write(fw, fw->buffer, 3);
+>> +       if (ret < 0) {
+>> +               dev_err(fw->dev, "fw cmd write fail\n");
+>> +               return ret;
+>> +       }
+>> +
+>> +       return stm32fwu_spi_wait_for_ack(fw, cmd->timeout);
+>> +}
+>> +
+>> +void stm32fwu_spi_init(struct stm32fwu_fw *fw)
+>> +{
+>> +       fw->write = stm32fwu_spi_write;
+>> +       fw->read = stm32fwu_spi_read;
+>> +       fw->wait_for_ack = stm32fwu_spi_wait_for_ack;
+>> +       fw->send_cmd = stm32fwu_spi_send_cmd;
+>> +}
+>> diff --git a/include/linux/stm32fwu.h b/include/linux/stm32fwu.h
+>> new file mode 100644
+>> index 0000000..3084ffd
+>> --- /dev/null
+>> +++ b/include/linux/stm32fwu.h
+>> @@ -0,0 +1,49 @@
+>> +/*
+>> + *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
+>> + *
+>> + *  This program is free software; you can redistribute it and/or modify
+>> + *  it under the terms of the GNU General Public License as published by
+>> + *  the Free Software Foundation; either version 2 of the License, or
+>> + *  (at your option) any later version.
+>> + *
+>> + *  This program is distributed in the hope that it will be useful,
+>> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + *  GNU General Public License for more details.
+>> + *
+>> + */
+>> +
+>> +#ifndef _STM32FWU_H_
+>> +#define _STM32FWU_H_
+>> +
+>> +/**
+>> + * enum stm32fwu_iface - upgrade interfaces for STM32 MCU's
+>> + * @STM32_SPI:         SPI interface.
+>> + * @STM32_MAX:         terminator.
+>> + */
+>> +enum stm32fwu_iface {
+>> +       STM32_SPI,
+>> +       /*
+>> +        * Generally for future use, i.e. UART upgrade algorithm looks pretty
+>> +        * similar.
+>> +        */
+>> +       STM32_MAX
+>> +};
+>> +
+>> +struct stm32fwu_fw;
+>> +
+>> +struct stm32fwu_fw *stm32fwu_init(struct device *dev,
+>> +                                 enum stm32fwu_iface iface, const u8 *data,
+>> +                                 u32 len);
+>> +
+>> +void stm32fwu_destroy(struct stm32fwu_fw *fw);
+>> +
+>> +int stm32fwu_send_sync(struct stm32fwu_fw *fw);
+>> +
+>> +int stm32fwu_update(struct stm32fwu_fw *fw);
+>> +
+>> +int stm32fwu_get(struct stm32fwu_fw *fw);
+>> +
+>> +int stm32fwu_get_version(struct stm32fwu_fw *fw);
+>> +
+>> +#endif /* _STM32FWU_H_ */
+>> --
+>> 1.7.9.5
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
