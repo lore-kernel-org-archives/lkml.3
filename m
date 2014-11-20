@@ -1,169 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaKTHd7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:33:59 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:42253 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaKTHd5 (ORCPT
+	id S1756023AbaKTHh2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:37:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43783 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaKTHh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:33:57 -0500
-Date: Thu, 20 Nov 2014 08:33:51 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Aravinda Prasad <aravinda@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@suse.de>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        Kan Liang <kan.liang@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@iki.fi>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>, systemtap@sourceware.org,
-        Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
-        WANG Chao <chaowang@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/16] perf/core improvements and fixes
-Message-ID: <20141120073351.GA498@gmail.com>
-References: <1416413016-19110-1-git-send-email-acme@kernel.org>
+	Thu, 20 Nov 2014 02:37:27 -0500
+Date: Wed, 19 Nov 2014 23:36:56 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-5e2d4d0e88dac4003cf96aca00d63aff2314391e@git.kernel.org>
+Cc: acme@redhat.com, paulus@samba.org, namhyung@kernel.org, mingo@kernel.org,
+        jolsa@redhat.com, a.p.zijlstra@chello.nl, dsahern@gmail.com,
+        namhyung.kim@lge.com, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com, hpa@zytor.com, tglx@linutronix.de
+Reply-To: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com, namhyung.kim@lge.com, dsahern@gmail.com,
+        jolsa@redhat.com, a.p.zijlstra@chello.nl, acme@redhat.com,
+        paulus@samba.org, mingo@kernel.org, namhyung@kernel.org
+In-Reply-To: <1415337606-2186-3-git-send-email-namhyung@kernel.org>
+References: <1415337606-2186-3-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Clean up libelf feature support code
+Git-Commit-ID: 5e2d4d0e88dac4003cf96aca00d63aff2314391e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1416413016-19110-1-git-send-email-acme@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  5e2d4d0e88dac4003cf96aca00d63aff2314391e
+Gitweb:     http://git.kernel.org/tip/5e2d4d0e88dac4003cf96aca00d63aff2314391e
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Fri, 7 Nov 2014 14:20:06 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 19 Nov 2014 12:33:46 -0300
 
-* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+perf tools: Clean up libelf feature support code
 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit 2565711fb7d7c28e0cd93c8971b520d1b10b857c:
-> 
->   perf: Improve the perf_sample_data struct layout (2014-11-16 11:42:04 +0100)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to a84808083688d82d7f1e5786ccf5df0ff7d448cb:
-> 
->   perf tools: Only override the default :tid comm entry (2014-11-19 12:37:26 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
-> 
-> User visible fixes:
-> 
-> - Fallback to kallsyms when using the minimal 'ELF' loader (Arnaldo Carvalho de Melo)
-> 
-> - Fix annotation with kcore (Adrian Hunter)
-> 
-> - Fix up srcline histogram key formatting (Arnaldo Carvalho de Melo)
-> 
-> - Add missing handler for PERF_RECORD_MMAP2 events in 'perf diff' (Kan Liang)
-> 
-> User visible changes/new features:
-> 
-> - Only print base source file for srcline histogram sort key (Andi Kleen)
-> 
-> - Support source line numbers in annotate using a hotkey (Andi Kleen)
-> 
-> Infrastructure:
-> 
-> - Do not poll events that use the system_wide flag (Adrian Hunter)
-> 
-> - Add perf-read-vdso32 and perf-read-vdsox32 to .gitignore (Adrian Hunter)
-> 
->   perf tools: Only override the default :tid comm entry (Adrian Hunter)
-> 
-> - Factor out adding new call chain entries (Andi Kleen)
-> 
-> - Use al.addr to set up call chain (Andi Kleen)
-> 
-> - Use a common function to resolve symbol or name (Andi Kleen)
-> 
-> - Fix ftrace:function event recording (Jiri Olsa)
-> 
-> - Move disable_buildid_cache() to util/build-id.c (Namhyung Kim)
-> 
-> - Clean up libelf feature support code (Namhyung Kim)
-> 
-> - fix typo in python 'perf test' (WANG Chao)
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Adrian Hunter (4):
->       perf tools: Fix annotation with kcore
->       perf evlist: Do not poll events that use the system_wide flag
->       perf tools: Add perf-read-vdso32 and perf-read-vdsox32 to .gitignore
->       perf tools: Only override the default :tid comm entry
-> 
-> Andi Kleen (5):
->       perf callchain: Factor out adding new call chain entries
->       perf callchain: Use al.addr to set up call chain
->       perf callchain: Use a common function to resolve symbol or name
->       perf tools: Only print base source file for srcline
->       perf annotate: Support source line numbers in annotate
-> 
-> Arnaldo Carvalho de Melo (2):
->       perf symbols: Fallback to kallsyms when using the minimal 'ELF' loader
->       perf hists: Fix up srcline histogram key formatting
-> 
-> Jiri Olsa (1):
->       perf evsel: Fix ftrace:function event recording
-> 
-> Kan Liang (1):
->       perf diff: Add missing handler for PERF_RECORD_MMAP2 events
-> 
-> Namhyung Kim (2):
->       perf build-id: Move disable_buildid_cache() to util/build-id.c
->       perf tools: Clean up libelf feature support code
-> 
-> WANG Chao (1):
->       perf test: fix typo in python test
-> 
->  tools/perf/.gitignore             |  2 ++
->  tools/perf/Makefile.perf          |  2 --
->  tools/perf/builtin-diff.c         |  1 +
->  tools/perf/config/Makefile        |  5 ++--
->  tools/perf/tests/builtin-test.c   |  2 +-
->  tools/perf/ui/browsers/annotate.c | 13 +++++++++-
->  tools/perf/ui/browsers/hists.c    | 17 -------------
->  tools/perf/ui/gtk/hists.c         | 11 +--------
->  tools/perf/ui/stdio/hist.c        | 23 +++++++-----------
->  tools/perf/util/annotate.c        | 32 ++++++++++++++++++++----
->  tools/perf/util/annotate.h        |  1 +
->  tools/perf/util/build-id.c        | 11 +++++++++
->  tools/perf/util/build-id.h        |  1 +
->  tools/perf/util/callchain.c       | 19 +++++++++++++++
->  tools/perf/util/callchain.h       |  3 +++
->  tools/perf/util/evlist.c          | 10 +++++++-
->  tools/perf/util/evsel.c           |  8 ++++++
->  tools/perf/util/header.c          | 10 +-------
->  tools/perf/util/machine.c         | 51 ++++++++++++++++++++++++---------------
->  tools/perf/util/sort.c            |  2 +-
->  tools/perf/util/srcline.c         |  2 +-
->  tools/perf/util/symbol-minimal.c  |  1 -
->  tools/perf/util/thread.c          |  5 ++--
->  tools/perf/util/util.h            |  1 -
->  24 files changed, 145 insertions(+), 88 deletions(-)
+Current EXTLIBS contains -lelf by default and removes it when libelf is
+not detected.
 
-Pulled into tip:perf/core, thanks a lot Arnaldo!
+This is little bit confusing since we can now build perf without libelf
+so there's no need to handle it differently than other libraries.
 
-	Ingo
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1415337606-2186-3-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile.perf   | 2 --
+ tools/perf/config/Makefile | 5 +++--
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index aecf61dc..478efa9 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -497,8 +497,6 @@ ifneq ($(OUTPUT),)
+ endif
+ 
+ ifdef NO_LIBELF
+-EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
+-
+ # Remove ELF/DWARF dependent codes
+ LIB_OBJS := $(filter-out $(OUTPUT)util/symbol-elf.o,$(LIB_OBJS))
+ LIB_OBJS := $(filter-out $(OUTPUT)util/dwarf-aux.o,$(LIB_OBJS))
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 79f906c..5d4b039 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -150,7 +150,7 @@ CFLAGS += -std=gnu99
+ # adding assembler files missing the .GNU-stack linker note.
+ LDFLAGS += -Wl,-z,noexecstack
+ 
+-EXTLIBS = -lelf -lpthread -lrt -lm -ldl
++EXTLIBS = -lpthread -lrt -lm -ldl
+ 
+ ifneq ($(OUTPUT),)
+   OUTPUT_FEATURES = $(OUTPUT)config/feature-checks/
+@@ -354,6 +354,7 @@ endif # NO_LIBELF
+ 
+ ifndef NO_LIBELF
+   CFLAGS += -DHAVE_LIBELF_SUPPORT
++  EXTLIBS += -lelf
+ 
+   ifeq ($(feature-libelf-mmap), 1)
+     CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
+@@ -373,7 +374,7 @@ ifndef NO_LIBELF
+     else
+       CFLAGS += -DHAVE_DWARF_SUPPORT $(LIBDW_CFLAGS)
+       LDFLAGS += $(LIBDW_LDFLAGS)
+-      EXTLIBS += -lelf -ldw
++      EXTLIBS += -ldw
+     endif # PERF_HAVE_DWARF_REGS
+   endif # NO_DWARF
+ endif # NO_LIBELF
