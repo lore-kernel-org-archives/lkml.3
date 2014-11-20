@@ -1,75 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866AbaKTOfF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 09:35:05 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:63788 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953AbaKTOfA (ORCPT
+	id S1756920AbaKTOfS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 09:35:18 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:44523 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953AbaKTOfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 09:35:00 -0500
-Date: Thu, 20 Nov 2014 15:34:53 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: "Griffis, Brad" <bgriffis@ti.com>
-Cc: "Nori, Sekhar" <nsekhar@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>, "R, Vignesh" <vigneshr@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, "Balbi, Felipe" <balbi@ti.com>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kardell <jan.kardell@telliq.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Robert Nelson <robertcnelson@gmail.com>
-Subject: Re: [PATCH v4 3/6] mfd: ti_am335x_tscadc: Remove unwanted
- reg_se_cache save
-Message-ID: <20141120143453.GA5809@localhost.localdomain>
-References: <1415941651-28962-1-git-send-email-vigneshr@ti.com>
- <1415941651-28962-4-git-send-email-vigneshr@ti.com>
- <20141118143005.GF24004@x1>
- <20141118171240.GB3003@dtor-ws>
- <546DF2F0.9080405@ti.com>
- <912A29987EAE174BA6CF187D7CDFA9CE26F69163@DLEE08.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <912A29987EAE174BA6CF187D7CDFA9CE26F69163@DLEE08.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 20 Nov 2014 09:35:15 -0500
+From: Imre Palik <imrep.amz@gmail.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, "Palik, Imre" <imrep@amazon.de>,
+        Matt Wilson <msw@amazon.com>
+Subject: [PATCH RFC] audit: move the tree pruning to a dedicated thread
+Date: Thu, 20 Nov 2014 15:34:21 +0100
+Message-Id: <1416494061-22778-1-git-send-email-imrep.amz@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Brad,
+From: "Palik, Imre" <imrep@amazon.de>
 
-What you wrote is just the kind of thing one would like to see in the
-cover letter or change log...
+When file auditing is enabled, during a low memory situation, a memory
+allocation with __GFP_FS can lead to pruning the inode cache.  Which can,
+in turn lead to audit_tree_freeing_mark() being called.  This can call
+audit_schedule_prune(), that tries to fork a pruning thread, and
+waits until the thread is created.  But forking needs memory, and the
+memory allocations there are done with __GFP_FS.
 
-On Thu, Nov 20, 2014 at 02:23:30PM +0000, Griffis, Brad wrote:
-> In that thread the user was registering multiple press events for a single press.  By increasing the udelay to 1.5ms they were able to solve the problem.  Of course, having a 1.5ms delay in your ISR is a really bad thing to do...
+So we are waiting merrily for some __GFP_FS memory allocations to complete,
+while holding some filesystem locks.  This can take a while ...
 
-I fully support removing the aweful ISR delay, as long as the result
-works!
+This patch creates a single thread for pruning the tree from
+audit_tree_init(), and thus avoids the deadlock that the on-demand thread
+creation can cause.
+
+An alternative approach would be to move the thread creation outside of the
+lock.  This would assume that other layers of the filesystem code don't
+hold any locks, and it would need some rewrite of the code to limit the
+amount of threads possibly spawned.
+
+Reported-by: Matt Wilson <msw@amazon.com>
+Cc: Matt Wilson <msw@amazon.com>
+Signed-off-by: Imre Palik <imrep@amazon.de>
+---
+ kernel/audit_tree.c |   53 ++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 35 insertions(+), 18 deletions(-)
+
+diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
+index 0caf1f8..cf6db88 100644
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -37,6 +37,7 @@ struct audit_chunk {
  
-> I have another customer that was experiencing the same issue of registering multiple press events, and sure enough the 1.5ms delay "fixed" their problem too.  The patches allowed them to remove that gigantic delay from the ISR because that software delay has now become a hardware delay via CHARGECONFIG.  That customer is the one that needed 0xB000 which is MUCH larger than the value of 0x400 that was working fine for me on the EVM.
-
-It would be really nice for TI to explain to board designers how to
-calculate the proper value.
-
-Thanks,
-Richard
+ static LIST_HEAD(tree_list);
+ static LIST_HEAD(prune_list);
++static struct task_struct *prune_thread;
+ 
+ /*
+  * One struct chunk is attached to each inode of interest.
+@@ -806,30 +807,39 @@ int audit_tag_tree(char *old, char *new)
+  */
+ static int prune_tree_thread(void *unused)
+ {
+-	mutex_lock(&audit_cmd_mutex);
+-	mutex_lock(&audit_filter_mutex);
++	for (;;) {
++		set_current_state(TASK_INTERRUPTIBLE);
++		if (list_empty(&prune_list))
++			schedule();
++		__set_current_state(TASK_RUNNING);
+ 
+-	while (!list_empty(&prune_list)) {
+-		struct audit_tree *victim;
++		mutex_lock(&audit_cmd_mutex);
++		mutex_lock(&audit_filter_mutex);
+ 
+-		victim = list_entry(prune_list.next, struct audit_tree, list);
+-		list_del_init(&victim->list);
++		while (!list_empty(&prune_list)) {
++			struct audit_tree *victim;
+ 
+-		mutex_unlock(&audit_filter_mutex);
++			victim = list_entry(prune_list.next,
++					struct audit_tree, list);
++			list_del_init(&victim->list);
+ 
+-		prune_one(victim);
++			mutex_unlock(&audit_filter_mutex);
+ 
+-		mutex_lock(&audit_filter_mutex);
+-	}
++			prune_one(victim);
+ 
+-	mutex_unlock(&audit_filter_mutex);
+-	mutex_unlock(&audit_cmd_mutex);
++			mutex_lock(&audit_filter_mutex);
++		}
++
++		mutex_unlock(&audit_filter_mutex);
++		mutex_unlock(&audit_cmd_mutex);
++	}
+ 	return 0;
+ }
+ 
+ static void audit_schedule_prune(void)
+ {
+-	kthread_run(prune_tree_thread, NULL, "audit_prune_tree");
++	BUG_ON(!prune_thread);
++	wake_up_process(prune_thread);
+ }
+ 
+ /*
+@@ -896,9 +906,10 @@ static void evict_chunk(struct audit_chunk *chunk)
+ 	for (n = 0; n < chunk->count; n++)
+ 		list_del_init(&chunk->owners[n].list);
+ 	spin_unlock(&hash_lock);
++	mutex_unlock(&audit_filter_mutex);
+ 	if (need_prune)
+ 		audit_schedule_prune();
+-	mutex_unlock(&audit_filter_mutex);
++
+ }
+ 
+ static int audit_tree_handle_event(struct fsnotify_group *group,
+@@ -938,10 +949,16 @@ static int __init audit_tree_init(void)
+ {
+ 	int i;
+ 
+-	audit_tree_group = fsnotify_alloc_group(&audit_tree_ops);
+-	if (IS_ERR(audit_tree_group))
+-		audit_panic("cannot initialize fsnotify group for rectree watches");
+-
++	prune_thread = kthread_create(prune_tree_thread, NULL,
++				"audit_prune_tree");
++	if (IS_ERR(prune_thread)) {
++		audit_panic("cannot start thread audit_prune_tree");
++	} else {
++		wake_up_process(prune_thread);
++		audit_tree_group = fsnotify_alloc_group(&audit_tree_ops);
++		if (IS_ERR(audit_tree_group))
++			audit_panic("cannot initialize fsnotify group for rectree watches");
++	}
+ 	for (i = 0; i < HASH_SIZE; i++)
+ 		INIT_LIST_HEAD(&chunk_hash_heads[i]);
+ 
+-- 
+1.7.9.5
 
