@@ -1,103 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708AbaKTHsi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:48:38 -0500
-Received: from mail-bn1on0119.outbound.protection.outlook.com ([157.56.110.119]:31648
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755212AbaKTHsg convert rfc822-to-8bit (ORCPT
+	id S1756033AbaKTH5O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:57:14 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:34703 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727AbaKTH5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:48:36 -0500
-From: Dexuan Cui <decui@microsoft.com>
-To: KY Srinivasan <kys@microsoft.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-CC: Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH] hv: hv_fcopy: drop the obsolete message on transfer
- failure
-Thread-Topic: [PATCH] hv: hv_fcopy: drop the obsolete message on transfer
- failure
-Thread-Index: AQHP/ixzoWqBLlree0aJYfe1XGjx8ZxonIcQgACGI1A=
-Date: Thu, 20 Nov 2014 07:47:41 +0000
-Message-ID: <F792CF86EFE20D4AB8064279AFBA51C613E577E6@HKNPRD3002MB017.064d.mgd.msft.net>
-References: <1415768606-28538-1-git-send-email-decui@microsoft.com>
- <BN1PR0301MB0707ED3958628389255649FCA0890@BN1PR0301MB0707.namprd03.prod.outlook.com>
-In-Reply-To: <BN1PR0301MB0707ED3958628389255649FCA0890@BN1PR0301MB0707.namprd03.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [141.251.55.132]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Nov 2014 02:57:12 -0500
+Date: Thu, 20 Nov 2014 08:57:06 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] scheduler fixes
+Message-ID: <20141120075706.GA4424@gmail.com>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=decui@microsoft.com; 
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(199003)(51704005)(189002)(377454003)(13464003)(52314003)(164054003)(551934003)(26826002)(92566001)(2201001)(2656002)(69596002)(86146001)(92726001)(1511001)(64706001)(47776003)(20776003)(86362001)(66066001)(87936001)(46406003)(44976005)(217423001)(6806004)(2421001)(50466002)(33656002)(97756001)(31966008)(50986999)(54356999)(76176999)(23726002)(97736003)(68736004)(2501002)(2561002)(21056001)(16796002)(86612001)(84676001)(120916001)(55846006)(99396003)(81156004)(106466001)(106116001)(4396001)(107046002)(77096003)(62966003)(77156002)(46102003)(95666004);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB1215;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1215;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1215;
-X-Forefront-PRVS: 0401647B7F
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1215;
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: KY Srinivasan
-> Sent: Thursday, November 20, 2014 6:59 AM
-> > diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c index
-> > 23b2ce2..177122a 100644
-> > --- a/drivers/hv/hv_fcopy.c
-> > +++ b/drivers/hv/hv_fcopy.c
-> > @@ -86,6 +86,15 @@ static void fcopy_work_func(struct work_struct
-> > *dummy)
-> >   * process the pending transaction.
-> >   */
-> >  fcopy_respond_to_host(HV_E_FAIL);
-> > +
-> > +/* In the case the user-space daemon crashes, hangs or is killed, we
-> > + * need to down the semaphore, otherwise, after the daemon starts
-> > next
-> > + * time, the obsolete data in fcopy_transaction.message or
-> > + * fcopy_transaction.fcopy_msg will be used immediately.
-> > + */
-> > +if (down_trylock(&fcopy_transaction.read_sema))
-> > +pr_debug("FCP: failed to acquire the semaphore\n");
-> > +
-> >  }
-> 
-> When the daemon is killed, we currently reset the state in the release
-> function. Why can't we cleanup the semaphore state (initialize) here as well.
-> 
-> K. Y
+Linus,
 
-Hi KY,
-1) The down_trylock() here is necessary: the daemon can fail to respond in 5
-seconds due to many reasons, e.g., the VM's CPU and I/O are too busy. In this
-case, the daemon may become running later(NOTE: in this example, the daemon
-is not killed), but from the host user's point of view, the PowerShell
-copy-vmfile command has failed, so here we have to 'down' the semaphore
-anyway, otherwise, the daemon can get obsolete data.
+Please pull the latest sched-urgent-for-linus git tree from:
 
-2) If we add a line
-sema_init(&fcopy_transaction.read_sema, 0);
-in fcopy_release(), it seems OK at a glance, but we have to handle the race
-condition: the above down_trylock() and the sema_init() can, in theory, run
-simultaneously on different virtual CPUs.  It's tricky to address this.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
 
-3) So I think we can reuse the same semaphore without an actually unnecessary
-re-initialization. :-)
+   # HEAD: 6e998916dfe327e785e7c2447959b2c1a3ea4930 sched/cputime: Fix clock_nanosleep()/clock_gettime() inconsistency
 
-Thanks,
--- Dexuan
+Misc fixes: two NUMA fixes, two cputime fixes and an RCU/lockdep 
+fix.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Andrey Ryabinin (1):
+      sched/numa: Fix out of bounds read in sched_init_numa()
+
+Kirill Tkhai (1):
+      sched: Remove lockdep check in sched_move_task()
+
+Peter Zijlstra (2):
+      sched/numa: Avoid selecting oneself as swap target
+      sched/cputime: Fix cpu_timer_sample_group() double accounting
+
+Stanislaw Gruszka (1):
+      sched/cputime: Fix clock_nanosleep()/clock_gettime() inconsistency
+
+
+ include/linux/kernel_stat.h    |  5 ----
+ kernel/sched/core.c            | 63 ++++++++++++++----------------------------
+ kernel/sched/deadline.c        |  2 ++
+ kernel/sched/fair.c            | 14 ++++++++++
+ kernel/sched/rt.c              |  2 ++
+ kernel/sched/sched.h           |  2 ++
+ kernel/time/posix-cpu-timers.c |  2 +-
+ 7 files changed, 42 insertions(+), 48 deletions(-)
+
+diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
+index 8422b4ed6882..b9376cd5a187 100644
+--- a/include/linux/kernel_stat.h
++++ b/include/linux/kernel_stat.h
+@@ -77,11 +77,6 @@ static inline unsigned int kstat_cpu_irqs_sum(unsigned int cpu)
+ 	return kstat_cpu(cpu).irqs_sum;
+ }
+ 
+-/*
+- * Lock/unlock the current runqueue - to extract task statistics:
+- */
+-extern unsigned long long task_delta_exec(struct task_struct *);
+-
+ extern void account_user_time(struct task_struct *, cputime_t, cputime_t);
+ extern void account_system_time(struct task_struct *, int, cputime_t, cputime_t);
+ extern void account_steal_time(cputime_t);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 240157c13ddc..24beb9bb4c3e 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2475,44 +2475,6 @@ EXPORT_PER_CPU_SYMBOL(kstat);
+ EXPORT_PER_CPU_SYMBOL(kernel_cpustat);
+ 
+ /*
+- * Return any ns on the sched_clock that have not yet been accounted in
+- * @p in case that task is currently running.
+- *
+- * Called with task_rq_lock() held on @rq.
+- */
+-static u64 do_task_delta_exec(struct task_struct *p, struct rq *rq)
+-{
+-	u64 ns = 0;
+-
+-	/*
+-	 * Must be ->curr _and_ ->on_rq.  If dequeued, we would
+-	 * project cycles that may never be accounted to this
+-	 * thread, breaking clock_gettime().
+-	 */
+-	if (task_current(rq, p) && task_on_rq_queued(p)) {
+-		update_rq_clock(rq);
+-		ns = rq_clock_task(rq) - p->se.exec_start;
+-		if ((s64)ns < 0)
+-			ns = 0;
+-	}
+-
+-	return ns;
+-}
+-
+-unsigned long long task_delta_exec(struct task_struct *p)
+-{
+-	unsigned long flags;
+-	struct rq *rq;
+-	u64 ns = 0;
+-
+-	rq = task_rq_lock(p, &flags);
+-	ns = do_task_delta_exec(p, rq);
+-	task_rq_unlock(rq, p, &flags);
+-
+-	return ns;
+-}
+-
+-/*
+  * Return accounted runtime for the task.
+  * In case the task is currently running, return the runtime plus current's
+  * pending runtime that have not been accounted yet.
+@@ -2521,7 +2483,7 @@ unsigned long long task_sched_runtime(struct task_struct *p)
+ {
+ 	unsigned long flags;
+ 	struct rq *rq;
+-	u64 ns = 0;
++	u64 ns;
+ 
+ #if defined(CONFIG_64BIT) && defined(CONFIG_SMP)
+ 	/*
+@@ -2540,7 +2502,16 @@ unsigned long long task_sched_runtime(struct task_struct *p)
+ #endif
+ 
+ 	rq = task_rq_lock(p, &flags);
+-	ns = p->se.sum_exec_runtime + do_task_delta_exec(p, rq);
++	/*
++	 * Must be ->curr _and_ ->on_rq.  If dequeued, we would
++	 * project cycles that may never be accounted to this
++	 * thread, breaking clock_gettime().
++	 */
++	if (task_current(rq, p) && task_on_rq_queued(p)) {
++		update_rq_clock(rq);
++		p->sched_class->update_curr(rq);
++	}
++	ns = p->se.sum_exec_runtime;
+ 	task_rq_unlock(rq, p, &flags);
+ 
+ 	return ns;
+@@ -6368,6 +6339,10 @@ static void sched_init_numa(void)
+ 		if (!sched_debug())
+ 			break;
+ 	}
++
++	if (!level)
++		return;
++
+ 	/*
+ 	 * 'level' contains the number of unique distances, excluding the
+ 	 * identity distance node_distance(i,i).
+@@ -7444,8 +7419,12 @@ void sched_move_task(struct task_struct *tsk)
+ 	if (unlikely(running))
+ 		put_prev_task(rq, tsk);
+ 
+-	tg = container_of(task_css_check(tsk, cpu_cgrp_id,
+-				lockdep_is_held(&tsk->sighand->siglock)),
++	/*
++	 * All callers are synchronized by task_rq_lock(); we do not use RCU
++	 * which is pointless here. Thus, we pass "true" to task_css_check()
++	 * to prevent lockdep warnings.
++	 */
++	tg = container_of(task_css_check(tsk, cpu_cgrp_id, true),
+ 			  struct task_group, css);
+ 	tg = autogroup_task_group(tsk, tg);
+ 	tsk->sched_task_group = tg;
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 5285332392d5..28fa9d9e9201 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -1701,4 +1701,6 @@ const struct sched_class dl_sched_class = {
+ 	.prio_changed           = prio_changed_dl,
+ 	.switched_from		= switched_from_dl,
+ 	.switched_to		= switched_to_dl,
++
++	.update_curr		= update_curr_dl,
+ };
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 34baa60f8a7b..ef2b104b254c 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -726,6 +726,11 @@ static void update_curr(struct cfs_rq *cfs_rq)
+ 	account_cfs_rq_runtime(cfs_rq, delta_exec);
+ }
+ 
++static void update_curr_fair(struct rq *rq)
++{
++	update_curr(cfs_rq_of(&rq->curr->se));
++}
++
+ static inline void
+ update_stats_wait_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ {
+@@ -1180,6 +1185,13 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	raw_spin_unlock_irq(&dst_rq->lock);
+ 
+ 	/*
++	 * Because we have preemption enabled we can get migrated around and
++	 * end try selecting ourselves (current == env->p) as a swap candidate.
++	 */
++	if (cur == env->p)
++		goto unlock;
++
++	/*
+ 	 * "imp" is the fault differential for the source task between the
+ 	 * source and destination node. Calculate the total differential for
+ 	 * the source task and potential destination task. The more negative
+@@ -7949,6 +7961,8 @@ const struct sched_class fair_sched_class = {
+ 
+ 	.get_rr_interval	= get_rr_interval_fair,
+ 
++	.update_curr		= update_curr_fair,
++
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	.task_move_group	= task_move_group_fair,
+ #endif
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index d024e6ce30ba..20bca398084a 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -2128,6 +2128,8 @@ const struct sched_class rt_sched_class = {
+ 
+ 	.prio_changed		= prio_changed_rt,
+ 	.switched_to		= switched_to_rt,
++
++	.update_curr		= update_curr_rt,
+ };
+ 
+ #ifdef CONFIG_SCHED_DEBUG
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 24156c8434d1..2df8ef067cc5 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1135,6 +1135,8 @@ struct sched_class {
+ 	unsigned int (*get_rr_interval) (struct rq *rq,
+ 					 struct task_struct *task);
+ 
++	void (*update_curr) (struct rq *rq);
++
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	void (*task_move_group) (struct task_struct *p, int on_rq);
+ #endif
+diff --git a/kernel/time/posix-cpu-timers.c b/kernel/time/posix-cpu-timers.c
+index 492b986195d5..a16b67859e2a 100644
+--- a/kernel/time/posix-cpu-timers.c
++++ b/kernel/time/posix-cpu-timers.c
+@@ -553,7 +553,7 @@ static int cpu_timer_sample_group(const clockid_t which_clock,
+ 		*sample = cputime_to_expires(cputime.utime);
+ 		break;
+ 	case CPUCLOCK_SCHED:
+-		*sample = cputime.sum_exec_runtime + task_delta_exec(p);
++		*sample = cputime.sum_exec_runtime;
+ 		break;
+ 	}
+ 	return 0;
