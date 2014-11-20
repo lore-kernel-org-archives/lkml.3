@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757659AbaKTV7J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 16:59:09 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:56732 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756036AbaKTV7H (ORCPT
+	id S1756792AbaKTWFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 17:05:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51422 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756141AbaKTWFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 16:59:07 -0500
-Message-ID: <546E6425.9040605@gmail.com>
-Date: Thu, 20 Nov 2014 22:59:01 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: Kishon Vijay Abraham I <kishon@ti.com>,
-        Antoine Tenart <antoine.tenart@free-electrons.com>,
-        p.zabel@pengutronix.de
-CC: arnd@arndb.de, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] phy: berlin_usb: depends on RESET_CONTROLLER
-References: <1416231192-27056-1-git-send-email-antoine.tenart@free-electrons.com> <1416231192-27056-2-git-send-email-antoine.tenart@free-electrons.com> <546BA05E.4090605@gmail.com> <546C340E.8000209@ti.com>
-In-Reply-To: <546C340E.8000209@ti.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Nov 2014 17:05:10 -0500
+Date: Thu, 20 Nov 2014 14:04:26 -0800
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-b5e212a3051b65e426a513901d9c7001681c7215@git.kernel.org>
+Cc: peterz@infradead.org, dzickus@redhat.com, mingo@kernel.org,
+        luto@amacapital.net, davej@redhat.com, torvalds@linux-foundation.org,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, tglx@linutronix.de
+Reply-To: davej@redhat.com, luto@amacapital.net, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, torvalds@linux-foundation.org, peterz@infradead.org,
+        dzickus@redhat.com, mingo@kernel.org, tglx@linutronix.de
+In-Reply-To: <a6cd3b60a3f53afb6e1c8081b0ec30ff19003dd7.1416434075.git.luto@amacapital.net>
+References: <a6cd3b60a3f53afb6e1c8081b0ec30ff19003dd7.1416434075.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, syscall:
+  Fix _TIF_NOHZ handling in syscall_trace_enter_phase1
+Git-Commit-ID: b5e212a3051b65e426a513901d9c7001681c7215
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2014 07:09 AM, Kishon Vijay Abraham I wrote:
-> Hi,
->
-> On Wednesday 19 November 2014 01:09 AM, Sebastian Hesselbarth wrote:
->> On 17.11.2014 14:33, Antoine Tenart wrote:
->>> The Berlin USB PHY driver uses the Berlin reset controller
->>> unconditionally. Make it depending on RESET_CONTROLLER.
->>>
->>> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
->>
->> Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->>
->>> ---
->>>    drivers/phy/Kconfig | 2 +-
->>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
->>> index b6da75f563e7..38ca6ff00aef 100644
->>> --- a/drivers/phy/Kconfig
->>> +++ b/drivers/phy/Kconfig
->>> @@ -17,7 +17,7 @@ config GENERIC_PHY
->>>
->>>    config PHY_BERLIN_USB
->
-> phy-berlin-usb is not in my phy tree and I don't seem to find anywhere in my
-> inbox. Care to send them to me?
+Commit-ID:  b5e212a3051b65e426a513901d9c7001681c7215
+Gitweb:     http://git.kernel.org/tip/b5e212a3051b65e426a513901d9c7001681c7215
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Wed, 19 Nov 2014 13:56:19 -0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 20 Nov 2014 23:01:53 +0100
 
-Kishon,
+x86, syscall: Fix _TIF_NOHZ handling in syscall_trace_enter_phase1
 
-phy-berlin-usb is part of a larger patch set moving chipidea usb to
-generic phy. As all other patches of that set have already been taken,
-I squashed this into one of the two remaining patches from the said
-set. I just sent out the now two remaining patches.
+TIF_NOHZ is 19 (i.e. _TIF_SYSCALL_TRACE | _TIF_NOTIFY_RESUME |
+_TIF_SINGLESTEP), not (1<<19).
 
-Looks like Antoine simply forgot to put you on Cc, at least for v8
-of the patches.
+This code is involved in Dave's trinity lockup, but I don't see why
+it would cause any of the problems he's seeing, except inadvertently
+by causing a different path through entry_64.S's syscall handling.
 
-Sebastian
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/a6cd3b60a3f53afb6e1c8081b0ec30ff19003dd7.1416434075.git.luto@amacapital.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/ptrace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 749b0e4..e510618 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -1484,7 +1484,7 @@ unsigned long syscall_trace_enter_phase1(struct pt_regs *regs, u32 arch)
+ 	 */
+ 	if (work & _TIF_NOHZ) {
+ 		user_exit();
+-		work &= ~TIF_NOHZ;
++		work &= ~_TIF_NOHZ;
+ 	}
+ 
+ #ifdef CONFIG_SECCOMP
