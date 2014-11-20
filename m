@@ -1,108 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748AbaKTKyR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:54:17 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:55612 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628AbaKTKyP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:54:15 -0500
-Date: Thu, 20 Nov 2014 10:54:11 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: "arm@kernel.org" <arm@kernel.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        device tree <devicetree@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/2] arm64: Add support for Juno development board
-Message-ID: <20141120105410.GD17214@e106497-lin.cambridge.arm.com>
-References: <1415727131-4572-1-git-send-email-Liviu.Dudau@arm.com>
-MIME-Version: 1.0
-In-Reply-To: <1415727131-4572-1-git-send-email-Liviu.Dudau@arm.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 20 Nov 2014 10:54:12.0274 (UTC) FILETIME=[518DB120:01D004B0]
-X-MC-Unique: 114112010541301401
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1751752AbaKTLBF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 06:01:05 -0500
+Received: from mga02.intel.com ([134.134.136.20]:50364 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750776AbaKTLBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 06:01:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,423,1413270000"; 
+   d="scan'208";a="640336933"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH] sched/deadline: fix dl entity is still mark yield after replenishing
+Date: Thu, 20 Nov 2014 19:00:48 +0800
+Message-Id: <1416481248-38998-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 05:32:09PM +0000, Liviu Dudau wrote:
-> Hi,
-> 
-> This patchset adds device tree support for ARM's AArch64 Juno development
-> board. It enables use of various peripherals on the board, from USB and
-> networking to I2C and PL011 UART.
-> 
-> The patches can also be found in the repository at:
-> 
->    git://github.com/ARM-software/linux.git juno/dts-for-armsoc
-> 
-> for you to fetch.
+Yield task semantic for deadline task is get off from the CPU until our next 
+instance, we mark the task got to sleep until its current deadline by forcing 
+its runtime to zero and update_curr_dl() stops it and the bandwidth timer will 
+wake it up and will give it new scheduling parameters.
 
-Gentle ping!
+Bandwidth timer may fail to start in update_curr_dl() and instead replenishing 
+the budget immediately, however, dl_yielded of dl_se is cleared when bandwidth 
+timer fire, the immediate replenishing miss to reset it. 
 
-Olof, Arnd, Kevin: are you OK with this patchset?
+This patch fix it by reseting the dl_yielded flag after the immediate replenishing
+if fail to start bandwidth timer.
 
-Best regards,
-Liviu
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+ kernel/sched/deadline.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-> 
-> 
-> Changes vs v2:
->   - rebased on top of arm-soc/next/cleanup
->   - Split the flat device tree into several files. Although some
->     commonality still remains in the main .dts file with other
->     devices trees (see psci node) it is not clear what benefits can
->     be gained from moving such a small node into its own file.
->   - Ordered nodes according to their address space
->   - Removed ulpi_phy node as it was redundant and the bindings non-standard.
-> 
-> v2 version: http://lkml.org/lkml/2014/11/10/242
-> 
-> Best regards,
-> Liviu
-> 
-> Liviu Dudau (2):
->   arm64: Create link to include/dt-bindings to enable C preprocessor
->     use.
->   arm64: Add Juno board device tree.
-> 
->  arch/arm64/boot/dts/arm/Makefile              |   1 +
->  arch/arm64/boot/dts/arm/juno-clocks.dtsi      |  45 ++++++
->  arch/arm64/boot/dts/arm/juno-motherboard.dtsi | 129 +++++++++++++++
->  arch/arm64/boot/dts/arm/juno.dts              | 218 ++++++++++++++++++++++++++
->  arch/arm64/boot/dts/include/dt-bindings       |   1 +
->  5 files changed, 394 insertions(+)
->  create mode 100644 arch/arm64/boot/dts/arm/juno-clocks.dtsi
->  create mode 100644 arch/arm64/boot/dts/arm/juno-motherboard.dtsi
->  create mode 100644 arch/arm64/boot/dts/arm/juno.dts
->  create mode 120000 arch/arm64/boot/dts/include/dt-bindings
-> 
-> -- 
-> 2.1.3
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
-
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 981479a..9d3e31f 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -633,8 +633,11 @@ static void update_curr_dl(struct rq *rq)
+ 		__dequeue_task_dl(rq, curr, 0);
+ 		if (likely(start_dl_timer(dl_se, curr->dl.dl_boosted)))
+ 			dl_se->dl_throttled = 1;
+-		else
++		else {
+ 			enqueue_task_dl(rq, curr, ENQUEUE_REPLENISH);
++			if (unlikely(dl_se->dl_yielded))
++				dl_se->dl_yielded = 0;
++		}
+ 
+ 		if (!is_leftmost(curr, &rq->dl))
+ 			resched_curr(rq);
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+1.9.1
 
