@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247AbaKTW05 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 17:26:57 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:53918 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291AbaKTW0y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 17:26:54 -0500
-Date: Thu, 20 Nov 2014 15:26:50 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>, catalin.marinas@arm.com,
-        will.deacon@arm.com, lorenzo.pieralisi@arm.com, wangyijing@huawei.com,
-        hanjun.guo@linaro.org, Liviu.Dudau@arm.com, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, rjw@rjwysocki.net,
-        linaro-acpi@lists.linaro.org, linux-pci@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 6/6] pci, acpi: Share ACPI PCI config space accessors.
-Message-ID: <20141120222650.GC7987@google.com>
-References: <1416413091-13452-1-git-send-email-tomasz.nowicki@linaro.org>
- <1416413091-13452-7-git-send-email-tomasz.nowicki@linaro.org>
- <2360791.Aj7tQ0nCJ3@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2360791.Aj7tQ0nCJ3@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757570AbaKTWaZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 17:30:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60299 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756911AbaKTWaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 17:30:21 -0500
+From: Seth Jennings <sjenning@redhat.com>
+To: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3 3/3] kernel: add sysfs documentation for live patching
+Date: Thu, 20 Nov 2014 16:29:40 -0600
+Message-Id: <1416522580-5593-4-git-send-email-sjenning@redhat.com>
+In-Reply-To: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
+References: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 05:19:20PM +0100, Arnd Bergmann wrote:
-> On Wednesday 19 November 2014 17:04:51 Tomasz Nowicki wrote:
-> > +/*
-> > + * raw_pci_read/write - ACPI PCI config space accessors.
-> > + *
-> > + * ACPI spec defines MMCFG as the way we can access PCI config space,
-> > + * so let MMCFG be default (__weak).
-> > + *
-> > + * If platform needs more fancy stuff, should provides its own implementation.
-> > + */
-> > +int __weak raw_pci_read(unsigned int domain, unsigned int bus,
-> > +                       unsigned int devfn, int reg, int len, u32 *val)
-> > +{
-> > +       return pci_mmcfg_read(domain, bus, devfn, reg, len, val);
-> > +}
-> > +
-> > +int __weak raw_pci_write(unsigned int domain, unsigned int bus,
-> > +                        unsigned int devfn, int reg, int len, u32 val)
-> > +{
-> > +       return pci_mmcfg_write(domain, bus, devfn, reg, len, val);
-> > +}
-> > +
-> > 
-> 
-> I think it would be better to avoid __weak functions here, as they tend
-> to be hard to follow when trying to understand the code.
+Adds sysfs interface documentation to Documentation/ABI/testing/
 
-That's interesting.  I would have said exactly the opposite -- I think the
-extra Kconfiggery is harder to follow than weak/strong functions :)
+Signed-off-by: Seth Jennings <sjenning@redhat.com>
+---
+ Documentation/ABI/testing/sysfs-kernel-livepatch | 44 ++++++++++++++++++++++++
+ MAINTAINERS                                      |  1 +
+ 2 files changed, 45 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-kernel-livepatch
 
-But consistency is better than my personal opinion.  Is there a consensus
-that we should use the Kconfig strategy instead of __weak?
+diff --git a/Documentation/ABI/testing/sysfs-kernel-livepatch b/Documentation/ABI/testing/sysfs-kernel-livepatch
+new file mode 100644
+index 0000000..5bf42a8
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-kernel-livepatch
+@@ -0,0 +1,44 @@
++What:		/sys/kernel/livepatch
++Date:		Nov 2014
++KernelVersion:	3.19.0
++Contact:	live-patching@vger.kernel.org
++Description:
++		Interface for kernel live patching
++
++		The /sys/kernel/livepatch directory contains subdirectories for
++		each loaded live patch module.
++
++What:		/sys/kernel/livepatch/<patch>
++Date:		Nov 2014
++KernelVersion:	3.19.0
++Contact:	live-patching@vger.kernel.org
++Description:
++		The patch directory contains subdirectories for each kernel
++		object (vmlinux or a module) in which it patched functions.
++
++What:		/sys/kernel/livepatch/<patch>/enabled
++Date:		Nov 2014
++KernelVersion:	3.19.0
++Contact:	live-patching@vger.kernel.org
++Description:
++		A writable attribute that indicates whether the patched
++		code is currently applied.  Writing 0 will disable the patch
++		while writing 1 will re-enable the patch.
++
++What:		/sys/kernel/livepatch/<patch>/<object>
++Date:		Nov 2014
++KernelVersion:	3.19.0
++Contact:	live-patching@vger.kernel.org
++Description:
++		The object directory contains subdirectories for each function
++		that is patched within the object.
++
++What:		/sys/kernel/livepatch/<patch>/<object>/<function>
++Date:		Nov 2014
++KernelVersion:	3.19.0
++Contact:	live-patching@vger.kernel.org
++Description:
++		The function directory contains attributes regarding the
++		properties and state of the patched function.
++
++		There are currently no such attributes.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index c7f49ae..7985293 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5725,6 +5725,7 @@ F:	kernel/livepatch/
+ F:	include/linux/livepatch.h
+ F:	arch/x86/include/asm/livepatch.h
+ F:	arch/x86/kernel/livepatch.c
++F:	Documentation/ABI/testing/sysfs-kernel-livepatch
+ L:	live-patching@vger.kernel.org
+ 
+ LLC (802.2)
+-- 
+1.9.3
 
-> How about using a Kconfig symbol like this:
-> 
-> #ifdef CONFIG_ARCH_RAW_PCI_READWRITE
-> int raw_pci_read(unsigned int domain, unsigned int bus, unsigned int devfn,
->                  int reg, int len, u32 *val);
-> int raw_pci_write(unsigned int domain, unsigned int bus, unsigned int devfn,
->                   int reg, int len, u32 val);
-> #else
-> static inline int raw_pci_read(unsigned int domain, unsigned int bus,
-> 	                       unsigned int devfn, int reg, int len, u32 *val)
-> {
-> 	return pci_mmcfg_read(domain, bus, devfn, reg, len, val);
-> }
-> 
-> static inline int raw_pci_write(unsigned int domain, unsigned int bus,
->              		                unsigned int devfn, int reg, int len, u32 val)
-> {
->        return pci_mmcfg_write(domain, bus, devfn, reg, len, val);
-> }
-> #endif
