@@ -1,111 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932266AbaKTKN0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:13:26 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58167 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680AbaKTKNY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:13:24 -0500
-Date: Thu, 20 Nov 2014 11:13:21 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Pali Roh?r <pali.rohar@gmail.com>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, freemangordon@abv.bg,
-        Sakari Ailus <sakari.ailus@iki.fi>
-Subject: voice calls on N900 working (off-line) was Re: N900 modem support in
- 3.18-rc1
-Message-ID: <20141120101320.GA6356@amd>
-References: <20141104205117.GA17606@amd>
- <20141106180335.GA21513@earth.universe>
- <20141106225005.GA14002@amd>
- <201411070001.46481@pali>
- <545C6F14.8050303@gmail.com>
- <20141113162420.GB8512@xo-6d-61-c0.localdomain>
- <5465A977.4030605@gmail.com>
- <20141114172008.GB12250@earth.universe>
- <54665E02.8050108@gmail.com>
- <20141114215749.GA19023@earth.universe>
+	id S1757390AbaKTKPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 05:15:10 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40099 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756009AbaKTKPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 05:15:07 -0500
+Date: Thu, 20 Nov 2014 11:15:05 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "ruiv.wang@gmail.com" <ruiv.wang@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
+        "Wang, Rui Y" <rui.y.wang@intel.com>
+Subject: Re: [PATCH v3] x86/mce: Try printing all machine check banks known
+ before panic
+Message-ID: <20141120101505.GA791@pd.tnic>
+References: <1416388961-24159-1-git-send-email-ruiv.wang@gmail.com>
+ <20141119102954.GA5617@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F3294198E@ORSMSX114.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141114215749.GA19023@earth.universe>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3294198E@ORSMSX114.amr.corp.intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > REed pulseaudio modules that use cmtspeech will be ready sooner than later
-> > (I believe in 2-3 monts from now), see on gitorious how fast we progressed
-> > with -record and -music modules. Sure, -voice module is way more
-> > complicated, but lots of it is already opensourced, we just need to figure
-> > out a couple of DSP algorithms(drc, agc, aec, etc) related to call quality.
-> > But I don't think the driver should wait for those modules to be REed, they
-> > can be used as is even now, in their closed form for testing.
+On Wed, Nov 19, 2014 at 11:34:10PM +0000, Luck, Tony wrote:
+> The SDM has this to say about EN=0 (in section 15.10.4.1 of volume 3B):
 > 
-> https://gitorious.org/pulseaudio-modules-nemo/jusas-tanuk2-mer-packaging/source/6ed34611b49c99b007f614d9dff4d58369876345:
-> https://github.com/nemomobile/pulseaudio-module-cmtspeech-n9xx/commits/master
+>    When the EN flag is zero but the VAL and UC flags are one in
+>    the IA32_MCi_STATUS register, the reported uncorrected error
+>    in this bank is not enabled. As uncorrected errors with the
+>    EN flag = 0 are not the source of machine check exceptions,
+>    the MCE handler should log and clear non-enabled errors when
+>    the S bit is set and should continue searching for enabled
+>    errors from the other IA32_MCi_STATUS registers. Note that
+>    when IA32_MCG_CAP [24] is 0, any uncorrected error condition
+>    (VAL =1 and UC=1) including the one with the EN flag cleared
+>    are fatal and the handler must signal the operating system to
+>    reset the system. For the errors that do not generate machine
+>    check exceptions, the EN flag has no meaning.
 > 
-> It seems there is already cmtspeech code for pulseaudio?
+> Note the "should log and clear".  We just clear ... just need to shuffle some code
+> in mce.c to add the logging.
 
-Yes, and it works; but see below.
+Sure, we can log those.
 
-> > Unfortunately all my spare time is dedicated to that PA stuff, so
-> > I simply can't cleanup cmtspeech driver and send a patch for
-> > upstreaming. (Pavel, what about you?)
-> 
-> If somebody gets audio working with your driver and documents the
-> steps needed in userland I will take care of upstreaming the driver.
+> But we still need something like Rui's patch - calling mcelog()
+> doesn't ensure that we see something on the console about possible
+> cause of the problem.
 
-I got it to work.
+So you're saying we should drain the mcelog buffer to the console in
+such situations before we panic? If so, there's drain_mcelog_buffer()
+which could be changed to call print_mce() instead of going to the
+x86_mce_decoder_chain.
 
-Ok, so realtime audio does not work due to some pulseaudio problems,
-but I was able to record a (silent) call and then replay it with 
-
-pacat --rate 4000 ../../../pulseaudio2.raw
-
-on my PC. I have yet to do some testing on the microphone side.
-
-I'm using Debian 7 as a a base, and I suggest nfsroot.
-
-It seems that libcmtspeechdata + pulseaudio-module-cmtspeech-n9xx is
-enough to get calls to work. Now. I could not get configure on these
-packages to work, so I hard-coded build scripts (mkit). You'll need to
-symlink resulting .so to pulseaudio directory (see
-/my/pulseaudio-module-cmtspeech-n9xx/src/cmtspeech/mkit). I leave binaries in,
-since this is non-trivial to compile. Some memory allocation stuff was
-missing. I faked it; it seems it is not needed in the first call.
-
-untar in the root directory of n900. Reset n900, no need to log in
-into console, connect using ssh -X root@n900.
-
-Then go to /my/tui/ofone. Run "./run" -- that should start
-pulseaudio. Run "./ofone", hit "lowlevel: online", hit "contacts",
-enter phone number you want to call, hit the number, it should start
-dialing.
-
-Wait a while, hit "lowlevel: hangup".
-
-Now you should have:
-
-/my/pulseaudio2.raw
-
-you can play with pacat above, and /my/pulseaudio.log.*, which
-contains stuff that needs to be fixed.
-
-I've put the archive at
-
-http://atrey.karlin.mff.cuni.cz/~pavel/outgoing/n900-my.tgz
-
-Have fun!
-
-									Pavel
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
