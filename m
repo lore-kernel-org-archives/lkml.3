@@ -1,152 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924AbaKTNLY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:11:24 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:59000 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776AbaKTNLW (ORCPT
+	id S1755076AbaKTNMo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:12:44 -0500
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:62770 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953AbaKTNMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:11:22 -0500
-Date: Thu, 20 Nov 2014 08:11:18 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Boaz Harrosh <boaz@plexistor.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH vfs 2/2] {block|char}_dev: remove inode->i_devices
-Message-ID: <20141120131118.GB14877@htj.dyndns.org>
-References: <20141113220927.GF2598@htj.dyndns.org>
- <20141113221139.GG2598@htj.dyndns.org>
- <546DC5AD.3040606@plexistor.com>
- <20141120115052.GA32237@htj.dyndns.org>
- <546DE065.3090502@plexistor.com>
+	Thu, 20 Nov 2014 08:12:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546DE065.3090502@plexistor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <546DD87B.3080806@ti.com>
+References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
+	<1709760.E0jX3Myv0h@wuerfel>
+	<546C7FDD.7030906@ti.com>
+	<2900095.WIocOu7ue2@wuerfel>
+	<CAPDyKFqeZ3YU2OEN4tCOdcQ0pAho67Q8U_eCEOroG9aS0mp+-Q@mail.gmail.com>
+	<546DD87B.3080806@ti.com>
+Date: Thu, 20 Nov 2014 14:12:41 +0100
+Message-ID: <CAPDyKFrBhZyqozM98_4pPdW0EMFt5W6VX1X7cz6Z=yNhW4vYTA@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@kernel.org>,
+        ssantosh@kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Boaz.
+On 20 November 2014 13:03, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
+> On 11/20/2014 01:34 PM, Ulf Hansson wrote:
+>> On 19 November 2014 14:47, Arnd Bergmann <arnd@arndb.de> wrote:
+>>> On Wednesday 19 November 2014 13:32:45 Grygorii Strashko wrote:
+>>>> On 11/18/2014 09:32 PM, Arnd Bergmann wrote:
+>>>>> On Tuesday 18 November 2014 20:54:36 Grygorii Strashko wrote:
+>>>>>
+>>>>> Have one pmdomain driver in the generic code that knows about clocks,
+>>>>> possibly also regulators and pins and just turns them on when needed.
+>>>>> You can have a "simple-pmdomain" or "generic-pmdomain" compatible
+>>>>> string.
+>>>>>
+>>>>> I'm a bit surprised that your pmdomain code looks up the clocks from the
+>>>>> respective device, rather than know about the clocks itself. There is
+>>>>> probably a good reason for this, but I don't see it yet.
+>>>>
+>>>> The keystone 2 uses simple PM schema based on clocks only:
+>>>> - clocks enabled -> dev is active
+>>>> - clocks disabled -> dev is suspended
+>>>>
+>>>> To achieve explained above the Generic clock manipulation PM callbacks framework (pm_clk) is used.
+>>>> - list of managed clocks is filled for each device (for non-DT case the con_id list
+>>>>    is specified by platform code like:
+>>>>        .con_ids = { "fck", "master", "slave", NULL },
+>>>>          - or -
+>>>>        .con_ids = { }, <-- in this case only first clock will be added to pm_clk
+>>>>    )
+>>
+>> According to earlier comments in this thread, device's clocks are
+>> split into "functional" and "PM" clocks.
+>>
+>> If I understand correctly, a typical platform driver will enable it's
+>> "functional" clocks during ->probe() and you want the PM domain to
+>> take care of the "PM" clocks, when the device changes runtime PM
+>> status.
+>>
+>> How will you describe these different set of device clocks in DT?
+>
+> True :(  You can dig deeper in the history of this series if you wish.
+> - first Geert Uytterhoeven proposed to use CLK_RUNTIME_PM there
+>   https://lkml.org/lkml/2014/11/6/319
+> - second I proposed to introduce smth. like "clkops-clocks", "pm-clocks" there
+>   https://lkml.org/lkml/2014/6/12/436
+>  or "fck-clocks"/"opt-clocks" later.
+>
+> ^failed.
+>
+> So, this implementation picks up all clocks for each device, which is ok for
+> Keystone 2 and, because it's platform specific.
+>
+>>>
+>>> Yes, it would definitely solve the problem that I see with the infrastructure
+>>> code that the current version adds into the platform directory.
+>>>
+>>> The exact binding of course should be reviewed by the pmdomain and
+>>> DT maintainers, to ensure that it is done the best possible way, because
+>>> I assume we will end up using it a lot, and it would be a shame to get
+>>> it slightly wrong.
+>>>
+>>> One possible variation I can think of would be to just use "simple-pmdomain"
+>>> as the compatible string, and use properties in the node itself to decide
+>>> what the domain should control, e.g.
+>>>
+>>>          clk_pmdomain: pmdomain {
+>>>                  compatible = "simple-pmdomain";
+>>>                  pmdomain-enable-clocks;
+>>>                  #power-domain-cells = <0>;
+>>>          };
+>>>          clk_regulator_pmdomain: pmdomain {
+>>>                  compatible = "simple-pmdomain";
+>>>                  pmdomain-enable-clocks;
+>>>                  pmdomain-enable-regulators;
+>>>                  #power-domain-cells = <0>;
+>>>          };
+>>>
+>>> and then have each device link to one of the nodes as the pmdomain.
+>>>
+>>
+>> That's seems like a good approach to me.
+>
+> Yes, but your previous comment is still actual :(
 
-On Thu, Nov 20, 2014 at 02:36:53PM +0200, Boaz Harrosh wrote:
->   Actually with my proposed change to "the code you submitted here"
->   there are *less* unnecessary allocations. In both our imp we have a
->   waste when element already exist in the tree, and your imp already
->   waists an allocation in every pset_preload()
-> 
->   And again you are talking about a future undefined "what if", let
->   us look at the very sound imp you proposed here with rbtree and
->   do the best we can with that one.
+Agree!
 
-Preloading is an established pattern and a pretty effective one at
-that.  It allows its users to not worry about carrying the state
-explicitly while allowing the preloaded allocation to be cached across
-multiple insertions.
+So I really think we need to decide on how to address the split of the
+device clocks. Before that's done, I don't think it make sense to add
+a "simple-pmdomain" compatible, since it will likely not be that many
+SoC that can use it.
 
-Whether ptrset needs it or not is debatable.  If it didn't need to be
-shared between block and chardevs, I prolly would have just open coded
-it with linked list.  But being a generic library feature which isn't
-too different from other memory allocating indexing data structures, I
-think it'd be better to follow the established pattern rather than
-creating another one-off behavior.  If we demote this to something
-which is shared only between block and char devs, we can go simpler
-and less versatile.  Where should it go tho?
+So, does anyone have a suggestion on how to deal with the split of the
+device clocks into "functional" clocks and into "PM" clocks?
 
->   Again Theoretical. With your current code the only failing I see
->   from add() is allocation, so with my imp it will never fail. One
->   thing good with embedded list_heads is the void returning add.
->   And so with my proposition: void returning add.
-
-Sure, if you look at just these two instances.  We can just require
-preloading and drop @gfp from the insertion function too.  -EEXIST can
-be avoided too, so let's drop the return value entirely.
-
-Again, the problem is that it's implemented as a generic lib feature,
-so it needs to consider how different use cases can be served and we
-have an established pattern which proved to be effective over time for
-these types of data structures and that's the pattern being followed
-here.
-
->   When some new imp will be needed we can cross the bridge then.
-> 
->   For now you have convinced me that an rbtree is good, and I want to
->   solve the preemption-disable, none interrupt ugliness, per-cpu vars,
->   as well as the double alloc in the normal lots-of-free-memory case.
-
-It's a reserve which is kept around, one per CPU at most, which also
-allows us to avoid spurious frees on insertion attempts which don't
-consume the reserve.  If your point is that we don't need ptrset as a
-generic lib thing, this can definitely be simpler but otherwise I'm
-not sure what you're arguing.  We have an established pattern to make
-prealloactions easier for generic lib functions.  Why wouldn't we use
-that and make things simpler for its users?
-
-> > so
-> > overall it seems better to defer the allocation error to the actual
-> > insertion point.  
-> 
-> That one I did not understand.
-
-So, w/o preloading, you would do,
-
-	error = insert();
-	if (error)
-		handle error;
-
-W/ preloading, one way to do it is,
-
-	if (preload())
-		handle -ENOMEM;
-	lock;
-	error = insert();
-	if (error)
-		handle error which can't be -ENOMEM;
-	unlock;
-	preload_end();
-
-Another way is
-
-	preload();	// can't fail
-	lock;
-	error = insert();
-	if (error)
-		handle error;'
-	unlock;
-	preload_end();
-
-Both ways have pros and cons.  The latter seems to lead to simpler
-code in general.  Not always, but the overall.
-
-> > It also makes conceptual sense.  The preloading
-> > simply upgrades the allocation mask the insertion operation uses.
-> 
-> How is "upgrades", better then "always have the best mask"
-
-Hah?  What are you talking about?  So,
-
-	preload(GFP_KERNEL);
-	lock;
-	insert(GFP_NOWAIT);
-	unlock;
-	preload_end();
-
-can be considered as insert() allocating memory using GFP_KERNEL.
-That's what preallocation does.  My point was that deferring
-allocation error to insert() time allows considering the above code
-like the following.
-
-	lock;
-	insert(GFP_KERNEL);
-	unlock;
-
-And that's why the pattern usually leads to simpler code - it doesn't
-create a new failure point.
-
-Thanks.
-
--- 
-tejun
+Kind regards
+Uffe
