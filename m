@@ -1,56 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446AbaKTAnu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 19:43:50 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:46379 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754641AbaKTAns (ORCPT
+	id S1756320AbaKTAqw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 19:46:52 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:60322 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754550AbaKTAqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 19:43:48 -0500
+	Wed, 19 Nov 2014 19:46:50 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAK=WgbZE7_WrsNz5E+MDX7j2tAGEjv91zeCgqhB=Jsiu0+d8vw@mail.gmail.com>
-References: <1410553499-55951-1-git-send-email-s-anna@ti.com>
-	<1410553499-55951-6-git-send-email-s-anna@ti.com>
-	<CAK=WgbZE7_WrsNz5E+MDX7j2tAGEjv91zeCgqhB=Jsiu0+d8vw@mail.gmail.com>
-Date: Wed, 19 Nov 2014 16:43:46 -0800
-Message-ID: <CAJAp7OisV3UrL45UgRb0tMudyCJHe-xsmsRYV0uGG3P4PReHnA@mail.gmail.com>
-Subject: Re: [PATCHv6 5/5] hwspinlock/omap: add support for dt nodes
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Suman Anna <s-anna@ti.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <CA+55aFxNkD8=1JB0-4EyQTR+Yd0YaofB3+E5J+L3vsfki-RUSQ@mail.gmail.com>
+References: <cover.1416352397.git.luto@amacapital.net> <c25e1a64e5b718fa156e141fd9ecbf31011c6059.1416352397.git.luto@amacapital.net>
+ <CA+55aFztsw6Vt4CyVs1OsqdKXxQmFrxHdE7z89VMZ_1KwKPcmQ@mail.gmail.com>
+ <20141119192928.GL12538@two.firstfloor.org> <CA+55aFwykb6aZYgyZXbU1DQ3OL0umpv8gkHYWykBEC2B7UdMbw@mail.gmail.com>
+ <CALCETrXi7vdNAk4RziNDtqX4asPqXxi1VsLzL7pP0zivkjTH4Q@mail.gmail.com>
+ <CA+55aFx4-WzNQ0e-ZTcCig3b7U7xmt1WB1jzO3TLk9zHD006ng@mail.gmail.com>
+ <CALCETrVJJUcPRfkWRouLJCNUVNRH3aWX0X_K8L62yrUu1aR8Vg@mail.gmail.com>
+ <CA+55aFy0neTJAAm-8KsmPPU33zevyHmYa+vZjPk-DozSPPW_nQ@mail.gmail.com>
+ <CALCETrXzMe2WcpY3yX48WtvdRQDvSg7CZRO1T1TdLynmAcJHXg@mail.gmail.com> <CA+55aFxNkD8=1JB0-4EyQTR+Yd0YaofB3+E5J+L3vsfki-RUSQ@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 19 Nov 2014 16:46:29 -0800
+Message-ID: <CALCETrWBpmS_W3sN3Pf-qRL8jgxoBoQWnQuk3r_TT_eBm9eNqQ@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] sched, x86: Check that we're on the right stack in
+ schedule and __might_sleep
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 11:14 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> Hi Suman,
-[..]
+On Wed, Nov 19, 2014 at 4:37 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, Nov 19, 2014 at 4:13 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> No drugs, just imprecision.  This series doesn't change NMI handling
+>> at all.  It only changes machine_check int3, debug, and stack_segment.
+>> (Why is #SS using IST stacks anyway?)
 >
-> Does this mean you allow nodes not to have the base_id property? How
-> do we protect against multiple nodes not having a base_id property
-> then?
+> .. ok, we were talking about adding an explicit preemption count to
+> nmi, and then you wanted to make that conditional, that kind of
+> freaked me out.
+
+I guess I jumped around in the conversation a bit...
+
 >
-> Implicitly assuming a base_id value (zero in this case) may not be always safe.
+>> So my point stands: if machine_check is going to be conditionally
+>> atomic, then that condition needs to be expressed somewhere.
 >
+> I'd still prefer to keep that knowledge in one place, rather than
+> adding *another* completely ad-hoc thing in addition to what we
+> already have.
+>
+> Also, I really don't think it should be about the particular stack
+> you're using. Sure, if a debug fault happens in user space, the fault
+> handler could sleep if it runs on the regular stack, but our
+> "might_sleep()" are about catching things that *could* be problematic,
+> even if the sleep never happens. And so, might_sleep() _should_
+> actually trigger, even if it's not using the IST stack, because *if*
+> the debug exception happened in kernel space, then we should warn.
+>
+> So I'd actually *prefer* to have special hacks that perhaps then
+> "undo" the preemption count if the code expressly tests for "did this
+> happen in user space, then I know I'm safe". But then it's an
+> *explicit* thing, not something that just magically works because
+> nobody even thought about it, and the trap happened in user space.
+>
+> See the argument? I'd *rather* see code like
+>
+>    /* Magic */
+>    if (user_mode(regs)) {
+>        .. verify that we're using the normal kernel stack
+>        .. enable interrupts, enable preemption
+>        .. this is the explicit special case and it is aware
+>        .. of being special
+>    }
+>
+> even if on the face of it it looks hacky. But an *explicit* hack is
+> preferable to something that just "happens" to work only for the
+> user-mode case.
 
-Hi Ohad,
+So we'd do, in do_machine_check:
 
-I still have a huge problem understanding the awesomeness with the
-"base_id". If you have a SoC with 2 hwlock blocks; say 8+8 locks, used
-for interaction with e.g. a modem and a video core respectively.
-Why would you in either remote system offset the locks with 8?
-Wouldn't e.g the modem use locks hwlock0:0-7 and video core use locks
-hwlock1:0-7?
+irq_enter();
 
-What systems use more than one hwlock block and do you know of any
-reasons why these hwlocks are globally numbered?
+do atomic stuff;
 
-Regards,
-Bjorn
+ist_stop_being_atomic(regs);
+local_irq_enable();
+...
+local_irq_disable();
+ist_start_being_atomic_again();
+
+irq_exit();
+
+and we'd have something like:
+
+void ist_stop_being_atomic(struct pt_regs *regs)
+{
+  BUG_ON(!user_mode_vm(regs));
+  --irq_count;
+}
+
+I'm very hesitant to use irq_enter for this, though.  I think we want
+just the irq_count part.  Maybe ist_enter() and ist_exit()?  I think
+that we really don't want to go anywhere near the accounting stuff in
+irq_enter from an IST handler if !user_mode_vm(regs).  Doing it from
+asm is somewhat less error prone, although I guess we already rely on
+the IDT entries themselves being in sync with the paranoid idtentry
+setting.
+
+--Andy
