@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794AbaKTVqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 16:46:37 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:40650 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756658AbaKTVqf (ORCPT
+	id S1756992AbaKTVsA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 16:48:00 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59735 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756658AbaKTVr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 16:46:35 -0500
-Message-ID: <546E6136.6050003@gmail.com>
-Date: Thu, 20 Nov 2014 22:46:30 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: Kishon Vijay Abraham I <kishon@ti.com>,
-        Antoine Tenart <antoine.tenart@free-electrons.com>,
-        p.zabel@pengutronix.de
-CC: arnd@arndb.de, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] phy: berlin_usb: depends on RESET_CONTROLLER
-References: <1416231192-27056-1-git-send-email-antoine.tenart@free-electrons.com> <1416231192-27056-2-git-send-email-antoine.tenart@free-electrons.com> <546BA05E.4090605@gmail.com> <546C340E.8000209@ti.com>
-In-Reply-To: <546C340E.8000209@ti.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Nov 2014 16:47:57 -0500
+Date: Thu, 20 Nov 2014 21:47:53 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, target-devel@vger.kernel.org,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFC] situation with csum_and_copy_... API
+Message-ID: <20141120214753.GR7996@ZenIV.linux.org.uk>
+References: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
+ <20141119.161744.1661940121298888832.davem@davemloft.net>
+ <20141119213006.GE7996@ZenIV.linux.org.uk>
+ <20141119.165340.2162829993279387495.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141119.165340.2162829993279387495.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2014 07:09 AM, Kishon Vijay Abraham I wrote:
-> Hi,
->
-> On Wednesday 19 November 2014 01:09 AM, Sebastian Hesselbarth wrote:
->> On 17.11.2014 14:33, Antoine Tenart wrote:
->>> The Berlin USB PHY driver uses the Berlin reset controller
->>> unconditionally. Make it depending on RESET_CONTROLLER.
->>>
->>> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
->>
->> Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->>
->>> ---
->>>    drivers/phy/Kconfig | 2 +-
->>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
->>> index b6da75f563e7..38ca6ff00aef 100644
->>> --- a/drivers/phy/Kconfig
->>> +++ b/drivers/phy/Kconfig
->>> @@ -17,7 +17,7 @@ config GENERIC_PHY
->>>
->>>    config PHY_BERLIN_USB
->
-> phy-berlin-usb is not in my phy tree and I don't seem to find anywhere in my
-> inbox. Care to send them to me?
+On Wed, Nov 19, 2014 at 04:53:40PM -0500, David Miller wrote:
 
-Kishon,
+> Pulled, thanks Al.
 
-phy-berlin-usb has been part of chipidea generic phy patch set for
-a while now. It looks like Antoine simply forgot to put you on Cc
-at least for v8 of it.
+Umm...  Not in net-next.git#master...  Anyway, the next portion is in
+vfs.git#iov_iter-net right now; I'll post it on netdev once I get some
+sleep.
 
-As all other patches of that patch set have already been taken,
-I'll squash this patch into the two remaining ones from Antoine
-and send phy-berlin-usb patches in a second.
+It's getting close to really interesting parts.  Right now the main obstacle
+is in iscsit_do_rx_data/iscsit_do_tx_data; what happens there is reuse of
+iovec if kernel_sendmsg() gives a short write - it tries to send again, with
+the same iovec and decremented length.  Ditto on RX side (with kernel_recvmsg(),
+obviously).
 
-Sebastian
+As far as I can see, these retries on the send side are simply broken -
+normally we are talking to TCP sockets there and tcp_sendmsg() does *not*
+modify iovec in normal case.  IOW, if you get 8K sent out of 80K, the next
+time it'll try to send 72K - already sent piece + 64K following it, etc.
 
+Could target-devel folks tell how realistic those resends are, in the
+first place?  Both with TX and RX sides...  Is there any sane limit on
+iovec size there, etc.
+
+Note that while conversion to iov_iter will provide a very simple solution
+(iovec remains unchanged, iterator advances and we just need to avoid
+reinitializing it for subsequent iterations in those loops), it won't solve
+the problem in older kernels; that code had been there since 2011 and
+iov_iter conversion is far too invasive for -stable.
