@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758034AbaKTTnL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:43:11 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:41166 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756755AbaKTTnJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 14:43:09 -0500
+	id S1758062AbaKTTns (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:43:48 -0500
+Received: from mout.web.de ([212.227.17.11]:63018 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757530AbaKTTnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 14:43:47 -0500
+Message-ID: <546E441B.7040004@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 20:42:19 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141120152509.GA5412@redhat.com>
-References: <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
-	<20141118023930.GA2871@redhat.com>
-	<CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
-	<20141118145234.GA7487@redhat.com>
-	<alpine.DEB.2.11.1411181914020.3909@nanos>
-	<20141118215540.GD35311@redhat.com>
-	<20141119021902.GA14216@redhat.com>
-	<CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
-	<20141119145902.GA13387@redhat.com>
-	<546D0530.8040800@mit.edu>
-	<20141120152509.GA5412@redhat.com>
-Date: Thu, 20 Nov 2014 11:43:07 -0800
-X-Google-Sender-Auth: Bm4byfuxssEk54EdzZUVQwoNBeQ
-Message-ID: <CA+55aFzP0jivKYWUVwt==wNaBjZM+aBQLMT=Td+2cOVKSvm-dQ@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: "James E. J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] SCSI-eata_pio: Deletion of an unnecessary check before
+ the function call "pci_dev_put"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:ButwcOmAY+h8/fV6rqKOMR2gSYbwVe9DYYg+2BAo+yhmYqZccg5
+ x46eN+UE4ogX5b8LU30WV8OE6FHcKW0ZOUOpoFBoqFWTEdPMChV7E0C+4+vqkM2Kub1Gela
+ GGa1l5fygYNQIYjU1DigkB3cFdS8fe8vyk4KwDD9pUvgBvbZkeq3DHFfY55y5UAIrWOFWhb
+ dM97/zliWlzpyLMYbRBsA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 7:25 AM, Dave Jones <davej@redhat.com> wrote:
->
-> Disabling CONTEXT_TRACKING didn't change the problem.
-> Unfortunatly the full trace didn't make it over usb-serial this time. Grr.
->
-> Here's what came over serial..
->
-> NMI watchdog: BUG: soft lockup - CPU#2 stuck for 22s! [trinity-c35:11634]
-> RIP: 0010:[<ffffffff88379605>]  [<ffffffff88379605>] copy_user_enhanced_fast_string+0x5/0x10
-> RAX: ffff880220eb4000 RBX: ffffffff887dac64 RCX: 0000000000006a18
-> RDX: 000000000000e02f RSI: 00007f766f466620 RDI: ffff88016f6a7617
-> RBP: ffff880220eb7f78 R08: 8000000000000063 R09: 0000000000000004
-> Call Trace:
->  [<ffffffff882f4225>] ? SyS_add_key+0xd5/0x240
->  [<ffffffff8837adae>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->  [<ffffffff887da092>] system_call_fastpath+0x12/0x17
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 20:37:30 +0100
 
-Ok, that's just about half-way in a ~57kB memory copy (you can see it
-in the register state: %rdx contains the original size of the key
-payload, rcx contains the current remaining size: 57kB total, 27kB
-left).
+The pci_dev_put() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-And it's holding absolutely zero locks, and not even doing anything
-odd. It wasn't doing anything particularly odd before either, although
-the kmalloc() of a 64kB area might just have caused a fair amount of
-VM work, of course.
+This issue was detected by using the Coccinelle software.
 
-You know what? I'm seriously starting to think that these bugs aren't
-actually real. Or rather, I don't think it's really a true softlockup,
-because most of them seem to happen in totally harmless code.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/scsi/eata_pio.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-So I'm wondering whether the real issue might not be just this:
+diff --git a/drivers/scsi/eata_pio.c b/drivers/scsi/eata_pio.c
+index 8319d2b..707f64d 100644
+--- a/drivers/scsi/eata_pio.c
++++ b/drivers/scsi/eata_pio.c
+@@ -122,8 +122,7 @@ static int eata_pio_release(struct Scsi_Host *sh)
+ 			release_region(sh->io_port, sh->n_io_port);
+ 	}
+ 	/* At this point the PCI reference can go */
+-	if (hd->pdev)
+-		pci_dev_put(hd->pdev);
++	pci_dev_put(hd->pdev);
+ 	return 1;
+ }
+ 
+-- 
+2.1.3
 
-   [loadavg: 164.79 157.30 155.90 37/409 11893]
-
-together with possibly a scheduler issue and/or a bug in the smpboot
-thread logic (that the watchdog uses) or similar.
-
-That's *especially* true if it turns out that the 3.17 problem you saw
-was actually a perf bug that has already been fixed and is in stable.
-We've been looking at kernel/smp.c changes, and looking for x86 IPI or
-APIC changes, and found some harmlessly (at least on x86) suspicious
-code and this exercise might be worth it for that reason, but what if
-it's really just a scheduler regression.
-
-There's been a *lot* more scheduler changes since 3.17 than the small
-things we've looked at for x86 entry or IPI handling. And the
-scheduler changes have been about things like overloaded scheduling
-groups etc, and I could easily imaging that some bug *there* ends up
-causing the watchdog process not to schedule.
-
-Hmm? Scheduler people?
-
-                       Linus
