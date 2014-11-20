@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757294AbaKTALn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 19:11:43 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:60909 "EHLO
+	id S1756922AbaKTAKw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 19:10:52 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:60858 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756929AbaKTAKy (ORCPT
+	with ESMTP id S1756563AbaKTAKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 19:10:54 -0500
+	Wed, 19 Nov 2014 19:10:50 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
-Cc: Rajendra Nayak <rnayak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
         Kenneth Westfield <kwestfie@codeaurora.org>,
         Josh Cartwright <joshc@codeaurora.org>,
+        Rajendra Nayak <rnayak@codeaurora.org>, devicetree@vger.kernel.org,
         Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH 5/7] dt-bindings: Add #defines for IPQ806x lpass clock control
-Date: Wed, 19 Nov 2014 16:10:43 -0800
-Message-Id: <1416442245-21967-6-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 0/7] IPQ806X audio clock control driver
+Date: Wed, 19 Nov 2014 16:10:38 -0800
+Message-Id: <1416442245-21967-1-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 2.1.0.61.ge50deb1
-In-Reply-To: <1416442245-21967-1-git-send-email-sboyd@codeaurora.org>
-References: <1416442245-21967-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rajendra Nayak <rnayak@codeaurora.org>
+This patchset adds support for the low power audio subsystem (lpass)
+clock controller hardware. I split out the #define patch so that
+it can go through the clock tree and the arm-soc tree in parallel
+if desired. I'll be adding the apq/msm drivers shortly, but I wanted
+to get this out for any feedback while I go and port over that data.
 
-Add defines to make more human readable numbers for the lpass
-clock controller found on IPQ806x SoCs. Also remove the PLL4
-define in gcc to avoid #define conflicts because that clock
-doesn't exist in gcc, instead it lives in lcc.
+Josh Cartwright (1):
+  clk: qcom: Add support for cdiv clocks
 
-Signed-off-by: Rajendra Nayak <rnayak@codeaurora.org>
-[sboyd@codeaurora.org: Split off into separate patch]
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- include/dt-bindings/clock/qcom,gcc-ipq806x.h |  1 -
- include/dt-bindings/clock/qcom,lcc-ipq806x.h | 29 ++++++++++++++++++++++++++++
- 2 files changed, 29 insertions(+), 1 deletion(-)
+Rajendra Nayak (3):
+  dt-bindings: Add #defines for IPQ806x lpass clock control
+  clk: qcom: ipq: Add lpass clock controller driver
+  devicetree: bindings: Document qcom,lcc
+
+Stephen Boyd (3):
+  clk: Add __clk_mux_determine_rate_closest
+  clk: divider: Make generic for usage elsewhere
+  clk: qcom: Add simple regmap based muxes
+
+ .../devicetree/bindings/clock/qcom,lcc.txt         |  21 +
+ drivers/clk/clk-divider.c                          | 195 +++++----
+ drivers/clk/clk.c                                  |  47 ++-
+ drivers/clk/qcom/Kconfig                           |   9 +
+ drivers/clk/qcom/Makefile                          |   3 +
+ drivers/clk/qcom/clk-cdiv.c                        |  72 ++++
+ drivers/clk/qcom/clk-cdiv.h                        |  29 ++
+ drivers/clk/qcom/clk-regmap-mux.c                  |  59 +++
+ drivers/clk/qcom/clk-regmap-mux.h                  |  29 ++
+ drivers/clk/qcom/gcc-ipq806x.c                     |  12 +
+ drivers/clk/qcom/lcc-ipq806x.c                     | 456 +++++++++++++++++++++
+ include/dt-bindings/clock/qcom,gcc-ipq806x.h       |   1 -
+ include/dt-bindings/clock/qcom,lcc-ipq806x.h       |  29 ++
+ include/linux/clk-provider.h                       |  20 +-
+ 14 files changed, 894 insertions(+), 88 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/qcom,lcc.txt
+ create mode 100644 drivers/clk/qcom/clk-cdiv.c
+ create mode 100644 drivers/clk/qcom/clk-cdiv.h
+ create mode 100644 drivers/clk/qcom/clk-regmap-mux.c
+ create mode 100644 drivers/clk/qcom/clk-regmap-mux.h
+ create mode 100644 drivers/clk/qcom/lcc-ipq806x.c
  create mode 100644 include/dt-bindings/clock/qcom,lcc-ipq806x.h
 
-diff --git a/include/dt-bindings/clock/qcom,gcc-ipq806x.h b/include/dt-bindings/clock/qcom,gcc-ipq806x.h
-index b857cadb0bd4..04fb29ae30e6 100644
---- a/include/dt-bindings/clock/qcom,gcc-ipq806x.h
-+++ b/include/dt-bindings/clock/qcom,gcc-ipq806x.h
-@@ -238,7 +238,6 @@
- #define PLL0_VOTE				221
- #define PLL3					222
- #define PLL3_VOTE				223
--#define PLL4					224
- #define PLL4_VOTE				225
- #define PLL8					226
- #define PLL8_VOTE				227
-diff --git a/include/dt-bindings/clock/qcom,lcc-ipq806x.h b/include/dt-bindings/clock/qcom,lcc-ipq806x.h
-new file mode 100644
-index 000000000000..94ffd654c462
---- /dev/null
-+++ b/include/dt-bindings/clock/qcom,lcc-ipq806x.h
-@@ -0,0 +1,29 @@
-+/*
-+ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef _DT_BINDINGS_CLK_LCC_IPQ806X_H
-+#define _DT_BINDINGS_CLK_LCC_IPQ806X_H
-+
-+#define PLL4				0
-+#define MI2S_OSR_SRC			1
-+#define MI2S_OSR_CLK			2
-+#define MI2S_BIT_DIV_CLK		3
-+#define MI2S_BIT_CLK			4
-+#define PCM_SRC				5
-+#define PCM_CLK_OUT			6
-+#define PCM_CLK				7
-+#define SPDIF_SRC			8
-+#define SPDIF_CLK			9
-+#define AHBIX_CLK			10
-+
-+#endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 a Linux Foundation Collaborative Project
