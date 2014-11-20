@@ -1,55 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566AbaKTBMT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 20:12:19 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:36999 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145AbaKTBMS (ORCPT
+	id S1756745AbaKTBOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 20:14:07 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:55230 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755334AbaKTBOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 20:12:18 -0500
+	Wed, 19 Nov 2014 20:14:03 -0500
+Date: Thu, 20 Nov 2014 10:13:59 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: SF Markus Elfring <elfring@users.sourceforge.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Wensong Zhang <wensong@linux-vs.org>, netdev@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        coreteam@netfilter.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH 1/1] netfilter: Deletion of unnecessary checks before two
+ function calls
+Message-ID: <20141120011359.GJ5065@verge.net.au>
+References: <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <546BA253.6030100@users.sourceforge.net>
+ <alpine.LFD.2.11.1411200024280.6497@ja.home.ssi.bg>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyRYCEoaUh-neg-XQzQHT3dkkp5LhRWkFPMOOH084Ck4A@mail.gmail.com>
-References: <cover.1416352397.git.luto@amacapital.net> <c25e1a64e5b718fa156e141fd9ecbf31011c6059.1416352397.git.luto@amacapital.net>
- <CA+55aFztsw6Vt4CyVs1OsqdKXxQmFrxHdE7z89VMZ_1KwKPcmQ@mail.gmail.com>
- <20141119192928.GL12538@two.firstfloor.org> <CA+55aFwykb6aZYgyZXbU1DQ3OL0umpv8gkHYWykBEC2B7UdMbw@mail.gmail.com>
- <CALCETrXi7vdNAk4RziNDtqX4asPqXxi1VsLzL7pP0zivkjTH4Q@mail.gmail.com>
- <CA+55aFx4-WzNQ0e-ZTcCig3b7U7xmt1WB1jzO3TLk9zHD006ng@mail.gmail.com>
- <CALCETrVJJUcPRfkWRouLJCNUVNRH3aWX0X_K8L62yrUu1aR8Vg@mail.gmail.com>
- <CA+55aFy0neTJAAm-8KsmPPU33zevyHmYa+vZjPk-DozSPPW_nQ@mail.gmail.com>
- <CALCETrXzMe2WcpY3yX48WtvdRQDvSg7CZRO1T1TdLynmAcJHXg@mail.gmail.com>
- <CA+55aFxNkD8=1JB0-4EyQTR+Yd0YaofB3+E5J+L3vsfki-RUSQ@mail.gmail.com>
- <CALCETrWBpmS_W3sN3Pf-qRL8jgxoBoQWnQuk3r_TT_eBm9eNqQ@mail.gmail.com> <CA+55aFyRYCEoaUh-neg-XQzQHT3dkkp5LhRWkFPMOOH084Ck4A@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 19 Nov 2014 17:11:56 -0800
-Message-ID: <CALCETrUnjii54nfUaCR6AH_pbb+71dJWXC=qvjj7mOJPeVT_qQ@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] sched, x86: Check that we're on the right stack in
- schedule and __might_sleep
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1411200024280.6497@ja.home.ssi.bg>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 5:09 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Nov 19, 2014 at 4:46 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> I'm very hesitant to use irq_enter for this, though.  I think we want
->> just the irq_count part.
->
-> Oh, I agree. I mentioned irq_enter/exit() just as the place the
-> preempt count increment normally happens. I have nothing against doing
-> it manually for these things that really aren't normal interrupts.
->
+On Thu, Nov 20, 2014 at 12:26:56AM +0200, Julian Anastasov wrote:
+> 
+> 	Hello,
+> 
+> On Tue, 18 Nov 2014, SF Markus Elfring wrote:
+> 
+> > From: Markus Elfring <elfring@users.sourceforge.net>
+> > Date: Tue, 18 Nov 2014 20:37:05 +0100
+> > 
+> > The functions free_percpu() and module_put() test whether their argument
+> > is NULL and then return immediately. Thus the test around the call is
+> > not needed.
+> > 
+> > This issue was detected by using the Coccinelle software.
+> > 
+> > Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> 
+> 	Pablo, the IPVS parts look ok to me,
+> 
+> Acked-by: Julian Anastasov <ja@ssi.bg>
 
-It may need to be considerably more complicated to keep RCU happy,
-though.  In fact, I think that this code is already wrong.
+Acked-by: Simon Horman <horms@verge.net.au>
 
-I'll write something and cc Paul to get some feedback.
-
---Andy
+> 
+> > ---
+> >  net/netfilter/ipvs/ip_vs_ctl.c   | 3 +--
+> >  net/netfilter/ipvs/ip_vs_pe.c    | 3 +--
+> >  net/netfilter/ipvs/ip_vs_sched.c | 3 +--
+> >  net/netfilter/ipvs/ip_vs_sync.c  | 3 +--
+> >  net/netfilter/nf_tables_api.c    | 3 +--
+> >  5 files changed, 5 insertions(+), 10 deletions(-)
+> > 
+> > diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+> > index fd3f444..7c5e40a 100644
+> > --- a/net/netfilter/ipvs/ip_vs_ctl.c
+> > +++ b/net/netfilter/ipvs/ip_vs_ctl.c
+> > @@ -465,8 +465,7 @@ __ip_vs_bind_svc(struct ip_vs_dest *dest, struct ip_vs_service *svc)
+> >  
+> >  static void ip_vs_service_free(struct ip_vs_service *svc)
+> >  {
+> > -	if (svc->stats.cpustats)
+> > -		free_percpu(svc->stats.cpustats);
+> > +	free_percpu(svc->stats.cpustats);
+> >  	kfree(svc);
+> >  }
+> >  
+> > diff --git a/net/netfilter/ipvs/ip_vs_pe.c b/net/netfilter/ipvs/ip_vs_pe.c
+> > index 1a82b29..0df17ca 100644
+> > --- a/net/netfilter/ipvs/ip_vs_pe.c
+> > +++ b/net/netfilter/ipvs/ip_vs_pe.c
+> > @@ -37,8 +37,7 @@ struct ip_vs_pe *__ip_vs_pe_getbyname(const char *pe_name)
+> >  			rcu_read_unlock();
+> >  			return pe;
+> >  		}
+> > -		if (pe->module)
+> > -			module_put(pe->module);
+> > +		module_put(pe->module);
+> >  	}
+> >  	rcu_read_unlock();
+> >  
+> > diff --git a/net/netfilter/ipvs/ip_vs_sched.c b/net/netfilter/ipvs/ip_vs_sched.c
+> > index 4dbcda6..199760c 100644
+> > --- a/net/netfilter/ipvs/ip_vs_sched.c
+> > +++ b/net/netfilter/ipvs/ip_vs_sched.c
+> > @@ -104,8 +104,7 @@ static struct ip_vs_scheduler *ip_vs_sched_getbyname(const char *sched_name)
+> >  			mutex_unlock(&ip_vs_sched_mutex);
+> >  			return sched;
+> >  		}
+> > -		if (sched->module)
+> > -			module_put(sched->module);
+> > +		module_put(sched->module);
+> >  	}
+> >  
+> >  	mutex_unlock(&ip_vs_sched_mutex);
+> > diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
+> > index eadffb2..cafe28d 100644
+> > --- a/net/netfilter/ipvs/ip_vs_sync.c
+> > +++ b/net/netfilter/ipvs/ip_vs_sync.c
+> > @@ -820,8 +820,7 @@ ip_vs_conn_fill_param_sync(struct net *net, int af, union ip_vs_sync_conn *sc,
+> >  
+> >  		p->pe_data = kmemdup(pe_data, pe_data_len, GFP_ATOMIC);
+> >  		if (!p->pe_data) {
+> > -			if (p->pe->module)
+> > -				module_put(p->pe->module);
+> > +			module_put(p->pe->module);
+> >  			return -ENOMEM;
+> >  		}
+> >  		p->pe_data_len = pe_data_len;
+> > diff --git a/net/netfilter/nf_tables_api.c b/net/netfilter/nf_tables_api.c
+> > index deeb95f..b115f54 100644
+> > --- a/net/netfilter/nf_tables_api.c
+> > +++ b/net/netfilter/nf_tables_api.c
+> > @@ -3472,8 +3472,7 @@ static int nf_tables_abort(struct sk_buff *skb)
+> >  			break;
+> >  		case NFT_MSG_NEWCHAIN:
+> >  			if (nft_trans_chain_update(trans)) {
+> > -				if (nft_trans_chain_stats(trans))
+> > -					free_percpu(nft_trans_chain_stats(trans));
+> > +				free_percpu(nft_trans_chain_stats(trans));
+> >  
+> >  				nft_trans_destroy(trans);
+> >  			} else {
+> > -- 
+> > 2.1.3
+> 
+> Regards
+> 
+> --
+> Julian Anastasov <ja@ssi.bg>
+> 
