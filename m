@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236AbaKTLux (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 06:50:53 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:2355 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754735AbaKTLug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 06:50:36 -0500
-X-IronPort-AV: E=Sophos;i="5.07,423,1413244800"; 
-   d="scan'208";a="193231392"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <xen-devel@lists.xenproject.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCHv4 0/4]: dma, x86, xen: reduce SWIOTLB usage in Xen guests
-Date: Thu, 20 Nov 2014 11:50:21 +0000
-Message-ID: <1416484225-28054-1-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756438AbaKTLu7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 06:50:59 -0500
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:65309 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756270AbaKTLu4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 06:50:56 -0500
+Date: Thu, 20 Nov 2014 06:50:52 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Boaz Harrosh <boaz@plexistor.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH vfs 2/2] {block|char}_dev: remove inode->i_devices
+Message-ID: <20141120115052.GA32237@htj.dyndns.org>
+References: <20141113220927.GF2598@htj.dyndns.org>
+ <20141113221139.GG2598@htj.dyndns.org>
+ <546DC5AD.3040606@plexistor.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546DC5AD.3040606@plexistor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On systems where DMA addresses and physical addresses are not 1:1
-(such as Xen PV guests), the generic dma_get_required_mask() will not
-return the correct mask (since it uses max_pfn).
+Hello, Boaz.
 
-Some device drivers (such as mptsas, mpt2sas) use
-dma_get_required_mask() to set the device's DMA mask to allow them to use
-only 32-bit DMA addresses in hardware structures.  This results in
-unnecessary use of the SWIOTLB if DMA addresses are more than 32-bits,
-impacting performance significantly.
+On Thu, Nov 20, 2014 at 12:42:53PM +0200, Boaz Harrosh wrote:
+> if I understand correctly the motivation here is that the allocation
+> of the internal element is done GFP_KERNEL at this call
+> 
+> Then the add() below can be under the spin_lock.
+> 
+> So why don't you just return an element here to caller and give it to
+> add below. No Preemption-disable, no percpu variable, simple. Like:
 
-This series allows Xen PV guests to override the default
-dma_get_required_mask() with one that calculates the DMA mask from the
-maximum MFN (and not the PFN).
+Hmmm... mostly because preloading is more convenient and but also
+because it provides better separation from internal implementation
+details.  e.g. This may be implemented using a different data
+structure (e.g. bonsai tree) which may require differing number of new
+elements even on success.  With the scheme you're describing, the
+operation would be constantly allocating and freeing memory areas
+(which may be multiple) unnecessarily.
 
-Changes in v4:
-- Assume 64-bit mask is required.
+One thing which is debatable is how to handle preloading errors.  We
+can have the preload fail and then assume that the later insertion
+won't fail with -ENOMEM (often through BUG/WARN_ON()); however, it
+often, but not always, is that those insertion operations may fail
+with different error codes too and requires error handling anyway, so
+overall it seems better to defer the allocation error to the actual
+insertion point.  It also makes conceptual sense.  The preloading
+simply upgrades the allocation mask the insertion operation uses.
 
-Changes in v3:
-- fix off-by-one in xen_dma_get_required_mask()
-- split ia64 changes into separate patch.
+Thanks.
 
-Changes in v2:
-- split x86 and xen changes into separate patches
-
-David
-
+-- 
+tejun
