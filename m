@@ -1,77 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757817AbaKTRzb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:55:31 -0500
-Received: from mout.web.de ([212.227.17.12]:59256 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754913AbaKTRz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 12:55:29 -0500
-Message-ID: <546E2B02.5090902@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 18:55:14 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1757836AbaKTR6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:58:25 -0500
+Received: from mail-by2on0133.outbound.protection.outlook.com ([207.46.100.133]:47072
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756023AbaKTR6Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 12:58:24 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Dexuan Cui <decui@microsoft.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+CC: Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH] hv: hv_fcopy: drop the obsolete message on transfer
+ failure
+Thread-Topic: [PATCH] hv: hv_fcopy: drop the obsolete message on transfer
+ failure
+Thread-Index: AQHP/ixzoWqBLlree0aJYfe1XGjx8ZxonIcQgACGI1CAALBG0A==
+Date: Thu, 20 Nov 2014 17:58:22 +0000
+Message-ID: <6b6a1089b0104b3fb9c2e785d058cd1d@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1415768606-28538-1-git-send-email-decui@microsoft.com>
+ <BN1PR0301MB0707ED3958628389255649FCA0890@BN1PR0301MB0707.namprd03.prod.outlook.com>
+ <F792CF86EFE20D4AB8064279AFBA51C613E577E6@HKNPRD3002MB017.064d.mgd.msft.net>
+In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C613E577E6@HKNPRD3002MB017.064d.mgd.msft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2601:8:9b00:fd:3cf0:919c:163c:e95a]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0712;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0712;
+x-forefront-prvs: 0401647B7F
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(377454003)(13464003)(52314003)(199003)(164054003)(51704005)(31966008)(19580395003)(87936001)(217423001)(19580405001)(2656002)(76176999)(54356999)(50986999)(33646002)(2421001)(551934003)(101416001)(106116001)(106356001)(105586002)(99286002)(95666004)(107046002)(99396003)(122556002)(120916001)(40100003)(77096003)(77156002)(62966003)(76576001)(46102003)(2501002)(92566001)(2201001)(108616004)(74316001)(4396001)(2561002)(97736003)(86362001)(86612001)(20776003)(1511001)(21056001)(64706001)(24736002)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0712;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "James E. J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] SCSI: Deletion of unnecessary checks before the function
- call "put_device"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:Qc3BIjZXnIhxRUrP+goiuDw9cc5JbKwQ6PiChg2DjHtYdgi/BIS
- PSLLZurzy2QNnWgPN4iENYuasgQYNKHYTGDpI1KTnH5lKKHCb7apjZSVhdlI9vPbo2Xnr2B
- yUsfgXEVDJxJw2DlKsycbbB74e5BcsprSo0KdMCaJcd1a4eDyXWXKd1XdmFh2Zedv7pbLsR
- r3aUB832jmCrWzTG8a4Gg==
-X-UI-Out-Filterresults: notjunk:1;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 18:48:52 +0100
 
-The put_device() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
 
-This issue was detected by using the Coccinelle software.
+> -----Original Message-----
+> From: Dexuan Cui
+> Sent: Wednesday, November 19, 2014 11:48 PM
+> To: KY Srinivasan; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; driverdev-devel@linuxdriverproject.org;
+> olaf@aepfle.de; apw@canonical.com; jasowang@redhat.com
+> Cc: Haiyang Zhang
+> Subject: RE: [PATCH] hv: hv_fcopy: drop the obsolete message on transfer
+> failure
+> 
+> > -----Original Message-----
+> > From: KY Srinivasan
+> > Sent: Thursday, November 20, 2014 6:59 AM
+> > > diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c index
+> > > 23b2ce2..177122a 100644
+> > > --- a/drivers/hv/hv_fcopy.c
+> > > +++ b/drivers/hv/hv_fcopy.c
+> > > @@ -86,6 +86,15 @@ static void fcopy_work_func(struct work_struct
+> > > *dummy)
+> > >   * process the pending transaction.
+> > >   */
+> > >  fcopy_respond_to_host(HV_E_FAIL);
+> > > +
+> > > +/* In the case the user-space daemon crashes, hangs or is killed,
+> > > +we
+> > > + * need to down the semaphore, otherwise, after the daemon starts
+> > > next
+> > > + * time, the obsolete data in fcopy_transaction.message or
+> > > + * fcopy_transaction.fcopy_msg will be used immediately.
+> > > + */
+> > > +if (down_trylock(&fcopy_transaction.read_sema))
+> > > +pr_debug("FCP: failed to acquire the semaphore\n");
+> > > +
+> > >  }
+> >
+> > When the daemon is killed, we currently reset the state in the release
+> > function. Why can't we cleanup the semaphore state (initialize) here as
+> well.
+> >
+> > K. Y
+> 
+> Hi KY,
+> 1) The down_trylock() here is necessary: the daemon can fail to respond in 5
+> seconds due to many reasons, e.g., the VM's CPU and I/O are too busy. In
+> this case, the daemon may become running later(NOTE: in this example, the
+> daemon is not killed), but from the host user's point of view, the PowerShell
+> copy-vmfile command has failed, so here we have to 'down' the semaphore
+> anyway, otherwise, the daemon can get obsolete data.
+> 
+> 2) If we add a line
+> sema_init(&fcopy_transaction.read_sema, 0); in fcopy_release(), it seems
+> OK at a glance, but we have to handle the race
+> condition: the above down_trylock() and the sema_init() can, in theory, run
+> simultaneously on different virtual CPUs.  It's tricky to address this.
+> 
+> 3) So I think we can reuse the same semaphore without an actually
+> unnecessary re-initialization. :-)
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/scsi/hosts.c      | 3 +--
- drivers/scsi/scsi_sysfs.c | 3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+Agreed; you may want to get rid of the pr_debug() call though.
 
-diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
-index 6de80e3..57afb19 100644
---- a/drivers/scsi/hosts.c
-+++ b/drivers/scsi/hosts.c
-@@ -337,8 +337,7 @@ static void scsi_host_dev_release(struct device *dev)
- 
- 	kfree(shost->shost_data);
- 
--	if (parent)
--		put_device(parent);
-+	put_device(parent);
- 	kfree(shost);
- }
- 
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 8b4105a..c977c99 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -426,8 +426,7 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
- 	kfree(sdev->inquiry);
- 	kfree(sdev);
- 
--	if (parent)
--		put_device(parent);
-+	put_device(parent);
- }
- 
- static void scsi_device_dev_release(struct device *dev)
--- 
-2.1.3
+Thanks,
+
+K. Y
+> 
+> Thanks,
+> -- Dexuan
 
