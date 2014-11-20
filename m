@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575AbaKTPPC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 10:15:02 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:36097 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958AbaKTPPA (ORCPT
+	id S1757602AbaKTPQQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 10:16:16 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:54094 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757288AbaKTPQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 10:15:00 -0500
-Date: Thu, 20 Nov 2014 10:14:56 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kara <jack@suse.cz>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCHSET block/for-next] writeback: prepare for cgroup
- writeback support
-Message-ID: <20141120151456.GE14877@htj.dyndns.org>
-References: <1416299848-22112-1-git-send-email-tj@kernel.org>
- <20141120151311.GE2330@quack.suse.cz>
+	Thu, 20 Nov 2014 10:16:12 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Kees Cook <keescook@chromium.org>, mtk.manpages@gmail.com,
+        linux-api@vger.kernel.org, linux-man@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <6b6bef0eb7328d466e8deef3d2c186a79633e0a7.1416121601.git.josh@joshtriplett.org>
+Date: Thu, 20 Nov 2014 09:14:50 -0600
+In-Reply-To: <6b6bef0eb7328d466e8deef3d2c186a79633e0a7.1416121601.git.josh@joshtriplett.org>
+	(Josh Triplett's message of "Sat, 15 Nov 2014 23:08:32 -0800")
+Message-ID: <87egsxnbth.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141120151311.GE2330@quack.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18nm1w+bzcyf9RI9UuGesBZQk1pLilfvxA=
+X-SA-Exim-Connect-IP: 97.121.92.161
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP Message was received from an IP address
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4966]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Josh Triplett <josh@joshtriplett.org>
+X-Spam-Relay-Country: 
+X-Spam-Timing: total 740 ms - load_scoreonly_sql: 0.19 (0.0%),
+	signal_user_changed: 18 (2.5%), b_tie_ro: 17 (2.3%), parse: 1.07 (0.1%),
+	extract_message_metadata: 49 (6.6%), get_uri_detail_list: 1.25 (0.2%),
+	tests_pri_-1000: 26 (3.5%), tests_pri_-950: 13 (1.8%), tests_pri_-900: 1.82
+	(0.2%), tests_pri_-400: 63 (8.4%), check_bayes: 60 (8.1%), b_tokenize: 7
+	(1.0%), b_tok_get_all: 33 (4.5%), b_comp_prob: 2.5 (0.3%), b_tok_touch_all:
+	1.90 (0.3%), b_finish: 0.69 (0.1%), tests_pri_0: 544 (73.4%), tests_pri_500:
+	20 (2.7%), rewrite_mail: 0.00 (0.0%)
+Subject: Re: [PATCH] Add supplementary UIDs, and getusers/setusers system calls
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 04:13:11PM +0100, Jan Kara wrote:
-> On Tue 18-11-14 03:37:18, Tejun Heo wrote:
-> > Hello,
-> > 
-> > This patchset contains the following 10 prepatory patches for cgroup
-> > writeback support.  None of these patches introduces behavior changes.
-> > 
-> >  0001-writeback-move-backing_dev_info-state-into-bdi_write.patch
-> >  0002-writeback-move-backing_dev_info-bdi_stat-into-bdi_wr.patch
-> >  0003-writeback-move-bandwidth-related-fields-from-backing.patch
-> >  0004-writeback-move-backing_dev_info-wb_lock-and-worklist.patch
-> >  0005-writeback-move-lingering-dirty-IO-lists-transfer-fro.patch
-> >  0006-writeback-reorganize-mm-backing-dev.c.patch
-> >  0007-writeback-separate-out-include-linux-backing-dev-def.patch
-> >  0008-writeback-cosmetic-change-in-account_page_dirtied.patch
-> >  0009-writeback-add-gfp-to-wb_init.patch
-> >  0010-writeback-move-inode_to_bdi-to-include-linux-backing.patch
-> > 
-> > 0001-0005 move writeback related fields from bdi (backing_dev_info) to
-> > wb (bdi_writeback).  Currently, one bdi embeds one wb and the
-> > separation between the two is blurry.  bdi's lock protects wb's fields
-> > and fields which are closely related are scattered across the two.
-> > These five patches move all fields which are used during writeback
-> > into wb.
-> > 
-> > 0006-0010 are misc prep patches.  They're all rather trivial and each
-> > is self-explanatory.
-> > 
-> > This patchset is on top of the current block/for-next eb494facbee2
-> > ("5748c0fce0fd40c87d164d6bee61") and is available in the following git
-> > branch.
->   I have no problem with these patches in principle (I'll check individual
-> patches in detail) but do you have some higher level design where exactly
-> are you going?
+Josh Triplett <josh@joshtriplett.org> writes:
 
-Yeah, I'm prepping the actual patchset and it'll go out with high
-level description.  Just wanted to send out the prep ones separately
-to reduce the patchset to a manageable size.
+> Analogous to the supplementary GID list, the supplementary UID list
+> provides a set of additional user credentials that a process can act as.
+> A process with CAP_SETUID can set its UID list arbitrarily; a process
+> without CAP_SETUID can only reduce its UID list.
+>
+> This allows each user to have a set of UIDs that they can then use to
+> further sandbox individual child processes without first escalating to
+> root to change UIDs.  For instance, a PAM module could give each user a
+> block of UIDs to work with.
 
-> PS: I've added CC to linux-fsdevel since there's high chance people miss
-> these patches in lkml...
+A couple of quick comments on this patch.
 
-Will do so when posting the actual series.
+1) user namespaces already allow you to do this.
 
-Thanks.
+2) After having looked at the group case I am afraid this intersects in
+   an unfortunate way with user namespaces.
 
--- 
-tejun
+3) This intersects in a very unfortunate way with setresuid.
+   Applications that today know they are dropping all privileges
+   won't be dropping all privielges with this change.  Which sounds like
+   a recipe for a security exploit to me.
+
+Eric
