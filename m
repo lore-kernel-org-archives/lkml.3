@@ -1,177 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552AbaKTN3B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:29:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56312 "EHLO mx2.suse.de"
+	id S1757570AbaKTN3c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:29:32 -0500
+Received: from mga02.intel.com ([134.134.136.20]:21311 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517AbaKTN26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:28:58 -0500
-Date: Thu, 20 Nov 2014 14:28:53 +0100
-From: Jan Kara <jack@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ted Tso <tytso@mit.edu>
-Subject: Re: ext4: kill ext4_kvfree()
-Message-ID: <20141120132853.GB2330@quack.suse.cz>
-References: <20141120081004.GH7996@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141120081004.GH7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757054AbaKTN0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 08:26:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,424,1413270000"; 
+   d="scan'208";a="611096978"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH V2 13/22] perf itrace: Add processing for Instruction Tracing events
+Date: Thu, 20 Nov 2014 15:23:19 +0200
+Message-Id: <1416489808-4489-14-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416489808-4489-1-git-send-email-adrian.hunter@intel.com>
+References: <1416489808-4489-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 20-11-14 08:10:05, Al Viro wrote:
-> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-  Looks good. Added Ted (ext4 maintainer) to CC.
+Provide hooks so that an Instruction Trace
+decoder can process Instruction Tracing
+events.
 
-Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/itrace.c | 49 ++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/itrace.h | 13 +++++++++++++
+ 2 files changed, 62 insertions(+)
 
-								Honza
-> ---
->  fs/ext4/ext4.h    |    1 -
->  fs/ext4/mballoc.c |    6 +++---
->  fs/ext4/resize.c  |    6 +++---
->  fs/ext4/super.c   |   19 +++++--------------
->  4 files changed, 11 insertions(+), 21 deletions(-)
-> 
-> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-> index c55a1fa..21a3b38 100644
-> --- a/fs/ext4/ext4.h
-> +++ b/fs/ext4/ext4.h
-> @@ -2192,7 +2192,6 @@ extern int ext4_calculate_overhead(struct super_block *sb);
->  extern void ext4_superblock_csum_set(struct super_block *sb);
->  extern void *ext4_kvmalloc(size_t size, gfp_t flags);
->  extern void *ext4_kvzalloc(size_t size, gfp_t flags);
-> -extern void ext4_kvfree(void *ptr);
->  extern int ext4_alloc_flex_bg_array(struct super_block *sb,
->  				    ext4_group_t ngroup);
->  extern const char *ext4_decode_error(struct super_block *sb, int errno,
-> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-> index dbfe15c..004d0ff 100644
-> --- a/fs/ext4/mballoc.c
-> +++ b/fs/ext4/mballoc.c
-> @@ -2358,7 +2358,7 @@ int ext4_mb_alloc_groupinfo(struct super_block *sb, ext4_group_t ngroups)
->  	if (sbi->s_group_info) {
->  		memcpy(new_groupinfo, sbi->s_group_info,
->  		       sbi->s_group_info_size * sizeof(*sbi->s_group_info));
-> -		ext4_kvfree(sbi->s_group_info);
-> +		kvfree(sbi->s_group_info);
->  	}
->  	sbi->s_group_info = new_groupinfo;
->  	sbi->s_group_info_size = size / sizeof(*sbi->s_group_info);
-> @@ -2495,7 +2495,7 @@ err_freebuddy:
->  		kfree(sbi->s_group_info[i]);
->  	iput(sbi->s_buddy_cache);
->  err_freesgi:
-> -	ext4_kvfree(sbi->s_group_info);
-> +	kvfree(sbi->s_group_info);
->  	return -ENOMEM;
->  }
->  
-> @@ -2708,7 +2708,7 @@ int ext4_mb_release(struct super_block *sb)
->  			EXT4_DESC_PER_BLOCK_BITS(sb);
->  		for (i = 0; i < num_meta_group_infos; i++)
->  			kfree(sbi->s_group_info[i]);
-> -		ext4_kvfree(sbi->s_group_info);
-> +		kvfree(sbi->s_group_info);
->  	}
->  	kfree(sbi->s_mb_offsets);
->  	kfree(sbi->s_mb_maxs);
-> diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-> index ca45883..bf76f40 100644
-> --- a/fs/ext4/resize.c
-> +++ b/fs/ext4/resize.c
-> @@ -856,7 +856,7 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
->  	n_group_desc[gdb_num] = gdb_bh;
->  	EXT4_SB(sb)->s_group_desc = n_group_desc;
->  	EXT4_SB(sb)->s_gdb_count++;
-> -	ext4_kvfree(o_group_desc);
-> +	kvfree(o_group_desc);
->  
->  	le16_add_cpu(&es->s_reserved_gdt_blocks, -1);
->  	err = ext4_handle_dirty_super(handle, sb);
-> @@ -866,7 +866,7 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
->  	return err;
->  
->  exit_inode:
-> -	ext4_kvfree(n_group_desc);
-> +	kvfree(n_group_desc);
->  	brelse(iloc.bh);
->  exit_dind:
->  	brelse(dind);
-> @@ -909,7 +909,7 @@ static int add_new_gdb_meta_bg(struct super_block *sb,
->  	n_group_desc[gdb_num] = gdb_bh;
->  	EXT4_SB(sb)->s_group_desc = n_group_desc;
->  	EXT4_SB(sb)->s_gdb_count++;
-> -	ext4_kvfree(o_group_desc);
-> +	kvfree(o_group_desc);
->  	BUFFER_TRACE(gdb_bh, "get_write_access");
->  	err = ext4_journal_get_write_access(handle, gdb_bh);
->  	if (unlikely(err))
-> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-> index 2c9e686..4b79f39 100644
-> --- a/fs/ext4/super.c
-> +++ b/fs/ext4/super.c
-> @@ -176,15 +176,6 @@ void *ext4_kvzalloc(size_t size, gfp_t flags)
->  	return ret;
->  }
->  
-> -void ext4_kvfree(void *ptr)
-> -{
-> -	if (is_vmalloc_addr(ptr))
-> -		vfree(ptr);
-> -	else
-> -		kfree(ptr);
-> -
-> -}
-> -
->  ext4_fsblk_t ext4_block_bitmap(struct super_block *sb,
->  			       struct ext4_group_desc *bg)
->  {
-> @@ -811,8 +802,8 @@ static void ext4_put_super(struct super_block *sb)
->  
->  	for (i = 0; i < sbi->s_gdb_count; i++)
->  		brelse(sbi->s_group_desc[i]);
-> -	ext4_kvfree(sbi->s_group_desc);
-> -	ext4_kvfree(sbi->s_flex_groups);
-> +	kvfree(sbi->s_group_desc);
-> +	kvfree(sbi->s_flex_groups);
->  	percpu_counter_destroy(&sbi->s_freeclusters_counter);
->  	percpu_counter_destroy(&sbi->s_freeinodes_counter);
->  	percpu_counter_destroy(&sbi->s_dirs_counter);
-> @@ -1939,7 +1930,7 @@ int ext4_alloc_flex_bg_array(struct super_block *sb, ext4_group_t ngroup)
->  		memcpy(new_groups, sbi->s_flex_groups,
->  		       (sbi->s_flex_groups_allocated *
->  			sizeof(struct flex_groups)));
-> -		ext4_kvfree(sbi->s_flex_groups);
-> +		kvfree(sbi->s_flex_groups);
->  	}
->  	sbi->s_flex_groups = new_groups;
->  	sbi->s_flex_groups_allocated = size / sizeof(struct flex_groups);
-> @@ -4224,7 +4215,7 @@ failed_mount7:
->  failed_mount6:
->  	ext4_mb_release(sb);
->  	if (sbi->s_flex_groups)
-> -		ext4_kvfree(sbi->s_flex_groups);
-> +		kvfree(sbi->s_flex_groups);
->  	percpu_counter_destroy(&sbi->s_freeclusters_counter);
->  	percpu_counter_destroy(&sbi->s_freeinodes_counter);
->  	percpu_counter_destroy(&sbi->s_dirs_counter);
-> @@ -4253,7 +4244,7 @@ failed_mount3:
->  failed_mount2:
->  	for (i = 0; i < db_count; i++)
->  		brelse(sbi->s_group_desc[i]);
-> -	ext4_kvfree(sbi->s_group_desc);
-> +	kvfree(sbi->s_group_desc);
->  failed_mount:
->  	if (sbi->s_chksum_driver)
->  		crypto_free_shash(sbi->s_chksum_driver);
-> -- 
-> 1.7.10.4
-> 
+diff --git a/tools/perf/util/itrace.c b/tools/perf/util/itrace.c
+index b50d959..eb43a7f 100644
+--- a/tools/perf/util/itrace.c
++++ b/tools/perf/util/itrace.c
+@@ -599,6 +599,28 @@ out_free:
+ 	return err;
+ }
+ 
++static bool itrace__dont_decode(struct perf_session *session)
++{
++	return !session->itrace_synth_opts ||
++	       session->itrace_synth_opts->dont_decode;
++}
++
++int perf_event__process_itrace_info(struct perf_tool *tool __maybe_unused,
++				    union perf_event *event,
++				    struct perf_session *session __maybe_unused)
++{
++	enum itrace_type type = event->itrace_info.type;
++
++	if (dump_trace)
++		fprintf(stdout, " type: %u\n", type);
++
++	switch (type) {
++	case PERF_ITRACE_UNKNOWN:
++	default:
++		return -EINVAL;
++	}
++}
++
+ int perf_event__synthesize_itrace(struct perf_tool *tool,
+ 				  perf_event__handler_t process,
+ 				  size_t size, u64 offset, u64 ref, int idx,
+@@ -619,6 +641,30 @@ int perf_event__synthesize_itrace(struct perf_tool *tool,
+ 	return process(tool, &ev, NULL, NULL);
+ }
+ 
++s64 perf_event__process_itrace(struct perf_tool *tool, union perf_event *event,
++			       struct perf_session *session)
++{
++	s64 err;
++
++	if (dump_trace)
++		fprintf(stdout, " size: %#"PRIx64"  offset: %#"PRIx64"  ref: %#"PRIx64"  idx: %u  tid: %d  cpu: %d\n",
++			event->itrace.size, event->itrace.offset,
++			event->itrace.reference, event->itrace.idx,
++			event->itrace.tid, event->itrace.cpu);
++
++	if (itrace__dont_decode(session))
++		return event->itrace.size;
++
++	if (!session->itrace || event->header.type != PERF_RECORD_ITRACE)
++		return -EINVAL;
++
++	err = session->itrace->process_itrace_event(session, event, tool);
++	if (err < 0)
++		return err;
++
++	return event->itrace.size;
++}
++
+ #define PERF_ITRACE_DEFAULT_PERIOD_TYPE		PERF_ITRACE_PERIOD_NANOSECS
+ #define PERF_ITRACE_DEFAULT_PERIOD		100000
+ #define PERF_ITRACE_DEFAULT_CALLCHAIN_SZ	16
+@@ -764,6 +810,9 @@ int perf_event__process_itrace_error(struct perf_tool *tool __maybe_unused,
+ 				     union perf_event *event,
+ 				     struct perf_session *session)
+ {
++	if (itrace__dont_decode(session))
++		return 0;
++
+ 	if (session->itrace)
+ 		session->itrace->error_count += 1;
+ 
+diff --git a/tools/perf/util/itrace.h b/tools/perf/util/itrace.h
+index a7d4ad2..575037c 100644
+--- a/tools/perf/util/itrace.h
++++ b/tools/perf/util/itrace.h
+@@ -34,6 +34,10 @@ struct option;
+ struct record_opts;
+ struct itrace_info_event;
+ 
++enum itrace_type {
++	PERF_ITRACE_UNKNOWN,
++};
++
+ enum itrace_error_type {
+ 	PERF_ITRACE_DECODER_ERROR = 1,
+ };
+@@ -90,6 +94,9 @@ struct itrace {
+ 			     union perf_event *event,
+ 			     struct perf_sample *sample,
+ 			     struct perf_tool *tool);
++	int (*process_itrace_event)(struct perf_session *session,
++				    union perf_event *event,
++				    struct perf_tool *tool);
+ 	int (*flush_events)(struct perf_session *session,
+ 			    struct perf_tool *tool);
+ 	void (*free_events)(struct perf_session *session);
+@@ -330,10 +337,16 @@ int perf_event__synthesize_itrace_info(struct itrace_record *itr,
+ 				       struct perf_tool *tool,
+ 				       struct perf_session *session,
+ 				       perf_event__handler_t process);
++int perf_event__process_itrace_info(struct perf_tool *tool,
++				    union perf_event *event,
++				    struct perf_session *session);
+ int perf_event__synthesize_itrace(struct perf_tool *tool,
+ 				  perf_event__handler_t process,
+ 				  size_t size, u64 offset, u64 ref, int idx,
+ 				  u32 tid, u32 cpu);
++s64 perf_event__process_itrace(struct perf_tool *tool,
++			       union perf_event *event,
++			       struct perf_session *session);
+ int perf_event__process_itrace_error(struct perf_tool *tool,
+ 				     union perf_event *event,
+ 				     struct perf_session *session);
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.9.1
+
