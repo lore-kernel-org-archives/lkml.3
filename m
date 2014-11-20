@@ -1,81 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241AbaKTJVm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 04:21:42 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:14321 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575AbaKTJVk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 04:21:40 -0500
-Message-ID: <546DB293.1040500@huawei.com>
-Date: Thu, 20 Nov 2014 17:21:23 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1757302AbaKTJVx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 04:21:53 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:39307 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755511AbaKTJVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 04:21:49 -0500
+Message-ID: <546DB29E.2030308@ti.com>
+Date: Thu, 20 Nov 2014 14:51:34 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: For the problem when using swiotlb
-References: <5469E26B.2010905@huawei.com> <2522857.bNQToYpBNt@wuerfel> <546DA795.9080209@huawei.com> <2121725.INdNoXW7GO@wuerfel>
-In-Reply-To: <2121725.INdNoXW7GO@wuerfel>
-Content-Type: text/plain; charset="UTF-8"
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Vivek Gautam <gautam.vivek@samsung.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <andrew.kim@intel.com>
+Subject: Re: [PATCHv5 6/7] base: platform: name the device already during
+ allocation
+References: <1416410903-162369-1-git-send-email-heikki.krogerus@linux.intel.com> <1416410903-162369-7-git-send-email-heikki.krogerus@linux.intel.com>
+In-Reply-To: <1416410903-162369-7-git-send-email-heikki.krogerus@linux.intel.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.246]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/20 17:02, Arnd Bergmann wrote:
-> On Thursday 20 November 2014 16:34:29 Ding Tianhong wrote:
->>>
->>> I didn't mean the dma_pfn_offset. The problem is that the of_dma_configure
->>> code currently doesn't look at the mask. As I explained in my reply to
->>> Catalin, it should set the mask to the size of the dma-ranges if that is
->>> 32-bit or smaller, and dma_set_mask should look at the same dma-ranges
->>> property to decide what to set the mask to when a driver asks for a
->>> mask larger than 64-bit.
->>>
->> ok, I think the your reply to catalin is clear, I got it, add a
->> appropriate mask for the dev is
->> reasonable, I think it should be fixed later.
->>
->> But in my case, if I don't use the DMA_CMA, the dma_alloc_coherent
->> should use the swiotlb directly which maximum is 16M,
->> so unless I use the kmalloc otherwise I have no better idea for that.
+Hi Greg,
+
+On Wednesday 19 November 2014 08:58 PM, Heikki Krogerus wrote:
+> The device name is usually required when assigning resources
+> like clocks to platform devices. The problem is that the
+> device name is not know before platform_device_add is called
+> and that can be too late as the drivers may have already
+> requested the resources when the function returns. By naming
+> the device already in platform_device_alloc, the resources
+> can be assigned before platform_device_add is called.
 > 
-> But if you just change your driver to set the 64-bit DMA mask,
-> it will no longer use the swiotlb and work much faster without
-> that. You have to do it anyway, even once we fix the architecture
-> code.
+> This change allows different kinds of probe drivers to pass
+> forward their resources to the actual driver. The first
+> place where we need it is dwc3 controllers host glue code
+> (drivers/usb/dwc3/host.c) to pass the phy's to xhci.
 > 
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Yes, I did, it is useful, thanks.
+Are you fine with this change? Can it come via linux-phy tree?
 
-> The fix in the architecture code is just required so things don't
-> break if you have a 64-bit DMA capable device on a 32-bit bus.
+Thanks
+Kishon
+> ---
+>  drivers/base/platform.c | 69 +++++++++++++++++++++++++++++--------------------
+>  1 file changed, 41 insertions(+), 28 deletions(-)
 > 
-> On a related note, we should really fix the network and scsi core
-> code not lot just look at PCI_DMA_BUS_IS_PHYS but check the presence
-> of an IOMMU for devices that are limited to 32-bit DMA, so we fall
-> back to block bounce and lowmem SKB instead of swiotlb for IOMMU-less
-> devices.
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index cdb6c07..d2217f3 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -195,11 +195,41 @@ void platform_device_put(struct platform_device *pdev)
+>  }
+>  EXPORT_SYMBOL_GPL(platform_device_put);
+>  
+> +static int pdev_set_name(struct platform_device *pdev)
+> +{
+> +	int ret;
+> +
+> +	switch (pdev->id) {
+> +	default:
+> +		return dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
+> +	case PLATFORM_DEVID_NONE:
+> +		return dev_set_name(&pdev->dev, "%s", pdev->name);
+> +	case PLATFORM_DEVID_AUTO:
+> +		/*
+> +		 * Automatically allocated device ID. We mark it as such so
+> +		 * that we remember it must be freed, and we append a suffix
+> +		 * to avoid namespace collision with explicit IDs.
+> +		 */
+> +		ret = ida_simple_get(&platform_devid_ida, 0, 0, GFP_KERNEL);
+> +		if (ret < 0)
+> +			return ret;
+> +		pdev->id = ret;
+> +		pdev->id_auto = true;
+> +		return dev_set_name(&pdev->dev, "%s.%d.auto", pdev->name,
+> +				    pdev->id);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  static void platform_device_release(struct device *dev)
+>  {
+>  	struct platform_object *pa = container_of(dev, struct platform_object,
+>  						  pdev.dev);
+>  
+> +	if (pa->pdev.id_auto)
+> +		ida_simple_remove(&platform_devid_ida, pa->pdev.id);
+> +
+>  	of_device_node_put(&pa->pdev.dev);
+>  	kfree(pa->pdev.dev.platform_data);
+>  	kfree(pa->pdev.mfd_cell);
+> @@ -228,6 +258,10 @@ struct platform_device *platform_device_alloc(const char *name, int id)
+>  		device_initialize(&pa->pdev.dev);
+>  		pa->pdev.dev.release = platform_device_release;
+>  		arch_setup_pdev_archdata(&pa->pdev);
+> +		if (pdev_set_name(&pa->pdev)) {
+> +			kfree(pa);
+> +			return NULL;
+> +		}
+>  	}
+>  
+>  	return pa ? &pa->pdev : NULL;
+> @@ -308,28 +342,6 @@ int platform_device_add(struct platform_device *pdev)
+>  
+>  	pdev->dev.bus = &platform_bus_type;
+>  
+> -	switch (pdev->id) {
+> -	default:
+> -		dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
+> -		break;
+> -	case PLATFORM_DEVID_NONE:
+> -		dev_set_name(&pdev->dev, "%s", pdev->name);
+> -		break;
+> -	case PLATFORM_DEVID_AUTO:
+> -		/*
+> -		 * Automatically allocated device ID. We mark it as such so
+> -		 * that we remember it must be freed, and we append a suffix
+> -		 * to avoid namespace collision with explicit IDs.
+> -		 */
+> -		ret = ida_simple_get(&platform_devid_ida, 0, 0, GFP_KERNEL);
+> -		if (ret < 0)
+> -			goto err_out;
+> -		pdev->id = ret;
+> -		pdev->id_auto = true;
+> -		dev_set_name(&pdev->dev, "%s.%d.auto", pdev->name, pdev->id);
+> -		break;
+> -	}
+> -
+>  	for (i = 0; i < pdev->num_resources; i++) {
+>  		struct resource *p, *r = &pdev->resource[i];
+>  
+> @@ -372,7 +384,6 @@ int platform_device_add(struct platform_device *pdev)
+>  			release_resource(r);
+>  	}
+>  
+> - err_out:
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(platform_device_add);
+> @@ -392,11 +403,6 @@ void platform_device_del(struct platform_device *pdev)
+>  	if (pdev) {
+>  		device_del(&pdev->dev);
+>  
+> -		if (pdev->id_auto) {
+> -			ida_simple_remove(&platform_devid_ida, pdev->id);
+> -			pdev->id = PLATFORM_DEVID_AUTO;
+> -		}
+> -
+>  		for (i = 0; i < pdev->num_resources; i++) {
+>  			struct resource *r = &pdev->resource[i];
+>  			unsigned long type = resource_type(r);
+> @@ -414,8 +420,15 @@ EXPORT_SYMBOL_GPL(platform_device_del);
+>   */
+>  int platform_device_register(struct platform_device *pdev)
+>  {
+> +	int ret;
+> +
+>  	device_initialize(&pdev->dev);
+>  	arch_setup_pdev_archdata(pdev);
+> +
+> +	ret = pdev_set_name(pdev);
+> +	if (ret)
+> +		return ret;
+> +
+>  	return platform_device_add(pdev);
+>  }
+>  EXPORT_SYMBOL_GPL(platform_device_register);
 > 
-agree.
-
-> Which driver are you using BTW?
-> 
-soc ppe drivers which is not upstream yet, and sas drivers.
-
-> 	Arnd
-
-Regards
-Ding
-
-> 
-> .
-> 
-
-
