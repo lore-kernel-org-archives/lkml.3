@@ -1,77 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290AbaKTQUL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 11:20:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42039 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaKTQUJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 11:20:09 -0500
-Date: Thu, 20 Nov 2014 08:20:07 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
-        Metin Doslu <metin@citusdata.com>,
-        Michel Lespinasse <walken@google.com>,
-        Ozgun Erdogan <ozgun@citusdata.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3.14 102/122] mm + fs: prepare for non-page entries in
- page cache radix trees
-Message-ID: <20141120162007.GA32617@kroah.com>
-References: <20141119205208.812884198@linuxfoundation.org>
- <20141119205212.209198738@linuxfoundation.org>
- <20141120154937.GA325@phnom.home.cmpxchg.org>
+	id S1757738AbaKTQLP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 11:11:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35991 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757547AbaKTQLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 11:11:13 -0500
+Date: Thu, 20 Nov 2014 11:10:55 -0500
+From: Dave Jones <davej@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        WANG Chao <chaowang@redhat.com>, Baoquan He <bhe@redhat.com>,
+        Dave Young <dyoung@redhat.com>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141120161055.GA8309@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Vivek Goyal <vgoyal@redhat.com>, Don Zickus <dzickus@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	the arch/x86 maintainers <x86@kernel.org>,
+	WANG Chao <chaowang@redhat.com>, Baoquan He <bhe@redhat.com>,
+	Dave Young <dyoung@redhat.com>
+References: <20141118023930.GA2871@redhat.com>
+ <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
+ <20141118145234.GA7487@redhat.com>
+ <alpine.DEB.2.11.1411181914020.3909@nanos>
+ <20141118215540.GD35311@redhat.com>
+ <20141118220254.GA2571@redhat.com>
+ <20141119144105.GB108701@redhat.com>
+ <20141119150333.GB2953@redhat.com>
+ <20141119153852.GA16146@redhat.com>
+ <20141119162806.GD2953@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141120154937.GA325@phnom.home.cmpxchg.org>
+In-Reply-To: <20141119162806.GD2953@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 10:49:37AM -0500, Johannes Weiner wrote:
-> On Wed, Nov 19, 2014 at 12:52:32PM -0800, Greg Kroah-Hartman wrote:
-> > 3.14-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Johannes Weiner <hannes@cmpxchg.org>
-> > 
-> > commit 0cd6144aadd2afd19d1aca880153530c52957604 upstream.
-> > 
-> > shmem mappings already contain exceptional entries where swap slot
-> > information is remembered.
-> > 
-> > To be able to store eviction information for regular page cache, prepare
-> > every site dealing with the radix trees directly to handle entries other
-> > than pages.
-> 
-> I don't see the rest of the thrash-detection patches in this series.
-> Without anybody actually planting "entries other than pages" in the
-> radix trees, why is this needed in -stable?
+On Wed, Nov 19, 2014 at 11:28:06AM -0500, Vivek Goyal wrote:
+ 
+ > I am wondering may be in some cases we panic in second kernel and sit
+ > there. Probably we should append a kernel command line automatically
+ > say "panic=1" so that it reboots itself if second kernel panics.
+ > 
+ > By any chance, have you enabled "CONFIG_RANDOMIZE_BASE"? If yes, please
+ > disable that as currently kexec/kdump stuff does not work with it. And
+ > it hangs very early in the boot process and I had to hook serial console
+ > to get following message on console.
 
-What specific patches are you referring to?  I still have 31 pending
-patches that Mel has backported that I have not applied to the
-3.14-stable kernel for his big series of performance improvements.  I've
-been slowly feeding them into releases to catch any possible problems
-earlier.
+I did have that enabled. (Perhaps the kconfig should conflict?)
 
-So perhaps they have yet to be applied?  Or they are later on in this
-patch series (there are 20 more patches in this series after this
-patch...)
+After rebuilding without it, this..
 
-thanks,
+ > > dracut: *** Stripping files done ***
+ > > dracut: *** Store current command line parameters ***
+ > > dracut: *** Creating image file ***
+ > > dracut: *** Creating image file done ***
+ > > kdumpctl: cat: write error: Broken pipe
+ > > kdumpctl: kexec: failed to load kdump kernel
+ > > kdumpctl: Starting kdump: [FAILED]
+ 
+went away. It generated the image, and things looked good.
+I did echo c > /proc/sysrq-trigger and got this..
 
-greg k-h
+SysRq : Trigger a crash
+BUG: sleeping function called from invalid context at arch/x86/mm/fault.c:1192
+in_atomic(): 0, irqs_disabled(): 0, pid: 8860, name: bash
+3 locks held by bash/8860:
+ #0:  (sb_writers#5){......}, at: [<ffffffff811eac13>] vfs_write+0x1b3/0x1f0
+ #1:  (rcu_read_lock){......}, at: [<ffffffff8144a435>] __handle_sysrq+0x5/0x1b0
+ #2:  (&mm->mmap_sem){......}, at: [<ffffffff8103cb20>] __do_page_fault+0x140/0x600
+Preemption disabled at:[<ffffffff817ca332>] printk+0x5c/0x72
+
+CPU: 1 PID: 8860 Comm: bash Not tainted 3.18.0-rc5+ #95 [loadavg: 0.54 0.24 0.09 2/143 8909]
+ 00000000000004a8 00000000e1f75c1b ffff880236473c28 ffffffff817ce5c7
+ 0000000000000000 0000000000000000 ffff880236473c58 ffffffff8109af8a
+ ffff880236473c58 0000000000000029 0000000000000000 ffff880236473d88
+Call Trace:
+ [<ffffffff817ce5c7>] dump_stack+0x4f/0x7c
+ [<ffffffff8109af8a>] __might_sleep+0x12a/0x190
+ [<ffffffff8103cb3b>] __do_page_fault+0x15b/0x600
+ [<ffffffff811613b2>] ? irq_work_queue+0x62/0xd0
+ [<ffffffff8137ad7d>] ? trace_hardirqs_off_thunk+0x3a/0x3f
+ [<ffffffff8103cfec>] do_page_fault+0xc/0x10
+ [<ffffffff817dbcf2>] page_fault+0x22/0x30
+ [<ffffffff817ca332>] ? printk+0x5c/0x72
+ [<ffffffff81449ce6>] ? sysrq_handle_crash+0x16/0x20
+ [<ffffffff8144a567>] __handle_sysrq+0x137/0x1b0
+ [<ffffffff8144a435>] ? __handle_sysrq+0x5/0x1b0
+ [<ffffffff8144aa4a>] write_sysrq_trigger+0x4a/0x50
+ [<ffffffff81259f2d>] proc_reg_write+0x3d/0x80
+ [<ffffffff811eab1a>] vfs_write+0xba/0x1f0
+ [<ffffffff811eb628>] SyS_write+0x58/0xd0
+ [<ffffffff817da052>] system_call_fastpath+0x12/0x17
+Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+CPU: 1 PID: 8860 Comm: bash Not tainted 3.18.0-rc5+ #95 [loadavg: 0.54 0.24 0.09 1/143 8909]
+task: ffff8800a1a60000 ti: ffff880236470000 task.ti: ffff880236470000
+RIP: 0010:[<ffffffff81449ce6>]  [<ffffffff81449ce6>] sysrq_handle_crash+0x16/0x20
+RSP: 0018:ffff880236473e38  EFLAGS: 00010246
+RAX: 000000000000000f RBX: ffffffff81cb4a00 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: ffffffff817ca332 RDI: 0000000000000063
+RBP: ffff880236473e38 R08: 0000000000000001 R09: 0000000000000001
+R10: 0000000000000358 R11: 0000000000000357 R12: 0000000000000063
+R13: 0000000000000000 R14: 0000000000000007 R15: 0000000000000000
+FS:  00007fc652f4e740(0000) GS:ffff880244200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000000 CR3: 000000023a3b2000 CR4: 00000000001407e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+Stack:
+ ffff880236473e78 ffffffff8144a567 ffffffff8144a435 0000000000000002
+ 0000000000000002 00007fc652f51000 0000000000000002 ffff880236473f48
+ ffff880236473ea8 ffffffff8144aa4a 0000000000000002 00007fc652f51000
+Call Trace:
+ [<ffffffff8144a567>] __handle_sysrq+0x137/0x1b0
+ [<ffffffff8144a435>] ? __handle_sysrq+0x5/0x1b0
+ [<ffffffff8144aa4a>] write_sysrq_trigger+0x4a/0x50
+ [<ffffffff81259f2d>] proc_reg_write+0x3d/0x80
+ [<ffffffff811eab1a>] vfs_write+0xba/0x1f0
+ [<ffffffff811eb628>] SyS_write+0x58/0xd0
+ [<ffffffff817da052>] system_call_fastpath+0x12/0x17
+Code: 01 f4 45 39 a5 b4 00 00 00 75 e2 4c 89 ef e8 d2 f7 ff ff eb d8 0f 1f 44 00 00 55 c7 05 08 b7 7e 00 01 00 00 00 48 89 e5 0f ae f8 <c6> 04 25 00 00 00 00 01 5d c3 0f 1f 44 00 00 55 31 c0 48 89 e5 
+RIP  [<ffffffff81449ce6>] sysrq_handle_crash+0x16/0x20
+ RSP <ffff880236473e38>
+CR2: 0000000000000000
+
+Which, asides from the sleeping while atomic thing which isn't important,
+does what I expected.  Shortly later, it rebooted.
+
+And then /var/crash was empty.
+
+	Dave
+
