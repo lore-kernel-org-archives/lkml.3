@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913AbaKTKr3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:47:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51370 "EHLO mx2.suse.de"
+	id S1755240AbaKTKss (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 05:48:48 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:59109 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880AbaKTKr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:47:28 -0500
-Date: Thu, 20 Nov 2014 10:47:22 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH 03/10] mm: Convert p[te|md]_numa users to
- p[te|md]_protnone_numa
-Message-ID: <20141120104722.GL2725@suse.de>
-References: <1416478790-27522-1-git-send-email-mgorman@suse.de>
- <1416478790-27522-4-git-send-email-mgorman@suse.de>
- <063D6719AE5E284EB5DD2968C1650D6D1C9F48CB@AcuExch.aculab.com>
+	id S1750776AbaKTKsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 05:48:47 -0500
+X-IronPort-AV: E=Sophos;i="5.07,423,1413244800"; 
+   d="scan'208";a="193219877"
+Date: Thu, 20 Nov 2014 10:47:51 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xensource.com>, <Ian.Campbell@citrix.com>,
+        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <catalin.marinas@arm.com>
+Subject: Re: [PATCH v9 12/13] swiotlb-xen: pass dev_addr to xen_dma_unmap_page
+ and xen_dma_sync_single_for_cpu
+In-Reply-To: <alpine.DEB.2.02.1411201033460.12596@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1411201046110.12596@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com> <1415792454-23161-12-git-send-email-stefano.stabellini@eu.citrix.com> <20141119210703.GE20440@laptop.dumpdata.com> <alpine.DEB.2.02.1411201033460.12596@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1C9F48CB@AcuExch.aculab.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 10:38:56AM +0000, David Laight wrote:
-> From:  Mel Gorman
-> > Convert existing users of pte_numa and friends to the new helper. Note
-> > that the kernel is broken after this patch is applied until the other
-> > page table modifiers are also altered. This patch layout is to make
-> > review easier.
+On Thu, 20 Nov 2014, Stefano Stabellini wrote:
+> On Wed, 19 Nov 2014, Konrad Rzeszutek Wilk wrote:
+> > On Wed, Nov 12, 2014 at 11:40:53AM +0000, Stefano Stabellini wrote:
+> > > xen_dma_unmap_page and xen_dma_sync_single_for_cpu take a dma_addr_t
+> > > handle as argument, not a physical address.
+> > 
+> > Ouch. Should this also go on stable tree?
 > 
-> Doesn't that break bisection?
+> Good idea
+
+Also can I take that as an Acked-by for this patch?
+
+
+There is one last bit of common and x86 changes in this series:
+patch #7 adds a paramter to xen_dma_map_page, even though the x86
+implementation is empty:
+
+http://marc.info/?l=xen-devel&m=141579253829808&w=2
+
+is that OK for you?
+ 
+ 
+> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+> > > ---
+> > >  drivers/xen/swiotlb-xen.c |    6 +++---
+> > >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > > 
+> > > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> > > index 3725ee4..498b654 100644
+> > > --- a/drivers/xen/swiotlb-xen.c
+> > > +++ b/drivers/xen/swiotlb-xen.c
+> > > @@ -449,7 +449,7 @@ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
+> > >  
+> > >  	BUG_ON(dir == DMA_NONE);
+> > >  
+> > > -	xen_dma_unmap_page(hwdev, paddr, size, dir, attrs);
+> > > +	xen_dma_unmap_page(hwdev, dev_addr, size, dir, attrs);
+> > >  
+> > >  	/* NOTE: We use dev_addr here, not paddr! */
+> > >  	if (is_xen_swiotlb_buffer(dev_addr)) {
+> > > @@ -497,14 +497,14 @@ xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
+> > >  	BUG_ON(dir == DMA_NONE);
+> > >  
+> > >  	if (target == SYNC_FOR_CPU)
+> > > -		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
+> > > +		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
+> > >  
+> > >  	/* NOTE: We use dev_addr here, not paddr! */
+> > >  	if (is_xen_swiotlb_buffer(dev_addr))
+> > >  		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
+> > >  
+> > >  	if (target == SYNC_FOR_DEVICE)
+> > > -		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
+> > > +		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
+> > >  
+> > >  	if (dir != DMA_FROM_DEVICE)
+> > >  		return;
+> > > -- 
+> > > 1.7.10.4
+> > > 
+> > 
 > 
-
-Yes, for automatic NUMA balancing at least. The patch structure is to
-to make reviewers job easier and besides, bisecting within patches 2-6
-is pointless. If desired, I can collapse patches 2-6 together for the
-final submission.
-
--- 
-Mel Gorman
-SUSE Labs
