@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757117AbaKTHlD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:41:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43922 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757049AbaKTHk7 (ORCPT
+	id S1756912AbaKTHkK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:40:10 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:61008 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756855AbaKTHkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:40:59 -0500
-Date: Wed, 19 Nov 2014 23:40:31 -0800
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-a84808083688d82d7f1e5786ccf5df0ff7d448cb@git.kernel.org>
-Cc: mingo@kernel.org, acme@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        peterz@infradead.org, linux-kernel@vger.kernel.org,
-        adrian.hunter@intel.com, jolsa@redhat.com, tglx@linutronix.de,
-        eranian@google.com, paulus@samba.org, hpa@zytor.com,
-        namhyung@gmail.com
-Reply-To: hpa@zytor.com, namhyung@gmail.com, tglx@linutronix.de,
-        jolsa@redhat.com, paulus@samba.org, eranian@google.com,
-        peterz@infradead.org, linux-kernel@vger.kernel.org,
-        adrian.hunter@intel.com, mingo@kernel.org, acme@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com
-In-Reply-To: <1415715423-15563-4-git-send-email-adrian.hunter@intel.com>
-References: <1415715423-15563-4-git-send-email-adrian.hunter@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Only override the default :
- tid comm entry
-Git-Commit-ID: a84808083688d82d7f1e5786ccf5df0ff7d448cb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 20 Nov 2014 02:40:08 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: For the problem when using swiotlb
+Date: Thu, 20 Nov 2014 08:40 +0100
+Message-ID: <2522857.bNQToYpBNt@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <546D58B1.60108@huawei.com>
+References: <5469E26B.2010905@huawei.com> <1535751.CcvIi3DN4F@wuerfel> <546D58B1.60108@huawei.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:hJwckUcfblQ7DPmB9vcq6T//648aHXsN7Tq20GrAiVf
+ qdCqgIHzM9VNbKvIYBFS1M21snXeSTN7XvC1owz1RBPCS4CqtP
+ 6dULipAWS3KKh+vTHYwIa0D56KHsBLB9cD8xUd2wEzj5OzEPFd
+ mZIueZgFVAOTStnKT2jfm4bw91tNsDfRlYMWJmsXafWEc3TR8L
+ yVGnxQD9IOA+n1ZG2YX+kJgMtNmAfvtV2dlVZS1DjrJdU+TxXw
+ 8HxTAU5AsxhGVgdKCqXGFz8nDrbdVLcaZe11O1owmYbQhifTTO
+ MnR3Yme4Clpjlcy3wzc1kJaGC18MqlLOkWPwJqpVX6exwLoNnl
+ 7q1Arp6MChHTh0oEhzVU=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a84808083688d82d7f1e5786ccf5df0ff7d448cb
-Gitweb:     http://git.kernel.org/tip/a84808083688d82d7f1e5786ccf5df0ff7d448cb
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Tue, 11 Nov 2014 16:16:41 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 19 Nov 2014 12:37:26 -0300
+On Thursday 20 November 2014 10:57:53 Ding Tianhong wrote:
+> On 2014/11/19 16:45, Arnd Bergmann wrote:
+> > On Wednesday 19 November 2014 11:17:15 Ding Tianhong wrote:
+> >> On 2014/11/18 2:09, Catalin Marinas wrote:
+> >>> On Mon, Nov 17, 2014 at 12:18:42PM +0000, Arnd Bergmann wrote:
+> >> Thanks everyone, I think I found the way to fix it, need to enable DMA_CMA, to reserve a big memory
+> >> for CMA and set coherent mask for dev, then dma_alloc and dma_mapping will not use the swiotlb until
+> >> the memory out of mask or swiotlb_force is enabled.
+> >>
+> >> If I still understand uncorrectly, please inform me.
+> >>
+> > 
+> > Please do not use CMA to work around the problem, but fix the underlying bug
+> > instead.
+> > 
+> > The driver should call 'dma_set_mask_and_coherent()' with the appropriate
+> > dma mask, and check whether that succeeded. However, the code implementing
+> > dma_set_mask_and_coherent on arm64 also needs to be changed to look up
+> > the dma-ranges property (see of_dma_configure()), and check if the mask
+> > is possible.
+> > 
+> The dma_pfn_offset looks only support arm32, but my platform is aarch64 and I check the latest kernel version, 
+> I think the dma-rangs still could not work for aarch64, so maybe we should add dma_pfn_offset for aarch64 first.
+> 
 
-perf tools: Only override the default :tid comm entry
+I didn't mean the dma_pfn_offset. The problem is that the of_dma_configure
+code currently doesn't look at the mask. As I explained in my reply to
+Catalin, it should set the mask to the size of the dma-ranges if that is
+32-bit or smaller, and dma_set_mask should look at the same dma-ranges
+property to decide what to set the mask to when a driver asks for a
+mask larger than 64-bit.
 
-Events may still be ordered even if there are no timestamps e.g. if the
-data is recorded per-thread.
-
-Also synthesized COMM events have a timestamp of zero.
-
-Consequently it is better to keep comm entries even if they have a
-timestamp of zero.
-
-However, when a struct thread is created the command string is not known
-and a comm entry with a string of the form ":<tid>" is used.
-
-In that case thread->comm_set is false and the comm entry should be
-overridden.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1415715423-15563-4-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/thread.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index a2157f0..9ebc8b1 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -103,15 +103,14 @@ struct comm *thread__exec_comm(const struct thread *thread)
- 	return last;
- }
- 
--/* CHECKME: time should always be 0 if event aren't ordered */
- int __thread__set_comm(struct thread *thread, const char *str, u64 timestamp,
- 		       bool exec)
- {
- 	struct comm *new, *curr = thread__comm(thread);
- 	int err;
- 
--	/* Override latest entry if it had no specific time coverage */
--	if (!curr->start && !curr->exec) {
-+	/* Override the default :tid entry */
-+	if (!thread->comm_set) {
- 		err = comm__override(curr, str, timestamp, exec);
- 		if (err)
- 			return err;
+	Arnd
