@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757767AbaKTRUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:20:19 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:51653 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756904AbaKTRUR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 12:20:17 -0500
+	id S1757069AbaKTRXm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:23:42 -0500
+Received: from mout.web.de ([212.227.15.4]:64224 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406AbaKTRXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 12:23:41 -0500
+Message-ID: <546E238A.5050606@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 18:23:22 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Date: Thu, 20 Nov 2014 21:20:14 +0400
-Message-ID: <CAAeHK+zQZ=sJYQA=BKLS2i7hu8NyXn6GXngvDqG9WD96yd9acg@mail.gmail.com>
-Subject: Potential data race in dput and __d_lookup
-From: Andrey Konovalov <andreyknvl@google.com>
-To: Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Dmitry Vyukov <dvyukov@google.com>, Kostya Serebryany <kcc@google.com>,
-        ktsan@googlegroups.com
-Content-Type: text/plain; charset=UTF-8
+To: Benny Halevy <bhalevy@primarydata.com>, Boaz Harrosh <openosd@gmail.com>,
+        "James E. J. Bottomley" <JBottomley@parallels.com>,
+        osd-dev@open-osd.org, linux-scsi@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] SCSI-OSD: Deletion of an unnecessary check before the
+ function call "put_disk"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:SUaHXtg+qmMW82fFtpH9LsXTCjdkf60eMWtNjQAC/OZuwNNJUQU
+ OKNA2lZ98Jj+2aSbw5496f9ctdnCoEdI7e2WMfLLsuyiXtcBR/rFR8I+i9444dggHMaCXf7
+ HEZQN33GJ7OiuxcsMwR5K77b7mjHUr5e0bMqfx4vDQrDKSp+a0ulP91EOljNIic1T+veyzM
+ FhPq9TL52m3VpmZOZi6vQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 18:11:28 +0100
 
-We are working on a dynamic data race detector for Linux kernel called
-KernelThreadSanitizer (ktsan)
-(https://code.google.com/p/thread-sanitizer/wiki/ThreadSanitizerForKernel).
+The put_disk() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-Here is a report we got while running ktsan (upstream revision
-fc14f9c1272f62c3e8d01300f52467c0d9af50f9, Linux 3.18-rc5):
+This issue was detected by using the Coccinelle software.
 
-==================================================================
-ThreadSanitizer: data-race in lockref_put_or_lock
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/scsi/osd/osd_uld.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Read of size 8 by thread T575 (K814):
- [<ffffffff8152067f>] lockref_put_or_lock+0x1f/0xe0 /lib/lockref.c:122
- [<ffffffff8126965e>] dput+0x2e/0x2b0 /fs/dcache.c:626
- [<     inlined    >] link_path_walk+0xddd/0x1d40 path_to_nameidata
-/fs/namei.c:677
- [<     inlined    >] link_path_walk+0xddd/0x1d40 walk_component
-/fs/namei.c:1571
- [<ffffffff81257d7d>] link_path_walk+0xddd/0x1d40 /fs/namei.c:1805
- [<ffffffff8125e344>] path_openat+0xe4/0xb10 /fs/namei.c:3206
- [<ffffffff81260911>] do_filp_open+0x51/0xd0 /fs/namei.c:3259
- [<ffffffff81242003>] do_sys_open+0x183/0x2d0 /fs/open.c:998
- [<     inlined    >] SyS_open+0x35/0x50 SYSC_open /fs/open.c:1016
- [<ffffffff81242185>] SyS_open+0x35/0x50 /fs/open.c:1011
- [<ffffffff81e39fe9>] system_call_fastpath+0x12/0x17
-/arch/x86/kernel/entry_64.S:422
-DBG: cpu = ffffe8ffffc010b0
+diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
+index e1d9a4c..3d82ee1 100644
+--- a/drivers/scsi/osd/osd_uld.c
++++ b/drivers/scsi/osd/osd_uld.c
+@@ -408,8 +408,7 @@ static void __remove(struct device *dev)
+ 	OSD_INFO("osd_remove %s\n",
+ 		 oud->disk ? oud->disk->disk_name : NULL);
+ 
+-	if (oud->disk)
+-		put_disk(oud->disk);
++	put_disk(oud->disk);
+ 	ida_remove(&osd_minor_ida, oud->minor);
+ 
+ 	kfree(oud);
+-- 
+2.1.3
 
-Previous write of size 4 by thread T574 (K813):
- [<ffffffff8126e22f>] __d_lookup+0x27f/0x2d0 /fs/dcache.c:2185
- [<ffffffff812543c9>] lookup_fast+0x299/0x5a0 /fs/namei.c:1427
- [<     inlined    >] link_path_walk+0x25c/0x1d40 walk_component
-/fs/namei.c:1546
- [<ffffffff812571fc>] link_path_walk+0x25c/0x1d40 /fs/namei.c:1805
- [<ffffffff8125e344>] path_openat+0xe4/0xb10 /fs/namei.c:3206
- [<ffffffff81260911>] do_filp_open+0x51/0xd0 /fs/namei.c:3259
- [<ffffffff81242003>] do_sys_open+0x183/0x2d0 /fs/open.c:998
- [<     inlined    >] SyS_open+0x35/0x50 SYSC_open /fs/open.c:1016
- [<ffffffff81242185>] SyS_open+0x35/0x50 /fs/open.c:1011
- [<ffffffff81e39fe9>] system_call_fastpath+0x12/0x17
-/arch/x86/kernel/entry_64.S:422
-DBG: cpu = 0
-
-DBG: addr: ffff8801148e91f0
-DBG: first offset: 4, second offset: 0
-DBG: T575 clock: {T575: 27630, T574: 25486}
-DBG: T574 clock: {T574: 25539}
-==================================================================
-
-It seems that one thread increments 'dentry->d_lockref.count', while
-other does 'lockref_put_or_lock(&dentry->d_lockref)'  without any
-synchronization.
-
-Could you confirm if this is a real race?
-
-Thank you.
