@@ -1,104 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758154AbaKTUib (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 15:38:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50188 "EHLO mx1.redhat.com"
+	id S1758159AbaKTUjj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 15:39:39 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:59511 "EHLO gum.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755849AbaKTUia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 15:38:30 -0500
-Date: Thu, 20 Nov 2014 15:37:49 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141120203749.GM108701@redhat.com>
-References: <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
- <20141118145234.GA7487@redhat.com>
- <alpine.DEB.2.11.1411181914020.3909@nanos>
- <20141118215540.GD35311@redhat.com>
- <20141119021902.GA14216@redhat.com>
- <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
- <20141119145902.GA13387@redhat.com>
- <546D0530.8040800@mit.edu>
- <20141120152509.GA5412@redhat.com>
- <CA+55aFzP0jivKYWUVwt==wNaBjZM+aBQLMT=Td+2cOVKSvm-dQ@mail.gmail.com>
+	id S1756884AbaKTUji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 15:39:38 -0500
+Date: Thu, 20 Nov 2014 15:39:24 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3.14 102/122] mm + fs: prepare for non-page entries in
+ page cache radix trees
+Message-ID: <20141120203924.GA2611@phnom.home.cmpxchg.org>
+References: <20141119205208.812884198@linuxfoundation.org>
+ <20141119205212.209198738@linuxfoundation.org>
+ <20141120154937.GA325@phnom.home.cmpxchg.org>
+ <20141120162122.GS2725@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzP0jivKYWUVwt==wNaBjZM+aBQLMT=Td+2cOVKSvm-dQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141120162122.GS2725@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 11:43:07AM -0800, Linus Torvalds wrote:
-> On Thu, Nov 20, 2014 at 7:25 AM, Dave Jones <davej@redhat.com> wrote:
-> >
-> > Disabling CONTEXT_TRACKING didn't change the problem.
-> > Unfortunatly the full trace didn't make it over usb-serial this time. Grr.
-> >
-> > Here's what came over serial..
-> >
-> > NMI watchdog: BUG: soft lockup - CPU#2 stuck for 22s! [trinity-c35:11634]
-> > RIP: 0010:[<ffffffff88379605>]  [<ffffffff88379605>] copy_user_enhanced_fast_string+0x5/0x10
-> > RAX: ffff880220eb4000 RBX: ffffffff887dac64 RCX: 0000000000006a18
-> > RDX: 000000000000e02f RSI: 00007f766f466620 RDI: ffff88016f6a7617
-> > RBP: ffff880220eb7f78 R08: 8000000000000063 R09: 0000000000000004
-> > Call Trace:
-> >  [<ffffffff882f4225>] ? SyS_add_key+0xd5/0x240
-> >  [<ffffffff8837adae>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> >  [<ffffffff887da092>] system_call_fastpath+0x12/0x17
+On Thu, Nov 20, 2014 at 04:21:22PM +0000, Mel Gorman wrote:
+> On Thu, Nov 20, 2014 at 10:49:37AM -0500, Johannes Weiner wrote:
+> > I don't see the rest of the thrash-detection patches in this series.
+> > Without anybody actually planting "entries other than pages" in the
+> > radix trees, why is this needed in -stable?
 > 
-> Ok, that's just about half-way in a ~57kB memory copy (you can see it
-> in the register state: %rdx contains the original size of the key
-> payload, rcx contains the current remaining size: 57kB total, 27kB
-> left).
-> 
-> And it's holding absolutely zero locks, and not even doing anything
-> odd. It wasn't doing anything particularly odd before either, although
-> the kmalloc() of a 64kB area might just have caused a fair amount of
-> VM work, of course.
+> Patches later on in the stable series depended upon the code structure
+> introduced by this patch even though the thrash-detection stuff was not
+> backported. It could have been backported without it but then the
+> patches would look much different from their mainline equivalent.
 
-Just for clarification, softlockups are processes hogging the cpu (thus
-blocking the high priority per-cpu watchdog thread).
-
-Hardlockups on the other hand are cpus with interrupts disabled for too
-long (thus blocking the timer interrupt).
-
-The might coincide with your scheduler theory below.  Don't know.
-
-Cheers,
-Don
-
-> 
-> You know what? I'm seriously starting to think that these bugs aren't
-> actually real. Or rather, I don't think it's really a true softlockup,
-> because most of them seem to happen in totally harmless code.
-> 
-> So I'm wondering whether the real issue might not be just this:
-> 
->    [loadavg: 164.79 157.30 155.90 37/409 11893]
-> 
-> together with possibly a scheduler issue and/or a bug in the smpboot
-> thread logic (that the watchdog uses) or similar.
-> 
-> That's *especially* true if it turns out that the 3.17 problem you saw
-> was actually a perf bug that has already been fixed and is in stable.
-> We've been looking at kernel/smp.c changes, and looking for x86 IPI or
-> APIC changes, and found some harmlessly (at least on x86) suspicious
-> code and this exercise might be worth it for that reason, but what if
-> it's really just a scheduler regression.
-> 
-> There's been a *lot* more scheduler changes since 3.17 than the small
-> things we've looked at for x86 entry or IPI handling. And the
-> scheduler changes have been about things like overloaded scheduling
-> groups etc, and I could easily imaging that some bug *there* ends up
-> causing the watchdog process not to schedule.
-> 
-> Hmm? Scheduler people?
-> 
->                        Linus
+That makes sense.  Thanks!
