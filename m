@@ -1,117 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751254AbaKTFNO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 00:13:14 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:63649 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752AbaKTFNN (ORCPT
+	id S1751849AbaKTFPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 00:15:44 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:56552 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaKTFPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 00:13:13 -0500
-Message-ID: <546D7860.2010300@linaro.org>
-Date: Thu, 20 Nov 2014 14:13:04 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 20 Nov 2014 00:15:42 -0500
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "keescook@chromium.org" <keescook@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
+In-Reply-To: <20141120023050.12298.26964@quantum>
+References: <1415408818-28028-1-git-send-email-dianders@chromium.org>
+	<20141120023050.12298.26964@quantum>
+Date: Wed, 19 Nov 2014 21:15:41 -0800
+X-Google-Sender-Auth: ETyRomP5HhYU68lv5WeZmTmQ_oo
+Message-ID: <CAD=FV=VZJ_iSFoW39kbahFSZ_Ta4Qf7zxaCnJMWFVWhXzsLrWw@mail.gmail.com>
+Subject: Re: [PATCH v2] clk: Propagate prepare and enable when reparenting orphans
+From: Doug Anderson <dianders@chromium.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Heiko Stuebner <heiko@sntech.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 2/6] arm64: ptrace: allow tracer to skip a system call
-References: <1416273038-15590-1-git-send-email-takahiro.akashi@linaro.org> <1416273038-15590-3-git-send-email-takahiro.akashi@linaro.org> <20141118140425.GM18842@arm.com> <546C58DB.5080204@linaro.org> <20141119190601.GM15985@arm.com>
-In-Reply-To: <20141119190601.GM15985@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2014 04:06 AM, Will Deacon wrote:
-> On Wed, Nov 19, 2014 at 08:46:19AM +0000, AKASHI Takahiro wrote:
->> On 11/18/2014 11:04 PM, Will Deacon wrote:
->>> On Tue, Nov 18, 2014 at 01:10:34AM +0000, AKASHI Takahiro wrote:
->>>>
->>>> +	if (((int)regs->syscallno == -1) && (orig_syscallno == -1)) {
->>>> +		/*
->>>> +		 * user-issued syscall(-1):
->>>> +		 * RESTRICTION: We always return ENOSYS whatever value is
->>>> +		 *   stored in x0 (a return value) at this point.
->>>> +		 * Normally, with ptrace off, syscall(-1) returns -ENOSYS.
->>>> +		 * With ptrace on, however, if a tracer didn't pay any
->>>> +		 * attention to user-issued syscall(-1) and just let it go
->>>> +		 * without a hack here, it would return a value in x0 as in
->>>> +		 * other system call cases. This means that this system call
->>>> +		 * might succeed and see any bogus return value.
->>>> +		 * This should be definitely avoided.
->>>> +		 */
->>>> +		regs->regs[0] = -ENOSYS;
->>>> +	}
->>>
->>> I'm still really uncomfortable with this, and it doesn't seem to match what
->>> arch/arm/ does either.
+Mike,
+
+On Wed, Nov 19, 2014 at 6:30 PM, Mike Turquette <mturquette@linaro.org> wrote:
+> Quoting Doug Anderson (2014-11-07 17:06:58)
+>> With the existing code, if you find a parent for an orhpan that has
+>> already been prepared / enabled, you won't enable the parent.  That
+>> can cause later problems since the clock tree isn't in a consistent
+>> state.  Fix by propagating the prepare and enable.
 >>
->> Yeah, I know but
->> as I mentioned before, syscall(-1) will be signaled on arm, and so we don't
->> have to care about a return value :)
+>> NOTE: this does bring up the question about whether the enable of the
+>> orphan actually made sense.  If the orphan's parent wasn't enabled by
+>> default (by the bootloader or the default state of the hardware) then
+>> the original enable of the orphan probably didn't do what the caller
+>> though it would.  Some users of the orphan might have preferred an
+>> EPROBE_DEFER be returned until we had a full path to a root clock.
+>> This patch doesn't address those concerns and really just syncs up the
+>> state.
 >
-> What does x86 do?
-
-On x86, syscall(-1) returns -ENOSYS if not traced, and we can change a return
-value if traced.
-
->>> Doesn't it also prevent a tracer from skipping syscall(-1)?
->>
->> Syscall(-1) will return -ENOSYS whether or not a syscallno is explicitly
->> replaced with -1 by a tracer, and, in this sense, it is *skipped*.
+> -ECANOFWORMS
 >
-> Ok, but now userspace sees -ENOSYS for a skipped system call in that case,
-> whereas it would usually see whatever the trace put in x0, right?
-
-Yes.
-If you don't really like this behavior, how about this patch instead of my [2/6] patch?
-
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index 726b910..1ef57d0 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -668,8 +668,15 @@ ENDPROC(el0_svc)
-          * switches, and waiting for our parent to respond.
-          */
-  __sys_trace:
-+       cmp     w8, #-1                         // default errno for invalid
-+       b.ne    1f                              // system call
-+       mov     x0, #-ENOSYS
-+       str     x0, [sp, #S_X0]
-+1:
-         mov     x0, sp
-         bl      syscall_trace_enter
-+       cmp     w0, #-1                         // skip the syscall?
-+       b.eq    __sys_trace_return_skipped
-         adr     lr, __sys_trace_return          // return address
-         uxtw    scno, w0                        // syscall number (possibly new)
-         mov     x1, sp                          // pointer to regs
-@@ -684,6 +691,7 @@ __sys_trace:
-
-  __sys_trace_return:
-         str     x0, [sp]                        // save returned x0
-+__sys_trace_return_skipped:
-         mov     x0, sp
-         bl      syscall_trace_exit
-         b       ret_to_user
-
-With this change, I believe, syscall(-1) returns -ENOSYS by default whether traced
-or not, and still you can change a return value when tracing.
-(But a drawback here is that a tracer will see -ENOSYS in x0 even at syscall entry
-for syscall(-1).)
-
-
--Takahiro AKASHI
-
-
-
-> Will
+> I'm thinking about this patch but I haven't quite made up my mind. It is
+> reasonable, but also some nice kind of error might be preferable when
+> preparing/enabling an orphaned clock.
 >
+> Under what conditions might a clock be orphaned? An obvious example is
+> just bad luck during the thundering herd of clock registrations from a
+> driver. In this case deferring the probe might be a good idea.
+>
+> However what about the case where a loadable module provides the parent
+> clock? It might be a long time before the orphan clocks gets picked up
+> from the orphanage. Is deferring probe the right thing here as well?
+
+I will defer to your wisdom here.  I agree that these are the two
+primary solutions and I've picked one, but I have no idea which will
+be more of a PITA in the long run.
+
+Note: I'm not sure that anyone expects EPROBE_DEFER to be returned
+from a clk_enable() (do they?).  It almost seems like the right answer
+is to fail to allow anyone to clk_get() any clock that doesn't have a
+path to root.
+
+
+I will say that without this patch or the EPROBE_DEFER solution we
+have a clear bug.  You can get into a situation where a clock is
+enabled/prepared but its parent isn't.
+
+-Doug
