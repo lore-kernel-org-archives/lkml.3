@@ -1,141 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757738AbaKTQLP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 11:11:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35991 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757547AbaKTQLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 11:11:13 -0500
-Date: Thu, 20 Nov 2014 11:10:55 -0500
-From: Dave Jones <davej@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        WANG Chao <chaowang@redhat.com>, Baoquan He <bhe@redhat.com>,
-        Dave Young <dyoung@redhat.com>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141120161055.GA8309@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Vivek Goyal <vgoyal@redhat.com>, Don Zickus <dzickus@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	the arch/x86 maintainers <x86@kernel.org>,
-	WANG Chao <chaowang@redhat.com>, Baoquan He <bhe@redhat.com>,
-	Dave Young <dyoung@redhat.com>
-References: <20141118023930.GA2871@redhat.com>
- <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
- <20141118145234.GA7487@redhat.com>
- <alpine.DEB.2.11.1411181914020.3909@nanos>
- <20141118215540.GD35311@redhat.com>
- <20141118220254.GA2571@redhat.com>
- <20141119144105.GB108701@redhat.com>
- <20141119150333.GB2953@redhat.com>
- <20141119153852.GA16146@redhat.com>
- <20141119162806.GD2953@redhat.com>
+	id S1757659AbaKTQKZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 11:10:25 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35345 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756481AbaKTQKX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 11:10:23 -0500
+Date: Thu, 20 Nov 2014 16:10:14 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Sonny Rao <sonnyrao@chromium.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH v4] clocksource: arch_timer: Fix code to use physical
+ timers when requested
+Message-ID: <20141120161013.GB5447@e104818-lin.cambridge.arm.com>
+References: <1412753937-29343-1-git-send-email-sonnyrao@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141119162806.GD2953@redhat.com>
+In-Reply-To: <1412753937-29343-1-git-send-email-sonnyrao@chromium.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 11:28:06AM -0500, Vivek Goyal wrote:
- 
- > I am wondering may be in some cases we panic in second kernel and sit
- > there. Probably we should append a kernel command line automatically
- > say "panic=1" so that it reboots itself if second kernel panics.
- > 
- > By any chance, have you enabled "CONFIG_RANDOMIZE_BASE"? If yes, please
- > disable that as currently kexec/kdump stuff does not work with it. And
- > it hangs very early in the boot process and I had to hook serial console
- > to get following message on console.
+On Wed, Oct 08, 2014 at 08:38:57AM +0100, Sonny Rao wrote:
+> This is a bug fix for using physical arch timers when
+> the arch_timer_use_virtual boolean is false.  It restores the
+> arch_counter_get_cntpct() function after removal in
+> 
+> 0d651e4e "clocksource: arch_timer: use virtual counters"
+> 
+> We need this on certain ARMv7 systems which are architected like this:
+> 
+> * The firmware doesn't know and doesn't care about hypervisor mode and
+>   we don't want to add the complexity of hypervisor there.
+> 
+> * The firmware isn't involved in SMP bringup or resume.
+> 
+> * The ARCH timer come up with an uninitialized offset between the
+>   virtual and physical counters.  Each core gets a different random
+>   offset.
+> 
+> * The device boots in "Secure SVC" mode.
+> 
+> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
+>   CNTHCTL.PL1PCTEN (both default to 1 at reset)
+> 
+> One example of such as system is RK3288 where it is much simpler to
+> use the physical counter since there's nobody managing the offset and
+> each time a core goes down and comes back up it will get reinitialized
+> to some other random value.
+> 
+> Fixes: 0d651e4e65e9 ("clocksource: arch_timer: use virtual counters")
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+> Acked-by: Olof Johansson <olof@lixom.net>
+[...]
+> --- a/arch/arm64/include/asm/arch_timer.h
+> +++ b/arch/arm64/include/asm/arch_timer.h
+> @@ -135,6 +135,16 @@ static inline void arch_timer_evtstrm_enable(int divider)
+>  #endif
+>  }
+>  
+> +static inline u64 arch_counter_get_cntpct(void)
+> +{
+> +	u64 cval;
+> +
+> +	isb();
+> +	asm volatile("mrs %0, cntpct_el0" : "=r" (cval));
+> +
+> +	return cval;
+> +}
 
-I did have that enabled. (Perhaps the kconfig should conflict?)
+Sorry but I have to NAK the arm64 changes here. If the firmware is
+broken and does not initialise CNTVOFF properly, please fix it (at least
+on ARMv8 hardware). Also, on arm64 the vdso gettimeofday()
+implementation relies on using the virtual counter, so correct
+initialisation of CNTVOFF is essential.
 
-After rebuilding without it, this..
-
- > > dracut: *** Stripping files done ***
- > > dracut: *** Store current command line parameters ***
- > > dracut: *** Creating image file ***
- > > dracut: *** Creating image file done ***
- > > kdumpctl: cat: write error: Broken pipe
- > > kdumpctl: kexec: failed to load kdump kernel
- > > kdumpctl: Starting kdump: [FAILED]
- 
-went away. It generated the image, and things looked good.
-I did echo c > /proc/sysrq-trigger and got this..
-
-SysRq : Trigger a crash
-BUG: sleeping function called from invalid context at arch/x86/mm/fault.c:1192
-in_atomic(): 0, irqs_disabled(): 0, pid: 8860, name: bash
-3 locks held by bash/8860:
- #0:  (sb_writers#5){......}, at: [<ffffffff811eac13>] vfs_write+0x1b3/0x1f0
- #1:  (rcu_read_lock){......}, at: [<ffffffff8144a435>] __handle_sysrq+0x5/0x1b0
- #2:  (&mm->mmap_sem){......}, at: [<ffffffff8103cb20>] __do_page_fault+0x140/0x600
-Preemption disabled at:[<ffffffff817ca332>] printk+0x5c/0x72
-
-CPU: 1 PID: 8860 Comm: bash Not tainted 3.18.0-rc5+ #95 [loadavg: 0.54 0.24 0.09 2/143 8909]
- 00000000000004a8 00000000e1f75c1b ffff880236473c28 ffffffff817ce5c7
- 0000000000000000 0000000000000000 ffff880236473c58 ffffffff8109af8a
- ffff880236473c58 0000000000000029 0000000000000000 ffff880236473d88
-Call Trace:
- [<ffffffff817ce5c7>] dump_stack+0x4f/0x7c
- [<ffffffff8109af8a>] __might_sleep+0x12a/0x190
- [<ffffffff8103cb3b>] __do_page_fault+0x15b/0x600
- [<ffffffff811613b2>] ? irq_work_queue+0x62/0xd0
- [<ffffffff8137ad7d>] ? trace_hardirqs_off_thunk+0x3a/0x3f
- [<ffffffff8103cfec>] do_page_fault+0xc/0x10
- [<ffffffff817dbcf2>] page_fault+0x22/0x30
- [<ffffffff817ca332>] ? printk+0x5c/0x72
- [<ffffffff81449ce6>] ? sysrq_handle_crash+0x16/0x20
- [<ffffffff8144a567>] __handle_sysrq+0x137/0x1b0
- [<ffffffff8144a435>] ? __handle_sysrq+0x5/0x1b0
- [<ffffffff8144aa4a>] write_sysrq_trigger+0x4a/0x50
- [<ffffffff81259f2d>] proc_reg_write+0x3d/0x80
- [<ffffffff811eab1a>] vfs_write+0xba/0x1f0
- [<ffffffff811eb628>] SyS_write+0x58/0xd0
- [<ffffffff817da052>] system_call_fastpath+0x12/0x17
-Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-CPU: 1 PID: 8860 Comm: bash Not tainted 3.18.0-rc5+ #95 [loadavg: 0.54 0.24 0.09 1/143 8909]
-task: ffff8800a1a60000 ti: ffff880236470000 task.ti: ffff880236470000
-RIP: 0010:[<ffffffff81449ce6>]  [<ffffffff81449ce6>] sysrq_handle_crash+0x16/0x20
-RSP: 0018:ffff880236473e38  EFLAGS: 00010246
-RAX: 000000000000000f RBX: ffffffff81cb4a00 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: ffffffff817ca332 RDI: 0000000000000063
-RBP: ffff880236473e38 R08: 0000000000000001 R09: 0000000000000001
-R10: 0000000000000358 R11: 0000000000000357 R12: 0000000000000063
-R13: 0000000000000000 R14: 0000000000000007 R15: 0000000000000000
-FS:  00007fc652f4e740(0000) GS:ffff880244200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000000 CR3: 000000023a3b2000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
-Stack:
- ffff880236473e78 ffffffff8144a567 ffffffff8144a435 0000000000000002
- 0000000000000002 00007fc652f51000 0000000000000002 ffff880236473f48
- ffff880236473ea8 ffffffff8144aa4a 0000000000000002 00007fc652f51000
-Call Trace:
- [<ffffffff8144a567>] __handle_sysrq+0x137/0x1b0
- [<ffffffff8144a435>] ? __handle_sysrq+0x5/0x1b0
- [<ffffffff8144aa4a>] write_sysrq_trigger+0x4a/0x50
- [<ffffffff81259f2d>] proc_reg_write+0x3d/0x80
- [<ffffffff811eab1a>] vfs_write+0xba/0x1f0
- [<ffffffff811eb628>] SyS_write+0x58/0xd0
- [<ffffffff817da052>] system_call_fastpath+0x12/0x17
-Code: 01 f4 45 39 a5 b4 00 00 00 75 e2 4c 89 ef e8 d2 f7 ff ff eb d8 0f 1f 44 00 00 55 c7 05 08 b7 7e 00 01 00 00 00 48 89 e5 0f ae f8 <c6> 04 25 00 00 00 00 01 5d c3 0f 1f 44 00 00 55 31 c0 48 89 e5 
-RIP  [<ffffffff81449ce6>] sysrq_handle_crash+0x16/0x20
- RSP <ffff880236473e38>
-CR2: 0000000000000000
-
-Which, asides from the sleeping while atomic thing which isn't important,
-does what I expected.  Shortly later, it rebooted.
-
-And then /var/crash was empty.
-
-	Dave
-
+-- 
+Catalin
