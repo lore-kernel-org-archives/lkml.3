@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758064AbaKTRGq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:06:46 -0500
-Received: from david.siemens.de ([192.35.17.14]:43895 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757740AbaKTRCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757763AbaKTRCp (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Nov 2014 12:02:45 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:35771 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076AbaKTRCl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 12:02:41 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -14,9 +15,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
         Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v10 19/27] scripts/gdb: Add class to iterate over CPU masks
-Date: Thu, 20 Nov 2014 18:01:56 +0100
-Message-Id: <7bb8d13d7c46d1b33ff59a8116ce759a0116ba5b.1416502923.git.jan.kiszka@siemens.com>
+Subject: [PATCH v10 04/27] scripts/gdb: Add module iteration class
+Date: Thu, 20 Nov 2014 18:01:41 +0100
+Message-Id: <3ebba90bd75c36211d4d21f6a4d71fa069ebcee6.1416502923.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <cover.1416502923.git.jan.kiszka@siemens.com>
 References: <cover.1416502923.git.jan.kiszka@siemens.com>
@@ -26,79 +27,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will be used first to count module references. It is optimized to read
-the mask only once per stop.
+Will soon be used for loading symbols, printing global variables or
+listing modules.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/cpus.py | 54 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
+ scripts/gdb/linux/modules.py | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+ create mode 100644 scripts/gdb/linux/modules.py
 
-diff --git a/scripts/gdb/linux/cpus.py b/scripts/gdb/linux/cpus.py
-index b683da9..c1441f2 100644
---- a/scripts/gdb/linux/cpus.py
-+++ b/scripts/gdb/linux/cpus.py
-@@ -50,6 +50,60 @@ def per_cpu(var_ptr, cpu):
-     return pointer.cast(var_ptr.type).dereference()
- 
- 
-+cpu_mask = {}
+diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
+new file mode 100644
+index 0000000..8a65c3d
+--- /dev/null
++++ b/scripts/gdb/linux/modules.py
+@@ -0,0 +1,39 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  module tools
++#
++# Copyright (c) Siemens AG, 2013
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
++
++import gdb
++
++from linux import utils
 +
 +
-+def cpu_mask_invalidate(event):
-+    global cpu_mask
-+    cpu_mask = {}
-+    gdb.events.stop.disconnect(cpu_mask_invalidate)
-+    if hasattr(gdb.events, 'new_objfile'):
-+        gdb.events.new_objfile.disconnect(cpu_mask_invalidate)
++module_type = utils.CachedType("struct module")
 +
 +
-+class CpuList():
-+    def __init__(self, mask_name):
-+        global cpu_mask
-+        self.mask = None
-+        if mask_name in cpu_mask:
-+            self.mask = cpu_mask[mask_name]
-+        if self.mask is None:
-+            self.mask = gdb.parse_and_eval(mask_name + ".bits")
-+            if hasattr(gdb, 'events'):
-+                cpu_mask[mask_name] = self.mask
-+                gdb.events.stop.connect(cpu_mask_invalidate)
-+                if hasattr(gdb.events, 'new_objfile'):
-+                    gdb.events.new_objfile.connect(cpu_mask_invalidate)
-+        self.bits_per_entry = self.mask[0].type.sizeof * 8
-+        self.num_entries = self.mask.type.sizeof * 8 / self.bits_per_entry
-+        self.entry = -1
-+        self.bits = 0
++class ModuleList:
++    def __init__(self):
++        global module_type
++        self.module_ptr_type = module_type.get_type().pointer()
++        modules = gdb.parse_and_eval("modules")
++        self.curr_entry = modules['next']
++        self.end_of_list = modules.address
 +
 +    def __iter__(self):
 +        return self
 +
 +    def next(self):
-+        while self.bits == 0:
-+            self.entry += 1
-+            if self.entry == self.num_entries:
-+                raise StopIteration
-+            self.bits = self.mask[self.entry]
-+            if self.bits != 0:
-+                self.bit = 0
-+                break
-+
-+        while self.bits & 1 == 0:
-+            self.bits >>= 1
-+            self.bit += 1
-+
-+        cpu = self.entry * self.bits_per_entry + self.bit
-+
-+        self.bits >>= 1
-+        self.bit += 1
-+
-+        return cpu
-+
-+
- class PerCpu(gdb.Function):
-     """Return per-cpu variable.
- 
++        entry = self.curr_entry
++        if entry != self.end_of_list:
++            self.curr_entry = entry['next']
++            return utils.container_of(entry, self.module_ptr_type, "list")
++        else:
++            raise StopIteration
 -- 
 1.8.4.5
 
