@@ -1,134 +1,387 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397AbaKTHGy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:06:54 -0500
-Received: from mga02.intel.com ([134.134.136.20]:64934 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756119AbaKTHGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:06:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,422,1413270000"; 
-   d="scan'208";a="610938932"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        pbonzini@redhat.com, gleb@kernel.org, Joerg Roedel <joro@8bytes.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        kvm@vger.kernel.org, Feng Wu <feng.wu@intel.com>
-Subject: [RFC Patch V1] genirq: Introduce irq_set_vcpu_affinity() to target an interrupt to a VCPU
-Date: Thu, 20 Nov 2014 15:10:00 +0800
-Message-Id: <1416467404-5031-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756502AbaKTHJL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:09:11 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:44496 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238AbaKTHJJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 02:09:09 -0500
+Date: Thu, 20 Nov 2014 09:09:04 +0200
+From: Gleb Natapov <gleb@kernel.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-ia64@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [PATCH] KVM: ia64: remove
+Message-ID: <20141120070904.GH26187@minantech.com>
+References: <1416431143-31843-1-git-send-email-pbonzini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416431143-31843-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With Posted-Interrupts support in Intel CPU and IOMMU, an external
-interrupt from assigned-devices could be directly delivered to a
-virtual CPU in a virtual machine. Instead of hacking KVM and Intel
-IOMMU drivers, we propose a platform independent interface to target
-an interrupt to a specific virtual CPU in a virtual machine, or set
-virtual CPU affinity for an interrupt.
+On Wed, Nov 19, 2014 at 10:05:43PM +0100, Paolo Bonzini wrote:
+> KVM for ia64 has been marked as broken not just once, but twice even,
+> and the last patch from the maintainer is now roughly 5 years old.
+> Time for it to rest in piece.
+> 
+Acked-by: Gleb Natapov <gleb@kernel.org>
 
-By adopting this new interface and the hierarchy irqdomain, we could
-easily support posted-interrupts on Intel platforms, and also provide
-flexible enough interfaces for other platforms to support similar
-features.
+Next step is to move ioapic bits into arch :)
 
-We may also cooperate between set_affinity() and set_vcpu_affinity()
-in IRQ core or irq chip drivers.
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+> 	The patch was edited to keep its size decent, by dropping
+> 	all the removed lines from the deleted files.
+> 
+>  MAINTAINERS                         |    9 -
+>  arch/ia64/Kconfig                   |    3 -
+>  arch/ia64/Makefile                  |    1 -
+>  arch/ia64/include/asm/kvm_host.h    |  609 ----------
+>  arch/ia64/include/asm/pvclock-abi.h |   48 -
+>  arch/ia64/include/uapi/asm/kvm.h    |  268 -----
+>  arch/ia64/kvm/Kconfig               |   66 --
+>  arch/ia64/kvm/Makefile              |   67 --
+>  arch/ia64/kvm/asm-offsets.c         |  241 ----
+>  arch/ia64/kvm/irq.h                 |   33 -
+>  arch/ia64/kvm/kvm-ia64.c            | 1942 ------------------------------
+>  arch/ia64/kvm/kvm_fw.c              |  674 -----------
+>  arch/ia64/kvm/kvm_lib.c             |   21 -
+>  arch/ia64/kvm/kvm_minstate.h        |  266 -----
+>  arch/ia64/kvm/lapic.h               |   30 -
+>  arch/ia64/kvm/memcpy.S              |    1 -
+>  arch/ia64/kvm/memset.S              |    1 -
+>  arch/ia64/kvm/misc.h                |   94 --
+>  arch/ia64/kvm/mmio.c                |  336 ------
+>  arch/ia64/kvm/optvfault.S           | 1090 -----------------
+>  arch/ia64/kvm/process.c             | 1024 ----------------
+>  arch/ia64/kvm/trampoline.S          | 1038 ----------------
+>  arch/ia64/kvm/vcpu.c                | 2209 -----------------------------------
+>  arch/ia64/kvm/vcpu.h                |  752 ------------
+>  arch/ia64/kvm/vmm.c                 |   99 --
+>  arch/ia64/kvm/vmm_ivt.S             | 1392 ----------------------
+>  arch/ia64/kvm/vti.h                 |  290 -----
+>  arch/ia64/kvm/vtlb.c                |  640 ----------
+>  virt/kvm/ioapic.c                   |  5 -
+>  virt/kvm/ioapic.h                   |  1 -
+>  virt/kvm/irq_comm.c                 | 22 -
+>  31 files changed, 13272 deletions(-)
+>  delete mode 100644 arch/ia64/include/asm/kvm_host.h
+>  delete mode 100644 arch/ia64/include/asm/pvclock-abi.h
+>  delete mode 100644 arch/ia64/include/uapi/asm/kvm.h
+>  delete mode 100644 arch/ia64/kvm/Kconfig
+>  delete mode 100644 arch/ia64/kvm/Makefile
+>  delete mode 100644 arch/ia64/kvm/asm-offsets.c
+>  delete mode 100644 arch/ia64/kvm/irq.h
+>  delete mode 100644 arch/ia64/kvm/kvm-ia64.c
+>  delete mode 100644 arch/ia64/kvm/kvm_fw.c
+>  delete mode 100644 arch/ia64/kvm/kvm_lib.c
+>  delete mode 100644 arch/ia64/kvm/kvm_minstate.h
+>  delete mode 100644 arch/ia64/kvm/lapic.h
+>  delete mode 100644 arch/ia64/kvm/memcpy.S
+>  delete mode 100644 arch/ia64/kvm/memset.S
+>  delete mode 100644 arch/ia64/kvm/misc.h
+>  delete mode 100644 arch/ia64/kvm/mmio.c
+>  delete mode 100644 arch/ia64/kvm/optvfault.S
+>  delete mode 100644 arch/ia64/kvm/process.c
+>  delete mode 100644 arch/ia64/kvm/trampoline.S
+>  delete mode 100644 arch/ia64/kvm/vcpu.c
+>  delete mode 100644 arch/ia64/kvm/vcpu.h
+>  delete mode 100644 arch/ia64/kvm/vmm.c
+>  delete mode 100644 arch/ia64/kvm/vmm_ivt.S
+>  delete mode 100644 arch/ia64/kvm/vti.h
+>  delete mode 100644 arch/ia64/kvm/vtlb.c
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index a12edf2624e5..56705138ca74 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -5244,15 +5244,6 @@ S:       Supported
+>  F:     arch/powerpc/include/asm/kvm*
+>  F:     arch/powerpc/kvm/
+> 
+> -KERNEL VIRTUAL MACHINE For Itanium (KVM/IA64)
+> -M:     Xiantao Zhang <xiantao.zhang@intel.com>
+> -L:     kvm-ia64@vger.kernel.org
+> -W:     http://kvm.qumranet.com
+> -S:     Supported
+> -F:     Documentation/ia64/kvm.txt
+> -F:     arch/ia64/include/asm/kvm*
+> -F:     arch/ia64/kvm/
+> -
+>  KERNEL VIRTUAL MACHINE for s390 (KVM/s390)
+>  M:     Christian Borntraeger <borntraeger@de.ibm.com>
+>  M:     Cornelia Huck <cornelia.huck@de.ibm.com>
+> diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+> index c84c88bbbbd7..11afe7ab1981 100644
+> --- a/arch/ia64/Kconfig
+> +++ b/arch/ia64/Kconfig
+> @@ -21,7 +21,6 @@ config IA64
+>  	select HAVE_DYNAMIC_FTRACE if (!ITANIUM)
+>  	select HAVE_FUNCTION_TRACER
+>  	select HAVE_DMA_ATTRS
+> -	select HAVE_KVM
+>  	select TTY
+>  	select HAVE_ARCH_TRACEHOOK
+>  	select HAVE_DMA_API_DEBUG
+> @@ -640,8 +639,6 @@ source "security/Kconfig"
+>  
+>  source "crypto/Kconfig"
+>  
+> -source "arch/ia64/kvm/Kconfig"
+> -
+>  source "lib/Kconfig"
+>  
+>  config IOMMU_HELPER
+> diff --git a/arch/ia64/Makefile b/arch/ia64/Makefile
+> index 5441b14994fc..970d0bd99621 100644
+> --- a/arch/ia64/Makefile
+> +++ b/arch/ia64/Makefile
+> @@ -53,7 +53,6 @@ core-$(CONFIG_IA64_HP_ZX1)	+= arch/ia64/dig/
+>  core-$(CONFIG_IA64_HP_ZX1_SWIOTLB) += arch/ia64/dig/
+>  core-$(CONFIG_IA64_SGI_SN2)	+= arch/ia64/sn/
+>  core-$(CONFIG_IA64_SGI_UV)	+= arch/ia64/uv/
+> -core-$(CONFIG_KVM) 		+= arch/ia64/kvm/
+>  
+>  drivers-$(CONFIG_PCI)		+= arch/ia64/pci/
+>  drivers-$(CONFIG_IA64_HP_SIM)	+= arch/ia64/hp/sim/
+> diff --git a/arch/ia64/include/asm/kvm_host.h b/arch/ia64/include/asm/kvm_host.h
+> deleted file mode 100644
+> index 4729752b7256..000000000000
+> --- a/arch/ia64/include/asm/kvm_host.h
+> +++ /dev/null
+> @@ -1,609 +0,0 @@
+> diff --git a/arch/ia64/include/asm/pvclock-abi.h b/arch/ia64/include/asm/pvclock-abi.h
+> deleted file mode 100644
+> index 42b233bedeb5..000000000000
+> --- a/arch/ia64/include/asm/pvclock-abi.h
+> +++ /dev/null
+> @@ -1,48 +0,0 @@
+> diff --git a/arch/ia64/include/uapi/asm/kvm.h b/arch/ia64/include/uapi/asm/kvm.h
+> deleted file mode 100644
+> index 99503c284400..000000000000
+> --- a/arch/ia64/include/uapi/asm/kvm.h
+> +++ /dev/null
+> @@ -1,268 +0,0 @@
+> diff --git a/arch/ia64/kvm/Kconfig b/arch/ia64/kvm/Kconfig
+> deleted file mode 100644
+> index 3d50ea955c4c..000000000000
+> --- a/arch/ia64/kvm/Kconfig
+> +++ /dev/null
+> @@ -1,66 +0,0 @@
+> diff --git a/arch/ia64/kvm/Makefile b/arch/ia64/kvm/Makefile
+> deleted file mode 100644
+> index 18e45ec49bbf..000000000000
+> --- a/arch/ia64/kvm/Makefile
+> +++ /dev/null
+> @@ -1,67 +0,0 @@
+> diff --git a/arch/ia64/kvm/asm-offsets.c b/arch/ia64/kvm/asm-offsets.c
+> deleted file mode 100644
+> index 9324c875caf5..000000000000
+> --- a/arch/ia64/kvm/asm-offsets.c
+> +++ /dev/null
+> @@ -1,241 +0,0 @@
+> diff --git a/arch/ia64/kvm/irq.h b/arch/ia64/kvm/irq.h
+> deleted file mode 100644
+> index c0785a728271..000000000000
+> --- a/arch/ia64/kvm/irq.h
+> +++ /dev/null
+> @@ -1,33 +0,0 @@
+> diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
+> deleted file mode 100644
+> index ec6b9acb6bea..000000000000
+> --- a/arch/ia64/kvm/kvm-ia64.c
+> +++ /dev/null
+> @@ -1,1942 +0,0 @@
+> diff --git a/arch/ia64/kvm/kvm_fw.c b/arch/ia64/kvm/kvm_fw.c
+> deleted file mode 100644
+> index cb548ee9fcae..000000000000
+> --- a/arch/ia64/kvm/kvm_fw.c
+> +++ /dev/null
+> @@ -1,674 +0,0 @@
+> diff --git a/arch/ia64/kvm/kvm_lib.c b/arch/ia64/kvm/kvm_lib.c
+> deleted file mode 100644
+> index f1268b8e6f9e..000000000000
+> --- a/arch/ia64/kvm/kvm_lib.c
+> +++ /dev/null
+> @@ -1,21 +0,0 @@
+> diff --git a/arch/ia64/kvm/kvm_minstate.h b/arch/ia64/kvm/kvm_minstate.h
+> deleted file mode 100644
+> index b2bcaa2787aa..000000000000
+> --- a/arch/ia64/kvm/kvm_minstate.h
+> +++ /dev/null
+> @@ -1,266 +0,0 @@
+> diff --git a/arch/ia64/kvm/lapic.h b/arch/ia64/kvm/lapic.h
+> deleted file mode 100644
+> index c5f92a926a9a..000000000000
+> --- a/arch/ia64/kvm/lapic.h
+> +++ /dev/null
+> @@ -1,30 +0,0 @@
+> diff --git a/arch/ia64/kvm/memcpy.S b/arch/ia64/kvm/memcpy.S
+> deleted file mode 100644
+> index c04cdbe9f80f..000000000000
+> --- a/arch/ia64/kvm/memcpy.S
+> +++ /dev/null
+> @@ -1 +0,0 @@
+> diff --git a/arch/ia64/kvm/memset.S b/arch/ia64/kvm/memset.S
+> deleted file mode 100644
+> index 83c3066d844a..000000000000
+> --- a/arch/ia64/kvm/memset.S
+> +++ /dev/null
+> @@ -1 +0,0 @@
+> diff --git a/arch/ia64/kvm/misc.h b/arch/ia64/kvm/misc.h
+> deleted file mode 100644
+> index dd979e00b574..000000000000
+> --- a/arch/ia64/kvm/misc.h
+> +++ /dev/null
+> @@ -1,94 +0,0 @@
+> diff --git a/arch/ia64/kvm/mmio.c b/arch/ia64/kvm/mmio.c
+> deleted file mode 100644
+> index f1e17d3d6cd9..000000000000
+> --- a/arch/ia64/kvm/mmio.c
+> +++ /dev/null
+> @@ -1,336 +0,0 @@
+> diff --git a/arch/ia64/kvm/optvfault.S b/arch/ia64/kvm/optvfault.S
+> deleted file mode 100644
+> index f793be3effff..000000000000
+> --- a/arch/ia64/kvm/optvfault.S
+> +++ /dev/null
+> @@ -1,1090 +0,0 @@
+> diff --git a/arch/ia64/kvm/process.c b/arch/ia64/kvm/process.c
+> deleted file mode 100644
+> index b0398740b48d..000000000000
+> --- a/arch/ia64/kvm/process.c
+> +++ /dev/null
+> @@ -1,1024 +0,0 @@
+> diff --git a/arch/ia64/kvm/trampoline.S b/arch/ia64/kvm/trampoline.S
+> deleted file mode 100644
+> index 30897d44d61e..000000000000
+> --- a/arch/ia64/kvm/trampoline.S
+> +++ /dev/null
+> @@ -1,1038 +0,0 @@
+> diff --git a/arch/ia64/kvm/vcpu.c b/arch/ia64/kvm/vcpu.c
+> deleted file mode 100644
+> index 958815c9787d..000000000000
+> --- a/arch/ia64/kvm/vcpu.c
+> +++ /dev/null
+> @@ -1,2209 +0,0 @@
+> diff --git a/arch/ia64/kvm/vcpu.h b/arch/ia64/kvm/vcpu.h
+> deleted file mode 100644
+> index 988911b4cc7a..000000000000
+> --- a/arch/ia64/kvm/vcpu.h
+> +++ /dev/null
+> @@ -1,752 +0,0 @@
+> diff --git a/arch/ia64/kvm/vmm.c b/arch/ia64/kvm/vmm.c
+> deleted file mode 100644
+> index 176a12cd56de..000000000000
+> --- a/arch/ia64/kvm/vmm.c
+> +++ /dev/null
+> @@ -1,99 +0,0 @@
+> diff --git a/arch/ia64/kvm/vmm_ivt.S b/arch/ia64/kvm/vmm_ivt.S
+> deleted file mode 100644
+> index 397e34a63e18..000000000000
+> --- a/arch/ia64/kvm/vmm_ivt.S
+> +++ /dev/null
+> @@ -1,1392 +0,0 @@
+> diff --git a/arch/ia64/kvm/vti.h b/arch/ia64/kvm/vti.h
+> deleted file mode 100644
+> index b214b5b0432d..000000000000
+> --- a/arch/ia64/kvm/vti.h
+> +++ /dev/null
+> @@ -1,290 +0,0 @@
+> diff --git a/arch/ia64/kvm/vtlb.c b/arch/ia64/kvm/vtlb.c
+> deleted file mode 100644
+> index a7869f8f49a6..000000000000
+> --- a/arch/ia64/kvm/vtlb.c
+> +++ /dev/null
+> @@ -1,640 +0,0 @@
+> diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+> index 381077d8cc5d..1cb8af07bf2b 100644
+> --- a/virt/kvm/ioapic.c
+> +++ b/virt/kvm/ioapic.c
+> @@ -544,11 +544,6 @@ static int ioapic_mmio_write(struct kvm_io_device *this, gpa_t addr, int len,
+>  	case IOAPIC_REG_WINDOW:
+>  		ioapic_write_indirect(ioapic, data);
+>  		break;
+> -#ifdef	CONFIG_IA64
+> -	case IOAPIC_REG_EOI:
+> -		__kvm_ioapic_update_eoi(NULL, ioapic, data, IOAPIC_LEVEL_TRIG);
+> -		break;
+> -#endif
+>  
+>  	default:
+>  		break;
+> diff --git a/virt/kvm/ioapic.h b/virt/kvm/ioapic.h
+> index 35c0e3ed72bf..e2d34012ac7e 100644
+> --- a/virt/kvm/ioapic.h
+> +++ b/virt/kvm/ioapic.h
+> @@ -19,7 +19,6 @@ struct kvm_vcpu;
+>  /* Direct registers. */
+>  #define IOAPIC_REG_SELECT  0x00
+>  #define IOAPIC_REG_WINDOW  0x10
+> -#define IOAPIC_REG_EOI     0x40	/* IA64 IOSAPIC only */
+>  
+>  /* Indirect registers. */
+>  #define IOAPIC_REG_APIC_ID 0x00	/* x86 IOAPIC only */
+> diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
+> index 963b8995a9e8..1345bde064f5 100644
+> --- a/virt/kvm/irq_comm.c
+> +++ b/virt/kvm/irq_comm.c
+> @@ -26,9 +26,6 @@
+>  #include <trace/events/kvm.h>
+>  
+>  #include <asm/msidef.h>
+> -#ifdef CONFIG_IA64
+> -#include <asm/iosapic.h>
+> -#endif
+>  
+>  #include "irq.h"
+>  
+> @@ -57,12 +54,7 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
+>  
+>  inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
+>  {
+> -#ifdef CONFIG_IA64
+> -	return irq->delivery_mode ==
+> -		(IOSAPIC_LOWEST_PRIORITY << IOSAPIC_DELIVERY_SHIFT);
+> -#else
+>  	return irq->delivery_mode == APIC_DM_LOWEST;
+> -#endif
+>  }
+>  
+>  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+> @@ -346,20 +338,6 @@ static const struct kvm_irq_routing_entry default_routing[] = {
+>  	ROUTING_ENTRY1(18), ROUTING_ENTRY1(19),
+>  	ROUTING_ENTRY1(20), ROUTING_ENTRY1(21),
+>  	ROUTING_ENTRY1(22), ROUTING_ENTRY1(23),
+> -#ifdef CONFIG_IA64
+> -	ROUTING_ENTRY1(24), ROUTING_ENTRY1(25),
+> -	ROUTING_ENTRY1(26), ROUTING_ENTRY1(27),
+> -	ROUTING_ENTRY1(28), ROUTING_ENTRY1(29),
+> -	ROUTING_ENTRY1(30), ROUTING_ENTRY1(31),
+> -	ROUTING_ENTRY1(32), ROUTING_ENTRY1(33),
+> -	ROUTING_ENTRY1(34), ROUTING_ENTRY1(35),
+> -	ROUTING_ENTRY1(36), ROUTING_ENTRY1(37),
+> -	ROUTING_ENTRY1(38), ROUTING_ENTRY1(39),
+> -	ROUTING_ENTRY1(40), ROUTING_ENTRY1(41),
+> -	ROUTING_ENTRY1(42), ROUTING_ENTRY1(43),
+> -	ROUTING_ENTRY1(44), ROUTING_ENTRY1(45),
+> -	ROUTING_ENTRY1(46), ROUTING_ENTRY1(47),
+> -#endif
+>  };
+>  
+>  int kvm_setup_default_irq_routing(struct kvm *kvm)
+> -- 
+> 2.1.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Here is the usage scenario for this interface:
-Guest update MSI/MSI-X interrupt configuratoin
-	-->QEMU and KVM handle this
-	-->KVM call this interface (passing posted interrupts descriptor
-	   and guest vector)
-	-->irq core will transfer the control to IOMMU
-	-->IOMMU will do the real work of updating IRTE (IRTE has new
-	   format for VT-d Posted-Interrupts)
-
-You can find the VT-d Posted-Interrtups Spec. in the following URL:
-http://www.intel.com/content/www/us/en/intelligent-systems/intel-technology/vt-directed-io-spec.html
-
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Signed-off-by: Feng Wu <feng.wu@intel.com>
----
- include/linux/irq.h |    6 ++++++
- kernel/irq/manage.c |   19 +++++++++++++++++++
- 2 files changed, 25 insertions(+)
-
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 8badf34baf0f..0a3c8ac38ffb 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -29,6 +29,7 @@
- struct seq_file;
- struct module;
- struct msi_msg;
-+struct irq_vcpu_id;
- 
- /*
-  * IRQ line status.
-@@ -323,6 +324,8 @@ static inline irq_hw_number_t irqd_to_hwirq(struct irq_data *d)
-  *				irq_request_resources
-  * @irq_compose_msi_msg:	optional to compose message content for MSI
-  * @irq_write_msi_msg:	optional to write message content for MSI
-+ * @irq_set_vcpu_affinity:	optional to target a virtual CPU in a virtual
-+ *				machine
-  * @flags:		chip specific flags
-  */
- struct irq_chip {
-@@ -362,6 +365,8 @@ struct irq_chip {
- 	void		(*irq_compose_msi_msg)(struct irq_data *data, struct msi_msg *msg);
- 	void		(*irq_write_msi_msg)(struct irq_data *data, struct msi_msg *msg);
- 
-+	int		(*irq_set_vcpu_affinity)(struct irq_data *data, struct irq_vcpu_id *vcpu_id);
-+
- 	unsigned long	flags;
- };
- 
-@@ -415,6 +420,7 @@ extern void irq_cpu_online(void);
- extern void irq_cpu_offline(void);
- extern int irq_set_affinity_locked(struct irq_data *data,
- 				   const struct cpumask *cpumask, bool force);
-+extern int irq_set_vcpu_affinity(unsigned int irq, struct irq_vcpu_id *vcpu_id);
- 
- #if defined(CONFIG_SMP) && defined(CONFIG_GENERIC_PENDING_IRQ)
- void irq_move_irq(struct irq_data *data);
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 80692373abd6..4ae8f243293a 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -247,6 +247,25 @@ int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m)
- }
- EXPORT_SYMBOL_GPL(irq_set_affinity_hint);
- 
-+int irq_set_vcpu_affinity(unsigned int irq, struct irq_vcpu_id *vcpu_id)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	struct irq_chip *chip;
-+	unsigned long flags;
-+	int ret = -ENOSYS;
-+
-+	if (!desc)
-+		return -EINVAL;
-+
-+	raw_spin_lock_irqsave(&desc->lock, flags);
-+	chip = desc->irq_data.chip;
-+	if (chip && chip->irq_set_vcpu_affinity)
-+		ret = chip->irq_set_vcpu_affinity(&desc->irq_data, vcpu_id);
-+	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+
-+	return ret;
-+}
-+
- static void irq_affinity_notify(struct work_struct *work)
- {
- 	struct irq_affinity_notify *notify =
--- 
-1.7.10.4
-
+--
+			Gleb.
