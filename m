@@ -1,71 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751377AbaKTFv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 00:51:27 -0500
-Received: from gproxy9-pub.mail.unifiedlayer.com ([69.89.20.122]:59503 "HELO
-	gproxy9-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750792AbaKTFvZ (ORCPT
+	id S1752633AbaKTFwp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 00:52:45 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:51476 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777AbaKTFwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 00:51:25 -0500
-X-Authority-Analysis: v=2.1 cv=Hd2HEE08 c=1 sm=1 tr=0
- a=PkLafpyMt2xwRD+PMJrZ3Q==:117 a=PkLafpyMt2xwRD+PMJrZ3Q==:17 a=cNaOj0WVAAAA:8
- a=f5113yIGAAAA:8 a=J0QyKEt1u0cA:10 a=IkcTkHD0fZMA:10 a=ptNznvi-AAAA:8
- a=fztpppUj2ZoA:10 a=Xwexni91U_8A:10 a=5y4faFyK3SkA:10
- a=ccRtT4pHRuiIfriKJfMA:9 a=QEXdDO2ut3YA:10
-Date: Wed, 19 Nov 2014 22:44:37 -0700
-From: Eddie Kovsky <ewk@edkovsky.org>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] kconfig: Fix compiler warning
-Message-ID: <20141120054437.GA30162@athena>
+	Thu, 20 Nov 2014 00:52:43 -0500
+Message-ID: <546D81A2.4040405@linaro.org>
+Date: Thu, 20 Nov 2014 14:52:34 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Identified-User: {1650:box492.bluehost.com:edkovsky:edkovsky.org} {sentby:smtp auth 65.102.196.57 authed with ewk+edkovsky.org}
+To: Will Deacon <will.deacon@arm.com>
+CC: "keescook@chromium.org" <keescook@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 2/6] arm64: ptrace: allow tracer to skip a system call
+References: <1416273038-15590-1-git-send-email-takahiro.akashi@linaro.org> <1416273038-15590-3-git-send-email-takahiro.akashi@linaro.org> <20141118140425.GM18842@arm.com> <546C58DB.5080204@linaro.org> <20141119190601.GM15985@arm.com> <546D7860.2010300@linaro.org>
+In-Reply-To: <546D7860.2010300@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes gcc warning when building linux-next:
+On 11/20/2014 02:13 PM, AKASHI Takahiro wrote:
+> On 11/20/2014 04:06 AM, Will Deacon wrote:
+>> On Wed, Nov 19, 2014 at 08:46:19AM +0000, AKASHI Takahiro wrote:
+>>> On 11/18/2014 11:04 PM, Will Deacon wrote:
+>>>> On Tue, Nov 18, 2014 at 01:10:34AM +0000, AKASHI Takahiro wrote:
+>>>>>
+>>>>> +    if (((int)regs->syscallno == -1) && (orig_syscallno == -1)) {
+>>>>> +        /*
+>>>>> +         * user-issued syscall(-1):
+>>>>> +         * RESTRICTION: We always return ENOSYS whatever value is
+>>>>> +         *   stored in x0 (a return value) at this point.
+>>>>> +         * Normally, with ptrace off, syscall(-1) returns -ENOSYS.
+>>>>> +         * With ptrace on, however, if a tracer didn't pay any
+>>>>> +         * attention to user-issued syscall(-1) and just let it go
+>>>>> +         * without a hack here, it would return a value in x0 as in
+>>>>> +         * other system call cases. This means that this system call
+>>>>> +         * might succeed and see any bogus return value.
+>>>>> +         * This should be definitely avoided.
+>>>>> +         */
+>>>>> +        regs->regs[0] = -ENOSYS;
+>>>>> +    }
+>>>>
+>>>> I'm still really uncomfortable with this, and it doesn't seem to match what
+>>>> arch/arm/ does either.
+>>>
+>>> Yeah, I know but
+>>> as I mentioned before, syscall(-1) will be signaled on arm, and so we don't
+>>> have to care about a return value :)
+>>
+>> What does x86 do?
+>
+> On x86, syscall(-1) returns -ENOSYS if not traced, and we can change a return
+> value if traced.
+>
+>>>> Doesn't it also prevent a tracer from skipping syscall(-1)?
+>>>
+>>> Syscall(-1) will return -ENOSYS whether or not a syscallno is explicitly
+>>> replaced with -1 by a tracer, and, in this sense, it is *skipped*.
+>>
+>> Ok, but now userspace sees -ENOSYS for a skipped system call in that case,
+>> whereas it would usually see whatever the trace put in x0, right?
+>
+> Yes.
+> If you don't really like this behavior, how about this patch instead of my [2/6] patch?
+>
+> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+> index 726b910..1ef57d0 100644
+> --- a/arch/arm64/kernel/entry.S
+> +++ b/arch/arm64/kernel/entry.S
+> @@ -668,8 +668,15 @@ ENDPROC(el0_svc)
+>           * switches, and waiting for our parent to respond.
+>           */
+>   __sys_trace:
+> +       cmp     w8, #-1                         // default errno for invalid
 
-In file included from scripts/kconfig/zconf.tab.c:2537:0:
-scripts/kconfig/menu.c: In function ‘get_symbol_str’:
-scripts/kconfig/menu.c:590:18: warning: ‘jump’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-     jump->offset = strlen(r->s);
-                  ^
-scripts/kconfig/menu.c:551:19: note: ‘jump’ was declared here
-  struct jump_key *jump;
-                   ^
-  HOSTLD  scripts/kconfig/conf
+I needed to correct the code here:
+w8 should be w26, thinking of compat syscalls.
 
-Moved the initialization of struct jump_key *jump outside the first
-'if' branch so it can be available throughout the function.
+> +       b.ne    1f                              // system call
+> +       mov     x0, #-ENOSYS
+> +       str     x0, [sp, #S_X0]
+> +1:
 
-Also uses the preferred pointer syntax for passing the size of a struct.
+and this part might better be generalized like the following:
 
-Tested on next-20141119.
+__sys_trace:
+	cmp	w26, w25	// cannot use x26 and x25 here
+	b.hs	1f		// scno > sc_nr || scno < 0
+	b	2f
+1:
+	mov	x0, #-ENOSYS
+	str	x0, [sp, #S_X0]
+2:
 
-Signed-off-by: Eddie Kovsky <ewk@edkovsky.org>
----
- scripts/kconfig/menu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+If you will be comfortable, I will submit a new patch soon.
 
-diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
-index a26cc5d2a9b0..a728d23949e7 100644
---- a/scripts/kconfig/menu.c
-+++ b/scripts/kconfig/menu.c
-@@ -559,8 +559,8 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
- 		if (location == NULL && accessible)
- 			location = menu;
- 	}
-+	jump = xmalloc(sizeof(*jump));
- 	if (head && location) {
--		jump = xmalloc(sizeof(struct jump_key));
- 
- 		if (menu_is_visible(prop->menu)) {
- 			/*
--- 
-2.1.0
+-Takahiro AKASHI
 
+
+>          mov     x0, sp
+>          bl      syscall_trace_enter
+> +       cmp     w0, #-1                         // skip the syscall?
+> +       b.eq    __sys_trace_return_skipped
+>          adr     lr, __sys_trace_return          // return address
+>          uxtw    scno, w0                        // syscall number (possibly new)
+>          mov     x1, sp                          // pointer to regs
+> @@ -684,6 +691,7 @@ __sys_trace:
+>
+>   __sys_trace_return:
+>          str     x0, [sp]                        // save returned x0
+> +__sys_trace_return_skipped:
+>          mov     x0, sp
+>          bl      syscall_trace_exit
+>          b       ret_to_user
+>
+> With this change, I believe, syscall(-1) returns -ENOSYS by default whether traced
+> or not, and still you can change a return value when tracing.
+> (But a drawback here is that a tracer will see -ENOSYS in x0 even at syscall entry
+> for syscall(-1).)
+>
+>
+> -Takahiro AKASHI
+>
+>
+>
+>> Will
+>>
