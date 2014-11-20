@@ -1,107 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008AbaKTG6s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 01:58:48 -0500
-Received: from ozlabs.org ([103.22.144.67]:57792 "EHLO ozlabs.org"
+	id S1756113AbaKTHDA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:03:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48653 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775AbaKTG6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 01:58:47 -0500
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: tytso@mit.edu
-Cc: hpa@linux.intel.com, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] random: Remove unused arch_has_random[_seed]()
-Date: Thu, 20 Nov 2014 17:58:38 +1100
-Message-Id: <1416466718-22718-1-git-send-email-mpe@ellerman.id.au>
-X-Mailer: git-send-email 1.9.1
+	id S1751932AbaKTHC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 02:02:59 -0500
+Date: Thu, 20 Nov 2014 09:02:44 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH net V3] virtio-net: validate features during probe
+Message-ID: <20141120070244.GE30994@redhat.com>
+References: <1416463835-7364-1-git-send-email-jasowang@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416463835-7364-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch_has_random() and arch_has_random_seed() were added in 7b878d4b48c4
-"random: Add arch_has_random[_seed]()".
+On Thu, Nov 20, 2014 at 02:10:35PM +0800, Jason Wang wrote:
+> We currently trigger BUG when VIRTIO_NET_F_CTRL_VQ
+> is not set but one of features depending on it is.
+> That's not a friendly way to report errors to
+> hypervisors.
+> Let's check, and fail probe instead.
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-arch_has_random() was never used.
 
-arch_has_random_seed() was used in arch_random_refill(), but that usage
-was removed in 48d6be955a71 "random: limit the contribution of the hw
-rng to at most half".
+Looks good, minor nits below:
 
-If they're not used save arch code the trouble of implementing them.
+> ---
+> Changes from V2:
+> - only check the features for ctrl vq (this fix the real bug)
+> - better error message and simplify API
+> ---
+>  drivers/net/virtio_net.c | 37 +++++++++++++++++++++++++++++++++++++
+>  1 file changed, 37 insertions(+)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index ec2a8b4..a6bcfce 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -1673,6 +1673,40 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
+>  };
+>  #endif
+>  
+> +static bool virtnet_fail_on_feature(struct virtio_device *vdev,
+> +				    unsigned int fbit,
+> +				    const char *fname, const char *dname)
+> +{
+> +	if (!virtio_has_feature(vdev, fbit))
+> +		return false;
+> +
+> +	dev_err(&vdev->dev, "Hypervisor bug: advertise feature %s but not %s",
 
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
----
- arch/powerpc/include/asm/archrandom.h | 9 ---------
- arch/x86/include/asm/archrandom.h     | 3 ---
- include/linux/random.h                | 8 --------
- 3 files changed, 20 deletions(-)
+Well we don't know it's a hypervisor. How about:
+Device bug: advertises feature %s but not %s.
 
-diff --git a/arch/powerpc/include/asm/archrandom.h b/arch/powerpc/include/asm/archrandom.h
-index bde531103638..801beba4e64b 100644
---- a/arch/powerpc/include/asm/archrandom.h
-+++ b/arch/powerpc/include/asm/archrandom.h
-@@ -25,11 +25,6 @@ static inline int arch_get_random_int(unsigned int *v)
- 	return rc;
- }
- 
--static inline int arch_has_random(void)
--{
--	return !!ppc_md.get_random_long;
--}
--
- int powernv_get_random_long(unsigned long *v);
- 
- static inline int arch_get_random_seed_long(unsigned long *v)
-@@ -40,10 +35,6 @@ static inline int arch_get_random_seed_int(unsigned int *v)
- {
- 	return 0;
- }
--static inline int arch_has_random_seed(void)
--{
--	return 0;
--}
- 
- #endif /* CONFIG_ARCH_RANDOM */
- 
-diff --git a/arch/x86/include/asm/archrandom.h b/arch/x86/include/asm/archrandom.h
-index 69f1366f1aa3..6ad7f6d3f97f 100644
---- a/arch/x86/include/asm/archrandom.h
-+++ b/arch/x86/include/asm/archrandom.h
-@@ -114,9 +114,6 @@ GET_SEED(arch_get_random_seed_int, unsigned int, RDSEED_INT, ASM_NOP4);
- 
- #endif /* CONFIG_X86_64 */
- 
--#define arch_has_random()	static_cpu_has(X86_FEATURE_RDRAND)
--#define arch_has_random_seed()	static_cpu_has(X86_FEATURE_RDSEED)
--
- #else
- 
- static inline int rdrand_long(unsigned long *v)
-diff --git a/include/linux/random.h b/include/linux/random.h
-index b05856e16b75..6d6e1424184e 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -88,10 +88,6 @@ static inline int arch_get_random_int(unsigned int *v)
- {
- 	return 0;
- }
--static inline int arch_has_random(void)
--{
--	return 0;
--}
- static inline int arch_get_random_seed_long(unsigned long *v)
- {
- 	return 0;
-@@ -100,10 +96,6 @@ static inline int arch_get_random_seed_int(unsigned int *v)
- {
- 	return 0;
- }
--static inline int arch_has_random_seed(void)
--{
--	return 0;
--}
- #endif
- 
- /* Pseudo random number generator from numerical recipes. */
--- 
-1.9.1
+> +		fname, dname);
+> +
+> +	return true;
+> +}
+> +
+> +#define VIRTNET_FAIL_ON(vdev, fbit, dbit)			\
+> +	virtnet_fail_on_feature(vdev, fbit, #fbit, #dbit)
 
+I would pass dbit directly, and supply a string from caller,
+instead if #dbit, this way it can be any string.
+
+> +
+> +static bool virtnet_validate_features(struct virtio_device *vdev)
+> +{
+> +	if (!virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ) &&
+> +	    (VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_RX,
+> +			     VIRTIO_NET_F_CTRL_VQ) ||
+> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_VLAN,
+> +			     VIRTIO_NET_F_CTRL_VQ) ||
+> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_GUEST_ANNOUNCE,
+> +			     VIRTIO_NET_F_TRL_VQ) ||
+
+Typo: VIRTIO_NET_F_CTRL_VQ.
+
+> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_MQ, VIRTIO_NET_F_CTRL_VQ) ||
+> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_MAC_ADDR,
+> +			     VIRTIO_NET_F_CTRL_VQ))) {
+> +		return false;
+> +	}
+> +
+> +	return true;
+> +}
+> +
+>  static int virtnet_probe(struct virtio_device *vdev)
+>  {
+>  	int i, err;
+> @@ -1680,6 +1714,9 @@ static int virtnet_probe(struct virtio_device *vdev)
+>  	struct virtnet_info *vi;
+>  	u16 max_queue_pairs;
+>  
+> +	if (!virtnet_validate_features(vdev))
+> +		return -EINVAL;
+> +
+>  	/* Find if host supports multiqueue virtio_net device */
+>  	err = virtio_cread_feature(vdev, VIRTIO_NET_F_MQ,
+>  				   struct virtio_net_config,
+> -- 
+> 1.9.1
