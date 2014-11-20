@@ -1,87 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664AbaKTPD1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 10:03:27 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:44656 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257AbaKTPDZ (ORCPT
+	id S1756935AbaKTPET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 10:04:19 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:37089 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753977AbaKTPER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 10:03:25 -0500
+	Thu, 20 Nov 2014 10:04:17 -0500
+Date: Thu, 20 Nov 2014 16:04:13 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141120150411.GD2542@lerouge>
+References: <20141118020959.GA2091@redhat.com>
+ <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
+ <20141118023930.GA2871@redhat.com>
+ <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
+ <20141118145234.GA7487@redhat.com>
+ <alpine.DEB.2.11.1411181914020.3909@nanos>
+ <20141118215540.GD35311@redhat.com>
+ <20141119021902.GA14216@redhat.com>
+ <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
+ <20141119145902.GA13387@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <546DFFA1.4030700@redhat.com>
-References: <502D42E5.7090403@redhat.com>
-	<alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
-	<CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
-	<20120822032057.GA30871@google.com>
-	<50345232.4090002@redhat.com>
-	<20130603195003.GA31275@evergreen.ssec.wisc.edu>
-	<20141114163053.GA6547@cosmos.ssec.wisc.edu>
-	<20141117160212.b86d031e1870601240b0131d@linux-foundation.org>
-	<20141118014135.GA17252@cosmos.ssec.wisc.edu>
-	<546AB1F5.6030306@redhat.com>
-	<20141118121936.07b02545a0684b2cc839a10c@linux-foundation.org>
-	<CALYGNiMxnxmy-LyJ4OT9OoFeKwTPPkZMF-bJ-eJDBFXgZQ6AEA@mail.gmail.com>
-	<CALYGNiM_CsjjiK_36JGirZT8rTP+ROYcH0CSyZjghtSNDU8ptw@mail.gmail.com>
-	<546BDB29.9050403@suse.cz>
-	<CALYGNiOHXvyqr3+Jq5FsZ_xscsXwrQ_9YCtL2819i6iRkgms2w@mail.gmail.com>
-	<546CC0CD.40906@suse.cz>
-	<CALYGNiO9_bAVVZ2GdFq=PO2yV3LPs2utsbcb2pFby7MypptLCw@mail.gmail.com>
-	<CANN689G+y77m2_paF0vBpHG8EsJ2-pEnJvLJSGs-zHf+SqTEjQ@mail.gmail.com>
-	<CALYGNiOC4dEzzVzSQXGC4oxLbgp=8TC=A+duJs67jT97TWQ++g@mail.gmail.com>
-	<546DFFA1.4030700@redhat.com>
-Date: Thu, 20 Nov 2014 19:03:24 +0400
-Message-ID: <CALYGNiP_zqAucmN=Gn75Mm2wK1iE6fPNxTsaTRgnUbFbFE7C-g@mail.gmail.com>
-Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Michel Lespinasse <walken@google.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Tim Hartrick <tim@edgecast.com>, Michal Hocko <mhocko@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141119145902.GA13387@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 5:50 PM, Rik van Riel <riel@redhat.com> wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->
-> On 11/20/2014 09:42 AM, Konstantin Khlebnikov wrote:
->
->> I'm thinking about limitation for reusing anon_vmas which might
->> increase performance without breaking asymptotic estimation of
->> count anon_vma in the worst case. For example this heuristic: allow
->> to reuse only anon_vma with single direct descendant. It seems
->> there will be arount up to two times more anon_vmas but
->> false-aliasing must be much lower.
->
-> It may even be possible to not create a child anon_vma for the
-> first child a parent forks, but only create a new anon_vma once
-> the parent clones a second child (alive at the same time as the
-> first child).
->
-> That still takes care of things like apache or sendmail, but
-> would not create infinite anon_vmas for a task that keeps forking
-> itself to infinite depth without calling exec...
+On Wed, Nov 19, 2014 at 09:59:02AM -0500, Dave Jones wrote:
+> On Tue, Nov 18, 2014 at 08:40:55PM -0800, Linus Torvalds wrote:
+>  > On Tue, Nov 18, 2014 at 6:19 PM, Dave Jones <davej@redhat.com> wrote:
+>  > >
+>  > > NMI watchdog: BUG: soft lockup - CPU#2 stuck for 21s! [trinity-c42:31480]
+>  > > CPU: 2 PID: 31480 Comm: trinity-c42 Not tainted 3.18.0-rc5+ #91 [loadavg: 174.61 150.35 148.64 9/411 32140]
+>  > > RIP: 0010:[<ffffffff8a1798b4>]  [<ffffffff8a1798b4>] context_tracking_user_enter+0xa4/0x190
+>  > > Call Trace:
+>  > >  [<ffffffff8a012fc5>] syscall_trace_leave+0xa5/0x160
+>  > >  [<ffffffff8a7d8624>] int_check_syscall_exit_work+0x34/0x3d
+>  > 
+>  > Hmm, if we are getting soft-lockups here, maybe it suggest too much exit-work.
+>  > 
+>  > Some TIF_NOHZ loop, perhaps? You have nohz on, don't you?
+>  > 
+>  > That makes me wonder: does the problem go away if you disable NOHZ?
+> 
+> Aparently not.
+> 
+> NMI watchdog: BUG: soft lockup - CPU#3 stuck for 22s! [trinity-c75:25175]
+> CPU: 3 PID: 25175 Comm: trinity-c75 Not tainted 3.18.0-rc5+ #92 [loadavg: 168.72 151.72 150.38 9/410 27945]
+> task: ffff8800364e44d0 ti: ffff880192d2c000 task.ti: ffff880192d2c000
+> RIP: 0010:[<ffffffff94175be7>]  [<ffffffff94175be7>] context_tracking_user_exit+0x57/0x120
+> RSP: 0018:ffff880192d2fee8  EFLAGS: 00000246
+> RAX: 0000000000000000 RBX: 0000000100000046 RCX: 000000336ee35b47
+> RDX: 0000000000000001 RSI: ffffffff94ac1e84 RDI: ffffffff94a93725
+> RBP: ffff880192d2fef8 R08: 00007f9b74d0b740 R09: 0000000000000000
+> R10: 0000000000000000 R11: 0000000000000246 R12: ffffffff940d8503
+> R13: ffff880192d2fe98 R14: ffffffff943884e7 R15: ffff880192d2fe48
+> FS:  00007f9b74d0b740(0000) GS:ffff880244600000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 000000336f1b7740 CR3: 0000000229a95000 CR4: 00000000001407e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+> Stack:
+>  ffff880192d30000 0000000000080000 ffff880192d2ff78 ffffffff94012c25
+>  00007f9b747a5000 00007f9b747a5068 0000000000000000 0000000000000000
+>  0000000000000000 ffffffff9437b3be 0000000000000000 0000000000000000
+> Call Trace:
+>  [<ffffffff94012c25>] syscall_trace_enter_phase1+0x125/0x1a0
+>  [<ffffffff9437b3be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>  [<ffffffff947d41bf>] tracesys+0x14/0x4a
+> Code: 42 fd ff 48 c7 c7 7a 1e ac 94 e8 25 29 21 00 65 8b 04 25 34 f7 1c 00 83 f8 01 74 28 f6 c7 02 74 13 0f 1f 00 e8 bb 43 fd ff 53 9d <5b> 41 5c 5d c3 0f 1f 40 00 53 9d e8 89 42 fd ff eb ee 0f 1f 80 
+> sending NMI to other CPUs:
+> NMI backtrace for cpu 1
+> CPU: 1 PID: 25164 Comm: trinity-c64 Not tainted 3.18.0-rc5+ #92 [loadavg: 168.72 151.72 150.38 9/410 27945]
+> task: ffff88011600dbc0 ti: ffff8801a99a4000 task.ti: ffff8801a99a4000
+> RIP: 0010:[<ffffffff940fb71e>]  [<ffffffff940fb71e>] generic_exec_single+0xee/0x1a0
+> RSP: 0018:ffff8801a99a7d18  EFLAGS: 00000202
+> RAX: 0000000000000000 RBX: ffff8801a99a7d20 RCX: 0000000000000038
+> RDX: 00000000000000ff RSI: 0000000000000008 RDI: 0000000000000000
+> RBP: ffff8801a99a7d78 R08: ffff880242b57ce0 R09: 0000000000000000
+> R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000003
+> R13: 0000000000000001 R14: ffff880083c28948 R15: ffffffff94166aa0
+> FS:  00007f9b74d0b740(0000) GS:ffff880244200000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 0000000000000001 CR3: 00000001d8611000 CR4: 00000000001407e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+> Stack:
+>  ffff8801a99a7d28 0000000000000000 ffffffff94166aa0 ffff880083c28948
+>  0000000000000003 00000000e38f9aac ffff880083c28948 00000000ffffffff
+>  0000000000000003 ffffffff94166aa0 ffff880083c28948 0000000000000001
+> Call Trace:
+>  [<ffffffff94166aa0>] ? perf_swevent_add+0x120/0x120
+>  [<ffffffff94166aa0>] ? perf_swevent_add+0x120/0x120
+>  [<ffffffff940fb89a>] smp_call_function_single+0x6a/0xe0
 
-But this scheme is still exploitable. Malicious software easily could create
-sequence of forks and exits which leads to infinite chain of anon_vmas.
+One thing that happens a lot in your crashes is a CPU sending IPIs. Maybe
+stuck polling on csd->lock or something. But's it's not the CPU that soft
+lockups. At least not the first that gets reported.
 
->
-> - --
-> All rights reversed
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1
->
-> iQEcBAEBAgAGBQJUbf+hAAoJEM553pKExN6DxhQH/1QL+9GdhaSx7EQnRcbDRcHi
-> GuEfMU0g9Kv4ad+oPSQnH/L7vJMJAYeh5ZJGH+rOykWHp3sGReqDZOnzpXRAe11z
-> 1cSC1BJsndzrv9wX8niFpuKpYbF0IP+ckv3qaEzWtm5yCRyhHVZfr6b794Y4K9jF
-> z2EPPu1vAAldbkx1VlYTwofBA5lESL5UmrFvH4ouI7BeWYSEe6BgVCbvK+K5fANT
-> ketdA5R08xyUAcXDa+28qpBYkdWnxNhwqseDoXCW8SOFNwWbLDI6GRfrsCNku13i
-> Gi41h3uEuIAGDf+AU/GMjiymgwutCOGq+cfZlszELaRvHmDpNGYdPv1llghNg7Q=
-> =Vk+H
-> -----END PGP SIGNATURE-----
+>  [<ffffffff940a172b>] ? preempt_count_sub+0x7b/0x100
+>  [<ffffffff941671aa>] perf_event_read+0xca/0xd0
+>  [<ffffffff94167240>] perf_event_read_value+0x90/0xe0
+>  [<ffffffff941689c6>] perf_read+0x226/0x370
+>  [<ffffffff942fbfb7>] ? security_file_permission+0x87/0xa0
+>  [<ffffffff941eafff>] vfs_read+0x9f/0x180
+>  [<ffffffff941ebbd8>] SyS_read+0x58/0xd0
+>  [<ffffffff947d42c9>] tracesys_phase2+0xd4/0xd9
