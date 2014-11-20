@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063AbaKTLuh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 06:50:37 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:55564 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbaKTLuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755788AbaKTLug (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 06:50:36 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:2355 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750845AbaKTLuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Nov 2014 06:50:35 -0500
 X-IronPort-AV: E=Sophos;i="5.07,423,1413244800"; 
-   d="scan'208";a="194755369"
+   d="scan'208";a="193231390"
 From: David Vrabel <david.vrabel@citrix.com>
 To: <linux-kernel@vger.kernel.org>
 CC: David Vrabel <david.vrabel@citrix.com>,
@@ -18,66 +17,69 @@ CC: David Vrabel <david.vrabel@citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Boris Ostrovsky <boris.ostrovsky@oracle.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 3/4] x86: allow dma_get_required_mask() to be overridden
-Date: Thu, 20 Nov 2014 11:50:24 +0000
-Message-ID: <1416484225-28054-4-git-send-email-david.vrabel@citrix.com>
+Subject: [PATCH 1/4] dma: add dma_get_required_mask_from_max_pfn()
+Date: Thu, 20 Nov 2014 11:50:22 +0000
+Message-ID: <1416484225-28054-2-git-send-email-david.vrabel@citrix.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1416484225-28054-1-git-send-email-david.vrabel@citrix.com>
 References: <1416484225-28054-1-git-send-email-david.vrabel@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-DLP: MIA1
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dma_ops->get_required_mask() if provided, defaulting to
-dma_get_requried_mask_from_max_pfn().
-
-This is needed on systems (such as Xen PV guests) where the DMA
-address and the physical address are not equal.
-
-ARCH_HAS_DMA_GET_REQUIRED_MASK is defined in asm/device.h instead of
-asm/dma-mapping.h because linux/dma-mapping.h uses the define before
-including asm/dma-mapping.h
+A generic dma_get_required_mask() is useful even for architectures (such
+as ia64) that define ARCH_HAS_GET_REQUIRED_MASK.
 
 Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/x86/include/asm/device.h |    2 ++
- arch/x86/kernel/pci-dma.c     |    8 ++++++++
- 2 files changed, 10 insertions(+)
+ drivers/base/platform.c     |   10 ++++++++--
+ include/linux/dma-mapping.h |    1 +
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/device.h b/arch/x86/include/asm/device.h
-index 03dd729..10bc628 100644
---- a/arch/x86/include/asm/device.h
-+++ b/arch/x86/include/asm/device.h
-@@ -13,4 +13,6 @@ struct dev_archdata {
- struct pdev_archdata {
- };
- 
-+#define ARCH_HAS_DMA_GET_REQUIRED_MASK
-+
- #endif /* _ASM_X86_DEVICE_H */
-diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
-index a25e202..5154400 100644
---- a/arch/x86/kernel/pci-dma.c
-+++ b/arch/x86/kernel/pci-dma.c
-@@ -140,6 +140,14 @@ void dma_generic_free_coherent(struct device *dev, size_t size, void *vaddr,
- 		free_pages((unsigned long)vaddr, get_order(size));
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index b2afc29..f9f3930 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -1009,8 +1009,7 @@ int __init platform_bus_init(void)
+ 	return error;
  }
  
+-#ifndef ARCH_HAS_DMA_GET_REQUIRED_MASK
+-u64 dma_get_required_mask(struct device *dev)
++u64 dma_get_required_mask_from_max_pfn(struct device *dev)
+ {
+ 	u32 low_totalram = ((max_pfn - 1) << PAGE_SHIFT);
+ 	u32 high_totalram = ((max_pfn - 1) >> (32 - PAGE_SHIFT));
+@@ -1028,6 +1027,13 @@ u64 dma_get_required_mask(struct device *dev)
+ 	}
+ 	return mask;
+ }
++EXPORT_SYMBOL_GPL(dma_get_required_mask_from_max_pfn);
++
++#ifndef ARCH_HAS_DMA_GET_REQUIRED_MASK
 +u64 dma_get_required_mask(struct device *dev)
 +{
-+	if (dma_ops->get_required_mask)
-+		return dma_ops->get_required_mask(dev);
 +	return dma_get_required_mask_from_max_pfn(dev);
 +}
-+EXPORT_SYMBOL_GPL(dma_get_required_mask);
-+
- /*
-  * See <Documentation/x86/x86_64/boot-options.txt> for the iommu kernel
-  * parameter documentation.
+ EXPORT_SYMBOL_GPL(dma_get_required_mask);
+ #endif
+ 
+diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+index d5d3881..6e2fdfc 100644
+--- a/include/linux/dma-mapping.h
++++ b/include/linux/dma-mapping.h
+@@ -127,6 +127,7 @@ static inline int dma_coerce_mask_and_coherent(struct device *dev, u64 mask)
+ 	return dma_set_mask_and_coherent(dev, mask);
+ }
+ 
++extern u64 dma_get_required_mask_from_max_pfn(struct device *dev);
+ extern u64 dma_get_required_mask(struct device *dev);
+ 
+ #ifndef set_arch_dma_coherent_ops
 -- 
 1.7.10.4
 
