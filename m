@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758132AbaKTRIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 12:08:36 -0500
-Received: from david.siemens.de ([192.35.17.14]:43860 "EHLO david.siemens.de"
+	id S1758118AbaKTRIf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 12:08:35 -0500
+Received: from david.siemens.de ([192.35.17.14]:43859 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757387AbaKTRCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757411AbaKTRCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Nov 2014 12:02:42 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
         Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v10 05/27] scripts/gdb: Add lx-symbols command
-Date: Thu, 20 Nov 2014 18:01:42 +0100
-Message-Id: <88cae1df67643e895d4fa7287b86a36493016f4f.1416502923.git.jan.kiszka@siemens.com>
+Subject: [PATCH v10 16/27] scripts/gdb: Add get_gdbserver_type helper
+Date: Thu, 20 Nov 2014 18:01:53 +0100
+Message-Id: <e619a093459af11dfa113541079e8496a066d6a2.1416502923.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <cover.1416502923.git.jan.kiszka@siemens.com>
 References: <cover.1416502923.git.jan.kiszka@siemens.com>
@@ -26,164 +26,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is probably the most useful helper when debugging kernel modules:
-lx-symbols first reloads vmlinux. Then it searches recursively for *.ko
-files in the specified paths and the current directory. Finally it walks
-the kernel's module list, issuing the necessary add-symbol-file command
-for each loaded module so that gdb knows which module symbol corresponds
-to which address. It also looks up variable sections (bss, data, rodata)
-and appends their address to the add-symbole-file command line. This
-allows to access global module variables just like any other variable.
+This helper probes the type of the gdb server. Supported are QEMU and
+KGDB so far. Knowledge about the gdb server is required e.g. to retrieve
+the current CPU or current task.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/symbols.py | 127 +++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py   |   1 +
- 2 files changed, 128 insertions(+)
- create mode 100644 scripts/gdb/linux/symbols.py
+ scripts/gdb/linux/utils.py | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-diff --git a/scripts/gdb/linux/symbols.py b/scripts/gdb/linux/symbols.py
-new file mode 100644
-index 0000000..bd21a96
---- /dev/null
-+++ b/scripts/gdb/linux/symbols.py
-@@ -0,0 +1,127 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  load kernel and module symbols
-+#
-+# Copyright (c) Siemens AG, 2011-2013
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import gdb
-+import os
-+import re
-+import string
-+
-+from linux import modules, utils
+diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
+index 71ee48c..a4a1640 100644
+--- a/scripts/gdb/linux/utils.py
++++ b/scripts/gdb/linux/utils.py
+@@ -119,3 +119,38 @@ def is_target_arch(arch):
+         if target_arch is None:
+             target_arch = gdb.execute("show architecture", to_string=True)
+         return arch in target_arch
 +
 +
-+class LxSymbols(gdb.Command):
-+    """(Re-)load symbols of Linux kernel and currently loaded modules.
++GDBSERVER_QEMU = 0
++GDBSERVER_KGDB = 1
++gdbserver_type = None
 +
-+The kernel (vmlinux) is taken from the current working directly. Modules (.ko)
-+are scanned recursively, starting in the same directory. Optionally, the module
-+search path can be extended by a space separated list of paths passed to the
-+lx-symbols command."""
 +
-+    module_paths = []
-+    module_files = []
-+    module_files_updated = False
++def get_gdbserver_type():
++    def exit_handler(event):
++        global gdbserver_type
++        gdbserver_type = None
++        gdb.events.exited.disconnect(exit_handler)
 +
-+    def __init__(self):
-+        super(LxSymbols, self).__init__("lx-symbols", gdb.COMMAND_FILES,
-+                                        gdb.COMPLETE_FILENAME)
-+
-+    def _update_module_files(self):
-+        self.module_files = []
-+        for path in self.module_paths:
-+            gdb.write("scanning for modules in {0}\n".format(path))
-+            for root, dirs, files in os.walk(path):
-+                for name in files:
-+                    if name.endswith(".ko"):
-+                        self.module_files.append(root + "/" + name)
-+        self.module_files_updated = True
-+
-+    def _get_module_file(self, module_name):
-+        module_pattern = ".*/{0}\.ko$".format(
-+            string.replace(module_name, "_", r"[_\-]"))
-+        for name in self.module_files:
-+            if re.match(module_pattern, name) and os.path.exists(name):
-+                return name
-+        return None
-+
-+    def _section_arguments(self, module):
++    def probe_qemu():
 +        try:
-+            sect_attrs = module['sect_attrs'].dereference()
-+        except gdb.error:
-+            return ""
-+        attrs = sect_attrs['attrs']
-+        section_name_to_address = {
-+            attrs[n]['name'].string() : attrs[n]['address']
-+            for n in range(sect_attrs['nsections'])}
-+        args = []
-+        for section_name in [".data", ".data..read_mostly", ".rodata", ".bss"]:
-+            address = section_name_to_address.get(section_name)
-+            if address:
-+                args.append(" -s {name} {addr}".format(
-+                    name=section_name, addr=str(address)))
-+        return "".join(args)
++            return gdb.execute("monitor info version", to_string=True) != ""
++        except:
++            return False
 +
-+    def load_module_symbols(self, module):
-+        module_name = module['name'].string()
-+        module_addr = str(module['module_core']).split()[0]
++    def probe_kgdb():
++        try:
++            thread_info = gdb.execute("info thread 2", to_string=True)
++            return "shadowCPU0" in thread_info
++        except:
++            return False
 +
-+        module_file = self._get_module_file(module_name)
-+        if not module_file and not self.module_files_updated:
-+            self._update_module_files()
-+            module_file = self._get_module_file(module_name)
-+
-+        if module_file:
-+            gdb.write("loading @{addr}: {filename}\n".format(
-+                addr=module_addr, filename=module_file))
-+            cmdline = "add-symbol-file {filename} {addr}{sections}".format(
-+                filename=module_file,
-+                addr=module_addr,
-+                sections=self._section_arguments(module))
-+            gdb.execute(cmdline, to_string=True)
-+        else:
-+            gdb.write("no module object found for '{0}'\n".format(module_name))
-+
-+    def load_all_symbols(self):
-+        gdb.write("loading vmlinux\n")
-+
-+        # Dropping symbols will disable all breakpoints. So save their states
-+        # and restore them afterward.
-+        saved_states = []
-+        if hasattr(gdb, 'breakpoints') and not gdb.breakpoints() is None:
-+            for bp in gdb.breakpoints():
-+                saved_states.append({'breakpoint': bp, 'enabled': bp.enabled})
-+
-+        # drop all current symbols and reload vmlinux
-+        gdb.execute("symbol-file", to_string=True)
-+        gdb.execute("symbol-file vmlinux")
-+
-+        module_list = modules.ModuleList()
-+        if not module_list:
-+            gdb.write("no modules found\n")
-+        else:
-+            [self.load_module_symbols(module) for module in module_list]
-+
-+        for saved_state in saved_states:
-+            saved_state['breakpoint'].enabled = saved_state['enabled']
-+
-+    def invoke(self, arg, from_tty):
-+        self.module_paths = arg.split()
-+        self.module_paths.append(os.getcwd())
-+
-+        # enforce update
-+        self.module_files = []
-+        self.module_files_updated = False
-+
-+        self.load_all_symbols()
-+
-+
-+LxSymbols()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index 6495841..0b0faa4 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -23,3 +23,4 @@ except:
-               "work.\n")
- else:
-     import linux.utils
-+    import linux.symbols
++    global gdbserver_type
++    if gdbserver_type is None:
++        if probe_qemu():
++            gdbserver_type = GDBSERVER_QEMU
++        elif probe_kgdb():
++            gdbserver_type = GDBSERVER_KGDB
++        if not gdbserver_type is None and hasattr(gdb, 'events'):
++            gdb.events.exited.connect(exit_handler)
++    return gdbserver_type
 -- 
 1.8.4.5
 
