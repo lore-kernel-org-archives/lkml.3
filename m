@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247AbaKTHPy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:15:54 -0500
-Received: from exprod7og112.obsmtp.com ([64.18.2.177]:50969 "EHLO
-	exprod7og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756121AbaKTHPw (ORCPT
+	id S1757265AbaKTHP5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:15:57 -0500
+Received: from exprod7og127.obsmtp.com ([64.18.2.210]:43851 "EHLO
+	exprod7og127.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756531AbaKTHPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:15:52 -0500
+	Thu, 20 Nov 2014 02:15:55 -0500
 From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
 X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 To: jejb@kernel.org, hch@infradead.org
@@ -14,9 +14,9 @@ Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
         JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
         Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
         Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH 20/22] [SCSI] mpt3sas: Add branding string support for OEM's HBA
-Date: Thu, 20 Nov 2014 12:35:53 +0530
-Message-Id: <1416467155-16869-21-git-send-email-Sreekanth.Reddy@avagotech.com>
+Subject: [PATCH 22/22] [SCSI] mpt3sas: Bump mpt3sas driver version to v6.100.00.00
+Date: Thu, 20 Nov 2014 12:35:55 +0530
+Message-Id: <1416467155-16869-23-git-send-email-Sreekanth.Reddy@avagotech.com>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
 References: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
@@ -24,93 +24,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added the following Dell branding to the mpt3sas driver.
-
-"VendorID"   "DeviceID"  "SubsystemVendor ID"  "SubsystemDevice ID"  Dell Branding String
-0x1000        0x0097          0x1028                 0x1F46            DELL 12Gbps HBA
+Bump mpt3sas driver version to v6.100.00.00.
 
 Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 ---
- drivers/scsi/mpt3sas/mpt3sas_base.c | 36 ++++++++++++++++++++++++++++++++++++
- drivers/scsi/mpt3sas/mpt3sas_base.h | 11 +++++++++++
- 2 files changed, 47 insertions(+)
+ drivers/scsi/mpt3sas/mpt3sas_base.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.c b/drivers/scsi/mpt3sas/mpt3sas_base.c
-index 5fafd51..cc1bfef 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_base.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_base.c
-@@ -2338,6 +2338,41 @@ _base_display_intel_branding(struct MPT3SAS_ADAPTER *ioc)
- 
- 
- /**
-+ * _base_display_dell_branding - Display branding string
-+ * @ioc: per adapter object
-+ *
-+ * Return nothing.
-+ */
-+static void
-+_base_display_dell_branding(struct MPT3SAS_ADAPTER *ioc)
-+{
-+	if (ioc->pdev->subsystem_vendor != PCI_VENDOR_ID_DELL)
-+		return;
-+
-+	switch (ioc->pdev->device) {
-+	case MPI25_MFGPAGE_DEVID_SAS3008:
-+		switch (ioc->pdev->subsystem_device) {
-+		case MPT3SAS_DELL_12G_HBA_SSDID:
-+			pr_info(MPT3SAS_FMT "%s\n", ioc->name,
-+				MPT3SAS_DELL_12G_HBA_BRANDING);
-+			break;
-+		default:
-+			pr_info(MPT3SAS_FMT
-+			   "Dell 12Gbps HBA: Subsystem ID: 0x%X\n", ioc->name,
-+			   ioc->pdev->subsystem_device);
-+			break;
-+		}
-+		break;
-+	default:
-+		pr_info(MPT3SAS_FMT
-+			"Dell 12Gbps HBA: Subsystem ID: 0x%X\n", ioc->name,
-+			ioc->pdev->subsystem_device);
-+		break;
-+	}
-+}
-+
-+
-+/**
-  * _base_display_ioc_capabilities - Disply IOC's capabilities.
-  * @ioc: per adapter object
-  *
-@@ -2367,6 +2402,7 @@ _base_display_ioc_capabilities(struct MPT3SAS_ADAPTER *ioc)
- 	    bios_version & 0x000000FF);
- 
- 	_base_display_intel_branding(ioc);
-+	_base_display_dell_branding(ioc);
- 
- 	pr_info(MPT3SAS_FMT "Protocol=(", ioc->name);
- 
 diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.h b/drivers/scsi/mpt3sas/mpt3sas_base.h
-index c27e94e..f2ce5a5 100644
+index 9608e3a..035a244 100644
 --- a/drivers/scsi/mpt3sas/mpt3sas_base.h
 +++ b/drivers/scsi/mpt3sas/mpt3sas_base.h
-@@ -152,6 +152,17 @@
- #define MPT3SAS_INTEL_RS3UC080_SSDID    0x3524
- 
- /*
-+ * Dell HBA branding
-+ */
-+#define MPT3SAS_DELL_12G_HBA_BRANDING       \
-+	"Dell 12Gbps HBA"
-+
-+/*
-+ * Dell HBA SSDIDs
-+ */
-+#define MPT3SAS_DELL_12G_HBA_SSDID	0x1F46
-+
-+/*
-  * status bits for ioc->diag_buffer_status
-  */
- #define MPT3_DIAG_BUFFER_IS_REGISTERED	(0x01)
+@@ -71,8 +71,8 @@
+ #define MPT3SAS_DRIVER_NAME		"mpt3sas"
+ #define MPT3SAS_AUTHOR "Avago Technologies <MPT-FusionLinux.pdl@avagotech.com>"
+ #define MPT3SAS_DESCRIPTION	"LSI MPT Fusion SAS 3.0 Device Driver"
+-#define MPT3SAS_DRIVER_VERSION		"05.100.00.00"
+-#define MPT3SAS_MAJOR_VERSION		5
++#define MPT3SAS_DRIVER_VERSION		"06.100.00.00"
++#define MPT3SAS_MAJOR_VERSION		6
+ #define MPT3SAS_MINOR_VERSION		100
+ #define MPT3SAS_BUILD_VERSION		0
+ #define MPT3SAS_RELEASE_VERSION	00
 -- 
 2.0.2
 
