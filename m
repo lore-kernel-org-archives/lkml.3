@@ -1,170 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756986AbaKTIst (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 03:48:49 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:19509 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756637AbaKTIsr (ORCPT
+	id S1757055AbaKTIuH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 03:50:07 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:44912 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750848AbaKTIuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 03:48:47 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-2c-546daaec2fba
-Date: Thu, 20 Nov 2014 17:47:29 +0900
-From: Changman Lee <cm224.lee@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH 1/3] f2fs: call flush_dcache_page when the page
- was updated
-Message-id: <20141120084729.GA4740@lcm>
-References: <1416436510-6251-1-git-send-email-jaegeuk@kernel.org>
- <20141120060410.GB3117@lcm>
- <20141120064533.GA8860@jaegeuk-mac02.hsd1.ca.comcast.net>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-disposition: inline
-In-reply-to: <20141120064533.GA8860@jaegeuk-mac02.hsd1.ca.comcast.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42JZI2LSoftmVW6IQesaVYsn62cxW1xa5G6x
-	Z+9JFovLu+awObB4bFrVyeaxe8FnJo/Pm+QCmKO4bFJSczLLUov07RK4Ml4t+MJU8F+m4tm2
-	+2wNjDvEuxg5OSQETCQur5jODGGLSVy4t56ti5GLQ0hgKaPEiq/PWGCK1l1axAKRmM4oMWV/
-	OxOE85NR4tPTuWDtLAKqEutOrGcEsdkEtCTaT68F6xYRUJE4tOgyO4jNLJApMaH/BZgtLBAj
-	sflgG2sXIwcHr4C6xLPPOhAzZzNKvNh8hA2khldAUOLH5HssEL1aEut3HmeCsKUlHv2dATaH
-	U8BNYsbzY2B7RYF2TTm5DewFCYFl7BL/3kxkgThOQOLb5EMsIMskBGQlNh2AellS4uCKGywT
-	GMVmIVk3C8m6WUjWLWBkXsUomlqQXFCclF5kpFecmFtcmpeul5yfu4kRGEWn/z3r28F484D1
-	IUYBDkYlHt4Ei9wQIdbEsuLK3EOMpkBXTGSWEk3OB8ZqXkm8obGZkYWpiamxkbmlmZI4b4LU
-	z2AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjCwBwkuWHAzWOKh45sTXPSrzNbLmtbFs71j4
-	2GKnUuCndH5Xw/NV7QGX1728e/XxRuurPt6t0gx35XicGGOYbGY1xntpl2bP2/Nyv5LSodRP
-	lyTfOV6qrTGcvN9libfhuiPyIqsymKz2XOK4VnPf2c3p4MOHCeFLFjvaLRU/Ot2Eof+Q7zym
-	40osxRmJhlrMRcWJAGxLxXmdAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t9jQd03q3JDDB4tVbR4sn4Ws8WlRe4W
-	e/aeZLG4vGsOmwOLx6ZVnWweuxd8ZvL4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON45
-	3tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2ibkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3f
-	kCC4HiMDNJCwjjHj1YIvTAX/ZSqebbvP1sC4Q7yLkZNDQsBEYt2lRSwQtpjEhXvr2boYuTiE
-	BKYzSkzZ384E4fxklPj0dC4zSBWLgKrEuhPrGUFsNgEtifbTa8G6RQRUJA4tuswOYjMLZEpM
-	6H8BZgsLxEhsPtjG2sXIwcEroC7x7LMOxMzZjBIvNh9hA6nhFRCU+DH5HgtEr5bE+p3HmSBs
-	aYlHf2eAzeEUcJOY8fwY2F5RoF1TTm5jm8AoMAtJ+ywk7bOQtC9gZF7FKJpakFxQnJSea6RX
-	nJhbXJqXrpecn7uJERyjz6R3MK5qsDjEKMDBqMTDm2CRGyLEmlhWXJl7iFGCg1lJhFdpCVCI
-	NyWxsiq1KD++qDQntfgQoykwNCYyS4km5wPTR15JvKGxiZmRpZGZhZGJubmSOO91YCoREkhP
-	LEnNTk0tSC2C6WPi4JRqYOyatkbIIk/79sNDk6TXSN1g+LXyaPSBS8qabvXl6ra/vANb3mVp
-	/kxrkVnyWu+4b2aGo2lnVui5hDdqdzqE3dlX/lroWPpp366Ty7Y5/Xr1YlmOH89CFQmxg3Vh
-	VlPra4I3xcn9z+w5ute3d/GSCqHiT7nbD5/XUr5bdtG/jVUgUNCU6fLhbiWW4oxEQy3mouJE
-	AKloQ+fnAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 20 Nov 2014 03:50:04 -0500
+Date: Thu, 20 Nov 2014 09:49:00 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Sonny Rao <sonnyrao@chromium.org>
+Cc: linux-arm-kernel@lists.infradead.org, Mark Rutland <Mark.Rutland@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, dianders@chromium.org,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v4] clocksource: arch_timer: Fix code to use physical
+ timers when requested
+Message-ID: <20141120084900.GC24143@lukather>
+References: <1412753937-29343-1-git-send-email-sonnyrao@chromium.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Bu8it7iiRSEf40bY"
+Content-Disposition: inline
+In-Reply-To: <1412753937-29343-1-git-send-email-sonnyrao@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 10:45:33PM -0800, Jaegeuk Kim wrote:
-> On Thu, Nov 20, 2014 at 03:04:10PM +0900, Changman Lee wrote:
-> > Hi Jaegeuk,
-> > 
-> > We should call flush_dcache_page before kunmap because the purpose of the cache flush is to address aliasing problem related to virtual address.
-> 
-> Oh, I just followed zero_user_segments below.
-> 
-> static inline void zero_user_segments(struct page *page,
-> 	unsigned start1, unsigned end1,
-> 	unsigned start2, unsigned end2)
-> {
-> 	void *kaddr = kmap_atomic(page);
-> 
-> 	BUG_ON(end1 > PAGE_SIZE || end2 > PAGE_SIZE);
-> 
-> 	if (end1 > start1)
-> 		memset(kaddr + start1, 0, end1 - start1);
-> 
-> 	if (end2 > start2)
-> 		memset(kaddr + start2, 0, end2 - start2);
-> 
-> 	kunmap_atomic(kaddr);
-> 	flush_dcache_page(page);
-> }
-> 
-> Is this a wrong reference? Or, a bug?
-> 
 
-Well.. Data in cache only have to be flushed until before other users read the data.
-If so, it's not a bug.
+--Bu8it7iiRSEf40bY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Anyway I modified as below.
-> 
-> Thanks,
-> 
-> >From 7cb7b27c8cd2efc8a31d79239bef5b41c6e79216 Mon Sep 17 00:00:00 2001
-> From: Jaegeuk Kim <jaegeuk@kernel.org>
-> Date: Tue, 18 Nov 2014 10:50:21 -0800
-> Subject: [PATCH] f2fs: call flush_dcache_page when the page was updated
-> 
-> Whenever f2fs updates mapped pages, it needs to call flush_dcache_page.
-> 
-> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> ---
->  fs/f2fs/dir.c    | 7 ++++++-
->  fs/f2fs/inline.c | 2 ++
->  2 files changed, 8 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-> index 5a49995..fabf4ee 100644
-> --- a/fs/f2fs/dir.c
-> +++ b/fs/f2fs/dir.c
-> @@ -287,8 +287,10 @@ void f2fs_set_link(struct inode *dir, struct f2fs_dir_entry *de,
->  	f2fs_wait_on_page_writeback(page, type);
->  	de->ino = cpu_to_le32(inode->i_ino);
->  	set_de_type(de, inode);
-> -	if (!f2fs_has_inline_dentry(dir))
-> +	if (!f2fs_has_inline_dentry(dir)) {
-> +		flush_dcache_page(page);
->  		kunmap(page);
-> +	}
->  	set_page_dirty(page);
->  	dir->i_mtime = dir->i_ctime = CURRENT_TIME;
->  	mark_inode_dirty(dir);
-> @@ -365,6 +367,7 @@ static int make_empty_dir(struct inode *inode,
->  	make_dentry_ptr(&d, (void *)dentry_blk, 1);
->  	do_make_empty_dir(inode, parent, &d);
->  
-> +	flush_dcache_page(dentry_page);
->  	kunmap_atomic(dentry_blk);
->  
->  	set_page_dirty(dentry_page);
-> @@ -578,6 +581,7 @@ fail:
->  		update_inode_page(dir);
->  		clear_inode_flag(F2FS_I(dir), FI_UPDATE_DIR);
->  	}
-> +	flush_dcache_page(dentry_page);
->  	kunmap(dentry_page);
->  	f2fs_put_page(dentry_page, 1);
->  	return err;
-> @@ -660,6 +664,7 @@ void f2fs_delete_entry(struct f2fs_dir_entry *dentry, struct page *page,
->  	bit_pos = find_next_bit_le(&dentry_blk->dentry_bitmap,
->  			NR_DENTRY_IN_BLOCK,
->  			0);
-> +	flush_dcache_page(page);
->  	kunmap(page); /* kunmap - pair of f2fs_find_entry */
->  	set_page_dirty(page);
->  
-> diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
-> index f26fb87..4291c1f 100644
-> --- a/fs/f2fs/inline.c
-> +++ b/fs/f2fs/inline.c
-> @@ -106,6 +106,7 @@ int f2fs_convert_inline_page(struct dnode_of_data *dn, struct page *page)
->  	src_addr = inline_data_addr(dn->inode_page);
->  	dst_addr = kmap_atomic(page);
->  	memcpy(dst_addr, src_addr, MAX_INLINE_DATA);
-> +	flush_dcache_page(page);
->  	kunmap_atomic(dst_addr);
->  	SetPageUptodate(page);
->  no_update:
-> @@ -357,6 +358,7 @@ static int f2fs_convert_inline_dir(struct inode *dir, struct page *ipage,
->  	memcpy(dentry_blk->filename, inline_dentry->filename,
->  					NR_INLINE_DENTRY * F2FS_SLOT_LEN);
->  
-> +	flush_dcache_page(page);
->  	kunmap_atomic(dentry_blk);
->  	SetPageUptodate(page);
->  	set_page_dirty(page);
-> -- 
-> 2.1.1
-> 
+Hi,
+
+On Wed, Oct 08, 2014 at 12:38:57AM -0700, Sonny Rao wrote:
+> This is a bug fix for using physical arch timers when
+> the arch_timer_use_virtual boolean is false.  It restores the
+> arch_counter_get_cntpct() function after removal in
+>=20
+> 0d651e4e "clocksource: arch_timer: use virtual counters"
+>=20
+> We need this on certain ARMv7 systems which are architected like this:
+>=20
+> * The firmware doesn't know and doesn't care about hypervisor mode and
+>   we don't want to add the complexity of hypervisor there.
+>=20
+> * The firmware isn't involved in SMP bringup or resume.
+>=20
+> * The ARCH timer come up with an uninitialized offset between the
+>   virtual and physical counters.  Each core gets a different random
+>   offset.
+>=20
+> * The device boots in "Secure SVC" mode.
+>=20
+> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
+>   CNTHCTL.PL1PCTEN (both default to 1 at reset)
+>=20
+> One example of such as system is RK3288 where it is much simpler to
+> use the physical counter since there's nobody managing the offset and
+> each time a core goes down and comes back up it will get reinitialized
+> to some other random value.
+>=20
+> Fixes: 0d651e4e65e9 ("clocksource: arch_timer: use virtual counters")
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+> Acked-by: Olof Johansson <olof@lixom.net>
+
+Has this been merged yet?
+
+If not, you can add my Tested-by, it makes the Allwinner A31 boot
+flawlessly with the arch timers (together with the patch "clocksource:
+arch_timer: Allow the device tree to specify uninitialized timer
+registers")
+
+Thanks!
+Maxime
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--Bu8it7iiRSEf40bY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUbar7AAoJEBx+YmzsjxAgm3EQAIUedeLNoc1+K4dpNr4ckolN
+KRYTd2icTo1QqQZz8ildRXWrEfY0/WAH+WK+Y62ZVJOdjUeB5+AbC/9WtM4Py4Y9
+mT9zgpL2n0JRp9I6/2fO0l28piVHdkK9uXw6eEdJLKLYapqAMKWUowLR0joX2OZ4
+8YCwZ9FnQsH0+D0gUBjcxpgyGVxwm6kuD7Nv7YFplwB0XIdn/WuEaFDOw0N4BCXQ
+k7t7HnlULe91jJFYNtpvKb5f5E7/wyYpfQGtMEp2BBOaGQ4jD3zc1vvUaQSKmWFr
+v16jlUc/WSS9BjgDLOqZM1JioGcn2ZQ4fFatd1jK5ViJ8rgxyc/U0hQMBP567DKo
+jA2EjT4lBcv/DISuF7FKVHwkBlw49LtQ5UC6TY13XYTEEVQzZetF6/P3wnrjb8mG
+U2BIdxnKa669CsZuHv+3Pr1qkMYUFrxzoEi59odZOt72pp/aph29EL5zqzzQLohF
+6K/cq+IwzsA/Z/JSfCwXulsQ4yR2eF/9kPpSnfMZi0n2eEOYtn2szeuSoQlMdnJt
+YNOOuYhHp3fKSmQuNJBO1JIldVreYRBuEpLnO6WSLIvDy4XTUYQBEb/52c9Y6rLr
+LvyfgQYYVWtvW1ZcdPZkq3hMxGTNsVpLxXggHM693qqv4EHupsakF43E33YRWWJF
+ScXQUK7Zab4dKhSdIa6w
+=BADU
+-----END PGP SIGNATURE-----
+
+--Bu8it7iiRSEf40bY--
