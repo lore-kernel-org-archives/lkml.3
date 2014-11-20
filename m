@@ -1,81 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152AbaKTWyA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 17:54:00 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:34925 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756236AbaKTWx6 (ORCPT
+	id S1757400AbaKTWyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 17:54:13 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:34332 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757222AbaKTWyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 17:53:58 -0500
-Message-ID: <1416524035.8629.54.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [RFC] situation with csum_and_copy_... API
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        target-devel@vger.kernel.org,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Christoph Hellwig <hch@infradead.org>
-Date: Thu, 20 Nov 2014 14:53:55 -0800
-In-Reply-To: <20141120222506.GS7996@ZenIV.linux.org.uk>
-References: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
-	 <20141119.161744.1661940121298888832.davem@davemloft.net>
-	 <20141119213006.GE7996@ZenIV.linux.org.uk>
-	 <20141119.165340.2162829993279387495.davem@davemloft.net>
-	 <20141120214753.GR7996@ZenIV.linux.org.uk>
-	 <1416520542.8629.46.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20141120222506.GS7996@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Thu, 20 Nov 2014 17:54:08 -0500
+Message-ID: <546E7120.5080505@gmail.com>
+Date: Thu, 20 Nov 2014 14:54:24 -0800
+From: Rajat Jain <rajatxjain@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+CC: Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>,
+        Rajat Jain <rajatxjain@gmail.com>
+Subject: [PATCH v2] PCI: pciehp: Check link state before accessing device
+ during removal
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-20 at 22:25 +0000, Al Viro wrote:
+While removing a card, we can't assume the presence to mean that the
+access to card is OK. That is because the cause of removal may be a
+link down event, and the card may still be physically present. Thus,
+instead of presence, use the link state to decide whether or not it is
+OK to access the card devices.
 
-> Yes, it is.  You are breaking several _other_ kernel_sendmsg() users.
-> They are already slightly broken, but that'll make breakage much more
-> common.
-> 
-> Please, don't - the right thing to do is to have iov_iter in msghdr
-> (we already have the kernel and userland ones with different types and
-> we do not assume their layouts to be identical - currently they are,
-> but it's easy to change), keep iovec constant in all cases and advance
-> ->msg_iter.  Also in all cases.
-> 
-> Note that direct manipulations of what's currently in ->msg_iov are
-> wrong - all those loops over vector elements, etc., belong in low-level
-> primitives.  The main missing ones right now are csum_and_copy_{from,to}_iter()
-> - I have those in local queue, but I'm still trying to get a reasonably
-> clean mm/iov_iter.c without ridiculous amounts of boilerplating.  A bit more
-> massage is needed there...
-> 
-> Seriously, take a look at vfs.git#iov_iter-net; it's preparations for the
-> one that'll introduce ->msg_iter.  Right now that branch has local iov_iter
-> declared and initialized in several ->sendmsg() and ->recvmsg() instances and
-> fed to primitives that work with it; after the conversion it'll be in
-> msg->msg_iter and it will be initialized by sock_sendmsg()/sock_recvmsg().
-> 
-> The tricky part is how to get through that without temporary breaking the
-> existing sendmsg/recvmsg users in the kernel *and* without a patch size from
-> hell.  I more or less see how to carve the remaining steps into
-> reasonably-sized chunks; iscsi is one of the tricky ones and it, AFAICS,
-> is genuinely broken in mainline and will need fixes that can go into -stable.
-> 
-> And no, your solution doesn't work.  Sorry.  You'll break e.g. smb_send_kvec()
-> that way.  ceph_tcp_sendmsg() as well, IIRC.
+Here are the problem symptoms:
+During the removal of a card due to link down, sometimes the following
+error is seen (because pciehp_unconfigure_device() reads 0xFF from
+bridge control register as the link is down, which cause it to assume
+that the VGA bit is set):
 
-Nowhere in tcp_sendmsg() the iov had const qualifier.
+pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
+pciehp 0000:21:05.0:pcie24: Data Link Layer State change
+pciehp 0000:21:05.0:pcie24: slot(5): Link Down event
+pciehp 0000:21:05.0:pcie24: Disabling domain:bus:device=0000:60:00
+pciehp 0000:21:05.0:pcie24: pciehp_unconfigure_device: domain:bus:dev = 0000:60:00
+pciehp 0000:21:05.0:pcie24: Cannot remove display device 0000:60:00.0
 
-If it was declared as const, this discussion would not happen,
-we would know we are not allowed to modify it.
+Ofcourse, when the link comes back up, the device addition fails too:
 
-iov_iter is nice, but not a single time it is used in net/ 
+pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
+pciehp 0000:21:05.0:pcie24: Data Link Layer State change
+pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
+pciehp 0000:21:05.0:pcie24: slot(5): Link Up event
+pciehp 0000:21:05.0:pcie24: Enabling domain:bus:device=0000:60:00
+pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
+pciehp 0000:21:05.0:pcie24: pciehp_check_link_status: lnk_status = 6011
+pciehp 0000:21:05.0:pcie24: Device 0000:60:00.0 already exists at 0000:60:00, cannot hot-add
+pciehp 0000:21:05.0:pcie24: Cannot add device at 0000:60:00
 
-Please make sure to add const where appropriate.
+The problem is not seen with this patch applied. The device removal and
+insertion works as expected.
 
-Thanks.
+Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
+Signed-off-by: Rajat Jain <rajatjain@juniper.net>
+Signed-off-by: Guenter Roeck <groeck@juniper.net>
+---
+v2: Use the already initialized "ctrl" instead of "p_slot->ctrl"
 
+ drivers/pci/hotplug/pciehp_pci.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
+index 9e69403..911f85b 100644
+--- a/drivers/pci/hotplug/pciehp_pci.c
++++ b/drivers/pci/hotplug/pciehp_pci.c
+@@ -77,7 +77,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+ {
+ 	int rc = 0;
+ 	u8 bctl = 0;
+-	u8 presence = 0;
++	bool link_active = false;
+ 	struct pci_dev *dev, *temp;
+ 	struct pci_bus *parent = p_slot->ctrl->pcie->port->subordinate;
+ 	u16 command;
+@@ -85,7 +85,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+ 
+ 	ctrl_dbg(ctrl, "%s: domain:bus:dev = %04x:%02x:00\n",
+ 		 __func__, pci_domain_nr(parent), parent->number);
+-	pciehp_get_adapter_status(p_slot, &presence);
++	link_active = pciehp_check_link_active(ctrl);
+ 
+ 	pci_lock_rescan_remove();
+ 
+@@ -98,7 +98,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+ 	list_for_each_entry_safe_reverse(dev, temp, &parent->devices,
+ 					 bus_list) {
+ 		pci_dev_get(dev);
+-		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && presence) {
++		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && link_active) {
+ 			pci_read_config_byte(dev, PCI_BRIDGE_CONTROL, &bctl);
+ 			if (bctl & PCI_BRIDGE_CTL_VGA) {
+ 				ctrl_err(ctrl,
+@@ -114,7 +114,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+ 		 * Ensure that no new Requests will be generated from
+ 		 * the device.
+ 		 */
+-		if (presence) {
++		if (link_active) {
+ 			pci_read_config_word(dev, PCI_COMMAND, &command);
+ 			command &= ~(PCI_COMMAND_MASTER | PCI_COMMAND_SERR);
+ 			command |= PCI_COMMAND_INTX_DISABLE;
+-- 
+1.7.9.5
 
