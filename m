@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813AbaKTHMr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:12:47 -0500
-Received: from exprod7og109.obsmtp.com ([64.18.2.171]:41837 "EHLO
-	exprod7og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756361AbaKTHMp (ORCPT
+	id S1756845AbaKTHNG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:13:06 -0500
+Received: from exprod7og128.obsmtp.com ([64.18.2.121]:35549 "EHLO
+	exprod7og128.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756818AbaKTHNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:12:45 -0500
+	Thu, 20 Nov 2014 02:13:02 -0500
 From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
 X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 To: jejb@kernel.org, hch@infradead.org
@@ -14,9 +14,9 @@ Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
         JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
         Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
         Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH 10/22] [SCSI] mpt2sas: Bump driver version to 20.100.00.00
-Date: Thu, 20 Nov 2014 12:35:43 +0530
-Message-Id: <1416467155-16869-11-git-send-email-Sreekanth.Reddy@avagotech.com>
+Subject: [PATCH 21/22] mpt3sas: Add branding string support for OEM custom HBA
+Date: Thu, 20 Nov 2014 12:35:54 +0530
+Message-Id: <1416467155-16869-22-git-send-email-Sreekanth.Reddy@avagotech.com>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
 References: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
@@ -24,28 +24,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bump mpt2sas driver version to 20.100.00.00.
+Add the following OEM's branding to the mpt3sas driver.
+
+"VendorID"   "DeviceID"  "SubsystemVendor ID"   "SubsystemDevice ID"  Cisco Branding String
+0x1000         0x97         SVID = 0x1137             0x014C          Cisco 9300-8E 12G SAS HBA
 
 Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/mpt3sas/mpt3sas_base.c | 34 ++++++++++++++++++++++++++++++++++
+ drivers/scsi/mpt3sas/mpt3sas_base.h | 11 +++++++++++
+ 2 files changed, 45 insertions(+)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.h b/drivers/scsi/mpt2sas/mpt2sas_base.h
-index 72bffec..ed14084 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.h
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
-@@ -70,8 +70,8 @@
- #define MPT2SAS_DRIVER_NAME		"mpt2sas"
- #define MPT2SAS_AUTHOR "Avago Technologies <MPT-FusionLinux.pdl@avagotech.com>"
- #define MPT2SAS_DESCRIPTION	"LSI MPT Fusion SAS 2.0 Device Driver"
--#define MPT2SAS_DRIVER_VERSION		"19.100.00.00"
--#define MPT2SAS_MAJOR_VERSION		19
-+#define MPT2SAS_DRIVER_VERSION		"20.100.00.00"
-+#define MPT2SAS_MAJOR_VERSION		20
- #define MPT2SAS_MINOR_VERSION		100
- #define MPT2SAS_BUILD_VERSION		00
- #define MPT2SAS_RELEASE_VERSION		00
+diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.c b/drivers/scsi/mpt3sas/mpt3sas_base.c
+index cc1bfef..088c138 100644
+--- a/drivers/scsi/mpt3sas/mpt3sas_base.c
++++ b/drivers/scsi/mpt3sas/mpt3sas_base.c
+@@ -2371,6 +2371,39 @@ _base_display_dell_branding(struct MPT3SAS_ADAPTER *ioc)
+ 	}
+ }
+ 
++/**
++ * _base_display_cisco_branding - Display branding string
++ * @ioc: per adapter object
++ *
++ * Return nothing.
++ */
++static void
++_base_display_cisco_branding(struct MPT3SAS_ADAPTER *ioc)
++{
++	if (ioc->pdev->subsystem_vendor != PCI_VENDOR_ID_CISCO)
++		return;
++
++	switch (ioc->pdev->device) {
++	case MPI25_MFGPAGE_DEVID_SAS3008:
++		switch (ioc->pdev->subsystem_device) {
++		case MPT3SAS_CISCO_12G_HBA_SSDID:
++			pr_info(MPT3SAS_FMT "%s\n", ioc->name,
++				MPT3SAS_CISCO_12G_HBA_BRANDING);
++			break;
++		default:
++			pr_info(MPT3SAS_FMT
++			  "Cisco 12Gbps SAS HBA: Subsystem ID: 0x%X\n",
++			  ioc->name, ioc->pdev->subsystem_device);
++			break;
++		}
++		break;
++	default:
++		 pr_info(MPT3SAS_FMT
++			"Cisco 12Gbps SAS HBA: Subsystem ID: 0x%X\n",
++			ioc->name, ioc->pdev->subsystem_device);
++		break;
++	}
++}
+ 
+ /**
+  * _base_display_ioc_capabilities - Disply IOC's capabilities.
+@@ -2403,6 +2436,7 @@ _base_display_ioc_capabilities(struct MPT3SAS_ADAPTER *ioc)
+ 
+ 	_base_display_intel_branding(ioc);
+ 	_base_display_dell_branding(ioc);
++	_base_display_cisco_branding(ioc);
+ 
+ 	pr_info(MPT3SAS_FMT "Protocol=(", ioc->name);
+ 
+diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.h b/drivers/scsi/mpt3sas/mpt3sas_base.h
+index f2ce5a5..9608e3a 100644
+--- a/drivers/scsi/mpt3sas/mpt3sas_base.h
++++ b/drivers/scsi/mpt3sas/mpt3sas_base.h
+@@ -163,6 +163,17 @@
+ #define MPT3SAS_DELL_12G_HBA_SSDID	0x1F46
+ 
+ /*
++ * Cisco HBA branding
++ */
++#define MPT3SAS_CISCO_12G_HBA_BRANDING       \
++	"Cisco 9300-8E 12G SAS HBA"
++
++/*
++ * Cisco HBA SSSDIDs
++ */
++ #define MPT3SAS_CISCO_12G_HBA_SSDID  0x14C
++
++/*
+  * status bits for ioc->diag_buffer_status
+  */
+ #define MPT3_DIAG_BUFFER_IS_REGISTERED	(0x01)
 -- 
 2.0.2
 
