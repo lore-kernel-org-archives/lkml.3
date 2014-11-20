@@ -1,82 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757512AbaKTN2d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:28:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:11689 "EHLO mga02.intel.com"
+	id S1757536AbaKTN2q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:28:46 -0500
+Received: from mout.web.de ([212.227.17.12]:55160 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757302AbaKTN0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:26:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,424,1413270000"; 
-   d="scan'208";a="611097095"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH V2 15/22] perf tools: Add member to struct dso for an instruction cache
-Date: Thu, 20 Nov 2014 15:23:21 +0200
-Message-Id: <1416489808-4489-16-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416489808-4489-1-git-send-email-adrian.hunter@intel.com>
-References: <1416489808-4489-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1756884AbaKTN2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 08:28:41 -0500
+Message-ID: <546DEC79.9050807@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 14:28:25 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: netdev@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] IBM-EMAC: Deletion of unnecessary checks before the function
+ call "of_dev_put"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:cbpCimLd1DMxUxqPYV8zUz7lHR3/PwW+CclEzswW7QwWDfcLE0B
+ zI7Ck9/oCoJPAtmZO3998Odhx8xbvQUM7o+Ikc3CxjfKHEwV+EUbczTwmpwcfC6jELhSL9H
+ xVq156vnwnrfdRJhvSdvv28w6vGzupKlFlp12jJpBUdsofPMkuXRS9nqV15SrOP37kn3bmI
+ zZL5tYbS8HiNTWULbdctw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a member to struct dso that can be used by Instruction
-Trace implementations to hold a cache for decoded instructions.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 14:22:47 +0100
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+The of_dev_put() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
+
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 ---
- tools/perf/util/dso.c | 2 ++
- tools/perf/util/dso.h | 3 +++
- 2 files changed, 5 insertions(+)
+ drivers/net/ethernet/ibm/emac/core.c | 24 ++++++++----------------
+ 1 file changed, 8 insertions(+), 16 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 45be944..73e28ca 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -4,6 +4,7 @@
- #include "symbol.h"
- #include "dso.h"
- #include "machine.h"
-+#include "itrace.h"
- #include "util.h"
- #include "debug.h"
+diff --git a/drivers/net/ethernet/ibm/emac/core.c b/drivers/net/ethernet/ibm/emac/core.c
+index 87bd953..3f3fba9 100644
+--- a/drivers/net/ethernet/ibm/emac/core.c
++++ b/drivers/net/ethernet/ibm/emac/core.c
+@@ -2323,16 +2323,11 @@ static int emac_check_deps(struct emac_instance *dev,
  
-@@ -914,6 +915,7 @@ void dso__delete(struct dso *dso)
+ static void emac_put_deps(struct emac_instance *dev)
+ {
+-	if (dev->mal_dev)
+-		of_dev_put(dev->mal_dev);
+-	if (dev->zmii_dev)
+-		of_dev_put(dev->zmii_dev);
+-	if (dev->rgmii_dev)
+-		of_dev_put(dev->rgmii_dev);
+-	if (dev->mdio_dev)
+-		of_dev_put(dev->mdio_dev);
+-	if (dev->tah_dev)
+-		of_dev_put(dev->tah_dev);
++	of_dev_put(dev->mal_dev);
++	of_dev_put(dev->zmii_dev);
++	of_dev_put(dev->rgmii_dev);
++	of_dev_put(dev->mdio_dev);
++	of_dev_put(dev->tah_dev);
+ }
+ 
+ static int emac_of_bus_notify(struct notifier_block *nb, unsigned long action,
+@@ -2371,8 +2366,7 @@ static int emac_wait_deps(struct emac_instance *dev)
+ 	bus_unregister_notifier(&platform_bus_type, &emac_of_bus_notifier);
+ 	err = emac_check_deps(dev, deps) ? 0 : -ENODEV;
+ 	for (i = 0; i < EMAC_DEP_COUNT; i++) {
+-		if (deps[i].node)
+-			of_node_put(deps[i].node);
++		of_node_put(deps[i].node);
+ 		if (err && deps[i].ofdev)
+ 			of_dev_put(deps[i].ofdev);
  	}
+@@ -2383,8 +2377,7 @@ static int emac_wait_deps(struct emac_instance *dev)
+ 		dev->tah_dev = deps[EMAC_DEP_TAH_IDX].ofdev;
+ 		dev->mdio_dev = deps[EMAC_DEP_MDIO_IDX].ofdev;
+ 	}
+-	if (deps[EMAC_DEP_PREV_IDX].ofdev)
+-		of_dev_put(deps[EMAC_DEP_PREV_IDX].ofdev);
++	of_dev_put(deps[EMAC_DEP_PREV_IDX].ofdev);
+ 	return err;
+ }
  
- 	dso__data_close(dso);
-+	itrace_cache__free(dso->itrace_cache);
- 	dso_cache__free(&dso->data.cache);
- 	dso__free_a2l(dso);
- 	zfree(&dso->symsrc_filename);
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index 3782c82..c27c8fc 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -101,6 +101,8 @@ struct dsos {
- 	struct rb_root	 root;	/* rbtree root sorted by long name */
- };
+@@ -3113,8 +3106,7 @@ static void __exit emac_exit(void)
  
-+struct itrace_cache;
-+
- struct dso {
- 	struct list_head node;
- 	struct rb_node	 rb_node;	/* rbtree node sorted by long name */
-@@ -130,6 +132,7 @@ struct dso {
- 	u16		 long_name_len;
- 	u16		 short_name_len;
- 	void		*dwfl;			/* DWARF debug info */
-+	struct itrace_cache *itrace_cache;
+ 	/* Destroy EMAC boot list */
+ 	for (i = 0; i < EMAC_BOOT_LIST_SIZE; i++)
+-		if (emac_boot_list[i])
+-			of_node_put(emac_boot_list[i]);
++		of_node_put(emac_boot_list[i]);
+ }
  
- 	/* dso data file */
- 	struct {
+ module_init(emac_init);
 -- 
-1.9.1
+2.1.3
 
