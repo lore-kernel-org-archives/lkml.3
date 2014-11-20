@@ -1,141 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863AbaKTHNM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:13:12 -0500
-Received: from exprod7og116.obsmtp.com ([64.18.2.219]:48348 "EHLO
-	exprod7og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756818AbaKTHNH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:13:07 -0500
-From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-To: jejb@kernel.org, hch@infradead.org
-Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
-        JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
-        Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
-        Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH 19/22] [SCSI] mpt3sas: MPI 2.5 Rev J (2.5.5) specification and 2.00.34 header files
-Date: Thu, 20 Nov 2014 12:35:52 +0530
-Message-Id: <1416467155-16869-20-git-send-email-Sreekanth.Reddy@avagotech.com>
-X-Mailer: git-send-email 2.0.2
-In-Reply-To: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-References: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+	id S1756886AbaKTHNh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:13:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53936 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755999AbaKTHNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 02:13:35 -0500
+Message-ID: <546D948C.7020105@redhat.com>
+Date: Thu, 20 Nov 2014 15:13:16 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH net V3] virtio-net: validate features during probe
+References: <1416463835-7364-1-git-send-email-jasowang@redhat.com> <20141120070244.GE30994@redhat.com>
+In-Reply-To: <20141120070244.GE30994@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following is the change set,
+On 11/20/2014 03:02 PM, Michael S. Tsirkin wrote:
+> On Thu, Nov 20, 2014 at 02:10:35PM +0800, Jason Wang wrote:
+>> We currently trigger BUG when VIRTIO_NET_F_CTRL_VQ
+>> is not set but one of features depending on it is.
+>> That's not a friendly way to report errors to
+>> hypervisors.
+>> Let's check, and fail probe instead.
+>>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+>> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>
+> Looks good, minor nits below:
+>
+>> ---
+>> Changes from V2:
+>> - only check the features for ctrl vq (this fix the real bug)
+>> - better error message and simplify API
+>> ---
+>>  drivers/net/virtio_net.c | 37 +++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 37 insertions(+)
+>>
+>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>> index ec2a8b4..a6bcfce 100644
+>> --- a/drivers/net/virtio_net.c
+>> +++ b/drivers/net/virtio_net.c
+>> @@ -1673,6 +1673,40 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
+>>  };
+>>  #endif
+>>  
+>> +static bool virtnet_fail_on_feature(struct virtio_device *vdev,
+>> +				    unsigned int fbit,
+>> +				    const char *fname, const char *dname)
+>> +{
+>> +	if (!virtio_has_feature(vdev, fbit))
+>> +		return false;
+>> +
+>> +	dev_err(&vdev->dev, "Hypervisor bug: advertise feature %s but not %s",
+> Well we don't know it's a hypervisor. How about:
+> Device bug: advertises feature %s but not %s.
 
-1. Added more defines for the BiosOptions field of MPI2_CONFIG_PAGE_BIOS_1.
-2. Added MPI2_TOOLBOX_CLEAN_BIT26_PRODUCT_SPECIFIC definition.
+Ok.
+>> +		fname, dname);
+>> +
+>> +	return true;
+>> +}
+>> +
+>> +#define VIRTNET_FAIL_ON(vdev, fbit, dbit)			\
+>> +	virtnet_fail_on_feature(vdev, fbit, #fbit, #dbit)
+> I would pass dbit directly, and supply a string from caller,
+> instead if #dbit, this way it can be any string.
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
----
- drivers/scsi/mpt3sas/mpi/mpi2.h      |  5 +++--
- drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h | 14 ++++++++++++--
- drivers/scsi/mpt3sas/mpi/mpi2_tool.h |  4 +++-
- 3 files changed, 18 insertions(+), 5 deletions(-)
+Right, this is better.
+>> +
+>> +static bool virtnet_validate_features(struct virtio_device *vdev)
+>> +{
+>> +	if (!virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ) &&
+>> +	    (VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_RX,
+>> +			     VIRTIO_NET_F_CTRL_VQ) ||
+>> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_VLAN,
+>> +			     VIRTIO_NET_F_CTRL_VQ) ||
+>> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_GUEST_ANNOUNCE,
+>> +			     VIRTIO_NET_F_TRL_VQ) ||
+> Typo: VIRTIO_NET_F_CTRL_VQ.
+>
+>
 
-diff --git a/drivers/scsi/mpt3sas/mpi/mpi2.h b/drivers/scsi/mpt3sas/mpi/mpi2.h
-index d730c5c..c2d127c 100644
---- a/drivers/scsi/mpt3sas/mpi/mpi2.h
-+++ b/drivers/scsi/mpt3sas/mpi/mpi2.h
-@@ -8,7 +8,7 @@
-  *                 scatter/gather formats.
-  * Creation Date:  June 21, 2006
-  *
-- * mpi2.h Version:  02.00.33
-+ * mpi2.h Version:  02.00.34
-  *
-  * NOTE: Names (typedefs, defines, etc.) beginning with an MPI25 or Mpi25
-  *       prefix are for use only on MPI v2.5 products, and must not be used
-@@ -90,6 +90,7 @@
-  * 04-17-13  02.00.31  Bumped MPI2_HEADER_VERSION_UNIT.
-  * 08-19-13  02.00.32  Bumped MPI2_HEADER_VERSION_UNIT.
-  * 12-05-13  02.00.33  Bumped MPI2_HEADER_VERSION_UNIT.
-+ * 01-08-14  02.00.34  Bumped MPI2_HEADER_VERSION_UNIT
-  * --------------------------------------------------------------------------
-  */
- 
-@@ -123,7 +124,7 @@
- #define MPI2_VERSION_02_05                  (0x0205)
- 
- /*Unit and Dev versioning for this MPI header set */
--#define MPI2_HEADER_VERSION_UNIT            (0x21)
-+#define MPI2_HEADER_VERSION_UNIT            (0x22)
- #define MPI2_HEADER_VERSION_DEV             (0x00)
- #define MPI2_HEADER_VERSION_UNIT_MASK       (0xFF00)
- #define MPI2_HEADER_VERSION_UNIT_SHIFT      (8)
-diff --git a/drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h b/drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h
-index 62dfbf6..66f2cc1 100644
---- a/drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h
-+++ b/drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h
-@@ -6,7 +6,7 @@
-  *         Title:  MPI Configuration messages and pages
-  * Creation Date:  November 10, 2006
-  *
-- *   mpi2_cnfg.h Version:  02.00.27
-+ *   mpi2_cnfg.h Version:  02.00.28
-  *
-  * NOTE: Names (typedefs, defines, etc.) beginning with an MPI25 or Mpi25
-  *       prefix are for use only on MPI v2.5 products, and must not be used
-@@ -175,6 +175,8 @@
-  *		       MPI2_CONFIG_PAGE_SAS_ENCLOSURE_0.
-  *		       Added MPI2_SAS_ENCLS0_FLAGS_ENCL_LEVEL_VALID for
-  *		       MPI2_CONFIG_PAGE_SAS_ENCLOSURE_0.
-+ * 01-08-14  02.00.28  Added more defines for the BiosOptions field of
-+ *		       MPI2_CONFIG_PAGE_BIOS_1.
-  * --------------------------------------------------------------------------
-  */
- 
-@@ -1334,9 +1336,17 @@ typedef struct _MPI2_CONFIG_PAGE_BIOS_1 {
- 	*PTR_MPI2_CONFIG_PAGE_BIOS_1,
- 	Mpi2BiosPage1_t, *pMpi2BiosPage1_t;
- 
--#define MPI2_BIOSPAGE1_PAGEVERSION                      (0x05)
-+#define MPI2_BIOSPAGE1_PAGEVERSION                      (0x06)
- 
- /*values for BIOS Page 1 BiosOptions field */
-+#define MPI2_BIOSPAGE1_OPTIONS_X86_DISABLE_BIOS		    (0x00000400)
-+
-+#define MPI2_BIOSPAGE1_OPTIONS_MASK_REGISTRATION_UEFI_BSD	(0x00000300)
-+#define MPI2_BIOSPAGE1_OPTIONS_USE_BIT0_REGISTRATION_UEFI_BSD	(0x00000000)
-+#define MPI2_BIOSPAGE1_OPTIONS_FULL_REGISTRATION_UEFI_BSD	(0x00000100)
-+#define MPI2_BIOSPAGE1_OPTIONS_ADAPTER_REGISTRATION_UEFI_BSD	(0x00000200)
-+#define MPI2_BIOSPAGE1_OPTIONS_DISABLE_REGISTRATION_UEFI_BSD	(0x00000300)
-+
- #define MPI2_BIOSPAGE1_OPTIONS_MASK_OEM_ID                  (0x000000F0)
- #define MPI2_BIOSPAGE1_OPTIONS_LSI_OEM_ID                   (0x00000000)
- 
-diff --git a/drivers/scsi/mpt3sas/mpi/mpi2_tool.h b/drivers/scsi/mpt3sas/mpi/mpi2_tool.h
-index 904910d..1629e5b 100644
---- a/drivers/scsi/mpt3sas/mpi/mpi2_tool.h
-+++ b/drivers/scsi/mpt3sas/mpi/mpi2_tool.h
-@@ -6,7 +6,7 @@
-  *         Title:  MPI diagnostic tool structures and definitions
-  * Creation Date:  March 26, 2007
-  *
-- *   mpi2_tool.h Version:  02.00.11
-+ *   mpi2_tool.h Version:  02.00.12
-  *
-  * Version History
-  * ---------------
-@@ -33,6 +33,7 @@
-  * 07-26-12  02.00.10  Modified MPI2_TOOLBOX_DIAGNOSTIC_CLI_REQUEST so that
-  *                     it uses MPI Chain SGE as well as MPI Simple SGE.
-  * 08-19-13  02.00.11  Added MPI2_TOOLBOX_TEXT_DISPLAY_TOOL and related info.
-+ * 01-08-14  02.00.12  Added MPI2_TOOLBOX_CLEAN_BIT26_PRODUCT_SPECIFIC.
-  * --------------------------------------------------------------------------
-  */
- 
-@@ -100,6 +101,7 @@ typedef struct _MPI2_TOOLBOX_CLEAN_REQUEST {
- #define MPI2_TOOLBOX_CLEAN_OTHER_PERSIST_PAGES      (0x20000000)
- #define MPI2_TOOLBOX_CLEAN_FW_CURRENT               (0x10000000)
- #define MPI2_TOOLBOX_CLEAN_FW_BACKUP                (0x08000000)
-+#define MPI2_TOOLBOX_CLEAN_BIT26_PRODUCT_SPECIFIC   (0x04000000)
- #define MPI2_TOOLBOX_CLEAN_MEGARAID                 (0x02000000)
- #define MPI2_TOOLBOX_CLEAN_INITIALIZATION           (0x01000000)
- #define MPI2_TOOLBOX_CLEAN_FLASH                    (0x00000004)
--- 
-2.0.2
+Wil fix this and post V4.
+
+Thanks
 
