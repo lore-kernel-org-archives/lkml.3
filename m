@@ -1,89 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757360AbaKTOq4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 09:46:56 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:37008 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755076AbaKTOqz (ORCPT
+	id S1757374AbaKTOr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 09:47:56 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:52255 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756291AbaKTOry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 09:46:55 -0500
-Date: Thu, 20 Nov 2014 06:46:47 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Nov 20
-Message-ID: <20141120144647.GA6022@roeck-us.net>
-References: <20141120184653.7c7764ac@canb.auug.org.au>
+	Thu, 20 Nov 2014 09:47:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141120184653.7c7764ac@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.546DFEDE.02D3,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <20141120085750.GB23043@ulmo>
+References: <1416004955-28749-1-git-send-email-hali@codeaurora.org>
+	<CAF6AEGuFK=ZdaKF8hOwHyQOcmMR+ZMQjbwf+hL3pZm_O+t1K0w@mail.gmail.com>
+	<20141120085750.GB23043@ulmo>
+Date: Thu, 20 Nov 2014 09:47:53 -0500
+Message-ID: <CAF6AEGuC1HT97mytZtHm=-PW_VmFASjevg1pmJR7b4HRe4RMjA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] drm/msm: Register irq handler for each sub-system in mdss
+From: Rob Clark <robdclark@gmail.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Hai Li <hali@codeaurora.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 06:46:53PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20141119:
-> 
-> The asm-generic tree lost its build failure.
-> 
-> The omap_dss2 tree still had its build failure for which I applied a patch.
-> 
-> The devicetree tree gained a conflict against the devicetree-current tree.
-> 
-> Non-merge commits (relative to Linus' tree): 7146
->  7140 files changed, 242712 insertions(+), 180038 deletions(-)
-> 
-> ----------------------------------------------------------------------------
-> 
-Build results:
-	total: 133 pass: 130 fail: 3
-Failed builds:
-	arm:davinci_all_defconfig
-	arm:orion5x_defconfig
-	hexagon:defconfig
+On Thu, Nov 20, 2014 at 3:57 AM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Sun, Nov 16, 2014 at 09:18:47AM -0500, Rob Clark wrote:
+>> On Fri, Nov 14, 2014 at 5:42 PM, Hai Li <hali@codeaurora.org> wrote:
+>> > All the sub-systems in mdss share the same irq. This change provides
+>> > the sub-systems with the interfaces to register/unregister their own
+>> > irq handlers.
+>> >
+>> > With this change, struct mdp5_kms does not have to keep the hdmi or
+>> > edp context.
+>> >
+>>
+>> So, I think the point of this is to better deal w/ different hw
+>> variants which do or do-not have hdmi, edp, dsi, etc..
+>>
+>> But, just playing devil's advocate here, it seems like it would be
+>> simpler to instead just do something like:
+>>
+>>     if (priv->hdmi && (intr & MDP5_HW_INTR_STATUS_INTR_HDMI))
+>>         hdmi_irq(0, priv->hdmi);
+>>
+>>     if (priv->edp && (intr & MDP5_HW_INTR_STATUS_INTR_EDP))
+>>         edp_irq(0, priv->edp);
+>>
+>>     ... etc ...
+>>
+>> It is a little less elegant.  But it is also less lines of code.  I
+>> guess there will be plenty of necessary complexity as we add support
+>> for all mdp5 features.  So avoiding some unnecessary complexity might
+>> be a good thing in the long run.
+>>
+>> If we really did want to make it more dynamic, we could always extend
+>> 'struct mdp_irq' to take both an irq mask and an initiator id, I
+>> suppose.  I'm not sure if that is overkill.  AFAICT we really only
+>> have 5 different subsystems to dispatch to (mdp5 itself, and
+>> dsi0/dsi1/hdmi/edp), so simply adding some if-not-null checks in
+>> mdp5_irq() seems pretty reasonable to me.
+>
+> To me this just seems like a regular interrupt multiplexer, so
+> implementing it as an irq_chip would be the most appropriate. That way
+> you get all the goodness of a well-tested code base for free and you can
+> simply pass in the request_{threaded_,}irq()'s dev parameter.
 
-Qemu test results:
-	total: 30 pass: 30 fail: 0
+yup, that is what I did here:
 
-I assume the arm architecture folks will take care of the arm build failures,
-so I did not have a look into those. The hexagon build failure is due to a
-subtle change in files includes by other include files, resulting in a nested
-dependency which is no longer met. That may be tricky to fix.
+http://cgit.freedesktop.org/~robclark/linux/commit/?h=msm-next&id=d9a7093329225ae29bae370823af13290b133a7e
 
-The qemu x86:nonsmp test only passes because I disabled PCI_MSI for this test.
-Claim there is that qemu would not implement some IO_APIC related functionality
-which is now mandatory.
+there is a bit of awkwardness related to threaded handlers..  for now
+I don't need threaded handlers so the solution was to not use them
 
-Guenter
+> Thierry
