@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748AbaKTNVb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:21:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56077 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751103AbaKTNV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:21:29 -0500
-Date: Thu, 20 Nov 2014 14:21:36 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-cc: Mathieu Magnaudet <mathieu.magnaudet@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hid-multitouch: Add quirk for VTL touch panels
-In-Reply-To: <CAN+gG=GN4dwXr_qEHMfMddGHkMKECZMUwTM+xbNmY_gibthLmA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1411201421100.4454@pobox.suse.cz>
-References: <1416422480-3241-1-git-send-email-mathieu.magnaudet@enac.fr> <CAN+gG=GN4dwXr_qEHMfMddGHkMKECZMUwTM+xbNmY_gibthLmA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756817AbaKTNWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:22:09 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:54447 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953AbaKTNWH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 08:22:07 -0500
+From: Mahendran Ganesh <opensource.ganesh@gmail.com>
+To: minchan@kernel.org, ngupta@vflare.org, iamjoonsoo.kim@lge.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mahendran Ganesh <opensource.ganesh@gmail.com>
+Subject: [RFC PATCH] mm/zsmalloc: remove unnecessary check
+Date: Thu, 20 Nov 2014 21:21:56 +0800
+Message-Id: <1416489716-9967-1-git-send-email-opensource.ganesh@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Nov 2014, Benjamin Tissoires wrote:
+ZS_SIZE_CLASSES is calc by:
+  ((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / ZS_SIZE_CLASS_DELTA + 1)
 
-> though this patch works for this particular device, I just thought at
-> something which may solve the problem in a different way. I asked
-> Mathieu to test the different solution, so I'd rather you to wait for
-> final confirmation before merging this patch.
+So when i is in [0, ZS_SIZE_CLASSES - 1), the size:
+  size = ZS_MIN_ALLOC_SIZE + i * ZS_SIZE_CLASS_DELTA
+will not be greater than ZS_MAX_ALLOC_SIZE
 
-Thanks for the heads up, I am putting this patch on hold until further 
-notice from you or Mathieu.
+This patch removes the unnecessary check.
 
+Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
+---
+ mm/zsmalloc.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index b3b57ef..f2279e2 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -973,8 +973,6 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+ 		struct size_class *prev_class;
+ 
+ 		size = ZS_MIN_ALLOC_SIZE + i * ZS_SIZE_CLASS_DELTA;
+-		if (size > ZS_MAX_ALLOC_SIZE)
+-			size = ZS_MAX_ALLOC_SIZE;
+ 		pages_per_zspage = get_pages_per_zspage(size);
+ 
+ 		/*
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.9.5
+
