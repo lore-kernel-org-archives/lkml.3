@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890AbaKTGnO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 01:43:14 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:44917 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaKTGnN (ORCPT
+	id S1756141AbaKTGoi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 01:44:38 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:48946 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257AbaKTGoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 01:43:13 -0500
-Date: Wed, 19 Nov 2014 22:43:11 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] SCSI fixes for 3.18-rc4
-Message-ID: <20141120064311.GB29412@infradead.org>
-References: <1416154652.22472.5.camel@HansenPartnership.com>
+	Thu, 20 Nov 2014 01:44:37 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] perf tools: Fix segfault due to invalid kernel dso access
+References: <1416285028-30572-1-git-send-email-namhyung@kernel.org>
+Date: Thu, 20 Nov 2014 15:44:36 +0900
+In-Reply-To: <1416285028-30572-1-git-send-email-namhyung@kernel.org> (Namhyung
+	Kim's message of "Tue, 18 Nov 2014 13:30:28 +0900")
+Message-ID: <87wq6qnzfv.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416154652.22472.5.camel@HansenPartnership.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 16, 2014 at 08:17:32AM -0800, James Bottomley wrote:
-> This is a set of six fixes and a MAINTAINER update. The fixes are two
-> multipath (one in Test Unit Ready handling for the path checkers and one
-> in the section of code that sends a start unit after failover; both of
-> these were perturbed by the scsi-mq update), a CD-ROM door locking fix
-> that was likewise introduced by scsi-mq and three driver fixes for a
-> previous code update in cxgb4i, megaraid_sas and bnx2fc.
+Arnaldo,
 
-FYI, the multipath issue actually is due much older EH changes, not due
-to blk-mq work.
+Could you please consider applying this?
 
+Thanks,
+Namhyung
+
+
+On Tue, 18 Nov 2014 13:30:28 +0900, Namhyung Kim wrote:
+> Jiri reported that the commit 96d78059d6d9 ("perf tools: Make vmlinux
+> short name more like kallsyms short name") segfaults on perf script.
+>
+> When processing kernel mmap event, it should access the 'kernel'
+> variable as sometimes it cannot find a matching dso from build-id
+> table so 'dso' might be invalid.
+>
+> Reported-by: Jiri Olsa <jolsa@redhat.com>
+> Tested-by: Jiri Olsa <jolsa@redhat.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/util/machine.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> index 52e94902afb1..85033d80fd6a 100644
+> --- a/tools/perf/util/machine.c
+> +++ b/tools/perf/util/machine.c
+> @@ -1106,8 +1106,8 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
+>  		if (__machine__create_kernel_maps(machine, kernel) < 0)
+>  			goto out_problem;
+>  
+> -		if (strstr(dso->long_name, "vmlinux"))
+> -			dso__set_short_name(dso, "[kernel.vmlinux]", false);
+> +		if (strstr(kernel->long_name, "vmlinux"))
+> +			dso__set_short_name(kernel, "[kernel.vmlinux]", false);
+>  
+>  		machine__set_kernel_mmap_len(machine, event);
