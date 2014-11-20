@@ -1,83 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516AbaKTGrY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 01:47:24 -0500
-Received: from mga02.intel.com ([134.134.136.20]:18815 "EHLO mga02.intel.com"
+	id S1752008AbaKTG6s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 01:58:48 -0500
+Received: from ozlabs.org ([103.22.144.67]:57792 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848AbaKTGrW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 01:47:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,422,1413270000"; 
-   d="scan'208";a="610931880"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Lv Zheng <zetalog@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>
-Subject: RE: [RFC PATCH v4] ACPICA/Events: Add support to ensure GPE is
- disabled by default for handlers.
-Thread-Topic: [RFC PATCH v4] ACPICA/Events: Add support to ensure GPE is
- disabled by default for handlers.
-Thread-Index: AQHQBI2TEyXhuOlswEmYCNoDLZLxDJxpEhsA
-Date: Thu, 20 Nov 2014 06:47:16 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88026A3E81@SHSMSX101.ccr.corp.intel.com>
-References: <20141119121615.GA2514@node.dhcp.inet.fi>
- <ce3ab540463bc5d97e527f24ca7d7d82b2952fae.1416459350.git.lv.zheng@intel.com>
-In-Reply-To: <ce3ab540463bc5d97e527f24ca7d7d82b2952fae.1416459350.git.lv.zheng@intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1750775AbaKTG6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 01:58:47 -0500
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: tytso@mit.edu
+Cc: hpa@linux.intel.com, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] random: Remove unused arch_has_random[_seed]()
+Date: Thu, 20 Nov 2014 17:58:38 +1100
+Message-Id: <1416466718-22718-1-git-send-email-mpe@ellerman.id.au>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Kirill
+arch_has_random() and arch_has_random_seed() were added in 7b878d4b48c4
+"random: Add arch_has_random[_seed]()".
 
-Could also help to confirm if this patch can also fix the issue.
-Please help to validate the 2 fix patchsets separately.
+arch_has_random() was never used.
 
-Thanks in advance.
+arch_has_random_seed() was used in arch_random_refill(), but that usage
+was removed in 48d6be955a71 "random: limit the contribution of the hw
+rng to at most half".
 
-Best regards
--Lv
+If they're not used save arch code the trouble of implementing them.
 
-> From: Zheng, Lv
-> Sent: Thursday, November 20, 2014 2:45 PM
-> 
-> On some platforms, GPE is not disabled by default after ACPI hardware is
-> enabled. This confuses GPE drivers. This patch adds support to disable GPE
-> by default for GPE handler drivers.
-> 
-> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> Cc: Kirill A. Shutemov <kirill@shutemov.name>
-> ---
->  drivers/acpi/acpica/evxface.c |    7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> Index: linux-acpica/drivers/acpi/acpica/evxface.c
-> ===================================================================
-> --- linux-acpica.orig/drivers/acpi/acpica/evxface.c
-> +++ linux-acpica/drivers/acpi/acpica/evxface.c
-> @@ -821,6 +821,14 @@ acpi_install_gpe_handler(acpi_handle gpe
->  	    ~(ACPI_GPE_XRUPT_TYPE_MASK | ACPI_GPE_DISPATCH_MASK);
->  	gpe_event_info->flags |= (u8)(type | ACPI_GPE_DISPATCH_HANDLER);
-> 
-> +	/*
-> +	 * Make sure that the GPE is disabled by default for the GPE
-> +	 * handler driver. It is expected that the GPE handler driver
-> +	 * should invoke acpi_enable_gpe() after installing the GPE
-> +	 * handler.
-> +	 */
-> +	(void)acpi_hw_low_set_gpe(gpe_event_info, ACPI_GPE_DISABLE);
-> +
->  	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
-> 
->  unlock_and_exit:
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+---
+ arch/powerpc/include/asm/archrandom.h | 9 ---------
+ arch/x86/include/asm/archrandom.h     | 3 ---
+ include/linux/random.h                | 8 --------
+ 3 files changed, 20 deletions(-)
+
+diff --git a/arch/powerpc/include/asm/archrandom.h b/arch/powerpc/include/asm/archrandom.h
+index bde531103638..801beba4e64b 100644
+--- a/arch/powerpc/include/asm/archrandom.h
++++ b/arch/powerpc/include/asm/archrandom.h
+@@ -25,11 +25,6 @@ static inline int arch_get_random_int(unsigned int *v)
+ 	return rc;
+ }
+ 
+-static inline int arch_has_random(void)
+-{
+-	return !!ppc_md.get_random_long;
+-}
+-
+ int powernv_get_random_long(unsigned long *v);
+ 
+ static inline int arch_get_random_seed_long(unsigned long *v)
+@@ -40,10 +35,6 @@ static inline int arch_get_random_seed_int(unsigned int *v)
+ {
+ 	return 0;
+ }
+-static inline int arch_has_random_seed(void)
+-{
+-	return 0;
+-}
+ 
+ #endif /* CONFIG_ARCH_RANDOM */
+ 
+diff --git a/arch/x86/include/asm/archrandom.h b/arch/x86/include/asm/archrandom.h
+index 69f1366f1aa3..6ad7f6d3f97f 100644
+--- a/arch/x86/include/asm/archrandom.h
++++ b/arch/x86/include/asm/archrandom.h
+@@ -114,9 +114,6 @@ GET_SEED(arch_get_random_seed_int, unsigned int, RDSEED_INT, ASM_NOP4);
+ 
+ #endif /* CONFIG_X86_64 */
+ 
+-#define arch_has_random()	static_cpu_has(X86_FEATURE_RDRAND)
+-#define arch_has_random_seed()	static_cpu_has(X86_FEATURE_RDSEED)
+-
+ #else
+ 
+ static inline int rdrand_long(unsigned long *v)
+diff --git a/include/linux/random.h b/include/linux/random.h
+index b05856e16b75..6d6e1424184e 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -88,10 +88,6 @@ static inline int arch_get_random_int(unsigned int *v)
+ {
+ 	return 0;
+ }
+-static inline int arch_has_random(void)
+-{
+-	return 0;
+-}
+ static inline int arch_get_random_seed_long(unsigned long *v)
+ {
+ 	return 0;
+@@ -100,10 +96,6 @@ static inline int arch_get_random_seed_int(unsigned int *v)
+ {
+ 	return 0;
+ }
+-static inline int arch_has_random_seed(void)
+-{
+-	return 0;
+-}
+ #endif
+ 
+ /* Pseudo random number generator from numerical recipes. */
+-- 
+1.9.1
+
