@@ -1,102 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227AbaKTI56 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 03:57:58 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:55970 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756854AbaKTI5z (ORCPT
+	id S1756950AbaKTJA3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 04:00:29 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:35721 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727AbaKTJA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 03:57:55 -0500
-Date: Thu, 20 Nov 2014 09:57:52 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Rob Clark <robdclark@gmail.com>
-Cc: Hai Li <hali@codeaurora.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH 1/2] drm/msm: Register irq handler for each sub-system in
- mdss
-Message-ID: <20141120085750.GB23043@ulmo>
-References: <1416004955-28749-1-git-send-email-hali@codeaurora.org>
- <CAF6AEGuFK=ZdaKF8hOwHyQOcmMR+ZMQjbwf+hL3pZm_O+t1K0w@mail.gmail.com>
+	Thu, 20 Nov 2014 04:00:28 -0500
+Message-ID: <546DADA4.4050604@gmail.com>
+Date: Thu, 20 Nov 2014 17:00:20 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tsOsTdHNUZQcU9Ye"
-Content-Disposition: inline
-In-Reply-To: <CAF6AEGuFK=ZdaKF8hOwHyQOcmMR+ZMQjbwf+hL3pZm_O+t1K0w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "pang.xunlei" <pang.xunlei@linaro.org>, linux-kernel@vger.kernel.org
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: Re: [PATCH v2 1/4] sched/deadline: Modify cpudl.free_cpus to reflect
+ rd->span
+References: <1416411982-1204-1-git-send-email-pang.xunlei@linaro.org>
+In-Reply-To: <1416411982-1204-1-git-send-email-pang.xunlei@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+On 11/19/14, 11:46 PM, pang.xunlei wrote:
+> Currently, cpudl.free_cpus contains all cpus during init(see cpudl_init()),
+> so when calling cpudl_find() we have to add rd->span cpumask(cpus_allowed is
+> undependable when performing clustered scheduling using the cpuset) to avoid
+> selecting the cpu outside current root domain, see find_later_rq().
+>
+> This patch adds cpudl_set_freecpu() to initialize cpudl.free_cpus when doing
+> rq_attach_root(), so we can avoid the extra rd->span operation when calling
+> cpudl_find().
+>
+> Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
 
---tsOsTdHNUZQcU9Ye
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Reviewed-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 
-On Sun, Nov 16, 2014 at 09:18:47AM -0500, Rob Clark wrote:
-> On Fri, Nov 14, 2014 at 5:42 PM, Hai Li <hali@codeaurora.org> wrote:
-> > All the sub-systems in mdss share the same irq. This change provides
-> > the sub-systems with the interfaces to register/unregister their own
-> > irq handlers.
-> >
-> > With this change, struct mdp5_kms does not have to keep the hdmi or
-> > edp context.
-> >
->=20
-> So, I think the point of this is to better deal w/ different hw
-> variants which do or do-not have hdmi, edp, dsi, etc..
->=20
-> But, just playing devil's advocate here, it seems like it would be
-> simpler to instead just do something like:
->=20
->     if (priv->hdmi && (intr & MDP5_HW_INTR_STATUS_INTR_HDMI))
->         hdmi_irq(0, priv->hdmi);
->=20
->     if (priv->edp && (intr & MDP5_HW_INTR_STATUS_INTR_EDP))
->         edp_irq(0, priv->edp);
->=20
->     ... etc ...
->=20
-> It is a little less elegant.  But it is also less lines of code.  I
-> guess there will be plenty of necessary complexity as we add support
-> for all mdp5 features.  So avoiding some unnecessary complexity might
-> be a good thing in the long run.
->=20
-> If we really did want to make it more dynamic, we could always extend
-> 'struct mdp_irq' to take both an irq mask and an initiator id, I
-> suppose.  I'm not sure if that is overkill.  AFAICT we really only
-> have 5 different subsystems to dispatch to (mdp5 itself, and
-> dsi0/dsi1/hdmi/edp), so simply adding some if-not-null checks in
-> mdp5_irq() seems pretty reasonable to me.
+I think this patch solve one problem I meet in my progress to handle dl 
+task migration during cpu hotplug. 
+https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg770579.html
 
-To me this just seems like a regular interrupt multiplexer, so
-implementing it as an irq_chip would be the most appropriate. That way
-you get all the goodness of a well-tested code base for free and you can
-simply pass in the request_{threaded_,}irq()'s dev parameter.
+Regards,
+Wanpeng Li
 
-Thierry
+> ---
+>   kernel/sched/core.c        |    2 ++
+>   kernel/sched/cpudeadline.c |   18 ++++++++++++++----
+>   kernel/sched/cpudeadline.h |    1 +
+>   kernel/sched/deadline.c    |    3 ---
+>   4 files changed, 17 insertions(+), 7 deletions(-)
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 240157c..1b417de 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -5584,6 +5584,8 @@ static void rq_attach_root(struct rq *rq, struct root_domain *rd)
+>   	rq->rd = rd;
+>   
+>   	cpumask_set_cpu(rq->cpu, rd->span);
+> +	cpudl_set_freecpu(&rd->cpudl, rq->cpu);
+> +
+>   	if (cpumask_test_cpu(rq->cpu, cpu_active_mask))
+>   		set_rq_online(rq);
+>   
+> diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
+> index 539ca3c..c79f0d7 100644
+> --- a/kernel/sched/cpudeadline.c
+> +++ b/kernel/sched/cpudeadline.c
+> @@ -107,7 +107,9 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
+>   	int best_cpu = -1;
+>   	const struct sched_dl_entity *dl_se = &p->dl;
+>   
+> -	if (later_mask && cpumask_and(later_mask, later_mask, cp->free_cpus)) {
+> +	if (later_mask &&
+> +	    cpumask_and(later_mask, cp->free_cpus, &p->cpus_allowed) &&
+> +	    cpumask_and(later_mask, later_mask, cpu_active_mask)) {
+>   		best_cpu = cpumask_any(later_mask);
+>   		goto out;
+>   	} else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
+> @@ -186,6 +188,16 @@ out:
+>   }
+>   
+>   /*
+> + * cpudl_set_freecpu - Set the cpudl.free_cpus
+> + * @cp: the cpudl max-heap context
+> + * @cpu: rd attached cpu
+> + */
+> +void cpudl_set_freecpu(struct cpudl *cp, int cpu)
+> +{
+> +	cpumask_set_cpu(cpu, cp->free_cpus);
+> +}
+> +
+> +/*
+>    * cpudl_init - initialize the cpudl structure
+>    * @cp: the cpudl max-heap context
+>    */
+> @@ -203,7 +215,7 @@ int cpudl_init(struct cpudl *cp)
+>   	if (!cp->elements)
+>   		return -ENOMEM;
+>   
+> -	if (!alloc_cpumask_var(&cp->free_cpus, GFP_KERNEL)) {
+> +	if (!zalloc_cpumask_var(&cp->free_cpus, GFP_KERNEL)) {
+>   		kfree(cp->elements);
+>   		return -ENOMEM;
+>   	}
+> @@ -211,8 +223,6 @@ int cpudl_init(struct cpudl *cp)
+>   	for_each_possible_cpu(i)
+>   		cp->elements[i].idx = IDX_INVALID;
+>   
+> -	cpumask_setall(cp->free_cpus);
+> -
+>   	return 0;
+>   }
+>   
+> diff --git a/kernel/sched/cpudeadline.h b/kernel/sched/cpudeadline.h
+> index 020039b..4a10a65 100644
+> --- a/kernel/sched/cpudeadline.h
+> +++ b/kernel/sched/cpudeadline.h
+> @@ -24,6 +24,7 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
+>   	       struct cpumask *later_mask);
+>   void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid);
+>   int cpudl_init(struct cpudl *cp);
+> +void cpudl_set_freecpu(struct cpudl *cp, int cpu);
+>   void cpudl_cleanup(struct cpudl *cp);
+>   #endif /* CONFIG_SMP */
+>   
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index 5285332..bd83272 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -1187,9 +1187,6 @@ static int find_later_rq(struct task_struct *task)
+>   	 * We have to consider system topology and task affinity
+>   	 * first, then we can look for a suitable cpu.
+>   	 */
+> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
+> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
+> -	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+>   	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+>   			task, later_mask);
+>   	if (best_cpu == -1)
 
---tsOsTdHNUZQcU9Ye
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUba0OAAoJEN0jrNd/PrOhiSEP/0mzuHBJvlbT+lmMDJz/jaDz
-fhZvlYzO24stAmB+v29tL/Q59VhIxN7Ziisp3zFy6gBqUO2RhAWmoaqxFE/smEgd
-OeidITjt1cQjsHKLUOJq2xxDErsFRo5Fp5j0J7EBYZT0dQeYR4alt2J63pcKG9qL
-6boE3tqXRMnurn72jfdqp4I/atr688bBAZYLyjt1yAK/ZVuJISPLDokZQytdOfhA
-IWBc/5TipHpJxywXRx6ibiywelaS1Ufu3z6OKKrsEyimAWPQi9dXA6Nd0u0MPQNR
-FRVWKROU09qlRz1d5vmWk7ntrx3uNKhLIZx02OnRGDEYhG6rC1q31Eyra22yL8Oi
-CqwoxcyhvxHo9Wwbxq7izopV3tXtir41hrDhVQKhKeETvAqtJHiw8EJqvyMAIXUO
-5pRGRalRlE+5jRfp38mEGgd8DwlUxbZqZa4ciTA7Tsgj0r8U9G06WqCr2e+wEZY9
-uUug3HgBJ0THxTOPiz+wjx9rlaW7FhIfIyhtZh17UXkvsauhYUgWqdUYB4jBAlnj
-5r3cAIBCGXsp+R+dgd/P7lSMk/KYga+HHLDxN/NOrNREd1s5049HAXjH/uUWPnsv
-JSGet5XFDwJgbjqVfVnQaE082lpMa++dlidV5HxAc/p4cy5nsb5g32Sz4EfO4Now
-gGH+ta/GWr6zeBmrguE/
-=0Lj0
------END PGP SIGNATURE-----
-
---tsOsTdHNUZQcU9Ye--
