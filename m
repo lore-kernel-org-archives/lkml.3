@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310AbaKTN0D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:26:03 -0500
+	id S1757368AbaKTN0L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:26:11 -0500
 Received: from mga02.intel.com ([134.134.136.20]:21311 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757271AbaKTNZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:25:59 -0500
+	id S1757305AbaKTN0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 08:26:03 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,424,1413270000"; 
-   d="scan'208";a="611096926"
+   d="scan'208";a="611097143"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V2 12/22] perf itrace: Add a heap for sorting Instruction Tracing queues
-Date: Thu, 20 Nov 2014 15:23:18 +0200
-Message-Id: <1416489808-4489-13-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V2 16/22] perf script: Add Instruction Tracing support
+Date: Thu, 20 Nov 2014 15:23:22 +0200
+Message-Id: <1416489808-4489-17-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416489808-4489-1-git-send-email-adrian.hunter@intel.com>
 References: <1416489808-4489-1-git-send-email-adrian.hunter@intel.com>
@@ -27,165 +27,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to process Instruction Tracing
-data in time order, the queue with data
-with the lowest timestamp must be
-processed first.  Provide a heap to
-keep track of which queue that is.
-
-As with the queues, a decoder does not have
-to use the heap, but Intel BTS and Intel PT
-will use it.
+Add support for decoding an Instruction Trace.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/itrace.c | 85 ++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/itrace.h | 29 +++++++++++++++++
- 2 files changed, 114 insertions(+)
+ tools/perf/Documentation/perf-script.txt | 28 ++++++++++++++++++++++++++++
+ tools/perf/builtin-script.c              | 11 +++++++++++
+ 2 files changed, 39 insertions(+)
 
-diff --git a/tools/perf/util/itrace.c b/tools/perf/util/itrace.c
-index c67bf10..b50d959 100644
---- a/tools/perf/util/itrace.c
-+++ b/tools/perf/util/itrace.c
-@@ -347,6 +347,91 @@ void itrace_queues__free(struct itrace_queues *queues)
- 	queues->nr_queues = 0;
- }
+diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
+index 2149480..f89f3be 100644
+--- a/tools/perf/Documentation/perf-script.txt
++++ b/tools/perf/Documentation/perf-script.txt
+@@ -215,6 +215,34 @@ OPTIONS
+ --header-only
+ 	Show only perf.data header.
  
-+static void itrace_heapify(struct itrace_heap_item *heap_array,
-+			   unsigned int pos, unsigned int queue_nr,
-+			   u64 ordinal)
-+{
-+	unsigned int parent;
++-Z::
++--itrace::
++	Options for decoding Instruction Tracing data. The options are:
 +
-+	while (pos) {
-+		parent = (pos - 1) >> 1;
-+		if (heap_array[parent].ordinal <= ordinal)
-+			break;
-+		heap_array[pos] = heap_array[parent];
-+		pos = parent;
-+	}
-+	heap_array[pos].queue_nr = queue_nr;
-+	heap_array[pos].ordinal = ordinal;
-+}
++		i	synthesize instructions events
++		b	synthesize branches events
++		c	synthesize branches events (calls only)
++		r	synthesize branches events (returns only)
++		e	synthesize error events
++		d	create a debug log
++		g	synthesize a call chain for instructions events
 +
-+int itrace_heap__add(struct itrace_heap *heap, unsigned int queue_nr,
-+		     u64 ordinal)
-+{
-+	struct itrace_heap_item *heap_array;
++	The default is all events i.e. the same as -Zibe
 +
-+	if (queue_nr >= heap->heap_sz) {
-+		unsigned int heap_sz = ITRACE_INIT_NR_QUEUES;
++	In addition, the period (default 1000) for instructions events can be
++	specified in units of:
 +
-+		while (heap_sz <= queue_nr)
-+			heap_sz <<= 1;
-+		heap_array = realloc(heap->heap_array,
-+				     heap_sz * sizeof(struct itrace_heap_item));
-+		if (!heap_array)
-+			return -ENOMEM;
-+		heap->heap_array = heap_array;
-+		heap->heap_sz = heap_sz;
-+	}
++		i	instructions (default)
++		t	ticks
++		ms	milliseconds
++		us	microseconds
++		ns	nanoseconds
 +
-+	itrace_heapify(heap->heap_array, heap->heap_cnt++, queue_nr, ordinal);
++	Also the call chain size (default 16, max. 1024) for instructions
++	events can be specified.
 +
-+	return 0;
-+}
++	To disable decoding entirely, use --no-itrace.
 +
-+void itrace_heap__free(struct itrace_heap *heap)
-+{
-+	zfree(&heap->heap_array);
-+	heap->heap_cnt = 0;
-+	heap->heap_sz = 0;
-+}
-+
-+void itrace_heap__pop(struct itrace_heap *heap)
-+{
-+	unsigned int pos, last, heap_cnt = heap->heap_cnt;
-+	struct itrace_heap_item *heap_array;
-+
-+	if (!heap_cnt)
-+		return;
-+
-+	heap->heap_cnt -= 1;
-+
-+	heap_array = heap->heap_array;
-+
-+	pos = 0;
-+	while (1) {
-+		unsigned int left, right;
-+
-+		left = (pos << 1) + 1;
-+		if (left >= heap_cnt)
-+			break;
-+		right = left + 1;
-+		if (right >= heap_cnt) {
-+			heap_array[pos] = heap_array[left];
-+			return;
-+		}
-+		if (heap_array[left].ordinal < heap_array[right].ordinal) {
-+			heap_array[pos] = heap_array[left];
-+			pos = left;
-+		} else {
-+			heap_array[pos] = heap_array[right];
-+			pos = right;
-+		}
-+	}
-+
-+	last = heap_cnt - 1;
-+	itrace_heapify(heap_array, pos, heap_array[last].queue_nr,
-+		       heap_array[last].ordinal);
-+}
-+
- size_t itrace_record__info_priv_size(struct itrace_record *itr)
- {
- 	if (itr)
-diff --git a/tools/perf/util/itrace.h b/tools/perf/util/itrace.h
-index c357893..a7d4ad2 100644
---- a/tools/perf/util/itrace.h
-+++ b/tools/perf/util/itrace.h
-@@ -172,6 +172,29 @@ struct itrace_queues {
- };
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-script-perl[1],
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index ce304df..dbffd00 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -16,6 +16,7 @@
+ #include "util/evsel.h"
+ #include "util/sort.h"
+ #include "util/data.h"
++#include "util/itrace.h"
+ #include <linux/bitmap.h>
  
- /**
-+ * struct itrace_heap_item - element of struct itrace_heap.
-+ * @queue_nr: queue number
-+ * @ordinal: value used for sorting (lowest ordinal is top of the heap) expected
-+ *           to be a timestamp
-+ */
-+struct itrace_heap_item {
-+	unsigned int		queue_nr;
-+	u64			ordinal;
-+};
-+
-+/**
-+ * struct itrace_heap - a heap suitable for sorting Instruction Tracing queues.
-+ * @heap_array: the heap
-+ * @heap_cnt: the number of elements in the heap
-+ * @heap_sz: maximum number of elements (grows as needed)
-+ */
-+struct itrace_heap {
-+	struct itrace_heap_item	*heap_array;
-+	unsigned int		heap_cnt;
-+	unsigned int		heap_sz;
-+};
-+
-+/**
-  * struct itrace_mmap - records an mmap of the itrace buffer.
-  * @base: address of mapped area
-  * @userpg: pointer to buffer's perf_event_mmap_page
-@@ -280,6 +303,12 @@ void *itrace_buffer__get_data(struct itrace_buffer *buffer, int fd);
- void itrace_buffer__put_data(struct itrace_buffer *buffer);
- void itrace_buffer__drop_data(struct itrace_buffer *buffer);
- void itrace_buffer__free(struct itrace_buffer *buffer);
-+
-+int itrace_heap__add(struct itrace_heap *heap, unsigned int queue_nr,
-+		     u64 ordinal);
-+void itrace_heap__pop(struct itrace_heap *heap);
-+void itrace_heap__free(struct itrace_heap *heap);
-+
- struct itrace_record *itrace_record__init(int *err);
+ static char const		*script_name;
+@@ -1505,6 +1506,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	char *rec_script_path = NULL;
+ 	char *rep_script_path = NULL;
+ 	struct perf_session *session;
++	struct itrace_synth_opts itrace_synth_opts = {0};
+ 	char *script_path = NULL;
+ 	const char **__argv;
+ 	int i, j, err = 0;
+@@ -1519,6 +1521,10 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			.attr		 = process_attr,
+ 			.tracing_data	 = perf_event__process_tracing_data,
+ 			.build_id	 = perf_event__process_build_id,
++			.id_index	 = perf_event__process_id_index,
++			.itrace_info	 = perf_event__process_itrace_info,
++			.itrace		 = perf_event__process_itrace,
++			.itrace_error	 = perf_event__process_itrace_error,
+ 			.ordered_events	 = true,
+ 			.ordering_requires_timestamps = true,
+ 		},
+@@ -1570,6 +1576,9 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "Show the fork/comm/exit events"),
+ 	OPT_BOOLEAN('\0', "show-mmap-events", &script.show_mmap_events,
+ 		    "Show the mmap events"),
++	OPT_CALLBACK_OPTARG('Z', "itrace", &itrace_synth_opts, NULL, "opts",
++			    "Instruction Tracing options",
++			    itrace_parse_synth_opts),
+ 	OPT_END()
+ 	};
+ 	const char * const script_usage[] = {
+@@ -1767,6 +1776,8 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
  
- int itrace_record__options(struct itrace_record *itr,
+ 	script.session = session;
+ 
++	session->itrace_synth_opts = &itrace_synth_opts;
++
+ 	if (cpu_list) {
+ 		err = perf_session__cpu_bitmap(session, cpu_list, cpu_bitmap);
+ 		if (err < 0)
 -- 
 1.9.1
 
