@@ -1,91 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474AbaKTEDe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 23:03:34 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54662 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754270AbaKTEDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 23:03:31 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>,
-        Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>, quentin.gouchet@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        ABI/API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v2 02/10] crypto: AF_ALG: user space interface for cipher info
-Date: Thu, 20 Nov 2014 05:03:24 +0100
-Message-ID: <16101836.sTaxopCThb@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.3-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20141118140822.GB12100@gondor.apana.org.au>
-References: <5365136.g8vbXlhRyC@tachyon.chronox.de> <2688209.3bGZus2TD9@tachyon.chronox.de> <20141118140822.GB12100@gondor.apana.org.au>
+	id S1756099AbaKTEET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 23:04:19 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:34141 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755069AbaKTEER (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 23:04:17 -0500
+Message-ID: <546D6830.1090507@linux.vnet.ibm.com>
+Date: Thu, 20 Nov 2014 09:34:00 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Kevin Hilman <khilman@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, daniel.lezcano@linaro.org,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 1/2] clockevents: introduce ->set_dev_mode() which can
+ return error
+References: <1416422377-13615-1-git-send-email-khilman@kernel.org> <1416422377-13615-2-git-send-email-khilman@kernel.org>
+In-Reply-To: <1416422377-13615-2-git-send-email-khilman@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112004-0033-0000-0000-000002C08631
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 18. November 2014, 22:08:23 schrieb Herbert Xu:
+This looks good to me.
 
-Hi Herbert, Steffen,
-
-> On Sun, Nov 16, 2014 at 03:24:25AM +0100, Stephan Mueller wrote:
-> > The AF_ALG interface allows normal cipher (hash, encrypt, decrypt).
-> > However, it does not allow user space to obtain the following generic
-> > 
-> > information about the currently active cipher:
-> > 	* block size of the cipher
-> > 	
-> > 	* IV size of the cipher
-> > 	
-> > 	* for AEAD, the maximum authentication tag size
-> > 
-> > The patch adds a getsockopt interface for the symmetric ciphers to
-> > answer such information requests from user space.
-> > 
-> > The kernel crypto API function calls are used to obtain the real data.
-> > As all data are simple integer values, the getsockopt handler function
-> > uses put_user() to return the integer value to user space in the
-> > *optval parameter of getsockopt.
-> > 
-> > Signed-off-by: Stephan Mueller <smueller@chronox.de>
+On 11/20/2014 12:09 AM, Kevin Hilman wrote:
+> From: Viresh Kumar <viresh.kumar@linaro.org>
 > 
-> We already have crypto_user so you should be extending that to
-> cover what's missing.
-
-After playing a bit with the interface, I think it falls short supporting 
-AF_ALG in the following way:
-
-crypto_user cannot be applied to the currently active cipher that one has open 
-with AF_ALG. For getting information, one has to call crypto_user with the 
-cra_driver_name of a cipher. (Why is that limitation, btw (see crypto_report 
-and the use of cru_driver_name?)
-
-When we open AF_ALG with the typical approach of simply a cra_name, you have 
-no idea which cipher is selected. User space has no way to obtain the 
-information on which particular cipher implementation is used with 
-crypto_user.
-
-That means, to use crypto_user, we would first have to translate a cra_name 
-into a cra_driver_name. Granted, any cra_driver_name for the given cra_name 
-would work. But how would such a resolution be implemented? The only way would 
-be via /proc/crypto. But that file does not contain all cipher / block 
-chaining permutations. For example, ccm(aes) is not listed in /proc/crypto at 
-all (even after using it via the kernel crypto API -- i.e. there is an 
-accessible ccm(aes) implementation). Therefore, there is no way to resolve 
-ccm(aes) to a cra_driver_name. 
-
-Btw: is there an example that uses that interface? The ordering of data 
-structures in the netlink message is not really clear from looking at the 
-code.
+> Currently, the ->set_mode() method of a clockevent device is not
+> allowed to fail, so it has no return value.  In order to add new
+> clockevent modes, and allow the setting of those modes to fail, we
+> need the clockevent core to be able to detect when setting a mode
+> fails.
 > 
-> PS These paramters should not vary depending on the implementation,
-> if they do then one of the implementations must be buggy.
+> To allow detection of mode setting failures, introduce a new method
+> ->set_dev_mode() which can return an error if the given mode is not
+> supported or fails.
 > 
-> Cheers,
+> Since all current modes are still not allowed to fail, the core code
+> simply WARNs if any modes fail.  Future patches that add new mode
+> support will add proper error recovery based on failure conditions.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Reviewed-by: Kevin Hilman <khilman@linaro.org>
+> [khilman: rework changelogs, minor formatting/checkpatch cleanups]
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> ---
+>  include/linux/clockchips.h |  5 ++++-
+>  kernel/time/clockevents.c  | 21 ++++++++++++++++++---
+>  kernel/time/timer_list.c   |  5 ++++-
+>  3 files changed, 26 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
+> index 2e4cb67f6e56..d969659cf688 100644
+> --- a/include/linux/clockchips.h
+> +++ b/include/linux/clockchips.h
+> @@ -81,7 +81,8 @@ enum clock_event_mode {
+>   * @mode:		operating mode assigned by the management code
+>   * @features:		features
+>   * @retries:		number of forced programming retries
+> - * @set_mode:		set mode function
+> + * @set_dev_mode:	set dev mode function
+> + * @set_mode:		set mode function (deprecated, use set_dev_mode instead)
+>   * @broadcast:		function to broadcast events
+>   * @min_delta_ticks:	minimum delta value in ticks stored for reconfiguration
+>   * @max_delta_ticks:	maximum delta value in ticks stored for reconfiguration
+> @@ -109,6 +110,8 @@ struct clock_event_device {
+>  	unsigned long		retries;
+> 
+>  	void			(*broadcast)(const struct cpumask *mask);
+> +	int			(*set_dev_mode)(enum clock_event_mode mode,
+> +						struct clock_event_device *);
+>  	void			(*set_mode)(enum clock_event_mode mode,
+>  					    struct clock_event_device *);
+>  	void			(*suspend)(struct clock_event_device *);
+> diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+> index 9c94c19f1305..1d5ce3ce9228 100644
+> --- a/kernel/time/clockevents.c
+> +++ b/kernel/time/clockevents.c
+> @@ -105,7 +105,16 @@ void clockevents_set_mode(struct clock_event_device *dev,
+>  				 enum clock_event_mode mode)
+>  {
+>  	if (dev->mode != mode) {
+> -		dev->set_mode(mode, dev);
+> +		if (dev->set_dev_mode) {
+> +			int ret = dev->set_dev_mode(mode, dev);
+> +
+> +			/* Currently available modes shouldn't fail */
+> +			WARN_ONCE(ret, "Requested mode: %d, error: %d\n",
+> +				  mode, ret);
+> +		} else {
+> +			dev->set_mode(mode, dev);
+> +		}
+> +
+>  		dev->mode = mode;
+> 
+>  		/*
+> @@ -448,8 +457,14 @@ int __clockevents_update_freq(struct clock_event_device *dev, u32 freq)
+>  	if (dev->mode == CLOCK_EVT_MODE_ONESHOT)
+>  		return clockevents_program_event(dev, dev->next_event, false);
+> 
+> -	if (dev->mode == CLOCK_EVT_MODE_PERIODIC)
+> -		dev->set_mode(CLOCK_EVT_MODE_PERIODIC, dev);
+> +	if (dev->mode == CLOCK_EVT_MODE_PERIODIC) {
+> +		/* Shouldn't fail while switching to PERIODIC MODE */
+> +		if (dev->set_dev_mode)
+> +			WARN_ON_ONCE(dev->set_dev_mode(CLOCK_EVT_MODE_PERIODIC,
+> +						       dev));
+> +		else
+> +			dev->set_mode(CLOCK_EVT_MODE_PERIODIC, dev);
+> +	}
+> 
+>  	return 0;
+>  }
+> diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
+> index 61ed862cdd37..957a04951ef0 100644
+> --- a/kernel/time/timer_list.c
+> +++ b/kernel/time/timer_list.c
+> @@ -229,7 +229,10 @@ print_tickdevice(struct seq_file *m, struct tick_device *td, int cpu)
+>  	SEQ_printf(m, "\n");
+> 
+>  	SEQ_printf(m, " set_mode:       ");
+> -	print_name_offset(m, dev->set_mode);
+> +	if (dev->set_dev_mode)
+> +		print_name_offset(m, dev->set_dev_mode);
+> +	else
+> +		print_name_offset(m, dev->set_mode);
+>  	SEQ_printf(m, "\n");
+> 
+>  	SEQ_printf(m, " event_handler:  ");
+> 
 
+Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 
--- 
-Ciao
-Stephan
