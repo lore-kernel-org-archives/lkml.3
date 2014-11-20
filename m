@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971AbaKTIj6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 03:39:58 -0500
-Received: from mout.web.de ([212.227.17.12]:52435 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751377AbaKTIj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 03:39:57 -0500
-Message-ID: <546DA8BF.70005@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 09:39:27 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1757023AbaKTIkr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 03:40:47 -0500
+Received: from mail-bn1on0114.outbound.protection.outlook.com ([157.56.110.114]:40124
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756129AbaKTIkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 03:40:46 -0500
+From: Zidan Wang <b50113@freescale.com>
+To: <broonie@kernel.org>
+CC: <lgirdwood@gmail.com>, <perex@perex.cz>, <tiwai@suse.de>,
+        <lars@metafoo.de>, <ckeepax@opensource.wolfsonmicro.com>,
+        <Li.Xiubo@freescale.com>, <patches@opensource.wolfsonmicro.com>,
+        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
+        Zidan Wang <b50113@freescale.com>
+Subject: [alsa-devel][PATCH v2 2/2] ASoC: wm8960: LRCM operation should after software reset
+Date: Thu, 20 Nov 2014 16:41:18 +0800
+Message-ID: <1416472878-12108-2-git-send-email-b50113@freescale.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416472878-12108-1-git-send-email-b50113@freescale.com>
+References: <1416472878-12108-1-git-send-email-b50113@freescale.com>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=B50113@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(44976005)(47776003)(92726001)(68736004)(50466002)(99396003)(6806004)(120916001)(19580405001)(19580395003)(104016003)(64706001)(77156002)(62966003)(33646002)(50986999)(76176999)(31966008)(20776003)(102836001)(21056001)(92566001)(104166001)(93916002)(86362001)(87936001)(87286001)(89996001)(88136002)(48376002)(84676001)(85426001)(110136001)(2351001)(4396001)(95666004)(107046002)(36756003)(229853001)(46102003)(50226001)(106466001)(105606002)(97736003)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB1259;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-To: Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 3/3] [media] si2168: One function call less in si2168_init()
- after error detection
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546DA419.7050405@users.sourceforge.net>
-In-Reply-To: <546DA419.7050405@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:rCRalrcfXkxdxLrAN2C9QNaa7SH3haOq3pAdSkF+np+d6mfyeDW
- GEmpIbCD21e/ZFdpg82cxyW/6uJjb2MYnR++yOb8plHBvjSUZjXGJaAHMtLj/zCpuVv/72G
- FZ1KGGezSs9EmgHYCmSW6ASshJ/zGiQWSNrtkIPBaQj6b1cNvQ/k2JFG7kHwnPYubhKdPuw
- 9xChEinSJ0evx+6l/2JIA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1259;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1259;
+X-Forefront-PRVS: 0401647B7F
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1259;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 23:23:15 +0100
+When shared_lrclk is set, LRCM will be enabled. But the following software
+reset in wm8960_probe will reset it to the default state. So LRCM operation
+should after software reset.
 
-The release_firmware() function was called in some cases by the
-si2168_init() function during error handling even if the passed variable
-contained still a null pointer. This implementation detail could be improved
-by the introduction of another jump label.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: Zidan Wang <b50113@freescale.com>
 ---
- drivers/media/dvb-frontends/si2168.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ sound/soc/codecs/wm8960.c | 18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/media/dvb-frontends/si2168.c b/drivers/media/dvb-frontends/si2168.c
-index 6a455f9..b8c6372 100644
---- a/drivers/media/dvb-frontends/si2168.c
-+++ b/drivers/media/dvb-frontends/si2168.c
-@@ -428,7 +428,7 @@ static int si2168_init(struct dvb_frontend *fe)
- 			dev_err(&s->client->dev,
- 					"%s: firmware file '%s' not found\n",
- 					KBUILD_MODNAME, fw_file);
--			goto err;
-+			goto error_fw_release;
- 		}
+diff --git a/sound/soc/codecs/wm8960.c b/sound/soc/codecs/wm8960.c
+index e5d89a2..a7f60b7 100644
+--- a/sound/soc/codecs/wm8960.c
++++ b/sound/soc/codecs/wm8960.c
+@@ -976,6 +976,14 @@ static int wm8960_probe(struct snd_soc_codec *codec)
+ 		return ret;
  	}
  
-@@ -448,7 +448,7 @@ static int si2168_init(struct dvb_frontend *fe)
- 			dev_err(&s->client->dev,
- 					"%s: firmware download failed=%d\n",
- 					KBUILD_MODNAME, ret);
--			goto err;
-+			goto error_fw_release;
- 		}
- 	}
++    if (pdata->shared_lrclk) {
++		ret = snd_soc_update_bits(codec, WM8960_ADDCTL2, 0x4, 0x4);
++		if (ret < 0) {
++			dev_err(codec->dev, "Failed to enable LRCM: %d\n", ret);
++			return ret;
++		}
++	}
++
+ 	wm8960->set_bias_level(codec, SND_SOC_BIAS_STANDBY);
  
-@@ -468,9 +468,10 @@ static int si2168_init(struct dvb_frontend *fe)
- 	s->active = true;
+ 	/* Latch the update bits */
+@@ -1059,16 +1067,6 @@ static int wm8960_i2c_probe(struct i2c_client *i2c,
+ 	else if (i2c->dev.of_node)
+ 		wm8960_set_pdata_from_of(i2c, &wm8960->pdata);
  
- 	return 0;
--err:
--	release_firmware(fw);
+-	if (pdata && pdata->shared_lrclk) {
+-		ret = regmap_update_bits(wm8960->regmap, WM8960_ADDCTL2,
+-					 0x4, 0x4);
+-		if (ret != 0) {
+-			dev_err(&i2c->dev, "Failed to enable LRCM: %d\n",
+-				ret);
+-			return ret;
+-		}
+-	}
+-
+ 	i2c_set_clientdata(i2c, wm8960);
  
-+error_fw_release:
-+	release_firmware(fw);
-+err:
- 	dev_dbg(&s->client->dev, "%s: failed=%d\n", __func__, ret);
- 	return ret;
- }
+ 	ret = snd_soc_register_codec(&i2c->dev,
 -- 
-2.1.3
+1.9.1
 
