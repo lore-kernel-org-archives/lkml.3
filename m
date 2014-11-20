@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339AbaKTIri (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 03:47:38 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:20903 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848AbaKTIrh (ORCPT
+	id S1756903AbaKTIsO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 03:48:14 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:31614
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756666AbaKTIsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 03:47:37 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-60-546daaa6f93d
-Message-id: <546DAA99.5070402@samsung.com>
-Date: Thu, 20 Nov 2014 11:47:21 +0300
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: David Rientjes <rientjes@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 1/3] mm: sl[aou]b: introduce kmem_cache_zalloc_node()
-References: <1415621218-6438-1-git-send-email-a.ryabinin@samsung.com>
- <alpine.DEB.2.10.1411191545210.32057@chino.kir.corp.google.com>
-In-reply-to: <alpine.DEB.2.10.1411191545210.32057@chino.kir.corp.google.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOLMWRmVeSWpSXmKPExsVy+t/xa7rLVuWGGNxZZWgxZ/0aNovr394w
-	WlzeNYfN4t6a/6wWbZ//AYklG5ksNm+ayuzA7rFgU6nHplWdbB6bPk1i93h37hy7x4kZv1k8
-	nlyZzuTxeZNcAHsUl01Kak5mWWqRvl0CV8ajs7MZC16yVMxdu5u5gfEdcxcjJ4eEgInE7v4j
-	bBC2mMSFe+uBbC4OIYGljBIXrnxhhnCamSQmnloG1sEroCWx9tg5JhCbRUBVYt6HtYwgNpuA
-	nsS/WdvBJokKREhcWTOHEaJeUOLH5HssILaIgIZE24z/YBuYBc4xSkyZeRVskLCAp8TEyWeh
-	VrczStxf84sVJMEp4CPxfONqoAQHUIeexP2LWiBhZgF5ic1r3jJPYBSYhWTHLISqWUiqFjAy
-	r2IUTS1NLihOSs810itOzC0uzUvXS87P3cQICfyvOxiXHrM6xCjAwajEw3thVm6IEGtiWXFl
-	7iFGCQ5mJRFepSVAId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYwLFY7M0PNzVFq6ZydLz+rMTQIL
-	lJmeld1xWulr2P6wbsWD1Z1fLG/sc5R1FLnlqXD038aSXyadHtN3/How7SKTcIjk0w1Hak/X
-	3X82u9igYl+ZJ1fr40D+LonWf24HBc527vijNPfUztN5fBXn2lZo+k8IiSu/+Xaz8KaapyrX
-	czbfa9N4tsVRiaU4I9FQi7moOBEAcZHHoFoCAAA=
+	Thu, 20 Nov 2014 03:48:13 -0500
+X-IronPort-AV: E=Sophos;i="5.07,422,1413237600"; 
+   d="scan'208";a="89537001"
+Date: Thu, 20 Nov 2014 09:47:53 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+cc: John Fastabend <john.fastabend@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <jhs@mojatatu.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
+Subject: Re: net: sched: Deletion of an unnecessary check before the function
+ call "kfree"
+In-Reply-To: <546CE650.6080205@users.sourceforge.net>
+Message-ID: <alpine.DEB.2.10.1411200947320.2447@hadrien>
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net>
+ <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net> <546BAB93.4010406@users.sourceforge.net> <546CC9B3.5060405@gmail.com> <546CE650.6080205@users.sourceforge.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2014 02:46 AM, David Rientjes wrote:
-> On Mon, 10 Nov 2014, Andrey Ryabinin wrote:
-> 
->> kmem_cache_zalloc_node() allocates zeroed memory for a particular
->> cache from a specified memory node. To be used for struct irq_desc.
->>
-> 
-> Is there a reason to add this for such a specialized purpose to the slab 
-> allocator?  I think it can just be handled for struct irq_desc explicitly.
-> 
+On Wed, 19 Nov 2014, SF Markus Elfring wrote:
 
-It could be used not only for irq_desc. Grepping sources gave me 7 possible users.
+> > Marcus, what tree are you looking at?
+>
+> I dared to base this update suggestion on the source files
+> for Linux 3.17.3. Are newer software developments relevant here?
 
-We already have zeroing variants of kmalloc/kmalloc_node/kmem_cache_alloc,
-so why kmem_cache_alloc_node is special?
+You should always use linux-next.  You should update it every day.
 
+julia
 
+> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/net/sched/
+>
+> Regards,
+> Markus
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
