@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789AbaKTHij (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:38:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43837 "EHLO
+	id S1756824AbaKTHiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:38:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43843 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276AbaKTHii (ORCPT
+	with ESMTP id S1756791AbaKTHix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:38:38 -0500
-Date: Wed, 19 Nov 2014 23:38:25 -0800
+	Thu, 20 Nov 2014 02:38:53 -0500
+Date: Wed, 19 Nov 2014 23:38:43 -0800
 From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-2989ccaac48f8c3da7f77101bbf98e0ea8773d83@git.kernel.org>
-Cc: namhyung@kernel.org, mingo@kernel.org, jolsa@redhat.com,
-        tglx@linutronix.de, acme@redhat.com, ak@linux.intel.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org
-Reply-To: hpa@zytor.com, ak@linux.intel.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, namhyung@kernel.org,
-        tglx@linutronix.de, jolsa@redhat.com
-In-Reply-To: <1415844328-4884-6-git-send-email-andi@firstfloor.org>
-References: <1415844328-4884-6-git-send-email-andi@firstfloor.org>
+Message-ID: <tip-2de217688e8f086bf6d920d530401b56fcbc6eff@git.kernel.org>
+Cc: namhyung@kernel.org, linux-kernel@vger.kernel.org, ak@linux.intel.com,
+        tglx@linutronix.de, hpa@zytor.com, jolsa@redhat.com, mingo@kernel.org,
+        acme@redhat.com
+Reply-To: tglx@linutronix.de, ak@linux.intel.com, namhyung@kernel.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, jolsa@redhat.com
+In-Reply-To: <1415844328-4884-8-git-send-email-andi@firstfloor.org>
+References: <1415844328-4884-8-git-send-email-andi@firstfloor.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf callchain:
-  Use a common function to resolve symbol or name
-Git-Commit-ID: 2989ccaac48f8c3da7f77101bbf98e0ea8773d83
+Subject: [tip:perf/core] perf tools:
+  Only print base source file for srcline
+Git-Commit-ID: 2de217688e8f086bf6d920d530401b56fcbc6eff
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,195 +34,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2989ccaac48f8c3da7f77101bbf98e0ea8773d83
-Gitweb:     http://git.kernel.org/tip/2989ccaac48f8c3da7f77101bbf98e0ea8773d83
+Commit-ID:  2de217688e8f086bf6d920d530401b56fcbc6eff
+Gitweb:     http://git.kernel.org/tip/2de217688e8f086bf6d920d530401b56fcbc6eff
 Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Wed, 12 Nov 2014 18:05:23 -0800
+AuthorDate: Wed, 12 Nov 2014 18:05:25 -0800
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Wed, 19 Nov 2014 12:33:47 -0300
 
-perf callchain: Use a common function to resolve symbol or name
+perf tools: Only print base source file for srcline
 
-Refactor the duplicated code to resolve the symbol name or
-the address of a symbol into a single function.
-
-Used in next patch to add common functionality.
+For perf report with --sort srcline only print the base source file
+name. This makes the results generally fit much better to the screen.
+The path is usually not that useful anyways because it is often from
+different systems.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1415844328-4884-6-git-send-email-andi@firstfloor.org
+Link: http://lkml.kernel.org/r/1415844328-4884-8-git-send-email-andi@firstfloor.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/hists.c | 17 -----------------
- tools/perf/ui/gtk/hists.c      | 11 +----------
- tools/perf/ui/stdio/hist.c     | 23 +++++++++--------------
- tools/perf/util/callchain.c    | 19 +++++++++++++++++++
- tools/perf/util/callchain.h    |  3 +++
- 5 files changed, 32 insertions(+), 41 deletions(-)
+ tools/perf/util/srcline.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index cfb976b..12c17c5 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -463,23 +463,6 @@ out:
- 	return key;
- }
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index f3e4bc5..77c1806 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -274,7 +274,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
+ 	if (!addr2line(dso_name, addr, &file, &line, dso))
+ 		goto out;
  
--static char *callchain_list__sym_name(struct callchain_list *cl,
--				      char *bf, size_t bfsize, bool show_dso)
--{
--	int printed;
--
--	if (cl->ms.sym)
--		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
--	else
--		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
--
--	if (show_dso)
--		scnprintf(bf + printed, bfsize - printed, " %s",
--			  cl->ms.map ? cl->ms.map->dso->short_name : "unknown");
--
--	return bf;
--}
--
- struct callchain_print_arg {
- 	/* for hists browser */
- 	off_t	row_offset;
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index fc654fb..4b3585e 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -89,15 +89,6 @@ void perf_gtk__init_hpp(void)
- 				perf_gtk__hpp_color_overhead_acc;
- }
- 
--static void callchain_list__sym_name(struct callchain_list *cl,
--				     char *bf, size_t bfsize)
--{
--	if (cl->ms.sym)
--		scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
--	else
--		scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
--}
--
- static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
- 				    GtkTreeIter *parent, int col, u64 total)
- {
-@@ -128,7 +119,7 @@ static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
- 			scnprintf(buf, sizeof(buf), "%5.2f%%", percent);
- 			gtk_tree_store_set(store, &iter, 0, buf, -1);
- 
--			callchain_list__sym_name(chain, buf, sizeof(buf));
-+			callchain_list__sym_name(chain, buf, sizeof(buf), false);
- 			gtk_tree_store_set(store, &iter, col, buf, -1);
- 
- 			if (need_new_parent) {
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 15b451a..dfcbc90 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -41,6 +41,7 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
- {
- 	int i;
- 	size_t ret = 0;
-+	char bf[1024];
- 
- 	ret += callchain__fprintf_left_margin(fp, left_margin);
- 	for (i = 0; i < depth; i++) {
-@@ -56,11 +57,8 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
- 		} else
- 			ret += fprintf(fp, "%s", "          ");
+-	if (asprintf(&srcline, "%s:%u", file, line) < 0) {
++	if (asprintf(&srcline, "%s:%u", basename(file), line) < 0) {
+ 		free(file);
+ 		goto out;
  	}
--	if (chain->ms.sym)
--		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
--	else
--		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
--
-+	fputs(callchain_list__sym_name(chain, bf, sizeof(bf), false), fp);
-+	fputc('\n', fp);
- 	return ret;
- }
- 
-@@ -168,6 +166,7 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
- 	struct rb_node *node;
- 	int i = 0;
- 	int ret = 0;
-+	char bf[1024];
- 
- 	/*
- 	 * If have one single callchain root, don't bother printing
-@@ -196,10 +195,8 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
- 			} else
- 				ret += callchain__fprintf_left_margin(fp, left_margin);
- 
--			if (chain->ms.sym)
--				ret += fprintf(fp, " %s\n", chain->ms.sym->name);
--			else
--				ret += fprintf(fp, " %p\n", (void *)(long)chain->ip);
-+			ret += fprintf(fp, "%s\n", callchain_list__sym_name(chain, bf, sizeof(bf),
-+							false));
- 
- 			if (++entries_printed == callchain_param.print_limit)
- 				break;
-@@ -219,6 +216,7 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
- {
- 	struct callchain_list *chain;
- 	size_t ret = 0;
-+	char bf[1024];
- 
- 	if (!node)
- 		return 0;
-@@ -229,11 +227,8 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
- 	list_for_each_entry(chain, &node->val, list) {
- 		if (chain->ip >= PERF_CONTEXT_MAX)
- 			continue;
--		if (chain->ms.sym)
--			ret += fprintf(fp, "                %s\n", chain->ms.sym->name);
--		else
--			ret += fprintf(fp, "                %p\n",
--					(void *)(long)chain->ip);
-+		ret += fprintf(fp, "                %s\n", callchain_list__sym_name(chain,
-+					bf, sizeof(bf), false));
- 	}
- 
- 	return ret;
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 0022980..38da69c 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -808,3 +808,22 @@ int fill_callchain_info(struct addr_location *al, struct callchain_cursor_node *
- out:
- 	return 1;
- }
-+
-+char *callchain_list__sym_name(struct callchain_list *cl,
-+			       char *bf, size_t bfsize, bool show_dso)
-+{
-+	int printed;
-+
-+	if (cl->ms.sym) {
-+		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
-+	} else
-+		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
-+
-+	if (show_dso)
-+		scnprintf(bf + printed, bfsize - printed, " %s",
-+			  cl->ms.map ?
-+			  cl->ms.map->dso->short_name :
-+			  "unknown");
-+
-+	return bf;
-+}
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 3caccc2..3e1ed15 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -193,4 +193,7 @@ static inline int arch_skip_callchain_idx(struct thread *thread __maybe_unused,
- }
- #endif
- 
-+char *callchain_list__sym_name(struct callchain_list *cl,
-+			       char *bf, size_t bfsize, bool show_dso);
-+
- #endif	/* __PERF_CALLCHAIN_H */
