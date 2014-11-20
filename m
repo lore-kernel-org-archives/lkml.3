@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756320AbaKTLXE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 06:23:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:54775 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751170AbaKTLXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 06:23:02 -0500
-Date: Thu, 20 Nov 2014 11:22:55 +0000
-From: Lee Jones <lee@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Matthias Klein <matthias.klein@linux.com>
-Subject: Re: [PATCH] ARM: bcm2835: Add device tree for Raspberry Pi model B+
-Message-ID: <20141120112255.GB13269@x1>
-References: <1416480765-13449-1-git-send-email-lee@kernel.org>
- <2041471.8rvf0EmQUU@wuerfel>
+	id S1756409AbaKTLZf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 06:25:35 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:57098 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaKTLZd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 06:25:33 -0500
+From: Zhen Lei <thunder.leizhen@huawei.com>
+To: Alex Williamson <alex.williamson@redhat.com>, KVM <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: Zefan Li <lizefan@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
+        "Tianhong Ding" <dingtianhong@huawei.com>,
+        Kefeng Wang <wangkefeng.wang@huawei.com>,
+        Zhen Lei <thunder.leizhen@huawei.com>
+Subject: [PATCH 1/1] vfio: put off the allocation of "minor" in vfio_create_group
+Date: Thu, 20 Nov 2014 19:25:02 +0800
+Message-ID: <1416482702-10820-1-git-send-email-thunder.leizhen@huawei.com>
+X-Mailer: git-send-email 1.8.4.msysgit.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2041471.8rvf0EmQUU@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.177.27.142]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020208.546DCFA9.0168,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: bb8afcf09c407c032735d983d62b5599
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Nov 2014, Arnd Bergmann wrote:
+The next code fragment "list_for_each_entry" is not depend on "minor". With this
+patch, the free of "minor" in "list_for_each_entry" can be reduced, and there is
+no functional change.
 
-> On Thursday 20 November 2014 10:52:45 Lee Jones wrote:
-> > From: Matthias Klein <matthias.klein@linux.com>
-> > 
-> > The model B and B+ differ in the GPIO lines for ACT and PWR leds, and the
-> > I2S interface.
-> > 
-> > Signed-off-by: Matthias Klein <matthias.klein@linux.com>
-> > Tested-by: Stephen Warren <swarren@nvidia.com>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> > 
-> > As requested by Arnd.
-> > 
-> >  arch/arm/boot/dts/Makefile               |  1 +
-> >  arch/arm/boot/dts/bcm2835-rpi-b-plus.dts | 30 +++++++++++++++++++
-> >  arch/arm/boot/dts/bcm2835-rpi-b.dts      | 46 ++--------------------------
-> >  arch/arm/boot/dts/bcm2835-rpi.dtsi       | 51 ++++++++++++++++++++++++++++++++
-> >  4 files changed, 85 insertions(+), 43 deletions(-)
-> >  create mode 100644 arch/arm/boot/dts/bcm2835-rpi-b-plus.dts
-> >  create mode 100644 arch/arm/boot/dts/bcm2835-rpi.dtsi
-> > 
-> 
-> Applied to next/dt.
-> 
-> When you send a patch for inclusion the next time, better
-> be explicit and ask for it to be picked up into arm-soc, so we
-> know it's not just for review.
+Signed-off-by: Zhen Lei <thunder.leizhen@huawei.com>
+---
+ drivers/vfio/vfio.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-Sounds reasonable.  Thanks Arnd.
+diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
+index f018d8d..737eb468 100644
+--- a/drivers/vfio/vfio.c
++++ b/drivers/vfio/vfio.c
+@@ -225,22 +225,21 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
+
+ 	mutex_lock(&vfio.group_lock);
+
+-	minor = vfio_alloc_group_minor(group);
+-	if (minor < 0) {
+-		vfio_group_unlock_and_free(group);
+-		return ERR_PTR(minor);
+-	}
+-
+ 	/* Did we race creating this group? */
+ 	list_for_each_entry(tmp, &vfio.group_list, vfio_next) {
+ 		if (tmp->iommu_group == iommu_group) {
+ 			vfio_group_get(tmp);
+-			vfio_free_group_minor(minor);
+ 			vfio_group_unlock_and_free(group);
+ 			return tmp;
+ 		}
+ 	}
+
++	minor = vfio_alloc_group_minor(group);
++	if (minor < 0) {
++		vfio_group_unlock_and_free(group);
++		return ERR_PTR(minor);
++	}
++
+ 	dev = device_create(vfio.class, NULL,
+ 			    MKDEV(MAJOR(vfio.group_devt), minor),
+ 			    group, "%d", iommu_group_id(iommu_group));
+--
+1.8.0
+
+
