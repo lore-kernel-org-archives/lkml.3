@@ -1,103 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940AbaKTS6j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 13:58:39 -0500
-Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.28]:22132 "EHLO
-	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757858AbaKTS6h (ORCPT
+	id S1757953AbaKTTAc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:00:32 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:47572 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756291AbaKTTAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 13:58:37 -0500
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>,
-        KY Srinivasan <kys@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: RE: [PATCH 1/1] net: Hyper-V: Deletion of an unnecessary check before
- the function call "vfree"
-Thread-Topic: [PATCH 1/1] net: Hyper-V: Deletion of an unnecessary check
- before the function call "vfree"
-Thread-Index: AQHQBM3lPHoJ7I1S40Wjf3+Jmqo/ZZxp3eHw
-Date: Thu, 20 Nov 2014 18:58:22 +0000
-Message-ID: <f8c8e81a61634b02b8e1f562588e1ced@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <5307CAA2.8060406@users.sourceforge.net>
- <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
- <530A086E.8010901@users.sourceforge.net>
- <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
- <530A72AA.3000601@users.sourceforge.net>
- <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
- <530B5FB6.6010207@users.sourceforge.net>
- <alpine.DEB.2.10.1402241710370.2074@hadrien>
- <530C5E18.1020800@users.sourceforge.net>
- <alpine.DEB.2.10.1402251014170.2080@hadrien>
- <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net>
- <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <546DF9D7.6080801@users.sourceforge.net>
-In-Reply-To: <546DF9D7.6080801@users.sourceforge.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 20 Nov 2014 14:00:30 -0500
+Date: Thu, 20 Nov 2014 15:00:27 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincenzo Frascino <vincenzo.frascino@st.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/8] thermal:cpu cooling:ti: Provide deferred probing for
+ ti drivers
+Message-ID: <20141120190025.GB26794@developer>
+References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+ <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
+ <1415898165-27406-7-git-send-email-l.majewski@samsung.com>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 131.107.159.99)
- smtp.mailfrom=haiyangz@microsoft.com; vger.kernel.org; dkim=none (message not
- signed) header.d=none;vger.kernel.org; dmarc=pass action=none
- header.from=microsoft.com;
-X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(51704005)(199003)(13464003)(41574002)(189002)(377454003)(2656002)(2201001)(92566001)(87936001)(84676001)(4396001)(86612001)(19580405001)(19580395003)(6806004)(68736004)(44976005)(31966008)(107046002)(93886004)(99396003)(106466001)(77156002)(62966003)(77096003)(46102003)(2501002)(50466002)(21056001)(108616004)(120916001)(2561002)(97736003)(64706001)(2421001)(33646002)(20776003)(1511001)(47776003)(23676002)(66066001)(54356999)(106116001)(50986999)(76176999)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUSR01MB603;H:hybrid.exchange.microsoft.com;FPR:;SPF:Pass;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUSR01MB603;
-X-DmarcStatus: Passed
-X-DmarcAction: None
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(4001003)(4003003);SRVR:BLUSR01MB603;
-X-Forefront-PRVS: 0401647B7F
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUSR01MB603;
-X-OriginatorOrg: msft.ccsctp.net
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 20 Nov 2014 18:58:34.6617
- (UTC)
-X-MS-Exchange-CrossTenant-Id: f686d426-8d16-42db-81b7-ab578e110ccd
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUSR01MB603
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1UWUbFP1cBYEclgG"
+Content-Disposition: inline
+In-Reply-To: <1415898165-27406-7-git-send-email-l.majewski@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAKIwkNw012704
 
 
+--1UWUbFP1cBYEclgG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: SF Markus Elfring [mailto:elfring@users.sourceforge.net]
-> Sent: Thursday, November 20, 2014 9:25 AM
-> To: Haiyang Zhang; KY Srinivasan; devel@linuxdriverproject.org;
-> netdev@vger.kernel.org
-> Cc: LKML; kernel-janitors@vger.kernel.org; Julia Lawall
-> Subject: [PATCH 1/1] net: Hyper-V: Deletion of an unnecessary check
-> before the function call "vfree"
-> 
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Thu, 20 Nov 2014 15:15:21 +0100
-> 
-> The vfree() function performs also input parameter validation. Thus the
-> test
-> around the call is not needed.
-> 
-> This issue was detected by using the Coccinelle software.
-> 
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Lukaz,
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+On Thu, Nov 13, 2014 at 06:02:43PM +0100, Lukasz Majewski wrote:
+> When CPU freq is used as a thermal zone cooling device, one needs to wait
+> until cpufreq subsystem is properly initialized.
+>=20
+> This code is similar to the one already available in imx_thermal.c file.
+>=20
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> ---
+>  drivers/thermal/ti-soc-thermal/ti-bandgap.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+>=20
+> diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/therma=
+l/ti-soc-thermal/ti-bandgap.c
+> index 634b6ce..0ac5ead 100644
+> --- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+> +++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+> @@ -40,6 +40,7 @@
+>  #include <linux/of_irq.h>
+>  #include <linux/of_gpio.h>
+>  #include <linux/io.h>
+> +#include <linux/cpufreq.h>
+> =20
+>  #include "ti-bandgap.h"
+> =20
+> @@ -1196,6 +1197,12 @@ int ti_bandgap_probe(struct platform_device *pdev)
+>  	struct ti_bandgap *bgp;
+>  	int clk_rate, ret =3D 0, i;
+> =20
+> +#ifdef CONFIG_CPU_THERMAL
+> +	if (!cpufreq_get_current_driver()) {
+> +		dev_dbg(&pdev->dev, "no cpufreq driver!");
+> +		return -EPROBE_DEFER;
+> +	}
+> +#endif
 
-Thanks!
+This is part of drivers/thermal/ti-soc-thermal/ti-thermal-common.c. So,
+no need to duplicate it in here.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>  	bgp =3D ti_bandgap_build(pdev);
+>  	if (IS_ERR(bgp)) {
+>  		dev_err(&pdev->dev, "failed to fetch platform data\n");
+> --=20
+> 2.0.0.rc2
+>=20
+
+--1UWUbFP1cBYEclgG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUbjpJAAoJEMLUO4d9pOJWMIYH/iEQsBZN4A/BdVTIzD9IxQZL
+myAd1rF7obgvE/34GI9erJKHNZLPy555MttvsAlzjDLc5mDn5dSL3tRTH7+5xLOG
+akkOLE5SoRDch8sNHoQnPt5090p60hIg3gz+8TRzcmkmqS3WN+hycZ02hEHCR+oz
+m2EWy7eDYvPuZoMw6HFMLkN5p/kqVsli5y3Uk/QSqrcmNI07ReAZTzujT6eVv3FW
+tOSGdEXSMH1+FnVjoY1+2qQD19GGroGy4tSG6asa4lj9WsrmigMMcUVy2d2XcJQu
+gCx38k8L7OqCBDbYPdaJNok4aRUQtMYcwX48Vm73Lvt6icFKB9b9GLIW36IwH/w=
+=SEfc
+-----END PGP SIGNATURE-----
+
+--1UWUbFP1cBYEclgG--
