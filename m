@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253AbaKTWXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 17:23:44 -0500
-Received: from mout.web.de ([212.227.17.11]:57386 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756099AbaKTWXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 17:23:43 -0500
-Message-ID: <546E69D8.4040002@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 23:23:20 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1757407AbaKTWZM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 17:25:12 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59815 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757203AbaKTWZK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 17:25:10 -0500
+Date: Thu, 20 Nov 2014 22:25:06 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        target-devel@vger.kernel.org,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFC] situation with csum_and_copy_... API
+Message-ID: <20141120222506.GS7996@ZenIV.linux.org.uk>
+References: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
+ <20141119.161744.1661940121298888832.davem@davemloft.net>
+ <20141119213006.GE7996@ZenIV.linux.org.uk>
+ <20141119.165340.2162829993279387495.davem@davemloft.net>
+ <20141120214753.GR7996@ZenIV.linux.org.uk>
+ <1416520542.8629.46.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-To: "James E. J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] SCSI-aic94xx: Deletion of an unnecessary check before
- the function call "kfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:QEfGw/vnIeZZGgdZ4WmQIGQK6FQFH5Xu62WH0JDNYlZ1VE0CW+l
- 8LbiZYtp5iZ/Kw/Li6MntiwsnH7hX6AnIUlIP/bp4EWgE+s/1Dys/EcneU/0jTiS4JUvXcx
- vFSmPxTLAwsie0xPiMKf4/eAKD6Sk60Yi3Vkxz732onO1/QhNClibBGbZYJj6cJ1r8L6YWn
- NIT2oPoNrFl004zdLISSg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416520542.8629.46.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 23:18:56 +0100
+On Thu, Nov 20, 2014 at 01:55:42PM -0800, Eric Dumazet wrote:
+> On Thu, 2014-11-20 at 21:47 +0000, Al Viro wrote:
+> 
+> > As far as I can see, these retries on the send side are simply broken -
+> > normally we are talking to TCP sockets there and tcp_sendmsg() does *not*
+> > modify iovec in normal case. 
+> 
+> Arg... I sent this morning something doing this (against net-next tree)
+> 
+> Is it a problem ?
 
-The kfree() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+Yes, it is.  You are breaking several _other_ kernel_sendmsg() users.
+They are already slightly broken, but that'll make breakage much more
+common.
 
-This issue was detected by using the Coccinelle software.
+Please, don't - the right thing to do is to have iov_iter in msghdr
+(we already have the kernel and userland ones with different types and
+we do not assume their layouts to be identical - currently they are,
+but it's easy to change), keep iovec constant in all cases and advance
+->msg_iter.  Also in all cases.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/scsi/aic94xx/aic94xx_init.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Note that direct manipulations of what's currently in ->msg_iov are
+wrong - all those loops over vector elements, etc., belong in low-level
+primitives.  The main missing ones right now are csum_and_copy_{from,to}_iter()
+- I have those in local queue, but I'm still trying to get a reasonably
+clean mm/iov_iter.c without ridiculous amounts of boilerplating.  A bit more
+massage is needed there...
 
-diff --git a/drivers/scsi/aic94xx/aic94xx_init.c b/drivers/scsi/aic94xx/aic94xx_init.c
-index c56741f..0bfdcba 100644
---- a/drivers/scsi/aic94xx/aic94xx_init.c
-+++ b/drivers/scsi/aic94xx/aic94xx_init.c
-@@ -597,8 +597,7 @@ static void asd_destroy_ha_caches(struct asd_ha_struct *asd_ha)
- 	if (asd_ha->hw_prof.scb_ext)
- 		asd_free_coherent(asd_ha, asd_ha->hw_prof.scb_ext);
- 
--	if (asd_ha->hw_prof.ddb_bitmap)
--		kfree(asd_ha->hw_prof.ddb_bitmap);
-+	kfree(asd_ha->hw_prof.ddb_bitmap);
- 	asd_ha->hw_prof.ddb_bitmap = NULL;
- 
- 	for (i = 0; i < ASD_MAX_PHYS; i++) {
--- 
-2.1.3
+Seriously, take a look at vfs.git#iov_iter-net; it's preparations for the
+one that'll introduce ->msg_iter.  Right now that branch has local iov_iter
+declared and initialized in several ->sendmsg() and ->recvmsg() instances and
+fed to primitives that work with it; after the conversion it'll be in
+msg->msg_iter and it will be initialized by sock_sendmsg()/sock_recvmsg().
+
+The tricky part is how to get through that without temporary breaking the
+existing sendmsg/recvmsg users in the kernel *and* without a patch size from
+hell.  I more or less see how to carve the remaining steps into
+reasonably-sized chunks; iscsi is one of the tricky ones and it, AFAICS,
+is genuinely broken in mainline and will need fixes that can go into -stable.
+
+And no, your solution doesn't work.  Sorry.  You'll break e.g. smb_send_kvec()
+that way.  ceph_tcp_sendmsg() as well, IIRC.
 
