@@ -1,227 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101AbaKTNyk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:54:40 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:31142 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755240AbaKTNy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:54:27 -0500
-Date: Thu, 20 Nov 2014 08:54:25 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] tracing: Fix race of function probes counting
-Message-ID: <20141120085425.746a9224@gandalf.local.home>
-In-Reply-To: <546DD445.5080108@hitachi.com>
-References: <20141118134643.4b550ee4@gandalf.local.home>
-	<546DD445.5080108@hitachi.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1756409AbaKTN5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:57:10 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:51055 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751418AbaKTN5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 08:57:08 -0500
+Message-ID: <546DF325.6060507@osg.samsung.com>
+Date: Thu, 20 Nov 2014 06:56:53 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+To: Tim Bird <tim.bird@sonymobile.com>, linux-api@vger.kernel.org,
+        corbet@lwn.net
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
+        Shuah Khan <shuahkh@osg.samsung.com>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] kselftest: Move the docs to the Documentation dir
+References: <546D32D0.9090206@sonymobile.com>
+In-Reply-To: <546D32D0.9090206@sonymobile.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Nov 2014 20:45:09 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+On 11/19/2014 05:16 PM, Tim Bird wrote:
 > 
-> I have found a couple of typos, but basically, it looks OK.
+> Also, adjust the formatting a bit, and expand the section about using
+> TARGETS= on the make command line.
 > 
-> Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Grumble. I already pushed this to next so it's in my "no rebase" state.
-
-But I can add another patch to do these updates.
-
+> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+> ---
+>  Documentation/kselftest.txt        | 69 ++++++++++++++++++++++++++++++++++++++
+>  tools/testing/selftests/README.txt | 61 ---------------------------------
+>  2 files changed, 69 insertions(+), 61 deletions(-)
+>  create mode 100644 Documentation/kselftest.txt
+>  delete mode 100644 tools/testing/selftests/README.txt
 > 
-> > ---
-> >  kernel/trace/trace_functions.c | 117 +++++++++++++++++++++++++++++++++--------
-> >  1 file changed, 96 insertions(+), 21 deletions(-)
-> > 
-> > diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-> > index a8e0c7666164..973db52eb070 100644
-> > --- a/kernel/trace/trace_functions.c
-> > +++ b/kernel/trace/trace_functions.c
-> > @@ -261,37 +261,74 @@ static struct tracer function_trace __tracer_data =
-> >  };
-> >  
-> >  #ifdef CONFIG_DYNAMIC_FTRACE
-> > -static int update_count(void **data)
-> > +static void update_traceon_count(void **data, int on)
-> 
-> btw, why don't you use bool instead of int?
+> diff --git a/Documentation/kselftest.txt b/Documentation/kselftest.txt
+> new file mode 100644
+> index 0000000..a87d840
+> --- /dev/null
+> +++ b/Documentation/kselftest.txt
+>
 
-Because I didn't think of it ;-)
+Tim,
 
-Yeah, bool would be better.
+Thanks for doing this. Looks good to me. I think you missed
+Documentation maintainer. Adding linux-doc and Jon Corbet to
+the thread with my ack to take this through Documentation tree.
 
-> 
-> >  {
-> > -	unsigned long *count = (long *)data;
-> > +	long *count = (long *)data;
-> > +	long old_count = *count;
-> >  
-> > -	if (!*count)
-> > -		return 0;
-> > +	/*
-> > +	 * Tracing gets disabled (or enabled) once per count.
-> > +	 * This function can be called at the same time on mulitple CPUs.
->                                                            ^^^^^^^^ multiple
+Acked-by: shuahkh@osg.samsung.com
 
-You know, that is probably the biggest typo I make. My fingers do not
-like to hit 't' before 'i' when I type "multiple". In fact, it did it
-just then (I had to go back and correct it)!
+thanks,
+-- Shuah
 
-> 
-> > +	 * It is fine if both disable (or enable) tracing, as disabling
-> > +	 * (or enabling) the second time doesn't do anything as the
-> > +	 * state of the tracer is already disabled (or enabled).
-> > +	 * What needs to be synchronized in this case is that the count
-> > +	 * only gets decremented once, even if the tracer is disabled
-> > +	 * (or enabled) twice, as the second one is really a nop.
-> > +	 *
-> > +	 * The memory barriers guarantee that we only decrement the
-> > +	 * counter once. First the count is read to a local variable
-> > +	 * and a read barrier is used to make sure that it is loaded
-> > +	 * before checking if the tracer is in the state we want.
-> > +	 * If the tracer is not in the state we want, then the count
-> > +	 * is guaranteed to be the old count.
-> > +	 *
-> > +	 * Next the tracer is set to the state we want (disabled or enabled)
-> > +	 * then a write memory barrier is used to make sure that
-> > +	 * the new state is visible before changing the counter by
-> > +	 * one minus the old counter. This guarantees that another CPU
-> > +	 * executing this code will see the new state before seeing
-> > +	 * the new counter value, and would not do anthing if the new
->                                                    ^^^^^^^anything?
-
-OK, will fix.
-
-Thanks,
-
--- Steve
-
-> 
-> > +	 * counter is seen.
-> > +	 *
-> > +	 * Note, there is no synchronization between this and a user
-> > +	 * setting the tracing_on file. But we currently don't care
-> > +	 * about that.
-> > +	 */
-> > +	if (!old_count)
-> > +		return;
-> >  
-> > -	if (*count != -1)
-> > -		(*count)--;
-> > +	/* Make sure we see count before checking tracing state */
-> > +	smp_rmb();
-> >  
-> > -	return 1;
-> > +	if (on == !!tracing_is_on())
-> > +		return;
-> > +
-> > +	if (on)
-> > +		tracing_on();
-> > +	else
-> > +		tracing_off();
-> > +
-> > +	/* unlimited? */
-> > +	if (old_count == -1)
-> > +		return;
-> > +
-> > +	/* Make sure tracing state is visible before updating count */
-> > +	smp_wmb();
-> > +
-> > +	*count = old_count - 1;
-> >  }
-> >  
-> >  static void
-> >  ftrace_traceon_count(unsigned long ip, unsigned long parent_ip, void **data)
-> >  {
-> > -	if (tracing_is_on())
-> > -		return;
-> > -
-> > -	if (update_count(data))
-> > -		tracing_on();
-> > +	update_traceon_count(data, 1);
-> >  }
-> >  
-> >  static void
-> >  ftrace_traceoff_count(unsigned long ip, unsigned long parent_ip, void **data)
-> >  {
-> > -	if (!tracing_is_on())
-> > -		return;
-> > -
-> > -	if (update_count(data))
-> > -		tracing_off();
-> > +	update_traceon_count(data, 0);
-> >  }
-> >  
-> >  static void
-> > @@ -330,11 +367,49 @@ ftrace_stacktrace(unsigned long ip, unsigned long parent_ip, void **data)
-> >  static void
-> >  ftrace_stacktrace_count(unsigned long ip, unsigned long parent_ip, void **data)
-> >  {
-> > -	if (!tracing_is_on())
-> > -		return;
-> > +	long *count = (long *)data;
-> > +	long old_count;
-> > +	long new_count;
-> >  
-> > -	if (update_count(data))
-> > -		trace_dump_stack(STACK_SKIP);
-> > +	/*
-> > +	 * Stack traces should only execute the number of times the
-> > +	 * user specified in the counter.
-> > +	 */
-> > +	do {
-> > +
-> > +		if (!tracing_is_on())
-> > +			return;
-> > +
-> > +		old_count = *count;
-> > +
-> > +		if (!old_count)
-> > +			return;
-> > +
-> > +		/* unlimited? */
-> > +		if (old_count == -1) {
-> > +			trace_dump_stack(STACK_SKIP);
-> > +			return;
-> > +		}
-> > +
-> > +		new_count = old_count - 1;
-> > +		new_count = cmpxchg(count, old_count, new_count);
-> > +		if (new_count == old_count)
-> > +			trace_dump_stack(STACK_SKIP);
-> > +
-> > +	} while (new_count != old_count);
-> > +}
-> > +
-> > +static int update_count(void **data)
-> > +{
-> > +	unsigned long *count = (long *)data;
-> > +
-> > +	if (!*count)
-> > +		return 0;
-> > +
-> > +	if (*count != -1)
-> > +		(*count)--;
-> > +
-> > +	return 1;
-> >  }
-> >  
-> >  static void
-> > 
-> 
-> 
-
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
