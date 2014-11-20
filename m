@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503AbaKTWrY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 17:47:24 -0500
-Received: from mout.web.de ([212.227.15.14]:63554 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756640AbaKTWrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 17:47:22 -0500
-Message-ID: <546E6F5C.6050604@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 23:46:52 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
-        "James E. J. Bottomley" <JBottomley@parallels.com>,
-        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>,
-        linux-scsi@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] SCSI-bfa: Deletion of an unnecessary check before the
- function call "vfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
+	id S1757152AbaKTWyA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 17:54:00 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:34925 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756236AbaKTWx6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 17:53:58 -0500
+Message-ID: <1416524035.8629.54.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [RFC] situation with csum_and_copy_... API
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        target-devel@vger.kernel.org,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@infradead.org>
+Date: Thu, 20 Nov 2014 14:53:55 -0800
+In-Reply-To: <20141120222506.GS7996@ZenIV.linux.org.uk>
+References: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
+	 <20141119.161744.1661940121298888832.davem@davemloft.net>
+	 <20141119213006.GE7996@ZenIV.linux.org.uk>
+	 <20141119.165340.2162829993279387495.davem@davemloft.net>
+	 <20141120214753.GR7996@ZenIV.linux.org.uk>
+	 <1416520542.8629.46.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20141120222506.GS7996@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:l171mLqymcw2XQHe8PgiPMBogmz6PiIcjTRcE67p1pEi6OnUmsx
- Id6RWWxD9SiYXGcfIoOGcK0XaE9laETk3K6Jwwip6exE0TnXxDNROiRTdXeww0aeihiQaym
- gdpfjkZ5FyKt9EKtNHWoL4KTnOjJFIqyk7/rt1Na5col6DUav7k2DfXOQ47gPkIre4sZ25y
- WXZILM00I4DypSSAmNhCA==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 23:43:17 +0100
+On Thu, 2014-11-20 at 22:25 +0000, Al Viro wrote:
 
-The vfree() function performs also input parameter validation. Thus the test
-around the call is not needed.
+> Yes, it is.  You are breaking several _other_ kernel_sendmsg() users.
+> They are already slightly broken, but that'll make breakage much more
+> common.
+> 
+> Please, don't - the right thing to do is to have iov_iter in msghdr
+> (we already have the kernel and userland ones with different types and
+> we do not assume their layouts to be identical - currently they are,
+> but it's easy to change), keep iovec constant in all cases and advance
+> ->msg_iter.  Also in all cases.
+> 
+> Note that direct manipulations of what's currently in ->msg_iov are
+> wrong - all those loops over vector elements, etc., belong in low-level
+> primitives.  The main missing ones right now are csum_and_copy_{from,to}_iter()
+> - I have those in local queue, but I'm still trying to get a reasonably
+> clean mm/iov_iter.c without ridiculous amounts of boilerplating.  A bit more
+> massage is needed there...
+> 
+> Seriously, take a look at vfs.git#iov_iter-net; it's preparations for the
+> one that'll introduce ->msg_iter.  Right now that branch has local iov_iter
+> declared and initialized in several ->sendmsg() and ->recvmsg() instances and
+> fed to primitives that work with it; after the conversion it'll be in
+> msg->msg_iter and it will be initialized by sock_sendmsg()/sock_recvmsg().
+> 
+> The tricky part is how to get through that without temporary breaking the
+> existing sendmsg/recvmsg users in the kernel *and* without a patch size from
+> hell.  I more or less see how to carve the remaining steps into
+> reasonably-sized chunks; iscsi is one of the tricky ones and it, AFAICS,
+> is genuinely broken in mainline and will need fixes that can go into -stable.
+> 
+> And no, your solution doesn't work.  Sorry.  You'll break e.g. smb_send_kvec()
+> that way.  ceph_tcp_sendmsg() as well, IIRC.
 
-This issue was detected by using the Coccinelle software.
+Nowhere in tcp_sendmsg() the iov had const qualifier.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/scsi/bfa/bfad_debugfs.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+If it was declared as const, this discussion would not happen,
+we would know we are not allowed to modify it.
 
-diff --git a/drivers/scsi/bfa/bfad_debugfs.c b/drivers/scsi/bfa/bfad_debugfs.c
-index 8e83d04..a72170f 100644
---- a/drivers/scsi/bfa/bfad_debugfs.c
-+++ b/drivers/scsi/bfa/bfad_debugfs.c
-@@ -399,8 +399,7 @@ bfad_debugfs_release_fwtrc(struct inode *inode, struct file *file)
- 	if (!fw_debug)
- 		return 0;
- 
--	if (fw_debug->debug_buffer)
--		vfree(fw_debug->debug_buffer);
-+	vfree(fw_debug->debug_buffer);
- 
- 	file->private_data = NULL;
- 	kfree(fw_debug);
--- 
-2.1.3
+iov_iter is nice, but not a single time it is used in net/ 
+
+Please make sure to add const where appropriate.
+
+Thanks.
+
 
