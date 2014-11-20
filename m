@@ -1,70 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922AbaKTAKw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 19:10:52 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:60858 "EHLO
+	id S1757305AbaKTAMM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 19:12:12 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:60891 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756563AbaKTAKu (ORCPT
+	with ESMTP id S1756794AbaKTAKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 19:10:50 -0500
+	Wed, 19 Nov 2014 19:10:52 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Kenneth Westfield <kwestfie@codeaurora.org>,
         Josh Cartwright <joshc@codeaurora.org>,
-        Rajendra Nayak <rnayak@codeaurora.org>, devicetree@vger.kernel.org,
+        Rajendra Nayak <rnayak@codeaurora.org>,
         Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH 0/7] IPQ806X audio clock control driver
-Date: Wed, 19 Nov 2014 16:10:38 -0800
-Message-Id: <1416442245-21967-1-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 4/7] clk: qcom: Add simple regmap based muxes
+Date: Wed, 19 Nov 2014 16:10:42 -0800
+Message-Id: <1416442245-21967-5-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 2.1.0.61.ge50deb1
+In-Reply-To: <1416442245-21967-1-git-send-email-sboyd@codeaurora.org>
+References: <1416442245-21967-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds support for the low power audio subsystem (lpass)
-clock controller hardware. I split out the #define patch so that
-it can go through the clock tree and the arm-soc tree in parallel
-if desired. I'll be adding the apq/msm drivers shortly, but I wanted
-to get this out for any feedback while I go and port over that data.
+Add support for muxes that use regmap instead of readl/writel
+directly. We don't support as many features as clk-mux.c, but
+this is good enough to support getting and setting parents.
+Adding a table based lookup can be added in the future if needed.
 
-Josh Cartwright (1):
-  clk: qcom: Add support for cdiv clocks
-
-Rajendra Nayak (3):
-  dt-bindings: Add #defines for IPQ806x lpass clock control
-  clk: qcom: ipq: Add lpass clock controller driver
-  devicetree: bindings: Document qcom,lcc
-
-Stephen Boyd (3):
-  clk: Add __clk_mux_determine_rate_closest
-  clk: divider: Make generic for usage elsewhere
-  clk: qcom: Add simple regmap based muxes
-
- .../devicetree/bindings/clock/qcom,lcc.txt         |  21 +
- drivers/clk/clk-divider.c                          | 195 +++++----
- drivers/clk/clk.c                                  |  47 ++-
- drivers/clk/qcom/Kconfig                           |   9 +
- drivers/clk/qcom/Makefile                          |   3 +
- drivers/clk/qcom/clk-cdiv.c                        |  72 ++++
- drivers/clk/qcom/clk-cdiv.h                        |  29 ++
- drivers/clk/qcom/clk-regmap-mux.c                  |  59 +++
- drivers/clk/qcom/clk-regmap-mux.h                  |  29 ++
- drivers/clk/qcom/gcc-ipq806x.c                     |  12 +
- drivers/clk/qcom/lcc-ipq806x.c                     | 456 +++++++++++++++++++++
- include/dt-bindings/clock/qcom,gcc-ipq806x.h       |   1 -
- include/dt-bindings/clock/qcom,lcc-ipq806x.h       |  29 ++
- include/linux/clk-provider.h                       |  20 +-
- 14 files changed, 894 insertions(+), 88 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/qcom,lcc.txt
- create mode 100644 drivers/clk/qcom/clk-cdiv.c
- create mode 100644 drivers/clk/qcom/clk-cdiv.h
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clk/qcom/Makefile         |  1 +
+ drivers/clk/qcom/clk-regmap-mux.c | 59 +++++++++++++++++++++++++++++++++++++++
+ drivers/clk/qcom/clk-regmap-mux.h | 29 +++++++++++++++++++
+ 3 files changed, 89 insertions(+)
  create mode 100644 drivers/clk/qcom/clk-regmap-mux.c
  create mode 100644 drivers/clk/qcom/clk-regmap-mux.h
- create mode 100644 drivers/clk/qcom/lcc-ipq806x.c
- create mode 100644 include/dt-bindings/clock/qcom,lcc-ipq806x.h
 
+diff --git a/drivers/clk/qcom/Makefile b/drivers/clk/qcom/Makefile
+index f26917c6bfd7..e7f2d0f225ba 100644
+--- a/drivers/clk/qcom/Makefile
++++ b/drivers/clk/qcom/Makefile
+@@ -7,6 +7,7 @@ clk-qcom-y += clk-rcg.o
+ clk-qcom-y += clk-rcg2.o
+ clk-qcom-y += clk-branch.o
+ clk-qcom-y += clk-cdiv.o
++clk-qcom-y += clk-regmap-mux.o
+ clk-qcom-y += reset.o
+ 
+ obj-$(CONFIG_APQ_GCC_8084) += gcc-apq8084.o
+diff --git a/drivers/clk/qcom/clk-regmap-mux.c b/drivers/clk/qcom/clk-regmap-mux.c
+new file mode 100644
+index 000000000000..cae3071f384c
+--- /dev/null
++++ b/drivers/clk/qcom/clk-regmap-mux.c
+@@ -0,0 +1,59 @@
++/*
++ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/bitops.h>
++#include <linux/regmap.h>
++#include <linux/export.h>
++
++#include "clk-regmap-mux.h"
++
++static inline struct clk_regmap_mux *to_clk_regmap_mux(struct clk_hw *hw)
++{
++	return container_of(to_clk_regmap(hw), struct clk_regmap_mux, clkr);
++}
++
++static u8 mux_get_parent(struct clk_hw *hw)
++{
++	struct clk_regmap_mux *mux = to_clk_regmap_mux(hw);
++	struct clk_regmap *clkr = to_clk_regmap(hw);
++	unsigned int mask = GENMASK(mux->width - 1, 0);
++	unsigned int val;
++
++	regmap_read(clkr->regmap, mux->reg, &val);
++
++	val >>= mux->shift;
++	val &= mask;
++
++	return val;
++}
++
++static int mux_set_parent(struct clk_hw *hw, u8 index)
++{
++	struct clk_regmap_mux *mux = to_clk_regmap_mux(hw);
++	struct clk_regmap *clkr = to_clk_regmap(hw);
++	unsigned int mask = GENMASK(mux->width + mux->shift - 1, mux->shift);
++	unsigned int val;
++
++	val = index;
++	val <<= mux->shift;
++
++	return regmap_update_bits(clkr->regmap, mux->reg, mask, val);
++}
++
++const struct clk_ops clk_regmap_mux_closest_ops = {
++	.get_parent = mux_get_parent,
++	.set_parent = mux_set_parent,
++	.determine_rate = __clk_mux_determine_rate_closest,
++};
++EXPORT_SYMBOL_GPL(clk_regmap_mux_closest_ops);
+diff --git a/drivers/clk/qcom/clk-regmap-mux.h b/drivers/clk/qcom/clk-regmap-mux.h
+new file mode 100644
+index 000000000000..5cec76154fda
+--- /dev/null
++++ b/drivers/clk/qcom/clk-regmap-mux.h
+@@ -0,0 +1,29 @@
++/*
++ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __QCOM_CLK_REGMAP_MUX_H__
++#define __QCOM_CLK_REGMAP_MUX_H__
++
++#include <linux/clk-provider.h>
++#include "clk-regmap.h"
++
++struct clk_regmap_mux {
++	u32			reg;
++	u32			shift;
++	u32			width;
++	struct clk_regmap	clkr;
++};
++
++extern const struct clk_ops clk_regmap_mux_closest_ops;
++
++#endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 a Linux Foundation Collaborative Project
