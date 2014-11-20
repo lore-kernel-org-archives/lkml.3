@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757870AbaKTTMh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 14:12:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48208 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755125AbaKTTMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 14:12:35 -0500
-Message-ID: <1416510751.3116.13.camel@localhost>
-Subject: Re: sparc: Clashing values for O_PATH and FMODE_NONOTIFY?
-From: Eric Paris <eparis@redhat.com>
-To: David Drysdale <drysdale@google.com>
-Cc: David Miller <davem@davemloft.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        sparclinux@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Date: Thu, 20 Nov 2014 14:12:31 -0500
-In-Reply-To: <CAHse=S-f5o3vbT+b1D5baEWCWMUnDyLSxM88+vwwymFuLrTirg@mail.gmail.com>
-References: <CAHse=S_EY3mJ_pdZf+A46joro_uNy=6tXGG1v7Va4NX_YxJu2w@mail.gmail.com>
-	 <20141119.153001.1273476178846053821.davem@davemloft.net>
-	 <CAHse=S-f5o3vbT+b1D5baEWCWMUnDyLSxM88+vwwymFuLrTirg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1757962AbaKTTQK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 14:16:10 -0500
+Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:51250 "HELO
+	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757781AbaKTTQI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 14:16:08 -0500
+From: Joe Stringer <joestringer@nicira.com>
+To: Jesse Gross <jesse@nicira.com>
+Subject: Re: [PATCH net 2/5] i40e: Implement ndo_gso_check()
+Date: Thu, 20 Nov 2014 11:16:03 -0800
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: netdev <netdev@vger.kernel.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>, linux.nics@intel.com,
+        Tom Herbert <therbert@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shannon Nelson <shannon.nelson@intel.com>, jesse.brandeburg@intel.com
+References: <1415138202-1197-1-git-send-email-joestringer@nicira.com> <1415138202-1197-3-git-send-email-joestringer@nicira.com> <CAEP_g=8rbJF5z92LV_c14KooU=i3x=9WpikocctcEUOdw5-oLA@mail.gmail.com>
+In-Reply-To: <CAEP_g=8rbJF5z92LV_c14KooU=i3x=9WpikocctcEUOdw5-oLA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201411201116.04406.joestringer@nicira.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-20 at 12:12 +0000, David Drysdale wrote:
-> [+linux-fsdevel, without the typo this time]
+On Tuesday, November 04, 2014 15:45:22 Jesse Gross wrote:
+> On Tue, Nov 4, 2014 at 1:56 PM, Joe Stringer <joestringer@nicira.com> wrote:
+> > diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c
+> > b/drivers/net/ethernet/intel/i40e/i40e_main.c index c3a7f4a..21829b5
+> > 100644
+> > --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
+> > +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+> > +static bool i40e_gso_check(struct sk_buff *skb, struct net_device *dev)
+> > +{
+> > +       if ((skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) &&
+> > +           (skb->inner_protocol_type != ENCAP_TYPE_ETHER ||
+> > +            skb->inner_protocol != htons(ETH_P_TEB) ||
+> > +            skb_inner_mac_header(skb) - skb_transport_header(skb) > 64))
+> > +               return false;
 > 
-> On Wed, Nov 19, 2014 at 8:30 PM, David Miller <davem@davemloft.net> wrote:
-> > From: David Drysdale <drysdale@google.com>
-> > Date: Tue, 18 Nov 2014 13:13:51 +0000
-> >
-> >> Hi folks,
-> >>
-> >> It looks like the value for O_PATH on sparc:
-> >>
-> >>   arch/sparc/include/uapi/asm/fcntl.h:37:#define O_PATH 0x1000000
-> >>
-> >> clashes with the arch-independent value for __FMODE_NONOTIFY:
-> >>
-> >>   include/linux/fs.h:137:#define FMODE_NONOTIFY ((__force fmode_t)0x1000000)
-> >>   include/linux/fs.h:2764:#define __FMODE_NONOTIFY ((__force int)
-> >> FMODE_NONOTIFY)
-> >>
-> >> and they are both in the same numbering space, as indicated by the
-> >> comment at the top of include/uapi/asm-generic/fcntl.h and the use in
-> >> fs/notify/fanotify/fanotify_user.c:715.
-> >>
-> >> Presumably this could theoretically cause problems (no notifications for
-> >> O_PATH files on SPARC?), so would it be a good idea to renumber
-> >> FMODE_NONOTIFY?  (I *think* that value is entirely kernel-internal.)
-> >>
-> >> Given that this has happened before (12ed2e36c98aec6c4155 "fanotify:
-> >> FMODE_NONOTIFY and __O_SYNC in sparc conflict") it would probably
-> >> also be a good idea to add __FMODE_NOTIFY to the uniqueness check in
-> >> fs/fcntl.c:fcntl_init().
-> >>
-> >> Thoughts?
-> >
-> > I think you will need to change the internal value, to not clash with
-> > the sparc exported one, for sure.
+> I think it may be possible to even support a few more things here.
+> According to the datasheet here:
+> http://www.intel.com/content/dam/www/public/us/en/documents/datasheets/xl71
+> 0-10-40-controller-datasheet.pdf
 > 
-> Well, I was sort of hoping someone else might volunteer to make the
-> change :-) --  I don't use fanotify (or sparc for that matter), I just
-> happened to notice the clash in passing.
+> This can actually support 64 bytes beyond the tunnel header, which
+> would make for a total of 80 bytes. It looks like it can also support
+> IPv4 or IPv6 beyond just Ethernet as the encapsulated protocol.
 > 
-> But I'm happy to have a go, although I can't test much.  It would be
-> good to hear from the fanotify maintainers first, though -- Eric?
+> Intel guys, can you confirm that this is correct?
 
-It's totally internal.  And was picked to not clash with anyone.  I
-don't know how to keep it from happening in the future.....
-
+I'm just respinning this for v4/6 beyond GRE/UDP tunnel and IPIP, and I found 
+the description of max protocol parsing size of 480B (with individual header 
+limit of 255B). I couldn't find where you get this 64/80 number or which 
+headers it maps to. Could you (or one of the intel guys) expand on this?
