@@ -1,132 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624AbaKTLms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 06:42:48 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:37944 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756515AbaKTLmq (ORCPT
+	id S1756032AbaKTLpS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 06:45:18 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:38936 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845AbaKTLpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 06:42:46 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [RFC PATCH] arm: imx: Workaround i.MX6 PMU interrupts muxed to one SPI
-Date: Thu, 20 Nov 2014 11:42:37 +0000
-Message-Id: <1416483757-24165-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Thu, 20 Nov 2014 06:45:16 -0500
+Message-ID: <546DD445.5080108@hitachi.com>
+Date: Thu, 20 Nov 2014 20:45:09 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] tracing: Fix race of function probes counting
+References: <20141118134643.4b550ee4@gandalf.local.home>
+In-Reply-To: <20141118134643.4b550ee4@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All PMU interrupts on multi-core i.MX6 devices are muxed onto a single SPI.
-Should the PMU of any core except 0 (the default affinity for the
-interrupt) trigger the interrupt then it cannot be serviced and,
-eventually, the spurious irq detection will forcefully disable the
-interrupt.
+(2014/11/19 3:46), Steven Rostedt wrote:
+> 
+> The function probe counting for traceon and traceoff suffered a race
+> condition where if the probe was executing on two or more CPUs at the
+> same time, it could decrement the counter by more than one when
+> disabling (or enabling) the tracer only once.
+> 
+> The way the traceon and traceoff probes are suppose to work is that
+> they disable (or enable) tracing once per count. If a user were to
+> echo 'schedule:traceoff:3' into set_ftrace_filter, then when the
+> schedule function was called, it would disable tracing. But the count
+> should only be decremented once (to 2). Then if the user enabled tracing
+> again (via tracing_on file), the next call to schedule would disable
+> tracing again and the count would be decremented to 1.
+> 
+> But if multiple CPUS called schedule at the same time, it is possible
+> that the count would be decremented more than once because of the
+> simple "count--" used.
+> 
+> By reading the count into a local variable and using memory barriers
+> we can guarantee that the count would only be decremented once per
+> disable (or enable).
+> 
+> The stack trace probe had a similar race, but here the stack trace will
+> decrement for each time it is called. But this had the read-modify-
+> write race, where it could stack trace more than the number of times
+> that was specified. This case we use a cmpxchg to stack trace only the
+> number of times specified.
+> 
+> The dump probes can still use the old "update_count()" function as
+> they only run once, and that is controlled by the dump logic
+> itself.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-This can be worked around by getting the interrupt handler to change its
-own affinity if it cannot figure out why it has been triggered. This patch
-adds logic to rotate the affinity to i.MX6.
+I have found a couple of typos, but basically, it looks OK.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Notes:
-    This patch adopts the approach used on the u8500 (db8500_pmu_handler)
-    but the logic has been generalized for any number of CPUs, mostly
-    because the i.MX6 has a both dual and quad core variants.
-    
-    However it might be better to include the generalized logic in the main
-    armpmu code. I think the logic could be deployed automatically on SMP
-    systems with only a single not-percpu IRQ, replacing the
-    plat->handle_irq dance we currently do to hook up this code.
-    
-    Thoughts? (or is there already shared logic to do this that I
-    overlooked)
-    
+> ---
+>  kernel/trace/trace_functions.c | 117 +++++++++++++++++++++++++++++++++--------
+>  1 file changed, 96 insertions(+), 21 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+> index a8e0c7666164..973db52eb070 100644
+> --- a/kernel/trace/trace_functions.c
+> +++ b/kernel/trace/trace_functions.c
+> @@ -261,37 +261,74 @@ static struct tracer function_trace __tracer_data =
+>  };
+>  
+>  #ifdef CONFIG_DYNAMIC_FTRACE
+> -static int update_count(void **data)
+> +static void update_traceon_count(void **data, int on)
 
- arch/arm/mach-imx/mach-imx6q.c | 39 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 38 insertions(+), 1 deletion(-)
+btw, why don't you use bool instead of int?
 
-diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
-index d51c6e99a2e9..c056b7b97eaa 100644
---- a/arch/arm/mach-imx/mach-imx6q.c
-+++ b/arch/arm/mach-imx/mach-imx6q.c
-@@ -16,6 +16,7 @@
- #include <linux/delay.h>
- #include <linux/export.h>
- #include <linux/init.h>
-+#include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/irqchip.h>
-@@ -33,6 +34,7 @@
- #include <linux/mfd/syscon/imx6q-iomuxc-gpr.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-+#include <asm/pmu.h>
- #include <asm/system_misc.h>
+>  {
+> -	unsigned long *count = (long *)data;
+> +	long *count = (long *)data;
+> +	long old_count = *count;
+>  
+> -	if (!*count)
+> -		return 0;
+> +	/*
+> +	 * Tracing gets disabled (or enabled) once per count.
+> +	 * This function can be called at the same time on mulitple CPUs.
+                                                           ^^^^^^^^ multiple
 
- #include "common.h"
-@@ -261,6 +263,40 @@ static void __init imx6q_axi_init(void)
- 	}
- }
+> +	 * It is fine if both disable (or enable) tracing, as disabling
+> +	 * (or enabling) the second time doesn't do anything as the
+> +	 * state of the tracer is already disabled (or enabled).
+> +	 * What needs to be synchronized in this case is that the count
+> +	 * only gets decremented once, even if the tracer is disabled
+> +	 * (or enabled) twice, as the second one is really a nop.
+> +	 *
+> +	 * The memory barriers guarantee that we only decrement the
+> +	 * counter once. First the count is read to a local variable
+> +	 * and a read barrier is used to make sure that it is loaded
+> +	 * before checking if the tracer is in the state we want.
+> +	 * If the tracer is not in the state we want, then the count
+> +	 * is guaranteed to be the old count.
+> +	 *
+> +	 * Next the tracer is set to the state we want (disabled or enabled)
+> +	 * then a write memory barrier is used to make sure that
+> +	 * the new state is visible before changing the counter by
+> +	 * one minus the old counter. This guarantees that another CPU
+> +	 * executing this code will see the new state before seeing
+> +	 * the new counter value, and would not do anthing if the new
+                                                   ^^^^^^^anything?
 
-+/*
-+ * The PMU IRQ lines of all cores are muxed onto a single interrupt.
-+ * Rotate the interrupt around the cores if the current CPU cannot
-+ * figure out why the interrupt has been triggered.
-+ */
-+static irqreturn_t imx6q_pmu_handler(int irq, void *dev, irq_handler_t handler)
-+{
-+	irqreturn_t ret = handler(irq, dev);
-+	int next;
-+
-+	if (ret == IRQ_NONE && num_online_cpus() > 1) {
-+		next = cpumask_next(smp_processor_id(), cpu_online_mask);
-+		if (next > nr_cpu_ids)
-+			next = cpumask_next(-1, cpu_online_mask);
-+		irq_set_affinity(irq, cpumask_of(next));
-+	}
-+
-+	/*
-+	 * We should be able to get away with the amount of IRQ_NONEs we give,
-+	 * while still having the spurious IRQ detection code kick in if the
-+	 * interrupt really starts hitting spuriously.
-+	 */
-+	return ret;
-+}
-+
-+static struct arm_pmu_platdata imx6q_pmu_platdata = {
-+	.handle_irq = imx6q_pmu_handler,
-+};
-+
-+static struct of_dev_auxdata imx6q_auxdata_lookup[] __initdata = {
-+	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &imx6q_pmu_platdata),
-+	{},
-+};
-+
- static void __init imx6q_init_machine(void)
- {
- 	struct device *parent;
-@@ -276,7 +312,8 @@ static void __init imx6q_init_machine(void)
+> +	 * counter is seen.
+> +	 *
+> +	 * Note, there is no synchronization between this and a user
+> +	 * setting the tracing_on file. But we currently don't care
+> +	 * about that.
+> +	 */
+> +	if (!old_count)
+> +		return;
+>  
+> -	if (*count != -1)
+> -		(*count)--;
+> +	/* Make sure we see count before checking tracing state */
+> +	smp_rmb();
+>  
+> -	return 1;
+> +	if (on == !!tracing_is_on())
+> +		return;
+> +
+> +	if (on)
+> +		tracing_on();
+> +	else
+> +		tracing_off();
+> +
+> +	/* unlimited? */
+> +	if (old_count == -1)
+> +		return;
+> +
+> +	/* Make sure tracing state is visible before updating count */
+> +	smp_wmb();
+> +
+> +	*count = old_count - 1;
+>  }
+>  
+>  static void
+>  ftrace_traceon_count(unsigned long ip, unsigned long parent_ip, void **data)
+>  {
+> -	if (tracing_is_on())
+> -		return;
+> -
+> -	if (update_count(data))
+> -		tracing_on();
+> +	update_traceon_count(data, 1);
+>  }
+>  
+>  static void
+>  ftrace_traceoff_count(unsigned long ip, unsigned long parent_ip, void **data)
+>  {
+> -	if (!tracing_is_on())
+> -		return;
+> -
+> -	if (update_count(data))
+> -		tracing_off();
+> +	update_traceon_count(data, 0);
+>  }
+>  
+>  static void
+> @@ -330,11 +367,49 @@ ftrace_stacktrace(unsigned long ip, unsigned long parent_ip, void **data)
+>  static void
+>  ftrace_stacktrace_count(unsigned long ip, unsigned long parent_ip, void **data)
+>  {
+> -	if (!tracing_is_on())
+> -		return;
+> +	long *count = (long *)data;
+> +	long old_count;
+> +	long new_count;
+>  
+> -	if (update_count(data))
+> -		trace_dump_stack(STACK_SKIP);
+> +	/*
+> +	 * Stack traces should only execute the number of times the
+> +	 * user specified in the counter.
+> +	 */
+> +	do {
+> +
+> +		if (!tracing_is_on())
+> +			return;
+> +
+> +		old_count = *count;
+> +
+> +		if (!old_count)
+> +			return;
+> +
+> +		/* unlimited? */
+> +		if (old_count == -1) {
+> +			trace_dump_stack(STACK_SKIP);
+> +			return;
+> +		}
+> +
+> +		new_count = old_count - 1;
+> +		new_count = cmpxchg(count, old_count, new_count);
+> +		if (new_count == old_count)
+> +			trace_dump_stack(STACK_SKIP);
+> +
+> +	} while (new_count != old_count);
+> +}
+> +
+> +static int update_count(void **data)
+> +{
+> +	unsigned long *count = (long *)data;
+> +
+> +	if (!*count)
+> +		return 0;
+> +
+> +	if (*count != -1)
+> +		(*count)--;
+> +
+> +	return 1;
+>  }
+>  
+>  static void
+> 
 
- 	imx6q_enet_phy_init();
 
--	of_platform_populate(NULL, of_default_bus_match_table, NULL, parent);
-+	of_platform_populate(NULL, of_default_bus_match_table,
-+			     imx6q_auxdata_lookup, parent);
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
- 	imx_anatop_init();
- 	cpu_is_imx6q() ?  imx6q_pm_init() : imx6dl_pm_init();
---
-1.9.3
 
