@@ -1,92 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757234AbaKTNjk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 08:39:40 -0500
-Received: from mga01.intel.com ([192.55.52.88]:42170 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751103AbaKTNji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 08:39:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,424,1413270000"; 
-   d="scan'208";a="635184416"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: Stephane Eranian <eranian@google.com>, Namhyung Kim <namhyung@kernel.org>
-CC: "acme@kernel.org" <acme@kernel.org>, "jolsa@redhat.com" <jolsa@redhat.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: RE: [PATCH V4 1/3] perf tools: enable LBR call stack support
-Thread-Topic: [PATCH V4 1/3] perf tools: enable LBR call stack support
-Thread-Index: AQHQBIuwODa7l2FB7kKmHK6r8bJvrpxo7lAAgACVydA=
-Date: Thu, 20 Nov 2014 13:39:26 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F07701672911@SHSMSX103.ccr.corp.intel.com>
-References: <1416346617-3577-1-git-send-email-kan.liang@intel.com>
-	<1416346617-3577-2-git-send-email-kan.liang@intel.com>
-	<87r3wzpt4o.fsf@sejong.aot.lge.com>
-	<37D7C6CF3E00A74B8858931C1DB2F07701671D25@SHSMSX103.ccr.corp.intel.com>
-	<871toypelb.fsf@sejong.aot.lge.com>
- <CABPqkBS1a6X4J9Asov=xiax03OnC-R9M9y1Whhg=fBXeTBGGbA@mail.gmail.com>
-In-Reply-To: <CABPqkBS1a6X4J9Asov=xiax03OnC-R9M9y1Whhg=fBXeTBGGbA@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1757302AbaKTNj6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 08:39:58 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:35546 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757250AbaKTNjz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 08:39:55 -0500
+Date: Thu, 20 Nov 2014 08:39:52 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Boaz Harrosh <boaz@plexistor.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH vfs 2/2] {block|char}_dev: remove inode->i_devices
+Message-ID: <20141120133952.GC14877@htj.dyndns.org>
+References: <20141113220927.GF2598@htj.dyndns.org>
+ <20141113221139.GG2598@htj.dyndns.org>
+ <546DC5AD.3040606@plexistor.com>
+ <20141120115052.GA32237@htj.dyndns.org>
+ <546DE065.3090502@plexistor.com>
+ <20141120131118.GB14877@htj.dyndns.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141120131118.GB14877@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAKDdkuG010617
 
+On Thu, Nov 20, 2014 at 08:11:18AM -0500, Tejun Heo wrote:
+...
+> creating another one-off behavior.  If we demote this to something
+> which is shared only between block and char devs, we can go simpler
+> and less versatile.  Where should it go tho?
 
+So, one option is implementing something minimal in fs/devptrs.h or
+somesuch and include it from block/char_dev.c.  If it isn't exposed as
+a generic lib function, this can be a lot simpler.  I'll give it a
+shot later today.
 
-> 
-> On Thu, Nov 20, 2014 at 7:32 AM, Namhyung Kim <namhyung@kernel.org>
-> wrote:
-> >
-> > On Wed, 19 Nov 2014 14:32:08 +0000, Kan Liang wrote:
-> > >> On Tue, 18 Nov 2014 16:36:55 -0500, kan liang wrote:
-> > >> > +                  if (attr->exclude_user) {
-> > >> > +                          attr->exclude_user = 0;
-> > >> > +
-> > >> > +                          pr_warning("LBR callstack option is only available"
-> > >> > +                                     " to get user callchain information."
-> > >> > +                                     " Force exclude_user to 0.\n");
-> > >> > +                  }
-> > >>
-> > >> I'm not sure what's in a higher priority - maybe I missed earlier
-> discussion.
-> > >> IOW what about this?
-> > >>
-> > >>                      if (attr->exclude_user) {
-> > >>                              pr_warning("LBR callstack option is only available"
-> > >>                                         " to get user callchain
-> > >> information.\n");
-> > >
-> > > I think either is fine. I'd like to add more info "Falling back to
-> framepointers."
-> > > based on your changes.
-> > > So the user know what they will get then.
-> > >
-> > > What do you think?
-> >
-> > Looks good to me.  But I still slightly prefer not to override user
-> > settings.  But it's not a strong opinion though - I'd like to here
-> > from others.
-> >
-> I don't like when the tool changes the use settings under the hood.
-> I think perf did that with cycles -> TASK_CLOCK if PMU was not supported
-> and that was very confusing to me especially with no warning.
-> So if LBR Call stack mode is not avail, then inform the user with a warning or
-> error, don't swap silently.
+Thanks.
 
-OK. So the new patch will warn the user if LBR call stack is no available.
-It will also tell the user that the FP mode will replace the LBR mode.
-
-Thanks,
-Kan
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+tejun
