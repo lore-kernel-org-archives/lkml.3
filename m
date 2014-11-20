@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757914AbaKTKZy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 05:25:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50264 "EHLO mx2.suse.de"
+	id S1757897AbaKTKZw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 05:25:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50300 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575AbaKTKT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 05:19:56 -0500
+	id S1757454AbaKTKT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 05:19:57 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>,
@@ -19,141 +19,107 @@ Cc: Linux-MM <linux-mm@kvack.org>,
         Paul Mackerras <paulus@samba.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 0/10] Replace _PAGE_NUMA with PAGE_NONE protections v2
-Date: Thu, 20 Nov 2014 10:19:40 +0000
-Message-Id: <1416478790-27522-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 02/10] mm: Add p[te|md] protnone helpers for use by NUMA balancing
+Date: Thu, 20 Nov 2014 10:19:42 +0000
+Message-Id: <1416478790-27522-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1416478790-27522-1-git-send-email-mgorman@suse.de>
+References: <1416478790-27522-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V1 failed while running under kvm-tools very quickly and a second report
-indicated that it happens on bare metal as well. This version survived
-an overnight run of trinity running under kvm-tools here but verification
-from Sasha would be appreciated.
+This is a preparatory patch that introduces protnone helpers for automatic
+NUMA balancing.
 
-Changelog since V1
-o ppc64 paranoia checks and clarifications			(aneesh)
-o Fix trinity regression (hopefully)
-o Reduce unnecessary TLB flushes				(mel)
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ arch/powerpc/include/asm/pgtable.h | 11 +++++++++++
+ arch/x86/include/asm/pgtable.h     | 16 ++++++++++++++++
+ include/asm-generic/pgtable.h      | 19 +++++++++++++++++++
+ 3 files changed, 46 insertions(+)
 
-Automatic NUMA balancing depends on being able to protect PTEs to trap a
-fault and gather reference locality information. Very broadly speaking it
-would mark PTEs as not present and use another bit to distinguish between
-NUMA hinting faults and other types of faults. It was universally loved
-by everybody and caused no problems whatsoever. That last sentence might
-be a lie.
-
-This series is very heavily based on patches from Linus and Aneesh to
-replace the existing PTE/PMD NUMA helper functions with normal change
-protections. I did alter and add parts of it but I consider them relatively
-minor contributions. At their suggestion, acked-bys are in there but I've
-no problem converting them to Signed-off-by if requested.
-
-AFAIK, this has received no testing on ppc64 and I'm depending on Aneesh for
-that. I tested trinity under kvm-tool and passed and ran a few other basic
-tests. In most cases I'm leaving out detail as it's not that interesting.
-
-specjbb single JVM: There was negligible performance difference in the
-	benchmark itself for short and long runs. However, system activity
-	is higher and interrupts are much higher over time -- possibly
-	TLB flushes. Migrations are also higher. Overall, this is more
-	overhead but considering the problems faced with the old approach
-	I think we just have to suck it up and find another way of reducing
-	the overhead.
-
-specjbb multi JVM: Negligible performance difference to the actual benchmarm
-	but like the single JVM case, the system overhead is noticably
-	higher.  Again, interrupts are a major factor.
-
-autonumabench: This was all over the place and about all that can be
-	reasonably concluded is that it's different but not necessarily
-	better or worse.
-
-autonumabench
-                                     3.18.0-rc4            3.18.0-rc4
-                                        vanilla         protnone-v2r5
-User    NUMA01               32806.01 (  0.00%)    20250.67 ( 38.27%)
-User    NUMA01_THEADLOCAL    23910.28 (  0.00%)    22734.37 (  4.92%)
-User    NUMA02                3176.85 (  0.00%)     3082.68 (  2.96%)
-User    NUMA02_SMT            1600.06 (  0.00%)     1547.08 (  3.31%)
-System  NUMA01                 719.07 (  0.00%)     1344.39 (-86.96%)
-System  NUMA01_THEADLOCAL      916.26 (  0.00%)      180.90 ( 80.26%)
-System  NUMA02                  20.92 (  0.00%)       17.34 ( 17.11%)
-System  NUMA02_SMT               8.76 (  0.00%)        7.24 ( 17.35%)
-Elapsed NUMA01                 728.27 (  0.00%)      519.28 ( 28.70%)
-Elapsed NUMA01_THEADLOCAL      589.15 (  0.00%)      554.73 (  5.84%)
-Elapsed NUMA02                  81.20 (  0.00%)       81.72 ( -0.64%)
-Elapsed NUMA02_SMT              80.49 (  0.00%)       79.58 (  1.13%)
-CPU     NUMA01                4603.00 (  0.00%)     4158.00 (  9.67%)
-CPU     NUMA01_THEADLOCAL     4213.00 (  0.00%)     4130.00 (  1.97%)
-CPU     NUMA02                3937.00 (  0.00%)     3793.00 (  3.66%)
-CPU     NUMA02_SMT            1998.00 (  0.00%)     1952.00 (  2.30%)
-
-
-System CPU usage of NUMA01 is worse but it's an adverse workload on this
-machine so I'm reluctant to conclude that it's a problem that matters. On
-the other workloads that are sensible on this machine, system CPU usage
-is great.  Overall time to complete the benchmark is comparable
-
-          3.18.0-rc4  3.18.0-rc4
-             vanillaprotnone-v2r5
-User        61493.38    47615.01
-System       1665.17     1550.07
-Elapsed      1480.79     1236.74
-
-NUMA alloc hit                 4739774     5328362
-NUMA alloc miss                      0           0
-NUMA interleave hit                  0           0
-NUMA alloc local               4664980     5328351
-NUMA base PTE updates        556489407   444119981
-NUMA huge PMD updates          1086000      866680
-NUMA page range updates     1112521407   887860141
-NUMA hint faults               1538964     1242142
-NUMA hint local faults          835871      814313
-NUMA hint local percent             54          65
-NUMA pages migrated            7329212    59883854
-
-The NUMA pages migrated look terrible but when I looked at a graph of the
-activity over time I see that the massive spike in migration activity was
-during NUMA01. This correlates with high system CPU usage and could be simply
-down to bad luck but any modifications that affect that workload would be
-related to scan rates and migrations, not the protection mechanism. For
-all other workloads, migration activity was comparable.
-
-Overall, headline performance figures are comparable but the overhead
-is higher, mostly in interrupts. To some extent, higher overhead from
-this approach was anticipated but not to this degree. It's going to be
-necessary to reduce this again with a separate series in the future. It's
-still worth going ahead with this series though as it's likely to avoid
-constant headaches with Xen and is probably easier to maintain.
-
- arch/powerpc/include/asm/pgtable.h    |  53 ++----------
- arch/powerpc/include/asm/pte-common.h |   5 --
- arch/powerpc/include/asm/pte-hash64.h |   6 --
- arch/powerpc/kvm/book3s_hv_rm_mmu.c   |   2 +-
- arch/powerpc/mm/copro_fault.c         |   8 +-
- arch/powerpc/mm/fault.c               |  25 ++----
- arch/powerpc/mm/gup.c                 |   4 +-
- arch/powerpc/mm/pgtable.c             |   8 +-
- arch/powerpc/mm/pgtable_64.c          |   3 +-
- arch/x86/include/asm/pgtable.h        |  46 +++++-----
- arch/x86/include/asm/pgtable_64.h     |   5 --
- arch/x86/include/asm/pgtable_types.h  |  41 +--------
- arch/x86/mm/gup.c                     |   4 +-
- include/asm-generic/pgtable.h         | 152 ++--------------------------------
- include/linux/migrate.h               |   4 -
- include/linux/swapops.h               |   2 +-
- include/uapi/linux/mempolicy.h        |   2 +-
- mm/gup.c                              |   8 +-
- mm/huge_memory.c                      |  50 ++++++-----
- mm/memory.c                           |  18 ++--
- mm/mempolicy.c                        |   2 +-
- mm/migrate.c                          |   8 +-
- mm/mprotect.c                         |  48 +++++------
- mm/pgtable-generic.c                  |   2 -
- 24 files changed, 131 insertions(+), 375 deletions(-)
-
+diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
+index 316f9a5..452c3b4 100644
+--- a/arch/powerpc/include/asm/pgtable.h
++++ b/arch/powerpc/include/asm/pgtable.h
+@@ -39,6 +39,17 @@ static inline int pte_none(pte_t pte)		{ return (pte_val(pte) & ~_PTE_NONE_MASK)
+ static inline pgprot_t pte_pgprot(pte_t pte)	{ return __pgprot(pte_val(pte) & PAGE_PROT_BITS); }
+ 
+ #ifdef CONFIG_NUMA_BALANCING
++static inline int pte_protnone_numa(pte_t pte)
++{
++	return (pte_val(pte) &
++		(_PAGE_PRESENT | _PAGE_USER)) == _PAGE_PRESENT;
++}
++
++static inline int pmd_protnone_numa(pmd_t pmd)
++{
++	return pte_protnone_numa(pmd_pte(pmd));
++}
++
+ static inline int pte_present(pte_t pte)
+ {
+ 	return pte_val(pte) & _PAGE_NUMA_MASK;
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index aa97a07..613cd00 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -497,6 +497,22 @@ static inline int pmd_present(pmd_t pmd)
+ 				 _PAGE_NUMA);
+ }
+ 
++#ifdef CONFIG_NUMA_BALANCING
++/*
++ * These work without NUMA balancing but the kernel does not care. See the
++ * comment in include/asm-generic/pgtable.h
++ */
++static inline int pte_protnone_numa(pte_t pte)
++{
++	return pte_flags(pte) & _PAGE_PROTNONE;
++}
++
++static inline int pmd_protnone_numa(pmd_t pmd)
++{
++	return pmd_flags(pmd) & _PAGE_PROTNONE;
++}
++#endif /* CONFIG_NUMA_BALANCING */
++
+ static inline int pmd_none(pmd_t pmd)
+ {
+ 	/* Only check low word on 32-bit platforms, since it might be
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index 752e30d..7e74122 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -677,6 +677,25 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
+ #endif
+ }
+ 
++#ifndef CONFIG_NUMA_BALANCING
++/*
++ * Technically a PTE can be PROTNONE even when not doing NUMA balancing but
++ * the only case the kernel cares is for NUMA balancing. By default,
++ * implement the helper as "always no". Note that this does not check VMA
++ * protection bits meaning that it is up to the caller to distinguish between
++ * PROT_NONE protections and NUMA hinting fault protections.
++ */
++static inline int pte_protnone_numa(pte_t pte)
++{
++	return 0;
++}
++
++static inline int pmd_protnone_numa(pmd_t pmd)
++{
++	return 0;
++}
++#endif /* CONFIG_NUMA_BALANCING */
++
+ #ifdef CONFIG_NUMA_BALANCING
+ /*
+  * _PAGE_NUMA distinguishes between an unmapped page table entry, an entry that
 -- 
 2.1.2
 
