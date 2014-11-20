@@ -1,118 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113AbaKTHDA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:03:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48653 "EHLO mx1.redhat.com"
+	id S1756246AbaKTHGG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:06:06 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:36317 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751932AbaKTHC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:02:59 -0500
-Date: Thu, 20 Nov 2014 09:02:44 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH net V3] virtio-net: validate features during probe
-Message-ID: <20141120070244.GE30994@redhat.com>
-References: <1416463835-7364-1-git-send-email-jasowang@redhat.com>
+	id S1750949AbaKTHGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 02:06:03 -0500
+Date: Thu, 20 Nov 2014 08:05:52 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Stephan Mueller <smueller@chronox.de>
+CC: Herbert Xu <herbert@gondor.apana.org.au>,
+        Daniel Borkmann <dborkman@redhat.com>, <quentin.gouchet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-crypto@vger.kernel.org>,
+        ABI/API <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v2 02/10] crypto: AF_ALG: user space interface for cipher
+ info
+Message-ID: <20141120070552.GR6390@secunet.com>
+References: <5365136.g8vbXlhRyC@tachyon.chronox.de>
+ <2688209.3bGZus2TD9@tachyon.chronox.de>
+ <20141118140822.GB12100@gondor.apana.org.au>
+ <16101836.sTaxopCThb@tachyon.chronox.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1416463835-7364-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <16101836.sTaxopCThb@tachyon.chronox.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.182.7.102]
+X-EXCLAIMER-MD-CONFIG: 2c86f778-e09b-4440-8b15-867914633a10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 02:10:35PM +0800, Jason Wang wrote:
-> We currently trigger BUG when VIRTIO_NET_F_CTRL_VQ
-> is not set but one of features depending on it is.
-> That's not a friendly way to report errors to
-> hypervisors.
-> Let's check, and fail probe instead.
+On Thu, Nov 20, 2014 at 05:03:24AM +0100, Stephan Mueller wrote:
+> Am Dienstag, 18. November 2014, 22:08:23 schrieb Herbert Xu:
 > 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
-> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-
-
-Looks good, minor nits below:
-
-> ---
-> Changes from V2:
-> - only check the features for ctrl vq (this fix the real bug)
-> - better error message and simplify API
-> ---
->  drivers/net/virtio_net.c | 37 +++++++++++++++++++++++++++++++++++++
->  1 file changed, 37 insertions(+)
+> Hi Herbert, Steffen,
 > 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index ec2a8b4..a6bcfce 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -1673,6 +1673,40 @@ static const struct attribute_group virtio_net_mrg_rx_group = {
->  };
->  #endif
->  
-> +static bool virtnet_fail_on_feature(struct virtio_device *vdev,
-> +				    unsigned int fbit,
-> +				    const char *fname, const char *dname)
-> +{
-> +	if (!virtio_has_feature(vdev, fbit))
-> +		return false;
-> +
-> +	dev_err(&vdev->dev, "Hypervisor bug: advertise feature %s but not %s",
+> > 
+> > We already have crypto_user so you should be extending that to
+> > cover what's missing.
+> 
+> After playing a bit with the interface, I think it falls short supporting 
+> AF_ALG in the following way:
+> 
+> crypto_user cannot be applied to the currently active cipher that one has open 
+> with AF_ALG. For getting information, one has to call crypto_user with the 
+> cra_driver_name of a cipher. (Why is that limitation, btw (see crypto_report 
+> and the use of cru_driver_name?)
 
-Well we don't know it's a hypervisor. How about:
-Device bug: advertises feature %s but not %s.
+crypto_report() was intended to provide informations of one implementation
+of a algorithm, so it was required to specify this algorithm exactly with
+cru_driver_name.
 
-> +		fname, dname);
-> +
-> +	return true;
-> +}
-> +
-> +#define VIRTNET_FAIL_ON(vdev, fbit, dbit)			\
-> +	virtnet_fail_on_feature(vdev, fbit, #fbit, #dbit)
+We could extend crypto_report() to provide informations of the algorithm
+with the highest priority that matches cra_name.
 
-I would pass dbit directly, and supply a string from caller,
-instead if #dbit, this way it can be any string.
+Or, we also have crypto_dump_report(). This basically provides informations
+on all instantiated algorithms, similar to /proc/crypto. We could extend
+this in a way that you can provide a cra_name. Then it can dump out the
+informations of all algorithms that match cra_name.
 
-> +
-> +static bool virtnet_validate_features(struct virtio_device *vdev)
-> +{
-> +	if (!virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ) &&
-> +	    (VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_RX,
-> +			     VIRTIO_NET_F_CTRL_VQ) ||
-> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_VLAN,
-> +			     VIRTIO_NET_F_CTRL_VQ) ||
-> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_GUEST_ANNOUNCE,
-> +			     VIRTIO_NET_F_TRL_VQ) ||
-
-Typo: VIRTIO_NET_F_CTRL_VQ.
-
-> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_MQ, VIRTIO_NET_F_CTRL_VQ) ||
-> +	     VIRTNET_FAIL_ON(vdev, VIRTIO_NET_F_CTRL_MAC_ADDR,
-> +			     VIRTIO_NET_F_CTRL_VQ))) {
-> +		return false;
-> +	}
-> +
-> +	return true;
-> +}
-> +
->  static int virtnet_probe(struct virtio_device *vdev)
->  {
->  	int i, err;
-> @@ -1680,6 +1714,9 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	struct virtnet_info *vi;
->  	u16 max_queue_pairs;
->  
-> +	if (!virtnet_validate_features(vdev))
-> +		return -EINVAL;
-> +
->  	/* Find if host supports multiqueue virtio_net device */
->  	err = virtio_cread_feature(vdev, VIRTIO_NET_F_MQ,
->  				   struct virtio_net_config,
-> -- 
-> 1.9.1
