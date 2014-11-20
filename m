@@ -1,307 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364AbaKTWjN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 17:39:13 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:65193 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756141AbaKTWjL (ORCPT
+	id S1757374AbaKTWmt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 17:42:49 -0500
+Received: from www.linutronix.de ([62.245.132.108]:53526 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756515AbaKTWmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 17:39:11 -0500
+	Thu, 20 Nov 2014 17:42:47 -0500
+Date: Thu, 20 Nov 2014 23:42:42 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tejun Heo <tj@kernel.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: frequent lockups in 3.18rc4
+In-Reply-To: <20141120221122.GA25393@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.11.1411202315230.3950@nanos>
+References: <20141119145902.GA13387@redhat.com> <CA+55aFxBb+aH6GdhbWECkh+wDwsHv43O1ryy4u20O8Bk-oDz+g@mail.gmail.com> <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com> <20141119190215.GA10796@lerouge> <alpine.DEB.2.11.1411192251120.3909@nanos>
+ <20141119225615.GA11386@lerouge> <alpine.DEB.2.11.1411200002330.3909@nanos> <20141119235033.GE11386@lerouge> <20141120122339.GA14877@htj.dyndns.org> <alpine.DEB.2.11.1411202204030.3950@nanos> <20141120221122.GA25393@htj.dyndns.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1416326695-13083-3-git-send-email-wsa@the-dreams.de>
-References: <1416326695-13083-1-git-send-email-wsa@the-dreams.de>
-	<1416326695-13083-3-git-send-email-wsa@the-dreams.de>
-Date: Thu, 20 Nov 2014 23:39:08 +0100
-Message-ID: <CAOY=C6FSXWn2AKn9gp0oU69U8VkkyJAE7MMUTZsToy0P_Tf6AA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] i2c: slave-eeprom: add eeprom simulator driver
-From: Stijn Devriendt <highguy@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, linux-sh@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, Jean Delvare <jdelvare@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 5:04 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> From: Wolfram Sang <wsa+renesas@sang-engineering.com>
->
-> The first user of the i2c-slave interface is an eeprom simulator. It is
-> a shared memory which can be accessed by the remote master via I2C and
-> locally via sysfs.
->
-> Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
-> ---
->
-> Changes since RFC:
-> * fix build error for modules
-> * don't hardcode size
-> * add boundary checks for sysfs access
-> * use a spinlock
-> * s/at24s/eeprom/g
-> * add some docs
-> * clean up exit paths
-> * use size-variable instead of driver_data
->
->  drivers/i2c/Kconfig            |  10 +++
->  drivers/i2c/Makefile           |   1 +
->  drivers/i2c/i2c-slave-eeprom.c | 170 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 181 insertions(+)
->  create mode 100644 drivers/i2c/i2c-slave-eeprom.c
->
-> diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
-> index b51a402752c4..8c9e619f3026 100644
-> --- a/drivers/i2c/Kconfig
-> +++ b/drivers/i2c/Kconfig
-> @@ -110,6 +110,16 @@ config I2C_STUB
->
->           If you don't know what to do here, definitely say N.
->
-> +config I2C_SLAVE
-> +       bool "I2C slave support"
-> +
-> +if I2C_SLAVE
-> +
-> +config I2C_SLAVE_EEPROM
-> +       tristate "I2C eeprom slave driver"
-> +
-> +endif
-> +
->  config I2C_DEBUG_CORE
->         bool "I2C Core debugging messages"
->         help
-> diff --git a/drivers/i2c/Makefile b/drivers/i2c/Makefile
-> index 1722f50f2473..45095b3d16a9 100644
-> --- a/drivers/i2c/Makefile
-> +++ b/drivers/i2c/Makefile
-> @@ -9,6 +9,7 @@ obj-$(CONFIG_I2C_CHARDEV)       += i2c-dev.o
->  obj-$(CONFIG_I2C_MUX)          += i2c-mux.o
->  obj-y                          += algos/ busses/ muxes/
->  obj-$(CONFIG_I2C_STUB)         += i2c-stub.o
-> +obj-$(CONFIG_I2C_SLAVE_EEPROM) += i2c-slave-eeprom.o
->
->  ccflags-$(CONFIG_I2C_DEBUG_CORE) := -DDEBUG
->  CFLAGS_i2c-core.o := -Wno-deprecated-declarations
-> diff --git a/drivers/i2c/i2c-slave-eeprom.c b/drivers/i2c/i2c-slave-eeprom.c
-> new file mode 100644
-> index 000000000000..6631400b5f02
-> --- /dev/null
-> +++ b/drivers/i2c/i2c-slave-eeprom.c
-> @@ -0,0 +1,170 @@
-> +/*
-> + * I2C slave mode EEPROM simulator
-> + *
-> + * Copyright (C) 2014 by Wolfram Sang, Sang Engineering <wsa@sang-engineering.com>
-> + * Copyright (C) 2014 by Renesas Electronics Corporation
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the
-> + * Free Software Foundation; version 2 of the License.
-> + *
-> + * Because most IP blocks can only detect one I2C slave address anyhow, this
-> + * driver does not support simulating EEPROM types which take more than one
-> + * address. It is prepared to simulate bigger EEPROMs with an internal 16 bit
-> + * pointer, yet implementation is deferred until the need actually arises.
-> + */
-> +
-> +#include <linux/i2c.h>
-> +#include <linux/init.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/slab.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/sysfs.h>
-> +
-> +struct eeprom_data {
-> +       struct bin_attribute bin;
-> +       bool first_write;
-> +       spinlock_t buffer_lock;
-> +       u8 buffer_idx;
-> +       u8 buffer[];
-> +};
-> +
-> +static int i2c_slave_eeprom_slave_cb(struct i2c_client *client,
-> +                                    enum i2c_slave_event event, u8 *val)
-> +{
-> +       struct eeprom_data *eeprom = i2c_get_clientdata(client);
-> +
-> +       switch (event) {
-> +       case I2C_SLAVE_REQ_WRITE_END:
-> +               if (eeprom->first_write) {
-> +                       eeprom->buffer_idx = *val;
-> +                       eeprom->first_write = false;
-> +               } else {
-> +                       spin_lock(&eeprom->buffer_lock);
-> +                       eeprom->buffer[eeprom->buffer_idx++] = *val;
-> +                       spin_unlock(&eeprom->buffer_lock);
-> +               }
-> +               break;
-> +
-> +       case I2C_SLAVE_REQ_READ_START:
-> +               spin_lock(&eeprom->buffer_lock);
-> +               *val = eeprom->buffer[eeprom->buffer_idx];
-> +               spin_unlock(&eeprom->buffer_lock);
-> +               break;
-> +
-> +       case I2C_SLAVE_REQ_READ_END:
-> +               eeprom->buffer_idx++;
-> +               break;
-> +
-> +       case I2C_SLAVE_STOP:
-> +               eeprom->first_write = true;
-> +               break;
-> +
-> +       default:
-> +               break;
-> +       }
-> +
-> +       return 0;
-> +}
+On Thu, 20 Nov 2014, Tejun Heo wrote:
+> On Thu, Nov 20, 2014 at 10:58:26PM +0100, Thomas Gleixner wrote:
+> > It's completely undocumented behaviour, whether it has been that way
+> > for ever or not. And I agree with Fredric, that it is insane. Actuallu
+> > it's beyond insane, really.
+> 
+> This is exactly the same for any address in the vmalloc space.
 
+I know, but I really was not aware of the fact that dynamically
+allocated percpu stuff is vmalloc based and therefor exposed to the
+same issues.
 
-Would it make sense to have:
-WRITE_START
-WRITE_NEXT
-WRITE_STOP
-WRITE_REPEAT_START
-READ_START
-READ_NEXT
-READ_STOP
-READ_REPEAT_START
+The normal vmalloc space simply does not have the problems which are
+generated by percpu allocations which have no documented access
+restrictions.
 
-Some devices may want different behavior for subsequent
-reads when they are separate transactions, compared to
-a single larger transaction.
-e.g. a single transaction may wraparound inside a >8bit
-register (e.g. for 16bit: msb, lsb, msb, lsb, ...), but step
-to the next register when a separate read/write is issued.
-Alternatively, a WRITE/READ_NEXT may be implemented
-more efficiently. This may not matter for current systems
-compared to the low-frequency bus, but who knows what
-IoT devices may bring to the table.
+You created a special case and that special case is clever but not
+very well thought out considering the use cases of percpu variables
+and the completely undocumented limitations you introduced silently.
 
-Also, behavior may be different for repeat start versus
-stop/start, although a repeat start could be a start
-without a previous stop as well...
+Just admit it and dont try to educate me about trivial vmalloc
+properties.
 
-Of course, if an I2C adapter cannot distinguish these
-events, this is probably a futile attempt at adding
-semantics that will silently break depending on the
-actual hardware/driver used.
+> ..
+> >    So in the scheduler if the same task gets reselected you check that
+> >    sequence count and update the PGD if different. If a task switch
+> >    happens then you also need to check the sequence count and act
+> >    accordingly.
+> 
+> That isn't enough tho.  What if the percpu allocated pointer gets
+> passed to another CPU without task switching?  You'd at least need to
+> send IPIs to all CPUs so that all the active PGDs get updated
+> synchronously.
 
-Regards,
-Stijn
+You obviously did not even take the time to carefully read what I
+wrote:
 
-> +
-> +static ssize_t i2c_slave_eeprom_bin_read(struct file *filp, struct kobject *kobj,
-> +               struct bin_attribute *attr, char *buf, loff_t off, size_t count)
-> +{
-> +       struct eeprom_data *eeprom;
-> +       unsigned long flags;
-> +
-> +       if (off + count >= attr->size)
-> +               return -EFBIG;
-> +
-> +       eeprom = dev_get_drvdata(container_of(kobj, struct device, kobj));
-> +
-> +       spin_lock_irqsave(&eeprom->buffer_lock, flags);
-> +       memcpy(buf, &eeprom->buffer[off], count);
-> +       spin_unlock_irqrestore(&eeprom->buffer_lock, flags);
-> +
-> +       return count;
-> +}
-> +
-> +static ssize_t i2c_slave_eeprom_bin_write(struct file *filp, struct kobject *kobj,
-> +               struct bin_attribute *attr, char *buf, loff_t off, size_t count)
-> +{
-> +       struct eeprom_data *eeprom;
-> +       unsigned long flags;
-> +
-> +       if (off + count >= attr->size)
-> +               return -EFBIG;
-> +
-> +       eeprom = dev_get_drvdata(container_of(kobj, struct device, kobj));
-> +
-> +       spin_lock_irqsave(&eeprom->buffer_lock, flags);
-> +       memcpy(&eeprom->buffer[off], buf, count);
-> +       spin_unlock_irqrestore(&eeprom->buffer_lock, flags);
-> +
-> +       return count;
-> +}
-> +
-> +static int i2c_slave_eeprom_probe(struct i2c_client *client, const struct i2c_device_id *id)
-> +{
-> +       struct eeprom_data *eeprom;
-> +       int ret;
-> +       unsigned size = id->driver_data;
-> +
-> +       eeprom = devm_kzalloc(&client->dev, sizeof(struct eeprom_data) + size, GFP_KERNEL);
-> +       if (!eeprom)
-> +               return -ENOMEM;
-> +
-> +       eeprom->first_write = true;
-> +       spin_lock_init(&eeprom->buffer_lock);
-> +       i2c_set_clientdata(client, eeprom);
-> +
-> +       sysfs_bin_attr_init(&eeprom->bin);
-> +       eeprom->bin.attr.name = "slave-eeprom";
-> +       eeprom->bin.attr.mode = S_IRUSR | S_IWUSR;
-> +       eeprom->bin.read = i2c_slave_eeprom_bin_read;
-> +       eeprom->bin.write = i2c_slave_eeprom_bin_write;
-> +       eeprom->bin.size = size;
-> +
-> +       ret = sysfs_create_bin_file(&client->dev.kobj, &eeprom->bin);
-> +       if (ret)
-> +               return ret;
-> +
-> +       ret = i2c_slave_register(client, i2c_slave_eeprom_slave_cb);
-> +       if (ret) {
-> +               sysfs_remove_bin_file(&client->dev.kobj, &eeprom->bin);
-> +               return ret;
-> +       }
-> +
-> +       return 0;
-> +};
-> +
-> +static int i2c_slave_eeprom_remove(struct i2c_client *client)
-> +{
-> +       struct eeprom_data *eeprom = i2c_get_clientdata(client);
-> +
-> +       i2c_slave_unregister(client);
-> +       sysfs_remove_bin_file(&client->dev.kobj, &eeprom->bin);
-> +
-> +       return 0;
-> +}
-> +
-> +static const struct i2c_device_id i2c_slave_eeprom_id[] = {
-> +       { "slave-24c02", 2048 / 8 },
-> +       { }
-> +};
-> +MODULE_DEVICE_TABLE(i2c, i2c_slave_eeprom_id);
-> +
-> +static struct i2c_driver i2c_slave_eeprom_driver = {
-> +       .driver = {
-> +               .name = "i2c-slave-eeprom",
-> +               .owner = THIS_MODULE,
-> +       },
-> +       .probe = i2c_slave_eeprom_probe,
-> +       .remove = i2c_slave_eeprom_remove,
-> +       .id_table = i2c_slave_eeprom_id,
-> +};
-> +module_i2c_driver(i2c_slave_eeprom_driver);
-> +
-> +MODULE_AUTHOR("Wolfram Sang <wsa@sang-engineering.com>");
-> +MODULE_DESCRIPTION("I2C slave mode EEPROM simulator");
-> +MODULE_LICENSE("GPL v2");
-> --
-> 2.1.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+   "Now after that increment the allocation side needs to wait for a
+    scheduling cycle on all cpus (we have mechanisms for that)"
+
+That's exactly stating what you claim to be 'not enough'. 
+
+> > What really frightens me is the potential and well hidden fuckup
+> > potential which lurks around the corner and the hard to debug once in
+> > a while fallout which might be caused by this.
+> 
+> Lazy vmalloc population through fault is something we accepted as
+> reasonable as it works fine for most of the kernel. 
+
+Emphasis on most.
+
+I'm well aware about the lazy vmalloc population, but I was definitely
+not aware about the implications chosen by the dynamic percpu
+allocator. I do not care about random discussion threads on LKML or
+random slides you produced for a conference. All I care about is that
+I cannot find a single word of documentation about that in the source
+tree. Neither in the percpu implementation nor in Documentation/
+
+> For the time being, we can make percpu accessors complain when
+> called from nmi handlers so that the problematic ones can be easily
+> identified.
+
+You should have done that in the very first place instead of letting
+other people run into issues which you should have thought of from the
+very beginning.
+
+Thanks,
+
+	tglx
+
