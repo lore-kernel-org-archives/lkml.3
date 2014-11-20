@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757560AbaKTXbk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 18:31:40 -0500
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:59610 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756866AbaKTXbj (ORCPT
+	id S1757594AbaKTXej (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 18:34:39 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:55966 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756779AbaKTXei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 18:31:39 -0500
+	Thu, 20 Nov 2014 18:34:38 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141120195459.GI23217@saruman>
-References: <cover.1416390389.git.kiran.kumar@linaro.org>
-	<40513430786f3190776ee4a180c2486812048a6b.1416390389.git.kiran.kumar@linaro.org>
-	<CAAW3YpYnnvM5thnGDEt+OkhpPF5+CP3yb9vJS=AZ_5RgyPsejQ@mail.gmail.com>
-	<20141120195459.GI23217@saruman>
-Date: Fri, 21 Nov 2014 05:01:38 +0530
-Message-ID: <CA+RfmHYW0nYdVr9+35FN+vA9LsQvvMSg3Mq380FyPPnaG8mB_A@mail.gmail.com>
-Subject: Re: [PATCH 1/3] usb: phy: introduce usb_phy_set_event interface
-From: Kiran Raparthy <kiran.kumar@linaro.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Todd Poynor <toddpoynor@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Benoit Goby <benoit@android.com>
+In-Reply-To: <CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
+References: <CA+55aFym2UfWnXZw0NjA70Q575eybiAOUkx==3Ci+V43u1-ZNQ@mail.gmail.com>
+	<20141119190215.GA10796@lerouge>
+	<alpine.DEB.2.11.1411192251120.3909@nanos>
+	<20141119225615.GA11386@lerouge>
+	<alpine.DEB.2.11.1411200002330.3909@nanos>
+	<20141119235033.GE11386@lerouge>
+	<20141120122339.GA14877@htj.dyndns.org>
+	<alpine.DEB.2.11.1411202204030.3950@nanos>
+	<20141120221122.GA25393@htj.dyndns.org>
+	<alpine.DEB.2.11.1411202315230.3950@nanos>
+	<20141120230514.GB25393@htj.dyndns.org>
+	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
+Date: Thu, 20 Nov 2014 15:34:37 -0800
+X-Google-Sender-Auth: SIxhfM4nljciq4kGwtL3oRrG1ac
+Message-ID: <CA+55aFzcDABV6cXZB6fPGbi005SH5=swCVbcHTf7dcDkTQqVSw@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
-On 21 November 2014 01:24, Felipe Balbi <balbi@ti.com> wrote:
-> On Wed, Nov 19, 2014 at 08:36:22AM -0800, Todd Poynor wrote:
->> On Wed, Nov 19, 2014 at 2:43 AM, Kiran Kumar Raparthy
->> <kiran.kumar@linaro.org> wrote:
->> > From: Todd Poynor <toddpoynor@google.com>
->> >
->> > usb: phy: introduce usb_phy_set_event interface
->>
->> Hi Kiran, this is new stuff that is all your own work and you deserve
->> the credit.
->>
->> Thanks for working to get this feature in shape for mainline!
+On Thu, Nov 20, 2014 at 3:08 PM, Andy Lutomirski <luto@amacapital.net> wrote:
 >
-> Kiran, what Todd is saying is that $subject is From: Kiran, do you want
-> to resend with that change ? I think this is ready to be moved into my
-> testing/next otherwise.
-I thanked him for his kind words.
-No issues,I prefer not bothering you again by sending one more set of patches.
-Please accept them if you feel the patches are good in shape.
-Thank you so much for your time and support.
-Regards,
-Kiran
+> What's the issue with nmi?  Page faults are supposed to nest correctly
+> inside nmi, right?
 
->
-> --
-> balbi
+They should, now, yes. There used to be issues with the whole "that
+re-enables NMI".
+
+Which reminds me. We never took your patches that use ljmp to handle
+the return-to-kernel mode. You did them for performance reasons, but I
+think the bigger deal was that it would have cleaned up that whole
+special case.
+
+Or did they have other problems? The ones to return to user space were
+admittedly more fun, but just a tad too crazy (and not _quite_ in the
+"crazy like a fox" camp ;)
+
+            Linus
