@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756912AbaKTHkK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:40:10 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:61008 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756855AbaKTHkI (ORCPT
+	id S1756191AbaKTHpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:45:10 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:43715 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbaKTHpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:40:08 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Ding Tianhong <dingtianhong@huawei.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: For the problem when using swiotlb
-Date: Thu, 20 Nov 2014 08:40 +0100
-Message-ID: <2522857.bNQToYpBNt@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <546D58B1.60108@huawei.com>
-References: <5469E26B.2010905@huawei.com> <1535751.CcvIi3DN4F@wuerfel> <546D58B1.60108@huawei.com>
+	Thu, 20 Nov 2014 02:45:08 -0500
+Date: Thu, 20 Nov 2014 08:45:02 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH v3 3/3] sched, x86: Check that we're on the right stack
+ in schedule and __might_sleep
+Message-ID: <20141120074501.GA3805@gmail.com>
+References: <cover.1416352397.git.luto@amacapital.net>
+ <c25e1a64e5b718fa156e141fd9ecbf31011c6059.1416352397.git.luto@amacapital.net>
+ <CA+55aFztsw6Vt4CyVs1OsqdKXxQmFrxHdE7z89VMZ_1KwKPcmQ@mail.gmail.com>
+ <20141119192928.GL12538@two.firstfloor.org>
+ <CA+55aFwykb6aZYgyZXbU1DQ3OL0umpv8gkHYWykBEC2B7UdMbw@mail.gmail.com>
+ <CALCETrXi7vdNAk4RziNDtqX4asPqXxi1VsLzL7pP0zivkjTH4Q@mail.gmail.com>
+ <CA+55aFx4-WzNQ0e-ZTcCig3b7U7xmt1WB1jzO3TLk9zHD006ng@mail.gmail.com>
+ <CALCETrVJJUcPRfkWRouLJCNUVNRH3aWX0X_K8L62yrUu1aR8Vg@mail.gmail.com>
+ <CA+55aFy0neTJAAm-8KsmPPU33zevyHmYa+vZjPk-DozSPPW_nQ@mail.gmail.com>
+ <CALCETrXzMe2WcpY3yX48WtvdRQDvSg7CZRO1T1TdLynmAcJHXg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:hJwckUcfblQ7DPmB9vcq6T//648aHXsN7Tq20GrAiVf
- qdCqgIHzM9VNbKvIYBFS1M21snXeSTN7XvC1owz1RBPCS4CqtP
- 6dULipAWS3KKh+vTHYwIa0D56KHsBLB9cD8xUd2wEzj5OzEPFd
- mZIueZgFVAOTStnKT2jfm4bw91tNsDfRlYMWJmsXafWEc3TR8L
- yVGnxQD9IOA+n1ZG2YX+kJgMtNmAfvtV2dlVZS1DjrJdU+TxXw
- 8HxTAU5AsxhGVgdKCqXGFz8nDrbdVLcaZe11O1owmYbQhifTTO
- MnR3Yme4Clpjlcy3wzc1kJaGC18MqlLOkWPwJqpVX6exwLoNnl
- 7q1Arp6MChHTh0oEhzVU=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXzMe2WcpY3yX48WtvdRQDvSg7CZRO1T1TdLynmAcJHXg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 November 2014 10:57:53 Ding Tianhong wrote:
-> On 2014/11/19 16:45, Arnd Bergmann wrote:
-> > On Wednesday 19 November 2014 11:17:15 Ding Tianhong wrote:
-> >> On 2014/11/18 2:09, Catalin Marinas wrote:
-> >>> On Mon, Nov 17, 2014 at 12:18:42PM +0000, Arnd Bergmann wrote:
-> >> Thanks everyone, I think I found the way to fix it, need to enable DMA_CMA, to reserve a big memory
-> >> for CMA and set coherent mask for dev, then dma_alloc and dma_mapping will not use the swiotlb until
-> >> the memory out of mask or swiotlb_force is enabled.
+
+* Andy Lutomirski <luto@amacapital.net> wrote:
+
+> On Wed, Nov 19, 2014 at 3:59 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Wed, Nov 19, 2014 at 3:49 PM, Andy Lutomirski <luto@amacapital.net> wrote:
 > >>
-> >> If I still understand uncorrectly, please inform me.
-> >>
-> > 
-> > Please do not use CMA to work around the problem, but fix the underlying bug
-> > instead.
-> > 
-> > The driver should call 'dma_set_mask_and_coherent()' with the appropriate
-> > dma mask, and check whether that succeeded. However, the code implementing
-> > dma_set_mask_and_coherent on arm64 also needs to be changed to look up
-> > the dma-ranges property (see of_dma_configure()), and check if the mask
-> > is possible.
-> > 
-> The dma_pfn_offset looks only support arm32, but my platform is aarch64 and I check the latest kernel version, 
-> I think the dma-rangs still could not work for aarch64, so maybe we should add dma_pfn_offset for aarch64 first.
+> >> My only real objection is that it's going to be ugly and 
+> >> error prone. It'll have to be something like:
+> >
+> > No.
+> >
+> >> because the whole point of this series is to make the IST 
+> >> entries not be atomic when they come from userspace.
+> >
+> > Andy, you need to lay off the drugs.
+> >
 > 
+> No drugs, just imprecision.  This series doesn't change NMI 
+> handling at all.  It only changes machine_check int3, debug, 
+> and stack_segment. (Why is #SS using IST stacks anyway?)
 
-I didn't mean the dma_pfn_offset. The problem is that the of_dma_configure
-code currently doesn't look at the mask. As I explained in my reply to
-Catalin, it should set the mask to the size of the dma-ranges if that is
-32-bit or smaller, and dma_set_mask should look at the same dma-ranges
-property to decide what to set the mask to when a driver asks for a
-mask larger than 64-bit.
+We made most of those preemptible in -rt and changed it away from 
+the IST. I never got a good explanation from anyone for why they 
+were IST in the first place - histeric accident or such.
 
-	Arnd
+Feel free to clean this up too!
+
+Thanks,
+
+	Ingo
