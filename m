@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757692AbaKTPRm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 10:17:42 -0500
-Received: from eddie.linux-mips.org ([148.251.95.138]:53612 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755979AbaKTPRl (ORCPT
+	id S1757456AbaKTPTQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 10:19:16 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:37553 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751257AbaKTPTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 10:17:41 -0500
-Date: Thu, 20 Nov 2014 16:17:33 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Niklas Svensson <niklas.svensson@axis.com>
-Cc: Paul Burton <paul.burton@imgtec.com>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] MIPS: mips-cm: CM regions are disabled at boot
-Message-ID: <20141120151733.GC21620@linux-mips.org>
-References: <1416486540-28681-1-git-send-email-niklass@axis.com>
- <20141120123434.GW1127@pburton-laptop>
- <546DF354.6030803@axis.com>
+	Thu, 20 Nov 2014 10:19:15 -0500
+Date: Thu, 20 Nov 2014 10:19:03 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Markus Elfring <elfring@users.sourceforge.net>
+Subject: [for-next][PATCH] tracing: Deletion of an unnecessary check before
+ iput()
+Message-ID: <20141120101903.17a92fed@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546DF354.6030803@axis.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 02:57:40PM +0100, Niklas Svensson wrote:
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+for-next
 
-> On 11/20/2014 01:34 PM, Paul Burton wrote:
-> > On Thu, Nov 20, 2014 at 01:29:00PM +0100, Niklas Svensson wrote:
-> >> Each CM_REGION_TARGET is set to disabled at boot,
-> > 
-> > That part is true...
-> > 
-> >> so there is no need to disable the matching
-> >> CM_GCR_REG explicitly.
-> > 
-> > ...however there is no guarantee that the bootloader, or another kernel,
-> > or some other piece of code didn't program the registers differently
-> > before Linux starts. So I believe this patch to be incorrect.
-> 
-> 
-> That is the reason for this patch. This will overwrite settings written by the bootloader.
-> 
-> Say if the bootloader sets up an iocu, then these writes will clear those settings.
+Head SHA1: 16a8ef2751801346f1f76a18685b2beb63cd170f
 
-The kernel has to be firmware agnostic, can't know how these registers have
-been initialized as long as there is no proper boot protocol for the
-handover to the kernel which includes this status.  At this point I think a
-solution that hands over the required information as part of the DT is
-probably the way to go.
 
-  Ralf
+Markus Elfring (1):
+      tracing: Deletion of an unnecessary check before iput()
+
+----
+ kernel/trace/trace_uprobe.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+---------------------------
+commit 16a8ef2751801346f1f76a18685b2beb63cd170f
+Author: Markus Elfring <elfring@users.sourceforge.net>
+Date:   Sun Nov 16 14:46:28 2014 +0100
+
+    tracing: Deletion of an unnecessary check before iput()
+    
+    The iput() function tests whether its argument is NULL and then
+    returns immediately. Thus the test around the call is not needed.
+    
+    This issue was detected by using the Coccinelle software.
+    
+    Link: http://lkml.kernel.org/r/5468F875.7080907@users.sourceforge.net
+    
+    Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index fd76f8e108ef..8520acc34b18 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -552,8 +552,7 @@ error:
+ 	return ret;
+ 
+ fail_address_parse:
+-	if (inode)
+-		iput(inode);
++	iput(inode);
+ 
+ 	pr_info("Failed to parse address or file.\n");
+ 
