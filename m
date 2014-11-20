@@ -1,115 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678AbaKTLvh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 06:51:37 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:55564 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894AbaKTLuf (ORCPT
+	id S1756756AbaKTLwU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 06:52:20 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37874 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756344AbaKTLwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 06:50:35 -0500
-X-IronPort-AV: E=Sophos;i="5.07,423,1413244800"; 
-   d="scan'208";a="194755370"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <xen-devel@lists.xenproject.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 4/4] x86/xen: assume a 64-bit DMA mask is required
-Date: Thu, 20 Nov 2014 11:50:25 +0000
-Message-ID: <1416484225-28054-5-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1416484225-28054-1-git-send-email-david.vrabel@citrix.com>
-References: <1416484225-28054-1-git-send-email-david.vrabel@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+	Thu, 20 Nov 2014 06:52:19 -0500
+Message-ID: <1416484332.2769.1.camel@pengutronix.de>
+Subject: Re: [RFC PATCH] arm: imx: Workaround i.MX6 PMU interrupts muxed to
+ one SPI
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Date: Thu, 20 Nov 2014 12:52:12 +0100
+In-Reply-To: <1416483757-24165-1-git-send-email-daniel.thompson@linaro.org>
+References: <1416483757-24165-1-git-send-email-daniel.thompson@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a Xen PV guest the DMA addresses and physical addresses are not 1:1
-(such as Xen PV guests) and the generic dma_get_required_mask() does
-not return the correct mask (since it uses max_pfn).
+Am Donnerstag, den 20.11.2014, 11:42 +0000 schrieb Daniel Thompson:
+> All PMU interrupts on multi-core i.MX6 devices are muxed onto a single SPI.
+> Should the PMU of any core except 0 (the default affinity for the
+> interrupt) trigger the interrupt then it cannot be serviced and,
+> eventually, the spurious irq detection will forcefully disable the
+> interrupt.
+> 
+> This can be worked around by getting the interrupt handler to change its
+> own affinity if it cannot figure out why it has been triggered. This patch
+> adds logic to rotate the affinity to i.MX6.
+> 
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 
-Some device drivers (such as mptsas, mpt2sas) use
-dma_get_required_mask() to set the device's DMA mask to allow them to
-use only 32-bit DMA addresses in hardware structures.  This results in
-unnecessary use of the SWIOTLB if DMA addresses are more than 32-bits,
-impacting performance significantly.
+I've sent almost the same patch a while ago. At this time it was shot
+down due to fears of the measurements being too flaky to be useful with
+all that IRQ dance. While I don't think this is true (I did some
+measurements on a SOLO and a QUAD variants of the i.MX6 with the same
+workload, that were only minimally apart), I believe the IRQ affinity
+dance isn't the best way to handle this.
 
-We could base the DMA mask on the maximum MFN but:
+I had planned to look into smp_call_function() to distribute the IRQ to
+all CPUs at the same time, but have not got around to it yet. Maybe you
+could investigate whether this is a viable solution to the problem at
+hand?
 
-a) The hypercall op to get the maximum MFN (XENMEM_maximum_ram_page)
-will truncate the result to an int in 32-bit guests.
+Regards,
+Lucas
+> ---
+> 
+> Notes:
+>     This patch adopts the approach used on the u8500 (db8500_pmu_handler)
+>     but the logic has been generalized for any number of CPUs, mostly
+>     because the i.MX6 has a both dual and quad core variants.
+>     
+>     However it might be better to include the generalized logic in the main
+>     armpmu code. I think the logic could be deployed automatically on SMP
+>     systems with only a single not-percpu IRQ, replacing the
+>     plat->handle_irq dance we currently do to hook up this code.
+>     
+>     Thoughts? (or is there already shared logic to do this that I
+>     overlooked)
+>     
+> 
+>  arch/arm/mach-imx/mach-imx6q.c | 39 ++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 38 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+> index d51c6e99a2e9..c056b7b97eaa 100644
+> --- a/arch/arm/mach-imx/mach-imx6q.c
+> +++ b/arch/arm/mach-imx/mach-imx6q.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/export.h>
+>  #include <linux/init.h>
+> +#include <linux/interrupt.h>
+>  #include <linux/io.h>
+>  #include <linux/irq.h>
+>  #include <linux/irqchip.h>
+> @@ -33,6 +34,7 @@
+>  #include <linux/mfd/syscon/imx6q-iomuxc-gpr.h>
+>  #include <asm/mach/arch.h>
+>  #include <asm/mach/map.h>
+> +#include <asm/pmu.h>
+>  #include <asm/system_misc.h>
+> 
+>  #include "common.h"
+> @@ -261,6 +263,40 @@ static void __init imx6q_axi_init(void)
+>  	}
+>  }
+> 
+> +/*
+> + * The PMU IRQ lines of all cores are muxed onto a single interrupt.
+> + * Rotate the interrupt around the cores if the current CPU cannot
+> + * figure out why the interrupt has been triggered.
+> + */
+> +static irqreturn_t imx6q_pmu_handler(int irq, void *dev, irq_handler_t handler)
+> +{
+> +	irqreturn_t ret = handler(irq, dev);
+> +	int next;
+> +
+> +	if (ret == IRQ_NONE && num_online_cpus() > 1) {
+> +		next = cpumask_next(smp_processor_id(), cpu_online_mask);
+> +		if (next > nr_cpu_ids)
+> +			next = cpumask_next(-1, cpu_online_mask);
+> +		irq_set_affinity(irq, cpumask_of(next));
+> +	}
+> +
+> +	/*
+> +	 * We should be able to get away with the amount of IRQ_NONEs we give,
+> +	 * while still having the spurious IRQ detection code kick in if the
+> +	 * interrupt really starts hitting spuriously.
+> +	 */
+> +	return ret;
+> +}
+> +
+> +static struct arm_pmu_platdata imx6q_pmu_platdata = {
+> +	.handle_irq = imx6q_pmu_handler,
+> +};
+> +
+> +static struct of_dev_auxdata imx6q_auxdata_lookup[] __initdata = {
+> +	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &imx6q_pmu_platdata),
+> +	{},
+> +};
+> +
+>  static void __init imx6q_init_machine(void)
+>  {
+>  	struct device *parent;
+> @@ -276,7 +312,8 @@ static void __init imx6q_init_machine(void)
+> 
+>  	imx6q_enet_phy_init();
+> 
+> -	of_platform_populate(NULL, of_default_bus_match_table, NULL, parent);
+> +	of_platform_populate(NULL, of_default_bus_match_table,
+> +			     imx6q_auxdata_lookup, parent);
+> 
+>  	imx_anatop_init();
+>  	cpu_is_imx6q() ?  imx6q_pm_init() : imx6dl_pm_init();
+> --
+> 1.9.3
+> 
 
-b) Future uses of the IOMMU in Xen may map frames at bus addresses
-above the end of RAM.
-
-So, just assume a 64-bit DMA mask is always required.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
----
- arch/x86/xen/pci-swiotlb-xen.c |    1 +
- drivers/xen/swiotlb-xen.c      |    9 +++++++++
- include/xen/swiotlb-xen.h      |    4 ++++
- 3 files changed, 14 insertions(+)
-
-diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
-index 0e98e5d..a5d180a 100644
---- a/arch/x86/xen/pci-swiotlb-xen.c
-+++ b/arch/x86/xen/pci-swiotlb-xen.c
-@@ -31,6 +31,7 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
- 	.map_page = xen_swiotlb_map_page,
- 	.unmap_page = xen_swiotlb_unmap_page,
- 	.dma_supported = xen_swiotlb_dma_supported,
-+	.get_required_mask = xen_swiotlb_get_required_mask,
- };
- 
- /*
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index ebd8f21..767d048 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -42,9 +42,11 @@
- #include <xen/page.h>
- #include <xen/xen-ops.h>
- #include <xen/hvc-console.h>
-+#include <xen/interface/memory.h>
- 
- #include <asm/dma-mapping.h>
- #include <asm/xen/page-coherent.h>
-+#include <asm/xen/hypercall.h>
- 
- #include <trace/events/swiotlb.h>
- /*
-@@ -683,3 +685,10 @@ xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask)
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(xen_swiotlb_set_dma_mask);
-+
-+u64
-+xen_swiotlb_get_required_mask(struct device *dev)
-+{
-+	return DMA_BIT_MASK(64);
-+}
-+EXPORT_SYMBOL_GPL(xen_swiotlb_get_required_mask);
-diff --git a/include/xen/swiotlb-xen.h b/include/xen/swiotlb-xen.h
-index 8b2eb93..6408888 100644
---- a/include/xen/swiotlb-xen.h
-+++ b/include/xen/swiotlb-xen.h
-@@ -58,4 +58,8 @@ xen_swiotlb_dma_supported(struct device *hwdev, u64 mask);
- 
- extern int
- xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask);
-+
-+extern u64
-+xen_swiotlb_get_required_mask(struct device *dev);
-+
- #endif /* __LINUX_SWIOTLB_XEN_H */
 -- 
-1.7.10.4
+Pengutronix e.K.             | Lucas Stach                 |
+Industrial Linux Solutions   | http://www.pengutronix.de/  |
 
