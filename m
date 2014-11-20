@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931AbaKTHNt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 02:13:49 -0500
-Received: from exprod7og116.obsmtp.com ([64.18.2.219]:47552 "EHLO
-	exprod7og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756907AbaKTHNp (ORCPT
+	id S1756936AbaKTHOC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 02:14:02 -0500
+Received: from exprod7og128.obsmtp.com ([64.18.2.121]:42993 "EHLO
+	exprod7og128.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756953AbaKTHN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 02:13:45 -0500
+	Thu, 20 Nov 2014 02:13:58 -0500
 From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
 X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 To: jejb@kernel.org, hch@infradead.org
@@ -14,9 +14,9 @@ Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
         JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
         Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
         Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH 14/22] [SCSI] mpt2sas, mpt3sas: Remove redundancy code while freeing the controller resources.
-Date: Thu, 20 Nov 2014 12:35:47 +0530
-Message-Id: <1416467155-16869-15-git-send-email-Sreekanth.Reddy@avagotech.com>
+Subject: [PATCH 17/22] [SCSI] mpt3sas: Bump mpt3sas Driver version to v5.100.00.00
+Date: Thu, 20 Nov 2014 12:35:50 +0530
+Message-Id: <1416467155-16869-18-git-send-email-Sreekanth.Reddy@avagotech.com>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
 References: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
@@ -24,184 +24,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed the redundancy code while freeing the controller resources.
+Bump mpt3sas Driver version to v5.100.00.00
 
 Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c | 49 ++++++++++++++++++-------------
- drivers/scsi/mpt3sas/mpt3sas_base.c | 57 +++++++++++++++++++++----------------
- 2 files changed, 61 insertions(+), 45 deletions(-)
+ drivers/scsi/mpt3sas/mpt3sas_base.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index 7286cd2..79626d9 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -1501,6 +1501,33 @@ _base_enable_msix(struct MPT2SAS_ADAPTER *ioc)
- }
- 
- /**
-+ * mpt2sas_base_unmap_resources - free controller resources
-+ * @ioc: per adapter object
-+ */
-+void
-+mpt2sas_base_unmap_resources(struct MPT2SAS_ADAPTER *ioc)
-+{
-+	struct pci_dev *pdev = ioc->pdev;
-+
-+	dexitprintk(ioc, printk(MPT2SAS_FMT "%s\n",
-+		ioc->name, __func__));
-+
-+	_base_free_irq(ioc);
-+	_base_disable_msix(ioc);
-+
-+	if (ioc->chip_phys) {
-+		iounmap(ioc->chip);
-+		ioc->chip_phys = 0;
-+	}
-+
-+	if (pci_is_enabled(pdev)) {
-+		pci_release_selected_regions(ioc->pdev, ioc->bars);
-+		pci_disable_pcie_error_reporting(pdev);
-+		pci_disable_device(pdev);
-+	}
-+}
-+
-+/**
-  * mpt2sas_base_map_resources - map in controller resources (io/irq/memap)
-  * @ioc: per adapter object
-  *
-@@ -1606,12 +1633,7 @@ mpt2sas_base_map_resources(struct MPT2SAS_ADAPTER *ioc)
- 	return 0;
- 
-  out_fail:
--	if (ioc->chip_phys)
--		iounmap(ioc->chip);
--	ioc->chip_phys = 0;
--	pci_release_selected_regions(ioc->pdev, ioc->bars);
--	pci_disable_pcie_error_reporting(pdev);
--	pci_disable_device(pdev);
-+	mpt2sas_base_unmap_resources(ioc);
- 	return r;
- }
- 
-@@ -4422,8 +4444,6 @@ _base_make_ioc_operational(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
- void
- mpt2sas_base_free_resources(struct MPT2SAS_ADAPTER *ioc)
- {
--	struct pci_dev *pdev = ioc->pdev;
--
- 	dexitprintk(ioc, printk(MPT2SAS_INFO_FMT "%s\n", ioc->name,
- 	    __func__));
- 
-@@ -4434,18 +4454,7 @@ mpt2sas_base_free_resources(struct MPT2SAS_ADAPTER *ioc)
- 		ioc->shost_recovery = 0;
- 	}
- 
--	_base_free_irq(ioc);
--	_base_disable_msix(ioc);
--
--	if (ioc->chip_phys && ioc->chip)
--		iounmap(ioc->chip);
--	ioc->chip_phys = 0;
--
--	if (pci_is_enabled(pdev)) {
--		pci_release_selected_regions(ioc->pdev, ioc->bars);
--		pci_disable_pcie_error_reporting(pdev);
--		pci_disable_device(pdev);
--	}
-+	mpt2sas_base_unmap_resources(ioc);
- 	return;
- }
- 
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.c b/drivers/scsi/mpt3sas/mpt3sas_base.c
-index 527f91b..4322d7c 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_base.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_base.c
-@@ -1791,6 +1791,36 @@ _base_enable_msix(struct MPT3SAS_ADAPTER *ioc)
- }
- 
- /**
-+ * mpt3sas_base_unmap_resources - free controller resources
-+ * @ioc: per adapter object
-+ */
-+void
-+mpt3sas_base_unmap_resources(struct MPT3SAS_ADAPTER *ioc)
-+{
-+	struct pci_dev *pdev = ioc->pdev;
-+
-+	dexitprintk(ioc, printk(MPT3SAS_FMT "%s\n",
-+		ioc->name, __func__));
-+
-+	_base_free_irq(ioc);
-+	_base_disable_msix(ioc);
-+
-+	if (ioc->msix96_vector)
-+		kfree(ioc->replyPostRegisterIndex);
-+
-+	if (ioc->chip_phys) {
-+		iounmap(ioc->chip);
-+		ioc->chip_phys = 0;
-+	}
-+
-+	if (pci_is_enabled(pdev)) {
-+		pci_release_selected_regions(ioc->pdev, ioc->bars);
-+		pci_disable_pcie_error_reporting(pdev);
-+		pci_disable_device(pdev);
-+	}
-+}
-+
-+/**
-  * mpt3sas_base_map_resources - map in controller resources (io/irq/memap)
-  * @ioc: per adapter object
-  *
-@@ -1918,14 +1948,7 @@ mpt3sas_base_map_resources(struct MPT3SAS_ADAPTER *ioc)
- 	return 0;
- 
-  out_fail:
--	if (ioc->chip_phys)
--		iounmap(ioc->chip);
--	ioc->chip_phys = 0;
--	pci_release_selected_regions(ioc->pdev, ioc->bars);
--	pci_disable_pcie_error_reporting(pdev);
--	pci_disable_device(pdev);
--	if (ioc->msix96_vector)
--		kfree(ioc->replyPostRegisterIndex);
-+	mpt3sas_base_unmap_resources(ioc);
- 	return r;
- }
- 
-@@ -4657,8 +4680,6 @@ _base_make_ioc_operational(struct MPT3SAS_ADAPTER *ioc, int sleep_flag)
- void
- mpt3sas_base_free_resources(struct MPT3SAS_ADAPTER *ioc)
- {
--	struct pci_dev *pdev = ioc->pdev;
--
- 	dexitprintk(ioc, pr_info(MPT3SAS_FMT "%s\n", ioc->name,
- 	    __func__));
- 
-@@ -4669,21 +4690,7 @@ mpt3sas_base_free_resources(struct MPT3SAS_ADAPTER *ioc)
- 		ioc->shost_recovery = 0;
- 	}
- 
--	_base_free_irq(ioc);
--	_base_disable_msix(ioc);
--
--	if (ioc->msix96_vector)
--		kfree(ioc->replyPostRegisterIndex);
--
--	if (ioc->chip_phys && ioc->chip)
--		iounmap(ioc->chip);
--	ioc->chip_phys = 0;
--
--	if (pci_is_enabled(pdev)) {
--		pci_release_selected_regions(ioc->pdev, ioc->bars);
--		pci_disable_pcie_error_reporting(pdev);
--		pci_disable_device(pdev);
--	}
-+	mpt3sas_base_unmap_resources(ioc);
- 	return;
- }
- 
+diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.h b/drivers/scsi/mpt3sas/mpt3sas_base.h
+index dba4d66..4c07f17 100644
+--- a/drivers/scsi/mpt3sas/mpt3sas_base.h
++++ b/drivers/scsi/mpt3sas/mpt3sas_base.h
+@@ -71,8 +71,8 @@
+ #define MPT3SAS_DRIVER_NAME		"mpt3sas"
+ #define MPT3SAS_AUTHOR "Avago Technologies <MPT-FusionLinux.pdl@avagotech.com>"
+ #define MPT3SAS_DESCRIPTION	"LSI MPT Fusion SAS 3.0 Device Driver"
+-#define MPT3SAS_DRIVER_VERSION		"04.100.00.00"
+-#define MPT3SAS_MAJOR_VERSION		4
++#define MPT3SAS_DRIVER_VERSION		"05.100.00.00"
++#define MPT3SAS_MAJOR_VERSION		5
+ #define MPT3SAS_MINOR_VERSION		100
+ #define MPT3SAS_BUILD_VERSION		0
+ #define MPT3SAS_RELEASE_VERSION	00
 -- 
 2.0.2
 
