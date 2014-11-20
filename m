@@ -1,42 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971AbaKTGcV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 01:32:21 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:35937 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276AbaKTGcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 01:32:17 -0500
-Date: Thu, 20 Nov 2014 07:32:06 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Stephan Mueller <smueller@chronox.de>
-CC: Herbert Xu <herbert@gondor.apana.org.au>,
-        Daniel Borkmann <dborkman@redhat.com>, <quentin.gouchet@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, <linux-crypto@vger.kernel.org>,
-        ABI/API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v2 02/10] crypto: AF_ALG: user space interface for cipher
- info
-Message-ID: <20141120063206.GQ6390@secunet.com>
-References: <5365136.g8vbXlhRyC@tachyon.chronox.de>
- <2688209.3bGZus2TD9@tachyon.chronox.de>
- <20141118140822.GB12100@gondor.apana.org.au>
- <16101836.sTaxopCThb@tachyon.chronox.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <16101836.sTaxopCThb@tachyon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.182.7.102]
-X-EXCLAIMER-MD-CONFIG: 2c86f778-e09b-4440-8b15-867914633a10
+	id S1756091AbaKTGdO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 01:33:14 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:36695 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781AbaKTGdM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 01:33:12 -0500
+Message-ID: <1416465189.8629.11.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH net] tcp: fix connect() invalid -EADDRNOTAVAIL error
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jonathan Maxwell <jmaxwell37@gmail.com>
+Cc: davem@davemloft.net, kuznet <kuznet@ms2.inr.ac.ru>,
+        jmorris <jmorris@namei.org>, yoshfuji <yoshfuji@linux-ipv6.org>,
+        kaber <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jon Maxwell <jmaxwell@redhat.com>
+Date: Wed, 19 Nov 2014 22:33:09 -0800
+In-Reply-To: <CAGHK07BrUmWxbNA3FzYtEqUOji_qn816=dmi_J40S_CKE3kMnA@mail.gmail.com>
+References: <1416379060-15685-1-git-send-email-jmaxwell37@gmail.com>
+	 <1416417120.14060.55.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <CAGHK07BrUmWxbNA3FzYtEqUOji_qn816=dmi_J40S_CKE3kMnA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 05:03:24AM +0100, Stephan Mueller wrote:
+On Thu, 2014-11-20 at 14:44 +1100, Jonathan Maxwell wrote:
+> > > Prerequisites for this to happen:
+> > > 1) The local tcp port range must be exhausted.
+> > > 2) A process must have called bind() followed by connect() for all
+> > > local ports.
+> > 
+> > How the bind() is done exactly ? How SO_REUSEADDR is used ?
 > 
-> Btw: is there an example that uses that interface? The ordering of data 
-> structures in the netlink message is not really clear from looking at the 
-> code.
+> It fails regardless. I tried both with and without for the client and
+> server programs.
+> 
 
-I wrote to tool that uses this API some time ago, it is still
-a bit rudimentary but should work. You can find it at:
-https://sourceforge.net/projects/crconf/
+This is the missing part from the programs.
+
+By not using SO_REUSEADDR, programs basically do not allow another
+programs to use same port.
+
+> But removing the bind() and just calling connect() from the initial
+> program
+> then a subsequent connect() from a separate program succeeds. It seems
+> that 
+> this is inconsistent behaviour. The proposed fix makes it behave the
+> same for
+> 
+> both cases.
+
+This not consistent behavior is well known and somehow expected by some
+applications.
+
+bind() requests the kernel that this socket has a reserved port.
+
+It means the socket can later disconnect from the target, and reconnect
+to another, using _same_ source port, or chose to listen() on this port.
+
+That is why kernel is so picky, otherwise the listen() might fail
+later...
+
+This is part of BSD socket semantic.
+
+You have to use SO_REUSEADDR on both programs to relax these
+constraints.
+
+Your change might break existing programs, really expecting kernel
+to behave as requested.
+
+
+
