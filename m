@@ -1,103 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023AbaKTGFs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 01:05:48 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:58589 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748AbaKTGFq (ORCPT
+	id S1754697AbaKTGJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 01:09:40 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:42737 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775AbaKTGJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 01:05:46 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: byungchul.park@lge.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        seungho1.park@lge.com, jolsa@redhat.com
-Subject: Re: [PATCH v5 2/2] tracing: add additional marks to signal very large time
-References: <1416442535-31188-1-git-send-email-byungchul.park@lge.com>
-	<1416442535-31188-3-git-send-email-byungchul.park@lge.com>
-	<20141119200604.6b57266d@gandalf.local.home>
-Date: Thu, 20 Nov 2014 15:05:43 +0900
-In-Reply-To: <20141119200604.6b57266d@gandalf.local.home> (Steven Rostedt's
-	message of "Wed, 19 Nov 2014 20:06:04 -0500")
-Message-ID: <87ioiapft4.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 20 Nov 2014 01:09:38 -0500
+Date: Wed, 19 Nov 2014 22:09:33 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Barto <mister.freeman@laposte.net>
+Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: BUG in scsi_lib.c due to a bad commit
+Message-ID: <20141120060933.GA21432@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve and Byungchul,
+I
 
-On Wed, 19 Nov 2014 20:06:04 -0500, Steven Rostedt wrote:
-> On Thu, 20 Nov 2014 09:15:35 +0900
-> byungchul.park@lge.com wrote:
->> -static unsigned long preempt_mark_thresh_us = 100;
->> +#undef MARK
->> +#define MARK(v, s) {.val = v, .sym = s}
->> +/* trace overhead mark */
->> +static const struct trace_mark {
->> +	unsigned long long	val; /* unit: nsec */
->> +	char			sym;
->> +} mark[] = {
->> +	MARK(1000000000ULL	, '$'), /* 1 sec */
->> +	MARK(1000000ULL		, '#'), /* 1000 usecs */
->> +	MARK(100000ULL		, '!'), /* 100 usecs */
->> +	MARK(10000ULL		, '+'), /* 10 usecs */
->> +	MARK(0ULL		, ' '), /* 0 usecs */
->> +};
->> +#undef MARK
->> +
->> +char trace_find_mark(unsigned long long d)
->> +{
->> +	int i;
->> +	int size = ARRAY_SIZE(mark);
->> +
->> +	for (i = 0; i < size; i++) {
->> +		if (d >= mark[i].val)
->> +			break;
->> +	}
->> +
->> +	return (i == size)? ' ' : mark[i].sym;
->
-> Change this to:
->
-> 	/* The break from loop must have been hit */
-> 	if (WARN_ON_ONCE(i == size))
-> 		return ' ';
+Hi Barto,
 
-I think it's impossible since it's always true that 'd >= 0'.
+sorry for the late reply, and thanks for drilling down the exact
+conditions.
 
-Thanks,
-Namhyung
+I think we have some issues with the lack of the host lock vs error
+handling, but I still don't undertand the details.
 
->
-> 	return mark[i].sym;
->
-> -- Steve
->
->
->> +}
->>  
->>  static int
->>  lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
->> @@ -506,8 +532,7 @@ lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
->>  		return trace_seq_printf(
->>  				s, " %4lldus%c: ",
->>  				abs_ts,
->> -				rel_ts > preempt_mark_thresh_us ? '!' :
->> -				  rel_ts > 1 ? '+' : ' ');
->> +				trace_find_mark(rel_ts * NSEC_PER_USEC));
->>  	} else { /* !verbose && !in_ns */
->>  		return trace_seq_printf(s, " %4lld: ", abs_ts);
->>  	}
->> @@ -692,7 +717,7 @@ int register_ftrace_event(struct trace_event *event)
->>  				goto out;
->>  
->>  		} else {
->> -			
->> +
->>  			event->type = next_event_type++;
->>  			list = &ftrace_event_list;
->>  		}
+I've got a test patch for you that just adds the host lock back in a few
+places while keeing the atomic_t.  Can you try to reproduce with that
+one?
+
+When breaking an existing setup in software it's always the softwares
+fault, btw..
+
+
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 994eb08..99b77f7 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -311,16 +311,16 @@ void scsi_device_unbusy(struct scsi_device *sdev)
+ 	struct scsi_target *starget = scsi_target(sdev);
+ 	unsigned long flags;
+ 
++	spin_lock_irqsave(shost->host_lock, flags);
+ 	atomic_dec(&shost->host_busy);
+ 	if (starget->can_queue > 0)
+ 		atomic_dec(&starget->target_busy);
+ 
+ 	if (unlikely(scsi_host_in_recovery(shost) &&
+ 		     (shost->host_failed || shost->host_eh_scheduled))) {
+-		spin_lock_irqsave(shost->host_lock, flags);
+ 		scsi_eh_wakeup(shost);
+-		spin_unlock_irqrestore(shost->host_lock, flags);
+ 	}
++	spin_unlock_irqrestore(shost->host_lock, flags);
+ 
+ 	atomic_dec(&sdev->device_busy);
+ }
+@@ -1504,6 +1504,8 @@ static inline int scsi_host_queue_ready(struct request_queue *q,
+ 	if (scsi_host_in_recovery(shost))
+ 		return 0;
+ 
++	spin_lock_irq(shost->host_lock);
++
+ 	busy = atomic_inc_return(&shost->host_busy) - 1;
+ 	if (atomic_read(&shost->host_blocked) > 0) {
+ 		if (busy)
+@@ -1527,21 +1529,19 @@ static inline int scsi_host_queue_ready(struct request_queue *q,
+ 
+ 	/* We're OK to process the command, so we can't be starved */
+ 	if (!list_empty(&sdev->starved_entry)) {
+-		spin_lock_irq(shost->host_lock);
+ 		if (!list_empty(&sdev->starved_entry))
+ 			list_del_init(&sdev->starved_entry);
+-		spin_unlock_irq(shost->host_lock);
+ 	}
+ 
++	spin_unlock_irq(shost->host_lock);
+ 	return 1;
+ 
+ starved:
+-	spin_lock_irq(shost->host_lock);
+ 	if (list_empty(&sdev->starved_entry))
+ 		list_add_tail(&sdev->starved_entry, &shost->starved_list);
+-	spin_unlock_irq(shost->host_lock);
+ out_dec:
+ 	atomic_dec(&shost->host_busy);
++	spin_unlock_irq(shost->host_lock);
+ 	return 0;
+ }
+ 
