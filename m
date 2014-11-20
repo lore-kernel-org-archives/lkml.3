@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313AbaKTOua (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 09:50:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39446 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756498AbaKTOu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 09:50:28 -0500
-Message-ID: <546DFFA1.4030700@redhat.com>
-Date: Thu, 20 Nov 2014 09:50:09 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1756141AbaKTO5g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 09:57:36 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:58467 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969AbaKTO5f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 09:57:35 -0500
+Date: Thu, 20 Nov 2014 16:57:26 +0200
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Steven Walter <stevenrwalter@gmail.com>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        BlueZ development <linux-bluetooth@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Bluetooth: automatically flushable packets aren't
+ allowed on LE links
+Message-ID: <20141120145726.GA11947@t440s.P-661HNU-F1>
+Mail-Followup-To: Marcel Holtmann <marcel@holtmann.org>,
+	Steven Walter <stevenrwalter@gmail.com>,
+	"Gustavo F. Padovan" <gustavo@padovan.org>,
+	BlueZ development <linux-bluetooth@vger.kernel.org>,
+	linux-kernel@vger.kernel.org
+References: <1416419951-27659-1-git-send-email-stevenrwalter@gmail.com>
+ <20141120113813.GA23288@t440s.lan>
+ <80321467-10AB-489E-A47E-44B0ECEE4BE1@holtmann.org>
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <koct9i@gmail.com>,
-        Michel Lespinasse <walken@google.com>
-CC: Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Tim Hartrick <tim@edgecast.com>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
-References: <502D42E5.7090403@redhat.com>	<alpine.LSU.2.00.1208200032450.24855@eggly.anvils>	<CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>	<20120822032057.GA30871@google.com>	<50345232.4090002@redhat.com>	<20130603195003.GA31275@evergreen.ssec.wisc.edu>	<20141114163053.GA6547@cosmos.ssec.wisc.edu>	<20141117160212.b86d031e1870601240b0131d@linux-foundation.org>	<20141118014135.GA17252@cosmos.ssec.wisc.edu>	<546AB1F5.6030306@redhat.com>	<20141118121936.07b02545a0684b2cc839a10c@linux-foundation.org>	<CALYGNiMxnxmy-LyJ4OT9OoFeKwTPPkZMF-bJ-eJDBFXgZQ6AEA@mail.gmail.com>	<CALYGNiM_CsjjiK_36JGirZT8rTP+ROYcH0CSyZjghtSNDU8ptw@mail.gmail.com>	<546BDB29.9050403@suse.cz>	<CALYGNiOHXvyqr3+Jq5FsZ_xscsXwrQ_9YCtL2819i6iRkgms2w@mail.gmail.com>	<546CC0CD.40906@suse.cz>	<CALYGNiO9_bAVVZ2GdFq=PO2yV3LPs2utsbcb2pFby7MypptLCw@mail.gmail.com>	<CANN689G+y77m2_paF0vBpHG8EsJ2-pEnJvLJSGs-zHf+SqTEjQ@mail.gmail.com> <CALYGNiOC4dEzzVzSQXGC4oxLbgp=8TC=A+duJs67jT97TWQ++g@mail.gmail.com>
-In-Reply-To: <CALYGNiOC4dEzzVzSQXGC4oxLbgp=8TC=A+duJs67jT97TWQ++g@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <80321467-10AB-489E-A47E-44B0ECEE4BE1@holtmann.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Hi Marcel,
 
-On 11/20/2014 09:42 AM, Konstantin Khlebnikov wrote:
+On Thu, Nov 20, 2014, Marcel Holtmann wrote:
+> > static u16 get_acl_flags(struct hci_conn *hcon, struct l2cap_chan *chan)
+> > {
+> 
+> If we do it with a helper functions, then it should only provide the
+> l2cap_chan since we can get the hci_conn from there.
 
-> I'm thinking about limitation for reusing anon_vmas which might
-> increase performance without breaking asymptotic estimation of
-> count anon_vma in the worst case. For example this heuristic: allow
-> to reuse only anon_vma with single direct descendant. It seems
-> there will be arount up to two times more anon_vmas but
-> false-aliasing must be much lower.
+One of the places it'd get called from (l2cap_send_cmd)  doesn't have a
+l2cap_chan context at all which is why I split this into one mandatory
+(hci_conn) and another optoinal (l2cap_chan) parameter.
 
-It may even be possible to not create a child anon_vma for the
-first child a parent forks, but only create a new anon_vma once
-the parent clones a second child (alive at the same time as the
-first child).
+Anyway, if you're happy with having this inline with a code comment
+explaining the (rather complex) if-statement then I'm fine with that
+too.
 
-That still takes care of things like apache or sendmail, but
-would not create infinite anon_vmas for a task that keeps forking
-itself to infinite depth without calling exec...
-
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUbf+hAAoJEM553pKExN6DxhQH/1QL+9GdhaSx7EQnRcbDRcHi
-GuEfMU0g9Kv4ad+oPSQnH/L7vJMJAYeh5ZJGH+rOykWHp3sGReqDZOnzpXRAe11z
-1cSC1BJsndzrv9wX8niFpuKpYbF0IP+ckv3qaEzWtm5yCRyhHVZfr6b794Y4K9jF
-z2EPPu1vAAldbkx1VlYTwofBA5lESL5UmrFvH4ouI7BeWYSEe6BgVCbvK+K5fANT
-ketdA5R08xyUAcXDa+28qpBYkdWnxNhwqseDoXCW8SOFNwWbLDI6GRfrsCNku13i
-Gi41h3uEuIAGDf+AU/GMjiymgwutCOGq+cfZlszELaRvHmDpNGYdPv1llghNg7Q=
-=Vk+H
------END PGP SIGNATURE-----
+Johan
