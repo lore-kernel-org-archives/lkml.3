@@ -1,97 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757322AbaKTO13 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 09:27:29 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:58525 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756498AbaKTO11 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 09:27:27 -0500
-Message-ID: <546DFA04.9060901@linaro.org>
-Date: Thu, 20 Nov 2014 15:26:12 +0100
-From: Eric Auger <eric.auger@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1757364AbaKTO1k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 09:27:40 -0500
+Received: from mga09.intel.com ([134.134.136.24]:55571 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757329AbaKTO1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 09:27:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,424,1413270000"; 
+   d="scan'208";a="640431861"
+Date: Thu, 20 Nov 2014 16:27:30 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: rjw@rjwysocki.net, lenb@kernel.org, wsa@the-dreams.de,
+        robert.moore@intel.com, lv.zheng@intel.com, shigorin@gmail.com,
+        adamw@happyassassin.net, jan.brummer@tabos.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, devel@acpica.org
+Subject: Re: [PATCH V2] ACPI: Add _DEP(Operation Region Dependencies) support
+ to fix battery issue on the Asus T100TA
+Message-ID: <20141120142730.GP1309@lahna.fi.intel.com>
+References: <1416492733-18597-1-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
-To: Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: kvm-arm <kvmarm@lists.cs.columbia.edu>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>,
-        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, VFIO DRIVER <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 06/19] vfio/platform: return info for bound device
-References: <1414433284-31719-1-git-send-email-a.motakis@virtualopensystems.com> <1414433284-31719-7-git-send-email-a.motakis@virtualopensystems.com> <5463373C.2010202@linaro.org> <1415810168.16601.353.camel@ul30vt.home> <CAG8rG2z_iCXEDGnfuZW_g+29NjhRXzUaDG3AUEVh1zvbf298BA@mail.gmail.com>
-In-Reply-To: <CAG8rG2z_iCXEDGnfuZW_g+29NjhRXzUaDG3AUEVh1zvbf298BA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416492733-18597-1-git-send-email-tianyu.lan@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2014 03:10 PM, Antonios Motakis wrote:
-> On Wed, Nov 12, 2014 at 5:36 PM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
->> On Wed, 2014-11-12 at 11:32 +0100, Eric Auger wrote:
->>> On 10/27/2014 07:07 PM, Antonios Motakis wrote:
->>>> A VFIO userspace driver will start by opening the VFIO device
->>>> that corresponds to an IOMMU group, and will use the ioctl interface
->>>> to get the basic device info, such as number of memory regions and
->>>> interrupts, and their properties. This patch enables the
->>>> VFIO_DEVICE_GET_INFO ioctl call.
->>>>
->>>> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
->>>> ---
->>>>  drivers/vfio/platform/vfio_platform_common.c | 23 ++++++++++++++++++++---
->>>>  1 file changed, 20 insertions(+), 3 deletions(-)
->>>>
->>>> diff --git a/drivers/vfio/platform/vfio_platform_common.c b/drivers/vfio/platform/vfio_platform_common.c
->>>> index e0fdbc8..cb20526 100644
->>>> --- a/drivers/vfio/platform/vfio_platform_common.c
->>>> +++ b/drivers/vfio/platform/vfio_platform_common.c
->>>> @@ -43,10 +43,27 @@ static int vfio_platform_open(void *device_data)
->>>>  static long vfio_platform_ioctl(void *device_data,
->>>>                        unsigned int cmd, unsigned long arg)
->>>>  {
->>>> -   if (cmd == VFIO_DEVICE_GET_INFO)
->>>> -           return -EINVAL;
->>>> +   struct vfio_platform_device *vdev = device_data;
->>>> +   unsigned long minsz;
->>>> +
->>>> +   if (cmd == VFIO_DEVICE_GET_INFO) {
->>>> +           struct vfio_device_info info;
->>>> +
->>>> +           minsz = offsetofend(struct vfio_device_info, num_irqs);
->>>> +
->>>> +           if (copy_from_user(&info, (void __user *)arg, minsz))
->>>> +                   return -EFAULT;
->>>> +
->>>> +           if (info.argsz < minsz)
->>>> +                   return -EINVAL;
->>>> +
->>>> +           info.flags = vdev->flags;
->>>> +           info.num_regions = 0;
->>>> +           info.num_irqs = 0;
->>> Seems a bit weird to me to enable the modality but returning zeroed
->>> values. Shouldn't we put that patch after VFIO_DEVICE_GET_REGION_INFO
->>> and VFIO_DEVICE_GET_IRQ_INFO ones?
->>
->> I actually like how Antonios has started from a base framework, exposing
->> a device but none of the resources and then incrementally adds each
->> component.  It's also a good showcase of the VFIO ABI that we can do
->> things like this.  Thanks,
+On Thu, Nov 20, 2014 at 10:12:12PM +0800, Lan Tianyu wrote:
+> ACPI 5.0 introduces _DEP to designate device objects that OSPM should
+> assign a higher priority in start ordering due to future operation region
+> accesses.
 > 
-> I also agree with Alex with this. But of course I'm not married with
-> any particular splitting style, in case we decide to change this.
-
-Hi Antonios,
-please keep as is. I also learn each day about splitting style ;-)
-Best Regards
-Eric
+> On Asus T100TA, ACPI battery info are read from a I2C slave device via
+> I2C operation region. Before I2C operation region handler is installed,
+> battery _STA always returns 0. There is a _DEP method of designating
+> start order under battery device node.
 > 
->>
->> Alex
->>
+> This patch is to implement _DEP feature to fix battery issue on the Asus T100TA.
+> Introducing acpi_dep_list and adding dep_unmet count in the struct
+> acpi_device. During ACPI namespace scan, create struct acpi_dep_data for a
+> valid pair of master (device pointed to by _DEP)/slave(device with _DEP), record
+> master's and slave's ACPI handle in it and put it into acpi_dep_list. The dep_unmet
+> count will increase by one if there is a device under its _DEP. Driver's probe() should
+> return EPROBE_DEFER when find dep_unmet is larger than 0. When I2C operation
+> region handler is installed, remove all struct acpi_dep_data on the acpi_dep_list
+> whose master is pointed to I2C host controller and decrease slave's dep_unmet.
+> When dep_unmet decreases to 0, all _DEP conditions are met and then do acpi_bus_attach()
+> for the device in order to resolve battery _STA issue on the Asus T100TA.
+> 
+> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=69011
+> Tested-by: Jan-Michael Brummer <jan.brummer@tabos.org>
+> Tested-by: Adam Williamson <adamw@happyassassin.net>
+> Tested-by: Michael Shigorin <shigorin@gmail.com>
+> Acked-by: Wolfram Sang <wsa@the-dreams.de>
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 
+Looks good to me now,
+
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
