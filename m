@@ -1,122 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733AbaKUWI7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 17:08:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54350 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948AbaKUWI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 17:08:56 -0500
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 3/3] PCI: Extend and export pci_msi_supported() for
-	multivector MSI
-To: bhelgaas@google.com
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, joro@8bytes.org,
-        iommu@lists.linux-foundation.org
-Date: Fri, 21 Nov 2014 15:08:46 -0700
-Message-ID: <20141121220845.31095.19173.stgit@gimli.home>
-In-Reply-To: <20141121213752.31095.30735.stgit@gimli.home>
-References: <20141121213752.31095.30735.stgit@gimli.home>
-User-Agent: StGIT/0.14.3
+	id S1752697AbaKUWKr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 17:10:47 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:34696 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429AbaKUWKp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 17:10:45 -0500
+Date: Fri, 21 Nov 2014 23:10:42 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141121221040.GD9198@lerouge>
+References: <20141120122339.GA14877@htj.dyndns.org>
+ <alpine.DEB.2.11.1411202204030.3950@nanos>
+ <20141120221122.GA25393@htj.dyndns.org>
+ <alpine.DEB.2.11.1411202315230.3950@nanos>
+ <20141120230514.GB25393@htj.dyndns.org>
+ <CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
+ <20141120233920.GC25393@htj.dyndns.org>
+ <CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
+ <20141121162742.GB15461@htj.dyndns.org>
+ <CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Embrace and extend this existing function as an interface to test
-for multivector MSI support.  Drivers can now call this function
-with nvec >1 and type PCI_CAP_ID_MSI to verify whether the platform
-is capable of supporting multiple MSI vectors.
+On Fri, Nov 21, 2014 at 08:38:07AM -0800, Andy Lutomirski wrote:
+> On Nov 21, 2014 8:27 AM, "Tejun Heo" <tj@kernel.org> wrote:
+> >
+> > Hello, Andy.
+> >
+> > On Thu, Nov 20, 2014 at 03:55:09PM -0800, Andy Lutomirski wrote:
+> > > That doesn't appear to have anything to with nmi though, right?
+> >
+> > I thought that was the main offender but, apparently, not any more.
+> >
+> > > Wouldn't this issue be fixed by moving the vmalloc_fault check into
+> > > do_page_fault before exception_enter?
+> >
+> > Can you please elaborate why that'd fix the issue?  I'm not
+> > intimiately familiar with the fault handling so it'd be great if you
+> > can give me some pointers in terms of where to look at.
+> 
+> do_page_fault is called directly from asm.  It does:
+> 
+>     prev_state = exception_enter();
+>     __do_page_fault(regs, error_code, address);
+>     exception_exit(prev_state);
+> 
+> The vmalloc fixup is in __do_page_fault.
+> 
+> exception_enter does various accounting and tracing things, and I
+> think that the recursion in stack trace I saw was in exception_enter.
+> 
+> If you move the vmalloc fixup before exception_enter() and return if
+> the fault was from vmalloc, then you can't recurse.  You need to be
+> careful not to touch anything that uses RCU before exception_enter,
+> though.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+That fixes the exception_enter() recursion but surely more issues with
+per cpu memory faults are lurking somewhere now or in the future.
 
- drivers/pci/msi.c   |   15 ++++++++++++---
- include/linux/pci.h |    3 +++
- 2 files changed, 15 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 36b503a..da3c709 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -793,12 +793,13 @@ out_free:
-  * pci_msi_supported - check whether MSI may be enabled on a device
-  * @dev: pointer to the pci_dev data structure of MSI device function
-  * @nvec: how many MSIs have been requested ?
-+ * @type: PCI_CAP_ID_MSI or PCI_CAP_ID_MSIX
-  *
-  * Look at global flags, the device itself, and its parent buses
-  * to determine if MSI/-X are supported for the device. If MSI/-X is
-  * supported return 1, else return 0.
-  **/
--static int pci_msi_supported(struct pci_dev *dev, int nvec)
-+int pci_msi_supported(struct pci_dev *dev, int nvec, int type)
- {
- 	struct pci_bus *bus;
- 
-@@ -809,6 +810,9 @@ static int pci_msi_supported(struct pci_dev *dev, int nvec)
- 	if (!dev || dev->no_msi || dev->current_state != PCI_D0)
- 		return 0;
- 
-+	if (type != PCI_CAP_ID_MSI && type != PCI_CAP_ID_MSIX)
-+		return 0;
-+
- 	/*
- 	 * You can't ask to have 0 or less MSIs configured.
- 	 *  a) it's stupid ..
-@@ -828,8 +832,13 @@ static int pci_msi_supported(struct pci_dev *dev, int nvec)
- 		if (bus->bus_flags & PCI_BUS_FLAGS_NO_MSI)
- 			return 0;
- 
-+	if (type == PCI_CAP_ID_MSI && nvec > 1 &&
-+	    !arch_supports_multivector_msi(dev))
-+		return 0;
-+
- 	return 1;
- }
-+EXPORT_SYMBOL(pci_msi_supported);
- 
- /**
-  * pci_msi_vec_count - Return the number of MSI vectors a device can send
-@@ -930,7 +939,7 @@ int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
- 	int nr_entries;
- 	int i, j;
- 
--	if (!pci_msi_supported(dev, nvec))
-+	if (!pci_msi_supported(dev, nvec, PCI_CAP_ID_MSIX))
- 		return -EINVAL;
- 
- 	if (!entries)
-@@ -1041,7 +1050,7 @@ int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
- 	int nvec;
- 	int rc;
- 
--	if (!pci_msi_supported(dev, minvec))
-+	if (!pci_msi_supported(dev, minvec, PCI_CAP_ID_MSI))
- 		return -EINVAL;
- 
- 	WARN_ON(!!dev->msi_enabled);
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index c9a8904..f20605e 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1197,6 +1197,7 @@ struct msix_entry {
- 
- 
- #ifdef CONFIG_PCI_MSI
-+int pci_msi_supported(struct pci_dev *dev, int nvec, int type);
- int pci_msi_vec_count(struct pci_dev *dev);
- void pci_msi_shutdown(struct pci_dev *dev);
- void pci_disable_msi(struct pci_dev *dev);
-@@ -1225,6 +1226,8 @@ static inline int pci_enable_msix_exact(struct pci_dev *dev,
- 	return 0;
- }
- #else
-+static inline int pci_msi_supported(struct pci_dev *dev, int nvec, int type)
-+{ return 0; }
- static inline int pci_msi_vec_count(struct pci_dev *dev) { return -ENOSYS; }
- static inline void pci_msi_shutdown(struct pci_dev *dev) { }
- static inline void pci_disable_msi(struct pci_dev *dev) { }
-
+I'm going to add recursion protection to user_exit()/user_enter() anyway.
