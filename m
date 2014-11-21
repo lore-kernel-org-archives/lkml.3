@@ -1,410 +1,427 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaKUX0Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 18:26:25 -0500
-Received: from pb-smtp1.int.icgroup.com ([208.72.237.35]:62316 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750885AbaKUX0W convert rfc822-to-8bit (ORCPT
+	id S1752516AbaKUXay (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 18:30:54 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:59906 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172AbaKUXaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 18:26:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=AeBqHu6Nz1LrQaV+hA4
-	GOeyLJc1aISIAsbFTHVzyeBF5UX269UmlQivloQYrcgpAVQKSYQAVyvMBbXDatSB
-	hIN5ZVOzODiZHdbd5YuhlbIkCLa5qVdSHMuNIaXwoaFNY6HotqpsQkRA3MzqFMaG
-	r7iwiZCwpvnTgNr8FEPctn74=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v2.2.0-rc3
-Date: Fri, 21 Nov 2014 15:26:20 -0800
-Message-ID: <xmqq61e8yw2r.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 21 Nov 2014 18:30:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: CD323930-71D5-11E4-9D4C-42529F42C9D4-77302942!pb-smtp1.pobox.com
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1416599058-13836-2-git-send-email-john.stultz@linaro.org>
+References: <1416599058-13836-1-git-send-email-john.stultz@linaro.org>
+	<1416599058-13836-2-git-send-email-john.stultz@linaro.org>
+Date: Fri, 21 Nov 2014 15:30:51 -0800
+X-Google-Sender-Auth: h9IeoLmCCQcoZRVkKQwdYfNxyTA
+Message-ID: <CAGXu5jLKWOUcf+63HFdYLB6Ge31Xng+QqyKh3KNN7u15EfOVEA@mail.gmail.com>
+Subject: Re: [PATCH 01/12] time: Rename udelay_test.c to test_udelay.c
+From: Kees Cook <keescook@chromium.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        David Riley <davidriley@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A release candidate Git v2.2.0-rc3 is now available for testing
-at the usual places.  I was planning to do the final one but we
-found and fixed last-minute bugs in the code in -rc2, so this
-is to doubly make sure the result is fit for the final one,
-which I am planning to tag mid next week.
-
-The tarballs are found at:
-
-    https://www.kernel.org/pub/software/scm/git/testing/
-
-The following public repositories all have a copy of the 'v2.2.0-rc3'
-tag and the 'master' branch that the tag points at:
-
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Git v2.2 Release Notes (draft)
-==============================
-
-Updates since v2.1
-------------------
-
-Ports
-
- * Building on older MacOS X systems automatically sets
-   the necessary NO_APPLE_COMMON_CRYPTO build-time option.
-
- * The support to build with NO_PTHREADS has been resurrected.
-
- * Compilation options has been updated a bit to support z/OS port
-   better.
-
-
-UI, Workflows & Features
-
- * "git archive" learned to filter what gets archived with pathspec.
-
- * "git config --edit --global" starts from a skeletal per-user
-   configuration file contents, instead of a total blank, when the
-   user does not already have any.  This immediately reduces the
-   need for a later "Have you forgotten setting core.user?" and we
-   can add more to the template as we gain more experience.
-
- * "git stash list -p" used to be almost always a no-op because each
-   stash entry is represented as a merge commit.  It learned to show
-   the difference between the base commit version and the working tree
-   version, which is in line with what "git stash show" gives.
-
- * Sometimes users want to report a bug they experience on their
-   repository, but they are not at liberty to share the contents of
-   the repository.  "fast-export" was taught an "--anonymize" option
-   to replace blob contents, names of people and paths and log
-   messages with bland and simple strings to help them.
-
- * "git difftool" learned an option to stop feeding paths to the
-   diff backend when it exits with a non-zero status.
-
- * "git grep" allows to paint (or not paint) partial matches on
-   context lines when showing "grep -C<num>" output in color.
-
- * "log --date=iso" uses a slight variant of ISO 8601 format that is
-   made more human readable.  A new "--date=iso-strict" option gives
-   datetime output that is more strictly conformant.
-
- * The logic "git prune" uses is more resilient against various corner
-   cases.
-
- * A broken reimplementation of Git could write an invalid index that
-   records both stage #0 and higher stage entries for the same path.
-   We now notice and reject such an index, as there is no sensible
-   fallback (we do not know if the broken tool wanted to resolve and
-   forgot to remove higher stage entries, or if it wanted to unresolve
-   and forgot to remove the stage#0 entry).
-
- * The temporary files "git mergetool" uses are named to avoid too
-   many dots in them (e.g. a temporary file for "hello.c" used to be
-   named e.g. "hello.BASE.4321.c" but now uses underscore instead,
-   e.g. "hello_BASE_4321.c", to allow us to have multiple variants).
-
- * The temporary files "git mergetool" uses can be placed in a newly
-   created temporary directory, instead of the current directory, by
-   setting the mergetool.writeToTemp configuration variable.
-
- * "git mergetool" understands "--tool bc" now, as version 4 of
-   BeyondCompare can be driven the same way as its version 3 and it
-   feels awkward to say "--tool bc3" to run version 4.
-
- * The "pre-receive" and "post-receive" hooks are no longer required
-   to consume their input fully (not following this requirement used
-   to result in intermittent errors in "git push").
-
- * The pretty-format specifier "%d", which expanded to " (tagname)"
-   for a tagged commit, gained a cousin "%D" that just gives the
-   "tagname" without frills.
-
- * "git push" learned "--signed" push, that allows a push (i.e.
-   request to update the refs on the other side to point at a new
-   history, together with the transmission of necessary objects) to be
-   signed, so that it can be verified and audited, using the GPG
-   signature of the person who pushed, that the tips of branches at a
-   public repository really point the commits the pusher wanted to,
-   without having to "trust" the server.
-
- * "git interpret-trailers" is a new filter to programmatically edit
-    the tail end of the commit log messages, e.g. "Signed-off-by:".
-
- * "git help everyday" shows the "Everyday Git in 20 commands or so"
-   document, whose contents have been updated to match more modern
-   Git practice.
-
- * On the "git svn" front, work to reduce memory consumption and
-   to improve handling of mergeinfo progresses.
-
-
-Performance, Internal Implementation, Development Support etc.
-
- * The API to manipulate the "refs" has been restructured to make it
-   more transactional, with the eventual goal to allow all-or-none
-   atomic updates and migrating the storage to something other than
-   the traditional filesystem based one (e.g. databases).
-
- * The lockfile API and its users have been cleaned up.
-
- * We no longer attempt to keep track of individual dependencies to
-   the header files in the build procedure, relying on automated
-   dependency generation support from modern compilers.
-
- * In tests, we have been using NOT_{MINGW,CYGWIN} test prerequisites
-   long before negated prerequisites e.g. !MINGW were invented.
-   The former has been converted to the latter to avoid confusion.
-
- * Looking up remotes configuration in a repository with very many
-   remotes defined has been optimized.
-
- * There are cases where you lock and open to write a file, close it
-   to show the updated contents to external processes, and then have
-   to update the file again while still holding the lock; now the
-   lockfile API has support for such an access pattern.
-
- * The API to allocate the structure to keep track of commit
-   decoration has been updated to make it less cumbersome to use.
-
- * An in-core caching layer to let us avoid reading the same
-   configuration files number of times has been added.  A few commands
-   have been converted to use this subsystem.
-
- * Various code paths have been cleaned up and simplified by using
-   "strbuf", "starts_with()", and "skip_prefix()" APIs more.
-
- * A few codepaths that died when large blobs that would not fit in
-   core are involved in their operation have been taught to punt
-   instead, by e.g. marking too large a blob as not to be diffed.
-
- * A few more code paths in "commit" and "checkout" have been taught
-   to repopulate the cache-tree in the index, to help speed up later
-   "write-tree" (used in "commit") and "diff-index --cached" (used in
-   "status").
-
- * A common programming mistake to assign the same short option name
-   to two separate options is detected by parse_options() API to help
-   developers.
-
- * The code path to write out the packed-refs file has been optimized,
-   which especially matters in a repository with a large number of
-   refs.
-
- * The check to see if a ref $F can be created by making sure no
-   existing ref has $F/ as its prefix has been optimized, which
-   especially matters in a repository with a large number of existing
-   refs.
-
- * "git fsck" was taught to check contents of tag objects a bit more.
-
- * "git hash-object" was taught a "--literally" option to help
-   debugging.
-
- * When running a required clean filter, we do not have to mmap the
-   original before feeding the filter.  Instead, stream the file
-   contents directly to the filter and process its output.
-
- * The scripts in the test suite can be run with "-x" option to show
-   a shell-trace of each command run in them.
-
- * The "run-command" API learned to manage the argv and environment
-   arrays for child process, alleviating the need for the callers to
-   allocate and deallocate them.
-
- * Some people use AsciiDoctor, instead of AsciiDoc, to format our
-   documentation set; the documentation has been adjusted to be usable
-   by both, as AsciiDoctor is pickier than AsciiDoc in its input
-   mark-up.
-
-
-Also contains various documentation updates and code clean-ups.
-
-
-Fixes since v2.1
-----------------
-
-Unless otherwise noted, all the fixes since v2.1 in the maintenance
-track are contained in this release (see the maintenance releases'
-notes for details).
-
- * "git log --pretty/format=" with an empty format string did not
-   mean the more obvious "No output whatsoever" but "Use default
-   format", which was counterintuitive.
-
- * "git -c section.var command" and "git -c section.var= command"
-   should pass the configuration differently (the former should be a
-   boolean true, the latter should be an empty string).
-
- * Applying a patch not generated by Git in a subdirectory used to
-   check the whitespace breakage using the attributes for incorrect
-   paths. Also whitespace checks were performed even for paths
-   excluded via "git apply --exclude=<path>" mechanism.
-
- * "git bundle create" with date-range specification were meant to
-   exclude tags outside the range, but it didn't.
-
- * "git add x" where x that used to be a directory has become a
-   symbolic link to a directory misbehaved.
-
- * The prompt script checked $GIT_DIR/ref/stash file to see if there
-   is a stash, which was a no-no.
-
- * Pack-protocol documentation had a minor typo.
-
- * "git checkout -m" did not switch to another branch while carrying
-   the local changes forward when a path was deleted from the index.
-
- * "git daemon" (with NO_IPV6 build configuration) used to incorrectly
-   use the hostname even when gethostbyname() reported that the given
-   hostname is not found.
-   (merge 107efbe rs/daemon-fixes later to maint).
-
- * With sufficiently long refnames, "git fast-import" could have
-   overflown an on-stack buffer.
-
- * After "pack-refs --prune" packed refs at the top-level, it failed
-   to prune them.
-
- * Progress output from "git gc --auto" was visible in "git fetch -q".
-
- * We used to pass -1000 to poll(2), expecting it to also mean "no
-   timeout", which should be spelled as -1.
-
- * "git rebase" documentation was unclear that it is required to
-   specify on what <upstream> the rebase is to be done when telling it
-   to first check out <branch>.
-   (merge 95c6826 so/rebase-doc later to maint).
-
- * "git push" over HTTP transport had an artificial limit on number of
-   refs that can be pushed imposed by the command line length.
-   (merge 26be19b jk/send-pack-many-refspecs later to maint).
-
- * When receiving an invalid pack stream that records the same object
-   twice, multiple threads got confused due to a race.
-   (merge ab791dd jk/index-pack-threading-races later to maint).
-
- * An attempt to remove the entire tree in the "git fast-import" input
-   stream caused it to misbehave.
-   (merge 2668d69 mb/fast-import-delete-root later to maint).
-
- * Reachability check (used in "git prune" and friends) did not add a
-   detached HEAD as a starting point to traverse objects still in use.
-   (merge c40fdd0 mk/reachable-protect-detached-head later to maint).
-
- * "git config --add section.var val" used to lose existing
-   section.var whose value was an empty string.
-   (merge c1063be ta/config-add-to-empty-or-true-fix later to maint).
-
- * "git fsck" failed to report that it found corrupt objects via its
-   exit status in some cases.
-   (merge 30d1038 jk/fsck-exit-code-fix later to maint).
-
- * Use of "--verbose" option used to break "git branch --merged".
-   (merge 12994dd jk/maint-branch-verbose-merged later to maint).
-
- * Some MUAs mangled a line in a message that begins with "From " to
-   ">From " when writing to a mailbox file and feeding such an input
-   to "git am" used to lose such a line.
-   (merge 85de86a jk/mbox-from-line later to maint).
-
- * "rev-parse --verify --quiet $name" is meant to quietly exit with a
-   non-zero status when $name is not a valid object name, but still
-   gave error messages in some cases.
-
- * A handful of C source files have been updated to include
-   "git-compat-util.h" as the first thing, to conform better to our
-   coding guidelines.
-   (merge 1c4b660 da/include-compat-util-first-in-c later to maint).
-
- * t7004 test, which tried to run Git with small stack space, has been
-   updated to give a bit larger stack to avoid false breakage on some
-   platforms.
-   (merge b9a1907 sk/tag-contains-wo-recursion later to maint).
-
- * A few documentation pages had example sections marked up not quite
-   correctly, which passed AsciiDoc but failed with AsciiDoctor.
-   (merge c30c43c bc/asciidoc-pretty-formats-fix later to maint).
-   (merge f8a48af bc/asciidoc later to maint).
-
- * "gitweb" used deprecated CGI::startfrom, which was removed from
-   CGI.pm as of 4.04; use CGI::start_from instead.
-   (merge 4750f4b rm/gitweb-start-form later to maint).
-
- * Newer versions of 'meld' breaks the auto-detection we use to see if
-   they are new enough to support the `--output` option.
-   (merge b12d045 da/mergetool-meld later to maint).
-
- * "git pack-objects" forgot to disable the codepath to generate
-   object reachability bitmap when it needs to split the resulting
-   pack.
-   (merge 2113471 jk/pack-objects-no-bitmap-when-splitting later to maint).
-
- * The code to use cache-tree trusted the on-disk data too much and
-   fell into an infinite loop upon seeing an incorrectly recorded
-   index file.
-   (merge 729dbbd jk/cache-tree-protect-from-broken-libgit2 later to maint).
-
- * "git fetch" into a repository where branch B was deleted earlier
-   back when it had reflog enabled, and then branch B/C is fetched
-   into it without reflog enabled, which is arguably an unlikely
-   corner case, unnecessarily failed.
-   (merge aae828b jk/fetch-reflog-df-conflict later to maint).
-
- * "git log --first-parent -L..." used to crash.
-   (merge a8787c5 tm/line-log-first-parent later to maint).
-
-----------------------------------------------------------------
-
-Changes since v2.2.0-rc2 are as follows:
-
-Alex Henrie (1):
-      l10n: Update Catalan translation
-
-Christian Couder (2):
-      trailer: ignore comment lines inside the trailers
-      trailer: display a trailer without its trailing newline
-
-David Aguilar (1):
-      difftool: honor --trust-exit-code for builtin tools
-
-Jiang Xin (3):
-      l10n: git.pot: v2.2.0 round 2 (1 updated)
-      l10n: batch updates for one trivial change
-      l10n: remove a superfluous translation for push.c
-
-Junio C Hamano (2):
-      Documentation/git-commit: clarify that --only/--include records the working tree contents
-      Git 2.2.0-rc3
-
-Max Horn (1):
-      doc: add some crossrefs between manual pages
-
-Ralf Thielow (4):
-      l10n: de.po: use imperative form for command options
-      l10n: de.po: translate 62 new messages
-      l10n: de.po: translate 2 new messages
-      l10n: de.po: translate 2 messages
-
-Slavomir Vlcek (1):
-      SubmittingPatches: final submission is To: maintainer and CC: list
-
-Stefan Beller (1):
-      l10n: de.po: Fixup one translation
-
-Stefan Naewe (1):
-      gittutorial: fix output of 'git status'
-
-Thomas Ackermann (1):
-      gittutorial.txt: remove reference to ancient Git version
-
-Torsten Bögershausen (1):
-      t5705: the file:// URL should be absolute
-
+On Fri, Nov 21, 2014 at 11:44 AM, John Stultz <john.stultz@linaro.org> wrote:
+> Kees requested that this test module be renamed for consistency sake,
+> so this patch renames the udelay_test.c file (recently added to
+> tip/timers/core for 3.17) to test_udelay.c
+>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Greg KH <greg@kroah.com>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Linux-Next <linux-next@vger.kernel.org>
+> Cc: David Riley <davidriley@chromium.org>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+
+Reviewed-by: Kees Cook <keescook@chromium.org>
+
+Yes please! :)
+
+-Kees
+
+> ---
+>  kernel/time/Makefile      |   2 +-
+>  kernel/time/test_udelay.c | 168 ++++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/time/udelay_test.c | 168 ----------------------------------------------
+>  3 files changed, 169 insertions(+), 169 deletions(-)
+>  create mode 100644 kernel/time/test_udelay.c
+>  delete mode 100644 kernel/time/udelay_test.c
+>
+> diff --git a/kernel/time/Makefile b/kernel/time/Makefile
+> index 7347426..f622cf2 100644
+> --- a/kernel/time/Makefile
+> +++ b/kernel/time/Makefile
+> @@ -13,7 +13,7 @@ obj-$(CONFIG_TICK_ONESHOT)                    += tick-oneshot.o
+>  obj-$(CONFIG_TICK_ONESHOT)                     += tick-sched.o
+>  obj-$(CONFIG_TIMER_STATS)                      += timer_stats.o
+>  obj-$(CONFIG_DEBUG_FS)                         += timekeeping_debug.o
+> -obj-$(CONFIG_TEST_UDELAY)                      += udelay_test.o
+> +obj-$(CONFIG_TEST_UDELAY)                      += test_udelay.o
+>
+>  $(obj)/time.o: $(obj)/timeconst.h
+>
+> diff --git a/kernel/time/test_udelay.c b/kernel/time/test_udelay.c
+> new file mode 100644
+> index 0000000..e622ba3
+> --- /dev/null
+> +++ b/kernel/time/test_udelay.c
+> @@ -0,0 +1,168 @@
+> +/*
+> + * udelay() test kernel module
+> + *
+> + * Test is executed by writing and reading to /sys/kernel/debug/udelay_test
+> + * Tests are configured by writing: USECS ITERATIONS
+> + * Tests are executed by reading from the same file.
+> + * Specifying usecs of 0 or negative values will run multiples tests.
+> + *
+> + * Copyright (C) 2014 Google, Inc.
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/debugfs.h>
+> +#include <linux/delay.h>
+> +#include <linux/ktime.h>
+> +#include <linux/module.h>
+> +#include <linux/uaccess.h>
+> +
+> +#define DEFAULT_ITERATIONS 100
+> +
+> +#define DEBUGFS_FILENAME "udelay_test"
+> +
+> +static DEFINE_MUTEX(udelay_test_lock);
+> +static struct dentry *udelay_test_debugfs_file;
+> +static int udelay_test_usecs;
+> +static int udelay_test_iterations = DEFAULT_ITERATIONS;
+> +
+> +static int udelay_test_single(struct seq_file *s, int usecs, uint32_t iters)
+> +{
+> +       int min = 0, max = 0, fail_count = 0;
+> +       uint64_t sum = 0;
+> +       uint64_t avg;
+> +       int i;
+> +       /* Allow udelay to be up to 0.5% fast */
+> +       int allowed_error_ns = usecs * 5;
+> +
+> +       for (i = 0; i < iters; ++i) {
+> +               struct timespec ts1, ts2;
+> +               int time_passed;
+> +
+> +               ktime_get_ts(&ts1);
+> +               udelay(usecs);
+> +               ktime_get_ts(&ts2);
+> +               time_passed = timespec_to_ns(&ts2) - timespec_to_ns(&ts1);
+> +
+> +               if (i == 0 || time_passed < min)
+> +                       min = time_passed;
+> +               if (i == 0 || time_passed > max)
+> +                       max = time_passed;
+> +               if ((time_passed + allowed_error_ns) / 1000 < usecs)
+> +                       ++fail_count;
+> +               WARN_ON(time_passed < 0);
+> +               sum += time_passed;
+> +       }
+> +
+> +       avg = sum;
+> +       do_div(avg, iters);
+> +       seq_printf(s, "%d usecs x %d: exp=%d allowed=%d min=%d avg=%lld max=%d",
+> +                       usecs, iters, usecs * 1000,
+> +                       (usecs * 1000) - allowed_error_ns, min, avg, max);
+> +       if (fail_count)
+> +               seq_printf(s, " FAIL=%d", fail_count);
+> +       seq_puts(s, "\n");
+> +
+> +       return 0;
+> +}
+> +
+> +static int udelay_test_show(struct seq_file *s, void *v)
+> +{
+> +       int usecs;
+> +       int iters;
+> +       int ret = 0;
+> +
+> +       mutex_lock(&udelay_test_lock);
+> +       usecs = udelay_test_usecs;
+> +       iters = udelay_test_iterations;
+> +       mutex_unlock(&udelay_test_lock);
+> +
+> +       if (usecs > 0 && iters > 0) {
+> +               return udelay_test_single(s, usecs, iters);
+> +       } else if (usecs == 0) {
+> +               struct timespec ts;
+> +
+> +               ktime_get_ts(&ts);
+> +               seq_printf(s, "udelay() test (lpj=%ld kt=%ld.%09ld)\n",
+> +                               loops_per_jiffy, ts.tv_sec, ts.tv_nsec);
+> +               seq_puts(s, "usage:\n");
+> +               seq_puts(s, "echo USECS [ITERS] > " DEBUGFS_FILENAME "\n");
+> +               seq_puts(s, "cat " DEBUGFS_FILENAME "\n");
+> +       }
+> +
+> +       return ret;
+> +}
+> +
+> +static int udelay_test_open(struct inode *inode, struct file *file)
+> +{
+> +       return single_open(file, udelay_test_show, inode->i_private);
+> +}
+> +
+> +static ssize_t udelay_test_write(struct file *file, const char __user *buf,
+> +               size_t count, loff_t *pos)
+> +{
+> +       char lbuf[32];
+> +       int ret;
+> +       int usecs;
+> +       int iters;
+> +
+> +       if (count >= sizeof(lbuf))
+> +               return -EINVAL;
+> +
+> +       if (copy_from_user(lbuf, buf, count))
+> +               return -EFAULT;
+> +       lbuf[count] = '\0';
+> +
+> +       ret = sscanf(lbuf, "%d %d", &usecs, &iters);
+> +       if (ret < 1)
+> +               return -EINVAL;
+> +       else if (ret < 2)
+> +               iters = DEFAULT_ITERATIONS;
+> +
+> +       mutex_lock(&udelay_test_lock);
+> +       udelay_test_usecs = usecs;
+> +       udelay_test_iterations = iters;
+> +       mutex_unlock(&udelay_test_lock);
+> +
+> +       return count;
+> +}
+> +
+> +static const struct file_operations udelay_test_debugfs_ops = {
+> +       .owner = THIS_MODULE,
+> +       .open = udelay_test_open,
+> +       .read = seq_read,
+> +       .write = udelay_test_write,
+> +       .llseek = seq_lseek,
+> +       .release = single_release,
+> +};
+> +
+> +static int __init udelay_test_init(void)
+> +{
+> +       mutex_lock(&udelay_test_lock);
+> +       udelay_test_debugfs_file = debugfs_create_file(DEBUGFS_FILENAME,
+> +                       S_IRUSR, NULL, NULL, &udelay_test_debugfs_ops);
+> +       mutex_unlock(&udelay_test_lock);
+> +
+> +       return 0;
+> +}
+> +
+> +module_init(udelay_test_init);
+> +
+> +static void __exit udelay_test_exit(void)
+> +{
+> +       mutex_lock(&udelay_test_lock);
+> +       debugfs_remove(udelay_test_debugfs_file);
+> +       mutex_unlock(&udelay_test_lock);
+> +}
+> +
+> +module_exit(udelay_test_exit);
+> +
+> +MODULE_AUTHOR("David Riley <davidriley@chromium.org>");
+> +MODULE_LICENSE("GPL");
+> diff --git a/kernel/time/udelay_test.c b/kernel/time/udelay_test.c
+> deleted file mode 100644
+> index e622ba3..0000000
+> --- a/kernel/time/udelay_test.c
+> +++ /dev/null
+> @@ -1,168 +0,0 @@
+> -/*
+> - * udelay() test kernel module
+> - *
+> - * Test is executed by writing and reading to /sys/kernel/debug/udelay_test
+> - * Tests are configured by writing: USECS ITERATIONS
+> - * Tests are executed by reading from the same file.
+> - * Specifying usecs of 0 or negative values will run multiples tests.
+> - *
+> - * Copyright (C) 2014 Google, Inc.
+> - *
+> - * This software is licensed under the terms of the GNU General Public
+> - * License version 2, as published by the Free Software Foundation, and
+> - * may be copied, distributed, and modified under those terms.
+> - *
+> - * This program is distributed in the hope that it will be useful,
+> - * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> - * GNU General Public License for more details.
+> - */
+> -
+> -#include <linux/debugfs.h>
+> -#include <linux/delay.h>
+> -#include <linux/ktime.h>
+> -#include <linux/module.h>
+> -#include <linux/uaccess.h>
+> -
+> -#define DEFAULT_ITERATIONS 100
+> -
+> -#define DEBUGFS_FILENAME "udelay_test"
+> -
+> -static DEFINE_MUTEX(udelay_test_lock);
+> -static struct dentry *udelay_test_debugfs_file;
+> -static int udelay_test_usecs;
+> -static int udelay_test_iterations = DEFAULT_ITERATIONS;
+> -
+> -static int udelay_test_single(struct seq_file *s, int usecs, uint32_t iters)
+> -{
+> -       int min = 0, max = 0, fail_count = 0;
+> -       uint64_t sum = 0;
+> -       uint64_t avg;
+> -       int i;
+> -       /* Allow udelay to be up to 0.5% fast */
+> -       int allowed_error_ns = usecs * 5;
+> -
+> -       for (i = 0; i < iters; ++i) {
+> -               struct timespec ts1, ts2;
+> -               int time_passed;
+> -
+> -               ktime_get_ts(&ts1);
+> -               udelay(usecs);
+> -               ktime_get_ts(&ts2);
+> -               time_passed = timespec_to_ns(&ts2) - timespec_to_ns(&ts1);
+> -
+> -               if (i == 0 || time_passed < min)
+> -                       min = time_passed;
+> -               if (i == 0 || time_passed > max)
+> -                       max = time_passed;
+> -               if ((time_passed + allowed_error_ns) / 1000 < usecs)
+> -                       ++fail_count;
+> -               WARN_ON(time_passed < 0);
+> -               sum += time_passed;
+> -       }
+> -
+> -       avg = sum;
+> -       do_div(avg, iters);
+> -       seq_printf(s, "%d usecs x %d: exp=%d allowed=%d min=%d avg=%lld max=%d",
+> -                       usecs, iters, usecs * 1000,
+> -                       (usecs * 1000) - allowed_error_ns, min, avg, max);
+> -       if (fail_count)
+> -               seq_printf(s, " FAIL=%d", fail_count);
+> -       seq_puts(s, "\n");
+> -
+> -       return 0;
+> -}
+> -
+> -static int udelay_test_show(struct seq_file *s, void *v)
+> -{
+> -       int usecs;
+> -       int iters;
+> -       int ret = 0;
+> -
+> -       mutex_lock(&udelay_test_lock);
+> -       usecs = udelay_test_usecs;
+> -       iters = udelay_test_iterations;
+> -       mutex_unlock(&udelay_test_lock);
+> -
+> -       if (usecs > 0 && iters > 0) {
+> -               return udelay_test_single(s, usecs, iters);
+> -       } else if (usecs == 0) {
+> -               struct timespec ts;
+> -
+> -               ktime_get_ts(&ts);
+> -               seq_printf(s, "udelay() test (lpj=%ld kt=%ld.%09ld)\n",
+> -                               loops_per_jiffy, ts.tv_sec, ts.tv_nsec);
+> -               seq_puts(s, "usage:\n");
+> -               seq_puts(s, "echo USECS [ITERS] > " DEBUGFS_FILENAME "\n");
+> -               seq_puts(s, "cat " DEBUGFS_FILENAME "\n");
+> -       }
+> -
+> -       return ret;
+> -}
+> -
+> -static int udelay_test_open(struct inode *inode, struct file *file)
+> -{
+> -       return single_open(file, udelay_test_show, inode->i_private);
+> -}
+> -
+> -static ssize_t udelay_test_write(struct file *file, const char __user *buf,
+> -               size_t count, loff_t *pos)
+> -{
+> -       char lbuf[32];
+> -       int ret;
+> -       int usecs;
+> -       int iters;
+> -
+> -       if (count >= sizeof(lbuf))
+> -               return -EINVAL;
+> -
+> -       if (copy_from_user(lbuf, buf, count))
+> -               return -EFAULT;
+> -       lbuf[count] = '\0';
+> -
+> -       ret = sscanf(lbuf, "%d %d", &usecs, &iters);
+> -       if (ret < 1)
+> -               return -EINVAL;
+> -       else if (ret < 2)
+> -               iters = DEFAULT_ITERATIONS;
+> -
+> -       mutex_lock(&udelay_test_lock);
+> -       udelay_test_usecs = usecs;
+> -       udelay_test_iterations = iters;
+> -       mutex_unlock(&udelay_test_lock);
+> -
+> -       return count;
+> -}
+> -
+> -static const struct file_operations udelay_test_debugfs_ops = {
+> -       .owner = THIS_MODULE,
+> -       .open = udelay_test_open,
+> -       .read = seq_read,
+> -       .write = udelay_test_write,
+> -       .llseek = seq_lseek,
+> -       .release = single_release,
+> -};
+> -
+> -static int __init udelay_test_init(void)
+> -{
+> -       mutex_lock(&udelay_test_lock);
+> -       udelay_test_debugfs_file = debugfs_create_file(DEBUGFS_FILENAME,
+> -                       S_IRUSR, NULL, NULL, &udelay_test_debugfs_ops);
+> -       mutex_unlock(&udelay_test_lock);
+> -
+> -       return 0;
+> -}
+> -
+> -module_init(udelay_test_init);
+> -
+> -static void __exit udelay_test_exit(void)
+> -{
+> -       mutex_lock(&udelay_test_lock);
+> -       debugfs_remove(udelay_test_debugfs_file);
+> -       mutex_unlock(&udelay_test_lock);
+> -}
+> -
+> -module_exit(udelay_test_exit);
+> -
+> -MODULE_AUTHOR("David Riley <davidriley@chromium.org>");
+> -MODULE_LICENSE("GPL");
+> --
+> 1.9.1
+>
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
