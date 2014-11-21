@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758631AbaKUPgC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:36:02 -0500
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:39389 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755434AbaKUPf7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:35:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAN+gG=F5AENtv0a-sK3WmvYLdVUWEyteXce1avX7+eRSeOAswQ@mail.gmail.com>
-References: <1416422480-3241-1-git-send-email-mathieu.magnaudet@enac.fr>
-	<CAN+gG=GN4dwXr_qEHMfMddGHkMKECZMUwTM+xbNmY_gibthLmA@mail.gmail.com>
-	<alpine.LNX.2.00.1411201421100.4454@pobox.suse.cz>
-	<CAN+gG=F5AENtv0a-sK3WmvYLdVUWEyteXce1avX7+eRSeOAswQ@mail.gmail.com>
-Date: Fri, 21 Nov 2014 10:35:58 -0500
-Message-ID: <CAN+gG=FNK2ormxrFSw=k13iJvkacbzgkfuLbNHBp4cf2KFVK5A@mail.gmail.com>
-Subject: Re: [PATCH] hid-multitouch: Add quirk for VTL touch panels
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+	id S1758810AbaKUPgW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:36:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50348 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758675AbaKUPgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:36:17 -0500
+Date: Fri, 21 Nov 2014 09:35:35 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
 To: Jiri Kosina <jkosina@suse.cz>
-Cc: Mathieu Magnaudet <mathieu.magnaudet@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Cc: Seth Jennings <sjenning@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
+Message-ID: <20141121153535.GC26264@treble.redhat.com>
+References: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
+ <1416522580-5593-3-git-send-email-sjenning@redhat.com>
+ <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz>
+ <20141121152103.GB26264@treble.redhat.com>
+ <alpine.LNX.2.00.1411211626110.23174@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1411211626110.23174@pobox.suse.cz>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 10:27 AM, Benjamin Tissoires
-<benjamin.tissoires@gmail.com> wrote:
-> On Thu, Nov 20, 2014 at 8:21 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->> On Wed, 19 Nov 2014, Benjamin Tissoires wrote:
->>
->>> though this patch works for this particular device, I just thought at
->>> something which may solve the problem in a different way. I asked
->>> Mathieu to test the different solution, so I'd rather you to wait for
->>> final confirmation before merging this patch.
->>
->> Thanks for the heads up, I am putting this patch on hold until further
->> notice from you or Mathieu.
->>
->
-> Mathieu confirmed this morning that using hid_hw_raw_request instead
-> of hid_hw_request while _setting_ the input_mode works for this
-> particular touchscreen. So I think we will simply switch to use this
-> sync operation instead of relying on the async one. We will need to
-> test this change a little bit, but it should be safe for BT and I2C at
-> least.
->
-> So, yes, we will drop this patch and have a better one in the next few
-> days. Thanks for holding this one :)
->
+On Fri, Nov 21, 2014 at 04:27:57PM +0100, Jiri Kosina wrote:
+> On Fri, 21 Nov 2014, Josh Poimboeuf wrote:
+> 
+> > I think we can use "depends on HAVE_FENTRY" to accomplish this, since 
+> > CC_USING_FENTRY gets set by the top level kernel Makefile if 
+> > CONFIG_HAVE_FENTRY is set.
+> 
+> The problem is that HAVE_FENTRY is set automatically on x86_64, no matter 
+> whether your actual compiler supports it or not.
+> 
+> CC_USING_FENTRY is defined if and only if the actual currently used 
+> compiler supports it, but that can't be expressed in Kconfig.
 
-Actually, later tests showed that this was still required. I have a
-comment on the patch (see the other mail), so, please, Jiri, wait for
-the v2 :)
+Ah, light bulb moment.  Now I understand what "$(call cc-option, ...)"
+does.
 
-Cheers,
-Benjamin
+Thanks :-)
+
+-- 
+Josh
