@@ -1,99 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758597AbaKUKRf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 05:17:35 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:49555 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758422AbaKUKRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 05:17:31 -0500
-Message-ID: <546F10EE.3030309@ti.com>
-Date: Fri, 21 Nov 2014 15:46:14 +0530
-From: Vignesh R <vigneshr@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1758616AbaKUKRp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 05:17:45 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:46227
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758422AbaKUKRk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 05:17:40 -0500
+X-IronPort-AV: E=Sophos;i="5.07,429,1413237600"; 
+   d="scan'208";a="89831757"
+Date: Fri, 21 Nov 2014 11:17:15 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+cc: Eduardo Valentin <edubezval@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 1/1] thermal: Exynos: Deletion of unnecessary checks
+ before two function calls
+In-Reply-To: <546F1017.5080403@users.sourceforge.net>
+Message-ID: <alpine.DEB.2.10.1411211116580.2554@hadrien>
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net>
+ <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net> <546F1017.5080403@users.sourceforge.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Paul Walmsley <paul@pwsan.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] ARM: OMAP2+: hwmod: AM335x/AM43x: add hwmod support
- for tscadc on am43x-evm
-References: <1415099728-10959-1-git-send-email-vigneshr@ti.com> <1415099728-10959-3-git-send-email-vigneshr@ti.com> <alpine.DEB.2.02.1411200706441.9204@utopia.booyaka.com> <546EC6D4.7080906@ti.com> <alpine.DEB.2.02.1411210519520.9204@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.02.1411210519520.9204@utopia.booyaka.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 21 Nov 2014, SF Markus Elfring wrote:
 
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Fri, 21 Nov 2014 11:06:33 +0100
+>
+> The functions cpufreq_cooling_unregister() and thermal_zone_device_unregister()
+> test whether their argument is NULL and then return immediately.
+> Thus the test around the call is not needed.
+>
+> This issue was detected by using the Coccinelle software.
+>
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> ---
+>  drivers/thermal/samsung/exynos_thermal_common.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
+> index 3f5ad25..1cbb9d0 100644
+> --- a/drivers/thermal/samsung/exynos_thermal_common.c
+> +++ b/drivers/thermal/samsung/exynos_thermal_common.c
+> @@ -417,12 +417,10 @@ void exynos_unregister_thermal(struct thermal_sensor_conf *sensor_conf)
+>
+>  	th_zone = sensor_conf->pzone_data;
+>
+> -	if (th_zone->therm_dev)
+> -		thermal_zone_device_unregister(th_zone->therm_dev);
+> +	thermal_zone_device_unregister(th_zone->therm_dev);
+>
+>  	for (i = 0; i < th_zone->cool_dev_size; i++) {
+> -		if (th_zone->cool_dev[i])
+> -			cpufreq_cooling_unregister(th_zone->cool_dev[i]);
+> +		cpufreq_cooling_unregister(th_zone->cool_dev[i]);
+>  	}
 
-On Friday 21 November 2014 10:56 AM, Paul Walmsley wrote:
-> On Fri, 21 Nov 2014, Vignesh R wrote:
-> 
->> On 11/20/2014 12:39 PM, Paul Walmsley wrote:
->>> On Tue, 4 Nov 2014, Vignesh R wrote:
->>>
->>>> This patch adds hwmod support for tscadc to work on am43xx-evm. The am33xx
->>>> hwmod structures of tscadc has been moved to ipblock_data so that it can
->>>> be reused in am43xx. The clock domain names are separately set for am33xx
->>>> and am43xx. Thus tscadc dt entries can now be added to am43xx board
->>>> dt files.
->>>>
->>>> Signed-off-by: Vignesh R <vigneshr@ti.com>
->>> ...
->>>
->>>> diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
->>>> index 6e57b8ad0db5..b92a7c7825fa 100644
->>>> --- a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
->>>> +++ b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
->>> ...
->>>
->>>> +static void am33xx_hwmod_clockdomain(void)
->>>> +{
->>>> +	CLKDMNAME(am33xx_l4_hs_hwmod, "l4hs_clkdm");
->>>> +	CLKDMNAME(am33xx_adc_tsc_hwmod, "l4_wkup_clkdm");
->>>> +}
->>>> +
->>>> +static void am43xx_hwmod_clockdomain(void)
->>>> +{
->>>> +	CLKDMNAME(am33xx_l4_hs_hwmod, "l3_clkdm");
->>>> +	CLKDMNAME(am33xx_adc_tsc_hwmod, "l3s_tsc_clkdm");
->>>> +}
->>>> +
->>> ...
->>>
->>>> +	am33xx_hwmod_clockdomain();
->>> I looked at this patch and the one before it.  Is there some reason why we 
->>> need to share these two hwmods between AM33xx and AM43xx?  It seems 
->>> cleaner just to add the ADC data directly to the AM43xx hwmod data file, 
->>> not touch the AM33xx data, and not add another runtime data update for the 
->>> clockdomains.  Unless there's something that I'm missing?
->>
->>
->> I wanted to reuse hwmod structures. Except for clockdomain and offset,
->> rest of the hwmod data are same for AM33xx and AM43xx. Adding data to AM43xx
->> hwmod file just duplicates these structures. Do you still want me to move them
->> to AM43xx file?
-> 
-> Yes.  It looks to me like the number of lines saved by eliminating the 
-> duplication is not too different than the number of lines added with the 
-> dynamic clockdomain rewriting.  Plus then we can avoid the dynamic 
-> clockdomain rewriting that we are only doing for two IP blocks.  Ideally 
-> the hwmod data is meant to be static, not changed at runtime.  For the 
-> moment we are stuck with the CLKCTRL rewriting but I personally consider 
-> that to be a hack.
-> 
+Now you have unnecessary {}
 
-Ok, will add ADC data to AM43xx and post v3.
+julia
 
-Regards
-Vignesh
-
-> 
-> - Paul
-> 
+>
+>  	dev_info(sensor_conf->dev,
+> --
+> 2.1.3
+>
+>
