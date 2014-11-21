@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaKUTH5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:07:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60884 "EHLO mx2.suse.de"
+	id S1751839AbaKUTIK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:08:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60890 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344AbaKUTHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:07:55 -0500
-Date: Fri, 21 Nov 2014 20:07:53 +0100
-Message-ID: <s5hmw7kbcdy.wl-tiwai@suse.de>
+	id S1751737AbaKUTIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 14:08:07 -0500
+Date: Fri, 21 Nov 2014 20:08:05 +0100
+Message-ID: <s5hlhn4bcdm.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: SF Markus Elfring <elfring@users.sourceforge.net>
 Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
         Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH 1/1] ALSA: core: Deletion of unnecessary checks before two function calls
-In-Reply-To: <546F7921.2000406@users.sourceforge.net>
+Subject: Re: [PATCH 1/1] ALSA: es1688_lib: Deletion of an unnecessary check before the function call "release_and_free_resource"
+In-Reply-To: <546F8063.3090002@users.sourceforge.net>
 References: <5307CAA2.8060406@users.sourceforge.net>
 	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
 	<530A086E.8010901@users.sourceforge.net>
@@ -32,7 +32,7 @@ References: <5307CAA2.8060406@users.sourceforge.net>
 	<530DD06F.4090703@users.sourceforge.net>
 	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
 	<5317A59D.4@users.sourceforge.net>
-	<546F7921.2000406@users.sourceforge.net>
+	<546F8063.3090002@users.sourceforge.net>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.4
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -42,14 +42,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Fri, 21 Nov 2014 18:40:49 +0100,
+At Fri, 21 Nov 2014 19:11:47 +0100,
 SF Markus Elfring wrote:
 > 
 > From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Fri, 21 Nov 2014 18:34:48 +0100
+> Date: Fri, 21 Nov 2014 19:05:50 +0100
 > 
-> The functions snd_seq_oss_timer_delete() and vunmap() perform also input
-> parameter validation. Thus the test around the call is not needed.
+> The release_and_free_resource() function tests whether its argument is NULL
+> and then returns immediately. Thus the test around the call is not needed.
 > 
 > This issue was detected by using the Coccinelle software.
 > 
@@ -61,46 +61,23 @@ Applied, thanks.
 Takashi
 
 > ---
->  sound/core/seq/oss/seq_oss_init.c | 9 +++------
->  sound/core/sgbuf.c                | 3 +--
->  2 files changed, 4 insertions(+), 8 deletions(-)
+>  sound/isa/es1688/es1688_lib.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> diff --git a/sound/core/seq/oss/seq_oss_init.c b/sound/core/seq/oss/seq_oss_init.c
-> index b9184d2..b0e32e1 100644
-> --- a/sound/core/seq/oss/seq_oss_init.c
-> +++ b/sound/core/seq/oss/seq_oss_init.c
-> @@ -403,14 +403,11 @@ free_devinfo(void *private)
+> diff --git a/sound/isa/es1688/es1688_lib.c b/sound/isa/es1688/es1688_lib.c
+> index b3b4f15..fb259491 100644
+> --- a/sound/isa/es1688/es1688_lib.c
+> +++ b/sound/isa/es1688/es1688_lib.c
+> @@ -614,8 +614,7 @@ static int snd_es1688_free(struct snd_es1688 *chip)
 >  {
->  	struct seq_oss_devinfo *dp = (struct seq_oss_devinfo *)private;
->  
-> -	if (dp->timer)
-> -		snd_seq_oss_timer_delete(dp->timer);
-> +	snd_seq_oss_timer_delete(dp->timer);
->  		
-> -	if (dp->writeq)
-> -		snd_seq_oss_writeq_delete(dp->writeq);
-> +	snd_seq_oss_writeq_delete(dp->writeq);
->  
-> -	if (dp->readq)
-> -		snd_seq_oss_readq_delete(dp->readq);
-> +	snd_seq_oss_readq_delete(dp->readq);
->  	
->  	kfree(dp);
->  }
-> diff --git a/sound/core/sgbuf.c b/sound/core/sgbuf.c
-> index 0a41850..84fffab 100644
-> --- a/sound/core/sgbuf.c
-> +++ b/sound/core/sgbuf.c
-> @@ -39,8 +39,7 @@ int snd_free_sgbuf_pages(struct snd_dma_buffer *dmab)
->  	if (! sgbuf)
->  		return -EINVAL;
->  
-> -	if (dmab->area)
-> -		vunmap(dmab->area);
-> +	vunmap(dmab->area);
->  	dmab->area = NULL;
->  
->  	tmpb.dev.type = SNDRV_DMA_TYPE_DEV;
+>  	if (chip->hardware != ES1688_HW_UNDEF)
+>  		snd_es1688_init(chip, 0);
+> -	if (chip->res_port)
+> -		release_and_free_resource(chip->res_port);
+> +	release_and_free_resource(chip->res_port);
+>  	if (chip->irq >= 0)
+>  		free_irq(chip->irq, (void *) chip);
+>  	if (chip->dma8 >= 0) {
 > -- 
 > 2.1.3
 > 
