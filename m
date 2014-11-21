@@ -1,98 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757877AbaKUEUW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 23:20:22 -0500
-Received: from mx0a-0016ce01.pphosted.com ([67.231.148.157]:23079 "EHLO
-	mx0a-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756947AbaKUEUV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 23:20:21 -0500
-From: Anil Gurumurthy <Anil.Gurumurthy@qlogic.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>,
-        "James E. J. Bottomley" <JBottomley@parallels.com>,
-        Sudarsana Kalluru <Sudarsana.Kalluru@qlogic.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "Julia Lawall" <julia.lawall@lip6.fr>
-Subject: RE: [PATCH 1/1] SCSI-bfa: Deletion of an unnecessary check before
- the function call "vfree"
-Thread-Topic: [PATCH 1/1] SCSI-bfa: Deletion of an unnecessary check before
- the function call "vfree"
-Thread-Index: AQHQBRP0WF+YcLm2oE+SZI+ObmOVRJxqeqXg
-Date: Fri, 21 Nov 2014 04:20:04 +0000
-Message-ID: <20B1A3CBD98F3845B3F5F56D8597EF59FD4B5D@avmb2.qlogic.org>
-References: <5307CAA2.8060406@users.sourceforge.net>
- <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
- <530A086E.8010901@users.sourceforge.net>
- <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
- <530A72AA.3000601@users.sourceforge.net>
- <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
- <530B5FB6.6010207@users.sourceforge.net>
- <alpine.DEB.2.10.1402241710370.2074@hadrien>
- <530C5E18.1020800@users.sourceforge.net>
- <alpine.DEB.2.10.1402251014170.2080@hadrien>
- <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net>
- <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <546E6F5C.6050604@users.sourceforge.net>
-In-Reply-To: <546E6F5C.6050604@users.sourceforge.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.4.10]
-disclaimer: bypass
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757840AbaKUEWf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 23:22:35 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:62450 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368AbaKUEWe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 23:22:34 -0500
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7628 signatures=670578
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1402240000 definitions=main-1411210037
+Date: Fri, 21 Nov 2014 12:22:32 +0800
+Message-ID: <CAHnt0GXeTAmAaa3queHDP2kssYESgHLmohXj41F04gQvcB__ug@mail.gmail.com>
+Subject: [PATCH] scripts/kconfig/menu.c warning for uninitialized "jump"
+From: Peter Teoh <htmldeveloper@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch looks good. 
-Thanks!
-Acked-by: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
+This warning was found in v3.18-rc3-68-g20f3963 of Linus git-tree.
 
------Original Message-----
-From: SF Markus Elfring [mailto:elfring@users.sourceforge.net] 
-Sent: 21 November 2014 04:17
-To: Anil Gurumurthy; James E. J. Bottomley; Sudarsana Kalluru; linux-scsi
-Cc: linux-kernel; kernel-janitors@vger.kernel.org; Julia Lawall
-Subject: [PATCH 1/1] SCSI-bfa: Deletion of an unnecessary check before the function call "vfree"
+  SHIPPED scripts/kconfig/zconf.hash.c
+  HOSTCC  scripts/kconfig/zconf.tab.o
+In file included from scripts/kconfig/zconf.tab.c:2537:0:
+scripts/kconfig/menu.c: In function ‘get_symbol_str’:
+scripts/kconfig/menu.c:590:18: warning: ‘jump’ may be used
+uninitialized in this function [-Wmaybe-uninitialized]
+     jump->offset = strlen(r->s);
+                  ^
+scripts/kconfig/menu.c:551:19: note: ‘jump’ was declared here
+  struct jump_key *jump;
+                   ^
+  HOSTCC  scripts/kconfig/lxdialog/checklist.o
+  HOSTCC  scripts/kconfig/lxdialog/util.o
+  HOSTCC  scripts/kconfig/lxdialog/inputbox.o
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 20 Nov 2014 23:43:17 +0100
 
-The vfree() function performs also input parameter validation. Thus the test around the call is not needed.
+The patch is provided below, to put in the extra checks for jump, and
+it also added extra brackets to make the logical expression less
+cryptic.
 
-This issue was detected by using the Coccinelle software.
+Signed-off-by: Peter Teoh <htmldeveloper@gmail.com>
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/scsi/bfa/bfad_debugfs.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/scsi/bfa/bfad_debugfs.c b/drivers/scsi/bfa/bfad_debugfs.c index 8e83d04..a72170f 100644
---- a/drivers/scsi/bfa/bfad_debugfs.c
-+++ b/drivers/scsi/bfa/bfad_debugfs.c
-@@ -399,8 +399,7 @@ bfad_debugfs_release_fwtrc(struct inode *inode, struct file *file)
- 	if (!fw_debug)
- 		return 0;
- 
--	if (fw_debug->debug_buffer)
--		vfree(fw_debug->debug_buffer);
-+	vfree(fw_debug->debug_buffer);
- 
- 	file->private_data = NULL;
- 	kfree(fw_debug);
---
-2.1.3
-
+diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+index a26cc5d..4d7eb61 100644
+--- a/scripts/kconfig/menu.c
++++ b/scripts/kconfig/menu.c
+@@ -586,7 +586,7 @@ static void get_prompt_str(struct gstr *r, struct
+property *prop,
+                str_printf(r, _("  Location:\n"));
+                for (j = 4; --i >= 0; j += 2) {
+                        menu = submenu[i];
+-                       if (head && location && menu == location)
++                       if (head && location && (menu == location) && (jump))
+                                jump->offset = strlen(r->s);
+                        str_printf(r, "%*c-> %s", j, ' ',
+                                   _(menu_get_prompt(menu)));
