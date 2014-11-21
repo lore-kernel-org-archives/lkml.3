@@ -1,57 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758676AbaKUPtD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:49:03 -0500
-Received: from mout.web.de ([212.227.17.12]:54307 "EHLO mout.web.de"
+	id S1758801AbaKUPtx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:49:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56489 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758218AbaKUPtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:49:00 -0500
-Message-ID: <546F5ED7.1000206@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 16:48:39 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1758698AbaKUPtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:49:52 -0500
+Date: Fri, 21 Nov 2014 10:49:21 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: axboe@kernel.dk, martin.petersen@oracle.com, mst@redhat.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        qemu-devel@nongnu.org, dm-devel@redhat.com,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: virtio_blk: fix defaults for max_hw_sectors and max_segment_size
+Message-ID: <20141121154920.GA7644@redhat.com>
+References: <20141120190058.GA31214@redhat.com>
+ <20141121095456.GB8866@infradead.org>
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
-Subject: Re: USB: serial: Deletion of an unnecessary check before the function
- call "release_firmware"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546F5831.5060404@users.sourceforge.net> <alpine.DEB.2.10.1411211625380.2433@hadrien>
-In-Reply-To: <alpine.DEB.2.10.1411211625380.2433@hadrien>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:uQcfhuLBTM1Zf115SKsFuxP+90GeGgQRg90RdpLyimoW7NSHTw2
- sEBqrLj58Teia5OuGkMVoPDhkPElrMwDAz5w94xTeYC7uE/ymJRFFZ4Q13Ea976Z1P54d3k
- Xl7KwdO65fvoorMLFsLGlVy7ZgrqywSLEDHVjqHenj7zXHXMqWhmG9f7RBjAqMmNXWfpEt3
- M/7ERVtnXhQp41Nvm17fg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141121095456.GB8866@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> diff --git a/drivers/usb/serial/mxuport.c b/drivers/usb/serial/mxuport.c
->> index ab1d690..3653ec1 100644
->> --- a/drivers/usb/serial/mxuport.c
->> +++ b/drivers/usb/serial/mxuport.c
->> @@ -1101,8 +1101,7 @@ static int mxuport_probe(struct usb_serial *serial,
->>  	 */
->>  	usb_set_serial_data(serial, (void *)id->driver_info);
->>  out:
->> -	if (fw_p)
->> -		release_firmware(fw_p);
->> +	release_firmware(fw_p);
+On Fri, Nov 21 2014 at  4:54am -0500,
+Christoph Hellwig <hch@infradead.org> wrote:
+
+> On Thu, Nov 20, 2014 at 02:00:59PM -0500, Mike Snitzer wrote:
+> > virtio_blk incorrectly established -1U as the default for these
+> > queue_limits.  Set these limits to sane default values to avoid crashing
+> > the kernel.  But the virtio-blk protocol should probably be extended to
+> > allow proper stacking of the disk's limits from the host.
+> > 
+> > This change fixes a crash that was reported when virtio-blk was used to
+> > test linux-dm.git commit 604ea90641b4 ("dm thin: adjust max_sectors_kb
+> > based on thinp blocksize") that will initially set max_sectors to
+> > max_hw_sectors and then rounddown to the first power-of-2 factor of the
+> > DM thin-pool's blocksize.  Basically that commit assumes drivers don't
+> > suck when establishing max_hw_sectors so it acted like a canary in the
+> > coal mine.
 > 
-> I think that the if should stay.
+> Is that a crash in the host or guest?  What kind of mishandling did you
+> see?  Unless the recent virtio standard changed anything the host
+> should be able to handle our arbitrary limits, and even if it doesn't
+> that something we need to hash out with qemu and the virtio standards
+> folks.
 
-I have got an other opinion.
+Some good news: this guest crash isn't an issue with recent kernels (so
+upstream, fedora 20, RHEL7, etc aren't impacted -- Jens feel free to
+drop my virtio_blk patch; even though some of it's limits are clearly
+broken I'll defer to the virtio_blk developers on the best way forward
+-- sorry for the noise!).
 
+The BUG I saw only seems to impact RHEL6 kernels so far (note to self,
+actually _test_ on upstream before reporting a crash against upstream!)
 
-> There were two cases on the allocation, so there should be two cases
-> on the release.
+[root@RHEL-6 ~]# echo 1073741824 > /sys/block/vdc/queue/max_sectors_kb
+[root@RHEL-6 ~]# lvs
 
-I find that this implementation detail does not really matter for the
-necessity of a null pointer check directly before such a function call.
+Message from syslogd@RHEL-6 at Nov 21 15:32:15 ...
+ kernel:Kernel panic - not syncing: Fatal exception
 
-Regards,
-Markus
+Here is the RHEL6 guest crash, just for full disclosure:
+
+kernel BUG at fs/direct-io.c:696!
+invalid opcode: 0000 [#1] SMP
+last sysfs file: /sys/devices/virtual/block/dm-4/dev
+CPU 0
+Modules linked in: nfs lockd fscache auth_rpcgss nfs_acl sunrpc ipv6 ext2 dm_thin_pool dm_bio_prison dm_persistent_data dm_bufio libcrc32c dm_mirror dm_region_hash dm_log dm_mod microcode virtio_balloon i2c_piix4 i2c_core virtio_net ext4 jbd2 mbcache virtio_blk virtio_pci virtio_ring virtio pata_acpi ata_generic ata_piix [last unloaded: speedstep_lib]
+
+Pid: 1679, comm: lvs Not tainted 2.6.32 #6 Bochs Bochs
+RIP: 0010:[<ffffffff811ce336>]  [<ffffffff811ce336>] __blockdev_direct_IO_newtrunc+0x986/0x1270
+RSP: 0018:ffff88011a11ba48  EFLAGS: 00010287
+RAX: 0000000000000000 RBX: ffff8801192fbd28 RCX: 0000000000001000
+RDX: ffffea0003b3d218 RSI: ffff88011aac4300 RDI: ffff880118572378
+RBP: ffff88011a11bbe8 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801192fbd00
+R13: 0000000000000000 R14: ffff880118c3cac0 R15: 0000000000000000
+FS:  00007fde78bc37a0(0000) GS:ffff880028200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00000000012706f0 CR3: 000000011a432000 CR4: 00000000000407f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process lvs (pid: 1679, threadinfo ffff88011a11a000, task ffff8801185a4aa0)
+Stack:
+ ffff88011a11bb48 ffff88011a11baa8 ffff88010000000c ffff88011a11bb18
+<d> 0000000000000000 0000000000000000 ffff88011a11bdc8 ffff88011a11beb8
+<d> 0000000c1a11baa8 ffff880118c3cb98 0000000000000000 0000000018c3ccb8
+Call Trace:
+ [<ffffffff811c9e90>] ? blkdev_get_block+0x0/0x20
+ [<ffffffff811cec97>] __blockdev_direct_IO+0x77/0xe0
+ [<ffffffff811c9e90>] ? blkdev_get_block+0x0/0x20
+ [<ffffffff811caf17>] blkdev_direct_IO+0x57/0x60
+ [<ffffffff811c9e90>] ? blkdev_get_block+0x0/0x20
+ [<ffffffff8112619b>] generic_file_aio_read+0x6bb/0x700
+ [<ffffffff811cba60>] ? blkdev_get+0x10/0x20
+ [<ffffffff811cba70>] ? blkdev_open+0x0/0xc0
+ [<ffffffff8118af4f>] ? __dentry_open+0x23f/0x360
+ [<ffffffff811ca2d1>] blkdev_aio_read+0x51/0x80
+ [<ffffffff8118dc6a>] do_sync_read+0xfa/0x140
+ [<ffffffff8109eaf0>] ? autoremove_wake_function+0x0/0x40
+ [<ffffffff811ca22c>] ? block_ioctl+0x3c/0x40
+ [<ffffffff811a34c2>] ? vfs_ioctl+0x22/0xa0
+ [<ffffffff811a3664>] ? do_vfs_ioctl+0x84/0x580
+ [<ffffffff8122cee6>] ? security_file_permission+0x16/0x20
+ [<ffffffff8118e625>] vfs_read+0xb5/0x1a0
+ [<ffffffff8118e761>] sys_read+0x51/0x90
+ [<ffffffff810e5aae>] ? __audit_syscall_exit+0x25e/0x290
+ [<ffffffff8100b072>] system_call_fastpath+0x16/0x1b
+Code: fe ff ff c7 85 fc fe ff ff 00 00 00 00 48 89 95 10 ff ff ff 8b 95 34 ff ff ff e8 46 ac ff ff 3b 85 34 ff ff ff 0f 84 fc 02 00 00 <0f> 0b eb fe 8b 9d 34 ff ff ff 8b 85 30 ff ff ff 01 d8 85 c0 0f
+RIP  [<ffffffff811ce336>] __blockdev_direct_IO_newtrunc+0x986/0x1270
+ RSP <ffff88011a11ba48>
+---[ end trace 73be5dcaf8939399 ]---
+Kernel panic - not syncing: Fatal exception
