@@ -1,75 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758789AbaKUQDh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:03:37 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:59320 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758510AbaKUQDg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:03:36 -0500
+	id S1758853AbaKUQET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:04:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45574 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755447AbaKUQES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 11:04:18 -0500
+Date: Fri, 21 Nov 2014 13:04:13 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Tuan Bui <tuan.d.bui@hp.com>
+Cc: linux-kernel@vger.kernel.org, dbueso@suse.de, a.p.zijlstra@chello.nl,
+        paulus@samba.org, artagnon@gmail.com, jolsa@redhat.com,
+        dvhart@linux.intel.com, Aswin Chandramouleeswaran <aswin@hp.com>,
+        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org,
+        mingo@kernel.org
+Subject: Re: [PATCH v2] Perf Bench: Locking Microbenchmark
+Message-ID: <20141121160413.GC18625@kernel.org>
+References: <20141121155706.GB18625@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20141121155519.GB8568@twin.jikos.cz>
-References: <danieru.dressler@gmail.com>
-	<1415767389-29722-1-git-send-email-danieru.dressler@gmail.com>
-	<20141121155519.GB8568@twin.jikos.cz>
-Date: Sat, 22 Nov 2014 01:03:32 +0900
-Message-ID: <CAGC3nLApxMmbSmPc9WvQ5Uh0prrCY7qzcMABaKs_FcYKdUKCpw@mail.gmail.com>
-Subject: Re: [PATCH] Btrfs: ctree: reduce args where only fs_info used
-From: Daniel Dressler <danieru.dressler@gmail.com>
-To: dsterba@suse.cz, Daniel Dressler <danieru.dressler@gmail.com>,
-        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        "open list:BTRFS FILE SYSTEM" <linux-btrfs@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141121155706.GB18625@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ah thanks David for looking at this.
+Em Fri, Nov 21, 2014 at 12:57:06PM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Thu, Nov 20, 2014 at 11:06:05AM -0800, Tuan Bui escreveu:
+> > Subject: [PATCH] Perf Bench: Locking Microbenchmark
+> > 
+> > In response to this thread https://lkml.org/lkml/2014/2/11/93, this is
+> > a micro benchmark that stresses locking contention in the kernel with
+> > creat(2) system call by spawning multiple processes to spam this system
+> > call.  This workload generate similar results and contentions in AIM7
+> > fserver workload but can generate outputs within seconds.
+> > 
+> > With the creat system call the contention vary on what locks are used
+> > in the particular file system. I have ran this benchmark only on ext4
+> > and xfs file system.
 
-Sorry for the thin paragraphs my vim was warming too early about long
-lines. I will reformat it to break at 74 chars.
+I noticed that if control+C it it leaves tons of files in the current
+directory, can you please add code to make it handle this? I think that
+it would also be better to create a temporary directory, etc.
 
-No problem, I'll redo everything so it is one function per patch. Now
-fair warning: there are about 102 functions to cleanup. I was a bit
-worried that many patches would cause too much maintainer overhead but
-it is no problem for me. Only a few functions have dependecies on
-other functions needing cleanup. Thus there will be some small patch
-series for those function sets. A big benefit of one function one
-patch is that extent-io.c will no longer be a 34 function monster
-patch.
+And please take a look at the edited changelog below, to reflect those
+changes on your next attempt to submit this patch, ok? I added an
+Example so that people can now at a glance how it changes the existing
+output for 'perf bench' and what is the output for 'perf bench locking'.
 
-Thank you David, I'll redo all these patches.
+- Arnaldo
 
-Is there any rate limiting I should be doing? I don't want to flood
-the list with burst of dozen plus patches, or is that an okay volume?
+Subject: [PATCH] perf bench: Locking Microbenchmark
 
-Daniel
+In response to this thread https://lkml.org/lkml/2014/2/11/93, this is
+a micro benchmark that stresses locking contention in the kernel with
+creat(2) system call by spawning multiple processes to spam this system
+call.  This workload generate similar results and contentions in AIM7
+fserver workload but can generate outputs within seconds.
 
-2014-11-22 0:55 GMT+09:00 David Sterba <dsterba@suse.cz>:
-> On Wed, Nov 12, 2014 at 01:43:09PM +0900, Daniel Dressler wrote:
->> This patch is part of a larger project to cleanup
->> btrfs's internal usage of struct btrfs_root. Many
->> functions take btrfs_root only to grab a pointer
->> to fs_info.
->
-> Thanks for picking up the project.
->
-> A mere formality, can you please justify the paragraphs to 74 chars?
->
-> --
-> This patch is part of a larger project to cleanup btrfs's internal usage
-> of struct btrfs_root. Many functions take btrfs_root only to grab a
-> pointer to fs_info.
-> --
->
->> This patch does not address the two functions in
->> ctree.c (insert_ptr, and split_item) which only
->> use root for BUG_ONs in ctree.c
->>
->> This patch affects the following functions:
->>   1) fixup_low_keys
->>   2) btrfs_set_item_key_safe
->
-> Please send one patch per function change, unless there are more that
-> are somehow entangled that it would make it hard to separate.
+With the creat system call the contention vary on what locks are used
+in the particular file system. I have ran this benchmark only on ext4
+and xfs file system.
+
+Running the creat workload on ext4 show contention in the mutex lock
+that is used by ext4_orphan_add() and ext4_orphan_del() to add or delete
+an inode from the list of inodes. At the same time running the creat
+workload on xfs show contention in the spinlock that is used by
+xsf_log_commit_cil() to commit a transaction to the Committed Item List.
+
+Here is a comparison of this benchmark with AIM7 running fserver workload
+at 500-1000 users along with a perf trace running on ext4 file system.
+
+Test machine is a 8-sockets 80 cores Westmere system HT-off on v3.17-rc6.
+
+	AIM7		AIM7		perf-bench	perf-bench
+Users	Jobs/min	Jobs/min/child	Ops/sec		Ops/sec/child
+500	119668.25	239.34		104249		208
+600	126074.90	210.12		106136		176
+700	128662.42	183.80		106175		151
+800	119822.05	149.78		106290		132
+900	106150.25	117.94		105230		116
+1000	104681.29	104.68		106489		106
+
+Perf report for AIM7 fserver:
+14.51%	reaim  		[kernel.kallsyms]	[k] osq_lock
+4.98%	reaim  		reaim			[.] add_long
+4.98%	reaim  		reaim			[.] add_int
+4.31%	reaim  		[kernel.kallsyms]	[k] mutex_spin_on_owner
+...
+
+Perf report of 'perf bench locking vfs'
+
+22.37%	locking-creat  [kernel.kallsyms]	[k] osq_lock
+5.77%	locking-creat  [kernel.kallsyms]	[k] mutex_spin_on_owner
+5.31%	locking-creat  [kernel.kallsyms]	[k] _raw_spin_lock
+5.15%	locking-creat  [jbd2]			[k] jbd2_journal_put_journal_head
+...
+
+Example:
+
+[root@zoo ~]# perf bench
+Usage:
+	perf bench [<common options>] <collection> <benchmark>
+[<options>]
+
+        # List of all available benchmark collections:
+
+         sched: Scheduler and IPC benchmarks
+           mem: Memory access benchmarks
+          numa: NUMA scheduling and MM benchmarks
+         futex: Futex stressing benchmarks
+       locking: Kernel locking benchmarks
+           all: All benchmarks
+
+[root@zoo ~]# perf bench locking
+
+        # List of available benchmarks for collection 'locking':
+
+           vfs: Benchmark vfs using creat(2)
+           all: Run all benchmarks in this suite
+
+[root@zoo ~]# perf bench locking vfs
+
+   100 processes: throughput = 342506 average opts/sec all processes
+   100 processes: throughput = 3425 average opts/sec per process
+
+   200 processes: throughput = 341309 average opts/sec all processes
+   200 processes: throughput = 1706 average opts/sec per process
+<SNIP>
+
+Changes since v1:
+- Added -j options to specified jobs per processes.
+- Change name of microbenchmark from creat to vfs.
+- Change all instances of threads to proccess.
+
