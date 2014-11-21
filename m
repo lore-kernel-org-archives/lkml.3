@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757645AbaKUES2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 23:18:28 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:46397 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaKUES0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 23:18:26 -0500
-Message-ID: <1416543474.27917.51.camel@haakon3.risingtidesystems.com>
-Subject: Re: [RFC] situation with csum_and_copy_... API
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        target-devel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-In-Reply-To: <20141120214753.GR7996@ZenIV.linux.org.uk>
-References: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
-	 <20141119.161744.1661940121298888832.davem@davemloft.net>
-	 <20141119213006.GE7996@ZenIV.linux.org.uk>
-	 <20141119.165340.2162829993279387495.davem@davemloft.net>
-	 <20141120214753.GR7996@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Nov 2014 20:17:54 -0800
-Mime-Version: 1.0
-X-Mailer: Evolution 3.4.4-1 
-Content-Transfer-Encoding: 7bit
+	id S1757877AbaKUEUW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 23:20:22 -0500
+Received: from mx0a-0016ce01.pphosted.com ([67.231.148.157]:23079 "EHLO
+	mx0a-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756947AbaKUEUV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 23:20:21 -0500
+From: Anil Gurumurthy <Anil.Gurumurthy@qlogic.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>,
+        "James E. J. Bottomley" <JBottomley@parallels.com>,
+        Sudarsana Kalluru <Sudarsana.Kalluru@qlogic.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "Julia Lawall" <julia.lawall@lip6.fr>
+Subject: RE: [PATCH 1/1] SCSI-bfa: Deletion of an unnecessary check before
+ the function call "vfree"
+Thread-Topic: [PATCH 1/1] SCSI-bfa: Deletion of an unnecessary check before
+ the function call "vfree"
+Thread-Index: AQHQBRP0WF+YcLm2oE+SZI+ObmOVRJxqeqXg
+Date: Fri, 21 Nov 2014 04:20:04 +0000
+Message-ID: <20B1A3CBD98F3845B3F5F56D8597EF59FD4B5D@avmb2.qlogic.org>
+References: <5307CAA2.8060406@users.sourceforge.net>
+ <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
+ <530A086E.8010901@users.sourceforge.net>
+ <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
+ <530A72AA.3000601@users.sourceforge.net>
+ <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
+ <530B5FB6.6010207@users.sourceforge.net>
+ <alpine.DEB.2.10.1402241710370.2074@hadrien>
+ <530C5E18.1020800@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net> <546E6F5C.6050604@users.sourceforge.net>
+In-Reply-To: <546E6F5C.6050604@users.sourceforge.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.4.10]
+disclaimer: bypass
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7628 signatures=670578
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1411210037
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al & Co,
+Patch looks good. 
+Thanks!
+Acked-by: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
 
-On Thu, 2014-11-20 at 21:47 +0000, Al Viro wrote:
-> On Wed, Nov 19, 2014 at 04:53:40PM -0500, David Miller wrote:
-> 
-> > Pulled, thanks Al.
-> 
-> Umm...  Not in net-next.git#master...  Anyway, the next portion is in
-> vfs.git#iov_iter-net right now; I'll post it on netdev once I get some
-> sleep.
-> 
+-----Original Message-----
+From: SF Markus Elfring [mailto:elfring@users.sourceforge.net] 
+Sent: 21 November 2014 04:17
+To: Anil Gurumurthy; James E. J. Bottomley; Sudarsana Kalluru; linux-scsi
+Cc: linux-kernel; kernel-janitors@vger.kernel.org; Julia Lawall
+Subject: [PATCH 1/1] SCSI-bfa: Deletion of an unnecessary check before the function call "vfree"
 
-Thanks for your detailed analysis + work on this.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Thu, 20 Nov 2014 23:43:17 +0100
 
-> It's getting close to really interesting parts.  Right now the main obstacle
-> is in iscsit_do_rx_data/iscsit_do_tx_data; what happens there is reuse of
-> iovec if kernel_sendmsg() gives a short write - it tries to send again, with
-> the same iovec and decremented length.  Ditto on RX side (with kernel_recvmsg(),
-> obviously).
-> 
-> As far as I can see, these retries on the send side are simply broken -
-> normally we are talking to TCP sockets there and tcp_sendmsg() does *not*
-> modify iovec in normal case.  IOW, if you get 8K sent out of 80K, the next
-> time it'll try to send 72K - already sent piece + 64K following it, etc.
-> 
+The vfree() function performs also input parameter validation. Thus the test around the call is not needed.
 
-AFAIK, short writes have not been actively getting triggered.
+This issue was detected by using the Coccinelle software.
 
-This is likely due to iscsit_do_tx_data() being used for sending 48 byte
-PDU header, and small payloads in ISCSI_OP_LOGIN_RSP, ISCSI_OP_TEXT_RSP,
-and ISCSI_OP_NOOP_IN control PDUs. 
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/scsi/bfa/bfad_debugfs.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-All bulk data READ payloads are sent via iscsit_fe_sendpage_sg() and
-only use iscsit_do_tx_data() for leading PDU header.
-
-On the receive side, kernel_recvmsg() is called with MSG_WAITALL that
-has been masking this bug..
-
-> Could target-devel folks tell how realistic those resends are, in the
-> first place?  Both with TX and RX sides...  Is there any sane limit on
-> iovec size there, etc.
-> 
-
-Of the three control type PDU using this codepath, the transfer lengths
-are currently limited to <= 32K + header across 2 kvecs.  The simplest
-fix would probably be to fail the connection when send/recv returns a
-value other than requested transfer length for these special cases.
-
-For correctly handling short writes with your new work, what's the
-preferred way to do this..?
-
---nab
+diff --git a/drivers/scsi/bfa/bfad_debugfs.c b/drivers/scsi/bfa/bfad_debugfs.c index 8e83d04..a72170f 100644
+--- a/drivers/scsi/bfa/bfad_debugfs.c
++++ b/drivers/scsi/bfa/bfad_debugfs.c
+@@ -399,8 +399,7 @@ bfad_debugfs_release_fwtrc(struct inode *inode, struct file *file)
+ 	if (!fw_debug)
+ 		return 0;
+ 
+-	if (fw_debug->debug_buffer)
+-		vfree(fw_debug->debug_buffer);
++	vfree(fw_debug->debug_buffer);
+ 
+ 	file->private_data = NULL;
+ 	kfree(fw_debug);
+--
+2.1.3
 
