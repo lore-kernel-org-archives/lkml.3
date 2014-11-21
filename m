@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaKUXio (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 18:38:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58344 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100AbaKUXim (ORCPT
+	id S1752859AbaKUXkT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 18:40:19 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:12378 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751170AbaKUXkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 18:38:42 -0500
-Date: Fri, 21 Nov 2014 15:38:41 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>, Dave Hansen <dave@sr71.net>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 7/7] mm/page_owner: correct owner information for
- early allocated pages
-Message-Id: <20141121153841.c15fa400fd5c76d3946523a8@linux-foundation.org>
-In-Reply-To: <1416557646-21755-8-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1416557646-21755-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1416557646-21755-8-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Nov 2014 18:40:17 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/dRkyZO3mpvOmBOjXFC/09
+Date: Fri, 21 Nov 2014 15:39:59 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Paul Bolle <pebolle@tiscali.nl>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org,
+        Arnd Bergmann <arnd.bergmann@linaro.org>, linux-omap@vger.kernel.org
+Subject: Re: [PATCH v13 5/9] arm: omap1: Migrate debug_ll macros to use 8250.S
+Message-ID: <20141121233958.GB7046@atomide.com>
+References: <1416235750-4766-1-git-send-email-daniel.thompson@linaro.org>
+ <1416235750-4766-6-git-send-email-daniel.thompson@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416235750-4766-6-git-send-email-daniel.thompson@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014 17:14:06 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-
-> Extended memory to store page owner information is initialized some time
-> later than that page allocator starts. Until initialization, many pages
-> can be allocated and they have no owner information. This make debugging
-> using page owner harder, so some fixup will be helpful.
+* Daniel Thompson <daniel.thompson@linaro.org> [141117 06:53]:
+> The omap1's debug-macro.S is similar to the generic 8250 code. Compared to
+> the 8520 code the omap1 macro automatically determines what UART to use
+> based on breadcrumbs left by the bootloader and automatically copes with
+> the eccentric register layout on OMAP7XX.
 > 
-> This patch fix up this situation by setting fake owner information
-> immediately after page extension is initialized. Information doesn't
-> tell the right owner, but, at least, it can tell whether page is
-> allocated or not, more correctly.
+> This patch drops both these features and relies instead on the generic
+> 8250 macros:
 > 
-> On my testing, this patch catches 13343 early allocated pages, although
-> they are mostly allocated from page extension feature. Anyway, after then,
-> there is no page left that it is allocated and has no page owner flag.
+> 1. Dropping support for the bootloader breadcrumbs is identical to the
+>    way the migration was handled for OMAP2 (see 808b7e07464d...).
+> 
+> 2. Support for OMAP7XX still exists but it must be configured by hand
+>    (DEBUG_OMAP7XXUART1/2/3) rather than handled at runtime.
+> 
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+> Cc: linux-omap@vger.kernel.org
+> Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-We really should have a Documentation/vm/page_owner.txt which explains
-all this stuff, provides examples, etc.
+Looks OK to me, probably best that these are queued all together so:
+
+Acked-by: Tony Lindgren <tony@atomide.com>
