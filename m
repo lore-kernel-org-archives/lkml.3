@@ -1,85 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758266AbaKUOUc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 09:20:32 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:46209 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758277AbaKUOUD (ORCPT
+	id S1758529AbaKUOUy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 09:20:54 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:4840 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758491AbaKUOUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 09:20:03 -0500
+	Fri, 21 Nov 2014 09:20:52 -0500
+Date: Fri, 21 Nov 2014 09:20:36 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Petr Mladek <pmladek@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: linux-next: build failure after merge of the ftrace tree
+Message-ID: <20141121092036.09edee57@gandalf.local.home>
+In-Reply-To: <alpine.LNX.2.00.1411211149490.23174@pobox.suse.cz>
+References: <20141121183215.01ba539c@canb.auug.org.au>
+	<alpine.LNX.2.00.1411211149490.23174@pobox.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141111053641.GR23575@dastard>
-References: <1415094884-18349-1-git-send-email-drysdale@google.com>
- <1415094884-18349-3-git-send-email-drysdale@google.com> <20141111053641.GR23575@dastard>
-From: David Drysdale <drysdale@google.com>
-Date: Fri, 21 Nov 2014 14:19:41 +0000
-Message-ID: <CAHse=S9OwP8tSErW59Hd3VPbKVrE9VJM=5gMgZQwsv3kB9Ax0w@mail.gmail.com>
-Subject: Re: [PATCHv2 2/3] selftests: Add test of O_BENEATH & openat(2)
-To: Dave Chinner <david@fromorbit.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Will Drewry <wad@chromium.org>,
-        Jorge Lucangeli Obes <jorgelo@google.com>,
-        Ricky Zhou <rickyz@google.com>, Lee Campbell <leecam@google.com>,
-        Julien Tinnes <jln@google.com>, Mike Depinet <mdepinet@google.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        fstests@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 5:36 AM, Dave Chinner <david@fromorbit.com> wrote:
-> [cc fstests@vger.kernel.org]
->
-> On Tue, Nov 04, 2014 at 09:54:43AM +0000, David Drysdale wrote:
->> Add simple tests of openat(2) variations, including examples that
->> check the new O_BENEATH flag.
->>
->> Signed-off-by: David Drysdale <drysdale@google.com>
->
-> Wouldn't this be better added to fstests? That's the regression
-> test suite used by filesystem developers and most distro QA
-> organisations and where the fs developers aggregate all their new
-> regression tests.
->
-> IMO, the fewer places we aggregate VFS/filesystem tests the better.
-> I really don't think the kernel tree is the best place for adding
-> VFS behavioural tests because it has none of the infrastructure
-> around it to test arbitrary filesystems and configurations and hence
-> is not particularly useful to the people whoa re likely to notice
-> and care about fs regression tests suddenly breaking.
->
-> As an example, the recent renameat() syscall additions (e.g.
-> RENAME_EXCHANGE, RENAME_NOREPLACE) have unit tests in fstests, so
-> these new O_BENEATH tests should really follow the same model...
->
-> Cheers,
->
-> Dave.
 
-Fair enough, that makes sense -- I've now got a version of the selftest
-running within xfstests (git://oss.sgi.com/xfs/cmds/xfstests.git is the
-master repo, right?).
+> 
+> From: Jiri Kosina <jkosina@suse.cz>
+> Subject: [PATCH] printk: make sure printk_func_t is known in percpu.h
+> 
+> Commit afdc34a3d3b8 ("printk: Add per_cpu printk func to allow printk to 
+> be diverted") caused percpu variable printk_func to be declared in 
+> percpu.h. Make sure that the corresponding type is known at the time of 
+> declaration.
+> 
+> Fixes build failure on certain arch/config combinations.
+> 
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> ---
+>  include/linux/percpu.h | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+> index a3aa63e..c94c766 100644
+> --- a/include/linux/percpu.h
+> +++ b/include/linux/percpu.h
+> @@ -7,6 +7,7 @@
+>  #include <linux/cpumask.h>
+>  #include <linux/pfn.h>
+>  #include <linux/init.h>
+> +#include <linux/printk.h>
+>  
+>  #include <asm/percpu.h>
 
-Given that xfstests is independent of the kernel, what's the expected
-way to deal with flags (or syscalls) that are only in specific kernel
-versions?   At the moment I've just got a primitive override at
-compile time (#ifndef O_BENEATH #define O_BENEATH ...), and
-then the test will fail at run-time against an older kernel -- is there a
-need for anything more sophisticated?  (And if so, are there any
-examples I can crib from?)
+Unfortunately, this wasn't the fix. This was an allnoconfig, which
+means printk wasn't defined.
 
-Also, is there an archive of the fstests@ mailing list somewhere?
+-- Steve
 
-Thanks,
-David
+
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Date: Fri, 21 Nov 2014 09:16:58 -0500
+Subject: [PATCH] printk/percpu: Do not define printk_func when printk is not
+ defined
+
+To avoid include hell, the per_cpu variable printk_func was declared
+in percpu.h. But it is only defined if printk is defined.
+
+Link: http://lkml.kernel.org/r/20141121183215.01ba539c@canb.auug.org.au
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/percpu.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index ba2e85a0ff5b..74398ef1d294 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -134,7 +134,9 @@ extern phys_addr_t per_cpu_ptr_to_phys(void *addr);
+ 	(typeof(type) __percpu *)__alloc_percpu(sizeof(type),		\
+ 						__alignof__(type))
+ 
++#ifdef CONFIG_PRINTK
+ /* To avoid include hell, as printk can not declare this, we declare it here */
+ DECLARE_PER_CPU(printk_func_t, printk_func);
++#endif
+ 
+ #endif /* __LINUX_PERCPU_H */
+-- 
+2.1.1
+
