@@ -1,299 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476AbaKUV00 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 16:26:26 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:62646 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397AbaKUV0Y (ORCPT
+	id S1752532AbaKUV0d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 16:26:33 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:56728 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752408AbaKUV01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 16:26:24 -0500
+	Fri, 21 Nov 2014 16:26:27 -0500
 From: Andy Lutomirski <luto@amacapital.net>
 To: Borislav Petkov <bp@alien8.de>, x86@kernel.org,
         Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
         Oleg Nesterov <oleg@redhat.com>, Tony Luck <tony.luck@intel.com>,
         Andi Kleen <andi@firstfloor.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>
-Subject: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST context
-Date: Fri, 21 Nov 2014 13:26:08 -0800
-Message-Id: <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v4 3/5] x86, entry: Switch stacks on a paranoid entry from userspace
+Date: Fri, 21 Nov 2014 13:26:09 -0800
+Message-Id: <955e71b4b8427aec7e8b86de0bf877e7944ba1f3.1416604491.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1416604491.git.luto@amacapital.net>
 References: <cover.1416604491.git.luto@amacapital.net>
 In-Reply-To: <cover.1416604491.git.luto@amacapital.net>
 References: <cover.1416604491.git.luto@amacapital.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently pretend that IST context is like standard exception
-context, but this is incorrect.  IST entries from userspace are like
-standard exceptions except that they use per-cpu stacks, so they are
-atomic.  IST entries from kernel space are like NMIs from RCU's
-perspective -- they are not quiescent states even if they
-interrupted the kernel during a quiescent state.
+This causes all non-NMI, non-double-fault kernel entries from
+userspace to run on the normal kernel stack.  Double-fault is
+exempt to minimize confusion if we double-fault directly from
+userspace due to a bad kernel stack.
 
-Add and use ist_enter and ist_exit to track IST context.  Even
-though x86_32 has no IST stacks, we track these interrupts the same
-way.
+This is, suprisingly, simpler and shorter than the current code.  It
+removes the IMO rather frightening paranoid_userspace path, and it
+make sync_regs much simpler.
 
-This fixes two issues:
+There is no risk of stack overflow due to this change -- the kernel
+stack that we switch to is empty.
 
- - Scheduling from an IST interrupt handler will now warn.  It would
-   previously appear to work as long as we got lucky and nothing
-   overwrote the stack frame.  (I don't know of any bugs in this
-   that would trigger the warning, but it's good to be on the safe
-   side.)
+This will also enable us to create non-atomic sections within
+machine checks from userspace, which will simplify memory failure
+handling.  It will also allow the upcoming fsgsbase code to be
+simplified, because it doesn't need to worry about usergs when
+scheduling in paranoid_exit, as that code no longer exists.
 
- - RCU handling in IST context was dangerous.  As far as I know,
-   only machine checks were likely to trigger this, but it's good to
-   be on the safe side.
-
-Note that the machine check handlers appears to have been missing
-any context tracking at all before this patch.
-
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/include/asm/traps.h         |  4 +++
- arch/x86/kernel/cpu/mcheck/mce.c     |  5 ++++
- arch/x86/kernel/cpu/mcheck/p5.c      |  6 +++++
- arch/x86/kernel/cpu/mcheck/winchip.c |  5 ++++
- arch/x86/kernel/traps.c              | 49 ++++++++++++++++++++++++++++++------
- 5 files changed, 61 insertions(+), 8 deletions(-)
+ Documentation/x86/entry_64.txt         | 18 ++++---
+ Documentation/x86/x86_64/kernel-stacks |  8 ++--
+ arch/x86/kernel/entry_64.S             | 86 ++++++++++++++++++----------------
+ arch/x86/kernel/traps.c                | 23 ++-------
+ 4 files changed, 67 insertions(+), 68 deletions(-)
 
-diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
-index bc8352e7010a..eb16a61bfd06 100644
---- a/arch/x86/include/asm/traps.h
-+++ b/arch/x86/include/asm/traps.h
-@@ -1,6 +1,7 @@
- #ifndef _ASM_X86_TRAPS_H
- #define _ASM_X86_TRAPS_H
+diff --git a/Documentation/x86/entry_64.txt b/Documentation/x86/entry_64.txt
+index bc7226ef5055..8e53217e6d40 100644
+--- a/Documentation/x86/entry_64.txt
++++ b/Documentation/x86/entry_64.txt
+@@ -75,9 +75,6 @@ The expensive (paranoid) way is to read back the MSR_GS_BASE value
+ 	xorl %ebx,%ebx
+ 1:	ret
  
-+#include <linux/context_tracking_state.h>
- #include <linux/kprobes.h>
+-and the whole paranoid non-paranoid macro complexity is about whether
+-to suffer that RDMSR cost.
+-
+ If we are at an interrupt or user-trap/gate-alike boundary then we can
+ use the faster check: the stack will be a reliable indicator of
+ whether SWAPGS was already done: if we see that we are a secondary
+@@ -90,6 +87,15 @@ which might have triggered right after a normal entry wrote CS to the
+ stack but before we executed SWAPGS, then the only safe way to check
+ for GS is the slower method: the RDMSR.
  
- #include <asm/debugreg.h>
-@@ -109,6 +110,9 @@ asmlinkage void smp_thermal_interrupt(void);
- asmlinkage void mce_threshold_interrupt(void);
+-So we try only to mark those entry methods 'paranoid' that absolutely
+-need the more expensive check for the GS base - and we generate all
+-'normal' entry points with the regular (faster) entry macros.
++Therefore, super-atomic entries (except NMI, which is handled separately)
++must use idtentry with paranoid=1 to handle gsbase correctly.  This
++triggers three main behavior changes:
++
++ - Interrupt entry will use the slower gsbase check.
++ - Interrupt entry from user mode will switch off the IST stack.
++ - Interrupt exit to kernel mode will not attempt to reschedule.
++
++We try to only use IST entries and the paranoid entry code for vectors
++that absolutely need the more expensive check for the GS base - and we
++generate all 'normal' entry points with the regular (faster) paranoid=0
++variant.
+diff --git a/Documentation/x86/x86_64/kernel-stacks b/Documentation/x86/x86_64/kernel-stacks
+index a01eec5d1d0b..e3c8a49d1a2f 100644
+--- a/Documentation/x86/x86_64/kernel-stacks
++++ b/Documentation/x86/x86_64/kernel-stacks
+@@ -40,9 +40,11 @@ An IST is selected by a non-zero value in the IST field of an
+ interrupt-gate descriptor.  When an interrupt occurs and the hardware
+ loads such a descriptor, the hardware automatically sets the new stack
+ pointer based on the IST value, then invokes the interrupt handler.  If
+-software wants to allow nested IST interrupts then the handler must
+-adjust the IST values on entry to and exit from the interrupt handler.
+-(This is occasionally done, e.g. for debug exceptions.)
++the interrupt came from user mode, then the interrupt handler prologue
++will switch back to the per-thread stack.  If software wants to allow
++nested IST interrupts then the handler must adjust the IST values on
++entry to and exit from the interrupt handler.  (This is occasionally
++done, e.g. for debug exceptions.)
+ 
+ Events with different IST codes (i.e. with different stacks) can be
+ nested.  For example, a debug interrupt can safely be interrupted by an
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index df088bb03fb3..de24b2eac6b2 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1064,6 +1064,11 @@ ENTRY(\sym)
+ 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+ 
+ 	.if \paranoid
++	.if \paranoid == 1
++	CFI_REMEMBER_STATE
++	testl $3, CS(%rsp)		/* If coming from userspace, switch */
++	jnz 1f				/* stacks. */
++	.endif
+ 	call save_paranoid
+ 	.else
+ 	call error_entry
+@@ -1104,6 +1109,36 @@ ENTRY(\sym)
+ 	jmp error_exit			/* %ebx: no swapgs flag */
+ 	.endif
+ 
++	.if \paranoid == 1
++	CFI_RESTORE_STATE
++	/*
++	 * Paranoid entry from userspace.  Switch stacks and treat it
++	 * as a normal entry.  This means that paranoid handlers
++	 * run in real process context if user_mode(regs).
++	 */
++1:
++	call error_entry
++
++	DEFAULT_FRAME 0
++
++	movq %rsp,%rdi			/* pt_regs pointer */
++	call sync_regs
++	movq %rax,%rsp			/* switch stack */
++
++	movq %rsp,%rdi			/* pt_regs pointer */
++
++	.if \has_error_code
++	movq ORIG_RAX(%rsp),%rsi	/* get error code */
++	movq $-1,ORIG_RAX(%rsp)		/* no syscall to restart */
++	.else
++	xorl %esi,%esi			/* no error code */
++	.endif
++
++	call \do_sym
++
++	jmp error_exit			/* %ebx: no swapgs flag */
++	.endif
++
+ 	CFI_ENDPROC
+ END(\sym)
+ .endm
+@@ -1124,7 +1159,7 @@ idtentry overflow do_overflow has_error_code=0
+ idtentry bounds do_bounds has_error_code=0
+ idtentry invalid_op do_invalid_op has_error_code=0
+ idtentry device_not_available do_device_not_available has_error_code=0
+-idtentry double_fault __do_double_fault has_error_code=1 paranoid=1
++idtentry double_fault __do_double_fault has_error_code=1 paranoid=2
+ idtentry coprocessor_segment_overrun do_coprocessor_segment_overrun has_error_code=0
+ idtentry invalid_TSS do_invalid_TSS has_error_code=1
+ idtentry segment_not_present do_segment_not_present has_error_code=1
+@@ -1305,16 +1340,14 @@ idtentry machine_check has_error_code=0 paranoid=1 do_sym=*machine_check_vector(
  #endif
  
-+extern enum ctx_state ist_enter(struct pt_regs *regs);
-+extern void ist_exit(struct pt_regs *regs, enum ctx_state prev_state);
-+
- /* Interrupts/Exceptions */
- enum {
- 	X86_TRAP_DE = 0,	/*  0, Divide-by-zero */
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 61a9668cebfd..b72509d77337 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -43,6 +43,7 @@
- #include <linux/export.h>
+ 	/*
+-	 * "Paranoid" exit path from exception stack.
+-	 * Paranoid because this is used by NMIs and cannot take
+-	 * any kernel state for granted.
+-	 * We don't do kernel preemption checks here, because only
+-	 * NMI should be common and it does not enable IRQs and
+-	 * cannot get reschedule ticks.
++	 * "Paranoid" exit path from exception stack.  This is invoked
++	 * only on return from non-NMI IST interrupts that came
++	 * from kernel space.
+ 	 *
+-	 * "trace" is 0 for the NMI handler only, because irq-tracing
+-	 * is fundamentally NMI-unsafe. (we cannot change the soft and
+-	 * hard flags at once, atomically)
++	 * We may be returning to very strange contexts (e.g. very early
++	 * in syscall entry), so checking for preemption here would
++	 * be complicated.  Fortunately, we there's no good reason
++	 * to try to handle preemption here.
+ 	 */
  
- #include <asm/processor.h>
-+#include <asm/traps.h>
- #include <asm/mce.h>
- #include <asm/msr.h>
+ 	/* ebx:	no swapgs flag */
+@@ -1324,43 +1357,14 @@ ENTRY(paranoid_exit)
+ 	TRACE_IRQS_OFF_DEBUG
+ 	testl %ebx,%ebx				/* swapgs needed? */
+ 	jnz paranoid_restore
+-	testl $3,CS(%rsp)
+-	jnz   paranoid_userspace
+-paranoid_swapgs:
+ 	TRACE_IRQS_IRETQ 0
+ 	SWAPGS_UNSAFE_STACK
+ 	RESTORE_ALL 8
+-	jmp irq_return
++	INTERRUPT_RETURN
+ paranoid_restore:
+ 	TRACE_IRQS_IRETQ_DEBUG 0
+ 	RESTORE_ALL 8
+-	jmp irq_return
+-paranoid_userspace:
+-	GET_THREAD_INFO(%rcx)
+-	movl TI_flags(%rcx),%ebx
+-	andl $_TIF_WORK_MASK,%ebx
+-	jz paranoid_swapgs
+-	movq %rsp,%rdi			/* &pt_regs */
+-	call sync_regs
+-	movq %rax,%rsp			/* switch stack for scheduling */
+-	testl $_TIF_NEED_RESCHED,%ebx
+-	jnz paranoid_schedule
+-	movl %ebx,%edx			/* arg3: thread flags */
+-	TRACE_IRQS_ON
+-	ENABLE_INTERRUPTS(CLBR_NONE)
+-	xorl %esi,%esi 			/* arg2: oldset */
+-	movq %rsp,%rdi 			/* arg1: &pt_regs */
+-	call do_notify_resume
+-	DISABLE_INTERRUPTS(CLBR_NONE)
+-	TRACE_IRQS_OFF
+-	jmp paranoid_userspace
+-paranoid_schedule:
+-	TRACE_IRQS_ON
+-	ENABLE_INTERRUPTS(CLBR_ANY)
+-	SCHEDULE_USER
+-	DISABLE_INTERRUPTS(CLBR_ANY)
+-	TRACE_IRQS_OFF
+-	jmp paranoid_userspace
++	INTERRUPT_RETURN
+ 	CFI_ENDPROC
+ END(paranoid_exit)
  
-@@ -1016,6 +1017,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- {
- 	struct mca_config *cfg = &mca_cfg;
- 	struct mce m, *final;
-+	enum ctx_state prev_state;
- 	int i;
- 	int worst = 0;
- 	int severity;
-@@ -1038,6 +1040,8 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	DECLARE_BITMAP(valid_banks, MAX_NR_BANKS);
- 	char *msg = "Unknown";
- 
-+	prev_state = ist_enter(regs);
-+
- 	this_cpu_inc(mce_exception_count);
- 
- 	if (!cfg->banks)
-@@ -1168,6 +1172,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
- out:
- 	sync_core();
-+	ist_exit(regs, prev_state);
- }
- EXPORT_SYMBOL_GPL(do_machine_check);
- 
-diff --git a/arch/x86/kernel/cpu/mcheck/p5.c b/arch/x86/kernel/cpu/mcheck/p5.c
-index a3042989398c..ec2663a708e4 100644
---- a/arch/x86/kernel/cpu/mcheck/p5.c
-+++ b/arch/x86/kernel/cpu/mcheck/p5.c
-@@ -8,6 +8,7 @@
- #include <linux/smp.h>
- 
- #include <asm/processor.h>
-+#include <asm/traps.h>
- #include <asm/mce.h>
- #include <asm/msr.h>
- 
-@@ -17,8 +18,11 @@ int mce_p5_enabled __read_mostly;
- /* Machine check handler for Pentium class Intel CPUs: */
- static void pentium_machine_check(struct pt_regs *regs, long error_code)
- {
-+	enum ctx_state prev_state;
- 	u32 loaddr, hi, lotype;
- 
-+	prev_state = ist_enter(regs);
-+
- 	rdmsr(MSR_IA32_P5_MC_ADDR, loaddr, hi);
- 	rdmsr(MSR_IA32_P5_MC_TYPE, lotype, hi);
- 
-@@ -33,6 +37,8 @@ static void pentium_machine_check(struct pt_regs *regs, long error_code)
- 	}
- 
- 	add_taint(TAINT_MACHINE_CHECK, LOCKDEP_NOW_UNRELIABLE);
-+
-+	ist_exit(regs, prev_state);
- }
- 
- /* Set up machine check reporting for processors with Intel style MCE: */
-diff --git a/arch/x86/kernel/cpu/mcheck/winchip.c b/arch/x86/kernel/cpu/mcheck/winchip.c
-index 7dc5564d0cdf..bd5d46a32210 100644
---- a/arch/x86/kernel/cpu/mcheck/winchip.c
-+++ b/arch/x86/kernel/cpu/mcheck/winchip.c
-@@ -7,14 +7,19 @@
- #include <linux/types.h>
- 
- #include <asm/processor.h>
-+#include <asm/traps.h>
- #include <asm/mce.h>
- #include <asm/msr.h>
- 
- /* Machine check handler for WinChip C6: */
- static void winchip_machine_check(struct pt_regs *regs, long error_code)
- {
-+	enum ctx_state prev_state = ist_enter(regs);
-+
- 	printk(KERN_EMERG "CPU0: Machine Check Exception.\n");
- 	add_taint(TAINT_MACHINE_CHECK, LOCKDEP_NOW_UNRELIABLE);
-+
-+	ist_exit(regs, prev_state);
- }
- 
- /* Set up machine check reporting on the Winchip C6 series */
 diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 0d0e922fafc1..f5c4b8813774 100644
+index f5c4b8813774..6a02760df7b4 100644
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -107,6 +107,39 @@ static inline void preempt_conditional_cli(struct pt_regs *regs)
- 	preempt_count_dec();
- }
+@@ -408,27 +408,14 @@ NOKPROBE_SYMBOL(do_int3);
  
-+enum ctx_state ist_enter(struct pt_regs *regs)
-+{
-+	/*
-+	 * We are atomic because we're on the IST stack (or we're on x86_32,
-+	 * in which case we still shouldn't schedule.
-+	 */
-+	preempt_count_add(HARDIRQ_OFFSET);
-+
-+	if (user_mode_vm(regs)) {
-+		/* Other than that, we're just an exception. */
-+		return exception_enter();
-+	} else {
-+		/*
-+		 * We might have interrupted pretty much anything.  In
-+		 * fact, if we're a machine check, we can even interrupt
-+		 * NMI processing.  We don't want in_nmi() to return true,
-+		 * but we need to notify RCU.
-+		 */
-+		rcu_nmi_enter();
-+		return IN_KERNEL;  /* the value is irrelevant. */
-+	}
-+}
-+
-+void ist_exit(struct pt_regs *regs, enum ctx_state prev_state)
-+{
-+	preempt_count_sub(HARDIRQ_OFFSET);
-+
-+	if (user_mode_vm(regs))
-+		return exception_exit(prev_state);
-+	else
-+		rcu_nmi_exit();
-+}
-+
- static nokprobe_inline int
- do_trap_no_signal(struct task_struct *tsk, int trapnr, char *str,
- 		  struct pt_regs *regs,	long error_code)
-@@ -244,14 +277,14 @@ dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
+ #ifdef CONFIG_X86_64
+ /*
+- * Help handler running on IST stack to switch back to user stack
+- * for scheduling or signal handling. The actual stack switch is done in
+- * entry.S
++ * Help handler running on IST stack to switch off the IST stack if the
++ * interrupted code was in user mode. The actual stack switch is done in
++ * entry_64.S
+  */
+ asmlinkage __visible struct pt_regs *sync_regs(struct pt_regs *eregs)
  {
- 	enum ctx_state prev_state;
- 
--	prev_state = exception_enter();
-+	prev_state = ist_enter(regs);
- 	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
- 		       X86_TRAP_SS, SIGBUS) != NOTIFY_STOP) {
- 		preempt_conditional_sti(regs);
- 		do_trap(X86_TRAP_SS, SIGBUS, "stack segment", regs, error_code, NULL);
- 		preempt_conditional_cli(regs);
- 	}
--	exception_exit(prev_state);
-+	ist_exit(regs, prev_state);
+-	struct pt_regs *regs = eregs;
+-	/* Did already sync */
+-	if (eregs == (struct pt_regs *)eregs->sp)
+-		;
+-	/* Exception from user space */
+-	else if (user_mode(eregs))
+-		regs = task_pt_regs(current);
+-	/*
+-	 * Exception from kernel and interrupts are enabled. Move to
+-	 * kernel process stack.
+-	 */
+-	else if (eregs->flags & X86_EFLAGS_IF)
+-		regs = (struct pt_regs *)(eregs->sp -= sizeof(struct pt_regs));
+-	if (eregs != regs)
+-		*regs = *eregs;
++	struct pt_regs *regs = task_pt_regs(current);
++	*regs = *eregs;
+ 	return regs;
  }
- 
- dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
-@@ -259,8 +292,8 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- 	static const char str[] = "double fault";
- 	struct task_struct *tsk = current;
- 
--	exception_enter();
--	/* Return not checked because double check cannot be ignored */
-+	ist_enter(regs);
-+	/* Return not checked because double fault cannot be ignored */
- 	notify_die(DIE_TRAP, str, regs, error_code, X86_TRAP_DF, SIGSEGV);
- 
- 	tsk->thread.error_code = error_code;
-@@ -343,7 +376,7 @@ dotraplinkage void notrace do_int3(struct pt_regs *regs, long error_code)
- 	if (poke_int3_handler(regs))
- 		return;
- 
--	prev_state = exception_enter();
-+	prev_state = ist_enter(regs);
- #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
- 	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
- 				SIGTRAP) == NOTIFY_STOP)
-@@ -369,7 +402,7 @@ dotraplinkage void notrace do_int3(struct pt_regs *regs, long error_code)
- 	preempt_conditional_cli(regs);
- 	debug_stack_usage_dec();
- exit:
--	exception_exit(prev_state);
-+	ist_exit(regs, prev_state);
- }
- NOKPROBE_SYMBOL(do_int3);
- 
-@@ -433,7 +466,7 @@ dotraplinkage void do_debug(struct pt_regs *regs, long error_code)
- 	unsigned long dr6;
- 	int si_code;
- 
--	prev_state = exception_enter();
-+	prev_state = ist_enter(regs);
- 
- 	get_debugreg(dr6, 6);
- 
-@@ -508,7 +541,7 @@ dotraplinkage void do_debug(struct pt_regs *regs, long error_code)
- 	debug_stack_usage_dec();
- 
- exit:
--	exception_exit(prev_state);
-+	ist_exit(regs, prev_state);
- }
- NOKPROBE_SYMBOL(do_debug);
- 
+ NOKPROBE_SYMBOL(sync_regs);
 -- 
 1.9.3
 
