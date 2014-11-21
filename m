@@ -1,82 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214AbaKUKuT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 05:50:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48862 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751230AbaKUKuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 05:50:17 -0500
-Date: Fri, 21 Nov 2014 11:50:22 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Steven Rostedt <rostedt@goodmis.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Petr Mladek <pmladek@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: linux-next: build failure after merge of the ftrace tree
-In-Reply-To: <20141121183215.01ba539c@canb.auug.org.au>
-Message-ID: <alpine.LNX.2.00.1411211149490.23174@pobox.suse.cz>
-References: <20141121183215.01ba539c@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1758251AbaKUKua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 05:50:30 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:56057 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758231AbaKUKu0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 05:50:26 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <CA+icZUVSdSDqUCf3+2SmGx4DfhKvxPi4ivvhNzTEnbe1j4eFQA@mail.gmail.com>
+References: <20141120164531.GB3596@tucsk>
+	<CA+icZUVSdSDqUCf3+2SmGx4DfhKvxPi4ivvhNzTEnbe1j4eFQA@mail.gmail.com>
+Date: Fri, 21 Nov 2014 11:50:24 +0100
+Message-ID: <CAJfpegs6iF+O9W40k+L=kmydZA7O20H6aYdwtTF1vEsq4790xw@mail.gmail.com>
+Subject: Re: [GIT PULL] overlay filesystem fixes for 3.18
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-unionfs@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014, Stephen Rothwell wrote:
+On Fri, Nov 21, 2014 at 11:43 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs-current
+>>
+>
+> This seems to be the place where overlayfs-fixes are collected for a
+> git-pull request.
+> Can you add a "T:" line with the Git tree into MAINTAINERS file if
+> this is the case?
 
-> Hi Steven,
-> 
-> After merging the ftrace tree, today's linux-next build (powerpc
-> allnoconfig) failed like this:
-> 
-> In file included from include/asm-generic/percpu.h:6:0,
->                  from arch/powerpc/include/asm/percpu.h:19,
->                  from include/linux/percpu.h:11,
->                  from include/linux/sched.h:41,
->                  from arch/powerpc/kernel/asm-offsets.c:17:
-> include/linux/percpu.h:138:17: error: 'printk_func_t' undeclared here (not in a function)
->  DECLARE_PER_CPU(printk_func_t, printk_func);
->                  ^
-> include/linux/percpu-defs.h:101:38: note: in definition of macro 'DECLARE_PER_CPU_SECTION'
->   extern __PCPU_ATTRS(sec) __typeof__(type) name
->                                       ^
-> include/linux/percpu.h:138:1: note: in expansion of macro 'DECLARE_PER_CPU'
->  DECLARE_PER_CPU(printk_func_t, printk_func);
->  ^
+Done that already.  See "ovl: update MAINTAINERS" patch in that series.
 
-
-
-
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] printk: make sure printk_func_t is known in percpu.h
-
-Commit afdc34a3d3b8 ("printk: Add per_cpu printk func to allow printk to 
-be diverted") caused percpu variable printk_func to be declared in 
-percpu.h. Make sure that the corresponding type is known at the time of 
-declaration.
-
-Fixes build failure on certain arch/config combinations.
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- include/linux/percpu.h | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index a3aa63e..c94c766 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -7,6 +7,7 @@
- #include <linux/cpumask.h>
- #include <linux/pfn.h>
- #include <linux/init.h>
-+#include <linux/printk.h>
- 
- #include <asm/percpu.h>
- 
-
--- 
-Jiri Kosina
-SUSE Labs
+Thanks,
+Miklos
