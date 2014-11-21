@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310AbaKUTxK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:53:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52514 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751482AbaKUTxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:53:07 -0500
-Date: Fri, 21 Nov 2014 14:52:26 -0500
-From: Rik van Riel <riel@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Rafael Aquini <aquini@redhat.com>
-Subject: [PATCH] ipc,sem block sem_lock on sma->lock during sma
- initialization
-Message-ID: <20141121145226.2ac598af@annuminas.surriel.com>
-Organization: Red Hat, Inc.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752432AbaKUTxk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:53:40 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:38129 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335AbaKUTxh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 14:53:37 -0500
+Date: Fri, 21 Nov 2014 14:53:34 -0500 (EST)
+Message-Id: <20141121.145334.65720125038869042.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next v3 0/2] r8152: adjust rx functions
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394712342-15778-98-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-88-Taiwan-albertk@realtek.com>
+	<1394712342-15778-98-Taiwan-albertk@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 21 Nov 2014 11:53:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When manipulating just one semaphore with semop, sem_lock only takes that
-single semaphore's lock. This creates a problem during initialization of
-the semaphore array, when the data structures used by sem_lock have not
-been set up yet. The sma->lock is already held by newary, and we just
-have to make sure everything else waits on that lock during initialization.
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Thu, 20 Nov 2014 10:29:04 +0800
 
-Luckily it is easy to make sem_lock wait on the sma->lock, by pretending
-there is a complex operation in progress while the sma is being initialized.
+> v3:
+> For patch #1, remove unnecessary initialization for ret and
+> unnecessary blank line in r8152_submit_rx().
+> 
+> v2:
+> For patch #1, set actual_length to 0 before adding the rx to the
+> list, when a error occurs.
+> 
+> For patch #2, change the flow. Stop submitting the rx if a error
+> occurs, and add the remaining rx to the list for submitting later.
+> 
+> v1:
+> Adjust some flows and codes which are relative to r8152_submit_rx()
+> and rtl_start_rx().
 
-The newary function already zeroes sma->complex_count before unlocking
-the sma->lock.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- ipc/sem.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 454f6c6..1823160 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -507,6 +507,9 @@ static int newary(struct ipc_namespace *ns, struct ipc_params *params)
- 		return retval;
- 	}
- 
-+	/* Ensures sem_lock waits on &sma->lock until sma is ready. */
-+	sma->complex_count = 1;
-+
- 	id = ipc_addid(&sem_ids(ns), &sma->sem_perm, ns->sc_semmni);
- 	if (id < 0) {
- 		ipc_rcu_putref(sma, sem_rcu_free);
+Series applied, thanks.
