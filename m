@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917AbaKUA3r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 19:29:47 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:63328 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755788AbaKUA3p convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 19:29:45 -0500
-Content-Type: text/plain; charset=koi8-r
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] i2c: omap: fix i207 errata handling
-From: Alexander Kochetkov <al.kochet@gmail.com>
-In-Reply-To: <1416529011-21803-1-git-send-email-al.kochet@gmail.com>
-Date: Fri, 21 Nov 2014 03:29:40 +0300
-Cc: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>,
-        Felipe Balbi <balbi@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <089B5BDA-682D-46B6-869F-A6ADDFE691C3@gmail.com>
-References: <1416529011-21803-1-git-send-email-al.kochet@gmail.com>
-To: linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alexander Kochetkov <al.kochet@gmail.com>
-X-Mailer: Apple Mail (2.1878.6)
+	id S1757211AbaKUAb1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 19:31:27 -0500
+Received: from mga02.intel.com ([134.134.136.20]:31127 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756982AbaKUAbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 19:31:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,426,1413270000"; 
+   d="scan'208";a="611506754"
+Date: Fri, 21 Nov 2014 08:10:33 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Nadav Amit <nadav.amit@gmail.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, fenghua.yu@intel.com,
+        kvm list <kvm@vger.kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: KVM causes #GP on XRSTORS
+Message-ID: <20141121001033.GA10834@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <AA52FB0B-FB19-4DC0-964B-2984040B15A6@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AA52FB0B-FB19-4DC0-964B-2984040B15A6@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-21 нояб. 2014 г., в 3:16, Alexander Kochetkov <al.kochet@gmail.com> написал(а):
+Hi Nadav,
+On Thu, Nov 20, 2014 at 06:34:04PM +0200, Nadav Amit wrote:
+>Fenghua,
+>
+>I got KVM (v3.17) crashing on a machine that supports XRSTORS - It appears to get a #GP when it is trying to load the guest FPU.
+>One reason for the #GP is that XCOMP_BV[63] is zeroed on the guest_fpu, but I am not sure it is the only problem.
+>Was KVM ever tested with XRSTORS?
 
-> commit 6d9939f651419a63e091105663821f9c7d3fec37 (i2c: omap: split out [XR]DR
-> and [XR]RDY) changed the way how errata i207 (I2C: RDR Flag May Be Incorrectly
-> Set) get handled.
+Current kvm and qemu use standard format and xsaves/xrstors should use
+compact format, in addition, vmx is still not enabled for xsaves/xrstors 
+in kvm.
 
-It's is seen if open 6d9939f651419a63e09^ and 6d9939f651419a63e09 side by side:
+Regards,
+Wanpeng Li 
 
-6d9939f651419a63e09^:
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/drivers/i2c/busses/i2c-omap.c?id=540a4790f7da0d3ca5ad9d726f198a5eb4db05ec#n800
-
-6d9939f651419a63e09:
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/drivers/i2c/busses/i2c-omap.c?id=6d9939f651419a63e091105663821f9c7d3fec37#n800
-
-Errata "2C: RDR Flag May Be Incorrectly Set"
-http://www.ti.com/lit/er/sprz319f/sprz319f.pdf
-
-21 нояб. 2014 г., в 3:16, Alexander Kochetkov <al.kochet@gmail.com> написал(а):
-
-> Found by code review. Real impact haven't seen.
-> Tested on Beagleboard XM C.
-
-Does anybody know the "certain rare conditions" when RDR errata appears?
-I tested without luck (Beagleboard XM C).
-
+>
+>Thanks,
+>Nadav
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe kvm" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
