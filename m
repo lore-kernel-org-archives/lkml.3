@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaKUT0q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:26:46 -0500
-Received: from mout.web.de ([212.227.17.11]:51991 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750755AbaKUT0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:26:45 -0500
-Message-ID: <546F91E5.60104@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 20:26:29 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751886AbaKUT1E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:27:04 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34097 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823AbaKUT1C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 14:27:02 -0500
+Date: Fri, 21 Nov 2014 19:25:42 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Message-ID: <20141121192542.GM3815@sirena.org.uk>
+References: <1416406386-22923-1-git-send-email-rf@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] IDE: Deletion of an unnecessary check before the function
- call "module_put"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:7t9oqhvJswdQLPxeT59OD58g2+Cw4KMyV7s8PfhP8QMJ8cB7o7R
- H+BEz2IHyMgNsYsyVcxU6Er1xMe5L57aB6VePz6OzDrqR17L0g8hlAYTSggWkzsf00XleUu
- t4MyzTW3eDfNp2NAIuHcXKg0kClOPAVGzBVVNsMR0t2LYQX64RXlju9YhWU8PxKMrprmFiq
- VDsTxmiuv5PHpjZNOAMQA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VaPfWKFh9aVm1sXO"
+Content-Disposition: inline
+In-Reply-To: <1416406386-22923-1-git-send-email-rf@opensource.wolfsonmicro.com>
+X-Cookie: Some optional equipment shown.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: gpio: fix parsing of gpio list
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 20:22:32 +0100
 
-The module_put() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+--VaPfWKFh9aVm1sXO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This issue was detected by using the Coccinelle software.
+On Wed, Nov 19, 2014 at 02:13:06PM +0000, Richard Fitzgerald wrote:
+> The list of gpios is defined as optional but the code was
+> failing to properly handle the case of no gpios, and also
+> failing to check for errors reading the entry from the
+> devicetree.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/ide/ide.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Applied, thanks.
 
-diff --git a/drivers/ide/ide.c b/drivers/ide/ide.c
-index 2ce6268..e29b02c 100644
---- a/drivers/ide/ide.c
-+++ b/drivers/ide/ide.c
-@@ -101,8 +101,7 @@ void ide_device_put(ide_drive_t *drive)
- 	struct device *host_dev = drive->hwif->host->dev[0];
- 	struct module *module = host_dev ? host_dev->driver->owner : NULL;
- 
--	if (module)
--		module_put(module);
-+	module_put(module);
- #endif
- 	put_device(&drive->gendev);
- }
--- 
-2.1.3
+--VaPfWKFh9aVm1sXO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUb5G1AAoJECTWi3JdVIfQfUIH/imbFeRlejV8QsyperBOqOI3
+ZQ7hEpWQeJkqBvlT7PEP50qNndzb0niamqTXalqqu0/Id+eJCKP4y18TbUVbTdxm
+pKTwQ9sFxFhNa/mkei+fnFNlFCZsJabldkcDfHCMKNbZMK6EWQyEKXot8NINoU5B
+U0h7aI8XDFirSdp/wQt0jehszEdOj8rEaKPapEa0hVCsLobYFJD4Y+SNFVFvDmYk
+MHuXTPw0240h8NH9fYk2PzuRrtWxFMXEbj6FUGHykPVpoAeZKhXepcserX4DxwBn
+2DEShRkD2gjsHsYIdbv7FPagR4pmviPL/NZzHwFpeTO4Ya8SqKQME24KjokR3UA=
+=+gZj
+-----END PGP SIGNATURE-----
+
+--VaPfWKFh9aVm1sXO--
