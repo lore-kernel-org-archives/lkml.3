@@ -1,98 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaKUWTl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 17:19:41 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:34052 "EHLO
+	id S1752691AbaKUWTk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 17:19:40 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:34051 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505AbaKUWSD (ORCPT
+	with ESMTP id S1752485AbaKUWSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Nov 2014 17:18:03 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, bhelgaas@google.com, linux@eikelenboom.it
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v4 5/7] xen/pciback: Remove tons of dereferences
-Date: Fri, 21 Nov 2014 17:17:49 -0500
-Message-Id: <1416608271-18931-6-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH v4 6/7] PCI: Expose pci_load_saved_state for public consumption.
+Date: Fri, 21 Nov 2014 17:17:50 -0500
+Message-Id: <1416608271-18931-7-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416608271-18931-1-git-send-email-konrad.wilk@oracle.com>
 References: <1416608271-18931-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A little cleanup. No functional difference.
+We have the pci_load_and_free_saved_state, and pci_store_saved_state
+but are missing the functionality to just load the state
+multiple times in the PCI device without having to free/save
+the state.
 
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+This patch makes it possible to use this function.
+
+CC: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/xen-pciback/pci_stub.c | 20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+ drivers/pci/pci.c   | 5 +++--
+ include/linux/pci.h | 2 ++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index e5ff09d..843a2ba 100644
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -631,10 +631,12 @@ static pci_ers_result_t common_process(struct pcistub_device *psdev,
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 625a4ac..f00a9d6 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1142,8 +1142,8 @@ EXPORT_SYMBOL_GPL(pci_store_saved_state);
+  * @dev: PCI device that we're dealing with
+  * @state: Saved state returned from pci_store_saved_state()
+  */
+-static int pci_load_saved_state(struct pci_dev *dev,
+-				struct pci_saved_state *state)
++int pci_load_saved_state(struct pci_dev *dev,
++			 struct pci_saved_state *state)
  {
- 	pci_ers_result_t res = result;
- 	struct xen_pcie_aer_op *aer_op;
-+	struct xen_pcibk_device *pdev = psdev->pdev;
-+	struct xen_pci_sharedinfo *sh_info = pdev->sh_info;
- 	int ret;
+ 	struct pci_cap_saved_data *cap;
  
- 	/*with PV AER drivers*/
--	aer_op = &(psdev->pdev->sh_info->aer_op);
-+	aer_op = &(sh_info->aer_op);
- 	aer_op->cmd = aer_cmd ;
- 	/*useful for error_detected callback*/
- 	aer_op->err = state;
-@@ -655,36 +657,36 @@ static pci_ers_result_t common_process(struct pcistub_device *psdev,
- 	* this flag to judge whether we need to check pci-front give aer
- 	* service ack signal
- 	*/
--	set_bit(_PCIB_op_pending, (unsigned long *)&psdev->pdev->flags);
-+	set_bit(_PCIB_op_pending, (unsigned long *)&pdev->flags);
+@@ -1171,6 +1171,7 @@ static int pci_load_saved_state(struct pci_dev *dev,
+ 	dev->state_saved = true;
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(pci_load_saved_state);
  
- 	/*It is possible that a pcifront conf_read_write ops request invokes
- 	* the callback which cause the spurious execution of wake_up.
- 	* Yet it is harmless and better than a spinlock here
- 	*/
- 	set_bit(_XEN_PCIB_active,
--		(unsigned long *)&psdev->pdev->sh_info->flags);
-+		(unsigned long *)&sh_info->flags);
- 	wmb();
--	notify_remote_via_irq(psdev->pdev->evtchn_irq);
-+	notify_remote_via_irq(pdev->evtchn_irq);
- 
- 	ret = wait_event_timeout(xen_pcibk_aer_wait_queue,
- 				 !(test_bit(_XEN_PCIB_active, (unsigned long *)
--				 &psdev->pdev->sh_info->flags)), 300*HZ);
-+				 &sh_info->flags)), 300*HZ);
- 
- 	if (!ret) {
- 		if (test_bit(_XEN_PCIB_active,
--			(unsigned long *)&psdev->pdev->sh_info->flags)) {
-+			(unsigned long *)&sh_info->flags)) {
- 			dev_err(&psdev->dev->dev,
- 				"pcifront aer process not responding!\n");
- 			clear_bit(_XEN_PCIB_active,
--			  (unsigned long *)&psdev->pdev->sh_info->flags);
-+			  (unsigned long *)&sh_info->flags);
- 			aer_op->err = PCI_ERS_RESULT_NONE;
- 			return res;
- 		}
- 	}
--	clear_bit(_PCIB_op_pending, (unsigned long *)&psdev->pdev->flags);
-+	clear_bit(_PCIB_op_pending, (unsigned long *)&pdev->flags);
- 
- 	if (test_bit(_XEN_PCIF_active,
--		(unsigned long *)&psdev->pdev->sh_info->flags)) {
-+		(unsigned long *)&sh_info->flags)) {
- 		dev_dbg(&psdev->dev->dev,
- 			"schedule pci_conf service in " DRV_NAME "\n");
- 		xen_pcibk_test_and_schedule_op(psdev->pdev);
+ /**
+  * pci_load_and_free_saved_state - Reload the save state pointed to by state,
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 5be8db4..08088cb1 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1003,6 +1003,8 @@ void __iomem __must_check *pci_platform_rom(struct pci_dev *pdev, size_t *size);
+ int pci_save_state(struct pci_dev *dev);
+ void pci_restore_state(struct pci_dev *dev);
+ struct pci_saved_state *pci_store_saved_state(struct pci_dev *dev);
++int pci_load_saved_state(struct pci_dev *dev,
++			 struct pci_saved_state *state);
+ int pci_load_and_free_saved_state(struct pci_dev *dev,
+ 				  struct pci_saved_state **state);
+ struct pci_cap_saved_state *pci_find_saved_cap(struct pci_dev *dev, char cap);
 -- 
 1.9.3
 
