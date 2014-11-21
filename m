@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758268AbaKUKJY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 05:09:24 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42604 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758210AbaKUKJJ (ORCPT
+	id S1758315AbaKUKJu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 05:09:50 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:57906 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755211AbaKUKJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 05:09:09 -0500
+	Fri, 21 Nov 2014 05:09:11 -0500
 From: Omar Sandoval <osandov@osandov.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
@@ -16,9 +16,9 @@ To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Trond Myklebust <trond.myklebust@primarydata.com>,
         Mel Gorman <mgorman@suse.de>
 Cc: Omar Sandoval <osandov@osandov.com>
-Subject: [PATCH v2 2/5] nfs: don't dirty ITER_BVEC pages read through direct I/O
-Date: Fri, 21 Nov 2014 02:08:28 -0800
-Message-Id: <6f2a9d098e9b558cf551aa32f668d5eb95c96406.1416563833.git.osandov@osandov.com>
+Subject: [PATCH v2 4/5] btrfs: don't allow -C or +c chattrs on a swap file
+Date: Fri, 21 Nov 2014 02:08:30 -0800
+Message-Id: <a422e8d7ce252474b998eeca3af5f1e2964c5c50.1416563833.git.osandov@osandov.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <cover.1416563833.git.osandov@osandov.com>
 References: <cover.1416563833.git.osandov@osandov.com>
@@ -28,44 +28,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As with the generic blockdev code, kernel pages shouldn't be dirtied by the
-direct I/O path.
+swap_activate will check for a compressed or copy-on-write file; we shouldn't
+allow it to become either once it has already been activated.
 
 Signed-off-by: Omar Sandoval <osandov@osandov.com>
 ---
- fs/nfs/direct.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/btrfs/ioctl.c | 50 +++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 31 insertions(+), 19 deletions(-)
 
-diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
-index 10bf072..a67fa2c 100644
---- a/fs/nfs/direct.c
-+++ b/fs/nfs/direct.c
-@@ -88,6 +88,7 @@ struct nfs_direct_req {
- 	struct pnfs_ds_commit_info ds_cinfo;	/* Storage for cinfo */
- 	struct work_struct	work;
- 	int			flags;
-+	int			should_dirty;	/* should we mark read pages dirty? */
- #define NFS_ODIRECT_DO_COMMIT		(1)	/* an unstable reply was received */
- #define NFS_ODIRECT_RESCHED_WRITES	(2)	/* write verification failed */
- 	struct nfs_writeverf	verf;		/* unstable write verifier */
-@@ -370,7 +371,8 @@ static void nfs_direct_read_completion(struct nfs_pgio_header *hdr)
- 		struct nfs_page *req = nfs_list_entry(hdr->pages.next);
- 		struct page *page = req->wb_page;
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index 4399f0c..f022dce 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -293,14 +293,21 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
+ 		}
+ 	} else {
+ 		/*
+-		 * Revert back under same assuptions as above
++		 * swap_activate checks that we don't swapon a copy-on-write
++		 * file, but we must also make sure that it doesn't become
++		 * copy-on-write.
+ 		 */
+-		if (S_ISREG(mode)) {
+-			if (inode->i_size == 0)
+-				ip->flags &= ~(BTRFS_INODE_NODATACOW
+-				             | BTRFS_INODE_NODATASUM);
+-		} else {
+-			ip->flags &= ~BTRFS_INODE_NODATACOW;
++		if (!IS_SWAPFILE(inode)) {
++			/*
++			 * Revert back under same assumptions as above
++			 */
++			if (S_ISREG(mode)) {
++				if (inode->i_size == 0)
++					ip->flags &= ~(BTRFS_INODE_NODATACOW |
++						       BTRFS_INODE_NODATASUM);
++			} else {
++				ip->flags &= ~BTRFS_INODE_NODATACOW;
++			}
+ 		}
+ 	}
  
--		if (!PageCompound(page) && bytes < hdr->good_bytes)
-+		if (!PageCompound(page) && bytes < hdr->good_bytes &&
-+		    dreq->should_dirty)
- 			set_page_dirty(page);
- 		bytes += req->wb_bytes;
- 		nfs_list_remove_request(req);
-@@ -542,6 +544,7 @@ ssize_t nfs_file_direct_read(struct kiocb *iocb, struct iov_iter *iter,
- 	dreq->inode = inode;
- 	dreq->bytes_left = count;
- 	dreq->ctx = get_nfs_open_context(nfs_file_open_context(iocb->ki_filp));
-+	dreq->should_dirty = !(iter->type & ITER_BVEC);
- 	l_ctx = nfs_get_lock_context(dreq->ctx);
- 	if (IS_ERR(l_ctx)) {
- 		result = PTR_ERR(l_ctx);
+@@ -317,20 +324,25 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
+ 		if (ret && ret != -ENODATA)
+ 			goto out_drop;
+ 	} else if (flags & FS_COMPR_FL) {
+-		const char *comp;
+-
+-		ip->flags |= BTRFS_INODE_COMPRESS;
+-		ip->flags &= ~BTRFS_INODE_NOCOMPRESS;
++		/*
++		 * Like nodatacow, swap_activate checks that we don't swapon a
++		 * compressed file, so we shouldn't let it become compressed.
++		 */
++		if (!IS_SWAPFILE(inode)) {
++			const char *comp;
+ 
+-		if (root->fs_info->compress_type == BTRFS_COMPRESS_LZO)
+-			comp = "lzo";
+-		else
+-			comp = "zlib";
+-		ret = btrfs_set_prop(inode, "btrfs.compression",
+-				     comp, strlen(comp), 0);
+-		if (ret)
+-			goto out_drop;
++			ip->flags |= BTRFS_INODE_COMPRESS;
++			ip->flags &= ~BTRFS_INODE_NOCOMPRESS;
+ 
++			if (root->fs_info->compress_type == BTRFS_COMPRESS_LZO)
++				comp = "lzo";
++			else
++				comp = "zlib";
++			ret = btrfs_set_prop(inode, "btrfs.compression",
++					     comp, strlen(comp), 0);
++			if (ret)
++				goto out_drop;
++		}
+ 	} else {
+ 		ret = btrfs_set_prop(inode, "btrfs.compression", NULL, 0, 0);
+ 		if (ret && ret != -ENODATA)
 -- 
 2.1.3
 
