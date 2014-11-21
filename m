@@ -1,105 +1,410 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758116AbaKUJuU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 04:50:20 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:41458 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755056AbaKUJuQ (ORCPT
+	id S1758146AbaKUJxU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 04:53:20 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52724 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233AbaKUJxR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 04:50:16 -0500
-Message-ID: <546F0ACA.7010007@linaro.org>
-Date: Fri, 21 Nov 2014 09:50:02 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 21 Nov 2014 04:53:17 -0500
+Date: Fri, 21 Nov 2014 09:53:12 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "huxinwei@huawei.com" <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Liviu Dudau <liviu@dudau.co.uk>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
+Subject: Re: [RFC PATCH 07/16] PCI: Separate pci_host_bridge creation out of
+ pci_create_root_bus()
+Message-ID: <20141121095311.GG17214@e106497-lin.cambridge.arm.com>
+References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
+ <1416219710-26088-8-git-send-email-wangyijing@huawei.com>
+ <20141118153020.GL12037@e106497-lin.cambridge.arm.com>
+ <546BF59C.8060203@huawei.com>
+ <20141119163726.GW12037@e106497-lin.cambridge.arm.com>
+ <546D5647.8030401@huawei.com>
+ <20141120094741.GA17214@e106497-lin.cambridge.arm.com>
+ <546EA90D.3040304@huawei.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
-        linaro-kernel@lists.linaro.org, Russell King <linux@arm.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, patches@linaro.org,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] arm: imx: Workaround i.MX6 PMU interrupts muxed to
- one SPI
-References: <1416483757-24165-1-git-send-email-daniel.thompson@linaro.org> <alpine.DEB.2.11.1411210016360.6439@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411210016360.6439@nanos>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <546EA90D.3040304@huawei.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 21 Nov 2014 09:53:13.0181 (UTC) FILETIME=[F6FA28D0:01D00570]
+X-MC-Unique: 114112109531304001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/11/14 23:30, Thomas Gleixner wrote:
-> On Thu, 20 Nov 2014, Daniel Thompson wrote:
->> +/*
->> + * The PMU IRQ lines of all cores are muxed onto a single interrupt.
->> + * Rotate the interrupt around the cores if the current CPU cannot
->> + * figure out why the interrupt has been triggered.
->> + */
->> +static irqreturn_t imx6q_pmu_handler(int irq, void *dev, irq_handler_t handler)
->> +{
->> +	irqreturn_t ret = handler(irq, dev);
->> +	int next;
->> +
->> +	if (ret == IRQ_NONE && num_online_cpus() > 1) {
+On Fri, Nov 21, 2014 at 02:53:01AM +0000, Yijing Wang wrote:
+> >>> pci_create_host_bridge() can get pci_host_bridge ops while pci_create_root_bus() gets
+> >>> the bus ops. For find out the MSI controller, the domain number and any other HB
+> >>> specific stuff, you use the HB ops. For config R/W acceses you use bus ops.
+> >>>
+> >>
+> >> I want to unexport pci_create_root_bus() if we have pci_create_host_bridge().
+> >
+> > That's fine, but the function signature doesn't change, right? And I think we should keep
+> > pci_scan_root_bus() with the current signature as well (except change sysdata into a
+> > struct pci_host_bridge *). We create the host bridge in one step, stuff it with all the
+> > data that we need for scanning the root and associated busses, and then call pci_scan_root_bus().
+> > pci_host_bridge has the ops from pci_create_host_bridge() and the root bus from pci_scan_root_bus().
 > 
-> What guarantees that ret == IRQ_HANDLED is a sign for 'this is only
-> for this particular core' interrupt ?
+> Liviu, could you have some draft patches about replace sysdata with pci_host_bridge, so we could
+> discuss the details base it. :)
 
-It isn't guaranteed. We rely on re-entering the interrupt handler if
-more than one PMU is raising the interrupt simultaneously.
+Sure, I'll try to send something soon.
+
+Best regards,
+Liviu
 
 > 
->> +		next = cpumask_next(smp_processor_id(), cpu_online_mask);
->> +		if (next > nr_cpu_ids)
->> +			next = cpumask_next(-1, cpu_online_mask);
->> +		irq_set_affinity(irq, cpumask_of(next));
->> +	}
+> >
+> > Hope this makes sense.
+> >
+> >>
+> >>
+> >>>>>> -struct pci_bus *pci_create_root_bus(struct device *parent, u32 db,
+> >>>>>> -               struct pci_ops *ops, void *sysdata, struct list_head *resources)
+> >>>>>> +struct pci_bus *__pci_create_root_bus(struct pci_host_bridge *bridge)
+> >>>>>>  {
+> >>>>>>         int error;
+> >>>>>> -       struct pci_host_bridge *bridge;
+> >>>>>>         struct pci_bus *b, *b2;
+> >>>>>> -       struct pci_host_bridge_window *window, *n;
+> >>>>>> +       struct pci_host_bridge_window *window;
+> >>>>>>         struct resource *res;
+> >>>>>>         resource_size_t offset;
+> >>>>>>         char bus_addr[64];
+> >>>>>>         char *fmt;
+> >>>>>> -       u8      bus = PCI_BUSNUM(db);
+> >>>>>> +       struct device *parent = bridge->dev.parent;
+> >>>>>>
+> >>>>>>         b = pci_alloc_bus(NULL);
+> >>>>>>         if (!b)
+> >>>>>>                 return NULL;
+> >>>>>>
+> >>>>>> -       b->sysdata = sysdata;
+> >>>>>> -       b->ops = ops;
+> >>>>>> -       b->number = b->busn_res.start = bus;
+> >>>>>> +       b->sysdata = bridge->sysdata;
+> >>>>>
+> >>>>> I think bridge should be the b->sysdata here.
+> >>>>
+> >>>> ? what's the meaning?
+> >>>
+> >>> Currently, bus->sysdata holds a pointer to the arch/driver host bridge structure, as passed
+> >>> in pci_create_root_bus(). If you agree with my idea of wrapping the host bridge driver
+> >>> structure around the pci_host_bridge, then we will always have a way of retrieving that
+> >>> information; but for backwards compatibility we could set bus->sysdata to be the bridge.
+> >>> Then existing macros that convert sysdata to pci_controller can be reused after being
+> >>> updated.
+> >>
+> >> I think wrapping the host bridge driver structure around the pci_host_bridge could help
+> >> us to find the private pci_controller, but in this case, pci_host_bridge is not a pointer
+> >> so we put all pci_host_bridge init stuff in host drivers ?
+> >
+> > Of course we put pci_host_bridge init *calls* in the host drivers because we need to do host
+> > driver specific initialisation there anyway.
+> >
+> >> And if we still use arch spec
+> >> macros convert ssydata to pci_controller, so what's the greatest advantage ?
+> >
+> > Agree, the macro is not useful unless we have a common pci_controller structure. Sorry about
+> > the noise.
+> >
+> >>
+> >> If we move domain and msi_chip out of sysdata, what's other things in sysdata still need us
+> >> to convert in PCI core ?
+> >
+> > I've never said we need to keep sysdata. From my discussion with Bjorn a year ago the idea was
+> > to put the sysdata members into pci_host_bridge structure and remove sysdata member from pci_bus.
+> > pci_scan_root_bus() can still get a parameter called sysdata if we want, but it will be a
+> > struct pci_host_bridge * type.
 > 
-> Aside of the fact, that the hardware designers who came up with such a
-> brainfart should be put on sane drugs, this is just silly.
+> Fine.
 > 
-> Rotating that thing around will introduce arbitrary latencies and
-> dependencies on other interrupts to be handled.
+> >
+> > Best regards,
+> > Liviu
+> >
+> >>
+> >>
+> >>
+> >>>
+> >>> Best regards,
+> >>> Liviu
+> >>>
+> >>>>
+> >>>>>
+> >>>>>> +       b->ops = bridge->ops;
+> >>>>>
+> >>>>> See comment above why I don't think this is necessary.
+> >>>>>
+> >>>>>> +       b->number = b->busn_res.start = bridge->busnum;
+> >>>>>>         pci_bus_assign_domain_nr(b, parent);
+> >>>>>> -       b2 = pci_find_bus(pci_domain_nr(b), bus);
+> >>>>>> +       bridge->domain = pci_domain_nr(b);
+> >>>>>
+> >>>>> Do you really want to overwrite the bridge's domain with the one from a bus that
+> >>>>> could possibly be rejected a couple of lines further down?
+> >>>>>
+> >>>>> As an asside: if we are doing the split of pci_host_bridge from root bus creation
+> >>>>> it is worth in my opinion to move the domain setup in pci_create_host_bridge()
+> >>>>> and stop fiddling with it here.
+> >>>>
+> >>>>
+> >>>> Hi Liviu, these lines just temporary, I will remove it after all host drivers
+> >>>> save its domain in pci_host_bridge.
+> >>>>
+> >>>>
+> >>>>>
+> >>>>> Otherwise it looks to me like you are heading in the right direction.
+> >>>>
+> >>>> Thanks!
+> >>>> Yijing.
+> >>>>
+> >>>>>
+> >>>>> Best regards,
+> >>>>> Liviu
+> >>>>>
+> >>>>>> +       b2 = pci_find_bus(pci_domain_nr(b), bridge->busnum);
+> >>>>>>         if (b2) {
+> >>>>>>                 /* If we already got to this bus through a different bridge, ignore it */
+> >>>>>>                 dev_dbg(&b2->dev, "bus already known\n");
+> >>>>>>                 goto err_out;
+> >>>>>>         }
+> >>>>>>
+> >>>>>> -       bridge = pci_alloc_host_bridge(b);
+> >>>>>> -       if (!bridge)
+> >>>>>> -               goto err_out;
+> >>>>>> -
+> >>>>>> -       bridge->dev.parent = parent;
+> >>>>>> -       bridge->dev.release = pci_release_host_bridge_dev;
+> >>>>>> -       dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+> >>>>>> -       error = pcibios_root_bridge_prepare(bridge);
+> >>>>>> -       if (error) {
+> >>>>>> -               kfree(bridge);
+> >>>>>> -               goto err_out;
+> >>>>>> -       }
+> >>>>>> -
+> >>>>>> -       error = device_register(&bridge->dev);
+> >>>>>> -       if (error) {
+> >>>>>> -               put_device(&bridge->dev);
+> >>>>>> -               goto err_out;
+> >>>>>> -       }
+> >>>>>>         b->bridge = get_device(&bridge->dev);
+> >>>>>>         device_enable_async_suspend(b->bridge);
+> >>>>>>         pci_set_bus_of_node(b);
+> >>>>>> @@ -1950,7 +1899,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, u32 db,
+> >>>>>>
+> >>>>>>         b->dev.class = &pcibus_class;
+> >>>>>>         b->dev.parent = b->bridge;
+> >>>>>> -       dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
+> >>>>>> +       dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), b->number);
+> >>>>>>         error = device_register(&b->dev);
+> >>>>>>         if (error)
+> >>>>>>                 goto class_dev_reg_err;
+> >>>>>> @@ -1966,12 +1915,11 @@ struct pci_bus *pci_create_root_bus(struct device *parent, u32 db,
+> >>>>>>                 printk(KERN_INFO "PCI host bridge to bus %s\n", dev_name(&b->dev));
+> >>>>>>
+> >>>>>>         /* Add initial resources to the bus */
+> >>>>>> -       list_for_each_entry_safe(window, n, resources, list) {
+> >>>>>> -               list_move_tail(&window->list, &bridge->windows);
+> >>>>>> +       list_for_each_entry(window, &bridge->windows, list) {
+> >>>>>>                 res = window->res;
+> >>>>>>                 offset = window->offset;
+> >>>>>>                 if (res->flags & IORESOURCE_BUS)
+> >>>>>> -                       pci_bus_insert_busn_res(b, bus, res->end);
+> >>>>>> +                       pci_bus_insert_busn_res(b, b->number, res->end);
+> >>>>>>                 else
+> >>>>>>                         pci_bus_add_resource(b, res, 0);
+> >>>>>>                 if (offset) {
+> >>>>>> @@ -2001,6 +1949,25 @@ err_out:
+> >>>>>>         return NULL;
+> >>>>>>  }
+> >>>>>>
+> >>>>>> +struct pci_bus *pci_create_root_bus(struct device *parent, u32 bus,
+> >>>>>> +               struct pci_ops *ops, void *sysdata, struct list_head *resources)
+> >>>>>> +{
+> >>>>>> +       struct pci_host_bridge *host;
+> >>>>>> +
+> >>>>>> +       host = pci_create_host_bridge(parent, bus, ops,
+> >>>>>> +                       sysdata ,resources);
+> >>>>>> +       if (!host)
+> >>>>>> +               return NULL;
+> >>>>>> +
+> >>>>>> +       host->bus = __pci_create_root_bus(host);
+> >>>>>> +       if (!host->bus) {
+> >>>>>> +               pci_free_host_bridge(host);
+> >>>>>> +               return NULL;
+> >>>>>> +       }
+> >>>>>> +
+> >>>>>> +       return host->bus;
+> >>>>>> +}
+> >>>>>> +
+> >>>>>>  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
+> >>>>>>  {
+> >>>>>>         struct resource *res = &b->busn_res;
+> >>>>>> @@ -2069,40 +2036,37 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, u32 db,
+> >>>>>>  {
+> >>>>>>         struct pci_host_bridge_window *window;
+> >>>>>>         bool found = false;
+> >>>>>> -       struct pci_bus *b;
+> >>>>>> -       LIST_HEAD(default_res);
+> >>>>>> +       struct pci_host_bridge *host;
+> >>>>>>         int max;
+> >>>>>>
+> >>>>>> -       if (!resources) {
+> >>>>>> -               pci_add_resource(&default_res, &ioport_resource);
+> >>>>>> -               pci_add_resource(&default_res, &iomem_resource);
+> >>>>>> -               pci_add_resource(&default_res, &busn_resource);
+> >>>>>> -       } else {
+> >>>>>> -               list_for_each_entry(window, resources, list)
+> >>>>>> -                       if (window->res->flags & IORESOURCE_BUS) {
+> >>>>>> -                               found = true;
+> >>>>>> -                               break;
+> >>>>>> -                       }
+> >>>>>> -       }
+> >>>>>> +       host = pci_create_host_bridge(parent, db, ops, sysdata, resources);
+> >>>>>> +       if (!host)
+> >>>>>> +               return NULL;
+> >>>>>>
+> >>>>>> -       b = pci_create_root_bus(parent, db, ops, sysdata,
+> >>>>>> -                       resources ? resources : &default_res);
+> >>>>>> -       if (!b)
+> >>>>>> +       list_for_each_entry(window, &host->windows, list)
+> >>>>>> +               if (window->res->flags & IORESOURCE_BUS) {
+> >>>>>> +                       found = true;
+> >>>>>> +                       break;
+> >>>>>> +               }
+> >>>>>> +
+> >>>>>> +       host->bus = __pci_create_root_bus(host);
+> >>>>>> +       if (!host->bus) {
+> >>>>>> +               pci_free_host_bridge(host);
+> >>>>>>                 return NULL;
+> >>>>>> +       }
+> >>>>>>
+> >>>>>>         if (!found) {
+> >>>>>> -               dev_info(&b->dev,
+> >>>>>> +               dev_info(&host->bus->dev,
+> >>>>>>                  "No busn resource found for root bus, will use [bus %02x-ff]\n",
+> >>>>>>                         PCI_BUSNUM(db));
+> >>>>>> -               pci_bus_insert_busn_res(b, PCI_BUSNUM(db), 255);
+> >>>>>> +               pci_bus_insert_busn_res(host->bus, PCI_BUSNUM(db), 255);
+> >>>>>>         }
+> >>>>>>
+> >>>>>> -       max = pci_scan_child_bus(b);
+> >>>>>> -
+> >>>>>> +       max = pci_scan_child_bus(host->bus);
+> >>>>>>         if (!found)
+> >>>>>> -               pci_bus_update_busn_res_end(b, max);
+> >>>>>> +               pci_bus_update_busn_res_end(host->bus, max);
+> >>>>>>
+> >>>>>> -       return b;
+> >>>>>> +       return host->bus;
+> >>>>>>  }
+> >>>>>>  EXPORT_SYMBOL(pci_scan_root_bus);
+> >>>>>>
+> >>>>>> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> >>>>>> index 8b11b38..daa7f40 100644
+> >>>>>> --- a/include/linux/pci.h
+> >>>>>> +++ b/include/linux/pci.h
+> >>>>>> @@ -402,7 +402,12 @@ struct pci_host_bridge_window {
+> >>>>>>  struct pci_host_bridge {
+> >>>>>>         struct device dev;
+> >>>>>>         struct pci_bus *bus;            /* root bus */
+> >>>>>> +       struct list_head list;
+> >>>>>>         struct list_head windows;       /* pci_host_bridge_windows */
+> >>>>>> +       int busnum;
+> >>>>>> +       int domain;
+> >>>>>> +       void *sysdata;
+> >>>>>> +       struct pci_ops *ops;
+> >>>>>>         void (*release_fn)(struct pci_host_bridge *);
+> >>>>>>         void *release_data;
+> >>>>>>  };
+> >>>>>> @@ -413,7 +418,9 @@ void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
+> >>>>>>                      void *release_data);
+> >>>>>>
+> >>>>>>  int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge);
+> >>>>>> -
+> >>>>>> +struct pci_host_bridge *pci_create_host_bridge(
+> >>>>>> +               struct device *parent, u32 db, struct pci_ops *ops,
+> >>>>>> +               void *sys, struct list_head *resources);
+> >>>>>>  /*
+> >>>>>>   * The first PCI_BRIDGE_RESOURCE_NUM PCI bus resources (those that correspond
+> >>>>>>   * to P2P or CardBus bridge windows) go in a table.  Additional ones (for
+> >>>>>> @@ -770,6 +777,8 @@ void pci_bus_add_devices(const struct pci_bus *bus);
+> >>>>>>  struct pci_bus *pci_create_root_bus(struct device *parent, u32 bus,
+> >>>>>>                                     struct pci_ops *ops, void *sysdata,
+> >>>>>>                                     struct list_head *resources);
+> >>>>>> +struct pci_bus *__pci_create_root_bus(struct pci_host_bridge *host);
+> >>>>>> +void pci_free_host_bridge(struct pci_host_bridge *host);
+> >>>>>>  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
+> >>>>>>  int pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
+> >>>>>>  void pci_bus_release_busn_res(struct pci_bus *b);
+> >>>>>> --
+> >>>>>> 1.7.1
+> >>>>>>
+> >>>>>> --
+> >>>>>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> >>>>>> the body of a message to majordomo@vger.kernel.org
+> >>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>>>>>
+> >>>>>
+> >>>>
+> >>>>
+> >>>> --
+> >>>> Thanks!
+> >>>> Yijing
+> >>>>
+> >>>> --
+> >>>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> >>>> the body of a message to majordomo@vger.kernel.org
+> >>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>>>
+> >>>
+> >>
+> >>
+> >> --
+> >> Thanks!
+> >> Yijing
+> >>
+> >>
+> >
+> 
+> 
+> --
+> Thanks!
+> Yijing
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-To be honest I viewed the only real merits of the rotation workaround to
-be that it is simple and minimally invasive. I am in total agreement
-that there are profiling use cases that it will handle badly (although
-there are a useful set which this workaround is sufficient to support).
-
-> So if there is really no way to figure out which of the cores is the
-> actual target of the PMU interrupt
-
-PMU is only accessible via the bus if you are a external debugger
-(signals external to the cluster control the register windowing). From
-the kernel we have to use the co-processor interface and can only see
-our own PMU.
-
-> then you should simply broadcast
-> that interrupt to a designated per cpu vector async from the one which
-> handles it in the first place and be done with it. That's the only
-> sane option you have.
-
-As it happens I was planning to do some work on rebroadcasting next
-anyway regardless of this discussion because I can't call
-irq_set_affinity() from a FIQ handler...
-
-Options I considered to rebroadcast are either direct use of an (new and
-ARM specific?) IPI or use of smp_call_function() from a tasklet. I was
-inclined to rule out the tasklet because it has the potential for far
-greater timing jitter than rotating the affinity (doesn't it?).
-
-> Until now I assumed that on the core components side only timers and
-> interrupt controllers are supposed to be designed by janitors, but
-> there seems to be some more evil efforts underway.
-
-For now I have been assuming that problems like that are early teething
-troubles for the SoC integrators rather than a class of problem that
-will keep re-emerging over and over again. We've seen newer designs that
-use PPIs to hook up the PMU and systems integrated that way can never
-exhibit this problem.
-
-Anyhow on that basis I'm hopeful (but not certain) that we won't see 8-
-or 16- core systems that exhibit this issue.
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
