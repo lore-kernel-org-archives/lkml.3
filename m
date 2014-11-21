@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758470AbaKUPYx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:24:53 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:46276 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752806AbaKUPYw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:24:52 -0500
-X-IronPort-AV: E=Sophos;i="5.07,431,1413237600"; 
-   d="scan'208";a="108859740"
-Date: Fri, 21 Nov 2014 16:26:12 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 1/1] USB: serial: Deletion of an unnecessary check before
- the function call "release_firmware"
-In-Reply-To: <546F5831.5060404@users.sourceforge.net>
-Message-ID: <alpine.DEB.2.10.1411211625380.2433@hadrien>
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net>
- <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <546F5831.5060404@users.sourceforge.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1758634AbaKUP1i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:27:38 -0500
+Received: from mail-by2on0087.outbound.protection.outlook.com ([207.46.100.87]:17536
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755321AbaKUP1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:27:36 -0500
+Message-ID: <546F59DD.5040809@opensource.altera.com>
+Date: Fri, 21 Nov 2014 09:27:25 -0600
+From: Dinh Nguyen <dinguyen@opensource.altera.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+CC: <linux@arm.linux.org.uk>, <dinh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] arm: socfpga: Set share override bit of the l2 cache
+ controller
+References: <1416546280-12068-1-git-send-email-dinguyen@opensource.altera.com> <1416546280-12068-2-git-send-email-dinguyen@opensource.altera.com> <2156186.zs80uXCLAf@wuerfel>
+In-Reply-To: <2156186.zs80uXCLAf@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [99.103.66.154]
+X-ClientProxiedBy: BLUPR11CA0006.namprd11.prod.outlook.com (10.141.240.16) To
+ BY1PR0301MB1192.namprd03.prod.outlook.com (25.160.195.150)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1192;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1192;
+X-Forefront-PRVS: 0402872DA1
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(51704005)(189002)(479174003)(377454003)(164054003)(24454002)(199003)(19580395003)(97736003)(80316001)(19580405001)(31966008)(4396001)(50466002)(23756003)(76176999)(64126003)(65816999)(83506001)(101416001)(102836001)(87266999)(21056001)(33656002)(86362001)(50986999)(87976001)(54356999)(92726001)(92566001)(40100003)(59896002)(77156002)(62966003)(77096003)(120916001)(99396003)(65956001)(122386002)(105586002)(66066001)(106356001)(64706001)(47776003)(20776003)(107046002)(95666004)(42186005)(46102003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0301MB1192;H:Dinhs-MacBook-Pro.local;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1192;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Arnd,
 
+On 11/21/14, 5:04 AM, Arnd Bergmann wrote:
+> On Thursday 20 November 2014 23:04:40 dinguyen@opensource.altera.com wrote:
+>>
+>> ---
+>>  arch/arm/mach-socfpga/socfpga.c | 3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
+>> index 13b1858..afc009f 100644
+>> --- a/arch/arm/mach-socfpga/socfpga.c
+>> +++ b/arch/arm/mach-socfpga/socfpga.c
+>> @@ -105,7 +105,8 @@ static const char *altera_dt_match[] = {
+>>  
+>>  DT_MACHINE_START(SOCFPGA, "Altera SOCFPGA")
+>>         .l2c_aux_val    = L310_AUX_CTRL_DATA_PREFETCH |
+>> -                         L310_AUX_CTRL_INSTR_PREFETCH,
+>> +                         L310_AUX_CTRL_INSTR_PREFETCH |
+>> +                         L2C_AUX_CTRL_SHARED_OVERRIDE,
+>>         .l2c_aux_mask   = ~0,
+>>         .smp            = smp_ops(socfpga_smp_ops),
+>>         .map_io         = socfpga_map_io,
+> 
+> Hi Dinh,
+> 
+> Please do this by putting the appropriate proterties into the
+> l2x0 DT node instead.
+> 
 
-On Fri, 21 Nov 2014, SF Markus Elfring wrote:
+I don't see a way to do this yet in DT. Perhaps I'm missing a patchset
+to allow this?
 
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Fri, 21 Nov 2014 16:15:34 +0100
->
-> The release_firmware() function tests whether its argument is NULL
-> and then returns immediately. Thus the test around the call is not needed.
->
-> This issue was detected by using the Coccinelle software.
->
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
-> ---
->  drivers/usb/serial/mxuport.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/usb/serial/mxuport.c b/drivers/usb/serial/mxuport.c
-> index ab1d690..3653ec1 100644
-> --- a/drivers/usb/serial/mxuport.c
-> +++ b/drivers/usb/serial/mxuport.c
-> @@ -1101,8 +1101,7 @@ static int mxuport_probe(struct usb_serial *serial,
->  	 */
->  	usb_set_serial_data(serial, (void *)id->driver_info);
->  out:
-> -	if (fw_p)
-> -		release_firmware(fw_p);
-> +	release_firmware(fw_p);
-
-I think that the if should stay.  There were two cases on the allocation,
-so there should be two cases on the release.
-
-julia
-
->  	return err;
->  }
->
-> --
-> 2.1.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Thanks,
+Dinh
