@@ -1,134 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758223AbaKUMRj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 07:17:39 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:35988 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922AbaKUMRh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 07:17:37 -0500
+	id S1758242AbaKUMV6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 07:21:58 -0500
+Received: from mout.web.de ([212.227.17.11]:55592 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751596AbaKUMV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 07:21:57 -0500
+Message-ID: <546F2E50.5040804@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 13:21:36 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <546ECF4C.2040304@gmail.com>
-References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org>
- <1411488485-10025-5-git-send-email-vincent.guittot@linaro.org>
- <54246791.9050101@arm.com> <CAKfTPtCzVRY4q184nqHSL7zFh1CvF009p8q8EPFCZxDFMx9TeQ@mail.gmail.com>
- <546ECF4C.2040304@gmail.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Fri, 21 Nov 2014 13:17:16 +0100
-Message-ID: <CAKfTPtD1OpHWwkRPWhZhRW-A_98Ro1SbmUM8fDufj15aQE-gAQ@mail.gmail.com>
-Subject: Re: [PATCH v6 4/6] sched: get CPU's usage statistic
-To: Wanpeng Li <kernellwp@gmail.com>
-Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "bsegall@google.com" <bsegall@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andreas Noever <andreas.noever@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: thunderbolt: Deletion of unnecessary checks before the function
+ call "ring_free"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546F16A5.8030405@users.sourceforge.net> <CAMxnaaVLhKHjbzUJy5p_0n8BUprzSQ=A3sdF6iQzW_wqmq8N4A@mail.gmail.com>
+In-Reply-To: <CAMxnaaVLhKHjbzUJy5p_0n8BUprzSQ=A3sdF6iQzW_wqmq8N4A@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:zgSKYCkEEvOdKvYZSlx3sXQk6fF9kXr9X3vnRMTkcIu81iXvZj3
+ facKKWJ1cRiBfMVltOBBXGWIBD99E/9w7dKhSu3z+e+9uUzQuKAJ/2yO5A/cih/QBtsYPER
+ yfNZ+2/arTrlSVa7br9Tv2X7y5FPKceyH8coyjVtnvx5mEuRwZ/404vNJHjEot114/nBq9M
+ 08bOoc+49Nr4L4oTZvIhA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 November 2014 06:36, Wanpeng Li <kernellwp@gmail.com> wrote:
-> Hi Vincent,
->
-> On 9/26/14, 8:17 PM, Vincent Guittot wrote:
+> ring_free does not check for null:
+> http://lxr.free-electrons.com/source/drivers/thunderbolt/nhi.c#L398
+> 
+> Maybe your software confuses the method with:
+> http://lxr.free-electrons.com/source/drivers/char/tpm/xen-tpmfront.c#L268
 
- [snip]
+Thanks for your feedback.
 
->>
->>> You add up the individual cpu usage values for a group by
->>> sgs->group_usage += get_cpu_usage(i) in update_sg_lb_stats and later use
->>> sgs->group_usage in group_is_overloaded to compare it against
->>> sgs->group_capacity (taking imbalance_pct into consideration).
->>>
->>>> +
->>>> +     return (usage * capacity) >> SCHED_LOAD_SHIFT;
->>>
->>> Nit-pick: Since you're multiplying by a capacity value
->>> (rq->cpu_capacity_orig) you should shift by SCHED_CAPACITY_SHIFT.
->>
->> we want to compare the output of the function with some capacity
->> figures so i think that >> SCHED_LOAD_SHIFT is the right operation.
->
->
-> Could you explain more why '>> SCHED_LOAD_SHIFT' instead of '>>
-> SCHED_CAPACITY_SHIFT'?
+I am sorry for a bit of confusion here.
 
-The return of get_cpu_usage is going to be compared with capacity so
-we need to return CAPACITY unit
+1. Would it make sense that a variant for the thunderbolt ring_free()
+   function will also perform input parameter validation?
 
-usage unit is LOAD, capacity unit is CAPACITY so we have to divide by
-LOAD unit to return CAPACITY unit
-
-LOAD unit * CAPACITY unit / LOAD unit -> CAPACITY unit
+2. Are any additional prefixes appropriate so that further name space
+   conflicts can be better avoided?
 
 Regards,
-Vincent
-
->
-> Regards,
-> Wanpeng Li
->
->>
->>> Just to make sure: You do this scaling of usage by cpu_capacity_orig
->>> here only to cater for the fact that cpu_capacity_orig might be uarch
->>> scaled (by arch_scale_cpu_capacity, !SMT) in update_cpu_capacity while
->>
->> I do this for any system with CPUs that have an original capacity that
->> is different from SCHED_CAPACITY_SCALE so it's for both uArch and SMT.
->>
->>> utilization_load_avg is currently not.
->>> We don't even uArch scale on ARM TC2 big.LITTLE platform in mainline
->>> today due to the missing clock-frequency property in the device tree.
->>
->> sorry i don't catch your point
->>
->>> I think it's hard for people to grasp that your patch-set takes uArch
->>> scaling of capacity into consideration but not frequency scaling of
->>> capacity (via arch_scale_freq_capacity, not used at the moment).
->>>
->>>> +}
->>>> +
->>>>   /*
->>>>    * select_task_rq_fair: Select target runqueue for the waking task in
->>>> domains
->>>>    * that have the 'sd_flag' flag set. In practice, this is
->>>> SD_BALANCE_WAKE,
->>>> @@ -5663,6 +5674,7 @@ struct sg_lb_stats {
->>>>        unsigned long sum_weighted_load; /* Weighted load of group's
->>>> tasks */
->>>>        unsigned long load_per_task;
->>>>        unsigned long group_capacity;
->>>> +     unsigned long group_usage; /* Total usage of the group */
->>>>        unsigned int sum_nr_running; /* Nr tasks running in the group */
->>>>        unsigned int group_capacity_factor;
->>>>        unsigned int idle_cpus;
->>>> @@ -6037,6 +6049,7 @@ static inline void update_sg_lb_stats(struct
->>>> lb_env *env,
->>>>                        load = source_load(i, load_idx);
->>>>
->>>>                sgs->group_load += load;
->>>> +             sgs->group_usage += get_cpu_usage(i);
->>>>                sgs->sum_nr_running += rq->cfs.h_nr_running;
->>>>
->>>>                if (rq->nr_running > 1)
->>>>
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+Markus
