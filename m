@@ -1,91 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaKUXif (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 18:38:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58335 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567AbaKUXie (ORCPT
+	id S1752826AbaKUXim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 18:38:42 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:55869 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100AbaKUXij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 18:38:34 -0500
-Date: Fri, 21 Nov 2014 15:38:32 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>, Dave Hansen <dave@sr71.net>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 6/7] mm/page_owner: keep track of page owners
-Message-Id: <20141121153832.a9bd6f8b765608cd1c1959a3@linux-foundation.org>
-In-Reply-To: <1416557646-21755-7-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1416557646-21755-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1416557646-21755-7-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Nov 2014 18:38:39 -0500
+Date: Fri, 21 Nov 2014 15:38:34 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
+ context
+Message-ID: <20141121233834.GW5050@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <cover.1416604491.git.luto@amacapital.net>
+ <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
+ <CALCETrXLq1y7e_dKFPgou-FKHB6Pu-r8+t-6Ds+8=va7anBWDA@mail.gmail.com>
+ <20141121220704.GU5050@linux.vnet.ibm.com>
+ <CALCETrXVRqZ2fJJNOWLFzhE7wQvWejXbw0OUpcm6rt_UdFP6CA@mail.gmail.com>
+ <20141121225508.GV5050@linux.vnet.ibm.com>
+ <CALCETrXgd=5+RFugdi4CdCOzULK8u+ku-EQaJvY6JhXAMEW7rQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXgd=5+RFugdi4CdCOzULK8u+ku-EQaJvY6JhXAMEW7rQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112123-0025-0000-0000-000006497937
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014 17:14:05 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+On Fri, Nov 21, 2014 at 03:06:48PM -0800, Andy Lutomirski wrote:
+> On Fri, Nov 21, 2014 at 2:55 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Fri, Nov 21, 2014 at 02:19:17PM -0800, Andy Lutomirski wrote:
+> >> On Fri, Nov 21, 2014 at 2:07 PM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> > On Fri, Nov 21, 2014 at 01:32:50PM -0800, Andy Lutomirski wrote:
+> >> >> On Fri, Nov 21, 2014 at 1:26 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> >> >> > We currently pretend that IST context is like standard exception
+> >> >> > context, but this is incorrect.  IST entries from userspace are like
+> >> >> > standard exceptions except that they use per-cpu stacks, so they are
+> >> >> > atomic.  IST entries from kernel space are like NMIs from RCU's
+> >> >> > perspective -- they are not quiescent states even if they
+> >> >> > interrupted the kernel during a quiescent state.
+> >> >> >
+> >> >> > Add and use ist_enter and ist_exit to track IST context.  Even
+> >> >> > though x86_32 has no IST stacks, we track these interrupts the same
+> >> >> > way.
+> >> >>
+> >> >> I should add:
+> >> >>
+> >> >> I have no idea why RCU read-side critical sections are safe inside
+> >> >> __do_page_fault today.  It's guarded by exception_enter(), but that
+> >> >> doesn't do anything if context tracking is off, and context tracking
+> >> >> is usually off. What am I missing here?
+> >> >
+> >> > Ah!  There are three cases:
+> >> >
+> >> > 1.      Context tracking is off on a non-idle CPU.  In this case, RCU is
+> >> >         still paying attention to CPUs running in both userspace and in
+> >> >         the kernel.  So if a page fault happens, RCU will be set up to
+> >> >         notice any RCU read-side critical sections.
+> >> >
+> >> > 2.      Context tracking is on on a non-idle CPU.  In this case, RCU
+> >> >         might well be ignoring userspace execution: NO_HZ_FULL and
+> >> >         all that.  However, as you pointed out, in this case the
+> >> >         context-tracking code lets RCU know that we have entered the
+> >> >         kernel, which means that RCU will again be paying attention to
+> >> >         RCU read-side critical sections.
+> >> >
+> >> > 3.      The CPU is idle.  In this case, RCU is ignoring the CPU, so
+> >> >         if we take a page fault when context tracking is off, life
+> >> >         will be hard.  But the kernel is not supposed to take page
+> >> >         faults in the idle loop, so this is not a problem.
+> >>
+> >> I guess so, as long as there are really no page faults in the idle loop.
+> >
+> > As far as I know, there are not.  If there are, someone needs to let
+> > me know!  ;-)
+> >
+> >> There are, however, machine checks in the idle loop, and maybe kprobes
+> >> (haven't checked), so I think this patch might fix real bugs.
+> >
+> > If you can get ISTs from the idle loop, then the patch is needed.
+> >
+> >> > Just out of curiosity...  Can an NMI occur in IST context?  If it can,
+> >> > I need to make rcu_nmi_enter() and rcu_nmi_exit() deal properly with
+> >> > nested calls.
+> >>
+> >> Yes, and vice versa.  That code looked like it handled nesting
+> >> correctly, but I wasn't entirely sure.
+> >
+> > It currently does not, please see below patch.  Are you able to test
+> > nesting?  It would be really cool if you could do so -- I have no
+> > way to test this patch.
+> 
+> I can try.  It's sort of easy -- I'll put an int3 into do_nmi and add
+> a fixup to avoid crashing.
+> 
+> What should I look for?  Should I try to force full nohz on and assert
+> something?  I don't really know how to make full nohz work.
 
-> This is the page owner tracking code which is introduced
-> so far ago. It is resident on Andrew's tree, though, nobody
-> tried to upstream so it remain as is. Our company uses this feature
-> actively to debug memory leak or to find a memory hogger so
-> I decide to upstream this feature.
-> 
-> This functionality help us to know who allocates the page.
-> When allocating a page, we store some information about
-> allocation in extra memory. Later, if we need to know
-> status of all pages, we can get and analyze it from this stored
-> information.
-> 
-> In previous version of this feature, extra memory is statically defined
-> in struct page, but, in this version, extra memory is allocated outside
-> of struct page. It enables us to turn on/off this feature at boottime
-> without considerable memory waste.
-> 
-> Although we already have tracepoint for tracing page allocation/free,
-> using it to analyze page owner is rather complex. We need to enlarge
-> the trace buffer for preventing overlapping until userspace program
-> launched. And, launched program continually dump out the trace buffer
-> for later analysis and it would change system behaviour with more
-> possibility rather than just keeping it in memory, so bad for debug.
-> 
-> Moreover, we can use page_owner feature further for various purposes.
-> For example, we can use it for fragmentation statistics implemented in
-> this patch. And, I also plan to implement some CMA failure debugging
-> feature using this interface.
-> 
-> I'd like to give the credit for all developers contributed this feature,
-> but, it's not easy because I don't know exact history. Sorry about that.
-> Below is people who has "Signed-off-by" in the patches in Andrew's tree.
-> 
-> ...
->
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -884,6 +884,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			MTRR settings.  This parameter disables that behavior,
->  			possibly causing your machine to run very slowly.
->  
-> +	disable_page_owner
-> +			[KNL] Disable to store the information who requests
-> +			the page.
+You should look for the WARN_ON_ONCE() calls in rcu_nmi_enter() and
+rcu_nmi_exit() to fire.
 
-How about "Disable storage of the information about who allocated each
-page".
+							Thanx, Paul
 
-It seems odd that we have a disable flag.  Wouldn't it be less
-surprising to disable it by default and only enable if the boot option
-is provided?
-
-What is the overhead of page_owner if it is runtime-disabled, btw? 
-Will it be feasible for lots of people to just leave it enabled in
-config and to only turn it on when they want to use it?  That would be
-nice.  Please add a paragraph on this point to the changelog and the
-yet-to-be-written documentation.
-
+> >> Also, just to make sure: are we okay if rcu_nmi_enter() is called
+> >> before exception_enter if context tracking is on and we came directly
+> >> from userspace?
+> >
+> > If I understand correctly, this will result in context tracking invoking
+> > rcu_user_enter(), which will result in the rcu_dynticks counter having an
+> > odd value.  In that case, rcu_nmi_enter() will notice that RCU is already
+> > paying attention to this CPU via its check of atomic_read(&rdtp->dynticks)
+> > & 0x1), and will thus just return.  The matching rcu_nmi_exit() will
+> > notice that the nesting count is zero, and will also just return.
+> >
+> > Thus, everything works in that case.
+> >
+> > In contrast, if rcu_nmi_enter() was invoked from the idle loop, it
+> > would see that RCU is not paying attention to this CPU and that the
+> > NMI nesting depth (which rcu_nmi_enter() increments) used to be zero.
+> > It would then atomically increment rtdp->dynticks, forcing RCU to start
+> > paying attention to this CPU.  The matching rcu_nmi_exit() will see
+> > that the nesting count was non-zero, but became zero when decremented.
+> > This will cause rcu_nmi_exit() to atomically increment rtdp->dynticks,
+> > which will tell RCU to stop paying attention to this CPU.
+> >
+> >                                                         Thanx, Paul
+> >
+> > ------------------------------------------------------------------------
+> >
+> > rcu: Make rcu_nmi_enter() handle nesting
+> >
+> > Andy Lutomirski is introducing ISTs into x86, which from RCU's
+> > viewpoint are NMIs.  Because ISTs and NMIs can nest, rcu_nmi_enter()
+> > and rcu_nmi_exit() must now correctly handle nesting.  As luck would
+> > have it, rcu_nmi_exit() handles nesting but rcu_nmi_enter() does not.
+> > This patch therefore makes rcu_nmi_enter() handle nesting.
+> 
+> Thanks.  Should I add this to v5 of my series?
+> 
+> --Andy
+> 
+> >
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >
+> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> > index 8749f43f3f05..875421aff6e3 100644
+> > --- a/kernel/rcu/tree.c
+> > +++ b/kernel/rcu/tree.c
+> > @@ -770,7 +770,8 @@ void rcu_nmi_enter(void)
+> >         if (rdtp->dynticks_nmi_nesting == 0 &&
+> >             (atomic_read(&rdtp->dynticks) & 0x1))
+> >                 return;
+> > -       rdtp->dynticks_nmi_nesting++;
+> > +       if (rdtp->dynticks_nmi_nesting++ != 0)
+> > +               return; /* Nested NMI/IST/whatever. */
+> >         smp_mb__before_atomic();  /* Force delay from prior write. */
+> >         atomic_inc(&rdtp->dynticks);
+> >         /* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
+> >
+> 
+> 
+> 
+> -- 
+> Andy Lutomirski
+> AMA Capital Management, LLC
+> 
 
