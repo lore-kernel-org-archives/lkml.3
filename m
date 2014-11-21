@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758423AbaKUJeD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 04:34:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56075 "EHLO mx1.redhat.com"
+	id S1758464AbaKUJep (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 04:34:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46700 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758289AbaKUJc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 04:32:29 -0500
+	id S1758255AbaKUJcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 04:32:12 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -17,19 +17,18 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 09/11] perf tools: Add snapshot format file parsing
-Date: Fri, 21 Nov 2014 10:31:13 +0100
-Message-Id: <1416562275-12404-10-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 06/11] perf stat: Use read_counter in read_counter_aggr
+Date: Fri, 21 Nov 2014 10:31:10 +0100
+Message-Id: <1416562275-12404-7-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1416562275-12404-1-git-send-email-jolsa@kernel.org>
 References: <1416562275-12404-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The .snapshot file indicates that the provided event value is a
-snapshot value and we have to bypass the delta computation logic.
-
-Adding support to check up this file and set event flag accordingly.
+Use the read_counter function as the values retrieval
+function for aggr counter values thus eliminating
+the use of __perf_evsel__read function.
 
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -44,158 +43,64 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/evsel.h        |  1 +
- tools/perf/util/parse-events.c |  1 +
- tools/perf/util/pmu.c          | 47 ++++++++++++++++++++++++++++++++----------
- tools/perf/util/pmu.h          |  2 ++
- 4 files changed, 40 insertions(+), 11 deletions(-)
+ tools/perf/builtin-stat.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index be295f185c32..3207f4861038 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -73,6 +73,7 @@ struct perf_evsel {
- 	char			*name;
- 	double			scale;
- 	const char		*unit;
-+	bool			snapshot;
- 	struct event_format	*tp_format;
- 	union {
- 		void		*priv;
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 5a373483f0e4..77b43fe43d55 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -682,6 +682,7 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 		evsel->unit = info.unit;
- 		evsel->scale = info.scale;
- 		evsel->per_pkg = info.per_pkg;
-+		evsel->snapshot = info.snapshot;
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 2511d3aae708..b24a7a08bd1d 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -391,6 +391,8 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
+ static int read_cb(struct perf_evsel *evsel, int cpu, int thread __maybe_unused,
+ 		   struct perf_counts_values *count)
+ {
++	struct perf_counts_values *aggr = &evsel->counts->aggr;
++
+ 	switch (aggr_mode) {
+ 	case AGGR_CORE:
+ 	case AGGR_SOCKET:
+@@ -401,6 +403,11 @@ static int read_cb(struct perf_evsel *evsel, int cpu, int thread __maybe_unused,
+ 		update_shadow_stats(evsel, count->values);
+ 		break;
+ 	case AGGR_GLOBAL:
++		aggr->val += count->val;
++		if (scale) {
++			aggr->ena += count->ena;
++			aggr->run += count->run;
++		}
+ 	default:
+ 		break;
  	}
- 
- 	return evsel ? 0 : -ENOMEM;
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index f003b5a9e059..5c9c4947cfb4 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -181,6 +181,23 @@ perf_pmu__parse_per_pkg(struct perf_pmu_alias *alias, char *dir, char *name)
+@@ -408,20 +415,27 @@ static int read_cb(struct perf_evsel *evsel, int cpu, int thread __maybe_unused,
  	return 0;
  }
  
-+static int perf_pmu__parse_snapshot(struct perf_pmu_alias *alias,
-+				    char *dir, char *name)
-+{
-+	char path[PATH_MAX];
-+	int fd;
++static int read_counter(struct perf_evsel *counter);
 +
-+	snprintf(path, PATH_MAX, "%s/%s.snapshot", dir, name);
-+
-+	fd = open(path, O_RDONLY);
-+	if (fd == -1)
-+		return -1;
-+
-+	alias->snapshot = true;
-+	close(fd);
-+	return 0;
-+}
-+
- static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FILE *file)
+ /*
+  * Read out the results of a single counter:
+  * aggregate counts across CPUs in system-wide mode
+  */
+ static int read_counter_aggr(struct perf_evsel *counter)
  {
- 	struct perf_pmu_alias *alias;
-@@ -214,6 +231,7 @@ static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FI
- 	perf_pmu__parse_unit(alias, dir, name);
- 	perf_pmu__parse_scale(alias, dir, name);
- 	perf_pmu__parse_per_pkg(alias, dir, name);
-+	perf_pmu__parse_snapshot(alias, dir, name);
++	struct perf_counts_values *aggr = &counter->counts->aggr;
+ 	struct perf_stat *ps = counter->priv;
+ 	u64 *count = counter->counts->aggr.values;
+ 	int i;
  
- 	list_add_tail(&alias->list, list);
- 
-@@ -231,6 +249,8 @@ static inline bool pmu_alias_info_file(char *name)
- 		return true;
- 	if (len > 8 && !strcmp(name + len - 8, ".per-pkg"))
- 		return true;
-+	if (len > 9 && !strcmp(name + len - 9, ".snapshot"))
-+		return true;
- 
- 	return false;
- }
-@@ -639,23 +659,27 @@ static struct perf_pmu_alias *pmu_find_alias(struct perf_pmu *pmu,
- }
- 
- 
--static int check_unit_scale(struct perf_pmu_alias *alias,
--			    const char **unit, double *scale)
-+static int check_info_data(struct perf_pmu_alias *alias,
-+			   struct perf_pmu_info *info)
- {
- 	/*
- 	 * Only one term in event definition can
--	 * define unit and scale, fail if there's
--	 * more than one.
-+	 * define unit, scale and snapshot, fail
-+	 * if there's more than one.
- 	 */
--	if ((*unit && alias->unit) ||
--	    (*scale && alias->scale))
-+	if ((info->unit && alias->unit) ||
-+	    (info->scale && alias->scale) ||
-+	    (info->snapshot && alias->snapshot))
- 		return -EINVAL;
- 
- 	if (alias->unit)
--		*unit = alias->unit;
-+		info->unit = alias->unit;
- 
- 	if (alias->scale)
--		*scale = alias->scale;
-+		info->scale = alias->scale;
+-	if (__perf_evsel__read(counter, perf_evsel__nr_cpus(counter),
+-			       thread_map__nr(evsel_list->threads), scale) < 0)
++	aggr->val = aggr->ena = aggr->run = 0;
 +
-+	if (alias->snapshot)
-+		info->snapshot = alias->snapshot;
++	if (read_counter(counter))
+ 		return -1;
  
- 	return 0;
- }
-@@ -677,8 +701,9 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
- 	 * Mark unit and scale as not set
- 	 * (different from default values, see below)
- 	 */
--	info->unit   = NULL;
--	info->scale  = 0.0;
-+	info->unit     = NULL;
-+	info->scale    = 0.0;
-+	info->snapshot = false;
++	perf_evsel__compute_deltas(counter, -1, aggr);
++	perf_counts_values__scale(aggr, scale, &counter->counts->scaled);
++
+ 	for (i = 0; i < 3; i++)
+ 		update_stats(&ps->res_stats[i], count[i]);
  
- 	list_for_each_entry_safe(term, h, head_terms, list) {
- 		alias = pmu_find_alias(pmu, term);
-@@ -688,7 +713,7 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
- 		if (ret)
- 			return ret;
- 
--		ret = check_unit_scale(alias, &info->unit, &info->scale);
-+		ret = check_info_data(alias, info);
- 		if (ret)
- 			return ret;
- 
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index c3a74e0e17a2..6b1249fbdb5f 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -30,6 +30,7 @@ struct perf_pmu_info {
- 	const char *unit;
- 	double scale;
- 	bool per_pkg;
-+	bool snapshot;
- };
- 
- #define UNIT_MAX_LEN	31 /* max length for event unit name */
-@@ -41,6 +42,7 @@ struct perf_pmu_alias {
- 	char unit[UNIT_MAX_LEN+1];
- 	double scale;
- 	bool per_pkg;
-+	bool snapshot;
- };
- 
- struct perf_pmu *perf_pmu__find(const char *name);
 -- 
 1.9.3
 
