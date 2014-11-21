@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758368AbaKUNa6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 08:30:58 -0500
-Received: from mout.perfora.net ([74.208.4.197]:54021 "EHLO mout.perfora.net"
+	id S1758335AbaKUNfT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 08:35:19 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:48255 "EHLO jenni1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755059AbaKUNa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 08:30:56 -0500
-Message-ID: <1416576601.2744.11.camel@localhost.localdomain>
-Subject: Re: [PATCH] ARM: tegra: colibri t30: fix on-module ethernet
-From: Marcel Ziswiler <marcel@ziswiler.com>
-To: swarren@wwwdotorg.org
-Cc: thierry.reding@gmail.com, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        stefan@agner.ch
-Date: Fri, 21 Nov 2014 14:30:01 +0100
-In-Reply-To: <1416571072.2744.4.camel@localhost.localdomain>
-References: <b1cdc96ce8bb15059d7eea282f6586a826bee124.1416566157.git.marcel@ziswiler.com>
-	 <1416571072.2744.4.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:uNAOE15NjcRmrbUxNgh8mYjV6cZ+Ecur+If5QXZIu1q
- P51PeC0bDsS4z15t/DLH0baHxlv7Wg8Peuevnqo9XbJG51xdSJ
- kS0l1qMtAdHTLsxoJX0av47TcAJmHB8ewtaklBqdxN+UadXwsh
- U49no/Cz2c+Zj4E12IuK0le+QHmoyXOzH2KVd0f+FOhbUDXPDu
- oYX7klS/bPW6L4CTyYM/OSZ54T+S8oIL+WdzCPhSIXtKSEWfmp
- fbVMOIryUQ02bBjvmX+2NYtiaGh0cGfBfJ9YRY/0GQ/b0YVZhz
- +OkWLQX0ij0kn3WjZ3kAbbSR40dh7xZiIajceWqWBklQYIQRpP
- S9YFtN9lKfbt9tHmX8LB8wpVtiH1bN2aFNCbRP4y9
-X-UI-Out-Filterresults: notjunk:1;
+	id S1754794AbaKUNfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 08:35:17 -0500
+Date: Fri, 21 Nov 2014 15:31:45 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH tip/core/rcu 3/9] drivers/md: Use rcu_dereference() for
+ accessing rcu pointer
+Message-ID: <20141121133145.GA17245@node.dhcp.inet.fi>
+References: <20141028220944.GA26114@linux.vnet.ibm.com>
+ <1414534202-27312-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1414534202-27312-3-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414534202-27312-3-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-21 at 12:57 +0100, Marcel Ziswiler wrote:
-> Doing automatic power-cycle tests revealed that this is still not enough
-> and a proper reset-cycle might be required. However I don't know as of
-> yet how one can easily do that in mainline with a USB device otherwise
-> not mentioned anywhere in the device tree. Any ideas?
+On Tue, Oct 28, 2014 at 03:09:56PM -0700, Paul E. McKenney wrote:
+> From: Pranith Kumar <bobby.prani@gmail.com>
+> 
+> Got Paul's email wrong the first time.
+> 
+> The map field in 'struct mapped_device' is an rcu pointer. Use rcu_dereference()
+> while accessing it.
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-OK, looks like I need something as follows just wondering how far it can
-go (e.g. not even in -next as of yet):
+On current -next I see this:
 
-http://thread.gmane.org/gmane.linux.kernel/1682436
+[    6.388264] ===============================
+[    6.389571] [ INFO: suspicious RCU usage. ]
+[    6.390869] 3.18.0-rc5-next-20141121-08303-g44cae4530372 #2 Not tainted
+[    6.392185] -------------------------------
+[    6.393479] /home/kas/git/public/linux/drivers/md/dm.c:2853 suspicious rcu_dereference_check() usage!
+[    6.394801] 
+other info that might help us debug this:
 
+[    6.398714] 
+rcu_scheduler_active = 1, debug_locks = 0
+[    6.401247] 1 lock held by cryptsetup/159:
+[    6.402522]  #0:  (&md->suspend_lock/1){+.+...}, at: [<ffffffff8179dd1d>] dm_suspend+0x3d/0x140
+[    6.403848] 
+stack backtrace:
+[    6.406448] CPU: 3 PID: 159 Comm: cryptsetup Not tainted 3.18.0-rc5-next-20141121-08303-g44cae4530372 #2
+[    6.407726] Hardware name: LENOVO 3460CC6/3460CC6, BIOS G6ET93WW (2.53 ) 02/04/2013
+[    6.408982]  0000000000000001 ffff8800d3ac7c38 ffffffff81b00bbd 0000000000000011
+[    6.410249]  ffff8800d301a560 ffff8800d3ac7c68 ffffffff81153be7 ffff8800d3928800
+[    6.411548]  ffff8800d3928970 ffff8800d3928aa0 0000000000000001 ffff8800d3ac7ca8
+[    6.412780] Call Trace:
+[    6.413980]  [<ffffffff81b00bbd>] dump_stack+0x4c/0x6e
+[    6.415178]  [<ffffffff81153be7>] lockdep_rcu_suspicious+0xe7/0x120
+[    6.416364]  [<ffffffff8179de1d>] dm_suspend+0x13d/0x140
+[    6.417535]  [<ffffffff817a2d80>] ? table_load+0x340/0x340
+[    6.418749]  [<ffffffff817a2f2b>] dev_suspend+0x1ab/0x260
+[    6.419901]  [<ffffffff817a2d80>] ? table_load+0x340/0x340
+[    6.421038]  [<ffffffff817a3781>] ctl_ioctl+0x251/0x540
+[    6.422164]  [<ffffffff812b6415>] ? mntput_no_expire+0x5/0x360
+[    6.423280]  [<ffffffff817a3a83>] dm_ctl_ioctl+0x13/0x20
+[    6.424389]  [<ffffffff812a6f98>] do_vfs_ioctl+0x308/0x540
+[    6.425515]  [<ffffffff81175d2d>] ? rcu_read_lock_held+0x6d/0x70
+[    6.426601]  [<ffffffff812b324e>] ? __fget_light+0xbe/0xd0
+[    6.427686]  [<ffffffff812a7251>] SyS_ioctl+0x81/0xa0
+[    6.428760]  [<ffffffff81b0d6ad>] system_call_fastpath+0x16/0x1b
+-- 
+ Kirill A. Shutemov
