@@ -1,74 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758953AbaKUQia (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:38:30 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:46728 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755449AbaKUQi3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:38:29 -0500
+	id S1758962AbaKUQlG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:41:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52341 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758431AbaKUQlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 11:41:04 -0500
+Date: Fri, 21 Nov 2014 10:40:27 -0600
+From: Seth Jennings <sjenning@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
+Message-ID: <20141121164027.GB11339@cerebellum.variantweb.net>
+References: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
+ <1416522580-5593-3-git-send-email-sjenning@redhat.com>
+ <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20141121162742.GB15461@htj.dyndns.org>
-References: <alpine.DEB.2.11.1411200002330.3909@nanos> <20141119235033.GE11386@lerouge>
- <20141120122339.GA14877@htj.dyndns.org> <alpine.DEB.2.11.1411202204030.3950@nanos>
- <20141120221122.GA25393@htj.dyndns.org> <alpine.DEB.2.11.1411202315230.3950@nanos>
- <20141120230514.GB25393@htj.dyndns.org> <CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
- <20141120233920.GC25393@htj.dyndns.org> <CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
- <20141121162742.GB15461@htj.dyndns.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 21 Nov 2014 08:38:07 -0800
-Message-ID: <CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-To: Tejun Heo <tj@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 21, 2014 8:27 AM, "Tejun Heo" <tj@kernel.org> wrote:
->
-> Hello, Andy.
->
-> On Thu, Nov 20, 2014 at 03:55:09PM -0800, Andy Lutomirski wrote:
-> > That doesn't appear to have anything to with nmi though, right?
->
-> I thought that was the main offender but, apparently, not any more.
->
-> > Wouldn't this issue be fixed by moving the vmalloc_fault check into
-> > do_page_fault before exception_enter?
->
-> Can you please elaborate why that'd fix the issue?  I'm not
-> intimiately familiar with the fault handling so it'd be great if you
-> can give me some pointers in terms of where to look at.
+On Fri, Nov 21, 2014 at 01:22:33AM +0100, Jiri Kosina wrote:
+> On Thu, 20 Nov 2014, Seth Jennings wrote:
+> 
+> > This commit introduces code for the live patching core.  It implements
+> > an ftrace-based mechanism and kernel interface for doing live patching
+> > of kernel and kernel module functions.
+> > 
+> > It represents the greatest common functionality set between kpatch and
+> > kgraft and can accept patches built using either method.
+> > 
+> > This first version does not implement any consistency mechanism that
+> > ensures that old and new code do not run together.  In practice, ~90% of
+> > CVEs are safe to apply in this way, since they simply add a conditional
+> > check.  However, any function change that can not execute safely with
+> > the old version of the function can _not_ be safely applied in this
+> > version.
+> > 
+> > Signed-off-by: Seth Jennings <sjenning@redhat.com>
+> 
+> I think this is getting really close, which is awesome. A few rather minor 
+> nits below.
+> 
+> [ ... snip ... ]
+> > diff --git a/arch/x86/include/asm/livepatch.h b/arch/x86/include/asm/livepatch.h
+> > new file mode 100644
+> > index 0000000..2ed86ec
+> > --- /dev/null
+> > +++ b/arch/x86/include/asm/livepatch.h
+> > @@ -0,0 +1,37 @@
+> > +/*
+> > + * livepatch.h - x86-specific Kernel Live Patching Core
+> > + *
+> > + * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License
+> > + * as published by the Free Software Foundation; either version 2
+> > + * of the License, or (at your option) any later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License
+> > + * along with this program; if not, see <http://www.gnu.org/licenses/>.
+> > + */
+> > +
+> > +#ifndef _ASM_X86_LIVEPATCH_H
+> > +#define _ASM_X86_LIVEPATCH_H
+> > +
+> > +#include <linux/module.h>
+> > +
+> > +#ifdef CONFIG_LIVE_PATCHING
+> > +extern int klp_write_module_reloc(struct module *mod, unsigned long type,
+> > +				  unsigned long loc, unsigned long value);
+> > +
+> > +#else
+> > +static int klp_write_module_reloc(struct module *mod, unsigned long type,
+> 
+> static inline?
 
-do_page_fault is called directly from asm.  It does:
+I think the practice is to let the compiler handle inline determination
+unless you are sure that the compiler isn't inlining something you think
+it should.
 
-    prev_state = exception_enter();
-    __do_page_fault(regs, error_code, address);
-    exception_exit(prev_state);
+All other changes are accepted and queued for v4.
 
-The vmalloc fixup is in __do_page_fault.
+Thanks,
+Seth
 
-exception_enter does various accounting and tracing things, and I
-think that the recursion in stack trace I saw was in exception_enter.
-
-If you move the vmalloc fixup before exception_enter() and return if
-the fault was from vmalloc, then you can't recurse.  You need to be
-careful not to touch anything that uses RCU before exception_enter,
-though.
-
---Andy
-
->
-> Thanks.
->
-> --
-> tejun
+> 
+> [ ... snip ... ]
+> > --- /dev/null
+> > +++ b/kernel/livepatch/Kconfig
+> > @@ -0,0 +1,18 @@
+> > +config ARCH_HAVE_LIVE_PATCHING
+> > +	boolean
+> > +	help
+> > +	  Arch supports kernel live patching
+> > +
+> > +config LIVE_PATCHING
+> > +	boolean "Kernel Live Patching"
+> > +	depends on DYNAMIC_FTRACE_WITH_REGS
+> > +	depends on MODULES
+> > +	depends on SYSFS
+> > +	depends on KALLSYMS_ALL
+> > +	depends on ARCH_HAVE_LIVE_PATCHING
+> 
+> We have to refuse to build on x86_64 if the compiler doesn't support 
+> fentry. mcount is not really usable (well, it would be possible to use it, 
+> be the obstacles are too big to care).
+> 
+> Something like [1] should be applicable here as well I believe.
+> 
+> [1] https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/commit/?h=kgraft&id=bd4bc097c72937d18036f1312a4d79ed0bea9991
+> 
+> [ ... snip ... ]
+> > --- /dev/null
+> > +++ b/kernel/livepatch/core.c
+> > @@ -0,0 +1,828 @@
+> > +/*
+> > + * core.c - Kernel Live Patching Core
+> > + *
+> > + * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License
+> > + * as published by the Free Software Foundation; either version 2
+> > + * of the License, or (at your option) any later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License
+> > + * along with this program; if not, see <http://www.gnu.org/licenses/>.
+> > + */
+> > +
+> > +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> > +
+> > +#include <linux/module.h>
+> > +#include <linux/kernel.h>
+> > +#include <linux/mutex.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/ftrace.h>
+> > +#include <linux/list.h>
+> > +#include <linux/kallsyms.h>
+> > +#include <linux/livepatch.h>
+> > +
+> > +/*************************************
+> > + * Core structures
+> > + ************************************/
+> 
+> I don't personally find such markers (especially with all the '*'s) too 
+> tasteful, and I don't recall ever seeing this being common pattern used in 
+> the kernel code ... ?
+> 
+> > +static DEFINE_MUTEX(klp_mutex);
+> > +static LIST_HEAD(klp_patches);
+> > +
+> > +/*******************************************
+> > + * Helpers
+> > + *******************************************/
+> > +
+> > +/* sets obj->mod if object is not vmlinux and module is found */
+> > +static bool klp_find_object_module(struct klp_object *obj)
+> > +{
+> > +	if (!strcmp(obj->name, "vmlinux"))
+> > +		return 1;
+> 
+> Rather a matter of taste again -- I personally would prefer "obj->name == 
+> NULL" to be the condition identifying core kernel code text. You can't 
+> really forbid any lunetic out there calling his kernel module "vmlinux", 
+> right? :)
+> 
+> [ ... snip ... ]
+> 
+> > +/***********************************
+> > + * ftrace registration
+> > + **********************************/
+> > +
+> > +static void klp_ftrace_handler(unsigned long ip, unsigned long parent_ip,
+> > +			       struct ftrace_ops *ops, struct pt_regs *regs)
+> > +{
+> > +	struct klp_func *func = ops->private;
+> > +
+> > +	regs->ip = (unsigned long)func->new_func;
+> > +}
+> > +
+> > +static int klp_enable_func(struct klp_func *func)
+> > +{
+> > +	int ret;
+> > +
+> > +	if (WARN_ON(!func->old_addr || func->state != LPC_DISABLED))
+> > +		return -EINVAL;
+> 
+> If the WARN_ON triggers, there is no good way to find out which of the two 
+> conditions triggered it.
+> 
+> [ ... snip ... ]
+> > +static int klp_init_patch(struct klp_patch *patch)
+> > +{
+> > +	int ret;
+> > +
+> > +	mutex_lock(&klp_mutex);
+> > +
+> > +	/* init */
+> > +	patch->state = LPC_DISABLED;
+> > +
+> > +	/* sysfs */
+> > +	ret = kobject_init_and_add(&patch->kobj, &klp_ktype_patch,
+> > +				   klp_root_kobj, patch->mod->name);
+> > +	if (ret)
+> > +		return ret;
+> 
+> klp_mutex is leaked locked here.
+> 
+> > +
+> > +	/* create objects */
+> > +	ret = klp_init_objects(patch);
+> > +	if (ret) {
+> > +		kobject_put(&patch->kobj);
+> > +		return ret;
+> 
+> And here as well.
+> 
+> All in all, this is looking very good to me. I think we are really close 
+> to having a code that all the parties would agree with. Thanks everybody,
+> 
+> -- 
+> Jiri Kosina
+> SUSE Labs
