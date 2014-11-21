@@ -1,62 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758318AbaKUJiv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 04:38:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47220 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758166AbaKUJbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 04:31:49 -0500
-Date: Fri, 21 Nov 2014 09:31:41 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 0/10] Replace _PAGE_NUMA with PAGE_NONE protections v2
-Message-ID: <20141121093141.GU2725@suse.de>
-References: <1416478790-27522-1-git-send-email-mgorman@suse.de>
- <546E6221.5000409@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <546E6221.5000409@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758297AbaKUJki (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 04:40:38 -0500
+Received: from atl4mhob16.myregisteredsite.com ([209.17.115.109]:41840 "EHLO
+	atl4mhob16.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757717AbaKUJkg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 04:40:36 -0500
+X-TCPREMOTEIP: 88.159.208.100
+X-Authenticated-UID: mike@milosoftware.com
+From: Mike Looijmans <mike.looijmans@topic.nl>
+To: wim@iguana.be
+Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Looijmans <mike.looijmans@topic.nl>
+Subject: [PATCH v3] gpio_wdt: Add "always_running" feature to GPIO watchdog
+Date: Fri, 21 Nov 2014 10:40:28 +0100
+Message-Id: <1416562828-3978-1-git-send-email-mike.looijmans@topic.nl>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <546EE991.1080704@roeck-us.net>
+References: <546EE991.1080704@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 04:50:25PM -0500, Sasha Levin wrote:
-> On 11/20/2014 05:19 AM, Mel Gorman wrote:
-> > V1 failed while running under kvm-tools very quickly and a second report
-> > indicated that it happens on bare metal as well. This version survived
-> > an overnight run of trinity running under kvm-tools here but verification
-> > from Sasha would be appreciated.
-> 
-> Hi Mel,
-> 
-> I tried giving it a spin, but it won't apply at all on the latest -mm
-> tree:
-> 
-> $ git am -3 numa/*
-> Applying: mm: numa: Do not dereference pmd outside of the lock during NUMA hinting fault
-> Applying: mm: Add p[te|md] protnone helpers for use by NUMA balancing
-> Applying: mm: Convert p[te|md]_numa users to p[te|md]_protnone_numa
-> fatal: sha1 information is lacking or useless (mm/huge_memory.c).
-> Repository lacks necessary blobs to fall back on 3-way merge.
-> Cannot fall back to three-way merge.
-> 
-> Did I miss a prerequisite?
-> 
+On some chips, like the TPS386000, the trigger cannot be disabled
+and the CPU must keep toggling the line at all times. Add a switch
+"always_running" to keep toggling the GPIO line regardless of the
+state of the soft part of the watchdog. The "armed" member keeps
+track of whether a timeout must also cause a reset.
 
-No. V2 was still against 3.18-rc4 as that was what I had vanilla kernel
-test data for. V3 will be against latest mmotm.
+Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+---
+v3: Indentation adjusted to match
+Fix error path in probe when notification registration fails
+Prevent double assignment of "armed" variable
 
+ .../devicetree/bindings/watchdog/gpio-wdt.txt      |    5 +++
+ drivers/watchdog/gpio_wdt.c                        |   39 ++++++++++++++++----
+ 2 files changed, 36 insertions(+), 8 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+index 37afec1..1987949 100644
+--- a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
++++ b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+@@ -13,6 +13,11 @@ Required Properties:
+     by the GPIO flags.
+ - hw_margin_ms: Maximum time to reset watchdog circuit (milliseconds).
+ 
++Optional Properties:
++- always-running: If the watchdog timer cannot be disabled, add this flag to
++  have the driver keep toggling the signal without a client. It will only cease
++  to toggle the signal when the device is open and the timeout elapsed.
++
+ Example:
+ 	watchdog: watchdog {
+ 		/* ADM706 */
+diff --git a/drivers/watchdog/gpio_wdt.c b/drivers/watchdog/gpio_wdt.c
+index 220a9e0..9bfbd73 100644
+--- a/drivers/watchdog/gpio_wdt.c
++++ b/drivers/watchdog/gpio_wdt.c
+@@ -31,6 +31,8 @@ struct gpio_wdt_priv {
+ 	int			gpio;
+ 	bool			active_low;
+ 	bool			state;
++	bool			always_running;
++	bool			armed;
+ 	unsigned int		hw_algo;
+ 	unsigned int		hw_margin;
+ 	unsigned long		last_jiffies;
+@@ -48,10 +50,8 @@ static void gpio_wdt_disable(struct gpio_wdt_priv *priv)
+ 		gpio_direction_input(priv->gpio);
+ }
+ 
+-static int gpio_wdt_start(struct watchdog_device *wdd)
++static void gpio_wdt_start_impl(struct gpio_wdt_priv *priv)
+ {
+-	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
+-
+ 	priv->state = priv->active_low;
+ 	gpio_direction_output(priv->gpio, priv->state);
+ 	priv->last_jiffies = jiffies;
+@@ -60,12 +60,25 @@ static int gpio_wdt_start(struct watchdog_device *wdd)
+ 	return 0;
+ }
+ 
++static int gpio_wdt_start(struct watchdog_device *wdd)
++{
++	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
++
++	gpio_wdt_start_impl(priv);
++	priv->armed = true;
++
++	return 0;
++}
++
+ static int gpio_wdt_stop(struct watchdog_device *wdd)
+ {
+ 	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
+ 
+-	mod_timer(&priv->timer, 0);
+-	gpio_wdt_disable(priv);
++	priv->armed = false;
++	if (!priv->always_running) {
++		mod_timer(&priv->timer, 0);
++		gpio_wdt_disable(priv);
++	}
+ 
+ 	return 0;
+ }
+@@ -91,8 +104,8 @@ static void gpio_wdt_hwping(unsigned long data)
+ 	struct watchdog_device *wdd = (struct watchdog_device *)data;
+ 	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
+ 
+-	if (time_after(jiffies, priv->last_jiffies +
+-		       msecs_to_jiffies(wdd->timeout * 1000))) {
++	if (priv->armed && time_after(jiffies, priv->last_jiffies +
++				      msecs_to_jiffies(wdd->timeout * 1000))) {
+ 		dev_crit(wdd->dev, "Timer expired. System will reboot soon!\n");
+ 		return;
+ 	}
+@@ -197,6 +210,9 @@ static int gpio_wdt_probe(struct platform_device *pdev)
+ 	/* Use safe value (1/2 of real timeout) */
+ 	priv->hw_margin = msecs_to_jiffies(hw_margin / 2);
+ 
++	priv->always_running = of_property_read_bool(pdev->dev.of_node,
++						     "always-running");
++
+ 	watchdog_set_drvdata(&priv->wdd, priv);
+ 
+ 	priv->wdd.info		= &gpio_wdt_ident;
+@@ -216,8 +232,15 @@ static int gpio_wdt_probe(struct platform_device *pdev)
+ 	priv->notifier.notifier_call = gpio_wdt_notify_sys;
+ 	ret = register_reboot_notifier(&priv->notifier);
+ 	if (ret)
+-		watchdog_unregister_device(&priv->wdd);
++		goto error_unregister;
+ 
++	if (priv->always_running)
++		gpio_wdt_start_impl(priv);
++
++	return 0;
++
++error_unregister:
++	watchdog_unregister_device(&priv->wdd);
+ 	return ret;
+ }
+ 
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.5
+
