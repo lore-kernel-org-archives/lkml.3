@@ -1,129 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758602AbaKUOAt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 09:00:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53682 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757880AbaKUN5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 08:57:54 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>
-Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 02/10] mm: Add p[te|md] protnone helpers for use by NUMA balancing
-Date: Fri, 21 Nov 2014 13:57:40 +0000
-Message-Id: <1416578268-19597-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1416578268-19597-1-git-send-email-mgorman@suse.de>
-References: <1416578268-19597-1-git-send-email-mgorman@suse.de>
+	id S1758458AbaKUODx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 09:03:53 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:35812 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755380AbaKUODv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 09:03:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <546F1B7D.1020209@ti.com>
+References: <1416477788-5544-2-git-send-email-grygorii.strashko@ti.com>
+ <20141120214838.GA346@pengutronix.de> <546F1B7D.1020209@ti.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Fri, 21 Nov 2014 08:03:26 -0600
+Message-ID: <CAL_JsqJKhtzx9NKQ9R=m_4ReCUM9FP71mE7oRkScxPE7k881AA@mail.gmail.com>
+Subject: Re: [1/5] i2c: i2c-davinci: switch to use platform_get_irq
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Murali Karicheri <m-karicheri2@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a preparatory patch that introduces protnone helpers for automatic
-NUMA balancing.
+On Fri, Nov 21, 2014 at 5:01 AM, Grygorii Strashko
+<grygorii.strashko@ti.com> wrote:
+> On 11/20/2014 11:48 PM, Uwe Kleine-König wrote:
+>> Hello Grygorii,
+>>
+>> On Thu, Nov 20, 2014 at 12:03:04PM +0200, Grygorii Strashko wrote:
+>>> Switch Davinci I2C driver to use platform_get_irq(), because
+>>> - it is not recommened to use
+>>>    platform_get_resource(pdev, IORESOURCE_IRQ, ..) for requesting IRQ's
+>>>    resources any more, as they can be not ready yet in case of DT-booting.
+>>> - it makes code simpler
+>>>
+>>> CC: Sekhar Nori <nsekhar@ti.com>
+>>> CC: Kevin Hilman <khilman@deeprootsystems.com>
+>>> CC: Santosh Shilimkar <ssantosh@kernel.org>
+>>> CC: Murali Karicheri <m-karicheri2@ti.com>
+>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>>> ---
+>>>   drivers/i2c/busses/i2c-davinci.c | 14 +++++++-------
+>>>   1 file changed, 7 insertions(+), 7 deletions(-)
+>>>
+>>> diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
+>>> index 4d96147..9bbfb8f 100644
+>>> --- a/drivers/i2c/busses/i2c-davinci.c
+>>> +++ b/drivers/i2c/busses/i2c-davinci.c
+>>> @@ -640,13 +640,13 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+>>>   {
+>>>      struct davinci_i2c_dev *dev;
+>>>      struct i2c_adapter *adap;
+>>> -    struct resource *mem, *irq;
+>>> -    int r;
+>>> +    struct resource *mem;
+>>> +    int r, irq;
+>>>
+>>> -    irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+>>> -    if (!irq) {
+>>> -            dev_err(&pdev->dev, "no irq resource?\n");
+>>> -            return -ENODEV;
+>>> +    irq = platform_get_irq(pdev, 0);
+>> One bad thing about platform_get_irq is its unusual handling of irq=0.
+>> I'm pretty sure you don't want to use this value, so adding something
+>> like:
+>>
+>>       if (!irq)
+>>               irq = -ENXIO
+>>
+>> would be welcome because the usual value for "invalid irq" is 0 and not
+>> -ESOMETHING. platform_get_irq is one of the very few functions that
+>> don't adhere to this convention. With handling <= 0 as error your code
+>> is immune to changes in this area. Although I notice that
+>> platform_get_irq got worse in this respect to handle -EPROBE_DEFER. hmm.
+>>
+>> Apart from your change I wonder if platform_get_irq should handle
+>> of_irq_get returning 0 as an error.
+>
+> I think you are right and It seems like, the check for !irq should
+> be added/restored for OF case in platform_get_irq() too.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- arch/powerpc/include/asm/pgtable.h | 15 +++++++++++++++
- arch/x86/include/asm/pgtable.h     | 16 ++++++++++++++++
- include/asm-generic/pgtable.h      | 20 ++++++++++++++++++++
- 3 files changed, 51 insertions(+)
+Changing the return values of platform_get_irq is tricky as it would
+potentially break drivers because NO_IRQ can be 0 or -1 depending on
+the arch. Drivers checking against specific values of NO_IRQ would
+break. We've done some clean-up in this area, but I suspect more is
+needed.
 
-diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
-index a8805fe..490bd6d 100644
---- a/arch/powerpc/include/asm/pgtable.h
-+++ b/arch/powerpc/include/asm/pgtable.h
-@@ -39,6 +39,21 @@ static inline int pte_none(pte_t pte)		{ return (pte_val(pte) & ~_PTE_NONE_MASK)
- static inline pgprot_t pte_pgprot(pte_t pte)	{ return __pgprot(pte_val(pte) & PAGE_PROT_BITS); }
- 
- #ifdef CONFIG_NUMA_BALANCING
-+/*
-+ * These work without NUMA balancing but the kernel does not care. See the
-+ * comment in include/asm-generic/pgtable.h
-+ */
-+static inline int pte_protnone(pte_t pte)
-+{
-+	return (pte_val(pte) &
-+		(_PAGE_PRESENT | _PAGE_USER)) == _PAGE_PRESENT;
-+}
-+
-+static inline int pmd_protnone(pmd_t pmd)
-+{
-+	return pte_protnone(pmd_pte(pmd));
-+}
-+
- static inline int pte_present(pte_t pte)
- {
- 	return pte_val(pte) & _PAGE_NUMA_MASK;
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 081d6f4..2e25780 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -502,6 +502,22 @@ static inline int pmd_present(pmd_t pmd)
- 				 _PAGE_NUMA);
- }
- 
-+#ifdef CONFIG_NUMA_BALANCING
-+/*
-+ * These work without NUMA balancing but the kernel does not care. See the
-+ * comment in include/asm-generic/pgtable.h
-+ */
-+static inline int pte_protnone(pte_t pte)
-+{
-+	return pte_flags(pte) & _PAGE_PROTNONE;
-+}
-+
-+static inline int pmd_protnone(pmd_t pmd)
-+{
-+	return pmd_flags(pmd) & _PAGE_PROTNONE;
-+}
-+#endif /* CONFIG_NUMA_BALANCING */
-+
- static inline int pmd_none(pmd_t pmd)
- {
- 	/* Only check low word on 32-bit platforms, since it might be
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 177d597..d497d08 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -688,6 +688,26 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
- #endif
- }
- 
-+#ifndef CONFIG_NUMA_BALANCING
-+/*
-+ * Technically a PTE can be PROTNONE even when not doing NUMA balancing but
-+ * the only case the kernel cares is for NUMA balancing and is only ever set
-+ * when the VMA is accessible. For PROT_NONE VMAs, the PTEs are not marked
-+ * _PAGE_PROTNONE so by by default, implement the helper as "always no". It
-+ * is the responsibility of the caller to distinguish between PROT_NONE
-+ * protections and NUMA hinting fault protections.
-+ */
-+static inline int pte_protnone(pte_t pte)
-+{
-+	return 0;
-+}
-+
-+static inline int pmd_protnone(pmd_t pmd)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_NUMA_BALANCING */
-+
- #ifdef CONFIG_NUMA_BALANCING
- /*
-  * _PAGE_NUMA distinguishes between an unmapped page table entry, an entry that
--- 
-2.1.2
-
+Rob
