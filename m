@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758034AbaKUCQO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 21:16:14 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:36556 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757371AbaKUCQN (ORCPT
+	id S1758040AbaKUCSb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 21:18:31 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:36496 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756702AbaKUCSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 21:16:13 -0500
-X-Original-SENDERIP: 165.186.175.61
-X-Original-MAILFROM: ciogenis@gmail.com
-Date: Fri, 21 Nov 2014 11:10:39 +0900
-From: Hyogi Gim <ciogenis@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: a.zummo@towertech.it, john.stultz@linaro.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/rtc/interface.c: check the validation of
- rtc_time in __rtc_read_time
-Message-ID: <20141121021039.GB8368@lge.com>
-References: <20141008020529.GA21464@lge.com>
- <20141014152131.1442b937e3010a558c7798a6@linux-foundation.org>
+	Thu, 20 Nov 2014 21:18:30 -0500
+Message-ID: <546EA0F4.10006@codeaurora.org>
+Date: Thu, 20 Nov 2014 18:18:28 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141014152131.1442b937e3010a558c7798a6@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Turquette <mturquette@linaro.org>
+CC: Rajendra Nayak <rnayak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kenneth Westfield <kwestfie@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH 6/7] clk: qcom: ipq: Add lpass clock controller driver
+References: <1416442245-21967-1-git-send-email-sboyd@codeaurora.org> <1416442245-21967-7-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1416442245-21967-7-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 03:21:31PM -0700, Andrew Morton wrote:
-> On Wed, 8 Oct 2014 11:05:29 +0900 Hyogi Gim <ciogenis@gmail.com> wrote:
-> 
-> > Some of rtc devices always return '0' when rtc_class_ops.read_time is called.
-> > So if rtc_time isn't verified in callback, rtc interface cannot know whether
-> > rtc_time is valid.
-> 
-> We should fix the buggy .read_time() implementations...
-> 
+On 11/19/2014 04:10 PM, Stephen Boyd wrote:
+> +
+> +static struct clk_regmap_div mi2s_bit_div_clk = {
+> +	.reg = 0x48,
+> +	.shift = 10,
+> +	.width = 4,
+> +	.clkr = {
+> +		.enable_reg = 0x48,
+> +		.enable_mask = BIT(15),
 
-Thanks for comments.
-I'm studying rtc framework and trying to find a problem.
-This is a minor bug. But, as you know, it can be a big problem for
-newbies like me.
-
-Even though it was late, I send you reply because a question.
-If this patch is merged, rtc_valid_tm() in rtc_class_ops.read_time
-callback is not necessary anymore.
-So, I think each rtc device driver should change the code.
-I can change the code. But, test is a little different.
-
-In this case, how can I progress this modification?
-Can I just send the notification for rtc_valid_tm() to the driver
-manufacturer? or, request test for the code that I've modified?
+This also has a halt bit so I'll add that in the next version by
+splitting this down further into a divider and a branch.
 
 -- 
-Hyogi
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
