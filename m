@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaKUSeh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:34:37 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:29726 "EHLO smtp6-g21.free.fr"
+	id S1752226AbaKUSeo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:34:44 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:30030 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751921AbaKUSef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:34:35 -0500
+	id S1751014AbaKUSel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 13:34:41 -0500
 From: Alban Bedel <albeu@free.fr>
 To: linux-kernel@vger.kernel.org
 Cc: devicetree@vger.kernel.org, Alban Bedel <albeu@free.fr>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH 3/4] devicetree: add binding documentation for a generic clock controller
-Date: Fri, 21 Nov 2014 19:34:02 +0100
-Message-Id: <1416594843-12352-3-git-send-email-albeu@free.fr>
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 4/4] clk: add a generic MMIO clock controller
+Date: Fri, 21 Nov 2014 19:34:03 +0100
+Message-Id: <1416594843-12352-4-git-send-email-albeu@free.fr>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1416594843-12352-1-git-send-email-albeu@free.fr>
 References: <1416594843-12352-1-git-send-email-albeu@free.fr>
@@ -23,145 +20,264 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This driver allow defining simple MMIO clock controllers using only DT
+nodes. The clock controller driver map the configured MMIO range and
+allow creating simple clock trees using dividers, gates and muxers.
+
 Signed-off-by: Alban Bedel <albeu@free.fr>
 ---
- .../bindings/clock/mmio-clock-controller.txt       | 127 +++++++++++++++++++++
- 1 file changed, 127 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/mmio-clock-controller.txt
+ drivers/clk/Kconfig               |   9 ++
+ drivers/clk/Makefile              |   1 +
+ drivers/clk/clk-mmio-controller.c | 208 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 218 insertions(+)
+ create mode 100644 drivers/clk/clk-mmio-controller.c
 
-diff --git a/Documentation/devicetree/bindings/clock/mmio-clock-controller.txt b/Documentation/devicetree/bindings/clock/mmio-clock-controller.txt
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 455fd17..ca6b896 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -23,6 +23,15 @@ config COMMON_CLK
+ menu "Common Clock Framework"
+ 	depends on COMMON_CLK
+ 
++config COMMON_CLK_MMIO_CONTROLLER
++	tristate "Generic driver for simple MMIO clock controller"
++	depends on OF
++	---help---
++	  This driver allow supporting simple MMIO clock controllers that
++	  only consist of dividers, muxes and gates. The clock tree and
++	  register mapping can be fully configured from the devicetree
++	  removing the need for a device specific driver.
++
+ config COMMON_CLK_WM831X
+ 	tristate "Clock driver for WM831x/2x PMICs"
+ 	depends on MFD_WM831X
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index d5fba5b..0d9c8e4 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -26,6 +26,7 @@ obj-$(CONFIG_MACH_LOONGSON1)		+= clk-ls1x.o
+ obj-$(CONFIG_COMMON_CLK_MAX_GEN)	+= clk-max-gen.o
+ obj-$(CONFIG_COMMON_CLK_MAX77686)	+= clk-max77686.o
+ obj-$(CONFIG_COMMON_CLK_MAX77802)	+= clk-max77802.o
++obj-$(CONFIG_COMMON_CLK_MMIO_CONTROLLER)+= clk-mmio-controller.o
+ obj-$(CONFIG_ARCH_MOXART)		+= clk-moxart.o
+ obj-$(CONFIG_ARCH_NOMADIK)		+= clk-nomadik.o
+ obj-$(CONFIG_ARCH_NSPIRE)		+= clk-nspire.o
+diff --git a/drivers/clk/clk-mmio-controller.c b/drivers/clk/clk-mmio-controller.c
 new file mode 100644
-index 0000000..5a5f752
+index 0000000..0e5fb50
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/mmio-clock-controller.txt
-@@ -0,0 +1,127 @@
-+Binding for a generic MMIO clock controller
++++ b/drivers/clk/clk-mmio-controller.c
+@@ -0,0 +1,208 @@
++/*
++ * Copyright (C) 2014 Alban Bedel
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
-+This binding allow describing simple MMIO clock controllers using a few
-+primitive blocks like dividers and gates.
++#include <linux/clk-provider.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/of_address.h>
 +
-+Required properties:
-+- compatible : shall be "mmio-clock-controller"
-+- reg : address and size of the register area
-+- #address-cells : shall be 1
-+- #size-cells : shall be 0
++#define of_printk(node, lvl, fmt, ...) \
++	printk(lvl "%s: " fmt, node->full_name, ##__VA_ARGS__)
 +
-+Children nodes are used to represent the blocks found in the controller.
-+Beside the children types described here it is also possible to use fixed
-+clocks[1] and dividers[2].
++#define of_err(node, ...) of_printk(node, KERN_ERR, __VA_ARGS__)
++#define of_warn(node, ...) of_printk(node, KERN_WARNING, __VA_ARGS__)
 +
-+All the following bindings use the common clock binding[3].
++typedef struct clk *(*mmio_clock_probe_t)(
++	struct device_node *np, void __iomem *reg, spinlock_t *lock);
 +
-+[1] Documentation/devicetree/bindings/clock/fixed-clock.txt
-+[2] Documentation/devicetree/bindings/clock/fixed-factor-clock.txt
-+[3] Documentation/devicetree/bindings/clock/clock-bindings.txt
++static struct clk *mux_clock_probe(
++	struct device_node *np, void __iomem *reg, spinlock_t *lock)
++{
++	const char *parents[32] = {};
++	unsigned int num_parents = 0;
++	const char *clk_name;
++	u8 clk_mux_flags = 0;
++	u32 width, shift;
 +
-+- gate
++	clk_name = np->name;
++	of_property_read_string(np, "clock-output-names", &clk_name);
 +
-+  Required properties:
-+  - compatible : shall be "gate-clock"
-+  - reg : offset of the register
-+  - #clock-cells : from common clock binding; shall be set to 0
-+  - clocks : from common clock binding; the parent clock
-+  - clock-gate-bit : position of the gating bit inside the register
++	/* Read the parents */
++	while (num_parents < ARRAY_SIZE(parents)) {
++		parents[num_parents] = of_clk_get_parent_name(np, num_parents);
++		if (parents[num_parents])
++			num_parents++;
++		else
++			break;
++	}
 +
-+  Optional properties:
-+  - clock-output-names : from common clock binding
-+  - high-word-mask : set if the high word is a write mask
-+  - low-active : set if the bit should be cleared to enable the clock
++	if (of_property_read_u32(np, "clock-mux-width", &width) || width > 31 ||
++	    of_property_read_u32(np, "clock-mux-shift", &shift) || shift > 31)
++		return ERR_PTR(-EINVAL);
 +
-+- mux
++	if (of_property_read_bool(np, "index-plus-one"))
++		clk_mux_flags |= CLK_MUX_INDEX_ONE;
++	if (of_property_read_bool(np, "index-bitmask"))
++		clk_mux_flags |= CLK_MUX_INDEX_BIT;
++	if (of_property_read_bool(np, "high-word-mask"))
++		clk_mux_flags |= CLK_MUX_HIWORD_MASK;
++	if (of_property_read_bool(np, "read-only"))
++		clk_mux_flags |= CLK_MUX_READ_ONLY;
 +
-+  Required properties:
-+  - compatible : shall be "mux-clock"
-+  - reg : offset of the register
-+  - #clock-cells : from common clock binding; shall be set to 0
-+  - clocks : from common clock binding; the parent clocks
-+  - clock-mux-shift : position of the mux field inside the register
-+  - clock-mux-width : width of the mux field in bits
++	return clk_register_mux_table(
++		NULL, clk_name, parents, num_parents, 0, reg,
++		shift, width, clk_mux_flags, NULL, lock);
++}
 +
-+  Optional properties:
-+  - clock-output-names : from common clock binding
-+  - read-only : set if the muxer should not be writable
-+  - index-plus-one : set if the clock index should be offset by one
-+  - index-bitmask : set if the mux field is a bit mask
-+  - high-word-mask : set if the high word is a write mask
++static struct clk *gate_clock_probe(
++	struct device_node *np, void __iomem *reg, spinlock_t *lock)
++{
++	u8 clk_gate_flags = 0;
++	const char *clk_name;
++	u32 bit = 0;
 +
-+- divider
++	clk_name = np->name;
++	of_property_read_string(np, "clock-output-names", &clk_name);
 +
-+  Required properties:
-+  - compatible : shall be "divider-clock"
-+  - reg : offset of the register
-+  - #clock-cells : from common clock binding; shall be set to 0
-+  - clocks : from common clock binding; the parent clock
-+  - clock-div-shift : position of the divider field inside the register
-+  - clock-div-width : width of the divider field in bits
++	if (of_property_read_u32(np, "clock-gate-bit", &bit) || bit > 31)
++		return ERR_PTR(-EINVAL);
 +
-+  Optional properties:
-+  - clock-output-names : from common clock binding
-+  - clock-mult-shift : position of the multiplier field inside the register
-+  - clock-mult-width : width of the multiplier field in bits
-+  - read-only : set if the divider should not be writable
-+  - divider-plus-one : set if the divider should be offset by one
++	if (of_property_read_bool(np, "high-word-mask"))
++		clk_gate_flags |= CLK_GATE_HIWORD_MASK;
 +
-+  Optional properties only supported without multiplier:
-+  - divider-power-two : if set the divisor is 2 raised to the value read from
-+			the hardware register
-+  - divider-allow-zero : set to allow setting the divider to zero
-+  - high-word-mask : set if the high word is a write mask
++	return clk_register_gate(
++		NULL, clk_name, of_clk_get_parent_name(np, 0), 0, reg,
++		bit, clk_gate_flags, lock);
++}
 +
-+Example:
-+	clkctrl@8ABC0000 {
-+		compatible = "mmio-clock-controller";
-+		reg = <0x8ABC0000 0x10>;
++static struct clk *divider_clock_probe(
++	struct device_node *np, void __iomem *reg, spinlock_t *lock)
++{
++	u8 clk_divider_flags = 0;
++	const char *clk_name;
++	u32 div_shift = 0, div_width = 0;
++	u32 mul_shift = 0, mul_width = 0;
 +
-+		#address-cells = <1>;
-+		#size-cells = <0>;
++	clk_name = np->name;
++	of_property_read_string(np, "clock-output-names", &clk_name);
 +
-+		pll: pll {
-+			compatible = "divider-clock";
-+			reg = <0>;
++	of_property_read_u32(np, "clock-div-shift", &div_shift);
++	of_property_read_u32(np, "clock-div-width", &div_width);
++	of_property_read_u32(np, "clock-mult-shift", &mul_shift);
++	of_property_read_u32(np, "clock-mult-width", &mul_width);
 +
-+			clock-names = "external-oscillator";
-+			clocks = <&ext_osc>;
++	if (div_shift > 31 || div_width > 31 ||
++	    mul_shift > 31 || mul_width > 31)
++		return ERR_PTR(-EINVAL);
 +
-+			#clock-cells = <0>;
-+			clock-output-names = "pll";
++	if (mul_width && div_width) {
++		if (of_property_read_bool(np, "read-only"))
++			clk_divider_flags |= CLK_FRACTIONAL_DIVIDER_READ_ONLY;
++		if (of_property_read_bool(np, "divider-plus-one"))
++			clk_divider_flags |=
++				CLK_FRACTIONAL_DIVIDER_DIVISOR_PLUS_ONE;
 +
-+			clock-mult-shift = <0>;
-+			clock-mult-width = <10>;
++		return clk_register_fractional_divider(
++			NULL, clk_name, of_clk_get_parent_name(np, 0), 0, reg,
++			mul_shift, mul_width, div_shift, div_width,
++			clk_divider_flags, lock);
++	} else if (div_width) {
++		if (of_property_read_bool(np, "read-only"))
++			clk_divider_flags |= CLK_DIVIDER_READ_ONLY;
++		if (!of_property_read_bool(np, "divider-plus-one"))
++			clk_divider_flags |= CLK_DIVIDER_ONE_BASED;
++		if (of_property_read_bool(np, "divider-power-of-two"))
++			clk_divider_flags |= CLK_DIVIDER_POWER_OF_TWO;
++		if (of_property_read_bool(np, "divider-allow-zero"))
++			clk_divider_flags |= CLK_DIVIDER_ALLOW_ZERO;
++		if (of_property_read_bool(np, "high-word-mask"))
++			clk_divider_flags |= CLK_DIVIDER_HIWORD_MASK;
++		if (of_property_read_bool(np, "divider-roud-closest"))
++			clk_divider_flags |= CLK_DIVIDER_ROUND_CLOSEST;
 +
-+			clock-div-shift = <10>;
-+			clock-div-width = <6>;
-+		};
++		return clk_register_divider(
++			NULL, clk_name, of_clk_get_parent_name(np, 0), 0, reg,
++			div_shift, div_width, clk_divider_flags, lock);
++	} else {
++		of_err(np, "Unsupported mode\n");
++		return ERR_PTR(-EINVAL);
++	}
++}
 +
-+		pll_bypass: pll_bypass {
-+			compatible = "mux-clock";
-+			reg = <0>;
++const struct of_device_id clk_mmio_controller_matches[] = {
++	{
++		.compatible = "mux-clock",
++		.data = mux_clock_probe,
++	},
++	{
++		.compatible = "gate-clock",
++		.data = gate_clock_probe,
++	},
++	{
++		.compatible = "divider-clock",
++		.data = divider_clock_probe,
++	},
++	{ }
++};
 +
-+			clock-names = "pll", "external-oscillator";
-+			clocks = <&pll>, <&ext_osc>;
++static void __init mmio_clock_controller_register(struct device_node *np)
++{
++	const struct of_device_id *match;
++	struct device_node *child;
++	mmio_clock_probe_t probe;
++	unsigned int count = 0;
++	void __iomem *base;
++	spinlock_t *lock;
++	struct clk *clk;
++	u32 reg;
++	int err;
 +
-+			#clock-cells = <0>;
-+			clock-output-names = "pll-bypass";
++	lock = kzalloc(sizeof(*lock), GFP_KERNEL);
++	if (!lock)
++		return;
++	spin_lock_init(lock);
 +
-+			clock-mux-shift = <16>;
-+			clock-mux-width = <1>;
-+		};
++	base = of_iomap(np, 0);
++	if (!base) {
++		of_err(np, "failed to get IO memory\n");
++		kfree(lock);
++		return;
++	}
 +
-+		clk1: pll_gate {
-+			compatible = "gate-clock";
-+			reg = <0>;
++	for_each_available_child_of_node(np, child) {
++		match = of_match_node(clk_mmio_controller_matches, child);
++		if (!match)
++			continue;
 +
-+			clock-names = "pll-bypass";
-+			clocks = <&pll_bypass>;
++		if (of_property_read_u32(child, "reg", &reg)) {
++			of_warn(child, "the reg property is missing!\n");
++			continue;
++		}
 +
-+			#clock-cells = <0>;
-+			clock-output-names = "clk1";
++		probe = match->data;
++		clk = probe(child, base + reg, lock);
++		if (IS_ERR(clk)) {
++			of_err(child, "failed to register clock\n");
++			continue;
++		}
 +
-+			clock-gate-bit = <17>;
-+		};
-+	};
++		err = of_clk_add_provider(child, of_clk_src_simple_get, clk);
++		if (err) {
++			clk_unregister(clk);
++			of_err(child, "failed to add clock provider\n");
++		}
++		count += 1;
++	}
++
++	if (count == 0) {
++		iounmap(base);
++		kfree(lock);
++	}
++}
++CLK_OF_DECLARE(clk_generic, "mmio-clock-controller",
++		mmio_clock_controller_register);
 -- 
 2.0.0
 
