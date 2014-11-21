@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758899AbaKUQfg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:35:36 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:63041 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755084AbaKUQff (ORCPT
+	id S1758906AbaKUQgW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:36:22 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:42593 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755442AbaKUQgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:35:35 -0500
+	Fri, 21 Nov 2014 11:36:21 -0500
+Message-ID: <546F6A05.9080600@gmail.com>
+Date: Fri, 21 Nov 2014 11:36:21 -0500
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1416546149-24799-7-git-send-email-gregkh@linuxfoundation.org>
-References: <1416546149-24799-1-git-send-email-gregkh@linuxfoundation.org> <1416546149-24799-7-git-send-email-gregkh@linuxfoundation.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 21 Nov 2014 08:35:11 -0800
-Message-ID: <CALCETrW-RkhKa4n7X1HoPgmSuLV4V8YQ=FaSYVJ1YsHS=pJCSQ@mail.gmail.com>
-Subject: Re: kdbus: add node and filesystem implementation
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Mack <daniel@zonque.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>
-Content-Type: text/plain; charset=UTF-8
+To: Kees Cook <keescook@chromium.org>
+CC: Andy Lutomirski <luto@amacapital.net>, Will Drewry <wad@chromium.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 7/9] seccomp: Replace smp_read_barrier_depends() with
+ lockless_dereference()
+References: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>	<1416582363-20661-8-git-send-email-bobby.prani@gmail.com> <CAGXu5j+voSykTQ1sCh9+a8XuA-uhSKn1iNkEPX2bap0g4kK9PA@mail.gmail.com>
+In-Reply-To: <CAGXu5j+voSykTQ1sCh9+a8XuA-uhSKn1iNkEPX2bap0g4kK9PA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 9:02 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> From: Daniel Mack <daniel@zonque.org>
+
+On 11/21/2014 11:33 AM, Kees Cook wrote:
+> On Fri, Nov 21, 2014 at 7:06 AM, Pranith Kumar <bobby.prani@gmail.com> wrote:
+>> Recently lockless_dereference() was added which can be used in place of
+>> hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
+>>
+>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>> ---
+>>  kernel/seccomp.c | 7 +++----
+>>  1 file changed, 3 insertions(+), 4 deletions(-)
+> Thanks!
 >
-> kdbusfs is a filesystem that will expose a fresh kdbus domain context
-> each time it is mounted. Per mount point, there will be a 'control'
-> node, which can be used to create buses. fs.c contains the
-> implementation of that pseudo-fs. Exported inodes of 'file' type have
-> their i_fop set to either kdbus_handle_control_ops or
-> kdbus_handle_ep_ops, depending on their type. The actual dispatching
-> of file operations is done from handle.c
+> Acked-by: Kees Cook <keescook@chromium.org>
 >
-> node.c is an implementation of a kdbus object that has an id and
-> children, organized in an R/B tree. The tree is used by the filesystem
-> code for lookup and iterator functions, and to deactivate children
-> once the parent is deactivated. Every inode exported by kdbusfs is
-> backed by a kdbus_node, hence it is embedded in struct kdbus_ep,
-> struct kdbus_bus and struct kdbus_domain.
+> Do you need me to carry this patch in the seccomp tree, or will
+> someone else be taking your entire series?
 >
-> Signed-off-by: Daniel Mack <daniel@zonque.org>
-> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-> Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
+> -Kees
 
+Please take this patch individually into your tree. There are discussions about the other patches and I will drop the accepted patches and iterate for the next version.
 
-> +
-> +static struct file_system_type fs_type = {
-> +       .name           = KBUILD_MODNAME "fs",
-> +       .owner          = THIS_MODULE,
-> +       .mount          = fs_super_mount,
-> +       .kill_sb        = fs_super_kill,
-> +};
+Thanks!
 
-Does this want something like:
+>> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+>> index 4ef9687..3729b06 100644
+>> --- a/kernel/seccomp.c
+>> +++ b/kernel/seccomp.c
+>> @@ -175,17 +175,16 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
+>>   */
+>>  static u32 seccomp_run_filters(struct seccomp_data *sd)
+>>  {
+>> -       struct seccomp_filter *f = ACCESS_ONCE(current->seccomp.filter);
+>>         struct seccomp_data sd_local;
+>>         u32 ret = SECCOMP_RET_ALLOW;
+>> +       /* Make sure cross-thread synced filter points somewhere sane. */
+>> +       struct seccomp_filter *f =
+>> +                       lockless_dereference(current->seccomp.filter);
+>>
+>>         /* Ensure unexpected behavior doesn't result in failing open. */
+>>         if (unlikely(WARN_ON(f == NULL)))
+>>                 return SECCOMP_RET_KILL;
+>>
+>> -       /* Make sure cross-thread synced filter points somewhere sane. */
+>> -       smp_read_barrier_depends();
+>> -
+>>         if (!sd) {
+>>                 populate_seccomp_data(&sd_local);
+>>                 sd = &sd_local;
+>> --
+>> 1.9.1
+>>
+>
+>
 
-.fs_flags = FS_USERNS_MOUNT
-
-This design may have the annoying property that, if a namespace-based
-sandbox wants to use kdbus itself, it will need to proxy anything from
-the parent that it wants to use.
-
-Is there a good reason why individual *busses* don't show up in the
-filesystem?  If they did, maybe they could be bind-mounted or
-otherwise arranged to cross namespace boundaries.
-
---Andy
