@@ -1,76 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493AbaKUQNk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:13:40 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:64532 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932099AbaKUQNi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:13:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <546F606D.40407@oracle.com>
-References: <1416546149-24799-1-git-send-email-gregkh@linuxfoundation.org>
-	<1416546149-24799-7-git-send-email-gregkh@linuxfoundation.org>
-	<546F606D.40407@oracle.com>
-Date: Fri, 21 Nov 2014 17:13:26 +0100
-Message-ID: <CANq1E4QkXv9Ak6eT+NZPsy+5nTGKE8oypLvdr97cFcvmtigS_A@mail.gmail.com>
-Subject: Re: kdbus: add node and filesystem implementation
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, ebiederm@xmission.com,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
+	id S932536AbaKUQNr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:13:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39006 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932473AbaKUQNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 11:13:45 -0500
+Date: Fri, 21 Nov 2014 10:13:08 -0600
+From: Seth Jennings <sjenning@redhat.com>
+To: Miroslav Benes <mbenes@suse.cz>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
         Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Daniel Mack <daniel@zonque.org>, Djalal Harouni <tixxdz@opendz.org>
-Content-Type: text/plain; charset=UTF-8
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
+Message-ID: <20141121161308.GA11339@cerebellum.variantweb.net>
+References: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
+ <1416522580-5593-3-git-send-email-sjenning@redhat.com>
+ <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz>
+ <alpine.LNX.2.00.1411211542180.27891@pobox.suse.cz>
+ <20141121150041.GA26264@treble.redhat.com>
+ <alpine.LNX.2.00.1411211637020.27891@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1411211637020.27891@pobox.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Fri, Nov 21, 2014 at 04:46:32PM +0100, Miroslav Benes wrote:
+> On Fri, 21 Nov 2014, Josh Poimboeuf wrote:
+> 
+> > On Fri, Nov 21, 2014 at 03:44:35PM +0100, Miroslav Benes wrote:
+> > > On Fri, 21 Nov 2014, Jiri Kosina wrote:
+> > > 
+> > > [...]
+> > > 
+> > > > [ ... snip ... ]
+> > > > > +static int klp_init_patch(struct klp_patch *patch)
+> > > > > +{
+> > > > > +	int ret;
+> > > > > +
+> > > > > +	mutex_lock(&klp_mutex);
+> > > > > +
+> > > > > +	/* init */
+> > > > > +	patch->state = LPC_DISABLED;
+> > > > > +
+> > > > > +	/* sysfs */
+> > > > > +	ret = kobject_init_and_add(&patch->kobj, &klp_ktype_patch,
+> > > > > +				   klp_root_kobj, patch->mod->name);
+> > > > > +	if (ret)
+> > > > > +		return ret;
+> > > > 
+> > > > klp_mutex is leaked locked here.
+> > > > 
+> > > > > +
+> > > > > +	/* create objects */
+> > > > > +	ret = klp_init_objects(patch);
+> > > > > +	if (ret) {
+> > > > > +		kobject_put(&patch->kobj);
+> > > > > +		return ret;
+> > > > 
+> > > > And here as well.
+> > > > 
+> > > > All in all, this is looking very good to me. I think we are really close 
+> > > > to having a code that all the parties would agree with. Thanks everybody,
+> > > 
+> > > The leaking is my fault. I missed that somehow during rebasing.
+> > > 
+> > > Seth, could you please fix it in v4? 
+> > 
+> > Is it necessary to grab the mutex at the beginning of klp_init_patch?  I
+> > think we only need it when adding it to the global list at the end of
+> > the function.
+> 
+> I think it's not necessary now after thinking about that. It could happen 
+> that init values could be written twice to some patch structure if 
+> klp_register_patch would be called twice. But it should not corrupt 
+> anything and adding to the global list is protected. However I think we 
+> should define what is protected by klp_mutex and comment it somewhere near 
+> the mutex definition (if only the klp_patches list is protected or 
+> something more (in the future)).
 
-On Fri, Nov 21, 2014 at 4:55 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> On 11/21/2014 12:02 AM, Greg Kroah-Hartman wrote:
->> +static struct dentry *fs_dir_iop_lookup(struct inode *dir,
->> +                                     struct dentry *dentry,
->> +                                     unsigned int flags)
->> +{
->> +     struct dentry *dnew = NULL;
->> +     struct kdbus_node *parent;
->> +     struct kdbus_node *node;
->> +     struct inode *inode;
->> +
->> +     parent = kdbus_node_from_dentry(dentry->d_parent);
->> +     if (!kdbus_node_acquire(parent))
->> +             return NULL;
->> +
->> +     /* returns reference to _acquired_ child node */
->> +     node = kdbus_node_find_child(parent, dentry->d_name.name);
->> +     if (node) {
->> +             dentry->d_fsdata = node;
->> +             inode = fs_inode_get(dir->i_sb, node);
->> +             if (IS_ERR(inode))
->> +                     dnew = ERR_CAST(inode);
->> +             else
->> +                     dnew = d_materialise_unique(dentry, inode);
->
-> d_materialise_unique() is gone in Al's fs tree:
->
-> [mandatory]
->         d_materialise_unique() is gone; d_splice_alias() does everything you
->         need now.  Remember that they have opposite orders of arguments ;-/
+I'll fix it up for v4, moving the mutex just around the list_add() and
+adding a comment about what is protected by the mutex.
 
-That was actually pushed after we prepared v2, so I haven't seen it
-yet. I now rebased on top of vfs.git#for-next, with
-d_materialise_unique() -> d_splice_alias(). Thanks for the hint!
+Seth
 
-> Maybe it's worth basing your git tree on top of Al's rather than a random
-> -rc, since it's now a filesystem?
-
-Sure, sounds good.
-
-Thanks
-David
+> 
+> Mira
+> --
+> To unsubscribe from this list: send the line "unsubscribe live-patching" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
