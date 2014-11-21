@@ -1,136 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758795AbaKUQA3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:00:29 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:56331 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758442AbaKUQA0 (ORCPT
+	id S1758789AbaKUQDh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:03:37 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:59320 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758510AbaKUQDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:00:26 -0500
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Lior Amsalem <alior@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        devicetree@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCHv3 03/16] irqchip: irq-armada-370-xp: suspend/resume support
-Date: Fri, 21 Nov 2014 17:00:00 +0100
-Message-Id: <1416585613-2113-4-git-send-email-thomas.petazzoni@free-electrons.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416585613-2113-1-git-send-email-thomas.petazzoni@free-electrons.com>
-References: <1416585613-2113-1-git-send-email-thomas.petazzoni@free-electrons.com>
+	Fri, 21 Nov 2014 11:03:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141121155519.GB8568@twin.jikos.cz>
+References: <danieru.dressler@gmail.com>
+	<1415767389-29722-1-git-send-email-danieru.dressler@gmail.com>
+	<20141121155519.GB8568@twin.jikos.cz>
+Date: Sat, 22 Nov 2014 01:03:32 +0900
+Message-ID: <CAGC3nLApxMmbSmPc9WvQ5Uh0prrCY7qzcMABaKs_FcYKdUKCpw@mail.gmail.com>
+Subject: Re: [PATCH] Btrfs: ctree: reduce args where only fs_info used
+From: Daniel Dressler <danieru.dressler@gmail.com>
+To: dsterba@suse.cz, Daniel Dressler <danieru.dressler@gmail.com>,
+        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        "open list:BTRFS FILE SYSTEM" <linux-btrfs@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds suspend/resume support to the irqchip driver used on
-Armada XP platforms (amongst others). It does so by adding a set of
-suspend/resume syscore_ops, that will respectively save and restore
-the necessary registers to ensure interrupts continue to work after
-resume.
+Ah thanks David for looking at this.
 
-It is worth mentioning that the affinity is lost during a
-suspend/resume cycle, because when a secondary CPU is brought
-off-line, all interrupts that are assigned to this CPU in terms of
-affinity gets re-assigned to a still running CPU. Therefore, right
-before entering suspend, all interrupts are assigned to the boot CPU.
+Sorry for the thin paragraphs my vim was warming too early about long
+lines. I will reformat it to break at 74 chars.
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org
----
- drivers/irqchip/irq-armada-370-xp.c | 52 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 52 insertions(+)
+No problem, I'll redo everything so it is one function per patch. Now
+fair warning: there are about 102 functions to cleanup. I was a bit
+worried that many patches would cause too much maintainer overhead but
+it is no problem for me. Only a few functions have dependecies on
+other functions needing cleanup. Thus there will be some small patch
+series for those function sets. A big benefit of one function one
+patch is that extent-io.c will no longer be a 34 function monster
+patch.
 
-diff --git a/drivers/irqchip/irq-armada-370-xp.c b/drivers/irqchip/irq-armada-370-xp.c
-index 3e238cd..4ec137b 100644
---- a/drivers/irqchip/irq-armada-370-xp.c
-+++ b/drivers/irqchip/irq-armada-370-xp.c
-@@ -26,6 +26,7 @@
- #include <linux/of_pci.h>
- #include <linux/irqdomain.h>
- #include <linux/slab.h>
-+#include <linux/syscore_ops.h>
- #include <linux/msi.h>
- #include <asm/mach/arch.h>
- #include <asm/exception.h>
-@@ -66,6 +67,7 @@
- static void __iomem *per_cpu_int_base;
- static void __iomem *main_int_base;
- static struct irq_domain *armada_370_xp_mpic_domain;
-+static u32 doorbell_mask_reg;
- #ifdef CONFIG_PCI_MSI
- static struct irq_domain *armada_370_xp_msi_domain;
- static DECLARE_BITMAP(msi_used, PCI_MSI_DOORBELL_NR);
-@@ -474,6 +476,54 @@ armada_370_xp_handle_irq(struct pt_regs *regs)
- 	} while (1);
- }
- 
-+static int armada_370_xp_mpic_suspend(void)
-+{
-+	doorbell_mask_reg = readl(per_cpu_int_base +
-+				  ARMADA_370_XP_IN_DRBEL_MSK_OFFS);
-+	return 0;
-+}
-+
-+static void armada_370_xp_mpic_resume(void)
-+{
-+	int nirqs;
-+	irq_hw_number_t irq;
-+
-+	/* Re-enable interrupts */
-+	nirqs = (readl(main_int_base + ARMADA_370_XP_INT_CONTROL) >> 2) & 0x3ff;
-+	for (irq = 0; irq < nirqs; irq++) {
-+		struct irq_data *data;
-+		int virq;
-+
-+		virq = irq_linear_revmap(armada_370_xp_mpic_domain, irq);
-+		if (virq == 0)
-+			continue;
-+
-+		if (irq != ARMADA_370_XP_TIMER0_PER_CPU_IRQ)
-+			writel(irq, per_cpu_int_base +
-+			       ARMADA_370_XP_INT_CLEAR_MASK_OFFS);
-+		else
-+			writel(irq, main_int_base +
-+			       ARMADA_370_XP_INT_SET_ENABLE_OFFS);
-+
-+		data = irq_get_irq_data(virq);
-+		if (!irqd_irq_disabled(data))
-+			armada_370_xp_irq_unmask(data);
-+	}
-+
-+	/* Reconfigure doorbells for IPIs and MSIs */
-+	writel(doorbell_mask_reg,
-+	       per_cpu_int_base + ARMADA_370_XP_IN_DRBEL_MSK_OFFS);
-+	if (doorbell_mask_reg & IPI_DOORBELL_MASK)
-+		writel(0, per_cpu_int_base + ARMADA_370_XP_INT_CLEAR_MASK_OFFS);
-+	if (doorbell_mask_reg & PCI_MSI_DOORBELL_MASK)
-+		writel(1, per_cpu_int_base + ARMADA_370_XP_INT_CLEAR_MASK_OFFS);
-+}
-+
-+struct syscore_ops armada_370_xp_mpic_syscore_ops = {
-+	.suspend	= armada_370_xp_mpic_suspend,
-+	.resume		= armada_370_xp_mpic_resume,
-+};
-+
- static int __init armada_370_xp_mpic_of_init(struct device_node *node,
- 					     struct device_node *parent)
- {
-@@ -530,6 +580,8 @@ static int __init armada_370_xp_mpic_of_init(struct device_node *node,
- 					armada_370_xp_mpic_handle_cascade_irq);
- 	}
- 
-+	register_syscore_ops(&armada_370_xp_mpic_syscore_ops);
-+
- 	return 0;
- }
- 
--- 
-2.1.0
+Thank you David, I'll redo all these patches.
 
+Is there any rate limiting I should be doing? I don't want to flood
+the list with burst of dozen plus patches, or is that an okay volume?
+
+Daniel
+
+2014-11-22 0:55 GMT+09:00 David Sterba <dsterba@suse.cz>:
+> On Wed, Nov 12, 2014 at 01:43:09PM +0900, Daniel Dressler wrote:
+>> This patch is part of a larger project to cleanup
+>> btrfs's internal usage of struct btrfs_root. Many
+>> functions take btrfs_root only to grab a pointer
+>> to fs_info.
+>
+> Thanks for picking up the project.
+>
+> A mere formality, can you please justify the paragraphs to 74 chars?
+>
+> --
+> This patch is part of a larger project to cleanup btrfs's internal usage
+> of struct btrfs_root. Many functions take btrfs_root only to grab a
+> pointer to fs_info.
+> --
+>
+>> This patch does not address the two functions in
+>> ctree.c (insert_ptr, and split_item) which only
+>> use root for BUG_ONs in ctree.c
+>>
+>> This patch affects the following functions:
+>>   1) fixup_low_keys
+>>   2) btrfs_set_item_key_safe
+>
+> Please send one patch per function change, unless there are more that
+> are somehow entangled that it would make it hard to separate.
