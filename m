@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758745AbaKUPfQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:35:16 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51727 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758399AbaKUPfO (ORCPT
+	id S1758631AbaKUPgC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:36:02 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:39389 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755434AbaKUPf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:35:14 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pm >> Linux PM mailing list" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL] cpuidle: A few improvements for ARM cpuidle via DT
-Date: Fri, 21 Nov 2014 16:56:22 +0100
-Message-ID: <17509116.2bjC4d8bef@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <546C6DEB.8060204@linaro.org>
-References: <546C6DEB.8060204@linaro.org>
+	Fri, 21 Nov 2014 10:35:59 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CAN+gG=F5AENtv0a-sK3WmvYLdVUWEyteXce1avX7+eRSeOAswQ@mail.gmail.com>
+References: <1416422480-3241-1-git-send-email-mathieu.magnaudet@enac.fr>
+	<CAN+gG=GN4dwXr_qEHMfMddGHkMKECZMUwTM+xbNmY_gibthLmA@mail.gmail.com>
+	<alpine.LNX.2.00.1411201421100.4454@pobox.suse.cz>
+	<CAN+gG=F5AENtv0a-sK3WmvYLdVUWEyteXce1avX7+eRSeOAswQ@mail.gmail.com>
+Date: Fri, 21 Nov 2014 10:35:58 -0500
+Message-ID: <CAN+gG=FNK2ormxrFSw=k13iJvkacbzgkfuLbNHBp4cf2KFVK5A@mail.gmail.com>
+Subject: Re: [PATCH] hid-multitouch: Add quirk for VTL touch panels
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Mathieu Magnaudet <mathieu.magnaudet@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 19, 2014 11:16:11 AM Daniel Lezcano wrote:
-> 
-> Hi Rafael,
-> 
-> this pull request, based on 3.18-rc5, contains a set of changes from 
-> Lorenzo Pieralisi.
-> 
->   * Added a 'status' definition flag in the DT to specify the 
-> unsupported firmware idle states and ignore those states in the parsing 
-> code when initializing the cpuidle driver
-> 
->   * Added an idle state description in the DT. As the idle states are 
-> not standardized on ARM, the description gives information about the 
-> idle state
-> 
->   * Removed duplicate error message in the arm64 cpuidle drivers
-> 
-> Thanks !
-> 
->    -- Daniel
-> 
-> 
-> The following changes since commit fc14f9c1272f62c3e8d01300f52467c0d9af50f9:
-> 
->    Linux 3.18-rc5 (2014-11-16 16:36:20 -0800)
-> 
-> are available in the git repository at:
-> 
->    http://git.linaro.org/git-ro/people/daniel.lezcano/linux.git cpuidle/3.19
-> 
-> for you to fetch changes up to 18f95a3640dbf421ab9532e517070a0c1cd4d582:
-> 
->    drivers: cpuidle: Remove cpuidle-arm64 duplicate error messages 
-> (2014-11-19 10:16:28 +0100)
+On Thu, Nov 20, 2014 at 10:27 AM, Benjamin Tissoires
+<benjamin.tissoires@gmail.com> wrote:
+> On Thu, Nov 20, 2014 at 8:21 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+>> On Wed, 19 Nov 2014, Benjamin Tissoires wrote:
+>>
+>>> though this patch works for this particular device, I just thought at
+>>> something which may solve the problem in a different way. I asked
+>>> Mathieu to test the different solution, so I'd rather you to wait for
+>>> final confirmation before merging this patch.
+>>
+>> Thanks for the heads up, I am putting this patch on hold until further
+>> notice from you or Mathieu.
+>>
+>
+> Mathieu confirmed this morning that using hid_hw_raw_request instead
+> of hid_hw_request while _setting_ the input_mode works for this
+> particular touchscreen. So I think we will simply switch to use this
+> sync operation instead of relying on the async one. We will need to
+> test this change a little bit, but it should be safe for BT and I2C at
+> least.
+>
+> So, yes, we will drop this patch and have a better one in the next few
+> days. Thanks for holding this one :)
+>
 
-Pulled, but I had a conflict with one patch from you I'd already queued up for
-3.19-rc1.
+Actually, later tests showed that this was still required. I have a
+comment on the patch (see the other mail), so, please, Jiri, wait for
+the v2 :)
 
-Can you please have a look at my bleeding-edge branch and check if I resolved
-the conflict correctly?
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Cheers,
+Benjamin
