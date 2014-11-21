@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256AbaKULai (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 06:30:38 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36450 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758225AbaKULah (ORCPT
+	id S1755458AbaKULdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 06:33:06 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:49749 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175AbaKULdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 06:30:37 -0500
-Message-ID: <546F224E.2080106@arm.com>
-Date: Fri, 21 Nov 2014 11:30:22 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Fri, 21 Nov 2014 06:33:04 -0500
+From: Hans-Peter Jansen <hpj@urpla.net>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-unionfs@vger.kernel.org
+Subject: Re: [GIT PULL] overlay filesystem fixes for 3.18
+Date: Fri, 21 Nov 2014 12:32:54 +0100
+Message-ID: <1962959.JkOx4gJGaG@xrated>
+User-Agent: KMail/4.14.3 (Linux/3.11.10-21-desktop; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20141120164531.GB3596@tucsk>
+References: <20141120164531.GB3596@tucsk>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
-References: <546E1771.4030201@arm.com> <546E93DC.8010902@huawei.com> <alpine.DEB.2.11.1411210233250.6439@nanos> <546F140B.1050607@arm.com> <alpine.DEB.2.11.1411211142051.6439@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411211142051.6439@nanos>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:IJtElC0Ypu+sW+g4U7MjxujSFJ6v5FeOTuq1/ZC+2Ia
+ vhJtbMW3WHDwxzZm4b43TKXxj3bBg8uxyY2F8LxP5Om84aWHoe
+ +OnfNYwbLhBjR5IwT5/Gx08l8O9+jY4NPGd7GLKcPVCV4b1uTH
+ GtXj8esSmxosSepb/6Traic2aDogzcKINFoqX8exO75KM5iUIk
+ 7OD9g3To38456np6RJc6Ygn+GwDq+WeAtPkgxTB2GEjtqPuaQm
+ h2IIIasW9U+OZ+t0DlL9PRS4PaqHWCntbg+G9JbgiLFCE/p3ew
+ p7n8S/YqhUQl6jwt176+HOlJuiS2sYl2Gl4OcyremsQ9YKbfg=
+ =
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/11/14 10:49, Thomas Gleixner wrote:
-> Marc,
+Dear Miklos,
+
+On Donnerstag, 20. November 2014 17:45:31 Miklos Szeredi wrote:
 > 
-> On Fri, 21 Nov 2014, Marc Zyngier wrote:
->> On 21/11/14 01:46, Thomas Gleixner wrote:
->>> So the real question is:
->>>
->>>    What is the association level requirement to properly identify the
->>>    irqdomain for a specific device on any given architecture with and
->>>    without IOMMU, interrupt redirection etc.
->>>
->>> To be honest: I don't know.
->>>
->>> My gut feeling tells me that it's at the device level, but I really
->>> leave that decision to the experts in that field.
->>
->> Given the above requirement (single device associated to DMAR), I can
->> see two possibilities:
->> - we represent DMAR as a single PCI bus: feels a bit artificial
->> - we move the MSI domain to the device, as you suggested.
->>
->> The second one seems a lot more attractive to me.
-> 
-> And that's very useful if you want to support MSI on non PCI
-> devices.
-> 
->> Also, it is not clear to me what is the advantage of getting rid of the
->> MSI controller. By doing so, we loose an important part of the topology
->> information (the irq domain is another level of abstraction).
-> 
-> That was probably my misunderstanding of the msi controller. I had the
-> impression it's just there to expose the MSI properties of a device,
-> i.e. a magic wrapper which can be replaced by the MSI irqdomain work.
-> 
-> If that handles other information as well, then it's probably a
-> misnomer to begin with.
+> The biggest change is to rename the filesystem from "overlayfs" to
+> "overlay". This will allow legacy overlayfs to be easily carried by distros
+> alongside the new mainline one.
 
-At the moment, it serves multiple purpose:
-- MSI configuration via setup_irq/teardown_irq: this is what most 32bit
-ARM system are using (it has been introduced last year for that very
-purpose)
-- PCI controller vs MSI hw matching: both arm and arm64 are using this
-to associate the PCI controller with the matching MSI hw, using the
-device tree (msi-controller and msi-parent properties in DT, of_node
-field in the msi_controller structure).
-- associated irq_domain (I've added that bit).
+Would you kindly give a firm elaboration of this rename? 
 
-I expect setup_irq and co to disappear at some point, once all the users
-have been converted to stacked domains. The matching information is
-harder to let go though. But that could be a structure that doesn't have
-to be inflicted on everyone, if we can go from:
+Why would a distro kernel maintainer want to keep the external overlayfs 
+patches together with the now in kernel module?
 
-pci-device -> msi-controller -> irq-domain
+Isn't it enough to drop the external patches from distro kernels in order to 
+use it successfully or are there any semantic changes hidden that an admin 
+should know about?
 
-to
+BTW: congrats to all involved parties. A layered filesystem finally arrived in 
+the Linux kernel! This is a quantum leap for creative system architects.
 
-pci-device -> irq-domain -> dt-topology-information
+Cheers,
+Pete
 
-Thoughts?
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+proud user of aufs (and formerly unionfs) based fat diskless systems since 
+about a decade.
