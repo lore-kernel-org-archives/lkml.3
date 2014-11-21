@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787AbaKUW4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 17:56:42 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:33192 "EHLO mail.ispras.ru"
+	id S1752672AbaKUXCG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 18:02:06 -0500
+Received: from mout.web.de ([212.227.15.3]:59131 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752713AbaKUW4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 17:56:40 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, xen-devel@lists.xenproject.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] xen-netback: do not report success if xenvif_alloc() fails
-Date: Sat, 22 Nov 2014 01:56:28 +0300
-Message-Id: <1416610588-19816-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.9.1
+	id S1751677AbaKUXCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 18:02:04 -0500
+Message-ID: <546FC455.8090702@users.sourceforge.net>
+Date: Sat, 22 Nov 2014 00:01:41 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Fenghua Yu <fenghua.yu@intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] [IA64] Deletion of unnecessary checks before the function
+ call "unw_remove_unwind_table"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:ThZIE9w7+xaEo4I2rmExrbihB/L8dbB2G5CBkbb1EQ+Z+pNiZy4
+ vI7ohlLmSrWz7mRB/pijxMUVo+8pGZnQ1JHXv0jJ7ZW/QxAHTxZA9f64hZyxXFfp23STJpi
+ ADPKEr2VKbMRDQjUbpjzS/uvomxxg5g56SeeOYzFkccVnyEXOAXzPEb3+9BjPO0TbFnUYxY
+ H6FYnALmpVOoFW9WO/Znw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If xenvif_alloc() failes, netback_probe() reports success as well as
-"online" uevent is emitted. It does not make any sense, but it just
-misleads users.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 23:57:28 +0100
 
-The patch implements propagation of error code if xenvif creation fails.
+The unw_remove_unwind_table() function performs also input parameter validation.
+Thus the test around the call is not needed.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+This issue was detected by using the Coccinelle software.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 ---
- drivers/net/xen-netback/xenbus.c | 15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ arch/ia64/kernel/module.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
-index 4e56a27f9689..fab0d4b42f58 100644
---- a/drivers/net/xen-netback/xenbus.c
-+++ b/drivers/net/xen-netback/xenbus.c
-@@ -39,7 +39,7 @@ struct backend_info {
- static int connect_rings(struct backend_info *be, struct xenvif_queue *queue);
- static void connect(struct backend_info *be);
- static int read_xenbus_vif_flags(struct backend_info *be);
--static void backend_create_xenvif(struct backend_info *be);
-+static int backend_create_xenvif(struct backend_info *be);
- static void unregister_hotplug_status_watch(struct backend_info *be);
- static void set_backend_state(struct backend_info *be,
- 			      enum xenbus_state state);
-@@ -352,7 +352,9 @@ static int netback_probe(struct xenbus_device *dev,
- 	be->state = XenbusStateInitWait;
- 
- 	/* This kicks hotplug scripts, so do it immediately. */
--	backend_create_xenvif(be);
-+	err = backend_create_xenvif(be);
-+	if (err)
-+		goto fail;
- 
- 	return 0;
- 
-@@ -397,19 +399,19 @@ static int netback_uevent(struct xenbus_device *xdev,
- }
- 
- 
--static void backend_create_xenvif(struct backend_info *be)
-+static int backend_create_xenvif(struct backend_info *be)
+diff --git a/arch/ia64/kernel/module.c b/arch/ia64/kernel/module.c
+index 24603be..30ff27d 100644
+--- a/arch/ia64/kernel/module.c
++++ b/arch/ia64/kernel/module.c
+@@ -946,8 +946,6 @@ module_finalize (const Elf_Ehdr *hdr, const Elf_Shdr *sechdrs, struct module *mo
+ void
+ module_arch_cleanup (struct module *mod)
  {
- 	int err;
- 	long handle;
- 	struct xenbus_device *dev = be->dev;
- 
- 	if (be->vif != NULL)
--		return;
-+		return 0;
- 
- 	err = xenbus_scanf(XBT_NIL, dev->nodename, "handle", "%li", &handle);
- 	if (err != 1) {
- 		xenbus_dev_fatal(dev, err, "reading handle");
--		return;
-+		return (err < 0) ? err : -EINVAL;
- 	}
- 
- 	be->vif = xenvif_alloc(&dev->dev, dev->otherend_id, handle);
-@@ -417,10 +419,11 @@ static void backend_create_xenvif(struct backend_info *be)
- 		err = PTR_ERR(be->vif);
- 		be->vif = NULL;
- 		xenbus_dev_fatal(dev, err, "creating interface");
--		return;
-+		return err;
- 	}
- 
- 	kobject_uevent(&dev->dev.kobj, KOBJ_ONLINE);
-+	return 0;
+-	if (mod->arch.init_unw_table)
+-		unw_remove_unwind_table(mod->arch.init_unw_table);
+-	if (mod->arch.core_unw_table)
+-		unw_remove_unwind_table(mod->arch.core_unw_table);
++	unw_remove_unwind_table(mod->arch.init_unw_table);
++	unw_remove_unwind_table(mod->arch.core_unw_table);
  }
- 
- static void backend_disconnect(struct backend_info *be)
 -- 
-1.9.1
+2.1.3
 
