@@ -1,117 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758271AbaKULtC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 06:49:02 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:54824 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754592AbaKULs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 06:48:59 -0500
-X-IronPort-AV: E=Sophos;i="5.07,429,1413244800"; 
-   d="scan'208";a="193667428"
-Date: Fri, 21 Nov 2014 11:48:33 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <gregkh@linuxfoundation.org>, David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
-        <torvalds@linux-foundation.org>, <vinod.koul@intel.com>,
-        <dmaengine@vger.kernel.org>, <bhelgaas@google.com>,
-        <jejb@parisc-linux.org>, <deller@gmx.de>,
-        <linux-parisc@vger.kernel.org>, <iommu@lists.linux-foundation.org>,
-        <airlied@linux.ie>, <dri-devel@lists.freedesktop.org>,
-        <alexander.deucher@amd.com>, <christian.koenig@amd.com>,
-        <linux@arm.linux.org.uk>, <linux-mips@linux-mips.org>,
-        <ralf@linux-mips.org>, <linux-arm-kernel@lists.infradead.org>,
-        <dwmw2@infradead.org>
-Subject: Re: [RFC] add a struct page* parameter to dma_map_ops.unmap_page
-In-Reply-To: <alpine.DEB.2.02.1411111644490.26318@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1411211147450.12596@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1411111644490.26318@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755473AbaKUL5p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 06:57:45 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:62911 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189AbaKUL5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 06:57:44 -0500
+Message-ID: <546F288D.2040705@gmail.com>
+Date: Fri, 21 Nov 2014 19:57:01 +0800
+From: Yijing Wang <wangyijing0307@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+To: Marc Zyngier <marc.zyngier@arm.com>, Yijing Wang <wangyijing@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
+References: <546E1771.4030201@arm.com> <546E93DC.8010902@huawei.com> <546F0FB6.3050404@arm.com>
+In-Reply-To: <546F0FB6.3050404@arm.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Nov 2014, Stefano Stabellini wrote:
-> Hi all,
-> I am writing this email to ask for your advice.
-> 
-> On architectures where dma addresses are different from physical
-> addresses, it can be difficult to retrieve the physical address of a
-> page from its dma address.
-> 
-> Specifically this is the case for Xen on arm and arm64 but I think that
-> other architectures might have the same issue.
-> 
-> Knowing the physical address is necessary to be able to issue any
-> required cache maintenance operations when unmap_page,
-> sync_single_for_cpu and sync_single_for_device are called.
-> 
-> Adding a struct page* parameter to unmap_page, sync_single_for_cpu and
-> sync_single_for_device would make Linux dma handling on Xen on arm and
-> arm64 much easier and quicker.
-> 
-> I think that other drivers have similar problems, such as the Intel
-> IOMMU driver having to call find_iova and walking down an rbtree to get
-> the physical address in its implementation of unmap_page.
-> 
-> Callers have the struct page* in their hands already from the previous
-> map_page call so it shouldn't be an issue for them.  A problem does
-> exist however: there are about 280 callers of dma_unmap_page and
-> pci_unmap_page. We have even more callers of the dma_sync_single_for_*
-> functions.
-> 
-> 
-> 
-> Is such a change even conceivable? How would one go about it?
-> 
-> I think that Xen would not be the only one to gain from it, but I would
-> like to have a confirmation from others: given the magnitude of the
-> changes involved I would actually prefer to avoid them unless multiple
-> drivers/archs/subsystems could really benefit from them.
 
-Given the lack of interest from the community, I am going to drop this
-idea.
+在 2014/11/21 18:11, Marc Zyngier 写道:
+> On 21/11/14 01:22, Yijing Wang wrote:
+>> On 2014/11/21 0:31, Marc Zyngier wrote:
+>>> Bjorn, Yijing,
+>>>
+>>> I've just realized that patch c167caf8d174 (PCI/MSI: Remove useless
+>>> bus->msi assignment) completely breaks MSI on arm64 when using the new
+>>> MSI stacked domain:
+>> Sorry, this is my first part to refactor MSI related code, now
+>> how to get pci msi_controller depends arch functions(pcibios_msi_controller() or
+>> arch_setup_msi_irq()), we are working on generic pci_host_bridge, after that,
+>> we could eventually eliminate MSI arch functions and find pci dev 's msi controller
+>> by pci_host_bridge->get_msi_controller().
+>>
+>> Marc, could you tell me what pci host driver in your test platform ?
+> I'm using pci-host-generic (with a couple of patches to help it fit the
+> new "generic pci" infrastructure).
+>
+> This lives at:
+> git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git
+> irq/arm64-pci
 
+Thanks, I would have a look at it.
 
+>
+> Thanks,
+>
+> 	M.
 
-
-> Cheers,
-> 
-> Stefano
-> 
-> 
-> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-> index d5d3881..158a765 100644
-> --- a/include/linux/dma-mapping.h
-> +++ b/include/linux/dma-mapping.h
-> @@ -31,8 +31,9 @@ struct dma_map_ops {
->  			       unsigned long offset, size_t size,
->  			       enum dma_data_direction dir,
->  			       struct dma_attrs *attrs);
-> -	void (*unmap_page)(struct device *dev, dma_addr_t dma_handle,
-> -			   size_t size, enum dma_data_direction dir,
-> +	void (*unmap_page)(struct device *dev, struct page *page,
-> +			   dma_addr_t dma_handle, size_t size,
-> +			   enum dma_data_direction dir,
->  			   struct dma_attrs *attrs);
->  	int (*map_sg)(struct device *dev, struct scatterlist *sg,
->  		      int nents, enum dma_data_direction dir,
-> @@ -41,10 +42,10 @@ struct dma_map_ops {
->  			 struct scatterlist *sg, int nents,
->  			 enum dma_data_direction dir,
->  			 struct dma_attrs *attrs);
-> -	void (*sync_single_for_cpu)(struct device *dev,
-> +	void (*sync_single_for_cpu)(struct device *dev, struct page *page,
->  				    dma_addr_t dma_handle, size_t size,
->  				    enum dma_data_direction dir);
-> -	void (*sync_single_for_device)(struct device *dev,
-> +	void (*sync_single_for_device)(struct device *dev, struct page *page,
->  				       dma_addr_t dma_handle, size_t size,
->  				       enum dma_data_direction dir);
->  	void (*sync_sg_for_cpu)(struct device *dev,
-> 
