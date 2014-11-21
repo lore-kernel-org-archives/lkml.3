@@ -1,138 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152AbaKUAhZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 19:37:25 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:31886 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755788AbaKUAhX (ORCPT
+	id S1756976AbaKUAnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 19:43:25 -0500
+Received: from mga14.intel.com ([192.55.52.115]:26782 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755788AbaKUAnV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 19:37:23 -0500
-Message-ID: <546E892C.8000209@oracle.com>
-Date: Fri, 21 Nov 2014 08:37:00 +0800
-From: ethan zhao <ethan.zhao@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Thu, 20 Nov 2014 19:43:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,426,1413270000"; 
+   d="scan'208";a="625911922"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Ingo Molnar (mingo@redhat.com)" <mingo@redhat.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: RE: [PATCH 1/6] ACPI/EC: Introduce STARTED/STOPPED flags to replace
+ BLOCKED flag.
+Thread-Topic: [PATCH 1/6] ACPI/EC: Introduce STARTED/STOPPED flags to
+ replace BLOCKED flag.
+Thread-Index: AQHP9yVTyINIm6IIIUqyDtdpynBt3JxRS4XwgBarhsKAAOm2sIAAvi4AgAC134A=
+Date: Fri, 21 Nov 2014 00:42:55 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88026A4128@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1414988981.git.lv.zheng@intel.com>
+ <1AE640813FDE7649BE1B193DEA596E8802689778@SHSMSX101.ccr.corp.intel.com>
+ <20141118132328.GA27428@node.dhcp.inet.fi>
+ <4486101.LWS7CexbAj@vostro.rjw.lan>
+ <20141119121615.GA2514@node.dhcp.inet.fi>
+ <1AE640813FDE7649BE1B193DEA596E88026A3D69@SHSMSX101.ccr.corp.intel.com>
+ <20141120213348.GA13221@node.dhcp.inet.fi>
+In-Reply-To: <20141120213348.GA13221@node.dhcp.inet.fi>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: Linda Knippers <linda.knippers@hp.com>, viresh.kumar@linaro.org,
-        rjw@rjwysocki.net, corbet@lwn.net, dirk.j.brandewie@intel.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
-        brian.maly@oracle.com
-Subject: Re: [PATCH 1/3] intel_pstate: skip the driver if Sun server has ACPI
- _PPC method
-References: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com> <1416299826-15813-2-git-send-email-ethan.zhao@oracle.com> <546CFBEE.6090103@hp.com> <546E1BBE.7050906@intel.com>
-In-Reply-To: <546E1BBE.7050906@intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dirk,
+Hi, Shutemov
 
-On 2014/11/21 0:50, Dirk Brandewie wrote:
-> On 11/19/2014 12:22 PM, Linda Knippers wrote:
->> On 11/18/2014 3:37 AM, Ethan Zhao wrote:
->>> Oracle Sun X86 servers have dynamic power capping capability that 
->>> works via
->>> ACPI _PPC method etc, so skip loading this driver if Sun server has 
->>> ACPI _PPC
->>> enabled.
->>>
->>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
->>> ---
->>>   drivers/cpufreq/intel_pstate.c | 20 ++++++++++++++++++++
->>>   1 file changed, 20 insertions(+)
->>>
->>> diff --git a/drivers/cpufreq/intel_pstate.c 
->>> b/drivers/cpufreq/intel_pstate.c
->>> index 27bb6d3..5498eb0 100644
->>> --- a/drivers/cpufreq/intel_pstate.c
->>> +++ b/drivers/cpufreq/intel_pstate.c
->>> @@ -943,6 +943,21 @@ static bool intel_pstate_no_acpi_pss(void)
->>>       return true;
->>>   }
->>>
->>> +static bool intel_pstate_has_acpi_ppc(void)
->>> +{
->>> +    int i;
->>> +
->>> +    for_each_possible_cpu(i) {
->>> +        struct acpi_processor *pr = per_cpu(processors, i);
->>> +
->>> +        if (!pr)
->>> +            continue;
->>> +        if (acpi_has_method(pr->handle, "_PPC"))
->>> +            return true;
->>> +    }
->>> +    return false;
->>> +}
->>> +
->>>   struct hw_vendor_info {
->>>       u16  valid;
->>>       char oem_id[ACPI_OEM_ID_SIZE];
->>> @@ -952,6 +967,7 @@ struct hw_vendor_info {
->>>   /* Hardware vendor-specific info that has its own power management 
->>> modes */
->>>   static struct hw_vendor_info vendor_info[] = {
->>>       {1, "HP    ", "ProLiant"},
->>> +    {1, "ORACLE", ""},
->>>       {0, "", ""},
->>>   };
->>>
->>> @@ -969,12 +985,16 @@ static bool 
->>> intel_pstate_platform_pwr_mgmt_exists(void)
->>>               !strncmp(hdr.oem_table_id, v_info->oem_table_id, 
->>> ACPI_OEM_TABLE_ID_SIZE) &&
->>>               intel_pstate_no_acpi_pss())
->>>               return true;
->>> +        if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
->>> +            intel_pstate_has_acpi_ppc())
->>
->> We need try this on a few platforms to make sure this patch doesn't 
->> break the
->> HP platforms that may or may not need this driver, depending on the 
->> BIOS settings.
->>
->
-> It looks like HP systems would get swept up in this check too if they 
-> have _PPC
-    No , this patch checks the oem_id against 'ORACLE" first, will not 
-affect other vendors
-   even they have _PPC.
+> From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
+> Sent: Friday, November 21, 2014 5:34 AM
+> 
+> On Thu, Nov 20, 2014 at 02:20:53AM +0000, Zheng, Lv wrote:
+> > Since you have environment to trigger this.
+> > Could you also help to check if the fix can work?
+> > I've just sent them as RFC to this thread.
+> 
+> With these two patchse on top of my -next snapshot I still see the issue:
+> 
+> [    0.324119] ======================================================
+> [    0.324125] [ INFO: possible circular locking dependency detected ]
+> [    0.324132] 3.18.0-rc5-next-20141119-07477-g4c45e54745b2 #80 Not tainted
+> [    0.324138] -------------------------------------------------------
+> [    0.324144] swapper/3/0 is trying to acquire lock:
+> [    0.324149]  (&(&ec->lock)->rlock){-.....}, at: [<ffffffff814cb803>] acpi_ec_gpe_handler+0x21/0xfc
+> [    0.324165]
+> but task is already holding lock:
+> [    0.324171]  (&(*(&acpi_gbl_gpe_lock))->rlock){-.....}, at: [<ffffffff814c3b3e>] acpi_os_acquire_lock+0xe/0x10
+> [    0.324185]
+> which lock already depends on the new lock.
+> 
+> [    0.324193]
+> the existing dependency chain (in reverse order) is:
+> [    0.324200]
+> -> #1 (&(*(&acpi_gbl_gpe_lock))->rlock){-.....}:
+> [    0.324209]        [<ffffffff81158f0f>] lock_acquire+0xdf/0x2d0
+> [    0.324218]        [<ffffffff81b004c0>] _raw_spin_lock_irqsave+0x50/0x70
+> [    0.324228]        [<ffffffff814c3b3e>] acpi_os_acquire_lock+0xe/0x10
+> [    0.324235]        [<ffffffff814d9945>] acpi_enable_gpe+0x27/0x75
+> [    0.324244]        [<ffffffff814cc960>] acpi_ec_start+0x67/0x88
+> [    0.324251]        [<ffffffff81af4ca9>] ec_install_handlers+0x41/0xa4
+> [    0.324258]        [<ffffffff823e4134>] acpi_ec_ecdt_probe+0x1a9/0x1ea
+> [    0.324267]        [<ffffffff823e395e>] acpi_init+0x8b/0x26e
+> [    0.324275]        [<ffffffff81002148>] do_one_initcall+0xd8/0x210
+> [    0.324283]        [<ffffffff8239c1dc>] kernel_init_freeable+0x1f5/0x282
+> [    0.324293]        [<ffffffff81aea0fe>] kernel_init+0xe/0xf0
+> [    0.324300]        [<ffffffff81b011bc>] ret_from_fork+0x7c/0xb0
+> [    0.324307]
+> -> #0 (&(&ec->lock)->rlock){-.....}:
+> [    0.324315]        [<ffffffff811585af>] __lock_acquire+0x210f/0x2220
+> [    0.324323]        [<ffffffff81158f0f>] lock_acquire+0xdf/0x2d0
+> [    0.324330]        [<ffffffff81b004c0>] _raw_spin_lock_irqsave+0x50/0x70
+> [    0.324338]        [<ffffffff814cb803>] acpi_ec_gpe_handler+0x21/0xfc
+> [    0.324346]        [<ffffffff814d68e0>] acpi_ev_gpe_dispatch+0xb9/0x12e
+> [    0.324353]        [<ffffffff814d6a5a>] acpi_ev_gpe_detect+0x105/0x227
+> [    0.324360]        [<ffffffff814d8af5>] acpi_ev_sci_xrupt_handler+0x22/0x38
+> [    0.324368]        [<ffffffff814c2dae>] acpi_irq+0x16/0x31
+> [    0.324375]        [<ffffffff8116ecbf>] handle_irq_event_percpu+0x6f/0x540
+> [    0.324384]        [<ffffffff8116f1d1>] handle_irq_event+0x41/0x70
+> [    0.324392]        [<ffffffff81171ee6>] handle_fasteoi_irq+0x86/0x140
+> [    0.324399]        [<ffffffff81075a22>] handle_irq+0x22/0x40
+> [    0.324408]        [<ffffffff81b0436f>] do_IRQ+0x4f/0xf0
+> [    0.324416]        [<ffffffff81b02072>] ret_from_intr+0x0/0x1a
+> [    0.324423]        [<ffffffff8107e7a3>] default_idle+0x23/0x260
+> [    0.324430]        [<ffffffff8107f37f>] arch_cpu_idle+0xf/0x20
+> [    0.324438]        [<ffffffff8114a95b>] cpu_startup_entry+0x36b/0x5b0
+> [    0.324445]        [<ffffffff810a8d24>] start_secondary+0x1a4/0x1d0
+> [    0.324454]
+> other info that might help us debug this:
+> 
+> [    0.324462]  Possible unsafe locking scenario:
+> 
+> [    0.324468]        CPU0                    CPU1
+> [    0.324473]        ----                    ----
+> [    0.324477]   lock(&(*(&acpi_gbl_gpe_lock))->rlock);
+> [    0.324483]                                lock(&(&ec->lock)->rlock);
+> [    0.324490]                                lock(&(*(&acpi_gbl_gpe_lock))->rlock);
+> [    0.324498]   lock(&(&ec->lock)->rlock);
+> [    0.324503]
 
->
-> What about extending the hw_vendor_info struct to include whether _PSS or
-  Except refer to ACPI DSDT, I don't know how to fill such info.
-> _PPC should be done for the platform since it appears that oracle and HP
-> have implemented similar functionality using two different methods.
-   Maybe Linda could answer this whether HP also has _PPC and should be 
-wept out.
-   But that doesn't happen with on the same box at the same time.
+Let me convert this into call stack:
+	CPU0			 			CPU1
+	 acpi_irq
++GPE		acpi_ev_gpe_dispatch
+							acpi_bus_init
+								acpi_ec_ecdt_probe
+									acpi_install_gpe_handler()
+						+EC			acpi_ec_start
+						+GPE				acpi_enable_gpe
+						-GPE
+						-EC
++EC			acpi_ec_gpe_handler
+-EC
+-GPE
 
-   Thanks,
-   Ethan
->
->
->> I don't suppose you tested on a ProLiant too?
->>
->> -- ljk
->>
->>> +            return true;
->>>       }
->>>
->>>       return false;
->>>   }
->>>   #else /* CONFIG_ACPI not enabled */
->>>   static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { 
->>> return false; }
->>> +static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
->>>   #endif /* CONFIG_ACPI */
->>>
->>>   static int __init intel_pstate_init(void)
->>>
->>
->
+I used + to indicate spin_lock() and - to indicate spin_unlock().
+GPE to indicate acpi_gbl_gpe_lock, EC to indicate ec->lock.
 
+Are you sure you still can see this?
+Please help to check the [RFC PATCH 2] to see if the following code is exactly applied:
++						/*
++						 * There is no protection around the namespace node
++						 * and the GPE handler to ensure a safe destruction
++						 * because:
++						 * 1. The namespace node is expected to always
++						 *    exist after loading a table.
++						 * 2. The GPE handler is expected to be flushed by
++						 *    acpi_os_wait_events_complete() before the
++						 *    destruction.
++						 */
++						acpi_os_release_lock
++						    (acpi_gbl_gpe_lock, flags);
++						int_status |=
++						    gpe_handler_info->
++						    address(gpe_device,
++							    gpe_number,
++							    gpe_handler_info->
++							    context);
+
+This is where acpi_ec_gpe_handler() will be invoked.
+
++						flags =
++						    acpi_os_acquire_lock
++						    (acpi_gbl_gpe_lock);
+
+So when acpi_ec_gpe_handler() is invoked, GPE lock is release.
+There should be no reason you can see this warning, because the call stack will be:
+
+	CPU0			 			CPU1
+	CPU0			 			CPU1
+	 acpi_irq
++GPE		acpi_ev_gpe_dispatch
+							acpi_bus_init
+								acpi_ec_ecdt_probe
+									acpi_install_gpe_handler()
+						+EC			acpi_ec_start
+						+GPE				acpi_enable_gpe
+						-GPE
+						-EC
+-GPE
++EC			acpi_ec_gpe_handler
+-EC
++GPE
+-GPE
+
+When acpi_ec_gpe_handler() is invoked, there is no acpi_gbl_gpe_lock locked.
+So I really cannot understand your test result.
+Could you confirm this again?
+
+Maybe I just don't understand how this warning is generated, and this is just a kind of warning that we can ignore.
+Let me ask Peter and Ingo to check if this is just a limitation of lockdep.
+
+Thanks and best regards
+-Lv
+
+>  *** DEADLOCK ***
+> 
+> [    0.324510] 1 lock held by swapper/3/0:
+> [    0.324514]  #0:  (&(*(&acpi_gbl_gpe_lock))->rlock){-.....}, at: [<ffffffff814c3b3e>] acpi_os_acquire_lock+0xe/0x10
+> [    0.324528]
+> stack backtrace:
+> [    0.324535] CPU: 3 PID: 0 Comm: swapper/3 Not tainted 3.18.0-rc5-next-20141119-07477-g4c45e54745b2 #80
+> [    0.324543] Hardware name: LENOVO 3460CC6/3460CC6, BIOS G6ET93WW (2.53 ) 02/04/2013
+> [    0.324550]  ffffffff82cae120 ffff88011e2c3ba8 ffffffff81af484e 0000000000000011
+> [    0.324560]  ffffffff82cae120 ffff88011e2c3bf8 ffffffff81af3361 0000000000000001
+> [    0.324569]  ffff88011e2c3c58 ffff88011e2c3bf8 ffff8801193f92b0 ffff8801193f9b00
+> [    0.324579] Call Trace:
+> [    0.324582]  <IRQ>  [<ffffffff81af484e>] dump_stack+0x4c/0x6e
+> [    0.324593]  [<ffffffff81af3361>] print_circular_bug+0x2b2/0x2c3
+> [    0.324601]  [<ffffffff811585af>] __lock_acquire+0x210f/0x2220
+> [    0.324609]  [<ffffffff81158f0f>] lock_acquire+0xdf/0x2d0
+> [    0.324616]  [<ffffffff814cb803>] ? acpi_ec_gpe_handler+0x21/0xfc
+> [    0.324624]  [<ffffffff81b004c0>] _raw_spin_lock_irqsave+0x50/0x70
+> [    0.324631]  [<ffffffff814cb803>] ? acpi_ec_gpe_handler+0x21/0xfc
+> [    0.324640]  [<ffffffff814e08f7>] ? acpi_hw_write+0x4b/0x52
+> [    0.324646]  [<ffffffff814cb803>] acpi_ec_gpe_handler+0x21/0xfc
+> [    0.324653]  [<ffffffff814d68e0>] acpi_ev_gpe_dispatch+0xb9/0x12e
+> [    0.324660]  [<ffffffff814d6a5a>] acpi_ev_gpe_detect+0x105/0x227
+> [    0.324668]  [<ffffffff814d8af5>] acpi_ev_sci_xrupt_handler+0x22/0x38
+> [    0.324675]  [<ffffffff814c2dae>] acpi_irq+0x16/0x31
+> [    0.324683]  [<ffffffff8116ecbf>] handle_irq_event_percpu+0x6f/0x540
+> [    0.324691]  [<ffffffff8116f1d1>] handle_irq_event+0x41/0x70
+> [    0.324698]  [<ffffffff81171e88>] ? handle_fasteoi_irq+0x28/0x140
+> [    0.324705]  [<ffffffff81171ee6>] handle_fasteoi_irq+0x86/0x140
+> [    0.324712]  [<ffffffff81075a22>] handle_irq+0x22/0x40
+> [    0.324719]  [<ffffffff81b0436f>] do_IRQ+0x4f/0xf0
+> [    0.324725]  [<ffffffff81b02072>] common_interrupt+0x72/0x72
+> [    0.324731]  <EOI>  [<ffffffff810b8986>] ? native_safe_halt+0x6/0x10
+> [    0.324743]  [<ffffffff81154efd>] ? trace_hardirqs_on+0xd/0x10
+> [    0.324750]  [<ffffffff8107e7a3>] default_idle+0x23/0x260
+> [    0.324757]  [<ffffffff8107f37f>] arch_cpu_idle+0xf/0x20
+> [    0.324763]  [<ffffffff8114a95b>] cpu_startup_entry+0x36b/0x5b0
+> [    0.324771]  [<ffffffff810a8d24>] start_secondary+0x1a4/0x1d0
+> 
+> 
+> >
+> > Thanks and best regards
+> > -Lv
+> >
+> > > From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
+> > > Sent: Wednesday, November 19, 2014 8:16 PM
+> > > To: Rafael J. Wysocki
+> > > Cc: Zheng, Lv; Wysocki, Rafael J; Brown, Len; Lv Zheng; linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org
+> > > Subject: Re: [PATCH 1/6] ACPI/EC: Introduce STARTED/STOPPED flags to replace BLOCKED flag.
+> > >
+> > > On Tue, Nov 18, 2014 at 10:20:11PM +0100, Rafael J. Wysocki wrote:
+> > > > On Tuesday, November 18, 2014 03:23:28 PM Kirill A. Shutemov wrote:
+> > > > > On Wed, Nov 05, 2014 at 02:52:36AM +0000, Zheng, Lv wrote:
+> > > >
+> > > > [cut]
+> > > >
+> > > > >
+> > > > > Here's lockdep warning I see on -next:
+> > > >
+> > > > Is patch [1/6] sufficient to trigger this or do you need all [1-4/6]?
+> > >
+> > > I only saw it on -next. I've tried to apply patches directly on -rc5 and
+> > > don't see the warning. I don't have time for proper bisecting, sorry.
+> > >
+> > > --
+> > >  Kirill A. Shutemov
+> 
+> --
+>  Kirill A. Shutemov
