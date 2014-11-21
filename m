@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569AbaKUEAX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 23:00:23 -0500
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:39198 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756837AbaKUEAS (ORCPT
+	id S1757823AbaKUECp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 23:02:45 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:49409 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757301AbaKUECo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 23:00:18 -0500
+	Thu, 20 Nov 2014 23:02:44 -0500
+X-Originating-IP: 50.43.41.112
+Date: Thu, 20 Nov 2014 20:02:34 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: leizhen <thunder.leizhen@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Zefan Li <lizefan@huawei.com>, Xinwei Hu <huxinwei@huawei.com>
+Subject: Re: Fwd: [PATCH 1/1] init:add boot option "initramfs_packnum"
+Message-ID: <20141121040233.GB4993@thin>
+References: <1415670134-8016-1-git-send-email-thunder.leizhen@huawei.com>
+ <546EB5A2.5050604@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <20141120222650.GC7987@google.com>
-References: <1416413091-13452-1-git-send-email-tomasz.nowicki@linaro.org>
-	<1416413091-13452-7-git-send-email-tomasz.nowicki@linaro.org>
-	<2360791.Aj7tQ0nCJ3@wuerfel>
-	<20141120222650.GC7987@google.com>
-Date: Thu, 20 Nov 2014 21:00:17 -0700
-Message-ID: <CAL-B5D3MqUa-=bzebo12DbZfczss2-MdGwQ8WKTbFH8H2AENXg@mail.gmail.com>
-Subject: Re: [PATCH 6/6] pci, acpi: Share ACPI PCI config space accessors.
-From: Myron Stowe <myron.stowe@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>, catalin.marinas@arm.com,
-        will.deacon@arm.com, lorenzo.pieralisi@arm.com, wangyijing@huawei.com,
-        hanjun.guo@linaro.org, Liviu.Dudau@arm.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, rjw@rjwysocki.net,
-        linaro-acpi@lists.linaro.org, linux-pci <linux-pci@vger.kernel.org>,
-        x86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546EB5A2.5050604@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 3:26 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Wed, Nov 19, 2014 at 05:19:20PM +0100, Arnd Bergmann wrote:
->> On Wednesday 19 November 2014 17:04:51 Tomasz Nowicki wrote:
->> > +/*
->> > + * raw_pci_read/write - ACPI PCI config space accessors.
->> > + *
->> > + * ACPI spec defines MMCFG as the way we can access PCI config space,
->> > + * so let MMCFG be default (__weak).
->> > + *
->> > + * If platform needs more fancy stuff, should provides its own implementation.
->> > + */
->> > +int __weak raw_pci_read(unsigned int domain, unsigned int bus,
->> > +                       unsigned int devfn, int reg, int len, u32 *val)
->> > +{
->> > +       return pci_mmcfg_read(domain, bus, devfn, reg, len, val);
->> > +}
->> > +
->> > +int __weak raw_pci_write(unsigned int domain, unsigned int bus,
->> > +                        unsigned int devfn, int reg, int len, u32 val)
->> > +{
->> > +       return pci_mmcfg_write(domain, bus, devfn, reg, len, val);
->> > +}
->> > +
->> >
->>
->> I think it would be better to avoid __weak functions here, as they tend
->> to be hard to follow when trying to understand the code.
->
-> That's interesting.  I would have said exactly the opposite -- I think the
-> extra Kconfiggery is harder to follow than weak/strong functions :)
->
-> But consistency is better than my personal opinion.  Is there a consensus
-> that we should use the Kconfig strategy instead of __weak?
+On Fri, Nov 21, 2014 at 11:46:42AM +0800, leizhen wrote:
+> During the development phase, we usually enlarge initrd-end to reserve more
+> memory than the initfs zip exactly occupied. Then we can easily add or delete
+> files in zip package, without generate fdt again and again. But unfortunately,
+> if too many zeros followed initfs zip, it will take a long time to break the
+> loop.
+> 
+> while (!message && len) {
+>         ... ...
+>         if (!*buf) {
+> 		buf++;
+>                 ... ...
+>                 continue;
+>         }
+> 
+> So, use the boot option "initramfs_packnum" to specify how many zip packages
+> in each initrd area. When the specified number of packages decompressed in one
+> area, immediately terminate the loop. Have no impact on current use by default.
 
-I too find weak/strong functions easier to follow than "Kconfiggery" (nice term
-invention there).
+This seems like the wrong approach to me.  Rather than changing Linux to
+ignore excess data in the initramfs, could you change your bootloader to
+pass the true length of the initramfs to Linux?  Even if you reserve
+extra space, if you know how much data you've actually included, you
+could have your bootloader pass that information to Linux.
 
->
->> How about using a Kconfig symbol like this:
->>
->> #ifdef CONFIG_ARCH_RAW_PCI_READWRITE
->> int raw_pci_read(unsigned int domain, unsigned int bus, unsigned int devfn,
->>                  int reg, int len, u32 *val);
->> int raw_pci_write(unsigned int domain, unsigned int bus, unsigned int devfn,
->>                   int reg, int len, u32 val);
->> #else
->> static inline int raw_pci_read(unsigned int domain, unsigned int bus,
->>                              unsigned int devfn, int reg, int len, u32 *val)
->> {
->>       return pci_mmcfg_read(domain, bus, devfn, reg, len, val);
->> }
->>
->> static inline int raw_pci_write(unsigned int domain, unsigned int bus,
->>                                       unsigned int devfn, int reg, int len, u32 val)
->> {
->>        return pci_mmcfg_write(domain, bus, devfn, reg, len, val);
->> }
->> #endif
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+- Josh Triplett
