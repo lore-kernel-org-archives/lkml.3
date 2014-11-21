@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399AbaKUTrG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:47:06 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:52977 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368AbaKUTq7 (ORCPT
+	id S1752437AbaKUTrQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:47:16 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:38069 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366AbaKUTrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:46:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFw6w+pkG7fs7tBVm7jV_TjsnEyG5XDdk+Ghf5Af+ELUeA@mail.gmail.com>
-References: <alpine.DEB.2.11.1411202204030.3950@nanos>
-	<20141120221122.GA25393@htj.dyndns.org>
-	<alpine.DEB.2.11.1411202315230.3950@nanos>
-	<20141120230514.GB25393@htj.dyndns.org>
-	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
-	<20141120233920.GC25393@htj.dyndns.org>
-	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
-	<20141121162742.GB15461@htj.dyndns.org>
-	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
-	<CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
-	<20141121170805.GD30603@home.goodmis.org>
-	<CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
-	<CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
-	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
-	<CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
-	<20141121142301.564f7eb7@gandalf.local.home>
-	<CA+55aFw6w+pkG7fs7tBVm7jV_TjsnEyG5XDdk+Ghf5Af+ELUeA@mail.gmail.com>
-Date: Fri, 21 Nov 2014 11:46:57 -0800
-X-Google-Sender-Auth: Vzv1yDKP23nAW_2NAL-TPwu09Jk
-Message-ID: <CA+55aFwOL8thHWWLtuzXkriEH1mJDCQO=NUsMRPptDXc6HC4sg@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 21 Nov 2014 14:47:13 -0500
+Date: Fri, 21 Nov 2014 14:47:10 -0500 (EST)
+Message-Id: <20141121.144710.1431540256452223326.davem@davemloft.net>
+To: joestringer@nicira.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, pshelar@nicira.com,
+        dev@openvswitch.org
+Subject: Re: [PATCHv3 net] openvswitch: Don't validate IPv6 label masks.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1416434089-47062-1-git-send-email-joestringer@nicira.com>
+References: <1416434089-47062-1-git-send-email-joestringer@nicira.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 21 Nov 2014 11:47:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 11:34 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> So I kind of agree, but it wouldn't be my primary worry. My primary
-> worry is actually paravirt doing something insane.
+From: Joe Stringer <joestringer@nicira.com>
+Date: Wed, 19 Nov 2014 13:54:49 -0800
 
-Btw, on that tangent, does anybody actually care about paravirt any more?
+> When userspace doesn't provide a mask, OVS datapath generates a fully
+> unwildcarded mask for the flow by copying the flow and setting all bits
+> in all fields. For IPv6 label, this creates a mask that matches on the
+> upper 12 bits, causing the following error:
+> 
+> openvswitch: netlink: Invalid IPv6 flow label value (value=ffffffff, max=fffff)
+> 
+> This patch ignores the label validation check for masks, avoiding this
+> error.
+> 
+> Signed-off-by: Joe Stringer <joestringer@nicira.com>
+> ---
+> v3: Alternative approach.
+>     Was "openvswitch: Fix mask generation for IPv6 labels."
+> v2: OR lower 20 bits (upper 12 bits remain from earlier memdup)
 
-I'd love to start moving away from it. It makes a lot of the low-level
-code completely impossible to follow due to the random indirection
-through "native" vs "paravirt op table". Not just the page table
-handling, it's all over.
-
-Anybody who seriously does virtualization uses hw virtualization that
-is much better than it used to be. And the non-serious users aren't
-that performance-sensitive by definition.
-
-I note that the Fedora kernel config seems to include paravirt by
-default, so you get a lot of the crazy overheads..
-
-                   Linus
+Applied.
