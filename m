@@ -1,111 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831AbaKUXGK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 18:06:10 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:32998 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930AbaKUXGI (ORCPT
+	id S1752842AbaKUXHN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 18:07:13 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:61299 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677AbaKUXHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 18:06:08 -0500
+	Fri, 21 Nov 2014 18:07:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141121201415.GK4569@redhat.com>
-References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
- <544E1143.1080905@huawei.com> <20141029174607.GK19606@redhat.com>
- <CAFEAcA9JNVsT57Zgy96+cfdWBABE4_g4yJG7Te8Oa8ReXZqeRQ@mail.gmail.com> <20141121201415.GK4569@redhat.com>
-From: Peter Maydell <peter.maydell@linaro.org>
-Date: Fri, 21 Nov 2014 23:05:45 +0000
-Message-ID: <CAFEAcA9c7spP1wAqWFE4r=uZVyT2ZfZGZ2MJhjTCgfs5YiSONg@mail.gmail.com>
-Subject: Re: [Qemu-devel] [PATCH 00/17] RFC: userfault v2
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: zhanghailiang <zhang.zhanghailiang@huawei.com>,
-        Robert Love <rlove@google.com>, Dave Hansen <dave@sr71.net>,
-        Jan Kara <jack@suse.cz>, kvm-devel <kvm@vger.kernel.org>,
-        Neil Brown <neilb@suse.de>, Stefan Hajnoczi <stefanha@gmail.com>,
-        QEMU Developers <qemu-devel@nongnu.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>, Taras Glek <tglek@mozilla.com>,
-        Andrew Jones <drjones@redhat.com>, Juan Quintela <quintela@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        "Dr. David Alan Gilbert" <dgilbert@redhat.com>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Paolo Bonzini <pbonzini@redhat.com>, Keith Packard <keithp@keithp.com>,
-        Wenchao Xia <wenchaoqemu@gmail.com>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Minchan Kim <minchan@kernel.org>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mike Hommey <mh@glandium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Feiner <pfeiner@google.com>
+In-Reply-To: <20141121225508.GV5050@linux.vnet.ibm.com>
+References: <cover.1416604491.git.luto@amacapital.net> <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
+ <CALCETrXLq1y7e_dKFPgou-FKHB6Pu-r8+t-6Ds+8=va7anBWDA@mail.gmail.com>
+ <20141121220704.GU5050@linux.vnet.ibm.com> <CALCETrXVRqZ2fJJNOWLFzhE7wQvWejXbw0OUpcm6rt_UdFP6CA@mail.gmail.com>
+ <20141121225508.GV5050@linux.vnet.ibm.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 21 Nov 2014 15:06:48 -0800
+Message-ID: <CALCETrXgd=5+RFugdi4CdCOzULK8u+ku-EQaJvY6JhXAMEW7rQ@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST context
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 November 2014 20:14, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> Hi Peter,
->
-> On Wed, Oct 29, 2014 at 05:56:59PM +0000, Peter Maydell wrote:
->> On 29 October 2014 17:46, Andrea Arcangeli <aarcange@redhat.com> wrote:
->> > After some chat during the KVMForum I've been already thinking it
->> > could be beneficial for some usage to give userland the information
->> > about the fault being read or write
+On Fri, Nov 21, 2014 at 2:55 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Fri, Nov 21, 2014 at 02:19:17PM -0800, Andy Lutomirski wrote:
+>> On Fri, Nov 21, 2014 at 2:07 PM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> > On Fri, Nov 21, 2014 at 01:32:50PM -0800, Andy Lutomirski wrote:
+>> >> On Fri, Nov 21, 2014 at 1:26 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> >> > We currently pretend that IST context is like standard exception
+>> >> > context, but this is incorrect.  IST entries from userspace are like
+>> >> > standard exceptions except that they use per-cpu stacks, so they are
+>> >> > atomic.  IST entries from kernel space are like NMIs from RCU's
+>> >> > perspective -- they are not quiescent states even if they
+>> >> > interrupted the kernel during a quiescent state.
+>> >> >
+>> >> > Add and use ist_enter and ist_exit to track IST context.  Even
+>> >> > though x86_32 has no IST stacks, we track these interrupts the same
+>> >> > way.
+>> >>
+>> >> I should add:
+>> >>
+>> >> I have no idea why RCU read-side critical sections are safe inside
+>> >> __do_page_fault today.  It's guarded by exception_enter(), but that
+>> >> doesn't do anything if context tracking is off, and context tracking
+>> >> is usually off. What am I missing here?
+>> >
+>> > Ah!  There are three cases:
+>> >
+>> > 1.      Context tracking is off on a non-idle CPU.  In this case, RCU is
+>> >         still paying attention to CPUs running in both userspace and in
+>> >         the kernel.  So if a page fault happens, RCU will be set up to
+>> >         notice any RCU read-side critical sections.
+>> >
+>> > 2.      Context tracking is on on a non-idle CPU.  In this case, RCU
+>> >         might well be ignoring userspace execution: NO_HZ_FULL and
+>> >         all that.  However, as you pointed out, in this case the
+>> >         context-tracking code lets RCU know that we have entered the
+>> >         kernel, which means that RCU will again be paying attention to
+>> >         RCU read-side critical sections.
+>> >
+>> > 3.      The CPU is idle.  In this case, RCU is ignoring the CPU, so
+>> >         if we take a page fault when context tracking is off, life
+>> >         will be hard.  But the kernel is not supposed to take page
+>> >         faults in the idle loop, so this is not a problem.
 >>
->> ...I wonder if that would let us replace the current nasty
->> mess we use in linux-user to detect read vs write faults
->> (which uses a bunch of architecture-specific hacks including
->> in some cases "look at the insn that triggered this SEGV and
->> decode it to see if it was a load or a store"; see the
->> various cpu_signal_handler() implementations in user-exec.c).
+>> I guess so, as long as there are really no page faults in the idle loop.
 >
-> There's currently no plan to deliver to userland read access
-> notifications of a present page, simply because the task of the
-> userfaultfd is to handle the page fault in userland, but if the page
-> is mapped and readable it won't fault in the first place :). I just
-> mean it's not like gdb read watch.
+> As far as I know, there are not.  If there are, someone needs to let
+> me know!  ;-)
+>
+>> There are, however, machine checks in the idle loop, and maybe kprobes
+>> (haven't checked), so I think this patch might fix real bugs.
+>
+> If you can get ISTs from the idle loop, then the patch is needed.
+>
+>> > Just out of curiosity...  Can an NMI occur in IST context?  If it can,
+>> > I need to make rcu_nmi_enter() and rcu_nmi_exit() deal properly with
+>> > nested calls.
+>>
+>> Yes, and vice versa.  That code looked like it handled nesting
+>> correctly, but I wasn't entirely sure.
+>
+> It currently does not, please see below patch.  Are you able to test
+> nesting?  It would be really cool if you could do so -- I have no
+> way to test this patch.
 
-If it's mapped and readable-but-not-writable then it should still
-fault on write accesses, though? These are cases we currently get
-SEGV for, anyway.
+I can try.  It's sort of easy -- I'll put an int3 into do_nmi and add
+a fixup to avoid crashing.
 
-> Even if the region would be set to PROT_NONE it would still SEGV
-> without triggering an userfault (after all pte_present would still
-> true because the page is still mapped despite not being readable, so
-> in any case it wouldn't be considered a not-present page fault).
+What should I look for?  Should I try to force full nohz on and assert
+something?  I don't really know how to make full nohz work.
 
-Ah, I guess we have a terminology difference. I was considering
-"page fault" to mean (roughly) "anything that causes the CPU to
-take an exception on an attempted load/store" and expected that
-userfaultfd would notify userspace of any of those. (Well, not
-alignment faults, maybe, but I'm definitely surprised that
-access permission issues don't get reported the same way as
-page-completely-missing issues. In other words I was expecting
-that this was "everything previously reported via SIGSEGV or
-SIGBUS now comes via userfaultfd".)
+>
+>> Also, just to make sure: are we okay if rcu_nmi_enter() is called
+>> before exception_enter if context tracking is on and we came directly
+>> from userspace?
+>
+> If I understand correctly, this will result in context tracking invoking
+> rcu_user_enter(), which will result in the rcu_dynticks counter having an
+> odd value.  In that case, rcu_nmi_enter() will notice that RCU is already
+> paying attention to this CPU via its check of atomic_read(&rdtp->dynticks)
+> & 0x1), and will thus just return.  The matching rcu_nmi_exit() will
+> notice that the nesting count is zero, and will also just return.
+>
+> Thus, everything works in that case.
+>
+> In contrast, if rcu_nmi_enter() was invoked from the idle loop, it
+> would see that RCU is not paying attention to this CPU and that the
+> NMI nesting depth (which rcu_nmi_enter() increments) used to be zero.
+> It would then atomically increment rtdp->dynticks, forcing RCU to start
+> paying attention to this CPU.  The matching rcu_nmi_exit() will see
+> that the nesting count was non-zero, but became zero when decremented.
+> This will cause rcu_nmi_exit() to atomically increment rtdp->dynticks,
+> which will tell RCU to stop paying attention to this CPU.
+>
+>                                                         Thanx, Paul
+>
+> ------------------------------------------------------------------------
+>
+> rcu: Make rcu_nmi_enter() handle nesting
+>
+> Andy Lutomirski is introducing ISTs into x86, which from RCU's
+> viewpoint are NMIs.  Because ISTs and NMIs can nest, rcu_nmi_enter()
+> and rcu_nmi_exit() must now correctly handle nesting.  As luck would
+> have it, rcu_nmi_exit() handles nesting but rcu_nmi_enter() does not.
+> This patch therefore makes rcu_nmi_enter() handle nesting.
 
-> Temporarily removing/moving the page with remap_anon_pages shall be
-> much better than using PROT_NONE for this (or alternative syscall name
-> to differentiate it further from remap_file_pages, or equivalent
-> userfaultfd command if we decide to hide the pte/pmd mangling as
-> userfaultfd commands instead of adding new standalone syscalls).
+Thanks.  Should I add this to v5 of my series?
 
-We don't use PROT_NONE for the linux-user situation, we just use
-mprotect() to remove the PAGE_WRITE permission so it's still
-readable.
+--Andy
 
-I suspect actually linux-user would be better off implementing
-something like "if this is a page which we've mapped read-only
-because we translated code out of it, then go ahead and remap
-it r/w and throw away the translation and retry the access,
-otherwise report SEGV to the guest", because taking SEGVs shouldn't
-be a fast path in the guest binary. That would let us work without
-architecture-specific junk and without requiring new kernel
-features either. So you can ignore this whole tangent thread :-)
+>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index 8749f43f3f05..875421aff6e3 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -770,7 +770,8 @@ void rcu_nmi_enter(void)
+>         if (rdtp->dynticks_nmi_nesting == 0 &&
+>             (atomic_read(&rdtp->dynticks) & 0x1))
+>                 return;
+> -       rdtp->dynticks_nmi_nesting++;
+> +       if (rdtp->dynticks_nmi_nesting++ != 0)
+> +               return; /* Nested NMI/IST/whatever. */
+>         smp_mb__before_atomic();  /* Force delay from prior write. */
+>         atomic_inc(&rdtp->dynticks);
+>         /* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
+>
 
-thanks
--- PMM
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
