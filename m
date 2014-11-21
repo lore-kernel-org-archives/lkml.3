@@ -1,76 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476AbaKUVLz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 16:11:55 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59480 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017AbaKUVLy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 16:11:54 -0500
-Date: Fri, 21 Nov 2014 22:11:50 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <CA+55aFyt6q7Ed-SS9GeN8jeUZu6yNM14EGyH_8rn8AF2Vv37hg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1411212207150.6439@nanos>
-References: <alpine.DEB.2.11.1411202204030.3950@nanos> <CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com> <20141120233920.GC25393@htj.dyndns.org> <CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com> <20141121162742.GB15461@htj.dyndns.org>
- <CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com> <CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com> <20141121170805.GD30603@home.goodmis.org> <CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
- <CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com> <CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com> <CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com> <alpine.DEB.2.11.1411212049220.6439@nanos>
- <CA+55aFzvgxAMpP7kr9qrxyo82vSucQ5G+VByOgsgoyq6y5ExOA@mail.gmail.com> <alpine.DEB.2.11.1411212110320.6439@nanos> <CA+55aFyt6q7Ed-SS9GeN8jeUZu6yNM14EGyH_8rn8AF2Vv37hg@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1752543AbaKUVPU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 16:15:20 -0500
+Received: from mga02.intel.com ([134.134.136.20]:64873 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750822AbaKUVPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 16:15:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,432,1413270000"; 
+   d="scan'208";a="641401212"
+Date: Fri, 21 Nov 2014 13:14:53 -0800 (PST)
+From: Vikas Shivappa <vikas.shivappa@intel.com>
+X-X-Sender: vikas@vshiva-Udesk
+To: Borislav Petkov <bp@alien8.de>
+cc: Vikas Shivappa <vikas.shivappa@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tj@kernel.org, matt.flemming@intel.com, will.auld@intel.com,
+        peterz@infradead.org
+Subject: Re: [PATCH] x86: Intel Cache Allocation Technology support
+In-Reply-To: <20141121201520.GA5473@pd.tnic>
+Message-ID: <alpine.DEB.2.10.1411211313200.30781@vshiva-Udesk>
+References: <1416445539-24856-1-git-send-email-vikas.shivappa@linux.intel.com> <alpine.DEB.2.11.1411211224070.6439@nanos> <alpine.DEB.2.10.1411211123150.30781@vshiva-Udesk> <20141121201520.GA5473@pd.tnic>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014, Linus Torvalds wrote:
-> On Fri, Nov 21, 2014 at 12:16 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >
-> > I don't think that works on 32bit. See the magic in
-> > vmalloc_sync_one().
-> 
-> Heh. I guess we could just add a wrapper around this crap, and make it
-> very clear that the paravirt case is a horrible horrible hack.
-> 
-> Something like
-> 
->    #define set_one_pgd_entry(entry,pgdp) (pgdp)->pgd = (entry)
-> 
-> for the regular case, and then for paravirt we do something very
-> explicitly horrid, like
-> 
->    #ifdef CONFIG_PARAVIRT
->    #ifdef CONFIG_X86_32
->    // The pmd is the top-level page directory on non-PAE x86, nested
-> inside pgd/pud
->    #define set_one_pgd_entry(entry,pgdp) set_pmd((pmd_t *)(pgdp),
-> (pmd_t) { entry } )
->    #else
->    #define set_one_pgd_entry(entry, pgdp) do { set_pgd(pgdp, (pgd_t) {
-> entry });  arch_flush_lazy_mmu_mode(); } while (0)
->    #endif
-> 
-> because on x86-64, there seems to be that whole lazy_mode pv_ops
-> craziness (which I'm not at all convinced is needed here, but that's
-> what the current code does).
 
-I'm fine with that. I just think it's not horrid enough, but that can
-be fixed easily :)
+
+On Fri, 21 Nov 2014, Borislav Petkov wrote:
+
+> On Fri, Nov 21, 2014 at 12:00:27PM -0800, Vikas Shivappa wrote:
+>>>> +char hsw_brandstrs[5][64] = {
+>>>> +			"Intel(R) Xeon(R)  CPU E5-2658 v3  @  2.20GHz",
+>>>> +			"Intel(R) Xeon(R)  CPU E5-2648L v3  @  1.80GHz",
+>>>> +			"Intel(R) Xeon(R)  CPU E5-2628L v3  @  2.00GHz",
+>>>> +			"Intel(R) Xeon(R)  CPU E5-2618L v3  @  2.30GHz",
+>>>> +			"Intel(R) Xeon(R)  CPU E5-2608L v3  @  2.00GHz"
+>>>> +};
+>>>> +
+>>>> +#define cacheqe_for_each_child(child_cq, pos_css, parent_cq)		\
+>>>> +	css_for_each_child((pos_css),	\
+>>>> +	&(parent_cq)->css)
+>>>> +
+>>>> +#if CONFIG_CACHEQE_DEBUG
+>>>
+>>> We really do NOT need another config option for this. See above.
+>>>
+>>>> +/*DUMP the closid-cbm map.*/
+>>>
+>>> Wow that comment is really informative.
+>>>
+>>>> +static inline bool cqe_enabled(struct cpuinfo_x86 *c)
+>>>> +{
+>>>> +
+>>>> +	int i;
+>>>> +
+>>>> +	if (cpu_has(c, X86_FEATURE_CQE_L3))
+>>>> +		return true;
+>>>> +
+>>>> +	/*
+>>>> +	 * Hard code the checks and values for HSW SKUs.
+>>>> +	 * Unfortunately! have to check against only these brand name strings.
+>>>> +	 */
+>>>
+>>> You must be kidding.
+>>
+>> No. Will have a microcode version check as well in next patch after thats
+>> confirmed from h/w team
+>
+> Checking random brand strings? Please don't tell me those are not really
+> immutable either...
+>
+> And what happens with newer models appearing? Add more brand strings?
+> Lovely stuff, that.
+>
+> Well, since you're talking to the h/w team: can they give you some
+> immutable bit somewhere which you can check instead of looking at brand
+> strings? This'll be a sane solution, actually.
+>
+
+Yes , I did check for something like model stepping , not received anything yet. 
+will update in my next version.
 
 Thanks,
+Vikas
 
-	tglx
-
-
+> -- 
+> Regards/Gruss,
+>    Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+>
