@@ -1,154 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaKUWzQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 17:55:16 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:44894 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097AbaKUWzO (ORCPT
+	id S1752758AbaKUWzb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 17:55:31 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:37266 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613AbaKUWz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 17:55:14 -0500
-Date: Fri, 21 Nov 2014 14:55:08 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
- context
-Message-ID: <20141121225508.GV5050@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <cover.1416604491.git.luto@amacapital.net>
- <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
- <CALCETrXLq1y7e_dKFPgou-FKHB6Pu-r8+t-6Ds+8=va7anBWDA@mail.gmail.com>
- <20141121220704.GU5050@linux.vnet.ibm.com>
- <CALCETrXVRqZ2fJJNOWLFzhE7wQvWejXbw0OUpcm6rt_UdFP6CA@mail.gmail.com>
+	Fri, 21 Nov 2014 17:55:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXVRqZ2fJJNOWLFzhE7wQvWejXbw0OUpcm6rt_UdFP6CA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112122-8236-0000-0000-0000071C802C
+In-Reply-To: <alpine.DEB.2.11.1411212207150.6439@nanos>
+References: <alpine.DEB.2.11.1411202204030.3950@nanos>
+	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
+	<20141120233920.GC25393@htj.dyndns.org>
+	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
+	<20141121162742.GB15461@htj.dyndns.org>
+	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
+	<CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
+	<20141121170805.GD30603@home.goodmis.org>
+	<CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
+	<CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
+	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
+	<CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
+	<alpine.DEB.2.11.1411212049220.6439@nanos>
+	<CA+55aFzvgxAMpP7kr9qrxyo82vSucQ5G+VByOgsgoyq6y5ExOA@mail.gmail.com>
+	<alpine.DEB.2.11.1411212110320.6439@nanos>
+	<CA+55aFyt6q7Ed-SS9GeN8jeUZu6yNM14EGyH_8rn8AF2Vv37hg@mail.gmail.com>
+	<alpine.DEB.2.11.1411212207150.6439@nanos>
+Date: Fri, 21 Nov 2014 14:55:27 -0800
+X-Google-Sender-Auth: QcL9s9REuQDsKs6ZewsNSiYK3cU
+Message-ID: <CA+55aFyzg=vJqRwh2CsK8WD-E5nRPjdiasMaTBx6qygQhDrGLA@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: multipart/mixed; boundary=001a11c1edfe46f03505086657fc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 02:19:17PM -0800, Andy Lutomirski wrote:
-> On Fri, Nov 21, 2014 at 2:07 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Fri, Nov 21, 2014 at 01:32:50PM -0800, Andy Lutomirski wrote:
-> >> On Fri, Nov 21, 2014 at 1:26 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> >> > We currently pretend that IST context is like standard exception
-> >> > context, but this is incorrect.  IST entries from userspace are like
-> >> > standard exceptions except that they use per-cpu stacks, so they are
-> >> > atomic.  IST entries from kernel space are like NMIs from RCU's
-> >> > perspective -- they are not quiescent states even if they
-> >> > interrupted the kernel during a quiescent state.
-> >> >
-> >> > Add and use ist_enter and ist_exit to track IST context.  Even
-> >> > though x86_32 has no IST stacks, we track these interrupts the same
-> >> > way.
-> >>
-> >> I should add:
-> >>
-> >> I have no idea why RCU read-side critical sections are safe inside
-> >> __do_page_fault today.  It's guarded by exception_enter(), but that
-> >> doesn't do anything if context tracking is off, and context tracking
-> >> is usually off. What am I missing here?
-> >
-> > Ah!  There are three cases:
-> >
-> > 1.      Context tracking is off on a non-idle CPU.  In this case, RCU is
-> >         still paying attention to CPUs running in both userspace and in
-> >         the kernel.  So if a page fault happens, RCU will be set up to
-> >         notice any RCU read-side critical sections.
-> >
-> > 2.      Context tracking is on on a non-idle CPU.  In this case, RCU
-> >         might well be ignoring userspace execution: NO_HZ_FULL and
-> >         all that.  However, as you pointed out, in this case the
-> >         context-tracking code lets RCU know that we have entered the
-> >         kernel, which means that RCU will again be paying attention to
-> >         RCU read-side critical sections.
-> >
-> > 3.      The CPU is idle.  In this case, RCU is ignoring the CPU, so
-> >         if we take a page fault when context tracking is off, life
-> >         will be hard.  But the kernel is not supposed to take page
-> >         faults in the idle loop, so this is not a problem.
-> 
-> I guess so, as long as there are really no page faults in the idle loop.
+--001a11c1edfe46f03505086657fc
+Content-Type: text/plain; charset=UTF-8
 
-As far as I know, there are not.  If there are, someone needs to let
-me know!  ;-)
+On Fri, Nov 21, 2014 at 1:11 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> I'm fine with that. I just think it's not horrid enough, but that can
+> be fixed easily :)
 
-> There are, however, machine checks in the idle loop, and maybe kprobes
-> (haven't checked), so I think this patch might fix real bugs.
+Oh, I think it's plenty horrid.
 
-If you can get ISTs from the idle loop, then the patch is needed.
+Anyway, here's an actual patch. As usual, it has seen absolutely no
+actual testing, but I did try to make sure it compiles and seems to do
+the right thing on:
+ - x86-32 no-PAE
+ - x86-32 no-PAE with PARAVIRT
+ - x86-32 PAE
+ - x86-64
 
-> > Just out of curiosity...  Can an NMI occur in IST context?  If it can,
-> > I need to make rcu_nmi_enter() and rcu_nmi_exit() deal properly with
-> > nested calls.
-> 
-> Yes, and vice versa.  That code looked like it handled nesting
-> correctly, but I wasn't entirely sure.
+also, I just removed the noise that is "vmalloc_sync_all()", since
+it's just all garbage and nothing actually uses it. Yeah, it's used by
+"register_die_notifier()", which makes no sense what-so-ever.
+Whatever. It's gone.
 
-It currently does not, please see below patch.  Are you able to test
-nesting?  It would be really cool if you could do so -- I have no
-way to test this patch.
+Can somebody actually *test* this? In particular, in any kind of real
+paravirt environment? Or, any comments even without testing?
 
-> Also, just to make sure: are we okay if rcu_nmi_enter() is called
-> before exception_enter if context tracking is on and we came directly
-> from userspace?
+I *really* am not proud of the mess wrt the whole
 
-If I understand correctly, this will result in context tracking invoking
-rcu_user_enter(), which will result in the rcu_dynticks counter having an
-odd value.  In that case, rcu_nmi_enter() will notice that RCU is already
-paying attention to this CPU via its check of atomic_read(&rdtp->dynticks)
-& 0x1), and will thus just return.  The matching rcu_nmi_exit() will
-notice that the nesting count is zero, and will also just return.
+  #ifdef CONFIG_PARAVIRT
+  #ifdef CONFIG_X86_32
+    ...
 
-Thus, everything works in that case.
+but I think that from a long-term perspective, we're actually better
+off with this kind of really ugly - but very explcit - hack that very
+clearly shows what is going on.
 
-In contrast, if rcu_nmi_enter() was invoked from the idle loop, it
-would see that RCU is not paying attention to this CPU and that the
-NMI nesting depth (which rcu_nmi_enter() increments) used to be zero.
-It would then atomically increment rtdp->dynticks, forcing RCU to start
-paying attention to this CPU.  The matching rcu_nmi_exit() will see
-that the nesting count was non-zero, but became zero when decremented.
-This will cause rcu_nmi_exit() to atomically increment rtdp->dynticks,
-which will tell RCU to stop paying attention to this CPU.
+The old code that actually "walked" the page tables was more
+"portable", but was somewhat misleading about what was actually going
+on.
 
-							Thanx, Paul
+Comments?
 
-------------------------------------------------------------------------
+                   Linus
 
-rcu: Make rcu_nmi_enter() handle nesting
+--001a11c1edfe46f03505086657fc
+Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i2s58chi0
 
-Andy Lutomirski is introducing ISTs into x86, which from RCU's
-viewpoint are NMIs.  Because ISTs and NMIs can nest, rcu_nmi_enter()
-and rcu_nmi_exit() must now correctly handle nesting.  As luck would
-have it, rcu_nmi_exit() handles nesting but rcu_nmi_enter() does not.
-This patch therefore makes rcu_nmi_enter() handle nesting.
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 8749f43f3f05..875421aff6e3 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -770,7 +770,8 @@ void rcu_nmi_enter(void)
- 	if (rdtp->dynticks_nmi_nesting == 0 &&
- 	    (atomic_read(&rdtp->dynticks) & 0x1))
- 		return;
--	rdtp->dynticks_nmi_nesting++;
-+	if (rdtp->dynticks_nmi_nesting++ != 0)
-+		return; /* Nested NMI/IST/whatever. */
- 	smp_mb__before_atomic();  /* Force delay from prior write. */
- 	atomic_inc(&rdtp->dynticks);
- 	/* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
-
+IGFyY2gveDg2L21tL2ZhdWx0LmMgfCAyNDMgKysrKysrKysrKysrKy0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDU4IGluc2VydGlvbnMoKyks
+IDE4NSBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9tbS9mYXVsdC5jIGIvYXJj
+aC94ODYvbW0vZmF1bHQuYwppbmRleCBkOTczZTYxZTQ1MGQuLjRiMGExYjk0MDRiMSAxMDA2NDQK
+LS0tIGEvYXJjaC94ODYvbW0vZmF1bHQuYworKysgYi9hcmNoL3g4Ni9tbS9mYXVsdC5jCkBAIC00
+Miw2ICs0Miw2NCBAQCBlbnVtIHg4Nl9wZl9lcnJvcl9jb2RlIHsKIH07CiAKIC8qCisgKiBIYW5k
+bGUgYSBwb3NzaWJsZSB2bWFsbG9jIGZhdWx0LiBXZSBqdXN0IGNvcHkgdGhlCisgKiB0b3AtbGV2
+ZWwgcGFnZSB0YWJsZSBlbnRyeSBpZiBuZWNlc3NhcnkuCisgKgorICogV2l0aCBQQUUsIHRoZSB0
+b3AtbW9zdCBwZ2QgZW50cnkgaXMgYWx3YXlzIHNoYXJlZCwKKyAqIGFuZCB0aGF0J3Mgd2hlcmUg
+dGhlIHZtYWxsb2MgYXJlYSBpcy4gIFNvIFBBRSBoYWQKKyAqIGJldHRlciBuZXZlciBoYXZlIGFu
+eSB2bWFsbG9jIGZhdWx0cy4KKyAqCisgKiBOT1RFISBUaGlzIG9uIHB1cnBvc2UgZG9lcyAqTk9U
+KiB1c2UgcGdkX3ByZXNlbnQoKQorICogYW5kIHN1Y2ggZ2VuZXJpYyBhY2Nlc3NvciBmdW5jdGlv
+bnMsIGJlY2F1c2UKKyAqIHRoZSBwZ2QgbWF5IGNvbnRhaW4gYSBmb2xkZWQgcHVkL3BtZCwgYW5k
+IGlzIHRodXMKKyAqIGFsd2F5cyAicHJlc2VudCIuIFdlIGFjY2VzcyB0aGUgYWN0dWFsIGhhcmR3
+YXJlCisgKiBzdGF0ZSBkaXJlY3RseSwgZXhjZXB0IGZvciB0aGUgZmluYWwgInNldF9wZ2QoKSIK
+KyAqIHRoYXQgbWF5IGdvIHRocm91Z2ggYSBwYXJhdmlydHVhbGl6YXRpb24gbGF5ZXIuCisgKgor
+ICogQWxzbyBub3RlIHRoZSBkaXNndXN0aW5nIGhhY2tlcnkgZm9yIHRoZSB3aG9sZQorICogcGFy
+YXZpcnR1YWxpemF0aW9uIGNhc2UuIFNpbmNlIFBBRSBpc24ndCBhbiBpc3N1ZSwKKyAqIHdlIGtu
+b3cgdGhhdCB0aGUgcG1kIGlzIHRoZSB0b3AgbGV2ZWwsIGFuZCB3ZSBqdXN0CisgKiBzaG9ydC1j
+aXJjdWl0IGl0IGFsbC4KKyAqCisgKiBXZSAqc2VyaW91c2x5KiBuZWVkIHRvIGdldCByaWQgb2Yg
+dGhlIGNyYXp5CisgKiBwYXJhdmlydHVhbGl6YXRpb24gY3J1ZC4KKyAqLworc3RhdGljIG5va3By
+b2JlX2lubGluZSBpbnQgdm1hbGxvY19mYXVsdCh1bnNpZ25lZCBsb25nIGFkZHJlc3MpCit7Cisj
+aWZkZWYgQ09ORklHX1g4Nl9QQUUKKwlyZXR1cm4gLTE7CisjZWxzZQorCXBnZF90ICpwZ2RfZHN0
+LCBwZ2RfZW50cnk7CisJdW5zaWduZWQgaW5kZXggPSBwZ2RfaW5kZXgoYWRkcmVzcyk7CisKKwlp
+ZiAoaW5kZXggPCBLRVJORUxfUEdEX0JPVU5EQVJZKQorCQkgcmV0dXJuIC0xOworCisJcGdkX2Vu
+dHJ5ID0gaW5pdF9tbS5wZ2RbaW5kZXhdOworCWlmICghKHBnZF9lbnRyeS5wZ2QgJiAxKSkKKwkJ
+cmV0dXJuIC0xOworCisJcGdkX2RzdCA9IF9fdmEoUEFHRV9NQVNLICYgcmVhZF9jcjMoKSk7CisJ
+cGdkX2RzdCArPSBpbmRleDsKKworCWlmIChwZ2RfZHN0LT5wZ2QpCisJCXJldHVybiAtMTsKKwor
+I2lmZGVmIENPTkZJR19QQVJBVklSVAorI2lmZGVmIENPTkZJR19YODZfMzIKKwlzZXRfcG1kKChw
+bWRfdCAqKXBnZF9kc3QsIChwbWRfdCl7KHB1ZF90KXtwZ2RfZW50cnl9fSk7CisjZWxzZQorCXNl
+dF9wZ2QocGdkX2RzdCwgcGdkX2VudHJ5KTsKKwlhcmNoX2ZsdXNoX2xhenlfbW11X21vZGUoKTsg
+Ly8gV1RGPworI2VuZGlmCisjZWxzZQorCSpwZ2RfZHN0ID0gcGdkX2VudHJ5OworI2VuZGlmCisJ
+cmV0dXJuIDA7CisjZW5kaWYKK30KKworLyoKICAqIFJldHVybnMgMCBpZiBtbWlvdHJhY2UgaXMg
+ZGlzYWJsZWQsIG9yIGlmIHRoZSBmYXVsdCBpcyBub3QKICAqIGhhbmRsZWQgYnkgbW1pb3RyYWNl
+OgogICovCkBAIC0xODksMTEwICsyNDcsNiBAQCBERUZJTkVfU1BJTkxPQ0socGdkX2xvY2spOwog
+TElTVF9IRUFEKHBnZF9saXN0KTsKIAogI2lmZGVmIENPTkZJR19YODZfMzIKLXN0YXRpYyBpbmxp
+bmUgcG1kX3QgKnZtYWxsb2Nfc3luY19vbmUocGdkX3QgKnBnZCwgdW5zaWduZWQgbG9uZyBhZGRy
+ZXNzKQotewotCXVuc2lnbmVkIGluZGV4ID0gcGdkX2luZGV4KGFkZHJlc3MpOwotCXBnZF90ICpw
+Z2RfazsKLQlwdWRfdCAqcHVkLCAqcHVkX2s7Ci0JcG1kX3QgKnBtZCwgKnBtZF9rOwotCi0JcGdk
+ICs9IGluZGV4OwotCXBnZF9rID0gaW5pdF9tbS5wZ2QgKyBpbmRleDsKLQotCWlmICghcGdkX3By
+ZXNlbnQoKnBnZF9rKSkKLQkJcmV0dXJuIE5VTEw7Ci0KLQkvKgotCSAqIHNldF9wZ2QocGdkLCAq
+cGdkX2spOyBoZXJlIHdvdWxkIGJlIHVzZWxlc3Mgb24gUEFFCi0JICogYW5kIHJlZHVuZGFudCB3
+aXRoIHRoZSBzZXRfcG1kKCkgb24gbm9uLVBBRS4gQXMgd291bGQKLQkgKiBzZXRfcHVkLgotCSAq
+LwotCXB1ZCA9IHB1ZF9vZmZzZXQocGdkLCBhZGRyZXNzKTsKLQlwdWRfayA9IHB1ZF9vZmZzZXQo
+cGdkX2ssIGFkZHJlc3MpOwotCWlmICghcHVkX3ByZXNlbnQoKnB1ZF9rKSkKLQkJcmV0dXJuIE5V
+TEw7Ci0KLQlwbWQgPSBwbWRfb2Zmc2V0KHB1ZCwgYWRkcmVzcyk7Ci0JcG1kX2sgPSBwbWRfb2Zm
+c2V0KHB1ZF9rLCBhZGRyZXNzKTsKLQlpZiAoIXBtZF9wcmVzZW50KCpwbWRfaykpCi0JCXJldHVy
+biBOVUxMOwotCi0JaWYgKCFwbWRfcHJlc2VudCgqcG1kKSkKLQkJc2V0X3BtZChwbWQsICpwbWRf
+ayk7Ci0JZWxzZQotCQlCVUdfT04ocG1kX3BhZ2UoKnBtZCkgIT0gcG1kX3BhZ2UoKnBtZF9rKSk7
+Ci0KLQlyZXR1cm4gcG1kX2s7Ci19Ci0KLXZvaWQgdm1hbGxvY19zeW5jX2FsbCh2b2lkKQotewot
+CXVuc2lnbmVkIGxvbmcgYWRkcmVzczsKLQotCWlmIChTSEFSRURfS0VSTkVMX1BNRCkKLQkJcmV0
+dXJuOwotCi0JZm9yIChhZGRyZXNzID0gVk1BTExPQ19TVEFSVCAmIFBNRF9NQVNLOwotCSAgICAg
+YWRkcmVzcyA+PSBUQVNLX1NJWkUgJiYgYWRkcmVzcyA8IEZJWEFERFJfVE9QOwotCSAgICAgYWRk
+cmVzcyArPSBQTURfU0laRSkgewotCQlzdHJ1Y3QgcGFnZSAqcGFnZTsKLQotCQlzcGluX2xvY2so
+JnBnZF9sb2NrKTsKLQkJbGlzdF9mb3JfZWFjaF9lbnRyeShwYWdlLCAmcGdkX2xpc3QsIGxydSkg
+ewotCQkJc3BpbmxvY2tfdCAqcGd0X2xvY2s7Ci0JCQlwbWRfdCAqcmV0OwotCi0JCQkvKiB0aGUg
+cGd0X2xvY2sgb25seSBmb3IgWGVuICovCi0JCQlwZ3RfbG9jayA9ICZwZ2RfcGFnZV9nZXRfbW0o
+cGFnZSktPnBhZ2VfdGFibGVfbG9jazsKLQotCQkJc3Bpbl9sb2NrKHBndF9sb2NrKTsKLQkJCXJl
+dCA9IHZtYWxsb2Nfc3luY19vbmUocGFnZV9hZGRyZXNzKHBhZ2UpLCBhZGRyZXNzKTsKLQkJCXNw
+aW5fdW5sb2NrKHBndF9sb2NrKTsKLQotCQkJaWYgKCFyZXQpCi0JCQkJYnJlYWs7Ci0JCX0KLQkJ
+c3Bpbl91bmxvY2soJnBnZF9sb2NrKTsKLQl9Ci19Ci0KLS8qCi0gKiAzMi1iaXQ6Ci0gKgotICog
+ICBIYW5kbGUgYSBmYXVsdCBvbiB0aGUgdm1hbGxvYyBvciBtb2R1bGUgbWFwcGluZyBhcmVhCi0g
+Ki8KLXN0YXRpYyBub2lubGluZSBpbnQgdm1hbGxvY19mYXVsdCh1bnNpZ25lZCBsb25nIGFkZHJl
+c3MpCi17Ci0JdW5zaWduZWQgbG9uZyBwZ2RfcGFkZHI7Ci0JcG1kX3QgKnBtZF9rOwotCXB0ZV90
+ICpwdGVfazsKLQotCS8qIE1ha2Ugc3VyZSB3ZSBhcmUgaW4gdm1hbGxvYyBhcmVhOiAqLwotCWlm
+ICghKGFkZHJlc3MgPj0gVk1BTExPQ19TVEFSVCAmJiBhZGRyZXNzIDwgVk1BTExPQ19FTkQpKQot
+CQlyZXR1cm4gLTE7Ci0KLQlXQVJOX09OX09OQ0UoaW5fbm1pKCkpOwotCi0JLyoKLQkgKiBTeW5j
+aHJvbml6ZSB0aGlzIHRhc2sncyB0b3AgbGV2ZWwgcGFnZS10YWJsZQotCSAqIHdpdGggdGhlICdy
+ZWZlcmVuY2UnIHBhZ2UgdGFibGUuCi0JICoKLQkgKiBEbyBfbm90XyB1c2UgImN1cnJlbnQiIGhl
+cmUuIFdlIG1pZ2h0IGJlIGluc2lkZQotCSAqIGFuIGludGVycnVwdCBpbiB0aGUgbWlkZGxlIG9m
+IGEgdGFzayBzd2l0Y2guLgotCSAqLwotCXBnZF9wYWRkciA9IHJlYWRfY3IzKCk7Ci0JcG1kX2sg
+PSB2bWFsbG9jX3N5bmNfb25lKF9fdmEocGdkX3BhZGRyKSwgYWRkcmVzcyk7Ci0JaWYgKCFwbWRf
+aykKLQkJcmV0dXJuIC0xOwotCi0JcHRlX2sgPSBwdGVfb2Zmc2V0X2tlcm5lbChwbWRfaywgYWRk
+cmVzcyk7Ci0JaWYgKCFwdGVfcHJlc2VudCgqcHRlX2spKQotCQlyZXR1cm4gLTE7Ci0KLQlyZXR1
+cm4gMDsKLX0KLU5PS1BST0JFX1NZTUJPTCh2bWFsbG9jX2ZhdWx0KTsKLQogLyoKICAqIERpZCBp
+dCBoaXQgdGhlIERPUyBzY3JlZW4gbWVtb3J5IFZBIGZyb20gdm04NiBtb2RlPwogICovCkBAIC0z
+NDcsODcgKzMwMSw2IEBAIG91dDoKIAogI2Vsc2UgLyogQ09ORklHX1g4Nl82NDogKi8KIAotdm9p
+ZCB2bWFsbG9jX3N5bmNfYWxsKHZvaWQpCi17Ci0Jc3luY19nbG9iYWxfcGdkcyhWTUFMTE9DX1NU
+QVJUICYgUEdESVJfTUFTSywgVk1BTExPQ19FTkQsIDApOwotfQotCi0vKgotICogNjQtYml0Ogot
+ICoKLSAqICAgSGFuZGxlIGEgZmF1bHQgb24gdGhlIHZtYWxsb2MgYXJlYQotICoKLSAqIFRoaXMg
+YXNzdW1lcyBubyBsYXJnZSBwYWdlcyBpbiB0aGVyZS4KLSAqLwotc3RhdGljIG5vaW5saW5lIGlu
+dCB2bWFsbG9jX2ZhdWx0KHVuc2lnbmVkIGxvbmcgYWRkcmVzcykKLXsKLQlwZ2RfdCAqcGdkLCAq
+cGdkX3JlZjsKLQlwdWRfdCAqcHVkLCAqcHVkX3JlZjsKLQlwbWRfdCAqcG1kLCAqcG1kX3JlZjsK
+LQlwdGVfdCAqcHRlLCAqcHRlX3JlZjsKLQotCS8qIE1ha2Ugc3VyZSB3ZSBhcmUgaW4gdm1hbGxv
+YyBhcmVhOiAqLwotCWlmICghKGFkZHJlc3MgPj0gVk1BTExPQ19TVEFSVCAmJiBhZGRyZXNzIDwg
+Vk1BTExPQ19FTkQpKQotCQlyZXR1cm4gLTE7Ci0KLQlXQVJOX09OX09OQ0UoaW5fbm1pKCkpOwot
+Ci0JLyoKLQkgKiBDb3B5IGtlcm5lbCBtYXBwaW5ncyBvdmVyIHdoZW4gbmVlZGVkLiBUaGlzIGNh
+biBhbHNvCi0JICogaGFwcGVuIHdpdGhpbiBhIHJhY2UgaW4gcGFnZSB0YWJsZSB1cGRhdGUuIElu
+IHRoZSBsYXRlcgotCSAqIGNhc2UganVzdCBmbHVzaDoKLQkgKi8KLQlwZ2QgPSBwZ2Rfb2Zmc2V0
+KGN1cnJlbnQtPmFjdGl2ZV9tbSwgYWRkcmVzcyk7Ci0JcGdkX3JlZiA9IHBnZF9vZmZzZXRfayhh
+ZGRyZXNzKTsKLQlpZiAocGdkX25vbmUoKnBnZF9yZWYpKQotCQlyZXR1cm4gLTE7Ci0KLQlpZiAo
+cGdkX25vbmUoKnBnZCkpIHsKLQkJc2V0X3BnZChwZ2QsICpwZ2RfcmVmKTsKLQkJYXJjaF9mbHVz
+aF9sYXp5X21tdV9tb2RlKCk7Ci0JfSBlbHNlIHsKLQkJQlVHX09OKHBnZF9wYWdlX3ZhZGRyKCpw
+Z2QpICE9IHBnZF9wYWdlX3ZhZGRyKCpwZ2RfcmVmKSk7Ci0JfQotCi0JLyoKLQkgKiBCZWxvdyBo
+ZXJlIG1pc21hdGNoZXMgYXJlIGJ1Z3MgYmVjYXVzZSB0aGVzZSBsb3dlciB0YWJsZXMKLQkgKiBh
+cmUgc2hhcmVkOgotCSAqLwotCi0JcHVkID0gcHVkX29mZnNldChwZ2QsIGFkZHJlc3MpOwotCXB1
+ZF9yZWYgPSBwdWRfb2Zmc2V0KHBnZF9yZWYsIGFkZHJlc3MpOwotCWlmIChwdWRfbm9uZSgqcHVk
+X3JlZikpCi0JCXJldHVybiAtMTsKLQotCWlmIChwdWRfbm9uZSgqcHVkKSB8fCBwdWRfcGFnZV92
+YWRkcigqcHVkKSAhPSBwdWRfcGFnZV92YWRkcigqcHVkX3JlZikpCi0JCUJVRygpOwotCi0JcG1k
+ID0gcG1kX29mZnNldChwdWQsIGFkZHJlc3MpOwotCXBtZF9yZWYgPSBwbWRfb2Zmc2V0KHB1ZF9y
+ZWYsIGFkZHJlc3MpOwotCWlmIChwbWRfbm9uZSgqcG1kX3JlZikpCi0JCXJldHVybiAtMTsKLQot
+CWlmIChwbWRfbm9uZSgqcG1kKSB8fCBwbWRfcGFnZSgqcG1kKSAhPSBwbWRfcGFnZSgqcG1kX3Jl
+ZikpCi0JCUJVRygpOwotCi0JcHRlX3JlZiA9IHB0ZV9vZmZzZXRfa2VybmVsKHBtZF9yZWYsIGFk
+ZHJlc3MpOwotCWlmICghcHRlX3ByZXNlbnQoKnB0ZV9yZWYpKQotCQlyZXR1cm4gLTE7Ci0KLQlw
+dGUgPSBwdGVfb2Zmc2V0X2tlcm5lbChwbWQsIGFkZHJlc3MpOwotCi0JLyoKLQkgKiBEb24ndCB1
+c2UgcHRlX3BhZ2UgaGVyZSwgYmVjYXVzZSB0aGUgbWFwcGluZ3MgY2FuIHBvaW50Ci0JICogb3V0
+c2lkZSBtZW1fbWFwLCBhbmQgdGhlIE5VTUEgaGFzaCBsb29rdXAgY2Fubm90IGhhbmRsZQotCSAq
+IHRoYXQ6Ci0JICovCi0JaWYgKCFwdGVfcHJlc2VudCgqcHRlKSB8fCBwdGVfcGZuKCpwdGUpICE9
+IHB0ZV9wZm4oKnB0ZV9yZWYpKQotCQlCVUcoKTsKLQotCXJldHVybiAwOwotfQotTk9LUFJPQkVf
+U1lNQk9MKHZtYWxsb2NfZmF1bHQpOwotCiAjaWZkZWYgQ09ORklHX0NQVV9TVVBfQU1ECiBzdGF0
+aWMgY29uc3QgY2hhciBlcnJhdGE5M193YXJuaW5nW10gPQogS0VSTl9FUlIgCg==
+--001a11c1edfe46f03505086657fc--
