@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758492AbaKUJfh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 04:35:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44090 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932315AbaKUJfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 04:35:33 -0500
-Date: Fri, 21 Nov 2014 10:35:13 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC 00/11] perf tools: Factor stat reading and CQM changes
-Message-ID: <20141121093513.GA12548@krava.redhat.com>
-References: <1416562275-12404-1-git-send-email-jolsa@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416562275-12404-1-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932413AbaKUJfn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 04:35:43 -0500
+Received: from mo4.mail-out.ovh.net ([178.32.228.4]:57522 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758491AbaKUJfi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 04:35:38 -0500
+From: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+To: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Rockchip
+	SoC...),
+        linux-rockchip@lists.infradead.org (open list:ARM/Rockchip SoC...),
+        linux-kernel@vger.kernel.org (open list:COMMON CLK FRAMEWORK)
+Cc: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+Subject: [PATCH] clk: rockchip: fix clock gate for rk3188 spdif_pre
+Date: Fri, 21 Nov 2014 10:27:41 +0100
+Message-Id: <1416562062-14286-1-git-send-email-julien.chauveau@neo-technologies.fr>
+X-Mailer: git-send-email 2.1.0
+X-Ovh-Tracer-Id: 418834766108688412
+X-Ovh-Remote: 193.248.240.88 (laubervilliers-656-1-116-88.w193-248.abo.wanadoo.fr)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrkeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrkeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 10:31:04AM +0100, Jiri Olsa wrote:
-> hi,
-> this patchset factors Matt's userspace part of CQM patches:
-> http://marc.info/?l=linux-kernel&m=141156746730336&w=2
-> 
-> I needed to put counters reading into single place, which in
-> the end turned out to be simplification of the stat command
-> reading side.
-> 
-> any comments are welcome,
-> jirka
+In rk3188 clock branches, spdif_pre gate was set to RK2928_CLKGATE_CON(13) bit 13.
+This appears to be a copy-paste error because such a register does not exist.
+We correct it to RK2928_CLKGATE_CON(0) and find out that the rk3188 spdif clock
+is the same as the rk3066 spdif clock, so we move it to the common clock branches.
 
-available in:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-  perf/core_stat_cqm
+Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+---
+ drivers/clk/rockchip/clk-rk3188.c | 25 +++++++++----------------
+ 1 file changed, 9 insertions(+), 16 deletions(-)
 
-jirka
+diff --git a/drivers/clk/rockchip/clk-rk3188.c b/drivers/clk/rockchip/clk-rk3188.c
+index b0293c4..725d841 100644
+--- a/drivers/clk/rockchip/clk-rk3188.c
++++ b/drivers/clk/rockchip/clk-rk3188.c
+@@ -330,6 +330,15 @@ static struct rockchip_clk_branch common_clk_branches[] __initdata = {
+ 			RK2928_CLKSEL_CON(24), 8, 8, DFLAGS,
+ 			RK2928_CLKGATE_CON(2), 8, GFLAGS),
+ 
++	COMPOSITE_NOMUX(0, "spdif_pre", "i2s_src", 0,
++			RK2928_CLKSEL_CON(5), 0, 7, DFLAGS,
++			RK2928_CLKGATE_CON(0), 13, GFLAGS),
++	COMPOSITE_FRAC(0, "spdif_frac", "spdif_pll", 0,
++			RK2928_CLKSEL_CON(9), 0,
++			RK2928_CLKGATE_CON(0), 14, GFLAGS),
++	MUX(SCLK_SPDIF, "sclk_spdif", mux_sclk_spdif_p, 0,
++			RK2928_CLKSEL_CON(5), 8, 2, MFLAGS),
++
+ 	/*
+ 	 * Clock-Architecture Diagram 4
+ 	 */
+@@ -577,14 +586,6 @@ static struct rockchip_clk_branch rk3066a_clk_branches[] __initdata = {
+ 			RK2928_CLKGATE_CON(0), 12, GFLAGS),
+ 	MUX(SCLK_I2S2, "sclk_i2s2", mux_sclk_i2s2_p, 0,
+ 			RK2928_CLKSEL_CON(4), 8, 2, MFLAGS),
+-	COMPOSITE_NOMUX(0, "spdif_pre", "i2s_src", 0,
+-			RK2928_CLKSEL_CON(5), 0, 7, DFLAGS,
+-			RK2928_CLKGATE_CON(0), 13, GFLAGS),
+-	COMPOSITE_FRAC(0, "spdif_frac", "spdif_pll", 0,
+-			RK2928_CLKSEL_CON(9), 0,
+-			RK2928_CLKGATE_CON(0), 14, GFLAGS),
+-	MUX(SCLK_SPDIF, "sclk_spdif", mux_sclk_spdif_p, 0,
+-			RK2928_CLKSEL_CON(5), 8, 2, MFLAGS),
+ 
+ 	GATE(HCLK_I2S1, "hclk_i2s1", "hclk_cpu", 0, RK2928_CLKGATE_CON(7), 3, GFLAGS),
+ 	GATE(HCLK_I2S2, "hclk_i2s2", "hclk_cpu", 0, RK2928_CLKGATE_CON(7), 4, GFLAGS),
+@@ -675,14 +676,6 @@ static struct rockchip_clk_branch rk3188_clk_branches[] __initdata = {
+ 			RK2928_CLKGATE_CON(0), 10, GFLAGS),
+ 	MUX(SCLK_I2S0, "sclk_i2s0", mux_sclk_i2s0_p, 0,
+ 			RK2928_CLKSEL_CON(3), 8, 2, MFLAGS),
+-	COMPOSITE_NOMUX(0, "spdif_pre", "i2s_src", 0,
+-			RK2928_CLKSEL_CON(5), 0, 7, DFLAGS,
+-			RK2928_CLKGATE_CON(13), 13, GFLAGS),
+-	COMPOSITE_FRAC(0, "spdif_frac", "spdif_pll", 0,
+-			RK2928_CLKSEL_CON(9), 0,
+-			RK2928_CLKGATE_CON(0), 14, GFLAGS),
+-	MUX(SCLK_SPDIF, "sclk_spdif", mux_sclk_spdif_p, 0,
+-			RK2928_CLKSEL_CON(5), 8, 2, MFLAGS),
+ 
+ 	GATE(0, "hclk_imem0", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 14, GFLAGS),
+ 	GATE(0, "hclk_imem1", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 15, GFLAGS),
+-- 
+2.1.0
 
-> 
-> 
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> ---
-> Jiri Olsa (10):
->       perf tools: Introduce perf_evsel__compute_deltas function
->       perf tools: Introduce perf_counts_values__scale function
->       perf tools: Introduce perf_evsel__read_cb function
->       perf stat: Use perf_evsel__read_cb in read_counter
->       perf stat: Make read_counter work over the thread dimension
->       perf stat: Use read_counter in read_counter_aggr
->       perf tools: Remove perf_evsel__read interface
->       perf tools: Add snapshot format file parsing
->       perf stat: Add support for per-pkg counters
->       perf stat: Add support for snapshot counters
-> 
-> Matt Fleming (1):
->       perf tools: Add per-pkg format file parsing
-> 
->  tools/perf/builtin-stat.c      | 105 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-------
->  tools/perf/util/evsel.c        | 100 +++++++++++++++++++++++++++------------------------------------------
->  tools/perf/util/evsel.h        |  45 +++++++++++--------------------
->  tools/perf/util/parse-events.c |   2 ++
->  tools/perf/util/pmu.c          |  74 +++++++++++++++++++++++++++++++++++++++++++--------
->  tools/perf/util/pmu.h          |   4 +++
->  6 files changed, 220 insertions(+), 110 deletions(-)
