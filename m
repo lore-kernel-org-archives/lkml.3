@@ -1,77 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701AbaKUSir (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:38:47 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:48251 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaKUSip (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:38:45 -0500
+	id S1751329AbaKUSkZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:40:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42715 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750755AbaKUSkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 13:40:24 -0500
+From: Josh Stone <jistone@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Josh Stone <jistone@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel@daenzer.net>
+Subject: [PATCH RESEND] Kbuild: Add an option to enable GCC VTA
+Date: Fri, 21 Nov 2014 10:40:00 -0800
+Message-Id: <1416595200-22359-1-git-send-email-jistone@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <87ppcgju9w.fsf@x220.int.ebiederm.org>
-References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
- <1414013060-137148-3-git-send-email-seth.forshee@canonical.com>
- <20141111140454.GD333@tucsk> <87mw7xd9zt.fsf@x220.int.ebiederm.org>
- <20141112130915.GG333@tucsk> <20141112162254.GB31775@ubuntu-hedt>
- <20141118152156.GA21726@ubuntu-mba51> <CAJfpeguuT1V1Pf0iFXRozmeohDH2Jy=p8o=1EnvD_qfB1CTQuA@mail.gmail.com>
- <CAJfpeguctYFkzBPN26=WjOCLTt2mqvouHXqLZ1sRqZngtbw8CQ@mail.gmail.com>
- <20141119140911.GA27009@mail.hallyn.com> <20141121164441.GA1730@ubuntu-mba51> <87ppcgju9w.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 21 Nov 2014 10:38:23 -0800
-Message-ID: <CALCETrU_Ap-cENF4nczn1FrtRxKfWBT0TdHN0cU4rJt=Nvxpgw@mail.gmail.com>
-Subject: Re: [PATCH v5 2/4] fuse: Support fuse filesystems outside of init_user_ns
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Seth Forshee <seth.forshee@canonical.com>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 10:14 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> - Tweak the file capability code to look at s_user_ns and treat it
->   properly.
->
+Due to recent codegen issues, gcc -fvar-tracking-assignments was
+unconditionally disabled in commit 2062afb4f804a ("Fix gcc-4.9.0
+miscompilation of load_balance() in scheduler").  However, this reduces
+the debuginfo coverage for variable locations, especially in inline
+functions.  VTA is certainly not perfect either in those cases, but it
+is much better than without.  With compiler versions that have fixed the
+codegen bugs, we would prefer to have the better details for SystemTap,
+and surely other debuginfo consumers like perf will benefit as well.
 
-> - Tweak the security checks to allow setting file capabilities and
->   other security xattrs if we have the appropriate capabilities in
->   s_user_ns.
->
+This patch simply makes CONFIG_DEBUG_INFO_VTA an option.  I considered
+Frank and Linus's discussion of a cc-option-like -fcompare-debug test,
+but I'm convinced that a narrow test of an arch-specific codegen issue
+is not really useful.  GCC has their own regression tests for this, so
+I'd suggest GCC_COMPARE_DEBUG=-fvar-tracking-assignments-toggle is more
+useful for kernel developers to test confidence.
 
-Thinking about this some more, what do you mean by tweaking the file
-capability code to look at s_user_ns and treat it properly?
+In fact, I ran into a couple more issues when testing for this patch[1],
+although neither of those had any codegen impact.
+ [1] https://bugzilla.redhat.com/show_bug.cgi?id=1140872
 
-I think that the semantics should be that cap_inode_setxattr should
-check ns_capable wrt s_user_ns, but that the fscap *consumer* should
-check the mount as in my may_suid patch (and maybe also check
-s_user_ns).  There is legacy code that starts a FUSE server as global
-root, mounts the thing in a mount namespace belonging to an
-unprivileged user ns, and (I think) hands the /dev/fuse fd to that
-unprivileged code.
+With gcc-4.9.2-1.fc22, I can now build v3.18-rc5 with Fedora's i686 and
+x86_64 configs, and this is completely clean with GCC_COMPARE_DEBUG.
 
-Without the mount ns check, that FUSE server can take over the system.
-With the mount ns check, it's safe.
+Cc: Frank Ch. Eigler <fche@redhat.com>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Michel Dänzer <michel@daenzer.net>
+Signed-off-by: Josh Stone <jistone@redhat.com>
+---
+ Makefile          |  4 ++++
+ lib/Kconfig.debug | 18 +++++++++++++++++-
+ 2 files changed, 21 insertions(+), 1 deletion(-)
 
---Andy
-
->
-> When those bits are done we can tweak the fuse patches to also set
-> s_user_ns.
->
-> As for MNT_NO_SUID if fuse wants to enforce that in some way.  I don't
-> particularly care, but I don't think that makes sense as a vfs property.
->
-> Eric
-
-
-
+diff --git a/Makefile b/Makefile
+index 00d618bbe8e7..a289efbe7e28 100644
+--- a/Makefile
++++ b/Makefile
+@@ -704,7 +704,11 @@ KBUILD_CFLAGS	+= -fomit-frame-pointer
+ endif
+ endif
+ 
++ifdef CONFIG_DEBUG_INFO_VTA
++KBUILD_CFLAGS   += $(call cc-option, -fvar-tracking-assignments)
++else
+ KBUILD_CFLAGS   += $(call cc-option, -fno-var-tracking-assignments)
++endif
+ 
+ ifdef CONFIG_DEBUG_INFO
+ ifdef CONFIG_DEBUG_INFO_SPLIT
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 4e35a5d767ed..27410417de1d 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -165,7 +165,23 @@ config DEBUG_INFO_DWARF4
+ 	  Generate dwarf4 debug info. This requires recent versions
+ 	  of gcc and gdb. It makes the debug information larger.
+ 	  But it significantly improves the success of resolving
+-	  variables in gdb on optimized code.
++	  variables in gdb on optimized code.  The gcc docs also
++	  recommend enabling -fvar-tracking-assignments for maximum
++	  benefit. (see DEBUG_INFO_VTA)
++
++config DEBUG_INFO_VTA
++	bool "Enable var-tracking-assignments for debuginfo"
++	depends on DEBUG_INFO
++	help
++	  Enable gcc -fvar-tracking-assignments for improved debug
++	  information on variable locations in optimized code.  Per
++	  gcc, DEBUG_INFO_DWARF4 is recommended for best use of VTA.
++
++	  VTA has been implicated in codegen bugs (gcc PR61801,
++	  PR61904), so this may deserve some caution.  One can set
++	  GCC_COMPARE_DEBUG=-fvar-tracking-assignments-toggle in the
++	  environment to automatically compile everything both ways,
++	  generating an error if anything differs.
+ 
+ config ENABLE_WARN_DEPRECATED
+ 	bool "Enable __deprecated logic"
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+2.1.0
+
