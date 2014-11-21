@@ -1,131 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757760AbaKUCZx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 21:25:53 -0500
-Received: from mga03.intel.com ([134.134.136.65]:56478 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756905AbaKUCZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 21:25:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="489346894"
-Message-ID: <546EA2AB.9080609@linux.intel.com>
-Date: Fri, 21 Nov 2014 10:25:47 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1757742AbaKUC3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 21:29:23 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:36803 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756702AbaKUC3V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 21:29:21 -0500
+Subject: [PATCH ftrace/core v6 0/5] ftrace,
+ kprobes: Introduce IPMODIFY flag for ftrace_ops to detect conflicts
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
+        Ingo Molnar <mingo@kernel.org>
+Date: Fri, 21 Nov 2014 05:25:02 -0500
+Message-ID: <20141121102502.11844.82696.stgit@localhost.localdomain>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: Yijing Wang <wangyijing@huawei.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>
-CC: Marc Zyngier <marc.zyngier@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-pci@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
-References: <546E1771.4030201@arm.com> <20141120215353.GA7987@google.com> <alpine.DEB.2.11.1411202355060.6439@nanos> <546E9B60.9070706@huawei.com>
-In-Reply-To: <546E9B60.9070706@huawei.com>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/21 9:54, Yijing Wang wrote:
->>> Thomas, let me know if you want to do that.  I suppose we could add a new
->>> patch to add it back, but that would leave bisection broken for the
->>> interval between c167caf8d174 and the patch that adds it back.
->>
->> Fortunately my irq/irqdomain branch is not immutable yet. So we have
->> no problem at that point. I can rebase on your branch until tomorrow
->> night. Or just rebase on mainline and we sort out the merge conflicts
->> later, i.e. delegate them to Linus so his job of pulling stuff gets
->> not completely boring.
-> 
-> Hi Thomas, sorry for my introducing the broken.
-> 
->>
->> What I'm more worried about is whether this intended change is going
->> to inflict a problem on Jiangs intention to deduce the MSI irq domain
->> from the device, which we really need for making DMAR work w/o going
->> through loops and hoops.
->>
->> I have limited knowledge about the actual scope of iommu (DMAR) units
->> versus device/bus/host-controllers, so I would appreciate a proper
->> explanation for that from you or Jiang or both.
-> 
-> In my personal opinion, if it's not necessary, we should not put stuff
-> into pci_dev or pci_bus. If we plan to save msi_controller in pci_bus or
-> pci_dev.
-> I have a proposal, I would be appreciated if you could give some comments.
-> First we refactor pci_host_bridge to make a generic
-> pci_host_bridge, then we could save pci domain in it to eliminate
-> arch specific functions. I aslo wanted to save msi_controller as
-> pci domain, but now Jiang refactor hierarchy irq domain, and
-> pci devices under the same pci host bridge may need to associate
-> to different msi_controllers.
-> 
-> So I want to associate a msi_controller finding ops with generic pci_host_bridge,
-> then every pci device could find its msi_controller/irq_domain by a
-> common function
-> 
-> E.g
-> 
-> struct msi_controller *pci_msi_controller(struct pci_dev *pdev)
-> {
-> 	struct msi_controller *ctrl;
-> 	struct pci_host_bridge *host = find_pci_host_bridge(pdev->bus);
-> 	if (host && host->pci_get_msi_controller)
-> 		ctrl = pci_host_bridge->pci_get_msi_controller(struct pci_dev *pdev);
-> 
-> 	return ctrl;	
-> }
-Hi Yijing,
-	This may be a little overhead for x86 because we could get
-irqdomain from pci_dev itself through:
-	pci_dev->dev.archdata.iommu->ir_msi_domain.
-	This doesn't work currently because pci_dev->dev.archdata.iommu
-is set on the first dma mapping request, but we have a plan to set it
-when creating PCI devices so we don't need to search the iommu list
-at runtime.
-	Even the whole msi_controller concept may be killed for x86.
-Actually I'm trying to convert all MSI arch code to use hierarchy
-irqdomain, then we don't need arch_setup_msi_irqs() and
-msi_controller.setup_irq() and related anymore. But the issue is
-that it affects too many architectures and may cause slightly code
-size increase.
-	If we could convert all PCI MSI code to use hierarchy irqdomain,
-then the suggested interface is:
-	struct irq_domain *pci_get_msi_irqdomain(struct pci_dev *pdev);
-Thoughts?
-Regards!
-Gerry
-> 
-> If I miss something, please let me know, thanks.
-> 
-> Thanks!
-> Yijing.
-> 
-> 
->>
->> My guts feeling tells me that anything less granular than the bus
->> level is wrong and according to my limited knowledge Intel even has
->> DMARs which are assigned to a single device it's even more wrong. So
->> the proper change would be not to push it from bus to something above
->> the bus, but instead make it a per device property.
->>
->> But my knowledge there is limited, so I rely on the PCI/architecture
->> experts to sort that out.
->>
->> Let me know ASAP.
->>
->> Thanks,
->>
->> 	tglx
->>
->> .
->>
-> 
-> 
+Hi,
+
+Here is the 6th version of the series of patches which introduces
+IPMODIFY flag for ftrace_ops to detect conflicts of ftrace users
+who can modify regs->ip in their handler.
+
+This version is basically an update of previous version to the
+latest ftrace/core tree.
+
+Currently, only kprobes can change the regs->ip in the handler,
+but recent Kernel Live Patching also changes it.
+
+Here we talked on github.
+ https://github.com/dynup/kpatch/issues/47
+
+To protect modified regs-ip from each other, this series
+introduces FTRACE_OPS_FL_IPMODIFY flag and ftrace now ensures
+the flag can be set on each function entry location. If there
+is someone who already reserve regs->ip on target function
+entry, ftrace_set_filter_ip or register_ftrace_function will
+return -EBUSY. Users must handle that.
+The ftrace_ops with IPMODIFY flag requires at least one
+entry for filter hash, and its notrace_hash must be empty,
+because the IPMODIFY action is very address sensitve and
+user must consider the ip address.
+
+Thank you,
+
+---
+
+Masami Hiramatsu (5):
+      kprobes/ftrace: Recover original IP if pre_handler doesn't change it
+      ftrace, kprobes: Support IPMODIFY flag to find IP modify conflict
+      kprobes: Add IPMODIFY flag to kprobe_ftrace_ops
+      kprobes: Set IPMODIFY flag only if the probe can change regs->ip
+      kselftest,ftrace: Add ftrace IPMODIFY flag test
+
+
+ Documentation/kprobes.txt                          |   12 +
+ Documentation/trace/ftrace.txt                     |    5 +
+ arch/x86/kernel/kprobes/ftrace.c                   |    9 +
+ include/linux/ftrace.h                             |   16 ++
+ kernel/kprobes.c                                   |  123 +++++++++++++-
+ kernel/trace/ftrace.c                              |  142 ++++++++++++++++-
+ tools/testing/selftests/ftrace/Makefile            |   11 +
+ tools/testing/selftests/ftrace/ipmodify/Makefile   |   15 ++
+ tools/testing/selftests/ftrace/ipmodify/ipmodify.c |  170 ++++++++++++++++++++
+ .../selftests/ftrace/ipmodify/run_ipmodify.sh      |    6 +
+ 10 files changed, 480 insertions(+), 29 deletions(-)
+ create mode 100644 tools/testing/selftests/ftrace/ipmodify/Makefile
+ create mode 100644 tools/testing/selftests/ftrace/ipmodify/ipmodify.c
+ create mode 100644 tools/testing/selftests/ftrace/ipmodify/run_ipmodify.sh
+
+--
+
