@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536AbaKUQNr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:13:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39006 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932473AbaKUQNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:13:45 -0500
-Date: Fri, 21 Nov 2014 10:13:08 -0600
-From: Seth Jennings <sjenning@redhat.com>
-To: Miroslav Benes <mbenes@suse.cz>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
-Message-ID: <20141121161308.GA11339@cerebellum.variantweb.net>
-References: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
- <1416522580-5593-3-git-send-email-sjenning@redhat.com>
- <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz>
- <alpine.LNX.2.00.1411211542180.27891@pobox.suse.cz>
- <20141121150041.GA26264@treble.redhat.com>
- <alpine.LNX.2.00.1411211637020.27891@pobox.suse.cz>
+	id S932574AbaKUQNx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:13:53 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:60144 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932473AbaKUQNu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 11:13:50 -0500
+Message-ID: <546F64B9.8060300@linaro.org>
+Date: Fri, 21 Nov 2014 17:13:45 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1411211637020.27891@pobox.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm >> Linux PM mailing list" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] cpuidle: A few improvements for ARM cpuidle via DT
+References: <546C6DEB.8060204@linaro.org> <17509116.2bjC4d8bef@vostro.rjw.lan>
+In-Reply-To: <17509116.2bjC4d8bef@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 04:46:32PM +0100, Miroslav Benes wrote:
-> On Fri, 21 Nov 2014, Josh Poimboeuf wrote:
-> 
-> > On Fri, Nov 21, 2014 at 03:44:35PM +0100, Miroslav Benes wrote:
-> > > On Fri, 21 Nov 2014, Jiri Kosina wrote:
-> > > 
-> > > [...]
-> > > 
-> > > > [ ... snip ... ]
-> > > > > +static int klp_init_patch(struct klp_patch *patch)
-> > > > > +{
-> > > > > +	int ret;
-> > > > > +
-> > > > > +	mutex_lock(&klp_mutex);
-> > > > > +
-> > > > > +	/* init */
-> > > > > +	patch->state = LPC_DISABLED;
-> > > > > +
-> > > > > +	/* sysfs */
-> > > > > +	ret = kobject_init_and_add(&patch->kobj, &klp_ktype_patch,
-> > > > > +				   klp_root_kobj, patch->mod->name);
-> > > > > +	if (ret)
-> > > > > +		return ret;
-> > > > 
-> > > > klp_mutex is leaked locked here.
-> > > > 
-> > > > > +
-> > > > > +	/* create objects */
-> > > > > +	ret = klp_init_objects(patch);
-> > > > > +	if (ret) {
-> > > > > +		kobject_put(&patch->kobj);
-> > > > > +		return ret;
-> > > > 
-> > > > And here as well.
-> > > > 
-> > > > All in all, this is looking very good to me. I think we are really close 
-> > > > to having a code that all the parties would agree with. Thanks everybody,
-> > > 
-> > > The leaking is my fault. I missed that somehow during rebasing.
-> > > 
-> > > Seth, could you please fix it in v4? 
-> > 
-> > Is it necessary to grab the mutex at the beginning of klp_init_patch?  I
-> > think we only need it when adding it to the global list at the end of
-> > the function.
-> 
-> I think it's not necessary now after thinking about that. It could happen 
-> that init values could be written twice to some patch structure if 
-> klp_register_patch would be called twice. But it should not corrupt 
-> anything and adding to the global list is protected. However I think we 
-> should define what is protected by klp_mutex and comment it somewhere near 
-> the mutex definition (if only the klp_patches list is protected or 
-> something more (in the future)).
+On 11/21/2014 04:56 PM, Rafael J. Wysocki wrote:
+> On Wednesday, November 19, 2014 11:16:11 AM Daniel Lezcano wrote:
+>>
+>> Hi Rafael,
+>>
+>> this pull request, based on 3.18-rc5, contains a set of changes from
+>> Lorenzo Pieralisi.
+>>
+>>    * Added a 'status' definition flag in the DT to specify the
+>> unsupported firmware idle states and ignore those states in the parsing
+>> code when initializing the cpuidle driver
+>>
+>>    * Added an idle state description in the DT. As the idle states are
+>> not standardized on ARM, the description gives information about the
+>> idle state
+>>
+>>    * Removed duplicate error message in the arm64 cpuidle drivers
+>>
+>> Thanks !
+>>
+>>     -- Daniel
+>>
+>>
+>> The following changes since commit fc14f9c1272f62c3e8d01300f52467c0d9af50f9:
+>>
+>>     Linux 3.18-rc5 (2014-11-16 16:36:20 -0800)
+>>
+>> are available in the git repository at:
+>>
+>>     http://git.linaro.org/git-ro/people/daniel.lezcano/linux.git cpuidle/3.19
+>>
+>> for you to fetch changes up to 18f95a3640dbf421ab9532e517070a0c1cd4d582:
+>>
+>>     drivers: cpuidle: Remove cpuidle-arm64 duplicate error messages
+>> (2014-11-19 10:16:28 +0100)
+>
+> Pulled, but I had a conflict with one patch from you I'd already queued up for
+> 3.19-rc1.
+>
+> Can you please have a look at my bleeding-edge branch and check if I resolved
+> the conflict correctly?
 
-I'll fix it up for v4, moving the mutex just around the list_add() and
-adding a comment about what is protected by the mutex.
+Hi Rafael,
 
-Seth
+yes the conflict is correctly resolved.
 
-> 
-> Mira
-> --
-> To unsubscribe from this list: send the line "unsubscribe live-patching" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks
+   -- Daniel
+
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
