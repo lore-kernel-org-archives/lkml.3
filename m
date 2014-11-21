@@ -1,72 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaKUTBA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:01:00 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34068 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaKUTA7 (ORCPT
+	id S1751598AbaKUTGn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:06:43 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:61089 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986AbaKUTGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:00:59 -0500
-Date: Fri, 21 Nov 2014 18:58:56 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Andreas Ruprecht <rupran@einserver.de>
-Cc: Heiko Stuebner <heiko@sntech.de>, Liam Girdwood <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20141121185856.GJ3815@sirena.org.uk>
-References: <1416594913-30187-1-git-send-email-rupran@einserver.de>
+	Fri, 21 Nov 2014 14:06:41 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3/wSlNRiBFY7h6fz"
-Content-Disposition: inline
-In-Reply-To: <1416594913-30187-1-git-send-email-rupran@einserver.de>
-X-Cookie: Some optional equipment shown.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: rockchip: i2s: Add dependency to I2S device driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
+References: <alpine.DEB.2.11.1411202204030.3950@nanos>
+	<20141120221122.GA25393@htj.dyndns.org>
+	<alpine.DEB.2.11.1411202315230.3950@nanos>
+	<20141120230514.GB25393@htj.dyndns.org>
+	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
+	<20141120233920.GC25393@htj.dyndns.org>
+	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
+	<20141121162742.GB15461@htj.dyndns.org>
+	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
+	<CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
+	<20141121170805.GD30603@home.goodmis.org>
+	<CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
+	<CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
+	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
+Date: Fri, 21 Nov 2014 11:06:41 -0800
+X-Google-Sender-Auth: 0Mfp-U_Sq6ne11NKE6MVkIL56_4
+Message-ID: <CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 21, 2014 at 10:22 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>  (d) the non-PAE case would look something like this:
+>
+>     static noinline int vmalloc_fault(unsigned long address)
+>     {
+>         unsigned index;
+>         pgd_t *pgd_dst, pgd_entry;
+>
+>         /* Make sure we are in vmalloc area: */
+>         if (!(address >= VMALLOC_START && address < VMALLOC_END))
+>                 return -1;
 
---3/wSlNRiBFY7h6fz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Side note: I think this is just unnecessary confusion, and generates
+big constants for no good reason.
 
-On Fri, Nov 21, 2014 at 07:35:13PM +0100, Andreas Ruprecht wrote:
-> Currently, CONFIG_SND_SOC_ROCKCHIP_I2S could also be selected
-> without having CONFIG_SND_SOC_ROCKCHIP enabled.
->=20
-> As this makes no sense (and breaks the build, when the option
-> CONFIG_SND_SOC_GENERIC_DMAENGINE_PCM - which would be selected by
-> CONFIG_SND_SOC_ROCKCHIP - is not enabled), a Kconfig dependency
-> is added to CONFIG_SND_SOC_ROCKCHIP_I2S. This will make the item
-> visible only if CONFIG_SND_SOC_ROCKCHIP is enabled.
+The thing is, the kernel PGD's should always be in sync. In fact, at
+PGD allocation time, we just do
 
-This doesn't seem like an obvious fix - why is the fix not to put the
-select on the I2S driver (which is the thing that actually depends on
-the dmaengine stuff)? =20
+     clone_pgd_range(.. KERNEL_PGD_BOUNDARY, KERNEL_PGD_PTRS);
 
---3/wSlNRiBFY7h6fz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+and it might actually be better to structure this to be that exact same thing.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+So instead of checking the address, we could just do
 
-iQEcBAEBAgAGBQJUb4twAAoJECTWi3JdVIfQrQYH/11BKDB5c4u0DcCrYsBIZO4S
-9T9+RSlxKXw+31lHTA5VAcZMdcWM09wscUrp6et0diNWxowxRQwnB2wIYbX8pJmG
-pvaCEM/JFyqX3RRoMu2bE6eqrIMBnvOSzv2oc38w69tsJt9Xt2lYb7CU0pP+Lpsr
-kS/c5gfRAYq6XIqvojsQ1Ub0IqIacIsnz1m2Sx1OyWOpHSGXD2hLKa6GUQdxGKml
-9YeLMHxioWz62fHl4NhYZSLv4DRDh1YwKsKzM93b3FSwXiqZnv+1rI+fEJryLtg/
-YTcAQkLMtv9Qk1WHy0v2Y5pwruhi4RUKjM7iIpIVs8qUzzQvyH0bJURUe98+NHY=
-=zAV7
------END PGP SIGNATURE-----
+        index = pgd_index(address);
+        if (index < KERNEL_PGD_BOUNDARY)
+                return -1;
 
---3/wSlNRiBFY7h6fz--
+which actually matches our initialization sequence much better anyway.
+And avoids those random big constants.
+
+Also, it turns out that this:
+
+        if (pgd_present(pgd_dst[index]))
+
+generates a crazy big constant because of bad compiler issues (the
+"pgd_present()" thing only checks the low bit, but it does so on
+pgd_flags(), which does "native_pgd_val(pgd) & PTE_FLAGS_MASK", so you
+have an insane extra "and" with the constant 0xffffc00000000fff, just
+to then "and" it again with "1". It doesn't do that with the first
+pgd_present() check, oddly enough.
+
+WTF, gcc?
+
+Anyway, even more importantly, because of the whole issue with nesting
+page tables, it's probably best to actually avoid all the
+"pgd_present()" etc helpers, because those might be hardcoded to 1
+etc. So avoid the whole issue by just accessign the raw data.
+
+Simplify, simplify, simplify. The actual code generation for this all
+should be maybe 20 instructions.
+
+Here's the simplified end result. Again, this is TOTALLY UNTESTED. I
+compiled it and verified that the code generation looks like what I'd
+have expected, but that's literally it.
+
+  static noinline int vmalloc_fault(unsigned long address)
+  {
+        pgd_t *pgd_dst;
+        pgdval_t pgd_entry;
+        unsigned index = pgd_index(address);
+
+        if (index < KERNEL_PGD_BOUNDARY)
+                return -1;
+
+        pgd_entry = init_mm.pgd[index].pgd;
+        if (!pgd_entry)
+                return -1;
+
+        pgd_dst = __va(PAGE_MASK & read_cr3());
+        pgd_dst += index;
+
+        if (pgd_dst->pgd)
+                return -1;
+
+        ACCESS_ONCE(pgd_dst->pgd) = pgd_entry;
+        return 0;
+  }
+  NOKPROBE_SYMBOL(vmalloc_fault);
+
+Hmm? Does anybody see anything fundamentally wrong with this?
+
+                     Linus
