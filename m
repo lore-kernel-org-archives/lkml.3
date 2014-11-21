@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758238AbaKUIMd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 03:12:33 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39345 "EHLO
+	id S1758219AbaKUIMc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 03:12:32 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39344 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757162AbaKUILi (ORCPT
+	with ESMTP id S1757271AbaKUILi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Nov 2014 03:11:38 -0500
 X-Original-SENDERIP: 10.177.222.213
@@ -17,9 +17,9 @@ Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
         Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 7/7] mm/page_owner: correct owner information for early allocated pages
-Date: Fri, 21 Nov 2014 17:14:06 +0900
-Message-Id: <1416557646-21755-8-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 4/7] mm/nommu: use alloc_pages_exact() rather than it's own implementation
+Date: Fri, 21 Nov 2014 17:14:03 +0900
+Message-Id: <1416557646-21755-5-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1416557646-21755-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1416557646-21755-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -27,150 +27,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extended memory to store page owner information is initialized some time
-later than that page allocator starts. Until initialization, many pages
-can be allocated and they have no owner information. This make debugging
-using page owner harder, so some fixup will be helpful.
+do_mmap_private() in nommu.c try to allocate physically contiguous pages
+with arbitrary size in some cases and we now have good abstract function
+to do exactly same thing, alloc_pages_exact(). So, change to use it.
 
-This patch fix up this situation by setting fake owner information
-immediately after page extension is initialized. Information doesn't
-tell the right owner, but, at least, it can tell whether page is
-allocated or not, more correctly.
-
-On my testing, this patch catches 13343 early allocated pages, although
-they are mostly allocated from page extension feature. Anyway, after then,
-there is no page left that it is allocated and has no page owner flag.
+There is no functional change.
+This is the preparation step for support page owner feature accurately.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 ---
- mm/page_owner.c |   93 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 91 insertions(+), 2 deletions(-)
+ mm/nommu.c |   33 +++++++++++----------------------
+ 1 file changed, 11 insertions(+), 22 deletions(-)
 
-diff --git a/mm/page_owner.c b/mm/page_owner.c
-index f75dfe0..2ea8d02 100644
---- a/mm/page_owner.c
-+++ b/mm/page_owner.c
-@@ -10,6 +10,8 @@
- static bool page_owner_disabled;
- static bool page_owner_enabled __read_mostly;
- 
-+static void init_early_allocated_pages(void);
-+
- static int early_disable_page_owner(char *buf)
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 2266a34..1b87c17 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -1149,8 +1149,7 @@ static int do_mmap_private(struct vm_area_struct *vma,
+ 			   unsigned long len,
+ 			   unsigned long capabilities)
  {
- 	page_owner_disabled = true;
-@@ -32,6 +34,7 @@ static void init_page_owner(void)
- 		return;
+-	struct page *pages;
+-	unsigned long total, point, n;
++	unsigned long total, point;
+ 	void *base;
+ 	int ret, order;
  
- 	page_owner_enabled = true;
-+	init_early_allocated_pages();
- }
+@@ -1182,33 +1181,23 @@ static int do_mmap_private(struct vm_area_struct *vma,
+ 	order = get_order(len);
+ 	kdebug("alloc order %d for %lx", order, len);
  
- struct page_ext_operations page_owner_ops = {
-@@ -186,8 +189,8 @@ read_page_owner(struct file *file, char __user *buf, size_t count, loff_t *ppos)
- 		page_ext = lookup_page_ext(page);
+-	pages = alloc_pages(GFP_KERNEL, order);
+-	if (!pages)
+-		goto enomem;
+-
+ 	total = 1 << order;
+-	atomic_long_add(total, &mmap_pages_allocated);
+-
+ 	point = len >> PAGE_SHIFT;
  
- 		/*
--		 * Pages allocated before initialization of page_owner are
--		 * non-buddy and have no page_owner info.
-+		 * Some pages could be missed by concurrent allocation or free,
-+		 * because we don't hold the zone lock.
- 		 */
- 		if (!test_bit(PAGE_EXT_OWNER, &page_ext->flags))
- 			continue;
-@@ -201,6 +204,92 @@ read_page_owner(struct file *file, char __user *buf, size_t count, loff_t *ppos)
- 	return 0;
- }
+-	/* we allocated a power-of-2 sized page set, so we may want to trim off
+-	 * the excess */
++	/* we don't want to allocate a power-of-2 sized page set */
+ 	if (sysctl_nr_trim_pages && total - point >= sysctl_nr_trim_pages) {
+-		while (total > point) {
+-			order = ilog2(total - point);
+-			n = 1 << order;
+-			kdebug("shave %lu/%lu @%lu", n, total - point, total);
+-			atomic_long_sub(n, &mmap_pages_allocated);
+-			total -= n;
+-			set_page_refcounted(pages + total);
+-			__free_pages(pages + total, order);
+-		}
++		total = point;
++		kdebug("try to alloc exact %lu pages", total);
++		base = alloc_pages_exact(len, GFP_KERNEL);
++	} else {
++		base = __get_free_pages(GFP_KERNEL, order);
+ 	}
  
-+static void init_pages_in_zone(pg_data_t *pgdat, struct zone *zone)
-+{
-+	struct page *page;
-+	struct page_ext *page_ext;
-+	unsigned long pfn = zone->zone_start_pfn, block_end_pfn;
-+	unsigned long end_pfn = pfn + zone->spanned_pages;
-+	unsigned long count = 0;
+-	for (point = 1; point < total; point++)
+-		set_page_refcounted(&pages[point]);
++	if (!base)
++		goto enomem;
 +
-+	/* Scan block by block. First and last block may be incomplete */
-+	pfn = zone->zone_start_pfn;
-+
-+	/*
-+	 * Walk the zone in pageblock_nr_pages steps. If a page block spans
-+	 * a zone boundary, it will be double counted between zones. This does
-+	 * not matter as the mixed block count will still be correct
-+	 */
-+	for (; pfn < end_pfn; ) {
-+		if (!pfn_valid(pfn)) {
-+			pfn = ALIGN(pfn + 1, MAX_ORDER_NR_PAGES);
-+			continue;
-+		}
-+
-+		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
-+		block_end_pfn = min(block_end_pfn, end_pfn);
-+
-+		page = pfn_to_page(pfn);
-+
-+		for (; pfn < block_end_pfn; pfn++) {
-+			if (!pfn_valid_within(pfn))
-+				continue;
-+
-+			page = pfn_to_page(pfn);
-+
-+			/*
-+			 * We are safe to check buddy flag and order, because
-+			 * this is init stage and only single thread runs.
-+			 */
-+			if (PageBuddy(page)) {
-+				pfn += (1UL << page_order(page)) - 1;
-+				continue;
-+			}
-+
-+			if (PageReserved(page))
-+				continue;
-+
-+			page_ext = lookup_page_ext(page);
-+
-+			/* Maybe overraping zone */
-+			if (test_bit(PAGE_EXT_OWNER, &page_ext->flags))
-+				continue;
-+
-+			/* Found early allocated page */
-+			set_page_owner(page, 0, 0);
-+			count++;
-+		}
-+	}
-+
-+	pr_info("Node %d, zone %8s: page owner found early allocated %lu pages\n",
-+		pgdat->node_id, zone->name, count);
-+}
-+
-+static void init_zones_in_node(pg_data_t *pgdat)
-+{
-+	struct zone *zone;
-+	struct zone *node_zones = pgdat->node_zones;
-+	unsigned long flags;
-+
-+	for (zone = node_zones; zone - node_zones < MAX_NR_ZONES; ++zone) {
-+		if (!populated_zone(zone))
-+			continue;
-+
-+		spin_lock_irqsave(&zone->lock, flags);
-+		init_pages_in_zone(pgdat, zone);
-+		spin_unlock_irqrestore(&zone->lock, flags);
-+	}
-+}
-+
-+static void init_early_allocated_pages(void)
-+{
-+	pg_data_t *pgdat;
-+
-+	drain_all_pages(NULL);
-+	for_each_online_pgdat(pgdat)
-+		init_zones_in_node(pgdat);
-+}
-+
- static const struct file_operations proc_page_owner_operations = {
- 	.read		= read_page_owner,
- };
++	atomic_long_add(total, &mmap_pages_allocated);
+ 
+-	base = page_address(pages);
+ 	region->vm_flags = vma->vm_flags |= VM_MAPPED_COPY;
+ 	region->vm_start = (unsigned long) base;
+ 	region->vm_end   = region->vm_start + len;
 -- 
 1.7.9.5
 
