@@ -1,233 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014AbaKUAWd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 19:22:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42581 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755490AbaKUAWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 19:22:32 -0500
-Date: Fri, 21 Nov 2014 01:22:33 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Seth Jennings <sjenning@redhat.com>
-cc: Josh Poimboeuf <jpoimboe@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
-        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
-In-Reply-To: <1416522580-5593-3-git-send-email-sjenning@redhat.com>
-Message-ID: <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz>
-References: <1416522580-5593-1-git-send-email-sjenning@redhat.com> <1416522580-5593-3-git-send-email-sjenning@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756917AbaKUA3r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 19:29:47 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:63328 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755788AbaKUA3p convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 19:29:45 -0500
+Content-Type: text/plain; charset=koi8-r
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] i2c: omap: fix i207 errata handling
+From: Alexander Kochetkov <al.kochet@gmail.com>
+In-Reply-To: <1416529011-21803-1-git-send-email-al.kochet@gmail.com>
+Date: Fri, 21 Nov 2014 03:29:40 +0300
+Cc: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>,
+        Felipe Balbi <balbi@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <089B5BDA-682D-46B6-869F-A6ADDFE691C3@gmail.com>
+References: <1416529011-21803-1-git-send-email-al.kochet@gmail.com>
+To: linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Alexander Kochetkov <al.kochet@gmail.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Nov 2014, Seth Jennings wrote:
+21 нояб. 2014 г., в 3:16, Alexander Kochetkov <al.kochet@gmail.com> написал(а):
 
-> This commit introduces code for the live patching core.  It implements
-> an ftrace-based mechanism and kernel interface for doing live patching
-> of kernel and kernel module functions.
-> 
-> It represents the greatest common functionality set between kpatch and
-> kgraft and can accept patches built using either method.
-> 
-> This first version does not implement any consistency mechanism that
-> ensures that old and new code do not run together.  In practice, ~90% of
-> CVEs are safe to apply in this way, since they simply add a conditional
-> check.  However, any function change that can not execute safely with
-> the old version of the function can _not_ be safely applied in this
-> version.
-> 
-> Signed-off-by: Seth Jennings <sjenning@redhat.com>
+> commit 6d9939f651419a63e091105663821f9c7d3fec37 (i2c: omap: split out [XR]DR
+> and [XR]RDY) changed the way how errata i207 (I2C: RDR Flag May Be Incorrectly
+> Set) get handled.
 
-I think this is getting really close, which is awesome. A few rather minor 
-nits below.
+It's is seen if open 6d9939f651419a63e09^ and 6d9939f651419a63e09 side by side:
 
-[ ... snip ... ]
-> diff --git a/arch/x86/include/asm/livepatch.h b/arch/x86/include/asm/livepatch.h
-> new file mode 100644
-> index 0000000..2ed86ec
-> --- /dev/null
-> +++ b/arch/x86/include/asm/livepatch.h
-> @@ -0,0 +1,37 @@
-> +/*
-> + * livepatch.h - x86-specific Kernel Live Patching Core
-> + *
-> + * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version 2
-> + * of the License, or (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#ifndef _ASM_X86_LIVEPATCH_H
-> +#define _ASM_X86_LIVEPATCH_H
-> +
-> +#include <linux/module.h>
-> +
-> +#ifdef CONFIG_LIVE_PATCHING
-> +extern int klp_write_module_reloc(struct module *mod, unsigned long type,
-> +				  unsigned long loc, unsigned long value);
-> +
-> +#else
-> +static int klp_write_module_reloc(struct module *mod, unsigned long type,
+6d9939f651419a63e09^:
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/drivers/i2c/busses/i2c-omap.c?id=540a4790f7da0d3ca5ad9d726f198a5eb4db05ec#n800
 
-static inline?
+6d9939f651419a63e09:
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/drivers/i2c/busses/i2c-omap.c?id=6d9939f651419a63e091105663821f9c7d3fec37#n800
 
-[ ... snip ... ]
-> --- /dev/null
-> +++ b/kernel/livepatch/Kconfig
-> @@ -0,0 +1,18 @@
-> +config ARCH_HAVE_LIVE_PATCHING
-> +	boolean
-> +	help
-> +	  Arch supports kernel live patching
-> +
-> +config LIVE_PATCHING
-> +	boolean "Kernel Live Patching"
-> +	depends on DYNAMIC_FTRACE_WITH_REGS
-> +	depends on MODULES
-> +	depends on SYSFS
-> +	depends on KALLSYMS_ALL
-> +	depends on ARCH_HAVE_LIVE_PATCHING
+Errata "2C: RDR Flag May Be Incorrectly Set"
+http://www.ti.com/lit/er/sprz319f/sprz319f.pdf
 
-We have to refuse to build on x86_64 if the compiler doesn't support 
-fentry. mcount is not really usable (well, it would be possible to use it, 
-be the obstacles are too big to care).
+21 нояб. 2014 г., в 3:16, Alexander Kochetkov <al.kochet@gmail.com> написал(а):
 
-Something like [1] should be applicable here as well I believe.
+> Found by code review. Real impact haven't seen.
+> Tested on Beagleboard XM C.
 
-[1] https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/commit/?h=kgraft&id=bd4bc097c72937d18036f1312a4d79ed0bea9991
+Does anybody know the "certain rare conditions" when RDR errata appears?
+I tested without luck (Beagleboard XM C).
 
-[ ... snip ... ]
-> --- /dev/null
-> +++ b/kernel/livepatch/core.c
-> @@ -0,0 +1,828 @@
-> +/*
-> + * core.c - Kernel Live Patching Core
-> + *
-> + * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version 2
-> + * of the License, or (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/mutex.h>
-> +#include <linux/slab.h>
-> +#include <linux/ftrace.h>
-> +#include <linux/list.h>
-> +#include <linux/kallsyms.h>
-> +#include <linux/livepatch.h>
-> +
-> +/*************************************
-> + * Core structures
-> + ************************************/
-
-I don't personally find such markers (especially with all the '*'s) too 
-tasteful, and I don't recall ever seeing this being common pattern used in 
-the kernel code ... ?
-
-> +static DEFINE_MUTEX(klp_mutex);
-> +static LIST_HEAD(klp_patches);
-> +
-> +/*******************************************
-> + * Helpers
-> + *******************************************/
-> +
-> +/* sets obj->mod if object is not vmlinux and module is found */
-> +static bool klp_find_object_module(struct klp_object *obj)
-> +{
-> +	if (!strcmp(obj->name, "vmlinux"))
-> +		return 1;
-
-Rather a matter of taste again -- I personally would prefer "obj->name == 
-NULL" to be the condition identifying core kernel code text. You can't 
-really forbid any lunetic out there calling his kernel module "vmlinux", 
-right? :)
-
-[ ... snip ... ]
-
-> +/***********************************
-> + * ftrace registration
-> + **********************************/
-> +
-> +static void klp_ftrace_handler(unsigned long ip, unsigned long parent_ip,
-> +			       struct ftrace_ops *ops, struct pt_regs *regs)
-> +{
-> +	struct klp_func *func = ops->private;
-> +
-> +	regs->ip = (unsigned long)func->new_func;
-> +}
-> +
-> +static int klp_enable_func(struct klp_func *func)
-> +{
-> +	int ret;
-> +
-> +	if (WARN_ON(!func->old_addr || func->state != LPC_DISABLED))
-> +		return -EINVAL;
-
-If the WARN_ON triggers, there is no good way to find out which of the two 
-conditions triggered it.
-
-[ ... snip ... ]
-> +static int klp_init_patch(struct klp_patch *patch)
-> +{
-> +	int ret;
-> +
-> +	mutex_lock(&klp_mutex);
-> +
-> +	/* init */
-> +	patch->state = LPC_DISABLED;
-> +
-> +	/* sysfs */
-> +	ret = kobject_init_and_add(&patch->kobj, &klp_ktype_patch,
-> +				   klp_root_kobj, patch->mod->name);
-> +	if (ret)
-> +		return ret;
-
-klp_mutex is leaked locked here.
-
-> +
-> +	/* create objects */
-> +	ret = klp_init_objects(patch);
-> +	if (ret) {
-> +		kobject_put(&patch->kobj);
-> +		return ret;
-
-And here as well.
-
-All in all, this is looking very good to me. I think we are really close 
-to having a code that all the parties would agree with. Thanks everybody,
-
--- 
-Jiri Kosina
-SUSE Labs
