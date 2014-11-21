@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102AbaKUIYx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 03:24:53 -0500
-Received: from mga02.intel.com ([134.134.136.20]:14555 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754699AbaKUIYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 03:24:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,429,1413270000"; 
-   d="scan'208";a="641011377"
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
-        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH] sched: fix start hrtick for short schedule slices on UP
-Date: Fri, 21 Nov 2014 16:24:43 +0800
-Message-Id: <1416558283-204916-1-git-send-email-wanpeng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1757720AbaKUI3T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 03:29:19 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:35844 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174AbaKUI3S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 03:29:18 -0500
+Message-ID: <546EF7DA.20008@gmail.com>
+Date: Fri, 21 Nov 2014 09:29:14 +0100
+From: Harald Hoyer <harald.hoyer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Re: kdbus: add documentation
+References: <1416546149-24799-1-git-send-email-gregkh@linuxfoundation.org> <1416546149-24799-2-git-send-email-gregkh@linuxfoundation.org>
+In-Reply-To: <1416546149-24799-2-git-send-email-gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Start hrtick for schedule slices shorter than 10000ns doesn't make any 
-sense and can cause timer DoS.
+On 21.11.2014 06:02, Greg Kroah-Hartman wrote:
+> From: Daniel Mack <daniel@zonque.org>
+> …
 
-The commit 177ef2a6315e ("sched/deadline: Fix a precision problem in 
-the microseconds range") fixes the shorter slices issue for dl class. 
-Both the UP and SMP sides of hrtick_start() will handle the shorter 
-slices issue before the commit, however, the UP side of hrtick_start() 
-doesn't handle shorter slides issue any more after the commit applied.
+> +5.4 Creating buses and endpoints
+> +--------------------------------
+> +
+> +KDBUS_CMD_BUS_MAKE, and KDBUS_CMD_ENDPOINT_MAKE take a
+> +struct kdbus_cmd_make argument.
+> +
+> +struct kdbus_cmd_make {
+> +  __u64 size;
+> +    The overall size of the struct, including its items.
+> +
+> +  __u64 flags;
+> +    The flags for creation.
+> +
+> +    KDBUS_MAKE_ACCESS_GROUP
+> +      Make the device file group-accessible
 
-This patch fix it by making sure the scheduling slice won't be smaller 
-than 10us in the UP side of hrtick_start() for fair and dl schedule 
-class.
+device?
 
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
----
- kernel/sched/core.c | 5 +++++
- 1 file changed, 5 insertions(+)
+> +
+> +    KDBUS_MAKE_ACCESS_WORLD
+> +      Make the device file world-accessible
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index d44d0c5..dbfcca6 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -490,6 +490,11 @@ static __init void init_hrtick(void)
-  */
- void hrtick_start(struct rq *rq, u64 delay)
- {
-+	/*
-+	 * Don't schedule slices shorter than 10000ns, that just
-+	 * doesn't make sense. Rely on vruntime for fairness.
-+	 */
-+	delay = max_t(u64, delay, 10000LL);
- 	__hrtimer_start_range_ns(&rq->hrtick_timer, ns_to_ktime(delay), 0,
- 			HRTIMER_MODE_REL_PINNED, 0);
- }
--- 
-1.9.1
+device?
 
+> +
+> +  __u64 kernel_flags;
+> +    Valid flags for this command, returned by the kernel upon each call.
+> +
+> +  struct kdbus_item items[0];
+> +    A list of items, only used for creating custom endpoints. Has specific
+> +    meanings for KDBUS_CMD_BUS_MAKE and KDBUS_CMD_ENDPOINT_MAKE (see above).
+> +};
+> …
