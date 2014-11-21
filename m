@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758573AbaKUOvb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 09:51:31 -0500
-Received: from mail-oi0-f50.google.com ([209.85.218.50]:63879 "EHLO
-	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755423AbaKUOv3 (ORCPT
+	id S1758614AbaKUOwP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 09:52:15 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:63379 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755378AbaKUOwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 09:51:29 -0500
+	Fri, 21 Nov 2014 09:52:13 -0500
+From: Hans-Peter Jansen <hpj@urpla.net>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-unionfs@vger.kernel.org
+Subject: Re: [GIT PULL] overlay filesystem fixes for 3.18
+Date: Fri, 21 Nov 2014 15:51:59 +0100
+Message-ID: <1775324.vr1BUO4kWb@xrated>
+User-Agent: KMail/4.14.3 (Linux/3.11.10-21-desktop; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <CAJfpegtRktN8BdOogCMW++Gar02j06K=9OYOyDMBbwBZq6_=Hg@mail.gmail.com>
+References: <20141120164531.GB3596@tucsk> <1962959.JkOx4gJGaG@xrated> <CAJfpegtRktN8BdOogCMW++Gar02j06K=9OYOyDMBbwBZq6_=Hg@mail.gmail.com>
 MIME-Version: 1.0
-Date: Fri, 21 Nov 2014 15:51:28 +0100
-X-Google-Sender-Auth: yQED1sj3vCh2EEzFm2q_EXoqGNs
-Message-ID: <CAJZ5v0hOVGGt7_cq-tp5LPKaiZ7bF7mtXgyfBwZ7cOWMBb+c0g@mail.gmail.com>
-Subject: [GIT PULL] ACPI power management fix for 3.18-rc6
-From: "Rafael J. Wysocki" <rafael@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:DxeCUYgERVXD4e9SGzN8ZmzfuV6VlPfLcHkpR9TTdiy
+ MF3cHD4pt9AOdvRppjXk+ZErbihZOe7i06maq62yGUnst4SfOk
+ hmmYFg1DMsiKB+SFEfle0P+/vHNW1nH8pcnMRlp7oGO8qh+lI5
+ zBP9eP2TVH+P56aT6dnieiCg9qJu5wUzcGspKCFPxmHLPukPKg
+ 8zgfXFriSO6ydFOgReCLiGYcfElXNISSewAHJmBGjh2ViItbKF
+ 4I5JBeFnxHfBt3ibsrpw9qtSLMjUM2u2a2AVSDFS4mlrRs3GL5
+ jxL5DQmdjf6PFt+hjQeXqrPpYDD2ERhw2dS62Pzrb9464HR3g=
+ =
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Freitag, 21. November 2014 13:41:57 Miklos Szeredi wrote:
+> On Fri, Nov 21, 2014 at 12:32 PM, Hans-Peter Jansen <hpj@urpla.net> wrote:
+> > Dear Miklos,
+> > 
+> > On Donnerstag, 20. November 2014 17:45:31 Miklos Szeredi wrote:
+> >> The biggest change is to rename the filesystem from "overlayfs" to
+> >> "overlay". This will allow legacy overlayfs to be easily carried by
+> >> distros
+> >> alongside the new mainline one.
+> > 
+> > Would you kindly give a firm elaboration of this rename?
+> > 
+> 
+> See this thread:
+> 
+> https://lkml.org/lkml/2014/11/18/433
 
-Please pull from
+Okay, thanks. I  must have missed this one. "overlay" is as good as a name can 
+be, IMHO.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
- pm+acpi-3.18-rc6
-
-to receive an ACPI power management fix for v3.18-rc6 as
-commit 78579b7c7eb45f0e7ec5e9437087ed21749f9a9c
-
- ACPI / PM: Ignore wakeup setting if the ACPI companion can't wake up
-
-on top of commit fc14f9c1272f62c3e8d01300f52467c0d9af50f9
-
- Linux 3.18-rc5
-
-This is just a one-liner fixing a regression introduced in 3.13 that
-broke system suspend on some Chromebooks.
-
-On those machines there are ACPI device objects for some I2C devices
-that can wake up the system from sleep states, but that is done via
-a platform-specific mechanism and the ACPI objects don't contain any
-wakeup-related information.  When we started to use ACPI power
-management with those devices (which happened during the 3.13 cycle),
-their configuration confused the ACPI PM layer that returned error
-codes from suspend callbacks for them causing system suspend to fail.
-
-However, the ACPI PM layer can safely ignore the wakeup setting from
-a device driver if the ACPI object corresponding to the device in
-question doesn't contain wakeup information in which case the driver
-itself is responsible for setting up the device for system wakeup.
-
-Thanks!
-
----------------
-
-Rafael J. Wysocki (1):
-      ACPI / PM: Ignore wakeup setting if the ACPI companion can't wake up
-
----------------
-
- drivers/acpi/device_pm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Cheers,
+Pete
