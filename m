@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307AbaKUKYK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 05:24:10 -0500
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:52718 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750810AbaKUKYI (ORCPT
+	id S1755236AbaKUK1L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 05:27:11 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:59352 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476AbaKUK1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 05:24:08 -0500
-Message-ID: <1416565445.6958.3.camel@x220>
-Subject: Re: [PATCH v5 08/24] amdkfd: Add amdkfd skeleton driver
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Oded Gabbay <oded.gabbay@amd.com>
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, John Bridgman <John.Bridgman@amd.com>,
-        Ben Goz <ben.goz@amd.com>, Jay Cornwall <jay.cornwall@amd.com>,
-        Evgeny Pinchuk <evgeny.pinchuk@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Alexey Skidanov <Alexey.Skidanov@amd.com>
-Date: Fri, 21 Nov 2014 11:24:05 +0100
-In-Reply-To: <1415471865-1893-9-git-send-email-oded.gabbay@amd.com>
-References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
-	 <1415471865-1893-9-git-send-email-oded.gabbay@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	Fri, 21 Nov 2014 05:27:08 -0500
+Message-ID: <546F1367.4060301@linux.vnet.ibm.com>
+Date: Fri, 21 Nov 2014 15:56:47 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Denis Kirjanov <kirjanov@gmail.com>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, mikey@neuling.org,
+        james.hogan@imgtec.com, avagin@openvz.org, Paul.Clothier@imgtec.com,
+        peterz@infradead.org, palves@redhat.com, oleg@redhat.com,
+        dhowells@redhat.com, tglx@linutronix.de, davej@redhat.com,
+        akpm@linux-foundation.org, sukadev@linux.vnet.ibm.com,
+        davem@davemloft.net, sam.bobroff@au1.ibm.com
+Subject: Re: [PATCH V4 7/8] powerpc, ptrace: Enable support for miscellaneous
+ debug registers
+References: <1415683597-22819-1-git-send-email-khandual@linux.vnet.ibm.com> <1415683597-22819-8-git-send-email-khandual@linux.vnet.ibm.com> <54647DA7.1070000@linux.vnet.ibm.com> <CAHj3AVna2H1VZvP0=Xjw9pqS+gRKR7_KH9FNhX3vUBFh7OU2wA@mail.gmail.com>
+In-Reply-To: <CAHj3AVna2H1VZvP0=Xjw9pqS+gRKR7_KH9FNhX3vUBFh7OU2wA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Nov 2014 10:24:05.0653 (UTC) FILETIME=[4722F450:01D00575]
-X-RcptDomain: vger.kernel.org
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112110-0033-0000-0000-000000908376
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-11-08 at 20:37 +0200, Oded Gabbay wrote:
-> This patch adds the amdkfd skeleton driver. The driver does nothing except
-> define a /dev/kfd device.
+On 11/14/2014 03:30 PM, Denis Kirjanov wrote:
+> On 11/13/14, Anshuman Khandual <khandual@linux.vnet.ibm.com> wrote:
+>> > On 11/11/2014 10:56 AM, Anshuman Khandual wrote:
+>>> >> This patch enables get and set of miscellaneous debug registers through
+>>> >> ptrace PTRACE_GETREGSET-PTRACE_SETREGSET interface by implementing new
+>>> >> powerpc specific register set REGSET_MISC support corresponding to the
+>>> >> new ELF core note NT_PPC_MISC added previously in this regard.
+>> >
+>> > Right now this one does not compile for "ppc64e_defconfig" and
+>> > "pmac32_defconfig" config options. The patch below will fix it
+>> > and would be part of next revision.
+> It would be great to have a test tool for that under
+> tools/testing/selftests/ptrace/
 > 
-> It returns -ENODEV on all amdkfd IOCTLs.
-> 
-> v3: Move bool field to the end of structure, removed the pmc ioctls and added
-> a meaningful error message for ioctl error.
-> 
-> v5:
-> 
-> Create a new folder drm/amd and move amdkfd from drm/radeon/ to drm/amd/
-> Remove scheduler_class from kfd_priv.h as it was never used
-> Add skeleton implementation of the Get Version IOCTL
-> 
-> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 
-It seems v6 of this patch is included in today's linux-next (ie,
-next-20141121).
+Hey Denis,
 
->  drivers/gpu/drm/Kconfig                  |   2 +
->  drivers/gpu/drm/Makefile                 |   1 +
->  drivers/gpu/drm/amd/amdkfd/Kconfig       |  10 ++
->  drivers/gpu/drm/amd/amdkfd/Makefile      |   9 ++
->  drivers/gpu/drm/amd/amdkfd/kfd_chardev.c | 210 +++++++++++++++++++++++++++++++
->  drivers/gpu/drm/amd/amdkfd/kfd_device.c  | 130 +++++++++++++++++++
->  drivers/gpu/drm/amd/amdkfd/kfd_module.c  | 101 +++++++++++++++
->  drivers/gpu/drm/amd/amdkfd/kfd_priv.h    |  81 ++++++++++++
->  8 files changed, 544 insertions(+)
-> [...]
-> diff --git a/drivers/gpu/drm/amd/amdkfd/Kconfig b/drivers/gpu/drm/amd/amdkfd/Kconfig
-> new file mode 100644
-> index 0000000..a2ae6d4
-> --- /dev/null
-> +++ b/drivers/gpu/drm/amd/amdkfd/Kconfig
-> @@ -0,0 +1,10 @@
-> +#
-> +# Heterogenous system architecture configuration
-> +#
-> +
-> +config HSA_AMD
-> +	tristate "HSA kernel driver for AMD GPU devices"
-> +	depends on (DRM_RADEON || DRM_AMDGPU) && AMD_IOMMU_V2 && X86_64
-
-There's currently no Kconfig symbol DRM_AMDGPU (nor anything similar).
-Will that symbol be added in a future patch?
-
-> +	default m
-> +	help
-> +	  Enable this if you want to use HSA features on AMD GPU devices.
-
-
-Paul Bolle
+I have already added one test case under selftests/powerpc/tm/ which
+will test all the newly added ELF core note based ptrace requests on
+powerpc. This test case is added as part of the next patch 8/8 in
+the series. Please let me know if the test case does not cover something
+you are looking for.  
 
