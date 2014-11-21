@@ -1,63 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758860AbaKUP5a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:57:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56853 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758442AbaKUP5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:57:15 -0500
-Date: Fri, 21 Nov 2014 16:57:14 +0100
-From: David Sterba <dsterba@suse.cz>
-To: Daniel Dressler <danieru.dressler@gmail.com>
-Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        "open list:BTRFS FILE SYSTEM" <linux-btrfs@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Btrfs: delayed-inode: replace root args iff only fs_info
- used
-Message-ID: <20141121155714.GC8568@twin.jikos.cz>
-Reply-To: dsterba@suse.cz
-Mail-Followup-To: dsterba@suse.cz,
-	Daniel Dressler <danieru.dressler@gmail.com>,
-	Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-	"open list:BTRFS FILE SYSTEM" <linux-btrfs@vger.kernel.org>,
-	open list <linux-kernel@vger.kernel.org>
-References: <danieru.dressler@gmail.com>
- <1416229502-22368-1-git-send-email-danieru.dressler@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416229502-22368-1-git-send-email-danieru.dressler@gmail.com>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+	id S1758895AbaKUQAd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:00:33 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:56368 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758561AbaKUQAb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 11:00:31 -0500
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org, Tawfik Bayouk <tawfik@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Lior Amsalem <alior@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        devicetree@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [PATCHv3 08/16] clk: mvebu: add suspend/resume for gatable clocks
+Date: Fri, 21 Nov 2014 17:00:05 +0100
+Message-Id: <1416585613-2113-9-git-send-email-thomas.petazzoni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1416585613-2113-1-git-send-email-thomas.petazzoni@free-electrons.com>
+References: <1416585613-2113-1-git-send-email-thomas.petazzoni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 10:05:02PM +0900, Daniel Dressler wrote:
-> This is the second independent patch of a larger
-> project to cleanup btrfs's internal usage of
-> btrfs_root. Many functions take btrfs_root
-> only to grab the fs_info struct.
-> 
-> By requiring a root these functions cause
-> programmer overhead. That these functions can
-> accept any valid root is not obvious until
-> inspection.
-> 
-> This patch reduces the specificity of such
-> functions to accept the fs_info directly.
-> 
-> These patches can be applied independently
-> and thus are not being submitted as a patch
-> series. There should be about 26 patches by
-> the project's completion. Each patch will
-> cleanup between 1 and 34 functions apiece.
-> Each patch covers a single file's functions.
-> 
-> This patch affects the following function(s):
->   1) btrfs_wq_run_delayed_node
-> 
-> Signed-off-by: Daniel Dressler <danieru.dressler@gmail.com>
+This commit adds suspend/resume support for the gatable clock driver
+used on Marvell EBU platforms. When getting out of suspend, the
+Marvell EBU platforms go through the bootloader, which re-enables all
+gatable clocks. However, upon resume, the clock framework will not
+disable again all gatable clocks that are not used.
 
-Apart from the narrow paragraphs,
+Therefore, if the clock driver does not save/restore the state of the
+gatable clocks, all gatable clocks that are not claimed by any device
+driver will remain enabled after a resume. This is why this driver
+saves and restores the state of those clocks.
 
-Reviewed-by: David Sterba <dsterba@suse.cz>
+Since clocks aren't real devices, we don't have the normal ->suspend()
+and ->resume() of the device model, and have to use the ->suspend()
+and ->resume() hooks of the syscore_ops mechanism. This mechanism has
+the unfortunate idea of not providing a way of passing private data,
+which requires us to change the driver to make the assumption that
+there is only once instance of the gatable clock control structure.
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+ drivers/clk/mvebu/common.c | 32 ++++++++++++++++++++++++++++++--
+ 1 file changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
+index b7fcb46..0d4d121 100644
+--- a/drivers/clk/mvebu/common.c
++++ b/drivers/clk/mvebu/common.c
+@@ -19,6 +19,7 @@
+ #include <linux/io.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
++#include <linux/syscore_ops.h>
+ 
+ #include "common.h"
+ 
+@@ -177,14 +178,17 @@ struct clk_gating_ctrl {
+ 	spinlock_t *lock;
+ 	struct clk **gates;
+ 	int num_gates;
++	void __iomem *base;
++	u32 saved_reg;
+ };
+ 
+ #define to_clk_gate(_hw) container_of(_hw, struct clk_gate, hw)
+ 
++static struct clk_gating_ctrl *ctrl;
++
+ static struct clk *clk_gating_get_src(
+ 	struct of_phandle_args *clkspec, void *data)
+ {
+-	struct clk_gating_ctrl *ctrl = (struct clk_gating_ctrl *)data;
+ 	int n;
+ 
+ 	if (clkspec->args_count < 1)
+@@ -199,15 +203,35 @@ static struct clk *clk_gating_get_src(
+ 	return ERR_PTR(-ENODEV);
+ }
+ 
++static int mvebu_clk_gating_suspend(void)
++{
++	ctrl->saved_reg = readl(ctrl->base);
++	return 0;
++}
++
++static void mvebu_clk_gating_resume(void)
++{
++	writel(ctrl->saved_reg, ctrl->base);
++}
++
++static struct syscore_ops clk_gate_syscore_ops = {
++	.suspend = mvebu_clk_gating_suspend,
++	.resume = mvebu_clk_gating_resume,
++};
++
+ void __init mvebu_clk_gating_setup(struct device_node *np,
+ 				   const struct clk_gating_soc_desc *desc)
+ {
+-	struct clk_gating_ctrl *ctrl;
+ 	struct clk *clk;
+ 	void __iomem *base;
+ 	const char *default_parent = NULL;
+ 	int n;
+ 
++	if (ctrl) {
++		pr_err("mvebu-clk-gating: cannot instantiate more than one gatable clock device\n");
++		return;
++	}
++
+ 	base = of_iomap(np, 0);
+ 	if (WARN_ON(!base))
+ 		return;
+@@ -225,6 +249,8 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
+ 	/* lock must already be initialized */
+ 	ctrl->lock = &ctrl_gating_lock;
+ 
++	ctrl->base = base;
++
+ 	/* Count, allocate, and register clock gates */
+ 	for (n = 0; desc[n].name;)
+ 		n++;
+@@ -246,6 +272,8 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
+ 
+ 	of_clk_add_provider(np, clk_gating_get_src, ctrl);
+ 
++	register_syscore_ops(&clk_gate_syscore_ops);
++
+ 	return;
+ gates_out:
+ 	kfree(ctrl);
+-- 
+2.1.0
+
