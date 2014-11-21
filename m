@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758987AbaKUQtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:49:11 -0500
-Received: from smtp09.smtpout.orange.fr ([80.12.242.131]:59573 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758849AbaKUQtB (ORCPT
+	id S1758978AbaKUQxO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:53:14 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:34599 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757926AbaKUQxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:49:01 -0500
-X-ME-Helo: beldin
-X-ME-Date: Fri, 21 Nov 2014 17:48:58 +0100
-X-ME-IP: 109.222.88.20
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Michal Marek <mmarek@suse.cz>, Daniel Mack <daniel@zonque.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kbuild@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: arm: pxa: CPU_PXA27x?
-References: <1416566627.6958.16.camel@x220>
-X-URL: http://belgarath.falguerolles.org/
-Date: Fri, 21 Nov 2014 17:48:55 +0100
-In-Reply-To: <1416566627.6958.16.camel@x220> (Paul Bolle's message of "Fri, 21
-	Nov 2014 11:43:47 +0100")
-Message-ID: <87vbm85wjs.fsf@free.fr>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
+	Fri, 21 Nov 2014 11:53:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CALCETrW-RkhKa4n7X1HoPgmSuLV4V8YQ=FaSYVJ1YsHS=pJCSQ@mail.gmail.com>
+References: <1416546149-24799-1-git-send-email-gregkh@linuxfoundation.org>
+	<1416546149-24799-7-git-send-email-gregkh@linuxfoundation.org>
+	<CALCETrW-RkhKa4n7X1HoPgmSuLV4V8YQ=FaSYVJ1YsHS=pJCSQ@mail.gmail.com>
+Date: Fri, 21 Nov 2014 17:53:09 +0100
+Message-ID: <CANq1E4T9nJSAC2VprUXpCdCFPE+mzNSEzi+z78HdYU_OiYC=wA@mail.gmail.com>
+Subject: Re: kdbus: add node and filesystem implementation
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Mack <daniel@zonque.org>, Djalal Harouni <tixxdz@opendz.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Bolle <pebolle@tiscali.nl> writes:
+Hi
 
-> Robert,
+On Fri, Nov 21, 2014 at 5:35 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Thu, Nov 20, 2014 at 9:02 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+>> From: Daniel Mack <daniel@zonque.org>
+>>
+>> kdbusfs is a filesystem that will expose a fresh kdbus domain context
+>> each time it is mounted. Per mount point, there will be a 'control'
+>> node, which can be used to create buses. fs.c contains the
+>> implementation of that pseudo-fs. Exported inodes of 'file' type have
+>> their i_fop set to either kdbus_handle_control_ops or
+>> kdbus_handle_ep_ops, depending on their type. The actual dispatching
+>> of file operations is done from handle.c
+>>
+>> node.c is an implementation of a kdbus object that has an id and
+>> children, organized in an R/B tree. The tree is used by the filesystem
+>> code for lookup and iterator functions, and to deactivate children
+>> once the parent is deactivated. Every inode exported by kdbusfs is
+>> backed by a kdbus_node, hence it is embedded in struct kdbus_ep,
+>> struct kdbus_bus and struct kdbus_domain.
+>>
+>> Signed-off-by: Daniel Mack <daniel@zonque.org>
+>> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+>> Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> ---
 >
-> Your commit 03ec7fe70c5c ("arm: pxa: add pxa27x device-tree support") is
-> included in today's linux-next (ie, next-20141121). It adds a select
-> statement for CPU_PXA27x. But there's no Kconfig symbol CPU_PXA27x.
-Ah yes, you're perfectly right, CPU_PXA27x was not the one, it was PXA27x, sic
-..
-
 >
-> Why is that select needed? For what it's worth: __cpu_is_pxa27x()
-> compiles to something interesting if CONFIG_PXA27x is defined.
-You mean "is not defined", right ?
+>> +
+>> +static struct file_system_type fs_type = {
+>> +       .name           = KBUILD_MODNAME "fs",
+>> +       .owner          = THIS_MODULE,
+>> +       .mount          = fs_super_mount,
+>> +       .kill_sb        = fs_super_kill,
+>> +};
+>
+> Does this want something like:
+>
+> .fs_flags = FS_USERNS_MOUNT
 
-That (CONFIG_PXA27x) select is needed because without it the arm cpu
-architecture is not selected, ie. CONFIG_CPU_XSCALE is not set. And this in turn
-is needed to choose the basic arm operations like TLB handling, cache handling,
-etc ... You cannot compile a single platform kernel without this.
+Yes, we should add that. Nice catch!
 
-As a poor excuse, I hadn't seen this because this resulted from a poor merge
-resolution which brought in both "select PXA27x" and "select CPU_PXA27x".
+> This design may have the annoying property that, if a namespace-based
+> sandbox wants to use kdbus itself, it will need to proxy anything from
+> the parent that it wants to use.
+>
+> Is there a good reason why individual *busses* don't show up in the
+> filesystem?  If they did, maybe they could be bind-mounted or
+> otherwise arranged to cross namespace boundaries.
 
-> In https://lkml.org/lkml/2014/9/30/578 I proposed a patch that emits a
-> warning in cases like this. Like _all_ Kconfig related patches I've seen
-> flying by lately it appears to be dropped in /dev/null. What's going on?
-For that one I don't know.
+Buses show up as directories in kdbusfs. You can bind-mount them
+anywhere you want and you will get access to the endpoints in there.
 
-Ah, and yes I'll send an update patch to remove the "select CPU_PXA27x", thanks
-for noticing this.
-
-Cheers.
-
--- 
-Robert
+Thanks
+David
