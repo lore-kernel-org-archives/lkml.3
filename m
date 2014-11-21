@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749AbaKUXOd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 18:14:33 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:15568 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634AbaKUXOb (ORCPT
+	id S1752783AbaKUXRA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 18:17:00 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40114 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571AbaKUXQ6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 18:14:31 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/oGJywVGDojgJ39RFqbT3+
-Date: Fri, 21 Nov 2014 15:14:12 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-Subject: Re: linux-next: manual merge of the char-misc tree with the arm-soc
- tree
-Message-ID: <20141121231411.GW7046@atomide.com>
-References: <20141121172412.4caf89cc@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141121172412.4caf89cc@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 21 Nov 2014 18:16:58 -0500
+Content-Type: text/plain; charset=koi8-r
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] i2c: omap: fix i207 errata handling
+From: Alexander Kochetkov <al.kochet@gmail.com>
+In-Reply-To: <089B5BDA-682D-46B6-869F-A6ADDFE691C3@gmail.com>
+Date: Sat, 22 Nov 2014 02:16:53 +0300
+Cc: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>,
+        Felipe Balbi <balbi@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <ED68D587-66C0-427A-85D5-D213DC136ECD@gmail.com>
+References: <1416529011-21803-1-git-send-email-al.kochet@gmail.com> <089B5BDA-682D-46B6-869F-A6ADDFE691C3@gmail.com>
+To: linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Alexander Kochetkov <al.kochet@gmail.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Rothwell <sfr@canb.auug.org.au> [141120 22:26]:
-> Hi all,
+
+21 нояб. 2014 г., в 3:29, Alexander Kochetkov <al.kochet@gmail.com> написал(а):
+
+>> 
+>> Found by code review. Real impact haven't seen.
+>> Tested on Beagleboard XM C.
 > 
-> Today's linux-next merge of the char-misc tree got a conflict in
-> arch/arm/mach-omap2/Kconfig between commit 9e1e632c4846 ("ARM: OMAP2+:
-> Drop board file for ti8168evm") from the arm-soc tree and commit
-> 184901a06a36 ("ARM: removing support for etb/etm in
-> "arch/arm/kernel/"") from the char-misc tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+> Does anybody know the "certain rare conditions" when RDR errata appears?
+> I tested without luck (Beagleboard XM C).
 
-Looks right to me thanks.
+Spent half a day trying to catch the errata without luck.
+Tried to simulate noise on the bus in hope it may happen.
+Tried to run with OMAP_I2C_FLAG_NO_FIFO flag.
 
-Tony 
- 
-> diff --cc arch/arm/mach-omap2/Kconfig
-> index 27ec8923ddf6,06020fe77e57..000000000000
-> --- a/arch/arm/mach-omap2/Kconfig
-> +++ b/arch/arm/mach-omap2/Kconfig
-> @@@ -276,14 -282,16 +276,6 @@@ config MACH_SBC353
->   	default y
->   	select OMAP_PACKAGE_CUS
->   
-> - config OMAP3_EMU
-> - 	bool "OMAP3 debugging peripherals"
-> - 	depends on ARCH_OMAP3
-> - 	select ARM_AMBA
-> - 	select OC_ETM
-> - 	help
-> - 	  Say Y here to enable debugging hardware of omap3
->  -config MACH_TI8168EVM
->  -	bool "TI8168 Evaluation Module"
->  -	depends on SOC_TI81XX
->  -	default y
->  -
->  -config MACH_TI8148EVM
->  -	bool "TI8148 Evaluation Module"
->  -	depends on SOC_TI81XX
->  -	default y
-> --
->   config OMAP3_SDRC_AC_TIMING
->   	bool "Enable SDRC AC timing register changes"
->   	depends on ARCH_OMAP3
+What a mystery errata. Hiding.
 
+Anyway, thanks!
+Have a nice weekend!
 
