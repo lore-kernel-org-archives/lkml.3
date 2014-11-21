@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329AbaKUUjn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 15:39:43 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21381 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826AbaKUUjm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 15:39:42 -0500
-Date: Fri, 21 Nov 2014 12:39:38 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] block: bio_integrity_process uses wrong bio_vec iterator
-Message-ID: <20141121203938.GD10047@birch.djwong.org>
+	id S1752457AbaKUUkj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:40:39 -0500
+Received: from mail-by2on0114.outbound.protection.outlook.com ([207.46.100.114]:13760
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751911AbaKUUki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 15:40:38 -0500
+X-WSS-ID: 0NFEPFI-08-0SG-02
+X-M-MSG: 
+From: Oded Gabbay <oded.gabbay@amd.com>
+To: <dri-devel@lists.freedesktop.org>
+CC: <bp@alien8.de>, <pebolle@tiscali.nl>, <linux-kernel@vger.kernel.org>,
+        <airlied@linux.ie>, <alexander.deucher@amd.com>, <j.glisse@gmail.com>,
+        <John.Bridgman@amd.com>
+Subject: [PATCH] amdkfd: Remove DRM_AMDGPU dependency from Kconfig
+Date: Fri, 21 Nov 2014 22:40:17 +0200
+Message-ID: <1416602417-7337-1-git-send-email-oded.gabbay@amd.com>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(99396003)(120916001)(97736003)(50986999)(19580395003)(46102003)(68736004)(92566001)(92726001)(4396001)(50226001)(50466002)(47776003)(87936001)(101416001)(48376002)(53416004)(87286001)(44976005)(31966008)(20776003)(19580405001)(89996001)(84676001)(102836001)(110136001)(104166001)(64706001)(33646002)(77156002)(86362001)(105586002)(88136002)(229853001)(62966003)(106466001)(2351001)(107046002)(21056001)(93916002)(77096003)(95666004)(36756003);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB198;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
+X-Forefront-PRVS: 0402872DA1
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bio integrity handling is broken on a system with LVM layered atop a
-DIF/DIX SCSI drive because device mapper clones the bio, modifies the
-clone, and sends the clone to the lower layers for processing.
-However, the clone bio has bi_vcnt == 0, which means that when the sd
-driver calls bio_integrity_process to attach DIX data, the
-for_each_segment_all() call (which uses bi_vcnt) returns immediately
-and random garbage is sent to the disk on a disk write.  The disk of
-course returns error when it's fed garbage for checksums.
-
-Therefore, teach bio_integrity_process() to use bio_for_each_segment()
-to iterate the bio_vecs, since the per-bio iterator tracks which
-bio_vecs are associated with that particular bio.  The integrity
-handling code is effectively part of the "driver" (it's not the bio
-owner), so it must use the correct iterator function.
-
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- block/bio-integrity.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/amd/amdkfd/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/block/bio-integrity.c b/block/bio-integrity.c
-index 0984232..e1a320d 100644
---- a/block/bio-integrity.c
-+++ b/block/bio-integrity.c
-@@ -216,7 +216,8 @@ static int bio_integrity_process(struct bio *bio,
- {
- 	struct blk_integrity *bi = bdev_get_integrity(bio->bi_bdev);
- 	struct blk_integrity_iter iter;
--	struct bio_vec *bv;
-+	struct bvec_iter bviter;
-+	struct bio_vec bv;
- 	struct bio_integrity_payload *bip = bio_integrity(bio);
- 	unsigned int i, ret = 0;
- 	void *prot_buf = page_address(bip->bip_vec->bv_page) +
-@@ -227,11 +228,11 @@ static int bio_integrity_process(struct bio *bio,
- 	iter.seed = bip_get_seed(bip);
- 	iter.prot_buf = prot_buf;
+diff --git a/drivers/gpu/drm/amd/amdkfd/Kconfig b/drivers/gpu/drm/amd/amdkfd/Kconfig
+index e13c67c..8dfac37 100644
+--- a/drivers/gpu/drm/amd/amdkfd/Kconfig
++++ b/drivers/gpu/drm/amd/amdkfd/Kconfig
+@@ -4,6 +4,6 @@
  
--	bio_for_each_segment_all(bv, bio, i) {
--		void *kaddr = kmap_atomic(bv->bv_page);
-+	bio_for_each_segment(bv, bio, bviter) {
-+		void *kaddr = kmap_atomic(bv.bv_page);
- 
--		iter.data_buf = kaddr + bv->bv_offset;
--		iter.data_size = bv->bv_len;
-+		iter.data_buf = kaddr + bv.bv_offset;
-+		iter.data_size = bv.bv_len;
- 
- 		ret = proc_fn(&iter);
- 		if (ret) {
+ config HSA_AMD
+ 	tristate "HSA kernel driver for AMD GPU devices"
+-	depends on (DRM_RADEON || DRM_AMDGPU) && AMD_IOMMU_V2 && X86_64
++	depends on DRM_RADEON && AMD_IOMMU_V2 && X86_64
+ 	help
+ 	  Enable this if you want to use HSA features on AMD GPU devices.
+-- 
+2.1.0
+
