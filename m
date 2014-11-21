@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691AbaKUWTk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 17:19:40 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:34051 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485AbaKUWSD (ORCPT
+	id S1752841AbaKUWU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 17:20:26 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:63180 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948AbaKUWUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 17:18:03 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com, linux@eikelenboom.it
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v4 6/7] PCI: Expose pci_load_saved_state for public consumption.
-Date: Fri, 21 Nov 2014 17:17:50 -0500
-Message-Id: <1416608271-18931-7-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1416608271-18931-1-git-send-email-konrad.wilk@oracle.com>
-References: <1416608271-18931-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 21 Nov 2014 17:20:23 -0500
+Date: Fri, 21 Nov 2014 23:20:20 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Borislav Petkov <bp@alien8.de>,
+        X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
+ context
+Message-ID: <20141121222017.GE9198@lerouge>
+References: <cover.1416604491.git.luto@amacapital.net>
+ <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
+ <CALCETrXLq1y7e_dKFPgou-FKHB6Pu-r8+t-6Ds+8=va7anBWDA@mail.gmail.com>
+ <20141121220704.GU5050@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141121220704.GU5050@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have the pci_load_and_free_saved_state, and pci_store_saved_state
-but are missing the functionality to just load the state
-multiple times in the PCI device without having to free/save
-the state.
+On Fri, Nov 21, 2014 at 02:07:04PM -0800, Paul E. McKenney wrote:
+> On Fri, Nov 21, 2014 at 01:32:50PM -0800, Andy Lutomirski wrote:
+> > On Fri, Nov 21, 2014 at 1:26 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> > > We currently pretend that IST context is like standard exception
+> > > context, but this is incorrect.  IST entries from userspace are like
+> > > standard exceptions except that they use per-cpu stacks, so they are
+> > > atomic.  IST entries from kernel space are like NMIs from RCU's
+> > > perspective -- they are not quiescent states even if they
+> > > interrupted the kernel during a quiescent state.
+> > >
+> > > Add and use ist_enter and ist_exit to track IST context.  Even
+> > > though x86_32 has no IST stacks, we track these interrupts the same
+> > > way.
+> > 
+> > I should add:
+> > 
+> > I have no idea why RCU read-side critical sections are safe inside
+> > __do_page_fault today.  It's guarded by exception_enter(), but that
+> > doesn't do anything if context tracking is off, and context tracking
+> > is usually off. What am I missing here?
+> 
+> Ah!  There are three cases:
+> 
+> 1.	Context tracking is off on a non-idle CPU.  In this case, RCU is
+> 	still paying attention to CPUs running in both userspace and in
+> 	the kernel.  So if a page fault happens, RCU will be set up to
+> 	notice any RCU read-side critical sections.
+> 
+> 2.	Context tracking is on on a non-idle CPU.  In this case, RCU
+> 	might well be ignoring userspace execution: NO_HZ_FULL and
+> 	all that.  However, as you pointed out, in this case the
+> 	context-tracking code lets RCU know that we have entered the
+> 	kernel, which means that RCU will again be paying attention to
+> 	RCU read-side critical sections.
+> 
+> 3.	The CPU is idle.  In this case, RCU is ignoring the CPU, so
+> 	if we take a page fault when context tracking is off, life
+> 	will be hard.  But the kernel is not supposed to take page
+> 	faults in the idle loop, so this is not a problem.
+> 
+> Make sense?
 
-This patch makes it possible to use this function.
+To zoom out the picture for Andy, context tracking is never used 99%
+of all workloads. It's only used for NO_HZ_FULL. RCU needs to tick
+to poll on RCU uses. But when we run in userspace, RCU isn't used
+and thus doesn't need the tick which we can stop. So context tracking
+is there to tell RCU about CPUs crossing user/kernel boundaries.
 
-CC: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/pci/pci.c   | 5 +++--
- include/linux/pci.h | 2 ++
- 2 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 625a4ac..f00a9d6 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1142,8 +1142,8 @@ EXPORT_SYMBOL_GPL(pci_store_saved_state);
-  * @dev: PCI device that we're dealing with
-  * @state: Saved state returned from pci_store_saved_state()
-  */
--static int pci_load_saved_state(struct pci_dev *dev,
--				struct pci_saved_state *state)
-+int pci_load_saved_state(struct pci_dev *dev,
-+			 struct pci_saved_state *state)
- {
- 	struct pci_cap_saved_data *cap;
- 
-@@ -1171,6 +1171,7 @@ static int pci_load_saved_state(struct pci_dev *dev,
- 	dev->state_saved = true;
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(pci_load_saved_state);
- 
- /**
-  * pci_load_and_free_saved_state - Reload the save state pointed to by state,
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 5be8db4..08088cb1 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1003,6 +1003,8 @@ void __iomem __must_check *pci_platform_rom(struct pci_dev *pdev, size_t *size);
- int pci_save_state(struct pci_dev *dev);
- void pci_restore_state(struct pci_dev *dev);
- struct pci_saved_state *pci_store_saved_state(struct pci_dev *dev);
-+int pci_load_saved_state(struct pci_dev *dev,
-+			 struct pci_saved_state *state);
- int pci_load_and_free_saved_state(struct pci_dev *dev,
- 				  struct pci_saved_state **state);
- struct pci_cap_saved_state *pci_find_saved_cap(struct pci_dev *dev, char cap);
--- 
-1.9.3
-
+Also these hooks account the cputime spent in userspace and kernelspace
+in the absence of a tick.
