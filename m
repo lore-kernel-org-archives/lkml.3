@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaKUToi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:44:38 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:46372 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaKUToe (ORCPT
+	id S1752025AbaKUTrr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:47:47 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:50670 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988AbaKUTok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:44:34 -0500
+	Fri, 21 Nov 2014 14:44:40 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Kees Cook <keescook@chromium.org>,
-        Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+Cc: "pang.xunlei" <pang.xunlei@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        David Riley <davidriley@chromium.org>
-Subject: [PATCH 01/12] time: Rename udelay_test.c to test_udelay.c
-Date: Fri, 21 Nov 2014 11:44:07 -0800
-Message-Id: <1416599058-13836-2-git-send-email-john.stultz@linaro.org>
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Miroslav Lichvar <mlichvar@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 05/12] time: Provide y2038 safe timekeeping_inject_sleeptime() replacement
+Date: Fri, 21 Nov 2014 11:44:11 -0800
+Message-Id: <1416599058-13836-6-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416599058-13836-1-git-send-email-john.stultz@linaro.org>
 References: <1416599058-13836-1-git-send-email-john.stultz@linaro.org>
@@ -24,387 +27,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees requested that this test module be renamed for consistency sake,
-so this patch renames the udelay_test.c file (recently added to
-tip/timers/core for 3.17) to test_udelay.c
+From: "pang.xunlei" <pang.xunlei@linaro.org>
 
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+As part of addressing "y2038 problem" for in-kernel uses, this
+patch adds timekeeping_inject_sleeptime64() using timespec64.
+
+After this patch, timekeeping_inject_sleeptime() is deprecated
+and all its call sites will be fixed using the new interface,
+after that it can be removed.
+
+NOTE: timekeeping_inject_sleeptime() is safe actually, but we
+want to eliminate timespec eventually, so comes this patch.
+
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Linux-Next <linux-next@vger.kernel.org>
-Cc: David Riley <davidriley@chromium.org>
+Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+Cc: pang.xunlei <pang.xunlei@linaro.org>
+Cc: Miroslav Lichvar <mlichvar@redhat.com>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/Makefile      |   2 +-
- kernel/time/test_udelay.c | 168 ++++++++++++++++++++++++++++++++++++++++++++++
- kernel/time/udelay_test.c | 168 ----------------------------------------------
- 3 files changed, 169 insertions(+), 169 deletions(-)
- create mode 100644 kernel/time/test_udelay.c
- delete mode 100644 kernel/time/udelay_test.c
+ include/linux/timekeeping.h | 13 ++++++++++++-
+ kernel/time/timekeeping.c   | 10 ++++------
+ 2 files changed, 16 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/time/Makefile b/kernel/time/Makefile
-index 7347426..f622cf2 100644
---- a/kernel/time/Makefile
-+++ b/kernel/time/Makefile
-@@ -13,7 +13,7 @@ obj-$(CONFIG_TICK_ONESHOT)			+= tick-oneshot.o
- obj-$(CONFIG_TICK_ONESHOT)			+= tick-sched.o
- obj-$(CONFIG_TIMER_STATS)			+= timer_stats.o
- obj-$(CONFIG_DEBUG_FS)				+= timekeeping_debug.o
--obj-$(CONFIG_TEST_UDELAY)			+= udelay_test.o
-+obj-$(CONFIG_TEST_UDELAY)			+= test_udelay.o
- 
- $(obj)/time.o: $(obj)/timeconst.h
- 
-diff --git a/kernel/time/test_udelay.c b/kernel/time/test_udelay.c
-new file mode 100644
-index 0000000..e622ba3
---- /dev/null
-+++ b/kernel/time/test_udelay.c
-@@ -0,0 +1,168 @@
-+/*
-+ * udelay() test kernel module
-+ *
-+ * Test is executed by writing and reading to /sys/kernel/debug/udelay_test
-+ * Tests are configured by writing: USECS ITERATIONS
-+ * Tests are executed by reading from the same file.
-+ * Specifying usecs of 0 or negative values will run multiples tests.
-+ *
-+ * Copyright (C) 2014 Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
+diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
+index 071ad7e..6d76c65 100644
+--- a/include/linux/timekeeping.h
++++ b/include/linux/timekeeping.h
+@@ -201,7 +201,18 @@ static inline void timekeeping_clocktai(struct timespec *ts)
+ /*
+  * RTC specific
+  */
+-extern void timekeeping_inject_sleeptime(struct timespec *delta);
++extern void timekeeping_inject_sleeptime64(struct timespec64 *delta);
++
++/**
++ * Deprecated. Use timekeeping_inject_sleeptime64().
 + */
-+
-+#include <linux/debugfs.h>
-+#include <linux/delay.h>
-+#include <linux/ktime.h>
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
-+
-+#define DEFAULT_ITERATIONS 100
-+
-+#define DEBUGFS_FILENAME "udelay_test"
-+
-+static DEFINE_MUTEX(udelay_test_lock);
-+static struct dentry *udelay_test_debugfs_file;
-+static int udelay_test_usecs;
-+static int udelay_test_iterations = DEFAULT_ITERATIONS;
-+
-+static int udelay_test_single(struct seq_file *s, int usecs, uint32_t iters)
++static inline void timekeeping_inject_sleeptime(struct timespec *delta)
 +{
-+	int min = 0, max = 0, fail_count = 0;
-+	uint64_t sum = 0;
-+	uint64_t avg;
-+	int i;
-+	/* Allow udelay to be up to 0.5% fast */
-+	int allowed_error_ns = usecs * 5;
++	struct timespec64 delta64;
 +
-+	for (i = 0; i < iters; ++i) {
-+		struct timespec ts1, ts2;
-+		int time_passed;
-+
-+		ktime_get_ts(&ts1);
-+		udelay(usecs);
-+		ktime_get_ts(&ts2);
-+		time_passed = timespec_to_ns(&ts2) - timespec_to_ns(&ts1);
-+
-+		if (i == 0 || time_passed < min)
-+			min = time_passed;
-+		if (i == 0 || time_passed > max)
-+			max = time_passed;
-+		if ((time_passed + allowed_error_ns) / 1000 < usecs)
-+			++fail_count;
-+		WARN_ON(time_passed < 0);
-+		sum += time_passed;
-+	}
-+
-+	avg = sum;
-+	do_div(avg, iters);
-+	seq_printf(s, "%d usecs x %d: exp=%d allowed=%d min=%d avg=%lld max=%d",
-+			usecs, iters, usecs * 1000,
-+			(usecs * 1000) - allowed_error_ns, min, avg, max);
-+	if (fail_count)
-+		seq_printf(s, " FAIL=%d", fail_count);
-+	seq_puts(s, "\n");
-+
-+	return 0;
++	delta64 = timespec_to_timespec64(*delta);
++	timekeeping_inject_sleeptime64(&delta64);
 +}
-+
-+static int udelay_test_show(struct seq_file *s, void *v)
-+{
-+	int usecs;
-+	int iters;
-+	int ret = 0;
-+
-+	mutex_lock(&udelay_test_lock);
-+	usecs = udelay_test_usecs;
-+	iters = udelay_test_iterations;
-+	mutex_unlock(&udelay_test_lock);
-+
-+	if (usecs > 0 && iters > 0) {
-+		return udelay_test_single(s, usecs, iters);
-+	} else if (usecs == 0) {
-+		struct timespec ts;
-+
-+		ktime_get_ts(&ts);
-+		seq_printf(s, "udelay() test (lpj=%ld kt=%ld.%09ld)\n",
-+				loops_per_jiffy, ts.tv_sec, ts.tv_nsec);
-+		seq_puts(s, "usage:\n");
-+		seq_puts(s, "echo USECS [ITERS] > " DEBUGFS_FILENAME "\n");
-+		seq_puts(s, "cat " DEBUGFS_FILENAME "\n");
-+	}
-+
-+	return ret;
-+}
-+
-+static int udelay_test_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, udelay_test_show, inode->i_private);
-+}
-+
-+static ssize_t udelay_test_write(struct file *file, const char __user *buf,
-+		size_t count, loff_t *pos)
-+{
-+	char lbuf[32];
-+	int ret;
-+	int usecs;
-+	int iters;
-+
-+	if (count >= sizeof(lbuf))
-+		return -EINVAL;
-+
-+	if (copy_from_user(lbuf, buf, count))
-+		return -EFAULT;
-+	lbuf[count] = '\0';
-+
-+	ret = sscanf(lbuf, "%d %d", &usecs, &iters);
-+	if (ret < 1)
-+		return -EINVAL;
-+	else if (ret < 2)
-+		iters = DEFAULT_ITERATIONS;
-+
-+	mutex_lock(&udelay_test_lock);
-+	udelay_test_usecs = usecs;
-+	udelay_test_iterations = iters;
-+	mutex_unlock(&udelay_test_lock);
-+
-+	return count;
-+}
-+
-+static const struct file_operations udelay_test_debugfs_ops = {
-+	.owner = THIS_MODULE,
-+	.open = udelay_test_open,
-+	.read = seq_read,
-+	.write = udelay_test_write,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+
-+static int __init udelay_test_init(void)
-+{
-+	mutex_lock(&udelay_test_lock);
-+	udelay_test_debugfs_file = debugfs_create_file(DEBUGFS_FILENAME,
-+			S_IRUSR, NULL, NULL, &udelay_test_debugfs_ops);
-+	mutex_unlock(&udelay_test_lock);
-+
-+	return 0;
-+}
-+
-+module_init(udelay_test_init);
-+
-+static void __exit udelay_test_exit(void)
-+{
-+	mutex_lock(&udelay_test_lock);
-+	debugfs_remove(udelay_test_debugfs_file);
-+	mutex_unlock(&udelay_test_lock);
-+}
-+
-+module_exit(udelay_test_exit);
-+
-+MODULE_AUTHOR("David Riley <davidriley@chromium.org>");
-+MODULE_LICENSE("GPL");
-diff --git a/kernel/time/udelay_test.c b/kernel/time/udelay_test.c
-deleted file mode 100644
-index e622ba3..0000000
---- a/kernel/time/udelay_test.c
-+++ /dev/null
-@@ -1,168 +0,0 @@
--/*
-- * udelay() test kernel module
-- *
-- * Test is executed by writing and reading to /sys/kernel/debug/udelay_test
-- * Tests are configured by writing: USECS ITERATIONS
-- * Tests are executed by reading from the same file.
-- * Specifying usecs of 0 or negative values will run multiples tests.
-- *
-- * Copyright (C) 2014 Google, Inc.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- */
--
--#include <linux/debugfs.h>
--#include <linux/delay.h>
--#include <linux/ktime.h>
--#include <linux/module.h>
--#include <linux/uaccess.h>
--
--#define DEFAULT_ITERATIONS 100
--
--#define DEBUGFS_FILENAME "udelay_test"
--
--static DEFINE_MUTEX(udelay_test_lock);
--static struct dentry *udelay_test_debugfs_file;
--static int udelay_test_usecs;
--static int udelay_test_iterations = DEFAULT_ITERATIONS;
--
--static int udelay_test_single(struct seq_file *s, int usecs, uint32_t iters)
--{
--	int min = 0, max = 0, fail_count = 0;
--	uint64_t sum = 0;
--	uint64_t avg;
--	int i;
--	/* Allow udelay to be up to 0.5% fast */
--	int allowed_error_ns = usecs * 5;
--
--	for (i = 0; i < iters; ++i) {
--		struct timespec ts1, ts2;
--		int time_passed;
--
--		ktime_get_ts(&ts1);
--		udelay(usecs);
--		ktime_get_ts(&ts2);
--		time_passed = timespec_to_ns(&ts2) - timespec_to_ns(&ts1);
--
--		if (i == 0 || time_passed < min)
--			min = time_passed;
--		if (i == 0 || time_passed > max)
--			max = time_passed;
--		if ((time_passed + allowed_error_ns) / 1000 < usecs)
--			++fail_count;
--		WARN_ON(time_passed < 0);
--		sum += time_passed;
--	}
--
--	avg = sum;
--	do_div(avg, iters);
--	seq_printf(s, "%d usecs x %d: exp=%d allowed=%d min=%d avg=%lld max=%d",
--			usecs, iters, usecs * 1000,
--			(usecs * 1000) - allowed_error_ns, min, avg, max);
--	if (fail_count)
--		seq_printf(s, " FAIL=%d", fail_count);
--	seq_puts(s, "\n");
--
--	return 0;
--}
--
--static int udelay_test_show(struct seq_file *s, void *v)
--{
--	int usecs;
--	int iters;
--	int ret = 0;
--
--	mutex_lock(&udelay_test_lock);
--	usecs = udelay_test_usecs;
--	iters = udelay_test_iterations;
--	mutex_unlock(&udelay_test_lock);
--
--	if (usecs > 0 && iters > 0) {
--		return udelay_test_single(s, usecs, iters);
--	} else if (usecs == 0) {
--		struct timespec ts;
--
--		ktime_get_ts(&ts);
--		seq_printf(s, "udelay() test (lpj=%ld kt=%ld.%09ld)\n",
--				loops_per_jiffy, ts.tv_sec, ts.tv_nsec);
--		seq_puts(s, "usage:\n");
--		seq_puts(s, "echo USECS [ITERS] > " DEBUGFS_FILENAME "\n");
--		seq_puts(s, "cat " DEBUGFS_FILENAME "\n");
--	}
--
--	return ret;
--}
--
--static int udelay_test_open(struct inode *inode, struct file *file)
--{
--	return single_open(file, udelay_test_show, inode->i_private);
--}
--
--static ssize_t udelay_test_write(struct file *file, const char __user *buf,
--		size_t count, loff_t *pos)
--{
--	char lbuf[32];
--	int ret;
--	int usecs;
--	int iters;
--
--	if (count >= sizeof(lbuf))
--		return -EINVAL;
--
--	if (copy_from_user(lbuf, buf, count))
--		return -EFAULT;
--	lbuf[count] = '\0';
--
--	ret = sscanf(lbuf, "%d %d", &usecs, &iters);
--	if (ret < 1)
--		return -EINVAL;
--	else if (ret < 2)
--		iters = DEFAULT_ITERATIONS;
--
--	mutex_lock(&udelay_test_lock);
--	udelay_test_usecs = usecs;
--	udelay_test_iterations = iters;
--	mutex_unlock(&udelay_test_lock);
--
--	return count;
--}
--
--static const struct file_operations udelay_test_debugfs_ops = {
--	.owner = THIS_MODULE,
--	.open = udelay_test_open,
--	.read = seq_read,
--	.write = udelay_test_write,
--	.llseek = seq_lseek,
--	.release = single_release,
--};
--
--static int __init udelay_test_init(void)
--{
--	mutex_lock(&udelay_test_lock);
--	udelay_test_debugfs_file = debugfs_create_file(DEBUGFS_FILENAME,
--			S_IRUSR, NULL, NULL, &udelay_test_debugfs_ops);
--	mutex_unlock(&udelay_test_lock);
--
--	return 0;
--}
--
--module_init(udelay_test_init);
--
--static void __exit udelay_test_exit(void)
--{
--	mutex_lock(&udelay_test_lock);
--	debugfs_remove(udelay_test_debugfs_file);
--	mutex_unlock(&udelay_test_lock);
--}
--
--module_exit(udelay_test_exit);
--
--MODULE_AUTHOR("David Riley <davidriley@chromium.org>");
--MODULE_LICENSE("GPL");
+ 
+ /*
+  * PPS accessor
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 1d33550..d37f775 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1067,8 +1067,8 @@ static void __timekeeping_inject_sleeptime(struct timekeeper *tk,
+ }
+ 
+ /**
+- * timekeeping_inject_sleeptime - Adds suspend interval to timeekeeping values
+- * @delta: pointer to a timespec delta value
++ * timekeeping_inject_sleeptime64 - Adds suspend interval to timeekeeping values
++ * @delta: pointer to a timespec64 delta value
+  *
+  * This hook is for architectures that cannot support read_persistent_clock
+  * because their RTC/persistent clock is only accessible when irqs are enabled.
+@@ -1076,10 +1076,9 @@ static void __timekeeping_inject_sleeptime(struct timekeeper *tk,
+  * This function should only be called by rtc_resume(), and allows
+  * a suspend offset to be injected into the timekeeping values.
+  */
+-void timekeeping_inject_sleeptime(struct timespec *delta)
++void timekeeping_inject_sleeptime64(struct timespec64 *delta)
+ {
+ 	struct timekeeper *tk = &tk_core.timekeeper;
+-	struct timespec64 tmp;
+ 	unsigned long flags;
+ 
+ 	/*
+@@ -1094,8 +1093,7 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
+ 
+ 	timekeeping_forward_now(tk);
+ 
+-	tmp = timespec_to_timespec64(*delta);
+-	__timekeeping_inject_sleeptime(tk, &tmp);
++	__timekeeping_inject_sleeptime(tk, delta);
+ 
+ 	timekeeping_update(tk, TK_CLEAR_NTP | TK_MIRROR | TK_CLOCK_WAS_SET);
+ 
 -- 
 1.9.1
 
