@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaKUWpN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 17:45:13 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:49059 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750820AbaKUWpL (ORCPT
+	id S1752728AbaKUWwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 17:52:24 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:48382 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127AbaKUWwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 17:45:11 -0500
-Date: Fri, 21 Nov 2014 17:45:00 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Tejun Heo <tj@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141121174500.3facb44a@gandalf.local.home>
-In-Reply-To: <20141121215040.GC9198@lerouge>
-References: <alpine.DEB.2.11.1411202204030.3950@nanos>
-	<20141120221122.GA25393@htj.dyndns.org>
-	<alpine.DEB.2.11.1411202315230.3950@nanos>
-	<20141120230514.GB25393@htj.dyndns.org>
-	<alpine.DEB.2.11.1411210109460.6439@nanos>
-	<20141121141332.GA8808@lerouge>
-	<20141121162506.GA15461@htj.dyndns.org>
-	<20141121170151.GC30603@home.goodmis.org>
-	<20141121213204.GA9198@lerouge>
-	<CALCETrV9dNVS=OgDW3eO=ztNCQ6UAzYZvzwDBqd-BqmVpg7EHA@mail.gmail.com>
-	<20141121215040.GC9198@lerouge>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Fri, 21 Nov 2014 17:52:22 -0500
+From: Alexander Kochetkov <al.kochet@gmail.com>
+To: linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>,
+        Felipe Balbi <balbi@ti.com>, al.kochet@gmail.com
+Subject: [PATCH v2 3/4] i2c: omap: don't reset controller if Arbitration Lost detected
+Date: Sat, 22 Nov 2014 02:51:47 +0400
+Message-Id: <1416610307-3698-1-git-send-email-al.kochet@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1416518925-20679-4-git-send-email-al.kochet@gmail.com>
+References: <1416518925-20679-4-git-send-email-al.kochet@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014 22:50:41 +0100
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
-\
-> > Otherwise if we have a page fault inside do_page_fault, it's just a
-> > nested page fault.
-> 
-> Oh ok!
-> 
-> But we still have the cr2 issue that Steve talked about.
->
+Arbitration Lost is an expected situation in a multimaster
+environment. I2C controller (IP) correctly detect and report AL.
 
-Nope, as I looked at the code, I noticed that do_page_fault isn't traced
-which is the wrapper for __do_page_fault which is. And do_page_fault()
-saves off the cr2 before calling anything else.
+The only one visible reason for reseting IP in the AL case is
+to avoid advisory 1.94 (omap3) and errata i595 (omap4): "I2C:
+After an Arbitration is Lost the Module Incorrectly Starts
+the Next Transfer".
 
-So we are ok in this respect as well.
+Errata workaround states: "The MST and STT bits inside I2C_CON
+should be set to 1 at the same moment (avoid setting the MST bit
+to 1 while STT = 0)." The driver never set MST and STT bits
+separately and doesn't create condition for errata. So the reset
+is not necessary.
 
--- Steve
+Also corrected return value for AL to -EAGAIN.
+
+Tested on Beagleboard XM C.
+
+Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
+---
+
+On 21.10.2014 21:11, Wolfram Sang <wsa@the-dreams.de> wrote:
+> The errno for AL is -EAGAIN. Curly braces are not needed.
+
+Thank you, Wolfram, fixed.
+
+ drivers/i2c/busses/i2c-omap.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+index 3ffb9c0..02da567 100644
+--- a/drivers/i2c/busses/i2c-omap.c
++++ b/drivers/i2c/busses/i2c-omap.c
+@@ -707,13 +707,15 @@ static int omap_i2c_xfer_msg(struct i2c_adapter *adap,
+ 		return 0;
+ 
+ 	/* We have an error */
+-	if (dev->cmd_err & (OMAP_I2C_STAT_AL | OMAP_I2C_STAT_ROVR |
+-			    OMAP_I2C_STAT_XUDF)) {
++	if (dev->cmd_err & (OMAP_I2C_STAT_ROVR | OMAP_I2C_STAT_XUDF)) {
+ 		omap_i2c_reset(dev);
+ 		__omap_i2c_init(dev);
+ 		return -EIO;
+ 	}
+ 
++	if (dev->cmd_err & OMAP_I2C_STAT_AL)
++		return -EAGAIN;
++
+ 	if (dev->cmd_err & OMAP_I2C_STAT_NACK) {
+ 		if (msg->flags & I2C_M_IGNORE_NAK)
+ 			return 0;
+-- 
+1.7.9.5
+
