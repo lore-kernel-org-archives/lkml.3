@@ -1,138 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758853AbaKUQET (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:04:19 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45574 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755447AbaKUQES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:04:18 -0500
-Date: Fri, 21 Nov 2014 13:04:13 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Tuan Bui <tuan.d.bui@hp.com>
-Cc: linux-kernel@vger.kernel.org, dbueso@suse.de, a.p.zijlstra@chello.nl,
-        paulus@samba.org, artagnon@gmail.com, jolsa@redhat.com,
-        dvhart@linux.intel.com, Aswin Chandramouleeswaran <aswin@hp.com>,
-        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org,
-        mingo@kernel.org
-Subject: Re: [PATCH v2] Perf Bench: Locking Microbenchmark
-Message-ID: <20141121160413.GC18625@kernel.org>
-References: <20141121155706.GB18625@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141121155706.GB18625@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1758817AbaKUQHB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:07:01 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:56915 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479AbaKUQG7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 11:06:59 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-a3-546f63207e18
+Message-id: <546F6319.6010305@samsung.com>
+Date: Fri, 21 Nov 2014 19:06:49 +0300
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Dmitry Vyukov <dvyukov@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory
+ debugger.
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
+ <5461B906.1040803@samsung.com>
+ <20141118125843.434c216540def495d50f3a45@linux-foundation.org>
+ <CAPAsAGwZtfzx5oM73bOi_kw5BqXrwGd_xmt=m6xxU6uECA+H9Q@mail.gmail.com>
+ <20141120090356.GA6690@gmail.com>
+ <CACT4Y+aOKzq0AzvSJrRC-iU9LmmtLzxY=pxzu8f4oT-OZk=oLA@mail.gmail.com>
+ <20141120150033.4cd1ca25be4a9b00a7074149@linux-foundation.org>
+ <alpine.DEB.2.11.1411210011530.6439@nanos>
+In-reply-to: <alpine.DEB.2.11.1411210011530.6439@nanos>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA02Sa0iTYRTHed67S+Ntaj7YB2sY0aiZEPUoEiUE74c+BK2wCGrN5SWnsqVp
+	QZlXXGmmljkHSVrpHKibYbOpc4izLO8XdHlL81LN0sRMzXIuqG+/c87/nN+Xw+D8z4Q3ExF9
+	VaaIlkQJKB7Rtm7t379TGiM+kGHwQav1hSTSVOoo1Nz/g0YDS18AmjRnALQwOwZQzUAyhqbH
+	x2mUM55Oo4fVXqj8TgqFikYnCFQ7ZcdQeeYYiXrqNBQa0f0mUcX6G4C6zcUYSm3oxFD693US
+	WbPMGLK/LyBQemk1hqwvanBU0mzD0dxUHo4M+gc4+pBtp1GftolGHb+sJFqumiCP+nCPjfOA
+	M6qHaa5YH8cZyoRciWkW4/TaTIrTL+TSnMrei3Fz7e001/poleAmewswriQ7j+TmPw4R3KK2
+	H+e+NvRR3NviZvqk+zleUKgsKiJepvA7cpEXbliux2KnyYSqeRueBJoIFXBhIHsQljYW0U7e
+	DjtHKikV4DF89imAizU1hLNIwaB5qgV3pNxYIXxiSsUcTLC7ocGUtskUK4Lr6lrKwZ5sCOzV
+	aYAzvw0u541s2jzY07DsWxVwHMXZfgZmWUo3j7qzp2BrueavOoWAua/XSMfAhT0M8xs1GwZm
+	Y0MER7uEjjbO+kCDzo7nAFb9n0P9L6X+L1UMcC3wlMVJY5WXwuT+IqVEroyLDhNJY+R64HyQ
+	xZegpCXQAlgGCFzdzMfkYj4piVcmyi0AMrjAw+2ae4yY7xYqSbwuU8RcUMRFyZQWgDEu3kmg
+	esYg3pt940qv9cwzfsBKJNWyL8D6aX68ss59jy02+L5IOClIPztofH5IIyt8NeIiJLvfSY/r
+	diSkSYNnkmc6XFVBCTfPN9q23Ns1dmvJty3J1nXitihXFR456NWeb/k5GbJ1eO5yhS+l6tFn
+	rJiS+ux3A0cbJoxrflremnyIFRDKcIm/EFcoJX8ApFKzk/4CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Nov 21, 2014 at 12:57:06PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Thu, Nov 20, 2014 at 11:06:05AM -0800, Tuan Bui escreveu:
-> > Subject: [PATCH] Perf Bench: Locking Microbenchmark
-> > 
-> > In response to this thread https://lkml.org/lkml/2014/2/11/93, this is
-> > a micro benchmark that stresses locking contention in the kernel with
-> > creat(2) system call by spawning multiple processes to spam this system
-> > call.  This workload generate similar results and contentions in AIM7
-> > fserver workload but can generate outputs within seconds.
-> > 
-> > With the creat system call the contention vary on what locks are used
-> > in the particular file system. I have ran this benchmark only on ext4
-> > and xfs file system.
+On 11/21/2014 02:14 AM, Thomas Gleixner wrote:
+> On Thu, 20 Nov 2014, Andrew Morton wrote:
+> 
+>> On Thu, 20 Nov 2014 20:32:30 +0400 Dmitry Vyukov <dvyukov@google.com> wrote:
+>>
+>>> Let me provide some background first.
+>>
+>> Well that was useful.  Andrey, please slurp Dmitry's info into the 0/n
+>> changelog?
+> 
+> And into Documentation/UBSan or whatever the favourite place is. 0/n
+> lengthy explanations have a tendecy to be hard to retrieve.
+> 
 
-I noticed that if control+C it it leaves tons of files in the current
-directory, can you please add code to make it handle this? I think that
-it would also be better to create a temporary directory, etc.
+I would rather put this into 1/n patch changelog.
+IMO Documentation should only describe how to use this tool and how it works.
 
-And please take a look at the edited changelog below, to reflect those
-changes on your next attempt to submit this patch, ok? I added an
-Example so that people can now at a glance how it changes the existing
-output for 'perf bench' and what is the output for 'perf bench locking'.
+And UBSan != KASan. UBSan for detecting undefined behavior,
+KASan for out of bounds and use after frees.
 
-- Arnaldo
-
-Subject: [PATCH] perf bench: Locking Microbenchmark
-
-In response to this thread https://lkml.org/lkml/2014/2/11/93, this is
-a micro benchmark that stresses locking contention in the kernel with
-creat(2) system call by spawning multiple processes to spam this system
-call.  This workload generate similar results and contentions in AIM7
-fserver workload but can generate outputs within seconds.
-
-With the creat system call the contention vary on what locks are used
-in the particular file system. I have ran this benchmark only on ext4
-and xfs file system.
-
-Running the creat workload on ext4 show contention in the mutex lock
-that is used by ext4_orphan_add() and ext4_orphan_del() to add or delete
-an inode from the list of inodes. At the same time running the creat
-workload on xfs show contention in the spinlock that is used by
-xsf_log_commit_cil() to commit a transaction to the Committed Item List.
-
-Here is a comparison of this benchmark with AIM7 running fserver workload
-at 500-1000 users along with a perf trace running on ext4 file system.
-
-Test machine is a 8-sockets 80 cores Westmere system HT-off on v3.17-rc6.
-
-	AIM7		AIM7		perf-bench	perf-bench
-Users	Jobs/min	Jobs/min/child	Ops/sec		Ops/sec/child
-500	119668.25	239.34		104249		208
-600	126074.90	210.12		106136		176
-700	128662.42	183.80		106175		151
-800	119822.05	149.78		106290		132
-900	106150.25	117.94		105230		116
-1000	104681.29	104.68		106489		106
-
-Perf report for AIM7 fserver:
-14.51%	reaim  		[kernel.kallsyms]	[k] osq_lock
-4.98%	reaim  		reaim			[.] add_long
-4.98%	reaim  		reaim			[.] add_int
-4.31%	reaim  		[kernel.kallsyms]	[k] mutex_spin_on_owner
-...
-
-Perf report of 'perf bench locking vfs'
-
-22.37%	locking-creat  [kernel.kallsyms]	[k] osq_lock
-5.77%	locking-creat  [kernel.kallsyms]	[k] mutex_spin_on_owner
-5.31%	locking-creat  [kernel.kallsyms]	[k] _raw_spin_lock
-5.15%	locking-creat  [jbd2]			[k] jbd2_journal_put_journal_head
-...
-
-Example:
-
-[root@zoo ~]# perf bench
-Usage:
-	perf bench [<common options>] <collection> <benchmark>
-[<options>]
-
-        # List of all available benchmark collections:
-
-         sched: Scheduler and IPC benchmarks
-           mem: Memory access benchmarks
-          numa: NUMA scheduling and MM benchmarks
-         futex: Futex stressing benchmarks
-       locking: Kernel locking benchmarks
-           all: All benchmarks
-
-[root@zoo ~]# perf bench locking
-
-        # List of available benchmarks for collection 'locking':
-
-           vfs: Benchmark vfs using creat(2)
-           all: Run all benchmarks in this suite
-
-[root@zoo ~]# perf bench locking vfs
-
-   100 processes: throughput = 342506 average opts/sec all processes
-   100 processes: throughput = 3425 average opts/sec per process
-
-   200 processes: throughput = 341309 average opts/sec all processes
-   200 processes: throughput = 1706 average opts/sec per process
-<SNIP>
-
-Changes since v1:
-- Added -j options to specified jobs per processes.
-- Change name of microbenchmark from creat to vfs.
-- Change all instances of threads to proccess.
+> Thanks,
+> 
+> 	tglx
+> 
+> 
+> 
 
