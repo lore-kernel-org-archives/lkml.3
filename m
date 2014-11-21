@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932574AbaKUQNx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:13:53 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:60144 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932473AbaKUQNu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:13:50 -0500
-Message-ID: <546F64B9.8060300@linaro.org>
-Date: Fri, 21 Nov 2014 17:13:45 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932613AbaKUQPQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:15:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57192 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932155AbaKUQPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 11:15:12 -0500
+Date: Fri, 21 Nov 2014 17:15:09 +0100
+From: David Sterba <dsterba@suse.cz>
+To: Daniel Dressler <danieru.dressler@gmail.com>
+Cc: danieru.dressler@gmail.c, Chris Mason <clm@fb.com>,
+        Josef Bacik <jbacik@fb.com>,
+        "open list:BTRFS FILE SYSTEM" <linux-btrfs@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Btrfs: disk-io: replace root args iff only fs_info used
+Message-ID: <20141121161509.GD8568@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz,
+	Daniel Dressler <danieru.dressler@gmail.com>,
+	danieru.dressler@gmail.c, Chris Mason <clm@fb.com>,
+	Josef Bacik <jbacik@fb.com>,
+	"open list:BTRFS FILE SYSTEM" <linux-btrfs@vger.kernel.org>,
+	open list <linux-kernel@vger.kernel.org>
+References: <danieru.dressler@gmail.com>
+ <1416557707-9243-1-git-send-email-danieru.dressler@gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pm >> Linux PM mailing list" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL] cpuidle: A few improvements for ARM cpuidle via DT
-References: <546C6DEB.8060204@linaro.org> <17509116.2bjC4d8bef@vostro.rjw.lan>
-In-Reply-To: <17509116.2bjC4d8bef@vostro.rjw.lan>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416557707-9243-1-git-send-email-danieru.dressler@gmail.com>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2014 04:56 PM, Rafael J. Wysocki wrote:
-> On Wednesday, November 19, 2014 11:16:11 AM Daniel Lezcano wrote:
->>
->> Hi Rafael,
->>
->> this pull request, based on 3.18-rc5, contains a set of changes from
->> Lorenzo Pieralisi.
->>
->>    * Added a 'status' definition flag in the DT to specify the
->> unsupported firmware idle states and ignore those states in the parsing
->> code when initializing the cpuidle driver
->>
->>    * Added an idle state description in the DT. As the idle states are
->> not standardized on ARM, the description gives information about the
->> idle state
->>
->>    * Removed duplicate error message in the arm64 cpuidle drivers
->>
->> Thanks !
->>
->>     -- Daniel
->>
->>
->> The following changes since commit fc14f9c1272f62c3e8d01300f52467c0d9af50f9:
->>
->>     Linux 3.18-rc5 (2014-11-16 16:36:20 -0800)
->>
->> are available in the git repository at:
->>
->>     http://git.linaro.org/git-ro/people/daniel.lezcano/linux.git cpuidle/3.19
->>
->> for you to fetch changes up to 18f95a3640dbf421ab9532e517070a0c1cd4d582:
->>
->>     drivers: cpuidle: Remove cpuidle-arm64 duplicate error messages
->> (2014-11-19 10:16:28 +0100)
->
-> Pulled, but I had a conflict with one patch from you I'd already queued up for
-> 3.19-rc1.
->
-> Can you please have a look at my bleeding-edge branch and check if I resolved
-> the conflict correctly?
+On Fri, Nov 21, 2014 at 05:15:07PM +0900, Daniel Dressler wrote:
+> This is the 3rd independent patch of a larger
+> project to cleanup btrfs's internal usage of
+> btrfs_root. Many functions take btrfs_root
+> only to grab the fs_info struct.
+> 
+> By requiring a root these functions cause
+> programmer overhead. That these functions can
+> accept any valid root is not obvious until
+> inspection.
+> 
+> This patch reduces the specificity of such
+> functions to accept the fs_info directly.
+> 
+> These patches can be applied independently
+> and thus are not being submitted as a patch
+> series. There should be about 26 patches by
+> the project's completion. Each patch will
+> cleanup between 1 and 34 functions apiece.
+> Each patch covers a single file's functions.
 
-Hi Rafael,
+It's good to have this kind of introduction but it really belongs ot the
+cover letter not the individual patches.
+> 
+> This patch affects the following function(s):
+>   1) csum_tree_block
+>   2) csum_dirty_buffer
+>   3) check_tree_block_fsid
+>   4) btrfs_find_tree_block
+>   5) clean_tree_block
 
-yes the conflict is correctly resolved.
+Now that I see that, I'm not sure that my previous comment about 'one
+patch per function' is the right way to go. This patch looks good as it
+stands. The change is simple enough that I won't be opposed to grouping
+even more functions together as long as it stays revieweable.
 
-Thanks
-   -- Daniel
+The patches are likely to clash with a lot of pending patches, so you
+may want to base it on the integration branch next time. This would make
+maintainers' life easier and also raises chances to merge the patches.
 
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Reviewed-by: David Sterba <dsterba@suse.cz>
