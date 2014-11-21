@@ -1,110 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504AbaKUSKI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:10:08 -0500
-Received: from sauhun.de ([89.238.76.85]:53431 "EHLO pokefinder.org"
+	id S1751307AbaKUSMF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:12:05 -0500
+Received: from mout.web.de ([212.227.15.3]:64771 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939AbaKUSKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:10:07 -0500
-Date: Fri, 21 Nov 2014 19:11:25 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Alexander Kochetkov <al.kochet@gmail.com>
-Cc: linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH 3/4] i2c: omap: don't reset controller if Arbitration
- Lost detected
-Message-ID: <20141121181125.GD3754@katana>
-References: <1416518925-20679-1-git-send-email-al.kochet@gmail.com>
- <1416518925-20679-4-git-send-email-al.kochet@gmail.com>
+	id S1750848AbaKUSME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 13:12:04 -0500
+Message-ID: <546F8063.3090002@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 19:11:47 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x4pBfXISqBoDm8sr"
-Content-Disposition: inline
-In-Reply-To: <1416518925-20679-4-git-send-email-al.kochet@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] ALSA: es1688_lib: Deletion of an unnecessary check before
+ the function call "release_and_free_resource"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:pzhu3YZsk69jMVNqoGN/cvM01jiZtGMTt8B9g/MPy1UKKpJQ8zP
+ 1EbxhFnS8wSUCsj5TGWMKHlFHDNgyht2i9o8ZSnIYuct9SfKX+dSf6gQMy8hVKBgOOTBMIg
+ 5uNQI8SGIVMviffvLahfxcEvPt0WpqUKpY9v9pmfCNBLCw75YiootctGsqFU0QyGdWstNvt
+ a9ONhn6Qrvc5Z6/bkNMvQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 19:05:50 +0100
 
---x4pBfXISqBoDm8sr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The release_and_free_resource() function tests whether its argument is NULL
+and then returns immediately. Thus the test around the call is not needed.
 
-On Fri, Nov 21, 2014 at 01:28:44AM +0400, Alexander Kochetkov wrote:
-> Arbitration Lost is a expected situation in a multimaster environment.
-> IP correctly detect it.
->=20
-> The only reason for reseting IP in the AL case is to be sure to
-> avoid advisory 1.94 (omap3) and errata i595 (omap4):
-> "I2C: After an Arbitration is Lost the Module Incorrectly Starts
-> the Next Transfer" with workaround: "The MST and STT bits inside
-> I2C_CON should be set to 1 at the same moment (avoid setting the
-> MST bit to 1 while STT =3D 0)."
->=20
-> The driver never writes MST and STT bits separately and doesn't
-> create condition for errata. So the reset is not necessary.
->=20
-> Tested on Beagleboard XM C.
->=20
-> Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-> ---
->  drivers/i2c/busses/i2c-omap.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-> index 3ffb9c0..47103e7 100644
-> --- a/drivers/i2c/busses/i2c-omap.c
-> +++ b/drivers/i2c/busses/i2c-omap.c
-> @@ -707,13 +707,17 @@ static int omap_i2c_xfer_msg(struct i2c_adapter *ad=
-ap,
->  		return 0;
-> =20
->  	/* We have an error */
-> -	if (dev->cmd_err & (OMAP_I2C_STAT_AL | OMAP_I2C_STAT_ROVR |
-> +	if (dev->cmd_err & (OMAP_I2C_STAT_ROVR |
->  			    OMAP_I2C_STAT_XUDF)) {
->  		omap_i2c_reset(dev);
->  		__omap_i2c_init(dev);
->  		return -EIO;
->  	}
-> =20
-> +	if (dev->cmd_err & OMAP_I2C_STAT_AL) {
-> +		return -EIO;
-> +	}
+This issue was detected by using the Coccinelle software.
 
-The errno for AL is -EAGAIN. Curly braces are not needed.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ sound/isa/es1688/es1688_lib.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> +
->  	if (dev->cmd_err & OMAP_I2C_STAT_NACK) {
->  		if (msg->flags & I2C_M_IGNORE_NAK)
->  			return 0;
-> --=20
-> 1.7.9.5
->=20
+diff --git a/sound/isa/es1688/es1688_lib.c b/sound/isa/es1688/es1688_lib.c
+index b3b4f15..fb259491 100644
+--- a/sound/isa/es1688/es1688_lib.c
++++ b/sound/isa/es1688/es1688_lib.c
+@@ -614,8 +614,7 @@ static int snd_es1688_free(struct snd_es1688 *chip)
+ {
+ 	if (chip->hardware != ES1688_HW_UNDEF)
+ 		snd_es1688_init(chip, 0);
+-	if (chip->res_port)
+-		release_and_free_resource(chip->res_port);
++	release_and_free_resource(chip->res_port);
+ 	if (chip->irq >= 0)
+ 		free_irq(chip->irq, (void *) chip);
+ 	if (chip->dma8 >= 0) {
+-- 
+2.1.3
 
---x4pBfXISqBoDm8sr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUb4BNAAoJEBQN5MwUoCm25T4P/1ewQDUeHc0TOlcS0LNREi/E
-MPT4dAf2Xu2I2NGJpGfUxfXpD4XvC8rl8cyZWzm9za6r51nLn7Bb4Wy3eKlIEN1n
-h5N5XaBpFNmSFxz/nsVTaRxr+Q4tfP9jWPckprJhKmJIRcXTkmE4eaT0/OV/Vd+2
-IBRj6d99TRvytj9ZS3YOCS3iNXamd1obJd4P9auM1KEUqFBBY7FiQs3PyUZBkuf/
-jcZdNcZtrz2DgZiun2j90XfQ4nhSu3xeSgWj0KCow/MgXShXwWC4mSpgYKcn1PMO
-gRgr1TFmHoYgozjtnkGAWlWlxn6lYV88rJv2We7fx6XNtqypHYBk8AIQix3JD4CF
-aAARYAiJQfqfhT64sovFemergbxm9TCWrukqDBVFO1a3e1ElvFbM/ujBwTn03lDY
-KxeowSNy5A6+XnGyf7lbaGMQC1abUlEcTnuy4BhWIF3liRK1IFhRWF4wjXlKFSWi
-MXqa7iAGHTCrwx5Z033pm6K9qHD1js+aAOj/5WebYs7IiCCBy0Keforq8/jHZAuu
-dnWIj+Ao4bYJNlWOVXrbnitk0gJdB2AP6fdri1y+juQ5UKNw1/CRot4c4/rklgK/
-GozeZPebsUZ2b1sDfUP5UJJK6Ckkbg2am3RWHYG4bG6yFur2Rq4Q4Mjf4OwZIoJk
-W/UIHKGmkGK6txWlf/mI
-=1bEl
------END PGP SIGNATURE-----
-
---x4pBfXISqBoDm8sr--
