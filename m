@@ -1,103 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758443AbaKUJlr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 04:41:47 -0500
-Received: from mail-la0-f73.google.com ([209.85.215.73]:38676 "EHLO
-	mail-la0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758394AbaKUJln (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 04:41:43 -0500
-X-Greylist: delayed 144820 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Nov 2014 04:41:42 EST
-From: David Drysdale <drysdale@google.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        David Miller <davem@davemloft.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
-        David Drysdale <drysdale@google.com>
-Subject: [PATCH] vfs: renumber FMODE_NONOTIFY and add to uniqueness check
-Date: Fri, 21 Nov 2014 09:41:22 +0000
-Message-Id: <1416562882-21190-1-git-send-email-drysdale@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	id S1757594AbaKUJqw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 04:46:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47178 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751174AbaKUJqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 04:46:48 -0500
+Date: Fri, 21 Nov 2014 17:46:27 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Dave Jones <davej@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        WANG Chao <chaowang@redhat.com>, Baoquan He <bhe@redhat.com>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141121094627.GA24536@dhcp-16-198.nay.redhat.com>
+References: <alpine.DEB.2.11.1411181914020.3909@nanos>
+ <20141118215540.GD35311@redhat.com>
+ <20141118220254.GA2571@redhat.com>
+ <20141119144105.GB108701@redhat.com>
+ <20141119150333.GB2953@redhat.com>
+ <20141119153852.GA16146@redhat.com>
+ <20141119162806.GD2953@redhat.com>
+ <20141120161055.GA8309@redhat.com>
+ <20141120164809.GA22216@redhat.com>
+ <20141120173821.GB9550@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141120173821.GB9550@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although FMODE_NONOTIFY is only used internally in the kernel it is in
-the same numbering space as the other O_* flags, as indicated by the
-comment at the top of include/uapi/asm-generic/fcntl.h (and its use
-in fs/notify/fanotify/fanotify_user.c).  However, its current value
-clashes with the value of O_PATH on sparc, so renumber it to avoid
-the clash.
+On 11/20/14 at 12:38pm, Dave Jones wrote:
+> On Thu, Nov 20, 2014 at 11:48:09AM -0500, Vivek Goyal wrote:
+>  
+>  > Can we try following and retry and see if some additional messages show
+>  > up on console and help us narrow down the problem.
+>  > 
+>  > - Enable verbose boot messages. CONFIG_X86_VERBOSE_BOOTUP=y
+>  > 
+>  > - Enable early printk in second kernel. (earlyprintk=ttyS0,115200).
+>  > 
+>  >   You can either enable early printk in first kernel and reboot. That way
+>  >   second kernel will automatically have it enabled. Or you can edit
+>  >   "/etc/sysconfig/kdump" and append earlyprintk=<> to KDUMP_COMMANDLINE_APPEND. 
+>  >   You will need to restart kdump service after this.
+>  > 
+>  > - Enable some debug output during runtime from kexec purgatory. For that one
+>  >   needs to pass additional arguments to /sbin/kexec. You can edit
+>  >   /etc/sysconfig/kdump file and modify "KEXEC_ARGS" to pass additional
+>  >   arguments to /sbin/kexec during kernel load. I use following for my
+>  >   serial console.
+>  > 
+>  >   KEXEC_ARGS="--console-serial --serial=0x3f8 --serial-baud=115200"
+>  > 
+>  >   You will need to restart kdump service.
+> 
+> The only serial port on this machine is usb serial, which doesn't have io ports.
+> 
+> From my reading of the kexec man page, it doesn't look like I can tell
+> it to use ttyUSB0.
 
-All of this has happened before (12ed2e36c98aec6c4155, "fanotify:
-FMODE_NONOTIFY and __O_SYNC in sparc conflict"), and all of this
-will happen again -- so update the uniqueness check in fcntl_init()
-to include __FMODE_NONOTIFY.
+Enabling ttyUSB0 still need hacks in dracut/kdump module to pack the usb serial
+ko to initramfs and load it early. We can work on it in Fedora because it may benefit
+to some late problems.
 
-Signed-off-by: David Drysdale <drysdale@google.com>
----
- fs/fcntl.c                       | 5 +++--
- include/linux/fs.h               | 4 ++--
- include/uapi/asm-generic/fcntl.h | 2 +-
- 3 files changed, 6 insertions(+), 5 deletions(-)
+> 
+> And because it relies on usb being initialized, this probably isn't
+> going to help too much with early boot.
+> 
+> earlyprintk=tty0 didn't show anything extra after the sysrq-c oops.
+> likewise, =ttyUSB0
 
-diff --git a/fs/fcntl.c b/fs/fcntl.c
-index 99d440a4a6ba..ee85cd4e136a 100644
---- a/fs/fcntl.c
-+++ b/fs/fcntl.c
-@@ -740,14 +740,15 @@ static int __init fcntl_init(void)
- 	 * Exceptions: O_NONBLOCK is a two bit define on parisc; O_NDELAY
- 	 * is defined as O_NONBLOCK on some platforms and not on others.
- 	 */
--	BUILD_BUG_ON(20 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
-+	BUILD_BUG_ON(21 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
- 		O_RDONLY	| O_WRONLY	| O_RDWR	|
- 		O_CREAT		| O_EXCL	| O_NOCTTY	|
- 		O_TRUNC		| O_APPEND	| /* O_NONBLOCK	| */
- 		__O_SYNC	| O_DSYNC	| FASYNC	|
- 		O_DIRECT	| O_LARGEFILE	| O_DIRECTORY	|
- 		O_NOFOLLOW	| O_NOATIME	| O_CLOEXEC	|
--		__FMODE_EXEC	| O_PATH	| __O_TMPFILE
-+		__FMODE_EXEC	| O_PATH	| __O_TMPFILE	|
-+		__FMODE_NONOTIFY
- 		));
- 
- 	fasync_cache = kmem_cache_create("fasync_cache",
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 9ab779e8a63c..fd8611d423a0 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -80,7 +80,7 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
- 
- /*
-  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
-- * to O_WRONLY and O_RDWR via the strange trick in __dentry_open()
-+ * to O_WRONLY and O_RDWR via the strange trick in OPEN_FMODE() below.
-  */
- 
- /* file is open for reading */
-@@ -134,7 +134,7 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
- #define FMODE_CAN_WRITE         ((__force fmode_t)0x40000)
- 
- /* File was opened by fanotify and shouldn't generate fanotify events */
--#define FMODE_NONOTIFY		((__force fmode_t)0x1000000)
-+#define FMODE_NONOTIFY		((__force fmode_t)0x4000000)
- 
- /*
-  * Flag for rw_copy_check_uvector and compat_rw_copy_check_uvector
-diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-index 7543b3e51331..e063effe0cc1 100644
---- a/include/uapi/asm-generic/fcntl.h
-+++ b/include/uapi/asm-generic/fcntl.h
-@@ -5,7 +5,7 @@
- 
- /*
-  * FMODE_EXEC is 0x20
-- * FMODE_NONOTIFY is 0x1000000
-+ * FMODE_NONOTIFY is 0x4000000
-  * These cannot be used by userspace O_* until internal and external open
-  * flags are split.
-  * -Eric Paris
--- 
-2.1.0.rc2.206.gedb03e5
+earlyprintk=vga instead of tty0?
+earlyprintk=efi in case efi boot.
 
+earlyprintk=dbgp sometimes also helps but it's a little hard to setup because we
+need a usb debugger. My nokia n900 works well as a debugger. But to find a usable
+usb debug port in native host might fail, so this is my last try for earlyprintk :(
+
+> 
+> I'm going to try bisecting the problem I'm debugging again, so I'm not
+> going to dig into this much more today.
+> 
+
+Another case what I know about kdump kernel issue is nouveau sometimes does not work
+So if this is the case you can try add "rd.driver.blacklist=nouveau" to field
+KDUMP_COMMANDLINE_APPEND in /etc/sysconfig/kdump. Or just add "nomodeset" in 1st
+kernel grub cmdline so that 2nd kernel will reuse it to avoid load drm modules and
+also earlyprintk=vga probably could show something.
+
+Thanks
+Dave
