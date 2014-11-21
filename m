@@ -1,147 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaKUTiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:38:09 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:25612 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaKUTiH (ORCPT
+	id S1751994AbaKUTic (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:38:32 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:64311 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938AbaKUTia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:38:07 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] x86, PCI: support mmio more than 44 bits on 32bit/PAE mode
-Date: Fri, 21 Nov 2014 11:37:56 -0800
-Message-Id: <1416598676-3904-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 21 Nov 2014 14:38:30 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Karol Wrona <k.wrona@samsung.com>
+Cc: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH v2 1/5] misc: sensorhub: Add sensorhub driver
+Date: Fri, 21 Nov 2014 20:38:25 +0100
+Message-ID: <3489864.y2krC9T9rK@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1416593957-19788-2-git-send-email-k.wrona@samsung.com>
+References: <1416593957-19788-1-git-send-email-k.wrona@samsung.com> <1416593957-19788-2-git-send-email-k.wrona@samsung.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:GJOryK/fBAo0F1YQ4OujfkPTW4/pzSIQehJbPeqUN5s
+ uYqlWpdzlfP22q4W2nhG8IARgWIqIzhvBKlTFB0SxFil1DC2xt
+ ZyBqRa57CxwR9SzysDgVc8oTdzm3slpjvlSRvstTtDWouLqqa9
+ awwCmzlmWKug/XK7fk6zXU0RYxgoy/X/zbHGVsZYS7jKkKayv3
+ lVIye9QNk5LQ4boolbNdcw7Z/pgDqb/8XeD5xbHp5bq/ERJEbv
+ lTjdfraghx/NIzgsyfY9SU3F5HG0CF+hRtnAaEKfg0vrIsnz19
+ YiFMhVnpQeWwwPUcYi9Z2yfFQqcyGTLRkrAhh1YItp3DOfLJbF
+ 738AN9ow/cPTPDqeVSgo=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aaron reported 32bit/PAE mode, has problem with 64bit resource.
+On Friday 21 November 2014 19:19:13 Karol Wrona wrote:
+> Sensorhub  is MCU dedicated to collect data and manage several sensors.
+> Sensorhub is a spi device which provides a layer for IIO devices. It provides
+> some data parsing and common mechanism for sensorhub sensors.
+> 
+> Adds common sensorhub library for sensorhub driver and iio drivers
+> which uses sensorhub MCU to communicate with sensors.
+> 
+> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/misc/Kconfig                   |    1 +
+>  drivers/misc/Makefile                  |    1 +
+>  drivers/misc/sensorhub/Kconfig         |   13 +
+>  drivers/misc/sensorhub/Makefile        |    6 +
+>  drivers/misc/sensorhub/ssp.h           |  279 +++++++++++
+>  drivers/misc/sensorhub/ssp_dev.c       |  828 ++++++++++++++++++++++++++++++++
+>  drivers/misc/sensorhub/ssp_spi.c       |  653 +++++++++++++++++++++++++
+>  include/linux/iio/common/ssp_sensors.h |   79 +++
 
-[    6.610012] pci 0000:03:00.0: reg 0x10: [mem 0x383fffc00000-0x383fffdfffff 64bit pref]
-[    6.622195] pci 0000:03:00.0: reg 0x20: [mem 0x383fffe04000-0x383fffe07fff 64bit pref]
-[    6.656112] pci 0000:03:00.1: reg 0x10: [mem 0x383fffa00000-0x383fffbfffff 64bit pref]
-[    6.668293] pci 0000:03:00.1: reg 0x20: [mem 0x383fffe00000-0x383fffe03fff 64bit pref]
-...
-[   12.374143] calling  ixgbe_init_module+0x0/0x51 @ 1
-[   12.378130] ixgbe: Intel(R) 10 Gigabit PCI Express Network Driver - version 3.19.1-k
-[   12.385318] ixgbe: Copyright (c) 1999-2014 Intel Corporation.
-[   12.390578] ixgbe 0000:03:00.0: Adapter removed
-[   12.394247] ixgbe: probe of 0000:03:00.0 failed with error -5
-[   12.399369] ixgbe 0000:03:00.1: Adapter removed
-[   12.403036] ixgbe: probe of 0000:03:00.1 failed with error -5
-[   12.408017] initcall ixgbe_init_module+0x0/0x51 returned 0 after 29200 usecs
+You seem to provide infrastructure for other drivers here, so I don't think
+drivers/misc is a good place. Have you considered making this a regular
+mfd driver? If that doesn't fit, is there possibly some place in the iio
+framework for this kind of driver?
 
-root cause: ioremap can not handle mmio range that is more than 44bits on
-32bit PAE mode.
-
-We are using pfn with unsigned long like pfn_pte(), so those 0x383fffc00000 will
-overflow in pfn format with unsigned long (that is 32 bits in 32bit x86 kernel,
-and pfn only can support 44bits).
-
-| static inline pte_t pfn_pte(unsigned long page_nr, pgprot_t pgprot)
-| {
-|        return __pte(((phys_addr_t)page_nr << PAGE_SHIFT) |
-|                     massage_pgprot(pgprot));
-| }
-
-We could limit iomem to 44 bits so we can reject them early from root bus.
-but xhci is not happy with resource allocation (hang...)
-
-Change phys_addr_t for pfn_pte, and add overflow check to skip ram checking,
-as the mmio is too big to be ram.
-At last, don't use PHYSICAL_PAGE_MASK to get aligned phys_addr, that will
-cut off bits above 44bits.
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=88131
-Reported-by: Aaron Ma <mapengyu@gmail.com>
-Tested-by: Aaron Ma <mapengyu@gmail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/include/asm/page.h    |    8 ++++++++
- arch/x86/include/asm/pgtable.h |    4 ++--
- arch/x86/mm/ioremap.c          |    6 ++++--
- arch/x86/mm/pat.c              |    3 +++
- 4 files changed, 17 insertions(+), 4 deletions(-)
-
-Index: linux-2.6/arch/x86/include/asm/page.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/page.h
-+++ linux-2.6/arch/x86/include/asm/page.h
-@@ -15,6 +15,14 @@
- 
- #ifndef __ASSEMBLY__
- 
-+static inline int pfn_overflow(dma_addr_t phy_addr)
-+{
-+	dma_addr_t real_pfn = phy_addr >> PAGE_SHIFT;
-+	unsigned long pfn = (unsigned long)real_pfn;
-+
-+	return pfn != real_pfn;
-+}
-+
- struct page;
- 
- #include <linux/range.h>
-Index: linux-2.6/arch/x86/include/asm/pgtable.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/pgtable.h
-+++ linux-2.6/arch/x86/include/asm/pgtable.h
-@@ -355,9 +355,9 @@ static inline pgprotval_t massage_pgprot
- 	return protval;
- }
- 
--static inline pte_t pfn_pte(unsigned long page_nr, pgprot_t pgprot)
-+static inline pte_t pfn_pte(phys_addr_t page_nr, pgprot_t pgprot)
- {
--	return __pte(((phys_addr_t)page_nr << PAGE_SHIFT) |
-+	return __pte((page_nr << PAGE_SHIFT) |
- 		     massage_pgprot(pgprot));
- }
- 
-Index: linux-2.6/arch/x86/mm/ioremap.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/ioremap.c
-+++ linux-2.6/arch/x86/mm/ioremap.c
-@@ -122,7 +122,9 @@ static void __iomem *__ioremap_caller(re
- 	if (ram_region < 0) {
- 		pfn      = phys_addr >> PAGE_SHIFT;
- 		last_pfn = last_addr >> PAGE_SHIFT;
--		if (walk_system_ram_range(pfn, last_pfn - pfn + 1, NULL,
-+		/* pfn overflow, don't need to check */
-+		if (!pfn_overflow(last_addr) &&
-+		    walk_system_ram_range(pfn, last_pfn - pfn + 1, NULL,
- 					  __ioremap_check_ram) == 1)
- 			return NULL;
- 	}
-@@ -130,7 +132,7 @@ static void __iomem *__ioremap_caller(re
- 	 * Mappings have to be page-aligned
- 	 */
- 	offset = phys_addr & ~PAGE_MASK;
--	phys_addr &= PHYSICAL_PAGE_MASK;
-+	phys_addr -= offset;
- 	size = PAGE_ALIGN(last_addr+1) - phys_addr;
- 
- 	retval = reserve_memtype(phys_addr, (u64)phys_addr + size,
-Index: linux-2.6/arch/x86/mm/pat.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/pat.c
-+++ linux-2.6/arch/x86/mm/pat.c
-@@ -299,6 +299,9 @@ static int pat_pagerange_is_ram(resource
- 	unsigned long end_pfn = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	struct pagerange_state state = {start_pfn, 0, 0};
- 
-+	/* pfn overflow, don't need to check */
-+	if (pfn_overflow(end + PAGE_SIZE - 1))
-+		return 0;
- 	/*
- 	 * For legacy reasons, physical address range in the legacy ISA
- 	 * region is tracked as non-RAM. This will allow users of
+	Arnd
