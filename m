@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628AbaKURJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 12:09:30 -0500
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:51297 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755353AbaKURJ3 (ORCPT
+	id S1758742AbaKURLs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 12:11:48 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:36990 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755353AbaKURLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 12:09:29 -0500
-Message-ID: <1416589767.1114.9.camel@x220>
-Subject: Re: arm: pxa: CPU_PXA27x?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Michal Marek <mmarek@suse.cz>, Daniel Mack <daniel@zonque.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kbuild@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Fri, 21 Nov 2014 18:09:27 +0100
-In-Reply-To: <87vbm85wjs.fsf@free.fr>
-References: <1416566627.6958.16.camel@x220> <87vbm85wjs.fsf@free.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	Fri, 21 Nov 2014 12:11:47 -0500
+Date: Fri, 21 Nov 2014 12:11:36 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141121121136.18df4ecb@gandalf.local.home>
+In-Reply-To: <20141121170151.GC30603@home.goodmis.org>
+References: <alpine.DEB.2.11.1411200002330.3909@nanos>
+	<20141119235033.GE11386@lerouge>
+	<20141120122339.GA14877@htj.dyndns.org>
+	<alpine.DEB.2.11.1411202204030.3950@nanos>
+	<20141120221122.GA25393@htj.dyndns.org>
+	<alpine.DEB.2.11.1411202315230.3950@nanos>
+	<20141120230514.GB25393@htj.dyndns.org>
+	<alpine.DEB.2.11.1411210109460.6439@nanos>
+	<20141121141332.GA8808@lerouge>
+	<20141121162506.GA15461@htj.dyndns.org>
+	<20141121170151.GC30603@home.goodmis.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Nov 2014 17:09:27.0230 (UTC) FILETIME=[E7ED15E0:01D005AD]
-X-RcptDomain: vger.kernel.org
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-21 at 17:48 +0100, Robert Jarzmik wrote:
-> Paul Bolle <pebolle@tiscali.nl> writes:
-> > Your commit 03ec7fe70c5c ("arm: pxa: add pxa27x device-tree support") is
-> > included in today's linux-next (ie, next-20141121). It adds a select
-> > statement for CPU_PXA27x. But there's no Kconfig symbol CPU_PXA27x.
-> Ah yes, you're perfectly right, CPU_PXA27x was not the one, it was PXA27x, sic
-> ..
+On Fri, 21 Nov 2014 12:01:51 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
+ 
+> Looking at kernel/trace/trace_functions.c: function_trace_call() which is
+> registered with RECURSION_SAFE, I see that the recursion check is done
+> before the per_cpu_ptr() call to the dynamically allocated per_cpu data.
 > 
-> >
-> > Why is that select needed? For what it's worth: __cpu_is_pxa27x()
-> > compiles to something interesting if CONFIG_PXA27x is defined.
-> You mean "is not defined", right ?
-
-Perhaps I was ambiguous. This referred to these lines in
-arch/arm/mach-pxa/include/mach/hardware.h:
-    #ifdef CONFIG_PXA27x
-    #define __cpu_is_pxa27x(id)                             \
-            ({                                              \
-                    unsigned int _id = (id) >> 4 & 0xfff;   \
-                    _id == 0x411;                           \
-            })
-    #else
-    #define __cpu_is_pxa27x(id)     (0)
-    #endif
-
-But you needed PXA27x anyway, so this seems moot now.
-
-> That (CONFIG_PXA27x) select is needed because without it the arm cpu
-> architecture is not selected, ie. CONFIG_CPU_XSCALE is not set. And this in turn
-> is needed to choose the basic arm operations like TLB handling, cache handling,
-> etc ... You cannot compile a single platform kernel without this.
+> It looks OK, but...
 > 
-> As a poor excuse, I hadn't seen this because this resulted from a poor merge
-> resolution which brought in both "select PXA27x" and "select CPU_PXA27x".
+> Oh! but if we trace the page fault handler, and we fault here too
+> we just nuked the cr2 register. Not good.
 
-Stuff happens. Would my patch have been included you might have seen the
-warning and this thread wouldn't exist.
+Ah! Looking at the code, I see that do_page_fault (called from
+assembly) is marked notrace. And the first thing it does is:
 
-> > In https://lkml.org/lkml/2014/9/30/578 I proposed a patch that emits a
-> > warning in cases like this. Like _all_ Kconfig related patches I've seen
-> > flying by lately it appears to be dropped in /dev/null. What's going on?
-> For that one I don't know.
+	unsigned long address = read_cr2();
 
-Here I'm dragging you into a discussion about something that's been
-bugging me for a while now. Hence the addresses that have nothing to do
-with pxa in Cc:.
+And uses that. Thus if the function tracer were to fault on
+exception_enter() or __do_page_fautt(), the address wont be
+clobbered.
 
-> Ah, and yes I'll send an update patch to remove the "select CPU_PXA27x", thanks
-> for noticing this.
-
-Great!
-
-
-Paul Bolle
-
+-- Steve
