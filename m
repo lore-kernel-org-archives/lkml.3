@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750910AbaKUFZj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 00:25:39 -0500
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:54576 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaKUFZi (ORCPT
+	id S1752478AbaKUF0N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 00:26:13 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:46014 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127AbaKUF0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 00:25:38 -0500
+	Fri, 21 Nov 2014 00:26:12 -0500
+Date: Fri, 21 Nov 2014 05:26:08 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Vignesh R <vigneshr@ti.com>
+cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] ARM: OMAP2+: hwmod: AM335x/AM43x: add hwmod
+ support for tscadc on am43x-evm
+In-Reply-To: <546EC6D4.7080906@ti.com>
+Message-ID: <alpine.DEB.2.02.1411210519520.9204@utopia.booyaka.com>
+References: <1415099728-10959-1-git-send-email-vigneshr@ti.com> <1415099728-10959-3-git-send-email-vigneshr@ti.com> <alpine.DEB.2.02.1411200706441.9204@utopia.booyaka.com> <546EC6D4.7080906@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20141121034355.GA10123@bbox>
-References: <1416488913-9691-1-git-send-email-opensource.ganesh@gmail.com>
-	<20141121034355.GA10123@bbox>
-Date: Fri, 21 Nov 2014 13:25:37 +0800
-Message-ID: <CADAEsF9foZzneOY+0b_S71b8xVhrX+bNqGZCcgaL56c_SNicOQ@mail.gmail.com>
-Subject: Re: [PATCH] mm/zsmalloc: avoid duplicate assignment of prev_class
-From: Ganesh Mahendran <opensource.ganesh@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, iamjoonsoo.kim@lge.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+On Fri, 21 Nov 2014, Vignesh R wrote:
 
-2014-11-21 11:43 GMT+08:00 Minchan Kim <minchan@kernel.org>:
-> On Thu, Nov 20, 2014 at 09:08:33PM +0800, Mahendran Ganesh wrote:
->> In zs_create_pool(), prev_class is assigned (ZS_SIZE_CLASSES - 1)
->> times. And the prev_class only references to the previous alloc
->> size_class. So we do not need unnecessary assignement.
->>
->> This patch modifies *prev_class* to *prev_alloc_class*. And the
->> *prev_alloc_class* will only be assigned when a new size_class
->> structure is allocated.
->>
->> Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
->> ---
->>  mm/zsmalloc.c |    9 +++++----
->>  1 file changed, 5 insertions(+), 4 deletions(-)
->>
->> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
->> index b3b57ef..ac2b396 100644
->> --- a/mm/zsmalloc.c
->> +++ b/mm/zsmalloc.c
->> @@ -970,7 +970,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
->>               int size;
->>               int pages_per_zspage;
->>               struct size_class *class;
->> -             struct size_class *prev_class;
->> +             struct size_class *uninitialized_var(prev_alloc_class);
->
-> https://lkml.org/lkml/2012/10/27/71
-> In addition, I prefer prev_class.
+> On 11/20/2014 12:39 PM, Paul Walmsley wrote:
+> > On Tue, 4 Nov 2014, Vignesh R wrote:
+> >
+> >> This patch adds hwmod support for tscadc to work on am43xx-evm. The am33xx
+> >> hwmod structures of tscadc has been moved to ipblock_data so that it can
+> >> be reused in am43xx. The clock domain names are separately set for am33xx
+> >> and am43xx. Thus tscadc dt entries can now be added to am43xx board
+> >> dt files.
+> >>
+> >> Signed-off-by: Vignesh R <vigneshr@ti.com>
+> > ...
+> >
+> >> diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
+> >> index 6e57b8ad0db5..b92a7c7825fa 100644
+> >> --- a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
+> >> +++ b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
+> > ...
+> >
+> >> +static void am33xx_hwmod_clockdomain(void)
+> >> +{
+> >> +	CLKDMNAME(am33xx_l4_hs_hwmod, "l4hs_clkdm");
+> >> +	CLKDMNAME(am33xx_adc_tsc_hwmod, "l4_wkup_clkdm");
+> >> +}
+> >> +
+> >> +static void am43xx_hwmod_clockdomain(void)
+> >> +{
+> >> +	CLKDMNAME(am33xx_l4_hs_hwmod, "l3_clkdm");
+> >> +	CLKDMNAME(am33xx_adc_tsc_hwmod, "l3s_tsc_clkdm");
+> >> +}
+> >> +
+> > ...
+> >
+> >> +	am33xx_hwmod_clockdomain();
+> > I looked at this patch and the one before it.  Is there some reason why we 
+> > need to share these two hwmods between AM33xx and AM43xx?  It seems 
+> > cleaner just to add the ADC data directly to the AM43xx hwmod data file, 
+> > not touch the AM33xx data, and not add another runtime data update for the 
+> > clockdomains.  Unless there's something that I'm missing?
+> 
+> 
+> I wanted to reuse hwmod structures. Except for clockdomain and offset,
+> rest of the hwmod data are same for AM33xx and AM43xx. Adding data to AM43xx
+> hwmod file just duplicates these structures. Do you still want me to move them
+> to AM43xx file?
 
-Thanks for you review. I will resend the patch.
+Yes.  It looks to me like the number of lines saved by eliminating the 
+duplication is not too different than the number of lines added with the 
+dynamic clockdomain rewriting.  Plus then we can avoid the dynamic 
+clockdomain rewriting that we are only doing for two IP blocks.  Ideally 
+the hwmod data is meant to be static, not changed at runtime.  For the 
+moment we are stuck with the CLKCTRL rewriting but I personally consider 
+that to be a hack.
 
->
-> Thanks.
->
-> --
-> Kind regards,
-> Minchan Kim
+
+- Paul
