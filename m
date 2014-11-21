@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803AbaKUURO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 15:17:14 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49364 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761AbaKUURL (ORCPT
+	id S1752527AbaKUURW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:17:22 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:35812 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549AbaKUURT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 15:17:11 -0500
-Date: Fri, 21 Nov 2014 21:17:09 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Joe Perches <joe@perches.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Sebastian Reichel <sre@kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH v2 8/8] MAINTAINERS: add at91 power and memory entries
-Message-ID: <20141121201709.GC26833@amd>
-References: <1414451377-11053-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1414451377-11053-9-git-send-email-alexandre.belloni@free-electrons.com>
- <1414451837.18896.14.camel@perches.com>
+	Fri, 21 Nov 2014 15:17:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414451837.18896.14.camel@perches.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <2946373.UZAWO9ynEM@wuerfel>
+References: <1416599058-13836-1-git-send-email-john.stultz@linaro.org>
+	<CALAqxLVRJKHiZVr2_gW-uos-LtW5iQLs-qOWUedfWp70f9iHDw@mail.gmail.com>
+	<2946373.UZAWO9ynEM@wuerfel>
+Date: Fri, 21 Nov 2014 12:17:18 -0800
+Message-ID: <CALAqxLXTj3td4suOUm8XM7fbbLwzAAG5FKz+WsiePewU+Qv3og@mail.gmail.com>
+Subject: Re: [PATCH 00/12]
+From: John Stultz <john.stultz@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Arnd Bergmann <arnd.bergmann@linaro.org>,
+        "pang.xunlei" <pang.xunlei@linaro.org>,
+        Miroslav Lichvar <mlichvar@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-10-27 16:17:17, Joe Perches wrote:
-> On Tue, 2014-10-28 at 00:09 +0100, Alexandre Belloni wrote:
-> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> []
-> > diff --git a/MAINTAINERS b/MAINTAINERS
-> []
-> > @@ -871,6 +871,25 @@ M:	Boris Brezillon <boris.brezillon@free-electrons.com>
-> >  S:	Maintained
-> >  F:	drivers/clk/at91
-> >  
-> > +ARM/ATMEL AT91 Poweroff driver
-> > +M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> > +S:	Maintained
-> > +F:	drivers/power/reset/at91-poweroff.c
-> > +
-> > +ARM/ATMEL AT91 Reset driver
-> > +M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> > +S:	Maintained
-> > +F:	drivers/power/reset/at91-reset.c
-> 
-> It's traditional to use upper case section descriptions.
+On Fri, Nov 21, 2014 at 12:07 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 21 November 2014 11:53:04 John Stultz wrote:
+>> On Fri, Nov 21, 2014 at 11:44 AM, John Stultz <john.stultz@linaro.org> wrote:
+>> > Hey Thomas, All,
+>> >
+>> > Just wanted to submit a handful of changes for 3.19
+>> >
+>> > * udelay_test/test_udelay consistent file naming
+>> > * Time / ntp edge-case fixes from Xunlei
+>> > * y2038-safe internal interfaces from Xunlei and me
+>> > * Celanup suspend/resume timing y2038 issues
+>> > * Remove y2038 unsafe inject_sleeptime inteface
+>> >
+>> > Just as an FYI, I'm trying out signing this tag with
+>> > a new subkey on my yubikey. Hopefully haven't mucked
+>> > it up.
+>
+> Hmm, patch 1 doesn't seem to have made it to the list.
 
-Actually, it might be nice to switch to normal case
-descriptions. Easier to search for...
+I suspect its just I didn't CC you on that one (it already had a long
+cc list from the last time I sent it around for 3.17). I do see it in
+my list archive.
 
+> Can you send that again?
 
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Given I forgot the subject for the cover-letter and then managed to
+hit send before writing my apology for that, I'm going to give it a
+rest for today. :)
+
+Thomas has pointed out one other typo issue in one of the patches so
+I've already updated it. If he doesn't pull that in, or if there are
+any other objections I'll rework and resend on Monday.
+
+thanks
+-john
