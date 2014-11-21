@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473AbaKUL5p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 06:57:45 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:62911 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189AbaKUL5o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 06:57:44 -0500
-Message-ID: <546F288D.2040705@gmail.com>
-Date: Fri, 21 Nov 2014 19:57:01 +0800
-From: Yijing Wang <wangyijing0307@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>, Yijing Wang <wangyijing@huawei.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
-References: <546E1771.4030201@arm.com> <546E93DC.8010902@huawei.com> <546F0FB6.3050404@arm.com>
-In-Reply-To: <546F0FB6.3050404@arm.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1758147AbaKUL6m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 06:58:42 -0500
+Received: from mout.perfora.net ([74.208.4.197]:50954 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754495AbaKUL6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 06:58:40 -0500
+Message-ID: <1416571072.2744.4.camel@localhost.localdomain>
+Subject: Re: [PATCH] ARM: tegra: colibri t30: fix on-module ethernet
+From: Marcel Ziswiler <marcel@ziswiler.com>
+To: swarren@wwwdotorg.org
+Cc: thierry.reding@gmail.com, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        stefan@agner.ch
+Date: Fri, 21 Nov 2014 12:57:52 +0100
+In-Reply-To: <b1cdc96ce8bb15059d7eea282f6586a826bee124.1416566157.git.marcel@ziswiler.com>
+References: <b1cdc96ce8bb15059d7eea282f6586a826bee124.1416566157.git.marcel@ziswiler.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:YHQbMCkbh/SIiFWV/vVXafpv+4hha5wjUBI4lxfxuEA
+ r3EN3kIPRYvT5qem0A1dQE9Rvk7LIuK2xmht8hH/+4w2VRTNLN
+ VyU2admSez9+NTKsxEWF8t+M76nz2nxg++/IiVJ48JMOx5zv9m
+ BnMIF+nRzb752TLI3zAzl7rGlB+Kbaei0FFGAw+bU4NwOPGAtN
+ TYCqM0URzm+1LrvTaQ9LTN0XW1O3e9vhj6uWS/DTR/ngLdSuG3
+ pSYutU6ho8M+lgHN9vllReaEF4YwpMWNnPfAXUlGzeIPpgUmxl
+ mrMtXnlfysvOrSSRJBzfAb95tKR17psE3kHeXDudiyTXTY7EF2
+ pLlWTKycXD6ar1xWDctTPf08KgaTtMi8y2DTmM7l3
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2014-11-21 at 11:41 +0100, Marcel Ziswiler wrote:
+> Looks like Ethernet only ever worked if U-Boot properly brought it up
+> as both the reset as well as the VBUS lines were not actively handled
+> in-kernel.
+> This patch fixes this by just pulling up the reset GPIO
 
-在 2014/11/21 18:11, Marc Zyngier 写道:
-> On 21/11/14 01:22, Yijing Wang wrote:
->> On 2014/11/21 0:31, Marc Zyngier wrote:
->>> Bjorn, Yijing,
->>>
->>> I've just realized that patch c167caf8d174 (PCI/MSI: Remove useless
->>> bus->msi assignment) completely breaks MSI on arm64 when using the new
->>> MSI stacked domain:
->> Sorry, this is my first part to refactor MSI related code, now
->> how to get pci msi_controller depends arch functions(pcibios_msi_controller() or
->> arch_setup_msi_irq()), we are working on generic pci_host_bridge, after that,
->> we could eventually eliminate MSI arch functions and find pci dev 's msi controller
->> by pci_host_bridge->get_msi_controller().
->>
->> Marc, could you tell me what pci host driver in your test platform ?
-> I'm using pci-host-generic (with a couple of patches to help it fit the
-> new "generic pci" infrastructure).
->
-> This lives at:
-> git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git
-> irq/arm64-pci
+Doing automatic power-cycle tests revealed that this is still not enough
+and a proper reset-cycle might be required. However I don't know as of
+yet how one can easily do that in mainline with a USB device otherwise
+not mentioned anywhere in the device tree. Any ideas?
 
-Thanks, I would have a look at it.
-
->
-> Thanks,
->
-> 	M.
+> and properly
+> enabling VBUS via a GPIO enabled fixed regulator VBUS supply.
+> 
+> Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
 
