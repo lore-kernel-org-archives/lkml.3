@@ -1,282 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532AbaKUV0d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 16:26:33 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:56728 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408AbaKUV01 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 16:26:27 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: Borislav Petkov <bp@alien8.de>, x86@kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Oleg Nesterov <oleg@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v4 3/5] x86, entry: Switch stacks on a paranoid entry from userspace
-Date: Fri, 21 Nov 2014 13:26:09 -0800
-Message-Id: <955e71b4b8427aec7e8b86de0bf877e7944ba1f3.1416604491.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1416604491.git.luto@amacapital.net>
-References: <cover.1416604491.git.luto@amacapital.net>
-In-Reply-To: <cover.1416604491.git.luto@amacapital.net>
-References: <cover.1416604491.git.luto@amacapital.net>
+	id S1752605AbaKUV0l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 16:26:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44798 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752069AbaKUV0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 16:26:38 -0500
+Date: Fri, 21 Nov 2014 19:26:31 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@kernel.org,
+        ak@linux.intel.com, jolsa@redhat.com, acme@kernel.org
+Subject: Re: [PATCH v7 1/6] perf: add ability to sample machine state on
+ interrupt
+Message-ID: <20141121212631.GF5395@redhat.com>
+References: <1411559322-16548-1-git-send-email-eranian@google.com>
+ <1411559322-16548-2-git-send-email-eranian@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411559322-16548-2-git-send-email-eranian@google.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This causes all non-NMI, non-double-fault kernel entries from
-userspace to run on the normal kernel stack.  Double-fault is
-exempt to minimize confusion if we double-fault directly from
-userspace due to a bad kernel stack.
+Em Wed, Sep 24, 2014 at 01:48:37PM +0200, Stephane Eranian escreveu:
+> Enable capture of interrupted machine state for each
+> sample.
+> 
+> Registers to sample are passed per event in the
+> sample_regs_intr bitmask.
+> 
+> To sample interrupt machine state, the
+> PERF_SAMPLE_INTR_REGS must be passed in
+> sample_type.
+> 
+> The list of available registers is arch
+> dependent and provided by asm/perf_regs.h
+> 
+> Registers are laid out as u64 in the order
+> of the bit order of sample_intr_regs.
+> 
+> This patch also adds a new ABI version
+> PERF_ATTR_SIZE_VER4 because we extend
+> the perf_event_attr struct with a new u64
+> field.
 
-This is, suprisingly, simpler and shorter than the current code.  It
-removes the IMO rather frightening paranoid_userspace path, and it
-make sync_regs much simpler.
+So, trying to bisect a problem with how the TUI hist_entries browser
+renders callchains I got stuck with:
 
-There is no risk of stack overflow due to this change -- the kernel
-stack that we switch to is empty.
+[root@zoo acme]# perf report 
+incompatible file format (rerun with -v to learn more)
 
-This will also enable us to create non-atomic sections within
-machine checks from userspace, which will simplify memory failure
-handling.  It will also allow the upcoming fsgsbase code to be
-simplified, because it doesn't need to worry about usergs when
-scheduling in paranoid_exit, as that code no longer exists.
+[root@zoo acme]# perf report -v
+file uses a more recent and unsupported ABI (8 bytes extra)
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- Documentation/x86/entry_64.txt         | 18 ++++---
- Documentation/x86/x86_64/kernel-stacks |  8 ++--
- arch/x86/kernel/entry_64.S             | 86 ++++++++++++++++++----------------
- arch/x86/kernel/traps.c                | 23 ++-------
- 4 files changed, 67 insertions(+), 68 deletions(-)
+Because the perf.data file was generated with HEAD of perf/core and
+probably the above warning comes from a simple check against the ABI
+version...
 
-diff --git a/Documentation/x86/entry_64.txt b/Documentation/x86/entry_64.txt
-index bc7226ef5055..8e53217e6d40 100644
---- a/Documentation/x86/entry_64.txt
-+++ b/Documentation/x86/entry_64.txt
-@@ -75,9 +75,6 @@ The expensive (paranoid) way is to read back the MSR_GS_BASE value
- 	xorl %ebx,%ebx
- 1:	ret
- 
--and the whole paranoid non-paranoid macro complexity is about whether
--to suffer that RDMSR cost.
--
- If we are at an interrupt or user-trap/gate-alike boundary then we can
- use the faster check: the stack will be a reliable indicator of
- whether SWAPGS was already done: if we see that we are a secondary
-@@ -90,6 +87,15 @@ which might have triggered right after a normal entry wrote CS to the
- stack but before we executed SWAPGS, then the only safe way to check
- for GS is the slower method: the RDMSR.
- 
--So we try only to mark those entry methods 'paranoid' that absolutely
--need the more expensive check for the GS base - and we generate all
--'normal' entry points with the regular (faster) entry macros.
-+Therefore, super-atomic entries (except NMI, which is handled separately)
-+must use idtentry with paranoid=1 to handle gsbase correctly.  This
-+triggers three main behavior changes:
-+
-+ - Interrupt entry will use the slower gsbase check.
-+ - Interrupt entry from user mode will switch off the IST stack.
-+ - Interrupt exit to kernel mode will not attempt to reschedule.
-+
-+We try to only use IST entries and the paranoid entry code for vectors
-+that absolutely need the more expensive check for the GS base - and we
-+generate all 'normal' entry points with the regular (faster) paranoid=0
-+variant.
-diff --git a/Documentation/x86/x86_64/kernel-stacks b/Documentation/x86/x86_64/kernel-stacks
-index a01eec5d1d0b..e3c8a49d1a2f 100644
---- a/Documentation/x86/x86_64/kernel-stacks
-+++ b/Documentation/x86/x86_64/kernel-stacks
-@@ -40,9 +40,11 @@ An IST is selected by a non-zero value in the IST field of an
- interrupt-gate descriptor.  When an interrupt occurs and the hardware
- loads such a descriptor, the hardware automatically sets the new stack
- pointer based on the IST value, then invokes the interrupt handler.  If
--software wants to allow nested IST interrupts then the handler must
--adjust the IST values on entry to and exit from the interrupt handler.
--(This is occasionally done, e.g. for debug exceptions.)
-+the interrupt came from user mode, then the interrupt handler prologue
-+will switch back to the per-thread stack.  If software wants to allow
-+nested IST interrupts then the handler must adjust the IST values on
-+entry to and exit from the interrupt handler.  (This is occasionally
-+done, e.g. for debug exceptions.)
- 
- Events with different IST codes (i.e. with different stacks) can be
- nested.  For example, a debug interrupt can safely be interrupted by an
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index df088bb03fb3..de24b2eac6b2 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1064,6 +1064,11 @@ ENTRY(\sym)
- 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
- 
- 	.if \paranoid
-+	.if \paranoid == 1
-+	CFI_REMEMBER_STATE
-+	testl $3, CS(%rsp)		/* If coming from userspace, switch */
-+	jnz 1f				/* stacks. */
-+	.endif
- 	call save_paranoid
- 	.else
- 	call error_entry
-@@ -1104,6 +1109,36 @@ ENTRY(\sym)
- 	jmp error_exit			/* %ebx: no swapgs flag */
- 	.endif
- 
-+	.if \paranoid == 1
-+	CFI_RESTORE_STATE
-+	/*
-+	 * Paranoid entry from userspace.  Switch stacks and treat it
-+	 * as a normal entry.  This means that paranoid handlers
-+	 * run in real process context if user_mode(regs).
-+	 */
-+1:
-+	call error_entry
-+
-+	DEFAULT_FRAME 0
-+
-+	movq %rsp,%rdi			/* pt_regs pointer */
-+	call sync_regs
-+	movq %rax,%rsp			/* switch stack */
-+
-+	movq %rsp,%rdi			/* pt_regs pointer */
-+
-+	.if \has_error_code
-+	movq ORIG_RAX(%rsp),%rsi	/* get error code */
-+	movq $-1,ORIG_RAX(%rsp)		/* no syscall to restart */
-+	.else
-+	xorl %esi,%esi			/* no error code */
-+	.endif
-+
-+	call \do_sym
-+
-+	jmp error_exit			/* %ebx: no swapgs flag */
-+	.endif
-+
- 	CFI_ENDPROC
- END(\sym)
- .endm
-@@ -1124,7 +1159,7 @@ idtentry overflow do_overflow has_error_code=0
- idtentry bounds do_bounds has_error_code=0
- idtentry invalid_op do_invalid_op has_error_code=0
- idtentry device_not_available do_device_not_available has_error_code=0
--idtentry double_fault __do_double_fault has_error_code=1 paranoid=1
-+idtentry double_fault __do_double_fault has_error_code=1 paranoid=2
- idtentry coprocessor_segment_overrun do_coprocessor_segment_overrun has_error_code=0
- idtentry invalid_TSS do_invalid_TSS has_error_code=1
- idtentry segment_not_present do_segment_not_present has_error_code=1
-@@ -1305,16 +1340,14 @@ idtentry machine_check has_error_code=0 paranoid=1 do_sym=*machine_check_vector(
- #endif
- 
- 	/*
--	 * "Paranoid" exit path from exception stack.
--	 * Paranoid because this is used by NMIs and cannot take
--	 * any kernel state for granted.
--	 * We don't do kernel preemption checks here, because only
--	 * NMI should be common and it does not enable IRQs and
--	 * cannot get reschedule ticks.
-+	 * "Paranoid" exit path from exception stack.  This is invoked
-+	 * only on return from non-NMI IST interrupts that came
-+	 * from kernel space.
- 	 *
--	 * "trace" is 0 for the NMI handler only, because irq-tracing
--	 * is fundamentally NMI-unsafe. (we cannot change the soft and
--	 * hard flags at once, atomically)
-+	 * We may be returning to very strange contexts (e.g. very early
-+	 * in syscall entry), so checking for preemption here would
-+	 * be complicated.  Fortunately, we there's no good reason
-+	 * to try to handle preemption here.
- 	 */
- 
- 	/* ebx:	no swapgs flag */
-@@ -1324,43 +1357,14 @@ ENTRY(paranoid_exit)
- 	TRACE_IRQS_OFF_DEBUG
- 	testl %ebx,%ebx				/* swapgs needed? */
- 	jnz paranoid_restore
--	testl $3,CS(%rsp)
--	jnz   paranoid_userspace
--paranoid_swapgs:
- 	TRACE_IRQS_IRETQ 0
- 	SWAPGS_UNSAFE_STACK
- 	RESTORE_ALL 8
--	jmp irq_return
-+	INTERRUPT_RETURN
- paranoid_restore:
- 	TRACE_IRQS_IRETQ_DEBUG 0
- 	RESTORE_ALL 8
--	jmp irq_return
--paranoid_userspace:
--	GET_THREAD_INFO(%rcx)
--	movl TI_flags(%rcx),%ebx
--	andl $_TIF_WORK_MASK,%ebx
--	jz paranoid_swapgs
--	movq %rsp,%rdi			/* &pt_regs */
--	call sync_regs
--	movq %rax,%rsp			/* switch stack for scheduling */
--	testl $_TIF_NEED_RESCHED,%ebx
--	jnz paranoid_schedule
--	movl %ebx,%edx			/* arg3: thread flags */
--	TRACE_IRQS_ON
--	ENABLE_INTERRUPTS(CLBR_NONE)
--	xorl %esi,%esi 			/* arg2: oldset */
--	movq %rsp,%rdi 			/* arg1: &pt_regs */
--	call do_notify_resume
--	DISABLE_INTERRUPTS(CLBR_NONE)
--	TRACE_IRQS_OFF
--	jmp paranoid_userspace
--paranoid_schedule:
--	TRACE_IRQS_ON
--	ENABLE_INTERRUPTS(CLBR_ANY)
--	SCHEDULE_USER
--	DISABLE_INTERRUPTS(CLBR_ANY)
--	TRACE_IRQS_OFF
--	jmp paranoid_userspace
-+	INTERRUPT_RETURN
- 	CFI_ENDPROC
- END(paranoid_exit)
- 
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index f5c4b8813774..6a02760df7b4 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -408,27 +408,14 @@ NOKPROBE_SYMBOL(do_int3);
- 
- #ifdef CONFIG_X86_64
- /*
-- * Help handler running on IST stack to switch back to user stack
-- * for scheduling or signal handling. The actual stack switch is done in
-- * entry.S
-+ * Help handler running on IST stack to switch off the IST stack if the
-+ * interrupted code was in user mode. The actual stack switch is done in
-+ * entry_64.S
-  */
- asmlinkage __visible struct pt_regs *sync_regs(struct pt_regs *eregs)
- {
--	struct pt_regs *regs = eregs;
--	/* Did already sync */
--	if (eregs == (struct pt_regs *)eregs->sp)
--		;
--	/* Exception from user space */
--	else if (user_mode(eregs))
--		regs = task_pt_regs(current);
--	/*
--	 * Exception from kernel and interrupts are enabled. Move to
--	 * kernel process stack.
--	 */
--	else if (eregs->flags & X86_EFLAGS_IF)
--		regs = (struct pt_regs *)(eregs->sp -= sizeof(struct pt_regs));
--	if (eregs != regs)
--		*regs = *eregs;
-+	struct pt_regs *regs = task_pt_regs(current);
-+	*regs = *eregs;
- 	return regs;
- }
- NOKPROBE_SYMBOL(sync_regs);
--- 
-1.9.3
+I wonder if we can't just check that there are no sample_types that we
+don't know and if not, just process the file anyway, i.e. the sample
+will be parseable, no?
 
+For now, in this case, I'll just regenerate the perf.data file with an
+older tool...
+
+- Arnaldo
+ 
+> Reviewed-by: Jiri Olsa <jolsa@redhat.com>
+> Reviewed-by: Andi Kleen <ak@linux.intel.com>
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>  include/linux/perf_event.h      |    7 ++++--
+>  include/uapi/linux/perf_event.h |   15 ++++++++++++-
+>  kernel/events/core.c            |   46 +++++++++++++++++++++++++++++++++++++--
+>  3 files changed, 63 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 893a0d0..68d46d5 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -79,7 +79,7 @@ struct perf_branch_stack {
+>  	struct perf_branch_entry	entries[0];
+>  };
+>  
+> -struct perf_regs_user {
+> +struct perf_regs {
+>  	__u64		abi;
+>  	struct pt_regs	*regs;
+>  };
+> @@ -600,7 +600,8 @@ struct perf_sample_data {
+>  	struct perf_callchain_entry	*callchain;
+>  	struct perf_raw_record		*raw;
+>  	struct perf_branch_stack	*br_stack;
+> -	struct perf_regs_user		regs_user;
+> +	struct perf_regs		regs_user;
+> +	struct perf_regs		regs_intr;
+>  	u64				stack_user_size;
+>  	u64				weight;
+>  	/*
+> @@ -630,6 +631,8 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+>  	data->weight = 0;
+>  	data->data_src.val = PERF_MEM_NA;
+>  	data->txn = 0;
+> +	data->regs_intr.abi = PERF_SAMPLE_REGS_ABI_NONE;
+> +	data->regs_intr.regs = NULL;
+>  }
+>  
+>  extern void perf_output_sample(struct perf_output_handle *handle,
+> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+> index 9269de2..48d4a01 100644
+> --- a/include/uapi/linux/perf_event.h
+> +++ b/include/uapi/linux/perf_event.h
+> @@ -137,8 +137,9 @@ enum perf_event_sample_format {
+>  	PERF_SAMPLE_DATA_SRC			= 1U << 15,
+>  	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
+>  	PERF_SAMPLE_TRANSACTION			= 1U << 17,
+> +	PERF_SAMPLE_REGS_INTR			= 1U << 18,
+>  
+> -	PERF_SAMPLE_MAX = 1U << 18,		/* non-ABI */
+> +	PERF_SAMPLE_MAX = 1U << 19,		/* non-ABI */
+>  };
+>  
+>  /*
+> @@ -238,6 +239,7 @@ enum perf_event_read_format {
+>  #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
+>  #define PERF_ATTR_SIZE_VER3	96	/* add: sample_regs_user */
+>  					/* add: sample_stack_user */
+> +#define PERF_ATTR_SIZE_VER4	104	/* add: sample_regs_intr */
+>  
+>  /*
+>   * Hardware event_id to monitor via a performance monitoring event:
+> @@ -334,6 +336,15 @@ struct perf_event_attr {
+>  
+>  	/* Align to u64. */
+>  	__u32	__reserved_2;
+> +	/*
+> +	 * Defines set of regs to dump for each sample
+> +	 * state captured on:
+> +	 *  - precise = 0: PMU interrupt
+> +	 *  - precise > 0: sampled instruction
+> +	 *
+> +	 * See asm/perf_regs.h for details.
+> +	 */
+> +	__u64	sample_regs_intr;
+>  };
+>  
+>  #define perf_flags(attr)	(*(&(attr)->read_format + 1))
+> @@ -686,6 +697,8 @@ enum perf_event_type {
+>  	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+>  	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
+>  	 *	{ u64			transaction; } && PERF_SAMPLE_TRANSACTION
+> +	 *	{ u64			abi; # enum perf_sample_regs_abi
+> +	 *	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_INTR
+>  	 * };
+>  	 */
+>  	PERF_RECORD_SAMPLE			= 9,
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index eaa636e..7941343 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -4430,7 +4430,7 @@ perf_output_sample_regs(struct perf_output_handle *handle,
+>  	}
+>  }
+>  
+> -static void perf_sample_regs_user(struct perf_regs_user *regs_user,
+> +static void perf_sample_regs_user(struct perf_regs *regs_user,
+>  				  struct pt_regs *regs)
+>  {
+>  	if (!user_mode(regs)) {
+> @@ -4446,6 +4446,14 @@ static void perf_sample_regs_user(struct perf_regs_user *regs_user,
+>  	}
+>  }
+>  
+> +static void perf_sample_regs_intr(struct perf_regs *regs_intr,
+> +				  struct pt_regs *regs)
+> +{
+> +	regs_intr->regs = regs;
+> +	regs_intr->abi  = perf_reg_abi(current);
+> +}
+> +
+> +
+>  /*
+>   * Get remaining task size from user stack pointer.
+>   *
+> @@ -4827,6 +4835,23 @@ void perf_output_sample(struct perf_output_handle *handle,
+>  	if (sample_type & PERF_SAMPLE_TRANSACTION)
+>  		perf_output_put(handle, data->txn);
+>  
+> +	if (sample_type & PERF_SAMPLE_REGS_INTR) {
+> +		u64 abi = data->regs_intr.abi;
+> +		/*
+> +		 * If there are no regs to dump, notice it through
+> +		 * first u64 being zero (PERF_SAMPLE_REGS_ABI_NONE).
+> +		 */
+> +		perf_output_put(handle, abi);
+> +
+> +		if (abi) {
+> +			u64 mask = event->attr.sample_regs_intr;
+> +
+> +			perf_output_sample_regs(handle,
+> +						data->regs_intr.regs,
+> +						mask);
+> +		}
+> +	}
+> +
+>  	if (!event->attr.watermark) {
+>  		int wakeup_events = event->attr.wakeup_events;
+>  
+> @@ -4913,7 +4938,7 @@ void perf_prepare_sample(struct perf_event_header *header,
+>  		 * in case new sample type is added, because we could eat
+>  		 * up the rest of the sample size.
+>  		 */
+> -		struct perf_regs_user *uregs = &data->regs_user;
+> +		struct perf_regs *uregs = &data->regs_user;
+>  		u16 stack_size = event->attr.sample_stack_user;
+>  		u16 size = sizeof(u64);
+>  
+> @@ -4934,6 +4959,21 @@ void perf_prepare_sample(struct perf_event_header *header,
+>  		data->stack_user_size = stack_size;
+>  		header->size += size;
+>  	}
+> +
+> +	if (sample_type & PERF_SAMPLE_REGS_INTR) {
+> +		/* regs dump ABI info */
+> +		int size = sizeof(u64);
+> +
+> +		perf_sample_regs_intr(&data->regs_intr, regs);
+> +
+> +		if (data->regs_intr.regs) {
+> +			u64 mask = event->attr.sample_regs_intr;
+> +
+> +			size += hweight64(mask) * sizeof(u64);
+> +		}
+> +
+> +		header->size += size;
+> +	}
+>  }
+>  
+>  static void perf_event_output(struct perf_event *event,
+> @@ -7134,6 +7174,8 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+>  			ret = -EINVAL;
+>  	}
+>  
+> +	if (attr->sample_type & PERF_SAMPLE_REGS_INTR)
+> +		ret = perf_reg_validate(attr->sample_regs_intr);
+>  out:
+>  	return ret;
+>  
+> -- 
+> 1.7.9.5
