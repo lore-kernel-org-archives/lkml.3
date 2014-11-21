@@ -1,118 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758295AbaKUNNS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 08:13:18 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:46415 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856AbaKUNNQ (ORCPT
+	id S1758298AbaKUNSY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 08:18:24 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:34158 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755104AbaKUNSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 08:13:16 -0500
-Message-ID: <546F3A5C.3010604@linux.vnet.ibm.com>
-Date: Fri, 21 Nov 2014 18:43:00 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 21 Nov 2014 08:18:22 -0500
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-CC: mikey@neuling.org, james.hogan@imgtec.com, avagin@openvz.org,
-        Paul.Clothier@imgtec.com, peterz@infradead.org, palves@redhat.com,
-        oleg@redhat.com, davem@davemloft.net, dhowells@redhat.com,
-        davej@redhat.com, akpm@linux-foundation.org,
-        sukadev@linux.vnet.ibm.com, tglx@linutronix.de,
-        sam.bobroff@au1.ibm.com
-Subject: Re: [PATCH V4 2/8] powerpc, process: Add functions flush_tm_state,
- flush_tmregs_to_thread
-References: <1415683597-22819-1-git-send-email-khandual@linux.vnet.ibm.com> <1415683597-22819-3-git-send-email-khandual@linux.vnet.ibm.com>
-In-Reply-To: <1415683597-22819-3-git-send-email-khandual@linux.vnet.ibm.com>
+In-Reply-To: <20141121105951.GA20679@localhost>
+References: <1415885699-1465-1-git-send-email-user@radxa>
+	<1415885699-1465-2-git-send-email-user@radxa>
+	<20141121105951.GA20679@localhost>
+Date: Fri, 21 Nov 2014 14:18:21 +0100
+Message-ID: <CABgxDoLy-+a7TAm7VWo5pYF7xZv4SM9=Zjcd1V6khnRqZbsFAw@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] of: Rename "poweroff-source" property to "system-power-controller"
+From: Romain Perier <romain.perier@gmail.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Grant Likely <grant.likely@linaro.org>, robh <robh@kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Felipe Balbi <balbi@ti.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112113-0029-0000-0000-000000A5913A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2014 10:56 AM, Anshuman Khandual wrote:
-> This patch creates a new function called flush_tm_state to flush
-> the existing transactional memory state from the thread. It also
-> creates a function called flush_tmregs_to_thread which will then
-> be used on subsequent patches in this series.
-> 
-> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-> ---
->  arch/powerpc/include/asm/switch_to.h |  8 ++++++
->  arch/powerpc/kernel/process.c        | 49 +++++++++++++++++++++++++++++-------
->  2 files changed, 48 insertions(+), 9 deletions(-)
-> 
-> diff --git a/arch/powerpc/include/asm/switch_to.h b/arch/powerpc/include/asm/switch_to.h
-> index 58abeda..23752a9 100644
-> --- a/arch/powerpc/include/asm/switch_to.h
-> +++ b/arch/powerpc/include/asm/switch_to.h
-> @@ -82,6 +82,14 @@ static inline void flush_spe_to_thread(struct task_struct *t)
->  }
->  #endif
->  
-> +#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-> +extern void flush_tmregs_to_thread(struct task_struct *);
-> +#else
-> +static inline void flush_tmregs_to_thread(struct task_struct *t)
-> +{
-> +}
-> +#endif
-> +
->  static inline void clear_task_ebb(struct task_struct *t)
->  {
->  #ifdef CONFIG_PPC_BOOK3S_64
-> diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-> index aa1df89..c36477b 100644
-> --- a/arch/powerpc/kernel/process.c
-> +++ b/arch/powerpc/kernel/process.c
-> @@ -745,6 +745,45 @@ void restore_tm_state(struct pt_regs *regs)
->  #define __switch_to_tm(prev)
->  #endif /* CONFIG_PPC_TRANSACTIONAL_MEM */
->  
-> +/*
-> + * flush_tm_state
-> + *
-> + * Flush TM state out so we can copy it.  __switch_to_tm() does this
-> + * flush but it removes the checkpointed state from the current CPU and
-> + * transitions the CPU out of TM mode.  Hence we need to call
-> + * tm_recheckpoint_new_task() (on the same task) to restore the
-> + * checkpointed state back and the TM mode.
-> + */
-> +static void flush_tm_state(struct task_struct *src)
-> +{
-> +	__switch_to_tm(src);
-> +	tm_recheckpoint_new_task(src);
-> +}
-> +
-> +#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-> +void flush_tmregs_to_thread(struct task_struct *tsk)
-> +{
-> +	/*
-> +	 * If task is not current, it should have been flushed
-> +	 * already to it's thread_struct during __switch_to().
-> +	 */
-> +	if (tsk != current)
-> +		return;
+2014-11-21 11:59 GMT+01:00 Johan Hovold <johan@kernel.org>:
+> On Thu, Nov 13, 2014 at 01:34:58PM +0000, Auto Configured wrote:
+>> From: Romain Perier <romain.perier@gmail.com>
+>>
+>> It reverts commit a4b4e0461ec5 ("of: Add standard property for poweroff capability").
+>> As discussed on the mailing list, it makes more sense to rename back to the
+>> old established property name, without the vendor prefix. Problem being that
+>> the word "source" usually tends to be used for inputs and that is out of control
+>> of the OS. The poweroff capability is an output which simply turns the
+>> system-power off. Also, this property might be used by drivers which power-off
+>> the system and power back on subsequent RTC alarms. This seems to suggest to
+>> remove "poweroff" from the property name and to choose "system-power-controller"
+>> as the more generic name. This patchs adds the required renaming changes and
+>> defines an helper function which is compatible with both properties, the old one
+>> which was only used by tps65910 and the new one without vendor-prefix.
+>
+> Now this is a bit of a mess.
+>
+> There's a commit in the mfd tree, 25f833c1171d ("mfd: tps65910: Convert
+> ti,system-power-controller DT property to poweroff-source"), which
+> breaks all dts using tps65910 since these are never updated to the now
+> retracted property name ("poweroff-source").
 
-As of now, ptrace does not support process self tracing. So here in this
-function we really dont have to do anything if current and tsk does not
-match each other. In case they match, we will just post one warning (as
-ptrace generic code should have prevented this from happening) and move
-on. Will make this function very simple like the following and remove
-the next patch as well which was created because of this patch.
+No seriously ? yes, this is why I ask for feedbacks since 3 weeks... ^^
 
-#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-void flush_tmregs_to_thread(struct task_struct *tsk)
-{
-	/*
-	 * Self tracing is not yet supported through ptrace
-	 * interface. Warn here if attempted.
-	 */
+>
+> This one should simply be reverted ASAP.
+>
+>> Signed-off-by: Romain Perier <romain.perier@gmail.com>
+>> ---
+>>  .../bindings/power/{poweroff.txt => power-controller.txt}        | 0
+>>  .../devicetree/bindings/regulator/act8865-regulator.txt          | 4 ++--
+>>  drivers/mfd/tps65910.c                                           | 9 ++++++++-
+>>  drivers/regulator/act8865-regulator.c                            | 2 +-
+>>  include/linux/of.h                                               | 6 +++---
+>>  5 files changed, 14 insertions(+), 7 deletions(-)
+>
+> Romain, what tree is this patch against? The changes to the tps65910
+> driver appears not to even be in the regulator tree, yet you asked Mark
+> to merge this. And the MFD maintainer is not even on CC.
 
-	WARN_ON(tsk == current);
-	return;
-}
-#endif
 
+I work with linux-next, this patch is present in that tree. If I
+remember correctly, it was merged by Lee Jones (so it was merged onto
+the mfd tree)
+
+>
+> Let's fix the breakage by reverting the offending commit in mfd. Then the
+> new standard name can be introduced in regulator alone (e.g. this patch
+> without the tps65910 bits) as nothing outside of regulator should be
+> using the new power-off feature (or binding) for act8865. Then other
+> drivers and dts can be converted to use the new property name (while
+> retaining backwards compatibility) for 3.20.
+>
+> [ We should probably also consider adding an "of_device_is_" prefix to
+> the helper name for consistency. ]
+>
+> Johan
+
+Maintainers, Mark, Grant, Lee, what do you think ?
+
+Thanks,
+Romain
