@@ -1,33 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759AbaKURFN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 12:05:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60889 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932501AbaKURFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 12:05:09 -0500
-Message-ID: <546F70BF.30509@redhat.com>
-Date: Fri, 21 Nov 2014 18:05:03 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932473AbaKURIK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 12:08:10 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:38023 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751596AbaKURII (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 12:08:08 -0500
+Date: Fri, 21 Nov 2014 12:08:05 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141121170805.GD30603@home.goodmis.org>
+References: <alpine.DEB.2.11.1411202204030.3950@nanos>
+ <20141120221122.GA25393@htj.dyndns.org>
+ <alpine.DEB.2.11.1411202315230.3950@nanos>
+ <20141120230514.GB25393@htj.dyndns.org>
+ <CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
+ <20141120233920.GC25393@htj.dyndns.org>
+ <CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
+ <20141121162742.GB15461@htj.dyndns.org>
+ <CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
+ <CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] kvm: x86: move ioapic.c and irq_comm.c back to arch/x86/
-References: <1416490931-21724-1-git-send-email-pbonzini@redhat.com> <20141121161956.GA16941@potion.brq.redhat.com>
-In-Reply-To: <20141121161956.GA16941@potion.brq.redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/11/2014 17:19, Radim Krčmář wrote:
-> KVM: x86: remove IA64 from ioapic.c and irq_comm.c
+On Fri, Nov 21, 2014 at 08:48:58AM -0800, Linus Torvalds wrote:
 > 
-> They won't get compiled in x86 tree.
+> (The 64-bit mode also has a "WARN_ON_ONCE(in_nmi())", which I guess is
+> good - but it's good because the 64-bit version is written the way it
+> is).
 
-Ah no, these were already in my ia64 removal patch.  I had a deja-vu
-feeling...
+Actually, in_nmi() is now safe for vmalloc faults. In fact, it handles the
+clobbering of the cr2 register just fine. I wrote tests to test this, and
+submitted patches to get rid of that warn on. But that never went through.
 
-Paolo
+https://lkml.org/lkml/2013/10/15/894
+
+-- Steve
+
