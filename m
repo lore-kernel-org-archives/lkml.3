@@ -1,112 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758473AbaKUPTp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:19:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43029 "EHLO mail.kernel.org"
+	id S1758602AbaKUPUi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:20:38 -0500
+Received: from mout.web.de ([212.227.17.11]:55064 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755232AbaKUPTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:19:44 -0500
-Date: Fri, 21 Nov 2014 12:19:37 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: "Liang, Kan" <kan.liang@intel.com>
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "eranian@google.com" <eranian@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: Re: [PATCH V3 2/3] perf tool: Move cpumode resolve code to
- add_callchain_ip
-Message-ID: <20141121151937.GA18625@kernel.org>
-References: <1415972652-17310-1-git-send-email-kan.liang@intel.com>
- <1415972652-17310-3-git-send-email-kan.liang@intel.com>
- <20141118082454.GB27645@krava.brq.redhat.com>
- <37D7C6CF3E00A74B8858931C1DB2F07701674486@SHSMSX103.ccr.corp.intel.com>
+	id S1755332AbaKUPUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:20:36 -0500
+Message-ID: <546F5831.5060404@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 16:20:17 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F07701674486@SHSMSX103.ccr.corp.intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] USB: serial: Deletion of an unnecessary check before
+ the function call "release_firmware"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:NoYUrc9obLrF+r3Vz9gmGl6RKO8ValdHBW9fMruEX9D5LEuxr4t
+ gIcrZbvlLRhuEt5KTD8EY0MIG0Ll7og5t5vj/jpWHXRdpCNd7QCb/FKunYOLQnh5BYLxb2O
+ 2vwl3TvLVkMdTxPheJhR5HYsQoGIArmRHdiDgr32jps1g7vThPq2o4BrGFsDWER+jSlemyi
+ myUl3GmtLQiSOlm4ZPf3Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Nov 21, 2014 at 03:06:08PM +0000, Liang, Kan escreveu:
-> 
-> 
-> > -----Original Message-----
-> > From: Jiri Olsa [mailto:jolsa@redhat.com]
-> > Sent: Tuesday, November 18, 2014 3:25 AM
-> > To: Liang, Kan
-> > Cc: acme@kernel.org; a.p.zijlstra@chello.nl; eranian@google.com; linux-
-> > kernel@vger.kernel.org; mingo@redhat.com; paulus@samba.org;
-> > ak@linux.intel.com
-> > Subject: Re: [PATCH V3 2/3] perf tool: Move cpumode resolve code to
-> > add_callchain_ip
-> > 
-> > On Fri, Nov 14, 2014 at 08:44:11AM -0500, kan.liang@intel.com wrote:
-> > > From: Kan Liang <kan.liang@intel.com>
-> > >
-> > > Move the cpumode resolve code to add_callchain_ip function.
-> > > No change in behavior.
-> > >
-> > > Signed-off-by: Kan Liang <kan.liang@intel.com>
-> > > ---
-> > >  tools/perf/util/machine.c | 62
-> > > ++++++++++++++++++++++-------------------------
-> > >  1 file changed, 29 insertions(+), 33 deletions(-)
-> > >
-> > > diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-> > > index d97309c..dd8496a 100644
-> > > --- a/tools/perf/util/machine.c
-> > > +++ b/tools/perf/util/machine.c
-> > > @@ -1384,11 +1384,35 @@ struct mem_info
-> > *sample__resolve_mem(struct
-> > > perf_sample *sample,  static int add_callchain_ip(struct thread *thread,
-> > >  			    struct symbol **parent,
-> > >  			    struct addr_location *root_al,
-> > > -			    int cpumode,
-> > > +			    u8 cpumode,
-> > 
-> > Andi's patch got in:
-> > b3340a5 perf callchain: Support handling complete branch stacks as
-> > histograms
-> > 
-> > and it uses the cpumode check for -1, so it needs to stay int, otherwise
-> > there's a compilation failure:
-> > 
-> >   CC       util/machine.o
-> > util/machine.c: In function ‘add_callchain_ip’:
-> > util/machine.c:1419:14: error: comparison is always false due to limited
-> > range of data type [-Werror=type-limits]
-> >   if (cpumode == -1)
-> >               ^
-> > 
-> 
-> Hi Arnaldo and Jirka,
-> 
-> According to recent feedback, the LBR call stack V4 patch only need to do small
-> change. However, it looks the patch "b3340a5 perf callchain: Support handling
-> complete branch stacks as histograms" has been removed from perf/core.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 16:15:34 +0100
 
-Yeah, I should have left it on a separate branch while testing was
-underway, my bad.
+The release_firmware() function tests whether its argument is NULL
+and then returns immediately. Thus the test around the call is not needed.
+
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/usb/serial/mxuport.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/usb/serial/mxuport.c b/drivers/usb/serial/mxuport.c
+index ab1d690..3653ec1 100644
+--- a/drivers/usb/serial/mxuport.c
++++ b/drivers/usb/serial/mxuport.c
+@@ -1101,8 +1101,7 @@ static int mxuport_probe(struct usb_serial *serial,
+ 	 */
+ 	usb_set_serial_data(serial, (void *)id->driver_info);
+ out:
+-	if (fw_p)
+-		release_firmware(fw_p);
++	release_firmware(fw_p);
+ 	return err;
+ }
  
-> Should I wait for the patch to merge again and submit the V5 patch then, OR
-> Should I rebase the V5 to the latest perf/core and submit it today?
+-- 
+2.1.3
 
-I'll try to send a screenshot of the differences among
-
-  perf report --branch-report --tui
-  perf report --branch-report --stdio (or --gtk, those two matches)
-
-As requested by Andi, that isn't noticing any difference among these
-three output modes.
-
-After this is clarified (and possibly fixed) I'll push to Ingo and then
-you can move on.
-
-- Arnaldo
