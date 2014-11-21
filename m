@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651AbaKURB1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 12:01:27 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:45604 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932568AbaKURBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 12:01:25 -0500
-X-IronPort-AV: E=Sophos;i="5.07,432,1413244800"; 
-   d="scan'208";a="193778969"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <stable@vger.kernel.org>
-Subject: [PATCH 1/2] swiotlb-xen: call xen_dma_sync_single_for_device when appropriate
-Date: Fri, 21 Nov 2014 17:00:19 +0000
-Message-ID: <1416589220-7720-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1411211657430.2675@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1411211657430.2675@kaball.uk.xensource.com>
+	id S1758834AbaKURBz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 12:01:55 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:49176 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932099AbaKURBx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 12:01:53 -0500
+X-Greylist: delayed 52114 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Nov 2014 12:01:53 EST
+Date: Fri, 21 Nov 2014 12:01:51 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141121170151.GC30603@home.goodmis.org>
+References: <alpine.DEB.2.11.1411200002330.3909@nanos>
+ <20141119235033.GE11386@lerouge>
+ <20141120122339.GA14877@htj.dyndns.org>
+ <alpine.DEB.2.11.1411202204030.3950@nanos>
+ <20141120221122.GA25393@htj.dyndns.org>
+ <alpine.DEB.2.11.1411202315230.3950@nanos>
+ <20141120230514.GB25393@htj.dyndns.org>
+ <alpine.DEB.2.11.1411210109460.6439@nanos>
+ <20141121141332.GA8808@lerouge>
+ <20141121162506.GA15461@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141121162506.GA15461@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In xen_swiotlb_sync_single we always call xen_dma_sync_single_for_cpu,
-even when we should call xen_dma_sync_single_for_device. Fix that.
+On Fri, Nov 21, 2014 at 11:25:06AM -0500, Tejun Heo wrote:
+> 
+> * Static percpu areas wouldn't trigger fault lazily.  Note that this
+>   is not necessarily because the first percpu chunk which contains the
+>   static area is embedded inside the kernel linear mapping.  Depending
+>   on the memory layout and boot param, percpu allocator may choose to
+>   map the first chunk in vmalloc space too; however, this still works
+>   out fine because at that point there are no other page tables and
+>   the PUD entries covering the first chunk is faulted in before other
+>   pages tables are copied from the kernel one.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: konrad.wilk@oracle.com
-CC: stable@vger.kernel.org
----
- drivers/xen/swiotlb-xen.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+That sounds correct.
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 153cf14..810ad41 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -502,7 +502,7 @@ xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
- 		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
- 
- 	if (target == SYNC_FOR_DEVICE)
--		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
-+		xen_dma_sync_single_for_device(hwdev, dev_addr, size, dir);
- 
- 	if (dir != DMA_FROM_DEVICE)
- 		return;
--- 
-1.7.10.4
+> 
+> * NMI used to be a problem because vmalloc fault handler couldn't
+>   safely nest inside NMI handler but this has been fixed since and it
+>   should work fine from NMI handlers now.
 
+Right. Of course "should work fine" does not excatly mean "will work fine".
+
+
+> 
+> * Function tracers are problematic because they may end up nesting
+>   inside themselves through triggering a vmalloc fault while accessing
+>   dynamic percpu memory area.  This may lead to recursive locking and
+>   other surprises.
+
+The function tracer infrastructure now has a recursive check that happens
+rather early in the call. Unless the registered OPS specifically states
+it handles recursions (FTRACE_OPS_FL_RECUSION_SAFE), ftrace will add the
+necessary recursion checks. If a registered OPS lies about being recusion
+safe, well we can't stop suicide.
+
+Looking at kernel/trace/trace_functions.c: function_trace_call() which is
+registered with RECURSION_SAFE, I see that the recursion check is done
+before the per_cpu_ptr() call to the dynamically allocated per_cpu data.
+
+It looks OK, but...
+
+Oh! but if we trace the page fault handler, and we fault here too
+we just nuked the cr2 register. Not good.
+
+-- Steve
+
+
+> 
+> Are there other cases where the lazy vmalloc faults can break things?
