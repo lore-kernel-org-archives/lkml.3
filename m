@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758547AbaKUPGy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:06:54 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:62565 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758325AbaKUPGu (ORCPT
+	id S1758605AbaKUPG7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:06:59 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:61321 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758358AbaKUPGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:06:50 -0500
+	Fri, 21 Nov 2014 10:06:55 -0500
 From: Pranith Kumar <bobby.prani@gmail.com>
-To: Jonathan Corbet <corbet@lwn.net>,
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Rashika <rashika.kheria@gmail.com>,
+        dmaengine@vger.kernel.org (open list:DMA GENERIC OFFLO...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v2 1/9] doc: memory-barriers.txt: Document use of lockless_dereference()
-Date: Fri, 21 Nov 2014 10:05:55 -0500
-Message-Id: <1416582363-20661-2-git-send-email-bobby.prani@gmail.com>
+Subject: [PATCH v2 2/9] drivers: dma: Replace smp_read_barrier_depends() with lockless_dereference()
+Date: Fri, 21 Nov 2014 10:05:56 -0500
+Message-Id: <1416582363-20661-3-git-send-email-bobby.prani@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
 References: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
@@ -26,24 +31,47 @@ hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
 
 Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- Documentation/memory-barriers.txt | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/dma/ioat/dma_v2.c | 3 +--
+ drivers/dma/ioat/dma_v3.c | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index 7ee2ae6..d33aab3 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -203,8 +203,8 @@ There are some minimal guarantees that may be expected of a CPU:
-      and always in that order.  On most systems, smp_read_barrier_depends()
-      does nothing, but it is required for DEC Alpha.  The ACCESS_ONCE()
-      is required to prevent compiler mischief.  Please note that you
--     should normally use something like rcu_dereference() instead of
--     open-coding smp_read_barrier_depends().
-+     should normally use something like rcu_dereference() or
-+     lockless_dereference() instead of open-coding smp_read_barrier_depends().
+diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+index 695483e..0f94d72 100644
+--- a/drivers/dma/ioat/dma_v2.c
++++ b/drivers/dma/ioat/dma_v2.c
+@@ -142,10 +142,9 @@ static void __cleanup(struct ioat2_dma_chan *ioat, dma_addr_t phys_complete)
  
-  (*) Overlapping loads and stores within a particular CPU will appear to be
-      ordered within that CPU.  This means that for:
+ 	active = ioat2_ring_active(ioat);
+ 	for (i = 0; i < active && !seen_current; i++) {
+-		smp_read_barrier_depends();
+ 		prefetch(ioat2_get_ring_ent(ioat, idx + i + 1));
+ 		desc = ioat2_get_ring_ent(ioat, idx + i);
+-		tx = &desc->txd;
++		tx = &lockless_dereference(desc)->txd;
+ 		dump_desc_dbg(ioat, desc);
+ 		if (tx->cookie) {
+ 			dma_descriptor_unmap(tx);
+diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+index 895f869..cbd0537 100644
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -389,7 +389,6 @@ static void __cleanup(struct ioat2_dma_chan *ioat, dma_addr_t phys_complete)
+ 	for (i = 0; i < active && !seen_current; i++) {
+ 		struct dma_async_tx_descriptor *tx;
+ 
+-		smp_read_barrier_depends();
+ 		prefetch(ioat2_get_ring_ent(ioat, idx + i + 1));
+ 		desc = ioat2_get_ring_ent(ioat, idx + i);
+ 		dump_desc_dbg(ioat, desc);
+@@ -398,7 +397,7 @@ static void __cleanup(struct ioat2_dma_chan *ioat, dma_addr_t phys_complete)
+ 		if (device->cap & IOAT_CAP_DWBES)
+ 			desc_get_errstat(ioat, desc);
+ 
+-		tx = &desc->txd;
++		tx = &lockless_dereference(desc)->txd;
+ 		if (tx->cookie) {
+ 			dma_cookie_complete(tx);
+ 			dma_descriptor_unmap(tx);
 -- 
 1.9.1
 
