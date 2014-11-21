@@ -1,79 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758616AbaKUKRp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 05:17:45 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:46227
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758422AbaKUKRk (ORCPT
+	id S1758507AbaKUKSV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 05:18:21 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33249 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755307AbaKUKSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 05:17:40 -0500
-X-IronPort-AV: E=Sophos;i="5.07,429,1413237600"; 
-   d="scan'208";a="89831757"
-Date: Fri, 21 Nov 2014 11:17:15 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-cc: Eduardo Valentin <edubezval@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 1/1] thermal: Exynos: Deletion of unnecessary checks
- before two function calls
-In-Reply-To: <546F1017.5080403@users.sourceforge.net>
-Message-ID: <alpine.DEB.2.10.1411211116580.2554@hadrien>
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net>
- <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <546F1017.5080403@users.sourceforge.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 21 Nov 2014 05:18:15 -0500
+Date: Fri, 21 Nov 2014 10:16:15 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Flora Fu <flora.fu@mediatek.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, srv_heupstream@mediatek.com,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Dongdong Cheng <dongdong.cheng@mediatek.com>
+Message-ID: <20141121101615.GP3815@sirena.org.uk>
+References: <1416210027-5562-1-git-send-email-flora.fu@mediatek.com>
+ <1416210027-5562-4-git-send-email-flora.fu@mediatek.com>
+ <20141117234012.GE22111@sirena.org.uk>
+ <1416553771.19764.51.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="411OKKGJLVBgRQv/"
+Content-Disposition: inline
+In-Reply-To: <1416553771.19764.51.camel@mtksdaap41>
+X-Cookie: Some optional equipment shown.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/7] regulator: MT6397: Add support for MT6397 regulator
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014, SF Markus Elfring wrote:
 
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Fri, 21 Nov 2014 11:06:33 +0100
->
-> The functions cpufreq_cooling_unregister() and thermal_zone_device_unregister()
-> test whether their argument is NULL and then return immediately.
-> Thus the test around the call is not needed.
->
-> This issue was detected by using the Coccinelle software.
->
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
-> ---
->  drivers/thermal/samsung/exynos_thermal_common.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
-> index 3f5ad25..1cbb9d0 100644
-> --- a/drivers/thermal/samsung/exynos_thermal_common.c
-> +++ b/drivers/thermal/samsung/exynos_thermal_common.c
-> @@ -417,12 +417,10 @@ void exynos_unregister_thermal(struct thermal_sensor_conf *sensor_conf)
->
->  	th_zone = sensor_conf->pzone_data;
->
-> -	if (th_zone->therm_dev)
-> -		thermal_zone_device_unregister(th_zone->therm_dev);
-> +	thermal_zone_device_unregister(th_zone->therm_dev);
->
->  	for (i = 0; i < th_zone->cool_dev_size; i++) {
-> -		if (th_zone->cool_dev[i])
-> -			cpufreq_cooling_unregister(th_zone->cool_dev[i]);
-> +		cpufreq_cooling_unregister(th_zone->cool_dev[i]);
->  	}
+--411OKKGJLVBgRQv/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Now you have unnecessary {}
+On Fri, Nov 21, 2014 at 03:09:31PM +0800, Flora Fu wrote:
+> On Mon, 2014-11-17 at 23:40 +0000, Mark Brown wrote:
 
-julia
+> > > +	vosel =3D info->buck_conf.vosel_reg;
+> > > +	voselon =3D info->buck_conf.voselon_reg;
+> > > +	vosel_mask =3D info->buck_conf.vosel_mask;
 
->
->  	dev_info(sensor_conf->dev,
-> --
-> 2.1.3
->
->
+> > Please use the standard way of specifying data even if you can't use the
+> > standard function.
+
+> Could you specify the standard way of specification data? Thanks.=20
+
+Using the fields in the regulator_desc as you can see from the standard
+helpers.
+
+> > You should add comments here explaining what's going on - it's very
+> > strange to have to write the same value to two different registers and
+> > the names of the registers look suspiciously like this is something to =
+do
+> > with a suspend mode...
+
+> Yes, its is for suspend mode control usage.
+> For registers "vosel", "voselon", they is called register mode or
+> hardware control mode voltage settings. Register mode is a default mode
+> on the buck control. For quickly normal/sleep mode switch, hardware
+> control can be enabled by controlling buck output by a CTRL_PIN. In the
+> following diagram, there is a static settings on vosel_sleep for suspend
+> mode output. According to CTRL_PIN's level, Vout can have different
+> output (voselon or vosel_sleep).=20
+
+You need to represent this in your driver, the sleep mode controls
+should either be controlled using the suspend API or the GPIO control
+needs to be visible in the driver.  It's also OK to ignore the GPIO
+control for now and do it later if complex work is needed to represent
+it in the driver.
+
+--411OKKGJLVBgRQv/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUbxDrAAoJECTWi3JdVIfQxsYH/1EnydozK7WoOzEDmaoQOiXM
+3eLi6VTJhJqsnacl2Xr49kJGix/67XXR1Q1Txf/yr2Soxuom4QflD3oRUY+CHnmQ
+uqxJq8FDoABYH9kn+6OZ6mlozp7H6w0+38drF/ABUryVlfw3Pb8XteOXM3lPz0EU
+hhdfeLlokvP0qEIk1VXLO63Wf7hTUWjjKgX5PkVY4cSxQyVDFTGa159MM7l5hjcu
+zOFeBLxLs9VKElXECw9gumx6Xw2yuIygzsCluKjBbkir7kk/uLLkDMdoZXjSnjyO
+UGe4EvtKS5DyzftLxOEX+vkLZGm6X7ITy1jSd+xIy1C1Bwrwozwg1WPjXmLBVhU=
+=8buq
+-----END PGP SIGNATURE-----
+
+--411OKKGJLVBgRQv/--
