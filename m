@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552AbaKUUlq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 15:41:46 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:49195 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494AbaKUUlp (ORCPT
+	id S1752588AbaKUUmb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:42:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57115 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145AbaKUUma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 15:41:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1411212110320.6439@nanos>
-References: <alpine.DEB.2.11.1411202204030.3950@nanos>
-	<20141120221122.GA25393@htj.dyndns.org>
-	<alpine.DEB.2.11.1411202315230.3950@nanos>
-	<20141120230514.GB25393@htj.dyndns.org>
-	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
-	<20141120233920.GC25393@htj.dyndns.org>
-	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
-	<20141121162742.GB15461@htj.dyndns.org>
-	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
-	<CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
-	<20141121170805.GD30603@home.goodmis.org>
-	<CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
-	<CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
-	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
-	<CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
-	<alpine.DEB.2.11.1411212049220.6439@nanos>
-	<CA+55aFzvgxAMpP7kr9qrxyo82vSucQ5G+VByOgsgoyq6y5ExOA@mail.gmail.com>
-	<alpine.DEB.2.11.1411212110320.6439@nanos>
-Date: Fri, 21 Nov 2014 12:41:44 -0800
-X-Google-Sender-Auth: HGaEzycGmV44x04EukQyXl8tbhc
-Message-ID: <CA+55aFyt6q7Ed-SS9GeN8jeUZu6yNM14EGyH_8rn8AF2Vv37hg@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 21 Nov 2014 15:42:30 -0500
+Date: Fri, 21 Nov 2014 12:42:29 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Rafael Aquini <aquini@redhat.com>
+Subject: Re: [PATCH] ipc,sem block sem_lock on sma->lock during sma
+ initialization
+Message-Id: <20141121124229.933a9b6ef9725a4032c95d45@linux-foundation.org>
+In-Reply-To: <546FA0A7.2010507@redhat.com>
+References: <20141121145226.2ac598af@annuminas.surriel.com>
+	<20141121120930.3cd8d0f233f9670d689de672@linux-foundation.org>
+	<546FA0A7.2010507@redhat.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 12:16 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
-> I don't think that works on 32bit. See the magic in
-> vmalloc_sync_one().
+On Fri, 21 Nov 2014 15:29:27 -0500 Rik van Riel <riel@redhat.com> wrote:
 
-Heh. I guess we could just add a wrapper around this crap, and make it
-very clear that the paravirt case is a horrible horrible hack.
+> On 11/21/2014 03:09 PM, Andrew Morton wrote:
+> > On Fri, 21 Nov 2014 14:52:26 -0500 Rik van Riel <riel@redhat.com>
+> > wrote:
+> > 
+> >> When manipulating just one semaphore with semop, sem_lock only
+> >> takes that single semaphore's lock. This creates a problem during
+> >> initialization of the semaphore array, when the data structures
+> >> used by sem_lock have not been set up yet. The sma->lock is
+> >> already held by newary, and we just have to make sure everything
+> >> else waits on that lock during initialization.
+> >> 
+> >> Luckily it is easy to make sem_lock wait on the sma->lock, by
+> >> pretending there is a complex operation in progress while the sma
+> >> is being initialized.
+> >> 
+> >> The newary function already zeroes sma->complex_count before
+> >> unlocking the sma->lock.
+> > 
+> > What are the runtime effects of the bug?
+> > 
+> 
+> NULL pointer dereference in spin_lock from sem_lock,
+> if it is called before sma->sem_base has been pointed
+> somewhere valid.
 
-Something like
+Help us out here.  People need to use this description to work out
+which kernel versions need the patch and whether to backport the fix
+into their various kernels.  Other people will be starting at this
+changelog wondering "will this fix the bug my customer has reported".
 
-   #define set_one_pgd_entry(entry,pgdp) (pgdp)->pgd = (entry)
+Is there some bug report people can look at?
 
-for the regular case, and then for paravirt we do something very
-explicitly horrid, like
-
-   #ifdef CONFIG_PARAVIRT
-   #ifdef CONFIG_X86_32
-   // The pmd is the top-level page directory on non-PAE x86, nested
-inside pgd/pud
-   #define set_one_pgd_entry(entry,pgdp) set_pmd((pmd_t *)(pgdp),
-(pmd_t) { entry } )
-   #else
-   #define set_one_pgd_entry(entry, pgdp) do { set_pgd(pgdp, (pgd_t) {
-entry });  arch_flush_lazy_mmu_mode(); } while (0)
-   #endif
-
-because on x86-64, there seems to be that whole lazy_mode pv_ops
-craziness (which I'm not at all convinced is needed here, but that's
-what the current code does).
-
-                Linus
+What userspace actions trigger this bug?
