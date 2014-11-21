@@ -1,120 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654AbaKUTUL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:20:11 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:35410 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871AbaKUTUJ (ORCPT
+	id S1751598AbaKUTWq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:22:46 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34088 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaKUTWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:20:09 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        ssantosh@kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
-	<1709760.E0jX3Myv0h@wuerfel> <546C7FDD.7030906@ti.com>
-	<2900095.WIocOu7ue2@wuerfel>
-	<CAPDyKFqeZ3YU2OEN4tCOdcQ0pAho67Q8U_eCEOroG9aS0mp+-Q@mail.gmail.com>
-	<546DD87B.3080806@ti.com>
-	<CAPDyKFrBhZyqozM98_4pPdW0EMFt5W6VX1X7cz6Z=yNhW4vYTA@mail.gmail.com>
-	<CAMuHMdWtHT7QX3Kpa-GCLa49ToGODwjnNVgfxDzJzcM-FU1ffg@mail.gmail.com>
-	<546E0970.5090301@ti.com> <7hh9xtr5ac.fsf@deeprootsystems.com>
-	<CAMuHMdV7zASj8_NtLRir1VubXEKTkq0vBGMXeYXDACu8UC2tZA@mail.gmail.com>
-	<7hbno1r1af.fsf@deeprootsystems.com>
-	<CAMuHMdVXGPu7x706NxqO3rn3KuRbPbD_ZQsJtDH4Hf31AaRR+Q@mail.gmail.com>
-	<7hppchpcfm.fsf@deeprootsystems.com>
-	<CAMuHMdU6G35SP-P7bt6RJQk59CrGcKE2XM4N3o8Dv3qxZU7gxA@mail.gmail.com>
-Date: Fri, 21 Nov 2014 11:20:05 -0800
-In-Reply-To: <CAMuHMdU6G35SP-P7bt6RJQk59CrGcKE2XM4N3o8Dv3qxZU7gxA@mail.gmail.com>
-	(Geert Uytterhoeven's message of "Fri, 21 Nov 2014 09:06:09 +0100")
-Message-ID: <7h8uj4nyxm.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 21 Nov 2014 14:22:45 -0500
+Date: Fri, 21 Nov 2014 19:21:09 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Message-ID: <20141121192109.GK3815@sirena.org.uk>
+References: <1416512485-7292-1-git-send-email-joshc@codeaurora.org>
+ <1416512485-7292-4-git-send-email-joshc@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Z3MQA8rgdnnmvulu"
+Content-Disposition: inline
+In-Reply-To: <1416512485-7292-4-git-send-email-joshc@codeaurora.org>
+X-Cookie: Some optional equipment shown.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/3] regulator: rpm: add support for RPM-controller SMB208
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
-> Hi Kevin,
->
-> On Fri, Nov 21, 2014 at 2:30 AM, Kevin Hilman <khilman@kernel.org> wrote:
->> Geert Uytterhoeven <geert@linux-m68k.org> writes:
->>> On Thu, Nov 20, 2014 at 10:48 PM, Kevin Hilman <khilman@kernel.org> wrote:
->>>>>> So what exactly are we talking about with "PM" clocks, and why are they
->>>>>> "special" when it comes to PM domains?  IOW, why are the clocks to be
->>>>>> managed during PM domain transitions for a given device any different
->>>>>> than the clocks that need to be managed for a runtime suspend/resume (or
->>>>>> system suspend/resume) sequence for the same device?
->>>>>
->>>>> (Speaking for my case, shmobile)
->>>>>
->>>>> They're not. The clocks to be managed during PM domain transitions are the
->>>>> same as the clocks that need to be managed for a runtime suspend/resume
->>>>> (or system suspend/resume) sequence.
->>>>>
->>>>> The special thing is that this is more a platform than a driver thing: the same
->>>>> module may have a "PM/functional" clock (that is documented to enable/disable
->>>>> the module) on one Soc, but noet on another.
->>>>
->>>> So why isn't the presence or absence of the clock described in the .dtsi
->>>> for the SoC instead of being handled by special PM domain logic?
->>>
->>> It is. Cfr. the presence/absence of clocks for renesas,rcar-gpio nodes.
->>
->> Hmm, OK, Good.
->>
->> So now I'm confused about why the PM domain has to do anything special
->> if the presence/absence of the clocks is already handled by the DT.
->
-> Just adding a clock property to a device node in DT doesn't enable the clock
-> automatically, nor make it runtime-managed automatically.
+--Z3MQA8rgdnnmvulu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-In general, that's true.  But I thought you're PM domain was written to
-look for clock properties, and if present would manage them.  The
-proposed genpd support for TI Keystone2 would make it so these clocks
-would definitely be automatically managed by the PM domain.
+On Thu, Nov 20, 2014 at 01:41:25PM -0600, Josh Cartwright wrote:
+> The IPQ8064 reference boards make use of SMB208 regulators which are
+> controlled by RPM.  Implement support for these regulators in the RPM
+> regulator driver.
 
-> Compare this to e.g. pinctrl, where adding pinctrl properties to DT does enable
-> them automatically, without the driver for the device having to care about it.
+Applied, thanks.
 
-Well, we're headed down the same path with genpd (if given the right
-properties in genpd.)
+--Z3MQA8rgdnnmvulu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> Drivers interfacing external hardware typically do care about clocks, as they
-> have to program clock generators for the external hardware interface (e.g.
-> driving spi or i2c buses at specific frequencies).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Yes, but IMO, these should be handled by the driver, not by the PM
-domain.  More specifically, if a device is generating a clock for
-external hardware, presumably it cannot be runtime suspended, so the
-enclosing PM domain can be powered off.  If it's not generating a clock,
-then it can be runtime suspended and presumably would gate it's
-externally facing clocks when it runtime suspends.
+iQEcBAEBAgAGBQJUb5CkAAoJECTWi3JdVIfQYsAH/3ec/LSQqK0va6WPmRwEqsf/
+guDrabfp2f8tXnbyNsRS0paPgmuXkYj8x8jUwRbxUwN5fQ5u9oZsWhfvioHd6rGu
+aABrKgOrfYvuHUD3moG/YXjwuAd1CBxWDBjzpxmzLLMTrGb2VhX6B6+mrNBU8Gxs
+y7XMXw4KCnsaNaWj9qFqhAd9dzReOr7ItVBWWpWxJ8U46VonMuvUHKwrjA/+M4ln
+GyGWy8chV8Dw0ld45TuOmqivZ+2HFUTp0H2BmxIUhzVW7k/mz83SVEqhm1M1Cv8R
+KzTm3h+GWVq3QLBl0xPOb4jhqVzeFQtKzE9dY+ENAiarIkZEdJKfo2smLF+TyMQ=
+=KyYL
+-----END PGP SIGNATURE-----
 
-> Other random drivers don't care about clocks, so they don't handle them.
-> But as long as they make basic pm_runtime_{enable,get_sync,put}() calls,
-> the (optional) clocks (and hardware PM domains) will "work" fine, if handled
-> by the PM (clock) domain.
-
-Yes, I understand that.  But this still isn't helping me understand why
-your PM domain has to distinguish between different types of clocks
-(e.g. why it only manages the first clock.) 
-
-Did you set up the properties so that the first clock was the functional
-clock and any additional ones were for devices that generate external
-clocks?
-
-Kevin
-
+--Z3MQA8rgdnnmvulu--
