@@ -1,98 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758753AbaKUPdw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:33:52 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:41172 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758620AbaKUPdt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:33:49 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] of: spi: Export single device registration method
- =?iso-8859-1?Q?and=0D?= accessors (v2)
-To: Mark Brown <broonie@kernel.org>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-In-Reply-To: <20141029122204.GG18557@sirena.org.uk>
-References: <1414572037-11306-1-git-send-email-pantelis.antoniou@konsulko.com>
-	<20141029101420.GT18557@sirena.org.uk>
-	<6A3753C0-251A-4645-AD96-CB1D6521175F@antoniou-consulting.com>
-	<20141029122204.GG18557@sirena.org.uk>
-Date: Fri, 21 Nov 2014 15:33:29 +0000
-Message-Id: <20141121153329.C4DDDC40D85@trevor.secretlab.ca>
+	id S1758781AbaKUPeA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:34:00 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33538 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758691AbaKUPd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:33:57 -0500
+Message-ID: <546F5B51.1030006@ti.com>
+Date: Fri, 21 Nov 2014 17:33:37 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: =?windows-1252?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Wolfram Sang <wsa@the-dreams.de>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Murali Karicheri <m-karicheri2@ti.com>
+Subject: Re: [2/5] i2c: davinci: query STP always when NACK is received
+References: <1416477788-5544-3-git-send-email-grygorii.strashko@ti.com> <20141120221953.GI27002@pengutronix.de> <546F34B9.1000206@ti.com> <20141121131008.GQ27002@pengutronix.de>
+In-Reply-To: <20141121131008.GQ27002@pengutronix.de>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014 12:22:04 +0000
-, Mark Brown <broonie@kernel.org>
- wrote:
-> On Wed, Oct 29, 2014 at 01:48:06PM +0200, Pantelis Antoniou wrote:
-> > > On Oct 29, 2014, at 12:14 , Mark Brown <broonie@kernel.org> wrote:
-> 
-> > > This feels like there is an abstraction problem somewhere, whatever code
-> > > is supposed to use this is going to need to be taught about each
-> > > individual bus which is going to be tedious, I would expect that we'd
-> > > have something like the bus being able to provide a callback which will
-> > > get invoked whenever a new node appears on the parent node for the bus.
-> 
-> > Thereâ€™s a whole patchset that does exactly this. 
-> > Look at "OF: spi: Add OF notifier handlerâ€ and youâ€™ll where this is used.
-> 
-> I deleted that unread I'm afraid; one of the reasons that you should use
-> subject lines matching the styles for the subsystems is that it's one of
-> the things people use to filter out things that actually need attention,
-> if things are busy things that at first glance don't look terribly
-> relevant (like changes to the OF core in this case) are likely to get
-> looked at less urgently or just skipped.
-> 
-> A quick glance suggests that this is adding code inside the SPI core so
-> it's still not explaining why anything is being exported, can you
-> clarify please?
+Hi Uwe,
 
-I have the same question. This doesn't look like it should be exporting
-symbols.
-
-Also, the way the patch is written causes a lot of code changes to get
-interleaved in the diff. It would be better to split into two patches;
-one that creates the new of_register_spi_device(), and a separate patch
-to add the other new functions. It would be certainly easier to review
-that way.
-
+On 11/21/2014 03:10 PM, Uwe Kleine-König wrote:
+> On Fri, Nov 21, 2014 at 02:48:57PM +0200, Grygorii Strashko wrote:
+>> On 11/21/2014 12:19 AM, Uwe Kleine-König wrote:
+>>>> diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
+>>>> index 9bbfb8f..2cef115 100644
+>>>> --- a/drivers/i2c/busses/i2c-davinci.c
+>>>> +++ b/drivers/i2c/busses/i2c-davinci.c
+>>>> @@ -411,11 +411,9 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg *msg, int stop)
+>>>>    	if (dev->cmd_err & DAVINCI_I2C_STR_NACK) {
+>>>>    		if (msg->flags & I2C_M_IGNORE_NAK)
+>>>>    			return msg->len;
+>>>> -		if (stop) {
+>>>> -			w = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
+>>>> -			w |= DAVINCI_I2C_MDR_STP;
+>>>> -			davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, w);
+>>>> -		}
+>>>> +		w = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
+>>>> +		w |= DAVINCI_I2C_MDR_STP;
+>>>> +		davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, w);
+>>> I think this is a good change, but I wonder if the handling of
+>>> I2C_M_IGNORE_NAK is correct here. If the controller reports a NACK say
+>>> for the 2nd byte of a 5-byte-message, the transfer supposed to
+>>> continue, right? (Hmm, maybe the framework handle this and restarts the
+>>> transfer with I2C_M_NOSTART but the davinci driver doesn't seem to
+>>> handle this flag?)
+>>
+>> Have nothing to say about handling of I2C_M_IGNORE_NAK. I'm not going to
+>> change current behavior - davinci driver will interrupt transfer of i2c_msg always
+>>   in case of NACK and start transfer of the next i2c_msg (if exist).
+>> In my opinion, Above question is out of scope of this patch.
+> Yeah right, that's exactly what I thought.
 > 
-> > > SubmittingPatches says.  Please also try to keep your CC list sane,
-> > > CCing random people just means that you're increasing the volume of mail
-> > > they have to process.  I'm surprised kernel.org accepts so many CCs.
-> 
-> > > I have to say I don't recall ever seeing v1...
-> 
-> > All of them are in the CC list for a reason. 
-> 
-> This is a single, standalone SPI patch - you didn't send it as part of a
-> series (which is the only reason I read it).
+> Thinking again I wonder if with your change handling is correct when the
+> sender wants to do a repeated start. That would need a more detailed
+> look into the driver.
 
-Yes, this is part of the OF overlay series. It should have at least been
-marked as [PATCH 7/8] and that it replaced the previous, buggy, patch 7.
+Davinci driver will always abort transfer with error -EREMOTEIO in case if
+NACK received from I2C slave device. And the next omap_i2c_xfer() call may
+be *not* targeted to the same I2C slave device.
+^ if !I2C_M_IGNORE_NAK
 
-g.
+This discussion is absolutely similar to https://lkml.org/lkml/2013/7/16/235
+So, I'm just copy-pasting my answers from there ;)
 
+regards,
+-grygorii
