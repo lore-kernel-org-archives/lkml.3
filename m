@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228AbaKUKJK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 05:09:10 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:49675 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757720AbaKUKJE (ORCPT
+	id S1758268AbaKUKJY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 05:09:24 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42604 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758210AbaKUKJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 05:09:04 -0500
+	Fri, 21 Nov 2014 05:09:09 -0500
 From: Omar Sandoval <osandov@osandov.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
@@ -16,64 +16,56 @@ To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Trond Myklebust <trond.myklebust@primarydata.com>,
         Mel Gorman <mgorman@suse.de>
 Cc: Omar Sandoval <osandov@osandov.com>
-Subject: [PATCH v2 0/5] btrfs: implement swap file support
-Date: Fri, 21 Nov 2014 02:08:26 -0800
-Message-Id: <cover.1416563833.git.osandov@osandov.com>
+Subject: [PATCH v2 2/5] nfs: don't dirty ITER_BVEC pages read through direct I/O
+Date: Fri, 21 Nov 2014 02:08:28 -0800
+Message-Id: <6f2a9d098e9b558cf551aa32f668d5eb95c96406.1416563833.git.osandov@osandov.com>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <cover.1416563833.git.osandov@osandov.com>
+References: <cover.1416563833.git.osandov@osandov.com>
+In-Reply-To: <cover.1416563833.git.osandov@osandov.com>
+References: <cover.1416563833.git.osandov@osandov.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series, based on 3.18-rc5, implements support for swap files on
-BTRFS.
+As with the generic blockdev code, kernel pages shouldn't be dirtied by the
+direct I/O path.
 
-The standard swap file implementation uses the filesystem's implementation of
-bmap() to get a list of physical blocks on disk, which the swap file code then
-does I/O on directly without going through the filesystem. This doesn't work
-for BTRFS, which is copy-on-write and therefore moves disk blocks around (COW
-isn't the only thing that can shuffle around disk blocks: consider
-defragmentation, balancing, etc.).
+Signed-off-by: Omar Sandoval <osandov@osandov.com>
+---
+ fs/nfs/direct.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Swap-over-NFS introduced an interface through which a filesystem can arbitrate
-swap I/O through address space operations:
-
-- swap_activate() is called by swapon() and informs the address space that the
-  given file is going to be used for swap, so it should take adequate measures
-  like reserving space on disk and pinning block lookup information in memory
-- swap_deactivate() is used to clean up on swapoff()
-- readpage() is used to page in (read a page from disk)
-- direct_IO() is used to page out (write a page out to disk)
-
-Version 2 modifies this interface in the first part of the patch series to use
-direct_IO for both reads and writes, which makes things much cleaner.
-
-The second part of the patch series implements support for the interface on
-BTRFS, which just means implementing swap_{,de}activate and adding some chattr
-checks, which raises the following considerations:
-
-- We can't do direct I/O on compressed or inline extents, so we can't use files
-  with either for swap.
-- Supporting COW swapfiles might also come with some weird edge cases?
-
-This functionality is tenuously tested in a virtual machine with some
-artificial workloads. Comment away.
-
-Omar Sandoval (5):
-  direct-io: don't dirty ITER_BVEC pages on read
-  nfs: don't dirty ITER_BVEC pages read through direct I/O
-  swap: use direct I/O for SWP_FILE swap_readpage
-  btrfs: don't allow -C or +c chattrs on a swap file
-  btrfs: enable swap file support
-
-v2: use direct_IO for swap_readpage
-
- fs/btrfs/inode.c | 71 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/btrfs/ioctl.c | 50 ++++++++++++++++++++++++---------------
- fs/direct-io.c   |  8 ++++---
- fs/nfs/direct.c  |  5 +++-
- mm/page_io.c     | 32 +++++++++++++++++++++----
- 5 files changed, 139 insertions(+), 27 deletions(-)
-
+diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
+index 10bf072..a67fa2c 100644
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@ -88,6 +88,7 @@ struct nfs_direct_req {
+ 	struct pnfs_ds_commit_info ds_cinfo;	/* Storage for cinfo */
+ 	struct work_struct	work;
+ 	int			flags;
++	int			should_dirty;	/* should we mark read pages dirty? */
+ #define NFS_ODIRECT_DO_COMMIT		(1)	/* an unstable reply was received */
+ #define NFS_ODIRECT_RESCHED_WRITES	(2)	/* write verification failed */
+ 	struct nfs_writeverf	verf;		/* unstable write verifier */
+@@ -370,7 +371,8 @@ static void nfs_direct_read_completion(struct nfs_pgio_header *hdr)
+ 		struct nfs_page *req = nfs_list_entry(hdr->pages.next);
+ 		struct page *page = req->wb_page;
+ 
+-		if (!PageCompound(page) && bytes < hdr->good_bytes)
++		if (!PageCompound(page) && bytes < hdr->good_bytes &&
++		    dreq->should_dirty)
+ 			set_page_dirty(page);
+ 		bytes += req->wb_bytes;
+ 		nfs_list_remove_request(req);
+@@ -542,6 +544,7 @@ ssize_t nfs_file_direct_read(struct kiocb *iocb, struct iov_iter *iter,
+ 	dreq->inode = inode;
+ 	dreq->bytes_left = count;
+ 	dreq->ctx = get_nfs_open_context(nfs_file_open_context(iocb->ki_filp));
++	dreq->should_dirty = !(iter->type & ITER_BVEC);
+ 	l_ctx = nfs_get_lock_context(dreq->ctx);
+ 	if (IS_ERR(l_ctx)) {
+ 		result = PTR_ERR(l_ctx);
 -- 
 2.1.3
 
