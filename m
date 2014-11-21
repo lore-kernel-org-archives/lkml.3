@@ -1,91 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762AbaKUXED (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 18:04:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51007 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751755AbaKUXEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 18:04:01 -0500
-Message-ID: <546FC4D9.6010600@redhat.com>
-Date: Fri, 21 Nov 2014 18:03:53 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1752823AbaKUXES (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 18:04:18 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:50130 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755AbaKUXEQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 18:04:16 -0500
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Rafael Aquini <aquini@redhat.com>
-Subject: Re: [PATCH] ipc,sem block sem_lock on sma->lock during sma initialization
-References: <20141121145226.2ac598af@annuminas.surriel.com>	<20141121120930.3cd8d0f233f9670d689de672@linux-foundation.org>	<546FA0A7.2010507@redhat.com> <20141121124229.933a9b6ef9725a4032c95d45@linux-foundation.org>
-In-Reply-To: <20141121124229.933a9b6ef9725a4032c95d45@linux-foundation.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFyzg=vJqRwh2CsK8WD-E5nRPjdiasMaTBx6qygQhDrGLA@mail.gmail.com>
+References: <alpine.DEB.2.11.1411202204030.3950@nanos> <CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
+ <20141120233920.GC25393@htj.dyndns.org> <CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
+ <20141121162742.GB15461@htj.dyndns.org> <CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
+ <CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
+ <20141121170805.GD30603@home.goodmis.org> <CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
+ <CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
+ <CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
+ <CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
+ <alpine.DEB.2.11.1411212049220.6439@nanos> <CA+55aFzvgxAMpP7kr9qrxyo82vSucQ5G+VByOgsgoyq6y5ExOA@mail.gmail.com>
+ <alpine.DEB.2.11.1411212110320.6439@nanos> <CA+55aFyt6q7Ed-SS9GeN8jeUZu6yNM14EGyH_8rn8AF2Vv37hg@mail.gmail.com>
+ <alpine.DEB.2.11.1411212207150.6439@nanos> <CA+55aFyzg=vJqRwh2CsK8WD-E5nRPjdiasMaTBx6qygQhDrGLA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 21 Nov 2014 15:03:54 -0800
+Message-ID: <CALCETrVGSQ6CTXAFkPTueb0FMJ8oBd2_R4zB5X9juDoun_kJvQ@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Fri, Nov 21, 2014 at 2:55 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Nov 21, 2014 at 1:11 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>>
+>> I'm fine with that. I just think it's not horrid enough, but that can
+>> be fixed easily :)
+>
+> Oh, I think it's plenty horrid.
+>
+> Anyway, here's an actual patch. As usual, it has seen absolutely no
+> actual testing, but I did try to make sure it compiles and seems to do
+> the right thing on:
+>  - x86-32 no-PAE
+>  - x86-32 no-PAE with PARAVIRT
+>  - x86-32 PAE
+>  - x86-64
+>
+> also, I just removed the noise that is "vmalloc_sync_all()", since
+> it's just all garbage and nothing actually uses it. Yeah, it's used by
+> "register_die_notifier()", which makes no sense what-so-ever.
+> Whatever. It's gone.
+>
+> Can somebody actually *test* this? In particular, in any kind of real
+> paravirt environment? Or, any comments even without testing?
+>
+> I *really* am not proud of the mess wrt the whole
+>
+>   #ifdef CONFIG_PARAVIRT
+>   #ifdef CONFIG_X86_32
+>     ...
+>
+> but I think that from a long-term perspective, we're actually better
+> off with this kind of really ugly - but very explcit - hack that very
+> clearly shows what is going on.
+>
+> The old code that actually "walked" the page tables was more
+> "portable", but was somewhat misleading about what was actually going
+> on.
 
-On 11/21/2014 03:42 PM, Andrew Morton wrote:
-> On Fri, 21 Nov 2014 15:29:27 -0500 Rik van Riel <riel@redhat.com>
-> wrote:
-> 
->> On 11/21/2014 03:09 PM, Andrew Morton wrote:
->>> On Fri, 21 Nov 2014 14:52:26 -0500 Rik van Riel
->>> <riel@redhat.com> wrote:
->>> 
->>>> When manipulating just one semaphore with semop, sem_lock
->>>> only takes that single semaphore's lock. This creates a
->>>> problem during initialization of the semaphore array, when
->>>> the data structures used by sem_lock have not been set up
->>>> yet. The sma->lock is already held by newary, and we just
->>>> have to make sure everything else waits on that lock during
->>>> initialization.
->>>> 
->>>> Luckily it is easy to make sem_lock wait on the sma->lock,
->>>> by pretending there is a complex operation in progress while
->>>> the sma is being initialized.
->>>> 
->>>> The newary function already zeroes sma->complex_count before 
->>>> unlocking the sma->lock.
->>> 
->>> What are the runtime effects of the bug?
->>> 
->> 
->> NULL pointer dereference in spin_lock from sem_lock, if it is
->> called before sma->sem_base has been pointed somewhere valid.
-> 
-> Help us out here.  People need to use this description to work out 
-> which kernel versions need the patch and whether to backport the
-> fix into their various kernels.  Other people will be starting at
-> this changelog wondering "will this fix the bug my customer has
-> reported".
-> 
-> Is there some bug report people can look at?
-> 
-> What userspace actions trigger this bug?
+At the risk of going deeper down the rabbit hole, I grepped for
+pgd_list.  I found:
 
-The reason the bug took almost two years to get noticed is that
-it takes one task doing a semop on a semaphore in an array that
-is still getting instantiated by newary (getsem) from another
-task.
+__set_pmd_pte in pageattr.c.  It appears to be completely incorrect.
+Unless I've misunderstood, other than the very first line, it will
+either do nothing at all or crash when it falls off the end of the
+page tables that it's pointlessly trying to update.
 
-In other words, if you try to use a semaphore array before
-getsem returns, you can oops the task that calls semop.
+sync_global_pgds: OK, I guess -- this is for hot-add of memory, right?
+ But if we teach the context switch code to check that the kernel
+stack is okay, that can be removed, I think.  (We absolutely MUST keep
+the static per-cpu stuff populated everywhere before running user
+code, but that's never in hot-added memory.)
 
-It should not cause any damage to long-living kernel data
-structures.
+xen_mm_pin_all and xen_mm_unpin_all: I have no clue.  I wonder how
+that works with SHARED_KERNEL_PMD.
 
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Anyone want to attack these?  It would be kind of nice to remove
+pgd_list entirely.  (I realize that doing so precludes the use of
+bloody enormous 512GB kernel pages, but any attempt to use *those* is
+so completely screwed without a major reworking of all of this (or
+perhaps stop_machine) that keeping pgd_list around just for that is
+probably a mistake.)
 
-iQEcBAEBAgAGBQJUb8TZAAoJEM553pKExN6DzJUH/RYSovikk+36KH0uFQN44txj
-ZkEM6BsT7I6W9zBiK4OCPpwYCr5gy2xsXH7bLzCgzRV/YmjLFdw20DhDfSo14GO/
-1ByYcsUcsZ+lPJZ+g4IKi57VW4T+NLa1T4CoJ84+1QVGKYlpc7mlwc8suTGBhKvQ
-5Eq1o1KOE9ZtAG5Go8OYH7frwalkrYE0YJbGN9PW0pUvZ7FilEiMJIkznIetRS6K
-WK05dK52DMKeXFxzuxVhSRcCZb2+bHZn3qFOmon6kHbMqgzRZCKMcdydtoIvcFq7
-cA5eTt6V6je3XVhc4lsSfP9cHraLDZZIjkaJ856fBpgJ30ypsHcpVY6UKTbFSHo=
-=u1Vg
------END PGP SIGNATURE-----
+--Andy
