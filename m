@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928AbaKUFm7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 00:42:59 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54767 "EHLO mail.eperm.de"
+	id S1758017AbaKUFne (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 00:43:34 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54756 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757772AbaKUFm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 00:42:57 -0500
+	id S1752189AbaKUFmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 00:42:50 -0500
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: Herbert Xu <herbert@gondor.apana.org.au>
@@ -13,10 +13,12 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
         lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
         linux-crypto@vger.kernel.org, linux-api@vger.kernel.org
-Subject: [PATCH v3 0/7] crypto: AF_ALG: add AEAD and RNG support
-Date: Fri, 21 Nov 2014 06:29:36 +0100
-Message-ID: <4088013.2O8zCP0xXa@tachyon.chronox.de>
+Subject: [PATCH v3 3/7] crypto: AF_ALG: crypto API calls to inline functions
+Date: Fri, 21 Nov 2014 06:30:49 +0100
+Message-ID: <6008064.Pc9dQem1Ya@tachyon.chronox.de>
 User-Agent: KMail/4.14.3 (Linux/3.17.3-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <4088013.2O8zCP0xXa@tachyon.chronox.de>
+References: <4088013.2O8zCP0xXa@tachyon.chronox.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -24,82 +26,237 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+To avoid excessive branches and cluttering the code, all kernel crypto
+API calls are extracted into separate inline functions. These functions
+invoke either the ablkcipher or the aead crypto API function calls, as
+necessary.
 
-This patch set adds AEAD and RNG support to the AF_ALG interface
-exported by the kernel crypto API. By extending AF_ALG with AEAD and RNG
-support, all cipher types the kernel crypto API allows access to are
-now accessible from userspace.
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ crypto/algif_skcipher.c | 143 ++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 125 insertions(+), 18 deletions(-)
 
-The RNG support is stand-alone.
-
-The AEAD implementation is added to algif_skcipher.c to prevent
-re-implementation of the memory moving logic.
-
-The extension for the AEAD support can be summarized with the following
-types of changes:
-
-        * select the correct crypto API functions (either the ablkcipher
-          or the aead functions)
-
-        * apply the additional data needed for AEAD at the right time
-          (associated data, authentication tag) -- this includes the addition
-          of user space interfaces to allow setting this data.
-
-        * add the calculation for the memory size needed for encryption and
-          decryption.
-
-In addition, the patch set adds a getsockopt implementation to skcipher to
-allow user space to inquire about properties of the ciphers (IV size,
-block size, authentication data size). This extension would be needed for a
-generic user space usage of these ciphers.
-
-The new AEAD and RNG interfaces are fully tested with the test application
-provided at [1]. That test application exercises all newly added user space
-interfaces.
-
-
-Stephan Mueller (7):
-*tch set was tested on x86_64 and i386.
-
-[1] http://www.chronox.de/libkcapi.html
-
-Changes v2:
-* rebase to current cryptodev-2.6 tree
-* use memzero_explicit to zeroize AEAD associated data
-* use sizeof for determining length of AEAD associated data
-* update algif_rng.c covering all suggestions from Daniel Borkmann
-  <dborkman@redhat.com>
-* addition of patch 9: add digestsize interface for hashes
-* addition of patch to update documentation covering the userspace interface
-* change numbers of getsockopt options: separate them from sendmsg interface
-  definitions
-
-Changes v3:
-* remove getsockopt interface
-* AEAD: associated data is set prepended to the plain/ciphertext
-* AEAD: allowing arbitrary associated data lengths
-* remove setkey patch as protection was already in the existing code
-
-  crypto: AF_ALG: add user space interface for AEAD
-  crypto: AF_ALG: extend data structuers for AEAD
-  crypto: AF_ALG: crypto API calls to inline functions
-  crypto: AF_ALG: add AEAD support
-  crypto: AF_ALG: add random number generator support
-  crypto: AF_ALG: enable RNG interface compilation
-  crypto: AF_ALG: document the user space interface
-
- Documentation/crypto/crypto-API-userspace.txt |  70 +++++-
- crypto/Kconfig                                |   9 +
- crypto/Makefile                               |   1 +
- crypto/af_alg.c                               |  12 +
- crypto/algif_rng.c                            | 186 ++++++++++++++++
- crypto/algif_skcipher.c                       | 308 +++++++++++++++++++++++---
- include/crypto/if_alg.h                       |   2 +
- include/uapi/linux/if_alg.h                   |   2 +
- 8 files changed, 559 insertions(+), 31 deletions(-)
- create mode 100644 crypto/algif_rng.c
-
+diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
+index 49d5b08..9637365 100644
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -244,14 +244,121 @@ static void skcipher_data_wakeup(struct sock *sk)
+ 	rcu_read_unlock();
+ }
+ 
++static inline bool skcipher_is_aead(struct crypto_tfm *tfm)
++{
++	return ((crypto_tfm_alg_type(tfm) & CRYPTO_ALG_TYPE_MASK) ==
++		CRYPTO_ALG_TYPE_AEAD);
++}
++
++static inline unsigned int skcipher_crypto_ivsize(void *private)
++{
++	if (skcipher_is_aead(private))
++		return crypto_aead_ivsize(private);
++	else
++		return crypto_ablkcipher_ivsize(private);
++}
++
++static inline unsigned int skcipher_crypto_ivsize_ctx(struct skcipher_ctx *ctx)
++{
++	if (ctx->aead)
++		return crypto_aead_ivsize(crypto_aead_reqtfm(&ctx->u.aead_req));
++	else
++		return crypto_ablkcipher_ivsize(
++			crypto_ablkcipher_reqtfm(&ctx->u.ablkcipher_req));
++}
++
++static inline unsigned int skcipher_crypto_blocksize(struct skcipher_ctx *ctx)
++{
++	if (ctx->aead)
++		return crypto_aead_blocksize(
++			crypto_aead_reqtfm(&ctx->u.aead_req));
++	else
++		return crypto_ablkcipher_blocksize(
++			crypto_ablkcipher_reqtfm(&ctx->u.ablkcipher_req));
++}
++
++static inline unsigned int skcipher_crypto_reqsize(void *private)
++{
++	if (skcipher_is_aead(private))
++		return crypto_aead_reqsize(private);
++	else
++		return crypto_ablkcipher_reqsize(private);
++}
++
++static inline unsigned int skcipher_crypto_setkey(void *private, const u8 *key,
++						  unsigned int keylen)
++{
++	if (skcipher_is_aead(private))
++		return crypto_aead_setkey(private, key, keylen);
++	else
++		return crypto_ablkcipher_setkey(private, key, keylen);
++}
++
++static inline void skcipher_crypto_free(void *private)
++{
++	if (skcipher_is_aead(private))
++		crypto_free_aead(private);
++	else
++		crypto_free_ablkcipher(private);
++}
++
++static inline void skcipher_request_set_tfm(struct skcipher_ctx *ctx, void *tfm)
++{
++	if (ctx->aead)
++		aead_request_set_tfm(&ctx->u.aead_req, tfm);
++	else
++		ablkcipher_request_set_tfm(&ctx->u.ablkcipher_req, tfm);
++}
++
++static inline int skcipher_crypto_encrypt(struct skcipher_ctx *ctx)
++{
++	if (ctx->aead)
++		return crypto_aead_encrypt(&ctx->u.aead_req);
++	else
++		return crypto_ablkcipher_encrypt(&ctx->u.ablkcipher_req);
++}
++
++static inline int skcipher_crypto_decrypt(struct skcipher_ctx *ctx)
++{
++	if (ctx->aead)
++		return crypto_aead_decrypt(&ctx->u.aead_req);
++	else
++		return crypto_ablkcipher_decrypt(&ctx->u.ablkcipher_req);
++}
++
++static inline void skcipher_crypto_set_crypt(struct skcipher_ctx *ctx,
++					     struct scatterlist *src,
++					     struct scatterlist *dst,
++					     unsigned int cryptlen, u8 *iv)
++{
++	if (ctx->aead)
++		return aead_request_set_crypt(&ctx->u.aead_req, src, dst,
++					      cryptlen, iv);
++	else
++		return ablkcipher_request_set_crypt(&ctx->u.ablkcipher_req, src,
++						    dst, cryptlen, iv);
++}
++
++static inline void skcipher_request_set_callback(struct skcipher_ctx *ctx,
++						 u32 flags,
++						 crypto_completion_t complete,
++						 void *data)
++{
++	if (ctx->aead)
++		aead_request_set_callback(&ctx->u.aead_req, flags, complete,
++					  data);
++	else
++		ablkcipher_request_set_callback(&ctx->u.ablkcipher_req, flags,
++						complete, data);
++}
++
+ static int skcipher_sendmsg(struct kiocb *unused, struct socket *sock,
+ 			    struct msghdr *msg, size_t size)
+ {
+ 	struct sock *sk = sock->sk;
+ 	struct alg_sock *ask = alg_sk(sk);
+ 	struct skcipher_ctx *ctx = ask->private;
+-	struct crypto_ablkcipher *tfm = crypto_ablkcipher_reqtfm(&ctx->req);
+-	unsigned ivsize = crypto_ablkcipher_ivsize(tfm);
++	unsigned ivsize = skcipher_crypto_ivsize_ctx(ctx);
+ 	struct skcipher_sg_list *sgl;
+ 	struct af_alg_control con = {};
+ 	long copied = 0;
+@@ -429,8 +536,7 @@ static int skcipher_recvmsg(struct kiocb *unused, struct socket *sock,
+ 	struct sock *sk = sock->sk;
+ 	struct alg_sock *ask = alg_sk(sk);
+ 	struct skcipher_ctx *ctx = ask->private;
+-	unsigned bs = crypto_ablkcipher_blocksize(crypto_ablkcipher_reqtfm(
+-		&ctx->req));
++	unsigned bs = skcipher_crypto_blocksize(ctx);
+ 	struct skcipher_sg_list *sgl;
+ 	struct scatterlist *sg;
+ 	unsigned long iovlen;
+@@ -480,8 +586,8 @@ static int skcipher_recvmsg(struct kiocb *unused, struct socket *sock,
+ 
+ 			err = af_alg_wait_for_completion(
+ 				ctx->enc ?
+-					crypto_ablkcipher_encrypt(&ctx->req) :
+-					crypto_ablkcipher_decrypt(&ctx->req),
++					skcipher_crypto_encrypt(ctx) :
++					skcipher_crypto_decrypt(ctx),
+ 				&ctx->completion);
+ 
+ free:
+@@ -556,23 +662,23 @@ static void *skcipher_bind(const char *name, u32 type, u32 mask)
+ 
+ static void skcipher_release(void *private)
+ {
+-	crypto_free_ablkcipher(private);
++	skcipher_crypto_free(private);
+ }
+ 
+ static int skcipher_setkey(void *private, const u8 *key, unsigned int keylen)
+ {
+-	return crypto_ablkcipher_setkey(private, key, keylen);
++	return skcipher_crypto_setkey(private, key, keylen);
+ }
+ 
+ static void skcipher_sock_destruct(struct sock *sk)
+ {
+ 	struct alg_sock *ask = alg_sk(sk);
+ 	struct skcipher_ctx *ctx = ask->private;
+-	struct crypto_ablkcipher *tfm = crypto_ablkcipher_reqtfm(&ctx->req);
++	unsigned int ivlen = skcipher_crypto_ivsize_ctx(ctx);
+ 
+ 	skcipher_free_sgl(sk);
+-	memzero_explicit(ctx->iv, crypto_ablkcipher_ivsize(tfm));
+-	sock_kfree_s(sk, ctx->iv, crypto_ablkcipher_ivsize(tfm));
++	memzero_explicit(ctx->iv, ivlen);
++	sock_kfree_s(sk, ctx->iv, ivlen);
+ 	sock_kfree_s(sk, ctx, ctx->len);
+ 	af_alg_release_parent(sk);
+ }
+@@ -581,20 +687,20 @@ static int skcipher_accept_parent(void *private, struct sock *sk)
+ {
+ 	struct skcipher_ctx *ctx;
+ 	struct alg_sock *ask = alg_sk(sk);
+-	unsigned int len = sizeof(*ctx) + crypto_ablkcipher_reqsize(private);
++	unsigned int len = sizeof(*ctx) + skcipher_crypto_reqsize(private);
++	unsigned int ivlen = skcipher_crypto_ivsize(private);
+ 
+ 	ctx = sock_kmalloc(sk, len, GFP_KERNEL);
+ 	if (!ctx)
+ 		return -ENOMEM;
+ 
+-	ctx->iv = sock_kmalloc(sk, crypto_ablkcipher_ivsize(private),
+-			       GFP_KERNEL);
++	ctx->iv = sock_kmalloc(sk, ivlen, GFP_KERNEL);
+ 	if (!ctx->iv) {
+ 		sock_kfree_s(sk, ctx, len);
+ 		return -ENOMEM;
+ 	}
+ 
+-	memset(ctx->iv, 0, crypto_ablkcipher_ivsize(private));
++	memset(ctx->iv, 0, ivlen);
+ 
+ 	INIT_LIST_HEAD(&ctx->tsgl);
+ 	ctx->len = len;
+@@ -602,13 +708,14 @@ static int skcipher_accept_parent(void *private, struct sock *sk)
+ 	ctx->more = 0;
+ 	ctx->merge = 0;
+ 	ctx->enc = 0;
++	ctx->aead = skcipher_is_aead(private);
+ 	af_alg_init_completion(&ctx->completion);
+ 
+ 	ask->private = ctx;
+ 
+-	ablkcipher_request_set_tfm(&ctx->req, private);
+-	ablkcipher_request_set_callback(&ctx->req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-					af_alg_complete, &ctx->completion);
++	skcipher_request_set_tfm(ctx, private);
++	skcipher_request_set_callback(ctx, CRYPTO_TFM_REQ_MAY_BACKLOG,
++				      af_alg_complete, &ctx->completion);
+ 
+ 	sk->sk_destruct = skcipher_sock_destruct;
+ 
 -- 
 2.1.0
 
