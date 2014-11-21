@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757904AbaKUIqI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 03:46:08 -0500
-Received: from mout.web.de ([212.227.17.11]:49514 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752584AbaKUIqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 03:46:06 -0500
-Message-ID: <546EFBBB.7000409@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 09:45:47 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Brian Uchino <buchino@cisco.com>, Hiral Patel <hiralpat@cisco.com>,
-        "James E. J. Bottomley" <JBottomley@parallels.com>,
-        Suma Ramars <sramars@cisco.com>, linux-scsi@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] SCSI-fnic: Deletion of an unnecessary check before the
- function call "vfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
+	id S1758142AbaKUIqu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 03:46:50 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50790 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754893AbaKUIqt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 03:46:49 -0500
+Message-ID: <1416559571.2423.1.camel@pengutronix.de>
+Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-pci@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Date: Fri, 21 Nov 2014 09:46:11 +0100
+In-Reply-To: <546E9DF0.5010002@huawei.com>
+References: <546E1771.4030201@arm.com> <546E93DC.8010902@huawei.com>
+	 <alpine.DEB.2.11.1411210233250.6439@nanos> <546E9DF0.5010002@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:nOof+06oCbRgpBPPvJPG+Dk1m4I+lIFIeyG7VZT0oGna6HmxZgn
- +2p5hPYqiktnMxZQ+a4/1oit4JRzkJi4MII8wRyA+OOo/N5Kkqh2EYJWm6BbG1VIDW56TGb
- r79MPxZRxlSDeWzkc0ibYO2RwKLW9g65iaohkV/ykKF+x+whdjHWRqtJlcAIbVjTrjbd2hm
- BB6VCbOYuQgBdbpjpuZlA==
-X-UI-Out-Filterresults: notjunk:1;
+X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 09:39:43 +0100
+Am Freitag, den 21.11.2014, 10:05 +0800 schrieb Yijing Wang:
+> On 2014/11/21 9:46, Thomas Gleixner wrote:
+> > On Fri, 21 Nov 2014, Yijing Wang wrote:
+> >> On 2014/11/21 0:31, Marc Zyngier wrote:
+> >>> Bjorn, Yijing,
+> >>>
+> >>> I've just realized that patch c167caf8d174 (PCI/MSI: Remove useless
+> >>> bus->msi assignment) completely breaks MSI on arm64 when using the new
+> >>> MSI stacked domain:
+> >>
+> >> Sorry, this is my first part to refactor MSI related code, now how
+> >> to get pci msi_controller depends arch
+> >> functions(pcibios_msi_controller() or arch_setup_msi_irq()), we are
+> >> working on generic pci_host_bridge, after that, we could eventually
+> >> eliminate MSI arch functions and find pci dev 's msi controller by
+> >> pci_host_bridge->get_msi_controller().
+> > 
+> > The main question is why you think that pci_host_bridge is the proper
+> > place to store that information.
+> > 
+> > On x86 we have DMAR units associated to a single device. Each DMAR
+> > unit is a seperate MSI irq domain. 
+> > 
+> > Can you guarantee that the pci_host_bridge is the right point to
+> > provide the association of the device to the irq domain?
+> > 
+> > So the real question is:
+> > 
+> >    What is the association level requirement to properly identify the
+> >    irqdomain for a specific device on any given architecture with and
+> >    without IOMMU, interrupt redirection etc.
+> > 
+> > To be honest: I don't know.
+> > 
+> > My gut feeling tells me that it's at the device level, but I really
+> > leave that decision to the experts in that field.
+> 
+> I choose the pci_host_bridge to place the .get_msi_ctrl() ops, because
+> I think how to associate pci_dev and msi_controller is platform specific,
+> and we could initialize pci_host_bridge in platform pci host drivers to
+> avoid call platform specific functions when we scan or setup a pci device.
+> 
+I'm in favor of having the irqdomain attached to struct device even.
+Please keep in mind that going forward PCI will not be the only bus
+using MSI. Also having it attached to the device allows you to find the
+the domain by just walking up the chain of parent devices until you find
+one with an attached domain. A host bridge isn't different in that
+regard from any other device. This should work for all platforms AFAICS.
 
-The vfree() function performs also input parameter validation. Thus the test
-around the call is not needed.
+Regards,
+Lucas
 
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/scsi/fnic/fnic_debugfs.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/scsi/fnic/fnic_debugfs.c b/drivers/scsi/fnic/fnic_debugfs.c
-index 2c613bd..ec70e6d 100644
---- a/drivers/scsi/fnic/fnic_debugfs.c
-+++ b/drivers/scsi/fnic/fnic_debugfs.c
-@@ -102,8 +102,7 @@ void fnic_debugfs_terminate(void)
- 	debugfs_remove(fnic_trace_debugfs_root);
- 	fnic_trace_debugfs_root = NULL;
- 
--	if (fc_trc_flag)
--		vfree(fc_trc_flag);
-+	vfree(fc_trc_flag);
- }
- 
- /*
 -- 
-2.1.3
+Pengutronix e.K.             | Lucas Stach                 |
+Industrial Linux Solutions   | http://www.pengutronix.de/  |
 
