@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302AbaKUARN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 19:17:13 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:56640 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756640AbaKUARL (ORCPT
+	id S1757301AbaKUAUA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 19:20:00 -0500
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:36677 "HELO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756624AbaKUATz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 19:17:11 -0500
-From: Alexander Kochetkov <al.kochet@gmail.com>
-To: linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, al.kochet@gmail.com
-Cc: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>,
-        Felipe Balbi <balbi@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: [PATCH] i2c: omap: fix i207 errata handling
-Date: Fri, 21 Nov 2014 04:16:51 +0400
-Message-Id: <1416529011-21803-1-git-send-email-al.kochet@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 20 Nov 2014 19:19:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <1416525081-27779-1-git-send-email-joestringer@nicira.com>
+References: <1416525081-27779-1-git-send-email-joestringer@nicira.com>
+From: Jesse Gross <jesse@nicira.com>
+Date: Thu, 20 Nov 2014 16:19:33 -0800
+Message-ID: <CAEP_g=-VEWi2Qo6gcJGr2+NXWEhkuMyu7BiAke6H=x+PTLcNcg@mail.gmail.com>
+Subject: Re: [PATCHv2 net] i40e: Implement ndo_gso_check()
+To: Joe Stringer <joestringer@nicira.com>
+Cc: netdev <netdev@vger.kernel.org>, Shannon Nelson <shannon.nelson@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Tom Herbert <therbert@google.com>, linux.nics@intel.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 6d9939f651419a63e091105663821f9c7d3fec37 (i2c: omap: split out [XR]DR
-and [XR]RDY) changed the way how errata i207 (I2C: RDR Flag May Be Incorrectly
-Set) get handled. 6d9939f6514 code doesn't correspond to workaround provided by
-errata.
+On Thu, Nov 20, 2014 at 3:11 PM, Joe Stringer <joestringer@nicira.com> wrote:
+> diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
+> index c3a7f4a..2b01c8d 100644
+> --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
+> +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+> @@ -7447,6 +7447,36 @@ static int i40e_ndo_fdb_dump(struct sk_buff *skb,
+>
+>  #endif /* USE_DEFAULT_FDB_DEL_DUMP */
+>  #endif /* HAVE_FDB_OPS */
+> +static bool i40e_gso_check(struct sk_buff *skb, struct net_device *dev)
+> +{
+> +       if ((skb_shinfo(skb)->gso_type & SKB_GSO_IPIP) &&
+> +           (skb->inner_protocol_type != ENCAP_TYPE_IPPROTO ||
+> +            skb->inner_protocol != htons(IPPROTO_IPIP))) {
 
-According to errata ISR must filter out spurious RDR before data read not after.
-ISR must read RXSTAT to get number of bytes available to read. Because RDR
-could be set while there could no data in the receive FIFO.
+I think this check on inner_protocol isn't really semantically correct
+- that field is a union with inner_ipproto, so it would be more
+correct to check against that and then you wouldn't need to use htons
+either.
 
-Restored pre 6d9939f6514 way of handling errata.
+I don't know if we need to have the check at all for IPIP though -
+after all the driver doesn't expose support for it all (actually it
+doesn't expose GRE either). This raises kind of an interesting
+question about the checks though - it's pretty easy to add support to
+the driver for a new GSO type (and I imagine that people will be
+adding GRE soon) and forget to update the check.
 
-Found by code review. Real impact haven't seen.
-Tested on Beagleboard XM C.
+> +       if (skb_shinfo(skb)->gso_type & (SKB_GSO_GRE | SKB_GSO_UDP_TUNNEL)) {
+> +               unsigned char *ihdr;
+> +
+> +               if (skb->inner_protocol_type != ENCAP_TYPE_ETHER)
+> +                       return false;
 
-Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-Fixes: 6d9939f651419a63e09110 i2c: omap: split out [XR]DR and [XR]RDY
----
- drivers/i2c/busses/i2c-omap.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index 90dcc2e..e7cbcb0 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -958,11 +958,13 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
- 			if (dev->fifo_size)
- 				num_bytes = dev->buf_len;
- 
--			omap_i2c_receive_data(dev, num_bytes, true);
--
--			if (dev->errata & I2C_OMAP_ERRATA_I207)
-+			if (dev->errata & I2C_OMAP_ERRATA_I207) {
- 				i2c_omap_errata_i207(dev, stat);
-+				num_bytes = (omap_i2c_read_reg(dev,
-+					OMAP_I2C_BUFSTAT_REG) >> 8) & 0x3F;
-+			}
- 
-+			omap_i2c_receive_data(dev, num_bytes, true);
- 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_RDR);
- 			continue;
- 		}
--- 
-1.7.9.5
-
+I guess if you want to be nice, it might be good to check the
+equivalent IP protocol types as well.
