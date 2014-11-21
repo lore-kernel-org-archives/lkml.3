@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588AbaKUUmb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 15:42:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57115 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145AbaKUUma (ORCPT
+	id S1752607AbaKUUnj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:43:39 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59432 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084AbaKUUnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 15:42:30 -0500
-Date: Fri, 21 Nov 2014 12:42:29 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Rafael Aquini <aquini@redhat.com>
-Subject: Re: [PATCH] ipc,sem block sem_lock on sma->lock during sma
- initialization
-Message-Id: <20141121124229.933a9b6ef9725a4032c95d45@linux-foundation.org>
-In-Reply-To: <546FA0A7.2010507@redhat.com>
-References: <20141121145226.2ac598af@annuminas.surriel.com>
-	<20141121120930.3cd8d0f233f9670d689de672@linux-foundation.org>
-	<546FA0A7.2010507@redhat.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Nov 2014 15:43:37 -0500
+Date: Fri, 21 Nov 2014 21:43:34 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Hansen <dave.hansen@intel.com>
+cc: Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+        linux-kernel@vger.kernel.org, vikas.shivappa@intel.com, hpa@zytor.com,
+        mingo@kernel.org, tj@kernel.org, matt.flemming@intel.com,
+        will.auld@intel.com, peterz@infradead.org
+Subject: Re: [PATCH] x86: Intel Cache Allocation Technology support
+In-Reply-To: <546FA0C4.1000402@intel.com>
+Message-ID: <alpine.DEB.2.11.1411212139360.6439@nanos>
+References: <1416445539-24856-1-git-send-email-vikas.shivappa@linux.intel.com> <546FA0C4.1000402@intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014 15:29:27 -0500 Rik van Riel <riel@redhat.com> wrote:
-
-> On 11/21/2014 03:09 PM, Andrew Morton wrote:
-> > On Fri, 21 Nov 2014 14:52:26 -0500 Rik van Riel <riel@redhat.com>
-> > wrote:
-> > 
-> >> When manipulating just one semaphore with semop, sem_lock only
-> >> takes that single semaphore's lock. This creates a problem during
-> >> initialization of the semaphore array, when the data structures
-> >> used by sem_lock have not been set up yet. The sma->lock is
-> >> already held by newary, and we just have to make sure everything
-> >> else waits on that lock during initialization.
-> >> 
-> >> Luckily it is easy to make sem_lock wait on the sma->lock, by
-> >> pretending there is a complex operation in progress while the sma
-> >> is being initialized.
-> >> 
-> >> The newary function already zeroes sma->complex_count before
-> >> unlocking the sma->lock.
-> > 
-> > What are the runtime effects of the bug?
-> > 
+On Fri, 21 Nov 2014, Dave Hansen wrote:
+> On 11/19/2014 05:05 PM, Vikas Shivappa wrote:
+> > +	/*
+> > +	 * Hard code the checks and values for HSW SKUs.
+> > +	 * Unfortunately! have to check against only these brand name strings.
+> > +	 */
+> > +
+> > +	for (i = 0; i < 5; i++)
+> > +		if (!strcmp(hsw_brandstrs[i], c->x86_model_id)) {
+> > +			c->x86_cqe_closs = 4;
+> > +			c->x86_cqe_cbmlength = 20;
+> > +			return true;
+> > +		}
 > 
-> NULL pointer dereference in spin_lock from sem_lock,
-> if it is called before sma->sem_base has been pointed
-> somewhere valid.
+> Please use ARRAY_SIZE() here.  Otherwise, I guarantee the next string
+> you add to hsw_brandstrs[] gets silently ignored.
+> 
+> Are there really only 5 CPUs?  This:
+> 
+> > http://ark.intel.com/products/family/78583/Intel-Xeon-Processor-E5-v3-Family#@Server
+> 
+> lists 32 skus.
 
-Help us out here.  People need to use this description to work out
-which kernel versions need the patch and whether to backport the fix
-into their various kernels.  Other people will be starting at this
-changelog wondering "will this fix the bug my customer has reported".
+We really should find a proper software probing solution for this
+instead of having a gazillion of brand strings plus micro code version
+checks around for this.
 
-Is there some bug report people can look at?
+Why cant the HW folks release a micro code version which fixes the
+obviously wreckaged CPUID enumeration of this feature instead of
+burdening us with that horror?
 
-What userspace actions trigger this bug?
+Can you please find a proper sized clue bat and whack your HW folks
+over the head for this insanity?
+
+Thanks,
+
+	tglx
