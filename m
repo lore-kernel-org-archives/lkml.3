@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650AbaKUSXt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:23:49 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:64012 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859AbaKUSXr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:23:47 -0500
-From: Andreas Ruprecht <rupran@einserver.de>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au,
-        Andreas Ruprecht <rupran@einserver.de>
-Subject: [PATCH v2] media: pci: smipcie: Fix dependency for DVB_SMIPCIE
-Date: Fri, 21 Nov 2014 19:23:28 +0100
-Message-Id: <1416594208-29553-1-git-send-email-rupran@einserver.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <20141121161316.23963dc5@recife.lan>
-References: <20141121161316.23963dc5@recife.lan>
+	id S1751962AbaKUSYH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:24:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53629 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751169AbaKUSYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 13:24:05 -0500
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH 0/4] PCI: Reset exclusions
+To: bhelgaas@google.com
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 21 Nov 2014 11:24:02 -0700
+Message-ID: <20141121180322.26669.65689.stgit@gimli.home>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In smipcie.c, the function i2c_bit_add_bus() is called. This
-function is defined by the I2C bit-banging interfaces enabled
-with CONFIG_I2C_ALGOBIT.
+This is really 2 sets of 2 patches, but they both add bits to
+dev_flags so are included together.
 
-As there was no dependency in Kconfig, CONFIG_I2C_ALGOBIT could
-be set to "m" while CONFIG_DVB_SMIPCIE was set to "y", resulting
-in a build error due to an undefined reference.
+This fixes two problems we've seen with resets.  The first is for
+devices that advertise a PM reset mechanism, but it doesn't appear to
+do anything.  We add a quirk and flags bit to indicate the PM reset
+mechanism isn't viable.  This happens on some AMD GPUs and causes
+vfio-pci to assume the PM reset was successful when it really did
+nothing and we should have escalated to a PCI bus reset.  Alex
+Deucher confirms that PM reset isn't used by graphics drivers.  The
+exclusion here is for users of pci_reset_function(), which mostly
+only includes pci-sysfs and drivers like legacy KVM device assignment
+and VFIO.
 
-This patch adds the dependency on CONFIG_I2C_ALGOBIT in Kconfig
-by selecting it when CONFIG_DVB_SMIPCIE is selected.
+The second issue is a problem identified with an Atheros wifi chip
+where in performing a bus reset of the device, we not only permanently
+lose access to the device, but it introduces host stability issues if
+we try to access it.  I've been unsuccessful in finding any way to
+make the device behave or in finding anyone with access to hardware
+documentation and errata for this device, so it seems like the most
+appropriate path is to blacklist bus resets for topologies including
+this device.  The second two patches add infrastructure and quirks to
+do this.  Thanks,
 
-Signed-off-by: Andreas Ruprecht <rupran@einserver.de>
-Reported-by: Jim Davis <jim.epost@gmail.com>
+Alex
+
 ---
- drivers/media/pci/smipcie/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/media/pci/smipcie/Kconfig b/drivers/media/pci/smipcie/Kconfig
-index 75a2992..57dd124 100644
---- a/drivers/media/pci/smipcie/Kconfig
-+++ b/drivers/media/pci/smipcie/Kconfig
-@@ -1,6 +1,7 @@
- config DVB_SMIPCIE
- 	tristate "SMI PCIe DVBSky cards"
- 	depends on DVB_CORE && PCI && I2C
-+	select I2C_ALGOBIT
- 	select DVB_M88DS3103 if MEDIA_SUBDRV_AUTOSELECT
- 	select MEDIA_TUNER_M88TS2022 if MEDIA_SUBDRV_AUTOSELECT
- 	select MEDIA_TUNER_M88RS6000T if MEDIA_SUBDRV_AUTOSELECT
--- 
-1.9.1
+Alex Williamson (4):
+      PCI: quirk Atheros AR93xx to avoid bus reset
+      PCI: Allow device quirks to exclude bus reset
+      PCI: quirk AMD/ATI VGA cards to avoid PM reset
+      PCI: Allow device quirks to exclude D3->D0 PM reset
 
+
+ drivers/pci/pci.c    |   42 +++++++++++++++++++++++++++++++++++++-----
+ drivers/pci/quirks.c |   35 +++++++++++++++++++++++++++++++++++
+ include/linux/pci.h  |    4 ++++
+ 3 files changed, 76 insertions(+), 5 deletions(-)
