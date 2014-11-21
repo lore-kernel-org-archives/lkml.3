@@ -1,154 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751277AbaKURs0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 12:48:26 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:60296 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206AbaKURsW (ORCPT
+	id S1751076AbaKURvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 12:51:19 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:43748 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703AbaKURvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 12:48:22 -0500
-From: Kiran Raparthy <kiran.kumar@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kiran Raparthy <kiran.kumar@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Benoit Goby <benoit@android.com>, Todd Poynor <toddpoynor@google.com>
-Subject: [PATCH v2 3/3] usb: phy: hold wakeupsource when USB is enumerated in peripheral mode
-Date: Fri, 21 Nov 2014 23:16:31 +0530
-Message-Id: <1416591991-18925-3-git-send-email-kiran.kumar@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416591991-18925-1-git-send-email-kiran.kumar@linaro.org>
-References: <1416591991-18925-1-git-send-email-kiran.kumar@linaro.org>
+	Fri, 21 Nov 2014 12:51:17 -0500
+Date: Fri, 21 Nov 2014 10:51:14 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Michal Simek <monstr@monstr.eu>,
+        Martin Wilck <martin.wilck@ts.fujitsu.com>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Subject: Re: [RFC PATCH v3 1/2] drivers: pci: fix pci_mmap_fits()
+ implementation for procfs mmap
+Message-ID: <20141121175114.GC6578@google.com>
+References: <1415877558-8906-1-git-send-email-lorenzo.pieralisi@arm.com>
+ <1415877558-8906-2-git-send-email-lorenzo.pieralisi@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415877558-8906-2-git-send-email-lorenzo.pieralisi@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usb: phy: hold wakeupsource when USB is enumerated in peripheral mode
+On Thu, Nov 13, 2014 at 11:19:15AM +0000, Lorenzo Pieralisi wrote:
+> The introduction of pci_mmap_fits() in commit:
+> 
+> b5ff7df3df9efab511244d5a299fce706c71af48
+> "Check mapped ranges on sysfs resource files"
+> 
+> allowed to check for valid range mappings of PCI resources to user space
+> when mapping PCI resources through the sysfs filesystem.
+> 
+> The mapping of resources through the sysfs expects the offset passed
+> by the user through the mmap syscall to be 0, and the pgoff is adjusted
+> by the kernel to memory map the resource to the CPU physical address
+> corresponding to the PCI resource in question.
+> 
+> The usage of procfs mapping of PCI resources (/proc/bus/pci files)
+> is more controversial in that userspace programs mapping PCI resources
+> are expected to pass in the mmap offset field either a CPU physical address
+> or a PCI bar value, depending on the architecture.
+> 
+> By the time pci_mmap_fits() was used to check PCI resource ranges for
+> procfs PCI resources mapping in commit:
+> 
+> 9eff02e2042f96fb2aedd02e032eca1c5333d7
+> "PCI: check mmap range of /proc/bus/pci files too"
+> 
+> the procfs interface for mmapping resources to user space broke, since
+> pci_mmap_fits() expected the offset passed from user space in the mmap
+> call to be 0, not the CPU physical address or PCI BAR value of the
+> resource in question.
+> 
+> Subsequent attempts at fixing the pci_mmap_fits() implementation failed
+> to fix the issue (or fixed the issue in some architectures but not for
+> all of them, ARM and SPARC procfs interface PCI resources mapping stayed
+> broken throughout) in particular commits:
+> 
+> 8c05cd08a7504b855c265263e84af61aabafa329
+> "PCI: fix offset check for sysfs mmapped files"
+> 
+> and
+> 
+> 3b519e4ea618b6943a82931630872907f9ac2c2b
+> "PCI: fix size checks for mmap() on /proc/bus/pci files"
+> 
+> fixed procfs PCI resources mapping checks in pci_mmap_fits for some
+> architectures, but not for architectures like SPARC that expects
+> the offset value passed from user space through the mmap syscall
+> (when mapping through procfs) to represent the PCI BAR value of the
+> resource to be mapped.
+> 
+> The reason behind the breakage is the following. The addresses stored
+> in PCI device resources for memory spaces correspond to CPU physical
+> addresses, which do not necessarily map 1:1 to PCI bus addresses as
+> programmed in PCI devices configuration spaces.
+> 
+> This implies that the sanity checks carried out in pci_mmap_fits() to
+> ensure that the user executes an mmap of a "real" pci resource are
+> erroneous when executed through procfs. Some platforms (ie SPARC)
+> expect the offset value to be passed in (procfs mapping) to be the
+> PCI BAR configuration value as read from the PCI device configuration
+> space, not the fixed-up CPU physical address that is present in PCI
+> device resources.
+> 
+> The required pgoff (offset in mmap syscall) value passed from userspace
+> is supposed to represent the resource value exported through
+> /proc/bus/pci/devices when the resource is mmapped though procfs (and 0
+> when the mapping is carried out through sysfs resource files), which
+> corresponds to the PCI resource filtered through the pci_resource_to_user()
+> API.
+> 
+> This patch converts the PCI resource to the expected "user visible"
+> value through pci_resource_to_user() before carrying out sanity checks
+> in pci_mmap_fits() so that the check is carried out on the resource
+> values as expected from the userspace mmap API.
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Michal Simek <monstr@monstr.eu>
+> Cc: Martin Wilck <martin.wilck@ts.fujitsu.com>
+> Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 
-Some systems require a mechanism to prevent system to enter into suspend
-state when USB is connected and enumerated in peripheral mode.
+Hi Lorenzo,
 
-This patch provides an interface to hold a wakeupsource to prevent suspend.
-PHY drivers can use this interface when USB is connected and enumerated in
-peripheral mode.
+I think this patch is the right thing to do.  I'm going to try to write
+patches for microblaze, mips, powerpc, and sparc that implement their
+pci_resource_to_user() in terms of pcibios_resource_to_bus() (the patches
+are easy; it's the arguments for correctness that take time).  Then I'll
+try to convince myself that those arches are currently broken and will be
+fixed by your patch below.
 
-A timed wakeupsource is temporarily held on USB disconnect events, to allow
-the rest of the system to react to the USB disconnection (dropping host
-sessions, updating charger status, etc.) prior to re-allowing suspend.
+But I'll be on vacation all next week, so this will take me some time and
+it may not make the next merge window.
 
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Sumit Semwal <sumit.semwal@linaro.org>
-Cc: Arve Hjønnevåg <arve@android.com>
-Cc: Benoit Goby <benoit@android.com>
-[Original patch in Android from Todd]
-Cc: Todd Poynor <toddpoynor@google.com>
-Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
----
- drivers/usb/phy/phy.c   | 29 +++++++++++++++++++++++++++--
- include/linux/usb/phy.h |  5 +++++
- 2 files changed, 32 insertions(+), 2 deletions(-)
+Bjorn
 
-diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
-index b4066a0..8c87bc3 100644
---- a/drivers/usb/phy/phy.c
-+++ b/drivers/usb/phy/phy.c
-@@ -331,6 +331,7 @@ int usb_add_phy(struct usb_phy *x, enum usb_phy_type type)
- 	int		ret = 0;
- 	unsigned long	flags;
- 	struct usb_phy	*phy;
-+	char wsource_name[40];
- 
- 	if (x->type != USB_PHY_TYPE_UNDEFINED) {
- 		dev_err(x->dev, "not accepting initialized PHY %s\n", x->label);
-@@ -353,6 +354,10 @@ int usb_add_phy(struct usb_phy *x, enum usb_phy_type type)
- 	x->type = type;
- 	list_add_tail(&x->head, &phy_list);
- 
-+	snprintf(wsource_name, sizeof(wsource_name), "vbus-%s",
-+		dev_name(x->dev));
-+	wakeup_source_init(&x->wsource, wsource_name);
-+
- out:
- 	spin_unlock_irqrestore(&phy_lock, flags);
- 	return ret;
-@@ -404,6 +409,7 @@ void usb_remove_phy(struct usb_phy *x)
- 
- 	spin_lock_irqsave(&phy_lock, flags);
- 	if (x) {
-+		wakeup_source_trash(&x->wsource);
- 		list_for_each_entry(phy_bind, &phy_bind_list, list)
- 			if (phy_bind->phy == x)
- 				phy_bind->phy = NULL;
-@@ -448,13 +454,32 @@ int usb_bind_phy(const char *dev_name, u8 index,
- EXPORT_SYMBOL_GPL(usb_bind_phy);
- 
- /**
-- * usb_phy_set_event - set event to phy event
-+ * usb_phy_set_event - set event to phy event and
-+ * hold/temporarily hold wakeupsource
-  * @x: the phy returned by usb_get_phy();
-  *
-- * This sets event to phy event
-+ * This holds per-PHY wakeupsource/timed wakeupsource
-  */
- void usb_phy_set_event(struct usb_phy *x, unsigned long event)
- {
-+
- 	x->last_event = event;
-+
-+	switch (event) {
-+	case USB_EVENT_ENUMERATED:
-+		__pm_stay_awake(&x->wsource);
-+		break;
-+
-+	case USB_EVENT_NONE:
-+	case USB_EVENT_ID:
-+	case USB_EVENT_VBUS:
-+	case USB_EVENT_CHARGER:
-+		__pm_wakeup_event(&x->wsource,
-+				  USB_PHY_DEFAULT_WAKEUP_SRC_TIMEOUT);
-+		break;
-+
-+	default:
-+		break;
-+	}
- }
- EXPORT_SYMBOL_GPL(usb_phy_set_event);
-diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-index f499c23..63a56bf 100644
---- a/include/linux/usb/phy.h
-+++ b/include/linux/usb/phy.h
-@@ -12,6 +12,8 @@
- #include <linux/notifier.h>
- #include <linux/usb.h>
- 
-+#define USB_PHY_DEFAULT_WAKEUP_SRC_TIMEOUT	msecs_to_jiffies(2000)
-+
- enum usb_phy_interface {
- 	USBPHY_INTERFACE_MODE_UNKNOWN,
- 	USBPHY_INTERFACE_MODE_UTMI,
-@@ -88,6 +90,9 @@ struct usb_phy {
- 	/* for notification of usb_phy_events */
- 	struct atomic_notifier_head	notifier;
- 
-+	/* wakeup source */
-+	struct wakeup_source    wsource;
-+
- 	/* to pass extra port status to the root hub */
- 	u16			port_status;
- 	u16			port_change;
--- 
-1.9.1
-
+> ---
+>  drivers/pci/pci-sysfs.c | 13 ++++++++-----
+>  1 file changed, 8 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+> index 2c6643f..e4634e3 100644
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -963,17 +963,20 @@ void pci_remove_legacy_files(struct pci_bus *b)
+>  int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma,
+>  		  enum pci_mmap_api mmap_api)
+>  {
+> -	unsigned long nr, start, size, pci_start;
+> +	unsigned long nr, start, size, pci_offset;
+> +	resource_size_t pci_start, pci_end;
+>  
+>  	if (pci_resource_len(pdev, resno) == 0)
+>  		return 0;
+>  	nr = vma_pages(vma);
+>  	start = vma->vm_pgoff;
+> +	pci_resource_to_user(pdev, resno, &pdev->resource[resno],
+> +			     &pci_start, &pci_end);
+>  	size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
+> -	pci_start = (mmap_api == PCI_MMAP_PROCFS) ?
+> -			pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
+> -	if (start >= pci_start && start < pci_start + size &&
+> -			start + nr <= pci_start + size)
+> +	pci_offset = (mmap_api == PCI_MMAP_PROCFS) ?
+> +			pci_start >> PAGE_SHIFT : 0;
+> +	if (start >= pci_offset && start < pci_offset + size &&
+> +			start + nr <= pci_offset + size)
+>  		return 1;
+>  	return 0;
+>  }
+> -- 
+> 2.1.2
+> 
