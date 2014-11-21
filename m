@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613AbaKUXwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 18:52:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35772 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751788AbaKUXwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 18:52:37 -0500
-Date: Sat, 22 Nov 2014 00:52:36 +0100
-From: David Sterba <dsterba@suse.cz>
-To: Daniel Dressler <danieru.dressler@gmail.com>
-Cc: dsterba@suse.cz, Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        "open list:BTRFS FILE SYSTEM" <linux-btrfs@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Btrfs: ctree: reduce args where only fs_info used
-Message-ID: <20141121235236.GH8568@twin.jikos.cz>
-Reply-To: dsterba@suse.cz
-Mail-Followup-To: dsterba@suse.cz,
-	Daniel Dressler <danieru.dressler@gmail.com>,
-	Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-	"open list:BTRFS FILE SYSTEM" <linux-btrfs@vger.kernel.org>,
-	open list <linux-kernel@vger.kernel.org>
-References: <danieru.dressler@gmail.com>
- <1415767389-29722-1-git-send-email-danieru.dressler@gmail.com>
- <20141121155519.GB8568@twin.jikos.cz>
- <CAGC3nLApxMmbSmPc9WvQ5Uh0prrCY7qzcMABaKs_FcYKdUKCpw@mail.gmail.com>
+	id S1752737AbaKUXyw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 18:54:52 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30476 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751886AbaKUXyu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 18:54:50 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/9647K9beLVSzHsK1wLxQH
+Date: Fri, 21 Nov 2014 15:54:33 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
+        linux-omap@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] ARM: DTS: OMAP3-N900: add si4713 support
+Message-ID: <20141121235432.GE7046@atomide.com>
+References: <1416016050-4252-1-git-send-email-sre@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGC3nLApxMmbSmPc9WvQ5Uh0prrCY7qzcMABaKs_FcYKdUKCpw@mail.gmail.com>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+In-Reply-To: <1416016050-4252-1-git-send-email-sre@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 22, 2014 at 01:03:32AM +0900, Daniel Dressler wrote:
-> No problem, I'll redo everything so it is one function per patch. Now
-> fair warning: there are about 102 functions to cleanup. I was a bit
-> worried that many patches would cause too much maintainer overhead but
-> it is no problem for me.
+* Sebastian Reichel <sre@kernel.org> [141114 17:49]:
+> Add si4713 node to the N900 device tree file.
 
-Yeah, I'm aware that it's all over the sources. I'd say send no more
-than 30 patches in a burst first and see how it'd work.
+Applying into omap-for-v3.19/dt-v2 thanks.
 
-> Only a few functions have dependecies on
-> other functions needing cleanup. Thus there will be some small patch
-> series for those function sets. A big benefit of one function one
-> patch is that extent-io.c will no longer be a 34 function monster
-> patch.
-> 
-> Is there any rate limiting I should be doing? I don't want to flood
-> the list with burst of dozen plus patches, or is that an okay volume?
-
-Should be fine.
+Tony
