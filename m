@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470AbaKUN7z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 08:59:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53689 "EHLO mx2.suse.de"
+	id S1758496AbaKUN5y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 08:57:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53651 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758602AbaKUN56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 08:57:58 -0500
+	id S1755320AbaKUN5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 08:57:52 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
         LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>
@@ -18,185 +18,147 @@ Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
         Paul Mackerras <paulus@samba.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 05/10] mm: Convert p[te|md]_mknonnuma and remaining page table manipulations
-Date: Fri, 21 Nov 2014 13:57:43 +0000
-Message-Id: <1416578268-19597-6-git-send-email-mgorman@suse.de>
+Subject: [PATCH 0/10] Replace _PAGE_NUMA with PAGE_NONE protections v3
+Date: Fri, 21 Nov 2014 13:57:38 +0000
+Message-Id: <1416578268-19597-1-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1416578268-19597-1-git-send-email-mgorman@suse.de>
-References: <1416578268-19597-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With PROT_NONE, the traditional page table manipulation functions are
-sufficient.
+The main change here is to rebase on mmotm-20141119 as the series had
+significant conflicts that were non-obvious to resolve. The main blockers
+for merging are independent testing from Sasha (trinity), independent
+testing from Aneesh (ppc64 support) and acks from Ben and Paul on the
+powerpc patches.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
----
- include/linux/huge_mm.h |  3 +--
- mm/huge_memory.c        | 33 +++++++--------------------------
- mm/memory.c             | 10 ++++++----
- mm/mempolicy.c          |  2 +-
- mm/migrate.c            |  2 +-
- mm/mprotect.c           |  2 +-
- mm/pgtable-generic.c    |  2 --
- 7 files changed, 17 insertions(+), 37 deletions(-)
+Changelog since V2
+o Rename *_protnone_numa to _protnone and extend docs		(linus)
+o Rebase to mmotm-20141119 for pre-merge testing		(mel)
+o Conver WARN_ON to VM_WARN_ON					(aneesh)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index ad9051b..554bbe3 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -31,8 +31,7 @@ extern int move_huge_pmd(struct vm_area_struct *vma,
- 			 unsigned long new_addr, unsigned long old_end,
- 			 pmd_t *old_pmd, pmd_t *new_pmd);
- extern int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
--			unsigned long addr, pgprot_t newprot,
--			int prot_numa);
-+			unsigned long addr, pgprot_t newprot);
- 
- enum transparent_hugepage_flag {
- 	TRANSPARENT_HUGEPAGE_FLAG,
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index f81fddf..5618e22 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1366,9 +1366,8 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	goto out;
- clear_pmdnuma:
- 	BUG_ON(!PageLocked(page));
--	pmd = pmd_mknonnuma(pmd);
-+	pmd = pmd_modify(pmd, vma->vm_page_prot);
- 	set_pmd_at(mm, haddr, pmdp, pmd);
--	VM_BUG_ON(pmd_protnone(*pmdp));
- 	update_mmu_cache_pmd(vma, addr, pmdp);
- 	unlock_page(page);
- out_unlock:
-@@ -1503,7 +1502,7 @@ out:
-  *  - HPAGE_PMD_NR is protections changed and TLB flush necessary
-  */
- int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
--		unsigned long addr, pgprot_t newprot, int prot_numa)
-+		unsigned long addr, pgprot_t newprot)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	spinlock_t *ptl;
-@@ -1512,29 +1511,11 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
- 		pmd_t entry;
- 		ret = 1;
--		if (!prot_numa) {
--			entry = pmdp_get_and_clear_notify(mm, addr, pmd);
--			if (pmd_protnone(entry))
--				entry = pmd_mknonnuma(entry);
--			entry = pmd_modify(entry, newprot);
--			ret = HPAGE_PMD_NR;
--			set_pmd_at(mm, addr, pmd, entry);
--			BUG_ON(pmd_write(entry));
--		} else {
--			struct page *page = pmd_page(*pmd);
--
--			/*
--			 * Do not trap faults against the zero page. The
--			 * read-only data is likely to be read-cached on the
--			 * local CPU cache and it is less useful to know about
--			 * local vs remote hits on the zero page.
--			 */
--			if (!is_huge_zero_page(page) &&
--			    !pmd_protnone(*pmd)) {
--				pmdp_set_numa(mm, addr, pmd);
--				ret = HPAGE_PMD_NR;
--			}
--		}
-+		entry = pmdp_get_and_clear_notify(mm, addr, pmd);
-+		entry = pmd_modify(entry, newprot);
-+		ret = HPAGE_PMD_NR;
-+		set_pmd_at(mm, addr, pmd, entry);
-+		BUG_ON(pmd_write(entry));
- 		spin_unlock(ptl);
- 	}
- 
-diff --git a/mm/memory.c b/mm/memory.c
-index eaa46f1..2100e0f 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3114,9 +3114,9 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	* validation through pte_unmap_same(). It's of NUMA type but
- 	* the pfn may be screwed if the read is non atomic.
- 	*
--	* ptep_modify_prot_start is not called as this is clearing
--	* the _PAGE_NUMA bit and it is not really expected that there
--	* would be concurrent hardware modifications to the PTE.
-+	* We can safely just do a "set_pte_at()", because the old
-+	* page table entry is not accessible, so there would be no
-+	* concurrent hardware modifications to the PTE.
- 	*/
- 	ptl = pte_lockptr(mm, pmd);
- 	spin_lock(ptl);
-@@ -3125,7 +3125,9 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		goto out;
- 	}
- 
--	pte = pte_mknonnuma(pte);
-+	/* Make it present again */
-+	pte = pte_modify(pte, vma->vm_page_prot);
-+	pte = pte_mkyoung(pte);
- 	set_pte_at(mm, addr, ptep, pte);
- 	update_mmu_cache(vma, addr, ptep);
- 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index f22c559..530a0da 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -627,7 +627,7 @@ unsigned long change_prot_numa(struct vm_area_struct *vma,
- {
- 	int nr_updated;
- 
--	nr_updated = change_protection(vma, addr, end, vma->vm_page_prot, 0, 1);
-+	nr_updated = change_protection(vma, addr, end, PAGE_NONE, 0, 1);
- 	if (nr_updated)
- 		count_vm_numa_events(NUMA_PTE_UPDATES, nr_updated);
- 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 11d86b4..51ce492 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1891,7 +1891,7 @@ out_fail:
- out_dropref:
- 	ptl = pmd_lock(mm, pmd);
- 	if (pmd_same(*pmd, entry)) {
--		entry = pmd_mknonnuma(entry);
-+		entry = pmd_modify(entry, vma->vm_page_prot);
- 		set_pmd_at(mm, mmun_start, pmd, entry);
- 		update_mmu_cache_pmd(vma, address, &entry);
- 	}
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index e93ddac..dc65c0f 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -141,7 +141,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 				split_huge_page_pmd(vma, addr, pmd);
- 			else {
- 				int nr_ptes = change_huge_pmd(vma, pmd, addr,
--						newprot, prot_numa);
-+						newprot);
- 
- 				if (nr_ptes) {
- 					if (nr_ptes == HPAGE_PMD_NR) {
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index 4b8ad76..c25f94b 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -193,8 +193,6 @@ void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
- 		     pmd_t *pmdp)
- {
- 	pmd_t entry = *pmdp;
--	if (pmd_protnone(entry))
--		entry = pmd_mknonnuma(entry);
- 	set_pmd_at(vma->vm_mm, address, pmdp, pmd_mknotpresent(entry));
- 	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
- }
+Changelog since V1
+o ppc64 paranoia checks and clarifications			(aneesh)
+o Fix trinity regression (hopefully)
+o Reduce unnecessary TLB flushes				(mel)
+
+Automatic NUMA balancing depends on being able to protect PTEs to trap a
+fault and gather reference locality information. Very broadly speaking it
+would mark PTEs as not present and use another bit to distinguish between
+NUMA hinting faults and other types of faults. It was universally loved
+by everybody and caused no problems whatsoever. That last sentence might
+be a lie.
+
+This series is very heavily based on patches from Linus and Aneesh to
+replace the existing PTE/PMD NUMA helper functions with normal change
+protections. I did alter and add parts of it but I consider them relatively
+minor contributions. At their suggestion, acked-bys are in there but I've
+no problem converting them to Signed-off-by if requested.
+
+AFAIK, this has received no testing on ppc64 and I'm depending on Aneesh for
+that. I tested trinity under kvm-tool and passed and ran a few other basic
+tests. At the time of writing, only the short-lived tests have completed
+but testing of V2 indicated that long-term testing had no surprises. In
+most cases I'm leaving out detail as it's not that interesting.
+
+specjbb single JVM: There was negligible performance difference in the
+	benchmark itself for short runs. However, system activity is
+	higher and interrupts are much higher over time -- possibly TLB
+	flushes. Migrations are also higher. Overall, this is more overhead
+	but considering the problems faced with the old approach I think
+	we just have to suck it up and find another way of reducing the
+	overhead.
+
+specjbb multi JVM: Negligible performance difference to the actual benchmark
+	but like the single JVM case, the system overhead is noticeably
+	higher.  Again, interrupts are a major factor.
+
+autonumabench: This was all over the place and about all that can be
+	reasonably concluded is that it's different but not necessarily
+	better or worse.
+
+autonumabench
+                                     3.18.0-rc5            3.18.0-rc5
+                                 mmotm-20141119         protnone-v3r3
+User    NUMA01               32380.24 (  0.00%)    21642.92 ( 33.16%)
+User    NUMA01_THEADLOCAL    22481.02 (  0.00%)    22283.22 (  0.88%)
+User    NUMA02                3137.00 (  0.00%)     3116.54 (  0.65%)
+User    NUMA02_SMT            1614.03 (  0.00%)     1543.53 (  4.37%)
+System  NUMA01                 322.97 (  0.00%)     1465.89 (-353.88%)
+System  NUMA01_THEADLOCAL       91.87 (  0.00%)       49.32 ( 46.32%)
+System  NUMA02                  37.83 (  0.00%)       14.61 ( 61.38%)
+System  NUMA02_SMT               7.36 (  0.00%)        7.45 ( -1.22%)
+Elapsed NUMA01                 716.63 (  0.00%)      599.29 ( 16.37%)
+Elapsed NUMA01_THEADLOCAL      553.98 (  0.00%)      539.94 (  2.53%)
+Elapsed NUMA02                  83.85 (  0.00%)       83.04 (  0.97%)
+Elapsed NUMA02_SMT              86.57 (  0.00%)       79.15 (  8.57%)
+CPU     NUMA01                4563.00 (  0.00%)     3855.00 ( 15.52%)
+CPU     NUMA01_THEADLOCAL     4074.00 (  0.00%)     4136.00 ( -1.52%)
+CPU     NUMA02                3785.00 (  0.00%)     3770.00 (  0.40%)
+CPU     NUMA02_SMT            1872.00 (  0.00%)     1959.00 ( -4.65%)
+
+System CPU usage of NUMA01 is worse but it's an adverse workload on this
+machine so I'm reluctant to conclude that it's a problem that matters. On
+the other workloads that are sensible on this machine, system CPU usage
+is great.  Overall time to complete the benchmark is comparable
+
+          3.18.0-rc5  3.18.0-rc5
+        mmotm-20141119protnone-v3r3
+User        59612.50    48586.44
+System        460.22     1537.45
+Elapsed      1442.20     1304.29
+
+NUMA alloc hit                 5075182     5743353
+NUMA alloc miss                      0           0
+NUMA interleave hit                  0           0
+NUMA alloc local               5075174     5743339
+NUMA base PTE updates        637061448   443106883
+NUMA huge PMD updates          1243434      864747
+NUMA page range updates     1273699656   885857347
+NUMA hint faults               1658116     1214277
+NUMA hint local faults          959487      754113
+NUMA hint local percent             57          62
+NUMA pages migrated            5467056    61676398
+
+The NUMA pages migrated look terrible but when I looked at a graph of the
+activity over time I see that the massive spike in migration activity was
+during NUMA01. This correlates with high system CPU usage and could be simply
+down to bad luck but any modifications that affect that workload would be
+related to scan rates and migrations, not the protection mechanism. For
+all other workloads, migration activity was comparable.
+
+Overall, headline performance figures are comparable but the overhead
+is higher, mostly in interrupts. To some extent, higher overhead from
+this approach was anticipated but not to this degree. It's going to be
+necessary to reduce this again with a separate series in the future. It's
+still worth going ahead with this series though as it's likely to avoid
+constant headaches with Xen and is probably easier to maintain.
+
+ arch/powerpc/include/asm/pgtable.h    |  53 ++----------
+ arch/powerpc/include/asm/pte-common.h |   5 --
+ arch/powerpc/include/asm/pte-hash64.h |   6 --
+ arch/powerpc/kvm/book3s_hv_rm_mmu.c   |   2 +-
+ arch/powerpc/mm/copro_fault.c         |   8 +-
+ arch/powerpc/mm/fault.c               |  25 ++----
+ arch/powerpc/mm/pgtable.c             |  11 ++-
+ arch/powerpc/mm/pgtable_64.c          |   3 +-
+ arch/x86/include/asm/pgtable.h        |  46 +++++-----
+ arch/x86/include/asm/pgtable_64.h     |   5 --
+ arch/x86/include/asm/pgtable_types.h  |  41 +--------
+ arch/x86/mm/gup.c                     |   4 +-
+ include/asm-generic/pgtable.h         | 153 ++--------------------------------
+ include/linux/migrate.h               |   4 -
+ include/linux/swapops.h               |   2 +-
+ include/uapi/linux/mempolicy.h        |   2 +-
+ mm/gup.c                              |  10 +--
+ mm/huge_memory.c                      |  50 ++++++-----
+ mm/memory.c                           |  18 ++--
+ mm/mempolicy.c                        |   2 +-
+ mm/migrate.c                          |   8 +-
+ mm/mprotect.c                         |  48 +++++------
+ mm/pgtable-generic.c                  |   2 -
+ 23 files changed, 134 insertions(+), 374 deletions(-)
+
 -- 
 2.1.2
 
