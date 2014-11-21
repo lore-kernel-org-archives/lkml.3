@@ -1,35 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751189AbaKUTQa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:16:30 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:37661 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845AbaKUTQ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:16:28 -0500
-Date: Fri, 21 Nov 2014 14:16:21 -0500 (EST)
-Message-Id: <20141121.141621.653528959311466817.davem@davemloft.net>
-To: johan@kernel.org
-Cc: f.fainelli@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bth@kamstrup.dk, s.hauer@pengutronix.de, mark.rutland@arm.com
-Subject: Re: [PATCH 00/10] net: phy: add device-type abstraction
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1416398363-32306-1-git-send-email-johan@kernel.org>
-References: <1416398363-32306-1-git-send-email-johan@kernel.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 21 Nov 2014 11:16:27 -0800 (PST)
+	id S1751549AbaKUTQv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:16:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44279 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751374AbaKUTQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 14:16:50 -0500
+Date: Fri, 21 Nov 2014 12:29:12 -0600
+From: Seth Jennings <sjenning@redhat.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Jiri Kosina <jkosina@suse.cz>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
+Message-ID: <20141121182912.GA1887@cerebellum.variantweb.net>
+References: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
+ <1416522580-5593-3-git-send-email-sjenning@redhat.com>
+ <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz>
+ <20141121164027.GB11339@cerebellum.variantweb.net>
+ <546F77F3.3050002@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546F77F3.3050002@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <johan@kernel.org>
-Date: Wed, 19 Nov 2014 12:59:13 +0100
+On Fri, Nov 21, 2014 at 06:35:47PM +0100, Jiri Slaby wrote:
+> On 11/21/2014, 05:40 PM, Seth Jennings wrote:
+> >>> --- /dev/null
+> >>> +++ b/arch/x86/include/asm/livepatch.h
+> >>> @@ -0,0 +1,37 @@
+> ...
+> >>> +#ifndef _ASM_X86_LIVEPATCH_H
+> >>> +#define _ASM_X86_LIVEPATCH_H
+> >>> +
+> >>> +#include <linux/module.h>
+> >>> +
+> >>> +#ifdef CONFIG_LIVE_PATCHING
+> >>> +extern int klp_write_module_reloc(struct module *mod, unsigned long type,
+> >>> +				  unsigned long loc, unsigned long value);
+> >>> +
+> >>> +#else
+> >>> +static int klp_write_module_reloc(struct module *mod, unsigned long type,
+> >>
+> >> static inline?
+> > 
+> > I think the practice is to let the compiler handle inline determination
+> > unless you are sure that the compiler isn't inlining something you think
+> > it should.
+> 
+> Although you are right, it is a correct C, gcc specs (6.39) suggests to
+> use 'static inline' on such functions. gcc then shall inline such functions.
 
-> This series adds device and device-type abstractions to the micrel
-> driver, and enables support for RMII-reference clock selection for
-> KSZ8081 and KSZ8091 devices.
+Fair enough.  Queued up.
 
-Series applied, thanks Johan.
+Thanks,
+Seth
+
+> 
+> And if you look around in the kernel, we use that combination almost
+> everywhere.
+> 
+> thanks,
+> -- 
+> js
+> suse labs
+> --
+> To unsubscribe from this list: send the line "unsubscribe live-patching" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
