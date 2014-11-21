@@ -1,82 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751275AbaKUFlk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 00:41:40 -0500
-Received: from ozlabs.org ([103.22.144.67]:40537 "EHLO ozlabs.org"
+	id S1752098AbaKUFmk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 00:42:40 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54726 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750762AbaKUFlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 00:41:39 -0500
-Date: Fri, 21 Nov 2014 16:41:31 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>, Keerthy <j-keerthy@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: linux-next: manual merge of the driver-core tree with the arm-soc
- tree
-Message-ID: <20141121164131.0190e0ab@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1750739AbaKUFmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 00:42:38 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, linux-api@vger.kernel.org
+Subject: [PATCH v3 7/7] crypto: AF_ALG: document the user space interface
+Date: Fri, 21 Nov 2014 06:34:12 +0100
+Message-ID: <1981402.FQkbiEN1F6@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.3-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <4088013.2O8zCP0xXa@tachyon.chronox.de>
+References: <4088013.2O8zCP0xXa@tachyon.chronox.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/y7YDfZDjZbDRL5_Xi8nZKhb"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/y7YDfZDjZbDRL5_Xi8nZKhb
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+The extension of the user space interface documentation covers all
+aspects of the patchset, including:
 
-Hi Greg,
+        * AEAD cipher interface
 
-Today's linux-next merge of the driver-core tree got a conflict in
-drivers/bus/omap_l3_noc.c between commit 61b43d4e919e ("bus:
-omap_l3_noc: Add resume hook to restore context") from the arm-soc tree
-and commit 571b8c6adb1b ("bus: drop owner assignment from
-platform_drivers") from the driver-core tree.
+        * RNG cipher interface
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ Documentation/crypto/crypto-API-userspace.txt | 70 ++++++++++++++++++++++++++-
+ 1 file changed, 68 insertions(+), 2 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/Documentation/crypto/crypto-API-userspace.txt b/Documentation/crypto/crypto-API-userspace.txt
+index ac619cd..0646034 100644
+--- a/Documentation/crypto/crypto-API-userspace.txt
++++ b/Documentation/crypto/crypto-API-userspace.txt
+@@ -30,8 +30,9 @@ ciphers are accessible:
+ 
+ 	* Symmetric ciphers
+ 
+-Note, AEAD ciphers are currently not supported via the symmetric cipher
+-interface.
++	* AEAD ciphers
++
++	* Random number generators
+ 
+ The interface is provided via Netlink using the type AF_ALG. In addition, the
+ setsockopt option type is SOL_ALG. In case the user space header files do not
+@@ -85,6 +86,7 @@ If a consumer on the other hand wants to maintain the plaintext and the
+ ciphertext in different memory locations, all a consumer needs to do is to
+ provide different memory pointers for the encryption and decryption operation.
+ 
++
+ Message digest API
+ ==================
+ 
+@@ -169,6 +171,69 @@ as large as to hold all blocks of the encrypted or decrypted data. If the output
+ data size is smaller, only as many blocks are returned that fit into that
+ output buffer size.
+ 
++
++AEAD cipher API
++===============
++
++The operation is identical to the symmetric cipher API. However, an AEAD
++cipher requires additional information, such as the authentication tag and
++the associated data. This data is to be supplied in addition to the normal
++symmetric cipher data like key and IV discussed for the symmetric ciphers.
++
++During initialization, the struct sockaddr data structure must be filled as
++follows:
++
++struct sockaddr_alg sa = {
++	.salg_family = AF_ALG,
++	.salg_type = "aead", /* this selects the AEAD cipher */
++	.salg_name = "gcm(aes)" /* this is the cipher name */
++};
++
++The discussion about the sendmsg given for the symmetric cipher applies for
++the AEAD interface as well. In addition to the plaintext / ciphertext data and
++the IV, the following data must be supplied with the cmsghdr data structure:
++
++	* The AEAD authentication tag size is set with the flag
++	  ALG_SET_AEAD_AUTHSIZE. The integer value of the authentication tag
++	  size must be provided in the data field of the cmsghdr structure.
++
++	* The AEAD associated data is set with the flag ALG_SET_AEAD_ASSOC.
++	  The data is set the same way as for the IV by supplying the associated
++	  data in the data field of the cmsghdr structure.
++
++The authentication tag itself, however, is handled in a different way to comply
++with the specifics of the kernel crypto API and to avoid copying the
++authentication tag around in memory. The authentication tag is added to the
++memory that immediately follows the ciphertext.
++
++	* When performing an encryption operation, the resulting ciphertext
++	  buffer will hold the tag as follows: ciphertext || tag.  The consumer
++	  must ensure that the ciphertext buffer is large enough to hold the
++	  ciphertext together with the tag of the size set by the consumer using
++	  the ALG_SET_AEAD_AUTHSIZE cmsghdr flag as discussed above.
++
++	* When performing a decryption operation, the initial ciphertext buffer
++	  must hold the tag as follows: ciphertext || tag. The resulting
++	  plaintext has the same size as the ciphertext.
++
++Note: Authentication errors during decryption are marked with a failing
++read/recv system call whose errno is set to EBADMSG.
++
++
++Random number generator API
++===========================
++
++Compared to the symmetric ciphers, the random number generator API is simple:
++it only supports the system calls of read/recv.
++
++The consumer must observe the returned size of the read/recv system calls and
++potentially make subsequent calls if the returned length of random numbers is
++smaller than the expected length.
++
++When initializing a random number generator instance, the AF_ALG interface
++handler ensures that it is appropriately seeded.
++
++
+ Setsockopt interface
+ ====================
+ 
+@@ -190,6 +255,7 @@ optname:
+ 
+ 		- the hash cipher type (keyed message digests)
+ 
++
+ User space API example
+ ======================
+ 
+-- 
+2.1.0
 
-diff --cc drivers/bus/omap_l3_noc.c
-index 17d86595951c,1ff1863415c5..000000000000
---- a/drivers/bus/omap_l3_noc.c
-+++ b/drivers/bus/omap_l3_noc.c
-@@@ -358,8 -300,6 +358,7 @@@ static struct platform_driver omap_l3_d
-  	.probe		=3D omap_l3_probe,
-  	.driver		=3D {
-  		.name		=3D "omap_l3_noc",
-- 		.owner		=3D THIS_MODULE,
- +		.pm		=3D L3_DEV_PM_OPS,
-  		.of_match_table =3D of_match_ptr(l3_noc_match),
-  	},
-  };
 
---Sig_/y7YDfZDjZbDRL5_Xi8nZKhb
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUbtCQAAoJEMDTa8Ir7ZwVbicP/2r1e4Uf+liz6GC2axBtdHhT
-RTxBJe0JStb2Gy43/C/LLOQdCSQCsO6RIJolCEkO1oh+bRKvLiUpcwlDTIHVWG+1
-5FG1VK1YSkOlinuB3DxwUluTvI66csJ1nwPuA72E0//RuXLS+oO2OfaWXG3tSRMB
-03H7ZeoU9PEOz76rdSwrbv4yS4RxlttreHeclD+Mvw7/KeFtT528wYw49dcWsaYs
-NjMOodttEUzwaOVXUSmllbXQ46n//Ck4HFDS+kYHuwAVFjKjXG7Jp5qD1GLDRExo
-HIbGYSc9szlTXlUA+itVYwtt7AaZJMcta1g/0EbOcEB0/QMd3OfwCAJabJu8cfUL
-323v80FfNfiN94+o6uhKqoP9+O/H/7ZDXXFxkqiMCeOSOWvkQrNWIzU/T/sBqP1y
-Yfx5MSNThzaz5GXI2RJbnVvdmpKKslMzp0pOXWbZpGutS8LfjxkePZk72BXpz2Zh
-IqqVfqfWeYbV89x3w0b3y6BHy6LzeH+4gD1jA7wvQLJX/jw6XBAWyzHHbW8c5rXi
-j/QttZFG+wI1ckLqEn4UdIT2zccHPnAcnmoFGnWkEU+SdT0Kqv6PsdHHpDIAhkgT
-FlOF018O3E8aQ3nyv5t7Zm9FyUOP7X08Oc7WF4rN4UJhCQIT3FGEOBISmaxYT8kS
-PajCvU0gFHcAUJbq8TmJ
-=6ZMd
------END PGP SIGNATURE-----
-
---Sig_/y7YDfZDjZbDRL5_Xi8nZKhb--
