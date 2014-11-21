@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029AbaKUTn2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:43:28 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:57222 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751816AbaKUTn1 (ORCPT
+	id S1751738AbaKUToe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:44:34 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:61962 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344AbaKUTod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:43:27 -0500
-Date: Fri, 21 Nov 2014 14:43:16 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
-        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH ftrace/core v6 2/5] ftrace, kprobes: Support IPMODIFY
- flag to find IP modify conflict
-Message-ID: <20141121144316.22459f7e@gandalf.local.home>
-In-Reply-To: <20141121130529.316989d8@gandalf.local.home>
-References: <20141121102502.11844.82696.stgit@localhost.localdomain>
-	<20141121102516.11844.27829.stgit@localhost.localdomain>
-	<20141121130529.316989d8@gandalf.local.home>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Fri, 21 Nov 2014 14:44:33 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Arnd Bergmann <arnd.bergmann@linaro.org>,
+        "pang.xunlei" <pang.xunlei@linaro.org>,
+        Miroslav Lichvar <mlichvar@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: [PATCH 00/12] 
+Date: Fri, 21 Nov 2014 11:44:06 -0800
+Message-Id: <1416599058-13836-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014 13:05:29 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+Hey Thomas, All,
 
-> On Fri, 21 Nov 2014 05:25:16 -0500
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+Just wanted to submit a handful of changes for 3.19
 
-> > + * IPMODIFY - The ops can modify the IP register. This can only be set with
-> > + *            SAVE_REGS. If another ops is already registered for any of the
-> > + *            functions that this ops will be registered for, then this ops
-> > + *            will fail to register or set_filter_ip.
-> 
-> It's blocked by any ops sharing the same function, or just another ops
-> with this flag set? The comment doesn't specify. The code looks like
-> the latter.
+* udelay_test/test_udelay consistent file naming
+* Time / ntp edge-case fixes from Xunlei
+* y2038-safe internal interfaces from Xunlei and me
+* Celanup suspend/resume timing y2038 issues
+* Remove y2038 unsafe inject_sleeptime inteface
 
-I applied it and gave it the following updates to comments:
+Just as an FYI, I'm trying out signing this tag with
+a new subkey on my yubikey. Hopefully haven't mucked
+it up.
 
--- Steve
+If there's no objections, you can grab this via the
+pull-request below.
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 93cf0478f64e..ed501953f0b2 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -107,9 +107,9 @@ ftrace_func_t ftrace_ops_get_func(struct ftrace_ops *ops);
-  *            in such cases the arch must not modify it. Only the arch ftrace
-  *            core code should set this flag.
-  * IPMODIFY - The ops can modify the IP register. This can only be set with
-- *            SAVE_REGS. If another ops is already registered for any of the
-- *            functions that this ops will be registered for, then this ops
-- *            will fail to register or set_filter_ip.
-+ *            SAVE_REGS. If another ops with this flag set is already registered
-+ *            for any of the functions that this ops will be registered for, then
-+ *            this ops will fail to register or set_filter_ip.
-  */
- enum {
- 	FTRACE_OPS_FL_ENABLED			= 1 << 0,
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 531e72a716c3..929a733d302e 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1810,8 +1810,8 @@ static int __ftrace_hash_update_ipmodify(struct ftrace_ops *ops,
- 		return 0;
- 
- 	/*
--	 * Since the IPMODIFY is very address sensitive action, we do not allow
--	 * ftrace_ops to set all functions to new hash.
-+	 * Since the IPMODIFY is a very address sensitive action, we do not
-+	 * allow ftrace_ops to set all functions to new hash.
- 	 */
- 	if (!new_hash || !old_hash)
- 		return -EINVAL;
+Thanks
+-john
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+Cc: pang.xunlei <pang.xunlei@linaro.org>
+Cc: Miroslav Lichvar <mlichvar@redhat.com>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+
+The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
+
+  Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
+
+are available in the git repository at:
+
+  https://git.linaro.org/people/john.stultz/linux.git tags/fortglx-3.19-time
+
+for you to fetch changes up to b6adbbd9a2171aa4764ea8a56c4c1a5f63f2cca6:
+
+  Merge commit '039348d8c131329742e80e37122f11d230fd270b' into fortglx/3.19/time (2014-11-20 21:37:59 -0800)
+
+
+John Stultz (6):
+  time: Rename udelay_test.c to test_udelay.c
+  time: Expose getrawmonotonic64 for in-kernel uses
+  time: Expose get_monotonic_corase64() for in-kernel uses
+  time: Fixup comments to reflect usage of timespec64
+  rtc: Update suspend/resume timing to use 64bit time
+  time: Remove timekeeping_inject_sleeptime()
+
+pang.xunlei (6):
+  time: Avoid possible NTP adjustment mult overflow.
+  time: Complete NTP adjustment threshold judging conditions
+  time: Provide y2038 safe do_settimeofday() replacement
+  time: Provide y2038 safe timekeeping_inject_sleeptime() replacement
+  time: Provide y2038 safe mktime() replacement
+  rtc/lib: Provide y2038 safe rtc_tm_to_time()/rtc_time_to_tm()
+    replacement
+
