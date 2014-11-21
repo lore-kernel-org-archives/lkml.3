@@ -1,133 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219AbaKUS1f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:27:35 -0500
-Received: from mail-oi0-f42.google.com ([209.85.218.42]:34651 "EHLO
-	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539AbaKUS1d (ORCPT
+	id S1752265AbaKUS2x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:28:53 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:51485 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591AbaKUS2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:27:33 -0500
-Date: Fri, 21 Nov 2014 12:27:31 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, "Serge E. Hallyn" <serge@hallyn.com>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v5 2/4] fuse: Support fuse filesystems outside of
- init_user_ns
-Message-ID: <20141121182731.GC1730@ubuntu-mba51>
-References: <20141111140454.GD333@tucsk>
- <87mw7xd9zt.fsf@x220.int.ebiederm.org>
- <20141112130915.GG333@tucsk>
- <20141112162254.GB31775@ubuntu-hedt>
- <20141118152156.GA21726@ubuntu-mba51>
- <CAJfpeguuT1V1Pf0iFXRozmeohDH2Jy=p8o=1EnvD_qfB1CTQuA@mail.gmail.com>
- <CAJfpeguctYFkzBPN26=WjOCLTt2mqvouHXqLZ1sRqZngtbw8CQ@mail.gmail.com>
- <20141119140911.GA27009@mail.hallyn.com>
- <20141121164441.GA1730@ubuntu-mba51>
- <87ppcgju9w.fsf@x220.int.ebiederm.org>
+	Fri, 21 Nov 2014 13:28:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ppcgju9w.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
+References: <alpine.DEB.2.11.1411202204030.3950@nanos> <20141120221122.GA25393@htj.dyndns.org>
+ <alpine.DEB.2.11.1411202315230.3950@nanos> <20141120230514.GB25393@htj.dyndns.org>
+ <CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
+ <20141120233920.GC25393@htj.dyndns.org> <CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
+ <20141121162742.GB15461@htj.dyndns.org> <CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
+ <CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
+ <20141121170805.GD30603@home.goodmis.org> <CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
+ <CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com> <CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 21 Nov 2014 10:28:28 -0800
+Message-ID: <CALCETrUFHFvKU3hnD8w0oVYjKx2XPxTUrXynqpsm3J7yahbqYg@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 12:14:19PM -0600, Eric W. Biederman wrote:
-> Seth Forshee <seth.forshee@canonical.com> writes:
-> 
-> > On Wed, Nov 19, 2014 at 03:09:11PM +0100, Serge E. Hallyn wrote:
-> >> Quoting Miklos Szeredi (miklos@szeredi.hu):
-> >> > On Wed, Nov 19, 2014 at 9:50 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> >> > > On Tue, Nov 18, 2014 at 4:21 PM, Seth Forshee
-> >> > > <seth.forshee@canonical.com> wrote:
-> >> > >>> I asked around a bit, and it turns out there are use cases for nested
-> >> > >> containers (i.e. a container within a container) where the rootfs for
-> >> > >> the outer container mounts a filesystem containing the rootfs for the
-> >> > >> inner container. If that mount is nosuid then suid utilities like ping
-> >> > >> aren't going to work in the inner container.
-> >> > >>
-> >> > >> So since there's a use case for suid in a userns mount and we have what
-> >> > >> we belive are sufficient protections against using this as a vector to
-> >> > >> get privileges outside the container, I'm planning to move ahead without
-> >> > >> the MNT_NOSUID restriction. Any objections?
-> >> > >
-> >> > > In the general case how'd we prevent suid executable being tricked to
-> >> > > do something it shouldn't do by unprivileged mounting into sensitive
-> >> > > places (i.e. config files) inside the container?
-> >> 
-> >> The design of the namespaces would prevent that.  You cannot manipulate your
-> >> mounts namespace unless you own it.  You cannot manipulate the mounts namespace
-> >> for a task whose user namespace you do not own.  If you can, for instance,
-> >> bind mount $HOME/shadow onto /etc/shadow, then you already own your user
-> >> namespace and are root there, so any suid-root program which you mount through
-> >> fuse will only subjegate your own namespace.  Any task which running in the
-> >> parent user-ns (and therefore parent mount-ns) will not see your bind mount.
-> >> 
-> >> > > Allowing SUID looks like a slippery slope to me.  And there are plenty
-> >> > > of solutions to the "ping" problem, AFAICS, that don't involve the
-> >> > > suid bit.
-> >> > 
-> >> > ping isn't even suid on my system, it has security.capability xattr instead.
-> >> 
-> >> security.capability xattrs that will have the exact same concerns wrt
-> >> confusion through bind mounts as suid.
-> >> 
-> >> > Please just get rid of SUID/SGID.  It's a legacy, it's a hack, not
-> >> > worth the complexity and potential problems arising from that
-> >> > complexity.
-> >> 
-> >> Oh boy, I don't know which side to sit on here :)  I'm all for replacing
-> >> suid with some use of file capabilities, but realistically there are reasons
-> >> why that hasn't happened more widely than it has - tar, package managers,
-> >> cpio, nfs, etc.
-> >
-> > Miklos: I we're all generally in agreement here that suid/sgid is not
-> > the best solution, but as Serge points out we are unfortunately not yet
-> > in a place where it can be completely dropped in favor of capabilities.
-> > In light of this can I convince you to reconsider your position?
-> 
-> Regardless of what fuse does user namespaces must support mounting
-> filesystems that have the setuid and setgid bits set.  Likewise we need
-> to handle capabilities.
-> 
-> There is a parallel bit of work to the fuse patches that I think at this
-> point should be completed first.
-> 
-> - Add s_user_ns to struct super.  So we can have filesystems whose
->   labels are not interpreted at a global scope.
-> 
-> - Tweak the file capability code to look at s_user_ns and treat it
->   properly.
-> 
-> - Tweak the lsms to look at s_user_ns and ignore security labels that
->   don't come from init_user_ns.  (The lsms at their discrection can
->   be more trusting but the default should be for them to ignore those
->   labels).
-> 
-> - Tweak the security checks to allow setting file capabilities and
->   other security xattrs if we have the appropriate capabilities in
->   s_user_ns.
-> 
-> - Update tmpfs and ramfs to set s_user_ns when being mounted.
+On Fri, Nov 21, 2014 at 10:22 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Nov 21, 2014 at 9:22 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> Both mystify me.  Why does the 32-bit version walk down the hierarchy
+>> at all instead of just touching the top level?
+>
+> Quite frankly, I think it's just due to historical reasons, and should
+> be removed.
+>
+> But the historical reasons are that with the aliasing of the PUD and
+> PMD entries in the PGD, it's all fairly confusing. So I think we only
+> used to do the top level, but then when we expanded from two levels to
+> three, that "top level" became the pmd, and then when we expanded from
+> three to four, the pmd was actually two levels down. So it's all
+> basically mindless work.
+>
+> So I do think we could simplify and unify things.
+>
+> In 32-bit mode, we actually have two different cases:
+>
+>  - in PAE, there's the magic top-level 4-entry PGD that always *has*
+> to be present (the P bit isn't actually checked by hardware)
+>
+>     As a result, in PAE mode, the top PGD entries always exist, and
+> are always prepopulated, and for the kernel area (including obviously
+> the vmalloc space) always points to the init_pgd[] entry.
+>
+>     Ergo, in PAE mode, I don't think we should ever hit this case in
+> the first place.
+>
+>  - in non-PAE mode, we should just copy the top-level entry, and return.
+>
+> And in 64-bit more, we only have the "copy the top-level entry" case.
+>
+> So I think we should
+>
+>  (a) remove the 32-bit vs 64-bit difference, because that's not actually valid
+>
+>  (b) make it a PAE vs non-PAE difference
+>
+>  (c) the PAE case is a no-op
+>
+>  (d) the non-PAE case would look something like this:
+>
+>     static noinline int vmalloc_fault(unsigned long address)
+>     {
+>         unsigned index;
+>         pgd_t *pgd_dst, pgd_entry;
+>
+>         /* Make sure we are in vmalloc area: */
+>         if (!(address >= VMALLOC_START && address < VMALLOC_END))
+>                 return -1;
+>
+>         index = pgd_index(address);
+>         pgd_entry = init_mm.pgd[index];
+>         if (!pgd_present(pgd_entry))
+>                 return -1;
+>
+>         pgd_dst = __va(PAGE_MASK & read_cr3());
+>         if (pgd_present(pgd_dst[index]))
+>                 return -1;
+>
+>         ACCESS_ONCE(pgd_dst[index]) = pgd_entry;
+>         return 0;
+>     }
+>     NOKPROBE_SYMBOL(vmalloc_fault);
+>
+> and it's done.
+>
+> Would anybody be willing to actually *test* something like the above?
+> The above may compile, but that's all the "testing" it got.
+>
 
-Okay. Is someone already working on these items? If not I'll work up
-some patches.
+I'd be happy to test it (i.e. boot it and try to use my computer), but
+I have nowhere near enough RAM to do it right.
 
-> When those bits are done we can tweak the fuse patches to also set
-> s_user_ns.
-> 
-> As for MNT_NO_SUID if fuse wants to enforce that in some way.  I don't
-> particularly care, but I don't think that makes sense as a vfs property.
+Is there any easy way to get the vmalloc code to randomize enough bits
+to exercise this?
 
-I don't think fuse can enforce this since the flag applies to the mount
-and not the super block. It would have to be enforced by the vfs.
-
-Thanks,
-Seth
+--Andy
