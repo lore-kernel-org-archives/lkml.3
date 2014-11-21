@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138AbaKUGmm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 01:42:42 -0500
-Received: from 1wt.eu ([62.212.114.60]:57955 "EHLO 1wt.eu"
+	id S1754110AbaKUGqr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 01:46:47 -0500
+Received: from sauhun.de ([89.238.76.85]:48867 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910AbaKUGml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 01:42:41 -0500
-Date: Fri, 21 Nov 2014 07:42:38 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Wang Zhe <wzedmund@gmail.com>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Kernel support on Loognson 3B
-Message-ID: <20141121064238.GB27040@1wt.eu>
-References: <CAMYNMg5g+-PpgqmdVEbRqWRFj0NAUPXxmZfwsZDVYaMKOnfAAQ@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1750910AbaKUGqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 01:46:45 -0500
+Date: Fri, 21 Nov 2014 07:48:06 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Alexander Kochetkov <al.kochet@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-omap@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [PATCH] Fixes: 1d7afc9 i2c: omap: ack IRQ in parts
+Message-ID: <20141121064806.GC1480@katana>
+References: <1416242517-29885-1-git-send-email-al.kochet@gmail.com>
+ <20141118163921.GB6179@saruman>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ghzN8eJ9Qlbqn3iT"
 Content-Disposition: inline
-In-Reply-To: <CAMYNMg5g+-PpgqmdVEbRqWRFj0NAUPXxmZfwsZDVYaMKOnfAAQ@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <20141118163921.GB6179@saruman>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Fri, Nov 21, 2014 at 02:31:39PM +0800, Wang Zhe wrote:
-> Hi,
-> Currently I am working on Loongson 3B CPU with modified kernel version
-> of linux 3.5.0. I encountered a problem when I boot up PC and it keeps
-> entering into emergency mode. I' ve tried many different ways to get
-> rid of this issue and nothing worked out. I wondered it could be an
-> issue of using wrong kernel version. May I ask which official kernel
-> verison has better support on loongson 3B CPU?
+--ghzN8eJ9Qlbqn3iT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The stable list isn't about helping diagnose such issues. Also, you seem
-to be using a vendor-specific kernel, so nobody working on the official
-kernel will be able to help you. You need to contact your vendor to get
-support on this. Maybe they'll indicate you that a recent mainline kernel
-supports their CPU well, and even then it can depend on your board. Last
-point, 3.5.0 is quite outdated and unsupported. It lacks many bugfixes
-and important security fixes, so you should not run that anyway. Keep in
-mind that many vendor-specific kernels don't include fixes from mainline
-and based on that, you should always select your hardware based on its
-support in mainline instead of chosing the kernel based on the hardware.
+> > Tested on Beagleboard XM C.
+> >=20
+> > Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
+> > Cc: <stable@vger.kernel.org> # v3.7+
+>=20
+> This is good, but subject is wrong. That fixes line should not be the
+> subject, it should be here after Cc :-)
 
-Regards,
-Willy
+I'll take this as an Ack unless you protest.
 
+
+--ghzN8eJ9Qlbqn3iT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUbuAmAAoJEBQN5MwUoCm2Q9EQAJgPLvW472Ir7iOkDZAMevMC
++FgMNp2moJfX8rWrkQ8nGnmcFsWRWlF3jjBWFkufsL0TcealeRAXsrHrnfXbm80w
+C4HQiUOWq01+RWY6/aBiwHyBjO81fSP/3fquF+UpIUwyi9jtmybJ/883MeJVdaC/
+GVJO68fEIcFEYT6CsQg7Tl4gicPWcfB/BmpUSHVRiff9P5usmjZOKVvUd2aaqpQB
+6NLj1xRCLQol9DcbK48ItAPI0KbfRyNFXko3QeQudecnSxHrWOIft/MD98xWyUo5
+RBL6r+F+NPRXqFWizDZPvATft1LZ8Q6HnspwZfJA2nwfvdQgj1pfgA7LMJIzzYvk
+CBBeGxJTsEw7aHAl/jL2ckJBjhDxDSgIpyloGnQfqR3AGHbDZoScy3BLumkdLNr/
+8yfDzmGlXJlXRIYIH2mRHve++62OsPd6BZe2yCknTyPGVgwRs/QW4LyTY1rFOzvE
+3PW4S446/vOf4L8woxmu7Y3N4ig5W1Ba8wyBhMNUkcJBrH87tExJN+XY4zYLTzJR
+aydAKp8sfT6iawinPUqm4BdxerSgM7mJmWWWM3pjhGH3HbtVSOtTcH/t62g5shFn
+inyDQPPL45HUZ+ma0fVgfPmYR4LNWlFQ/4aBNDG8ZJNx2d33Rrrat3L9AVWht3GZ
+mZbiiv5MNG5+arFFotcN
+=Ecr3
+-----END PGP SIGNATURE-----
+
+--ghzN8eJ9Qlbqn3iT--
