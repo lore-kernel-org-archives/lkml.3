@@ -1,75 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715AbaKUTeG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:34:06 -0500
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:42433 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056AbaKUTeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:34:04 -0500
+	id S1751860AbaKUTe7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:34:59 -0500
+Received: from mail-bl2on0102.outbound.protection.outlook.com ([65.55.169.102]:63360
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751137AbaKUTe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 14:34:57 -0500
+X-WSS-ID: 0NFEME3-08-8KK-02
+X-M-MSG: 
+Message-ID: <546F93D5.8030704@amd.com>
+Date: Fri, 21 Nov 2014 21:34:45 +0200
+From: Oded Gabbay <oded.gabbay@amd.com>
+Organization: AMD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141121142301.564f7eb7@gandalf.local.home>
-References: <alpine.DEB.2.11.1411202204030.3950@nanos>
-	<20141120221122.GA25393@htj.dyndns.org>
-	<alpine.DEB.2.11.1411202315230.3950@nanos>
-	<20141120230514.GB25393@htj.dyndns.org>
-	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
-	<20141120233920.GC25393@htj.dyndns.org>
-	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
-	<20141121162742.GB15461@htj.dyndns.org>
-	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
-	<CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
-	<20141121170805.GD30603@home.goodmis.org>
-	<CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
-	<CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
-	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
-	<CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
-	<20141121142301.564f7eb7@gandalf.local.home>
-Date: Fri, 21 Nov 2014 11:34:03 -0800
-X-Google-Sender-Auth: 9eY9goa9GpW8_966V1nEqA9-SZQ
-Message-ID: <CA+55aFw6w+pkG7fs7tBVm7jV_TjsnEyG5XDdk+Ghf5Af+ELUeA@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <j.glisse@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>,
+        John Bridgman <John.Bridgman@amd.com>, Ben Goz <ben.goz@amd.com>,
+        Jay Cornwall <jay.cornwall@amd.com>,
+        "Evgeny Pinchuk" <evgeny.pinchuk@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Alexey Skidanov <Alexey.Skidanov@amd.com>
+Subject: Re: [PATCH v5 08/24] amdkfd: Add amdkfd skeleton driver
+References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
+	 <1415471865-1893-9-git-send-email-oded.gabbay@amd.com>
+ <1416565445.6958.3.camel@x220>
+In-Reply-To: <1416565445.6958.3.camel@x220>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(377424004)(199003)(24454002)(51704005)(189002)(377454003)(479174003)(50466002)(33656002)(102836001)(36756003)(65956001)(62966003)(77156002)(20776003)(23676002)(64706001)(47776003)(59896002)(50986999)(54356999)(87266999)(76176999)(65816999)(21056001)(87936001)(106466001)(99396003)(68736004)(110136001)(83506001)(31966008)(80316001)(44976005)(97736003)(19580405001)(19580395003)(95666004)(92726001)(84676001)(4396001)(92566001)(101416001)(120916001)(105586002)(86362001)(107046002)(46102003)(64126003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB196;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
+X-Forefront-PRVS: 0402872DA1
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 11:23 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> Should we at least check to see if it is present?
->
->         if (!(pgd_entry & 1))
->                 return -1;
 
-Maybe. But what other entry could there be?
 
-But yes, returning -1 is "safe", since it basically says "I'm not
-doing a vmalloc thing, oops if this is a bad access". So that kind of
-argues for being as aggressive as possible in returning 1.
+On 11/21/2014 12:24 PM, Paul Bolle wrote:
+> On Sat, 2014-11-08 at 20:37 +0200, Oded Gabbay wrote:
+>> This patch adds the amdkfd skeleton driver. The driver does nothing except
+>> define a /dev/kfd device.
+>>
+>> It returns -ENODEV on all amdkfd IOCTLs.
+>>
+>> v3: Move bool field to the end of structure, removed the pmc ioctls and added
+>> a meaningful error message for ioctl error.
+>>
+>> v5:
+>>
+>> Create a new folder drm/amd and move amdkfd from drm/radeon/ to drm/amd/
+>> Remove scheduler_class from kfd_priv.h as it was never used
+>> Add skeleton implementation of the Get Version IOCTL
+>>
+>> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+> 
+> It seems v6 of this patch is included in today's linux-next (ie,
+> next-20141121).
+> 
+>>  drivers/gpu/drm/Kconfig                  |   2 +
+>>  drivers/gpu/drm/Makefile                 |   1 +
+>>  drivers/gpu/drm/amd/amdkfd/Kconfig       |  10 ++
+>>  drivers/gpu/drm/amd/amdkfd/Makefile      |   9 ++
+>>  drivers/gpu/drm/amd/amdkfd/kfd_chardev.c | 210 +++++++++++++++++++++++++++++++
+>>  drivers/gpu/drm/amd/amdkfd/kfd_device.c  | 130 +++++++++++++++++++
+>>  drivers/gpu/drm/amd/amdkfd/kfd_module.c  | 101 +++++++++++++++
+>>  drivers/gpu/drm/amd/amdkfd/kfd_priv.h    |  81 ++++++++++++
+>>  8 files changed, 544 insertions(+)
+>> [...]
+>> diff --git a/drivers/gpu/drm/amd/amdkfd/Kconfig b/drivers/gpu/drm/amd/amdkfd/Kconfig
+>> new file mode 100644
+>> index 0000000..a2ae6d4
+>> --- /dev/null
+>> +++ b/drivers/gpu/drm/amd/amdkfd/Kconfig
+>> @@ -0,0 +1,10 @@
+>> +#
+>> +# Heterogenous system architecture configuration
+>> +#
+>> +
+>> +config HSA_AMD
+>> +	tristate "HSA kernel driver for AMD GPU devices"
+>> +	depends on (DRM_RADEON || DRM_AMDGPU) && AMD_IOMMU_V2 && X86_64
+> 
+> There's currently no Kconfig symbol DRM_AMDGPU (nor anything similar).
+> Will that symbol be added in a future patch?
+> 
+The DRM_AMDGPU symbol belongs to AMD's new Linux kernel graphic driver, called
+amdgpu. That driver is not yet upstreamed, so its symbol is not present in any
+Kconfig file. However, internally we work with that driver so that's why it
+appears in my patch.
 
-So for the first one (!pgd_entry), instead of returning -1 only for a
-completely empty entry, returning it for any non-present case is
-probably right.
+I can remove it if it violates some rule. I have no problem adding it back once
+amdgpu is upstreamed.
 
-And for the second one (where we check whether there is anything at
-all in the destination), returning -1 for "anything but zero" is
-probably the right thing to do.
+	Oded
 
-But in the end, if you have a corrupted top-level kernel page table,
-it sounds to me like you're just royally screwed anyway. So I don't
-think it matters *that* much.
-
-So I kind of agree, but it wouldn't be my primary worry. My primary
-worry is actually paravirt doing something insane.
-
-                    Linus
+>> +	default m
+>> +	help
+>> +	  Enable this if you want to use HSA features on AMD GPU devices.
+> 
+> 
+> Paul Bolle
+> 
