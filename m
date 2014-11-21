@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672AbaKUXCG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 18:02:06 -0500
-Received: from mout.web.de ([212.227.15.3]:59131 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751677AbaKUXCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 18:02:04 -0500
-Message-ID: <546FC455.8090702@users.sourceforge.net>
-Date: Sat, 22 Nov 2014 00:01:41 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Fenghua Yu <fenghua.yu@intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] [IA64] Deletion of unnecessary checks before the function
- call "unw_remove_unwind_table"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:ThZIE9w7+xaEo4I2rmExrbihB/L8dbB2G5CBkbb1EQ+Z+pNiZy4
- vI7ohlLmSrWz7mRB/pijxMUVo+8pGZnQ1JHXv0jJ7ZW/QxAHTxZA9f64hZyxXFfp23STJpi
- ADPKEr2VKbMRDQjUbpjzS/uvomxxg5g56SeeOYzFkccVnyEXOAXzPEb3+9BjPO0TbFnUYxY
- H6FYnALmpVOoFW9WO/Znw==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752779AbaKUXCN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 18:02:13 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:37805 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705AbaKUXCI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 18:02:08 -0500
+Content-Type: text/plain; charset=koi8-r
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] i2c: omap: fix i207 errata handling
+From: Alexander Kochetkov <al.kochet@gmail.com>
+In-Reply-To: <20141121160828.GP7508@saruman>
+Date: Sat, 22 Nov 2014 02:02:03 +0300
+Cc: linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B174E67D-9CCF-48B6-A5E5-911668161823@gmail.com>
+References: <1416529011-21803-1-git-send-email-al.kochet@gmail.com> <20141121160828.GP7508@saruman>
+To: Felipe Balbi <balbi@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Wolfram Sang <wsa@the-dreams.de>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 23:57:28 +0100
 
-The unw_remove_unwind_table() function performs also input parameter validation.
-Thus the test around the call is not needed.
+21 нояб. 2014 г., в 19:08, Felipe Balbi <balbi@ti.com> написал(а):
 
-This issue was detected by using the Coccinelle software.
+> Tested on BBB and AM437x Starter Kit
+> 
+> Tested-by: Felipe Balbi <balbi@ti.com>
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- arch/ia64/kernel/module.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+21 нояб. 2014 г., в 0:10, Aaro Koskinen <aaro.koskinen@iki.fi> написал(а):
 
-diff --git a/arch/ia64/kernel/module.c b/arch/ia64/kernel/module.c
-index 24603be..30ff27d 100644
---- a/arch/ia64/kernel/module.c
-+++ b/arch/ia64/kernel/module.c
-@@ -946,8 +946,6 @@ module_finalize (const Elf_Ehdr *hdr, const Elf_Shdr *sechdrs, struct module *mo
- void
- module_arch_cleanup (struct module *mod)
- {
--	if (mod->arch.init_unw_table)
--		unw_remove_unwind_table(mod->arch.init_unw_table);
--	if (mod->arch.core_unw_table)
--		unw_remove_unwind_table(mod->arch.core_unw_table);
-+	unw_remove_unwind_table(mod->arch.init_unw_table);
-+	unw_remove_unwind_table(mod->arch.core_unw_table);
- }
--- 
-2.1.3
+> I could not see any breakage or anything wrong on OMAP2 & OMAP3.
+> On OMAP1 I don't have anything on the OMAP I2C bus, so cannot really
+> test anything there.
+> 
+> Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+
+
+21 нояб. 2014 г., в 21:11, Wolfram Sang <wsa@the-dreams.de> написал(а):
+
+> The errno for AL is -EAGAIN. Curly braces are not needed.
+
+
+Guys, I really appreciate you help.
+So much testing and review.
+I could not have done one.
+Thank you!
+
+Alexander.
 
