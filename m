@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094AbaKUT7f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:59:35 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:38216 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275AbaKUT7e (ORCPT
+	id S1752265AbaKUUAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:00:10 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:45360 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178AbaKUUAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:59:34 -0500
-Date: Fri, 21 Nov 2014 14:59:32 -0500 (EST)
-Message-Id: <20141121.145932.1019989098659258075.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        herbert@gondor.apana.org.au
-Subject: Re: [PATCH net-next] macvtap: advance iov iterator when needed in
- macvtap_put_user()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1416472265-10151-1-git-send-email-jasowang@redhat.com>
-References: <1416472265-10151-1-git-send-email-jasowang@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 21 Nov 2014 11:59:34 -0800 (PST)
+	Fri, 21 Nov 2014 15:00:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.11.1411212049220.6439@nanos>
+References: <alpine.DEB.2.11.1411202204030.3950@nanos>
+	<20141120221122.GA25393@htj.dyndns.org>
+	<alpine.DEB.2.11.1411202315230.3950@nanos>
+	<20141120230514.GB25393@htj.dyndns.org>
+	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
+	<20141120233920.GC25393@htj.dyndns.org>
+	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
+	<20141121162742.GB15461@htj.dyndns.org>
+	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
+	<CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
+	<20141121170805.GD30603@home.goodmis.org>
+	<CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
+	<CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
+	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
+	<CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
+	<alpine.DEB.2.11.1411212049220.6439@nanos>
+Date: Fri, 21 Nov 2014 12:00:05 -0800
+X-Google-Sender-Auth: m65R53kMVp3sXbeumOXFiO9EHtg
+Message-ID: <CA+55aFzvgxAMpP7kr9qrxyo82vSucQ5G+VByOgsgoyq6y5ExOA@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Thu, 20 Nov 2014 16:31:05 +0800
+On Fri, Nov 21, 2014 at 11:51 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> This will break paravirt. set_pgd/set_pmd are paravirt functions.
 
-> When mergeable buffer is used, vnet_hdr_sz is greater than sizeof struct
-> virtio_net_hdr. So we need advance the iov iterators in this case.
-> 
-> Fixes 6c36d2e26cda1ad3e2c4b90dd843825fc62fe5b4 ("macvtap: Use iovec iterators")
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+I suspect we could use "set_pgd()" here instead of the direct access.
+I didn't want to walk through all the levels to see exactly which
+random op I needed to use.
 
-Applied, thanks.
+                Linus
