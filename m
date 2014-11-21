@@ -1,229 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757674AbaKUBqn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 20:46:43 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:38282 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757494AbaKUBqk (ORCPT
+	id S1757861AbaKUBsA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 20:48:00 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:34360 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757760AbaKUBr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 20:46:40 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v8 5/8] of: i2c: Export single device registration
- method
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <1414528565-10907-6-git-send-email-pantelis.antoniou@konsulko.com>
-References: <1414528565-10907-1-git-send-email-pantelis.antoniou@konsulko.com>
-	<1414528565-10907-6-git-send-email-pantelis.antoniou@konsulko.com>
-Date: Fri, 21 Nov 2014 01:46:31 +0000
-Message-Id: <20141121014631.C86D5C413E8@trevor.secretlab.ca>
+	Thu, 20 Nov 2014 20:47:59 -0500
+Date: Thu, 20 Nov 2014 17:47:27 -0800
+From: Calvin Owens <calvinowens@fb.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>, Eric Dumazet <edumazet@google.com>,
+        <kernel-team@fb.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tcp: Restore RFC5961-compliant behavior for SYN packets
+Message-ID: <20141121014727.GA1536781@mail.thefacebook.com>
+References: <1416524993-26228-1-git-send-email-calvinowens@fb.com>
+ <1416526940.8629.62.camel@edumazet-glaptop2.roam.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1416526940.8629.62.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.28,0.0.0000
+ definitions=2014-11-21_01:2014-11-20,2014-11-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.140620555742602 urlsuspect_oldscore=0.140620555742602
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.140620555742602 spamscore=0
+ recipient_to_sender_domain_totalscore=1 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1411210012
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Oct 2014 22:36:02 +0200
-, Pantelis Antoniou <pantelis.antoniou@konsulko.com>
- wrote:
-> Dynamically inserting i2c client device nodes requires the use
-> of a single device registration method. Rework and export it.
+On Thursday 11/20 at 15:42 -0800, Eric Dumazet wrote:
+> On Thu, 2014-11-20 at 15:09 -0800, Calvin Owens wrote:
+> > Commit c3ae62af8e755 ("tcp: should drop incoming frames without ACK
+> > flag set") was created to mitigate a security vulnerability in which a
+> > local attacker is able to inject data into locally-opened sockets by
+> > using TCP protocol statistics in procfs to quickly find the correct
+> > sequence number.
+> > 
+> > This broke the RFC5961 requirement to send a challenge ACK in response
+> > to spurious RST packets, which was subsequently fixed by commit
+> > 7b514a886ba50 ("tcp: accept RST without ACK flag").
+> > 
+> > Unfortunately, the RFC5961 requirement that spurious SYN packets be
+> > handled in a similar manner remains broken.
+> > 
+> > RFC5961 section 4 states that:
+> > 
+> >    ... the handling of the SYN in the synchronized state SHOULD be
+> >    performed as follows:
+> > 
+> >    1) If the SYN bit is set, irrespective of the sequence number, TCP
+> >       MUST send an ACK (also referred to as challenge ACK) to the remote
+> >       peer:
+> > 
+> >       <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
+> > 
+> >       After sending the acknowledgment, TCP MUST drop the unacceptable
+> >       segment and stop processing further.
+> > 
+> >    By sending an ACK, the remote peer is challenged to confirm the loss
+> >    of the previous connection and the request to start a new connection.
+> >    A legitimate peer, after restart, would not have a TCB in the
+> >    synchronized state.  Thus, when the ACK arrives, the peer should send
+> >    a RST segment back with the sequence number derived from the ACK
+> >    field that caused the RST.
+> > 
+> >    This RST will confirm that the remote peer has indeed closed the
+> >    previous connection.  Upon receipt of a valid RST, the local TCP
+> >    endpoint MUST terminate its connection.  The local TCP endpoint
+> >    should then rely on SYN retransmission from the remote end to
+> >    re-establish the connection.
+> > 
+> > This patch lets SYN packets through the discard added in c3ae62af8e755,
+> > so that spurious SYN packets are properly dealt with as per the RFC.
+> > 
+> > The challenge ACK is sent unconditionally and is rate-limited, so the
+> > original vulnerability is not reintroduced by this patch.
 > 
-> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-
-Acked-by: Grant Likely <grant.likely@linaro.org>
-
-Wolfram, this patch and the next one only make sense in conjunction with the overlay
-patches, but they don't necessarily need to be merged via the same tree.
-I'm happy to take them, but am equally happy to have you take them
-(assuming I ack the next patch; I haven't looked at it yet). What is
-your preference?
-
-g.
-
-> ---
->  drivers/i2c/i2c-core.c | 99 +++++++++++++++++++++++++++-----------------------
->  include/linux/i2c.h    | 10 +++++
->  2 files changed, 64 insertions(+), 45 deletions(-)
 > 
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index 2f90ac6..e6da9d3 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -54,6 +54,7 @@
->  #include <linux/acpi.h>
->  #include <linux/jump_label.h>
->  #include <asm/uaccess.h>
-> +#include <linux/err.h>
->  
->  #include "i2c-core.h"
->  
-> @@ -1370,63 +1371,71 @@ static void i2c_scan_static_board_info(struct i2c_adapter *adapter)
->  /* OF support code */
->  
->  #if IS_ENABLED(CONFIG_OF)
-> -static void of_i2c_register_devices(struct i2c_adapter *adap)
-> +struct i2c_client *
-> +of_i2c_register_device(struct i2c_adapter *adap,
-> +		struct device_node *node)
->  {
-> -	void *result;
-> -	struct device_node *node;
-> +	struct i2c_client *result;
-> +	struct i2c_board_info info = {};
-> +	struct dev_archdata dev_ad = {};
-> +	const __be32 *addr;
-> +	int len;
->  
-> -	/* Only register child devices if the adapter has a node pointer set */
-> -	if (!adap->dev.of_node)
-> -		return;
-> +	dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
->  
-> -	dev_dbg(&adap->dev, "of_i2c: walking child nodes\n");
-> +	if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
-> +		dev_err(&adap->dev, "of_i2c: modalias failure on %s\n",
-> +			node->full_name);
-> +		return ERR_PTR(-EINVAL);
-> +	}
->  
-> -	for_each_available_child_of_node(adap->dev.of_node, node) {
-> -		struct i2c_board_info info = {};
-> -		struct dev_archdata dev_ad = {};
-> -		const __be32 *addr;
-> -		int len;
-> +	addr = of_get_property(node, "reg", &len);
-> +	if (!addr || (len < sizeof(int))) {
-> +		dev_err(&adap->dev, "of_i2c: invalid reg on %s\n",
-> +			node->full_name);
-> +		return ERR_PTR(-EINVAL);
-> +	}
->  
-> -		dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
-> +	info.addr = be32_to_cpup(addr);
-> +	if (info.addr > (1 << 10) - 1) {
-> +		dev_err(&adap->dev, "of_i2c: invalid addr=%x on %s\n",
-> +			info.addr, node->full_name);
-> +		return ERR_PTR(-EINVAL);
-> +	}
->  
-> -		if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
-> -			dev_err(&adap->dev, "of_i2c: modalias failure on %s\n",
-> -				node->full_name);
-> -			continue;
-> -		}
-> +	info.irq = irq_of_parse_and_map(node, 0);
-> +	info.of_node = of_node_get(node);
-> +	info.archdata = &dev_ad;
->  
-> -		addr = of_get_property(node, "reg", &len);
-> -		if (!addr || (len < sizeof(int))) {
-> -			dev_err(&adap->dev, "of_i2c: invalid reg on %s\n",
-> -				node->full_name);
-> -			continue;
-> -		}
-> +	if (of_get_property(node, "wakeup-source", NULL))
-> +		info.flags |= I2C_CLIENT_WAKE;
->  
-> -		info.addr = be32_to_cpup(addr);
-> -		if (info.addr > (1 << 10) - 1) {
-> -			dev_err(&adap->dev, "of_i2c: invalid addr=%x on %s\n",
-> -				info.addr, node->full_name);
-> -			continue;
-> -		}
-> +	request_module("%s%s", I2C_MODULE_PREFIX, info.type);
->  
-> -		info.irq = irq_of_parse_and_map(node, 0);
-> -		info.of_node = of_node_get(node);
-> -		info.archdata = &dev_ad;
-> +	result = i2c_new_device(adap, &info);
-> +	if (result == NULL) {
-> +		dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
-> +			node->full_name);
-> +		of_node_put(node);
-> +		irq_dispose_mapping(info.irq);
-> +		return ERR_PTR(-EINVAL);
-> +	}
-> +	return result;
-> +}
-> +EXPORT_SYMBOL(of_i2c_register_device);
->  
-> -		if (of_get_property(node, "wakeup-source", NULL))
-> -			info.flags |= I2C_CLIENT_WAKE;
-> +static void of_i2c_register_devices(struct i2c_adapter *adap)
-> +{
-> +	struct device_node *node;
->  
-> -		request_module("%s%s", I2C_MODULE_PREFIX, info.type);
-> +	/* Only register child devices if the adapter has a node pointer set */
-> +	if (!adap->dev.of_node)
-> +		return;
->  
-> -		result = i2c_new_device(adap, &info);
-> -		if (result == NULL) {
-> -			dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
-> -				node->full_name);
-> -			of_node_put(node);
-> -			irq_dispose_mapping(info.irq);
-> -			continue;
-> -		}
-> -	}
-> +	dev_dbg(&adap->dev, "of_i2c: walking child nodes\n");
-> +
-> +	for_each_available_child_of_node(adap->dev.of_node, node)
-> +		of_i2c_register_device(adap, node);
->  }
->  
->  static int of_dev_node_match(struct device *dev, void *data)
-> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-> index b556e0a..22a8f44 100644
-> --- a/include/linux/i2c.h
-> +++ b/include/linux/i2c.h
-> @@ -558,6 +558,9 @@ static inline int i2c_adapter_id(struct i2c_adapter *adap)
->  #endif /* I2C */
->  
->  #if IS_ENABLED(CONFIG_OF)
-> +struct i2c_client *
-> +of_i2c_register_device(struct i2c_adapter *adap, struct device_node *node);
-> +
->  /* must call put_device() when done with returned i2c_client device */
->  extern struct i2c_client *of_find_i2c_device_by_node(struct device_node *node);
->  
-> @@ -566,6 +569,13 @@ extern struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
->  
->  #else
->  
-> +static inline struct i2c_client *
-> +of_i2c_register_device(struct i2c_adapter *adap,
-> +		struct device_node *node)
-> +{
-> +	return ERR_PTR(-ENODEV);
-> +}
-> +
->  static inline struct i2c_client *of_find_i2c_device_by_node(struct device_node *node)
->  {
->  	return NULL;
-> -- 
-> 1.7.12
-> 
+> I think this patch makes sense. But I wonder if the rate limiting wont
+> hurt anyway, as I presume you need that after some server being
+> rebooted, and if many connections are attempted in a small amount of
+> time, some of them wont get any answer ?
 
+That's actually not what led to finding this, but it's a good point. :)
+
+What if the challenge-ACK counter were decremented in tcp_validate_incoming()
+when a valid RST packet is seen? That would allow legitimate remote
+hosts to reestablish connections without being ratelimited, and still
+prevent a malicious host from guessing sequence numbers.
+
+There would need to be a way to tell if a challenge ACK had in fact been
+sent and only decrement in that case, since otherwise a local attacker
+could establish and immediately reset lots of connections to keep the
+counter below the ratelimit threshold and guess sequence numbers.
+
+Simply adding a flag to struct tcp_sock would work: just set the flag
+whenever a challenge ACK is sent, and clear it and decrement the counter
+only if it is set when a valid RST packet is seen.
+
+I suppose that should be a seperate patch?
+
+Thanks,
+Calvin 
