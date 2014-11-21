@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758422AbaKUNtb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 08:49:31 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:21303 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321AbaKUNt2 (ORCPT
+	id S1758525AbaKUNuf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 08:50:35 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:15300 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757880AbaKUNub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 08:49:28 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-18-546f42e6cbe2
+	Fri, 21 Nov 2014 08:50:31 -0500
+X-AuditID: cbfee68f-f791c6d000004834-6a-546f4325a231
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linux-usb@vger.kernel.org, devicetree@vger.kernel.org, balbi@ti.com,
@@ -16,39 +16,38 @@ Cc: linux-omap@vger.kernel.org, gregkh@linuxfoundation.org,
         tomasz.figa@gmail.com, s.nawrocki@samsung.com, robh+dt@kernel.org,
         stern@rowland.harvard.edu, kgene.kim@samsung.com,
         Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH 06/11] phy: exynos5-usbdrd: Add facility for VBUS-BOOST-5V
- supply
-Date: Fri, 21 Nov 2014 19:05:49 +0530
-Message-id: <1416576954-11997-7-git-send-email-gautam.vivek@samsung.com>
+Subject: [PATCH 07/11] phy: exynos7-usbdrd: Update dependency for ARCH_EXYNOS
+Date: Fri, 21 Nov 2014 19:05:50 +0530
+Message-id: <1416576954-11997-8-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1416576954-11997-1-git-send-email-gautam.vivek@samsung.com>
 References: <1416576954-11997-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42JZI2JSp/vMKT/E4MdCRYuD9+st5h85x2rR
-	duUgu0Xz4vVsFr0LrrJZXHjaw2ZxedccNovZS/pZLGac38dksWhZK7NF694j7BaH37SzWkz4
-	fYHNYtWuP4wOfB47Z91l99i0qpPNY//cNewes+/+YPTo27KK0eP4je1MHp83yQWwR3HZpKTm
-	ZJalFunbJXBlTD88j7lgiUTF1g+v2RsYLwh3MXJySAiYSPzvXMoEYYtJXLi3nq2LkYtDSGAp
-	o8S9ZdNYuxg5wIqurtIDqRESmM4o0dYZCFEzgUnid8NJFpAEm4CuRNPbXYwgtojAbKCig0Ig
-	RcwC9xglPr//DlYkLBAssfjFPTYQm0VAVeLo3LPMIDavgIfEyTP32SCWKUjMmWQDEuYU8JRo
-	WX+ZCWKxh8SaXbsZQWZKCNxil/h1dj0TxBwBiW+TD7FA9MpKbDrADPGMpMTBFTdYJjAKL2Bk
-	WMUomlqQXFCclF5kqlecmFtcmpeul5yfu4kRGD2n/z2buIPx/gHrQ4wCHIxKPLwfpueFCLEm
-	lhVX5h5iNAXaMJFZSjQ5HxijeSXxhsZmRhamJqbGRuaWZkrivDrSP4OFBNITS1KzU1MLUovi
-	i0pzUosPMTJxcEo1MFZUVT/mD7szv5rBYmvyqqp57l93yGzalrL/m2OCmHH21b3dU5PDOh7/
-	n/Bb/86+atHWhkcxld1b1tg5ufb/eLhg3UPjezderndkF5N51vxNYE9GXvrd6e8b1TbOYeDm
-	3mg6TYhZ+PgOtl8vLCYdWGzD3dyRyW3u3qyhe/6KyY3NQcFTtH8pVyqxFGckGmoxFxUnAgAX
-	7YoMmQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsVy+t9jQd1nTvkhBvvniFscvF9vMf/IOVaL
-	tisH2S2aF69ns+hdcJXN4sLTHjaLy7vmsFnMXtLPYjHj/D4mi0XLWpktWvceYbc4/Kad1WLC
-	7wtsFqt2/WF04PPYOesuu8emVZ1sHvvnrmH3mH33B6NH35ZVjB7Hb2xn8vi8SS6APaqB0SYj
-	NTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6GYlhbLEnFKg
-	UEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8b0w/OYC5ZIVGz98Jq9gfGCcBcjB4eE
-	gInE1VV6XYycQKaYxIV769lAbCGB6YwSbZ2BXYxcQPYEJonfDSdZQBJsAroSTW93MYLYIgKz
-	gYoOCoEUMQvcY5T4/P47WJGwQLDE4hf3wCaxCKhKHJ17lhnE5hXwkDh55j4bxGIFiTmTbEDC
-	nAKeEi3rLzNBLPaQWLNrN+MERt4FjAyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYJj85n0
-	DsZVDRaHGAU4GJV4eD9MzwsRYk0sK67MPcQowcGsJMJbLpwfIsSbklhZlVqUH19UmpNafIjR
-	FOioicxSosn5wLSRVxJvaGxibmpsamliYWJmqSTOe+NmboiQQHpiSWp2ampBahFMHxMHp1QD
-	4+S5nVFcPkzLttyU+5DCsmFdXOAWLwa5i24nvCI0J4TMuuM+P7ndJji8U/C2NduO61HiXCv3
-	GzxMjfzYsi67sOlqVazD3o4VvN/Kf62+3fPM9baBbOs2zoczk+Li32yd9C1Xs2R+Xnw/87SL
-	778n+F+XS3b6cHOj3USL7bqSb6+s71py/9gGPSWW4oxEQy3mouJEAKneYqfjAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42JZI2JSp6vqnB9isPSwrMXB+/UW84+cY7Vo
+	u3KQ3aJ58Xo2i94FV9ksLjztYbO4vGsOm8XsJf0sFjPO72OyWLSsldmide8RdovDb9pZLSb8
+	vsBmsWrXH0YHPo+ds+6ye2xa1cnmsX/uGnaP2Xd/MHr0bVnF6HH8xnYmj8+b5ALYo7hsUlJz
+	MstSi/TtErgyJixPLDjJWvG0q4utgfEESxcjB4eEgInErt9+XYycQKaYxIV769lAbCGBpYwS
+	P04HQMRNJFo2v2DqYuQCik9nlDh8eC0rhDOBSWLlzS0sIFVsAroSTW93MYLYIgKzGSXaDgqB
+	FDEL3GOU+Pz+O1iRsICvxIyXS5lAbBYBVYlZk68xgVzBK+Ah8eMkG8RBChJzJtmAVHAKeEq0
+	rL/MBHGQh8SaXbsZQUZKCNxil3hweiUrxBgBiW+TD0E9Iyux6QAzxNGSEgdX3GCZwCi8gJFh
+	FaNoakFyQXFSepGxXnFibnFpXrpecn7uJkZg5Jz+96x/B+PdA9aHGAU4GJV4eD9MzwsRYk0s
+	K67MPcRoCrRhIrOUaHI+MD7zSuINjc2MLExNTI2NzC3NlMR5F0r9DBYSSE8sSc1OTS1ILYov
+	Ks1JLT7EyMTBKdXAWM+nE781yTC7W/jjFb3PXY+q1qv/nHjYgO158q85ASZ2Ny1zZuu8nmEn
+	HtfyeN6ap+/9vCZLnfsjmyfkcLjydeWHLTPv2LWG/tks26p8xuhdRNSqS0qzNj0u2qNxc5JL
+	+TnlrF/v4lN3iRkXLjx7zVW6+XXltM3THr090vux9N6KNRdWlB2dGqPEUpyRaKjFXFScCAAG
+	tYKwlwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsVy+t9jQV1V5/wQgzcTRCwO3q+3mH/kHKtF
+	25WD7BbNi9ezWfQuuMpmceFpD5vF5V1z2CxmL+lnsZhxfh+TxaJlrcwWrXuPsFscftPOajHh
+	9wU2i1W7/jA68HnsnHWX3WPTqk42j/1z17B7zL77g9Gjb8sqRo/jN7YzeXzeJBfAHtXAaJOR
+	mpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdLOSQlliTilQ
+	KCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMWPC8sSCk6wVT7u62BoYT7B0MXJySAiY
+	SLRsfsEEYYtJXLi3nq2LkYtDSGA6o8Thw2tZIZwJTBIrb24B62AT0JVoeruLEcQWEZjNKNF2
+	UAikiFngHqPE5/ffwYqEBXwlZrxcCjaWRUBVYtbka0A2BwevgIfEj5NsIKaEgILEnEk2IBWc
+	Ap4SLesvg1ULAVWs2bWbcQIj7wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwbH5TGoH
+	48oGi0OMAhyMSjy8H6bnhQixJpYVV+YeYpTgYFYS4S0Xzg8R4k1JrKxKLcqPLyrNSS0+xGgK
+	dNNEZinR5Hxg2sgriTc0NjE3NTa1NLEwMbNUEue9cTM3REggPbEkNTs1tSC1CKaPiYNTqoHR
+	rXuqodVHvcBNbB0Xiw9UZ+5cbO7xcJHEmYY/01JeKjoxSX+MuFKm96xq1WX1ihnbnDk0Tz15
+	2nyRr0IlkCfu3YIj0y8969h+UUqlqqAy9Xv0yrITf0RLFxXub9rnr2zI6lRgyjpx5Tc5m1cv
+	CjXK31ueuhG5UWrXDou5J4OCVogKXFuxe5KZEktxRqKhFnNRcSIAPpe27uMCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,105 +55,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some Exynos boards have a separate regulator controlling a
-Boost 5V supply which goes as input for VBUS regulator.
-So adding a control for the same in driver, to enable
-vbus supply on the port.
+This PHY controller is also present on Exynos7 platform
+in arch-exynos family.
+So PHY_EXYNOS5_USBDRD should now depend on ARCH_EXYNOS.
 
 Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 ---
- drivers/phy/phy-exynos5-usbdrd.c |   32 ++++++++++++++++++++++++++++++--
- 1 file changed, 30 insertions(+), 2 deletions(-)
+ drivers/phy/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
-index 3654712..1f54639 100644
---- a/drivers/phy/phy-exynos5-usbdrd.c
-+++ b/drivers/phy/phy-exynos5-usbdrd.c
-@@ -159,6 +159,8 @@ struct exynos5_usbdrd_phy_drvdata {
-  *	       reference clocks' for SS and HS operations
-  * @ref_clk: reference clock to PHY block from which PHY's
-  *	     operational clocks are derived
-+ * vbus: VBUS regulator for phy
-+ * vbus_boost: Boost regulator for VBUS present on few Exynos boards
-  */
- struct exynos5_usbdrd_phy {
- 	struct device *dev;
-@@ -178,6 +180,7 @@ struct exynos5_usbdrd_phy {
- 	u32 extrefclk;
- 	struct clk *ref_clk;
- 	struct regulator *vbus;
-+	struct regulator *vbus_boost;
- };
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index 2a436e6..1514e40 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -193,7 +193,7 @@ config PHY_EXYNOS5250_USB2
  
- static inline
-@@ -460,11 +463,20 @@ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
- 	}
- 
- 	/* Enable VBUS supply */
-+	if (phy_drd->vbus_boost) {
-+		ret = regulator_enable(phy_drd->vbus_boost);
-+		if (ret) {
-+			dev_err(phy_drd->dev,
-+				"Failed to enable VBUS boost supply\n");
-+			goto fail_vbus;
-+		}
-+	}
-+
- 	if (phy_drd->vbus) {
- 		ret = regulator_enable(phy_drd->vbus);
- 		if (ret) {
- 			dev_err(phy_drd->dev, "Failed to enable VBUS supply\n");
--			goto fail_vbus;
-+			goto fail_vbus_boost;
- 		}
- 	}
- 
-@@ -473,6 +485,10 @@ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
- 
- 	return 0;
- 
-+fail_vbus_boost:
-+	if (phy_drd->vbus_boost)
-+		regulator_disable(phy_drd->vbus_boost);
-+
- fail_vbus:
- 	clk_disable_unprepare(phy_drd->ref_clk);
- 	if (!phy_drd->drv_data->has_common_clk_gate) {
-@@ -497,6 +513,8 @@ static int exynos5_usbdrd_phy_power_off(struct phy *phy)
- 	/* Disable VBUS supply */
- 	if (phy_drd->vbus)
- 		regulator_disable(phy_drd->vbus);
-+	if (phy_drd->vbus_boost)
-+		regulator_disable(phy_drd->vbus_boost);
- 
- 	clk_disable_unprepare(phy_drd->ref_clk);
- 	if (!phy_drd->drv_data->has_common_clk_gate) {
-@@ -690,7 +708,7 @@ static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
- 		break;
- 	}
- 
--	/* Get Vbus regulator */
-+	/* Get Vbus regulators */
- 	phy_drd->vbus = devm_regulator_get(dev, "vbus");
- 	if (IS_ERR(phy_drd->vbus)) {
- 		ret = PTR_ERR(phy_drd->vbus);
-@@ -701,6 +719,16 @@ static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
- 		phy_drd->vbus = NULL;
- 	}
- 
-+	phy_drd->vbus_boost = devm_regulator_get(dev, "vbus-boost");
-+	if (IS_ERR(phy_drd->vbus_boost)) {
-+		ret = PTR_ERR(phy_drd->vbus_boost);
-+		if (ret == -EPROBE_DEFER)
-+			return ret;
-+
-+		dev_warn(dev, "Failed to get VBUS boost supply regulator\n");
-+		phy_drd->vbus_boost = NULL;
-+	}
-+
- 	dev_vdbg(dev, "Creating usbdrd_phy phy\n");
- 
- 	for (i = 0; i < EXYNOS5_DRDPHYS_NUM; i++) {
+ config PHY_EXYNOS5_USBDRD
+ 	tristate "Exynos5 SoC series USB DRD PHY driver"
+-	depends on ARCH_EXYNOS5 && OF
++	depends on ARCH_EXYNOS && OF
+ 	depends on HAS_IOMEM
+ 	depends on USB_DWC3_EXYNOS
+ 	select GENERIC_PHY
 -- 
 1.7.10.4
 
