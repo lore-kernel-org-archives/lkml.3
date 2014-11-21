@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691AbaKUXdM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 18:33:12 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:39215 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100AbaKUXdL (ORCPT
+	id S1752752AbaKUXdv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 18:33:51 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:40081 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064AbaKUXdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 18:33:11 -0500
+	Fri, 21 Nov 2014 18:33:49 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18utOH4cpfkwJ4yW/loRMIe
+Date: Fri, 21 Nov 2014 15:33:25 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: George McCollister <george.mccollister@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
+        Nishanth Menon <nm@ti.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Joachim Eastwood <manabian@gmail.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Carlos Garcia <carlos@cgarcia.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
+        "open list:OMAP DEVICE TREE..." <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] ARM: dts: Add devicetree for NovaTech OrionLXm
+Message-ID: <20141121233325.GZ7046@atomide.com>
+References: <1416250957-11065-1-git-send-email-george.mccollister@gmail.com>
+ <1416250957-11065-2-git-send-email-george.mccollister@gmail.com>
+ <20141117190847.GA4857@saruman>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrVGSQ6CTXAFkPTueb0FMJ8oBd2_R4zB5X9juDoun_kJvQ@mail.gmail.com>
-References: <alpine.DEB.2.11.1411202204030.3950@nanos>
-	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
-	<20141120233920.GC25393@htj.dyndns.org>
-	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
-	<20141121162742.GB15461@htj.dyndns.org>
-	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
-	<CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
-	<20141121170805.GD30603@home.goodmis.org>
-	<CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
-	<CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
-	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
-	<CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
-	<alpine.DEB.2.11.1411212049220.6439@nanos>
-	<CA+55aFzvgxAMpP7kr9qrxyo82vSucQ5G+VByOgsgoyq6y5ExOA@mail.gmail.com>
-	<alpine.DEB.2.11.1411212110320.6439@nanos>
-	<CA+55aFyt6q7Ed-SS9GeN8jeUZu6yNM14EGyH_8rn8AF2Vv37hg@mail.gmail.com>
-	<alpine.DEB.2.11.1411212207150.6439@nanos>
-	<CA+55aFyzg=vJqRwh2CsK8WD-E5nRPjdiasMaTBx6qygQhDrGLA@mail.gmail.com>
-	<CALCETrVGSQ6CTXAFkPTueb0FMJ8oBd2_R4zB5X9juDoun_kJvQ@mail.gmail.com>
-Date: Fri, 21 Nov 2014 15:33:09 -0800
-X-Google-Sender-Auth: 1yNk_Ueh4zR6eUIO7QQ3hG0NZSQ
-Message-ID: <CA+55aFxSt2bg3LEj-5_kmne=C4jdr=0JzTAq8jGNuNaZ7k1phA@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141117190847.GA4857@saruman>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 3:03 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Fri, Nov 21, 2014 at 2:55 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> Anyway, here's an actual patch. As usual, it has seen absolutely no
->> actual testing,
+* Felipe Balbi <balbi@ti.com> [141117 11:10]:
+> On Mon, Nov 17, 2014 at 01:02:35PM -0600, George McCollister wrote:
+> > This adds the NovaTech OrionLXm which is based on the AM335x SoC
+> > http://www.novatechweb.com/substation-automation/orionlxm/
+> > 
+> > RAM: 512MiB
+> > Flash: 4GB eMMC
+> > Ethernet PHYs: 2x Micrel KSZ8041FTLI
+> > USB ports are used internally by the expansion cards.
+> > Internal micro SD slot is available.
+> > 
+> > Signed-off-by: George McCollister <george.mccollister@gmail.com>
+> 
+> this looks might better to my eyes:
+> 
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
 
-.. ok, it boots and works fine as far as I can tell on x86-64 with no
-paravirt anywhere.
+Applying into omap-for-v3.19/dt-v2 thanks.
 
-> At the risk of going deeper down the rabbit hole, I grepped for
-> pgd_list.  I found:
-
-Ugh.
-
-> __set_pmd_pte in pageattr.c.  It appears to be completely incorrect.
-> Unless I've misunderstood, other than the very first line, it will
-> either do nothing at all or crash when it falls off the end of the
-> page tables that it's pointlessly trying to update.
-
-I think you found a rats nest.
-
-I can't make heads nor tails of the logic. The !SHARED_KERNEL_PMD test
-doesn't seem very sensible, since that's also the conditional for
-adding anything to the list in the first place.
-
-So I agree that the code doesn't make much sense. Although maybe it's
-there just because that way the loop goes away at compile-time under
-most circumstances. So maybe even that part does make sense.
-
-And the "walk down to the pmd level" part actually looks ok. Remember:
-this is on x86-32 only, and you have two cases: non-PAE where the
-pmd/pud offset thing does nothing at all, and it just ends up
-converting a "pgd_t *" to a "pmd_t *".  And for PAE, the top pud level
-always exists, and the pmd is folded, so despite what looks like
-walking two levels, it really just walks the one level - the
-force-allocated PGD entries.
-
-So it won't "fall off the end of the page tables" like you imply. It
-will just walk to the pmd level. And there it will populate all the
-page tables with the same pmd.
-
-So I think it works.
-
-                   Linus
+Tony
