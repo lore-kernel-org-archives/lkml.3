@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212AbaKUOYR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 09:24:17 -0500
-Received: from mout.web.de ([212.227.15.3]:55644 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175AbaKUOYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 09:24:16 -0500
-Message-ID: <546F4AF7.1030207@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 15:23:51 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1758218AbaKUO2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 09:28:05 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:15040 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755232AbaKUO2E convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 09:28:04 -0500
+Date: Fri, 21 Nov 2014 09:27:46 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Petr Mladek <pmladek@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: linux-next: build failure after merge of the ftrace tree
+Message-ID: <20141121092746.7acc5d35@gandalf.local.home>
+In-Reply-To: <20141121092036.09edee57@gandalf.local.home>
+References: <20141121183215.01ba539c@canb.auug.org.au>
+	<alpine.LNX.2.00.1411211149490.23174@pobox.suse.cz>
+	<20141121092036.09edee57@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>, linux-usb@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] USB: PCI-quirks: Deletion of unnecessary checks before
- the function call "pci_dev_put"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:5sGtG2jJhoD7a067+8Z3XYUVJNsOYrT1sw75lWyvy2i3SpRbjEz
- w52RuGCS7evBJdtuHO7l7iaWoBaF2yXXE0lc6EDSJK+YXRG42eMST7qY3Vu7jWgJwAV45Ff
- fZNrG+AWSmih92mjnqa9KRF5pHzDI4Co9Jg2htjaO2id2c0/eUamNN2rNbbjG395W9n1QA7
- qO/6PFURx9QVEZai26ymw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 15:20:12 +0100
+On Fri, 21 Nov 2014 09:20:36 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
+ 
+> > diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+> > index a3aa63e..c94c766 100644
+> > --- a/include/linux/percpu.h
+> > +++ b/include/linux/percpu.h
+> > @@ -7,6 +7,7 @@
+> >  #include <linux/cpumask.h>
+> >  #include <linux/pfn.h>
+> >  #include <linux/init.h>
+> > +#include <linux/printk.h>
+> >  
+> >  #include <asm/percpu.h>
+> 
+> Unfortunately, this wasn't the fix. This was an allnoconfig, which
+> means printk wasn't defined.
+> 
 
-The pci_dev_put() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+Just to be safe, I put the printk.h back in. Although it doesn't seem
+to be needed.
 
-This issue was detected by using the Coccinelle software.
+-- Steve
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+>From da1e044a557571fd3718bd161b7ce7f36d3f999e Mon Sep 17 00:00:00 2001
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Date: Fri, 21 Nov 2014 09:16:58 -0500
+Subject: [PATCH] printk/percpu: Do not define printk_func when printk is not
+ defined
+
+To avoid include hell, the per_cpu variable printk_func was declared
+in percpu.h. But it is only defined if printk is defined.
+
+Also add a printk.h include in percpu.h just to be safe.
+
+Link: http://lkml.kernel.org/r/20141121183215.01ba539c@canb.auug.org.au
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/usb/host/pci-quirks.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ include/linux/percpu.h | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index 2f3aceb..dd483c1 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -233,10 +233,8 @@ commit:
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index ba2e85a0ff5b..87e9082a2bd4 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -5,6 +5,7 @@
+ #include <linux/preempt.h>
+ #include <linux/smp.h>
+ #include <linux/cpumask.h>
++#include <linux/printk.h>
+ #include <linux/pfn.h>
+ #include <linux/init.h>
  
- 		spin_unlock_irqrestore(&amd_lock, flags);
+@@ -134,7 +135,9 @@ extern phys_addr_t per_cpu_ptr_to_phys(void *addr);
+ 	(typeof(type) __percpu *)__alloc_percpu(sizeof(type),		\
+ 						__alignof__(type))
  
--		if (info.nb_dev)
--			pci_dev_put(info.nb_dev);
--		if (info.smbus_dev)
--			pci_dev_put(info.smbus_dev);
-+		pci_dev_put(info.nb_dev);
-+		pci_dev_put(info.smbus_dev);
++#ifdef CONFIG_PRINTK
+ /* To avoid include hell, as printk can not declare this, we declare it here */
+ DECLARE_PER_CPU(printk_func_t, printk_func);
++#endif
  
- 	} else {
- 		/* no race - commit the result */
-@@ -447,10 +445,8 @@ void usb_amd_dev_put(void)
- 
- 	spin_unlock_irqrestore(&amd_lock, flags);
- 
--	if (nb)
--		pci_dev_put(nb);
--	if (smbus)
--		pci_dev_put(smbus);
-+	pci_dev_put(nb);
-+	pci_dev_put(smbus);
- }
- EXPORT_SYMBOL_GPL(usb_amd_dev_put);
- 
+ #endif /* __LINUX_PERCPU_H */
 -- 
-2.1.3
+1.8.1.4
 
