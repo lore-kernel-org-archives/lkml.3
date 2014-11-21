@@ -1,100 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431AbaKUH1u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 02:27:50 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:64296 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079AbaKUH1s (ORCPT
+	id S1757953AbaKUH2W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 02:28:22 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:40042 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174AbaKUH2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 02:27:48 -0500
-Message-ID: <546EE780.8070307@huawei.com>
-Date: Fri, 21 Nov 2014 15:19:28 +0800
-From: zhanghailiang <zhang.zhanghailiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Fri, 21 Nov 2014 02:28:21 -0500
+Message-ID: <546EE991.1080704@roeck-us.net>
+Date: Thu, 20 Nov 2014 23:28:17 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: "Dr. David Alan Gilbert" <dgilbert@redhat.com>, <qemu-devel@nongnu.org>,
-        <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Dave Hansen <dave@sr71.net>, Paolo Bonzini <pbonzini@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Hugh Dickins" <hughd@google.com>, Peter Feiner <pfeiner@google.com>,
-        "Christopher Covington" <cov@codeaurora.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Android Kernel Team" <kernel-team@android.com>,
-        Robert Love <rlove@google.com>,
-        "Dmitry Adamushko" <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, "Mike Hommey" <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Michel Lespinasse" <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>, "Keith Packard" <keithp@keithp.com>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Juan Quintela <quintela@redhat.com>
-Subject: Re: [PATCH 00/17] RFC: userfault v2
-References: <1412356087-16115-1-git-send-email-aarcange@redhat.com> <544E1143.1080905@huawei.com> <20141029174607.GK19606@redhat.com> <545221A4.9030606@huawei.com> <20141030124950.GJ2376@work-vm> <5452E531.4070205@huawei.com> <20141119184938.GE803@redhat.com> <546D57E5.3080803@huawei.com> <20141120173833.GG803@redhat.com>
-In-Reply-To: <20141120173833.GG803@redhat.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: Mike Looijmans <mike.looijmans@topic.nl>, wim@iguana.be
+CC: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] gpio_wdt: Add "always_running" feature to GPIO watchdog
+References: <20141120172329.GA10673@roeck-us.net> <1416552828-3589-1-git-send-email-mike.looijmans@topic.nl>
+In-Reply-To: <1416552828-3589-1-git-send-email-mike.looijmans@topic.nl>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.69]
-X-CFilter-Loop: Reflected
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020202.546EE994.0074,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/21 1:38, Andrea Arcangeli wrote:
-> Hi,
+On 11/20/2014 10:53 PM, Mike Looijmans wrote:
+> On some chips, like the TPS386000, the trigger cannot be disabled
+> and the CPU must keep toggling the line at all times. Add a switch
+> "always_running" to keep toggling the GPIO line regardless of the
+> state of the soft part of the watchdog. The "armed" member keeps
+> track of whether a timeout must also cause a reset.
 >
-> On Thu, Nov 20, 2014 at 10:54:29AM +0800, zhanghailiang wrote:
->> Yes, you are right. This is what i really want, bypass all non-present faults
->> and only track strict wrprotect faults. ;)
->>
->> So, do you plan to support that in the userfault API?
+> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+> ---
 >
-> Yes I think it's good idea to support wrprotect/COW faults too.
+> v2: Rename property "always_running" to "always-running" and add devicetree
+> documentation
 >
-
-Great! Then i can expect your patches. ;)
-
-> I just wanted to understand if there was any other reason why you
-> needed only wrprotect faults, because the non-present faults didn't
-> look like a big performance concern if they triggered in addition to
-> wrprotect faults, but it's certainly ok to optimize them away so it's
-> fully optimal.
+>   .../devicetree/bindings/watchdog/gpio-wdt.txt      |    5 +++++
+>   drivers/watchdog/gpio_wdt.c                        |   20 +++++++++++++++++---
+>   2 files changed, 22 insertions(+), 3 deletions(-)
 >
-
-Er, you have got the answer, no special, it's only for optimality.
-
-> All it takes to differentiate the behavior should be one more bit
-> during registration so you can select non-present, wrprotect faults or
-> both. postcopy live migration would select only non-present faults,
-> postcopy live snapshot would select only wrprotect faults, anything
-> like distributed shared memory supporting shared readonly access and
-> exclusive write access, would select both flags.
+> diff --git a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+> index 37afec1..1987949 100644
+> --- a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+> +++ b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+> @@ -13,6 +13,11 @@ Required Properties:
+>       by the GPIO flags.
+>   - hw_margin_ms: Maximum time to reset watchdog circuit (milliseconds).
 >
+> +Optional Properties:
+> +- always-running: If the watchdog timer cannot be disabled, add this flag to
+> +  have the driver keep toggling the signal without a client. It will only cease
+> +  to toggle the signal when the device is open and the timeout elapsed.
+> +
+>   Example:
+>   	watchdog: watchdog {
+>   		/* ADM706 */
+> diff --git a/drivers/watchdog/gpio_wdt.c b/drivers/watchdog/gpio_wdt.c
+> index 220a9e0..3266215 100644
+> --- a/drivers/watchdog/gpio_wdt.c
+> +++ b/drivers/watchdog/gpio_wdt.c
+> @@ -31,6 +31,8 @@ struct gpio_wdt_priv {
+>   	int			gpio;
+>   	bool			active_low;
+>   	bool			state;
+> +	bool		always_running;
+> +	bool		armed;
 
-It is really flexible in this way.
+Please align columns with the other variables.
 
-> I just sent an (unfortunately) longish but way more detailed email
-> about live snapshotting with userfaultfd but I just wanted to give a
-> shorter answer here too :).
+>   	unsigned int		hw_algo;
+>   	unsigned int		hw_margin;
+>   	unsigned long		last_jiffies;
+> @@ -56,6 +58,7 @@ static int gpio_wdt_start(struct watchdog_device *wdd)
+>   	gpio_direction_output(priv->gpio, priv->state);
+>   	priv->last_jiffies = jiffies;
+>   	mod_timer(&priv->timer, priv->last_jiffies + priv->hw_margin);
+> +	priv->armed = true;
 >
-
-Thanks for your explanation, and your patience. It is really useful,
-now i know more details about why 'fork & dump live snapshot' scenario
-is not acceptable. Thanks :)
-
-> Thanks,
-> Andrea
+>   	return 0;
+>   }
+> @@ -64,8 +67,11 @@ static int gpio_wdt_stop(struct watchdog_device *wdd)
+>   {
+>   	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
 >
-> .
+> -	mod_timer(&priv->timer, 0);
+> -	gpio_wdt_disable(priv);
+> +	priv->armed = false;
+> +	if (!priv->always_running) {
+> +		mod_timer(&priv->timer, 0);
+> +		gpio_wdt_disable(priv);
+> +	}
 >
+>   	return 0;
+>   }
+> @@ -91,7 +97,7 @@ static void gpio_wdt_hwping(unsigned long data)
+>   	struct watchdog_device *wdd = (struct watchdog_device *)data;
+>   	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
+>
+> -	if (time_after(jiffies, priv->last_jiffies +
+> +	if (priv->armed && time_after(jiffies, priv->last_jiffies +
+>   		       msecs_to_jiffies(wdd->timeout * 1000))) {
 
+Please align continuation lines.
+
+>   		dev_crit(wdd->dev, "Timer expired. System will reboot soon!\n");
+>   		return;
+> @@ -197,6 +203,9 @@ static int gpio_wdt_probe(struct platform_device *pdev)
+>   	/* Use safe value (1/2 of real timeout) */
+>   	priv->hw_margin = msecs_to_jiffies(hw_margin / 2);
+>
+> +	priv->always_running = of_property_read_bool(pdev->dev.of_node,
+> +				"always-running");
+> +
+Please align continuation line with '('.
+
+>   	watchdog_set_drvdata(&priv->wdd, priv);
+>
+>   	priv->wdd.info		= &gpio_wdt_ident;
+> @@ -218,6 +227,11 @@ static int gpio_wdt_probe(struct platform_device *pdev)
+>   	if (ret)
+>   		watchdog_unregister_device(&priv->wdd);
+>
+> +	if (priv->always_running) {
+> +		gpio_wdt_start(&priv->wdd);
+> +		priv->armed = false;
+> +	}
+> +
+
+This won't work if there is an error. The driver won't load but the timer
+is started, which will likely cause a crash when the timer fires. You'll
+have to fix the error handling.
+
+I also dislike that you first set priv->armed in the start function and
+then reset it, but I don't have a better idea right now.
+
+Guenter
+
+>   	return ret;
+>   }
+>
+>
 
