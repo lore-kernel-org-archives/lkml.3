@@ -1,116 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860AbaKUTe7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:34:59 -0500
-Received: from mail-bl2on0102.outbound.protection.outlook.com ([65.55.169.102]:63360
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751137AbaKUTe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:34:57 -0500
-X-WSS-ID: 0NFEME3-08-8KK-02
-X-M-MSG: 
-Message-ID: <546F93D5.8030704@amd.com>
-Date: Fri, 21 Nov 2014 21:34:45 +0200
-From: Oded Gabbay <oded.gabbay@amd.com>
-Organization: AMD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>,
-        John Bridgman <John.Bridgman@amd.com>, Ben Goz <ben.goz@amd.com>,
-        Jay Cornwall <jay.cornwall@amd.com>,
-        "Evgeny Pinchuk" <evgeny.pinchuk@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Alexey Skidanov <Alexey.Skidanov@amd.com>
-Subject: Re: [PATCH v5 08/24] amdkfd: Add amdkfd skeleton driver
-References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
-	 <1415471865-1893-9-git-send-email-oded.gabbay@amd.com>
- <1416565445.6958.3.camel@x220>
-In-Reply-To: <1416565445.6958.3.camel@x220>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(377424004)(199003)(24454002)(51704005)(189002)(377454003)(479174003)(50466002)(33656002)(102836001)(36756003)(65956001)(62966003)(77156002)(20776003)(23676002)(64706001)(47776003)(59896002)(50986999)(54356999)(87266999)(76176999)(65816999)(21056001)(87936001)(106466001)(99396003)(68736004)(110136001)(83506001)(31966008)(80316001)(44976005)(97736003)(19580405001)(19580395003)(95666004)(92726001)(84676001)(4396001)(92566001)(101416001)(120916001)(105586002)(86362001)(107046002)(46102003)(64126003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB196;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
-X-Forefront-PRVS: 0402872DA1
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
-X-OriginatorOrg: amd4.onmicrosoft.com
+	id S1751880AbaKUTiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:38:09 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:25612 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbaKUTiH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 14:38:07 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] x86, PCI: support mmio more than 44 bits on 32bit/PAE mode
+Date: Fri, 21 Nov 2014 11:37:56 -0800
+Message-Id: <1416598676-3904-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Aaron reported 32bit/PAE mode, has problem with 64bit resource.
 
+[    6.610012] pci 0000:03:00.0: reg 0x10: [mem 0x383fffc00000-0x383fffdfffff 64bit pref]
+[    6.622195] pci 0000:03:00.0: reg 0x20: [mem 0x383fffe04000-0x383fffe07fff 64bit pref]
+[    6.656112] pci 0000:03:00.1: reg 0x10: [mem 0x383fffa00000-0x383fffbfffff 64bit pref]
+[    6.668293] pci 0000:03:00.1: reg 0x20: [mem 0x383fffe00000-0x383fffe03fff 64bit pref]
+...
+[   12.374143] calling  ixgbe_init_module+0x0/0x51 @ 1
+[   12.378130] ixgbe: Intel(R) 10 Gigabit PCI Express Network Driver - version 3.19.1-k
+[   12.385318] ixgbe: Copyright (c) 1999-2014 Intel Corporation.
+[   12.390578] ixgbe 0000:03:00.0: Adapter removed
+[   12.394247] ixgbe: probe of 0000:03:00.0 failed with error -5
+[   12.399369] ixgbe 0000:03:00.1: Adapter removed
+[   12.403036] ixgbe: probe of 0000:03:00.1 failed with error -5
+[   12.408017] initcall ixgbe_init_module+0x0/0x51 returned 0 after 29200 usecs
 
-On 11/21/2014 12:24 PM, Paul Bolle wrote:
-> On Sat, 2014-11-08 at 20:37 +0200, Oded Gabbay wrote:
->> This patch adds the amdkfd skeleton driver. The driver does nothing except
->> define a /dev/kfd device.
->>
->> It returns -ENODEV on all amdkfd IOCTLs.
->>
->> v3: Move bool field to the end of structure, removed the pmc ioctls and added
->> a meaningful error message for ioctl error.
->>
->> v5:
->>
->> Create a new folder drm/amd and move amdkfd from drm/radeon/ to drm/amd/
->> Remove scheduler_class from kfd_priv.h as it was never used
->> Add skeleton implementation of the Get Version IOCTL
->>
->> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
-> 
-> It seems v6 of this patch is included in today's linux-next (ie,
-> next-20141121).
-> 
->>  drivers/gpu/drm/Kconfig                  |   2 +
->>  drivers/gpu/drm/Makefile                 |   1 +
->>  drivers/gpu/drm/amd/amdkfd/Kconfig       |  10 ++
->>  drivers/gpu/drm/amd/amdkfd/Makefile      |   9 ++
->>  drivers/gpu/drm/amd/amdkfd/kfd_chardev.c | 210 +++++++++++++++++++++++++++++++
->>  drivers/gpu/drm/amd/amdkfd/kfd_device.c  | 130 +++++++++++++++++++
->>  drivers/gpu/drm/amd/amdkfd/kfd_module.c  | 101 +++++++++++++++
->>  drivers/gpu/drm/amd/amdkfd/kfd_priv.h    |  81 ++++++++++++
->>  8 files changed, 544 insertions(+)
->> [...]
->> diff --git a/drivers/gpu/drm/amd/amdkfd/Kconfig b/drivers/gpu/drm/amd/amdkfd/Kconfig
->> new file mode 100644
->> index 0000000..a2ae6d4
->> --- /dev/null
->> +++ b/drivers/gpu/drm/amd/amdkfd/Kconfig
->> @@ -0,0 +1,10 @@
->> +#
->> +# Heterogenous system architecture configuration
->> +#
->> +
->> +config HSA_AMD
->> +	tristate "HSA kernel driver for AMD GPU devices"
->> +	depends on (DRM_RADEON || DRM_AMDGPU) && AMD_IOMMU_V2 && X86_64
-> 
-> There's currently no Kconfig symbol DRM_AMDGPU (nor anything similar).
-> Will that symbol be added in a future patch?
-> 
-The DRM_AMDGPU symbol belongs to AMD's new Linux kernel graphic driver, called
-amdgpu. That driver is not yet upstreamed, so its symbol is not present in any
-Kconfig file. However, internally we work with that driver so that's why it
-appears in my patch.
+root cause: ioremap can not handle mmio range that is more than 44bits on
+32bit PAE mode.
 
-I can remove it if it violates some rule. I have no problem adding it back once
-amdgpu is upstreamed.
+We are using pfn with unsigned long like pfn_pte(), so those 0x383fffc00000 will
+overflow in pfn format with unsigned long (that is 32 bits in 32bit x86 kernel,
+and pfn only can support 44bits).
 
-	Oded
+| static inline pte_t pfn_pte(unsigned long page_nr, pgprot_t pgprot)
+| {
+|        return __pte(((phys_addr_t)page_nr << PAGE_SHIFT) |
+|                     massage_pgprot(pgprot));
+| }
 
->> +	default m
->> +	help
->> +	  Enable this if you want to use HSA features on AMD GPU devices.
-> 
-> 
-> Paul Bolle
-> 
+We could limit iomem to 44 bits so we can reject them early from root bus.
+but xhci is not happy with resource allocation (hang...)
+
+Change phys_addr_t for pfn_pte, and add overflow check to skip ram checking,
+as the mmio is too big to be ram.
+At last, don't use PHYSICAL_PAGE_MASK to get aligned phys_addr, that will
+cut off bits above 44bits.
+
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=88131
+Reported-by: Aaron Ma <mapengyu@gmail.com>
+Tested-by: Aaron Ma <mapengyu@gmail.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/include/asm/page.h    |    8 ++++++++
+ arch/x86/include/asm/pgtable.h |    4 ++--
+ arch/x86/mm/ioremap.c          |    6 ++++--
+ arch/x86/mm/pat.c              |    3 +++
+ 4 files changed, 17 insertions(+), 4 deletions(-)
+
+Index: linux-2.6/arch/x86/include/asm/page.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/page.h
++++ linux-2.6/arch/x86/include/asm/page.h
+@@ -15,6 +15,14 @@
+ 
+ #ifndef __ASSEMBLY__
+ 
++static inline int pfn_overflow(dma_addr_t phy_addr)
++{
++	dma_addr_t real_pfn = phy_addr >> PAGE_SHIFT;
++	unsigned long pfn = (unsigned long)real_pfn;
++
++	return pfn != real_pfn;
++}
++
+ struct page;
+ 
+ #include <linux/range.h>
+Index: linux-2.6/arch/x86/include/asm/pgtable.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/pgtable.h
++++ linux-2.6/arch/x86/include/asm/pgtable.h
+@@ -355,9 +355,9 @@ static inline pgprotval_t massage_pgprot
+ 	return protval;
+ }
+ 
+-static inline pte_t pfn_pte(unsigned long page_nr, pgprot_t pgprot)
++static inline pte_t pfn_pte(phys_addr_t page_nr, pgprot_t pgprot)
+ {
+-	return __pte(((phys_addr_t)page_nr << PAGE_SHIFT) |
++	return __pte((page_nr << PAGE_SHIFT) |
+ 		     massage_pgprot(pgprot));
+ }
+ 
+Index: linux-2.6/arch/x86/mm/ioremap.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/ioremap.c
++++ linux-2.6/arch/x86/mm/ioremap.c
+@@ -122,7 +122,9 @@ static void __iomem *__ioremap_caller(re
+ 	if (ram_region < 0) {
+ 		pfn      = phys_addr >> PAGE_SHIFT;
+ 		last_pfn = last_addr >> PAGE_SHIFT;
+-		if (walk_system_ram_range(pfn, last_pfn - pfn + 1, NULL,
++		/* pfn overflow, don't need to check */
++		if (!pfn_overflow(last_addr) &&
++		    walk_system_ram_range(pfn, last_pfn - pfn + 1, NULL,
+ 					  __ioremap_check_ram) == 1)
+ 			return NULL;
+ 	}
+@@ -130,7 +132,7 @@ static void __iomem *__ioremap_caller(re
+ 	 * Mappings have to be page-aligned
+ 	 */
+ 	offset = phys_addr & ~PAGE_MASK;
+-	phys_addr &= PHYSICAL_PAGE_MASK;
++	phys_addr -= offset;
+ 	size = PAGE_ALIGN(last_addr+1) - phys_addr;
+ 
+ 	retval = reserve_memtype(phys_addr, (u64)phys_addr + size,
+Index: linux-2.6/arch/x86/mm/pat.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/pat.c
++++ linux-2.6/arch/x86/mm/pat.c
+@@ -299,6 +299,9 @@ static int pat_pagerange_is_ram(resource
+ 	unsigned long end_pfn = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	struct pagerange_state state = {start_pfn, 0, 0};
+ 
++	/* pfn overflow, don't need to check */
++	if (pfn_overflow(end + PAGE_SIZE - 1))
++		return 0;
+ 	/*
+ 	 * For legacy reasons, physical address range in the legacy ISA
+ 	 * region is tracked as non-RAM. This will allow users of
