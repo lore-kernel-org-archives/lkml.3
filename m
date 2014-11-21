@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758650AbaKUPBa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:01:30 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:37056 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755377AbaKUPB2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:01:28 -0500
-Message-ID: <1416582085.8629.98.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [RFC] situation with csum_and_copy_... API
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        target-devel@vger.kernel.org,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Christoph Hellwig <hch@infradead.org>
-Date: Fri, 21 Nov 2014 07:01:25 -0800
-In-Reply-To: <20141121084956.GT7996@ZenIV.linux.org.uk>
-References: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
-	 <20141119.161744.1661940121298888832.davem@davemloft.net>
-	 <20141119213006.GE7996@ZenIV.linux.org.uk>
-	 <20141119.165340.2162829993279387495.davem@davemloft.net>
-	 <20141120214753.GR7996@ZenIV.linux.org.uk>
-	 <1416520542.8629.46.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20141120222506.GS7996@ZenIV.linux.org.uk>
-	 <1416524035.8629.54.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20141121084956.GT7996@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758664AbaKUPBl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:01:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58529 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758628AbaKUPB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:01:29 -0500
+Date: Fri, 21 Nov 2014 09:00:41 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Miroslav Benes <mbenes@suse.cz>
+Cc: Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
+Message-ID: <20141121150041.GA26264@treble.redhat.com>
+References: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
+ <1416522580-5593-3-git-send-email-sjenning@redhat.com>
+ <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz>
+ <alpine.LNX.2.00.1411211542180.27891@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1411211542180.27891@pobox.suse.cz>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-21 at 08:49 +0000, Al Viro wrote:
+On Fri, Nov 21, 2014 at 03:44:35PM +0100, Miroslav Benes wrote:
+> On Fri, 21 Nov 2014, Jiri Kosina wrote:
+> 
+> [...]
+> 
+> > [ ... snip ... ]
+> > > +static int klp_init_patch(struct klp_patch *patch)
+> > > +{
+> > > +	int ret;
+> > > +
+> > > +	mutex_lock(&klp_mutex);
+> > > +
+> > > +	/* init */
+> > > +	patch->state = LPC_DISABLED;
+> > > +
+> > > +	/* sysfs */
+> > > +	ret = kobject_init_and_add(&patch->kobj, &klp_ktype_patch,
+> > > +				   klp_root_kobj, patch->mod->name);
+> > > +	if (ret)
+> > > +		return ret;
+> > 
+> > klp_mutex is leaked locked here.
+> > 
+> > > +
+> > > +	/* create objects */
+> > > +	ret = klp_init_objects(patch);
+> > > +	if (ret) {
+> > > +		kobject_put(&patch->kobj);
+> > > +		return ret;
+> > 
+> > And here as well.
+> > 
+> > All in all, this is looking very good to me. I think we are really close 
+> > to having a code that all the parties would agree with. Thanks everybody,
+> 
+> The leaking is my fault. I missed that somehow during rebasing.
+> 
+> Seth, could you please fix it in v4? 
 
-> Another thing is tcp_sendmsg_fastopen() and tcp_send_rcvq().  The latter
-> should just use copy_from_iter() instead of memcpy_from_iovec(), the former
-> is dealt with by making tcp_send_syn_data() use the same copy_from_iter()
-> instead of memcpy_from_iovecend().
+Is it necessary to grab the mutex at the beginning of klp_init_patch?  I
+think we only need it when adding it to the global list at the end of
+the function.
 
-Well, another problem I already mentioned is that tcp_send_rcvq() does a
-single alloc_skb() with @size directly coming from user space. This
-certainly can try allocation of dozen of Megabytes.
-
-Not good.
-
-
-
+-- 
+Josh
