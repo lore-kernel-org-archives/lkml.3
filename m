@@ -1,72 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758820AbaKUQSP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:18:15 -0500
-Received: from mout.web.de ([212.227.17.12]:62578 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755412AbaKUQSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:18:13 -0500
-Message-ID: <546F6596.6010103@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 17:17:26 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Eduardo Valentin <edubezval@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH v2] thermal: Exynos: Deletion of unnecessary checks before
- two function calls
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546F1017.5080403@users.sourceforge.net> <alpine.DEB.2.10.1411211116580.2554@hadrien>
-In-Reply-To: <alpine.DEB.2.10.1411211116580.2554@hadrien>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:BLGjItj4QDY9OaFEgeTKA0wq5X1NaKf8YutSUgiO5PxPKrVpR0J
- jbzkC9LEK5a3agkWZHFuUqzcVQGOh5f2oii93onS7yuKI4PH8DqC1j/jgBQ7Ic+h3rIEii1
- XnuTBPcvLf5SWWGeYjwcZ4CABfO974px143+orPXYNu55ir56EawBW/O8KjZCqncJg9nTXU
- CT18onsvgVO73g/vnWqCQ==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1758866AbaKUQTB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:19:01 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:61348 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758177AbaKUQTA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 11:19:00 -0500
+From: Mahendran Ganesh <opensource.ganesh@gmail.com>
+To: minchan@kernel.org, ngupta@vflare.org, ddstreet@ieee.org,
+        sergey.senozhatsky@gmail.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mahendran Ganesh <opensource.ganesh@gmail.com>
+Subject: [PATCH] mm/zsmalloc: support max obj with length of PAGE_SIZE
+Date: Sat, 22 Nov 2014 00:18:39 +0800
+Message-Id: <1416586719-10125-1-git-send-email-opensource.ganesh@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 17:11:49 +0100
+2014-11-21 18:32 GMT+08:00 Minchan Kim <minchan@kernel.org>:
+> On Fri, Nov 21, 2014 at 06:48:49AM +0000, Minchan Kim wrote:
+>> On Fri, Nov 21, 2014 at 01:33:26PM +0800, Ganesh Mahendran wrote:
+>> > Hello
+>> >
+>> > 2014-11-21 11:54 GMT+08:00 Minchan Kim <minchan@kernel.org>:
+>> > > On Thu, Nov 20, 2014 at 09:21:56PM +0800, Mahendran Ganesh wrote:
+>> > >> ZS_SIZE_CLASSES is calc by:
+>> > >>   ((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / ZS_SIZE_CLASS_DELTA + 1)
+>> > >>
+>> > >> So when i is in [0, ZS_SIZE_CLASSES - 1), the size:
+>> > >>   size = ZS_MIN_ALLOC_SIZE + i * ZS_SIZE_CLASS_DELTA
+>> > >> will not be greater than ZS_MAX_ALLOC_SIZE
+>> > >>
+>> > >> This patch removes the unnecessary check.
+>> > >
+>> > > It depends on ZS_MIN_ALLOC_SIZE.
+>> > > For example, we would change min to 8 but MAX is still 4096.
+>> > > ZS_SIZE_CLASSES is (4096 - 8) / 16 + 1 = 256 so 8 + 255 * 16 = 4088,
+>> > > which exceeds the max.
+>> > Here, 4088 is less than MAX(4096).
+>> >
+>> > ZS_SIZE_CLASSES = (MAX - MIN) / Delta + 1
+>> > So, I think the value of
+>> >     MIN + (ZS_SIZE_CLASSES - 1) * Delta =
+>> >     MIN + ((MAX - MIN) / Delta) * Delta =
+>> >     MAX
+>> > will not exceed the MAX
+>>
+>> You're right. It was complext math for me.
+>> I should go back to elementary school.
+>>
+>> Thanks!
+>>
+>> Acked-by: Minchan Kim <minchan@kernel.org>
+>
+> I catch a nasty cold but above my poor math makes me think more.
+> ZS_SIZE_CLASSES is broken. In above my example, current code cannot
+> allocate 4096 size class so we should correct ZS_SIZE_CLASSES
+> at first.
+>
+> zs_size_classes = zs_max - zs_min / delta + 1;
+> if ((zs_max - zs_min) % delta)
+>         zs_size_classes += 1;
+>
+> Then, we need to code piece you removed.
+> As well, we need to fix below.
+>
+> - area->vm_buf = (char *)__get_free_page(GFP_KERNEL);
+> + area->vm_buf = kmalloc(ZS_MAX_ALLOC_SIZE);
+>
+> Hope I am sane in this time :(
 
-The functions cpufreq_cooling_unregister() and thermal_zone_device_unregister()
-test whether their argument is NULL and then return immediately.
-Thus the test around the call is not needed.
+how about something like this?
 
-This issue was detected by using the Coccinelle software.
+In zsmalloc, if ZS_MIN_ALLOC_SIZE is less than ZS_SIZE_CLASS_DELTA.
+Max obj size (ZS_MIN_ALLOC_SIZE + ZS_SIZE_CLASSES * ZS_SIZE_CLASS_DELTA)
+will be less than ZS_MAX_ALLOC_SIZE(page size).
+And in zs_malloc(), we thought we can put an obj(len == PAGE_SIZE)
+into zsmalloc. But actually we can not. This will make user confused.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+This patch takes Minchan Kim's suggestion.
+    https://lkml.org/lkml/2014/11/21/172
+
+When (ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) % ZS_SIZE_CLASS_DELTA) != 0,
+we add increase sz_size_class by 1 to make the size of max obj equal to
+ZS_MAX_ALLOC_SIZE(PAGE_SIZE).
+
+Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
 ---
- drivers/thermal/samsung/exynos_thermal_common.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ mm/zsmalloc.c |   22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
-index 3f5ad25..b6be572 100644
---- a/drivers/thermal/samsung/exynos_thermal_common.c
-+++ b/drivers/thermal/samsung/exynos_thermal_common.c
-@@ -417,13 +417,10 @@ void exynos_unregister_thermal(struct thermal_sensor_conf *sensor_conf)
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index 810eda1..bcea72d 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -155,8 +155,6 @@
+  *  (reason above)
+  */
+ #define ZS_SIZE_CLASS_DELTA	(PAGE_SIZE >> 8)
+-#define ZS_SIZE_CLASSES		((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / \
+-					ZS_SIZE_CLASS_DELTA + 1)
  
- 	th_zone = sensor_conf->pzone_data;
+ /*
+  * We do not maintain any list for completely empty or full pages
+@@ -214,7 +212,8 @@ struct link_free {
+ };
  
--	if (th_zone->therm_dev)
--		thermal_zone_device_unregister(th_zone->therm_dev);
-+	thermal_zone_device_unregister(th_zone->therm_dev);
+ struct zs_pool {
+-	struct size_class *size_class[ZS_SIZE_CLASSES];
++	struct size_class **size_class;
++	int nr_size_classes;
  
--	for (i = 0; i < th_zone->cool_dev_size; i++) {
--		if (th_zone->cool_dev[i])
--			cpufreq_cooling_unregister(th_zone->cool_dev[i]);
--	}
-+	for (i = 0; i < th_zone->cool_dev_size; ++i)
-+		cpufreq_cooling_unregister(th_zone->cool_dev[i]);
+ 	gfp_t flags;	/* allocation flags used when growing pool */
+ 	atomic_long_t pages_allocated;
+@@ -956,17 +955,28 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+ {
+ 	int i, ovhd_size;
+ 	struct zs_pool *pool;
++	int nr;
  
- 	dev_info(sensor_conf->dev,
- 		"Exynos: Kernel Thermal management unregistered\n");
+ 	ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
+ 	pool = kzalloc(ovhd_size, GFP_KERNEL);
+ 	if (!pool)
+ 		return NULL;
+ 
++	nr = (ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / ZS_SIZE_CLASS_DELTA + 1;
++	if ((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) % ZS_SIZE_CLASS_DELTA)
++		nr += 1;
++
++	pool->size_class = kcalloc(nr, sizeof(struct size_class *),
++			GFP_KERNEL);
++	if (!pool->size_class)
++		goto err;
++	pool->nr_size_classes = nr;
++
+ 	/*
+ 	 * Iterate reversly, because, size of size_class that we want to use
+ 	 * for merging should be larger or equal to current size.
+ 	 */
+-	for (i = ZS_SIZE_CLASSES - 1; i >= 0; i--) {
++	for (i = pool->nr_size_classes - 1; i >= 0; i--) {
+ 		int size;
+ 		int pages_per_zspage;
+ 		struct size_class *class;
+@@ -1020,7 +1030,7 @@ void zs_destroy_pool(struct zs_pool *pool)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < ZS_SIZE_CLASSES; i++) {
++	for (i = 0; i < pool->nr_size_classes; i++) {
+ 		int fg;
+ 		struct size_class *class = pool->size_class[i];
+ 
+@@ -1038,6 +1048,8 @@ void zs_destroy_pool(struct zs_pool *pool)
+ 		}
+ 		kfree(class);
+ 	}
++
++	kfree(pool->size_class);
+ 	kfree(pool);
+ }
+ EXPORT_SYMBOL_GPL(zs_destroy_pool);
 -- 
-2.1.3
+1.7.9.5
 
