@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaKUUBl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 15:01:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60877 "EHLO mx1.redhat.com"
+	id S1752342AbaKUUCf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:02:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32881 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751971AbaKUUBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 15:01:39 -0500
-Date: Fri, 21 Nov 2014 21:01:38 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Aaron Tomlin <atomlin@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 1/3] exit: reparent: avoid find_new_reaper() if no
-	children
-Message-ID: <20141121200138.GA21656@redhat.com>
-References: <20141120183400.GA9622@redhat.com> <20141120183423.GA10270@redhat.com> <20141120143722.af15074e6922108962e84649@linux-foundation.org>
+	id S1752030AbaKUUCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 15:02:34 -0500
+Date: Fri, 21 Nov 2014 15:00:52 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Andy Lutomirski <luto@amacapital.net>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Josh Boyer <jboyer@redhat.com>, Justin Forbes <jforbes@redhat.com>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141121200052.GA28668@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Andy Lutomirski <luto@amacapital.net>, Tejun Heo <tj@kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Don Zickus <dzickus@redhat.com>,
+	the arch/x86 maintainers <x86@kernel.org>,
+	Josh Boyer <jboyer@redhat.com>, Justin Forbes <jforbes@redhat.com>
+References: <CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
+ <CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
+ <20141121170805.GD30603@home.goodmis.org>
+ <CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
+ <CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
+ <CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
+ <CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
+ <20141121142301.564f7eb7@gandalf.local.home>
+ <CA+55aFw6w+pkG7fs7tBVm7jV_TjsnEyG5XDdk+Ghf5Af+ELUeA@mail.gmail.com>
+ <CA+55aFwOL8thHWWLtuzXkriEH1mJDCQO=NUsMRPptDXc6HC4sg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141120143722.af15074e6922108962e84649@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CA+55aFwOL8thHWWLtuzXkriEH1mJDCQO=NUsMRPptDXc6HC4sg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20, Andrew Morton wrote:
->
-> On Thu, 20 Nov 2014 19:34:23 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > $ time ./test 16 16536 shows:
-> >
-> > 		real		user		sys
-> > 	-	5m37.628s	0m4.437s	8m5.560s
-> > 	+	0m50.032s	0m7.130s	1m4.927s
->
-> Is that the best you can do?
+On Fri, Nov 21, 2014 at 11:46:57AM -0800, Linus Torvalds wrote:
+ 
+ > Anybody who seriously does virtualization uses hw virtualization that
+ > is much better than it used to be. And the non-serious users aren't
+ > that performance-sensitive by definition.
+ > 
+ > I note that the Fedora kernel config seems to include paravirt by
+ > default, so you get a lot of the crazy overheads..
 
-Unfortunately these changes do not even try to solve the main problem,
-tasklist_lock doesn't scale simply because it is global. These changes
-make sense (I hope) anyway, even if/when we redesign the locking. But
-so far I do not have a good plan.
+I'm not sure how many people actually use paravirt these days,
+but the reason Fedora has it enabled still at least is probably
+because..
 
-> (I assume the increase in user time was a glitch?)
+config KVM_GUEST
+         bool "KVM Guest support (including kvmclock)"
+         depends on PARAVIRT
 
-To be honest, I didn't even notice this change. I repeated the testing
-before/after this patch and (to my surprize) the "user" numbers are more
-or less stable, and /usr/bin/time reports the increase.
+But tbh I've not looked at this stuff since it first got merged.
+Will a full-virt system kvm boot a guest without KVM_GUEST enabled ?
+(ie, is this just an optimisation for the paravirt case?)
 
-1. First of all: this is impossible ;)
+I'm not a heavy virt user, so I don't even remember how a lot of
+this stuff is supposed to work.
 
-   Note that this test-case uses SIGTRAP to trigger the coredumping.
-   This means that exit_notify() can only be called when all threads
-   are already in kernel mode, the coredumping thread sleeps until
-   they all are parked in exit_mm(). Until then this patch has no
-   effect.
-
-2. With this patch applied, I added mdelay(2) into forget_original_parent(),
-   right after find_child_reaper(). And yes, this changes the numbers too:
-
-   		real		user		sys
-   		10m1.225s	0m5.443s	17m25.797s
-
-   note that "user time" goes down.
-
-3. So I think that this just reminds that utime/stime accounting isn't
-   precise. sum_exec_runtime is accurate and thus we can more or less
-   trust utime + stime, but utime/stime is random. Plus scale_stime()
-   doesn't look very accurate too.
-
-4. In this particular case the accounting is even more impresize, this
-   test-case spends a lot of time in kernel mode with irqs disabled and
-   this "freezes" task->stime.
-
-5. That said, I still can't really understand why "user" grows. If I
-   understand the calculations in cputime_adjust() correctly (probably
-   I don't), it should not.
-
-In short, I am a bit confused but I still don't think that this increase
-is real.
-
-Oleg.
+	Dave
 
