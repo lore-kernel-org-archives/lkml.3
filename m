@@ -1,108 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678AbaKUGNT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 01:13:19 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:56791 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876AbaKUGNS (ORCPT
+	id S1757467AbaKUGQm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 01:16:42 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:47165 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbaKUGQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 01:13:18 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Cc: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@gentwo.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Steve Capper <steve.capper@linaro.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH 06/19] mm: store mapcount for compound page separate
-In-Reply-To: <1415198994-15252-7-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com> <1415198994-15252-7-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Notmuch/0.18.2+162~g34d2c62 (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-pc-linux-gnu)
-Date: Fri, 21 Nov 2014 11:42:51 +0530
-Message-ID: <87h9xt6pzw.fsf@linux.vnet.ibm.com>
+	Fri, 21 Nov 2014 01:16:40 -0500
+Message-ID: <546ED8C6.8050003@linaro.org>
+Date: Fri, 21 Nov 2014 01:16:38 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112106-0033-0000-0000-000000900C1E
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        William Cohen <wcohen@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 5/5] arm64: Add HAVE_REGS_AND_STACK_ACCESS_API feature
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org> <1416292375-29560-6-git-send-email-dave.long@linaro.org> <20141118145228.GN18842@arm.com>
+In-Reply-To: <20141118145228.GN18842@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> writes:
-
-> We're going to allow mapping of individual 4k pages of THP compound and
-> we need a cheap way to find out how many time the compound page is
-> mapped with PMD -- compound_mapcount() does this.
+On 11/18/14 09:52, Will Deacon wrote:
+> Hi David,
 >
-> page_mapcount() counts both: PTE and PMD mappings of the page.
+> On Tue, Nov 18, 2014 at 06:32:55AM +0000, David Long wrote:
+>> From: "David A. Long" <dave.long@linaro.org>
+>>
+>> Add HAVE_REGS_AND_STACK_ACCESS_API feature for arm64.
 >
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
->  include/linux/mm.h   | 17 +++++++++++++++--
->  include/linux/rmap.h |  4 ++--
->  mm/huge_memory.c     | 23 ++++++++++++++---------
->  mm/hugetlb.c         |  4 ++--
->  mm/memory.c          |  2 +-
->  mm/migrate.c         |  2 +-
->  mm/page_alloc.c      | 13 ++++++++++---
->  mm/rmap.c            | 50 +++++++++++++++++++++++++++++++++++++++++++-------
->  8 files changed, 88 insertions(+), 27 deletions(-)
+> [...]
 >
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 1825c468f158..aef03acff228 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -435,6 +435,19 @@ static inline struct page *compound_head(struct page *page)
->  	return page;
->  }
->  
-> +static inline atomic_t *compound_mapcount_ptr(struct page *page)
-> +{
-> +	return (atomic_t *)&page[1].mapping;
-> +}
-> +
-> +static inline int compound_mapcount(struct page *page)
-> +{
-> +	if (!PageCompound(page))
-> +		return 0;
-> +	page = compound_head(page);
-> +	return atomic_read(compound_mapcount_ptr(page)) + 1;
-> +}
+>> diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
+>> index d3e782a..24cc048 100644
+>> --- a/arch/arm64/include/asm/ptrace.h
+>> +++ b/arch/arm64/include/asm/ptrace.h
+>> @@ -111,6 +111,8 @@ struct pt_regs {
+>>   	u64 syscallno;
+>>   };
+>>
+>> +#define MAX_REG_OFFSET (offsetof(struct pt_regs, orig_x0))
+>
+> Is orig_x0 actually useful to this API? If not, we could instead operate on
+> the user_pt_regs structure, and define the maximum offset in terms of sizeof
+> that.
+>
 
+I agree.  I don't think the orig_x0 field should be exposed through this 
+API.
 
-How about 
+>> +#define ARM_cpsr	pstate
+>> +#define ARM_pc		pc
+>> +#define ARM_sp		sp
+>> +#define ARM_lr		regs[30]
+>> +#define ARM_fp		regs[29]
+>> +#define ARM_x28		regs[28]
+>> +#define ARM_x27		regs[27]
+>
+> [...]
+>
+> I don't think we need these #defines.
+>
+> Will
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 6e0b286649f1..59c9cf3d8510 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -46,6 +46,11 @@ struct page {
- 	unsigned long flags;		/* Atomic flags, some possibly
- 					 * updated asynchronously */
- 	union {
-+		/*
-+		  * For THP we use this to track the compound
-+		  * page mapcount.
-+		  */
-+		atomic_t _compound_mapcount;
- 		struct address_space *mapping;	/* If low bit clear, points to
- 						 * inode address_space, or NULL.
- 						 * If page mapped as anonymous
+These are used in the REG_OFFSET_NAME macro.  This is all borrowed from 
+arch/arm/ code.  I didn't see a need to redesign it.
 
-and 
+-dl
 
-static inline atomic_t *compound_mapcount_ptr(struct page *page)
-{
-        return (atomic_t *)&page[1]._compound_mapcount;
-}
-
-
-
--aneesh
 
