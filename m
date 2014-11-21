@@ -1,79 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758664AbaKUPBl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:01:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58529 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758628AbaKUPB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:01:29 -0500
-Date: Fri, 21 Nov 2014 09:00:41 -0600
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Miroslav Benes <mbenes@suse.cz>
-Cc: Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
-Message-ID: <20141121150041.GA26264@treble.redhat.com>
-References: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
- <1416522580-5593-3-git-send-email-sjenning@redhat.com>
- <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz>
- <alpine.LNX.2.00.1411211542180.27891@pobox.suse.cz>
+	id S1758435AbaKUPDR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:03:17 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:48303 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175AbaKUPDP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:03:15 -0500
+Date: Fri, 21 Nov 2014 09:03:31 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Arjun Sreedharan <arjun024@gmail.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb:phy: propagate __of_usb_find_phy()'s error on failure
+Message-ID: <20141121150331.GB7508@saruman>
+Reply-To: <balbi@ti.com>
+References: <1416498816-3292-1-git-send-email-arjun024@gmail.com>
+ <20141120193949.GC23217@saruman>
+ <CAJFMrCGbUQar751mOZOJ5Fy=HEDb+L7XjQypJxzyE72T=qoDmw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Bn2rw/3z4jIqBvZU"
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1411211542180.27891@pobox.suse.cz>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+In-Reply-To: <CAJFMrCGbUQar751mOZOJ5Fy=HEDb+L7XjQypJxzyE72T=qoDmw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 03:44:35PM +0100, Miroslav Benes wrote:
-> On Fri, 21 Nov 2014, Jiri Kosina wrote:
-> 
-> [...]
-> 
-> > [ ... snip ... ]
-> > > +static int klp_init_patch(struct klp_patch *patch)
-> > > +{
-> > > +	int ret;
-> > > +
-> > > +	mutex_lock(&klp_mutex);
-> > > +
-> > > +	/* init */
-> > > +	patch->state = LPC_DISABLED;
-> > > +
-> > > +	/* sysfs */
-> > > +	ret = kobject_init_and_add(&patch->kobj, &klp_ktype_patch,
-> > > +				   klp_root_kobj, patch->mod->name);
-> > > +	if (ret)
-> > > +		return ret;
-> > 
-> > klp_mutex is leaked locked here.
-> > 
-> > > +
-> > > +	/* create objects */
-> > > +	ret = klp_init_objects(patch);
-> > > +	if (ret) {
-> > > +		kobject_put(&patch->kobj);
-> > > +		return ret;
-> > 
-> > And here as well.
-> > 
-> > All in all, this is looking very good to me. I think we are really close 
-> > to having a code that all the parties would agree with. Thanks everybody,
-> 
-> The leaking is my fault. I missed that somehow during rebasing.
-> 
-> Seth, could you please fix it in v4? 
+--Bn2rw/3z4jIqBvZU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Is it necessary to grab the mutex at the beginning of klp_init_patch?  I
-think we only need it when adding it to the global list at the end of
-the function.
+On Fri, Nov 21, 2014 at 12:19:42PM +0530, Arjun Sreedharan wrote:
+> On 21 November 2014 01:09, Felipe Balbi <balbi@ti.com> wrote:
+>=20
+> > On Thu, Nov 20, 2014 at 09:23:36PM +0530, Arjun Sreedharan wrote:
+> > > When __of_usb_find_phy() fails, it returns -ENODEV - its
+> > > error code has to be returned by devm_usb_get_phy_by_phandle().
+> > > Only when the former function succeeds and try_module_get()
+> > > fails should -EPROBE_DEFER be returned.
+> > >
+> > > Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+> > > ---
+> > >  drivers/usb/phy/phy.c | 4 +++-
+> > >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > >
+> > > diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
+> > > index 045cd30..0310112 100644
+> > > --- a/drivers/usb/phy/phy.c
+> > > +++ b/drivers/usb/phy/phy.c
+> > > @@ -191,7 +191,9 @@ struct usb_phy *devm_usb_get_phy_by_phandle(struct
+> > device *dev,
+> > >
+> > >       phy =3D __of_usb_find_phy(node);
+> > >       if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
+> > > -             phy =3D ERR_PTR(-EPROBE_DEFER);
+> > > +             if (!IS_ERR(phy))
+> > > +                     phy =3D ERR_PTR(-EPROBE_DEFER);
+> > > +
+> >
+> > trailing whitespace here. I'll fix it myself this time, but next time be
+> > more careful.
+> >
+>=20
+> sorry about that. my bloody vi. thanks
 
--- 
-Josh
+add these to your .vimrc :-)
+
+" Highlight redundant whitespaces
+highlight RedundantWhitespace ctermbg=3Dred guibg=3Dred
+match RedundantWhitespace /\s\+$\| \+\ze\t/
+
+--=20
+balbi
+
+--Bn2rw/3z4jIqBvZU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUb1RDAAoJEIaOsuA1yqREaWsP/j1fqDrpjxfmiUksq48xQAMa
+oacPJrRs0CF7i4gzzlPj/kHAkFKIuUxt6U3kG4MykaU/FbKxBqnV+p9ukC399M1N
+38CGoU1ytYEBfv7wfR0JL9t/T+ey3/PHQ8Ucpl6+VBnWxQieiW3gJxbsq8wYpZ2q
+aG38hUMr7qEmRb327sF5MVFRNj11s0WamRFBwnBw7tvjrRxQfUeB+ffQzK4AGxTe
+Fg7YT59v3chjBUOprOP2wxo+EkFbv1zd6rmfJs1e8n5lhx1620iqaLAq8z/PMoh0
+x3/oDlAc6Mgrl3eurxrc0zwTk2bviAWht6+J2Uvv7fRe4M1MRy0hPjucrU++3el7
+ktvaZtwxpTNIGMwm8QQx2997tI3bX0BTomreIH5JkGjKX5lVHdWzuIY32YlKp5ml
+iqsWPf50LDnlWs1XLYHUyWX8PkIUftUKJcbKiQhubkvSnmcBD5Wx+G2Joc90gX4s
+ZSHGP6uvRWnf3EsXMXmBFNbkSriCa48zvR6jMiQX/H3K0X9UHgeGOh95pTJk5ZE7
+EBoji5V+6JzjH9BOhhHVKESsHklKfAkap/v0uG0fGuXWYll3zeB5tOmd11nxpnzd
+WGyQYLcUTS2VIJLJL/WeIma0Isr+Uc5MiMxvRoQVql6Rt1VtfbcHgGrcJMmruLIe
+K95EEfhUTTvpBxGugr4C
+=uPVB
+-----END PGP SIGNATURE-----
+
+--Bn2rw/3z4jIqBvZU--
