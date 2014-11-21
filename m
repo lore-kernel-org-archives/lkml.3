@@ -1,98 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758576AbaKUKRb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 05:17:31 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:57133 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758472AbaKUKR3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 05:17:29 -0500
-From: Omar Sandoval <osandov@osandov.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>, linux-btrfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Mel Gorman <mgorman@suse.de>
-Cc: Omar Sandoval <osandov@osandov.com>
-Subject: [PATCH v2 3/5] swap: use direct I/O for SWP_FILE swap_readpage
-Date: Fri, 21 Nov 2014 02:08:29 -0800
-Message-Id: <455265ec2174096758e3d702a1e8c84aff46aa72.1416563833.git.osandov@osandov.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <cover.1416563833.git.osandov@osandov.com>
-References: <cover.1416563833.git.osandov@osandov.com>
-In-Reply-To: <cover.1416563833.git.osandov@osandov.com>
-References: <cover.1416563833.git.osandov@osandov.com>
+	id S1758542AbaKUKRV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 05:17:21 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:34412 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758454AbaKUKRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 05:17:17 -0500
+From: Vignesh R <vigneshr@ti.com>
+To: Paul Walmsley <paul@pwsan.com>, Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Vignesh R <vigneshr@ti.com>
+Subject: [PATCH v3 1/2] ARM: OMAP2+: hwmod: AM43x: add hwmod support for ADC on AM43xx
+Date: Fri, 21 Nov 2014 15:44:21 +0530
+Message-ID: <1416564862-23056-2-git-send-email-vigneshr@ti.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416564862-23056-1-git-send-email-vigneshr@ti.com>
+References: <1416564862-23056-1-git-send-email-vigneshr@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 07:48:17AM -0800, Christoph Hellwig wrote:
-> With the new iov_iter infrastructure that supprots direct I/O to kernel
-> pages please get rid of the ->readpage hack first.  I'm still utterly
-> disapoined that this crap ever got merged.
+This patch adds hwmod support for ADC on AM43xx. Since clockdomain
+and offsets of adc_tsc are different from AM33xx, ADC data has been
+directly added to AM43xx hwmod file.
 
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Omar Sandoval <osandov@osandov.com>
+Signed-off-by: Vignesh R <vigneshr@ti.com>
 ---
- mm/page_io.c | 32 ++++++++++++++++++++++++++++----
- 1 file changed, 28 insertions(+), 4 deletions(-)
+ arch/arm/mach-omap2/omap_hwmod_43xx_data.c | 39 ++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
-diff --git a/mm/page_io.c b/mm/page_io.c
-index 955db8b..10715e0 100644
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -283,8 +283,7 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
+diff --git a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c b/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
+index fea01aa3ef42..b47f6ad0928c 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
+@@ -417,6 +417,37 @@ static struct omap_hwmod am43xx_qspi_hwmod = {
+ 	},
+ };
  
- 		set_page_writeback(page);
- 		unlock_page(page);
--		ret = mapping->a_ops->direct_IO(ITER_BVEC | WRITE,
--						&kiocb, &from,
-+		ret = mapping->a_ops->direct_IO(WRITE, &kiocb, &from,
- 						kiocb.ki_pos);
- 		if (ret == PAGE_SIZE) {
- 			count_vm_event(PSWPOUT);
-@@ -348,12 +347,37 @@ int swap_readpage(struct page *page)
- 	}
- 
- 	if (sis->flags & SWP_FILE) {
-+		struct kiocb kiocb;
- 		struct file *swap_file = sis->swap_file;
- 		struct address_space *mapping = swap_file->f_mapping;
-+		struct bio_vec bv = {
-+			.bv_page = page,
-+			.bv_len = PAGE_SIZE,
-+			.bv_offset = 0,
-+		};
-+		struct iov_iter to = {
-+			.type = ITER_BVEC | READ,
-+			.count = PAGE_SIZE,
-+			.iov_offset = 0,
-+			.nr_segs = 1,
-+		};
-+		to.bvec = &bv;	/* older gcc versions are broken */
++/*
++ * 'adc/tsc' class
++ * TouchScreen Controller (Anolog-To-Digital Converter)
++ */
++static struct omap_hwmod_class_sysconfig am43xx_adc_tsc_sysc = {
++	.rev_offs       = 0x00,
++	.sysc_offs      = 0x10,
++	.sysc_flags     = SYSC_HAS_SIDLEMODE,
++	.idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
++			  SIDLE_SMART_WKUP),
++	.sysc_fields    = &omap_hwmod_sysc_type2,
++};
 +
-+		init_sync_kiocb(&kiocb, swap_file);
-+		kiocb.ki_pos = page_file_offset(page);
-+		kiocb.ki_nbytes = PAGE_SIZE;
++static struct omap_hwmod_class am43xx_adc_tsc_hwmod_class = {
++	.name           = "adc_tsc",
++	.sysc           = &am43xx_adc_tsc_sysc,
++};
++
++static struct omap_hwmod am43xx_adc_tsc_hwmod = {
++	.name           = "adc_tsc",
++	.class          = &am43xx_adc_tsc_hwmod_class,
++	.clkdm_name     = "l3s_tsc_clkdm",
++	.main_clk       = "adc_tsc_fck",
++	.prcm           = {
++		.omap4  = {
++			.clkctrl_offs   = AM43XX_CM_WKUP_ADC_TSC_CLKCTRL_OFFSET,
++			.modulemode     = MODULEMODE_SWCTRL,
++		},
++	},
++};
++
+ /* dss */
  
--		ret = mapping->a_ops->readpage(swap_file, page);
--		if (!ret)
-+		ret = mapping->a_ops->direct_IO(READ, &kiocb, &to,
-+						kiocb.ki_pos);
-+		if (ret == PAGE_SIZE) {
-+			SetPageUptodate(page);
- 			count_vm_event(PSWPIN);
-+			ret = 0;
-+		} else {
-+			ClearPageUptodate(page);
-+			SetPageError(page);
-+		}
-+		unlock_page(page);
- 		return ret;
- 	}
+ static struct omap_hwmod am43xx_dss_core_hwmod = {
+@@ -547,6 +578,13 @@ static struct omap_hwmod_ocp_if am43xx_l4_wkup__gpio0 = {
+ 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+ };
  
++static struct omap_hwmod_ocp_if am43xx_l4_wkup__adc_tsc = {
++	.master         = &am33xx_l4_wkup_hwmod,
++	.slave          = &am43xx_adc_tsc_hwmod,
++	.clk            = "dpll_core_m4_div2_ck",
++	.user           = OCP_USER_MPU,
++};
++
+ static struct omap_hwmod_ocp_if am43xx_l4_hs__cpgmac0 = {
+ 	.master		= &am43xx_l4_hs_hwmod,
+ 	.slave		= &am33xx_cpgmac0_hwmod,
+@@ -789,6 +827,7 @@ static struct omap_hwmod_ocp_if *am43xx_hwmod_ocp_ifs[] __initdata = {
+ 	&am43xx_l4_wkup__i2c1,
+ 	&am43xx_l4_wkup__gpio0,
+ 	&am43xx_l4_wkup__wd_timer1,
++	&am43xx_l4_wkup__adc_tsc,
+ 	&am43xx_l3_s__qspi,
+ 	&am33xx_l4_per__dcan0,
+ 	&am33xx_l4_per__dcan1,
 -- 
-2.1.3
+1.9.1
 
