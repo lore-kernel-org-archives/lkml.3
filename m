@@ -1,95 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758147AbaKUJFT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 04:05:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46821 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750734AbaKUJFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 04:05:11 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 1/1] parport: parport_pc, do not remove parent devices early
-Date: Fri, 21 Nov 2014 10:05:09 +0100
-Message-Id: <1416560709-7721-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
+	id S1757320AbaKUJQa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 04:16:30 -0500
+Received: from mail-bn1bon0147.outbound.protection.outlook.com ([157.56.111.147]:51072
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751174AbaKUJQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 04:16:27 -0500
+X-Greylist: delayed 6418 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Nov 2014 04:16:27 EST
+From: Yuantian Tang <Yuantian.Tang@freescale.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        "Jason.Jin@freescale.com" <Jason.Jin@freescale.com>
+Subject: RE: [PATCH 2/2] cpufreq: qoriq: rename the driver
+Thread-Topic: [PATCH 2/2] cpufreq: qoriq: rename the driver
+Thread-Index: AQHQBVzhF5TdVORmqkCz8HfXsQR2dJxqtngAgAAVqvA=
+Date: Fri, 21 Nov 2014 09:16:23 +0000
+Message-ID: <dedc11e3150d44ee89bb1e96b5447687@DM2PR03MB574.namprd03.prod.outlook.com>
+References: <1416554882-16566-1-git-send-email-Yuantian.Tang@freescale.com>
+	<1416554882-16566-2-git-send-email-Yuantian.Tang@freescale.com>
+ <CAKohpo=xLOxXrCJNO0LmrVxMDNsFy2Kxg6bNzHm=vQCJnBvSaw@mail.gmail.com>
+In-Reply-To: <CAKohpo=xLOxXrCJNO0LmrVxMDNsFy2Kxg6bNzHm=vQCJnBvSaw@mail.gmail.com>
+Accept-Language: en-US, zh-CN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.158.211]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1287;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1287;
+x-forefront-prvs: 0402872DA1
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(13464003)(51704005)(199003)(189002)(24454002)(164054003)(24434003)(377454003)(97736003)(54356999)(2656002)(101416001)(122556002)(31966008)(74316001)(110136001)(87936001)(108616004)(46102003)(33646002)(19580405001)(76176999)(120916001)(76576001)(21056001)(50986999)(19580395003)(86362001)(20776003)(66066001)(95666004)(105586002)(99286002)(4396001)(40100003)(106356001)(99396003)(106116001)(77156002)(92566001)(64706001)(62966003)(107046002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY1PR0301MB1287;H:DM2PR03MB574.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAL9Gdo6016269
 
-When the parport_pc module is removed from the system, all parport
-devices are iterated in parport_pc_exit and removed by a call to
-parport_pc_unregister_port. Note that some parport devices have its
-'struct device' parent, known as port->dev.  And when port->dev is a
-platform device, it is destroyed in parport_pc_exit too.
+Hello Viresh,
 
-Now, when parport_pc_unregister_port is called for a going port,
-drv->detach(port) is called for every parport driver in the system.
-ppdev can be one of them. ppdev's detach() tears down its per-port
-sysfs directory, which established port->dev as a parent earlier.
+When I use -C -M options, checkpatch reports error:
 
-But since parport_pc_exit kills port->dev parents before unregisters
-ports proper, ppdev's sysfs directory has no living parent anymore.
-This results in the following warning:
+[tangyt@titan linux-pm]$ ./scripts/checkpatch.pl 0002-cpufreq-qoriq-rename-the-driver.patch 
+WARNING: added, moved or deleted file(s), does MAINTAINERS need updating?
+#15: 
+ drivers/cpufreq/{ppc-corenet-cpufreq.c => qoriq-cpufreq.c} | 0
 
-WARNING: CPU: 1 PID: 785 at fs/sysfs/group.c:219 sysfs_remove_group+0x9b/0xa0
-sysfs group ffffffff81c69e20 not found for kobject 'parport1'
-Modules linked in: parport_pc(E-) ppdev(E) [last unloaded: ppdev]
-CPU: 1 PID: 785 Comm: rmmod Tainted: G        W   E  3.18.0-rc5-next-20141120+ #824
-...
-Call Trace:
-...
- [<ffffffff810aff76>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff8123d81b>] sysfs_remove_group+0x9b/0xa0
- [<ffffffff814c27e7>] dpm_sysfs_remove+0x57/0x60
- [<ffffffff814b6ac9>] device_del+0x49/0x240
- [<ffffffff814b6ce2>] device_unregister+0x22/0x70
- [<ffffffff814b6dac>] device_destroy+0x3c/0x50
- [<ffffffffc012209a>] pp_detach+0x4a/0x60 [ppdev]
- [<ffffffff814b32dd>] parport_remove_port+0x11d/0x150
- [<ffffffffc0137328>] parport_pc_unregister_port+0x28/0xf0 [parport_pc]
- [<ffffffffc0138c0e>] parport_pc_exit+0x76/0x468 [parport_pc]
- [<ffffffff81128dbc>] SyS_delete_module+0x18c/0x230
+ERROR: Does not appear to be a unified-diff format patch
 
-It is also easily reproducible on qemu with two dummy ports '-parallel
-/dev/null -parallel /dev/null'.
+total: 1 errors, 1 warnings, 0 lines checked
 
-So switch the order of killing the two structures. But since port is
-freed by parport_pc_unregister_port, we have to remember port->dev
-in a local variable.
+0002-cpufreq-qoriq-rename-the-driver.patch has style problems, please review.
 
-Perhaps nothing worse than the warning happens thanks to the device
-refcounting. We *should* be on the safe side.
+I just rename it and do not change anyting. Isn't that allowed?
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Reviewed-by: Takashi Iwai <tiwai@suse.de>
-Tested-by: Martin Pluskal <mpluskal@suse.com>
----
- drivers/parport/parport_pc.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+Thanks,
+Yuantian
 
-diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
-index 7ae20b7a56bc..53d15b30636a 100644
---- a/drivers/parport/parport_pc.c
-+++ b/drivers/parport/parport_pc.c
-@@ -3339,13 +3339,14 @@ static void __exit parport_pc_exit(void)
- 	while (!list_empty(&ports_list)) {
- 		struct parport_pc_private *priv;
- 		struct parport *port;
-+		struct device *dev;
- 		priv = list_entry(ports_list.next,
- 				  struct parport_pc_private, list);
- 		port = priv->port;
--		if (port->dev && port->dev->bus == &platform_bus_type)
--			platform_device_unregister(
--				to_platform_device(port->dev));
-+		dev = port->dev;
- 		parport_pc_unregister_port(port);
-+		if (dev && dev->bus == &platform_bus_type)
-+			platform_device_unregister(to_platform_device(dev));
- 	}
- }
- 
--- 
-2.1.3
-
+> -----Original Message-----
+> From: Viresh Kumar [mailto:viresh.kumar@linaro.org]
+> Sent: Friday, November 21, 2014 3:56 PM
+> To: Tang Yuantian-B29983
+> Cc: Rafael J. Wysocki; Linux Kernel Mailing List; linux-pm@vger.kernel.org;
+> linuxppc-dev@ozlabs.org; Jin Zhengxiong-R64188
+> Subject: Re: [PATCH 2/2] cpufreq: qoriq: rename the driver
+> 
+> On 21 November 2014 12:58, Tang Yuantian <Yuantian.Tang@freescale.com>
+> wrote:
+> > This driver works on all QorIQ platforms which include ARM-based cores
+> > and PPC-based cores.
+> > Rename it in order to represent better.
+> >
+> > Signed-off-by: Tang Yuantian <Yuantian.Tang@freescale.com>
+> > ---
+> >  drivers/cpufreq/ppc-corenet-cpufreq.c | 371 ----------------------------------
+> >  drivers/cpufreq/qoriq-cpufreq.c       | 371
+> ++++++++++++++++++++++++++++++++++
+> >  2 files changed, 371 insertions(+), 371 deletions(-)  delete mode
+> > 100644 drivers/cpufreq/ppc-corenet-cpufreq.c
+> >  create mode 100644 drivers/cpufreq/qoriq-cpufreq.c
+> 
+> This is not reviewable at all.. How do I verify that you haven't changed something
+> in the files as well ?
+> 
+> To make life easy always create patches with:
+> 
+> git format-patch -C -M
+> 
+> Above options handle renames pretty well.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
