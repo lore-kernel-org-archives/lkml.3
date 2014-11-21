@@ -1,80 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758668AbaKUQMu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:12:50 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:61332 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932155AbaKUQMs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:12:48 -0500
-Message-ID: <1416586364.8629.104.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH v2 9/9] netfilter: Replace smp_read_barrier_depends()
- with lockless_dereference()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        "open list:NETWORKING [IPv4/..." <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Fri, 21 Nov 2014 08:12:44 -0800
-In-Reply-To: <1416582363-20661-10-git-send-email-bobby.prani@gmail.com>
-References: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
-	 <1416582363-20661-10-git-send-email-bobby.prani@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758813AbaKUQM6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:12:58 -0500
+Received: from mga03.intel.com ([134.134.136.65]:34702 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758691AbaKUQM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 11:12:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,432,1413270000"; 
+   d="scan'208";a="611869521"
+From: kan.liang@intel.com
+To: acme@kernel.org, jolsa@redhat.com, namhyung@kernel.org
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V5 1/1] perf tool:perf diff support for different binaries
+Date: Fri, 21 Nov 2014 10:55:48 -0500
+Message-Id: <1416585348-14762-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-21 at 10:06 -0500, Pranith Kumar wrote:
-> Recently lockless_dereference() was added which can be used in place of
-> hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> ---
->  net/ipv4/netfilter/arp_tables.c | 3 +--
->  net/ipv4/netfilter/ip_tables.c  | 3 +--
->  net/ipv6/netfilter/ip6_tables.c | 3 +--
->  3 files changed, 3 insertions(+), 6 deletions(-)
-> 
-> diff --git a/net/ipv4/netfilter/arp_tables.c b/net/ipv4/netfilter/arp_tables.c
-> index f95b6f9..fc7533d 100644
-> --- a/net/ipv4/netfilter/arp_tables.c
-> +++ b/net/ipv4/netfilter/arp_tables.c
-> @@ -270,12 +270,11 @@ unsigned int arpt_do_table(struct sk_buff *skb,
->  
->  	local_bh_disable();
->  	addend = xt_write_recseq_begin();
-> -	private = table->private;
->  	/*
->  	 * Ensure we load private-> members after we've fetched the base
->  	 * pointer.
->  	 */
-> -	smp_read_barrier_depends();
-> +	private = lockless_dereference(table->private);
->  	table_base = private->entries[smp_processor_id()];
->  
+From: Kan Liang <kan.liang@intel.com>
 
+Currently, the perf diff only works with same binaries. That's because
+it compares the symbol start address. It doesn't work if the perf.data
+comes from different binaries. This patch matches the function names.
 
-Please carefully read the code, before and after your change, then
-you'll see this change broke the code.
+Here is a simple examples (Only change f2 and f3 functions location.)
+There is no change in behavior, but the old perf diff display the wrong
+differential profile.
 
-Problem is that a bug like that can be really hard to diagnose and fix
-later, so really you have to be very careful doing these mechanical
-changes.
+example_v1.c
 
-IMO, current code+comment is better than with this
-lockless_dereference() which in this particular case obfuscates the
-code. more than anything.
+noinline void f3(void)
+{
+        volatile int i;
+        for (i = 0; i < 10000;) {
 
-In this case we do have a lock (sort of), so lockless_dereference() is
-quite misleading.
+                if(i%2)
+                        i++;
+                else
+                        i++;
+        }
+}
 
+noinline void f2(void)
+{
+        volatile int a = 100, b, c;
+        for (b = 0; b < 10000; b++)
+                c = a * b;
+
+}
+
+noinline void f1(void)
+{
+                f2();
+                f3();
+}
+
+int main()
+{
+        int i;
+        for (i = 0; i < 100000; i++)
+                f1();
+}
+
+example_v2.c
+
+noinline void f2(void)
+{
+        volatile int a = 100, b, c;
+        for (b = 0; b < 10000; b++)
+                c = a * b;
+}
+
+noinline void f3(void)
+{
+        volatile int i;
+        for (i = 0; i < 10000;) {
+                if(i%2)
+                        i++;
+                else
+                        i++;
+        }
+}
+
+noinline void f1(void)
+{
+                f2();
+                f3();
+}
+
+int main()
+{
+        int i;
+        for (i = 0; i < 100000; i++)
+                f1();
+}
+
+[lk@localhost perf_diff]$ gcc example_v1.c -o example
+[lk@localhost perf_diff]$ perf record -o example_v1.data ./example
+[ perf record: Woken up 4 times to write data ]
+[ perf record: Captured and wrote 0.813 MB example_v1.data (~35522
+samples) ]
+
+[lk@localhost perf_diff]$ gcc example_v2.c -o example
+[lk@localhost perf_diff]$ perf record -o example_v2.data ./example
+[ perf record: Woken up 4 times to write data ]
+[ perf record: Captured and wrote 0.824 MB example_v2.data (~36015
+samples) ]
+
+Old perf diff result.
+[lk@localhost perf_diff]$ perf diff example_v1.data example_v2.data
+ Event 'cycles'
+
+ Baseline    Delta  Shared Object     Symbol
+ ........  .......  ................  ...............................
+
+                     [kernel.vmlinux]  [k] __perf_event_task_sched_out
+     0.00%           [kernel.vmlinux]  [k] apic_timer_interrupt
+                     [kernel.vmlinux]  [k] idle_cpu
+                     [kernel.vmlinux]  [k] intel_pstate_timer_func
+                     [kernel.vmlinux]  [k] native_read_msr_safe
+     0.00%           [kernel.vmlinux]  [k] native_read_tsc
+     0.00%           [kernel.vmlinux]  [k] native_write_msr_safe
+                     [kernel.vmlinux]  [k] ntp_tick_length
+     0.00%           [kernel.vmlinux]  [k] rb_erase
+     0.00%           [kernel.vmlinux]  [k] tick_sched_timer
+     0.00%           [kernel.vmlinux]  [k] unmap_single_vma
+     0.00%           [kernel.vmlinux]  [k] update_wall_time
+     0.00%           example           [.] f1
+    46.24%           example           [.] f2
+    53.71%   -7.55%  example           [.] f3
+            +53.81%  example           [.] f3
+     0.02%           example           [.] main
+
+New perf diff result.
+[lk@localhost perf_diff]$ perf diff example_v1.data example_v2.data
+ Event 'cycles'
+
+ Baseline    Delta  Shared Object     Symbol
+ ........  .......  ................  ...............................
+
+                     [kernel.vmlinux]  [k] __perf_event_task_sched_out
+     0.00%           [kernel.vmlinux]  [k] apic_timer_interrupt
+                     [kernel.vmlinux]  [k] idle_cpu
+                     [kernel.vmlinux]  [k] intel_pstate_timer_func
+                     [kernel.vmlinux]  [k] native_read_msr_safe
+     0.00%           [kernel.vmlinux]  [k] native_read_tsc
+     0.00%           [kernel.vmlinux]  [k] native_write_msr_safe
+                     [kernel.vmlinux]  [k] ntp_tick_length
+     0.00%           [kernel.vmlinux]  [k] rb_erase
+     0.00%           [kernel.vmlinux]  [k] tick_sched_timer
+     0.00%           [kernel.vmlinux]  [k] unmap_single_vma
+     0.00%           [kernel.vmlinux]  [k] update_wall_time
+     0.00%           example           [.] f1
+    46.24%   -0.08%  example           [.] f2
+    53.71%   +0.11%  example           [.] f3
+     0.02%           example           [.] main
+
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+
+---
+The patch is seperated from "[PATCH V4 0/3] perf tool: perf diff sort changes" patch set.
+The first patch of the patch set has been merged.
+The third patch of the patch set for symoff will be sent out by another thread.
+
+Changes since V4:
+ - Seperate from old patch set
+ - Add an example in changelog
+ - Update man page
+
+ tools/perf/Documentation/perf-diff.txt | 5 +++++
+ tools/perf/util/sort.c                 | 9 +++++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index e463caa..cf2be66 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -20,6 +20,11 @@ If no parameters are passed it will assume perf.data.old and perf.data.
+ The differential profile is displayed only for events matching both
+ specified perf.data files.
+ 
++If no parameters are passed the samples will be sorted by dso and symbol. 
++As the perf.data files could come from different binaries, the symbols addresses
++could vary. So perf diff is based on the comparison of the files and
++symbols name. 
++
+ OPTIONS
+ -------
+ -D::
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 82a5596..91a1c6b 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1430,6 +1430,15 @@ int sort_dimension__add(const char *tok)
+ 			sort__has_parent = 1;
+ 		} else if (sd->entry == &sort_sym) {
+ 			sort__has_sym = 1;
++			/*
++			 * perf diff displays the performance difference amongst
++			 * two or more perf.data files. Those files could come
++			 * from different binaries. So we should not compare
++			 * their ips, but the name of symbol.
++			 */
++			if (sort__mode == SORT_MODE__DIFF)
++				sd->entry->se_collapse = sort__sym_sort;
++
+ 		} else if (sd->entry == &sort_dso) {
+ 			sort__has_dso = 1;
+ 		}
+-- 
+1.8.3.2
 
