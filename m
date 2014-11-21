@@ -1,70 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966AbaKUHfN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 02:35:13 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:44823 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750856AbaKUHfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 02:35:11 -0500
-Message-ID: <1416555331.28873.8.camel@mm-sol.com>
-Subject: Re: [PATCH 3/7] pinctrl: pinconf-generic: Allow driver to specify
- DT params
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-rockchip@lists.infradead.org,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
-Date: Fri, 21 Nov 2014 09:35:31 +0200
-In-Reply-To: <7e2f4984733343fdb4ea51cf7eb4c339@BY2FFO11FD046.protection.gbl>
-References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
-	 <1415041531-15520-4-git-send-email-soren.brinkmann@xilinx.com>
-	 <CACRpkdYfj2ydLQ4q_FKwXo73jzNsvj9u2Aem9EiuEw-OCvurrg@mail.gmail.com>
-	 <1416300621.30131.6.camel@mm-sol.com>
-	 <995406b8e0244c63a3ef8e58314e81f6@BL2FFO11FD037.protection.gbl>
-	 <1416383379.30131.14.camel@mm-sol.com>
-	 <84517404cda34124930ec838a639f538@BL2FFO11FD030.protection.gbl>
-	 <1416470777.28873.1.camel@mm-sol.com>
-	 <7e2f4984733343fdb4ea51cf7eb4c339@BY2FFO11FD046.protection.gbl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.7-fta1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1757330AbaKUHvl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 02:51:41 -0500
+Received: from smtp102.mer-nm.internl.net ([217.149.192.138]:34565 "EHLO
+	smtp102.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752098AbaKUHvk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 02:51:40 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.899
+X-Spam-Languages: en
+Message-ID: <546EEF06.5090300@topic.nl>
+Date: Fri, 21 Nov 2014 08:51:34 +0100
+From: Mike Looijmans <mike.looijmans@topic.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>, <wim@iguana.be>
+CC: <linux-watchdog@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] gpio_wdt: Add "always_running" feature to GPIO watchdog
+References: <20141120172329.GA10673@roeck-us.net> <1416552828-3589-1-git-send-email-mike.looijmans@topic.nl> <546EE991.1080704@roeck-us.net>
+In-Reply-To: <546EE991.1080704@roeck-us.net>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.80.45]
+X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
+X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+﻿On 11/21/2014 08:28 AM, Guenter Roeck wrote:
+> On 11/20/2014 10:53 PM, Mike Looijmans wrote:
+>> On some chips, like the TPS386000, the trigger cannot be disabled
+>> and the CPU must keep toggling the line at all times. Add a switch
+>> "always_running" to keep toggling the GPIO line regardless of the
+>> state of the soft part of the watchdog. The "armed" member keeps
+>> track of whether a timeout must also cause a reset.
+>>
+>> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+>> ---
+>>
+>> v2: Rename property "always_running" to "always-running" and add devicetree
+>> documentation
+>>
+>>   .../devicetree/bindings/watchdog/gpio-wdt.txt      |    5 +++++
+>>   drivers/watchdog/gpio_wdt.c                        |   20
+>> +++++++++++++++++---
+>>   2 files changed, 22 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+>> b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+>> index 37afec1..1987949 100644
+>> --- a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+>> +++ b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+>> @@ -13,6 +13,11 @@ Required Properties:
+>>       by the GPIO flags.
+>>   - hw_margin_ms: Maximum time to reset watchdog circuit (milliseconds).
+>>
+>> +Optional Properties:
+>> +- always-running: If the watchdog timer cannot be disabled, add this flag to
+>> +  have the driver keep toggling the signal without a client. It will only
+>> cease
+>> +  to toggle the signal when the device is open and the timeout elapsed.
+>> +
+>>   Example:
+>>       watchdog: watchdog {
+>>           /* ADM706 */
+>> diff --git a/drivers/watchdog/gpio_wdt.c b/drivers/watchdog/gpio_wdt.c
+>> index 220a9e0..3266215 100644
+>> --- a/drivers/watchdog/gpio_wdt.c
+>> +++ b/drivers/watchdog/gpio_wdt.c
+>> @@ -31,6 +31,8 @@ struct gpio_wdt_priv {
+>>       int            gpio;
+>>       bool            active_low;
+>>       bool            state;
+>> +    bool        always_running;
+>> +    bool        armed;
+>
+> Please align columns with the other variables.
+>
+>>       unsigned int        hw_algo;
+>>       unsigned int        hw_margin;
+>>       unsigned long        last_jiffies;
+>> @@ -56,6 +58,7 @@ static int gpio_wdt_start(struct watchdog_device *wdd)
+>>       gpio_direction_output(priv->gpio, priv->state);
+>>       priv->last_jiffies = jiffies;
+>>       mod_timer(&priv->timer, priv->last_jiffies + priv->hw_margin);
+>> +    priv->armed = true;
+>>
+>>       return 0;
+>>   }
+>> @@ -64,8 +67,11 @@ static int gpio_wdt_stop(struct watchdog_device *wdd)
+>>   {
+>>       struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
+>>
+>> -    mod_timer(&priv->timer, 0);
+>> -    gpio_wdt_disable(priv);
+>> +    priv->armed = false;
+>> +    if (!priv->always_running) {
+>> +        mod_timer(&priv->timer, 0);
+>> +        gpio_wdt_disable(priv);
+>> +    }
+>>
+>>       return 0;
+>>   }
+>> @@ -91,7 +97,7 @@ static void gpio_wdt_hwping(unsigned long data)
+>>       struct watchdog_device *wdd = (struct watchdog_device *)data;
+>>       struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
+>>
+>> -    if (time_after(jiffies, priv->last_jiffies +
+>> +    if (priv->armed && time_after(jiffies, priv->last_jiffies +
+>>                  msecs_to_jiffies(wdd->timeout * 1000))) {
+>
+> Please align continuation lines.
 
-On Thu, 2014-11-20 at 08:22 -0800, Sören Brinkmann wrote:
-> 
-> 
-> Also, I hope all my changes here don't break the current behavior. So,
-> those 27 driver should still be able to do what they currently do. But I
-> hope they could migrated over to use the generic bindings only in the
-> longer term, so that these custom properties disappear.
-> 
-> > > The pinctrl driver just assembles
-> > > some data structure that has the information regarding custom properties
-> > > and the core handles the rest.
-> > 
-> > Yup, that is nice. What will be really nice if it also handle custom,
-> > "function", "groups" and "pins" properties. Otherwise most of the drivers
-> > will not be able to benefit from this.
-> 
-> Why would you still need those? 
+I'm unsure as to how you want them aligned. I thought I adhered to the kernel 
+coding guidelines, but please correct me if I did that wrong.
 
-I don't need them :-). The point was that still majority of the drivers
-will have custom parsing functions. It would be nice if we could fix
-that too. I do understand that using custom "pins", "functions"... is
-something which is deprecated, but if core parsing functions allow
-passing custom strings for above purposes, in a similar way as your
-proposal, it will be easier for those drivers to migrate, I believe.
+>
+>>           dev_crit(wdd->dev, "Timer expired. System will reboot soon!\n");
+>>           return;
+>> @@ -197,6 +203,9 @@ static int gpio_wdt_probe(struct platform_device *pdev)
+>>       /* Use safe value (1/2 of real timeout) */
+>>       priv->hw_margin = msecs_to_jiffies(hw_margin / 2);
+>>
+>> +    priv->always_running = of_property_read_bool(pdev->dev.of_node,
+>> +                "always-running");
+>> +
+> Please align continuation line with '('.
+>
+>>       watchdog_set_drvdata(&priv->wdd, priv);
+>>
+>>       priv->wdd.info        = &gpio_wdt_ident;
+>> @@ -218,6 +227,11 @@ static int gpio_wdt_probe(struct platform_device *pdev)
+>>       if (ret)
+>>           watchdog_unregister_device(&priv->wdd);
+>>
+>> +    if (priv->always_running) {
+>> +        gpio_wdt_start(&priv->wdd);
+>> +        priv->armed = false;
+>> +    }
+>> +
+>
+> This won't work if there is an error. The driver won't load but the timer
+> is started, which will likely cause a crash when the timer fires. You'll
+> have to fix the error handling.
 
-Regards,
-Ivan
+If you have an "always-running" gpio watchdog and this fails, the error 
+handling is going to be the least of your problems (the board I use this patch 
+on will power down if you don't toggle the pin every 400ms after POR).
+
+But you're absolutely right, I missed the error handling path here.
+
+An alternative approach would be to make failure to register the notifier a
+warning only. It seems harsh to me to let the system commit suicide just 
+because the shutdown notification didn't register. On the other hand, the 
+notification registration should never fail anyway (out-of-memory will result 
+in system failure soon enough).
+
+> I also dislike that you first set priv->armed in the start function and
+> then reset it, but I don't have a better idea right now.
+
+I just relied on the compiler's optimizer to remove the first assignment.
+
+Alternative would be to split the start function into two parts, where the 
+"armed" assignment is omitted from the upper part and call the upper part from 
+probe only.
+
+>
+> Guenter
+>
+>>       return ret;
+>>   }
+>>
+>>
+>
+
+
+
+Met vriendelijke groet / kind regards,
+
+Mike Looijmans
+System Expert
+
+
+TOPIC Embedded Systems
+Eindhovenseweg 32-C, NL-5683 KH Best
+Postbus 440, NL-5680 AK Best
+Telefoon: (+31) (0) 499 33 69 79
+Telefax:  (+31) (0) 499 33 69 70
+E-mail: mike.looijmans@topic.nl
+Website: www.topic.nl
+
+Please consider the environment before printing this e-mail
+
+Visit us at Bits & Chips Smart Systems 20th November, 1931 Congrescentum Brabanthallen 's-Hertogenbosch, stand number 34
+http://bc-smartsystems.nl
+
