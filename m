@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758579AbaKUN5z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 08:57:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53661 "EHLO mx2.suse.de"
+	id S1758716AbaKUN6A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 08:58:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53704 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755882AbaKUN5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 08:57:52 -0500
+	id S1758591AbaKUN54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 08:57:56 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
         LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>
@@ -18,9 +18,9 @@ Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
         Paul Mackerras <paulus@samba.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 01/10] mm: numa: Do not dereference pmd outside of the lock during NUMA hinting fault
-Date: Fri, 21 Nov 2014 13:57:39 +0000
-Message-Id: <1416578268-19597-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 04/10] ppc64: Add paranoid warnings for unexpected DSISR_PROTFAULT
+Date: Fri, 21 Nov 2014 13:57:42 +0000
+Message-Id: <1416578268-19597-5-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1416578268-19597-1-git-send-email-mgorman@suse.de>
 References: <1416578268-19597-1-git-send-email-mgorman@suse.de>
@@ -28,73 +28,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A transhuge NUMA hinting fault may find the page is migrating and should
-wait until migration completes. The check is race-prone because the pmd
-is deferenced outside of the page lock and while the race is tiny, it'll
-be larger if the PMD is cleared while marking PMDs for hinting fault.
-This patch closes the race.
+ppc64 should not be depending on DSISR_PROTFAULT and it's unexpected
+if they are triggered. This patch adds warnings just in case they
+are being accidentally depended upon.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- include/linux/migrate.h | 4 ----
- mm/huge_memory.c        | 3 ++-
- mm/migrate.c            | 6 ------
- 3 files changed, 2 insertions(+), 11 deletions(-)
+ arch/powerpc/mm/copro_fault.c |  8 ++++++--
+ arch/powerpc/mm/fault.c       | 20 +++++++++-----------
+ 2 files changed, 15 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 01aad3e..a3edcdf 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -77,7 +77,6 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
- 
- #ifdef CONFIG_NUMA_BALANCING
- extern bool pmd_trans_migrating(pmd_t pmd);
--extern void wait_migrate_huge_page(struct anon_vma *anon_vma, pmd_t *pmd);
- extern int migrate_misplaced_page(struct page *page,
- 				  struct vm_area_struct *vma, int node);
- extern bool migrate_ratelimited(int node);
-@@ -86,9 +85,6 @@ static inline bool pmd_trans_migrating(pmd_t pmd)
- {
- 	return false;
- }
--static inline void wait_migrate_huge_page(struct anon_vma *anon_vma, pmd_t *pmd)
--{
--}
- static inline int migrate_misplaced_page(struct page *page,
- 					 struct vm_area_struct *vma, int node)
- {
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 817a875..a2cd021 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1283,8 +1283,9 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * check_same as the page may no longer be mapped.
- 	 */
- 	if (unlikely(pmd_trans_migrating(*pmdp))) {
-+		page = pmd_page(*pmdp);
- 		spin_unlock(ptl);
--		wait_migrate_huge_page(vma->anon_vma, pmdp);
-+		wait_on_page_locked(page);
- 		goto out;
+diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
+index 5a236f0..0450d68 100644
+--- a/arch/powerpc/mm/copro_fault.c
++++ b/arch/powerpc/mm/copro_fault.c
+@@ -64,10 +64,14 @@ int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+ 		if (!(vma->vm_flags & VM_WRITE))
+ 			goto out_unlock;
+ 	} else {
+-		if (dsisr & DSISR_PROTFAULT)
+-			goto out_unlock;
+ 		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
+ 			goto out_unlock;
++		/*
++		 * protfault should only happen due to us
++		 * mapping a region readonly temporarily. PROT_NONE
++		 * is also covered by the VMA check above.
++		 */
++		WARN_ON_ONCE(dsisr & DSISR_PROTFAULT);
  	}
  
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 41945cb..11d86b4 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1698,12 +1698,6 @@ bool pmd_trans_migrating(pmd_t pmd)
- 	return PageLocked(page);
- }
+ 	ret = 0;
+diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
+index b434153..1bcd378 100644
+--- a/arch/powerpc/mm/fault.c
++++ b/arch/powerpc/mm/fault.c
+@@ -389,17 +389,6 @@ good_area:
+ #endif /* CONFIG_8xx */
  
--void wait_migrate_huge_page(struct anon_vma *anon_vma, pmd_t *pmd)
--{
--	struct page *page = pmd_page(*pmd);
--	wait_on_page_locked(page);
--}
+ 	if (is_exec) {
+-#ifdef CONFIG_PPC_STD_MMU
+-		/* Protection fault on exec go straight to failure on
+-		 * Hash based MMUs as they either don't support per-page
+-		 * execute permission, or if they do, it's handled already
+-		 * at the hash level. This test would probably have to
+-		 * be removed if we change the way this works to make hash
+-		 * processors use the same I/D cache coherency mechanism
+-		 * as embedded.
+-		 */
+-#endif /* CONFIG_PPC_STD_MMU */
 -
- /*
-  * Attempt to migrate a misplaced page to the specified destination
-  * node. Caller is expected to have an elevated reference count on
+ 		/*
+ 		 * Allow execution from readable areas if the MMU does not
+ 		 * provide separate controls over reading and executing.
+@@ -414,6 +403,14 @@ good_area:
+ 		    (cpu_has_feature(CPU_FTR_NOEXECUTE) ||
+ 		     !(vma->vm_flags & (VM_READ | VM_WRITE))))
+ 			goto bad_area;
++#ifdef CONFIG_PPC_STD_MMU
++		/*
++		 * protfault should only happen due to us
++		 * mapping a region readonly temporarily. PROT_NONE
++		 * is also covered by the VMA check above.
++		 */
++		WARN_ON_ONCE(error_code & DSISR_PROTFAULT);
++#endif /* CONFIG_PPC_STD_MMU */
+ 	/* a write */
+ 	} else if (is_write) {
+ 		if (!(vma->vm_flags & VM_WRITE))
+@@ -423,6 +420,7 @@ good_area:
+ 	} else {
+ 		if (!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)))
+ 			goto bad_area;
++		WARN_ON_ONCE(error_code & DSISR_PROTFAULT);
+ 	}
+ 
+ 	/*
 -- 
 2.1.2
 
