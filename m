@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaKUV13 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 16:27:29 -0500
-Received: from mga14.intel.com ([192.55.52.115]:47408 "EHLO mga14.intel.com"
+	id S1752156AbaKUVcA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 16:32:00 -0500
+Received: from mga14.intel.com ([192.55.52.115]:52314 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752490AbaKUV11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 16:27:27 -0500
+	id S1751092AbaKUVb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 16:31:58 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="419988640"
-Date: Fri, 21 Nov 2014 13:27:13 -0800 (PST)
-From: Vikas Shivappa <vikas.shivappa@intel.com>
-X-X-Sender: vikas@vshiva-Udesk
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Dave Hansen <dave.hansen@intel.com>,
-        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
-        linux-kernel@vger.kernel.org, vikas.shivappa@intel.com, hpa@zytor.com,
-        mingo@kernel.org, tj@kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        "Auld, Will" <will.auld@intel.com>, peterz@infradead.org
-Subject: Re: [PATCH] x86: Intel Cache Allocation Technology support
-In-Reply-To: <alpine.DEB.2.11.1411212139360.6439@nanos>
-Message-ID: <alpine.DEB.2.10.1411211326080.30781@vshiva-Udesk>
-References: <1416445539-24856-1-git-send-email-vikas.shivappa@linux.intel.com> <546FA0C4.1000402@intel.com> <alpine.DEB.2.11.1411212139360.6439@nanos>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+X-IronPort-AV: E=Sophos;i="5.07,432,1413270000"; 
+   d="scan'208";a="626397735"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: rui wang <ruiv.wang@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
+        "Wang, Rui Y" <rui.y.wang@intel.com>
+Subject: RE: [PATCH v3] x86/mce: Try printing all machine check banks known
+ before panic
+Thread-Topic: [PATCH v3] x86/mce: Try printing all machine check banks known
+ before panic
+Thread-Index: AQHQA9xP2DKrYSRRjki1N/RiQcamCZxoRecAgABTjfCAATqkgIAA/RuAgAEBPQD//4MAkIAAlq0A//+wGfA=
+Date: Fri, 21 Nov 2014 21:31:56 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F329504FD@ORSMSX114.amr.corp.intel.com>
+References: <1416388961-24159-1-git-send-email-ruiv.wang@gmail.com>
+ <20141119102954.GA5617@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F3294198E@ORSMSX114.amr.corp.intel.com>
+ <20141120101505.GA791@pd.tnic>
+ <CANVTcTa++Ef04JSYpfrCVuua5B0Wv=ASyr_H7nfHSQ-vC9GV3Q@mail.gmail.com>
+ <20141121164140.GA4274@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F3294F888@ORSMSX114.amr.corp.intel.com>
+ <20141121181334.GC4274@pd.tnic>
+In-Reply-To: <20141121181334.GC4274@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sALLW65A021332
 
+>
+>        /*
+>         * No machine check event found. Must be some external
+>         * source or one CPU is hung. Panic.
+>         */
+>        if (global_worst <= MCE_KEEP_SEVERITY && mca_cfg.tolerant < 3)
+>                mce_panic("Machine check from unknown source", NULL, NULL);
+>
+> Provided this comment is correct, it doesn't sound like any MCE record
+> will ever tell us what causes the error as an external source or a hung
+> CPU doesn't generate an MCE record in any bank, does it?
 
+That means there were no VALID=1, EN=1, S=1 errors anywhere.  But there
+might be some other things logged that would help us understand.
 
-On Fri, 21 Nov 2014, Thomas Gleixner wrote:
+We are into cpu errata territory here though ... we aren't supposed to get
+machine checks that don't have a logged cause.  We panic for spurious
+machine checks because we know something has gone horribly wrong,
+even if we don't know what that something was.
 
-> On Fri, 21 Nov 2014, Dave Hansen wrote:
->> On 11/19/2014 05:05 PM, Vikas Shivappa wrote:
->>> +	/*
->>> +	 * Hard code the checks and values for HSW SKUs.
->>> +	 * Unfortunately! have to check against only these brand name strings.
->>> +	 */
->>> +
->>> +	for (i = 0; i < 5; i++)
->>> +		if (!strcmp(hsw_brandstrs[i], c->x86_model_id)) {
->>> +			c->x86_cqe_closs = 4;
->>> +			c->x86_cqe_cbmlength = 20;
->>> +			return true;
->>> +		}
->>
->> Please use ARRAY_SIZE() here.  Otherwise, I guarantee the next string
->> you add to hsw_brandstrs[] gets silently ignored.
->>
->> Are there really only 5 CPUs?  This:
->>
->>> http://ark.intel.com/products/family/78583/Intel-Xeon-Processor-E5-v3-Family#@Server
->>
->> lists 32 skus.
->
-> We really should find a proper software probing solution for this
-> instead of having a gazillion of brand strings plus micro code version
-> checks around for this.
->
-> Why cant the HW folks release a micro code version which fixes the
-> obviously wreckaged CPUID enumeration of this feature instead of
-> burdening us with that horror?
->
-> Can you please find a proper sized clue bat and whack your HW folks
-> over the head for this insanity?
-Ok , we were in the process of checking this as its not usual to make 5 
-expensive brand strings. Will update status in next version.
-
-Thanks,
-Vikas
->
-> Thanks,
->
-> 	tglx
->
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
