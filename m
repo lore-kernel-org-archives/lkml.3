@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750876AbaKUFT3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 00:19:29 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:48346 "EHLO
+	id S1751230AbaKUFTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 00:19:50 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:48354 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704AbaKUFT1 (ORCPT
+	with ESMTP id S1750922AbaKUFTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 00:19:27 -0500
-Message-ID: <1416547164.27917.71.camel@haakon3.risingtidesystems.com>
+	Fri, 21 Nov 2014 00:19:48 -0500
+Message-ID: <1416547137.27917.70.camel@haakon3.risingtidesystems.com>
 Subject: [GIT PULL] target fixes for v3.18-rc6
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: target-devel <target-devel@vger.kernel.org>,
         linux-scsi <linux-scsi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 20 Nov 2014 21:19:24 -0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+Date: Thu, 20 Nov 2014 21:18:57 -0800
 Mime-Version: 1.0
+X-Mailer: Evolution 3.4.4-1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -75,5 +75,4 @@ Steven Allen (2):
  drivers/target/target_core_transport.c  |  2 +-
  drivers/vhost/scsi.c                    | 24 ++++++++++++++++++
  6 files changed, 69 insertions(+), 20 deletions(-)
-
 
