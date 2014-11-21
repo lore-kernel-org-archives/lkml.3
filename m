@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757897AbaKUDsN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 22:48:13 -0500
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:49883 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757092AbaKUDsL (ORCPT
+	id S1757330AbaKUDyh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 22:54:37 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:41019 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756837AbaKUDyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 22:48:11 -0500
+	Thu, 20 Nov 2014 22:54:36 -0500
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 21 Nov 2014 12:54:42 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mahendran Ganesh <opensource.ganesh@gmail.com>
+Cc: ngupta@vflare.org, iamjoonsoo.kim@lge.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mm/zsmalloc: remove unnecessary check
+Message-ID: <20141121035442.GB10123@bbox>
+References: <1416489716-9967-1-git-send-email-opensource.ganesh@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <546E24CC.2040402@gmail.com>
-References: <546E24CC.2040402@gmail.com>
-Date: Fri, 21 Nov 2014 09:18:10 +0530
-Message-ID: <CAKohpo=k3uTNAak=ejompWe5jW=dTbQS3M2zx=eCwgFJpu_ekw@mail.gmail.com>
-Subject: Re: Question about FIX ME in cpufreq-dt.c
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: nick <xerofoify@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1416489716-9967-1-git-send-email-opensource.ganesh@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 November 2014 22:58, nick <xerofoify@gmail.com> wrote:
-> Greetings Rafael and the other maintainers,
+On Thu, Nov 20, 2014 at 09:21:56PM +0800, Mahendran Ganesh wrote:
+> ZS_SIZE_CLASSES is calc by:
+>   ((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / ZS_SIZE_CLASS_DELTA + 1)
+> 
+> So when i is in [0, ZS_SIZE_CLASSES - 1), the size:
+>   size = ZS_MIN_ALLOC_SIZE + i * ZS_SIZE_CLASS_DELTA
+> will not be greater than ZS_MAX_ALLOC_SIZE
+> 
+> This patch removes the unnecessary check.
 
-Hi.
+It depends on ZS_MIN_ALLOC_SIZE.
+For example, we would change min to 8 but MAX is still 4096.
+ZS_SIZE_CLASSES is (4096 - 8) / 16 + 1 = 256 so 8 + 255 * 16 = 4088,
+which exceeds the max.
 
-> I am curious about the FIX ME in cpufreq-dt.c about not using a for loop or running this part of the code on all
-> CPUs.
+> 
+> Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
+> ---
+>  mm/zsmalloc.c |    2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index b3b57ef..f2279e2 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -973,8 +973,6 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+>  		struct size_class *prev_class;
+>  
+>  		size = ZS_MIN_ALLOC_SIZE + i * ZS_SIZE_CLASS_DELTA;
+> -		if (size > ZS_MAX_ALLOC_SIZE)
+> -			size = ZS_MAX_ALLOC_SIZE;
+>  		pages_per_zspage = get_pages_per_zspage(size);
+>  
+>  		/*
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-In case this isn't enough then the loop should be run for any one CPU
-from each cluster.
-That will guarantee that we have completed regulator/clk
-initialization for all the clusters..
-But checking for all CPUs might be fine as well..
-
-> If not can I remove the FIX ME or if it's valid can one of the maintainers send me so advice on to fix it
-> as I will write a patch if need be to fix it.
-
-The deal is that we aren't yet sure if we are really required to check
-this for all CPUs.
-So, we are waiting for the first platform to break and can be fixed
-then. So, just leave it
-as is for now :)
-
-Thanks for caring for it :)
+-- 
+Kind regards,
+Minchan Kim
