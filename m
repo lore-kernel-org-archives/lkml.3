@@ -1,50 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886AbaKUS0J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:26:09 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:39224 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160AbaKUSZt (ORCPT
+	id S1752100AbaKUSZN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:25:13 -0500
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:47128 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaKUSZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:25:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141121181332.GY3815@sirena.org.uk>
-References: <1416512485-7292-1-git-send-email-joshc@codeaurora.org>
-	<1416512485-7292-4-git-send-email-joshc@codeaurora.org>
-	<20141121181332.GY3815@sirena.org.uk>
-Date: Fri, 21 Nov 2014 10:25:48 -0800
-Message-ID: <CAJAp7OhY2pz+ppjbYRrjZ2E3Bn9NM54dfs1=xoqxd5tG5e3WaQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] regulator: rpm: add support for RPM-controller SMB208
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Mark Brown <broonie@kernel.org>
-Cc: Josh Cartwright <joshc@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 21 Nov 2014 13:25:10 -0500
+From: Toshi Kani <toshi.kani@hp.com>
+To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        akpm@linux-foundation.org, arnd@arndb.de
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
+        stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
+        yigal@plexistor.com, konrad.wilk@oracle.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v6 3/7] x86, mm, asm-gen: Add ioremap_wt() for WT
+Date: Fri, 21 Nov 2014 11:10:36 -0700
+Message-Id: <1416593440-23083-4-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1416593440-23083-1-git-send-email-toshi.kani@hp.com>
+References: <1416593440-23083-1-git-send-email-toshi.kani@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 10:13 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Thu, Nov 20, 2014 at 01:41:25PM -0600, Josh Cartwright wrote:
->> The IPQ8064 reference boards make use of SMB208 regulators which are
->> controlled by RPM.  Implement support for these regulators in the RPM
->> regulator driver.
->
-> I'm missing both patches 1-3 and the cover letter, what's the story
-> with the series - are there interdependencies?
+This patch adds ioremap_wt() for creating WT mapping on x86.
+It follows the same model as ioremap_wc() for multi-architecture
+support.  ARCH_HAS_IOREMAP_WT is defined in the x86 version of
+io.h to indicate that ioremap_wt() is implemented on x86.
 
-Hi Mark,
+Also update the PAT documentation file to cover ioremap_wt().
 
-There are no new dependencies introduced here, patch 1 and 2 are DT
-and mfd additions. So you can apply this patch independently in your
-tree.
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ Documentation/x86/pat.txt   |    4 +++-
+ arch/x86/include/asm/io.h   |    2 ++
+ arch/x86/mm/ioremap.c       |   24 ++++++++++++++++++++++++
+ include/asm-generic/io.h    |    4 ++++
+ include/asm-generic/iomap.h |    4 ++++
+ 5 files changed, 37 insertions(+), 1 deletion(-)
 
-Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-
-Regards,
-Bjorn
+diff --git a/Documentation/x86/pat.txt b/Documentation/x86/pat.txt
+index cf08c9f..be7b8c2 100644
+--- a/Documentation/x86/pat.txt
++++ b/Documentation/x86/pat.txt
+@@ -12,7 +12,7 @@ virtual addresses.
+ 
+ PAT allows for different types of memory attributes. The most commonly used
+ ones that will be supported at this time are Write-back, Uncached,
+-Write-combined and Uncached Minus.
++Write-combined, Write-through and Uncached Minus.
+ 
+ 
+ PAT APIs
+@@ -38,6 +38,8 @@ ioremap_nocache        |    --    |    UC-     |       UC-        |
+                        |          |            |                  |
+ ioremap_wc             |    --    |    --      |       WC         |
+                        |          |            |                  |
++ioremap_wt             |    --    |    --      |       WT         |
++                       |          |            |                  |
+ set_memory_uc          |    UC-   |    --      |       --         |
+  set_memory_wb         |          |            |                  |
+                        |          |            |                  |
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 71b9e65..c813c86 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -35,6 +35,7 @@
+   */
+ 
+ #define ARCH_HAS_IOREMAP_WC
++#define ARCH_HAS_IOREMAP_WT
+ 
+ #include <linux/string.h>
+ #include <linux/compiler.h>
+@@ -316,6 +317,7 @@ extern void unxlate_dev_mem_ptr(unsigned long phys, void *addr);
+ extern int ioremap_change_attr(unsigned long vaddr, unsigned long size,
+ 				enum page_cache_mode pcm);
+ extern void __iomem *ioremap_wc(resource_size_t offset, unsigned long size);
++extern void __iomem *ioremap_wt(resource_size_t offset, unsigned long size);
+ 
+ extern bool is_early_ioremap_ptep(pte_t *ptep);
+ 
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 8832e51..ee6e55a 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -167,6 +167,10 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 		prot = __pgprot(pgprot_val(prot) |
+ 				cachemode2protval(_PAGE_CACHE_MODE_WC));
+ 		break;
++	case _PAGE_CACHE_MODE_WT:
++		prot = __pgprot(pgprot_val(prot) |
++				cachemode2protval(_PAGE_CACHE_MODE_WT));
++		break;
+ 	case _PAGE_CACHE_MODE_WB:
+ 		break;
+ 	}
+@@ -261,6 +265,26 @@ void __iomem *ioremap_wc(resource_size_t phys_addr, unsigned long size)
+ }
+ EXPORT_SYMBOL(ioremap_wc);
+ 
++/**
++ * ioremap_wt	-	map memory into CPU space write through
++ * @phys_addr:	bus address of the memory
++ * @size:	size of the resource to map
++ *
++ * This version of ioremap ensures that the memory is marked write through.
++ * Write through stores data into memory while keeping the cache up-to-date.
++ *
++ * Must be freed with iounmap.
++ */
++void __iomem *ioremap_wt(resource_size_t phys_addr, unsigned long size)
++{
++	if (pat_enabled)
++		return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WT,
++					__builtin_return_address(0));
++	else
++		return ioremap_nocache(phys_addr, size);
++}
++EXPORT_SYMBOL(ioremap_wt);
++
+ void __iomem *ioremap_cache(resource_size_t phys_addr, unsigned long size)
+ {
+ 	return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WB,
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index b8fdc57..9dd07bf 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -322,6 +322,10 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+ #define ioremap_wc ioremap_nocache
+ #endif
+ 
++#ifndef ioremap_wt
++#define ioremap_wt ioremap_nocache
++#endif
++
+ static inline void iounmap(void __iomem *addr)
+ {
+ }
+diff --git a/include/asm-generic/iomap.h b/include/asm-generic/iomap.h
+index 1b41011..d8f8622 100644
+--- a/include/asm-generic/iomap.h
++++ b/include/asm-generic/iomap.h
+@@ -66,6 +66,10 @@ extern void ioport_unmap(void __iomem *);
+ #define ioremap_wc ioremap_nocache
+ #endif
+ 
++#ifndef ARCH_HAS_IOREMAP_WT
++#define ioremap_wt ioremap_nocache
++#endif
++
+ #ifdef CONFIG_PCI
+ /* Destroy a virtual mapping cookie for a PCI BAR (memory or IO) */
+ struct pci_dev;
