@@ -1,127 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751368AbaKUSJh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:09:37 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36959 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752AbaKUSJg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:09:36 -0500
-Date: Fri, 21 Nov 2014 18:09:25 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ding Tianhong <dingtianhong@huawei.com>
-Subject: Re: For the problem when using swiotlb
-Message-ID: <20141121180925.GG19783@e104818-lin.cambridge.arm.com>
-References: <5469E26B.2010905@huawei.com>
- <5029442.vhLMp7Ns7F@wuerfel>
- <20141121165708.GF19783@e104818-lin.cambridge.arm.com>
- <2530749.roRsteyaXx@wuerfel>
- <20141121175118.GA10451@localhost>
+	id S1751504AbaKUSKI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:10:08 -0500
+Received: from sauhun.de ([89.238.76.85]:53431 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750939AbaKUSKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 13:10:07 -0500
+Date: Fri, 21 Nov 2014 19:11:25 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Alexander Kochetkov <al.kochet@gmail.com>
+Cc: linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH 3/4] i2c: omap: don't reset controller if Arbitration
+ Lost detected
+Message-ID: <20141121181125.GD3754@katana>
+References: <1416518925-20679-1-git-send-email-al.kochet@gmail.com>
+ <1416518925-20679-4-git-send-email-al.kochet@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="x4pBfXISqBoDm8sr"
 Content-Disposition: inline
-In-Reply-To: <20141121175118.GA10451@localhost>
+In-Reply-To: <1416518925-20679-4-git-send-email-al.kochet@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 05:51:19PM +0000, Catalin Marinas wrote:
-> On Fri, Nov 21, 2014 at 05:04:28PM +0000, Arnd Bergmann wrote:
-> > On Friday 21 November 2014 16:57:09 Catalin Marinas wrote:
-> > > There is a scenario where smaller mask would work on arm64. For example
-> > > Juno, you can have 2GB of RAM in the 32-bit phys range (starting at
-> > > 0x80000000). A device with 31-bit mask and a dma_pfn_offset of
-> > > 0x80000000 would still work (there isn't any but just as an example). So
-> > > the check in dma_alloc_coherent() would be something like:
-> > > 
-> > > 	phys_to_dma(top of ZONE_DMA) - dma_pfn_offset <= coherent_dma_mask
-> > > 
-> > > (or assuming RAM starts at 0 and ignoring dma_pfn_offset for now)
-> > > 
-> > > If the condition above fails, dma_alloc_coherent() would no longer fall
-> > > back to swiotlb but issue a dev_warn() and return NULL.
-> > 
-> > Ah, that looks like it should work on all architectures, very nice.
-> > How about checking this condition, and then printing a small warning
-> > (dev_warn, not WARN_ON) and setting the dma_mask pointer to NULL?
-> 
-> I would not add the above ZONE_DMA check to of_dma_configure(). For
-> example on arm64, we may not support a small coherent_dma_mask but the
-> same value for dma_mask could be fine via swiotlb bouncing (or IOMMU).
-> However, that's an arch-specific decision. Maybe after the above setting
-> of dev->coherent_dma_mask in of_dma_configure(), we could add:
-> 
-> 	if (!dma_supported(dev, dev->coherent_dma_mask))
-> 		dev->dma_mask = NULL;
-> 
-> The arch dma_supported() can check the swiotlb bouncing or ZONE_DMA
-> limits.
 
-More precisely, that's what I meant:
+--x4pBfXISqBoDm8sr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 3b64d0bf5bba..4fcdfed6a6df 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -172,13 +172,6 @@ static void of_dma_configure(struct device *dev)
- 	dev->coherent_dma_mask = DMA_BIT_MASK(32);
- 
- 	/*
--	 * Set it to coherent_dma_mask by default if the architecture
--	 * code has not set it.
--	 */
--	if (!dev->dma_mask)
--		dev->dma_mask = &dev->coherent_dma_mask;
--
--	/*
- 	 * if dma-coherent property exist, call arch hook to setup
- 	 * dma coherent operations.
- 	 */
-@@ -188,18 +181,32 @@ static void of_dma_configure(struct device *dev)
- 	}
- 
- 	/*
--	 * if dma-ranges property doesn't exist - just return else
--	 * setup the dma offset
-+	 * If dma-ranges property exists - setup the dma offset.
- 	 */
- 	ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
- 	if (ret < 0) {
- 		dev_dbg(dev, "no dma range information to setup\n");
--		return;
-+		size = 0;
-+	} else {
-+		/* DMA ranges found. Calculate and set dma_pfn_offset */
-+		dev->dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
-+		dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
- 	}
- 
--	/* DMA ranges found. Calculate and set dma_pfn_offset */
--	dev->dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
--	dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
-+	/*
-+	 * If the bus dma-ranges property specifies a size smaller than 4GB,
-+	 * the device would not be capable of accessing the whole 32-bit
-+	 * space, so reduce the default coherent_dma_mask accordingly.
-+	 */
-+	if (size && size < (1ULL << 32))
-+		dev->coherent_dma_mask = DMA_BIT_MASK(ilog2(size));
-+
-+	/*
-+	 * Set dma_mask to coherent_dma_mask by default if the architecture
-+	 * code has not set it and DMA on such mask is supported.
-+	 */
-+	if (!dev->dma_mask && dma_supported(dev, dev->coherent_dma_mask))
-+		dev->dma_mask = &dev->coherent_dma_mask;
- }
- 
- /**
+On Fri, Nov 21, 2014 at 01:28:44AM +0400, Alexander Kochetkov wrote:
+> Arbitration Lost is a expected situation in a multimaster environment.
+> IP correctly detect it.
+>=20
+> The only reason for reseting IP in the AL case is to be sure to
+> avoid advisory 1.94 (omap3) and errata i595 (omap4):
+> "I2C: After an Arbitration is Lost the Module Incorrectly Starts
+> the Next Transfer" with workaround: "The MST and STT bits inside
+> I2C_CON should be set to 1 at the same moment (avoid setting the
+> MST bit to 1 while STT =3D 0)."
+>=20
+> The driver never writes MST and STT bits separately and doesn't
+> create condition for errata. So the reset is not necessary.
+>=20
+> Tested on Beagleboard XM C.
+>=20
+> Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
+> ---
+>  drivers/i2c/busses/i2c-omap.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+> index 3ffb9c0..47103e7 100644
+> --- a/drivers/i2c/busses/i2c-omap.c
+> +++ b/drivers/i2c/busses/i2c-omap.c
+> @@ -707,13 +707,17 @@ static int omap_i2c_xfer_msg(struct i2c_adapter *ad=
+ap,
+>  		return 0;
+> =20
+>  	/* We have an error */
+> -	if (dev->cmd_err & (OMAP_I2C_STAT_AL | OMAP_I2C_STAT_ROVR |
+> +	if (dev->cmd_err & (OMAP_I2C_STAT_ROVR |
+>  			    OMAP_I2C_STAT_XUDF)) {
+>  		omap_i2c_reset(dev);
+>  		__omap_i2c_init(dev);
+>  		return -EIO;
+>  	}
+> =20
+> +	if (dev->cmd_err & OMAP_I2C_STAT_AL) {
+> +		return -EIO;
+> +	}
 
--- 
-Catalin
+The errno for AL is -EAGAIN. Curly braces are not needed.
+
+> +
+>  	if (dev->cmd_err & OMAP_I2C_STAT_NACK) {
+>  		if (msg->flags & I2C_M_IGNORE_NAK)
+>  			return 0;
+> --=20
+> 1.7.9.5
+>=20
+
+--x4pBfXISqBoDm8sr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUb4BNAAoJEBQN5MwUoCm25T4P/1ewQDUeHc0TOlcS0LNREi/E
+MPT4dAf2Xu2I2NGJpGfUxfXpD4XvC8rl8cyZWzm9za6r51nLn7Bb4Wy3eKlIEN1n
+h5N5XaBpFNmSFxz/nsVTaRxr+Q4tfP9jWPckprJhKmJIRcXTkmE4eaT0/OV/Vd+2
+IBRj6d99TRvytj9ZS3YOCS3iNXamd1obJd4P9auM1KEUqFBBY7FiQs3PyUZBkuf/
+jcZdNcZtrz2DgZiun2j90XfQ4nhSu3xeSgWj0KCow/MgXShXwWC4mSpgYKcn1PMO
+gRgr1TFmHoYgozjtnkGAWlWlxn6lYV88rJv2We7fx6XNtqypHYBk8AIQix3JD4CF
+aAARYAiJQfqfhT64sovFemergbxm9TCWrukqDBVFO1a3e1ElvFbM/ujBwTn03lDY
+KxeowSNy5A6+XnGyf7lbaGMQC1abUlEcTnuy4BhWIF3liRK1IFhRWF4wjXlKFSWi
+MXqa7iAGHTCrwx5Z033pm6K9qHD1js+aAOj/5WebYs7IiCCBy0Keforq8/jHZAuu
+dnWIj+Ao4bYJNlWOVXrbnitk0gJdB2AP6fdri1y+juQ5UKNw1/CRot4c4/rklgK/
+GozeZPebsUZ2b1sDfUP5UJJK6Ckkbg2am3RWHYG4bG6yFur2Rq4Q4Mjf4OwZIoJk
+W/UIHKGmkGK6txWlf/mI
+=1bEl
+-----END PGP SIGNATURE-----
+
+--x4pBfXISqBoDm8sr--
