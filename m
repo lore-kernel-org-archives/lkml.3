@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758948AbaKUQtB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:49:01 -0500
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:59931 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321AbaKUQs7 (ORCPT
+	id S1758987AbaKUQtL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:49:11 -0500
+Received: from smtp09.smtpout.orange.fr ([80.12.242.131]:59573 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758849AbaKUQtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:48:59 -0500
+	Fri, 21 Nov 2014 11:49:01 -0500
+X-ME-Helo: beldin
+X-ME-Date: Fri, 21 Nov 2014 17:48:58 +0100
+X-ME-IP: 109.222.88.20
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Michal Marek <mmarek@suse.cz>, Daniel Mack <daniel@zonque.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kbuild@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: arm: pxa: CPU_PXA27x?
+References: <1416566627.6958.16.camel@x220>
+X-URL: http://belgarath.falguerolles.org/
+Date: Fri, 21 Nov 2014 17:48:55 +0100
+In-Reply-To: <1416566627.6958.16.camel@x220> (Paul Bolle's message of "Fri, 21
+	Nov 2014 11:43:47 +0100")
+Message-ID: <87vbm85wjs.fsf@free.fr>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
-References: <alpine.DEB.2.11.1411200002330.3909@nanos>
-	<20141119235033.GE11386@lerouge>
-	<20141120122339.GA14877@htj.dyndns.org>
-	<alpine.DEB.2.11.1411202204030.3950@nanos>
-	<20141120221122.GA25393@htj.dyndns.org>
-	<alpine.DEB.2.11.1411202315230.3950@nanos>
-	<20141120230514.GB25393@htj.dyndns.org>
-	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
-	<20141120233920.GC25393@htj.dyndns.org>
-	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
-	<20141121162742.GB15461@htj.dyndns.org>
-	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
-Date: Fri, 21 Nov 2014 08:48:58 -0800
-X-Google-Sender-Auth: nz8ARmMqrMxvv8Nokbi2h-ZRJDU
-Message-ID: <CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 8:38 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+Paul Bolle <pebolle@tiscali.nl> writes:
+
+> Robert,
 >
-> If you move the vmalloc fixup before exception_enter() and return if
-> the fault was from vmalloc, then you can't recurse.  You need to be
-> careful not to touch anything that uses RCU before exception_enter,
-> though.
+> Your commit 03ec7fe70c5c ("arm: pxa: add pxa27x device-tree support") is
+> included in today's linux-next (ie, next-20141121). It adds a select
+> statement for CPU_PXA27x. But there's no Kconfig symbol CPU_PXA27x.
+Ah yes, you're perfectly right, CPU_PXA27x was not the one, it was PXA27x, sic
+..
 
-This is probably the right thing to do anyway.
+>
+> Why is that select needed? For what it's worth: __cpu_is_pxa27x()
+> compiles to something interesting if CONFIG_PXA27x is defined.
+You mean "is not defined", right ?
 
-The vmalloc fixup is purely about filling in hardware structures, so
-there really shouldn't be any need for RCU or anything else. It should
-probably be done first, before *anything* else (like the whole
-kmemcheck/kmmio fault etc handling)
+That (CONFIG_PXA27x) select is needed because without it the arm cpu
+architecture is not selected, ie. CONFIG_CPU_XSCALE is not set. And this in turn
+is needed to choose the basic arm operations like TLB handling, cache handling,
+etc ... You cannot compile a single platform kernel without this.
 
-That said, the whole vmalloc_fault fixup routine does some odd things,
-over and beyond just filling in the page tables. So I'm not 100% sure
-that is safe as-is. The 32-bit version looks fine, but the x86-64
-version is very very dubious.
+As a poor excuse, I hadn't seen this because this resulted from a poor merge
+resolution which brought in both "select PXA27x" and "select CPU_PXA27x".
 
-The x86-64 version does crazy things like:
+> In https://lkml.org/lkml/2014/9/30/578 I proposed a patch that emits a
+> warning in cases like this. Like _all_ Kconfig related patches I've seen
+> flying by lately it appears to be dropped in /dev/null. What's going on?
+For that one I don't know.
 
- - uses "current->active_mm", which is very dubious
- - flush lazy mmu mode
- - walk down further in the page tables
+Ah, and yes I'll send an update patch to remove the "select CPU_PXA27x", thanks
+for noticing this.
 
-and those are just bugs, imnsho. Get rid of that crap. The 32-bit code
-does it right.
+Cheers.
 
-(The 64-bit mode also has a "WARN_ON_ONCE(in_nmi())", which I guess is
-good - but it's good because the 64-bit version is written the way it
-is).
-
-                    Linus
+-- 
+Robert
