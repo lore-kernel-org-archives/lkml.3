@@ -1,154 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758785AbaKUQbv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:31:51 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:32819 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbaKUQbu (ORCPT
+	id S1758844AbaKUQdn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:33:43 -0500
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:37479 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755084AbaKUQdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:31:50 -0500
-X-IronPort-AV: E=Sophos;i="5.07,432,1413244800"; 
-   d="scan'208";a="195303813"
-Date: Fri, 21 Nov 2014 16:31:31 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, <david.vrabel@citrix.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v9 10/13] xen/arm/arm64: introduce
- xen_arch_need_swiotlb
-In-Reply-To: <1415792454-23161-10-git-send-email-stefano.stabellini@eu.citrix.com>
-Message-ID: <alpine.DEB.2.02.1411211617090.2675@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com> <1415792454-23161-10-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 21 Nov 2014 11:33:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+In-Reply-To: <1416582363-20661-8-git-send-email-bobby.prani@gmail.com>
+References: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
+	<1416582363-20661-8-git-send-email-bobby.prani@gmail.com>
+Date: Fri, 21 Nov 2014 08:33:40 -0800
+X-Google-Sender-Auth: m39MLKCdpBSCly49mO_Z6HoBAZQ
+Message-ID: <CAGXu5j+voSykTQ1sCh9+a8XuA-uhSKn1iNkEPX2bap0g4kK9PA@mail.gmail.com>
+Subject: Re: [PATCH v2 7/9] seccomp: Replace smp_read_barrier_depends() with lockless_dereference()
+From: Kees Cook <keescook@chromium.org>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Will Drewry <wad@chromium.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Nov 2014, Stefano Stabellini wrote:
-> Introduce an arch specific function to find out whether a particular dma
-> mapping operation needs to bounce on the swiotlb buffer.
-> 
-> On ARM and ARM64, if the page involved is a foreign page and the device
-> is not coherent, we need to bounce because at unmap time we cannot
-> execute any required cache maintenance operations (we don't know how to
-> find the pfn from the mfn).
-> 
-> No change of behaviour for x86.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-> Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-I am thinking of asking a backport of this patch to 3.16+
-
-The catch is that is_device_dma_coherent is not available on older
-kernels, so I'll have to change the arm implementation of
-xen_arch_need_swiotlb to:
-
-+bool xen_arch_need_swiotlb(struct device *dev,
-+			   unsigned long pfn,
-+			   unsigned long mfn)
-+{
-+	return pfn != mfn;
-+}
-+
-
-It is going to make things slower but it is going to fix the issue with
-cache flushing buffers for non-coherent devices.
-
-Konrad, are you OK with that?
-
-
-> Changes in v6:
-> - fix ts.
-> 
-> Changes in v5:
-> - fix indentation.
+On Fri, Nov 21, 2014 at 7:06 AM, Pranith Kumar <bobby.prani@gmail.com> wrote:
+> Recently lockless_dereference() was added which can be used in place of
+> hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
+>
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 > ---
->  arch/arm/include/asm/xen/page.h |    4 ++++
->  arch/arm/xen/mm.c               |    7 +++++++
->  arch/x86/include/asm/xen/page.h |    7 +++++++
->  drivers/xen/swiotlb-xen.c       |    5 ++++-
->  4 files changed, 22 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-> index 135c24a..68c739b 100644
-> --- a/arch/arm/include/asm/xen/page.h
-> +++ b/arch/arm/include/asm/xen/page.h
-> @@ -107,4 +107,8 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
->  #define xen_remap(cookie, size) ioremap_cache((cookie), (size))
->  #define xen_unmap(cookie) iounmap((cookie))
->  
-> +bool xen_arch_need_swiotlb(struct device *dev,
-> +			   unsigned long pfn,
-> +			   unsigned long mfn);
-> +
->  #endif /* _ASM_ARM_XEN_PAGE_H */
-> diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-> index ab700e1..28ebf3e 100644
-> --- a/arch/arm/xen/mm.c
-> +++ b/arch/arm/xen/mm.c
-> @@ -100,6 +100,13 @@ void __xen_dma_sync_single_for_device(struct device *hwdev,
->  	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
->  }
->  
-> +bool xen_arch_need_swiotlb(struct device *dev,
-> +			   unsigned long pfn,
-> +			   unsigned long mfn)
-> +{
-> +	return ((pfn != mfn) && !is_device_dma_coherent(dev));
-> +}
-> +
->  int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
->  				 unsigned int address_bits,
->  				 dma_addr_t *dma_handle)
-> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-> index c949923..f58ef6c 100644
-> --- a/arch/x86/include/asm/xen/page.h
-> +++ b/arch/x86/include/asm/xen/page.h
-> @@ -236,4 +236,11 @@ void make_lowmem_page_readwrite(void *vaddr);
->  #define xen_remap(cookie, size) ioremap((cookie), (size));
->  #define xen_unmap(cookie) iounmap((cookie))
->  
-> +static inline bool xen_arch_need_swiotlb(struct device *dev,
-> +					 unsigned long pfn,
-> +					 unsigned long mfn)
-> +{
-> +	return false;
-> +}
-> +
->  #endif /* _ASM_X86_XEN_PAGE_H */
-> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> index ad2c5eb..3725ee4 100644
-> --- a/drivers/xen/swiotlb-xen.c
-> +++ b/drivers/xen/swiotlb-xen.c
-> @@ -399,7 +399,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
->  	 * buffering it.
->  	 */
->  	if (dma_capable(dev, dev_addr, size) &&
-> -	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
-> +	    !range_straddles_page_boundary(phys, size) &&
-> +		!xen_arch_need_swiotlb(dev, PFN_DOWN(phys), PFN_DOWN(dev_addr)) &&
-> +		!swiotlb_force) {
->  		/* we are not interested in the dma_addr returned by
->  		 * xen_dma_map_page, only in the potential cache flushes executed
->  		 * by the function. */
-> @@ -557,6 +559,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
->  		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
->  
->  		if (swiotlb_force ||
-> +		    xen_arch_need_swiotlb(hwdev, PFN_DOWN(paddr), PFN_DOWN(dev_addr)) ||
->  		    !dma_capable(hwdev, dev_addr, sg->length) ||
->  		    range_straddles_page_boundary(paddr, sg->length)) {
->  			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
-> -- 
-> 1.7.10.4
-> 
+>  kernel/seccomp.c | 7 +++----
+>  1 file changed, 3 insertions(+), 4 deletions(-)
+
+Thanks!
+
+Acked-by: Kees Cook <keescook@chromium.org>
+
+Do you need me to carry this patch in the seccomp tree, or will
+someone else be taking your entire series?
+
+-Kees
+
+>
+> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+> index 4ef9687..3729b06 100644
+> --- a/kernel/seccomp.c
+> +++ b/kernel/seccomp.c
+> @@ -175,17 +175,16 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
+>   */
+>  static u32 seccomp_run_filters(struct seccomp_data *sd)
+>  {
+> -       struct seccomp_filter *f = ACCESS_ONCE(current->seccomp.filter);
+>         struct seccomp_data sd_local;
+>         u32 ret = SECCOMP_RET_ALLOW;
+> +       /* Make sure cross-thread synced filter points somewhere sane. */
+> +       struct seccomp_filter *f =
+> +                       lockless_dereference(current->seccomp.filter);
+>
+>         /* Ensure unexpected behavior doesn't result in failing open. */
+>         if (unlikely(WARN_ON(f == NULL)))
+>                 return SECCOMP_RET_KILL;
+>
+> -       /* Make sure cross-thread synced filter points somewhere sane. */
+> -       smp_read_barrier_depends();
+> -
+>         if (!sd) {
+>                 populate_seccomp_data(&sd_local);
+>                 sd = &sd_local;
+> --
+> 1.9.1
+>
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
