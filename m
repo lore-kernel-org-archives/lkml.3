@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758040AbaKUFGW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 00:06:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50399 "EHLO
+	id S1758193AbaKUFH2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 00:07:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50352 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752305AbaKUFET (ORCPT
+	with ESMTP id S1751816AbaKUFEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 00:04:19 -0500
+	Fri, 21 Nov 2014 00:04:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
         teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
         linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: daniel@zonque.org, dh.herrmann@gmail.com, tixxdz@opendz.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: kdbus: add connection pool implementation
-Date: Thu, 20 Nov 2014 21:02:20 -0800
-Message-Id: <1416546149-24799-5-git-send-email-gregkh@linuxfoundation.org>
+Subject: kdbus: add policy database implementation
+Date: Thu, 20 Nov 2014 21:02:27 -0800
+Message-Id: <1416546149-24799-12-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1416546149-24799-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1416546149-24799-1-git-send-email-gregkh@linuxfoundation.org>
@@ -25,50 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Mack <daniel@zonque.org>
 
-A pool for data received from the kernel is installed for every
-connection of the bus, and it is used to copy data from the kernel to
-userspace clients, for messages and other information.
+This patch adds the policy database implementation.
 
-It is accessed when one of the following ioctls is issued:
+A policy databases restrict the possibilities of connections to own,
+see and talk to well-known names. It can be associated with a bus
+(through a policy holder connection) or a custom endpoint.
 
-  * KDBUS_CMD_MSG_RECV, to receive a message
-  * KDBUS_CMD_NAME_LIST, to dump the name registry
-  * KDBUS_CMD_CONN_INFO, to retrieve information on a connection
+By default, buses have an empty policy database that is augmented on
+demand when a policy holder connection is instantiated.
 
-The offsets returned by either one of the aforementioned ioctls
-describe offsets inside the pool. Internally, the pool is organized in
-slices, that are dynamically allocated on demand. The overall size of
-the pool is chosen by the connection when it connects to the bus with
-KDBUS_CMD_HELLO.
+Policies are set through KDBUS_CMD_HELLO (when creating a policy
+holder connection), KDBUS_CMD_CONN_UPDATE (when updating a policy
+holder connection), KDBUS_CMD_EP_MAKE (creating a custom endpoint)
+or KDBUS_CMD_EP_UPDATE (updating a custom endpoint). In all cases,
+the name and policy access information is stored in items of type
+KDBUS_ITEM_NAME and KDBUS_ITEM_POLICY_ACCESS.
 
-In order to make the slice available for subsequent calls,
-KDBUS_CMD_FREE has to be called on the offset.
-
-To access the memory, the caller is expected to mmap() it to its task.
+See Documentation/kdbus.txt for more details.
 
 Signed-off-by: Daniel Mack <daniel@zonque.org>
 Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- ipc/kdbus/pool.c | 722 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- ipc/kdbus/pool.h |  44 ++++
- 2 files changed, 766 insertions(+)
- create mode 100644 ipc/kdbus/pool.c
- create mode 100644 ipc/kdbus/pool.h
+ ipc/kdbus/policy.c | 629 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ ipc/kdbus/policy.h |  61 ++++++
+ 2 files changed, 690 insertions(+)
+ create mode 100644 ipc/kdbus/policy.c
+ create mode 100644 ipc/kdbus/policy.h
 
-diff --git a/ipc/kdbus/pool.c b/ipc/kdbus/pool.c
+diff --git a/ipc/kdbus/policy.c b/ipc/kdbus/policy.c
 new file mode 100644
-index 000000000000..3bf4ab426d3b
+index 000000000000..53652dfa2973
 --- /dev/null
-+++ b/ipc/kdbus/pool.c
-@@ -0,0 +1,722 @@
++++ b/ipc/kdbus/policy.c
+@@ -0,0 +1,629 @@
 +/*
 + * Copyright (C) 2013-2014 Kay Sievers
 + * Copyright (C) 2013-2014 Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 + * Copyright (C) 2013-2014 Daniel Mack <daniel@zonque.org>
 + * Copyright (C) 2013-2014 David Herrmann <dh.herrmann@gmail.com>
 + * Copyright (C) 2013-2014 Linux Foundation
++ * Copyright (C) 2014 Djalal Harouni
 + *
 + * kdbus is free software; you can redistribute it and/or modify it under
 + * the terms of the GNU Lesser General Public License as published by the
@@ -76,721 +74,627 @@ index 000000000000..3bf4ab426d3b
 + * your option) any later version.
 + */
 +
-+#include <linux/aio.h>
-+#include <linux/file.h>
 +#include <linux/fs.h>
-+#include <linux/highmem.h>
 +#include <linux/init.h>
-+#include <linux/mm.h>
-+#include <linux/module.h>
-+#include <linux/pagemap.h>
-+#include <linux/rbtree.h>
++#include <linux/mutex.h>
 +#include <linux/sched.h>
-+#include <linux/shmem_fs.h>
 +#include <linux/sizes.h>
 +#include <linux/slab.h>
 +#include <linux/uaccess.h>
 +
-+#include "pool.h"
-+#include "util.h"
++#include "bus.h"
++#include "connection.h"
++#include "domain.h"
++#include "item.h"
++#include "names.h"
++#include "policy.h"
++
++#define KDBUS_POLICY_HASH_SIZE	64
 +
 +/**
-+ * struct kdbus_pool - the receiver's buffer
-+ * @f:			The backing shmem file
-+ * @size:		The size of the file
-+ * @busy:		The currently used size
-+ * @lock:		Pool data lock
-+ * @slices:		All slices sorted by address
-+ * @slices_busy:	Tree of allocated slices
-+ * @slices_free:	Tree of free slices
-+ *
-+ * The receiver's buffer, managed as a pool of allocated and free
-+ * slices containing the queued messages.
-+ *
-+ * Messages sent with KDBUS_CMD_MSG_SEND are copied direcly by the
-+ * sending process into the receiver's pool.
-+ *
-+ * Messages received with KDBUS_CMD_MSG_RECV just return the offset
-+ * to the data placed in the pool.
-+ *
-+ * The internally allocated memory needs to be returned by the receiver
-+ * with KDBUS_CMD_MSG_FREE.
++ * struct kdbus_policy_db_cache_entry - a cached entry
++ * @conn_a:		Connection A
++ * @conn_b:		Connection B
++ * @owner:		Owner of policy-entry that produced this cache-entry
++ * @hentry:		The hash table entry for the database's entries_hash
 + */
-+struct kdbus_pool {
-+	struct file *f;
-+	size_t size;
-+	size_t busy;
-+	struct mutex lock;
-+
-+	struct list_head slices;
-+	struct rb_root slices_busy;
-+	struct rb_root slices_free;
++struct kdbus_policy_db_cache_entry {
++	struct kdbus_conn *conn_a;
++	struct kdbus_conn *conn_b;
++	const void *owner;
++	struct hlist_node hentry;
 +};
 +
 +/**
-+ * struct kdbus_pool_slice - allocated element in kdbus_pool
-+ * @pool:		Pool this slice belongs to
-+ * @off:		Offset of slice in the shmem file
-+ * @size:		Size of slice
-+ * @entry:		Entry in "all slices" list
-+ * @rb_node:		Entry in free or busy list
-+ * @free:		Unused slice
-+ * @public:		Slice was exposed to userspace and may be freed
-+ *			with KDBUS_CMD_FREE.
++ * struct kdbus_policy_db_entry_access - a database entry access item
++ * @type:		One of KDBUS_POLICY_ACCESS_* types
++ * @access:		Access to grant. One of KDBUS_POLICY_*
++ * @uid:		For KDBUS_POLICY_ACCESS_USER, the global uid
++ * @gid:		For KDBUS_POLICY_ACCESS_GROUP, the global gid
++ * @list:		List entry item for the entry's list
 + *
-+ * The pool has one or more slices, always spanning the entire size of the
-+ * pool.
-+ *
-+ * Every slice is an element in a list sorted by the buffer address, to
-+ * provide access to the next neighbor slice.
-+ *
-+ * Every slice is member in either the busy or the free tree. The free
-+ * tree is organized by slice size, the busy tree organized by buffer
-+ * offset.
++ * This is the internal version of struct kdbus_policy_db_access.
 + */
-+struct kdbus_pool_slice {
-+	struct kdbus_pool *pool;
-+	size_t off;
-+	size_t size;
-+
-+	struct list_head entry;
-+	struct rb_node rb_node;
-+	bool free;
-+	bool public;
++struct kdbus_policy_db_entry_access {
++	u8 type;		/* USER, GROUP, WORLD */
++	u8 access;		/* OWN, TALK, SEE */
++	union {
++		kuid_t uid;	/* global uid */
++		kgid_t gid;	/* global gid */
++	};
++	struct list_head list;
 +};
 +
-+static struct kdbus_pool_slice *kdbus_pool_slice_new(struct kdbus_pool *pool,
-+						     size_t off, size_t size)
++/**
++ * struct kdbus_policy_db_entry - a policy database entry
++ * @name:		The name to match the policy entry against
++ * @hentry:		The hash entry for the database's entries_hash
++ * @access_list:	List head for keeping tracks of the entry's
++ *			access items.
++ * @owner:		The owner of this entry. Can be a kdbus_conn or
++ *			a kdbus_ep object.
++ * @wildcard:		The name is a wildcard, such as ending on '.*'
++ */
++struct kdbus_policy_db_entry {
++	char *name;
++	struct hlist_node hentry;
++	struct list_head access_list;
++	const void *owner;
++	bool wildcard:1;
++};
++
++static void kdbus_policy_entry_free(struct kdbus_policy_db_entry *e)
 +{
-+	struct kdbus_pool_slice *slice;
++	struct kdbus_policy_db_entry_access *a, *tmp;
 +
-+	slice = kzalloc(sizeof(*slice), GFP_KERNEL);
-+	if (!slice)
-+		return NULL;
-+
-+	slice->pool = pool;
-+	slice->off = off;
-+	slice->size = size;
-+	slice->free = true;
-+	slice->public = false;
-+	return slice;
-+}
-+
-+/* insert a slice into the free tree */
-+static void kdbus_pool_add_free_slice(struct kdbus_pool *pool,
-+				      struct kdbus_pool_slice *slice)
-+{
-+	struct rb_node **n;
-+	struct rb_node *pn = NULL;
-+
-+	n = &pool->slices_free.rb_node;
-+	while (*n) {
-+		struct kdbus_pool_slice *pslice;
-+
-+		pn = *n;
-+		pslice = rb_entry(pn, struct kdbus_pool_slice, rb_node);
-+		if (slice->size < pslice->size)
-+			n = &pn->rb_left;
-+		else
-+			n = &pn->rb_right;
++	list_for_each_entry_safe(a, tmp, &e->access_list, list) {
++		list_del(&a->list);
++		kfree(a);
 +	}
 +
-+	rb_link_node(&slice->rb_node, pn, n);
-+	rb_insert_color(&slice->rb_node, &pool->slices_free);
++	kfree(e->name);
++	kfree(e);
 +}
 +
-+/* insert a slice into the busy tree */
-+static void kdbus_pool_add_busy_slice(struct kdbus_pool *pool,
-+				      struct kdbus_pool_slice *slice)
++static const struct kdbus_policy_db_entry *
++kdbus_policy_lookup(struct kdbus_policy_db *db,
++		    const char *name, u32 hash, bool wildcard)
 +{
-+	struct rb_node **n;
-+	struct rb_node *pn = NULL;
++	struct kdbus_policy_db_entry *e, *found = NULL;
 +
-+	n = &pool->slices_busy.rb_node;
-+	while (*n) {
-+		struct kdbus_pool_slice *pslice;
++	hash_for_each_possible(db->entries_hash, e, hentry, hash)
++		if (strcmp(e->name, name) == 0 && !e->wildcard)
++			return e;
 +
-+		pn = *n;
-+		pslice = rb_entry(pn, struct kdbus_pool_slice, rb_node);
-+		if (slice->off < pslice->off)
-+			n = &pn->rb_left;
-+		else if (slice->off > pslice->off)
-+			n = &pn->rb_right;
++	if (wildcard) {
++		const char *tmp;
++		char *dot;
++
++		tmp = kstrdup(name, GFP_KERNEL);
++		if (!tmp)
++			return NULL;
++
++		dot = strrchr(tmp, '.');
++		if (!dot)
++			goto exit_free;
++
++		*dot = '\0';
++		hash = kdbus_str_hash(tmp);
++
++		hash_for_each_possible(db->entries_hash, e, hentry, hash)
++			if (strcmp(e->name, tmp) == 0 && e->wildcard) {
++				found = e;
++				/* never "break;" in hash_for_each() */
++				goto exit_free;
++			}
++
++exit_free:
++		kfree(tmp);
 +	}
 +
-+	rb_link_node(&slice->rb_node, pn, n);
-+	rb_insert_color(&slice->rb_node, &pool->slices_busy);
-+}
-+
-+static struct kdbus_pool_slice *kdbus_pool_find_slice(struct kdbus_pool *pool,
-+						      size_t off)
-+{
-+	struct rb_node *n;
-+
-+	n = pool->slices_busy.rb_node;
-+	while (n) {
-+		struct kdbus_pool_slice *s;
-+
-+		s = rb_entry(n, struct kdbus_pool_slice, rb_node);
-+		if (off < s->off)
-+			n = n->rb_left;
-+		else if (off > s->off)
-+			n = n->rb_right;
-+		else
-+			return s;
-+	}
-+
-+	return NULL;
++	return found;
 +}
 +
 +/**
-+ * kdbus_pool_slice_alloc() - allocate memory from a pool
-+ * @pool:		The receiver's pool
-+ * @size:		The number of bytes to allocate
-+ *
-+ * The returned slice is used for kdbus_pool_slice_free() to
-+ * free the allocated memory.
-+ *
-+ * Return: the allocated slice on success, ERR_PTR on failure.
++ * kdbus_policy_db_clear - release all memory from a policy db
++ * @db:		The policy database
 + */
-+struct kdbus_pool_slice *kdbus_pool_slice_alloc(struct kdbus_pool *pool,
-+						size_t size)
++void kdbus_policy_db_clear(struct kdbus_policy_db *db)
 +{
-+	size_t slice_size = KDBUS_ALIGN8(size);
-+	struct rb_node *n, *found = NULL;
-+	struct kdbus_pool_slice *s;
-+	int ret = 0;
++	struct kdbus_policy_db_cache_entry *ce;
++	struct kdbus_policy_db_entry *e;
++	struct hlist_node *tmp;
++	unsigned int i;
 +
-+	/* search a free slice with the closest matching size */
-+	mutex_lock(&pool->lock);
-+	n = pool->slices_free.rb_node;
-+	while (n) {
-+		s = rb_entry(n, struct kdbus_pool_slice, rb_node);
-+		if (slice_size < s->size) {
-+			found = n;
-+			n = n->rb_left;
-+		} else if (slice_size > s->size) {
-+			n = n->rb_right;
-+		} else {
-+			found = n;
-+			break;
++	BUG_ON(!db);
++
++	/* purge entries */
++	down_write(&db->entries_rwlock);
++	hash_for_each_safe(db->entries_hash, i, tmp, e, hentry) {
++		hash_del(&e->hentry);
++		kdbus_policy_entry_free(e);
++	}
++	up_write(&db->entries_rwlock);
++
++	/* purge cache */
++	mutex_lock(&db->cache_lock);
++	hash_for_each_safe(db->talk_access_hash, i, tmp, ce, hentry) {
++		hash_del(&ce->hentry);
++		kfree(ce);
++	}
++	mutex_unlock(&db->cache_lock);
++}
++
++/**
++ * kdbus_policy_db_init() - initialize a new policy database
++ * @db:		The location of the database
++ *
++ * This initializes a new policy-db. The underlying memory must have been
++ * cleared to zero by the caller.
++ */
++void kdbus_policy_db_init(struct kdbus_policy_db *db)
++{
++	hash_init(db->entries_hash);
++	hash_init(db->talk_access_hash);
++	init_rwsem(&db->entries_rwlock);
++	mutex_init(&db->cache_lock);
++}
++
++static int kdbus_policy_check_access(const struct kdbus_policy_db_entry *e,
++				     const struct cred *cred,
++				     unsigned int access)
++{
++	struct kdbus_policy_db_entry_access *a;
++	struct group_info *group_info;
++	int i;
++
++	if (!e)
++		return -EPERM;
++
++	group_info = cred->group_info;
++
++	list_for_each_entry(a, &e->access_list, list) {
++		if (a->access >= access) {
++			switch (a->type) {
++			case KDBUS_POLICY_ACCESS_USER:
++				if (uid_eq(cred->uid, a->uid))
++					return 0;
++				break;
++			case KDBUS_POLICY_ACCESS_GROUP:
++				if (gid_eq(cred->gid, a->gid))
++					return 0;
++
++				for (i = 0; i < group_info->ngroups; i++) {
++					kgid_t gid = GROUP_AT(group_info, i);
++
++					if (gid_eq(gid, a->gid))
++						return 0;
++				}
++
++				break;
++			case KDBUS_POLICY_ACCESS_WORLD:
++				return 0;
++			}
 +		}
 +	}
 +
-+	/* no slice with the minimum size found in the pool */
-+	if (!found) {
-+		ret = -ENOBUFS;
-+		goto exit_unlock;
-+	}
-+
-+	/* no exact match, use the closest one */
-+	if (!n)
-+		s = rb_entry(found, struct kdbus_pool_slice, rb_node);
-+
-+	/* move slice from free to the busy tree */
-+	rb_erase(found, &pool->slices_free);
-+	kdbus_pool_add_busy_slice(pool, s);
-+
-+	/* we got a slice larger than what we asked for? */
-+	if (s->size > slice_size) {
-+		struct kdbus_pool_slice *s_new;
-+
-+		/* split-off the remainder of the size to its own slice */
-+		s_new = kdbus_pool_slice_new(pool, s->off + slice_size,
-+					     s->size - slice_size);
-+		if (!s_new) {
-+			ret = -ENOMEM;
-+			goto exit_unlock;
-+		}
-+
-+		list_add(&s_new->entry, &s->entry);
-+		kdbus_pool_add_free_slice(pool, s_new);
-+
-+		/* adjust our size now that we split-off another slice */
-+		s->size = slice_size;
-+	}
-+
-+	s->free = false;
-+	s->public = false;
-+	pool->busy += s->size;
-+	mutex_unlock(&pool->lock);
-+
-+	return s;
-+
-+exit_unlock:
-+	mutex_unlock(&pool->lock);
-+	return ERR_PTR(ret);
-+}
-+
-+static void __kdbus_pool_slice_free(struct kdbus_pool_slice *slice)
-+{
-+	struct kdbus_pool *pool = slice->pool;
-+
-+	BUG_ON(slice->free);
-+
-+	rb_erase(&slice->rb_node, &pool->slices_busy);
-+	pool->busy -= slice->size;
-+
-+	/* merge with the next free slice */
-+	if (!list_is_last(&slice->entry, &pool->slices)) {
-+		struct kdbus_pool_slice *s;
-+
-+		s = list_entry(slice->entry.next,
-+			       struct kdbus_pool_slice, entry);
-+		if (s->free) {
-+			rb_erase(&s->rb_node, &pool->slices_free);
-+			list_del(&s->entry);
-+			slice->size += s->size;
-+			kfree(s);
-+		}
-+	}
-+
-+	/* merge with previous free slice */
-+	if (pool->slices.next != &slice->entry) {
-+		struct kdbus_pool_slice *s;
-+
-+		s = list_entry(slice->entry.prev, struct kdbus_pool_slice,
-+			       entry);
-+		if (s->free) {
-+			rb_erase(&s->rb_node, &pool->slices_free);
-+			list_del(&slice->entry);
-+			s->size += slice->size;
-+			kfree(slice);
-+			slice = s;
-+		}
-+	}
-+
-+	slice->free = true;
-+	kdbus_pool_add_free_slice(pool, slice);
++	return -EPERM;
 +}
 +
 +/**
-+ * kdbus_pool_slice_free() - give allocated memory back to the pool
-+ * @slice:		Slice allocated from the the pool
++ * kdbus_policy_check_own_access() - check whether a connection is allowed
++ *				     to own a name
++ * @db:		The policy database
++ * @cred:	The creds to check against
++ * @name:	The name to check
 + *
-+ * The slice was returned by the call to kdbus_pool_alloc_slice(), the
-+ * memory is returned to the pool.
++ * Return: 0 if the connection is allowed to own the name, -EPERM otherwise
 + */
-+void kdbus_pool_slice_free(struct kdbus_pool_slice *slice)
++int kdbus_policy_check_own_access(struct kdbus_policy_db *db,
++				  const struct cred *cred,
++				  const char *name)
 +{
-+	struct kdbus_pool *pool = slice->pool;
-+
-+	mutex_lock(&pool->lock);
-+	__kdbus_pool_slice_free(slice);
-+	mutex_unlock(&pool->lock);
-+}
-+
-+/**
-+ * kdbus_pool_release_offset() - release a public offset
-+ * @pool:		pool to operate on
-+ * @off:		offset to release
-+ *
-+ * This should be called whenever user-space frees a slice given to them. It
-+ * verifies the slice is available and public, and then drops it. It ensures
-+ * correct locking and barriers against queues.
-+ *
-+ * Return: 0 on success, ENXIO if the offset is invalid, EINVAL if the offset is
-+ * valid but not public.
-+ */
-+int kdbus_pool_release_offset(struct kdbus_pool *pool, size_t off)
-+{
-+	struct kdbus_pool_slice *slice;
-+	int ret = 0;
-+
-+	mutex_lock(&pool->lock);
-+	slice = kdbus_pool_find_slice(pool, off);
-+	if (slice) {
-+		if (slice->public)
-+			__kdbus_pool_slice_free(slice);
-+		else
-+			ret = -EINVAL;
-+	} else {
-+		ret = -ENXIO;
-+	}
-+	mutex_unlock(&pool->lock);
-+
-+	return ret;
-+}
-+
-+/**
-+ * kdbus_pool_slice_offset() - return the slice's offset inside the pool
-+ * @slice:		The slice
-+ *
-+ * Return: the offset in bytes.
-+ */
-+size_t kdbus_pool_slice_offset(const struct kdbus_pool_slice *slice)
-+{
-+	return slice->off;
-+}
-+
-+/**
-+ * kdbus_pool_slice_make_public() - set a slice's public flag to true
-+ * @slice:		The slice
-+ */
-+void kdbus_pool_slice_make_public(struct kdbus_pool_slice *slice)
-+{
-+	slice->public = true;
-+}
-+
-+/**
-+ * kdbus_pool_new() - create a new pool
-+ * @name:		Name of the (deleted) file which shows up in
-+ *			/proc, used for debugging
-+ * @size:		Maximum size of the pool
-+ *
-+ * Return: a new kdbus_pool on success, ERR_PTR on failure.
-+ */
-+struct kdbus_pool *kdbus_pool_new(const char *name, size_t size)
-+{
-+	struct kdbus_pool_slice *s;
-+	struct kdbus_pool *p;
-+	struct file *f;
-+	char *n = NULL;
++	const struct kdbus_policy_db_entry *e;
 +	int ret;
 +
-+	p = kzalloc(sizeof(*p), GFP_KERNEL);
-+	if (!p)
-+		return ERR_PTR(-ENOMEM);
++	down_read(&db->entries_rwlock);
++	e = kdbus_policy_lookup(db, name, kdbus_str_hash(name), true);
++	ret = kdbus_policy_check_access(e, cred, KDBUS_POLICY_OWN);
++	up_read(&db->entries_rwlock);
 +
-+	if (name) {
-+		n = kasprintf(GFP_KERNEL, KBUILD_MODNAME "-conn:%s", name);
-+		if (!n) {
-+			ret = -ENOMEM;
-+			goto exit_free;
++	return ret;
++}
++
++/**
++ * kdbus_policy_check_talk_access() - check if one connection is allowed
++ *				       to send a message to another connection
++ * @db:			The policy database
++ * @conn_src:		The source connection
++ * @conn_dst:		The destination connection
++ *
++ * Return: 0 if access is granted, -EPERM if not, negative errno on failure
++ */
++int kdbus_policy_check_talk_access(struct kdbus_policy_db *db,
++				   struct kdbus_conn *conn_src,
++				   struct kdbus_conn *conn_dst)
++{
++	struct kdbus_policy_db_cache_entry *ce;
++	struct kdbus_name_entry *name_entry;
++	unsigned int hash = 0;
++	const void *owner;
++	int ret;
++
++	/*
++	 * If there was a positive match for these two connections before,
++	 * there's an entry in the hash table for them.
++	 */
++	hash ^= hash_ptr(conn_src, KDBUS_POLICY_HASH_SIZE);
++	hash ^= hash_ptr(conn_dst, KDBUS_POLICY_HASH_SIZE);
++
++	mutex_lock(&db->cache_lock);
++	hash_for_each_possible(db->talk_access_hash, ce, hentry, hash)
++		if (ce->conn_a == conn_src && ce->conn_b == conn_dst) {
++			mutex_unlock(&db->cache_lock);
++			return 0;
++		}
++	mutex_unlock(&db->cache_lock);
++
++	/*
++	 * Otherwise, walk the connection list and store a hash-table entry if
++	 * send access is granted.
++	 */
++
++	down_read(&db->entries_rwlock);
++
++	ret = -EPERM;
++	mutex_lock(&conn_dst->lock);
++	list_for_each_entry(name_entry, &conn_dst->names_list, conn_entry) {
++		u32 hash = kdbus_str_hash(name_entry->name);
++		const struct kdbus_policy_db_entry *e;
++
++		e = kdbus_policy_lookup(db, name_entry->name, hash, true);
++		if (kdbus_policy_check_access(e, conn_src->cred,
++					      KDBUS_POLICY_TALK) == 0) {
++			owner = e->owner;
++			ret = 0;
++			break;
++		}
++	}
++	mutex_unlock(&conn_dst->lock);
++
++	if (ret >= 0) {
++		ret = -ENOMEM;
++		ce = kmalloc(sizeof(*ce), GFP_KERNEL);
++		if (ce) {
++			ce->conn_a = conn_src;
++			ce->conn_b = conn_dst;
++			ce->owner = owner;
++			INIT_HLIST_NODE(&ce->hentry);
++
++			mutex_lock(&db->cache_lock);
++			hash_add(db->talk_access_hash, &ce->hentry, hash);
++			mutex_unlock(&db->cache_lock);
++
++			ret = 0;
 +		}
 +	}
 +
-+	f = shmem_file_setup(n ?: KBUILD_MODNAME "-conn", size, VM_NORESERVE);
-+	kfree(n);
++	up_read(&db->entries_rwlock);
 +
-+	if (IS_ERR(f)) {
-+		ret = PTR_ERR(f);
-+		goto exit_free;
++	return ret;
++}
++
++/**
++ * kdbus_policy_check_see_access_unlocked() - Check whether a connection is
++ *					      allowed to see a given name
++ * @db:		The policy database
++ * @cred:	The cred to check against
++ * @name:	The name
++ *
++ * Return: 0 if permission to see the name is granted, -EPERM otherwise
++ */
++int kdbus_policy_check_see_access_unlocked(struct kdbus_policy_db *db,
++					   const struct cred *cred,
++					   const char *name)
++{
++	const struct kdbus_policy_db_entry *e;
++
++	e = kdbus_policy_lookup(db, name, kdbus_str_hash(name), true);
++	return kdbus_policy_check_access(e, cred, KDBUS_POLICY_SEE);
++}
++
++static void __kdbus_policy_remove_owner_cache(struct kdbus_policy_db *db,
++					      const void *owner)
++{
++	struct kdbus_policy_db_cache_entry *ce;
++	struct hlist_node *tmp;
++	int i;
++
++	mutex_lock(&db->cache_lock);
++	hash_for_each_safe(db->talk_access_hash, i, tmp, ce, hentry)
++		if (ce->owner == owner) {
++			hash_del(&ce->hentry);
++			kfree(ce);
++		}
++	mutex_unlock(&db->cache_lock);
++}
++
++static void __kdbus_policy_remove_owner(struct kdbus_policy_db *db,
++					const void *owner)
++{
++	struct kdbus_policy_db_entry *e;
++	struct hlist_node *tmp;
++	int i;
++
++	hash_for_each_safe(db->entries_hash, i, tmp, e, hentry)
++		if (e->owner == owner) {
++			hash_del(&e->hentry);
++			kdbus_policy_entry_free(e);
++		}
++}
++
++/**
++ * kdbus_policy_remove_owner() - remove all entries related to a connection
++ * @db:		The policy database
++ * @owner:	The connection which items to remove
++ */
++void kdbus_policy_remove_owner(struct kdbus_policy_db *db,
++			       const void *owner)
++{
++	down_write(&db->entries_rwlock);
++	__kdbus_policy_remove_owner(db, owner);
++	__kdbus_policy_remove_owner_cache(db, owner);
++	up_write(&db->entries_rwlock);
++}
++
++/**
++ * kdbus_policy_purge_cache_for_conn() - remove all cached entries related to
++ *				a connection
++ * @db:		The policy database
++ * @conn:	The connection which items to remove
++ */
++void kdbus_policy_purge_cache(struct kdbus_policy_db *db,
++			      const struct kdbus_conn *conn)
++{
++	struct kdbus_policy_db_cache_entry *ce;
++	struct hlist_node *tmp;
++	int i;
++
++	mutex_lock(&db->cache_lock);
++	hash_for_each_safe(db->talk_access_hash, i, tmp, ce, hentry)
++		if (ce->conn_a == conn || ce->conn_b == conn) {
++			hash_del(&ce->hentry);
++			kfree(ce);
++		}
++	mutex_unlock(&db->cache_lock);
++}
++
++/*
++ * Convert user provided policy access to internal kdbus policy
++ * access
++ */
++static struct kdbus_policy_db_entry_access *
++kdbus_policy_make_access(const struct kdbus_policy_access *uaccess)
++{
++	int ret;
++	struct kdbus_policy_db_entry_access *a;
++
++	a = kzalloc(sizeof(*a), GFP_KERNEL);
++	if (!a)
++		return ERR_PTR(-ENOMEM);
++
++	ret = -EINVAL;
++	switch (uaccess->access) {
++	case KDBUS_POLICY_SEE:
++	case KDBUS_POLICY_TALK:
++	case KDBUS_POLICY_OWN:
++		a->access = uaccess->access;
++		break;
++	default:
++		goto err;
 +	}
 +
-+	ret = get_write_access(file_inode(f));
-+	if (ret < 0)
-+		goto exit_put_shmem;
++	switch (uaccess->type) {
++	case KDBUS_POLICY_ACCESS_USER:
++		a->uid = make_kuid(current_user_ns(), uaccess->id);
++		if (!uid_valid(a->uid))
++			goto err;
 +
-+	/* allocate first slice spanning the entire pool */
-+	s = kdbus_pool_slice_new(p, 0, size);
-+	if (!s) {
-+		ret = -ENOMEM;
-+		goto exit_put_write;
++		break;
++	case KDBUS_POLICY_ACCESS_GROUP:
++		a->gid = make_kgid(current_user_ns(), uaccess->id);
++		if (!gid_valid(a->gid))
++			goto err;
++
++		break;
++	case KDBUS_POLICY_ACCESS_WORLD:
++		a->uid = current_uid();
++		break;
++	default:
++		goto err;
 +	}
 +
-+	p->f = f;
-+	p->size = size;
-+	p->busy = 0;
-+	p->slices_free = RB_ROOT;
-+	p->slices_busy = RB_ROOT;
-+	mutex_init(&p->lock);
++	a->type = uaccess->type;
 +
-+	INIT_LIST_HEAD(&p->slices);
-+	list_add(&s->entry, &p->slices);
++	return a;
 +
-+	kdbus_pool_add_free_slice(p, s);
-+	return p;
-+
-+exit_put_write:
-+	put_write_access(file_inode(f));
-+exit_put_shmem:
-+	fput(f);
-+exit_free:
-+	kfree(p);
++err:
++	kfree(a);
 +	return ERR_PTR(ret);
 +}
 +
 +/**
-+ * kdbus_pool_free() - destroy pool
-+ * @pool:		The receiver's pool
-+ */
-+void kdbus_pool_free(struct kdbus_pool *pool)
-+{
-+	struct kdbus_pool_slice *s, *tmp;
-+
-+	if (!pool)
-+		return;
-+
-+	list_for_each_entry_safe(s, tmp, &pool->slices, entry) {
-+		list_del(&s->entry);
-+		kfree(s);
-+	}
-+
-+	put_write_access(file_inode(pool->f));
-+	fput(pool->f);
-+	kfree(pool);
-+}
-+
-+/**
-+ * kdbus_pool_remain() - the number of free bytes in the pool
-+ * @pool:		The receiver's pool
++ * kdbus_policy_set() - set a connection's policy rules
++ * @db:				The policy database
++ * @items:			A list of kdbus_item elements that contain both
++ *				names and access rules to set.
++ * @items_size:			The total size of the items.
++ * @max_policies:		The maximum number of policy entries to allow.
++ *				Pass 0 for no limit.
++ * @allow_wildcards:		Boolean value whether wildcard entries (such
++ *				ending on '.*') should be allowed.
++ * @owner:			The owner of the new policy items.
 + *
-+ * Return: the number of unallocated bytes in the pool
-+ */
-+size_t kdbus_pool_remain(struct kdbus_pool *pool)
-+{
-+	size_t size;
-+
-+	mutex_lock(&pool->lock);
-+	size = pool->size - pool->busy;
-+	mutex_unlock(&pool->lock);
-+
-+	return size;
-+}
-+
-+/* copy data from a file to a page in the receiver's pool */
-+static int kdbus_pool_copy_file(struct page *p, size_t start,
-+				struct file *f, size_t off, size_t count)
-+{
-+	loff_t o = off;
-+	char *kaddr;
-+	ssize_t n;
-+
-+	kaddr = kmap(p);
-+	n = f->f_op->read(f, (char __force __user *)kaddr + start, count, &o);
-+	kunmap(p);
-+	if (n < 0)
-+		return n;
-+	if (n != count)
-+		return -EFAULT;
-+
-+	return 0;
-+}
-+
-+/* copy data to a page in the receiver's pool */
-+static int kdbus_pool_copy_data(struct page *p, size_t start,
-+				const void __user *from, size_t count)
-+{
-+	unsigned long remain;
-+	char *kaddr;
-+
-+	if (fault_in_pages_readable(from, count) < 0)
-+		return -EFAULT;
-+
-+	kaddr = kmap_atomic(p);
-+	pagefault_disable();
-+	remain = __copy_from_user_inatomic(kaddr + start, from, count);
-+	pagefault_enable();
-+	kunmap_atomic(kaddr);
-+	if (remain > 0)
-+		return -EFAULT;
-+
-+	cond_resched();
-+	return 0;
-+}
-+
-+/* copy data to the receiver's pool */
-+static size_t kdbus_pool_copy(const struct kdbus_pool_slice *slice, size_t off,
-+			      const void __user *data, struct file *f_src,
-+			      size_t off_src, size_t len)
-+{
-+	struct file *f_dst = slice->pool->f;
-+	struct address_space *mapping = f_dst->f_mapping;
-+	const struct address_space_operations *aops = mapping->a_ops;
-+	unsigned long fpos = slice->off + off;
-+	unsigned long rem = len;
-+	size_t pos = 0;
-+	int ret = 0;
-+
-+	BUG_ON(off + len > slice->size);
-+	BUG_ON(slice->free);
-+
-+	while (rem > 0) {
-+		struct page *p;
-+		unsigned long o;
-+		unsigned long n;
-+		void *fsdata;
-+		int status;
-+
-+		o = fpos & (PAGE_CACHE_SIZE - 1);
-+		n = min_t(unsigned long, PAGE_CACHE_SIZE - o, rem);
-+
-+		status = aops->write_begin(f_dst, mapping, fpos, n, 0, &p,
-+					   &fsdata);
-+		if (status) {
-+			ret = -EFAULT;
-+			break;
-+		}
-+
-+		if (data)
-+			ret = kdbus_pool_copy_data(p, o, data + pos, n);
-+		else
-+			ret = kdbus_pool_copy_file(p, o, f_src,
-+						   off_src + pos, n);
-+		mark_page_accessed(p);
-+
-+		status = aops->write_end(f_dst, mapping, fpos, n, n, p, fsdata);
-+
-+		if (ret < 0)
-+			break;
-+		if (status != n) {
-+			ret = -EFAULT;
-+			break;
-+		}
-+
-+		pos += n;
-+		fpos += n;
-+		rem -= n;
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * kdbus_pool_slice_copy_user() - copy user memory to a slice
-+ * @slice:		The slice to write to
-+ * @off:		Offset in the slice to write to
-+ * @data:		User memory to copy from
-+ * @len:		Number of bytes to copy
++ * This function sets a new set of policies for a given owner. The names and
++ * access rules are gathered by walking the list of items passed in as
++ * argument. An item of type KDBUS_ITEM_NAME is expected before any number of
++ * KDBUS_ITEM_POLICY_ACCESS items. If there are more repetitions of this
++ * pattern than denoted in @max_policies, -EINVAL is returned.
 + *
-+ * The offset was returned by the call to kdbus_pool_alloc_slice().
-+ * The user memory at @data will be copied to the @off in the allocated
-+ * slice in the pool.
-+ *
-+ * Return: the numbers of bytes copied, negative errno on failure.
-+ */
-+ssize_t
-+kdbus_pool_slice_copy_user(const struct kdbus_pool_slice *slice, size_t off,
-+			   const void __user *data, size_t len)
-+{
-+	return kdbus_pool_copy(slice, off, data, NULL, 0, len);
-+}
-+
-+/**
-+ * kdbus_pool_slice_copy() - copy kernel memory to a slice
-+ * @slice:		The slice to write to
-+ * @off:		Offset in the slice to write to
-+ * @data:		Kernel memory to copy from
-+ * @len:		Number of bytes to copy
-+ *
-+ * The slice was returned by the call to kdbus_pool_alloc_slice().
-+ * The user memory at @data will be copied to the @off in the allocated
-+ * slice in the pool.
-+ *
-+ * Return: the numbers of bytes copied, negative errno on failure.
-+ */
-+ssize_t kdbus_pool_slice_copy(const struct kdbus_pool_slice *slice, size_t off,
-+			      const void *data, size_t len)
-+{
-+	mm_segment_t old_fs;
-+	ssize_t ret;
-+
-+	old_fs = get_fs();
-+	set_fs(get_ds());
-+	ret = kdbus_pool_copy(slice, off,
-+			      (const void __user *)data, NULL, 0, len);
-+	set_fs(old_fs);
-+
-+	return ret;
-+}
-+
-+/**
-+ * kdbus_pool_slice_move() - move memory from one pool into another one
-+ * @src_pool:		The receiver's pool to copy from
-+ * @dst_pool:		The receiver's pool to copy to
-+ * @slice:		Reference to the slice to copy from the source;
-+ *			updated with the newly allocated slice in the
-+ *			destination
-+ *
-+ * Move memory from one pool to another. Memory will be allocated in the
-+ * destination pool, the memory copied over, and the free()d in source
-+ * pool.
++ * In order to allow atomic replacement of rules, the function first removes
++ * all entries that have been created for the given owner previously.
 + *
 + * Return: 0 on success, negative errno on failure.
 + */
-+int kdbus_pool_slice_move(struct kdbus_pool *src_pool,
-+			  struct kdbus_pool *dst_pool,
-+			  struct kdbus_pool_slice **slice)
++int kdbus_policy_set(struct kdbus_policy_db *db,
++		     const struct kdbus_item *items,
++		     size_t items_size,
++		     size_t max_policies,
++		     bool allow_wildcards,
++		     const void *owner)
 +{
-+	mm_segment_t old_fs;
-+	struct kdbus_pool_slice *slice_new;
-+	int ret;
++	struct kdbus_policy_db_entry_access *a;
++	struct kdbus_policy_db_entry *e, *p;
++	const struct kdbus_item *item;
++	struct hlist_node *tmp;
++	HLIST_HEAD(entries);
++	HLIST_HEAD(restore);
++	size_t count = 0;
++	int i, ret = 0;
++	u32 hash;
 +
-+	slice_new = kdbus_pool_slice_alloc(dst_pool, (*slice)->size);
-+	if (IS_ERR(slice_new))
-+		return PTR_ERR(slice_new);
++	if (items_size > KDBUS_POLICY_MAX_SIZE)
++		return -E2BIG;
 +
-+	old_fs = get_fs();
-+	set_fs(get_ds());
-+	ret = kdbus_pool_copy(slice_new, 0, NULL,
-+			      src_pool->f, (*slice)->off, (*slice)->size);
-+	set_fs(old_fs);
++	/* Walk the list of items and look for new policies */
++	e = NULL;
++	KDBUS_ITEMS_FOREACH(item, items, items_size) {
++		switch (item->type) {
++		case KDBUS_ITEM_NAME: {
++			size_t len;
++
++			if (max_policies && ++count > max_policies) {
++				ret = -E2BIG;
++				goto exit;
++			}
++
++			if (!kdbus_name_is_valid(item->str, true)) {
++				ret = -EINVAL;
++				goto exit;
++			}
++
++			e = kzalloc(sizeof(*e), GFP_KERNEL);
++			if (!e) {
++				ret = -ENOMEM;
++				goto exit;
++			}
++
++			INIT_LIST_HEAD(&e->access_list);
++			e->owner = owner;
++			hlist_add_head(&e->hentry, &entries);
++
++			e->name = kstrdup(item->str, GFP_KERNEL);
++			if (!e->name) {
++				ret = -ENOMEM;
++				goto exit;
++			}
++
++			/*
++			 * If a supplied name ends with an '.*', cut off that
++			 * part, only store anything before it, and mark the
++			 * entry as wildcard.
++			 */
++			len = strlen(e->name);
++			if (len > 2 &&
++			    e->name[len - 3] == '.' &&
++			    e->name[len - 2] == '*') {
++				if (!allow_wildcards) {
++					ret = -EINVAL;
++					goto exit;
++				}
++
++				e->name[len - 3] = '\0';
++				e->wildcard = true;
++			}
++
++			break;
++		}
++
++		case KDBUS_ITEM_POLICY_ACCESS:
++			if (!e) {
++				ret = -EINVAL;
++				goto exit;
++			}
++
++			a = kdbus_policy_make_access(&item->policy_access);
++			if (IS_ERR(a)) {
++				ret = PTR_ERR(a);
++				goto exit;
++			}
++
++			list_add_tail(&a->list, &e->access_list);
++			break;
++		}
++	}
++
++	down_write(&db->entries_rwlock);
++
++	/* remember previous entries to restore in case of failure */
++	hash_for_each_safe(db->entries_hash, i, tmp, e, hentry)
++		if (e->owner == owner) {
++			hash_del(&e->hentry);
++			hlist_add_head(&e->hentry, &restore);
++		}
++
++	hlist_for_each_entry_safe(e, tmp, &entries, hentry) {
++		/* prevent duplicates */
++		hash = kdbus_str_hash(e->name);
++		hash_for_each_possible(db->entries_hash, p, hentry, hash)
++			if (strcmp(e->name, p->name) == 0 &&
++			    e->wildcard == p->wildcard) {
++				ret = -EEXIST;
++				goto restore;
++			}
++
++		hlist_del(&e->hentry);
++		hash_add(db->entries_hash, &e->hentry, hash);
++	}
++
++	/* purge all cache-entries produced by previous rules */
++	__kdbus_policy_remove_owner_cache(db, owner);
++
++restore:
++	/* if we failed, flush all entries we added so far, but keep cache */
 +	if (ret < 0)
-+		goto exit_free;
++		__kdbus_policy_remove_owner(db, owner);
 +
-+	kdbus_pool_slice_free(*slice);
++	/* if we failed, restore entries, otherwise release them */
++	hlist_for_each_entry_safe(e, tmp, &restore, hentry) {
++		hlist_del(&e->hentry);
++		if (ret < 0) {
++			hash = kdbus_str_hash(e->name);
++			hash_add(db->entries_hash, &e->hentry, hash);
++		} else {
++			kdbus_policy_entry_free(e);
++		}
++	}
 +
-+	*slice = slice_new;
-+	return 0;
++	up_write(&db->entries_rwlock);
 +
-+exit_free:
-+	kdbus_pool_slice_free(slice_new);
++exit:
++	hlist_for_each_entry_safe(e, tmp, &entries, hentry) {
++		hlist_del(&e->hentry);
++		kdbus_policy_entry_free(e);
++	}
++
 +	return ret;
 +}
-+
-+/**
-+ * kdbus_pool_slice_flush() - flush dcache memory area of a slice
-+ * @slice:		The allocated slice to flush
-+ *
-+ * Dcache flushes are delayed to happen only right before the receiver
-+ * gets the new buffer area announced. The mapped buffer is always
-+ * read-only for the receiver, and only the area of the announced message
-+ * needs to be flushed.
-+ */
-+void kdbus_pool_slice_flush(const struct kdbus_pool_slice *slice)
-+{
-+#if ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE == 1
-+	struct address_space *mapping = slice->pool->f->f_mapping;
-+	pgoff_t first = slice->off >> PAGE_CACHE_SHIFT;
-+	pgoff_t last = (slice->off + slice->size +
-+			PAGE_CACHE_SIZE-1) >> PAGE_CACHE_SHIFT;
-+	pgoff_t i;
-+
-+	for (i = first; i < last; i++) {
-+		struct page *page;
-+
-+		page = find_get_page(mapping, i);
-+		if (!page)
-+			continue;
-+
-+		flush_dcache_page(page);
-+		put_page(page);
-+	}
-+#endif
-+}
-+
-+/**
-+ * kdbus_pool_mmap() -  map the pool into the process
-+ * @pool:		The receiver's pool
-+ * @vma:		passed by mmap() syscall
-+ *
-+ * Return: the result of the mmap() call, negative errno on failure.
-+ */
-+int kdbus_pool_mmap(const struct kdbus_pool *pool, struct vm_area_struct *vma)
-+{
-+	/* deny write access to the pool */
-+	if (vma->vm_flags & VM_WRITE)
-+		return -EPERM;
-+	vma->vm_flags &= ~VM_MAYWRITE;
-+
-+	/* do not allow to map more than the size of the file */
-+	if ((vma->vm_end - vma->vm_start) > pool->size)
-+		return -EFAULT;
-+
-+	/* replace the connection file with our shmem file */
-+	if (vma->vm_file)
-+		fput(vma->vm_file);
-+	vma->vm_file = get_file(pool->f);
-+
-+	return pool->f->f_op->mmap(pool->f, vma);
-+}
-diff --git a/ipc/kdbus/pool.h b/ipc/kdbus/pool.h
+diff --git a/ipc/kdbus/policy.h b/ipc/kdbus/policy.h
 new file mode 100644
-index 000000000000..b8f6930d5bb9
+index 000000000000..6eb7d77b54b0
 --- /dev/null
-+++ b/ipc/kdbus/pool.h
-@@ -0,0 +1,44 @@
++++ b/ipc/kdbus/policy.h
+@@ -0,0 +1,61 @@
 +/*
 + * Copyright (C) 2013-2014 Kay Sievers
 + * Copyright (C) 2013-2014 Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -804,35 +708,52 @@ index 000000000000..b8f6930d5bb9
 + * your option) any later version.
 + */
 +
-+#ifndef __KDBUS_POOL_H
-+#define __KDBUS_POOL_H
++#ifndef __KDBUS_POLICY_H
++#define __KDBUS_POLICY_H
 +
-+struct kdbus_pool;
-+struct kdbus_pool_slice;
++#include <linux/hashtable.h>
++#include <linux/mutex.h>
++#include <linux/rwsem.h>
 +
-+struct kdbus_pool *kdbus_pool_new(const char *name, size_t size);
-+void kdbus_pool_free(struct kdbus_pool *pool);
-+size_t kdbus_pool_remain(struct kdbus_pool *pool);
-+int kdbus_pool_mmap(const struct kdbus_pool *pool, struct vm_area_struct *vma);
-+int kdbus_pool_release_offset(struct kdbus_pool *pool, size_t off);
++struct kdbus_conn;
++struct kdbus_item;
 +
-+struct kdbus_pool_slice *kdbus_pool_slice_alloc(struct kdbus_pool *pool,
-+						size_t size);
-+void kdbus_pool_slice_free(struct kdbus_pool_slice *slice);
-+struct kdbus_pool_slice *kdbus_pool_slice_find(struct kdbus_pool *pool,
-+					       size_t off);
-+int kdbus_pool_slice_move(struct kdbus_pool *src_pool,
-+			  struct kdbus_pool *dst_pool,
-+			  struct kdbus_pool_slice **slice);
-+size_t kdbus_pool_slice_offset(const struct kdbus_pool_slice *slice);
-+ssize_t kdbus_pool_slice_copy(const struct kdbus_pool_slice *slice, size_t off,
-+			      const void *data, size_t len);
-+ssize_t kdbus_pool_slice_copy_user(const struct kdbus_pool_slice *slice,
-+				   size_t off, const void __user *data,
-+				   size_t len);
-+void kdbus_pool_slice_flush(const struct kdbus_pool_slice *slice);
++/**
++ * struct kdbus_policy_db - policy database
++ * @entries_hash:	Hashtable of entries
++ * @talk_access_hash:	Hashtable of send access elements
++ * @entries_lock:	Mutex to protect the database's access entries
++ * @cache_lock:		Mutex to protect the database's cache
++ */
++struct kdbus_policy_db {
++	DECLARE_HASHTABLE(entries_hash, 6);
++	DECLARE_HASHTABLE(talk_access_hash, 6);
++	struct rw_semaphore entries_rwlock;
++	struct mutex cache_lock;
++};
 +
-+void kdbus_pool_slice_make_public(struct kdbus_pool_slice *slice);
++void kdbus_policy_db_init(struct kdbus_policy_db *db);
++void kdbus_policy_db_clear(struct kdbus_policy_db *db);
++
++int kdbus_policy_check_see_access_unlocked(struct kdbus_policy_db *db,
++					   const struct cred *cred,
++					   const char *name);
++int kdbus_policy_check_talk_access(struct kdbus_policy_db *db,
++				   struct kdbus_conn *conn_src,
++				   struct kdbus_conn *conn_dst);
++int kdbus_policy_check_own_access(struct kdbus_policy_db *db,
++				  const struct cred *cred,
++				  const char *name);
++void kdbus_policy_purge_cache(struct kdbus_policy_db *db,
++			      const struct kdbus_conn *conn);
++void kdbus_policy_remove_owner(struct kdbus_policy_db *db,
++			       const void *owner);
++int kdbus_policy_set(struct kdbus_policy_db *db,
++		     const struct kdbus_item *items,
++		     size_t items_size,
++		     size_t max_policies,
++		     bool allow_wildcards,
++		     const void *owner);
 +
 +#endif
 -- 
