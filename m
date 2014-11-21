@@ -1,156 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758845AbaKUQsw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:48:52 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23579 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321AbaKUQsu (ORCPT
+	id S1758948AbaKUQtB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:49:01 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:59931 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321AbaKUQs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:48:50 -0500
-Date: Fri, 21 Nov 2014 11:48:08 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, Ian Campbell <Ian.Campbell@citrix.com>,
-        david.vrabel@citrix.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v9 10/13] xen/arm/arm64: introduce xen_arch_need_swiotlb
-Message-ID: <20141121164808.GB6798@laptop.dumpdata.com>
-References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
- <1415792454-23161-10-git-send-email-stefano.stabellini@eu.citrix.com>
- <alpine.DEB.2.02.1411211617090.2675@kaball.uk.xensource.com>
+	Fri, 21 Nov 2014 11:48:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1411211617090.2675@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
+References: <alpine.DEB.2.11.1411200002330.3909@nanos>
+	<20141119235033.GE11386@lerouge>
+	<20141120122339.GA14877@htj.dyndns.org>
+	<alpine.DEB.2.11.1411202204030.3950@nanos>
+	<20141120221122.GA25393@htj.dyndns.org>
+	<alpine.DEB.2.11.1411202315230.3950@nanos>
+	<20141120230514.GB25393@htj.dyndns.org>
+	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
+	<20141120233920.GC25393@htj.dyndns.org>
+	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
+	<20141121162742.GB15461@htj.dyndns.org>
+	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
+Date: Fri, 21 Nov 2014 08:48:58 -0800
+X-Google-Sender-Auth: nz8ARmMqrMxvv8Nokbi2h-ZRJDU
+Message-ID: <CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 04:31:31PM +0000, Stefano Stabellini wrote:
-> On Wed, 12 Nov 2014, Stefano Stabellini wrote:
-> > Introduce an arch specific function to find out whether a particular dma
-> > mapping operation needs to bounce on the swiotlb buffer.
-> > 
-> > On ARM and ARM64, if the page involved is a foreign page and the device
-> > is not coherent, we need to bounce because at unmap time we cannot
-> > execute any required cache maintenance operations (we don't know how to
-> > find the pfn from the mfn).
-> > 
-> > No change of behaviour for x86.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-> > Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-> > Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> > Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> I am thinking of asking a backport of this patch to 3.16+
-> 
-> The catch is that is_device_dma_coherent is not available on older
-> kernels, so I'll have to change the arm implementation of
-> xen_arch_need_swiotlb to:
-> 
-> +bool xen_arch_need_swiotlb(struct device *dev,
-> +			   unsigned long pfn,
-> +			   unsigned long mfn)
-> +{
-> +	return pfn != mfn;
-> +}
-> +
-> 
-> It is going to make things slower but it is going to fix the issue with
-> cache flushing buffers for non-coherent devices.
-> 
-> Konrad, are you OK with that?
+On Fri, Nov 21, 2014 at 8:38 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> If you move the vmalloc fixup before exception_enter() and return if
+> the fault was from vmalloc, then you can't recurse.  You need to be
+> careful not to touch anything that uses RCU before exception_enter,
+> though.
 
-Looks fine.
-> 
-> 
-> > Changes in v6:
-> > - fix ts.
-> > 
-> > Changes in v5:
-> > - fix indentation.
-> > ---
-> >  arch/arm/include/asm/xen/page.h |    4 ++++
-> >  arch/arm/xen/mm.c               |    7 +++++++
-> >  arch/x86/include/asm/xen/page.h |    7 +++++++
-> >  drivers/xen/swiotlb-xen.c       |    5 ++++-
-> >  4 files changed, 22 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-> > index 135c24a..68c739b 100644
-> > --- a/arch/arm/include/asm/xen/page.h
-> > +++ b/arch/arm/include/asm/xen/page.h
-> > @@ -107,4 +107,8 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
-> >  #define xen_remap(cookie, size) ioremap_cache((cookie), (size))
-> >  #define xen_unmap(cookie) iounmap((cookie))
-> >  
-> > +bool xen_arch_need_swiotlb(struct device *dev,
-> > +			   unsigned long pfn,
-> > +			   unsigned long mfn);
-> > +
-> >  #endif /* _ASM_ARM_XEN_PAGE_H */
-> > diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-> > index ab700e1..28ebf3e 100644
-> > --- a/arch/arm/xen/mm.c
-> > +++ b/arch/arm/xen/mm.c
-> > @@ -100,6 +100,13 @@ void __xen_dma_sync_single_for_device(struct device *hwdev,
-> >  	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
-> >  }
-> >  
-> > +bool xen_arch_need_swiotlb(struct device *dev,
-> > +			   unsigned long pfn,
-> > +			   unsigned long mfn)
-> > +{
-> > +	return ((pfn != mfn) && !is_device_dma_coherent(dev));
-> > +}
-> > +
-> >  int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
-> >  				 unsigned int address_bits,
-> >  				 dma_addr_t *dma_handle)
-> > diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-> > index c949923..f58ef6c 100644
-> > --- a/arch/x86/include/asm/xen/page.h
-> > +++ b/arch/x86/include/asm/xen/page.h
-> > @@ -236,4 +236,11 @@ void make_lowmem_page_readwrite(void *vaddr);
-> >  #define xen_remap(cookie, size) ioremap((cookie), (size));
-> >  #define xen_unmap(cookie) iounmap((cookie))
-> >  
-> > +static inline bool xen_arch_need_swiotlb(struct device *dev,
-> > +					 unsigned long pfn,
-> > +					 unsigned long mfn)
-> > +{
-> > +	return false;
-> > +}
-> > +
-> >  #endif /* _ASM_X86_XEN_PAGE_H */
-> > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> > index ad2c5eb..3725ee4 100644
-> > --- a/drivers/xen/swiotlb-xen.c
-> > +++ b/drivers/xen/swiotlb-xen.c
-> > @@ -399,7 +399,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
-> >  	 * buffering it.
-> >  	 */
-> >  	if (dma_capable(dev, dev_addr, size) &&
-> > -	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
-> > +	    !range_straddles_page_boundary(phys, size) &&
-> > +		!xen_arch_need_swiotlb(dev, PFN_DOWN(phys), PFN_DOWN(dev_addr)) &&
-> > +		!swiotlb_force) {
-> >  		/* we are not interested in the dma_addr returned by
-> >  		 * xen_dma_map_page, only in the potential cache flushes executed
-> >  		 * by the function. */
-> > @@ -557,6 +559,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
-> >  		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
-> >  
-> >  		if (swiotlb_force ||
-> > +		    xen_arch_need_swiotlb(hwdev, PFN_DOWN(paddr), PFN_DOWN(dev_addr)) ||
-> >  		    !dma_capable(hwdev, dev_addr, sg->length) ||
-> >  		    range_straddles_page_boundary(paddr, sg->length)) {
-> >  			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
-> > -- 
-> > 1.7.10.4
-> > 
+This is probably the right thing to do anyway.
+
+The vmalloc fixup is purely about filling in hardware structures, so
+there really shouldn't be any need for RCU or anything else. It should
+probably be done first, before *anything* else (like the whole
+kmemcheck/kmmio fault etc handling)
+
+That said, the whole vmalloc_fault fixup routine does some odd things,
+over and beyond just filling in the page tables. So I'm not 100% sure
+that is safe as-is. The 32-bit version looks fine, but the x86-64
+version is very very dubious.
+
+The x86-64 version does crazy things like:
+
+ - uses "current->active_mm", which is very dubious
+ - flush lazy mmu mode
+ - walk down further in the page tables
+
+and those are just bugs, imnsho. Get rid of that crap. The 32-bit code
+does it right.
+
+(The 64-bit mode also has a "WARN_ON_ONCE(in_nmi())", which I guess is
+good - but it's good because the 64-bit version is written the way it
+is).
+
+                    Linus
