@@ -1,95 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759075AbaKUQop (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:44:45 -0500
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:37732 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758856AbaKUQon (ORCPT
+	id S1758845AbaKUQsw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:48:52 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23579 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321AbaKUQsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:44:43 -0500
-Date: Fri, 21 Nov 2014 10:44:41 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v5 2/4] fuse: Support fuse filesystems outside of
- init_user_ns
-Message-ID: <20141121164441.GA1730@ubuntu-mba51>
-References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
- <1414013060-137148-3-git-send-email-seth.forshee@canonical.com>
- <20141111140454.GD333@tucsk>
- <87mw7xd9zt.fsf@x220.int.ebiederm.org>
- <20141112130915.GG333@tucsk>
- <20141112162254.GB31775@ubuntu-hedt>
- <20141118152156.GA21726@ubuntu-mba51>
- <CAJfpeguuT1V1Pf0iFXRozmeohDH2Jy=p8o=1EnvD_qfB1CTQuA@mail.gmail.com>
- <CAJfpeguctYFkzBPN26=WjOCLTt2mqvouHXqLZ1sRqZngtbw8CQ@mail.gmail.com>
- <20141119140911.GA27009@mail.hallyn.com>
+	Fri, 21 Nov 2014 11:48:50 -0500
+Date: Fri, 21 Nov 2014 11:48:08 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, Ian Campbell <Ian.Campbell@citrix.com>,
+        david.vrabel@citrix.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v9 10/13] xen/arm/arm64: introduce xen_arch_need_swiotlb
+Message-ID: <20141121164808.GB6798@laptop.dumpdata.com>
+References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
+ <1415792454-23161-10-git-send-email-stefano.stabellini@eu.citrix.com>
+ <alpine.DEB.2.02.1411211617090.2675@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141119140911.GA27009@mail.hallyn.com>
+In-Reply-To: <alpine.DEB.2.02.1411211617090.2675@kaball.uk.xensource.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 03:09:11PM +0100, Serge E. Hallyn wrote:
-> Quoting Miklos Szeredi (miklos@szeredi.hu):
-> > On Wed, Nov 19, 2014 at 9:50 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> > > On Tue, Nov 18, 2014 at 4:21 PM, Seth Forshee
-> > > <seth.forshee@canonical.com> wrote:
-> > >>> I asked around a bit, and it turns out there are use cases for nested
-> > >> containers (i.e. a container within a container) where the rootfs for
-> > >> the outer container mounts a filesystem containing the rootfs for the
-> > >> inner container. If that mount is nosuid then suid utilities like ping
-> > >> aren't going to work in the inner container.
-> > >>
-> > >> So since there's a use case for suid in a userns mount and we have what
-> > >> we belive are sufficient protections against using this as a vector to
-> > >> get privileges outside the container, I'm planning to move ahead without
-> > >> the MNT_NOSUID restriction. Any objections?
-> > >
-> > > In the general case how'd we prevent suid executable being tricked to
-> > > do something it shouldn't do by unprivileged mounting into sensitive
-> > > places (i.e. config files) inside the container?
-> 
-> The design of the namespaces would prevent that.  You cannot manipulate your
-> mounts namespace unless you own it.  You cannot manipulate the mounts namespace
-> for a task whose user namespace you do not own.  If you can, for instance,
-> bind mount $HOME/shadow onto /etc/shadow, then you already own your user
-> namespace and are root there, so any suid-root program which you mount through
-> fuse will only subjegate your own namespace.  Any task which running in the
-> parent user-ns (and therefore parent mount-ns) will not see your bind mount.
-> 
-> > > Allowing SUID looks like a slippery slope to me.  And there are plenty
-> > > of solutions to the "ping" problem, AFAICS, that don't involve the
-> > > suid bit.
+On Fri, Nov 21, 2014 at 04:31:31PM +0000, Stefano Stabellini wrote:
+> On Wed, 12 Nov 2014, Stefano Stabellini wrote:
+> > Introduce an arch specific function to find out whether a particular dma
+> > mapping operation needs to bounce on the swiotlb buffer.
 > > 
-> > ping isn't even suid on my system, it has security.capability xattr instead.
+> > On ARM and ARM64, if the page involved is a foreign page and the device
+> > is not coherent, we need to bounce because at unmap time we cannot
+> > execute any required cache maintenance operations (we don't know how to
+> > find the pfn from the mfn).
+> > 
+> > No change of behaviour for x86.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+> > Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+> > Acked-by: Ian Campbell <ian.campbell@citrix.com>
+> > Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > 
-> security.capability xattrs that will have the exact same concerns wrt
-> confusion through bind mounts as suid.
+> I am thinking of asking a backport of this patch to 3.16+
 > 
-> > Please just get rid of SUID/SGID.  It's a legacy, it's a hack, not
-> > worth the complexity and potential problems arising from that
-> > complexity.
+> The catch is that is_device_dma_coherent is not available on older
+> kernels, so I'll have to change the arm implementation of
+> xen_arch_need_swiotlb to:
 > 
-> Oh boy, I don't know which side to sit on here :)  I'm all for replacing
-> suid with some use of file capabilities, but realistically there are reasons
-> why that hasn't happened more widely than it has - tar, package managers,
-> cpio, nfs, etc.
+> +bool xen_arch_need_swiotlb(struct device *dev,
+> +			   unsigned long pfn,
+> +			   unsigned long mfn)
+> +{
+> +	return pfn != mfn;
+> +}
+> +
+> 
+> It is going to make things slower but it is going to fix the issue with
+> cache flushing buffers for non-coherent devices.
+> 
+> Konrad, are you OK with that?
 
-Miklos: I we're all generally in agreement here that suid/sgid is not
-the best solution, but as Serge points out we are unfortunately not yet
-in a place where it can be completely dropped in favor of capabilities.
-In light of this can I convince you to reconsider your position?
-
-Thanks,
-Seth
+Looks fine.
+> 
+> 
+> > Changes in v6:
+> > - fix ts.
+> > 
+> > Changes in v5:
+> > - fix indentation.
+> > ---
+> >  arch/arm/include/asm/xen/page.h |    4 ++++
+> >  arch/arm/xen/mm.c               |    7 +++++++
+> >  arch/x86/include/asm/xen/page.h |    7 +++++++
+> >  drivers/xen/swiotlb-xen.c       |    5 ++++-
+> >  4 files changed, 22 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
+> > index 135c24a..68c739b 100644
+> > --- a/arch/arm/include/asm/xen/page.h
+> > +++ b/arch/arm/include/asm/xen/page.h
+> > @@ -107,4 +107,8 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+> >  #define xen_remap(cookie, size) ioremap_cache((cookie), (size))
+> >  #define xen_unmap(cookie) iounmap((cookie))
+> >  
+> > +bool xen_arch_need_swiotlb(struct device *dev,
+> > +			   unsigned long pfn,
+> > +			   unsigned long mfn);
+> > +
+> >  #endif /* _ASM_ARM_XEN_PAGE_H */
+> > diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
+> > index ab700e1..28ebf3e 100644
+> > --- a/arch/arm/xen/mm.c
+> > +++ b/arch/arm/xen/mm.c
+> > @@ -100,6 +100,13 @@ void __xen_dma_sync_single_for_device(struct device *hwdev,
+> >  	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
+> >  }
+> >  
+> > +bool xen_arch_need_swiotlb(struct device *dev,
+> > +			   unsigned long pfn,
+> > +			   unsigned long mfn)
+> > +{
+> > +	return ((pfn != mfn) && !is_device_dma_coherent(dev));
+> > +}
+> > +
+> >  int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
+> >  				 unsigned int address_bits,
+> >  				 dma_addr_t *dma_handle)
+> > diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+> > index c949923..f58ef6c 100644
+> > --- a/arch/x86/include/asm/xen/page.h
+> > +++ b/arch/x86/include/asm/xen/page.h
+> > @@ -236,4 +236,11 @@ void make_lowmem_page_readwrite(void *vaddr);
+> >  #define xen_remap(cookie, size) ioremap((cookie), (size));
+> >  #define xen_unmap(cookie) iounmap((cookie))
+> >  
+> > +static inline bool xen_arch_need_swiotlb(struct device *dev,
+> > +					 unsigned long pfn,
+> > +					 unsigned long mfn)
+> > +{
+> > +	return false;
+> > +}
+> > +
+> >  #endif /* _ASM_X86_XEN_PAGE_H */
+> > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> > index ad2c5eb..3725ee4 100644
+> > --- a/drivers/xen/swiotlb-xen.c
+> > +++ b/drivers/xen/swiotlb-xen.c
+> > @@ -399,7 +399,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+> >  	 * buffering it.
+> >  	 */
+> >  	if (dma_capable(dev, dev_addr, size) &&
+> > -	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
+> > +	    !range_straddles_page_boundary(phys, size) &&
+> > +		!xen_arch_need_swiotlb(dev, PFN_DOWN(phys), PFN_DOWN(dev_addr)) &&
+> > +		!swiotlb_force) {
+> >  		/* we are not interested in the dma_addr returned by
+> >  		 * xen_dma_map_page, only in the potential cache flushes executed
+> >  		 * by the function. */
+> > @@ -557,6 +559,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+> >  		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
+> >  
+> >  		if (swiotlb_force ||
+> > +		    xen_arch_need_swiotlb(hwdev, PFN_DOWN(paddr), PFN_DOWN(dev_addr)) ||
+> >  		    !dma_capable(hwdev, dev_addr, sg->length) ||
+> >  		    range_straddles_page_boundary(paddr, sg->length)) {
+> >  			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
+> > -- 
+> > 1.7.10.4
+> > 
