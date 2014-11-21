@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276AbaKUPj2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:39:28 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27144 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321AbaKUPj0 (ORCPT
+	id S932361AbaKUPnD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:43:03 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:50345 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758418AbaKUPnC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:39:26 -0500
-Message-ID: <546F5C98.4030202@oracle.com>
-Date: Fri, 21 Nov 2014 09:39:04 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 21 Nov 2014 10:43:02 -0500
 MIME-Version: 1.0
-Newsgroups: gmane.comp.file-systems.btrfs,gmane.linux.file-systems,gmane.linux.kernel,gmane.linux.kernel.mm,gmane.linux.nfs
-To: Omar Sandoval <osandov@osandov.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>, linux-btrfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Mel Gorman <mgorman@suse.de>
-CC: Ming Lei <ming.lei@canonical.com>
-Subject: Re: [PATCH v2 1/5] direct-io: don't dirty ITER_BVEC pages on read
-References: <cover.1416563833.git.osandov@osandov.com> <d5e6bbb3e54f76bbc11ffd106bc98a2c531b67ad.1416563833.git.osandov@osandov.com>
-In-Reply-To: <d5e6bbb3e54f76bbc11ffd106bc98a2c531b67ad.1416563833.git.osandov@osandov.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20141121151105.GC7508@saruman>
+References: <cover.1416547297.git.kiran.kumar@linaro.org>
+	<7a23b5f0af4463aea85384b6a67678b9c41b9d2d.1416547297.git.kiran.kumar@linaro.org>
+	<20141121151105.GC7508@saruman>
+Date: Fri, 21 Nov 2014 21:13:00 +0530
+Message-ID: <CA+RfmHZo4FuH6-Z8+VFY7Ao5QVD-VmfdCm17ZrB6f7J8Xpo-Aw@mail.gmail.com>
+Subject: Re: [PATCH v1 2/3] usb: phy: Handle per-PHY event for connect and
+ disconnect events
+From: Kiran Raparthy <kiran.kumar@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        =?UTF-8?B?QXJ2ZSBIau+/vW5uZXbvv71n?= <arve@android.com>,
+        Benoit Goby <benoit@android.com>, Todd Poynor <toddpoynor@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2014 04:08 AM, Omar Sandoval wrote:
-> Reads through the iov_iter infrastructure for kernel pages shouldn't be dirtied
-> by the direct I/O code.
-> 
-> This is based on Dave Kleikamp's and Ming Lei's previously posted patches.
-
-Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-
-> Cc: Ming Lei <ming.lei@canonical.com>
-> Signed-off-by: Omar Sandoval <osandov@osandov.com>
-> ---
->  fs/direct-io.c | 8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/direct-io.c b/fs/direct-io.c
-> index e181b6b..e542ce4 100644
-> --- a/fs/direct-io.c
-> +++ b/fs/direct-io.c
-> @@ -120,6 +120,7 @@ struct dio {
->  	spinlock_t bio_lock;		/* protects BIO fields below */
->  	int page_errors;		/* errno from get_user_pages() */
->  	int is_async;			/* is IO async ? */
-> +	int should_dirty;		/* should we mark read pages dirty? */
->  	bool defer_completion;		/* defer AIO completion to workqueue? */
->  	int io_error;			/* IO error in completion path */
->  	unsigned long refcount;		/* direct_io_worker() and bios */
-> @@ -392,7 +393,7 @@ static inline void dio_bio_submit(struct dio *dio, struct dio_submit *sdio)
->  	dio->refcount++;
->  	spin_unlock_irqrestore(&dio->bio_lock, flags);
->  
-> -	if (dio->is_async && dio->rw == READ)
-> +	if (dio->is_async && dio->rw == READ && dio->should_dirty)
->  		bio_set_pages_dirty(bio);
->  
->  	if (sdio->submit_io)
-> @@ -463,13 +464,13 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
->  	if (!uptodate)
->  		dio->io_error = -EIO;
->  
-> -	if (dio->is_async && dio->rw == READ) {
-> +	if (dio->is_async && dio->rw == READ && dio->should_dirty) {
->  		bio_check_pages_dirty(bio);	/* transfers ownership */
->  	} else {
->  		bio_for_each_segment_all(bvec, bio, i) {
->  			struct page *page = bvec->bv_page;
->  
-> -			if (dio->rw == READ && !PageCompound(page))
-> +			if (dio->rw == READ && !PageCompound(page) && dio->should_dirty)
->  				set_page_dirty_lock(page);
->  			page_cache_release(page);
->  		}
-> @@ -1177,6 +1178,7 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
->  
->  	dio->inode = inode;
->  	dio->rw = rw;
-> +	dio->should_dirty = !(iter->type & ITER_BVEC);
->  
->  	/*
->  	 * For AIO O_(D)SYNC writes we need to defer completions to a workqueue
-> 
+On 21 November 2014 20:41, Felipe Balbi <balbi@ti.com> wrote:
+> On Fri, Nov 21, 2014 at 11:31:21AM +0530, Kiran Raparthy wrote:
+>> usb: phy: Handle per-PHY event for connnect and disconnect events
+>>
+>> When usb is connected and enumerated in device mode or when usb is
+>> disconnected,call usb_phy_set_event from phy drivers to handle per-PHY event.
+>>
+>> Cc: Felipe Balbi <balbi@ti.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: linux-usb@vger.kernel.org
+>> Cc: Android Kernel Team <kernel-team@android.com>
+>> Cc: John Stultz <john.stultz@linaro.org>
+>> Cc: Sumit Semwal <sumit.semwal@linaro.org>
+>> Cc: Arve Hj�nnev�g <arve@android.com>
+>> Cc: Benoit Goby <benoit@android.com>
+>> [Original patch in Android from Todd]
+>> Cc: Todd Poynor <toddpoynor@google.com>
+>> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+>
+> this patch doesn't apply, please rebase entire series on my testing/next.
+Sure,
+Regards,
+Kiran
+>
+> --
+> balbi
