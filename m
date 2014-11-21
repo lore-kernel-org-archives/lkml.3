@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758561AbaKUMgd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 07:36:33 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36613 "EHLO
+	id S1758582AbaKUMgv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 07:36:51 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36625 "EHLO
 	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755237AbaKUMgb (ORCPT
+	with ESMTP id S1758347AbaKUMgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 07:36:31 -0500
-Date: Fri, 21 Nov 2014 12:37:19 +0000
+	Fri, 21 Nov 2014 07:36:50 -0500
+Date: Fri, 21 Nov 2014 12:37:33 +0000
 From: Morten Rasmussen <morten.rasmussen@arm.com>
 To: Vincent Guittot <vincent.guittot@linaro.org>
 Cc: "peterz@infradead.org" <peterz@infradead.org>,
@@ -20,99 +20,85 @@ Cc: "peterz@infradead.org" <peterz@infradead.org>,
         "riel@redhat.com" <riel@redhat.com>, "efault@gmx.de" <efault@gmx.de>,
         "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
         "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH v9 08/10] sched: replace capacity_factor by usage
-Message-ID: <20141121123719.GH23177@e105550-lin.cambridge.arm.com>
+Subject: Re: [PATCH v9 10/10] sched: move cfs task on a CPU with higher
+ capacity
+Message-ID: <20141121123733.GI23177@e105550-lin.cambridge.arm.com>
 References: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org>
- <1415033687-23294-9-git-send-email-vincent.guittot@linaro.org>
+ <1415033687-23294-11-git-send-email-vincent.guittot@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415033687-23294-9-git-send-email-vincent.guittot@linaro.org>
+In-Reply-To: <1415033687-23294-11-git-send-email-vincent.guittot@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 04:54:45PM +0000, Vincent Guittot wrote:
-> The scheduler tries to compute how many tasks a group of CPUs can handle by
-> assuming that a task's load is SCHED_LOAD_SCALE and a CPU's capacity is
-> SCHED_CAPACITY_SCALE. group_capacity_factor divides the capacity of the group
-> by SCHED_LOAD_SCALE to estimate how many task can run in the group. Then, it
-> compares this value with the sum of nr_running to decide if the group is
-> overloaded or not. But the group_capacity_factor is hardly working for SMT
->  system, it sometimes works for big cores but fails to do the right thing for
->  little cores.
+On Mon, Nov 03, 2014 at 04:54:47PM +0000, Vincent Guittot wrote:
+> When a CPU is used to handle a lot of IRQs or some RT tasks, the remaining
+> capacity for CFS tasks can be significantly reduced. Once we detect such
+> situation by comparing cpu_capacity_orig and cpu_capacity, we trig an idle
+> load balance to check if it's worth moving its tasks on an idle CPU.
 > 
-> Below are two examples to illustrate the problem that this patch solves:
+> Once the idle load_balance has selected the busiest CPU, it will look for an
+> active load balance for only two cases :
+> - there is only 1 task on the busiest CPU.
+> - we haven't been able to move a task of the busiest rq.
 > 
-> 1- If the original capacity of a CPU is less than SCHED_CAPACITY_SCALE
-> (640 as an example), a group of 3 CPUS will have a max capacity_factor of 2
-> (div_round_closest(3x640/1024) = 2) which means that it will be seen as
-> overloaded even if we have only one task per CPU.
+> A CPU with a reduced capacity is included in the 1st case, and it's worth to
+> actively migrate its task if the idle CPU has got full capacity. This test has
+> been added in need_active_balance.
 > 
-> 2 - If the original capacity of a CPU is greater than SCHED_CAPACITY_SCALE
-> (1512 as an example), a group of 4 CPUs will have a capacity_factor of 4
-> (at max and thanks to the fix [0] for SMT system that prevent the apparition
-> of ghost CPUs) but if one CPU is fully used by rt tasks (and its capacity is
-> reduced to nearly nothing), the capacity factor of the group will still be 4
-> (div_round_closest(3*1512/1024) = 5 which is cap to 4 with [0]).
+> As a sidenote, this will note generate more spurious ilb because we already
+> trig an ilb if there is more than 1 busy cpu. If this cpu is the only one that
+> has a task, we will trig the ilb once for migrating the task.
 > 
-> So, this patch tries to solve this issue by removing capacity_factor and
-> replacing it with the 2 following metrics :
-> -The available CPU's capacity for CFS tasks which is already used by
->  load_balance.
-> -The usage of the CPU by the CFS tasks. For the latter, utilization_avg_contrib
-> has been re-introduced to compute the usage of a CPU by CFS tasks.
+> The nohz_kick_needed function has been cleaned up a bit while adding the new
+> test
 > 
-> group_capacity_factor and group_has_free_capacity has been removed and replaced
-> by group_no_capacity. We compare the number of task with the number of CPUs and
-> we evaluate the level of utilization of the CPUs to define if a group is
-> overloaded or if a group has capacity to handle more tasks.
+> env.src_cpu and env.src_rq must be set unconditionnally because they are used
+> in need_active_balance which is called even if busiest->nr_running equals 1
 > 
-> For SD_PREFER_SIBLING, a group is tagged overloaded if it has more than 1 task
-> so it will be selected in priority (among the overloaded groups). Since [1],
-> SD_PREFER_SIBLING is no more concerned by the computation of load_above_capacity
-> because local is not overloaded.
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>  kernel/sched/fair.c | 74 ++++++++++++++++++++++++++++++++++++++---------------
+>  1 file changed, 53 insertions(+), 21 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index db392a6..02e8f7f 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -6634,6 +6634,28 @@ static int need_active_balance(struct lb_env *env)
+>  			return 1;
+>  	}
+>  
+> +	/*
+> +	 * The dst_cpu is idle and the src_cpu CPU has only 1 CFS task.
+> +	 * It's worth migrating the task if the src_cpu's capacity is reduced
+> +	 * because of other sched_class or IRQs whereas capacity stays
+> +	 * available on dst_cpu.
+> +	 */
+> +	if ((env->idle != CPU_NOT_IDLE) &&
+> +			(env->src_rq->cfs.h_nr_running == 1)) {
+> +		unsigned long src_eff_capacity, dst_eff_capacity;
+> +
+> +		dst_eff_capacity = 100;
+> +		dst_eff_capacity *= capacity_of(env->dst_cpu);
+> +		dst_eff_capacity *= capacity_orig_of(env->src_cpu);
+> +
+> +		src_eff_capacity = sd->imbalance_pct;
+> +		src_eff_capacity *= capacity_of(env->src_cpu);
+> +		src_eff_capacity *= capacity_orig_of(env->dst_cpu);
 
-[...]
+Do we need to scale by capacity_orig? Shouldn't the absolute capacity be
+better?
 
-> @@ -6213,17 +6207,20 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
-> 
->                 /*
->                  * In case the child domain prefers tasks go to siblings
-> -                * first, lower the sg capacity factor to one so that we'll try
-> +                * first, lower the sg capacity so that we'll try
->                  * and move all the excess tasks away. We lower the capacity
->                  * of a group only if the local group has the capacity to fit
-> -                * these excess tasks, i.e. nr_running < group_capacity_factor. The
-> -                * extra check prevents the case where you always pull from the
-> -                * heaviest group when it is already under-utilized (possible
-> -                * with a large weight task outweighs the tasks on the system).
-> +                * these excess tasks. The extra check prevents the case where
-> +                * you always pull from the heaviest group when it is already
-> +                * under-utilized (possible with a large weight task outweighs
-> +                * the tasks on the system).
->                  */
->                 if (prefer_sibling && sds->local &&
-> -                   sds->local_stat.group_has_free_capacity)
-> -                       sgs->group_capacity_factor = min(sgs->group_capacity_factor, 1U);
-> +                   group_has_capacity(env, &sds->local_stat) &&
-> +                   (sgs->sum_nr_running > 1)) {
-> +                       sgs->group_no_capacity = 1;
-> +                       sgs->group_type = group_overloaded;
-> +               }
+if (capacity_of(env->src) * sd->imbalance_pct < capacity_of(env->dst) *
+100) ?
 
-I'm still a bit confused about SD_PREFER_SIBLING. What is the flag
-supposed to do and why?
-
-It looks like a weak load balancing bias attempting to consolidate tasks
-on domains with spare capacity. It does so by marking non-local groups
-as overloaded regardless of their actual load if the local group has
-spare capacity. Correct?
-
-In patch 9 this behaviour is enabled for SMT level domains, which
-implies that tasks will be consolidated in MC groups, that is we prefer
-multiple tasks on sibling cpus (hw threads). I must be missing something
-essential. I was convinced that we wanted to avoid using sibling cpus on
-SMT systems as much as possible?
-
+Isn't it the absolute available capacity that matters? For SMP
+capacity_orig is the same and cancels out and doesn't change anything.
+For big.LITTLE we would rather have the task run on a big where rt/irq
+eats 30% than a little cpu where rq/irq eats 5%, assuming big capacity
+is much bigger than little capacity so the absolute available capacity
+(~cycles/time) is larger on the big cpu.
