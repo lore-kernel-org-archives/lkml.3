@@ -1,92 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758834AbaKURBz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 12:01:55 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:49176 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932099AbaKURBx (ORCPT
+	id S932568AbaKUREU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 12:04:20 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49561 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758926AbaKURES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 12:01:53 -0500
-X-Greylist: delayed 52114 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Nov 2014 12:01:53 EST
-Date: Fri, 21 Nov 2014 12:01:51 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141121170151.GC30603@home.goodmis.org>
-References: <alpine.DEB.2.11.1411200002330.3909@nanos>
- <20141119235033.GE11386@lerouge>
- <20141120122339.GA14877@htj.dyndns.org>
- <alpine.DEB.2.11.1411202204030.3950@nanos>
- <20141120221122.GA25393@htj.dyndns.org>
- <alpine.DEB.2.11.1411202315230.3950@nanos>
- <20141120230514.GB25393@htj.dyndns.org>
- <alpine.DEB.2.11.1411210109460.6439@nanos>
- <20141121141332.GA8808@lerouge>
- <20141121162506.GA15461@htj.dyndns.org>
+	Fri, 21 Nov 2014 12:04:18 -0500
+Message-ID: <546F7077.4010200@oracle.com>
+Date: Fri, 21 Nov 2014 12:03:51 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141121162506.GA15461@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Herrmann <dh.herrmann@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>, ebiederm@xmission.com,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Daniel Mack <daniel@zonque.org>, Djalal Harouni <tixxdz@opendz.org>
+Subject: Re: kdbus: add node and filesystem implementation
+References: <1416546149-24799-1-git-send-email-gregkh@linuxfoundation.org> <1416546149-24799-7-git-send-email-gregkh@linuxfoundation.org> <546F606D.40407@oracle.com> <CANq1E4QkXv9Ak6eT+NZPsy+5nTGKE8oypLvdr97cFcvmtigS_A@mail.gmail.com> <20141121165638.GA24866@kroah.com>
+In-Reply-To: <20141121165638.GA24866@kroah.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 11:25:06AM -0500, Tejun Heo wrote:
-> 
-> * Static percpu areas wouldn't trigger fault lazily.  Note that this
->   is not necessarily because the first percpu chunk which contains the
->   static area is embedded inside the kernel linear mapping.  Depending
->   on the memory layout and boot param, percpu allocator may choose to
->   map the first chunk in vmalloc space too; however, this still works
->   out fine because at that point there are no other page tables and
->   the PUD entries covering the first chunk is faulted in before other
->   pages tables are copied from the kernel one.
+On 11/21/2014 11:56 AM, Greg Kroah-Hartman wrote:
+>>> Maybe it's worth basing your git tree on top of Al's rather than a random
+>>> > > -rc, since it's now a filesystem?
+>> > 
+>> > Sure, sounds good.
+> No, I'll keep it as is, we can handle the merge issues later when it
+> hits Linus's tree, this makes it easier for me and others to test it
+> out properly.
 
-That sounds correct.
-
-> 
-> * NMI used to be a problem because vmalloc fault handler couldn't
->   safely nest inside NMI handler but this has been fixed since and it
->   should work fine from NMI handlers now.
-
-Right. Of course "should work fine" does not excatly mean "will work fine".
+It should be hitting -next, not Linus's tree. This is why we have an
+integration tree, no?
 
 
-> 
-> * Function tracers are problematic because they may end up nesting
->   inside themselves through triggering a vmalloc fault while accessing
->   dynamic percpu memory area.  This may lead to recursive locking and
->   other surprises.
-
-The function tracer infrastructure now has a recursive check that happens
-rather early in the call. Unless the registered OPS specifically states
-it handles recursions (FTRACE_OPS_FL_RECUSION_SAFE), ftrace will add the
-necessary recursion checks. If a registered OPS lies about being recusion
-safe, well we can't stop suicide.
-
-Looking at kernel/trace/trace_functions.c: function_trace_call() which is
-registered with RECURSION_SAFE, I see that the recursion check is done
-before the per_cpu_ptr() call to the dynamically allocated per_cpu data.
-
-It looks OK, but...
-
-Oh! but if we trace the page fault handler, and we fault here too
-we just nuked the cr2 register. Not good.
-
--- Steve
-
-
-> 
-> Are there other cases where the lazy vmalloc faults can break things?
+Thanks,
+Sasha
