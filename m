@@ -1,70 +1,380 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588AbaKUViq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 16:38:46 -0500
-Received: from mga01.intel.com ([192.55.52.88]:37215 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751826AbaKUVip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 16:38:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,432,1413270000"; 
-   d="scan'208";a="636139656"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@kernel.org
-Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/2] perf, tools: Allow to force redirect pr_debug to stderr.
-Date: Fri, 21 Nov 2014 13:38:00 -0800
-Message-Id: <1416605880-25055-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1416605880-25055-1-git-send-email-andi@firstfloor.org>
-References: <1416605880-25055-1-git-send-email-andi@firstfloor.org>
+	id S1752610AbaKUVjf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 16:39:35 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:64943 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaKUVjd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 16:39:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+dbMptnfYf0QgKqXWkv4N7_YzJvnoKcvOUY5asPX4x9yEApLg@mail.gmail.com>
+References: <1416417577-27495-1-git-send-email-yazen.ghannam@linaro.org>
+	<CA+dbMptnfYf0QgKqXWkv4N7_YzJvnoKcvOUY5asPX4x9yEApLg@mail.gmail.com>
+Date: Fri, 21 Nov 2014 22:39:31 +0100
+Message-ID: <CAKv+Gu9-ZqkNxEMcdbna4jYDvNmtwEr0Yf57Wv=usURZBvC3BQ@mail.gmail.com>
+Subject: Re: [PATCH] arm64: crypto: Add ARM64 CRC32 hw accelerated module
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Yazen Ghannam <yazen.ghannam@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 20 November 2014 15:22, Yazen Ghannam <yazen.ghannam@linaro.org> wrote:
+> +linux-arm-kernel@lists.infradead.org
+>
+> On Wed, Nov 19, 2014 at 11:19 AM, Yazen Ghannam
+> <yazen.ghannam@linaro.org> wrote:
+>> This module registers a crc32 algorithm and a crc32c algorithm
+>> that use the optional CRC32 and CRC32C instructions in ARMv8.
+>>
+>> Tested on AMD Seattle.
+>>
+>> Improvement compared to crc32c-generic algorithm:
+>> TCRYPT CRC32C speed test shows ~450% speedup.
+>> Simple dd write tests to btrfs filesystem show ~30% speedup.
+>>
+>> Signed-off-by: Yazen Ghannam <yazen.ghannam@linaro.org>
+>> Acked-by: Steve Capper <steve.capper@linaro.org>
+>> Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+>> ---
+>>  arch/arm64/crypto/Kconfig       |   4 +
+>>  arch/arm64/crypto/Makefile      |   4 +
+>>  arch/arm64/crypto/crc32-arm64.c | 274 ++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 282 insertions(+)
+>>  create mode 100644 arch/arm64/crypto/crc32-arm64.c
+>>
+>> diff --git a/arch/arm64/crypto/Kconfig b/arch/arm64/crypto/Kconfig
+>> index 5562652..c1a0468 100644
+>> --- a/arch/arm64/crypto/Kconfig
+>> +++ b/arch/arm64/crypto/Kconfig
+>> @@ -50,4 +50,8 @@ config CRYPTO_AES_ARM64_NEON_BLK
+>>         select CRYPTO_AES
+>>         select CRYPTO_ABLK_HELPER
+>>
+>> +config CRYPTO_CRC32_ARM64
+>> +       tristate "CRC32 and CRC32C using optional ARMv8 instructions"
+>> +       depends on ARM64
+>> +       select CRYPTO_HASH
+>>  endif
+>> diff --git a/arch/arm64/crypto/Makefile b/arch/arm64/crypto/Makefile
+>> index a3f935f..5720608 100644
+>> --- a/arch/arm64/crypto/Makefile
+>> +++ b/arch/arm64/crypto/Makefile
+>> @@ -34,5 +34,9 @@ AFLAGS_aes-neon.o     := -DINTERLEAVE=4
+>>
+>>  CFLAGS_aes-glue-ce.o   := -DUSE_V8_CRYPTO_EXTENSIONS
+>>
+>> +obj-$(CONFIG_CRYPTO_CRC32_ARM64) += crc32-arm64.o
+>> +
+>> +CFLAGS_crc32-arm64.o   := -mcpu=generic+crc
+>> +
+>>  $(obj)/aes-glue-%.o: $(src)/aes-glue.c FORCE
+>>         $(call if_changed_rule,cc_o_c)
+>> diff --git a/arch/arm64/crypto/crc32-arm64.c b/arch/arm64/crypto/crc32-arm64.c
+>> new file mode 100644
+>> index 0000000..9499199
+>> --- /dev/null
+>> +++ b/arch/arm64/crypto/crc32-arm64.c
+>> @@ -0,0 +1,274 @@
+>> +/*
+>> + * crc32-arm64.c - CRC32 and CRC32C using optional ARMv8 instructions
+>> + *
+>> + * Module based on crypto/crc32c_generic.c
+>> + *
+>> + * CRC32 loop taken from Ed Nevill's Hadoop CRC patch
+>> + * http://mail-archives.apache.org/mod_mbox/hadoop-common-dev/201406.mbox/%3C1403687030.3355.19.camel%40localhost.localdomain%3E
+>> + *
+>> + * Using inline assembly instead of intrinsics in order to be backwards
+>> + * compatible with older compilers.
+>> + *
+>> + * Copyright (C) 2014 Linaro Ltd <yazen.ghannam@linaro.org>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +#include <linux/unaligned/access_ok.h>
 
-When debugging the tui browser I find it useful to
-redirect the debug log into a file. Currently it's always
-forced to the message line.
+One final nit: you should not be including this file directly.
+You should include <asm/unaligned.h> instead, and it is up to the
+architecture to include either access_ok.h or another implementation
+of get_unaligned_leXX
 
-Add an option to force it to stderr. Then it can be
-easily redirected.
+Granted, the distinction is fairly artificial on arm64, but it does
+increase the portability of the code.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/util/debug.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-index ba357f3..ad60b2f 100644
---- a/tools/perf/util/debug.c
-+++ b/tools/perf/util/debug.c
-@@ -19,13 +19,14 @@
- int verbose;
- bool dump_trace = false, quiet = false;
- int debug_ordered_events;
-+static int redirect_to_stderr;
- 
- static int _eprintf(int level, int var, const char *fmt, va_list args)
- {
- 	int ret = 0;
- 
- 	if (var >= level) {
--		if (use_browser >= 1)
-+		if (use_browser >= 1 && !redirect_to_stderr)
- 			ui_helpline__vshow(fmt, args);
- 		else
- 			ret = vfprintf(stderr, fmt, args);
-@@ -145,6 +146,7 @@ static struct debug_variable {
- } debug_variables[] = {
- 	{ .name = "verbose",		.ptr = &verbose },
- 	{ .name = "ordered-events",	.ptr = &debug_ordered_events},
-+	{ .name = "stderr",		.ptr = &redirect_to_stderr},
- 	{ .name = NULL, }
- };
- 
 -- 
-1.9.3
+Ard.
 
+
+>> +#include <linux/cpufeature.h>
+>> +#include <linux/init.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/module.h>
+>> +#include <linux/string.h>
+>> +
+>> +#include <crypto/internal/hash.h>
+>> +
+>> +MODULE_AUTHOR("Yazen Ghannam <yazen.ghannam@linaro.org>");
+>> +MODULE_DESCRIPTION("CRC32 and CRC32C using optional ARMv8 instructions");
+>> +MODULE_LICENSE("GPL v2");
+>> +
+>> +#define CRC32X(crc, value) __asm__("crc32x %w[c], %w[c], %x[v]":[c]"+r"(crc):[v]"r"(value))
+>> +#define CRC32W(crc, value) __asm__("crc32w %w[c], %w[c], %w[v]":[c]"+r"(crc):[v]"r"(value))
+>> +#define CRC32H(crc, value) __asm__("crc32h %w[c], %w[c], %w[v]":[c]"+r"(crc):[v]"r"(value))
+>> +#define CRC32B(crc, value) __asm__("crc32b %w[c], %w[c], %w[v]":[c]"+r"(crc):[v]"r"(value))
+>> +#define CRC32CX(crc, value) __asm__("crc32cx %w[c], %w[c], %x[v]":[c]"+r"(crc):[v]"r"(value))
+>> +#define CRC32CW(crc, value) __asm__("crc32cw %w[c], %w[c], %w[v]":[c]"+r"(crc):[v]"r"(value))
+>> +#define CRC32CH(crc, value) __asm__("crc32ch %w[c], %w[c], %w[v]":[c]"+r"(crc):[v]"r"(value))
+>> +#define CRC32CB(crc, value) __asm__("crc32cb %w[c], %w[c], %w[v]":[c]"+r"(crc):[v]"r"(value))
+>> +
+>> +static u32 crc32_arm64_le_hw(u32 crc, const u8 *p, unsigned int len)
+>> +{
+>> +       s64 length = len;
+>> +
+>> +       while ((length -= sizeof(u64)) >= 0) {
+>> +               CRC32X(crc, get_unaligned_le64(p));
+>> +               p += sizeof(u64);
+>> +       }
+>> +
+>> +       /* The following is more efficient than the straight loop */
+>> +       if (length & sizeof(u32)) {
+>> +               CRC32W(crc, get_unaligned_le32(p));
+>> +               p += sizeof(u32);
+>> +       }
+>> +       if (length & sizeof(u16)) {
+>> +               CRC32H(crc, get_unaligned_le16(p));
+>> +               p += sizeof(u16);
+>> +       }
+>> +       if (length & sizeof(u8))
+>> +               CRC32B(crc, *p);
+>> +
+>> +       return crc;
+>> +}
+>> +
+>> +static u32 crc32c_arm64_le_hw(u32 crc, const u8 *p, unsigned int len)
+>> +{
+>> +       s64 length = len;
+>> +
+>> +       while ((length -= sizeof(u64)) >= 0) {
+>> +               CRC32CX(crc, get_unaligned_le64(p));
+>> +               p += sizeof(u64);
+>> +       }
+>> +
+>> +       /* The following is more efficient than the straight loop */
+>> +       if (length & sizeof(u32)) {
+>> +               CRC32CW(crc, get_unaligned_le32(p));
+>> +               p += sizeof(u32);
+>> +       }
+>> +       if (length & sizeof(u16)) {
+>> +               CRC32CH(crc, get_unaligned_le16(p));
+>> +               p += sizeof(u16);
+>> +       }
+>> +       if (length & sizeof(u8))
+>> +               CRC32CB(crc, *p);
+>> +
+>> +       return crc;
+>> +}
+>> +
+>> +#define CHKSUM_BLOCK_SIZE      1
+>> +#define CHKSUM_DIGEST_SIZE     4
+>> +
+>> +struct chksum_ctx {
+>> +       u32 key;
+>> +};
+>> +
+>> +struct chksum_desc_ctx {
+>> +       u32 crc;
+>> +};
+>> +
+>> +static int chksum_init(struct shash_desc *desc)
+>> +{
+>> +       struct chksum_ctx *mctx = crypto_shash_ctx(desc->tfm);
+>> +       struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
+>> +
+>> +       ctx->crc = mctx->key;
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +/*
+>> + * Setting the seed allows arbitrary accumulators and flexible XOR policy
+>> + * If your algorithm starts with ~0, then XOR with ~0 before you set
+>> + * the seed.
+>> + */
+>> +static int chksum_setkey(struct crypto_shash *tfm, const u8 *key,
+>> +                        unsigned int keylen)
+>> +{
+>> +       struct chksum_ctx *mctx = crypto_shash_ctx(tfm);
+>> +
+>> +       if (keylen != sizeof(mctx->key)) {
+>> +               crypto_shash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
+>> +               return -EINVAL;
+>> +       }
+>> +       mctx->key = get_unaligned_le32(key);
+>> +       return 0;
+>> +}
+>> +
+>> +static int chksum_update(struct shash_desc *desc, const u8 *data,
+>> +                        unsigned int length)
+>> +{
+>> +       struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
+>> +
+>> +       ctx->crc = crc32_arm64_le_hw(ctx->crc, data, length);
+>> +       return 0;
+>> +}
+>> +
+>> +static int chksumc_update(struct shash_desc *desc, const u8 *data,
+>> +                        unsigned int length)
+>> +{
+>> +       struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
+>> +
+>> +       ctx->crc = crc32c_arm64_le_hw(ctx->crc, data, length);
+>> +       return 0;
+>> +}
+>> +
+>> +static int chksum_final(struct shash_desc *desc, u8 *out)
+>> +{
+>> +       struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
+>> +
+>> +       put_unaligned_le32(~ctx->crc, out);
+>> +       return 0;
+>> +}
+>> +
+>> +static int __chksum_finup(u32 crc, const u8 *data, unsigned int len, u8 *out)
+>> +{
+>> +       put_unaligned_le32(~crc32_arm64_le_hw(crc, data, len), out);
+>> +       return 0;
+>> +}
+>> +
+>> +static int __chksumc_finup(u32 crc, const u8 *data, unsigned int len, u8 *out)
+>> +{
+>> +       put_unaligned_le32(~crc32c_arm64_le_hw(crc, data, len), out);
+>> +       return 0;
+>> +}
+>> +
+>> +static int chksum_finup(struct shash_desc *desc, const u8 *data,
+>> +                       unsigned int len, u8 *out)
+>> +{
+>> +       struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
+>> +
+>> +       return __chksum_finup(ctx->crc, data, len, out);
+>> +}
+>> +
+>> +static int chksumc_finup(struct shash_desc *desc, const u8 *data,
+>> +                       unsigned int len, u8 *out)
+>> +{
+>> +       struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
+>> +
+>> +       return __chksumc_finup(ctx->crc, data, len, out);
+>> +}
+>> +
+>> +static int chksum_digest(struct shash_desc *desc, const u8 *data,
+>> +                        unsigned int length, u8 *out)
+>> +{
+>> +       struct chksum_ctx *mctx = crypto_shash_ctx(desc->tfm);
+>> +
+>> +       return __chksum_finup(mctx->key, data, length, out);
+>> +}
+>> +
+>> +static int chksumc_digest(struct shash_desc *desc, const u8 *data,
+>> +                        unsigned int length, u8 *out)
+>> +{
+>> +       struct chksum_ctx *mctx = crypto_shash_ctx(desc->tfm);
+>> +
+>> +       return __chksumc_finup(mctx->key, data, length, out);
+>> +}
+>> +
+>> +static int crc32_cra_init(struct crypto_tfm *tfm)
+>> +{
+>> +       struct chksum_ctx *mctx = crypto_tfm_ctx(tfm);
+>> +
+>> +       mctx->key = ~0;
+>> +       return 0;
+>> +}
+>> +
+>> +static struct shash_alg crc32_alg = {
+>> +       .digestsize             =       CHKSUM_DIGEST_SIZE,
+>> +       .setkey                 =       chksum_setkey,
+>> +       .init                   =       chksum_init,
+>> +       .update                 =       chksum_update,
+>> +       .final                  =       chksum_final,
+>> +       .finup                  =       chksum_finup,
+>> +       .digest                 =       chksum_digest,
+>> +       .descsize               =       sizeof(struct chksum_desc_ctx),
+>> +       .base                   =       {
+>> +               .cra_name               =       "crc32",
+>> +               .cra_driver_name        =       "crc32-arm64-hw",
+>> +               .cra_priority           =       300,
+>> +               .cra_blocksize          =       CHKSUM_BLOCK_SIZE,
+>> +               .cra_alignmask          =       0,
+>> +               .cra_ctxsize            =       sizeof(struct chksum_ctx),
+>> +               .cra_module             =       THIS_MODULE,
+>> +               .cra_init               =       crc32_cra_init,
+>> +       }
+>> +};
+>> +
+>> +static struct shash_alg crc32c_alg = {
+>> +       .digestsize             =       CHKSUM_DIGEST_SIZE,
+>> +       .setkey                 =       chksum_setkey,
+>> +       .init                   =       chksum_init,
+>> +       .update                 =       chksumc_update,
+>> +       .final                  =       chksum_final,
+>> +       .finup                  =       chksumc_finup,
+>> +       .digest                 =       chksumc_digest,
+>> +       .descsize               =       sizeof(struct chksum_desc_ctx),
+>> +       .base                   =       {
+>> +               .cra_name               =       "crc32c",
+>> +               .cra_driver_name        =       "crc32c-arm64-hw",
+>> +               .cra_priority           =       300,
+>> +               .cra_blocksize          =       CHKSUM_BLOCK_SIZE,
+>> +               .cra_alignmask          =       0,
+>> +               .cra_ctxsize            =       sizeof(struct chksum_ctx),
+>> +               .cra_module             =       THIS_MODULE,
+>> +               .cra_init               =       crc32_cra_init,
+>> +       }
+>> +};
+>> +
+>> +static int __init crc32_mod_init(void)
+>> +{
+>> +       int err;
+>> +
+>> +       err = crypto_register_shash(&crc32_alg);
+>> +
+>> +       if (err)
+>> +               return err;
+>> +
+>> +       err = crypto_register_shash(&crc32c_alg);
+>> +
+>> +       if (err) {
+>> +               crypto_unregister_shash(&crc32_alg);
+>> +               return err;
+>> +       }
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static void __exit crc32_mod_exit(void)
+>> +{
+>> +       crypto_unregister_shash(&crc32_alg);
+>> +       crypto_unregister_shash(&crc32c_alg);
+>> +}
+>> +
+>> +module_cpu_feature_match(CRC32, crc32_mod_init);
+>> +module_exit(crc32_mod_exit);
+>> --
+>> 2.1.0
+>>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
