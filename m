@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751019AbaKURnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 12:43:50 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:40525 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751055AbaKURns convert rfc822-to-8bit (ORCPT
+	id S1751183AbaKURoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 12:44:21 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:49976 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878AbaKURoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 12:43:48 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Al Viro'" <viro@ZenIV.linux.org.uk>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "target-devel@vger.kernel.org" <target-devel@vger.kernel.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: RE: [RFC] situation with csum_and_copy_... API
-Thread-Topic: [RFC] situation with csum_and_copy_... API
-Thread-Index: AQHQBWgr4bLXouueRUuDoiZfcNPHWpxrWCtw
-Date: Fri, 21 Nov 2014 17:42:55 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1C9F6930@AcuExch.aculab.com>
-References: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
- <20141119.161744.1661940121298888832.davem@davemloft.net>
- <20141119213006.GE7996@ZenIV.linux.org.uk>
- <20141119.165340.2162829993279387495.davem@davemloft.net>
- <20141120214753.GR7996@ZenIV.linux.org.uk>
- <1416520542.8629.46.camel@edumazet-glaptop2.roam.corp.google.com>
- <20141120222506.GS7996@ZenIV.linux.org.uk>
- <1416524035.8629.54.camel@edumazet-glaptop2.roam.corp.google.com>
- <20141121084956.GT7996@ZenIV.linux.org.uk>
-In-Reply-To: <20141121084956.GT7996@ZenIV.linux.org.uk>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Nov 2014 12:44:19 -0500
 MIME-Version: 1.0
+In-Reply-To: <546F5C01.8060103@users.sourceforge.net>
+References: <5307CAA2.8060406@users.sourceforge.net>
+	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
+	<530A086E.8010901@users.sourceforge.net>
+	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
+	<530A72AA.3000601@users.sourceforge.net>
+	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
+	<530B5FB6.6010207@users.sourceforge.net>
+	<alpine.DEB.2.10.1402241710370.2074@hadrien>
+	<530C5E18.1020800@users.sourceforge.net>
+	<alpine.DEB.2.10.1402251014170.2080@hadrien>
+	<530CD2C4.4050903@users.sourceforge.net>
+	<alpine.DEB.2.10.1402251840450.7035@hadrien>
+	<530CF8FF.8080600@users.sourceforge.net>
+	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+	<530DD06F.4090703@users.sourceforge.net>
+	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+	<5317A59D.4@users.sourceforge.net>
+	<546F5C01.8060103@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 19:44:17 +0200
+Message-ID: <CABdoFFeZW_sj5krvx4s03XSv--0jry+4ER_tT2Yt-08RRsoCkQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] USB-IP: Deletion of unnecessary checks before the
+ function call "usb_put_dev"
+From: Valentina Manea <valentina.manea.m@gmail.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Shuah Khan <shuah.kh@samsung.com>, linux-usb@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Julia Lawall <julia.lawall@lip6.fr>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro
-...
-> We would be better off with iov_iter passed to __sock_{send,recv}msg() (as
-> a part of struct msghdr, instead of ->msg_iov/->msg_iovlen) and always
-> advanced to match the amount of data actually picked from it.  With iovec
-> behind it remaining constant.  That would work just as well as the current
-> variant for sendmsg(2)/recvmsg(2)/etc., be a lot more convenient for
-> kernel_{send,recv}msg() callers and would allow a lot of other fun stuff.
+On Fri, Nov 21, 2014 at 5:36 PM, SF Markus Elfring
+<elfring@users.sourceforge.net> wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Fri, 21 Nov 2014 16:33:18 +0100
+>
+> The usb_put_dev() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
+>
+> This issue was detected by using the Coccinelle software.
+>
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> ---
+>  drivers/usb/usbip/vhci_hcd.c | 9 +++------
+>  1 file changed, 3 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/usb/usbip/vhci_hcd.c b/drivers/usb/usbip/vhci_hcd.c
+> index c02374b..cc1b03e 100644
+> --- a/drivers/usb/usbip/vhci_hcd.c
+> +++ b/drivers/usb/usbip/vhci_hcd.c
+> @@ -518,8 +518,7 @@ static int vhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
+>                         dev_info(dev, "SetAddress Request (%d) to port %d\n",
+>                                  ctrlreq->wValue, vdev->rhport);
+>
+> -                       if (vdev->udev)
+> -                               usb_put_dev(vdev->udev);
+> +                       usb_put_dev(vdev->udev);
+>                         vdev->udev = usb_get_dev(urb->dev);
+>
+>                         spin_lock(&vdev->ud.lock);
+> @@ -539,8 +538,7 @@ static int vhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
+>                                 usbip_dbg_vhci_hc(
+>                                         "Not yet?:Get_Descriptor to device 0 (get max pipe size)\n");
+>
+> -                       if (vdev->udev)
+> -                               usb_put_dev(vdev->udev);
+> +                       usb_put_dev(vdev->udev);
+>                         vdev->udev = usb_get_dev(urb->dev);
+>                         goto out;
+>
+> @@ -831,8 +829,7 @@ static void vhci_device_reset(struct usbip_device *ud)
+>         vdev->speed  = 0;
+>         vdev->devid  = 0;
+>
+> -       if (vdev->udev)
+> -               usb_put_dev(vdev->udev);
+> +       usb_put_dev(vdev->udev);
+>         vdev->udev = NULL;
+>
+>         if (ud->tcp_socket) {
+> --
+> 2.1.3
+>
 
-Callers of kernel_send/recvmsg() could easily be using a wrapper
-function that creates the 'msghdr'.
-When the want to send the remaining part of a buffer the old iterator
-will no longer be available - just the original iov and the required offset.
-
-So it would be useful if the iterator could be initialised to a byte
-offset down the iov[].
-
-Are there any current code paths where the iov[] is modified but
-ends up being something other than 'the remaining data'?
-If not then code can check whether iov[0].len has changed, and
-skip the 'advance' is it has.
-
-(I've an out-of-tree driver that assumes the iov[] isn't changed.)
-
-	David
-
-
-
+Acked-by: Valentina Manea <valentina.manea.m@gmail.com>
