@@ -1,46 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758936AbaKUR1E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 12:27:04 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47086 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758069AbaKUR1C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 12:27:02 -0500
-Date: Fri, 21 Nov 2014 12:26:52 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, David Vrabel <david.vrabel@citrix.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] small swiotlb-xen fixes
-Message-ID: <20141121172652.GF8314@laptop.dumpdata.com>
-References: <alpine.DEB.2.02.1411211657430.2675@kaball.uk.xensource.com>
+	id S1758966AbaKUR1b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 12:27:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33134 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755503AbaKUR13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 12:27:29 -0500
+Date: Fri, 21 Nov 2014 18:27:26 +0100
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm: x86: move ioapic.c and irq_comm.c back to arch/x86/
+Message-ID: <20141121172725.GB16941@potion.brq.redhat.com>
+References: <1416490931-21724-1-git-send-email-pbonzini@redhat.com>
+ <20141121161956.GA16941@potion.brq.redhat.com>
+ <546F70BF.30509@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1411211657430.2675@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <546F70BF.30509@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 05:00:05PM +0000, Stefano Stabellini wrote:
-> Hi all,
-> I have a couple of small straightforward fixes for swiotlb-xen for 3.19.
+2014-11-21 18:05+0100, Paolo Bonzini:
+> On 21/11/2014 17:19, Radim Krčmář wrote:
+> > KVM: x86: remove IA64 from ioapic.c and irq_comm.c
+> > 
+> > They won't get compiled in x86 tree.
 > 
+> Ah no, these were already in my ia64 removal patch.  I had a deja-vu
+> feeling...
 
-They look fine to me.
-
-Thanks.
-> Cheers,
-> 
-> Stefano
-> 
-> 
-> Stefano Stabellini (2):
->       swiotlb-xen: call xen_dma_sync_single_for_device when appropriate
->       swiotlb-xen: pass dev_addr to swiotlb_tbl_unmap_single
-> 
->  drivers/xen/swiotlb-xen.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+Oops, renaming simplifies conflict resolution ...
+CONFIG_X86 removal should still be applicable though.
