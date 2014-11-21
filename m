@@ -1,100 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758495AbaKUPGx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:06:53 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:46535 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754269AbaKUPGt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:06:49 -0500
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cristian Stoica <cristian.stoica@freescale.com>,
-        Horia Geanta <horia.geanta@freescale.com>,
-        Ruchika Gupta <ruchika.gupta@freescale.com>,
-        Michael Neuling <mikey@neuling.org>, Wolfram Sang <wsa@the-dreams.de>,
-        linux-crypto@vger.kernel.org (open list:CRYPTO API),
-        linux-kernel@vger.kernel.org (open list),
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>,
-        Dave Jiang <dave.jiang@intel.com>, Rashika <rashika.kheria@gmail.com>,
-        dmaengine@vger.kernel.org (open list:DMA GENERIC OFFLO...),
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        devel@linuxdriverproject.org (open list:Hyper-V CORE AND...),
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Kees Cook <keescook@chromium.org>,
-        Andy Lutomirski <luto@amacapital.net>, Will Drewry <wad@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, NeilBrown <neilb@suse.de>,
-        Joerg Roedel <jroedel@suse.de>, Sasha Levin <sasha.levin@oracle.com>,
-        Paul McQuade <paulmcquad@gmail.com>,
-        linux-mm@kvack.org (open list:MEMORY MANAGEMENT),
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org (open list:NETWORKING [IPv4/...)
-Subject: [PATCH v2 0/9] Replace smp_read_barrier_depends() with lockless_derefrence()
-Date: Fri, 21 Nov 2014 10:05:54 -0500
-Message-Id: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1758804AbaKUPLB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:11:01 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46347 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755232AbaKUPLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:11:00 -0500
+Date: Fri, 21 Nov 2014 09:11:05 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Kiran Raparthy <kiran.kumar@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <balbi@ti.com>, <john.stultz@linaro.org>,
+        <sumit.semwal@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Arve =?utf-8?B?SGrvv71ubmV277+9Zw==?= <arve@android.com>,
+        Benoit Goby <benoit@android.com>, Todd Poynor <toddpoynor@google.com>
+Subject: Re: [PATCH v1 2/3] usb: phy: Handle per-PHY event for connect and
+ disconnect events
+Message-ID: <20141121151105.GC7508@saruman>
+Reply-To: <balbi@ti.com>
+References: <cover.1416547297.git.kiran.kumar@linaro.org>
+ <7a23b5f0af4463aea85384b6a67678b9c41b9d2d.1416547297.git.kiran.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5G06lTa6Jq83wMTw"
+Content-Disposition: inline
+In-Reply-To: <7a23b5f0af4463aea85384b6a67678b9c41b9d2d.1416547297.git.kiran.kumar@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently lockless_dereference() was added which can be used in place of
-hard-coding smp_read_barrier_depends(). 
+--5G06lTa6Jq83wMTw
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-http://lkml.iu.edu/hypermail/linux/kernel/1410.3/04561.html
+On Fri, Nov 21, 2014 at 11:31:21AM +0530, Kiran Raparthy wrote:
+> usb: phy: Handle per-PHY event for connnect and disconnect events
+>=20
+> When usb is connected and enumerated in device mode or when usb is
+> disconnected,call usb_phy_set_event from phy drivers to handle per-PHY ev=
+ent.
+>=20
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-usb@vger.kernel.org
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Sumit Semwal <sumit.semwal@linaro.org>
+> Cc: Arve Hj=EF=BF=BDnnev=EF=BF=BDg <arve@android.com>
+> Cc: Benoit Goby <benoit@android.com>
+> [Original patch in Android from Todd]
+> Cc: Todd Poynor <toddpoynor@google.com>
+> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
 
-The following series tries to do this.
+this patch doesn't apply, please rebase entire series on my testing/next.
 
-There are still some hard-coded locations which I was not sure how to replace
-with. I will send in separate patches/questions regarding them.
+--=20
+balbi
 
-Pranith Kumar (9):
-  doc: memory-barriers.txt: Document use of lockless_dereference()
-  drivers: dma: Replace smp_read_barrier_depends() with
-    lockless_dereference()
-  dcache: Replace smp_read_barrier_depends() with lockless_dereference()
-  hyperv: Replace smp_read_barrier_depends() with lockless_dereference()
-  percpu: Replace smp_read_barrier_depends() with lockless_dereference()
-  perf: Replace smp_read_barrier_depends() with lockless_dereference()
-  seccomp: Replace smp_read_barrier_depends() with
-    lockless_dereference()
-  task_work: Replace smp_read_barrier_depends() with
-    lockless_dereference()
-  netfilter: Replace smp_read_barrier_depends() with
-    lockless_dereference()
+--5G06lTa6Jq83wMTw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- Documentation/memory-barriers.txt | 4 ++--
- drivers/dma/ioat/dma_v2.c         | 3 +--
- drivers/dma/ioat/dma_v3.c         | 3 +--
- fs/dcache.c                       | 7 ++-----
- include/linux/hyperv.h            | 9 ++++-----
- include/linux/percpu-refcount.h   | 4 +---
- kernel/events/core.c              | 3 +--
- kernel/events/uprobes.c           | 8 ++++----
- kernel/seccomp.c                  | 7 +++----
- kernel/task_work.c                | 3 +--
- net/ipv4/netfilter/arp_tables.c   | 3 +--
- net/ipv4/netfilter/ip_tables.c    | 3 +--
- net/ipv6/netfilter/ip6_tables.c   | 3 +--
- 13 files changed, 23 insertions(+), 37 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
--- 
-1.9.1
+iQIcBAEBAgAGBQJUb1YJAAoJEIaOsuA1yqREFgMP/AjG9Xkkt81qmT/Yc8jFG6QD
+C0fzYCKGDehCaSjzbwjg2Iz46qgcrvylZPdAJ7328u1v2h2ysPswnzziauoC5rkt
+7MSqSPL1hOMZgXsoB2Pf0/DBblhdRTLP8wCLUa/xzWbgzZqzcjpZwCO3mwD/id47
+8kNg+1WNjJl9VyuhGLWgEkucQ0J2HGhg8AfnHxOjE/BJyiHS+uCbLclwYFbasDtN
+xd4YV6Vq9off2sy5BCRIP6j0Gdy3GAib6WLeFEOhIDzarrglxvmLZtP2a6DSCG3v
+GhIXEpPaAPXk6Y0aX+1v4oleBFCi8ToIh3ZOx/iv++BSOWoHfG5F0a0BV4ynUber
+yj+nIHEtdSKyR8dWD7cfrQJC04WwmFtBLODX5aE3WlgAarpw4S1eSctji7dis3RP
+EMpmV1uUGU98Oy45GVVwJva3GivtM9yaQfmsLu9ndc8YNW3leoiyxcfBaLryNpMo
+9wcdabsEaEd4du3mZ0NuxXKxSVPg4Nu6HU3xkQiccbtjcUE2psV3WactdICXnMJx
+waGMPrDNcE3peTWUa1nEoKtjnNUnJ4DOFRrR9YDnEAJlWmFIjlh4MilkQG/4nJtS
+aiV9U5AkS804oI1GaSOzFQH9PNg0zEaZWrXyBXbr8w4E+UT5hVZ1Tv4WKp4pFYke
+kfYiT1Hr+F2E7WxByJvZ
+=/gQ/
+-----END PGP SIGNATURE-----
 
+--5G06lTa6Jq83wMTw--
