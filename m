@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaKUWdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 17:33:07 -0500
-Received: from mail-bn1hn0250.outbound.protection.outlook.com ([157.56.110.250]:55605
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752393AbaKUWdG convert rfc822-to-8bit (ORCPT
+	id S1752567AbaKUWfB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 17:35:01 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:40520 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaKUWe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 17:33:06 -0500
-From: "Coopes, BJ" <Barbara.Coopes@providence.org>
-Subject: =?windows-1256?Q?Mailbox_Maintenance_Schedule=FE?=
-Thread-Topic: =?windows-1256?Q?Mailbox_Maintenance_Schedule=FE?=
-Thread-Index: AdAF1LWjpP6dxWjLSj+qDJbpBgPBLw==
-Date: Fri, 21 Nov 2014 21:47:13 +0000
-Message-ID: <6B9BEE750756C844B3F267BB0B3206E72F097DDB@WN72071.ak.providence.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.21.89.10]
-Content-Type: text/plain; charset="windows-1256"
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Nov 2014 17:34:59 -0500
+Date: Fri, 21 Nov 2014 17:33:09 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        xen-devel@lists.xenproject.org
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141121223309.GC19283@laptop.dumpdata.com>
+References: <CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
+ <20141121162742.GB15461@htj.dyndns.org>
+ <CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
+ <CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
+ <20141121170805.GD30603@home.goodmis.org>
+ <CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
+ <CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
+ <CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
+ <CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
+ <alpine.DEB.2.11.1411212049220.6439@nanos>
 MIME-Version: 1.0
-To: Undisclosed recipients:;
-X-CFilter-Loop: Reflected
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:170.173.0.16;CTRY:US;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(10019020)(6009001)(438002)(199003)(189002)(15202345003)(21056001)(575854001)(31966008)(881003)(2656002)(44976005)(50986999)(4396001)(55846006)(33656002)(47776003)(15395725005)(92726001)(20776003)(566704002)(19580395003)(107046002)(86362001)(16796002)(62966003)(566174002)(64706001)(50466002)(120916001)(77156002)(229853001)(106466001)(15975445006)(107886001)(2420400002)(77096003)(109986003)(1671002)(92566001)(87936001)(95666004)(54356999)(99396003)(110136001)(46102003)(94026002)(84636001);DIR:OUT;SFP:1501;SCL:5;SRVR:BY2FFO11HUB032;H:sdc-nat.providence.org;FPR:;MLV:nov;PTR:sdc-nat.providence.org;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB032;
-X-Exchange-Antispam-Report-Test: UriScan:(101175863118811);
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(2003001);SRVR:BY2FFO11HUB032;
-X-Forefront-PRVS: 0402872DA1
-Authentication-Results: spf=pass (sender IP is 170.173.0.16)
- smtp.mailfrom=Barbara.Coopes@providence.org; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB032;
-X-OriginatorOrg: providence.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1411212049220.6439@nanos>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Helpdesk Service Center requires your immediate re-activation of your Email account. to upgrade email right now Activate please CLICK HERE: http://eazyfashion.com/js/jqbanner/img/webmail-logon.htm
+On Fri, Nov 21, 2014 at 08:51:43PM +0100, Thomas Gleixner wrote:
+> On Fri, 21 Nov 2014, Linus Torvalds wrote:
+> > Here's the simplified end result. Again, this is TOTALLY UNTESTED. I
+> > compiled it and verified that the code generation looks like what I'd
+> > have expected, but that's literally it.
+> > 
+> >   static noinline int vmalloc_fault(unsigned long address)
+> >   {
+> >         pgd_t *pgd_dst;
+> >         pgdval_t pgd_entry;
+> >         unsigned index = pgd_index(address);
+> > 
+> >         if (index < KERNEL_PGD_BOUNDARY)
+> >                 return -1;
+> > 
+> >         pgd_entry = init_mm.pgd[index].pgd;
+> >         if (!pgd_entry)
+> >                 return -1;
+> > 
+> >         pgd_dst = __va(PAGE_MASK & read_cr3());
+> >         pgd_dst += index;
+> > 
+> >         if (pgd_dst->pgd)
+> >                 return -1;
+> > 
+> >         ACCESS_ONCE(pgd_dst->pgd) = pgd_entry;
+> 
+> This will break paravirt. set_pgd/set_pmd are paravirt functions.
+> 
+> But I'm fine with breaking it, then you just need to change
+> CONFIG_PARAVIRT to 'def_bool n'
 
-________________________________
-
-This message is intended for the sole use of the addressee, and may contain information that is privileged, confidential and exempt from disclosure under applicable law. If you are not the addressee you are hereby notified that you may not use, copy, disclose, or distribute to anyone the message or any information contained in the message. If you have received this message in error, please immediately advise the sender by reply email and delete this message.
+That is not very nice.
