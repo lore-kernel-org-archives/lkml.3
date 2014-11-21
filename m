@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758223AbaKUJbw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 04:31:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43164 "EHLO mx1.redhat.com"
+	id S1758243AbaKUJcB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 04:32:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43222 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758145AbaKUJbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 04:31:47 -0500
+	id S1758145AbaKUJb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 04:31:57 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -17,17 +17,18 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 02/11] perf tools: Introduce perf_counts_values__scale function
-Date: Fri, 21 Nov 2014 10:31:06 +0100
-Message-Id: <1416562275-12404-3-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 03/11] perf tools: Introduce perf_evsel__read_cb function
+Date: Fri, 21 Nov 2014 10:31:07 +0100
+Message-Id: <1416562275-12404-4-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1416562275-12404-1-git-send-email-jolsa@kernel.org>
 References: <1416562275-12404-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factoring out scale login into perf_counts_values__scale
-function.
+Adding perf_evsel__read_cb read function that retuns count
+values via callback. It will be used later in stat command
+as single way to retrieve counter values.
 
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -42,95 +43,54 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/evsel.c | 47 ++++++++++++++++++++++-------------------------
- tools/perf/util/evsel.h |  3 +++
- 2 files changed, 25 insertions(+), 25 deletions(-)
+ tools/perf/util/evsel.c | 16 ++++++++++++++++
+ tools/perf/util/evsel.h |  7 +++++++
+ 2 files changed, 23 insertions(+)
 
 diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 1c73bc4d57d3..6dc7a67e6d35 100644
+index 6dc7a67e6d35..2d26b7ad6fe0 100644
 --- a/tools/perf/util/evsel.c
 +++ b/tools/perf/util/evsel.c
-@@ -897,6 +897,26 @@ void perf_evsel__compute_deltas(struct perf_evsel *evsel, int cpu,
- 	count->run = count->run - tmp.run;
+@@ -917,6 +917,22 @@ void perf_counts_values__scale(struct perf_counts_values *count,
+ 		*pscaled = scaled;
  }
  
-+void perf_counts_values__scale(struct perf_counts_values *count,
-+			       bool scale, s8 *pscaled)
++int perf_evsel__read_cb(struct perf_evsel *evsel, int cpu, int thread,
++			perf_evsel__read_cb_t cb)
 +{
-+	s8 scaled = 0;
++	struct perf_counts_values count;
 +
-+	if (scale) {
-+		if (count->run == 0) {
-+			scaled = -1;
-+			count->val = 0;
-+		} else if (count->run < count->ena) {
-+			scaled = 1;
-+			count->val = (u64)((double) count->val * count->ena / count->run + 0.5);
-+		}
-+	} else
-+		count->ena = count->run = 0;
++	memset(&count, 0, sizeof(count));
 +
-+	if (pscaled)
-+		*pscaled = scaled;
++	if (FD(evsel, cpu, thread) < 0)
++		return -EINVAL;
++
++	if (readn(FD(evsel, cpu, thread), &count, sizeof(count)) < 0)
++		return -errno;
++
++	return cb(evsel, cpu, thread, &count);
 +}
 +
  int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
  			      int cpu, int thread, bool scale)
  {
-@@ -913,15 +933,7 @@ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
- 		return -errno;
- 
- 	perf_evsel__compute_deltas(evsel, cpu, &count);
--
--	if (scale) {
--		if (count.run == 0)
--			count.val = 0;
--		else if (count.run < count.ena)
--			count.val = (u64)((double)count.val * count.ena / count.run + 0.5);
--	} else
--		count.ena = count.run = 0;
--
-+	perf_counts_values__scale(&count, scale, NULL);
- 	evsel->counts->cpu[cpu] = count;
- 	return 0;
- }
-@@ -956,22 +968,7 @@ int __perf_evsel__read(struct perf_evsel *evsel,
- 	}
- 
- 	perf_evsel__compute_deltas(evsel, -1, aggr);
--
--	evsel->counts->scaled = 0;
--	if (scale) {
--		if (aggr->run == 0) {
--			evsel->counts->scaled = -1;
--			aggr->val = 0;
--			return 0;
--		}
--
--		if (aggr->run < aggr->ena) {
--			evsel->counts->scaled = 1;
--			aggr->val = (u64)((double)aggr->val * aggr->ena / aggr->run + 0.5);
--		}
--	} else
--		aggr->ena = aggr->run = 0;
--
-+	perf_counts_values__scale(aggr, scale, &evsel->counts->scaled);
- 	return 0;
- }
- 
 diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 746b7ea84589..7af0377ceb18 100644
+index 7af0377ceb18..5c93bed8e8d9 100644
 --- a/tools/perf/util/evsel.h
 +++ b/tools/perf/util/evsel.h
-@@ -110,6 +110,9 @@ struct thread_map;
- struct perf_evlist;
- struct record_opts;
+@@ -233,6 +233,13 @@ static inline bool perf_evsel__match2(struct perf_evsel *e1,
+ 	 (a)->attr.type == (b)->attr.type &&	\
+ 	 (a)->attr.config == (b)->attr.config)
  
-+void perf_counts_values__scale(struct perf_counts_values *count,
-+			       bool scale, s8 *pscaled);
++typedef int (perf_evsel__read_cb_t)(struct perf_evsel *evsel,
++				    int cpu, int thread,
++				    struct perf_counts_values *count);
 +
- void perf_evsel__compute_deltas(struct perf_evsel *evsel, int cpu,
- 				struct perf_counts_values *count);
++int perf_evsel__read_cb(struct perf_evsel *evsel, int cpu, int thread,
++			perf_evsel__read_cb_t cb);
++
+ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
+ 			      int cpu, int thread, bool scale);
  
 -- 
 1.9.3
