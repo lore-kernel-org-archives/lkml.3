@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425AbaKUU3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 15:29:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31180 "EHLO mx1.redhat.com"
+	id S1752532AbaKUU37 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:29:59 -0500
+Received: from mga09.intel.com ([134.134.136.24]:19899 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751530AbaKUU3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 15:29:38 -0500
-Message-ID: <546FA0A7.2010507@redhat.com>
-Date: Fri, 21 Nov 2014 15:29:27 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1751944AbaKUU36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 15:29:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,432,1413270000"; 
+   d="scan'208";a="612014386"
+Message-ID: <546FA0C4.1000402@intel.com>
+Date: Fri, 21 Nov 2014 12:29:56 -0800
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Rafael Aquini <aquini@redhat.com>
-Subject: Re: [PATCH] ipc,sem block sem_lock on sma->lock during sma initialization
-References: <20141121145226.2ac598af@annuminas.surriel.com> <20141121120930.3cd8d0f233f9670d689de672@linux-foundation.org>
-In-Reply-To: <20141121120930.3cd8d0f233f9670d689de672@linux-foundation.org>
-Content-Type: text/plain; charset=utf-8
+To: Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+CC: vikas.shivappa@intel.com, hpa@zytor.com, tglx@linutronix.de,
+        mingo@kernel.org, tj@kernel.org, matt.flemming@intel.com,
+        will.auld@intel.com, peterz@infradead.org
+Subject: Re: [PATCH] x86: Intel Cache Allocation Technology support
+References: <1416445539-24856-1-git-send-email-vikas.shivappa@linux.intel.com>
+In-Reply-To: <1416445539-24856-1-git-send-email-vikas.shivappa@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On 11/19/2014 05:05 PM, Vikas Shivappa wrote:
+> +	/*
+> +	 * Hard code the checks and values for HSW SKUs.
+> +	 * Unfortunately! have to check against only these brand name strings.
+> +	 */
+> +
+> +	for (i = 0; i < 5; i++)
+> +		if (!strcmp(hsw_brandstrs[i], c->x86_model_id)) {
+> +			c->x86_cqe_closs = 4;
+> +			c->x86_cqe_cbmlength = 20;
+> +			return true;
+> +		}
 
-On 11/21/2014 03:09 PM, Andrew Morton wrote:
-> On Fri, 21 Nov 2014 14:52:26 -0500 Rik van Riel <riel@redhat.com>
-> wrote:
-> 
->> When manipulating just one semaphore with semop, sem_lock only
->> takes that single semaphore's lock. This creates a problem during
->> initialization of the semaphore array, when the data structures
->> used by sem_lock have not been set up yet. The sma->lock is
->> already held by newary, and we just have to make sure everything
->> else waits on that lock during initialization.
->> 
->> Luckily it is easy to make sem_lock wait on the sma->lock, by
->> pretending there is a complex operation in progress while the sma
->> is being initialized.
->> 
->> The newary function already zeroes sma->complex_count before
->> unlocking the sma->lock.
-> 
-> What are the runtime effects of the bug?
-> 
+Please use ARRAY_SIZE() here.  Otherwise, I guarantee the next string
+you add to hsw_brandstrs[] gets silently ignored.
 
-NULL pointer dereference in spin_lock from sem_lock,
-if it is called before sma->sem_base has been pointed
-somewhere valid.
+Are there really only 5 CPUs?  This:
 
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> http://ark.intel.com/products/family/78583/Intel-Xeon-Processor-E5-v3-Family#@Server
 
-iQEcBAEBAgAGBQJUb6CnAAoJEM553pKExN6Dh8oH/iFVqwrukMkZp7ViFTC84DVK
-m8rw6CWk76kEvi6BWx977nT26e7ZfiOCxrhyy/gETOnUDJMgQrn7cFMFd6Ja/2yG
-uGCq5WcvVLDiLw7ij9Rqu4C6aHcICserzgfXwWV0XAa5TZOEqvg6FKZgCUHN6sxM
-ek0TV0oq/VQvRwAQk/MFDOv38PydH2LH1Z3wXk7JVlhEMX062a4EoxTAe8Teed2p
-X5+mTOl4jezog2rFJxFe0Cp8PxpqAi4f1kDugQKohZ3TpUFqH4VKZYmTtvHvpNDH
-oeHjnRv632N8KuU2lvIi7EGJGu0Y+ReyOr+NQtozlRYCTPuY/rezkbBmgVwu4iY=
-=CDvy
------END PGP SIGNATURE-----
+lists 32 skus.
