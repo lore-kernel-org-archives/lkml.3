@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757823AbaKUECp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 23:02:45 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:49409 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757301AbaKUECo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 23:02:44 -0500
-X-Originating-IP: 50.43.41.112
-Date: Thu, 20 Nov 2014 20:02:34 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: leizhen <thunder.leizhen@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Zefan Li <lizefan@huawei.com>, Xinwei Hu <huxinwei@huawei.com>
-Subject: Re: Fwd: [PATCH 1/1] init:add boot option "initramfs_packnum"
-Message-ID: <20141121040233.GB4993@thin>
-References: <1415670134-8016-1-git-send-email-thunder.leizhen@huawei.com>
- <546EB5A2.5050604@huawei.com>
+	id S1757935AbaKUEFS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 23:05:18 -0500
+Received: from ozlabs.org ([103.22.144.67]:52360 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757438AbaKUEFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 23:05:13 -0500
+Date: Fri, 21 Nov 2014 15:05:06 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rob Herring <robh@kernel.org>
+Subject: linux-next: manual merge of the devicetree tree with the
+ devicetree-current tree
+Message-ID: <20141121150506.3f7b873d@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546EB5A2.5050604@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/8RKq390i=WoXzF1Q1tMmG=e"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 11:46:42AM +0800, leizhen wrote:
-> During the development phase, we usually enlarge initrd-end to reserve more
-> memory than the initfs zip exactly occupied. Then we can easily add or delete
-> files in zip package, without generate fdt again and again. But unfortunately,
-> if too many zeros followed initfs zip, it will take a long time to break the
-> loop.
-> 
-> while (!message && len) {
->         ... ...
->         if (!*buf) {
-> 		buf++;
->                 ... ...
->                 continue;
->         }
-> 
-> So, use the boot option "initramfs_packnum" to specify how many zip packages
-> in each initrd area. When the specified number of packages decompressed in one
-> area, immediately terminate the loop. Have no impact on current use by default.
+--Sig_/8RKq390i=WoXzF1Q1tMmG=e
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-This seems like the wrong approach to me.  Rather than changing Linux to
-ignore excess data in the initramfs, could you change your bootloader to
-pass the true length of the initramfs to Linux?  Even if you reserve
-extra space, if you know how much data you've actually included, you
-could have your bootloader pass that information to Linux.
+Hi Grant,
 
-- Josh Triplett
+Today's linux-next merge of the devicetree tree got a conflict in
+drivers/of/address.c between commit 746c9e9f92dd ("of/base: Fix PowerPC
+address parsing hack") from the  tree and commit a0212ae0be5b
+("of/address: Don't throw errors on absent ranges properties") from the
+devicetree tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/of/address.c
+index 06af494184d6,78f02f65fc48..000000000000
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@@ -490,10 -475,12 +490,10 @@@ static int of_translate_one(struct devi
+  	 * This code is only enabled on powerpc. --gcl
+  	 */
+  	ranges =3D of_get_property(parent, rprop, &rlen);
+ -#if !defined(CONFIG_PPC)
+ -	if (ranges =3D=3D NULL) {
+ +	if (ranges =3D=3D NULL && !of_empty_ranges_quirk()) {
+- 		pr_err("OF: no ranges; cannot translate\n");
++ 		pr_debug("OF: no ranges; cannot translate\n");
+  		return 1;
+  	}
+ -#endif /* !defined(CONFIG_PPC) */
+  	if (ranges =3D=3D NULL || rlen =3D=3D 0) {
+  		offset =3D of_read_number(addr, na);
+  		memset(addr, 0, pna * 4);
+
+--Sig_/8RKq390i=WoXzF1Q1tMmG=e
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUbrn2AAoJEMDTa8Ir7ZwVTCgP/277IrqoCyfS6FIHOSAkrsrG
+kGRkFSRSHfPVUCmWYYE4S9KyVXM9RQl8cSdBlK1Fgd+03EiEVmNUfs8QIn33yUXV
+WTAbwTDAXeSeTxvsGjc8h/BXpSfhapcAYlrtLL/doyPuyN2hUM2pDtZW4/X/wSEO
+2mw2i1iUfLN8Nj/T/LqvMtFLlg/u2TjaeLlPjKnk75ixTEwCfMLBPgG3APIirRWg
+E548LX4+T67kzt+7p//UML0Z+vJTmIwrG/G5kVZIQ7FDw96PHIcbCtJNaoG5NCcA
+b15WTJKZ0PkugYo0pZFNQ7w9UQtA+WbkdLS0QQbl7LfX8VxOJ13d9+UIty1ESlEz
+oyBW8UMMfH+4lczfUqjNURlOyt+GftsyPxqwFJvCimCINlBN3+IYgMay/tnDIt6t
+v39XPOVLT9+m2e/8C/1XHY1AeJS8V+jJkdSXxom6CO/kOrgZydD+5sg3mStV/kTp
+UBC69ulK1NRSjHNBtC8Zzg5bXA81Omvn9mHjhPlZ88TNXyfK/DKyBLle+dIJeOoS
+SIUp20jNO9nF/yiS+dugBDQXTAcW5iMdW77GBHX0npGwz4OOqcet5Q0YoovjY7ih
+0hDFXQG8T2CW9VQHi8e3aEMQG2qhYTArpiGnKU8RGGdZfu2LUcDJB5Ryhx+do6pS
+eBtscWIezIvinGESQDkC
+=6DuM
+-----END PGP SIGNATURE-----
+
+--Sig_/8RKq390i=WoXzF1Q1tMmG=e--
