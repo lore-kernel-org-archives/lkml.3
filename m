@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758614AbaKUOwP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 09:52:15 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:63379 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378AbaKUOwN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 09:52:13 -0500
-From: Hans-Peter Jansen <hpj@urpla.net>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-unionfs@vger.kernel.org
-Subject: Re: [GIT PULL] overlay filesystem fixes for 3.18
-Date: Fri, 21 Nov 2014 15:51:59 +0100
-Message-ID: <1775324.vr1BUO4kWb@xrated>
-User-Agent: KMail/4.14.3 (Linux/3.11.10-21-desktop; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <CAJfpegtRktN8BdOogCMW++Gar02j06K=9OYOyDMBbwBZq6_=Hg@mail.gmail.com>
-References: <20141120164531.GB3596@tucsk> <1962959.JkOx4gJGaG@xrated> <CAJfpegtRktN8BdOogCMW++Gar02j06K=9OYOyDMBbwBZq6_=Hg@mail.gmail.com>
+	id S1758367AbaKUOzk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 09:55:40 -0500
+Received: from mout.web.de ([212.227.17.11]:65116 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755190AbaKUOzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 09:55:38 -0500
+Message-ID: <546F525A.7050002@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 15:55:22 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:DxeCUYgERVXD4e9SGzN8ZmzfuV6VlPfLcHkpR9TTdiy
- MF3cHD4pt9AOdvRppjXk+ZErbihZOe7i06maq62yGUnst4SfOk
- hmmYFg1DMsiKB+SFEfle0P+/vHNW1nH8pcnMRlp7oGO8qh+lI5
- zBP9eP2TVH+P56aT6dnieiCg9qJu5wUzcGspKCFPxmHLPukPKg
- 8zgfXFriSO6ydFOgReCLiGYcfElXNISSewAHJmBGjh2ViItbKF
- 4I5JBeFnxHfBt3ibsrpw9qtSLMjUM2u2a2AVSDFS4mlrRs3GL5
- jxL5DQmdjf6PFt+hjQeXqrPpYDD2ERhw2dS62Pzrb9464HR3g=
- =
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thomas Winischhofer <thomas@winischhofer.net>,
+        linux-usb@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] USB-SIS: Deletion of an unnecessary check before the
+ function call "usb_put_dev"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:rvuswkOb/9wr11XmIxb3jUtBhksAAhwlBJ5UYJOV+/L4oUvMrXs
+ 4TSM+pLfHHWq+CqO8ubS+dZGD+EVw92SfoMi/TwOhg64Ia0xVKZUjlp/4mlUQvH++qbbnYA
+ oN2F8ULaCme922Rd6KXmcJbGJkyInIrzekTStFE3gkuHpQfV8CAZmYFT88jxDhOV07AwgKe
+ IMCHyufkm+IJI3fktsiRQ==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Freitag, 21. November 2014 13:41:57 Miklos Szeredi wrote:
-> On Fri, Nov 21, 2014 at 12:32 PM, Hans-Peter Jansen <hpj@urpla.net> wrote:
-> > Dear Miklos,
-> > 
-> > On Donnerstag, 20. November 2014 17:45:31 Miklos Szeredi wrote:
-> >> The biggest change is to rename the filesystem from "overlayfs" to
-> >> "overlay". This will allow legacy overlayfs to be easily carried by
-> >> distros
-> >> alongside the new mainline one.
-> > 
-> > Would you kindly give a firm elaboration of this rename?
-> > 
-> 
-> See this thread:
-> 
-> https://lkml.org/lkml/2014/11/18/433
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 15:50:44 +0100
 
-Okay, thanks. I  must have missed this one. "overlay" is as good as a name can 
-be, IMHO.
+The usb_put_dev() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-Cheers,
-Pete
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/usb/misc/sisusbvga/sisusb.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/usb/misc/sisusbvga/sisusb.c b/drivers/usb/misc/sisusbvga/sisusb.c
+index 633caf6..022dc00 100644
+--- a/drivers/usb/misc/sisusbvga/sisusb.c
++++ b/drivers/usb/misc/sisusbvga/sisusb.c
+@@ -2472,8 +2472,7 @@ sisusb_delete(struct kref *kref)
+ 	if (!sisusb)
+ 		return;
+ 
+-	if (sisusb->sisusb_dev)
+-		usb_put_dev(sisusb->sisusb_dev);
++	usb_put_dev(sisusb->sisusb_dev);
+ 
+ 	sisusb->sisusb_dev = NULL;
+ 	sisusb_free_buffers(sisusb);
+-- 
+2.1.3
+
