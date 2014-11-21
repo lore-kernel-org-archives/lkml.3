@@ -1,116 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368AbaKUQI2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:08:28 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:47861 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755442AbaKUQIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:08:25 -0500
-Date: Fri, 21 Nov 2014 10:08:28 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Alexander Kochetkov <al.kochet@gmail.com>
-CC: <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Wolfram Sang <wsa@the-dreams.de>,
-        "Tony Lindgren" <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCH] i2c: omap: fix i207 errata handling
-Message-ID: <20141121160828.GP7508@saruman>
-Reply-To: <balbi@ti.com>
-References: <1416529011-21803-1-git-send-email-al.kochet@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8G1nIWD3RY794FAy"
-Content-Disposition: inline
-In-Reply-To: <1416529011-21803-1-git-send-email-al.kochet@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1758933AbaKUQIj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:08:39 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:21397 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755433AbaKUQIh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 11:08:37 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-d5-546f63821da5
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: [PATCH v2 1/2] kernel: irq: use kmem_cache for allocating struct
+ irq_desc
+Date: Fri, 21 Nov 2014 19:08:18 +0300
+Message-id: <1416586099-13375-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 2.1.3
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIJMWRmVeSWpSXmKPExsVy+t/xa7pNyfkhBgtvSFts+/WIzeL6tzeM
+	Fpd3zWGzaFuykcli86apzA6sHgs2lXq8O3eO3ePJlelMHn1bVjF6fN4kF8AaxWWTkpqTWZZa
+	pG+XwJWx7v5EpoKNohXbe+axNTBeEexi5OSQEDCR+Pr2FQuELSZx4d56ti5GLg4hgaWMEkdn
+	XmOEcPqYJNbt284MUsUmoCfxb9Z2NhBbREBDYuOlW8wgRcwCUxglts9+wt7FyMEhLBAi0bgp
+	A6SGRUBV4sfsx6wgYV4BN4nGZzUgpoSAnMTWdd4TGLkXMDKsYhRNLU0uKE5KzzXUK07MLS7N
+	S9dLzs/dxAgJhi87GBcfszrEKMDBqMTDe8AxN0SINbGsuDL3EKMEB7OSCG+5cH6IEG9KYmVV
+	alF+fFFpTmrxIUYmDk6pBkbDn4KifGvcv3D8vd4re5zNdOVrloCyMP6f94+fr5ZlORfpn6Je
+	xVnev2zO8Rh+5QatIKvgFl3/iPyQ9TLSZQ41kg+tvDZFq3LHSSn9WOheGC75cfH86ZwbXDXt
+	VsiJZq1XsFzlrCYtYj9p2v15/VpnXc68l1adqTKLkf1Y4tMnNY8e/D7NqMRSnJFoqMVcVJwI
+	AOL+sUjkAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---8G1nIWD3RY794FAy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+After enabling alignment checks in UBSan I've noticed a lot of
+reports like this:
 
-On Fri, Nov 21, 2014 at 04:16:51AM +0400, Alexander Kochetkov wrote:
-> commit 6d9939f651419a63e091105663821f9c7d3fec37 (i2c: omap: split out [XR=
-]DR
-> and [XR]RDY) changed the way how errata i207 (I2C: RDR Flag May Be Incorr=
-ectly
-> Set) get handled. 6d9939f6514 code doesn't correspond to workaround provi=
-ded by
-> errata.
->=20
-> According to errata ISR must filter out spurious RDR before data read not=
- after.
-> ISR must read RXSTAT to get number of bytes available to read. Because RDR
-> could be set while there could no data in the receive FIFO.
->=20
-> Restored pre 6d9939f6514 way of handling errata.
->=20
-> Found by code review. Real impact haven't seen.
-> Tested on Beagleboard XM C.
->=20
-> Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-> Fixes: 6d9939f651419a63e09110 i2c: omap: split out [XR]DR and [XR]RDY
+    UBSan: Undefined behaviour in ../kernel/irq/chip.c:195:14
+    member access within misaligned address ffff88003e80d6f8
+    for type 'struct irq_desc' which requires 64 byte alignment
 
-Tested on BBB and AM437x Starter Kit
+struct irq_desc declared with ____cacheline_internodealigned_in_smp
+attribute. However in some cases it allocated dynamically via kmalloc().
+In general case kmalloc() guaranties only sizeof(void *) alignment.
+We should use a separate slab cache to make struct irq_desc
+properly aligned on SMP configuration.
 
-Tested-by: Felipe Balbi <balbi@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+This also could slightly reduce memory usage on some configurations.
+E.g. in my setup sizeof(struct irq_desc) == 320. Which means that
+kmalloc-512 will be used for allocating irg_desc via kmalloc().
+In that case using separate slab cache will save us 192 bytes per
+each irq_desc.
 
-> ---
->  drivers/i2c/busses/i2c-omap.c |    8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-> index 90dcc2e..e7cbcb0 100644
-> --- a/drivers/i2c/busses/i2c-omap.c
-> +++ b/drivers/i2c/busses/i2c-omap.c
-> @@ -958,11 +958,13 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
->  			if (dev->fifo_size)
->  				num_bytes =3D dev->buf_len;
-> =20
-> -			omap_i2c_receive_data(dev, num_bytes, true);
-> -
-> -			if (dev->errata & I2C_OMAP_ERRATA_I207)
-> +			if (dev->errata & I2C_OMAP_ERRATA_I207) {
->  				i2c_omap_errata_i207(dev, stat);
-> +				num_bytes =3D (omap_i2c_read_reg(dev,
-> +					OMAP_I2C_BUFSTAT_REG) >> 8) & 0x3F;
-> +			}
-> =20
-> +			omap_i2c_receive_data(dev, num_bytes, true);
->  			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_RDR);
->  			continue;
->  		}
-> --=20
-> 1.7.9.5
->=20
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Acked-by: David Rientjes <rientjes@google.com>
+---
 
---=20
-balbi
+Changes since v1:
+  - Drop kmem_cache_zalloc_node() and use kmem_cache_alloc_node with __GFP_ZERO flag.
 
---8G1nIWD3RY794FAy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ kernel/irq/irqdesc.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index a1782f8..c7a812c 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -23,6 +23,8 @@
+  */
+ static struct lock_class_key irq_desc_lock_class;
+ 
++static struct kmem_cache *irq_desc_cachep;
++
+ #if defined(CONFIG_SMP)
+ static void __init init_irq_default_affinity(void)
+ {
+@@ -137,7 +139,7 @@ static struct irq_desc *alloc_desc(int irq, int node, struct module *owner)
+ 	struct irq_desc *desc;
+ 	gfp_t gfp = GFP_KERNEL;
+ 
+-	desc = kzalloc_node(sizeof(*desc), gfp, node);
++	desc = kmem_cache_alloc_node(irq_desc_cachep, gfp | __GFP_ZERO, node);
+ 	if (!desc)
+ 		return NULL;
+ 	/* allocate based on nr_cpu_ids */
+@@ -158,7 +160,7 @@ static struct irq_desc *alloc_desc(int irq, int node, struct module *owner)
+ err_kstat:
+ 	free_percpu(desc->kstat_irqs);
+ err_desc:
+-	kfree(desc);
++	kmem_cache_free(irq_desc_cachep, desc);
+ 	return NULL;
+ }
+ 
+@@ -174,7 +176,7 @@ static void free_desc(unsigned int irq)
+ 
+ 	free_masks(desc);
+ 	free_percpu(desc->kstat_irqs);
+-	kfree(desc);
++	kmem_cache_free(irq_desc_cachep, desc);
+ }
+ 
+ static int alloc_descs(unsigned int start, unsigned int cnt, int node,
+@@ -218,6 +220,8 @@ int __init early_irq_init(void)
+ 
+ 	init_irq_default_affinity();
+ 
++	irq_desc_cachep = KMEM_CACHE(irq_desc, SLAB_PANIC);
++
+ 	/* Let arch update nr_irqs and return the nr of preallocated irqs */
+ 	initcnt = arch_probe_nr_irqs();
+ 	printk(KERN_INFO "NR_IRQS:%d nr_irqs:%d %d\n", NR_IRQS, nr_irqs, initcnt);
+-- 
+2.1.3
 
-iQIcBAEBAgAGBQJUb2N8AAoJEIaOsuA1yqREDw0P/jVAXOEa7gB6gyCWSCO26Muu
-gY15MoL2pXp1dtMrk4fgWgYjiYKpGAgEpLGhAPWZuni/PF5KnCo8qhN+szme3IxZ
-teEaWyIZxhd8y8ORGNlP7bLHvY7r6G9JdnzPlYodvpKZIR+jgWTv2+huIy/j8AGR
-oV3HhyptBx7z8IFcfz7IGV+i5i0obiVnYKb0fyxqY0a8ctJa4nuAe7mHvB+bboHM
-yAm40a2Ew1o+uwFfXxgiwC4xExq42PF5aJ+vPV1776HtTvhQUTrRUKaedNrVLm1P
-eFEFKcApTuIswLJemXmlOybc3PRFZ5Pi4fYW7303DUVadkST5I8xkfgs08mks+Ox
-wvw3n7AmQSTH8anHEuqhjjmY9Gbw9IOGfAQZrjEIoHorOi/hDT5y+FSXlBRgl0Gf
-YbOaILwBUuTDbCrCuxfmFBJ+V3Wn+P23ioSxexOGA+3LondDI3dmx8WTOVbr2QwF
-3ohWUdVNykIg0hXxiS4QoIa+TmzGNiSkFYZoXd6/yxx4geOiuGHxIH3d3Bq5xSn8
-6GH9s7YQvAUhBL9igXkIUEhElnDZQkmpWnHIBFxt2Yvo9jMaBxpl118zH8xoApwq
-w6zpbKHBuJ5spp+OPF8quuZY1vFmhjQwV9KG27HK4+W4Ws9yXWPov4ubLgIsgSaA
-QkKXS3zS3s044H4h347+
-=kGUT
------END PGP SIGNATURE-----
-
---8G1nIWD3RY794FAy--
