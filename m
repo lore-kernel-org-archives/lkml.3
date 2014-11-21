@@ -1,93 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426AbaKUB2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 20:28:48 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33626 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756873AbaKUB2r (ORCPT
+	id S1757467AbaKUBa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 20:30:59 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:44419 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756647AbaKUBa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 20:28:47 -0500
-Message-ID: <1416533299.7215.17.camel@decadent.org.uk>
-Subject: Re: [PATCH] ixgbe: make VLAN filter conditional in SR-IOV case
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-Cc: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        Hayato Momma <h-momma@ce.jp.nec.com>,
-        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Fri, 21 Nov 2014 01:28:19 +0000
-In-Reply-To: <7F861DC0615E0C47A872E6F3C5FCDDBD05D9D336@BPXM14GP.gisp.nec.co.jp>
-References: <7F861DC0615E0C47A872E6F3C5FCDDBD05D9D336@BPXM14GP.gisp.nec.co.jp>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-7axfqq2RjRK3lAtmm77X"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 20 Nov 2014 20:30:56 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        ssantosh@kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
+References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
+	<1709760.E0jX3Myv0h@wuerfel> <546C7FDD.7030906@ti.com>
+	<2900095.WIocOu7ue2@wuerfel>
+	<CAPDyKFqeZ3YU2OEN4tCOdcQ0pAho67Q8U_eCEOroG9aS0mp+-Q@mail.gmail.com>
+	<546DD87B.3080806@ti.com>
+	<CAPDyKFrBhZyqozM98_4pPdW0EMFt5W6VX1X7cz6Z=yNhW4vYTA@mail.gmail.com>
+	<CAMuHMdWtHT7QX3Kpa-GCLa49ToGODwjnNVgfxDzJzcM-FU1ffg@mail.gmail.com>
+	<546E0970.5090301@ti.com> <7hh9xtr5ac.fsf@deeprootsystems.com>
+	<CAMuHMdV7zASj8_NtLRir1VubXEKTkq0vBGMXeYXDACu8UC2tZA@mail.gmail.com>
+	<7hbno1r1af.fsf@deeprootsystems.com>
+	<CAMuHMdVXGPu7x706NxqO3rn3KuRbPbD_ZQsJtDH4Hf31AaRR+Q@mail.gmail.com>
+Date: Thu, 20 Nov 2014 17:30:53 -0800
+In-Reply-To: <CAMuHMdVXGPu7x706NxqO3rn3KuRbPbD_ZQsJtDH4Hf31AaRR+Q@mail.gmail.com>
+	(Geert Uytterhoeven's message of "Thu, 20 Nov 2014 22:54:07 +0100")
+Message-ID: <7hppchpcfm.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
---=-7axfqq2RjRK3lAtmm77X
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> On Thu, Nov 20, 2014 at 10:48 PM, Kevin Hilman <khilman@kernel.org> wrote:
+>>>> So what exactly are we talking about with "PM" clocks, and why are they
+>>>> "special" when it comes to PM domains?  IOW, why are the clocks to be
+>>>> managed during PM domain transitions for a given device any different
+>>>> than the clocks that need to be managed for a runtime suspend/resume (or
+>>>> system suspend/resume) sequence for the same device?
+>>>
+>>> (Speaking for my case, shmobile)
+>>>
+>>> They're not. The clocks to be managed during PM domain transitions are the
+>>> same as the clocks that need to be managed for a runtime suspend/resume
+>>> (or system suspend/resume) sequence.
+>>>
+>>> The special thing is that this is more a platform than a driver thing: the same
+>>> module may have a "PM/functional" clock (that is documented to enable/disable
+>>> the module) on one Soc, but noet on another.
+>>
+>> So why isn't the presence or absence of the clock described in the .dtsi
+>> for the SoC instead of being handled by special PM domain logic?
+>
+> It is. Cfr. the presence/absence of clocks for renesas,rcar-gpio nodes.
 
-On Thu, 2014-11-13 at 08:28 +0000, Hiroshi Shimamoto wrote:
-> From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
->=20
-> Disable hardware VLAN filtering if netdev->features VLAN flag is dropped.
->=20
-> In SR-IOV case, there is a use case which needs to disable VLAN filter.
-> For example, we need to make a network function with VF in virtualized
-> environment. That network function may be a software switch, a router
-> or etc. It means that that network function will be an end point which
-> terminates many VLANs.
->=20
-> In the current implementation, VLAN filtering always be turned on and
-> VF can receive only 63 VLANs. It means that only 63 VLANs can be used
-> and it's not enough at all for building a virtual router.
->=20
-> With this patch, if the user turns VLAN filtering off on the host, VF
-> can receive every VLAN packet.
-> The behavior is changed only if VLAN filtering is turned off by ethtool.
-[...]
+Hmm, OK, Good.  
 
-What happens when VLAN filtering is turned back on and a VF uses too
-many VLANs?  It seems like that should either be prevented (you can't
-turn it back on) or the driver should log a message saying the VF is now
-broken.
+So now I'm confused about why the PM domain has to do anything special
+if the presence/absence of the clocks is already handled by the DT.
 
-Ben.
+Kevin
 
---=20
-Ben Hutchings
-Beware of bugs in the above code;
-I have only proved it correct, not tried it. - Donald Knuth
 
---=-7axfqq2RjRK3lAtmm77X
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUAVG6VPee/yOyVhhEJAQoqBhAAmpUy80xu2SpV/gjvI8y9zpTefOgUPUgG
-MVRTUEoJVaQfeKZvN1tzrLxz7OXukAQ/ZWjvktZghjW/hj+aMqJ+nE/NkzDLszU2
-117RHcnF6oy1Ts8+Dkbf2dDLpfZSJ3x5LByLrZ/Tnh9FduNp/AVdChJCDOBy4Ku9
-2t54hO6wZzx/u+HEVlueHrtxtLZv9d83bSUYKSkl7ZdmCUOEiyc6M5weWWPtjbQV
-YhXEHjnq/F+wRSWx54Fw7FBEMENeTe1K8snfHazLAjm2yENGbRG7vzLjAAqy096a
-GSXtKJQNv0yhbwe52NRV3O9gb+6u/JsDsnlbVb1YuqwVIjBGlvHA25oNVqHqbXZF
-weXj8om847lw7e4S3LyLFwLCbJNfYZIIDdhMqOTcucYgjshA93ezCcB2CndB7EUa
-vHN7D7KH8X+gfBKxknSLK+92OMSfoWUtmQ8eG2ydQjtmF8/k360RhKTKUrwm97mD
-MI5jFsNTF8FjH+KSTDQoxndaR2Uq8gsQBgkQJj28kP9stTrXQyGRS5LMYwDDJK5c
-5GUcoMB1jctjypE4f/Fg4dsnhtg7rSeZU2HnaVTIZ1sxkcprSki1toDzYf99h1SC
-S/6KbSKvTlz7E8IuNlMla1Mdr38mkWou2KUt+hGLMPS8fgzzir5G9jm+c0TDIxbb
-l+2/MgtHHw8=
-=y4ZZ
------END PGP SIGNATURE-----
-
---=-7axfqq2RjRK3lAtmm77X--
