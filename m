@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758862AbaKUPL1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:11:27 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:60722 "EHLO comal.ext.ti.com"
+	id S1758848AbaKUPLZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:11:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42367 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753879AbaKUPLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758448AbaKUPLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Nov 2014 10:11:21 -0500
-Date: Fri, 21 Nov 2014 09:11:30 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <balbi@ti.com>, <kishon@ti.com>, <linux-omap@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <tomasz.figa@gmail.com>,
-        <s.nawrocki@samsung.com>, <robh+dt@kernel.org>,
-        <stern@rowland.harvard.edu>, <kgene.kim@samsung.com>
-Subject: Re: [PATCH 00/11] Exynos7: Adding USB 3.0 support
-Message-ID: <20141121151130.GD7508@saruman>
-Reply-To: <balbi@ti.com>
-References: <1416576954-11997-1-git-send-email-gautam.vivek@samsung.com>
+Message-ID: <546F5613.1020208@kernel.org>
+Date: Sat, 22 Nov 2014 00:11:15 +0900
+From: Kukjin Kim <kgene@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZJcv+A0YCCLh2VIg"
-Content-Disposition: inline
-In-Reply-To: <1416576954-11997-1-git-send-email-gautam.vivek@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Abhilash Kesavan <a.kesavan@samsung.com>
+CC: linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        kgene@kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de,
+        gregkh@linuxfoundation.org, jslaby@suse.cz, kesavan.abhilash@gmail.com,
+        Pankaj Dubey <pankaj.dubey@samsung.com>
+Subject: Re: [PATCH v2] serial: samsung: Fix serial config dependencies for
+ exynos7
+References: <1416199491-4841-1-git-send-email-a.kesavan@samsung.com> <1416383812-714-1-git-send-email-a.kesavan@samsung.com>
+In-Reply-To: <1416383812-714-1-git-send-email-a.kesavan@samsung.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ZJcv+A0YCCLh2VIg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/19/14 16:56, Abhilash Kesavan wrote:
+> From: Pankaj Dubey <pankaj.dubey@samsung.com>
+> 
+> Exynos7 has a similar serial controller to that present in older Samsung
+> SoCs. To re-use the existing serial driver on Exynos7 we need to have
+> SERIAL_SAMSUNG_UARTS_4 and SERIAL_SAMSUNG_UARTS selected. This is not
+> possible because these symbols are dependent on PLAT_SAMSUNG which is
+> not present for the ARMv8 based exynos7.
+> 
+> Change the dependency of these symbols from PLAT_SAMSUNG to the serial
+> driver thus making it available on exynos7. As the existing platform
+> specific code making use of these symbols is related to uart driver this
+> change in dependency should not cause any issues.
+> 
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+> Changes in v2:
+> 	- Added Greg's ack and Kukjin Kim as a recepient
 
-On Fri, Nov 21, 2014 at 07:05:43PM +0530, Vivek Gautam wrote:
-> The series has dependency on
-> a) "[PATCH v7 0/7] Enable support for Samsung Exynos7 SoC"
->    http://www.spinics.net/lists/linux-samsung-soc/msg38734.html
-> b) "[GIT PULL] Samsung clock changes for 3.19" - specifically the clock dt
->    bindings header.
->    http://comments.gmane.org/gmane.linux.kernel.samsung-soc/39142
-> c) "tty: serial: samsung: Clean-up selection of number of available UARTs"
->    http://www.spinics.net/lists/linux-samsung-soc/msg37418.html
-> d) "dts, kbuild: Implement support for dtb vendor subdirs"(merged in linu=
-x-next)
->    https://lkml.org/lkml/2014/10/21/654
-> e) "Samsung pinctrl patches for v3.19"
->    http://www.spinics.net/lists/linux-samsung-soc/msg38744.html
->=20
-> Tested on Exynos7-espresso board with 3.18-rc5 and above dependencies.
->=20
-> Clubbing the pinctrl, clk, and usb driver changes alongwith the dt changes
-> together in this series only so as to avoid having 'n' number of dependen=
-cies.
->=20
-> The USB driver patches in this series were part of [1] sent earlier.
-> [1] [PATCH v2 0/4] usb: dwc3/phy-exynos5-usbdrd: Extend support to Exynos7
->     https://lkml.org/lkml/2014/10/7/191
+Applied, thanks.
 
-I took dwc3 driver patches.
-
---=20
-balbi
-
---ZJcv+A0YCCLh2VIg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUb1YiAAoJEIaOsuA1yqREyl4P/0fQmqSnGXnX25uUiNXcnFLL
-TtQthuYr674d0JJ+wNi9uaONTWpZKnr20JLNvV9gkFt/yh2w6N6GFBwvhVGLqTMn
-wkjccayRKHVM/c5Zr8z/+sQQeEPpXXGKOSC8lLZ5nv3FQWL43lkNflFog+Ej6dGy
-cMT43xzBGLoAxwdSh8JdU6uryDqv05i7viekAo/VSy09xFRbabgf5WIXsMjjZinn
-2Cf7ITObEn/G1uSfMBnRc/quyTIgXmt/g2WDUsxyAwn97glNYTYNPwa42X+YRMIU
-2lOu8Ux7/5gkEBsDhV76RsRUEkgwdyeLaD1zivBmOG7Y3UVyfupyRJ/aH3L2epYr
-AgfEC83+B09fz3sTCOusuzn1tJcC35eQ3dm5ahJrAXXhoOtK6lJheEzy7C88m78L
-zxKqnS0Wx3VKr1LSfGcTQ+MEw02JXQvTJGgVhoFhStXy0igVhBROeWocFjD6Y+Gf
-Jha9o4WBMKxOMkJd5qpTGH5WdY/BzcLpsvsDwXF+vPoXNZjjVnJ8syRzDp6S5zNO
-jqp7xfri3pnQ0aVXYWf1aRf9BpoMSfrkIUohxWNcZNLfxBnu5TVtxpAmCqwfq2xQ
-dKwJxOw7bkj9Uo6SeIZ/qTcUHgVtiVXwJOi/jxKSrc8L7gDSRmW+tKhq+9YZyCRK
-s4+xieUDSvlVd5OJgaI+
-=RxWf
------END PGP SIGNATURE-----
-
---ZJcv+A0YCCLh2VIg--
+- Kukjin
