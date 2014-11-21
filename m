@@ -1,102 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540AbaKUIGO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 03:06:14 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:39943 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902AbaKUIGM (ORCPT
+	id S1758052AbaKUILl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 03:11:41 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39341 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476AbaKUILi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 03:06:12 -0500
-MIME-Version: 1.0
-In-Reply-To: <7hppchpcfm.fsf@deeprootsystems.com>
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
-	<1709760.E0jX3Myv0h@wuerfel>
-	<546C7FDD.7030906@ti.com>
-	<2900095.WIocOu7ue2@wuerfel>
-	<CAPDyKFqeZ3YU2OEN4tCOdcQ0pAho67Q8U_eCEOroG9aS0mp+-Q@mail.gmail.com>
-	<546DD87B.3080806@ti.com>
-	<CAPDyKFrBhZyqozM98_4pPdW0EMFt5W6VX1X7cz6Z=yNhW4vYTA@mail.gmail.com>
-	<CAMuHMdWtHT7QX3Kpa-GCLa49ToGODwjnNVgfxDzJzcM-FU1ffg@mail.gmail.com>
-	<546E0970.5090301@ti.com>
-	<7hh9xtr5ac.fsf@deeprootsystems.com>
-	<CAMuHMdV7zASj8_NtLRir1VubXEKTkq0vBGMXeYXDACu8UC2tZA@mail.gmail.com>
-	<7hbno1r1af.fsf@deeprootsystems.com>
-	<CAMuHMdVXGPu7x706NxqO3rn3KuRbPbD_ZQsJtDH4Hf31AaRR+Q@mail.gmail.com>
-	<7hppchpcfm.fsf@deeprootsystems.com>
-Date: Fri, 21 Nov 2014 09:06:09 +0100
-X-Google-Sender-Auth: DpbnZ4b9q7nZZOn1biY3XOH9oxE
-Message-ID: <CAMuHMdU6G35SP-P7bt6RJQk59CrGcKE2XM4N3o8Dv3qxZU7gxA@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        ssantosh@kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 21 Nov 2014 03:11:38 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>, Dave Hansen <dave@sr71.net>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 5/7] stacktrace: introduce snprint_stack_trace for buffer output
+Date: Fri, 21 Nov 2014 17:14:04 +0900
+Message-Id: <1416557646-21755-6-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1416557646-21755-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1416557646-21755-1-git-send-email-iamjoonsoo.kim@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+Current stacktrace only have the function for console output.
+page_owner that will be introduced in following patch needs to print
+the output of stacktrace into the buffer for our own output format
+so so new function, snprint_stack_trace(), is needed.
 
-On Fri, Nov 21, 2014 at 2:30 AM, Kevin Hilman <khilman@kernel.org> wrote:
-> Geert Uytterhoeven <geert@linux-m68k.org> writes:
->> On Thu, Nov 20, 2014 at 10:48 PM, Kevin Hilman <khilman@kernel.org> wrote:
->>>>> So what exactly are we talking about with "PM" clocks, and why are they
->>>>> "special" when it comes to PM domains?  IOW, why are the clocks to be
->>>>> managed during PM domain transitions for a given device any different
->>>>> than the clocks that need to be managed for a runtime suspend/resume (or
->>>>> system suspend/resume) sequence for the same device?
->>>>
->>>> (Speaking for my case, shmobile)
->>>>
->>>> They're not. The clocks to be managed during PM domain transitions are the
->>>> same as the clocks that need to be managed for a runtime suspend/resume
->>>> (or system suspend/resume) sequence.
->>>>
->>>> The special thing is that this is more a platform than a driver thing: the same
->>>> module may have a "PM/functional" clock (that is documented to enable/disable
->>>> the module) on one Soc, but noet on another.
->>>
->>> So why isn't the presence or absence of the clock described in the .dtsi
->>> for the SoC instead of being handled by special PM domain logic?
->>
->> It is. Cfr. the presence/absence of clocks for renesas,rcar-gpio nodes.
->
-> Hmm, OK, Good.
->
-> So now I'm confused about why the PM domain has to do anything special
-> if the presence/absence of the clocks is already handled by the DT.
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ include/linux/stacktrace.h |    3 +++
+ kernel/stacktrace.c        |   24 ++++++++++++++++++++++++
+ 2 files changed, 27 insertions(+)
 
-Just adding a clock property to a device node in DT doesn't enable the clock
-automatically, nor make it runtime-managed automatically.
-Compare this to e.g. pinctrl, where adding pinctrl properties to DT does enable
-them automatically, without the driver for the device having to care about it.
+diff --git a/include/linux/stacktrace.h b/include/linux/stacktrace.h
+index 115b570..5948c67 100644
+--- a/include/linux/stacktrace.h
++++ b/include/linux/stacktrace.h
+@@ -20,6 +20,8 @@ extern void save_stack_trace_tsk(struct task_struct *tsk,
+ 				struct stack_trace *trace);
+ 
+ extern void print_stack_trace(struct stack_trace *trace, int spaces);
++extern int  snprint_stack_trace(char *buf, int buf_len,
++				struct stack_trace *trace, int spaces);
+ 
+ #ifdef CONFIG_USER_STACKTRACE_SUPPORT
+ extern void save_stack_trace_user(struct stack_trace *trace);
+@@ -32,6 +34,7 @@ extern void save_stack_trace_user(struct stack_trace *trace);
+ # define save_stack_trace_tsk(tsk, trace)		do { } while (0)
+ # define save_stack_trace_user(trace)			do { } while (0)
+ # define print_stack_trace(trace, spaces)		do { } while (0)
++# define snprint_stack_trace(buf, len, trace, spaces)	do { } while (0)
+ #endif
+ 
+ #endif
+diff --git a/kernel/stacktrace.c b/kernel/stacktrace.c
+index 00fe55c..61088ff 100644
+--- a/kernel/stacktrace.c
++++ b/kernel/stacktrace.c
+@@ -25,6 +25,30 @@ void print_stack_trace(struct stack_trace *trace, int spaces)
+ }
+ EXPORT_SYMBOL_GPL(print_stack_trace);
+ 
++int snprint_stack_trace(char *buf, int buf_len, struct stack_trace *trace,
++			int spaces)
++{
++	int i, printed;
++	unsigned long ip;
++	int ret = 0;
++
++	if (WARN_ON(!trace->entries))
++		return 0;
++
++	for (i = 0; i < trace->nr_entries && buf_len; i++) {
++		ip = trace->entries[i];
++		printed = snprintf(buf, buf_len, "%*c[<%p>] %pS\n",
++				1 + spaces, ' ', (void *) ip, (void *) ip);
++
++		buf_len -= printed;
++		ret += printed;
++		buf += printed;
++	}
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(snprint_stack_trace);
++
+ /*
+  * Architectures that do not implement save_stack_trace_tsk or
+  * save_stack_trace_regs get this weak alias and a once-per-bootup warning
+-- 
+1.7.9.5
 
-Drivers interfacing external hardware typically do care about clocks, as they
-have to program clock generators for the external hardware interface (e.g.
-driving spi or i2c buses at specific frequencies).
-
-Other random drivers don't care about clocks, so they don't handle them.
-But as long as they make basic pm_runtime_{enable,get_sync,put}() calls,
-the (optional) clocks (and hardware PM domains) will "work" fine, if handled
-by the PM (clock) domain.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
