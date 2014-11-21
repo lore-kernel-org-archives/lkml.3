@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788AbaKUTXR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:23:17 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:10617 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751480AbaKUTXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:23:15 -0500
-Date: Fri, 21 Nov 2014 14:23:01 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141121142301.564f7eb7@gandalf.local.home>
-In-Reply-To: <CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
-References: <alpine.DEB.2.11.1411202204030.3950@nanos>
-	<20141120221122.GA25393@htj.dyndns.org>
-	<alpine.DEB.2.11.1411202315230.3950@nanos>
-	<20141120230514.GB25393@htj.dyndns.org>
-	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
-	<20141120233920.GC25393@htj.dyndns.org>
-	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
-	<20141121162742.GB15461@htj.dyndns.org>
-	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
-	<CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
-	<20141121170805.GD30603@home.goodmis.org>
-	<CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
-	<CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
-	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
-	<CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1751616AbaKUT0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:26:46 -0500
+Received: from mout.web.de ([212.227.17.11]:51991 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750755AbaKUT0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 14:26:45 -0500
+Message-ID: <546F91E5.60104@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 20:26:29 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] IDE: Deletion of an unnecessary check before the function
+ call "module_put"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+X-Provags-ID: V03:K0:7t9oqhvJswdQLPxeT59OD58g2+Cw4KMyV7s8PfhP8QMJ8cB7o7R
+ H+BEz2IHyMgNsYsyVcxU6Er1xMe5L57aB6VePz6OzDrqR17L0g8hlAYTSggWkzsf00XleUu
+ t4MyzTW3eDfNp2NAIuHcXKg0kClOPAVGzBVVNsMR0t2LYQX64RXlju9YhWU8PxKMrprmFiq
+ VDsTxmiuv5PHpjZNOAMQA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014 11:06:41 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 20:22:32 +0100
+
+The module_put() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
+
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/ide/ide.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/ide/ide.c b/drivers/ide/ide.c
+index 2ce6268..e29b02c 100644
+--- a/drivers/ide/ide.c
++++ b/drivers/ide/ide.c
+@@ -101,8 +101,7 @@ void ide_device_put(ide_drive_t *drive)
+ 	struct device *host_dev = drive->hwif->host->dev[0];
+ 	struct module *module = host_dev ? host_dev->driver->owner : NULL;
  
->   static noinline int vmalloc_fault(unsigned long address)
->   {
->         pgd_t *pgd_dst;
->         pgdval_t pgd_entry;
->         unsigned index = pgd_index(address);
-> 
->         if (index < KERNEL_PGD_BOUNDARY)
->                 return -1;
-> 
->         pgd_entry = init_mm.pgd[index].pgd;
->         if (!pgd_entry)
->                 return -1;
-
-Should we at least check to see if it is present?
-
-	if (!(pgd_entry & 1))
-		return -1;
-
-?
-
--- Steve
-
-> 
->         pgd_dst = __va(PAGE_MASK & read_cr3());
->         pgd_dst += index;
-> 
->         if (pgd_dst->pgd)
->                 return -1;
-> 
->         ACCESS_ONCE(pgd_dst->pgd) = pgd_entry;
->         return 0;
->   }
->   NOKPROBE_SYMBOL(vmalloc_fault);
-> 
-> Hmm? Does anybody see anything fundamentally wrong with this?
-> 
->                      Linus
+-	if (module)
+-		module_put(module);
++	module_put(module);
+ #endif
+ 	put_device(&drive->gendev);
+ }
+-- 
+2.1.3
 
