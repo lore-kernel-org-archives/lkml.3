@@ -1,220 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945AbaKUQ1k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:27:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46589 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758547AbaKUQ1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:27:38 -0500
-Message-ID: <546F67F5.2070500@redhat.com>
-Date: Fri, 21 Nov 2014 17:27:33 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932380AbaKUQ1s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:27:48 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:38884 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758547AbaKUQ1q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 11:27:46 -0500
+Date: Fri, 21 Nov 2014 11:27:42 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141121162742.GB15461@htj.dyndns.org>
+References: <alpine.DEB.2.11.1411200002330.3909@nanos>
+ <20141119235033.GE11386@lerouge>
+ <20141120122339.GA14877@htj.dyndns.org>
+ <alpine.DEB.2.11.1411202204030.3950@nanos>
+ <20141120221122.GA25393@htj.dyndns.org>
+ <alpine.DEB.2.11.1411202315230.3950@nanos>
+ <20141120230514.GB25393@htj.dyndns.org>
+ <CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
+ <20141120233920.GC25393@htj.dyndns.org>
+ <CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] kvm: x86: move ioapic.c and irq_comm.c back to arch/x86/
-References: <1416490931-21724-1-git-send-email-pbonzini@redhat.com> <20141121161956.GA16941@potion.brq.redhat.com>
-In-Reply-To: <20141121161956.GA16941@potion.brq.redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/11/2014 17:19, Radim Krčmář wrote:
-> 2014-11-20 14:42+0100, Paolo Bonzini:
->> ia64 does not need them anymore.
-> 
-> (Similar for device assignment and iommu, should I prepare patches?)
+Hello, Andy.
 
-Sure!  Feel free to join the party. ;)
+On Thu, Nov 20, 2014 at 03:55:09PM -0800, Andy Lutomirski wrote:
+> That doesn't appear to have anything to with nmi though, right?
 
-Paolo
+I thought that was the main offender but, apparently, not any more.
 
->> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
->> ---
-> 
-> At least one compile-breaker on arches without IOAPIC,
-> 
->> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
->> index ea53b04993f2..d2d42709d6f4 100644
->> --- a/include/linux/kvm_host.h
->> +++ b/include/linux/kvm_host.h
->> +#ifdef __KVM_HAVE_IOAPIC
->> +void kvm_vcpu_request_scan_ioapic(struct kvm *kvm);
->> +#else
->> +static inline void kvm_vcpu_request-scan_ioapic(struct kvm *kvm)
->                                       ^_-
->> +{
->> +}
->> +#endif
->> +
-> 
-> Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
-> 
-> And we could clean them up as well:
+> Wouldn't this issue be fixed by moving the vmalloc_fault check into
+> do_page_fault before exception_enter?
 
-Will squash in next monday.
+Can you please elaborate why that'd fix the issue?  I'm not
+intimiately familiar with the fault handling so it'd be great if you
+can give me some pointers in terms of where to look at.
 
-Paolo
+Thanks.
 
-> ---8<---
-> KVM: x86: remove IA64 from ioapic.c and irq_comm.c
-> 
-> They won't get compiled in x86 tree.
-> 
-> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-> ---
->  arch/x86/kvm/ioapic.c   | 12 ------------
->  arch/x86/kvm/irq_comm.c | 41 ++---------------------------------------
->  2 files changed, 2 insertions(+), 51 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/ioapic.c b/arch/x86/kvm/ioapic.c
-> index 0ba4057..b1947e0 100644
-> --- a/arch/x86/kvm/ioapic.c
-> +++ b/arch/x86/kvm/ioapic.c
-> @@ -270,7 +270,6 @@ void kvm_ioapic_scan_entry(struct kvm_vcpu *vcpu, u64 *eoi_exit_bitmap,
->  	spin_unlock(&ioapic->lock);
->  }
->  
-> -#ifdef CONFIG_X86
->  void kvm_vcpu_request_scan_ioapic(struct kvm *kvm)
->  {
->  	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
-> @@ -279,12 +278,6 @@ void kvm_vcpu_request_scan_ioapic(struct kvm *kvm)
->  		return;
->  	kvm_make_scan_ioapic_request(kvm);
->  }
-> -#else
-> -void kvm_vcpu_request_scan_ioapic(struct kvm *kvm)
-> -{
-> -	return;
-> -}
-> -#endif
->  
->  static void ioapic_write_indirect(struct kvm_ioapic *ioapic, u32 val)
->  {
-> @@ -586,11 +579,6 @@ static int ioapic_mmio_write(struct kvm_io_device *this, gpa_t addr, int len,
->  	case IOAPIC_REG_WINDOW:
->  		ioapic_write_indirect(ioapic, data);
->  		break;
-> -#ifdef	CONFIG_IA64
-> -	case IOAPIC_REG_EOI:
-> -		__kvm_ioapic_update_eoi(NULL, ioapic, data, IOAPIC_LEVEL_TRIG);
-> -		break;
-> -#endif
->  
->  	default:
->  		break;
-> diff --git a/arch/x86/kvm/irq_comm.c b/arch/x86/kvm/irq_comm.c
-> index a8f988c..72298b3 100644
-> --- a/arch/x86/kvm/irq_comm.c
-> +++ b/arch/x86/kvm/irq_comm.c
-> @@ -26,9 +26,6 @@
->  #include <trace/events/kvm.h>
->  
->  #include <asm/msidef.h>
-> -#ifdef CONFIG_IA64
-> -#include <asm/iosapic.h>
-> -#endif
->  
->  #include "irq.h"
->  
-> @@ -38,12 +35,8 @@ static int kvm_set_pic_irq(struct kvm_kernel_irq_routing_entry *e,
->  			   struct kvm *kvm, int irq_source_id, int level,
->  			   bool line_status)
->  {
-> -#ifdef CONFIG_X86
->  	struct kvm_pic *pic = pic_irqchip(kvm);
->  	return kvm_pic_set_irq(pic, e->irqchip.pin, irq_source_id, level);
-> -#else
-> -	return -1;
-> -#endif
->  }
->  
->  static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
-> @@ -57,12 +50,7 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
->  
->  inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
->  {
-> -#ifdef CONFIG_IA64
-> -	return irq->delivery_mode ==
-> -		(IOSAPIC_LOWEST_PRIORITY << IOSAPIC_DELIVERY_SHIFT);
-> -#else
->  	return irq->delivery_mode == APIC_DM_LOWEST;
-> -#endif
->  }
->  
->  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
-> @@ -202,9 +190,7 @@ int kvm_request_irq_source_id(struct kvm *kvm)
->  	}
->  
->  	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
-> -#ifdef CONFIG_X86
->  	ASSERT(irq_source_id != KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID);
-> -#endif
->  	set_bit(irq_source_id, bitmap);
->  unlock:
->  	mutex_unlock(&kvm->irq_lock);
-> @@ -215,9 +201,7 @@ unlock:
->  void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
->  {
->  	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
-> -#ifdef CONFIG_X86
->  	ASSERT(irq_source_id != KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID);
-> -#endif
->  
->  	mutex_lock(&kvm->irq_lock);
->  	if (irq_source_id < 0 ||
-> @@ -230,9 +214,7 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
->  		goto unlock;
->  
->  	kvm_ioapic_clear_all(kvm->arch.vioapic, irq_source_id);
-> -#ifdef CONFIG_X86
->  	kvm_pic_clear_all(pic_irqchip(kvm), irq_source_id);
-> -#endif
->  unlock:
->  	mutex_unlock(&kvm->irq_lock);
->  }
-> @@ -322,16 +304,11 @@ out:
->  	  .u.irqchip = { .irqchip = KVM_IRQCHIP_IOAPIC, .pin = (irq) } }
->  #define ROUTING_ENTRY1(irq) IOAPIC_ROUTING_ENTRY(irq)
->  
-> -#ifdef CONFIG_X86
-> -#  define PIC_ROUTING_ENTRY(irq) \
-> +#define PIC_ROUTING_ENTRY(irq) \
->  	{ .gsi = irq, .type = KVM_IRQ_ROUTING_IRQCHIP,	\
->  	  .u.irqchip = { .irqchip = SELECT_PIC(irq), .pin = (irq) % 8 } }
-> -#  define ROUTING_ENTRY2(irq) \
-> +#define ROUTING_ENTRY2(irq) \
->  	IOAPIC_ROUTING_ENTRY(irq), PIC_ROUTING_ENTRY(irq)
-> -#else
-> -#  define ROUTING_ENTRY2(irq) \
-> -	IOAPIC_ROUTING_ENTRY(irq)
-> -#endif
->  
->  static const struct kvm_irq_routing_entry default_routing[] = {
->  	ROUTING_ENTRY2(0), ROUTING_ENTRY2(1),
-> @@ -346,20 +323,6 @@ static const struct kvm_irq_routing_entry default_routing[] = {
->  	ROUTING_ENTRY1(18), ROUTING_ENTRY1(19),
->  	ROUTING_ENTRY1(20), ROUTING_ENTRY1(21),
->  	ROUTING_ENTRY1(22), ROUTING_ENTRY1(23),
-> -#ifdef CONFIG_IA64
-> -	ROUTING_ENTRY1(24), ROUTING_ENTRY1(25),
-> -	ROUTING_ENTRY1(26), ROUTING_ENTRY1(27),
-> -	ROUTING_ENTRY1(28), ROUTING_ENTRY1(29),
-> -	ROUTING_ENTRY1(30), ROUTING_ENTRY1(31),
-> -	ROUTING_ENTRY1(32), ROUTING_ENTRY1(33),
-> -	ROUTING_ENTRY1(34), ROUTING_ENTRY1(35),
-> -	ROUTING_ENTRY1(36), ROUTING_ENTRY1(37),
-> -	ROUTING_ENTRY1(38), ROUTING_ENTRY1(39),
-> -	ROUTING_ENTRY1(40), ROUTING_ENTRY1(41),
-> -	ROUTING_ENTRY1(42), ROUTING_ENTRY1(43),
-> -	ROUTING_ENTRY1(44), ROUTING_ENTRY1(45),
-> -	ROUTING_ENTRY1(46), ROUTING_ENTRY1(47),
-> -#endif
->  };
->  
->  int kvm_setup_default_irq_routing(struct kvm *kvm)
-> 
+-- 
+tejun
