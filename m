@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758147AbaKUL6m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 06:58:42 -0500
-Received: from mout.perfora.net ([74.208.4.197]:50954 "EHLO mout.perfora.net"
+	id S1758177AbaKUMCW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 07:02:22 -0500
+Received: from mta-out1.inet.fi ([62.71.2.227]:60024 "EHLO kirsi1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754495AbaKUL6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 06:58:40 -0500
-Message-ID: <1416571072.2744.4.camel@localhost.localdomain>
-Subject: Re: [PATCH] ARM: tegra: colibri t30: fix on-module ethernet
-From: Marcel Ziswiler <marcel@ziswiler.com>
-To: swarren@wwwdotorg.org
-Cc: thierry.reding@gmail.com, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        stefan@agner.ch
-Date: Fri, 21 Nov 2014 12:57:52 +0100
-In-Reply-To: <b1cdc96ce8bb15059d7eea282f6586a826bee124.1416566157.git.marcel@ziswiler.com>
-References: <b1cdc96ce8bb15059d7eea282f6586a826bee124.1416566157.git.marcel@ziswiler.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:YHQbMCkbh/SIiFWV/vVXafpv+4hha5wjUBI4lxfxuEA
- r3EN3kIPRYvT5qem0A1dQE9Rvk7LIuK2xmht8hH/+4w2VRTNLN
- VyU2admSez9+NTKsxEWF8t+M76nz2nxg++/IiVJ48JMOx5zv9m
- BnMIF+nRzb752TLI3zAzl7rGlB+Kbaei0FFGAw+bU4NwOPGAtN
- TYCqM0URzm+1LrvTaQ9LTN0XW1O3e9vhj6uWS/DTR/ngLdSuG3
- pSYutU6ho8M+lgHN9vllReaEF4YwpMWNnPfAXUlGzeIPpgUmxl
- mrMtXnlfysvOrSSRJBzfAb95tKR17psE3kHeXDudiyTXTY7EF2
- pLlWTKycXD6ar1xWDctTPf08KgaTtMi8y2DTmM7l3
-X-UI-Out-Filterresults: notjunk:1;
+	id S1753101AbaKUMCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 07:02:21 -0500
+Date: Fri, 21 Nov 2014 14:01:45 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Christoph Lameter <cl@linux.com>, Dave Hansen <dave.hansen@intel.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 06/19] mm: store mapcount for compound page separate
+Message-ID: <20141121120145.GB16647@node.dhcp.inet.fi>
+References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1415198994-15252-7-git-send-email-kirill.shutemov@linux.intel.com>
+ <546C761D.6050407@redhat.com>
+ <20141119130050.GA29884@node.dhcp.inet.fi>
+ <alpine.DEB.2.11.1411201405140.14867@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1411201405140.14867@gentwo.org>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-21 at 11:41 +0100, Marcel Ziswiler wrote:
-> Looks like Ethernet only ever worked if U-Boot properly brought it up
-> as both the reset as well as the VBUS lines were not actively handled
-> in-kernel.
-> This patch fixes this by just pulling up the reset GPIO
-
-Doing automatic power-cycle tests revealed that this is still not enough
-and a proper reset-cycle might be required. However I don't know as of
-yet how one can easily do that in mainline with a USB device otherwise
-not mentioned anywhere in the device tree. Any ideas?
-
-> and properly
-> enabling VBUS via a GPIO enabled fixed regulator VBUS supply.
+On Thu, Nov 20, 2014 at 02:06:53PM -0600, Christoph Lameter wrote:
+> On Wed, 19 Nov 2014, Kirill A. Shutemov wrote:
 > 
-> Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
+> > I don't think we want to bloat struct page description: nobody outside of
+> > helpers should use it direcly. And it's exactly what we did to store
+> > compound page destructor and compound page order.
+> 
+> This is more like a description what overloading is occurring. Either
+> add the new way of using it there including a comment explainng things or
+> please do not overload the field.
 
+I can do this although I don't see much value. At least we need to be
+consistent and do the same for compound destructor and compound order.
+
+Dave, you tried to sort mess around struct page recently. Any opinion?
+
+BTW, how far we should go there? Should things like
+PAGE_BUDDY_MAPCOUNT_VALUE and PAGE_BALLOON_MAPCOUNT_VALUE be described in
+struct page definition too?
+
+-- 
+ Kirill A. Shutemov
