@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176AbaKUDUO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 22:20:14 -0500
-Received: from mga03.intel.com ([134.134.136.65]:2053 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756722AbaKUDUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 22:20:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,428,1413270000"; 
-   d="scan'208";a="640907592"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [Patch irqdomain: Enhance irq_domain_free_irqs_common() to support parentless irqdomain
-Date: Fri, 21 Nov 2014 11:23:26 +0800
-Message-Id: <1416540206-18103-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1757599AbaKUDWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 22:22:42 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:34936 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757059AbaKUDWl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 22:22:41 -0500
+MIME-Version: 1.0
+In-Reply-To: <1416488913-9691-1-git-send-email-opensource.ganesh@gmail.com>
+References: <1416488913-9691-1-git-send-email-opensource.ganesh@gmail.com>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Thu, 20 Nov 2014 22:22:19 -0500
+X-Google-Sender-Auth: x6GGeM-1CgB2umCTDI7ml1zjtuM
+Message-ID: <CALZtONAdpiP+DZfJBYG9EYN+8pTToMnAaUGemZ-r7x8YcQXbCQ@mail.gmail.com>
+Subject: Re: [PATCH] mm/zsmalloc: avoid duplicate assignment of prev_class
+To: Mahendran Ganesh <opensource.ganesh@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Originally irq_domain_free_irqs_common() is designed to be used by
-irqdomains with parent. But there are desires to reuse for parentless
-irqdomains for code reduction.
-So check domain->parent before invoking irq_domain_free_irqs_parent().
+On Thu, Nov 20, 2014 at 8:08 AM, Mahendran Ganesh
+<opensource.ganesh@gmail.com> wrote:
+> In zs_create_pool(), prev_class is assigned (ZS_SIZE_CLASSES - 1)
+> times. And the prev_class only references to the previous alloc
+> size_class. So we do not need unnecessary assignement.
+>
+> This patch modifies *prev_class* to *prev_alloc_class*. And the
+> *prev_alloc_class* will only be assigned when a new size_class
+> structure is allocated.
+>
+> Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
+> ---
+>  mm/zsmalloc.c |    9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
+>
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index b3b57ef..ac2b396 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -970,7 +970,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+>                 int size;
+>                 int pages_per_zspage;
+>                 struct size_class *class;
+> -               struct size_class *prev_class;
+> +               struct size_class *uninitialized_var(prev_alloc_class);
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
-Hi Thomas,
-	This patch applies to tip/irq/irqdomain, it helps to reduce code
-size on ARM. Seems we still have chance to merge it into tip/irq/irqdomain:)
-Regards!
-Gerry
----
- kernel/irq/irqdomain.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
++               struct size_class *prev_class = NULL;
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 029acf11efed..0449d2869e17 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -975,7 +975,8 @@ void irq_domain_free_irqs_common(struct irq_domain *domain, unsigned int virq,
- 		if (irq_data)
- 			irq_domain_reset_irq_data(irq_data);
- 	}
--	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
-+	if (domain->parent)
-+		irq_domain_free_irqs_parent(domain, virq, nr_irqs);
- }
- 
- /**
--- 
-1.7.10.4
+Use the fact it's unset below, so set it to NULL here
 
+>
+>                 size = ZS_MIN_ALLOC_SIZE + i * ZS_SIZE_CLASS_DELTA;
+>                 if (size > ZS_MAX_ALLOC_SIZE)
+> @@ -987,9 +987,8 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+>                  * previous size_class if possible.
+>                  */
+>                 if (i < ZS_SIZE_CLASSES - 1) {
+> -                       prev_class = pool->size_class[i + 1];
+> -                       if (can_merge(prev_class, size, pages_per_zspage)) {
+> -                               pool->size_class[i] = prev_class;
+> +                       if (can_merge(prev_alloc_class, size, pages_per_zspage)) {
+> +                               pool->size_class[i] = prev_alloc_class;
+
+simplify more, we can check if this is the first iteration by looking
+at prev_class, e.g.:
+
+                if (prev_class) {
+                       if (can_merge(prev_class, size, pages_per_zspage)) {
+                               pool->size_class[i] = prev_class;
+
+
+>                                 continue;
+>                         }
+>                 }
+> @@ -1003,6 +1002,8 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+>                 class->pages_per_zspage = pages_per_zspage;
+>                 spin_lock_init(&class->lock);
+>                 pool->size_class[i] = class;
+> +
+> +               prev_alloc_class = class;
+>         }
+>
+>         pool->flags = flags;
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
