@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880AbaKUKzL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 05:55:11 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:34969 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175AbaKUKzJ (ORCPT
+	id S1755277AbaKUK7z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 05:59:55 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:46849 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbaKUK7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 05:55:09 -0500
-From: Steve Capper <steve.capper@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, will.deacon@arm.com,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Steve Capper <steve.capper@linaro.org>
-Subject: [PATCH] perf symbols: Consider the syms_ss in dso__load_sym
-Date: Fri, 21 Nov 2014 10:54:57 +0000
-Message-Id: <1416567297-9000-1-git-send-email-steve.capper@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 21 Nov 2014 05:59:52 -0500
+Date: Fri, 21 Nov 2014 11:59:51 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Auto Configured <romain.perier@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>
+Cc: heiko@sntech.de, grant.likely@linaro.org, robh@kernel.org,
+        devicetree@vger.kernel.org, lgirdwood@gmail.com, broonie@kernel.org,
+        johan@kernel.org, mark.rutland@arm.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        balbi@ti.com
+Subject: Re: [PATCH v4 1/2] of: Rename "poweroff-source" property to
+ "system-power-controller"
+Message-ID: <20141121105951.GA20679@localhost>
+References: <1415885699-1465-1-git-send-email-user@radxa>
+ <1415885699-1465-2-git-send-email-user@radxa>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415885699-1465-2-git-send-email-user@radxa>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In dso__load_sym we only try to load the .debug_frame section from the
-runtime image. For distros, the debug symbols are generally in a
-separate file.
+On Thu, Nov 13, 2014 at 01:34:58PM +0000, Auto Configured wrote:
+> From: Romain Perier <romain.perier@gmail.com>
+> 
+> It reverts commit a4b4e0461ec5 ("of: Add standard property for poweroff capability").
+> As discussed on the mailing list, it makes more sense to rename back to the
+> old established property name, without the vendor prefix. Problem being that
+> the word "source" usually tends to be used for inputs and that is out of control
+> of the OS. The poweroff capability is an output which simply turns the
+> system-power off. Also, this property might be used by drivers which power-off
+> the system and power back on subsequent RTC alarms. This seems to suggest to
+> remove "poweroff" from the property name and to choose "system-power-controller"
+> as the more generic name. This patchs adds the required renaming changes and
+> defines an helper function which is compatible with both properties, the old one
+> which was only used by tps65910 and the new one without vendor-prefix.
 
-As a result, running perf report on arm64 can give errors such as:
-"$file with build id $id not found, continuing without symbols"
+Now this is a bit of a mess.
 
-Even when the debug symbols have been correctly installed (and loaded
-by perf).
+There's a commit in the mfd tree, 25f833c1171d ("mfd: tps65910: Convert
+ti,system-power-controller DT property to poweroff-source"), which
+breaks all dts using tps65910 since these are never updated to the now
+retracted property name ("poweroff-source").
 
-This patch adds logic to dso__load_sym to query syms_ss for the
-.debug_frame section if it can't be found in the elf file pointed to by
-runtime_ss.
+This one should simply be reverted ASAP.
 
-Signed-off-by: Steve Capper <steve.capper@linaro.org>
----
-This patch is against 3.18-rc5.
----
- tools/perf/util/symbol-elf.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+> Signed-off-by: Romain Perier <romain.perier@gmail.com>
+> ---
+>  .../bindings/power/{poweroff.txt => power-controller.txt}        | 0
+>  .../devicetree/bindings/regulator/act8865-regulator.txt          | 4 ++--
+>  drivers/mfd/tps65910.c                                           | 9 ++++++++-
+>  drivers/regulator/act8865-regulator.c                            | 2 +-
+>  include/linux/of.h                                               | 6 +++---
+>  5 files changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 1e23a5b..1336392 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -830,8 +830,11 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 			continue;
- 
- 		sec = elf_getscn(runtime_ss->elf, sym.st_shndx);
--		if (!sec)
--			goto out_elf_end;
-+		if (!sec) {
-+			sec = elf_getscn(syms_ss->elf, sym.st_shndx);
-+			if (!sec)
-+				goto out_elf_end;
-+		}
- 
- 		gelf_getshdr(sec, &shdr);
- 
--- 
-1.9.3
+Romain, what tree is this patch against? The changes to the tps65910
+driver appears not to even be in the regulator tree, yet you asked Mark
+to merge this. And the MFD maintainer is not even on CC.
 
+Let's fix the breakage by reverting the offending commit in mfd. Then the
+new standard name can be introduced in regulator alone (e.g. this patch
+without the tps65910 bits) as nothing outside of regulator should be
+using the new power-off feature (or binding) for act8865. Then other
+drivers and dts can be converted to use the new property name (while
+retaining backwards compatibility) for 3.20.
+
+[ We should probably also consider adding an "of_device_is_" prefix to
+the helper name for consistency. ]
+
+Johan
