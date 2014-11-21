@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaKUS1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:27:17 -0500
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:47149 "EHLO
+	id S1752240AbaKUS1h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:27:37 -0500
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:47074 "EHLO
 	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaKUSZM (ORCPT
+	with ESMTP id S1751572AbaKUSZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:25:12 -0500
+	Fri, 21 Nov 2014 13:25:06 -0500
 From: Toshi Kani <toshi.kani@hp.com>
 To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
         akpm@linux-foundation.org, arnd@arndb.de
@@ -14,9 +14,9 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
         stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
         yigal@plexistor.com, konrad.wilk@oracle.com,
         Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v6 4/7] x86, mm, pat: Add pgprot_writethrough() for WT
-Date: Fri, 21 Nov 2014 11:10:37 -0700
-Message-Id: <1416593440-23083-5-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH v6 1/7] x86, mm, pat: Set WT to PA7 slot of PAT MSR
+Date: Fri, 21 Nov 2014 11:10:34 -0700
+Message-Id: <1416593440-23083-2-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416593440-23083-1-git-send-email-toshi.kani@hp.com>
 References: <1416593440-23083-1-git-send-email-toshi.kani@hp.com>
@@ -24,64 +24,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds pgprot_writethrough() for setting WT to a given
-pgprot_t.
+This patch sets WT to the PA7 slot in the PAT MSR when the processor
+is not affected by the PAT errata.  The PA7 slot is chosen to improve
+robustness in the presence of errata that might cause the high PAT bit
+to be ignored.  This way a buggy PA7 slot access will hit the PA3 slot,
+which is UC, so at worst we lose performance without causing a correctness
+issue.
+
+The following Intel processors are affected by the PAT errata.
+
+   errata               cpuid
+   ----------------------------------------------------
+   Pentium 2, A52       family 0x6, model 0x5
+   Pentium 3, E27       family 0x6, model 0x7, 0x8
+   Pentium 3 Xenon, G26 family 0x6, model 0x7, 0x8, 0xa
+   Pentium M, Y26       family 0x6, model 0x9
+   Pentium M 90nm, X9   family 0x6, model 0xd
+   Pentium 4, N46       family 0xf, model 0x0
+
+Instead of making sharp boundary checks, this patch makes conservative
+checks to exclude all Pentium 2, 3, M and 4 family processors.  For
+such processors, _PAGE_CACHE_MODE_WT is redirected to UC- per the
+default setup in __cachemode2pte_tbl[].
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: Juergen Gross <jgross@suse.com>
 ---
- arch/x86/include/asm/pgtable_types.h |    3 +++
- arch/x86/mm/pat.c                    |   10 ++++++++++
- include/asm-generic/pgtable.h        |    4 ++++
- 3 files changed, 17 insertions(+)
+ arch/x86/mm/pat.c |   71 ++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 56 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index af447f9..1a2033c 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -407,6 +407,9 @@ extern int nx_enabled;
- #define pgprot_writecombine	pgprot_writecombine
- extern pgprot_t pgprot_writecombine(pgprot_t prot);
- 
-+#define pgprot_writethrough	pgprot_writethrough
-+extern pgprot_t pgprot_writethrough(pgprot_t prot);
-+
- /* Indicate that x86 has its own track and untrack pfn vma functions */
- #define __HAVE_PFNMAP_TRACKING
- 
 diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 5552384..5a6e836 100644
+index 25d2c58..0f0be47 100644
 --- a/arch/x86/mm/pat.c
 +++ b/arch/x86/mm/pat.c
-@@ -967,6 +967,16 @@ pgprot_t pgprot_writecombine(pgprot_t prot)
- }
- EXPORT_SYMBOL_GPL(pgprot_writecombine);
+@@ -197,6 +197,7 @@ void pat_init(void)
+ {
+ 	u64 pat;
+ 	bool boot_cpu = !boot_pat_state;
++	struct cpuinfo_x86 *c = &boot_cpu_data;
  
-+pgprot_t pgprot_writethrough(pgprot_t prot)
-+{
-+	if (pat_enabled)
-+		return __pgprot(pgprot_val(prot) |
-+				cachemode2protval(_PAGE_CACHE_MODE_WT));
-+	else
-+		return pgprot_noncached(prot);
-+}
-+EXPORT_SYMBOL_GPL(pgprot_writethrough);
-+
- #if defined(CONFIG_DEBUG_FS) && defined(CONFIG_X86_PAT)
+ 	if (!pat_enabled)
+ 		return;
+@@ -217,21 +218,61 @@ void pat_init(void)
+ 		}
+ 	}
  
- static struct memtype *memtype_get_idx(loff_t pos)
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 752e30d..9ad756e 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -249,6 +249,10 @@ static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
- #define pgprot_writecombine pgprot_noncached
- #endif
+-	/* Set PWT to Write-Combining. All other bits stay the same */
+-	/*
+-	 * PTE encoding used in Linux:
+-	 *      PAT
+-	 *      |PCD
+-	 *      ||PWT
+-	 *      |||
+-	 *      000 WB		_PAGE_CACHE_WB
+-	 *      001 WC		_PAGE_CACHE_WC
+-	 *      010 UC-		_PAGE_CACHE_UC_MINUS
+-	 *      011 UC		_PAGE_CACHE_UC
+-	 * PAT bit unused
+-	 */
+-	pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
+-	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
++	if ((c->x86_vendor == X86_VENDOR_INTEL) &&
++	    (((c->x86 == 0x6) && (c->x86_model <= 0xd)) ||
++	     ((c->x86 == 0xf) && (c->x86_model <= 0x6)))) {
++		/*
++		 * PAT support with the lower four entries. Intel Pentium 2,
++		 * 3, M, and 4 are affected by PAT errata, which makes the
++		 * upper four entries unusable.  We do not use the upper four
++		 * entries for all the affected processor families for safe.
++		 *
++		 *  PTE encoding used in Linux:
++		 *      PAT
++		 *      |PCD
++		 *      ||PWT  PAT
++		 *      |||    slot
++		 *      000    0    WB : _PAGE_CACHE_MODE_WB
++		 *      001    1    WC : _PAGE_CACHE_MODE_WC
++		 *      010    2    UC-: _PAGE_CACHE_MODE_UC_MINUS
++		 *      011    3    UC : _PAGE_CACHE_MODE_UC
++		 * PAT bit unused
++		 *
++		 * NOTE: When WT or WP is used, it is redirected to UC- per
++		 * the default setup in __cachemode2pte_tbl[].
++		 */
++		pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
++		      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
++	} else {
++		/*
++		 * PAT full support.  We put WT in slot 7 to improve
++		 * robustness in the presence of errata that might cause
++		 * the high PAT bit to be ignored.  This way a buggy slot 7
++		 * access will hit slot 3, and slot 3 is UC, so at worst
++		 * we lose performance without causing a correctness issue.
++		 * Pentium 4 erratum N46 is an example of such an erratum,
++		 * although we try not to use PAT at all on affected CPUs.
++		 *
++		 *  PTE encoding used in Linux:
++		 *      PAT
++		 *      |PCD
++		 *      ||PWT  PAT
++		 *      |||    slot
++		 *      000    0    WB : _PAGE_CACHE_MODE_WB
++		 *      001    1    WC : _PAGE_CACHE_MODE_WC
++		 *      010    2    UC-: _PAGE_CACHE_MODE_UC_MINUS
++		 *      011    3    UC : _PAGE_CACHE_MODE_UC
++		 *      100    4    WB : Reserved
++		 *      101    5    WC : Reserved
++		 *      110    6    UC-: Reserved
++		 *      111    7    WT : _PAGE_CACHE_MODE_WT
++		 *
++		 * The reserved slots are unused, but mapped to their
++		 * corresponding types in the presence of PAT errata.
++		 */
++		pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
++		      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, WT);
++	}
  
-+#ifndef pgprot_writethrough
-+#define pgprot_writethrough pgprot_noncached
-+#endif
-+
- #ifndef pgprot_device
- #define pgprot_device pgprot_noncached
- #endif
+ 	/* Boot CPU check */
+ 	if (!boot_pat_state)
