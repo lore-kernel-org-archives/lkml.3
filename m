@@ -1,118 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758801AbaKUPtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:49:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56489 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758698AbaKUPtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:49:52 -0500
-Date: Fri, 21 Nov 2014 10:49:21 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: axboe@kernel.dk, martin.petersen@oracle.com, mst@redhat.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        qemu-devel@nongnu.org, dm-devel@redhat.com,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: virtio_blk: fix defaults for max_hw_sectors and max_segment_size
-Message-ID: <20141121154920.GA7644@redhat.com>
-References: <20141120190058.GA31214@redhat.com>
- <20141121095456.GB8866@infradead.org>
+	id S1758698AbaKUPv0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:51:26 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:37012 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755376AbaKUPvY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:51:24 -0500
+X-Listener-Flag: 11101
+Subject: Re: [PATCH v7 1/4] irqchip: gic: Support hierarchy irq domain.
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Marc Zyngier <marc.zyngier@arm.com>, Jiang Liu <jiang.liu@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Mark Rutland <Mark.Rutland@arm.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <Pawel.Moll@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "hc.yen@mediatek.com" <hc.yen@mediatek.com>,
+        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
+        "yh.chen@mediatek.com" <yh.chen@mediatek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh+dt@kernel.org>,
+        "nathan.chung@mediatek.com" <nathan.chung@mediatek.com>,
+        "yingjoe.chen@gmail.com" <yingjoe.chen@gmail.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        "eddie.huang@mediatek.com" <eddie.huang@mediatek.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        "lin ux- arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <87wq6q9odi.fsf@approximate.cambridge.arm.com>
+References: <1416406451-4578-1-git-send-email-yingjoe.chen@mediatek.com>
+	 <1416406451-4578-2-git-send-email-yingjoe.chen@mediatek.com>
+	 <87h9xvaz2p.fsf@approximate.cambridge.arm.com>
+	 <546D6D62.4030005@linux.intel.com>
+	 <87wq6q9odi.fsf@approximate.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Nov 2014 23:51:21 +0800
+Message-ID: <1416585081.24971.15.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141121095456.GB8866@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21 2014 at  4:54am -0500,
-Christoph Hellwig <hch@infradead.org> wrote:
 
-> On Thu, Nov 20, 2014 at 02:00:59PM -0500, Mike Snitzer wrote:
-> > virtio_blk incorrectly established -1U as the default for these
-> > queue_limits.  Set these limits to sane default values to avoid crashing
-> > the kernel.  But the virtio-blk protocol should probably be extended to
-> > allow proper stacking of the disk's limits from the host.
-> > 
-> > This change fixes a crash that was reported when virtio-blk was used to
-> > test linux-dm.git commit 604ea90641b4 ("dm thin: adjust max_sectors_kb
-> > based on thinp blocksize") that will initially set max_sectors to
-> > max_hw_sectors and then rounddown to the first power-of-2 factor of the
-> > DM thin-pool's blocksize.  Basically that commit assumes drivers don't
-> > suck when establishing max_hw_sectors so it acted like a canary in the
-> > coal mine.
+Hi,
+
+On Thu, 2014-11-20 at 10:07 +0000, Marc Zyngier wrote:
+> On Thu, Nov 20 2014 at  4:26:10 am GMT, Jiang Liu <jiang.liu@linux.intel.com> wrote:
 > 
-> Is that a crash in the host or guest?  What kind of mishandling did you
-> see?  Unless the recent virtio standard changed anything the host
-> should be able to handle our arbitrary limits, and even if it doesn't
-> that something we need to hash out with qemu and the virtio standards
-> folks.
+> Hi Jiang,
+> 
+> > On 2014/11/20 1:18, Marc Zyngier wrote:
+> >> Hi Yingjoe,
+> >> 
+> >> On Wed, Nov 19 2014 at 2:14:08 pm GMT, Yingjoe Chen
+> >> <yingjoe.chen@mediatek.com> wrote:
+> >>> +
+> >>> +static const struct irq_domain_ops gic_irq_domain_hierarchy_ops = {
+> >>> +	.xlate = gic_irq_domain_xlate,
+> >>> +	.alloc = gic_irq_domain_alloc,
+> >>> +	.free = irq_domain_free_irqs_top,
+> >> 
+> >> I'm convinced that irq_domain_free_irqs_top is the wrong function to
+> >> call here, because you're calling it from the bottom, not the top-level
+> >> (it has no parent).
+> >> 
+> >> I cannot verify this with your code as I don't a working platform with
+> >> GICv2m, but if I enable something similar on GICv3, it dies a very
+> >> painful way:
+> >> 
+> >> Unable to handle kernel NULL pointer dereference at virtual address 00000018
+> >> pgd = ffffffc03d059000
+> >> [00000018] *pgd=0000000081356003, *pud=0000000081356003, *pmd=0000000000000000
+> >> Internal error: Oops: 96000006 [#1] SMP
+> >> Modules linked in:
+> >> CPU: 4 PID: 1052 Comm: sh Not tainted 3.18.0-rc4+ #3311
+> >> task: ffffffc03e320000 ti: ffffffc001390000 task.ti: ffffffc001390000
+> >> PC is at irq_domain_free_irqs_recursive+0x1c/0x80
+> >> LR is at irq_domain_free_irqs_common+0x88/0x9c
+> >> pc : [<ffffffc0000ed790>] lr : [<ffffffc0000ede20>] pstate: 60000145
+> >> [...]
+> >> [<ffffffc0000ed790>] irq_domain_free_irqs_recursive+0x1c/0x80
+> >> [<ffffffc0000ede1c>] irq_domain_free_irqs_common+0x84/0x9c
+> >> [<ffffffc0000ede98>] irq_domain_free_irqs_top+0x64/0x7c  <-- gic_domain.free()
+> >> [<ffffffc0000ed798>] irq_domain_free_irqs_recursive+0x24/0x80
+> >> [<ffffffc0000ee468>] irq_domain_free_irqs_parent+0x14/0x20
+> >> [<ffffffc0003500b8>] its_irq_domain_free+0xc8/0x250
+> >> [<ffffffc0000ed798>] irq_domain_free_irqs_recursive+0x24/0x80
+> >> [<ffffffc0000ede1c>] irq_domain_free_irqs_common+0x84/0x9c
+> >> [<ffffffc0000ede98>] irq_domain_free_irqs_top+0x64/0x7c
+> >> [<ffffffc0000ef518>] msi_domain_free+0x70/0x88
+> >> [<ffffffc0000ed798>] irq_domain_free_irqs_recursive+0x24/0x80
+> >> [<ffffffc0000ee3ac>] irq_domain_free_irqs+0x108/0x17c
+> >> [<ffffffc0000efb68>] msi_domain_free_irqs+0x28/0x4c
+> >> [<ffffffc000369cac>] free_msi_irqs+0xb4/0x1c0
+> >> [<ffffffc00036adec>] pci_disable_msix+0x3c/0x4c
+> >> [...]
+> >> 
+> >> and I cannot see how this could work on the standard GIC either.
+> >> 
+> >> Thomas, Jiang: could you please confirm or infirm my suspicions? My
+> >> understanding is that irq_domain_free_irqs_top can only be called from
+> >> the top-level domain.
+> > Hi Marc,
+> > 	It indicates that irq_domain_free_irqs_top() is not a good name.
+> > We have:
+> > 1) irq_domain_set_hwirq_and_chip() to set irq_chip and chip_data
+> > 2) irq_domain_set_info() to set irq_chip, chip_data, flow_handler and
+> >    handler_data;
+> > 3) irq_domain_reset_irq_data() resets irq_chip and chip_data.
+> > 4) irq_domain_free_irqs_common() resets irq_chip, chip_data and calls
+> >    parent domain's domain_ops.free() callback.
+> > 5) irq_domain_free_irqs_top() resets irq_chip, chip_data, flow handler,
+> >    handler_data and call parent domain's domain_ops.free() callback.
+> 
+> Yes, and this "call parent domain's free callback" is where the problem
+> lies. Here, it is called from the innermost domain, with no parent.
+> 
+> > So there two possible improvements here:
+> > 1) Rename irq_domain_free_irqs_top() with better name, any suggestions?
+> >    It's named as is because it's always called by the outer-most
+> >    irqdomains on x86.
+> > 2) Change irq_domain_free_irqs_common() and irq_domain_free_irqs_top()
+> >    to call parent domain's domain_ops.free() callback only if parent
+> >    exists. By this way, they could be used for inner-most irqdomains.
+> > If OK, I will respin a version 4 patch set based on tip/irq/irqdomain.
+> > Thoughts?
+> 
+> Checking the parent is probably a safe solution (this is not a hot path
+> anyway). I don't care much about the name though, and I the only thing I
+> can think of is irq_domain_free_irqs_reset_flow, which looks so bad it's
+> not even funny. I'll let the matter rest in your capable hands! ;-)
 
-Some good news: this guest crash isn't an issue with recent kernels (so
-upstream, fedora 20, RHEL7, etc aren't impacted -- Jens feel free to
-drop my virtio_blk patch; even though some of it's limits are clearly
-broken I'll defer to the virtio_blk developers on the best way forward
--- sorry for the noise!).
+I've applied Jiang's "irqdomain: Enhance irq_domain_free_irqs_common()
+to support parentless irqdomain" patch and it did fix the crash.
 
-The BUG I saw only seems to impact RHEL6 kernels so far (note to self,
-actually _test_ on upstream before reporting a crash against upstream!)
+Thanks Jiang, Marc
 
-[root@RHEL-6 ~]# echo 1073741824 > /sys/block/vdc/queue/max_sectors_kb
-[root@RHEL-6 ~]# lvs
+Joe.C
 
-Message from syslogd@RHEL-6 at Nov 21 15:32:15 ...
- kernel:Kernel panic - not syncing: Fatal exception
 
-Here is the RHEL6 guest crash, just for full disclosure:
-
-kernel BUG at fs/direct-io.c:696!
-invalid opcode: 0000 [#1] SMP
-last sysfs file: /sys/devices/virtual/block/dm-4/dev
-CPU 0
-Modules linked in: nfs lockd fscache auth_rpcgss nfs_acl sunrpc ipv6 ext2 dm_thin_pool dm_bio_prison dm_persistent_data dm_bufio libcrc32c dm_mirror dm_region_hash dm_log dm_mod microcode virtio_balloon i2c_piix4 i2c_core virtio_net ext4 jbd2 mbcache virtio_blk virtio_pci virtio_ring virtio pata_acpi ata_generic ata_piix [last unloaded: speedstep_lib]
-
-Pid: 1679, comm: lvs Not tainted 2.6.32 #6 Bochs Bochs
-RIP: 0010:[<ffffffff811ce336>]  [<ffffffff811ce336>] __blockdev_direct_IO_newtrunc+0x986/0x1270
-RSP: 0018:ffff88011a11ba48  EFLAGS: 00010287
-RAX: 0000000000000000 RBX: ffff8801192fbd28 RCX: 0000000000001000
-RDX: ffffea0003b3d218 RSI: ffff88011aac4300 RDI: ffff880118572378
-RBP: ffff88011a11bbe8 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801192fbd00
-R13: 0000000000000000 R14: ffff880118c3cac0 R15: 0000000000000000
-FS:  00007fde78bc37a0(0000) GS:ffff880028200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00000000012706f0 CR3: 000000011a432000 CR4: 00000000000407f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process lvs (pid: 1679, threadinfo ffff88011a11a000, task ffff8801185a4aa0)
-Stack:
- ffff88011a11bb48 ffff88011a11baa8 ffff88010000000c ffff88011a11bb18
-<d> 0000000000000000 0000000000000000 ffff88011a11bdc8 ffff88011a11beb8
-<d> 0000000c1a11baa8 ffff880118c3cb98 0000000000000000 0000000018c3ccb8
-Call Trace:
- [<ffffffff811c9e90>] ? blkdev_get_block+0x0/0x20
- [<ffffffff811cec97>] __blockdev_direct_IO+0x77/0xe0
- [<ffffffff811c9e90>] ? blkdev_get_block+0x0/0x20
- [<ffffffff811caf17>] blkdev_direct_IO+0x57/0x60
- [<ffffffff811c9e90>] ? blkdev_get_block+0x0/0x20
- [<ffffffff8112619b>] generic_file_aio_read+0x6bb/0x700
- [<ffffffff811cba60>] ? blkdev_get+0x10/0x20
- [<ffffffff811cba70>] ? blkdev_open+0x0/0xc0
- [<ffffffff8118af4f>] ? __dentry_open+0x23f/0x360
- [<ffffffff811ca2d1>] blkdev_aio_read+0x51/0x80
- [<ffffffff8118dc6a>] do_sync_read+0xfa/0x140
- [<ffffffff8109eaf0>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff811ca22c>] ? block_ioctl+0x3c/0x40
- [<ffffffff811a34c2>] ? vfs_ioctl+0x22/0xa0
- [<ffffffff811a3664>] ? do_vfs_ioctl+0x84/0x580
- [<ffffffff8122cee6>] ? security_file_permission+0x16/0x20
- [<ffffffff8118e625>] vfs_read+0xb5/0x1a0
- [<ffffffff8118e761>] sys_read+0x51/0x90
- [<ffffffff810e5aae>] ? __audit_syscall_exit+0x25e/0x290
- [<ffffffff8100b072>] system_call_fastpath+0x16/0x1b
-Code: fe ff ff c7 85 fc fe ff ff 00 00 00 00 48 89 95 10 ff ff ff 8b 95 34 ff ff ff e8 46 ac ff ff 3b 85 34 ff ff ff 0f 84 fc 02 00 00 <0f> 0b eb fe 8b 9d 34 ff ff ff 8b 85 30 ff ff ff 01 d8 85 c0 0f
-RIP  [<ffffffff811ce336>] __blockdev_direct_IO_newtrunc+0x986/0x1270
- RSP <ffff88011a11ba48>
----[ end trace 73be5dcaf8939399 ]---
-Kernel panic - not syncing: Fatal exception
