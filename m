@@ -1,289 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758142AbaKUC34 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 21:29:56 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:36929 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757877AbaKUC3x (ORCPT
+	id S1757211AbaKUCc3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 21:32:29 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:32819 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756132AbaKUCc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 21:29:53 -0500
-Subject: [PATCH ftrace/core v6 5/5] kselftest,
- ftrace: Add ftrace IPMODIFY flag test
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
-        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Fri, 21 Nov 2014 05:25:37 -0500
-Message-ID: <20141121102537.11844.9781.stgit@localhost.localdomain>
-In-Reply-To: <20141121102502.11844.82696.stgit@localhost.localdomain>
-References: <20141121102502.11844.82696.stgit@localhost.localdomain>
-User-Agent: StGit/0.17-dirty
+	Thu, 20 Nov 2014 21:32:27 -0500
+Date: Fri, 21 Nov 2014 10:31:31 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+        Daniel Borkmann <dborkman@redhat.com>, quentin.gouchet@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        ABI/API <linux-api@vger.kernel.org>
+Subject: Re: crypto: user - Allow get request with empty driver name
+Message-ID: <20141121023131.GA3873@gondor.apana.org.au>
+References: <5365136.g8vbXlhRyC@tachyon.chronox.de>
+ <2283056.kKnMJs7Bfg@tachyon.chronox.de>
+ <20141120134029.GA31411@gondor.apana.org.au>
+ <6655976.jRkjMUZ19x@tachyon.chronox.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6655976.jRkjMUZ19x@tachyon.chronox.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ftrace IPMODIFY flag test to selftest/ftrace. The
-test checks simple ftrace handler insertion and
-combinations of ftrace, kprobe, and jprobe.
-This test requires kernel build tree to build a test
-kernel module and root privilege to run.
+On Thu, Nov 20, 2014 at 05:08:42PM +0100, Stephan Mueller wrote:
+> Am Donnerstag, 20. November 2014, 21:40:29 schrieb Herbert Xu:
+> 
+> Hi Herbert,
+> 
+> > On Thu, Nov 20, 2014 at 02:10:00PM +0100, Stephan Mueller wrote:
+> > > What about the following
+> > > 
+> > > if (p->cru_driver_name[0]
+> 
+> If the driver name is not empty
+> > > 
+> > > 	alg = crypto_alg_match(p, 1);
+> 
+> Do an exact match using the driver name
+> > > 
+> > > else
+> > > 
+> > > 	alg = crypto_alg_match(p, 0);
+> 
+> Otherise use the generic name for a fuzzy match.
+> > 
+> > If cru_driver_name is not empty then exact will never be used, no?
+> 
+> If the code suggestion does not follow my words outlined above, I want my 
+> words to be considered ;-)
+> 
+> Yet, I am unsure where the code deviates from my words.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+No I am asking how is this different from my patch?
 
----
-Changes in v6:
- - Fix macros to avoid errors by checkpatch.pl.
-
-Changes in v5:
- - Add this test to kselftest.
----
- tools/testing/selftests/ftrace/Makefile            |   11 +
- tools/testing/selftests/ftrace/ipmodify/Makefile   |   15 ++
- tools/testing/selftests/ftrace/ipmodify/ipmodify.c |  170 ++++++++++++++++++++
- .../selftests/ftrace/ipmodify/run_ipmodify.sh      |    6 +
- 4 files changed, 202 insertions(+)
- create mode 100644 tools/testing/selftests/ftrace/ipmodify/Makefile
- create mode 100644 tools/testing/selftests/ftrace/ipmodify/ipmodify.c
- create mode 100644 tools/testing/selftests/ftrace/ipmodify/run_ipmodify.sh
-
-diff --git a/tools/testing/selftests/ftrace/Makefile b/tools/testing/selftests/ftrace/Makefile
-index 76cc9f1..69f0b1a 100644
---- a/tools/testing/selftests/ftrace/Makefile
-+++ b/tools/testing/selftests/ftrace/Makefile
-@@ -1,7 +1,18 @@
-+TARGETS += ipmodify
-+
- all:
-+	for TARGET in $(TARGETS); do \
-+		make -C $$TARGET; \
-+	done;
- 
- run_tests:
- 	@/bin/sh ./ftracetest || echo "ftrace selftests: [FAIL]"
-+	for TARGET in $(TARGETS); do \
-+		make -C $$TARGET run_tests; \
-+	done;
- 
- clean:
- 	rm -rf logs/*
-+	for TARGET in $(TARGETS); do \
-+		make -C $$TARGET clean; \
-+	done;
-diff --git a/tools/testing/selftests/ftrace/ipmodify/Makefile b/tools/testing/selftests/ftrace/ipmodify/Makefile
-new file mode 100644
-index 0000000..416e9a8
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/ipmodify/Makefile
-@@ -0,0 +1,15 @@
-+BUILDDIR = /lib/modules/$(shell uname -r)/build
-+HERE = $(abspath ./)
-+
-+obj-m := ipmodify.o
-+
-+ipmodify.ko: ipmodify.c
-+	$(MAKE) -C $(BUILDDIR) M=$(HERE) $@
-+
-+all: ipmodify.ko
-+
-+run_tests:
-+	@/bin/sh ./run_ipmodify.sh || echo "ftrace ipmodify test: [FAIL]"
-+
-+clean:
-+	$(RM) -Rf .*.o.cmd .*.ko.cmd .tmp_versions *.o *.ko *.mod.c modules.order Module.symvers
-diff --git a/tools/testing/selftests/ftrace/ipmodify/ipmodify.c b/tools/testing/selftests/ftrace/ipmodify/ipmodify.c
-new file mode 100644
-index 0000000..85213f8
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/ipmodify/ipmodify.c
-@@ -0,0 +1,170 @@
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/ftrace.h>
-+#include <linux/kprobes.h>
-+
-+/* Testing the IPMODIFY flag by using kprobe, jprobe, and ftrace handler */
-+
-+static __used int ipmodify_target_function(int a1, int a2, int a3)
-+{
-+	return a1 + a2 + a3;
-+}
-+
-+/* Kprobe pre handler (IPMODIFY bit is NOT set) */
-+static int kprobe_test_handler(struct kprobe *kp, struct pt_regs *regs)
-+{
-+	return 0;
-+}
-+
-+static struct kprobe test_kp, __test_kp = {
-+	.pre_handler = kprobe_test_handler,
-+	.addr = (void *)ipmodify_target_function,
-+};
-+
-+/* Jprobe entry handler (IPMODIFY should be set) */
-+static void jprobe_test_handler(int a1, int a2, int a3)
-+{
-+	jprobe_return();
-+}
-+
-+static struct jprobe test_jp, __test_jp = {
-+	.entry = jprobe_test_handler,
-+	.kp = {
-+		.addr = (void *)ipmodify_target_function,
-+	},
-+};
-+
-+/* Ftrace handler (with IPMODIFY flag) */
-+static void ftrace_ipmodify_handler(unsigned long a0, unsigned long a1,
-+				struct ftrace_ops *op, struct pt_regs *regs)
-+{
-+}
-+
-+static struct ftrace_ops test_ops __read_mostly, __test_ops = {
-+	.func = ftrace_ipmodify_handler,
-+	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
-+};
-+
-+static void cleanup_probes(void)
-+{
-+	unregister_kprobe(&test_kp);
-+	unregister_jprobe(&test_jp);
-+	if (test_ops.flags & FTRACE_OPS_FL_ENABLED)
-+		unregister_ftrace_function(&test_ops);
-+	test_kp = __test_kp;
-+	test_jp = __test_jp;
-+}
-+
-+
-+
-+/* We'll test various probes on a target function. */
-+static int __init ipmodify_init(void)
-+{
-+	int ret;
-+
-+	test_kp = __test_kp;
-+	test_jp = __test_jp;
-+	test_ops = __test_ops;
-+
-+	/* Setup ftrace filter */
-+	ret = ftrace_set_filter_ip(&test_ops,
-+				 (unsigned long)ipmodify_target_function, 0, 0);
-+	if (ret < 0) {
-+		ret = pr_err("IPMODIFY test: ftrace_set_filter_ip\t[FAILED]\n");
-+		goto err;
-+	}
-+
-+	ret = -EINVAL;
-+
-+/* For the test case which should pass */
-+#define EXP_OK(cond)							\
-+	do {								\
-+		if ((cond) < 0) {					\
-+			pr_cont("[FAIL]\n\t" #cond " is failed\n");	\
-+			goto err;					\
-+		}							\
-+	} while (0)
-+/* For the test case which should fail */
-+#define EXP_NG(cond)							\
-+	do {								\
-+		if ((cond) >= 0) {					\
-+			pr_cont("[XPASS]\n\t" #cond " is unexpectedly passed\n");\
-+			goto err;					\
-+		}							\
-+	} while (0)
-+
-+	/* Case 1 */
-+	pr_info("IPMODIFY test: ipmodify only\t");
-+	EXP_OK(register_ftrace_function(&test_ops));
-+	ipmodify_target_function(1, 2, 3);
-+	pr_cont("[PASS]\n");
-+	cleanup_probes();
-+
-+	/* Case 2 */
-+	pr_info("IPMODIFY test: kprobe->ipmodify\t");
-+	EXP_OK(register_kprobe(&test_kp));
-+	EXP_OK(register_ftrace_function(&test_ops));
-+	ipmodify_target_function(2, 3, 4);
-+	pr_cont("[PASS]\n");
-+	cleanup_probes();
-+
-+	/* Case 3 */
-+	pr_info("IPMODIFY test: jprobe->ipmodify(NG)\t");
-+	EXP_OK(register_jprobe(&test_jp));
-+	EXP_NG(register_ftrace_function(&test_ops));
-+	ipmodify_target_function(3, 4, 5);
-+	pr_cont("[PASS]\n");
-+	cleanup_probes();
-+
-+	/* Case 4 */
-+	pr_info("IPMODIFY test: ipmodify->kprobe\t");
-+	EXP_OK(register_ftrace_function(&test_ops));
-+	EXP_OK(register_kprobe(&test_kp));
-+	ipmodify_target_function(4, 5, 6);
-+	pr_cont("[PASS]\n");
-+	cleanup_probes();
-+
-+	/* Case 5 */
-+	pr_info("IPMODIFY test: ipmodify->jprobe(NG)\t");
-+	EXP_OK(register_ftrace_function(&test_ops));
-+	EXP_NG(register_jprobe(&test_jp));
-+	ipmodify_target_function(5, 6, 7);
-+	pr_cont("[PASS]\n");
-+	cleanup_probes();
-+
-+	/* Case 6 */
-+	pr_info("IPMODIFY test: kprobe->jprobe->ipmodify(NG)\t");
-+	EXP_OK(register_kprobe(&test_kp));
-+	EXP_OK(register_jprobe(&test_jp));
-+	EXP_NG(register_ftrace_function(&test_ops));
-+	ipmodify_target_function(6, 7, 8);
-+	pr_cont("[PASS]\n");
-+	cleanup_probes();
-+
-+	/* Case 7 */
-+	pr_info("IPMODIFY test: kprobe->ipmodify->jprobe(NG)\t");
-+	EXP_OK(register_kprobe(&test_kp));
-+	EXP_OK(register_ftrace_function(&test_ops));
-+	EXP_NG(register_jprobe(&test_jp));
-+	ipmodify_target_function(7, 8, 9);
-+	pr_cont("[PASS]\n");
-+	cleanup_probes();
-+
-+	/* Case 8 */
-+	pr_info("IPMODIFY test: setting notrace filter with ipmodify(NG)\t");
-+	EXP_NG(ftrace_set_notrace(&test_ops, "do_fork", 0, 0));
-+	pr_cont("[PASS]\n");
-+
-+	return 0;
-+err:
-+	cleanup_probes();
-+	return ret;
-+}
-+
-+void ipmodify_exit(void)
-+{
-+}
-+
-+module_init(ipmodify_init)
-+module_exit(ipmodify_exit)
-+MODULE_LICENSE("GPL");
-diff --git a/tools/testing/selftests/ftrace/ipmodify/run_ipmodify.sh b/tools/testing/selftests/ftrace/ipmodify/run_ipmodify.sh
-new file mode 100644
-index 0000000..4878d9d
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/ipmodify/run_ipmodify.sh
-@@ -0,0 +1,6 @@
-+#!/bin/sh
-+set -e
-+insmod ipmodify.ko
-+rmmod ipmodify.ko
-+dmesg | tail -n 8
-+
-
-
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
