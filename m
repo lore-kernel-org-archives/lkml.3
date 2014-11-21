@@ -1,135 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbaKUT36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:29:58 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:35266 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680AbaKUT34 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:29:56 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, mturquette@linaro.org
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
-	<1709760.E0jX3Myv0h@wuerfel> <546C7FDD.7030906@ti.com>
-	<2900095.WIocOu7ue2@wuerfel>
-	<CAPDyKFqeZ3YU2OEN4tCOdcQ0pAho67Q8U_eCEOroG9aS0mp+-Q@mail.gmail.com>
-	<546DD87B.3080806@ti.com>
-	<CAPDyKFrBhZyqozM98_4pPdW0EMFt5W6VX1X7cz6Z=yNhW4vYTA@mail.gmail.com>
-	<CAMuHMdWtHT7QX3Kpa-GCLa49ToGODwjnNVgfxDzJzcM-FU1ffg@mail.gmail.com>
-	<546E0970.5090301@ti.com> <7hh9xtr5ac.fsf@deeprootsystems.com>
-	<CAMuHMdV7zASj8_NtLRir1VubXEKTkq0vBGMXeYXDACu8UC2tZA@mail.gmail.com>
-	<7hbno1r1af.fsf@deeprootsystems.com>
-	<CAMuHMdVXGPu7x706NxqO3rn3KuRbPbD_ZQsJtDH4Hf31AaRR+Q@mail.gmail.com>
-	<7hppchpcfm.fsf@deeprootsystems.com>
-	<CAMuHMdU6G35SP-P7bt6RJQk59CrGcKE2XM4N3o8Dv3qxZU7gxA@mail.gmail.com>
-	<546F8B39.1080106@ti.com>
-Date: Fri, 21 Nov 2014 11:29:53 -0800
-In-Reply-To: <546F8B39.1080106@ti.com> (Grygorii Strashko's message of "Fri,
-	21 Nov 2014 20:58:01 +0200")
-Message-ID: <7hsihcmjwu.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751516AbaKUTdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:33:44 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:56132 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750741AbaKUTdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 14:33:43 -0500
+Message-ID: <546F9382.40102@ti.com>
+Date: Fri, 21 Nov 2014 21:33:22 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: =?windows-1252?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Wolfram Sang <wsa@the-dreams.de>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Murali Karicheri <m-karicheri2@ti.com>
+Subject: Re: [4/5] i2c: davinci: use bus recovery infrastructure
+References: <1416477788-5544-5-git-send-email-grygorii.strashko@ti.com> <20141121190744.GB4431@pengutronix.de>
+In-Reply-To: <20141121190744.GB4431@pengutronix.de>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grygorii Strashko <grygorii.strashko@ti.com> writes:
+Hi Uwe,
 
-> Hi Kevin,
-> On 11/21/2014 10:06 AM, Geert Uytterhoeven wrote:
->> On Fri, Nov 21, 2014 at 2:30 AM, Kevin Hilman <khilman@kernel.org> wrote:
->>> Geert Uytterhoeven <geert@linux-m68k.org> writes:
->>>> On Thu, Nov 20, 2014 at 10:48 PM, Kevin Hilman <khilman@kernel.org> wrote:
->>>>>>> So what exactly are we talking about with "PM" clocks, and why are they
->>>>>>> "special" when it comes to PM domains?  IOW, why are the clocks to be
->>>>>>> managed during PM domain transitions for a given device any different
->>>>>>> than the clocks that need to be managed for a runtime suspend/resume (or
->>>>>>> system suspend/resume) sequence for the same device?
->>>>>>
->>>>>> (Speaking for my case, shmobile)
->>>>>>
->>>>>> They're not. The clocks to be managed during PM domain transitions are the
->>>>>> same as the clocks that need to be managed for a runtime suspend/resume
->>>>>> (or system suspend/resume) sequence.
->>>>>>
->>>>>> The special thing is that this is more a platform than a driver thing: the same
->>>>>> module may have a "PM/functional" clock (that is documented to enable/disable
->>>>>> the module) on one Soc, but noet on another.
->>>>>
->>>>> So why isn't the presence or absence of the clock described in the .dtsi
->>>>> for the SoC instead of being handled by special PM domain logic?
->>>>
->>>> It is. Cfr. the presence/absence of clocks for renesas,rcar-gpio nodes.
->>>
->>> Hmm, OK, Good.
->>>
->>> So now I'm confused about why the PM domain has to do anything special
->>> if the presence/absence of the clocks is already handled by the DT.
->> 
->> Just adding a clock property to a device node in DT doesn't enable the clock
->> automatically, nor make it runtime-managed automatically.
->> Compare this to e.g. pinctrl, where adding pinctrl properties to DT does enable
->> them automatically, without the driver for the device having to care about it.
->> 
->> Drivers interfacing external hardware typically do care about clocks, as they
->> have to program clock generators for the external hardware interface (e.g.
->> driving spi or i2c buses at specific frequencies).
->> 
->> Other random drivers don't care about clocks, so they don't handle them.
->> But as long as they make basic pm_runtime_{enable,get_sync,put}() calls,
->> the (optional) clocks (and hardware PM domains) will "work" fine, if handled
->> by the PM (clock) domain.
->
-> Personally, I don't see problems with "functional" clocks.
-> The problem, in my opinion, is that we can't specify in DT that some clock is
-> "optional", so no one should touch such clock except driver.
-> For example:
-> Keystone 2 NETCP module has 3 clocks:
-> 	clocks = <&papllclk>, <&clkcpgmac>, <&chipclk12>;
-> 	clock-names = "clk_pa", "clk_cpgmac", "cpsw_cpts_rft_clk";
->  and CPTS functionality is optional (in general) and can be enabled/disabled.
-> Also, usual example is MMC hosts 
-> - OMAP hsmmc has "functional" clock "hsmmc1_fclk", and may have
-> "optional" clock "mmchsdb_fck". As you may remember, PM runtime
-> for OMAP2+ implemented by OMAP PM domain which performs many things,
-> but one thing which is done always is enabling/disabling of "fck"
-> when get/put() are called.
->
-> Actually, pm_clk is very simple case of OMAP PM domain which should only
-> handle clocks.
->
-> In non-DT case, we have possibility to divide clocks on "fck" and "opt"
-> (The way it can be done is not convenient, but it is - .con_id).
->
-> For DT-case - no way now. Also, PM domains are not physically present on
-> Keystone 2 and GPD was selected as glue layer to integrate DT, pm_clk and
-> PM runtime all together (one big-fat-global PM domain :).
->
-> So, I was able to find only following way to define "fck" clocks in DT:
-> 	clocks = <&papllclk>, <&clkcpgmac>, <&chipclk12>;
-> 	clock-names = "clk_pa", "clk_cpgmac", "cpsw_cpts_rft_clk";
-> 	fck-clocks = <&papllclk>, <&clkcpgmac>;
-> As you can see - this will lead to data duplication in DT (
->
-> Any propositions are welcome?
+On 11/21/2014 09:07 PM, Uwe Kleine-König wrote:
+> On Thu, Nov 20, 2014 at 12:03:07PM +0200, Grygorii Strashko wrote:
+>> This patch converts Davinci I2C driver to use I2C bus recovery
+>> infrastructure, introduced by commit 5f9296ba21b3 ("i2c: Add
+>> bus recovery infrastructure").
+>>
+>> The i2c_bus_recovery_info is configured for Davinci I2C adapter
+>> only in case if scl_pin is provided in Platform data at least.
+> s/Platform/platform/
+> 
+>>
+>> Because the controller must be held in reset while doing so, the
+> s/Because/As/
+> 
+>> recovery routine must re-init the controller. Since this was already
+>> being done after each call to i2c_recover_bus, move those calls into
+>> the recovery_prepare/unprepare routines and as well.
+>>
+>> CC: Sekhar Nori <nsekhar@ti.com>
+>> CC: Kevin Hilman <khilman@deeprootsystems.com>
+>> CC: Santosh Shilimkar <ssantosh@kernel.org>
+>> CC: Murali Karicheri <m-karicheri2@ti.com>
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> ---
+>>   drivers/i2c/busses/i2c-davinci.c | 76 ++++++++++++++++++----------------------
+>>   1 file changed, 35 insertions(+), 41 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
+>> index 2cef115..db2a2cd 100644
+>> --- a/drivers/i2c/busses/i2c-davinci.c
+>> +++ b/drivers/i2c/busses/i2c-davinci.c
+>> @@ -133,43 +133,6 @@ static inline u16 davinci_i2c_read_reg(struct davinci_i2c_dev *i2c_dev, int reg)
+>>   	return readw_relaxed(i2c_dev->base + reg);
+>>   }
+>>   
+>> -/* Generate a pulse on the i2c clock pin. */
+>> -static void davinci_i2c_clock_pulse(unsigned int scl_pin)
+>> -{
+>> -	u16 i;
+>> -
+>> -	if (scl_pin) {
+>> -		/* Send high and low on the SCL line */
+>> -		for (i = 0; i < 9; i++) {
+>> -			gpio_set_value(scl_pin, 0);
+>> -			udelay(20);
+>> -			gpio_set_value(scl_pin, 1);
+>> -			udelay(20);
+>> -		}
+>> -	}
+>> -}
+>> -
+>> -/* This routine does i2c bus recovery as specified in the
+>> - * i2c protocol Rev. 03 section 3.16 titled "Bus clear"
+>> - */
+>> -static void davinci_i2c_recover_bus(struct davinci_i2c_dev *dev)
+>> -{
+>> -	u32 flag = 0;
+>> -	struct davinci_i2c_platform_data *pdata = dev->pdata;
+>> -
+>> -	dev_err(dev->dev, "initiating i2c bus recovery\n");
+>> -	/* Send NACK to the slave */
+>> -	flag = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
+>> -	flag |=  DAVINCI_I2C_MDR_NACK;
+>> -	/* write the data into mode register */
+>> -	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, flag);
+>> -	davinci_i2c_clock_pulse(pdata->scl_pin);
+>> -	/* Send STOP */
+>> -	flag = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
+>> -	flag |= DAVINCI_I2C_MDR_STP;
+>> -	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, flag);
+>> -}
+>> -
+>>   static inline void davinci_i2c_reset_ctrl(struct davinci_i2c_dev *i2c_dev,
+>>   								int val)
+>>   {
+>> @@ -266,6 +229,33 @@ static int i2c_davinci_init(struct davinci_i2c_dev *dev)
+>>   	return 0;
+>>   }
+>>   
+>> +/* This routine does i2c bus recovery as specified in the
+>> + * i2c protocol Rev. 03 section 3.16 titled "Bus clear"
+>> + */
+> This comment is wrong. The actual bus clear is implemented by
+> i2c_generic_gpio_recovery. Also while touching this comment, convert it
+> to the usual format with /* on its own line. (The file in question has
+> already both types of comment, so consistency is not a reason to keep it
+> as is.)
 
-How about you proposed a new (optional) property for the clock bindings
-called 'clocks-optional' or something like that.  The clock maintainer
-(Mike Turquette, Cc'd) is also very familiar with OMAP and the need for
-these different kinds of clocks.
+It has been just copy-pasted, but ok.
+I'll change this comment as following:
+/* 
+ * This routine does i2c bus recovery by using i2c_generic_gpio_recovery
+ * which is provided by I2C Bus recovery infrastructure.
+ */
+Is it ok?
 
-Kevin
+> 
+> Even though I remember that I reviewed this bus recovery patch (that
+> resulted in 5f9296ba21b3) back then, I don't remember why it was split
+> in prepare + recover + unprepare. But that is unrelated to this patch.
+> 
+>> +static void davinci_i2c_prepare_recovery(struct i2c_adapter *adap)
+>> +{
+>> +	struct davinci_i2c_dev *dev = i2c_get_adapdata(adap);
+>> +
+>> +	dev_err(dev->dev, "initiating i2c bus recovery\n");
+>> +	/* Disable interrupts */
+>> +	davinci_i2c_write_reg(dev, DAVINCI_I2C_IMR_REG, 0);
+>> +
+>> +	/* put I2C into reset */
+>> +	davinci_i2c_reset_ctrl(dev, 0);
+>> +}
+>> +
+>> +static void davinci_i2c_unprepare_recovery(struct i2c_adapter *adap)
+>> +{
+>> +	struct davinci_i2c_dev *dev = i2c_get_adapdata(adap);
+>> +
+>> +	i2c_davinci_init(dev);
+>> +}
+>> +
+>> +static struct i2c_bus_recovery_info davinci_i2c_gpio_recovery_info = {
+> I'd call this only davinci_i2c_recovery_info.
+
+No. Pls, see next patch.
+
+> 
+>> +	.recover_bus = i2c_generic_gpio_recovery,
+>> +	.prepare_recovery = davinci_i2c_prepare_recovery,
+>> +	.unprepare_recovery = davinci_i2c_unprepare_recovery,
+>> +};
+> new line here please
+
+:) Ok.
+Fixed in next patch.
+
+> 
+>>   /*
+>>    * Waiting for bus not busy
+>>    */
+>> @@ -286,8 +276,7 @@ static int i2c_davinci_wait_bus_not_busy(struct davinci_i2c_dev *dev,
+>>   				return -ETIMEDOUT;
+>>   			} else {
+>>   				to_cnt = 0;
+>> -				davinci_i2c_recover_bus(dev);
+>> -				i2c_davinci_init(dev);
+>> +				i2c_recover_bus(&dev->adapter);
+>>   			}
+>>   		}
+>>   		if (allow_sleep)
+>> @@ -376,8 +365,7 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg *msg, int stop)
+>>   						      dev->adapter.timeout);
+>>   	if (r == 0) {
+>>   		dev_err(dev->dev, "controller timed out\n");
+>> -		davinci_i2c_recover_bus(dev);
+>> -		i2c_davinci_init(dev);
+>> +		i2c_recover_bus(adap);
+>>   		dev->buf_len = 0;
+>>   		return -ETIMEDOUT;
+>>   	}
+>> @@ -717,6 +705,12 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+>>   	adap->timeout = DAVINCI_I2C_TIMEOUT;
+>>   	adap->dev.of_node = pdev->dev.of_node;
+>>   
+>> +	if (dev->pdata->scl_pin) {
+>> +		adap->bus_recovery_info = &davinci_i2c_gpio_recovery_info;
+>> +		adap->bus_recovery_info->scl_gpio = dev->pdata->scl_pin;
+>> +		adap->bus_recovery_info->sda_gpio = dev->pdata->sda_pin;
+>> +	}
+>> +
+>>   	adap->nr = pdev->id;
+>>   	r = i2c_add_numbered_adapter(adap);
+>>   	if (r) {
+> Just another general comment about the driver that doesn't influence the
+> correctness of this patch: The i2c-davinci driver is quite quick to
+> reset the bus. I wonder how often this reset triggers. Is the bus in
+> question less "stable" than others?
+
+In comparison to ..? :)
+
+regards,
+-grygorii
+
 
