@@ -1,209 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758AbaKUWzb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 17:55:31 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:37266 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613AbaKUWz2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 17:55:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1411212207150.6439@nanos>
-References: <alpine.DEB.2.11.1411202204030.3950@nanos>
-	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
-	<20141120233920.GC25393@htj.dyndns.org>
-	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
-	<20141121162742.GB15461@htj.dyndns.org>
-	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
-	<CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
-	<20141121170805.GD30603@home.goodmis.org>
-	<CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
-	<CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
-	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
-	<CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
-	<alpine.DEB.2.11.1411212049220.6439@nanos>
-	<CA+55aFzvgxAMpP7kr9qrxyo82vSucQ5G+VByOgsgoyq6y5ExOA@mail.gmail.com>
-	<alpine.DEB.2.11.1411212110320.6439@nanos>
-	<CA+55aFyt6q7Ed-SS9GeN8jeUZu6yNM14EGyH_8rn8AF2Vv37hg@mail.gmail.com>
-	<alpine.DEB.2.11.1411212207150.6439@nanos>
-Date: Fri, 21 Nov 2014 14:55:27 -0800
-X-Google-Sender-Auth: QcL9s9REuQDsKs6ZewsNSiYK3cU
-Message-ID: <CA+55aFyzg=vJqRwh2CsK8WD-E5nRPjdiasMaTBx6qygQhDrGLA@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: multipart/mixed; boundary=001a11c1edfe46f03505086657fc
+	id S1752787AbaKUW4m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 17:56:42 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:33192 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752713AbaKUW4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 17:56:40 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, xen-devel@lists.xenproject.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: [PATCH] xen-netback: do not report success if xenvif_alloc() fails
+Date: Sat, 22 Nov 2014 01:56:28 +0300
+Message-Id: <1416610588-19816-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c1edfe46f03505086657fc
-Content-Type: text/plain; charset=UTF-8
+If xenvif_alloc() failes, netback_probe() reports success as well as
+"online" uevent is emitted. It does not make any sense, but it just
+misleads users.
 
-On Fri, Nov 21, 2014 at 1:11 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
-> I'm fine with that. I just think it's not horrid enough, but that can
-> be fixed easily :)
+The patch implements propagation of error code if xenvif creation fails.
 
-Oh, I think it's plenty horrid.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Anyway, here's an actual patch. As usual, it has seen absolutely no
-actual testing, but I did try to make sure it compiles and seems to do
-the right thing on:
- - x86-32 no-PAE
- - x86-32 no-PAE with PARAVIRT
- - x86-32 PAE
- - x86-64
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/net/xen-netback/xenbus.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-also, I just removed the noise that is "vmalloc_sync_all()", since
-it's just all garbage and nothing actually uses it. Yeah, it's used by
-"register_die_notifier()", which makes no sense what-so-ever.
-Whatever. It's gone.
+diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
+index 4e56a27f9689..fab0d4b42f58 100644
+--- a/drivers/net/xen-netback/xenbus.c
++++ b/drivers/net/xen-netback/xenbus.c
+@@ -39,7 +39,7 @@ struct backend_info {
+ static int connect_rings(struct backend_info *be, struct xenvif_queue *queue);
+ static void connect(struct backend_info *be);
+ static int read_xenbus_vif_flags(struct backend_info *be);
+-static void backend_create_xenvif(struct backend_info *be);
++static int backend_create_xenvif(struct backend_info *be);
+ static void unregister_hotplug_status_watch(struct backend_info *be);
+ static void set_backend_state(struct backend_info *be,
+ 			      enum xenbus_state state);
+@@ -352,7 +352,9 @@ static int netback_probe(struct xenbus_device *dev,
+ 	be->state = XenbusStateInitWait;
+ 
+ 	/* This kicks hotplug scripts, so do it immediately. */
+-	backend_create_xenvif(be);
++	err = backend_create_xenvif(be);
++	if (err)
++		goto fail;
+ 
+ 	return 0;
+ 
+@@ -397,19 +399,19 @@ static int netback_uevent(struct xenbus_device *xdev,
+ }
+ 
+ 
+-static void backend_create_xenvif(struct backend_info *be)
++static int backend_create_xenvif(struct backend_info *be)
+ {
+ 	int err;
+ 	long handle;
+ 	struct xenbus_device *dev = be->dev;
+ 
+ 	if (be->vif != NULL)
+-		return;
++		return 0;
+ 
+ 	err = xenbus_scanf(XBT_NIL, dev->nodename, "handle", "%li", &handle);
+ 	if (err != 1) {
+ 		xenbus_dev_fatal(dev, err, "reading handle");
+-		return;
++		return (err < 0) ? err : -EINVAL;
+ 	}
+ 
+ 	be->vif = xenvif_alloc(&dev->dev, dev->otherend_id, handle);
+@@ -417,10 +419,11 @@ static void backend_create_xenvif(struct backend_info *be)
+ 		err = PTR_ERR(be->vif);
+ 		be->vif = NULL;
+ 		xenbus_dev_fatal(dev, err, "creating interface");
+-		return;
++		return err;
+ 	}
+ 
+ 	kobject_uevent(&dev->dev.kobj, KOBJ_ONLINE);
++	return 0;
+ }
+ 
+ static void backend_disconnect(struct backend_info *be)
+-- 
+1.9.1
 
-Can somebody actually *test* this? In particular, in any kind of real
-paravirt environment? Or, any comments even without testing?
-
-I *really* am not proud of the mess wrt the whole
-
-  #ifdef CONFIG_PARAVIRT
-  #ifdef CONFIG_X86_32
-    ...
-
-but I think that from a long-term perspective, we're actually better
-off with this kind of really ugly - but very explcit - hack that very
-clearly shows what is going on.
-
-The old code that actually "walked" the page tables was more
-"portable", but was somewhat misleading about what was actually going
-on.
-
-Comments?
-
-                   Linus
-
---001a11c1edfe46f03505086657fc
-Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_i2s58chi0
-
-IGFyY2gveDg2L21tL2ZhdWx0LmMgfCAyNDMgKysrKysrKysrKysrKy0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDU4IGluc2VydGlvbnMoKyks
-IDE4NSBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9tbS9mYXVsdC5jIGIvYXJj
-aC94ODYvbW0vZmF1bHQuYwppbmRleCBkOTczZTYxZTQ1MGQuLjRiMGExYjk0MDRiMSAxMDA2NDQK
-LS0tIGEvYXJjaC94ODYvbW0vZmF1bHQuYworKysgYi9hcmNoL3g4Ni9tbS9mYXVsdC5jCkBAIC00
-Miw2ICs0Miw2NCBAQCBlbnVtIHg4Nl9wZl9lcnJvcl9jb2RlIHsKIH07CiAKIC8qCisgKiBIYW5k
-bGUgYSBwb3NzaWJsZSB2bWFsbG9jIGZhdWx0LiBXZSBqdXN0IGNvcHkgdGhlCisgKiB0b3AtbGV2
-ZWwgcGFnZSB0YWJsZSBlbnRyeSBpZiBuZWNlc3NhcnkuCisgKgorICogV2l0aCBQQUUsIHRoZSB0
-b3AtbW9zdCBwZ2QgZW50cnkgaXMgYWx3YXlzIHNoYXJlZCwKKyAqIGFuZCB0aGF0J3Mgd2hlcmUg
-dGhlIHZtYWxsb2MgYXJlYSBpcy4gIFNvIFBBRSBoYWQKKyAqIGJldHRlciBuZXZlciBoYXZlIGFu
-eSB2bWFsbG9jIGZhdWx0cy4KKyAqCisgKiBOT1RFISBUaGlzIG9uIHB1cnBvc2UgZG9lcyAqTk9U
-KiB1c2UgcGdkX3ByZXNlbnQoKQorICogYW5kIHN1Y2ggZ2VuZXJpYyBhY2Nlc3NvciBmdW5jdGlv
-bnMsIGJlY2F1c2UKKyAqIHRoZSBwZ2QgbWF5IGNvbnRhaW4gYSBmb2xkZWQgcHVkL3BtZCwgYW5k
-IGlzIHRodXMKKyAqIGFsd2F5cyAicHJlc2VudCIuIFdlIGFjY2VzcyB0aGUgYWN0dWFsIGhhcmR3
-YXJlCisgKiBzdGF0ZSBkaXJlY3RseSwgZXhjZXB0IGZvciB0aGUgZmluYWwgInNldF9wZ2QoKSIK
-KyAqIHRoYXQgbWF5IGdvIHRocm91Z2ggYSBwYXJhdmlydHVhbGl6YXRpb24gbGF5ZXIuCisgKgor
-ICogQWxzbyBub3RlIHRoZSBkaXNndXN0aW5nIGhhY2tlcnkgZm9yIHRoZSB3aG9sZQorICogcGFy
-YXZpcnR1YWxpemF0aW9uIGNhc2UuIFNpbmNlIFBBRSBpc24ndCBhbiBpc3N1ZSwKKyAqIHdlIGtu
-b3cgdGhhdCB0aGUgcG1kIGlzIHRoZSB0b3AgbGV2ZWwsIGFuZCB3ZSBqdXN0CisgKiBzaG9ydC1j
-aXJjdWl0IGl0IGFsbC4KKyAqCisgKiBXZSAqc2VyaW91c2x5KiBuZWVkIHRvIGdldCByaWQgb2Yg
-dGhlIGNyYXp5CisgKiBwYXJhdmlydHVhbGl6YXRpb24gY3J1ZC4KKyAqLworc3RhdGljIG5va3By
-b2JlX2lubGluZSBpbnQgdm1hbGxvY19mYXVsdCh1bnNpZ25lZCBsb25nIGFkZHJlc3MpCit7Cisj
-aWZkZWYgQ09ORklHX1g4Nl9QQUUKKwlyZXR1cm4gLTE7CisjZWxzZQorCXBnZF90ICpwZ2RfZHN0
-LCBwZ2RfZW50cnk7CisJdW5zaWduZWQgaW5kZXggPSBwZ2RfaW5kZXgoYWRkcmVzcyk7CisKKwlp
-ZiAoaW5kZXggPCBLRVJORUxfUEdEX0JPVU5EQVJZKQorCQkgcmV0dXJuIC0xOworCisJcGdkX2Vu
-dHJ5ID0gaW5pdF9tbS5wZ2RbaW5kZXhdOworCWlmICghKHBnZF9lbnRyeS5wZ2QgJiAxKSkKKwkJ
-cmV0dXJuIC0xOworCisJcGdkX2RzdCA9IF9fdmEoUEFHRV9NQVNLICYgcmVhZF9jcjMoKSk7CisJ
-cGdkX2RzdCArPSBpbmRleDsKKworCWlmIChwZ2RfZHN0LT5wZ2QpCisJCXJldHVybiAtMTsKKwor
-I2lmZGVmIENPTkZJR19QQVJBVklSVAorI2lmZGVmIENPTkZJR19YODZfMzIKKwlzZXRfcG1kKChw
-bWRfdCAqKXBnZF9kc3QsIChwbWRfdCl7KHB1ZF90KXtwZ2RfZW50cnl9fSk7CisjZWxzZQorCXNl
-dF9wZ2QocGdkX2RzdCwgcGdkX2VudHJ5KTsKKwlhcmNoX2ZsdXNoX2xhenlfbW11X21vZGUoKTsg
-Ly8gV1RGPworI2VuZGlmCisjZWxzZQorCSpwZ2RfZHN0ID0gcGdkX2VudHJ5OworI2VuZGlmCisJ
-cmV0dXJuIDA7CisjZW5kaWYKK30KKworLyoKICAqIFJldHVybnMgMCBpZiBtbWlvdHJhY2UgaXMg
-ZGlzYWJsZWQsIG9yIGlmIHRoZSBmYXVsdCBpcyBub3QKICAqIGhhbmRsZWQgYnkgbW1pb3RyYWNl
-OgogICovCkBAIC0xODksMTEwICsyNDcsNiBAQCBERUZJTkVfU1BJTkxPQ0socGdkX2xvY2spOwog
-TElTVF9IRUFEKHBnZF9saXN0KTsKIAogI2lmZGVmIENPTkZJR19YODZfMzIKLXN0YXRpYyBpbmxp
-bmUgcG1kX3QgKnZtYWxsb2Nfc3luY19vbmUocGdkX3QgKnBnZCwgdW5zaWduZWQgbG9uZyBhZGRy
-ZXNzKQotewotCXVuc2lnbmVkIGluZGV4ID0gcGdkX2luZGV4KGFkZHJlc3MpOwotCXBnZF90ICpw
-Z2RfazsKLQlwdWRfdCAqcHVkLCAqcHVkX2s7Ci0JcG1kX3QgKnBtZCwgKnBtZF9rOwotCi0JcGdk
-ICs9IGluZGV4OwotCXBnZF9rID0gaW5pdF9tbS5wZ2QgKyBpbmRleDsKLQotCWlmICghcGdkX3By
-ZXNlbnQoKnBnZF9rKSkKLQkJcmV0dXJuIE5VTEw7Ci0KLQkvKgotCSAqIHNldF9wZ2QocGdkLCAq
-cGdkX2spOyBoZXJlIHdvdWxkIGJlIHVzZWxlc3Mgb24gUEFFCi0JICogYW5kIHJlZHVuZGFudCB3
-aXRoIHRoZSBzZXRfcG1kKCkgb24gbm9uLVBBRS4gQXMgd291bGQKLQkgKiBzZXRfcHVkLgotCSAq
-LwotCXB1ZCA9IHB1ZF9vZmZzZXQocGdkLCBhZGRyZXNzKTsKLQlwdWRfayA9IHB1ZF9vZmZzZXQo
-cGdkX2ssIGFkZHJlc3MpOwotCWlmICghcHVkX3ByZXNlbnQoKnB1ZF9rKSkKLQkJcmV0dXJuIE5V
-TEw7Ci0KLQlwbWQgPSBwbWRfb2Zmc2V0KHB1ZCwgYWRkcmVzcyk7Ci0JcG1kX2sgPSBwbWRfb2Zm
-c2V0KHB1ZF9rLCBhZGRyZXNzKTsKLQlpZiAoIXBtZF9wcmVzZW50KCpwbWRfaykpCi0JCXJldHVy
-biBOVUxMOwotCi0JaWYgKCFwbWRfcHJlc2VudCgqcG1kKSkKLQkJc2V0X3BtZChwbWQsICpwbWRf
-ayk7Ci0JZWxzZQotCQlCVUdfT04ocG1kX3BhZ2UoKnBtZCkgIT0gcG1kX3BhZ2UoKnBtZF9rKSk7
-Ci0KLQlyZXR1cm4gcG1kX2s7Ci19Ci0KLXZvaWQgdm1hbGxvY19zeW5jX2FsbCh2b2lkKQotewot
-CXVuc2lnbmVkIGxvbmcgYWRkcmVzczsKLQotCWlmIChTSEFSRURfS0VSTkVMX1BNRCkKLQkJcmV0
-dXJuOwotCi0JZm9yIChhZGRyZXNzID0gVk1BTExPQ19TVEFSVCAmIFBNRF9NQVNLOwotCSAgICAg
-YWRkcmVzcyA+PSBUQVNLX1NJWkUgJiYgYWRkcmVzcyA8IEZJWEFERFJfVE9QOwotCSAgICAgYWRk
-cmVzcyArPSBQTURfU0laRSkgewotCQlzdHJ1Y3QgcGFnZSAqcGFnZTsKLQotCQlzcGluX2xvY2so
-JnBnZF9sb2NrKTsKLQkJbGlzdF9mb3JfZWFjaF9lbnRyeShwYWdlLCAmcGdkX2xpc3QsIGxydSkg
-ewotCQkJc3BpbmxvY2tfdCAqcGd0X2xvY2s7Ci0JCQlwbWRfdCAqcmV0OwotCi0JCQkvKiB0aGUg
-cGd0X2xvY2sgb25seSBmb3IgWGVuICovCi0JCQlwZ3RfbG9jayA9ICZwZ2RfcGFnZV9nZXRfbW0o
-cGFnZSktPnBhZ2VfdGFibGVfbG9jazsKLQotCQkJc3Bpbl9sb2NrKHBndF9sb2NrKTsKLQkJCXJl
-dCA9IHZtYWxsb2Nfc3luY19vbmUocGFnZV9hZGRyZXNzKHBhZ2UpLCBhZGRyZXNzKTsKLQkJCXNw
-aW5fdW5sb2NrKHBndF9sb2NrKTsKLQotCQkJaWYgKCFyZXQpCi0JCQkJYnJlYWs7Ci0JCX0KLQkJ
-c3Bpbl91bmxvY2soJnBnZF9sb2NrKTsKLQl9Ci19Ci0KLS8qCi0gKiAzMi1iaXQ6Ci0gKgotICog
-ICBIYW5kbGUgYSBmYXVsdCBvbiB0aGUgdm1hbGxvYyBvciBtb2R1bGUgbWFwcGluZyBhcmVhCi0g
-Ki8KLXN0YXRpYyBub2lubGluZSBpbnQgdm1hbGxvY19mYXVsdCh1bnNpZ25lZCBsb25nIGFkZHJl
-c3MpCi17Ci0JdW5zaWduZWQgbG9uZyBwZ2RfcGFkZHI7Ci0JcG1kX3QgKnBtZF9rOwotCXB0ZV90
-ICpwdGVfazsKLQotCS8qIE1ha2Ugc3VyZSB3ZSBhcmUgaW4gdm1hbGxvYyBhcmVhOiAqLwotCWlm
-ICghKGFkZHJlc3MgPj0gVk1BTExPQ19TVEFSVCAmJiBhZGRyZXNzIDwgVk1BTExPQ19FTkQpKQot
-CQlyZXR1cm4gLTE7Ci0KLQlXQVJOX09OX09OQ0UoaW5fbm1pKCkpOwotCi0JLyoKLQkgKiBTeW5j
-aHJvbml6ZSB0aGlzIHRhc2sncyB0b3AgbGV2ZWwgcGFnZS10YWJsZQotCSAqIHdpdGggdGhlICdy
-ZWZlcmVuY2UnIHBhZ2UgdGFibGUuCi0JICoKLQkgKiBEbyBfbm90XyB1c2UgImN1cnJlbnQiIGhl
-cmUuIFdlIG1pZ2h0IGJlIGluc2lkZQotCSAqIGFuIGludGVycnVwdCBpbiB0aGUgbWlkZGxlIG9m
-IGEgdGFzayBzd2l0Y2guLgotCSAqLwotCXBnZF9wYWRkciA9IHJlYWRfY3IzKCk7Ci0JcG1kX2sg
-PSB2bWFsbG9jX3N5bmNfb25lKF9fdmEocGdkX3BhZGRyKSwgYWRkcmVzcyk7Ci0JaWYgKCFwbWRf
-aykKLQkJcmV0dXJuIC0xOwotCi0JcHRlX2sgPSBwdGVfb2Zmc2V0X2tlcm5lbChwbWRfaywgYWRk
-cmVzcyk7Ci0JaWYgKCFwdGVfcHJlc2VudCgqcHRlX2spKQotCQlyZXR1cm4gLTE7Ci0KLQlyZXR1
-cm4gMDsKLX0KLU5PS1BST0JFX1NZTUJPTCh2bWFsbG9jX2ZhdWx0KTsKLQogLyoKICAqIERpZCBp
-dCBoaXQgdGhlIERPUyBzY3JlZW4gbWVtb3J5IFZBIGZyb20gdm04NiBtb2RlPwogICovCkBAIC0z
-NDcsODcgKzMwMSw2IEBAIG91dDoKIAogI2Vsc2UgLyogQ09ORklHX1g4Nl82NDogKi8KIAotdm9p
-ZCB2bWFsbG9jX3N5bmNfYWxsKHZvaWQpCi17Ci0Jc3luY19nbG9iYWxfcGdkcyhWTUFMTE9DX1NU
-QVJUICYgUEdESVJfTUFTSywgVk1BTExPQ19FTkQsIDApOwotfQotCi0vKgotICogNjQtYml0Ogot
-ICoKLSAqICAgSGFuZGxlIGEgZmF1bHQgb24gdGhlIHZtYWxsb2MgYXJlYQotICoKLSAqIFRoaXMg
-YXNzdW1lcyBubyBsYXJnZSBwYWdlcyBpbiB0aGVyZS4KLSAqLwotc3RhdGljIG5vaW5saW5lIGlu
-dCB2bWFsbG9jX2ZhdWx0KHVuc2lnbmVkIGxvbmcgYWRkcmVzcykKLXsKLQlwZ2RfdCAqcGdkLCAq
-cGdkX3JlZjsKLQlwdWRfdCAqcHVkLCAqcHVkX3JlZjsKLQlwbWRfdCAqcG1kLCAqcG1kX3JlZjsK
-LQlwdGVfdCAqcHRlLCAqcHRlX3JlZjsKLQotCS8qIE1ha2Ugc3VyZSB3ZSBhcmUgaW4gdm1hbGxv
-YyBhcmVhOiAqLwotCWlmICghKGFkZHJlc3MgPj0gVk1BTExPQ19TVEFSVCAmJiBhZGRyZXNzIDwg
-Vk1BTExPQ19FTkQpKQotCQlyZXR1cm4gLTE7Ci0KLQlXQVJOX09OX09OQ0UoaW5fbm1pKCkpOwot
-Ci0JLyoKLQkgKiBDb3B5IGtlcm5lbCBtYXBwaW5ncyBvdmVyIHdoZW4gbmVlZGVkLiBUaGlzIGNh
-biBhbHNvCi0JICogaGFwcGVuIHdpdGhpbiBhIHJhY2UgaW4gcGFnZSB0YWJsZSB1cGRhdGUuIElu
-IHRoZSBsYXRlcgotCSAqIGNhc2UganVzdCBmbHVzaDoKLQkgKi8KLQlwZ2QgPSBwZ2Rfb2Zmc2V0
-KGN1cnJlbnQtPmFjdGl2ZV9tbSwgYWRkcmVzcyk7Ci0JcGdkX3JlZiA9IHBnZF9vZmZzZXRfayhh
-ZGRyZXNzKTsKLQlpZiAocGdkX25vbmUoKnBnZF9yZWYpKQotCQlyZXR1cm4gLTE7Ci0KLQlpZiAo
-cGdkX25vbmUoKnBnZCkpIHsKLQkJc2V0X3BnZChwZ2QsICpwZ2RfcmVmKTsKLQkJYXJjaF9mbHVz
-aF9sYXp5X21tdV9tb2RlKCk7Ci0JfSBlbHNlIHsKLQkJQlVHX09OKHBnZF9wYWdlX3ZhZGRyKCpw
-Z2QpICE9IHBnZF9wYWdlX3ZhZGRyKCpwZ2RfcmVmKSk7Ci0JfQotCi0JLyoKLQkgKiBCZWxvdyBo
-ZXJlIG1pc21hdGNoZXMgYXJlIGJ1Z3MgYmVjYXVzZSB0aGVzZSBsb3dlciB0YWJsZXMKLQkgKiBh
-cmUgc2hhcmVkOgotCSAqLwotCi0JcHVkID0gcHVkX29mZnNldChwZ2QsIGFkZHJlc3MpOwotCXB1
-ZF9yZWYgPSBwdWRfb2Zmc2V0KHBnZF9yZWYsIGFkZHJlc3MpOwotCWlmIChwdWRfbm9uZSgqcHVk
-X3JlZikpCi0JCXJldHVybiAtMTsKLQotCWlmIChwdWRfbm9uZSgqcHVkKSB8fCBwdWRfcGFnZV92
-YWRkcigqcHVkKSAhPSBwdWRfcGFnZV92YWRkcigqcHVkX3JlZikpCi0JCUJVRygpOwotCi0JcG1k
-ID0gcG1kX29mZnNldChwdWQsIGFkZHJlc3MpOwotCXBtZF9yZWYgPSBwbWRfb2Zmc2V0KHB1ZF9y
-ZWYsIGFkZHJlc3MpOwotCWlmIChwbWRfbm9uZSgqcG1kX3JlZikpCi0JCXJldHVybiAtMTsKLQot
-CWlmIChwbWRfbm9uZSgqcG1kKSB8fCBwbWRfcGFnZSgqcG1kKSAhPSBwbWRfcGFnZSgqcG1kX3Jl
-ZikpCi0JCUJVRygpOwotCi0JcHRlX3JlZiA9IHB0ZV9vZmZzZXRfa2VybmVsKHBtZF9yZWYsIGFk
-ZHJlc3MpOwotCWlmICghcHRlX3ByZXNlbnQoKnB0ZV9yZWYpKQotCQlyZXR1cm4gLTE7Ci0KLQlw
-dGUgPSBwdGVfb2Zmc2V0X2tlcm5lbChwbWQsIGFkZHJlc3MpOwotCi0JLyoKLQkgKiBEb24ndCB1
-c2UgcHRlX3BhZ2UgaGVyZSwgYmVjYXVzZSB0aGUgbWFwcGluZ3MgY2FuIHBvaW50Ci0JICogb3V0
-c2lkZSBtZW1fbWFwLCBhbmQgdGhlIE5VTUEgaGFzaCBsb29rdXAgY2Fubm90IGhhbmRsZQotCSAq
-IHRoYXQ6Ci0JICovCi0JaWYgKCFwdGVfcHJlc2VudCgqcHRlKSB8fCBwdGVfcGZuKCpwdGUpICE9
-IHB0ZV9wZm4oKnB0ZV9yZWYpKQotCQlCVUcoKTsKLQotCXJldHVybiAwOwotfQotTk9LUFJPQkVf
-U1lNQk9MKHZtYWxsb2NfZmF1bHQpOwotCiAjaWZkZWYgQ09ORklHX0NQVV9TVVBfQU1ECiBzdGF0
-aWMgY29uc3QgY2hhciBlcnJhdGE5M193YXJuaW5nW10gPQogS0VSTl9FUlIgCg==
---001a11c1edfe46f03505086657fc--
