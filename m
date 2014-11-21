@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536AbaKUUIa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 15:08:30 -0500
-Received: from mail-bl2on0130.outbound.protection.outlook.com ([65.55.169.130]:55200
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751934AbaKUUI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 15:08:28 -0500
-X-WSS-ID: 0NFENXZ-07-C0T-02
-X-M-MSG: 
-From: Oded Gabbay <oded.gabbay@amd.com>
-To: <dri-devel@lists.freedesktop.org>, <jim.epost@gmail.com>
-CC: <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <airlied@linux.ie>
-Subject: [PATCH] amdkfd: explicitely include io.h in kfd_doorbell.c
-Date: Fri, 21 Nov 2014 22:07:59 +0200
-Message-ID: <1416600479-5767-1-git-send-email-oded.gabbay@amd.com>
-X-Mailer: git-send-email 2.1.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(68736004)(50466002)(89996001)(92566001)(101416001)(88136002)(50986999)(84676001)(87936001)(48376002)(19580395003)(31966008)(19580405001)(104166001)(102836001)(44976005)(105586002)(62966003)(64706001)(77096003)(106466001)(77156002)(95666004)(46102003)(97736003)(120916001)(33646002)(229853001)(47776003)(36756003)(53416004)(21056001)(107046002)(99396003)(93916002)(50226001)(87286001)(92726001)(86362001)(4396001)(20776003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB201;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
-X-Forefront-PRVS: 0402872DA1
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
-X-OriginatorOrg: amd4.onmicrosoft.com
+	id S1752559AbaKUUIr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:08:47 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:38348 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934AbaKUUIo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 15:08:44 -0500
+Date: Fri, 21 Nov 2014 15:08:36 -0500 (EST)
+Message-Id: <20141121.150836.687566774013830023.davem@davemloft.net>
+To: drysdale@google.com
+Cc: sfr@canb.auug.org.au, ebiederm@xmission.com, luto@amacapital.net,
+        viro@zeniv.linux.org.uk, meredydd@senatehouse.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        tglx@linutronix.de, oleg@redhat.com, mtk.manpages@gmail.com,
+        mingo@redhat.com, hpa@zytor.com, keescook@chromium.org, arnd@arndb.de,
+        dalias@aerifal.cx, hch@infradead.org, x86@kernel.org,
+        linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCHv9 4/5] sparc: Hook up execveat system call.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAHse=S--yNmP5sTr2kg_7kb2V8Lh2FioTSH_o23MstVrdt4Wmw@mail.gmail.com>
+References: <1416418072-18639-5-git-send-email-drysdale@google.com>
+	<20141120104223.2cea8043@canb.auug.org.au>
+	<CAHse=S--yNmP5sTr2kg_7kb2V8Lh2FioTSH_o23MstVrdt4Wmw@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 21 Nov 2014 12:08:41 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a compilation error when using certain configuration by
-including the file io.h in kfd_doorbell.c
+From: David Drysdale <drysdale@google.com>
+Date: Thu, 20 Nov 2014 11:28:22 +0000
 
-Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
----
- drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c | 1 +
- 1 file changed, 1 insertion(+)
+> On Wed, Nov 19, 2014 at 11:42 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi David,
+>>
+>> On Wed, 19 Nov 2014 17:27:51 +0000 David Drysdale <drysdale@google.com> wrote:
+>>>
+>>> diff --git a/arch/sparc/kernel/systbls_64.S b/arch/sparc/kernel/systbls_64.S
+>>> index 580cde9370c9..15069cb35dac 100644
+>>> --- a/arch/sparc/kernel/systbls_64.S
+>>> +++ b/arch/sparc/kernel/systbls_64.S
+>>> @@ -88,6 +88,7 @@ sys_call_table32:
+>>>       .word sys_syncfs, compat_sys_sendmmsg, sys_setns, compat_sys_process_vm_readv, compat_sys_process_vm_writev
+>>>  /*340*/      .word sys_kern_features, sys_kcmp, sys_finit_module, sys_sched_setattr, sys_sched_getattr
+>>>       .word sys32_renameat2, sys_seccomp, sys_getrandom, sys_memfd_create, sys_bpf
+>>> +/*350*/      .word sys_execveat
+>>
+>> Shouldn't this be compat_sys_execveat?
+> 
+> Yeah, that would make sense -- thanks for spotting.
+> 
+> Looking at this more closely, I also wonder if we need a pair of wrappers
+> analogous to sys(32|64)_execve -- they include a (pipeline-executed)
+> flushw instruction after the jmpl to [compat_]sys_execve, which I guess
+> might be needed.  So I could add something like the following to
+> arch/sparc/kernel/syscalls.S:
+> 
+>   sys64_execveat:
+>       set sys_execveat, %g1
+>       jmpl %g1, %g0
+>       flushw
+>   #ifdef CONFIG_COMPAT
+>   sys32_execveat:
+>       set compat_sys_execveat, %g1
+>       jmpl %g1, %g0
+>       flushw
+>   #endif
+> 
+> However, I don't speak SPARC and can't run the code -- any thoughts
+> out there from someone who does & can?
+> 
+> Or maybe I should stop trying to be helpful with speculative patches, and
+> just leave wiring up the sparc stuff to the experts...
 
-diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c b/drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c
-index 0dcb787..b5791a5 100644
---- a/drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c
-+++ b/drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c
-@@ -23,6 +23,7 @@
- #include <linux/mm.h>
- #include <linux/mman.h>
- #include <linux/slab.h>
-+#include <linux/io.h>
- 
- /*
-  * This extension supports a kernel level doorbells management for
--- 
-2.1.0
+You need wrappers for execve() like system calls yes, in order to flush all
+of the user register windows to the stack before the kill the address space.
 
+I think your code snippet above is fine, except that you should indent
+the flushw by one space more because it is in the delay slot of a
+control transfer instruction.
+
+Thanks.
