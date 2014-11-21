@@ -1,84 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758828AbaKUPgw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:36:52 -0500
-Received: from mout.web.de ([212.227.15.3]:51642 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758422AbaKUPgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:36:50 -0500
-Message-ID: <546F5C01.8060103@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 16:36:33 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1758842AbaKUPhL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:37:11 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:46866 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758422AbaKUPhG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:37:06 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        linux-usb@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] USB-IP: Deletion of unnecessary checks before the function
- call "usb_put_dev"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:4dFQjX9qsdVpqX7Zdy0/gjIzusjXSy34Xft8h40b/vv3bR/A1g0
- IzlNLgjI/LzuDkthvmXXEdgUkxJpHWgd3Q0vwG2Gw9JTvwNiy0O/JV2/ebyV/odX2E/KYN5
- IV50AjHxXzHx6elpTUV6XgU1ehhjelTkk2vaVOoL3pYmbJTCfPoU1h5DJ8p8zacrmmVKIFr
- jMp8IDJAgYYfaD1+MdhPA==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <1416422480-3241-1-git-send-email-mathieu.magnaudet@enac.fr>
+References: <1416422480-3241-1-git-send-email-mathieu.magnaudet@enac.fr>
+Date: Fri, 21 Nov 2014 10:37:05 -0500
+Message-ID: <CAN+gG=EBQouDwm3f8ToT_O72tvY6=uPkR20cfsxZs38U86=EkA@mail.gmail.com>
+Subject: Re: [PATCH] hid-multitouch: Add quirk for VTL touch panels
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Mathieu Magnaudet <mathieu.magnaudet@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 16:33:18 +0100
+Hi Mathieu,
 
-The usb_put_dev() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+On Wed, Nov 19, 2014 at 1:41 PM, Mathieu Magnaudet
+<mathieu.magnaudet@gmail.com> wrote:
+> VTL panels do not switch to the multitouch mode until the input mode
+> feature is read by the host. This should normally be done by
+> usbhid, but it looks like an other bug prevents usbhid to properly
+> retrieve the feature state. As a workaround, we force the reading of
+> the feature in mt_set_input_mode for such devices.
+>
+> Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> Signed-off-by: Mathieu Magnaudet <mathieu.magnaudet@enac.fr>
+> ---
+>  drivers/hid/hid-ids.h        |  3 +++
+>  drivers/hid/hid-multitouch.c | 27 +++++++++++++++++++++++++++
+>  2 files changed, 30 insertions(+)
+>
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index 7c86373..d6cc6a9 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -931,6 +931,9 @@
+>  #define USB_DEVICE_ID_VERNIER_CYCLOPS  0x0004
+>  #define USB_DEVICE_ID_VERNIER_LCSPEC   0x0006
+>
+> +#define USB_VENDOR_ID_VTL              0x0306
+> +#define USB_DEVICE_ID_VTL_MULTITOUCH_FF3F      0xff3f
+> +
+>  #define USB_VENDOR_ID_WACOM            0x056a
+>  #define USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH 0x81
+>  #define USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH   0x00BD
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 51e25b9..a4bc111 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -67,6 +67,7 @@ MODULE_LICENSE("GPL");
+>  #define MT_QUIRK_IGNORE_DUPLICATES     (1 << 10)
+>  #define MT_QUIRK_HOVERING              (1 << 11)
+>  #define MT_QUIRK_CONTACT_CNT_ACCURATE  (1 << 12)
+> +#define MT_QUIRK_FORCE_GET_FEATURE     (1 << 13)
+>
+>  #define MT_INPUTMODE_TOUCHSCREEN       0x02
+>  #define MT_INPUTMODE_TOUCHPAD          0x03
+> @@ -150,6 +151,7 @@ static void mt_post_parse(struct mt_device *td);
+>  #define MT_CLS_FLATFROG                                0x0107
+>  #define MT_CLS_GENERALTOUCH_TWOFINGERS         0x0108
+>  #define MT_CLS_GENERALTOUCH_PWT_TENFINGERS     0x0109
+> +#define MT_CLS_VTL                             0x0110
+>
+>  #define MT_DEFAULT_MAXCONTACT  10
+>  #define MT_MAX_MAXCONTACT      250
+> @@ -255,6 +257,11 @@ static struct mt_class mt_classes[] = {
+>                 .sn_move = 2048,
+>                 .maxcontacts = 40,
+>         },
+> +       { .name = MT_CLS_VTL,
+> +               .quirks = MT_QUIRK_ALWAYS_VALID |
+> +                       MT_QUIRK_CONTACT_CNT_ACCURATE |
+> +                       MT_QUIRK_FORCE_GET_FEATURE,
+> +       },
+>         { }
+>  };
+>
+> @@ -809,6 +816,9 @@ static void mt_set_input_mode(struct hid_device *hdev)
+>         struct mt_device *td = hid_get_drvdata(hdev);
+>         struct hid_report *r;
+>         struct hid_report_enum *re;
+> +       struct mt_class *cls = &td->mtclass;
+> +       char *buf;
+> +       int report_len;
+>
+>         if (td->inputmode < 0)
+>                 return;
+> @@ -816,6 +826,18 @@ static void mt_set_input_mode(struct hid_device *hdev)
+>         re = &(hdev->report_enum[HID_FEATURE_REPORT]);
+>         r = re->report_id_hash[td->inputmode];
+>         if (r) {
+> +               if (cls->quirks & MT_QUIRK_FORCE_GET_FEATURE) {
+> +                       report_len = ((r->size - 1) >> 3) + 1 + (r->id > 0);
+> +                       buf = kzalloc(report_len, GFP_KERNEL);
 
-This issue was detected by using the Coccinelle software.
+Sorry for not spotting this earlier.
+These 2 lines can be replaced by a call to hid_alloc_report_buf(r, GFP_KERNEL);
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/usb/usbip/vhci_hcd.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+Cheers,
+Benjamin
 
-diff --git a/drivers/usb/usbip/vhci_hcd.c b/drivers/usb/usbip/vhci_hcd.c
-index c02374b..cc1b03e 100644
---- a/drivers/usb/usbip/vhci_hcd.c
-+++ b/drivers/usb/usbip/vhci_hcd.c
-@@ -518,8 +518,7 @@ static int vhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
- 			dev_info(dev, "SetAddress Request (%d) to port %d\n",
- 				 ctrlreq->wValue, vdev->rhport);
- 
--			if (vdev->udev)
--				usb_put_dev(vdev->udev);
-+			usb_put_dev(vdev->udev);
- 			vdev->udev = usb_get_dev(urb->dev);
- 
- 			spin_lock(&vdev->ud.lock);
-@@ -539,8 +538,7 @@ static int vhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
- 				usbip_dbg_vhci_hc(
- 					"Not yet?:Get_Descriptor to device 0 (get max pipe size)\n");
- 
--			if (vdev->udev)
--				usb_put_dev(vdev->udev);
-+			usb_put_dev(vdev->udev);
- 			vdev->udev = usb_get_dev(urb->dev);
- 			goto out;
- 
-@@ -831,8 +829,7 @@ static void vhci_device_reset(struct usbip_device *ud)
- 	vdev->speed  = 0;
- 	vdev->devid  = 0;
- 
--	if (vdev->udev)
--		usb_put_dev(vdev->udev);
-+	usb_put_dev(vdev->udev);
- 	vdev->udev = NULL;
- 
- 	if (ud->tcp_socket) {
--- 
-2.1.3
-
+> +                       if (!buf) {
+> +                               hid_err(hdev, "failed to allocate buffer for report\n");
+> +                               return;
+> +                       }
+> +                       hid_hw_raw_request(hdev, r->id, buf, report_len,
+> +                                          HID_FEATURE_REPORT,
+> +                                          HID_REQ_GET_REPORT);
+> +                       kfree(buf);
+> +               }
+>                 r->field[0]->value[td->inputmode_index] = td->inputmode_value;
+>                 hid_hw_request(hdev, r, HID_REQ_SET_REPORT);
+>         }
+> @@ -1281,6 +1303,11 @@ static const struct hid_device_id mt_devices[] = {
+>                 MT_USB_DEVICE(USB_VENDOR_ID_UNITEC,
+>                         USB_DEVICE_ID_UNITEC_USB_TOUCH_0A19) },
+>
+> +       /* VTL panels */
+> +       { .driver_data = MT_CLS_VTL,
+> +               MT_USB_DEVICE(USB_VENDOR_ID_VTL,
+> +                       USB_DEVICE_ID_VTL_MULTITOUCH_FF3F) },
+> +
+>         /* Wistron panels */
+>         { .driver_data = MT_CLS_NSMU,
+>                 MT_USB_DEVICE(USB_VENDOR_ID_WISTRON,
+> --
+> 1.9.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
