@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602AbaKUSPM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:15:12 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33986 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713AbaKUSPH (ORCPT
+	id S1751634AbaKUSPX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:15:23 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:60771 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859AbaKUSPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:15:07 -0500
-Date: Fri, 21 Nov 2014 18:13:32 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <20141121181332.GY3815@sirena.org.uk>
-References: <1416512485-7292-1-git-send-email-joshc@codeaurora.org>
- <1416512485-7292-4-git-send-email-joshc@codeaurora.org>
+	Fri, 21 Nov 2014 13:15:17 -0500
+Message-ID: <546F812A.1000103@einserver.de>
+Date: Fri, 21 Nov 2014 19:15:06 +0100
+From: Andreas Ruprecht <rupran@einserver.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nLgjwVFNYHlBQjnm"
-Content-Disposition: inline
-In-Reply-To: <1416512485-7292-4-git-send-email-joshc@codeaurora.org>
-X-Cookie: Some optional equipment shown.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/3] regulator: rpm: add support for RPM-controller SMB208
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au
+Subject: Re: [PATCH] media: pci: smipcie: Fix dependency for DVB_SMIPCIE
+References: <1416592319-23644-1-git-send-email-rupran@einserver.de> <20141121161316.23963dc5@recife.lan>
+In-Reply-To: <20141121161316.23963dc5@recife.lan>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 21.11.2014 19:13, Mauro Carvalho Chehab wrote:
+> Em Fri, 21 Nov 2014 18:51:59 +0100
+> Andreas Ruprecht <rupran@einserver.de> escreveu:
+> 
+>> In smipcie.c, the function i2c_bit_add_bus() is called. This
+>> function is defined by the I2C bit-banging interfaces enabled
+>> with CONFIG_I2C_ALGOBIT.
+>>
+>> As there was no dependency in Kconfig, CONFIG_I2C_ALGOBIT could
+>> be set to "m" while CONFIG_DVB_SMIPCIE was set to "y", resulting
+>> in a build error due to an undefined reference. This patch adds
+>> the dependency on CONFIG_I2C_ALGOBIT in Kconfig.
+>>
+>> Signed-off-by: Andreas Ruprecht <rupran@einserver.de>
+>> Reported-by: Jim Davis <jim.epost@gmail.com>
+>> ---
+>>  drivers/media/pci/smipcie/Kconfig | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/media/pci/smipcie/Kconfig b/drivers/media/pci/smipcie/Kconfig
+>> index 75a2992..c728721 100644
+>> --- a/drivers/media/pci/smipcie/Kconfig
+>> +++ b/drivers/media/pci/smipcie/Kconfig
+>> @@ -1,6 +1,6 @@
+>>  config DVB_SMIPCIE
+>>  	tristate "SMI PCIe DVBSky cards"
+>> -	depends on DVB_CORE && PCI && I2C
+>> +	depends on DVB_CORE && PCI && I2C && I2C_ALGOBIT
+> 
+> IMHO, the best would be, instead, to select I2C_ALGOBIT.
 
---nLgjwVFNYHlBQjnm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Okay, I'll change that and submit a new version of this patch.
 
-On Thu, Nov 20, 2014 at 01:41:25PM -0600, Josh Cartwright wrote:
-> The IPQ8064 reference boards make use of SMB208 regulators which are
-> controlled by RPM.  Implement support for these regulators in the RPM
-> regulator driver.
+Regards,
 
-I'm missing both patches 1-3 and the cover letter, what's the story
-with the series - are there interdependencies?
-
---nLgjwVFNYHlBQjnm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUb4DMAAoJECTWi3JdVIfQgyoH/RStcwZ3J9SvKpPCuVv9SnUB
-5F93+DF7enTylUhndqiqXUR/j3al87zeyVOx9iQnhGRzqGkHM4ZMmE3JSwTLxa6P
-2bWOFWyeyFa0km9xCmIfSgtIGTpJJpH7TyNW3uM/jVo1gQgOafPPmspzFWLIjWce
-bhgQYypO0+lcXvm80oSyeS14Vn/8xJMwmkoeoqQATHR39OP9BHk189gFWSXXu/Jj
-1LTunuRAxOSfWJCM6rOKvlpt9x9mBsc0cDhmowgfZSWkbIqNhdFHNvd21v5PwmwY
-h/qUOCH6WuTSAc5J1VFtZ6caeV1XjtIGu81ZrFJze/ET4ZJ2mKfWTWtJ7yD7k8c=
-=PJyn
------END PGP SIGNATURE-----
-
---nLgjwVFNYHlBQjnm--
+Andreas Ruprecht
