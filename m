@@ -1,214 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaKUTdo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:33:44 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:56132 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750741AbaKUTdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:33:43 -0500
-Message-ID: <546F9382.40102@ti.com>
-Date: Fri, 21 Nov 2014 21:33:22 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751715AbaKUTeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:34:06 -0500
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:42433 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaKUTeE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 14:34:04 -0500
 MIME-Version: 1.0
-To: =?windows-1252?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Wolfram Sang <wsa@the-dreams.de>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        Murali Karicheri <m-karicheri2@ti.com>
-Subject: Re: [4/5] i2c: davinci: use bus recovery infrastructure
-References: <1416477788-5544-5-git-send-email-grygorii.strashko@ti.com> <20141121190744.GB4431@pengutronix.de>
-In-Reply-To: <20141121190744.GB4431@pengutronix.de>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141121142301.564f7eb7@gandalf.local.home>
+References: <alpine.DEB.2.11.1411202204030.3950@nanos>
+	<20141120221122.GA25393@htj.dyndns.org>
+	<alpine.DEB.2.11.1411202315230.3950@nanos>
+	<20141120230514.GB25393@htj.dyndns.org>
+	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
+	<20141120233920.GC25393@htj.dyndns.org>
+	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
+	<20141121162742.GB15461@htj.dyndns.org>
+	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
+	<CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
+	<20141121170805.GD30603@home.goodmis.org>
+	<CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
+	<CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
+	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
+	<CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
+	<20141121142301.564f7eb7@gandalf.local.home>
+Date: Fri, 21 Nov 2014 11:34:03 -0800
+X-Google-Sender-Auth: 9eY9goa9GpW8_966V1nEqA9-SZQ
+Message-ID: <CA+55aFw6w+pkG7fs7tBVm7jV_TjsnEyG5XDdk+Ghf5Af+ELUeA@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
+On Fri, Nov 21, 2014 at 11:23 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> Should we at least check to see if it is present?
+>
+>         if (!(pgd_entry & 1))
+>                 return -1;
 
-On 11/21/2014 09:07 PM, Uwe Kleine-König wrote:
-> On Thu, Nov 20, 2014 at 12:03:07PM +0200, Grygorii Strashko wrote:
->> This patch converts Davinci I2C driver to use I2C bus recovery
->> infrastructure, introduced by commit 5f9296ba21b3 ("i2c: Add
->> bus recovery infrastructure").
->>
->> The i2c_bus_recovery_info is configured for Davinci I2C adapter
->> only in case if scl_pin is provided in Platform data at least.
-> s/Platform/platform/
-> 
->>
->> Because the controller must be held in reset while doing so, the
-> s/Because/As/
-> 
->> recovery routine must re-init the controller. Since this was already
->> being done after each call to i2c_recover_bus, move those calls into
->> the recovery_prepare/unprepare routines and as well.
->>
->> CC: Sekhar Nori <nsekhar@ti.com>
->> CC: Kevin Hilman <khilman@deeprootsystems.com>
->> CC: Santosh Shilimkar <ssantosh@kernel.org>
->> CC: Murali Karicheri <m-karicheri2@ti.com>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->> ---
->>   drivers/i2c/busses/i2c-davinci.c | 76 ++++++++++++++++++----------------------
->>   1 file changed, 35 insertions(+), 41 deletions(-)
->>
->> diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
->> index 2cef115..db2a2cd 100644
->> --- a/drivers/i2c/busses/i2c-davinci.c
->> +++ b/drivers/i2c/busses/i2c-davinci.c
->> @@ -133,43 +133,6 @@ static inline u16 davinci_i2c_read_reg(struct davinci_i2c_dev *i2c_dev, int reg)
->>   	return readw_relaxed(i2c_dev->base + reg);
->>   }
->>   
->> -/* Generate a pulse on the i2c clock pin. */
->> -static void davinci_i2c_clock_pulse(unsigned int scl_pin)
->> -{
->> -	u16 i;
->> -
->> -	if (scl_pin) {
->> -		/* Send high and low on the SCL line */
->> -		for (i = 0; i < 9; i++) {
->> -			gpio_set_value(scl_pin, 0);
->> -			udelay(20);
->> -			gpio_set_value(scl_pin, 1);
->> -			udelay(20);
->> -		}
->> -	}
->> -}
->> -
->> -/* This routine does i2c bus recovery as specified in the
->> - * i2c protocol Rev. 03 section 3.16 titled "Bus clear"
->> - */
->> -static void davinci_i2c_recover_bus(struct davinci_i2c_dev *dev)
->> -{
->> -	u32 flag = 0;
->> -	struct davinci_i2c_platform_data *pdata = dev->pdata;
->> -
->> -	dev_err(dev->dev, "initiating i2c bus recovery\n");
->> -	/* Send NACK to the slave */
->> -	flag = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
->> -	flag |=  DAVINCI_I2C_MDR_NACK;
->> -	/* write the data into mode register */
->> -	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, flag);
->> -	davinci_i2c_clock_pulse(pdata->scl_pin);
->> -	/* Send STOP */
->> -	flag = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
->> -	flag |= DAVINCI_I2C_MDR_STP;
->> -	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, flag);
->> -}
->> -
->>   static inline void davinci_i2c_reset_ctrl(struct davinci_i2c_dev *i2c_dev,
->>   								int val)
->>   {
->> @@ -266,6 +229,33 @@ static int i2c_davinci_init(struct davinci_i2c_dev *dev)
->>   	return 0;
->>   }
->>   
->> +/* This routine does i2c bus recovery as specified in the
->> + * i2c protocol Rev. 03 section 3.16 titled "Bus clear"
->> + */
-> This comment is wrong. The actual bus clear is implemented by
-> i2c_generic_gpio_recovery. Also while touching this comment, convert it
-> to the usual format with /* on its own line. (The file in question has
-> already both types of comment, so consistency is not a reason to keep it
-> as is.)
+Maybe. But what other entry could there be?
 
-It has been just copy-pasted, but ok.
-I'll change this comment as following:
-/* 
- * This routine does i2c bus recovery by using i2c_generic_gpio_recovery
- * which is provided by I2C Bus recovery infrastructure.
- */
-Is it ok?
+But yes, returning -1 is "safe", since it basically says "I'm not
+doing a vmalloc thing, oops if this is a bad access". So that kind of
+argues for being as aggressive as possible in returning 1.
 
-> 
-> Even though I remember that I reviewed this bus recovery patch (that
-> resulted in 5f9296ba21b3) back then, I don't remember why it was split
-> in prepare + recover + unprepare. But that is unrelated to this patch.
-> 
->> +static void davinci_i2c_prepare_recovery(struct i2c_adapter *adap)
->> +{
->> +	struct davinci_i2c_dev *dev = i2c_get_adapdata(adap);
->> +
->> +	dev_err(dev->dev, "initiating i2c bus recovery\n");
->> +	/* Disable interrupts */
->> +	davinci_i2c_write_reg(dev, DAVINCI_I2C_IMR_REG, 0);
->> +
->> +	/* put I2C into reset */
->> +	davinci_i2c_reset_ctrl(dev, 0);
->> +}
->> +
->> +static void davinci_i2c_unprepare_recovery(struct i2c_adapter *adap)
->> +{
->> +	struct davinci_i2c_dev *dev = i2c_get_adapdata(adap);
->> +
->> +	i2c_davinci_init(dev);
->> +}
->> +
->> +static struct i2c_bus_recovery_info davinci_i2c_gpio_recovery_info = {
-> I'd call this only davinci_i2c_recovery_info.
+So for the first one (!pgd_entry), instead of returning -1 only for a
+completely empty entry, returning it for any non-present case is
+probably right.
 
-No. Pls, see next patch.
+And for the second one (where we check whether there is anything at
+all in the destination), returning -1 for "anything but zero" is
+probably the right thing to do.
 
-> 
->> +	.recover_bus = i2c_generic_gpio_recovery,
->> +	.prepare_recovery = davinci_i2c_prepare_recovery,
->> +	.unprepare_recovery = davinci_i2c_unprepare_recovery,
->> +};
-> new line here please
+But in the end, if you have a corrupted top-level kernel page table,
+it sounds to me like you're just royally screwed anyway. So I don't
+think it matters *that* much.
 
-:) Ok.
-Fixed in next patch.
+So I kind of agree, but it wouldn't be my primary worry. My primary
+worry is actually paravirt doing something insane.
 
-> 
->>   /*
->>    * Waiting for bus not busy
->>    */
->> @@ -286,8 +276,7 @@ static int i2c_davinci_wait_bus_not_busy(struct davinci_i2c_dev *dev,
->>   				return -ETIMEDOUT;
->>   			} else {
->>   				to_cnt = 0;
->> -				davinci_i2c_recover_bus(dev);
->> -				i2c_davinci_init(dev);
->> +				i2c_recover_bus(&dev->adapter);
->>   			}
->>   		}
->>   		if (allow_sleep)
->> @@ -376,8 +365,7 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg *msg, int stop)
->>   						      dev->adapter.timeout);
->>   	if (r == 0) {
->>   		dev_err(dev->dev, "controller timed out\n");
->> -		davinci_i2c_recover_bus(dev);
->> -		i2c_davinci_init(dev);
->> +		i2c_recover_bus(adap);
->>   		dev->buf_len = 0;
->>   		return -ETIMEDOUT;
->>   	}
->> @@ -717,6 +705,12 @@ static int davinci_i2c_probe(struct platform_device *pdev)
->>   	adap->timeout = DAVINCI_I2C_TIMEOUT;
->>   	adap->dev.of_node = pdev->dev.of_node;
->>   
->> +	if (dev->pdata->scl_pin) {
->> +		adap->bus_recovery_info = &davinci_i2c_gpio_recovery_info;
->> +		adap->bus_recovery_info->scl_gpio = dev->pdata->scl_pin;
->> +		adap->bus_recovery_info->sda_gpio = dev->pdata->sda_pin;
->> +	}
->> +
->>   	adap->nr = pdev->id;
->>   	r = i2c_add_numbered_adapter(adap);
->>   	if (r) {
-> Just another general comment about the driver that doesn't influence the
-> correctness of this patch: The i2c-davinci driver is quite quick to
-> reset the bus. I wonder how often this reset triggers. Is the bus in
-> question less "stable" than others?
-
-In comparison to ..? :)
-
-regards,
--grygorii
-
-
+                    Linus
