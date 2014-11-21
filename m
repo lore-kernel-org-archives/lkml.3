@@ -1,124 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758792AbaKUPgU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:36:20 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:34417 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758656AbaKUPgR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:36:17 -0500
-X-Listener-Flag: 11101
-Subject: Re: [PATCH v7 2/4] ARM: mediatek: Add sysirq interrupt polarity
- support
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <Pawel.Moll@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "hc.yen@mediatek.com" <hc.yen@mediatek.com>,
-        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
-        "yh.chen@mediatek.com" <yh.chen@mediatek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh+dt@kernel.org>,
-        "nathan.chung@mediatek.com" <nathan.chung@mediatek.com>,
-        "yingjoe.chen@gmail.com" <yingjoe.chen@gmail.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        "eddie.huang@mediatek.com" <eddie.huang@mediatek.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <20141119180448.GD12851@leverpostej>
-References: <1416406451-4578-1-git-send-email-yingjoe.chen@mediatek.com>
-	 <1416406451-4578-3-git-send-email-yingjoe.chen@mediatek.com>
-	 <20141119180448.GD12851@leverpostej>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Nov 2014 23:36:07 +0800
-Message-ID: <1416584167.24971.9.camel@mtksdaap41>
+	id S1758828AbaKUPgw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:36:52 -0500
+Received: from mout.web.de ([212.227.15.3]:51642 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758422AbaKUPgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:36:50 -0500
+Message-ID: <546F5C01.8060103@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 16:36:33 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        linux-usb@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] USB-IP: Deletion of unnecessary checks before the function
+ call "usb_put_dev"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-MTK: N
+X-Provags-ID: V03:K0:4dFQjX9qsdVpqX7Zdy0/gjIzusjXSy34Xft8h40b/vv3bR/A1g0
+ IzlNLgjI/LzuDkthvmXXEdgUkxJpHWgd3Q0vwG2Gw9JTvwNiy0O/JV2/ebyV/odX2E/KYN5
+ IV50AjHxXzHx6elpTUV6XgU1ehhjelTkk2vaVOoL3pYmbJTCfPoU1h5DJ8p8zacrmmVKIFr
+ jMp8IDJAgYYfaD1+MdhPA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 16:33:18 +0100
 
+The usb_put_dev() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-On Wed, 2014-11-19 at 18:04 +0000, Mark Rutland wrote:
-> On Wed, Nov 19, 2014 at 02:14:09PM +0000, Yingjoe Chen wrote:
-> > +	if (type == IRQ_TYPE_LEVEL_LOW || type == IRQ_TYPE_EDGE_FALLING) {
-> > +		if (type == IRQ_TYPE_LEVEL_LOW)
-> > +			type = IRQ_TYPE_LEVEL_HIGH;
-> > +		else
-> > +			type = IRQ_TYPE_EDGE_RISING;
-> > +		value |= (1 << offset);
-> > +	} else
-> > +		value &= ~(1 << offset);
-> 
-> Nit: if one branch of an if statements is bracketed, both branches
-> should be. Please bracket the else case.
+This issue was detected by using the Coccinelle software.
 
-OK, will change in next version.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/usb/usbip/vhci_hcd.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-> > +	writel(value, chip_data->intpol_base + reg_index * 4);
-> > +
-> > +	data = data->parent_data;
-> > +	ret = data->chip->irq_set_type(data, type);
-> > +	spin_unlock_irqrestore(&chip_data->lock, flags);
-> > +	return ret;
-> > +}
-> > +
-> > +static struct irq_chip mtk_sysirq_chip = {
-> > +	.name			= "MT_SYSIRQ",
-> > +	.irq_mask		= irq_chip_mask_parent,
-> > +	.irq_unmask		= irq_chip_unmask_parent,
-> > +	.irq_eoi		= irq_chip_eoi_parent,
-> > +	.irq_set_type		= mtk_sysirq_set_type,
-> > +	.irq_retrigger		= irq_chip_retrigger_hierarchy,
-> > +	.irq_set_affinity	= irq_chip_set_affinity_parent,
-> > +};
-> > +
-> > +static int mtk_sysirq_domain_xlate(struct irq_domain *d,
-> > +				   struct device_node *controller,
-> > +				   const u32 *intspec, unsigned int intsize,
-> > +				   unsigned long *out_hwirq,
-> > +				   unsigned int *out_type)
-> > +{
-> > +	if (intsize < 3)
-> > +		return -EINVAL;
-> > +
-> > +	/* sysirq doesn't support PPI */
-> > +	if (intspec[0])
-> > +		return -EINVAL;
-> > +
-> > +	*out_hwirq = intspec[1];
-> > +	*out_type = intspec[2] & IRQ_TYPE_SENSE_MASK;
-> 
-> All of this is very strongly tied to the GIC, but the binding made it
-> sound like this was more generic (it didn't specify the number of cells
-> or their meaning). It doesn't look like we validate that this is
-> attached to a GIC.
-> 
-> Do we expect this to only ever be attached to a GICv2?
-> 
-> It would be nice to either make this generic or to describe the format
-> in the binding.
-
-This expect the parent to use the same interrupt cells format as GIC.
-I'll fix the binding to make this more clear.
-
-> Also, surely you expect intsize == 3 if you expect a GICv2? Likewise in
-> mtk_sysirq_domain_alloc.
-
-OK, will change that in next version.
-
-Joe.C
-
+diff --git a/drivers/usb/usbip/vhci_hcd.c b/drivers/usb/usbip/vhci_hcd.c
+index c02374b..cc1b03e 100644
+--- a/drivers/usb/usbip/vhci_hcd.c
++++ b/drivers/usb/usbip/vhci_hcd.c
+@@ -518,8 +518,7 @@ static int vhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
+ 			dev_info(dev, "SetAddress Request (%d) to port %d\n",
+ 				 ctrlreq->wValue, vdev->rhport);
+ 
+-			if (vdev->udev)
+-				usb_put_dev(vdev->udev);
++			usb_put_dev(vdev->udev);
+ 			vdev->udev = usb_get_dev(urb->dev);
+ 
+ 			spin_lock(&vdev->ud.lock);
+@@ -539,8 +538,7 @@ static int vhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
+ 				usbip_dbg_vhci_hc(
+ 					"Not yet?:Get_Descriptor to device 0 (get max pipe size)\n");
+ 
+-			if (vdev->udev)
+-				usb_put_dev(vdev->udev);
++			usb_put_dev(vdev->udev);
+ 			vdev->udev = usb_get_dev(urb->dev);
+ 			goto out;
+ 
+@@ -831,8 +829,7 @@ static void vhci_device_reset(struct usbip_device *ud)
+ 	vdev->speed  = 0;
+ 	vdev->devid  = 0;
+ 
+-	if (vdev->udev)
+-		usb_put_dev(vdev->udev);
++	usb_put_dev(vdev->udev);
+ 	vdev->udev = NULL;
+ 
+ 	if (ud->tcp_socket) {
+-- 
+2.1.3
 
