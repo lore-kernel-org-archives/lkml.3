@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758017AbaKUBih (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 20:38:37 -0500
-Received: from mga14.intel.com ([192.55.52.115]:48490 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756904AbaKUBid convert rfc822-to-8bit (ORCPT
+	id S1757359AbaKUBnL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 20:43:11 -0500
+Received: from smtprelay0031.hostedemail.com ([216.40.44.31]:45635 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756702AbaKUBnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 20:38:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="419604589"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Lv Zheng <zetalog@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>
-Subject: RE: [RFC PATCH v4] ACPICA/Events: Add support to ensure GPE is
- disabled by default for handlers.
-Thread-Topic: [RFC PATCH v4] ACPICA/Events: Add support to ensure GPE is
- disabled by default for handlers.
-Thread-Index: AQHQBI2TEyXhuOlswEmYCNoDLZLxDJxpEhsAgAB9sICAAL2wcA==
-Date: Fri, 21 Nov 2014 01:36:42 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88026A41BB@SHSMSX101.ccr.corp.intel.com>
-References: <20141119121615.GA2514@node.dhcp.inet.fi>
- <ce3ab540463bc5d97e527f24ca7d7d82b2952fae.1416459350.git.lv.zheng@intel.com>
- <1AE640813FDE7649BE1B193DEA596E88026A3E81@SHSMSX101.ccr.corp.intel.com>
- <20141120221535.GA13547@node.dhcp.inet.fi>
-In-Reply-To: <20141120221535.GA13547@node.dhcp.inet.fi>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 20 Nov 2014 20:43:09 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:966:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2559:2562:2828:2914:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:4321:4385:5007:6261:7903:10004:10400:10848:11026:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: join19_1b3fc2d46292d
+X-Filterd-Recvd-Size: 1797
+Message-ID: <1416534185.6651.30.camel@perches.com>
+Subject: Re: [PATCH 1/8] of: Use vargs in __of_node_alloc
+From: Joe Perches <joe@perches.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Rob Herring <robh+dt@kernel.org>
+Date: Thu, 20 Nov 2014 17:43:05 -0800
+In-Reply-To: <1416533715-9758-2-git-send-email-grant.likely@linaro.org>
+References: <1416533715-9758-1-git-send-email-grant.likely@linaro.org>
+	 <1416533715-9758-2-git-send-email-grant.likely@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This result convinces me that this might only be a theoretical dead lock for now.
-So finally we won't need this in order to eliminate this warning.
+On Fri, 2014-11-21 at 01:35 +0000, Grant Likely wrote:
+> The overlay code needs to construct a new full_name from the parent name
+> and the node name, but the current method has to allocate and then free
+> an temporary string which is wasteful. Fix this problem by using vargs
+> to pass in a format and arguments into __of_node_alloc().
+[]
+> diff --git a/drivers/of/of_private.h b/drivers/of/of_private.h
+[]
+> @@ -61,7 +61,7 @@ static inline int of_property_notify(int action, struct device_node *np,
+>   * own the devtree lock or work on detached trees only.
+>   */
+>  struct property *__of_prop_dup(const struct property *prop, gfp_t allocflags);
+> -struct device_node *__of_node_alloc(const char *full_name, gfp_t allocflags);
 
-Thanks and best regards
--Lv
+Please add
 
-> From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
-> Sent: Friday, November 21, 2014 6:16 AM
-> To: Zheng, Lv
-> Cc: Lv Zheng; linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org; Wysocki, Rafael J; Brown, Len
-> Subject: Re: [RFC PATCH v4] ACPICA/Events: Add support to ensure GPE is disabled by default for handlers.
-> 
-> On Thu, Nov 20, 2014 at 06:47:16AM +0000, Zheng, Lv wrote:
-> > Hi, Kirill
-> >
-> > Could also help to confirm if this patch can also fix the issue.
-> > Please help to validate the 2 fix patchsets separately.
-> 
-> I've applied it on top of other two and still set the issue.
-> --
->  Kirill A. Shutemov
+__printf(1, 2)
+> +struct device_node *__of_node_alloc(const char *fmt, ...);
+
+
