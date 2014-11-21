@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758390AbaKUOUF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 09:20:05 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:59979 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755351AbaKUOUB (ORCPT
+	id S1758266AbaKUOUc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 09:20:32 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:46209 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758277AbaKUOUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 09:20:01 -0500
-Date: Fri, 21 Nov 2014 15:13:35 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141121141332.GA8808@lerouge>
-References: <alpine.DEB.2.11.1411192251120.3909@nanos>
- <20141119225615.GA11386@lerouge>
- <alpine.DEB.2.11.1411200002330.3909@nanos>
- <20141119235033.GE11386@lerouge>
- <20141120122339.GA14877@htj.dyndns.org>
- <alpine.DEB.2.11.1411202204030.3950@nanos>
- <20141120221122.GA25393@htj.dyndns.org>
- <alpine.DEB.2.11.1411202315230.3950@nanos>
- <20141120230514.GB25393@htj.dyndns.org>
- <alpine.DEB.2.11.1411210109460.6439@nanos>
+	Fri, 21 Nov 2014 09:20:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1411210109460.6439@nanos>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141111053641.GR23575@dastard>
+References: <1415094884-18349-1-git-send-email-drysdale@google.com>
+ <1415094884-18349-3-git-send-email-drysdale@google.com> <20141111053641.GR23575@dastard>
+From: David Drysdale <drysdale@google.com>
+Date: Fri, 21 Nov 2014 14:19:41 +0000
+Message-ID: <CAHse=S9OwP8tSErW59Hd3VPbKVrE9VJM=5gMgZQwsv3kB9Ax0w@mail.gmail.com>
+Subject: Re: [PATCHv2 2/3] selftests: Add test of O_BENEATH & openat(2)
+To: Dave Chinner <david@fromorbit.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Will Drewry <wad@chromium.org>,
+        Jorge Lucangeli Obes <jorgelo@google.com>,
+        Ricky Zhou <rickyz@google.com>, Lee Campbell <leecam@google.com>,
+        Julien Tinnes <jln@google.com>, Mike Depinet <mdepinet@google.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        fstests@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 01:54:00AM +0100, Thomas Gleixner wrote:
-> On Thu, 20 Nov 2014, Tejun Heo wrote:
-> > Sure, this could have been better but I missed it at the beginning
-> > and this is the first time I hear about this issue.
-> 
-> So the issues Frederic talked about in that very thread about
-> recursive faults and the need that perf had to emulate percpu stuff in
-> order to work around them have never been communicated to you?
-> 
-> I that's the case then that's not your problem, but a serious problem
-> in our overall process.
+On Tue, Nov 11, 2014 at 5:36 AM, Dave Chinner <david@fromorbit.com> wrote:
+> [cc fstests@vger.kernel.org]
+>
+> On Tue, Nov 04, 2014 at 09:54:43AM +0000, David Drysdale wrote:
+>> Add simple tests of openat(2) variations, including examples that
+>> check the new O_BENEATH flag.
+>>
+>> Signed-off-by: David Drysdale <drysdale@google.com>
+>
+> Wouldn't this be better added to fstests? That's the regression
+> test suite used by filesystem developers and most distro QA
+> organisations and where the fs developers aggregate all their new
+> regression tests.
+>
+> IMO, the fewer places we aggregate VFS/filesystem tests the better.
+> I really don't think the kernel tree is the best place for adding
+> VFS behavioural tests because it has none of the infrastructure
+> around it to test arbitrary filesystems and configurations and hence
+> is not particularly useful to the people whoa re likely to notice
+> and care about fs regression tests suddenly breaking.
+>
+> As an example, the recent renameat() syscall additions (e.g.
+> RENAME_EXCHANGE, RENAME_NOREPLACE) have unit tests in fstests, so
+> these new O_BENEATH tests should really follow the same model...
+>
+> Cheers,
+>
+> Dave.
 
-So when the issue arised 4 years ago, it was a problem only for NMIs.
-Like Linus says: "what happens in NMI stays in NMI". Ok no that's not quite
-what he says :-)  But NMIs happen to be a corner case for about everything
-and it's sometimes better to fix things from NMI itself, or have an NMI
-special case rather than grow the whole infrastructure in complexity to
-support this very corner case.
+Fair enough, that makes sense -- I've now got a version of the selftest
+running within xfstests (git://oss.sgi.com/xfs/cmds/xfstests.git is the
+master repo, right?).
 
-Not saying that's the only valid approach to take wrt. NMIs but those vmalloc faults
-seemed to be well established and generally known (except perhaps for percpu)
-and NMI was the only corner case, and we are used to that, so fixing the issue
-for NMIs only felt like the right direction when we fixed the callchain thing
-with other perf developers.
+Given that xfstests is independent of the kernel, what's the expected
+way to deal with flags (or syscalls) that are only in specific kernel
+versions?   At the moment I've just got a primitive override at
+compile time (#ifndef O_BENEATH #define O_BENEATH ...), and
+then the test will fail at run-time against an older kernel -- is there a
+need for anything more sophisticated?  (And if so, are there any
+examples I can crib from?)
 
-I certainly should have talked to Tejun about that but it took a bit of time
-for me to realize that randomly faultable memory is a dangerous behaviour.
+Also, is there an archive of the fstests@ mailing list somewhere?
 
-Add to that a bit of the "take the infrastrusture as granted" problem when
-you're not well experienced enough...
-
-Anyway, I really hope we fix that, that's a bomb waiting to explode.
+Thanks,
+David
