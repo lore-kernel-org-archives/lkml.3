@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056AbaKUKsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 05:48:22 -0500
-Received: from mout.perfora.net ([74.208.4.196]:52494 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751128AbaKUKsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 05:48:20 -0500
-X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Nov 2014 05:48:19 EST
-From: Marcel Ziswiler <marcel@ziswiler.com>
-To: swarren@wwwdotorg.org, thierry.reding@gmail.com
-Cc: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, stefan@agner.ch,
-        Marcel Ziswiler <marcel@ziswiler.com>
-Subject: [PATCH] ARM: tegra: colibri t30: fix on-module ethernet
-Date: Fri, 21 Nov 2014 11:41:41 +0100
-Message-Id: <b1cdc96ce8bb15059d7eea282f6586a826bee124.1416566157.git.marcel@ziswiler.com>
-X-Mailer: git-send-email 1.9.3
-X-Provags-ID: V02:K0:x06M1XxNwJ9pDQvX7Ej3AWug9iFoV03dTcTZ8VXs+CU
- Uqi8gRnDbFubxK5yAnhmd72v/2/Ci81nR75zm6tOiYC2vBE1dk
- 4+dvX2ilZIn+qGN439NXpFTw1uP187HKhyYO8oHvrGaqVZUX73
- Oq8tk/aUd7sAj3qxHXtSSP4HNTYHBuGmG50TxrczdB/XWXYug5
- QzbjcRtVENnj3LKJ8VTjpEMuQQEIGorz7O+qnZLndRXWQr9naS
- FEE1fV7DnMD4UdlM6oFgS4wHlTQSS4GmkqqJBTPyDZLsJHOROz
- 63tXWJFtZXMl0Cpr28Bkmjmr93CFouU8MgEkuurV/o4NYYlHdX
- o0STLgGMag5exfm0PiuK9N7eOsjPDeqoOSrqw+yS7Ns+vThRXW
- FcimfD414Vn/TFVqzaav1/29HgRIs+5G/MKqGtE/P4Nx+WUqng
- 0e0MvGSjsDuGFx8fOIHckGMlzag==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1758169AbaKUKtR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 05:49:17 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56074 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaKUKtP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 05:49:15 -0500
+Date: Fri, 21 Nov 2014 11:49:05 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Marc Zyngier <marc.zyngier@arm.com>
+cc: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
+In-Reply-To: <546F140B.1050607@arm.com>
+Message-ID: <alpine.DEB.2.11.1411211142051.6439@nanos>
+References: <546E1771.4030201@arm.com> <546E93DC.8010902@huawei.com> <alpine.DEB.2.11.1411210233250.6439@nanos> <546F140B.1050607@arm.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks like Ethernet only ever worked if U-Boot properly brought it up
-as both the reset as well as the VBUS lines were not actively handled
-in-kernel.
-This patch fixes this by just pulling up the reset GPIO and properly
-enabling VBUS via a GPIO enabled fixed regulator VBUS supply.
+Marc,
 
-Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
----
-Don't know whether this one could still make it into the current RC
-cycle as it is clearly a bug fix.
+On Fri, 21 Nov 2014, Marc Zyngier wrote:
+> On 21/11/14 01:46, Thomas Gleixner wrote:
+> > So the real question is:
+> > 
+> >    What is the association level requirement to properly identify the
+> >    irqdomain for a specific device on any given architecture with and
+> >    without IOMMU, interrupt redirection etc.
+> > 
+> > To be honest: I don't know.
+> > 
+> > My gut feeling tells me that it's at the device level, but I really
+> > leave that decision to the experts in that field.
+> 
+> Given the above requirement (single device associated to DMAR), I can
+> see two possibilities:
+> - we represent DMAR as a single PCI bus: feels a bit artificial
+> - we move the MSI domain to the device, as you suggested.
+> 
+> The second one seems a lot more attractive to me.
 
- arch/arm/boot/dts/tegra30-colibri.dtsi | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+And that's very useful if you want to support MSI on non PCI
+devices.
 
-diff --git a/arch/arm/boot/dts/tegra30-colibri.dtsi b/arch/arm/boot/dts/tegra30-colibri.dtsi
-index c4ed1be..ddbdb77 100644
---- a/arch/arm/boot/dts/tegra30-colibri.dtsi
-+++ b/arch/arm/boot/dts/tegra30-colibri.dtsi
-@@ -167,6 +167,22 @@
- 				nvidia,pull = <TEGRA_PIN_PULL_UP>;
- 				nvidia,tristate = <TEGRA_PIN_DISABLE>;
- 			};
-+
-+			/* LAN_RESET# */
-+			pex_l0_prsnt_n_pdd0 {
-+				nvidia,pins = "pex_l0_prsnt_n_pdd0";
-+				nvidia,function = "rsvd3";
-+				nvidia,pull = <TEGRA_PIN_PULL_UP>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
-+
-+			/* LAN_V_BUS */
-+			pex_l0_clkreq_n_pdd2 {
-+				nvidia,pins = "pex_l0_clkreq_n_pdd2";
-+				nvidia,function = "rsvd3";
-+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
- 		};
- 	};
- 
-@@ -345,6 +361,7 @@
- 	usb-phy@7d004000 {
- 		status = "okay";
- 		nvidia,is-wired = <1>;
-+		vbus-supply = <&lan_vbus_reg>;
- 	};
- 
- 	clocks {
-@@ -382,5 +399,17 @@
- 			regulator-max-microvolt = <5000000>;
- 			regulator-always-on;
- 		};
-+
-+		/* LAN_V_BUS */
-+		lan_vbus_reg: regulator@102 {
-+			compatible = "regulator-fixed";
-+			reg = <102>;
-+			regulator-name = "lan_vbus";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			gpio = <&gpio TEGRA_GPIO(DD, 2) GPIO_ACTIVE_HIGH>;
-+			enable-active-high;
-+			vin-supply = <&charge_pump_5v0_reg>;
-+		};
- 	};
- };
--- 
-1.9.3
+> Also, it is not clear to me what is the advantage of getting rid of the
+> MSI controller. By doing so, we loose an important part of the topology
+> information (the irq domain is another level of abstraction).
+
+That was probably my misunderstanding of the msi controller. I had the
+impression it's just there to expose the MSI properties of a device,
+i.e. a magic wrapper which can be replaced by the MSI irqdomain work.
+
+If that handles other information as well, then it's probably a
+misnomer to begin with.
+
+Thanks,
+
+	tglx
+
 
