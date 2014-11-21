@@ -1,56 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575AbaKUSt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:49:27 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34405 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038AbaKUSt0 (ORCPT
+	id S1751636AbaKUSwB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:52:01 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38108 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751045AbaKUSwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:49:26 -0500
-Date: Fri, 21 Nov 2014 19:49:22 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        Murali Karicheri <m-karicheri2@ti.com>
-Subject: Re: [3/5] i2c: recovery: change input parameter to i2c_adapter for
- prepare/unprepare_recovery
-Message-ID: <20141121184922.GA4431@pengutronix.de>
-References: <1416477788-5544-4-git-send-email-grygorii.strashko@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416477788-5544-4-git-send-email-grygorii.strashko@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 21 Nov 2014 13:52:00 -0500
+Message-ID: <1416595911.7215.23.camel@decadent.org.uk>
+Subject: Re: [PATCH 1/2] 8139too: Allow setting MTU larger than 1500
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Alban <albeu@free.fr>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Benoit Taine <benoit.taine@lip6.fr>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Fri, 21 Nov 2014 18:51:51 +0000
+In-Reply-To: <20141121145853.1be898de@tock>
+References: <1415447316-12424-1-git-send-email-albeu@free.fr>
+	 <1416530074.7215.11.camel@decadent.org.uk> <20141121145853.1be898de@tock>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Z6GLiCLOxGVy0PWC4A1f"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 12:03:06PM +0200, Grygorii Strashko wrote:
-> This patch changes type of input parameter for .prepare/unprepare_recovery()
-> callbacks from struct i2c_bus_recovery_info * to struct i2c_adapter *.
-> This allows to simplify implementation of these callbacks and avoid
-> type conversations from i2c_bus_recovery_info to i2c_adapter.
-> The i2c_bus_recovery_info can be simply retrieved from struct i2c_adapter
-> which contains pointer on it.
-> 
-> CC: Sekhar Nori <nsekhar@ti.com>
-> CC: Kevin Hilman <khilman@deeprootsystems.com>
-> CC: Santosh Shilimkar <ssantosh@kernel.org>
-> CC: Murali Karicheri <m-karicheri2@ti.com>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Sounds and looks sensible
 
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+--=-Z6GLiCLOxGVy0PWC4A1f
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+On Fri, 2014-11-21 at 14:58 +0100, Alban wrote:
+> On Fri, 21 Nov 2014 00:34:34 +0000
+> Ben Hutchings <ben@decadent.org.uk> wrote:
+>=20
+> > On Sat, 2014-11-08 at 12:48 +0100, Alban Bedel wrote:
+> > > Replace the default ndo_change_mtu callback with one that allow
+> > > setting MTU that the driver can handle.
+> > >=20
+> > > Signed-off-by: Alban Bedel <albeu@free.fr>
+> > > ---
+> > >  drivers/net/ethernet/realtek/8139too.c | 13 ++++++++++++-
+> > >  1 file changed, 12 insertions(+), 1 deletion(-)
+> > >=20
+> > > diff --git a/drivers/net/ethernet/realtek/8139too.c
+> > > b/drivers/net/ethernet/realtek/8139too.c index 007b38c..8387de9
+> > > 100644 --- a/drivers/net/ethernet/realtek/8139too.c
+> > > +++ b/drivers/net/ethernet/realtek/8139too.c
+> > > @@ -185,6 +185,9 @@ static int debug =3D -1;
+> > >  /* max supported ethernet frame size -- must be at least
+> > > (dev->mtu+14+4).*/ #define MAX_ETH_FRAME_SIZE	1536
+> > > =20
+> > > +/* max supported payload size */
+> > > +#define MAX_ETH_DATA_SIZE	(MAX_ETH_FRAME_SIZE - ETH_HLEN -
+> > > ETH_FCS_LEN)
+> > [...]
+> >=20
+> > Does this maximum still allow for VLAN tags, or should it use
+> > VLAN_ETH_HLEN instead of ETH_HLEN?
+>=20
+> That might well be as the VLAN code seems to assume that the physical
+> device can handle frames of MTU + VLAN_HLEN bytes. I can fix it, but to
+> me it seems like the VLAN code should be fixed to respect the physical
+> device MTU.
+
+Drivers that support VLANs have to allow for at least one VLAN tag when
+validating the MTU.  This is obviously broken for multiple layers of
+VLAN tags, but those are the semantics we're stuck with.
+
+Ben.
+
+--=20
+Ben Hutchings
+Beware of bugs in the above code;
+I have only proved it correct, not tried it. - Donald Knuth
+
+--=-Z6GLiCLOxGVy0PWC4A1f
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAVG+Jx+e/yOyVhhEJAQqU9A/9EhLgpP5fWbXomzhApckFCNnMkkpg007E
+Sw9MwWTseFLXPSmatLD6Ceiz5CWj/BmvpFH7/zs9ibWxt5Ma0oTmXOp80V+ADdI6
+Mj547YqeoEdReVo6bl2vQqpHxB8yQhkDJY8xiVdva1HrPk+iSmBBMdrxAgQoF0rZ
+/gDqGHxidlSFrDVh/T9QZmsFd7o886/XdKEh/NlmtLPj38wQlGaajjNK8Q5SS0Ct
+9Cs51H5f/t1yATCe7VlJJIYe8spnZlzzXeZuXeqxaTVG90VM4z4WEQjeNBp9TywS
+lHJhm9LSq+nIYEMHCEi04L2rHqUlAqp3L1nLCCyWlPW36monXVLx160gSBjB9aZS
+x+xbvAF33n3wXm25kYpq21zYJ0CY2eBuBzXYGWnuew8RnVw+sDbF0nAV/d4Hs6Or
+c2Jk3eQfsS5d3aVIv6rqj8Lzpb645rR0Ouz77LewrCndBSwYJtseboE7zXPgnduT
+OQ0huLNB84v71M11/bME99de05PYRhSB4ZrApswbjPMnd5wCEhuTUeifE//SMm5j
+hVbCBUnl7711LGGUwFs/mdzslBwABmd7P7B3a2Z/EfqtpZv3o1G7Dab0UHJeTIb9
+VqZCkMIU6+hAp90/y3maA6x62q8m5crouJ7I3RdwPEIK+E80GSkIWhrDPm5gsOtf
+vuDtO03wxNQ=
+=V4we
+-----END PGP SIGNATURE-----
+
+--=-Z6GLiCLOxGVy0PWC4A1f--
