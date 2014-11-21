@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757330AbaKUDyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 22:54:37 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:41019 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756837AbaKUDyg (ORCPT
+	id S1757569AbaKUEAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 23:00:23 -0500
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:39198 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756837AbaKUEAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 22:54:36 -0500
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Fri, 21 Nov 2014 12:54:42 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mahendran Ganesh <opensource.ganesh@gmail.com>
-Cc: ngupta@vflare.org, iamjoonsoo.kim@lge.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] mm/zsmalloc: remove unnecessary check
-Message-ID: <20141121035442.GB10123@bbox>
-References: <1416489716-9967-1-git-send-email-opensource.ganesh@gmail.com>
+	Thu, 20 Nov 2014 23:00:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1416489716-9967-1-git-send-email-opensource.ganesh@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141120222650.GC7987@google.com>
+References: <1416413091-13452-1-git-send-email-tomasz.nowicki@linaro.org>
+	<1416413091-13452-7-git-send-email-tomasz.nowicki@linaro.org>
+	<2360791.Aj7tQ0nCJ3@wuerfel>
+	<20141120222650.GC7987@google.com>
+Date: Thu, 20 Nov 2014 21:00:17 -0700
+Message-ID: <CAL-B5D3MqUa-=bzebo12DbZfczss2-MdGwQ8WKTbFH8H2AENXg@mail.gmail.com>
+Subject: Re: [PATCH 6/6] pci, acpi: Share ACPI PCI config space accessors.
+From: Myron Stowe <myron.stowe@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>, catalin.marinas@arm.com,
+        will.deacon@arm.com, lorenzo.pieralisi@arm.com, wangyijing@huawei.com,
+        hanjun.guo@linaro.org, Liviu.Dudau@arm.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, rjw@rjwysocki.net,
+        linaro-acpi@lists.linaro.org, linux-pci <linux-pci@vger.kernel.org>,
+        x86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 09:21:56PM +0800, Mahendran Ganesh wrote:
-> ZS_SIZE_CLASSES is calc by:
->   ((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / ZS_SIZE_CLASS_DELTA + 1)
-> 
-> So when i is in [0, ZS_SIZE_CLASSES - 1), the size:
->   size = ZS_MIN_ALLOC_SIZE + i * ZS_SIZE_CLASS_DELTA
-> will not be greater than ZS_MAX_ALLOC_SIZE
-> 
-> This patch removes the unnecessary check.
+On Thu, Nov 20, 2014 at 3:26 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Wed, Nov 19, 2014 at 05:19:20PM +0100, Arnd Bergmann wrote:
+>> On Wednesday 19 November 2014 17:04:51 Tomasz Nowicki wrote:
+>> > +/*
+>> > + * raw_pci_read/write - ACPI PCI config space accessors.
+>> > + *
+>> > + * ACPI spec defines MMCFG as the way we can access PCI config space,
+>> > + * so let MMCFG be default (__weak).
+>> > + *
+>> > + * If platform needs more fancy stuff, should provides its own implementation.
+>> > + */
+>> > +int __weak raw_pci_read(unsigned int domain, unsigned int bus,
+>> > +                       unsigned int devfn, int reg, int len, u32 *val)
+>> > +{
+>> > +       return pci_mmcfg_read(domain, bus, devfn, reg, len, val);
+>> > +}
+>> > +
+>> > +int __weak raw_pci_write(unsigned int domain, unsigned int bus,
+>> > +                        unsigned int devfn, int reg, int len, u32 val)
+>> > +{
+>> > +       return pci_mmcfg_write(domain, bus, devfn, reg, len, val);
+>> > +}
+>> > +
+>> >
+>>
+>> I think it would be better to avoid __weak functions here, as they tend
+>> to be hard to follow when trying to understand the code.
+>
+> That's interesting.  I would have said exactly the opposite -- I think the
+> extra Kconfiggery is harder to follow than weak/strong functions :)
+>
+> But consistency is better than my personal opinion.  Is there a consensus
+> that we should use the Kconfig strategy instead of __weak?
 
-It depends on ZS_MIN_ALLOC_SIZE.
-For example, we would change min to 8 but MAX is still 4096.
-ZS_SIZE_CLASSES is (4096 - 8) / 16 + 1 = 256 so 8 + 255 * 16 = 4088,
-which exceeds the max.
+I too find weak/strong functions easier to follow than "Kconfiggery" (nice term
+invention there).
 
-> 
-> Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
-> ---
->  mm/zsmalloc.c |    2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index b3b57ef..f2279e2 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -973,8 +973,6 @@ struct zs_pool *zs_create_pool(gfp_t flags)
->  		struct size_class *prev_class;
->  
->  		size = ZS_MIN_ALLOC_SIZE + i * ZS_SIZE_CLASS_DELTA;
-> -		if (size > ZS_MAX_ALLOC_SIZE)
-> -			size = ZS_MAX_ALLOC_SIZE;
->  		pages_per_zspage = get_pages_per_zspage(size);
->  
->  		/*
-> -- 
-> 1.7.9.5
-> 
+>
+>> How about using a Kconfig symbol like this:
+>>
+>> #ifdef CONFIG_ARCH_RAW_PCI_READWRITE
+>> int raw_pci_read(unsigned int domain, unsigned int bus, unsigned int devfn,
+>>                  int reg, int len, u32 *val);
+>> int raw_pci_write(unsigned int domain, unsigned int bus, unsigned int devfn,
+>>                   int reg, int len, u32 val);
+>> #else
+>> static inline int raw_pci_read(unsigned int domain, unsigned int bus,
+>>                              unsigned int devfn, int reg, int len, u32 *val)
+>> {
+>>       return pci_mmcfg_read(domain, bus, devfn, reg, len, val);
+>> }
+>>
+>> static inline int raw_pci_write(unsigned int domain, unsigned int bus,
+>>                                       unsigned int devfn, int reg, int len, u32 val)
+>> {
+>>        return pci_mmcfg_write(domain, bus, devfn, reg, len, val);
+>> }
+>> #endif
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
