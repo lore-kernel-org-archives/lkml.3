@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774AbaKUKc0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 05:32:26 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36333 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaKUKcY (ORCPT
+	id S1758189AbaKUKcq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 05:32:46 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:42977 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755384AbaKUKco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 05:32:24 -0500
-Date: Fri, 21 Nov 2014 10:32:14 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ding Tianhong <dingtianhong@huawei.com>
-Subject: Re: For the problem when using swiotlb
-Message-ID: <20141121103213.GB19783@e104818-lin.cambridge.arm.com>
-References: <5469E26B.2010905@huawei.com>
- <1535751.CcvIi3DN4F@wuerfel>
- <546D58B1.60108@huawei.com>
- <2522857.bNQToYpBNt@wuerfel>
- <20141121093509.GA19783@e104818-lin.cambridge.arm.com>
+	Fri, 21 Nov 2014 05:32:44 -0500
+Date: Fri, 21 Nov 2014 19:32:32 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Ganesh Mahendran <opensource.ganesh@gmail.com>
+Cc: Nitin Gupta <ngupta@vflare.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] mm/zsmalloc: remove unnecessary check
+Message-ID: <20141121103232.GA31540@blaptop>
+References: <1416489716-9967-1-git-send-email-opensource.ganesh@gmail.com>
+ <20141121035442.GB10123@bbox>
+ <CADAEsF975+a6Y5dcEu1B2OscQ5JaxD+ZQ1jnFOJ115BXgMqULA@mail.gmail.com>
+ <20141121064849.GA17181@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141121093509.GA19783@e104818-lin.cambridge.arm.com>
+In-Reply-To: <20141121064849.GA17181@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 09:35:10AM +0000, Catalin Marinas wrote:
-> @@ -88,11 +89,24 @@ static inline int dma_set_mask(struct device *dev, u64 mask)
->  {
->  	if (!dev->dma_mask || !dma_supported(dev, mask))
->  		return -EIO;
-> +	/* if asking for bigger dma mask, limit it to the bus dma ranges */
-> +	if (mask > *dev->dma_mask)
-> +		mask &= of_dma_get_range_mask(dev);
->  	*dev->dma_mask = mask;
->  
->  	return 0;
->  }
+On Fri, Nov 21, 2014 at 06:48:49AM +0000, Minchan Kim wrote:
+> On Fri, Nov 21, 2014 at 01:33:26PM +0800, Ganesh Mahendran wrote:
+> > Hello
+> > 
+> > 2014-11-21 11:54 GMT+08:00 Minchan Kim <minchan@kernel.org>:
+> > > On Thu, Nov 20, 2014 at 09:21:56PM +0800, Mahendran Ganesh wrote:
+> > >> ZS_SIZE_CLASSES is calc by:
+> > >>   ((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / ZS_SIZE_CLASS_DELTA + 1)
+> > >>
+> > >> So when i is in [0, ZS_SIZE_CLASSES - 1), the size:
+> > >>   size = ZS_MIN_ALLOC_SIZE + i * ZS_SIZE_CLASS_DELTA
+> > >> will not be greater than ZS_MAX_ALLOC_SIZE
+> > >>
+> > >> This patch removes the unnecessary check.
+> > >
+> > > It depends on ZS_MIN_ALLOC_SIZE.
+> > > For example, we would change min to 8 but MAX is still 4096.
+> > > ZS_SIZE_CLASSES is (4096 - 8) / 16 + 1 = 256 so 8 + 255 * 16 = 4088,
+> > > which exceeds the max.
+> > Here, 4088 is less than MAX(4096).
+> > 
+> > ZS_SIZE_CLASSES = (MAX - MIN) / Delta + 1
+> > So, I think the value of
+> >     MIN + (ZS_SIZE_CLASSES - 1) * Delta =
+> >     MIN + ((MAX - MIN) / Delta) * Delta =
+> >     MAX
+> > will not exceed the MAX
+> 
+> You're right. It was complext math for me.
+> I should go back to elementary school.
+> 
+> Thanks!
+> 
+> Acked-by: Minchan Kim <minchan@kernel.org>
 
-I wonder whether mask &= of_dma_get_range_mask(dev) limiting should
-actually be done before actually checking dma_supported(). That's
-because a device may try to set a 64-bit mask but being connected to a
-more limiting bus, we should check the dma_supported() on the resulting
-mask.
+I catch a nasty cold but above my poor math makes me think more.
+ZS_SIZE_CLASSES is broken. In above my example, current code cannot
+allocate 4096 size class so we should correct ZS_SIZE_CLASSES
+at first.
 
--- 
-Catalin
+zs_size_classes = zs_max - zs_min / delta + 1;
+if ((zs_max - zs_min) % delta)
+	zs_size_classes += 1;
+
+Then, we need to code piece you removed.
+As well, we need to fix below.
+
+- area->vm_buf = (char *)__get_free_page(GFP_KERNEL);
++ area->vm_buf = kmalloc(ZS_MAX_ALLOC_SIZE);
+
+Hope I am sane in this time :(
