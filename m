@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758703AbaKUPHR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:07:17 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:49638 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758358AbaKUPHH (ORCPT
+	id S1758716AbaKUPH3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:07:29 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:49183 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758358AbaKUPH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:07:07 -0500
+	Fri, 21 Nov 2014 10:07:26 -0500
 From: Pranith Kumar <bobby.prani@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+To: Kees Cook <keescook@chromium.org>, Andy Lutomirski <luto@amacapital.net>,
+        Will Drewry <wad@chromium.org>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v2 3/9] dcache: Replace smp_read_barrier_depends() with lockless_dereference()
-Date: Fri, 21 Nov 2014 10:05:57 -0500
-Message-Id: <1416582363-20661-4-git-send-email-bobby.prani@gmail.com>
+Subject: [PATCH v2 7/9] seccomp: Replace smp_read_barrier_depends() with lockless_dereference()
+Date: Fri, 21 Nov 2014 10:06:01 -0500
+Message-Id: <1416582363-20661-8-git-send-email-bobby.prani@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
 References: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
@@ -25,35 +26,34 @@ hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
 
 Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- fs/dcache.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ kernel/seccomp.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index a6c5d7e..27b8b5b 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -230,8 +230,7 @@ static inline int dentry_cmp(const struct dentry *dentry, const unsigned char *c
- 	 * early because the data cannot match (there can
- 	 * be no NUL in the ct/tcount data)
- 	 */
--	cs = ACCESS_ONCE(dentry->d_name.name);
--	smp_read_barrier_depends();
-+	cs = lockless_dereference(dentry->d_name.name);
- 	return dentry_string_cmp(cs, ct, tcount);
- }
- 
-@@ -2714,10 +2713,8 @@ static int prepend(char **buffer, int *buflen, const char *str, int namelen)
- static int prepend_name(char **buffer, int *buflen, struct qstr *name)
+diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+index 4ef9687..3729b06 100644
+--- a/kernel/seccomp.c
++++ b/kernel/seccomp.c
+@@ -175,17 +175,16 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
+  */
+ static u32 seccomp_run_filters(struct seccomp_data *sd)
  {
- 	const char *dname = ACCESS_ONCE(name->name);
--	u32 dlen = ACCESS_ONCE(name->len);
- 	char *p;
--
--	smp_read_barrier_depends();
-+	u32 dlen = lockless_dereference(name->len);
+-	struct seccomp_filter *f = ACCESS_ONCE(current->seccomp.filter);
+ 	struct seccomp_data sd_local;
+ 	u32 ret = SECCOMP_RET_ALLOW;
++	/* Make sure cross-thread synced filter points somewhere sane. */
++	struct seccomp_filter *f =
++			lockless_dereference(current->seccomp.filter);
  
- 	*buflen -= dlen + 1;
- 	if (*buflen < 0)
+ 	/* Ensure unexpected behavior doesn't result in failing open. */
+ 	if (unlikely(WARN_ON(f == NULL)))
+ 		return SECCOMP_RET_KILL;
+ 
+-	/* Make sure cross-thread synced filter points somewhere sane. */
+-	smp_read_barrier_depends();
+-
+ 	if (!sd) {
+ 		populate_seccomp_data(&sd_local);
+ 		sd = &sd_local;
 -- 
 1.9.1
 
