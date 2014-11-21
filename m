@@ -1,180 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaKUUbL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 15:31:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:35509 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939AbaKUUbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 15:31:09 -0500
-Date: Fri, 21 Nov 2014 17:30:57 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        "Liang, Kan" <kan.liang@intel.com>
-Subject: Re: Implement lbr-as-callgraph v10
-Message-ID: <20141121203057.GD18625@kernel.org>
-References: <20141117213457.GE4163@kernel.org>
- <20141118104416.GE27645@krava.brq.redhat.com>
- <20141118110007.GF27645@krava.brq.redhat.com>
- <87zjbnpv64.fsf@sejong.aot.lge.com>
- <20141119092323.GC2592@krava.brq.redhat.com>
- <20141119105450.GA22132@krava.brq.redhat.com>
- <20141119141027.GF3790@kernel.org>
- <20141119160458.GG3790@kernel.org>
- <20141119214822.GM12538@two.firstfloor.org>
- <20141120193347.GL3790@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141120193347.GL3790@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752226AbaKUUen (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:34:43 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:38712 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530AbaKUUem (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 15:34:42 -0500
+Date: Fri, 21 Nov 2014 15:34:38 -0500 (EST)
+Message-Id: <20141121.153438.43820255874630231.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: calvinowens@fb.com, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        edumazet@google.com, kernel-team@fb.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tcp: Restore RFC5961-compliant behavior for SYN packets
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1416536527.8629.74.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1416526940.8629.62.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20141121014727.GA1536781@mail.thefacebook.com>
+	<1416536527.8629.74.camel@edumazet-glaptop2.roam.corp.google.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 21 Nov 2014 12:34:42 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Nov 20, 2014 at 04:33:47PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Wed, Nov 19, 2014 at 10:48:22PM +0100, Andi Kleen escreveu:
-> > > > directory since I'm comparing the output of --stdio, --tui and --gtk,
-> > > > since it looks --gtk is wrong, still unsure about what the problem is in
-> > > > that case, but stumbled on:
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Thu, 20 Nov 2014 18:22:07 -0800
 
-> > > I need to investigate this further, so I created a perf/branch-history
-> > > branch that has the patches I need to test more rebased on top of my
-> > > perf/core branch I just pushed out to Ingo.
+> On Thu, 2014-11-20 at 17:47 -0800, Calvin Owens wrote:
+> 
+>> That's actually not what led to finding this, but it's a good point. :)
+>> 
+>> What if the challenge-ACK counter were decremented in tcp_validate_incoming()
+>> when a valid RST packet is seen? That would allow legitimate remote
+>> hosts to reestablish connections without being ratelimited, and still
+>> prevent a malicious host from guessing sequence numbers.
+>> 
+>> There would need to be a way to tell if a challenge ACK had in fact been
+>> sent and only decrement in that case, since otherwise a local attacker
+>> could establish and immediately reset lots of connections to keep the
+>> counter below the ratelimit threshold and guess sequence numbers.
+>> 
+>> Simply adding a flag to struct tcp_sock would work: just set the flag
+>> whenever a challenge ACK is sent, and clear it and decrement the counter
+>> only if it is set when a valid RST packet is seen.
+> 
+> Seems tricky, a Challenge ACK do not necessarily gives an RST.
+> 
+> Anyway this certainly can wait, as we already have a sysctl to
+> eventually work around the issue.
+> 
+> Acked-by: Eric Dumazet <edumazet@google.com>
 
-> > I tested --gtk and I don't see any differences to the console mode
-> > with --branch-history.  What problem do you see?
-
-> The difference is with --tui, but I haven't checked if this is a problem
-> introduced by your patchkit or if this is something that was there
-> before it was applied.
-
-So, here it is, --gtk looks like --stdio:
-
-$ perf report --no-children --branch-history --stdio
-
-# Samples: 43  of event 'cycles'
-# Event count (approx.): 26843162
-#
-# Overhead  Source:Line  Symbol                     Shared Object   
-# ........  ...........  .........................  ................
-#
-    68.42%  tcall.c:5    [.] f2                     tcall           
-            |          
-            |--87.65%-- f2 tcall.c:4
-            |          |          
-            |          |--67.41%-- f1 tcall.c:10
-            |          |          f1 tcall.c:9
-            |          |          main tcall.c:17
-            |          |          main tcall.c:17
-            |          |          main tcall.c:16
-            |          |          main tcall.c:16
-            |          |          f1 tcall.c:12
-            |          |          f1 tcall.c:12
-            |          |          f2 tcall.c:6
-            |          |          f2 tcall.c:4
-            |          |          f1 tcall.c:11
-            |          |          f1 tcall.c:11
-            |          |          f2 tcall.c:6
-            |          |          f2 tcall.c:4
-            |          |          f1 tcall.c:10
-            |          |          
-            |           --32.59%-- f1 tcall.c:11
-            |                     f1 tcall.c:11
-            |                     f1 tcall.c:11
-            |                     f2 tcall.c:6
-            |                     f2 tcall.c:4
-            |                     f1 tcall.c:10
-            |                     f1 tcall.c:9
-            |                     main tcall.c:17
-            |                     main tcall.c:17
-            |                     main tcall.c:16
-            |                     main tcall.c:16
-            |                     f1 tcall.c:12
-            |                     f1 tcall.c:12
-            |                     f2 tcall.c:6
-            |                     f2 tcall.c:4
-            |                     f1 tcall.c:11
-            |          
-             --12.35%-- f1 tcall.c:9
-                       main tcall.c:17
-                       main tcall.c:17
-                       main tcall.c:16
-                       main tcall.c:16
-                       f1 tcall.c:12
-                       f1 tcall.c:12
-                       f2 tcall.c:6
-                       f2 tcall.c:4
-                       f1 tcall.c:11
-                       f1 tcall.c:11
-                       f2 tcall.c:6
-                       f2 tcall.c:4
-                       f1 tcall.c:10
-                       f1 tcall.c:9
-                       main tcall.c:17
-<SNIP>
-
-But:
-
-$ perf report --no-children --branch-history --tui
-# Then expand a few callchains and press 'P' to generate a perf.hist.0
-# file:
--   68.42%  tcall.c:5    [.] f2                     tcall
-   - f2 tcall.c:4
-      - 67.41% f1 tcall.c:10
-           f1 tcall.c:9
-           main tcall.c:17
-           main tcall.c:17
-           main tcall.c:16
-           main tcall.c:16
-           f1 tcall.c:12
-           f1 tcall.c:12
-           f2 tcall.c:6
-           f2 tcall.c:4
-           f1 tcall.c:11
-           f1 tcall.c:11
-           f2 tcall.c:6
-           f2 tcall.c:4
-           f1 tcall.c:10
-      - 32.59% f1 tcall.c:11
-           f1 tcall.c:11
-           f2 tcall.c:6
-           f2 tcall.c:4
-           f1 tcall.c:10
-           f1 tcall.c:9
-           main tcall.c:17
-           main tcall.c:17
-           main tcall.c:16
-           main tcall.c:16
-           f1 tcall.c:12
-           f1 tcall.c:12
-           f2 tcall.c:6
-           f2 tcall.c:4
-           f1 tcall.c:11
-     f1 tcall.c:9
-     main tcall.c:17
-     main tcall.c:17
-     main tcall.c:16
-     main tcall.c:16
-     f1 tcall.c:12
-     f1 tcall.c:12
-     f2 tcall.c:6
-     f2 tcall.c:4
-     f1 tcall.c:11
-     f1 tcall.c:11
-     f2 tcall.c:6
-     f2 tcall.c:4
-     f1 tcall.c:10
-     f1 tcall.c:9
-     main tcall.c:17
-<SNIP>
-
-
-Do you see the diff?  The 87.65% and 12.35% doesn't appear on the --tui
-output.
-
-But I don't know if this is due to your patchkit, trying to check.
-
-- Arnaldo
+Applied, thanks everyone.
