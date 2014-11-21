@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758245AbaKUMEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 07:04:25 -0500
-Received: from s250.sam-solutions.net ([217.21.49.219]:58483 "EHLO
-	s250.sam-solutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757322AbaKUMEY (ORCPT
+	id S1758291AbaKUMGV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 07:06:21 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:44980 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755584AbaKUMGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 07:04:24 -0500
-From: Dmitry Lavnikevich <D.Lavnikevich@sam-solutions.com>
-To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-CC: Support Opensource <Support.Opensource@diasemi.com>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rtc: da9063: Fix ALARM interrupt registration.
-Thread-Topic: [PATCH] rtc: da9063: Fix ALARM interrupt registration.
-Thread-Index: AQHQBKf+aAnFetIHV0qwuDSOzEEmNpxpLRYAgAAdrYCAABozgIABZe2A
-Date: Fri, 21 Nov 2014 12:04:06 +0000
-Message-ID: <EFFD3D9B-9FA8-4DC6-9664-F62050232523@sam-solutions.com>
-References: <1416477273-975-1-git-send-email-d.lavnikevich@sam-solutions.com>
- <6ED8E3B22081A4459DAC7699F3695FB7D0B4836D@SW-EX-MBX02.diasemi.com>
- <8A823154-DC33-4A5A-9B4B-8B0E3BCFE83C@sam-solutions.com>
- <6ED8E3B22081A4459DAC7699F3695FB7D0B483EE@SW-EX-MBX02.diasemi.com>
-In-Reply-To: <6ED8E3B22081A4459DAC7699F3695FB7D0B483EE@SW-EX-MBX02.diasemi.com>
-Accept-Language: en-US, ru-RU
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.111.33]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <E3D2F3001B00364DA20BDE325C82EF97@sam-solutions.net>
+	Fri, 21 Nov 2014 07:06:19 -0500
 MIME-Version: 1.0
+In-Reply-To: <5464152E.7040209@rock-chips.com>
+References: <1415109789-7046-1-git-send-email-addy.ke@rock-chips.com>
+	<1415678573-6093-1-git-send-email-addy.ke@rock-chips.com>
+	<CAPDyKFqUoBjhsbz8rkLa9PY_dpgMxnimz3k7OoA5WVhi7MacPQ@mail.gmail.com>
+	<CAD=FV=VQHZ6YmcoeAb1OEVLYRrYBnc_dM5Kjt1TZX_CQJC=EfA@mail.gmail.com>
+	<5464152E.7040209@rock-chips.com>
+Date: Fri, 21 Nov 2014 13:06:18 +0100
+Message-ID: <CAPDyKFrzGfDew0eLLEcA+_iS_mo-O2bFU58fjirfXXA8AJ9UYQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: try pick the exact same voltage as vmmc for vqmmc
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: addy ke <addy.ke@rock-chips.com>
+Cc: Doug Anderson <dianders@chromium.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Alexandru Stan <amstan@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
+        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris Zhong <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sALC4Wr0017169
 
+[...]
 
-> On 20Nov, 2014, at 15:43, Opensource [Steve Twiss] <stwiss.opensource@diasemi.com> wrote:
-> 
-> On 20 November 2014 13:09 Dmitry Lavnikevich wrote:
-> [...]
->>> 
->>> da9063-rtc da9063-rtc: Failed to request ALARM IRQ -22: -22
->>> da9063-rtc: probe of da9063-rtc failed with error -22
->> 
->> I have tested this patch on pfla02 board and it was ok. On which
->> board this fail occurred?
-> 
-> I am using a MCIMX6DL-SDP board -- although I the differences are in
-> my code base and not the platform in this case.
-> My apologies 
-> 
-> Regards,
-> Steve
-> 
-> patch follows:
-[â€¦]
+> Sure
+> If the first card is sd2.0 since startup, dw_mci_switch_voltage will not be called,
 
-I see that your code also fixes the issue. And it is more consistent with da9055 implementation.
-So there is no need for my fix if yours is already there. Is it already accepted on some mainline branch?
-If not then are you going to submit it soon?ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+That can't be right. mmc_power_up() should trigger
+dw_mci_switch_voltage() to be invoked.
+
+> and card can be identified. But if UHS card is pulgged in first, the vqmmc will be down to 1.8v.
+>
+> when sd2.0 card is pulgged in, mmc core will call dw_mci_switch_voltage to change vqmmc to 3.3v
+> (MMC_SINGLE_VOTAGE_330). So vqmmc will be set 2.7v, if we request 2.7-3.6v.
+>
+> But vmmc is always 3.3v,becuase it be set min_volt = max_volt = 3.3v in dt tables.
+>
+> So the result:
+> vmmc = 3.3v and vqmmc = 2.7v, and sd2.0 card is failed to identify in my test.
+
+Hmm. I wonder why it works the first time? Could it be that your
+regulator have voltage ramp up time that isn't properly considered?
+
+Kind regards
+Uffe
