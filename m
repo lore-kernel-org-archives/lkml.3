@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaKUU2W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 15:28:22 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:49640 "EHLO gir.skynet.ie"
+	id S1752425AbaKUU3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:29:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31180 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776AbaKUU2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 15:28:21 -0500
-Date: Fri, 21 Nov 2014 20:28:17 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1411212026350.31357@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751530AbaKUU3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 15:29:38 -0500
+Message-ID: <546FA0A7.2010507@redhat.com>
+Date: Fri, 21 Nov 2014 15:29:27 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Rafael Aquini <aquini@redhat.com>
+Subject: Re: [PATCH] ipc,sem block sem_lock on sma->lock during sma initialization
+References: <20141121145226.2ac598af@annuminas.surriel.com> <20141121120930.3cd8d0f233f9670d689de672@linux-foundation.org>
+In-Reply-To: <20141121120930.3cd8d0f233f9670d689de672@linux-foundation.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Hi Linus,
+On 11/21/2014 03:09 PM, Andrew Morton wrote:
+> On Fri, 21 Nov 2014 14:52:26 -0500 Rik van Riel <riel@redhat.com>
+> wrote:
+> 
+>> When manipulating just one semaphore with semop, sem_lock only
+>> takes that single semaphore's lock. This creates a problem during
+>> initialization of the semaphore array, when the data structures
+>> used by sem_lock have not been set up yet. The sma->lock is
+>> already held by newary, and we just have to make sure everything
+>> else waits on that lock during initialization.
+>> 
+>> Luckily it is easy to make sem_lock wait on the sma->lock, by
+>> pretending there is a complex operation in progress while the sma
+>> is being initialized.
+>> 
+>> The newary function already zeroes sma->complex_count before
+>> unlocking the sma->lock.
+> 
+> What are the runtime effects of the bug?
+> 
 
-just two radeon and two intel fixes, endian and regression fixes.
+NULL pointer dereference in spin_lock from sem_lock,
+if it is called before sma->sem_base has been pointed
+somewhere valid.
 
-Dave.
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-The following changes since commit fc14f9c1272f62c3e8d01300f52467c0d9af50f9:
-
-  Linux 3.18-rc5 (2014-11-16 16:36:20 -0800)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to a0fc608178a9b38a5f782331909fcc208b742a7b:
-
-  Merge branch 'drm-fixes-3.18' of git://people.freedesktop.org/~agd5f/linux into drm-fixes (2014-11-21 12:19:19 +1000)
-
-----------------------------------------------------------------
-
-Alex Deucher (2):
-      drm/radeon: disable native backlight control on pre-r6xx asics (v2)
-      drm/radeon: fix endian swapping in vbios fetch for tdp table
-
-Daniel Vetter (2):
-      drm/i915: drop WaSetupGtModeTdRowDispatch:snb
-      drm/i915: Kick fbdev before vgacon
-
-Dave Airlie (2):
-      Merge tag 'drm-intel-fixes-2014-11-19' of git://anongit.freedesktop.org/drm-intel into drm-fixes
-      Merge branch 'drm-fixes-3.18' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
-
- drivers/gpu/drm/i915/i915_dma.c          | 10 ++++++----
- drivers/gpu/drm/i915/intel_pm.c          |  5 -----
- drivers/gpu/drm/radeon/r600_dpm.c        |  2 +-
- drivers/gpu/drm/radeon/radeon_encoders.c |  3 +++
- 4 files changed, 10 insertions(+), 10 deletions(-)
+iQEcBAEBAgAGBQJUb6CnAAoJEM553pKExN6Dh8oH/iFVqwrukMkZp7ViFTC84DVK
+m8rw6CWk76kEvi6BWx977nT26e7ZfiOCxrhyy/gETOnUDJMgQrn7cFMFd6Ja/2yG
+uGCq5WcvVLDiLw7ij9Rqu4C6aHcICserzgfXwWV0XAa5TZOEqvg6FKZgCUHN6sxM
+ek0TV0oq/VQvRwAQk/MFDOv38PydH2LH1Z3wXk7JVlhEMX062a4EoxTAe8Teed2p
+X5+mTOl4jezog2rFJxFe0Cp8PxpqAi4f1kDugQKohZ3TpUFqH4VKZYmTtvHvpNDH
+oeHjnRv632N8KuU2lvIi7EGJGu0Y+ReyOr+NQtozlRYCTPuY/rezkbBmgVwu4iY=
+=CDvy
+-----END PGP SIGNATURE-----
