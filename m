@@ -1,104 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758932AbaKUQ0F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:26:05 -0500
-Received: from mail-bn1bon0134.outbound.protection.outlook.com ([157.56.111.134]:7712
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758726AbaKUQ0D convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:26:03 -0500
-X-WSS-ID: 0NFEDN8-07-2EK-02
-X-M-MSG: 
-From: "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
-To: Marc Zyngier <marc.zyngier@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-CC: Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Lendacky, Thomas" <Thomas.Lendacky@amd.com>,
-        "Schopp, Joel" <Joel.Schopp@amd.com>
-Subject: Re: [PATCH V3] arm64: amd-seattle: Adding device tree for AMD
- Seattle platform
-Thread-Topic: [PATCH V3] arm64: amd-seattle: Adding device tree for AMD
- Seattle platform
-Thread-Index: AQHP8rRCMFb7H3BqM0WQXXItWQqGg5xrg/GAgACR7QD//4z4gIAAkIkA
-Date: Fri, 21 Nov 2014 16:25:55 +0000
-Message-ID: <D09577B0.9B9B%suravee.suthikulpanit@amd.com>
-In-Reply-To: <546F50BD.8070501@arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.0.121105
-x-originating-ip: [10.177.96.15]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-ID: <688F8A7271F148489A786B4E1A11D8CA@amd.com>
-Content-Transfer-Encoding: 8BIT
+	id S1758945AbaKUQ1k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:27:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46589 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758547AbaKUQ1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 11:27:38 -0500
+Message-ID: <546F67F5.2070500@redhat.com>
+Date: Fri, 21 Nov 2014 17:27:33 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(51704005)(479174003)(199003)(24454002)(189002)(164054003)(31966008)(105586002)(64706001)(106116001)(20776003)(47776003)(23756003)(99396003)(95666004)(101416001)(36756003)(87936001)(86362001)(21056001)(2656002)(68736004)(19580405001)(19580395003)(4396001)(106466001)(44976005)(120916001)(50466002)(84676001)(83506001)(92726001)(77096003)(46102003)(50986999)(62966003)(53416004)(97736003)(107046002)(54356999)(92566001)(77156002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB197;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB197;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB197;
-X-Forefront-PRVS: 0402872DA1
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB197;
-X-OriginatorOrg: amd4.onmicrosoft.com
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm: x86: move ioapic.c and irq_comm.c back to arch/x86/
+References: <1416490931-21724-1-git-send-email-pbonzini@redhat.com> <20141121161956.GA16941@potion.brq.redhat.com>
+In-Reply-To: <20141121161956.GA16941@potion.brq.redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 21/11/2014 17:19, Radim Krčmář wrote:
+> 2014-11-20 14:42+0100, Paolo Bonzini:
+>> ia64 does not need them anymore.
+> 
+> (Similar for device assignment and iommu, should I prepare patches?)
 
+Sure!  Feel free to join the party. ;)
 
-On 11/21/14, 21:48, "Marc Zyngier" <marc.zyngier@arm.com> wrote:
+Paolo
 
->On 21/11/14 14:40, Suthikulpanit, Suravee wrote:
->> 
->> 
->> On 11/21/14, 19:57, "Marc Zyngier" <marc.zyngier@arm.com> wrote:
->> 
->>>> +	gic: interrupt-controller@e1101000 {
->>>> +		compatible = "arm,gic-400", "arm,cortex-a15-gic";
->>>> +		interrupt-controller;
->>>> +		#interrupt-cells = <3>;
->>>> +		#address-cells = <2>;
->>>> +		#size-cells = <2>;
->>>> +		reg = <0x0 0xe1110000 0 0x1000>,
->>>> +		      <0x0 0xe112f000 0 0x2000>,
->>>> +		      <0x0 0xe1140000 0 0x10000>,
->>>> +		      <0x0 0xe1160000 0 0x10000>;
->>>> +		interrupts = <1 8 0xf04>;
->>>
->>> Are you sure about this one? ARM systems usually have this wired on
->>>PPI9
->>> (interrupt 25)...
->>>
->>> Thanks,
->>>
->>> 	M.
->> 
->> I think you might be right. GIC-400 TRM says that this is should be
->> 25, and used for virtual maintenance interrupts. How can I verify
->> this in Linux? KVM?
->
->KVM is one way, but you'll never see the interrupt firing (we kill the
->interrupt while in HYP, before the kernel gets a chance to see it).
->
->If you effectively have GIC400 on this system, then I know for sure this
->is interrupt 25.
+>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+>> ---
+> 
+> At least one compile-breaker on arches without IOAPIC,
+> 
+>> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+>> index ea53b04993f2..d2d42709d6f4 100644
+>> --- a/include/linux/kvm_host.h
+>> +++ b/include/linux/kvm_host.h
+>> +#ifdef __KVM_HAVE_IOAPIC
+>> +void kvm_vcpu_request_scan_ioapic(struct kvm *kvm);
+>> +#else
+>> +static inline void kvm_vcpu_request-scan_ioapic(struct kvm *kvm)
+>                                       ^_-
+>> +{
+>> +}
+>> +#endif
+>> +
+> 
+> Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
+> 
+> And we could clean them up as well:
 
-I�ll make the change. Thanks for clarification.
+Will squash in next monday.
 
-Suravee
->
->Thanks,
->
->	M.
->-- 
->Jazz is not dead. It just smells funny...
+Paolo
 
+> ---8<---
+> KVM: x86: remove IA64 from ioapic.c and irq_comm.c
+> 
+> They won't get compiled in x86 tree.
+> 
+> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+> ---
+>  arch/x86/kvm/ioapic.c   | 12 ------------
+>  arch/x86/kvm/irq_comm.c | 41 ++---------------------------------------
+>  2 files changed, 2 insertions(+), 51 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/ioapic.c b/arch/x86/kvm/ioapic.c
+> index 0ba4057..b1947e0 100644
+> --- a/arch/x86/kvm/ioapic.c
+> +++ b/arch/x86/kvm/ioapic.c
+> @@ -270,7 +270,6 @@ void kvm_ioapic_scan_entry(struct kvm_vcpu *vcpu, u64 *eoi_exit_bitmap,
+>  	spin_unlock(&ioapic->lock);
+>  }
+>  
+> -#ifdef CONFIG_X86
+>  void kvm_vcpu_request_scan_ioapic(struct kvm *kvm)
+>  {
+>  	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
+> @@ -279,12 +278,6 @@ void kvm_vcpu_request_scan_ioapic(struct kvm *kvm)
+>  		return;
+>  	kvm_make_scan_ioapic_request(kvm);
+>  }
+> -#else
+> -void kvm_vcpu_request_scan_ioapic(struct kvm *kvm)
+> -{
+> -	return;
+> -}
+> -#endif
+>  
+>  static void ioapic_write_indirect(struct kvm_ioapic *ioapic, u32 val)
+>  {
+> @@ -586,11 +579,6 @@ static int ioapic_mmio_write(struct kvm_io_device *this, gpa_t addr, int len,
+>  	case IOAPIC_REG_WINDOW:
+>  		ioapic_write_indirect(ioapic, data);
+>  		break;
+> -#ifdef	CONFIG_IA64
+> -	case IOAPIC_REG_EOI:
+> -		__kvm_ioapic_update_eoi(NULL, ioapic, data, IOAPIC_LEVEL_TRIG);
+> -		break;
+> -#endif
+>  
+>  	default:
+>  		break;
+> diff --git a/arch/x86/kvm/irq_comm.c b/arch/x86/kvm/irq_comm.c
+> index a8f988c..72298b3 100644
+> --- a/arch/x86/kvm/irq_comm.c
+> +++ b/arch/x86/kvm/irq_comm.c
+> @@ -26,9 +26,6 @@
+>  #include <trace/events/kvm.h>
+>  
+>  #include <asm/msidef.h>
+> -#ifdef CONFIG_IA64
+> -#include <asm/iosapic.h>
+> -#endif
+>  
+>  #include "irq.h"
+>  
+> @@ -38,12 +35,8 @@ static int kvm_set_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+>  			   struct kvm *kvm, int irq_source_id, int level,
+>  			   bool line_status)
+>  {
+> -#ifdef CONFIG_X86
+>  	struct kvm_pic *pic = pic_irqchip(kvm);
+>  	return kvm_pic_set_irq(pic, e->irqchip.pin, irq_source_id, level);
+> -#else
+> -	return -1;
+> -#endif
+>  }
+>  
+>  static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
+> @@ -57,12 +50,7 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
+>  
+>  inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
+>  {
+> -#ifdef CONFIG_IA64
+> -	return irq->delivery_mode ==
+> -		(IOSAPIC_LOWEST_PRIORITY << IOSAPIC_DELIVERY_SHIFT);
+> -#else
+>  	return irq->delivery_mode == APIC_DM_LOWEST;
+> -#endif
+>  }
+>  
+>  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+> @@ -202,9 +190,7 @@ int kvm_request_irq_source_id(struct kvm *kvm)
+>  	}
+>  
+>  	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
+> -#ifdef CONFIG_X86
+>  	ASSERT(irq_source_id != KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID);
+> -#endif
+>  	set_bit(irq_source_id, bitmap);
+>  unlock:
+>  	mutex_unlock(&kvm->irq_lock);
+> @@ -215,9 +201,7 @@ unlock:
+>  void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+>  {
+>  	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
+> -#ifdef CONFIG_X86
+>  	ASSERT(irq_source_id != KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID);
+> -#endif
+>  
+>  	mutex_lock(&kvm->irq_lock);
+>  	if (irq_source_id < 0 ||
+> @@ -230,9 +214,7 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+>  		goto unlock;
+>  
+>  	kvm_ioapic_clear_all(kvm->arch.vioapic, irq_source_id);
+> -#ifdef CONFIG_X86
+>  	kvm_pic_clear_all(pic_irqchip(kvm), irq_source_id);
+> -#endif
+>  unlock:
+>  	mutex_unlock(&kvm->irq_lock);
+>  }
+> @@ -322,16 +304,11 @@ out:
+>  	  .u.irqchip = { .irqchip = KVM_IRQCHIP_IOAPIC, .pin = (irq) } }
+>  #define ROUTING_ENTRY1(irq) IOAPIC_ROUTING_ENTRY(irq)
+>  
+> -#ifdef CONFIG_X86
+> -#  define PIC_ROUTING_ENTRY(irq) \
+> +#define PIC_ROUTING_ENTRY(irq) \
+>  	{ .gsi = irq, .type = KVM_IRQ_ROUTING_IRQCHIP,	\
+>  	  .u.irqchip = { .irqchip = SELECT_PIC(irq), .pin = (irq) % 8 } }
+> -#  define ROUTING_ENTRY2(irq) \
+> +#define ROUTING_ENTRY2(irq) \
+>  	IOAPIC_ROUTING_ENTRY(irq), PIC_ROUTING_ENTRY(irq)
+> -#else
+> -#  define ROUTING_ENTRY2(irq) \
+> -	IOAPIC_ROUTING_ENTRY(irq)
+> -#endif
+>  
+>  static const struct kvm_irq_routing_entry default_routing[] = {
+>  	ROUTING_ENTRY2(0), ROUTING_ENTRY2(1),
+> @@ -346,20 +323,6 @@ static const struct kvm_irq_routing_entry default_routing[] = {
+>  	ROUTING_ENTRY1(18), ROUTING_ENTRY1(19),
+>  	ROUTING_ENTRY1(20), ROUTING_ENTRY1(21),
+>  	ROUTING_ENTRY1(22), ROUTING_ENTRY1(23),
+> -#ifdef CONFIG_IA64
+> -	ROUTING_ENTRY1(24), ROUTING_ENTRY1(25),
+> -	ROUTING_ENTRY1(26), ROUTING_ENTRY1(27),
+> -	ROUTING_ENTRY1(28), ROUTING_ENTRY1(29),
+> -	ROUTING_ENTRY1(30), ROUTING_ENTRY1(31),
+> -	ROUTING_ENTRY1(32), ROUTING_ENTRY1(33),
+> -	ROUTING_ENTRY1(34), ROUTING_ENTRY1(35),
+> -	ROUTING_ENTRY1(36), ROUTING_ENTRY1(37),
+> -	ROUTING_ENTRY1(38), ROUTING_ENTRY1(39),
+> -	ROUTING_ENTRY1(40), ROUTING_ENTRY1(41),
+> -	ROUTING_ENTRY1(42), ROUTING_ENTRY1(43),
+> -	ROUTING_ENTRY1(44), ROUTING_ENTRY1(45),
+> -	ROUTING_ENTRY1(46), ROUTING_ENTRY1(47),
+> -#endif
+>  };
+>  
+>  int kvm_setup_default_irq_routing(struct kvm *kvm)
+> 
