@@ -1,147 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670AbaKUFhO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 00:37:14 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:36751 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719AbaKUFhM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 00:37:12 -0500
-Message-ID: <546ECF4C.2040304@gmail.com>
-Date: Fri, 21 Nov 2014 13:36:12 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751275AbaKUFlk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 00:41:40 -0500
+Received: from ozlabs.org ([103.22.144.67]:40537 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750762AbaKUFlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 00:41:39 -0500
+Date: Fri, 21 Nov 2014 16:41:31 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wolfram Sang <wsa@the-dreams.de>, Keerthy <j-keerthy@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: linux-next: manual merge of the driver-core tree with the arm-soc
+ tree
+Message-ID: <20141121164131.0190e0ab@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "bsegall@google.com" <bsegall@google.com>
-Subject: Re: [PATCH v6 4/6] sched: get CPU's usage statistic
-References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org> <1411488485-10025-5-git-send-email-vincent.guittot@linaro.org> <54246791.9050101@arm.com> <CAKfTPtCzVRY4q184nqHSL7zFh1CvF009p8q8EPFCZxDFMx9TeQ@mail.gmail.com>
-In-Reply-To: <CAKfTPtCzVRY4q184nqHSL7zFh1CvF009p8q8EPFCZxDFMx9TeQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/y7YDfZDjZbDRL5_Xi8nZKhb"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
-On 9/26/14, 8:17 PM, Vincent Guittot wrote:
-> On 25 September 2014 21:05, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
->> On 23/09/14 17:08, Vincent Guittot wrote:
->>> Monitor the usage level of each group of each sched_domain level. The usage is
->>> the amount of cpu_capacity that is currently used on a CPU or group of CPUs.
->>> We use the utilization_load_avg to evaluate the usage level of each group.
->>>
->>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->>> ---
->>>   kernel/sched/fair.c | 13 +++++++++++++
->>>   1 file changed, 13 insertions(+)
->>>
->>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>> index 2cf153d..4097e3f 100644
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -4523,6 +4523,17 @@ static int select_idle_sibling(struct task_struct *p, int target)
->>>        return target;
->>>   }
->>>
->>> +static int get_cpu_usage(int cpu)
->>> +{
->>> +     unsigned long usage = cpu_rq(cpu)->cfs.utilization_load_avg;
->>> +     unsigned long capacity = capacity_orig_of(cpu);
->>> +
->>> +     if (usage >= SCHED_LOAD_SCALE)
->>> +             return capacity + 1;
->> Why you are returning rq->cpu_capacity_orig + 1 (1025) in case
->> utilization_load_avg is greater or equal than 1024 and not usage or
->> (usage * capacity) >> SCHED_LOAD_SHIFT too?
-> The usage can't be higher than the full capacity of the CPU because
-> it's about the running time on this CPU. Nevertheless, usage can be
-> higher than SCHED_LOAD_SCALE because of unfortunate rounding in
-> avg_period and running_load_avg or just after migrating tasks until
-> the average stabilizes with the new running time.
->
->> In case the weight of a sched group is greater than 1, you might loose
->> the information that the whole sched group is over-utilized too.
-> that's exactly for sched_group with more than 1 CPU that we need to
-> cap the usage of a CPU to 100%. Otherwise, the group could be seen as
-> overloaded (CPU0 usage at 121% + CPU1 usage at 80%) whereas CPU1 has
-> 20% of available capacity
->
->> You add up the individual cpu usage values for a group by
->> sgs->group_usage += get_cpu_usage(i) in update_sg_lb_stats and later use
->> sgs->group_usage in group_is_overloaded to compare it against
->> sgs->group_capacity (taking imbalance_pct into consideration).
->>
->>> +
->>> +     return (usage * capacity) >> SCHED_LOAD_SHIFT;
->> Nit-pick: Since you're multiplying by a capacity value
->> (rq->cpu_capacity_orig) you should shift by SCHED_CAPACITY_SHIFT.
-> we want to compare the output of the function with some capacity
-> figures so i think that >> SCHED_LOAD_SHIFT is the right operation.
+--Sig_/y7YDfZDjZbDRL5_Xi8nZKhb
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Could you explain more why '>> SCHED_LOAD_SHIFT' instead of '>> 
-SCHED_CAPACITY_SHIFT'?
+Hi Greg,
 
-Regards,
-Wanpeng Li
+Today's linux-next merge of the driver-core tree got a conflict in
+drivers/bus/omap_l3_noc.c between commit 61b43d4e919e ("bus:
+omap_l3_noc: Add resume hook to restore context") from the arm-soc tree
+and commit 571b8c6adb1b ("bus: drop owner assignment from
+platform_drivers") from the driver-core tree.
 
->
->> Just to make sure: You do this scaling of usage by cpu_capacity_orig
->> here only to cater for the fact that cpu_capacity_orig might be uarch
->> scaled (by arch_scale_cpu_capacity, !SMT) in update_cpu_capacity while
-> I do this for any system with CPUs that have an original capacity that
-> is different from SCHED_CAPACITY_SCALE so it's for both uArch and SMT.
->
->> utilization_load_avg is currently not.
->> We don't even uArch scale on ARM TC2 big.LITTLE platform in mainline
->> today due to the missing clock-frequency property in the device tree.
-> sorry i don't catch your point
->
->> I think it's hard for people to grasp that your patch-set takes uArch
->> scaling of capacity into consideration but not frequency scaling of
->> capacity (via arch_scale_freq_capacity, not used at the moment).
->>
->>> +}
->>> +
->>>   /*
->>>    * select_task_rq_fair: Select target runqueue for the waking task in domains
->>>    * that have the 'sd_flag' flag set. In practice, this is SD_BALANCE_WAKE,
->>> @@ -5663,6 +5674,7 @@ struct sg_lb_stats {
->>>        unsigned long sum_weighted_load; /* Weighted load of group's tasks */
->>>        unsigned long load_per_task;
->>>        unsigned long group_capacity;
->>> +     unsigned long group_usage; /* Total usage of the group */
->>>        unsigned int sum_nr_running; /* Nr tasks running in the group */
->>>        unsigned int group_capacity_factor;
->>>        unsigned int idle_cpus;
->>> @@ -6037,6 +6049,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
->>>                        load = source_load(i, load_idx);
->>>
->>>                sgs->group_load += load;
->>> +             sgs->group_usage += get_cpu_usage(i);
->>>                sgs->sum_nr_running += rq->cfs.h_nr_running;
->>>
->>>                if (rq->nr_running > 1)
->>>
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/bus/omap_l3_noc.c
+index 17d86595951c,1ff1863415c5..000000000000
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@@ -358,8 -300,6 +358,7 @@@ static struct platform_driver omap_l3_d
+  	.probe		=3D omap_l3_probe,
+  	.driver		=3D {
+  		.name		=3D "omap_l3_noc",
+- 		.owner		=3D THIS_MODULE,
+ +		.pm		=3D L3_DEV_PM_OPS,
+  		.of_match_table =3D of_match_ptr(l3_noc_match),
+  	},
+  };
+
+--Sig_/y7YDfZDjZbDRL5_Xi8nZKhb
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUbtCQAAoJEMDTa8Ir7ZwVbicP/2r1e4Uf+liz6GC2axBtdHhT
+RTxBJe0JStb2Gy43/C/LLOQdCSQCsO6RIJolCEkO1oh+bRKvLiUpcwlDTIHVWG+1
+5FG1VK1YSkOlinuB3DxwUluTvI66csJ1nwPuA72E0//RuXLS+oO2OfaWXG3tSRMB
+03H7ZeoU9PEOz76rdSwrbv4yS4RxlttreHeclD+Mvw7/KeFtT528wYw49dcWsaYs
+NjMOodttEUzwaOVXUSmllbXQ46n//Ck4HFDS+kYHuwAVFjKjXG7Jp5qD1GLDRExo
+HIbGYSc9szlTXlUA+itVYwtt7AaZJMcta1g/0EbOcEB0/QMd3OfwCAJabJu8cfUL
+323v80FfNfiN94+o6uhKqoP9+O/H/7ZDXXFxkqiMCeOSOWvkQrNWIzU/T/sBqP1y
+Yfx5MSNThzaz5GXI2RJbnVvdmpKKslMzp0pOXWbZpGutS8LfjxkePZk72BXpz2Zh
+IqqVfqfWeYbV89x3w0b3y6BHy6LzeH+4gD1jA7wvQLJX/jw6XBAWyzHHbW8c5rXi
+j/QttZFG+wI1ckLqEn4UdIT2zccHPnAcnmoFGnWkEU+SdT0Kqv6PsdHHpDIAhkgT
+FlOF018O3E8aQ3nyv5t7Zm9FyUOP7X08Oc7WF4rN4UJhCQIT3FGEOBISmaxYT8kS
+PajCvU0gFHcAUJbq8TmJ
+=6ZMd
+-----END PGP SIGNATURE-----
+
+--Sig_/y7YDfZDjZbDRL5_Xi8nZKhb--
