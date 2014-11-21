@@ -1,99 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751183AbaKURoV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 12:44:21 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:49976 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878AbaKURoT (ORCPT
+	id S1750897AbaKURrt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 12:47:49 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:62166 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703AbaKURrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 12:44:19 -0500
+	Fri, 21 Nov 2014 12:47:47 -0500
+From: Kiran Raparthy <kiran.kumar@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kiran Raparthy <kiran.kumar@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Benoit Goby <benoit@android.com>, Todd Poynor <toddpoynor@google.com>
+Subject: [PATCH v2 1/3] usb: phy: introduce usb_phy_set_event interface
+Date: Fri, 21 Nov 2014 23:16:29 +0530
+Message-Id: <1416591991-18925-1-git-send-email-kiran.kumar@linaro.org>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-In-Reply-To: <546F5C01.8060103@users.sourceforge.net>
-References: <5307CAA2.8060406@users.sourceforge.net>
-	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
-	<530A086E.8010901@users.sourceforge.net>
-	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
-	<530A72AA.3000601@users.sourceforge.net>
-	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
-	<530B5FB6.6010207@users.sourceforge.net>
-	<alpine.DEB.2.10.1402241710370.2074@hadrien>
-	<530C5E18.1020800@users.sourceforge.net>
-	<alpine.DEB.2.10.1402251014170.2080@hadrien>
-	<530CD2C4.4050903@users.sourceforge.net>
-	<alpine.DEB.2.10.1402251840450.7035@hadrien>
-	<530CF8FF.8080600@users.sourceforge.net>
-	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
-	<530DD06F.4090703@users.sourceforge.net>
-	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-	<5317A59D.4@users.sourceforge.net>
-	<546F5C01.8060103@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 19:44:17 +0200
-Message-ID: <CABdoFFeZW_sj5krvx4s03XSv--0jry+4ER_tT2Yt-08RRsoCkQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] USB-IP: Deletion of unnecessary checks before the
- function call "usb_put_dev"
-From: Valentina Manea <valentina.manea.m@gmail.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Shuah Khan <shuah.kh@samsung.com>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Julia Lawall <julia.lawall@lip6.fr>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 5:36 PM, SF Markus Elfring
-<elfring@users.sourceforge.net> wrote:
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Fri, 21 Nov 2014 16:33:18 +0100
->
-> The usb_put_dev() function tests whether its argument is NULL and then
-> returns immediately. Thus the test around the call is not needed.
->
-> This issue was detected by using the Coccinelle software.
->
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
-> ---
->  drivers/usb/usbip/vhci_hcd.c | 9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/usb/usbip/vhci_hcd.c b/drivers/usb/usbip/vhci_hcd.c
-> index c02374b..cc1b03e 100644
-> --- a/drivers/usb/usbip/vhci_hcd.c
-> +++ b/drivers/usb/usbip/vhci_hcd.c
-> @@ -518,8 +518,7 @@ static int vhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
->                         dev_info(dev, "SetAddress Request (%d) to port %d\n",
->                                  ctrlreq->wValue, vdev->rhport);
->
-> -                       if (vdev->udev)
-> -                               usb_put_dev(vdev->udev);
-> +                       usb_put_dev(vdev->udev);
->                         vdev->udev = usb_get_dev(urb->dev);
->
->                         spin_lock(&vdev->ud.lock);
-> @@ -539,8 +538,7 @@ static int vhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
->                                 usbip_dbg_vhci_hc(
->                                         "Not yet?:Get_Descriptor to device 0 (get max pipe size)\n");
->
-> -                       if (vdev->udev)
-> -                               usb_put_dev(vdev->udev);
-> +                       usb_put_dev(vdev->udev);
->                         vdev->udev = usb_get_dev(urb->dev);
->                         goto out;
->
-> @@ -831,8 +829,7 @@ static void vhci_device_reset(struct usbip_device *ud)
->         vdev->speed  = 0;
->         vdev->devid  = 0;
->
-> -       if (vdev->udev)
-> -               usb_put_dev(vdev->udev);
-> +       usb_put_dev(vdev->udev);
->         vdev->udev = NULL;
->
->         if (ud->tcp_socket) {
-> --
-> 2.1.3
->
+PHY drivers require a generic interface to handle per-PHY events.
 
-Acked-by: Valentina Manea <valentina.manea.m@gmail.com>
+usb_phy_set_event interface sets event to phy event.
+PHY drivers call this interface for each phy event.
+
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-usb@vger.kernel.org
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>
+Cc: Arve Hjønnevåg <arve@android.com>
+Cc: Benoit Goby <benoit@android.com>
+[Original patch in Android from Todd]
+Cc: Todd Poynor <toddpoynor@google.com>
+Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/usb/phy/phy.c   | 12 ++++++++++++
+ include/linux/usb/phy.h |  5 +++++
+ 2 files changed, 17 insertions(+)
+
+diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
+index e6bf801..b4066a0 100644
+--- a/drivers/usb/phy/phy.c
++++ b/drivers/usb/phy/phy.c
+@@ -446,3 +446,15 @@ int usb_bind_phy(const char *dev_name, u8 index,
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(usb_bind_phy);
++
++/**
++ * usb_phy_set_event - set event to phy event
++ * @x: the phy returned by usb_get_phy();
++ *
++ * This sets event to phy event
++ */
++void usb_phy_set_event(struct usb_phy *x, unsigned long event)
++{
++	x->last_event = event;
++}
++EXPORT_SYMBOL_GPL(usb_phy_set_event);
+diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+index ac7d791..f499c23 100644
+--- a/include/linux/usb/phy.h
++++ b/include/linux/usb/phy.h
+@@ -209,6 +209,7 @@ extern void usb_put_phy(struct usb_phy *);
+ extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
+ extern int usb_bind_phy(const char *dev_name, u8 index,
+ 				const char *phy_dev_name);
++extern void usb_phy_set_event(struct usb_phy *x, unsigned long event);
+ #else
+ static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
+ {
+@@ -250,6 +251,10 @@ static inline int usb_bind_phy(const char *dev_name, u8 index,
+ {
+ 	return -EOPNOTSUPP;
+ }
++
++static inline void usb_phy_set_event(struct usb_phy *x, unsigned long event)
++{
++}
+ #endif
+ 
+ static inline int
+-- 
+1.9.1
+
