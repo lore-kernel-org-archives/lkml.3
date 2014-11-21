@@ -1,108 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059AbaKUB0J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 20:26:09 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:35718 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756487AbaKUB0G (ORCPT
+	id S1757426AbaKUB2s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 20:28:48 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33626 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756873AbaKUB2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 20:26:06 -0500
-Message-ID: <546E948E.2090502@huawei.com>
-Date: Fri, 21 Nov 2014 09:25:34 +0800
-From: leizhen <thunder.leizhen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: KVM <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Zefan Li <lizefan@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
-        Tianhong Ding <dingtianhong@huawei.com>,
-        Kefeng Wang <wangkefeng.wang@huawei.com>
-Subject: Re: [PATCH 1/1] vfio: put off the allocation of "minor" in vfio_create_group
-References: <1416482702-10820-1-git-send-email-thunder.leizhen@huawei.com> <1416497837.27937.362.camel@ul30vt.home>
-In-Reply-To: <1416497837.27937.362.camel@ul30vt.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.142]
-X-CFilter-Loop: Reflected
+	Thu, 20 Nov 2014 20:28:47 -0500
+Message-ID: <1416533299.7215.17.camel@decadent.org.uk>
+Subject: Re: [PATCH] ixgbe: make VLAN filter conditional in SR-IOV case
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+Cc: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        Hayato Momma <h-momma@ce.jp.nec.com>,
+        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Fri, 21 Nov 2014 01:28:19 +0000
+In-Reply-To: <7F861DC0615E0C47A872E6F3C5FCDDBD05D9D336@BPXM14GP.gisp.nec.co.jp>
+References: <7F861DC0615E0C47A872E6F3C5FCDDBD05D9D336@BPXM14GP.gisp.nec.co.jp>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-7axfqq2RjRK3lAtmm77X"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/20 23:37, Alex Williamson wrote:
-> On Thu, 2014-11-20 at 19:25 +0800, Zhen Lei wrote:
->> The next code fragment "list_for_each_entry" is not depend on "minor". With this
->> patch, the free of "minor" in "list_for_each_entry" can be reduced, and there is
->> no functional change.
-> 
-> A reasonable micro-optimization, but I'm curious if you're actually
-> seeing some measurable overhead from this.  It seems like we'd need to
 
-Oh, I just found this by code review. It's good to put pure check first and
-resource allocation later, if they are order independent. Isn't it?
-I think it will not improve performance but only save a little code space
-and looks feel better.
+--=-7axfqq2RjRK3lAtmm77X
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> have multiple devices, all within the same IOMMU group, all probed by
-> vfio-pci at the same time to exercise the race condition.  Thanks,
+On Thu, 2014-11-13 at 08:28 +0000, Hiroshi Shimamoto wrote:
+> From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+>=20
+> Disable hardware VLAN filtering if netdev->features VLAN flag is dropped.
+>=20
+> In SR-IOV case, there is a use case which needs to disable VLAN filter.
+> For example, we need to make a network function with VF in virtualized
+> environment. That network function may be a software switch, a router
+> or etc. It means that that network function will be an end point which
+> terminates many VLANs.
+>=20
+> In the current implementation, VLAN filtering always be turned on and
+> VF can receive only 63 VLANs. It means that only 63 VLANs can be used
+> and it's not enough at all for building a virtual router.
+>=20
+> With this patch, if the user turns VLAN filtering off on the host, VF
+> can receive every VLAN packet.
+> The behavior is changed only if VLAN filtering is turned off by ethtool.
+[...]
 
-I think vfio_create_group can not be invoked frequently. So, the performance of this function
-is not a major consideration, we don't care slightly performance change.
+What happens when VLAN filtering is turned back on and a VF uses too
+many VLANs?  It seems like that should either be prevented (you can't
+turn it back on) or the driver should log a message saying the VF is now
+broken.
 
-> 
-> Alex
-> 
->> Signed-off-by: Zhen Lei <thunder.leizhen@huawei.com>
->> ---
->>  drivers/vfio/vfio.c | 13 ++++++-------
->>  1 file changed, 6 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
->> index f018d8d..737eb468 100644
->> --- a/drivers/vfio/vfio.c
->> +++ b/drivers/vfio/vfio.c
->> @@ -225,22 +225,21 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
->>
->>  	mutex_lock(&vfio.group_lock);
->>
->> -	minor = vfio_alloc_group_minor(group);
->> -	if (minor < 0) {
->> -		vfio_group_unlock_and_free(group);
->> -		return ERR_PTR(minor);
->> -	}
->> -
->>  	/* Did we race creating this group? */
->>  	list_for_each_entry(tmp, &vfio.group_list, vfio_next) {
->>  		if (tmp->iommu_group == iommu_group) {
->>  			vfio_group_get(tmp);
->> -			vfio_free_group_minor(minor);
->>  			vfio_group_unlock_and_free(group);
->>  			return tmp;
->>  		}
->>  	}
->>
->> +	minor = vfio_alloc_group_minor(group);
->> +	if (minor < 0) {
->> +		vfio_group_unlock_and_free(group);
->> +		return ERR_PTR(minor);
->> +	}
->> +
->>  	dev = device_create(vfio.class, NULL,
->>  			    MKDEV(MAJOR(vfio.group_devt), minor),
->>  			    group, "%d", iommu_group_id(iommu_group));
->> --
->> 1.8.0
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-> 
-> 
-> .
-> 
+Ben.
 
+--=20
+Ben Hutchings
+Beware of bugs in the above code;
+I have only proved it correct, not tried it. - Donald Knuth
 
+--=-7axfqq2RjRK3lAtmm77X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAVG6VPee/yOyVhhEJAQoqBhAAmpUy80xu2SpV/gjvI8y9zpTefOgUPUgG
+MVRTUEoJVaQfeKZvN1tzrLxz7OXukAQ/ZWjvktZghjW/hj+aMqJ+nE/NkzDLszU2
+117RHcnF6oy1Ts8+Dkbf2dDLpfZSJ3x5LByLrZ/Tnh9FduNp/AVdChJCDOBy4Ku9
+2t54hO6wZzx/u+HEVlueHrtxtLZv9d83bSUYKSkl7ZdmCUOEiyc6M5weWWPtjbQV
+YhXEHjnq/F+wRSWx54Fw7FBEMENeTe1K8snfHazLAjm2yENGbRG7vzLjAAqy096a
+GSXtKJQNv0yhbwe52NRV3O9gb+6u/JsDsnlbVb1YuqwVIjBGlvHA25oNVqHqbXZF
+weXj8om847lw7e4S3LyLFwLCbJNfYZIIDdhMqOTcucYgjshA93ezCcB2CndB7EUa
+vHN7D7KH8X+gfBKxknSLK+92OMSfoWUtmQ8eG2ydQjtmF8/k360RhKTKUrwm97mD
+MI5jFsNTF8FjH+KSTDQoxndaR2Uq8gsQBgkQJj28kP9stTrXQyGRS5LMYwDDJK5c
+5GUcoMB1jctjypE4f/Fg4dsnhtg7rSeZU2HnaVTIZ1sxkcprSki1toDzYf99h1SC
+S/6KbSKvTlz7E8IuNlMla1Mdr38mkWou2KUt+hGLMPS8fgzzir5G9jm+c0TDIxbb
+l+2/MgtHHw8=
+=y4ZZ
+-----END PGP SIGNATURE-----
+
+--=-7axfqq2RjRK3lAtmm77X--
