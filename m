@@ -1,67 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758742AbaKURLs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 12:11:48 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:36990 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755353AbaKURLr (ORCPT
+	id S1758712AbaKURSz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 12:18:55 -0500
+Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:45429 "EHLO
+	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758514AbaKURSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 12:11:47 -0500
-Date: Fri, 21 Nov 2014 12:11:36 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141121121136.18df4ecb@gandalf.local.home>
-In-Reply-To: <20141121170151.GC30603@home.goodmis.org>
-References: <alpine.DEB.2.11.1411200002330.3909@nanos>
-	<20141119235033.GE11386@lerouge>
-	<20141120122339.GA14877@htj.dyndns.org>
-	<alpine.DEB.2.11.1411202204030.3950@nanos>
-	<20141120221122.GA25393@htj.dyndns.org>
-	<alpine.DEB.2.11.1411202315230.3950@nanos>
-	<20141120230514.GB25393@htj.dyndns.org>
-	<alpine.DEB.2.11.1411210109460.6439@nanos>
-	<20141121141332.GA8808@lerouge>
-	<20141121162506.GA15461@htj.dyndns.org>
-	<20141121170151.GC30603@home.goodmis.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 21 Nov 2014 12:18:54 -0500
+Message-ID: <1416590308.1827.3.camel@linaro.org>
+Subject: Re: [PATCH v3 2/3] ARM: kprobes: collects stack consumption for
+ store instructions
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: masami.hiramatsu.pt@hitachi.com, linux@arm.linux.org.uk,
+        will.deacon@arm.com, taras.kondratiuk@linaro.org,
+        ben.dooks@codethink.co.uk, cl@linux.com, rabin@rab.in,
+        davem@davemloft.net, lizefan@huawei.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Fri, 21 Nov 2014 17:18:28 +0000
+In-Reply-To: <1416551731-50777-3-git-send-email-wangnan0@huawei.com>
+References: <1416551731-50777-1-git-send-email-wangnan0@huawei.com>
+	 <1416551731-50777-3-git-send-email-wangnan0@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+X-Originating-smarthost01c-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014 12:01:51 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
- 
-> Looking at kernel/trace/trace_functions.c: function_trace_call() which is
-> registered with RECURSION_SAFE, I see that the recursion check is done
-> before the per_cpu_ptr() call to the dynamically allocated per_cpu data.
+On Fri, 2014-11-21 at 14:35 +0800, Wang Nan wrote:
+> This patch uses the previously introduced checker functionality on
+> store instructions to record their stack consumption information to
+> arch_probes_insn.
 > 
-> It looks OK, but...
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> Signed-off-by: Jon Medhurst <tixy@linaro.org>
+> Reviewed-by: Jon Medhurst <tixy@linaro.org>
 > 
-> Oh! but if we trace the page fault handler, and we fault here too
-> we just nuked the cr2 register. Not good.
+> ---
 
-Ah! Looking at the code, I see that do_page_fault (called from
-assembly) is marked notrace. And the first thing it does is:
+During testing of these patches I found a couple of bugs in the 32-bit
+thumb instruction decoding...
 
-	unsigned long address = read_cr2();
+[...]
+> +static enum probes_insn __kprobes t32_check_stack(probes_opcode_t insn,
+> +		struct arch_probes_insn *asi,
+> +		const struct decode_header *h)
+> +{
+> +	/*
+> +	 * PROBES_T32_LDMSTM, PROBES_T32_LDRDSTRD and PROBES_T32_LDRSTR
+> +	 * may get here. Simply mark all normal insns as STACK_USE_NONE.
+> +	 */
+> +	static const union decode_item table[] = {
+> +
+> +		/*
+> +		 * First, filter out all ldr insns to make our life easier.
+> +		 * Following load insns may come here:
+> +		 * LDM, LDRD, LDR.
+> +		 * In T32 encoding, bit 20 is enough for distinguishing
+> +		 * load and store. All load insns have this bit set, when
+> +		 * all store insns have this bit clear.
+> +		 */
+> +		DECODE_CUSTOM	(0x00100000, 0x00100000, STACK_USE_NONE),
+> +
+> +		/*
+> +		 * Mark all 'STR{,B,H}, Rt, [Rn, Rm]' as STACK_USE_UNKNOWN
+> +		 * if Rn or Rm is SP. T32 doesn't encode STRD.
+> +		 */
+> +		/*                                    | Rn | Rt |         | Rm |*/
+> +		/* STR (register)	1111 1000 0100 xxxx xxxx 0000 00xx xxxx */
+> +		/* STRB (register)	1111 1000 0000 xxxx xxxx 0000 00xx xxxx */
+> +		/* STRH (register)	1111 1000 0010 xxxx xxxx 0000 00xx xxxx */
+> +		/* INVALID INSN		1111 1000 0110 xxxx xxxx 0000 00xx xxxx */
+> +		/* By Introducing INVALID INSN, bit 21 and 22 can be ignored. */
+> +		DECODE_OR	(0xff9f0fc0, 0xf80d0000),
+> +		DECODE_CUSTOM	(0xff900fcf, 0xf800000d, STACK_USE_UNKNOWN),
+> +
+> +
+> +		/*                                    | Rn | Rt | PUW|   imm8  |*/
+> +		/* STR (imm 8)		1111 1000 0100 xxxx xxxx 110x xxxx xxxx */
+> +		/* STRB (imm 8)		1111 1000 0000 xxxx xxxx 110x xxxx xxxx */
+> +		/* STRH (imm 8)		1111 1000 0010 xxxx xxxx 110x xxxx xxxx */
+> +		/* INVALID INSN		1111 1000 0110 xxxx xxxx 110x xxxx xxxx */
+> +		/* Only consider U == 0 and P == 1: strx rx, [sp, #-<imm>] */
+> +		DECODE_CUSTOM	(0xff9f0e00, 0xf80d0c00, STACK_USE_FIXED_0XX),
+> +
+> +		/* For STR{,B,H} (imm 12), offset is always positive, so ignore them. */
+> +
+> +		/*                              P U W | Rn | Rt | Rt2|   imm8  |*/
+> +		/* STRD (immediate)	1110 1001 01x0 1101 xxxx xxxx xxxx xxxx */
+> +		/* Only consider U == 0 and P == 1 */
+> +		DECODE_CUSTOM	(0xffdf0000, 0xe94d0000, STACK_USE_FIXED_0XX),
 
-And uses that. Thus if the function tracer were to fault on
-exception_enter() or __do_page_fautt(), the address wont be
-clobbered.
+For the encoding of LDRD, the 8 bit immediate value is the number of
+words not bytes and so needs multiplying by 4. This will need an
+additional enum and function to handle that.
 
--- Steve
+
+> +
+> +		/*                                    | Rn | */
+> +		/* STMDB		1110 1001 00x0 1101 xxxx xxxx xxxx xxxx */
+> +		DECODE_CUSTOM	(0xffdf0000, 0xe94d0000, STACK_USE_STMDX),
+
+The match value is incorrect (the same as used for LDRD), this should
+be 
+
+		DECODE_CUSTOM	(0xffdf0000, 0xe90d0000, STACK_USE_STMDX),
+
+
+-- 
+Tixy
+
+
