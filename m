@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758306AbaKUOsj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 09:48:39 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36795 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806AbaKUOsi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 09:48:38 -0500
-Message-ID: <546F50BD.8070501@arm.com>
-Date: Fri, 21 Nov 2014 14:48:29 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1758378AbaKUOuk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 09:50:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35124 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755216AbaKUOui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 09:50:38 -0500
+Date: Fri, 21 Nov 2014 09:50:00 -0500
+From: Dave Jones <davej@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, Don Zickus <dzickus@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141121145000.GA10364@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Ingo Molnar <mingo@kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andy Lutomirski <luto@amacapital.net>,
+	Don Zickus <dzickus@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	the arch/x86 maintainers <x86@kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>
+References: <20141118145234.GA7487@redhat.com>
+ <alpine.DEB.2.11.1411181914020.3909@nanos>
+ <20141118215540.GD35311@redhat.com>
+ <20141119021902.GA14216@redhat.com>
+ <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
+ <20141119145902.GA13387@redhat.com>
+ <546D0530.8040800@mit.edu>
+ <20141120152509.GA5412@redhat.com>
+ <CA+55aFzP0jivKYWUVwt==wNaBjZM+aBQLMT=Td+2cOVKSvm-dQ@mail.gmail.com>
+ <20141121063742.GA29250@gmail.com>
 MIME-Version: 1.0
-To: "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-CC: Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Lendacky, Thomas" <Thomas.Lendacky@amd.com>,
-        "Schopp, Joel" <Joel.Schopp@amd.com>
-Subject: Re: [PATCH V3] arm64: amd-seattle: Adding device tree for AMD Seattle
- platform
-References: <D0955C2B.9B22%suravee.suthikulpanit@amd.com>
-In-Reply-To: <D0955C2B.9B22%suravee.suthikulpanit@amd.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141121063742.GA29250@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/11/14 14:40, Suthikulpanit, Suravee wrote:
-> 
-> 
-> On 11/21/14, 19:57, "Marc Zyngier" <marc.zyngier@arm.com> wrote:
-> 
->>> +	gic: interrupt-controller@e1101000 {
->>> +		compatible = "arm,gic-400", "arm,cortex-a15-gic";
->>> +		interrupt-controller;
->>> +		#interrupt-cells = <3>;
->>> +		#address-cells = <2>;
->>> +		#size-cells = <2>;
->>> +		reg = <0x0 0xe1110000 0 0x1000>,
->>> +		      <0x0 0xe112f000 0 0x2000>,
->>> +		      <0x0 0xe1140000 0 0x10000>,
->>> +		      <0x0 0xe1160000 0 0x10000>;
->>> +		interrupts = <1 8 0xf04>;
->>
->> Are you sure about this one? ARM systems usually have this wired on PPI9
->> (interrupt 25)...
->>
->> Thanks,
->>
->> 	M.
-> 
-> I think you might be right. GIC-400 TRM says that this is should be
-> 25, and used for virtual maintenance interrupts. How can I verify
-> this in Linux? KVM?
+On Fri, Nov 21, 2014 at 07:37:42AM +0100, Ingo Molnar wrote:
 
-KVM is one way, but you'll never see the interrupt firing (we kill the
-interrupt while in HYP, before the kernel gets a chance to see it).
+ > It might make sense to disable the softlockup detector altogether 
+ > and just see whether trinity finishes/wedges, whether a login 
+ > over the console is still possible - etc.
 
-If you effectively have GIC400 on this system, then I know for sure this
-is interrupt 25.
+I can give that a try later.
 
-Thanks,
+ > The softlockup messages in themselves are only analytical, unless 
+ > CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=1 is used.
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Hm, I don't recall why I had that set. That should make things easier
+to debug if the machine stays alive a little longer rather than
+panicing. At least it might make sure that I get the full traces
+over usb-serial.
+
+Additionally, it might make ftrace an option.
+
+The last thing I tested was 3.17 plus the perf fixes Frederic pointed
+out yesterday. It's survived 20 hours of runtime, so I'm back to
+believing that this is a recent (ie, post 3.17 bug).
+
+Running into the weekend though, so I'm not going to get to bisecting
+until Monday probably. So maybe I'll try your idea at the top of this
+mail in my over-the-weekend run.
+
+	Dave
+
