@@ -1,157 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568AbaKUBhx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 20:37:53 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:35077 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756947AbaKUBfb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 20:35:31 -0500
-From: Grant Likely <grant.likely@linaro.org>
-To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH 4/8] of: Add of_reconfig_get_state_change() of notifier helper.
-Date: Fri, 21 Nov 2014 01:35:11 +0000
-Message-Id: <1416533715-9758-5-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416533715-9758-1-git-send-email-grant.likely@linaro.org>
-References: <1416533715-9758-1-git-send-email-grant.likely@linaro.org>
+	id S1757947AbaKUBiH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 20:38:07 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:54111 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757049AbaKUBiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 20:38:04 -0500
+Message-ID: <546E977A.30508@osg.samsung.com>
+Date: Thu, 20 Nov 2014 18:38:02 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/70] 3.10.61-stable review
+References: <20141119205210.913169042@linuxfoundation.org>
+In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+On 11/19/2014 01:51 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.61 release.
+> There are 70 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Fri Nov 21 20:51:58 UTC 2014.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.61-rc1.gz
+> and the diffstat can be found below.
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
-Introduce of_reconfig_get_state_change() which allows an of notifier
-to query about device state changes.
+Compiled and booted test system. No dmesg regressions.
 
-Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
----
- drivers/of/dynamic.c | 96 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/of.h   |  1 +
- 2 files changed, 97 insertions(+)
+-- Shuah
 
-diff --git a/drivers/of/dynamic.c b/drivers/of/dynamic.c
-index 7c095bffef3a..7634c2f69d4a 100644
---- a/drivers/of/dynamic.c
-+++ b/drivers/of/dynamic.c
-@@ -85,6 +85,102 @@ int of_reconfig_notify(unsigned long action, void *p)
- 	return notifier_to_errno(rc);
- }
- 
-+/*
-+ * of_reconfig_get_state_change()	- Returns new state of device
-+ * @action	- action of the of notifier
-+ * @arg		- argument of the of notifier
-+ *
-+ * Returns the new state of a device based on the notifier used.
-+ * Returns 0 on device going from enabled to disabled, 1 on device
-+ * going from disabled to enabled and -1 on no change.
-+ */
-+int of_reconfig_get_state_change(unsigned long action, void *arg)
-+{
-+	struct device_node *dn;
-+	struct property *prop, *old_prop;
-+	struct of_prop_reconfig *pr;
-+	int is_status, status_state, old_status_state, prev_state, new_state;
-+
-+	/* figure out if a device should be created or destroyed */
-+	dn = NULL;
-+	prop = old_prop = NULL;
-+	switch (action) {
-+	case OF_RECONFIG_ATTACH_NODE:
-+	case OF_RECONFIG_DETACH_NODE:
-+		dn = arg;
-+		prop = of_find_property(dn, "status", NULL);
-+		break;
-+	case OF_RECONFIG_ADD_PROPERTY:
-+	case OF_RECONFIG_REMOVE_PROPERTY:
-+		pr = arg;
-+		dn = pr->dn;
-+		prop = pr->prop;
-+		break;
-+	case OF_RECONFIG_UPDATE_PROPERTY:
-+		pr = arg;
-+		dn = pr->dn;
-+		prop = pr->prop;
-+		old_prop = pr->old_prop;
-+		break;
-+	default:
-+		return -1;	/* don't care */
-+	}
-+
-+	is_status = 0;
-+	status_state = -1;
-+	old_status_state = -1;
-+	prev_state = -1;
-+	new_state = -1;
-+
-+	if (prop && !strcmp(prop->name, "status")) {
-+		is_status = 1;
-+		status_state = !strcmp(prop->value, "okay") ||
-+			       !strcmp(prop->value, "ok");
-+		if (old_prop)
-+			old_status_state = !strcmp(old_prop->value, "okay") ||
-+					   !strcmp(old_prop->value, "ok");
-+	}
-+
-+	switch (action) {
-+	case OF_RECONFIG_ATTACH_NODE:
-+		prev_state = 0;
-+		/* -1 & 0 status either missing or okay */
-+		new_state = status_state != 0;
-+		break;
-+	case OF_RECONFIG_DETACH_NODE:
-+		/* -1 & 0 status either missing or okay */
-+		prev_state = status_state != 0;
-+		new_state = 0;
-+		break;
-+	case OF_RECONFIG_ADD_PROPERTY:
-+		if (is_status) {
-+			/* no status property -> enabled (legacy) */
-+			prev_state = 1;
-+			new_state = status_state;
-+		}
-+		break;
-+	case OF_RECONFIG_REMOVE_PROPERTY:
-+		if (is_status) {
-+			prev_state = status_state;
-+			/* no status property -> enabled (legacy) */
-+			new_state = 1;
-+		}
-+		break;
-+	case OF_RECONFIG_UPDATE_PROPERTY:
-+		if (is_status) {
-+			prev_state = old_status_state != 0;
-+			new_state = status_state != 0;
-+		}
-+		break;
-+	}
-+
-+	if (prev_state == new_state)
-+		return -1;
-+
-+	return new_state;
-+}
-+EXPORT_SYMBOL_GPL(of_reconfig_get_state_change);
-+
- int of_property_notify(int action, struct device_node *np,
- 		       struct property *prop, struct property *oldprop)
- {
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 27635c89d8c2..96f678515d8f 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -327,6 +327,7 @@ struct of_prop_reconfig {
- extern int of_reconfig_notifier_register(struct notifier_block *);
- extern int of_reconfig_notifier_unregister(struct notifier_block *);
- extern int of_reconfig_notify(unsigned long, void *);
-+extern int of_reconfig_get_state_change(unsigned long action, void *arg);
- 
- extern int of_attach_node(struct device_node *);
- extern int of_detach_node(struct device_node *);
 -- 
-1.9.1
-
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
