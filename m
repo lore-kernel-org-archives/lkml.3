@@ -1,90 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372AbaKUSGa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:06:30 -0500
-Received: from sauhun.de ([89.238.76.85]:53397 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770AbaKUSG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:06:29 -0500
-Date: Fri, 21 Nov 2014 19:07:47 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Michal Marek <mmarek@suse.cz>
-Cc: Nicolas Palix <nicolas.palix@imag.fr>, linux-kernel@vger.kernel.org,
-        Himangi Saraogi <himangi774@gmail.com>, cocci@systeme.lip6.fr
-Subject: Re: [Cocci] bugon.cocci: fix Options at the macro
-Message-ID: <20141121180747.GA3754@katana>
-References: <20141028151824.4b41986f@recife.lan>
- <20141107175105.GC3656@katana>
+	id S1751280AbaKUSIb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:08:31 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:40671 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbaKUSI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 13:08:29 -0500
+Date: Fri, 21 Nov 2014 11:08:25 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Myron Stowe <myron.stowe@gmail.com>,
+        rjw@rjwysocki.net, lorenzo.pieralisi@arm.com,
+        linaro-acpi@lists.linaro.org, linux-pci <linux-pci@vger.kernel.org>,
+        catalin.marinas@arm.com, x86 <x86@kernel.org>, will.deacon@arm.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, hanjun.guo@linaro.org,
+        "H. Peter Anvin" <hpa@zytor.com>, wangyijing@huawei.com,
+        Liviu.Dudau@arm.com, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 6/6] pci, acpi: Share ACPI PCI config space accessors.
+Message-ID: <20141121180825.GD6578@google.com>
+References: <1416413091-13452-1-git-send-email-tomasz.nowicki@linaro.org>
+ <20141120222650.GC7987@google.com>
+ <CAL-B5D3MqUa-=bzebo12DbZfczss2-MdGwQ8WKTbFH8H2AENXg@mail.gmail.com>
+ <3957412.IooRKpIXjW@wuerfel>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141107175105.GC3656@katana>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <3957412.IooRKpIXjW@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 21, 2014 at 01:24:52PM +0100, Arnd Bergmann wrote:
+> On Thursday 20 November 2014 21:00:17 Myron Stowe wrote:
+> > On Thu, Nov 20, 2014 at 3:26 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > > On Wed, Nov 19, 2014 at 05:19:20PM +0100, Arnd Bergmann wrote:
+> > >> On Wednesday 19 November 2014 17:04:51 Tomasz Nowicki wrote:
+> > >> > +/*
+> > >> > + * raw_pci_read/write - ACPI PCI config space accessors.
+> > >> > + *
+> > >> > + * ACPI spec defines MMCFG as the way we can access PCI config space,
+> > >> > + * so let MMCFG be default (__weak).
+> > >> > + *
+> > >> > + * If platform needs more fancy stuff, should provides its own implementation.
+> > >> > + */
+> > >> > +int __weak raw_pci_read(unsigned int domain, unsigned int bus,
+> > >> > +                       unsigned int devfn, int reg, int len, u32 *val)
+> > >> > +{
+> > >> > +       return pci_mmcfg_read(domain, bus, devfn, reg, len, val);
+> > >> > +}
+> > >> > +
+> > >> > +int __weak raw_pci_write(unsigned int domain, unsigned int bus,
+> > >> > +                        unsigned int devfn, int reg, int len, u32 val)
+> > >> > +{
+> > >> > +       return pci_mmcfg_write(domain, bus, devfn, reg, len, val);
+> > >> > +}
+> > >> > +
+> > >> >
+> > >>
+> > >> I think it would be better to avoid __weak functions here, as they tend
+> > >> to be hard to follow when trying to understand the code.
+> > >
+> > > That's interesting.  I would have said exactly the opposite -- I think the
+> > > extra Kconfiggery is harder to follow than weak/strong functions 
+> > >
+> > > But consistency is better than my personal opinion.  Is there a consensus
+> > > that we should use the Kconfig strategy instead of __weak?
+> > 
+> > I too find weak/strong functions easier to follow than "Kconfiggery" (nice term
+> > invention there).
+> 
+> I don't think there is a universal consensus, but the majority of
+> maintainers seems to avoid them for the same reasons that I think
+> __weak is problematic.
+> 
+> We have some uses of __weak in the core kernel, but there is
+> basically none in drivers outside of PCI, and the most common
+> uses are all providing an empty __weak function that can be
+> overridden with a function that actually does something, unlike
+> the code above.
 
---k1lZvvs/B4yU6o8G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+One thing I like better about __weak (when used correctly) is that you have
+exactly one declaration, and the role of each definition (weak default
+implementation or strong override) is obvious from looking at it.
 
-On Fri, Nov 07, 2014 at 06:51:05PM +0100, Wolfram Sang wrote:
-> On Tue, Oct 28, 2014 at 03:18:24PM -0200, Mauro Carvalho Chehab wrote:
-> > The comma after --no-includes makes coccinelle to not run the script:
-> >=20
-> > /usr/bin/spatch -D report --very-quiet --no-show-diff --cocci-file ./sc=
-ripts/coccinelle/misc/bugon.cocci --no-includes, --include-headers --patch =
-=2E --dir drivers/media/platform/coda/ -I ./arch/x86/include -I arch/x86/in=
-clude/generated -I include -I ./arch/x86/include/uapi -I arch/x86/include/g=
-enerated/uapi -I ./include/uapi -I include/generated/uapi -I ./include/linu=
-x/kconfig.h
-> > Usage: spatch.opt --sp-file <SP> <infile> [-o <outfile>] [--iso-file <i=
-so>] [options]
-> > Options are:
-> >   --sp-file                    <file> the semantic patch file
-> >   -o                           <file> the output file
-> >   --in-place                   do the modification on the file directly
-> >   --backup-suffix              suffix to use when making a backup for i=
-nplace
-> > ...
-> >=20
-> > At least with Fedora 20 coccinelle package:
-> > 	coccinelle-1.0.0-0.rc20.1.fc21.x86_64
-> >=20
-> > Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
->=20
-> Yay, with this my patch handling scripts finally work again as they used
-> to! Please let it go into 3.18.
->=20
-> Tested-by: Wolfram Sang <wsa@the-dreams.de>
+In your #ifdef example, the extern declaration and the inline definition
+are never compiled together, so you have to repeat the signature and the
+compiler doesn't enforce that they match.  So you end up with the extern
+and the inline in one file, a #define in an arch header file or Kconfig,
+and an arch definition in a third file.
 
-Ping.
+But it's certainly true that everybody knows how #ifdef works, and the fact
+that __weak on a declaration affects all in-scope definitions is definitely
+a land mine (multiple weak definitions with no strong one is a disaster).
 
+> My pragmatic approach so far has been to advocate __weak for
+> drivers/pci patches but discourage it elsewhere when I review
+> patches, in order to maintain consistency. I also think it
+> would be nice to change the way that PCI handles architecture
+> specific overrides in the process of unifying the host bridge
+> handling.
+> 
+> I wouldn't use Kconfig symbols in most cases though. My preferred
+> choice would be to turn a lot of the __weak symbols into function
+> pointers within a per-hostbridge structure. As an example, we could
+> replace pcibios_add_device() with a pointer in pci_host_bridge->ops
+> that gets set by all the architectures and host drivers that currently
+> override it, and replace the one caller with
+> 
+> 	if (pci_host_bridge->ops->add_device)
+> 		pci_host_bridge->ops->add_device(dev);
 
---k1lZvvs/B4yU6o8G
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I definitely agree with this part, but I think it's orthogonal to the
+__weak question.  In this case, we'd like to support multiple host bridges,
+each with a different flavor of add_device().  We can't do that at all with
+either __weak or #ifdef.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUb39zAAoJEBQN5MwUoCm2WAIQAIiia6sa4828LTsCJMVDrloV
-ChhytUvmmQZkcSYyd82RH7GVTm3bqj9a2rWBwj8f5Nh3PZS/oICbmDLzUZVrh955
-hYA4Beb2ZamuT8uLj7KjQL2a042o8QB4pukekaIvQKC7OFS2SDSiiF6NK5jWwOWi
-PaDJM8uVYu7kpfuVKbz/qdkyjvwmjrqDDFBOfSB04FAq9D3OkzcSeaJAoegyO7Et
-OmavRlUHw8Hb+75ccGuDYAQm1ibbVDouCjM4NKAf8nwWcXAQDn0V4Vx8FGmL5h2r
-3RYjhRk2bLf4GrEoF+se2dkDMbZ5Qqke7haYo5DW7KLPfRRRYT6WJDUtExmGWZkj
-z12LeDK4Gt/ymhBpKIWkhMK7Oz8XmRQ4jOk8acmwHSeAdUPJhOHuL0cGzWOmB4c1
-OjJP+v1dfOLj66qSEwqq7i294MFBrzGHiIfq4db6tMRH/5RWwA2YQo2wCxVQOqkH
-77f3ne3RcuMg/XeffbM88xkP4qGN87FNMmyl0DiEBuSMxOS3/kY+s6bYsU3b/Kz7
-S2LLH0Sjg/rC4NPNjhy6QsonVLspUTMR4tmcyEIIyGgVxzF3zXoTMBhZLseku6be
-dVj3vk4xVETNigyilq1kJvmgq82PAilm7JvOOp0ZIjpF+x+50GUPN0guv40cnYwi
-joXqdriXUgc9J9U8KoID
-=CZbr
------END PGP SIGNATURE-----
-
---k1lZvvs/B4yU6o8G--
+Bjorn
