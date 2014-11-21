@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758766AbaKUQYs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:24:48 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:41497 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbaKUQYp (ORCPT
+	id S1758888AbaKUQYx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:24:53 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:42853 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758431AbaKUQYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:24:45 -0500
+	Fri, 21 Nov 2014 11:24:48 -0500
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
         Catalin Marinas <catalin.marinas@arm.com>
@@ -17,9 +17,9 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>,
         Arnaldo Carvalho de Melo <acme@kernel.org>, patches@linaro.org,
         linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
         Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [PATCH v2 1/2] arm: perf: Prevent wraparound during overflow
-Date: Fri, 21 Nov 2014 16:24:26 +0000
-Message-Id: <1416587067-3220-2-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH v2 2/2] arm64: perf: Prevent wraparound during overflow
+Date: Fri, 21 Nov 2014 16:24:27 +0000
+Message-Id: <1416587067-3220-3-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416587067-3220-1-git-send-email-daniel.thompson@linaro.org>
 References: <1416412346-8759-1-git-send-email-daniel.thompson@linaro.org>
@@ -49,14 +49,14 @@ ticking at 4GHz the interrupt rate would only be ~1Hz.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 ---
- arch/arm/kernel/perf_event.c | 10 ++++++++--
+ arch/arm64/kernel/perf_event.c | 10 ++++++++--
  1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 266cba46db3e..ab68833c1e31 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -115,8 +115,14 @@ int armpmu_event_set_period(struct perf_event *event)
+diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
+index aa29ecb4f800..25a5308744b1 100644
+--- a/arch/arm64/kernel/perf_event.c
++++ b/arch/arm64/kernel/perf_event.c
+@@ -169,8 +169,14 @@ armpmu_event_set_period(struct perf_event *event,
  		ret = 1;
  	}
  
