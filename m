@@ -1,176 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757717AbaKUBxq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 20:53:46 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:46581 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756889AbaKUBxo (ORCPT
+	id S1757834AbaKUBy6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 20:54:58 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:57052 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756700AbaKUBy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 20:53:44 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v8 6/8] OF: i2c: Add OF notifier handler
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <1414528565-10907-7-git-send-email-pantelis.antoniou@konsulko.com>
-References: <1414528565-10907-1-git-send-email-pantelis.antoniou@konsulko.com>
-	<1414528565-10907-7-git-send-email-pantelis.antoniou@konsulko.com>
-Date: Fri, 21 Nov 2014 01:53:35 +0000
-Message-Id: <20141121015335.99BF2C413E8@trevor.secretlab.ca>
+	Thu, 20 Nov 2014 20:54:56 -0500
+Message-ID: <546E9B60.9070706@huawei.com>
+Date: Fri, 21 Nov 2014 09:54:40 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, Bjorn Helgaas <bhelgaas@google.com>
+CC: Marc Zyngier <marc.zyngier@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "Catalin Marinas" <catalin.marinas@arm.com>
+Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
+References: <546E1771.4030201@arm.com> <20141120215353.GA7987@google.com> <alpine.DEB.2.11.1411202355060.6439@nanos>
+In-Reply-To: <alpine.DEB.2.11.1411202355060.6439@nanos>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Oct 2014 22:36:03 +0200
-, Pantelis Antoniou <pantelis.antoniou@konsulko.com>
- wrote:
-> Add OF notifier handler needed for creating/destroying i2c devices
-> according to dynamic runtime changes in the DT live tree.
+>> Thomas, let me know if you want to do that.  I suppose we could add a new
+>> patch to add it back, but that would leave bisection broken for the
+>> interval between c167caf8d174 and the patch that adds it back.
 > 
-> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-> ---
->  drivers/i2c/i2c-core.c | 79 +++++++++++++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 78 insertions(+), 1 deletion(-)
+> Fortunately my irq/irqdomain branch is not immutable yet. So we have
+> no problem at that point. I can rebase on your branch until tomorrow
+> night. Or just rebase on mainline and we sort out the merge conflicts
+> later, i.e. delegate them to Linus so his job of pulling stuff gets
+> not completely boring.
+
+Hi Thomas, sorry for my introducing the broken.
+
 > 
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index e6da9d3..e751b78 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -1470,6 +1470,7 @@ struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
->  	return i2c_verify_adapter(dev);
->  }
->  EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
-> +
->  #else
->  static void of_i2c_register_devices(struct i2c_adapter *adap) { }
->  #endif /* CONFIG_OF */
-> @@ -1955,6 +1956,71 @@ void i2c_clients_command(struct i2c_adapter *adap, unsigned int cmd, void *arg)
->  }
->  EXPORT_SYMBOL(i2c_clients_command);
->  
-> +#if IS_ENABLED(CONFIG_OF)
-> +
-> +static int of_i2c_notify(struct notifier_block *nb,
-> +				unsigned long action, void *arg)
-> +{
-> +	struct device_node *dn;
-> +	struct i2c_adapter *adap;
-> +	struct i2c_client *client;
-> +	int state;
-> +
-> +	state = of_reconfig_get_state_change(action, arg);
-> +	if (state == -1)
-> +		return NOTIFY_OK;
-> +
-> +	switch (action) {
-> +	case OF_RECONFIG_ATTACH_NODE:
-> +	case OF_RECONFIG_DETACH_NODE:
-> +		dn = arg;
-> +		break;
-> +	case OF_RECONFIG_ADD_PROPERTY:
-> +	case OF_RECONFIG_REMOVE_PROPERTY:
-> +	case OF_RECONFIG_UPDATE_PROPERTY:
-> +		dn = ((struct of_prop_reconfig *)arg)->dn;
-> +		break;
-> +	default:
-> +		return NOTIFY_OK;
-> +	}
-> +
-> +	if (state) {
-> +
-> +		adap = of_find_i2c_adapter_by_node(dn->parent);
-> +		if (adap == NULL)
-> +			return NOTIFY_OK;	/* not for us */
-> +
-> +		client = of_i2c_register_device(adap, dn);
-> +		put_device(&adap->dev);
-> +
-> +		if (IS_ERR(client)) {
-> +			pr_err("%s: failed to create for '%s'\n",
-> +					__func__, dn->full_name);
-> +			return notifier_from_errno(PTR_ERR(client));
-> +		}
-> +
-> +	} else {
-> +
-> +		/* find our device by node */
-> +		client = of_find_i2c_device_by_node(dn);
-> +		if (client == NULL)
-> +			return NOTIFY_OK;	/* no? not meant for us */
-> +
-> +		/* unregister takes one ref away */
-> +		i2c_unregister_device(client);
-> +
-> +		/* and put the reference of the find */
-> +		put_device(&client->dev);
-> +
-> +	}
-
-Nit: odd whitespace
-
-> +
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block i2c_of_notifier;
-> +
-> +#endif
-> +
->  static int __init i2c_init(void)
->  {
->  	int retval;
-> @@ -1972,8 +2038,19 @@ static int __init i2c_init(void)
->  	retval = i2c_add_driver(&dummy_driver);
->  	if (retval)
->  		goto class_err;
-> -	return 0;
->  
-> +#if IS_ENABLED(CONFIG_OF)
-> +	i2c_of_notifier.notifier_call = of_i2c_notify;
-> +	retval = of_reconfig_notifier_register(&i2c_of_notifier);
-> +	if (retval)
-> +		goto notifier_err;
-> +#endif
-> +
-> +	return 0;
-> +#if IS_ENABLED(CONFIG_OF)
-> +notifier_err:
-> +	i2c_del_driver(&dummy_driver);
-> +#endif
-
-Similar to my comment on the platform bus, don't break the entire bus if
-registration of the notifier fails. I would drop the error case and just
-do a WARN_ON() if it fails.
-
-Otherwise:
-
-Acked-by: Grant Likely <grant.likely@linaro.org>
-
->  class_err:
->  #ifdef CONFIG_I2C_COMPAT
->  	class_compat_unregister(i2c_adapter_compat_class);
-> -- 
-> 1.7.12
+> What I'm more worried about is whether this intended change is going
+> to inflict a problem on Jiangs intention to deduce the MSI irq domain
+> from the device, which we really need for making DMAR work w/o going
+> through loops and hoops.
 > 
+> I have limited knowledge about the actual scope of iommu (DMAR) units
+> versus device/bus/host-controllers, so I would appreciate a proper
+> explanation for that from you or Jiang or both.
+
+In my personal opinion, if it's not necessary, we should not put stuff
+into pci_dev or pci_bus. If we plan to save msi_controller in pci_bus or
+pci_dev.
+I have a proposal, I would be appreciated if you could give some comments.
+First we refactor pci_host_bridge to make a generic
+pci_host_bridge, then we could save pci domain in it to eliminate
+arch specific functions. I aslo wanted to save msi_controller as
+pci domain, but now Jiang refactor hierarchy irq domain, and
+pci devices under the same pci host bridge may need to associate
+to different msi_controllers.
+
+So I want to associate a msi_controller finding ops with generic pci_host_bridge,
+then every pci device could find its msi_controller/irq_domain by a
+common function
+
+E.g
+
+struct msi_controller *pci_msi_controller(struct pci_dev *pdev)
+{
+	struct msi_controller *ctrl;
+	struct pci_host_bridge *host = find_pci_host_bridge(pdev->bus);
+	if (host && host->pci_get_msi_controller)
+		ctrl = pci_host_bridge->pci_get_msi_controller(struct pci_dev *pdev);
+
+	return ctrl;	
+}
+
+If I miss something, please let me know, thanks.
+
+Thanks!
+Yijing.
+
+
+> 
+> My guts feeling tells me that anything less granular than the bus
+> level is wrong and according to my limited knowledge Intel even has
+> DMARs which are assigned to a single device it's even more wrong. So
+> the proper change would be not to push it from bus to something above
+> the bus, but instead make it a per device property.
+> 
+> But my knowledge there is limited, so I rely on the PCI/architecture
+> experts to sort that out.
+> 
+> Let me know ASAP.
+> 
+> Thanks,
+> 
+> 	tglx
+> 
+> .
+> 
+
+
+-- 
+Thanks!
+Yijing
 
