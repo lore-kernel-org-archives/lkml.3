@@ -1,169 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaKUUMQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 15:12:16 -0500
-Received: from queue01c.mail.zen.net.uk ([212.23.3.237]:43911 "EHLO
-	queue01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbaKUUMO (ORCPT
+	id S1752156AbaKUUM6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:12:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56886 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbaKUUM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 15:12:14 -0500
-Message-ID: <1416600700.1827.10.camel@linaro.org>
-Subject: [PATCH] ARM: kprobes: Add test cases for stack consuming
- instructions
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: lizefan@huawei.com, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, linux-arm-kernel@lists.infradead.org
-Date: Fri, 21 Nov 2014 20:11:40 +0000
-In-Reply-To: <1416592797.1827.8.camel@linaro.org>
-References: <1416551731-50777-1-git-send-email-wangnan0@huawei.com>
-	 <1416551731-50777-4-git-send-email-wangnan0@huawei.com>
-	 <1416592797.1827.8.camel@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01a-IP: [82.69.122.217]
+	Fri, 21 Nov 2014 15:12:56 -0500
+Date: Fri, 21 Nov 2014 12:11:33 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.10.61
+Message-ID: <20141121201133.GA8476@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qMm9M+Fa2AknHoGS"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jon Medhurst <tixy@linaro.org>
 
-These have extra 'checker' functions associated with them so
-lets make sure those get covered by testing.
+--qMm9M+Fa2AknHoGS
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
+I'm announcing the release of the 3.10.61 kernel.
+
+All users of the 3.10 kernel series must upgrade.
+
+The updated 3.10.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.10.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                        |    2=20
+ arch/alpha/mm/fault.c                           |    7=20
+ arch/arc/mm/fault.c                             |   17 +-
+ arch/arm/include/asm/bug.h                      |   10 -
+ arch/arm/kernel/kprobes-common.c                |   19 +-
+ arch/arm/kernel/kprobes-thumb.c                 |   20 +-
+ arch/arm/kernel/kprobes.c                       |    9 -
+ arch/arm/kernel/traps.c                         |    8 -
+ arch/arm/mm/Kconfig                             |    1=20
+ arch/arm/mm/fault.c                             |   23 +--
+ arch/arm64/lib/clear_user.S                     |    2=20
+ arch/arm64/mm/fault.c                           |   31 ++--
+ arch/avr32/mm/fault.c                           |    4=20
+ arch/cris/mm/fault.c                            |    6=20
+ arch/frv/mm/fault.c                             |   10 -
+ arch/hexagon/mm/vm_fault.c                      |    6=20
+ arch/ia64/mm/fault.c                            |    6=20
+ arch/m32r/mm/fault.c                            |   10 -
+ arch/m68k/mm/fault.c                            |    2=20
+ arch/metag/mm/fault.c                           |   12 +
+ arch/microblaze/mm/fault.c                      |    7=20
+ arch/mips/mm/c-r4k.c                            |    2=20
+ arch/mips/mm/fault.c                            |    8 -
+ arch/mn10300/mm/fault.c                         |    9 -
+ arch/openrisc/mm/fault.c                        |    9 -
+ arch/parisc/include/uapi/asm/shmbuf.h           |   25 +--
+ arch/parisc/kernel/syscall_table.S              |    8 -
+ arch/parisc/mm/fault.c                          |    7=20
+ arch/powerpc/mm/fault.c                         |    7=20
+ arch/s390/mm/fault.c                            |    2=20
+ arch/score/mm/fault.c                           |   21 +-
+ arch/sh/mm/fault.c                              |    9 -
+ arch/sparc/include/asm/atomic_32.h              |    2=20
+ arch/sparc/include/asm/cmpxchg_32.h             |   12 -
+ arch/sparc/include/asm/vio.h                    |   14 +
+ arch/sparc/kernel/pci_schizo.c                  |    6=20
+ arch/sparc/kernel/smp_64.c                      |    4=20
+ arch/sparc/lib/atomic32.c                       |   27 +++
+ arch/sparc/mm/fault_32.c                        |   12 +
+ arch/sparc/mm/fault_64.c                        |    6=20
+ arch/tile/mm/fault.c                            |   21 +-
+ arch/um/kernel/trap.c                           |   22 +-
+ arch/unicore32/mm/fault.c                       |   22 +-
+ arch/x86/kernel/cpu/perf_event_intel.c          |    3=20
+ arch/x86/kernel/ptrace.c                        |   11 -
+ arch/x86/kvm/x86.c                              |    2=20
+ arch/x86/mm/fault.c                             |   43 ++---
+ arch/xtensa/include/uapi/asm/unistd.h           |    3=20
+ arch/xtensa/mm/fault.c                          |    2=20
+ drivers/ata/ahci.c                              |   19 ++
+ drivers/block/sunvdc.c                          |  176 +++++++++++++++++--=
+----
+ drivers/firewire/core-cdev.c                    |    3=20
+ drivers/gpu/drm/radeon/evergreen.c              |    1=20
+ drivers/input/mouse/alps.c                      |   11 +
+ drivers/md/dm-raid.c                            |   11 -
+ drivers/md/persistent-data/dm-btree-internal.h  |    6=20
+ drivers/md/persistent-data/dm-btree-spine.c     |    2=20
+ drivers/md/persistent-data/dm-btree.c           |   24 +--
+ drivers/media/usb/ttusb-dec/ttusbdecfe.c        |    3=20
+ drivers/misc/mei/bus.c                          |    2=20
+ drivers/net/ethernet/mellanox/mlx4/en_tx.c      |   61 +++++---
+ drivers/net/ethernet/sun/sunvnet.c              |    4=20
+ drivers/net/macvtap.c                           |    2=20
+ drivers/net/wireless/iwlwifi/iwl-trans.h        |    2=20
+ drivers/net/wireless/iwlwifi/mvm/fw-api-power.h |   35 ++++
+ drivers/net/wireless/iwlwifi/mvm/fw-api.h       |    1=20
+ drivers/net/wireless/iwlwifi/mvm/fw.c           |    9 +
+ drivers/net/wireless/iwlwifi/mvm/ops.c          |    1=20
+ drivers/net/wireless/iwlwifi/pcie/trans.c       |   17 +-
+ drivers/platform/x86/dell-wmi.c                 |   12 +
+ drivers/scsi/hpsa.c                             |    4=20
+ drivers/scsi/scsi_error.c                       |    4=20
+ fs/ioprio.c                                     |   14 +
+ fs/nfs/delegation.c                             |   25 +++
+ fs/nfs/delegation.h                             |    1=20
+ fs/nfs/direct.c                                 |    1=20
+ fs/nfs/inode.c                                  |    2=20
+ fs/nfs/nfs4proc.c                               |   26 +++
+ include/linux/clocksource.h                     |    2=20
+ include/linux/kgdb.h                            |    2=20
+ include/linux/memcontrol.h                      |   37 ++++
+ include/linux/mm.h                              |    1=20
+ include/linux/nfs_xdr.h                         |   11 +
+ include/linux/sched.h                           |    6=20
+ include/net/sctp/sctp.h                         |    5=20
+ include/net/sctp/sm.h                           |    6=20
+ include/uapi/linux/netfilter/xt_bpf.h           |    2=20
+ ipc/ipc_sysctl.c                                |    3=20
+ kernel/audit_tree.c                             |    1=20
+ kernel/events/core.c                            |   22 ++
+ mm/memcontrol.c                                 |  182 ++++++++++++++-----=
+-----
+ mm/memory.c                                     |   49 +++++-
+ mm/oom_kill.c                                   |    7=20
+ net/bridge/br_private.h                         |   10 +
+ net/bridge/br_stp_bpdu.c                        |    2=20
+ net/ceph/crypto.c                               |  169 +++++++++++++++++--=
 ---
+ net/ipv6/ip6_gre.c                              |    7=20
+ net/ipv6/ip6_tunnel.c                           |   10 -
+ net/mac80211/rx.c                               |   14 -
+ net/netfilter/nf_nat_core.c                     |   35 ++++
+ net/netfilter/nfnetlink_log.c                   |   31 ++--
+ net/sctp/associola.c                            |    2=20
+ net/sctp/auth.c                                 |    2=20
+ net/sctp/inqueue.c                              |   33 ----
+ net/sctp/sm_make_chunk.c                        |  102 +++++++------
+ net/sctp/sm_statefuns.c                         |   21 --
+ sound/usb/mixer_quirks.c                        |    6=20
+ 107 files changed, 1196 insertions(+), 594 deletions(-)
 
-Wang Nan, as I promised in my reply to your patch, here are the
-additional test cases for the stack store instructions. Would be good to
-add this patch to the series. Let me know if you think I've missed
-something...
+Alex Deucher (1):
+      drm/radeon: add missing crtc unlock when setting up the MC
+
+Alexander Usyskin (1):
+      mei: bus: fix possible boundaries violation
+
+Allen Pais (2):
+      sunvdc: add cdrom and v1.1 protocol support
+      sunvdc: compute vdisk geometry from capacity
+
+Andreas Larsson (1):
+      sparc32: Implement xchg and atomic_xchg using ATOMIC_HASH locks
+
+Andrey Vagin (1):
+      ipc: always handle a new value of auto_msgmni
+
+Andy Lutomirski (1):
+      x86, x32, audit: Fix x32's AUDIT_ARCH wrt audit
+
+Ben Dooks (2):
+      ARM: probes: fix instruction fetch order with <asm/opcodes.h>
+      ARM: Correct BUG() assembly to ensure it is endian-agnostic
+
+Bjorn Helgaas (2):
+      kgdb: Remove "weak" from kgdb_arch_pc() declaration
+      clocksource: Remove "weak" from clocksource_default_clock() declarati=
+on
+
+Christoph Hellwig (1):
+      scsi: only re-lock door after EH on devices that were reset
+
+Dan Carpenter (1):
+      media: ttusb-dec: buffer overflow in ioctl
+
+Daniel Borkmann (5):
+      net: sctp: fix NULL pointer dereference in af->from_addr_param on mal=
+formed packet
+      net: sctp: fix memory leak in auth key management
+      net: sctp: fix remote memory pressure from excessive queueing
+      net: sctp: fix panic on duplicate ASCONF chunks
+      net: sctp: fix skb_over_panic when receiving malformed ASCONF chunks
+
+David S. Miller (2):
+      sparc64: Fix crashes in schizo_pcierr_intr_other().
+      sparc64: Do irq_{enter,exit}() around generic_smp_call_function*().
+
+Dwight Engen (3):
+      sunvdc: limit each sg segment to a page
+      vio: fix reuse of vio_dring slot
+      sunvdc: don't call VD_OP_GET_VTOC
+
+Emmanuel Grumbach (1):
+      iwlwifi: configure the LTR
+
+Eugenia Emantayev (1):
+      net/mlx4_en: Fix BlueFlame race
+
+Florian Westphal (3):
+      netfilter: nf_log: account for size of NLMSG_DONE attribute
+      netfilter: nfnetlink_log: fix maximum packet length logged to userspa=
+ce
+      netfilter: nf_nat: fix oops on netns removal
+
+Greg Kroah-Hartman (1):
+      Linux 3.10.61
+
+Heinz Mauelshagen (1):
+      dm raid: ensure superblock's size matches device's logical block size
+
+Helge Deller (1):
+      parisc: Use compat layer for msgctl, shmat, shmctl and semtimedop sys=
+calls
+
+Herbert Xu (1):
+      macvtap: Fix csum_start when VLAN tags are present
+
+Houcheng Lin (1):
+      netfilter: nf_log: release skbuff on nlmsg put failure
+
+Ilya Dryomov (1):
+      libceph: do not crash on large auth tickets
+
+James Ralston (1):
+      ahci: Add Device IDs for Intel Sunrise Point PCH
+
+Jan Kara (2):
+      block: Fix computation of merged request priority
+      nfs: Fix use of uninitialized variable in nfs_getattr()
+
+Jiri Pirko (1):
+      br: fix use of ->rx_handler_data in code executed on non-rx_handler p=
+ath
+
+Joe Thornber (1):
+      dm btree: fix a recursion depth bug in btree walking code
+
+Johannes Berg (1):
+      mac80211: fix use-after-free in defragmentation
+
+Johannes Weiner (9):
+      mm: invoke oom-killer from remaining unconverted page fault handlers
+      arch: mm: remove obsolete init OOM protection
+      arch: mm: do not invoke OOM killer on kernel fault OOM
+      arch: mm: pass userspace fault flag to generic fault handler
+      x86: finish user fault error path with fatal signal
+      mm: memcg: enable memcg OOM killer only for user faults
+      mm: memcg: rework and document OOM waiting and wakeup
+      mm: memcg: do not trap chargers with full callstack on OOM
+      mm: memcg: handle non-error OOM situations more gracefully
+
+Kyle McMartin (1):
+      arm64: __clear_user: handle exceptions on strb
+
+Max Filippov (1):
+      xtensa: re-wire umount syscall to sys_oldumount
+
+Miklos Szeredi (1):
+      audit: keep inode pinned
+
+Nadav Amit (1):
+      KVM: x86: Don't report guest userspace emulation error to userspace
+
+Nathan Lynch (1):
+      ARM: 8198/1: make kuser helpers depend on MMU
+
+Pablo Neira (1):
+      netfilter: xt_bpf: add mising opaque struct sk_filter definition
+
+Pali Roh=E1r (3):
+      Input: alps - ignore potential bare packets when device is out of sync
+      Input: alps - allow up to 2 invalid packets without resetting device
+      dell-wmi: Fix access out of memory
+
+Pawel Moll (1):
+      perf: Handle compat ioctl
+
+Peng Tao (1):
+      nfs: fix pnfs direct write memory leak
+
+Stefan Richter (1):
+      firewire: cdev: prevent kernel stack leaking into ioctl arguments
+
+Steffen Klassert (2):
+      ip6_tunnel: Use ip6_tnl_dev_init as the ndo_init function.
+      gre6: Move the setting of dev->iflink into the ndo_init functions.
+
+Takashi Iwai (1):
+      ALSA: usb-audio: Fix memory leak in FTU quirk
+
+Tejun Heo (1):
+      ahci: disable MSI instead of NCQ on Samsung pci-e SSDs on macbooks
+
+Tomas Henzl (1):
+      SCSI: hpsa: fix a race in cmd_free/scsi_done
+
+Trond Myklebust (3):
+      NFSv4: Ensure that we remove NFSv4.0 delegations when state has expir=
+ed
+      NFS: Don't try to reclaim delegation open state if recovery failed
+      NFSv4: Fix races between nfs_remove_bad_delegation() and delegation r=
+eturn
+
+Vince Weaver (1):
+      perf/x86/intel: Use proper dTLB-load-misses event on IvyBridge
+
+Yoichi Yuasa (1):
+      MIPS: Fix forgotten preempt_enable() when CPU has inclusive pcaches
 
 
- arch/arm/kernel/kprobes-test-arm.c   | 17 +++++++++++++++--
- arch/arm/kernel/kprobes-test-thumb.c | 12 ++++++++++++
- 2 files changed, 27 insertions(+), 2 deletions(-)
+--qMm9M+Fa2AknHoGS
+Content-Type: application/pgp-signature
 
-diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/kernel/kprobes-test-arm.c
-index d8ad5bb..7aa96b6 100644
---- a/arch/arm/kernel/kprobes-test-arm.c
-+++ b/arch/arm/kernel/kprobes-test-arm.c
-@@ -12,6 +12,7 @@
- #include <linux/module.h>
- #include <asm/system_info.h>
- #include <asm/opcodes.h>
-+#include <asm/probes.h>
- 
- #include "kprobes-test.h"
- 
-@@ -478,6 +479,7 @@ void kprobe_arm_test_cases(void)
- 	TEST_RPR(  "strh	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")
- 	TEST_RPR(  "streqh	r",14,VAL2,", [r",11,0, ", r",12, 48,"]")
- 	TEST_UNSUPPORTED(  "streqh	r14, [r13, r12]")
-+	TEST_UNSUPPORTED(  "streqh	r14, [r12, r13]")
- 	TEST_RPR(  "strh	r",1, VAL1,", [r",2, 24,", r",3,  48,"]!")
- 	TEST_RPR(  "strneh	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")
- 	TEST_RPR(  "strh	r",2, VAL1,", [r",3, 24,"], r",4, 48,"")
-@@ -502,6 +504,9 @@ void kprobe_arm_test_cases(void)
- 	TEST_RP(   "strplh	r",12,VAL2,", [r",11,24,", #-4]!")
- 	TEST_RP(   "strh	r",2, VAL1,", [r",3, 24,"], #48")
- 	TEST_RP(   "strh	r",10,VAL2,", [r",9, 64,"], #-48")
-+	TEST_RP(   "strh	r",3, VAL1,", [r",13,TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"]!")
-+	TEST_UNSUPPORTED("strh r3, [r13, #-"__stringify(MAX_STACK_SIZE)"-8]!")
-+	TEST_RP(   "strh	r",4, VAL1,", [r",14,TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"-8]!")
- 	TEST_UNSUPPORTED(__inst_arm(0xe1efc3b0) "	@ strh r12, [pc, #48]!")
- 	TEST_UNSUPPORTED(__inst_arm(0xe0c9f3b0) "	@ strh pc, [r9], #48")
- 
-@@ -568,6 +573,7 @@ void kprobe_arm_test_cases(void)
- 	TEST_RPR(  "strd	r",0, VAL1,", [r",1, 48,", -r",2,24,"]")
- 	TEST_RPR(  "strccd	r",8, VAL2,", [r",11,0, ", r",12,48,"]")
- 	TEST_UNSUPPORTED(  "strccd r8, [r13, r12]")
-+	TEST_UNSUPPORTED(  "strccd r8, [r12, r13]")
- 	TEST_RPR(  "strd	r",4, VAL1,", [r",2, 24,", r",3, 48,"]!")
- 	TEST_RPR(  "strcsd	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")
- 	TEST_RPR(  "strd	r",2, VAL1,", [r",5, 24,"], r",4,48,"")
-@@ -591,6 +597,9 @@ void kprobe_arm_test_cases(void)
- 	TEST_RP(   "strvcd	r",12,VAL2,", [r",11,24,", #-16]!")
- 	TEST_RP(   "strd	r",2, VAL1,", [r",4, 24,"], #48")
- 	TEST_RP(   "strd	r",10,VAL2,", [r",9, 64,"], #-48")
-+	TEST_RP(   "strd	r",6, VAL1,", [r",13,TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"]!")
-+	TEST_UNSUPPORTED("strd r6, [r13, #-"__stringify(MAX_STACK_SIZE)"-8]!")
-+	TEST_RP(   "strd	r",4, VAL1,", [r",12,TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"-8]!")
- 	TEST_UNSUPPORTED(__inst_arm(0xe1efc3f0) "	@ strd r12, [pc, #48]!")
- 
- 	TEST_P(	   "ldrd	r0, [r",0, 24,", #-8]")
-@@ -639,16 +648,20 @@ void kprobe_arm_test_cases(void)
- 	TEST_RP( "str"byte"	r",12,VAL2,", [r",11,24,", #-4]!")		\
- 	TEST_RP( "str"byte"	r",2, VAL1,", [r",3, 24,"], #48")		\
- 	TEST_RP( "str"byte"	r",10,VAL2,", [r",9, 64,"], #-48")		\
-+	TEST_RP( "str"byte"	r",3, VAL1,", [r",13,TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"]!") \
-+	TEST_UNSUPPORTED("str"byte" r3, [r13, #-"__stringify(MAX_STACK_SIZE)"-8]!")				\
-+	TEST_RP( "str"byte"	r",4, VAL1,", [r",10,TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"-8]!") \
- 	TEST_RPR("str"byte"	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")	\
- 	TEST_RPR("str"byte"	r",14,VAL2,", [r",11,0, ", r",12, 48,"]")	\
--	TEST_UNSUPPORTED("str"byte" r14, [r13, r12]")	\
-+	TEST_UNSUPPORTED("str"byte" r14, [r13, r12]")				\
-+	TEST_UNSUPPORTED("str"byte" r14, [r12, r13]")				\
- 	TEST_RPR("str"byte"	r",1, VAL1,", [r",2, 24,", r",3,  48,"]!")	\
- 	TEST_RPR("str"byte"	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")	\
- 	TEST_RPR("str"byte"	r",2, VAL1,", [r",3, 24,"], r",4, 48,"")	\
- 	TEST_RPR("str"byte"	r",10,VAL2,", [r",9, 48,"], -r",11,24,"")	\
- 	TEST_RPR("str"byte"	r",0, VAL1,", [r",1, 24,", r",2,  32,", asl #1]")\
- 	TEST_RPR("str"byte"	r",14,VAL2,", [r",11,0, ", r",12, 32,", lsr #2]")\
--	TEST_UNSUPPORTED("str"byte"	r14, [r13, r12, lsr #2]")\
-+	TEST_UNSUPPORTED("str"byte"	r14, [r13, r12, lsr #2]")		\
- 	TEST_RPR("str"byte"	r",1, VAL1,", [r",2, 24,", r",3,  32,", asr #3]!")\
- 	TEST_RPR("str"byte"	r",12,VAL2,", [r",11,24,", r",10, 4,", ror #31]!")\
- 	TEST_P(  "ldr"byte"	r0, [r",0,  24,", #-2]")			\
-diff --git a/arch/arm/kernel/kprobes-test-thumb.c b/arch/arm/kernel/kprobes-test-thumb.c
-index 844dd10..45b19d2 100644
---- a/arch/arm/kernel/kprobes-test-thumb.c
-+++ b/arch/arm/kernel/kprobes-test-thumb.c
-@@ -11,6 +11,7 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <asm/opcodes.h>
-+#include <asm/probes.h>
- 
- #include "kprobes-test.h"
- 
-@@ -416,6 +417,9 @@ void kprobe_thumb32_test_cases(void)
- 	TEST_RR( "strd	r",14,VAL2,", r",12,VAL1,", [sp, #16]!")
- 	TEST_RRP("strd	r",1, VAL1,", r",0, VAL2,", [r",7, 24,"], #16")
- 	TEST_RR( "strd	r",7, VAL2,", r",8, VAL1,", [sp], #-16")
-+	TEST_RRP("strd	r",6, VAL1,", r",7, VAL2,", [r",13, TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"]!")
-+	TEST_UNSUPPORTED("strd r6, r7, [r13, #-"__stringify(MAX_STACK_SIZE)"-8]!")
-+	TEST_RRP("strd	r",4, VAL1,", r",5, VAL2,", [r",14, TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"-8]!")
- 	TEST_UNSUPPORTED(__inst_thumb32(0xe9efec04) "	@ strd	r14, r12, [pc, #16]!")
- 	TEST_UNSUPPORTED(__inst_thumb32(0xe8efec04) "	@ strd	r14, r12, [pc], #16")
- 
-@@ -821,14 +825,22 @@ CONDITION_INSTRUCTIONS(22,
- 	TEST_RP( "str"size"	r",14,VAL2,", [r",1, 256,  ", #-128]!")		\
- 	TEST_RPR("str"size".w	r",0, VAL1,", [r",1, 0,", r",2, 4,"]")		\
- 	TEST_RPR("str"size"	r",14,VAL2,", [r",10,0,", r",11,4,", lsl #1]")	\
-+	TEST_UNSUPPORTED("str"size"	r0, [r13, r1]")				\
- 	TEST_R(  "str"size".w	r",7, VAL1,", [sp, #24]")			\
- 	TEST_RP( "str"size".w	r",0, VAL2,", [r",0,0, "]")			\
-+	TEST_RP( "str"size"	r",6, VAL1,", [r",13, TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"]!") \
-+	TEST_UNSUPPORTED("str"size"	r6, [r13, #-"__stringify(MAX_STACK_SIZE)"-8]!")			\
-+	TEST_RP( "str"size"	r",4, VAL2,", [r",12, TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"-8]!") \
- 	TEST_UNSUPPORTED("str"size"t	r0, [r1, #4]")
- 
- 	SINGLE_STORE("b")
- 	SINGLE_STORE("h")
- 	SINGLE_STORE("")
- 
-+	TEST_UNSUPPORTED(__inst_thumb32(0xf801000d) "	@ strb	r0, [r1, r13]")	
-+	TEST_UNSUPPORTED(__inst_thumb32(0xf821000d) "	@ strh	r0, [r1, r13]")	
-+	TEST_UNSUPPORTED(__inst_thumb32(0xf841000d) "	@ str	r0, [r1, r13]")	
-+
- 	TEST("str	sp, [sp]")
- 	TEST_UNSUPPORTED(__inst_thumb32(0xf8cfe000) "	@ str	r14, [pc]")
- 	TEST_UNSUPPORTED(__inst_thumb32(0xf8cef000) "	@ str	pc, [r14]")
--- 
-2.1.3
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBAgAGBQJUb5x1AAoJEDjbvchgkmk+U4UP/jJTd5RNCiT4bHpGz7C4C2Ne
+wsDJtepqIdT5SHmTkURtxsDjgLt8HRaHstSNgmvlN3ZfzgiUqXoM8Nu/f5t581St
+BsLkOLdiTdbVD73L0FtO9UF9DDlnRmXareAMMK1vMqwLVEmnu/ciDJoPxQsXl4TY
+Jz5LmR9xY0+50CZtYna8Lap1m5xh07xBBsRNS0V5GcR8DW/XscBKfk83Slgnj8vZ
+xImlsU6DcrJbGmzc1BYxRa93VMEZ0ycbAiAep2TrZ4qL+S1/oriPBrJK2XelmQQK
+C0z0JQMjAFM8FLHid5vGunatljoRAR93vDYhAfs0kw5jbpRYzS1mEBbAOst8Y2Om
+lhRRPU2gBPj9Q8aFfT4ab0VUJtEtj/uM+Vwrol4n5g3VKTQac2uz8F/tKNiqZjti
+T80lcz92dcBQBN6OnbtJ9bYOIeVZ1v/Hh9y0PdlAvcHgMxQjWDDF9XuT/fLSZ20f
+MeO++Gi6DlrnIyA+pvuWuv1y76vvH0t2IFk65HZ2MUAXXoz44VaPljCmVpo0a3mn
+o6DzJU7aHk9zKwjE6g+VFxXmMuN8TntdzN6gNALfpD3i8pE8FbbM8e8bn2Bxunwy
+494bguF0Wxk/IuseKZOrPLiIIQuvUsABVGxNq/vxvDNYVMLYq5erfz6vhJZwxE9X
+CgvPuJcHfpapfMPLvW+Z
+=vrEX
+-----END PGP SIGNATURE-----
 
-
+--qMm9M+Fa2AknHoGS--
