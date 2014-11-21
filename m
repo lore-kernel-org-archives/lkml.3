@@ -1,156 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451AbaKUSIn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:08:43 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:48667 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713AbaKUSIl (ORCPT
+	id S1751368AbaKUSJh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:09:37 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36959 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752AbaKUSJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:08:41 -0500
-Date: Fri, 21 Nov 2014 14:08:28 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincenzo Frascino <vincenzo.frascino@st.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] thermal:core:fix: Check return code of the
- ->get_max_state() callback
-Message-ID: <20141121180826.GA3331@developer>
-References: <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
- <1416305790-27746-1-git-send-email-l.majewski@samsung.com>
+	Fri, 21 Nov 2014 13:09:36 -0500
+Date: Fri, 21 Nov 2014 18:09:25 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ding Tianhong <dingtianhong@huawei.com>
+Subject: Re: For the problem when using swiotlb
+Message-ID: <20141121180925.GG19783@e104818-lin.cambridge.arm.com>
+References: <5469E26B.2010905@huawei.com>
+ <5029442.vhLMp7Ns7F@wuerfel>
+ <20141121165708.GF19783@e104818-lin.cambridge.arm.com>
+ <2530749.roRsteyaXx@wuerfel>
+ <20141121175118.GA10451@localhost>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="a8Wt8u1KmwUX3Y2C"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416305790-27746-1-git-send-email-l.majewski@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20141121175118.GA10451@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 21, 2014 at 05:51:19PM +0000, Catalin Marinas wrote:
+> On Fri, Nov 21, 2014 at 05:04:28PM +0000, Arnd Bergmann wrote:
+> > On Friday 21 November 2014 16:57:09 Catalin Marinas wrote:
+> > > There is a scenario where smaller mask would work on arm64. For example
+> > > Juno, you can have 2GB of RAM in the 32-bit phys range (starting at
+> > > 0x80000000). A device with 31-bit mask and a dma_pfn_offset of
+> > > 0x80000000 would still work (there isn't any but just as an example). So
+> > > the check in dma_alloc_coherent() would be something like:
+> > > 
+> > > 	phys_to_dma(top of ZONE_DMA) - dma_pfn_offset <= coherent_dma_mask
+> > > 
+> > > (or assuming RAM starts at 0 and ignoring dma_pfn_offset for now)
+> > > 
+> > > If the condition above fails, dma_alloc_coherent() would no longer fall
+> > > back to swiotlb but issue a dev_warn() and return NULL.
+> > 
+> > Ah, that looks like it should work on all architectures, very nice.
+> > How about checking this condition, and then printing a small warning
+> > (dev_warn, not WARN_ON) and setting the dma_mask pointer to NULL?
+> 
+> I would not add the above ZONE_DMA check to of_dma_configure(). For
+> example on arm64, we may not support a small coherent_dma_mask but the
+> same value for dma_mask could be fine via swiotlb bouncing (or IOMMU).
+> However, that's an arch-specific decision. Maybe after the above setting
+> of dev->coherent_dma_mask in of_dma_configure(), we could add:
+> 
+> 	if (!dma_supported(dev, dev->coherent_dma_mask))
+> 		dev->dma_mask = NULL;
+> 
+> The arch dma_supported() can check the swiotlb bouncing or ZONE_DMA
+> limits.
 
---a8Wt8u1KmwUX3Y2C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+More precisely, that's what I meant:
 
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 3b64d0bf5bba..4fcdfed6a6df 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -172,13 +172,6 @@ static void of_dma_configure(struct device *dev)
+ 	dev->coherent_dma_mask = DMA_BIT_MASK(32);
+ 
+ 	/*
+-	 * Set it to coherent_dma_mask by default if the architecture
+-	 * code has not set it.
+-	 */
+-	if (!dev->dma_mask)
+-		dev->dma_mask = &dev->coherent_dma_mask;
+-
+-	/*
+ 	 * if dma-coherent property exist, call arch hook to setup
+ 	 * dma coherent operations.
+ 	 */
+@@ -188,18 +181,32 @@ static void of_dma_configure(struct device *dev)
+ 	}
+ 
+ 	/*
+-	 * if dma-ranges property doesn't exist - just return else
+-	 * setup the dma offset
++	 * If dma-ranges property exists - setup the dma offset.
+ 	 */
+ 	ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
+ 	if (ret < 0) {
+ 		dev_dbg(dev, "no dma range information to setup\n");
+-		return;
++		size = 0;
++	} else {
++		/* DMA ranges found. Calculate and set dma_pfn_offset */
++		dev->dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
++		dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
+ 	}
+ 
+-	/* DMA ranges found. Calculate and set dma_pfn_offset */
+-	dev->dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
+-	dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
++	/*
++	 * If the bus dma-ranges property specifies a size smaller than 4GB,
++	 * the device would not be capable of accessing the whole 32-bit
++	 * space, so reduce the default coherent_dma_mask accordingly.
++	 */
++	if (size && size < (1ULL << 32))
++		dev->coherent_dma_mask = DMA_BIT_MASK(ilog2(size));
++
++	/*
++	 * Set dma_mask to coherent_dma_mask by default if the architecture
++	 * code has not set it and DMA on such mask is supported.
++	 */
++	if (!dev->dma_mask && dma_supported(dev, dev->coherent_dma_mask))
++		dev->dma_mask = &dev->coherent_dma_mask;
+ }
+ 
+ /**
 
-Lukasz,
-
-On Tue, Nov 18, 2014 at 11:16:30AM +0100, Lukasz Majewski wrote:
-> The return code from ->get_max_state() callback was not checked during
-> binding cooling device to thermal zone device.
->=20
-> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> ---
-> Changes for v2:
-> - It turned out that patches from 1 to 6 from v1 are not needed, since
->   they either already solve the problem (like imx_thermal.c) or not use
->   cpufreq as a thermal cooling device.
-> - The patch 7 from v1 is also not needed since this patch on error exits
->   this function without using max_state variable.
-> - In thermal driver probe the cpufreq_cooling_register() method presence
->   is crucial to evaluate if the thermal driver needs any actions with=20
->   -EPROBE_DEFER.
-
-Have you tried this patch with of-thermal based systems?
-
-The above proposal works if the thermal driver is dealing with loading
-cpu_cooling. But for of-thermal based drivers, the idea is to leave to
-cpufreq code to load it.=20
-
-As an example, I am taking the ti-soc-thermal, but we already have other
-of-thermal based drivers. Booting with this patch ti-soc-thermal
-(of-based boot) loads fine, but the cpu_cooling never gets bound to the
-thermal zone.
-
-The thing is that the bind may happen before cpufreq-dt code loads the
-cpufreq driver, and when cpu_cooling is checking what is the max freq,
-by using cpufreq table, it won't be able to do it, as there is no table.
-
-While, without the patch, it will use wrong in the binding, but after
-it gets bound, and cpufreq loads, the max will be used correctly.
-
-And in this case, the system still works besides this bug. The reasoning
-is because the max state comes from DT (2) and lower and upper wont be
-equal to THERMAL_NO_LIMIT. Then, the following check will use the
-parameter, instead of max_state:
-
-        cdev->ops->get_max_state(cdev, &max_state);
-
-	/* lower default 0, upper default max_state */
-	lower =3D lower =3D=3D THERMAL_NO_LIMIT ? 0 : lower;
-	upper =3D upper =3D=3D THERMAL_NO_LIMIT ?
-				max_state : upper;
-
-In summary, introducing this patch, although it fix a problem, will
-introduce regressions, in of-thermal based drivers.
-
-I believe, to have this fix, you need to provide a way to have probing
-deferring also in cpu_cooling. That needs also the change in the cpufreq
-driver, as I mentioned in the other thread.
-
-Cheers,
-
-> ---
->  drivers/thermal/thermal_core.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_cor=
-e.c
-> index 43b9070..8567929 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -928,7 +928,7 @@ int thermal_zone_bind_cooling_device(struct thermal_z=
-one_device *tz,
->  	struct thermal_zone_device *pos1;
->  	struct thermal_cooling_device *pos2;
->  	unsigned long max_state;
-> -	int result;
-> +	int result, ret;
-> =20
->  	if (trip >=3D tz->trips || (trip < 0 && trip !=3D THERMAL_TRIPS_NONE))
->  		return -EINVAL;
-> @@ -945,7 +945,9 @@ int thermal_zone_bind_cooling_device(struct thermal_z=
-one_device *tz,
->  	if (tz !=3D pos1 || cdev !=3D pos2)
->  		return -EINVAL;
-> =20
-> -	cdev->ops->get_max_state(cdev, &max_state);
-> +	ret =3D cdev->ops->get_max_state(cdev, &max_state);
-> +	if (ret)
-> +		return ret;
-> =20
->  	/* lower default 0, upper default max_state */
->  	lower =3D lower =3D=3D THERMAL_NO_LIMIT ? 0 : lower;
-> --=20
-> 2.0.0.rc2
->=20
-
---a8Wt8u1KmwUX3Y2C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUb3+RAAoJEMLUO4d9pOJWltoH/3EpKRfWaTs1Ygt4XnRLDAiJ
-1kt/tiOHZcNx5A9E/QIMmR4MGZ4KZ93UbLiWjIe2vU/63xpJjSFkd7Gr9u6bfrl8
-BJCvt85Tsk9cflmAZzZsLJPDgRB8vJNx6usSj8HQ/R8ggZTK8Ef8lU7nHvy0krSK
-iub1UHAjMkaFvo38mPSnsdDOj6ToxIvv04wl8RVG9BZzUSEzjy+aQSknwc6sHMkI
-6G6yowKQ7N0c0xeWW7uSpA55sK2eB1bjqnWV1Vi3f0InRvYS5gihAZN46B3bqznf
-jATFi200E690ELIUROqffNQevOaqaLde7DQUsAM1IyzFGbYAqI5eSYdrkXj1E0g=
-=11im
------END PGP SIGNATURE-----
-
---a8Wt8u1KmwUX3Y2C--
+-- 
+Catalin
