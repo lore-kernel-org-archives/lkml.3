@@ -1,151 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758297AbaKUJki (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 04:40:38 -0500
-Received: from atl4mhob16.myregisteredsite.com ([209.17.115.109]:41840 "EHLO
-	atl4mhob16.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757717AbaKUJkg (ORCPT
+	id S1758443AbaKUJlr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 04:41:47 -0500
+Received: from mail-la0-f73.google.com ([209.85.215.73]:38676 "EHLO
+	mail-la0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758394AbaKUJln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 04:40:36 -0500
-X-TCPREMOTEIP: 88.159.208.100
-X-Authenticated-UID: mike@milosoftware.com
-From: Mike Looijmans <mike.looijmans@topic.nl>
-To: wim@iguana.be
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mike Looijmans <mike.looijmans@topic.nl>
-Subject: [PATCH v3] gpio_wdt: Add "always_running" feature to GPIO watchdog
-Date: Fri, 21 Nov 2014 10:40:28 +0100
-Message-Id: <1416562828-3978-1-git-send-email-mike.looijmans@topic.nl>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <546EE991.1080704@roeck-us.net>
-References: <546EE991.1080704@roeck-us.net>
+	Fri, 21 Nov 2014 04:41:43 -0500
+X-Greylist: delayed 144820 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Nov 2014 04:41:42 EST
+From: David Drysdale <drysdale@google.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        David Miller <davem@davemloft.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+        David Drysdale <drysdale@google.com>
+Subject: [PATCH] vfs: renumber FMODE_NONOTIFY and add to uniqueness check
+Date: Fri, 21 Nov 2014 09:41:22 +0000
+Message-Id: <1416562882-21190-1-git-send-email-drysdale@google.com>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some chips, like the TPS386000, the trigger cannot be disabled
-and the CPU must keep toggling the line at all times. Add a switch
-"always_running" to keep toggling the GPIO line regardless of the
-state of the soft part of the watchdog. The "armed" member keeps
-track of whether a timeout must also cause a reset.
+Although FMODE_NONOTIFY is only used internally in the kernel it is in
+the same numbering space as the other O_* flags, as indicated by the
+comment at the top of include/uapi/asm-generic/fcntl.h (and its use
+in fs/notify/fanotify/fanotify_user.c).  However, its current value
+clashes with the value of O_PATH on sparc, so renumber it to avoid
+the clash.
 
-Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+All of this has happened before (12ed2e36c98aec6c4155, "fanotify:
+FMODE_NONOTIFY and __O_SYNC in sparc conflict"), and all of this
+will happen again -- so update the uniqueness check in fcntl_init()
+to include __FMODE_NONOTIFY.
+
+Signed-off-by: David Drysdale <drysdale@google.com>
 ---
-v3: Indentation adjusted to match
-Fix error path in probe when notification registration fails
-Prevent double assignment of "armed" variable
+ fs/fcntl.c                       | 5 +++--
+ include/linux/fs.h               | 4 ++--
+ include/uapi/asm-generic/fcntl.h | 2 +-
+ 3 files changed, 6 insertions(+), 5 deletions(-)
 
- .../devicetree/bindings/watchdog/gpio-wdt.txt      |    5 +++
- drivers/watchdog/gpio_wdt.c                        |   39 ++++++++++++++++----
- 2 files changed, 36 insertions(+), 8 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
-index 37afec1..1987949 100644
---- a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
-+++ b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
-@@ -13,6 +13,11 @@ Required Properties:
-     by the GPIO flags.
- - hw_margin_ms: Maximum time to reset watchdog circuit (milliseconds).
+diff --git a/fs/fcntl.c b/fs/fcntl.c
+index 99d440a4a6ba..ee85cd4e136a 100644
+--- a/fs/fcntl.c
++++ b/fs/fcntl.c
+@@ -740,14 +740,15 @@ static int __init fcntl_init(void)
+ 	 * Exceptions: O_NONBLOCK is a two bit define on parisc; O_NDELAY
+ 	 * is defined as O_NONBLOCK on some platforms and not on others.
+ 	 */
+-	BUILD_BUG_ON(20 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
++	BUILD_BUG_ON(21 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
+ 		O_RDONLY	| O_WRONLY	| O_RDWR	|
+ 		O_CREAT		| O_EXCL	| O_NOCTTY	|
+ 		O_TRUNC		| O_APPEND	| /* O_NONBLOCK	| */
+ 		__O_SYNC	| O_DSYNC	| FASYNC	|
+ 		O_DIRECT	| O_LARGEFILE	| O_DIRECTORY	|
+ 		O_NOFOLLOW	| O_NOATIME	| O_CLOEXEC	|
+-		__FMODE_EXEC	| O_PATH	| __O_TMPFILE
++		__FMODE_EXEC	| O_PATH	| __O_TMPFILE	|
++		__FMODE_NONOTIFY
+ 		));
  
-+Optional Properties:
-+- always-running: If the watchdog timer cannot be disabled, add this flag to
-+  have the driver keep toggling the signal without a client. It will only cease
-+  to toggle the signal when the device is open and the timeout elapsed.
-+
- Example:
- 	watchdog: watchdog {
- 		/* ADM706 */
-diff --git a/drivers/watchdog/gpio_wdt.c b/drivers/watchdog/gpio_wdt.c
-index 220a9e0..9bfbd73 100644
---- a/drivers/watchdog/gpio_wdt.c
-+++ b/drivers/watchdog/gpio_wdt.c
-@@ -31,6 +31,8 @@ struct gpio_wdt_priv {
- 	int			gpio;
- 	bool			active_low;
- 	bool			state;
-+	bool			always_running;
-+	bool			armed;
- 	unsigned int		hw_algo;
- 	unsigned int		hw_margin;
- 	unsigned long		last_jiffies;
-@@ -48,10 +50,8 @@ static void gpio_wdt_disable(struct gpio_wdt_priv *priv)
- 		gpio_direction_input(priv->gpio);
- }
+ 	fasync_cache = kmem_cache_create("fasync_cache",
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 9ab779e8a63c..fd8611d423a0 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -80,7 +80,7 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
  
--static int gpio_wdt_start(struct watchdog_device *wdd)
-+static void gpio_wdt_start_impl(struct gpio_wdt_priv *priv)
- {
--	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
--
- 	priv->state = priv->active_low;
- 	gpio_direction_output(priv->gpio, priv->state);
- 	priv->last_jiffies = jiffies;
-@@ -60,12 +60,25 @@ static int gpio_wdt_start(struct watchdog_device *wdd)
- 	return 0;
- }
+ /*
+  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
+- * to O_WRONLY and O_RDWR via the strange trick in __dentry_open()
++ * to O_WRONLY and O_RDWR via the strange trick in OPEN_FMODE() below.
+  */
  
-+static int gpio_wdt_start(struct watchdog_device *wdd)
-+{
-+	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
-+
-+	gpio_wdt_start_impl(priv);
-+	priv->armed = true;
-+
-+	return 0;
-+}
-+
- static int gpio_wdt_stop(struct watchdog_device *wdd)
- {
- 	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
+ /* file is open for reading */
+@@ -134,7 +134,7 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
+ #define FMODE_CAN_WRITE         ((__force fmode_t)0x40000)
  
--	mod_timer(&priv->timer, 0);
--	gpio_wdt_disable(priv);
-+	priv->armed = false;
-+	if (!priv->always_running) {
-+		mod_timer(&priv->timer, 0);
-+		gpio_wdt_disable(priv);
-+	}
+ /* File was opened by fanotify and shouldn't generate fanotify events */
+-#define FMODE_NONOTIFY		((__force fmode_t)0x1000000)
++#define FMODE_NONOTIFY		((__force fmode_t)0x4000000)
  
- 	return 0;
- }
-@@ -91,8 +104,8 @@ static void gpio_wdt_hwping(unsigned long data)
- 	struct watchdog_device *wdd = (struct watchdog_device *)data;
- 	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
+ /*
+  * Flag for rw_copy_check_uvector and compat_rw_copy_check_uvector
+diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
+index 7543b3e51331..e063effe0cc1 100644
+--- a/include/uapi/asm-generic/fcntl.h
++++ b/include/uapi/asm-generic/fcntl.h
+@@ -5,7 +5,7 @@
  
--	if (time_after(jiffies, priv->last_jiffies +
--		       msecs_to_jiffies(wdd->timeout * 1000))) {
-+	if (priv->armed && time_after(jiffies, priv->last_jiffies +
-+				      msecs_to_jiffies(wdd->timeout * 1000))) {
- 		dev_crit(wdd->dev, "Timer expired. System will reboot soon!\n");
- 		return;
- 	}
-@@ -197,6 +210,9 @@ static int gpio_wdt_probe(struct platform_device *pdev)
- 	/* Use safe value (1/2 of real timeout) */
- 	priv->hw_margin = msecs_to_jiffies(hw_margin / 2);
- 
-+	priv->always_running = of_property_read_bool(pdev->dev.of_node,
-+						     "always-running");
-+
- 	watchdog_set_drvdata(&priv->wdd, priv);
- 
- 	priv->wdd.info		= &gpio_wdt_ident;
-@@ -216,8 +232,15 @@ static int gpio_wdt_probe(struct platform_device *pdev)
- 	priv->notifier.notifier_call = gpio_wdt_notify_sys;
- 	ret = register_reboot_notifier(&priv->notifier);
- 	if (ret)
--		watchdog_unregister_device(&priv->wdd);
-+		goto error_unregister;
- 
-+	if (priv->always_running)
-+		gpio_wdt_start_impl(priv);
-+
-+	return 0;
-+
-+error_unregister:
-+	watchdog_unregister_device(&priv->wdd);
- 	return ret;
- }
- 
+ /*
+  * FMODE_EXEC is 0x20
+- * FMODE_NONOTIFY is 0x1000000
++ * FMODE_NONOTIFY is 0x4000000
+  * These cannot be used by userspace O_* until internal and external open
+  * flags are split.
+  * -Eric Paris
 -- 
-1.7.9.5
+2.1.0.rc2.206.gedb03e5
 
