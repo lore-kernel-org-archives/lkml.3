@@ -1,107 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102AbaKUKA5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 05:00:57 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36287 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755211AbaKUKAz (ORCPT
+	id S1757540AbaKUKGx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 05:06:53 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:3667 "EHLO
+	imgpgp01.kl.imgtec.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752189AbaKUKGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 05:00:55 -0500
-Message-ID: <546F0D43.4020307@arm.com>
-Date: Fri, 21 Nov 2014 10:00:35 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Fri, 21 Nov 2014 05:06:50 -0500
+X-PGP-Universal: processed;
+	by imgpgp01.kl.imgtec.org on Fri, 21 Nov 2014 10:06:48 +0000
+Date: Fri, 21 Nov 2014 10:06:47 +0000
+From: James Hogan <james.hogan@imgtec.com>
+To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>
+CC: Mike Turquette <mturquette@linaro.org>, <linux-metag@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>
+Subject: Re: [PATCH 15/15] metag: tz1090: add TZ1090 clocks to device tree
+Message-ID: <20141121100647.GF12456@jhogan-linux.le.imgtec.org>
+References: <1416438943-11429-1-git-send-email-james.hogan@imgtec.com>
+ <1416438943-11429-16-git-send-email-james.hogan@imgtec.com>
+ <2363265.Y6kZ4TuTy5@diego>
 MIME-Version: 1.0
-To: Yijing Wang <wangyijing@huawei.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
-References: <546E1771.4030201@arm.com> <20141120215353.GA7987@google.com> <alpine.DEB.2.11.1411202355060.6439@nanos> <546E9B60.9070706@huawei.com>
-In-Reply-To: <546E9B60.9070706@huawei.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
+Content-Disposition: inline
+In-Reply-To: <2363265.Y6kZ4TuTy5@diego>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-Originating-IP: [192.168.154.101]
+X-ESG-ENCRYPT-TAG: f2c42831
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yijing,
+--XsQoSWH+UP9D9v3l
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 21/11/14 01:54, Yijing Wang wrote:
->>> Thomas, let me know if you want to do that.  I suppose we could add a new
->>> patch to add it back, but that would leave bisection broken for the
->>> interval between c167caf8d174 and the patch that adds it back.
->>
->> Fortunately my irq/irqdomain branch is not immutable yet. So we have
->> no problem at that point. I can rebase on your branch until tomorrow
->> night. Or just rebase on mainline and we sort out the merge conflicts
->> later, i.e. delegate them to Linus so his job of pulling stuff gets
->> not completely boring.
-> 
-> Hi Thomas, sorry for my introducing the broken.
-> 
->>
->> What I'm more worried about is whether this intended change is going
->> to inflict a problem on Jiangs intention to deduce the MSI irq domain
->> from the device, which we really need for making DMAR work w/o going
->> through loops and hoops.
->>
->> I have limited knowledge about the actual scope of iommu (DMAR) units
->> versus device/bus/host-controllers, so I would appreciate a proper
->> explanation for that from you or Jiang or both.
-> 
-> In my personal opinion, if it's not necessary, we should not put stuff
-> into pci_dev or pci_bus. If we plan to save msi_controller in pci_bus or
-> pci_dev.
-> I have a proposal, I would be appreciated if you could give some comments.
-> First we refactor pci_host_bridge to make a generic
-> pci_host_bridge, then we could save pci domain in it to eliminate
-> arch specific functions. I aslo wanted to save msi_controller as
-> pci domain, but now Jiang refactor hierarchy irq domain, and
-> pci devices under the same pci host bridge may need to associate
-> to different msi_controllers.
-> 
-> So I want to associate a msi_controller finding ops with generic pci_host_bridge,
-> then every pci device could find its msi_controller/irq_domain by a
-> common function
-> 
-> E.g
-> 
-> struct msi_controller *pci_msi_controller(struct pci_dev *pdev)
-> {
-> 	struct msi_controller *ctrl;
-> 	struct pci_host_bridge *host = find_pci_host_bridge(pdev->bus);
-> 	if (host && host->pci_get_msi_controller)
-> 		ctrl = pci_host_bridge->pci_get_msi_controller(struct pci_dev *pdev);
-> 
-> 	return ctrl;	
-> }
-> 
-> If I miss something, please let me know, thanks.
+On Thu, Nov 20, 2014 at 01:56:24PM +0100, Heiko St=C3=BCbner wrote:
+> Hi James,
+>=20
+> interestingly I only got the cover-letter, so had to find the other patch=
+es=20
+> through my list-archive :-) .
 
-That feels slightly convoluted for something that should be a very
-simple operation. Does this mean you're trying to represent a situation
-where:
-- a single host bridge has multiple MSI controllers,
-- this bridge serves multiple busses,
-- devices on the same bus can talk to different MSI controllers?
+Hmm, sorry about that. I copy cover letter Cc list from the Ccs of the
+patches, so not sure what happened there.
 
-That would be the only case where the current way we pass the
-msi_controller around wouldn't work.
+>=20
+>=20
+> Am Mittwoch, 19. November 2014, 23:15:43 schrieb James Hogan:
+> > Enable the common clock framework for the TZ1090 SoC, add a tz1090_clk
+> > device tree file describing the clocks, and connect the Meta core clock
+> > so that the rate of the Meta timer can be determined.
+> >=20
+> > Most of the clock tree is described apart from some AFE clocks which
+> > aren't usually of much interest to Linux. These are represented with
+> > placeholder clocks.
+> >=20
+> > Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> > Cc: Mike Turquette <mturquette@linaro.org>
+> > Cc: Rob Herring <robh+dt@kernel.org>
+> > Cc: Pawel Moll <pawel.moll@arm.com>
+> > Cc: Mark Rutland <mark.rutland@arm.com>
+> > Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> > Cc: Kumar Gala <galak@codeaurora.org>
+> > Cc: linux-metag@vger.kernel.org
+> > Cc: devicetree@vger.kernel.org
+> > ---
+>=20
+>=20
+> I don't know enough about your clock structure, but it looks quite a bit =
+like=20
+> Mike's mail from May [0] may apply here too.
+>=20
+> The register layout also suggests that it is indeed one clock ip-block:
+>=20
+> 0x02005908 0x4	CR_TOP_CLKSWITCH=20
+> 0x0200590c 0x4	CR_TOP_CLKENAB
+> 0x02005950 0x4	CR_TOP_SYSPLL_CTL0
+> 0x02005954 0x4	CR_TOP_SYSPLL_CTL1
+> 0x02005988 0x4	CR_TOP_CLKSWITCH2
+> 0x0200598c 0x4	CR_TOP_CLKENAB2
+> ...
+>=20
+>=20
+> [0] https://lkml.org/lkml/2014/5/14/715
 
-If that's what you're trying to do, I can see how this work, but I'd
-suggest you put that infrastructure in place before tearing down the
-existing one. This means being having support at the host-bridge level
-and reasonable defaults for the non-complicated case where bus->msi is
-exactly what you want.
+Thanks, that does make sense. It's probably more like 4 memory regions
+("top" level, "perip" peripheral registers, "hep" high end peripheral
+registers, and "pdc" powerdown controller registers), but it could
+certainly still have a single binding with multiple memory regions to
+simplify the clock specifiers.
 
-Thanks,
+I'll take a look at doing it that way.
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Cheers
+James
+
+--XsQoSWH+UP9D9v3l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUbw63AAoJEGwLaZPeOHZ6q9QQAJ+IVpui8B8AgxJrhQKQgx3n
+jXWGHngPP+uZmKBl3fuKnQoTDVNPQUNRSTYJrJxeyGaSuZuhjiVsxkoBVCH2Puya
+1vtKJrsPFrJ3vIUodQhzR3+us8WrzA/gFvawl/gWGkwaWn4SSYXTF23/qKezq/gi
+EQ6yUJfmceig13743dkgPiAbI6PDCnUAYKRboN3nnFKYp+9m/TUFhlTbAgKT5wDu
+wCvJhjva5yiHzw7ZIGqKfhhKBE97RewjZHQc3Gqem1vtCVTBSgEGZmY3xsvzDHpN
++SSav1OnMLI8m1Gffx2Gs9rb4JG1CE7FHZGQveqFoudoqz1ePRyFBfAvBoaz+2Wv
+lPrHHlyPNCDPIntGvmifLyHhIJPHVOdROkIHwRtIGUlNqfWBC6J2Flq6OCo7uOfN
+1ZugffXAVFE9Iuetn1kNtQAaF98U9TCmfWfK6yB4Fnyf4Fit7leYnD3YXqmvJWkB
+1Ngz3LFOFXLY7HoTjq3w5x40KNwj/itvGCOVn/wMX2fmKCrezqKE3Yjw6rPeOna2
+yROmr1FtYfogvAhwnkKUT+cSzk4irfcF8AhzFcjHJ+wuvdSnvIlL5DRyZiDwlDxr
+By4Enitxn44QmoVTCFCvKQKXl6IWCuYhzOW5NZ4x1hCIxVlYBVaiUZysaIx4UjtA
+U0HypPQMzyYvFRYxbHcR
+=u/zm
+-----END PGP SIGNATURE-----
+
+--XsQoSWH+UP9D9v3l--
