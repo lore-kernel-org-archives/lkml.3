@@ -1,129 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbaKUTGn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:06:43 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:61089 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986AbaKUTGl (ORCPT
+	id S1751760AbaKUTHK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:07:10 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:64760 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755AbaKUTHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:06:41 -0500
+	Fri, 21 Nov 2014 14:07:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
-References: <alpine.DEB.2.11.1411202204030.3950@nanos>
-	<20141120221122.GA25393@htj.dyndns.org>
-	<alpine.DEB.2.11.1411202315230.3950@nanos>
-	<20141120230514.GB25393@htj.dyndns.org>
-	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
-	<20141120233920.GC25393@htj.dyndns.org>
-	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
-	<20141121162742.GB15461@htj.dyndns.org>
-	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
-	<CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
-	<20141121170805.GD30603@home.goodmis.org>
-	<CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
-	<CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
-	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
-Date: Fri, 21 Nov 2014 11:06:41 -0800
-X-Google-Sender-Auth: 0Mfp-U_Sq6ne11NKE6MVkIL56_4
-Message-ID: <CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+Reply-To: fdmanana@gmail.com
+In-Reply-To: <20141121180045.GF8568@twin.jikos.cz>
+References: <cover.1416563833.git.osandov@osandov.com>
+	<afd3c1009172a4a1cfa10e73a64caf35c631a6d4.1416563833.git.osandov@osandov.com>
+	<20141121180045.GF8568@twin.jikos.cz>
+Date: Fri, 21 Nov 2014 19:07:03 +0000
+Message-ID: <CAL3q7H5=X0duvO3e-b5aKZ5n=VbBhXVOcz9uKkR_j2KQ4DB_Mw@mail.gmail.com>
+Subject: Re: [PATCH v2 5/5] btrfs: enable swap file support
+From: Filipe David Manana <fdmanana@gmail.com>
+To: "dsterba@suse.cz" <dsterba@suse.cz>, Omar Sandoval <osandov@osandov.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
+        Josef Bacik <jbacik@fb.com>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
+        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Mel Gorman <mgorman@suse.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 10:22 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On Fri, Nov 21, 2014 at 6:00 PM, David Sterba <dsterba@suse.cz> wrote:
+> On Fri, Nov 21, 2014 at 02:08:31AM -0800, Omar Sandoval wrote:
+>> Implement the swap file a_ops on btrfs. Activation simply checks for a usable
+>> swap file: it must be fully allocated (no holes), support direct I/O (so no
+>> compressed or inline extents) and should be nocow (I'm not sure about that last
+>> one).
+>>
+>> Signed-off-by: Omar Sandoval <osandov@osandov.com>
+>> ---
+>>  fs/btrfs/inode.c | 71 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 71 insertions(+)
+>>
+>> diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+>> index d23362f..b8fd36b 100644
+>> --- a/fs/btrfs/inode.c
+>> +++ b/fs/btrfs/inode.c
+>> @@ -9442,6 +9442,75 @@ out_inode:
+>>
+>>  }
+>>
+>> +static int btrfs_swap_activate(struct swap_info_struct *sis, struct file *file,
+>> +                            sector_t *span)
+>> +{
+>> +     struct inode *inode = file_inode(file);
+>> +     struct btrfs_inode *ip = BTRFS_I(inode);
 >
->  (d) the non-PAE case would look something like this:
+> 'ip' looks strange in context of a filesystem, please pick a different
+> name (eg. 'inode' or whatever).
 >
->     static noinline int vmalloc_fault(unsigned long address)
->     {
->         unsigned index;
->         pgd_t *pgd_dst, pgd_entry;
+>> +     int ret = 0;
+>> +     u64 isize = inode->i_size;
+>> +     struct extent_state *cached_state = NULL;
+>> +     struct extent_map *em;
+>> +     u64 start, len;
+>> +
+>> +     if (ip->flags & BTRFS_INODE_COMPRESS) {
+>> +             /* Can't do direct I/O on a compressed file. */
+>> +             pr_err("BTRFS: swapfile is compressed");
 >
->         /* Make sure we are in vmalloc area: */
->         if (!(address >= VMALLOC_START && address < VMALLOC_END))
->                 return -1;
+> Please use the btrfs_err macros everywhere.
+>
+>> +             return -EINVAL;
+>> +     }
+>> +     if (!(ip->flags & BTRFS_INODE_NODATACOW)) {
+>> +             /* The swap file can't be copy-on-write. */
+>> +             pr_err("BTRFS: swapfile is copy-on-write");
+>> +             return -EINVAL;
+>> +     }
+>> +
+>> +     lock_extent_bits(&ip->io_tree, 0, isize - 1, 0, &cached_state);
+>> +
+>> +     /*
+>> +      * All of the extents must be allocated and support direct I/O. Inline
+>> +      * extents and compressed extents fall back to buffered I/O, so those
+>> +      * are no good.
+>> +      */
+>> +     start = 0;
+>> +     while (start < isize) {
+>> +             len = isize - start;
+>> +             em = btrfs_get_extent(inode, NULL, 0, start, len, 0);
+>> +             if (IS_ERR(em)) {
+>> +                     ret = PTR_ERR(em);
+>> +                     goto out;
+>> +             }
+>> +
+>> +             if (test_bit(EXTENT_FLAG_VACANCY, &em->flags) ||
+>> +                 em->block_start == EXTENT_MAP_HOLE) {
+>
+> If the no-holes feature is enabled on the filesystem, there won't be any
+> such extent representing the hole. You have to check that each two
+> consecutive extents are adjacent.
 
-Side note: I think this is just unnecessary confusion, and generates
-big constants for no good reason.
+If no-holes is enabled it means file extent items aren't used to
+represent holes. But extent maps are still used to represent holes in
+memory, and that's what the code is looking for and therefore it's
+correct.
 
-The thing is, the kernel PGD's should always be in sync. In fact, at
-PGD allocation time, we just do
+>
+>> +                     pr_err("BTRFS: swapfile has holes");
+>> +                     ret = -EINVAL;
+>> +                     goto out;
+>> +             }
+>> +             if (em->block_start == EXTENT_MAP_INLINE) {
+>> +                     pr_err("BTRFS: swapfile is inline");
+>
+> While the test is valid, this would mean that the file is smaller than
+> the inline limit, which is now one page. I think the generic swap code
+> would refuse such a small file anyway.
+>
+>> +                     ret = -EINVAL;
+>> +                     goto out;
+>> +             }
+>> +             if (test_bit(EXTENT_FLAG_COMPRESSED, &em->flags)) {
+>> +                     pr_err("BTRFS: swapfile is compresed");
+>> +                     ret = -EINVAL;
+>> +                     goto out;
+>> +             }
+>
+> I think the preallocated extents should be refused as well. This means
+> the filesystem has enough space to hold the data but it would still have
+> to go through the allocation and could in turn stress the memory
+> management code that triggered the swapping activity in the first place.
+>
+> Though it's probably still possible to reach such corner case even with
+> fully allocated nodatacow file, this should be reviewed anyway.
+>
+>> +
+>> +             start = extent_map_end(em);
+>> +             free_extent_map(em);
+>> +     }
+>> +
+>> +out:
+>> +     unlock_extent_cached(&ip->io_tree, 0, isize - 1, &cached_state,
+>> +                          GFP_NOFS);
+>> +     return ret;
+>> +}
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-     clone_pgd_range(.. KERNEL_PGD_BOUNDARY, KERNEL_PGD_PTRS);
 
-and it might actually be better to structure this to be that exact same thing.
 
-So instead of checking the address, we could just do
+-- 
+Filipe David Manana,
 
-        index = pgd_index(address);
-        if (index < KERNEL_PGD_BOUNDARY)
-                return -1;
-
-which actually matches our initialization sequence much better anyway.
-And avoids those random big constants.
-
-Also, it turns out that this:
-
-        if (pgd_present(pgd_dst[index]))
-
-generates a crazy big constant because of bad compiler issues (the
-"pgd_present()" thing only checks the low bit, but it does so on
-pgd_flags(), which does "native_pgd_val(pgd) & PTE_FLAGS_MASK", so you
-have an insane extra "and" with the constant 0xffffc00000000fff, just
-to then "and" it again with "1". It doesn't do that with the first
-pgd_present() check, oddly enough.
-
-WTF, gcc?
-
-Anyway, even more importantly, because of the whole issue with nesting
-page tables, it's probably best to actually avoid all the
-"pgd_present()" etc helpers, because those might be hardcoded to 1
-etc. So avoid the whole issue by just accessign the raw data.
-
-Simplify, simplify, simplify. The actual code generation for this all
-should be maybe 20 instructions.
-
-Here's the simplified end result. Again, this is TOTALLY UNTESTED. I
-compiled it and verified that the code generation looks like what I'd
-have expected, but that's literally it.
-
-  static noinline int vmalloc_fault(unsigned long address)
-  {
-        pgd_t *pgd_dst;
-        pgdval_t pgd_entry;
-        unsigned index = pgd_index(address);
-
-        if (index < KERNEL_PGD_BOUNDARY)
-                return -1;
-
-        pgd_entry = init_mm.pgd[index].pgd;
-        if (!pgd_entry)
-                return -1;
-
-        pgd_dst = __va(PAGE_MASK & read_cr3());
-        pgd_dst += index;
-
-        if (pgd_dst->pgd)
-                return -1;
-
-        ACCESS_ONCE(pgd_dst->pgd) = pgd_entry;
-        return 0;
-  }
-  NOKPROBE_SYMBOL(vmalloc_fault);
-
-Hmm? Does anybody see anything fundamentally wrong with this?
-
-                     Linus
+"Reasonable men adapt themselves to the world.
+ Unreasonable men adapt the world to themselves.
+ That's why all progress depends on unreasonable men."
