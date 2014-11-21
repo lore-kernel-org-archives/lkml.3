@@ -1,88 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559AbaKUUIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 15:08:47 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:38348 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934AbaKUUIo (ORCPT
+	id S1752593AbaKUUJc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:09:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56867 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406AbaKUUJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 15:08:44 -0500
-Date: Fri, 21 Nov 2014 15:08:36 -0500 (EST)
-Message-Id: <20141121.150836.687566774013830023.davem@davemloft.net>
-To: drysdale@google.com
-Cc: sfr@canb.auug.org.au, ebiederm@xmission.com, luto@amacapital.net,
-        viro@zeniv.linux.org.uk, meredydd@senatehouse.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        tglx@linutronix.de, oleg@redhat.com, mtk.manpages@gmail.com,
-        mingo@redhat.com, hpa@zytor.com, keescook@chromium.org, arnd@arndb.de,
-        dalias@aerifal.cx, hch@infradead.org, x86@kernel.org,
-        linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCHv9 4/5] sparc: Hook up execveat system call.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAHse=S--yNmP5sTr2kg_7kb2V8Lh2FioTSH_o23MstVrdt4Wmw@mail.gmail.com>
-References: <1416418072-18639-5-git-send-email-drysdale@google.com>
-	<20141120104223.2cea8043@canb.auug.org.au>
-	<CAHse=S--yNmP5sTr2kg_7kb2V8Lh2FioTSH_o23MstVrdt4Wmw@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 21 Nov 2014 15:09:31 -0500
+Date: Fri, 21 Nov 2014 12:09:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Rafael Aquini <aquini@redhat.com>
+Subject: Re: [PATCH] ipc,sem block sem_lock on sma->lock during sma
+ initialization
+Message-Id: <20141121120930.3cd8d0f233f9670d689de672@linux-foundation.org>
+In-Reply-To: <20141121145226.2ac598af@annuminas.surriel.com>
+References: <20141121145226.2ac598af@annuminas.surriel.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 21 Nov 2014 12:08:41 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Drysdale <drysdale@google.com>
-Date: Thu, 20 Nov 2014 11:28:22 +0000
+On Fri, 21 Nov 2014 14:52:26 -0500 Rik van Riel <riel@redhat.com> wrote:
 
-> On Wed, Nov 19, 2014 at 11:42 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Hi David,
->>
->> On Wed, 19 Nov 2014 17:27:51 +0000 David Drysdale <drysdale@google.com> wrote:
->>>
->>> diff --git a/arch/sparc/kernel/systbls_64.S b/arch/sparc/kernel/systbls_64.S
->>> index 580cde9370c9..15069cb35dac 100644
->>> --- a/arch/sparc/kernel/systbls_64.S
->>> +++ b/arch/sparc/kernel/systbls_64.S
->>> @@ -88,6 +88,7 @@ sys_call_table32:
->>>       .word sys_syncfs, compat_sys_sendmmsg, sys_setns, compat_sys_process_vm_readv, compat_sys_process_vm_writev
->>>  /*340*/      .word sys_kern_features, sys_kcmp, sys_finit_module, sys_sched_setattr, sys_sched_getattr
->>>       .word sys32_renameat2, sys_seccomp, sys_getrandom, sys_memfd_create, sys_bpf
->>> +/*350*/      .word sys_execveat
->>
->> Shouldn't this be compat_sys_execveat?
+> When manipulating just one semaphore with semop, sem_lock only takes that
+> single semaphore's lock. This creates a problem during initialization of
+> the semaphore array, when the data structures used by sem_lock have not
+> been set up yet. The sma->lock is already held by newary, and we just
+> have to make sure everything else waits on that lock during initialization.
 > 
-> Yeah, that would make sense -- thanks for spotting.
+> Luckily it is easy to make sem_lock wait on the sma->lock, by pretending
+> there is a complex operation in progress while the sma is being initialized.
 > 
-> Looking at this more closely, I also wonder if we need a pair of wrappers
-> analogous to sys(32|64)_execve -- they include a (pipeline-executed)
-> flushw instruction after the jmpl to [compat_]sys_execve, which I guess
-> might be needed.  So I could add something like the following to
-> arch/sparc/kernel/syscalls.S:
-> 
->   sys64_execveat:
->       set sys_execveat, %g1
->       jmpl %g1, %g0
->       flushw
->   #ifdef CONFIG_COMPAT
->   sys32_execveat:
->       set compat_sys_execveat, %g1
->       jmpl %g1, %g0
->       flushw
->   #endif
-> 
-> However, I don't speak SPARC and can't run the code -- any thoughts
-> out there from someone who does & can?
-> 
-> Or maybe I should stop trying to be helpful with speculative patches, and
-> just leave wiring up the sparc stuff to the experts...
+> The newary function already zeroes sma->complex_count before unlocking
+> the sma->lock.
 
-You need wrappers for execve() like system calls yes, in order to flush all
-of the user register windows to the stack before the kill the address space.
-
-I think your code snippet above is fine, except that you should indent
-the flushw by one space more because it is in the delay slot of a
-control transfer instruction.
-
-Thanks.
+What are the runtime effects of the bug?
