@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750813AbaKUReq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 12:34:46 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:55008 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750699AbaKURep (ORCPT
+	id S1750845AbaKURfx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 12:35:53 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34997 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699AbaKURfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 12:34:45 -0500
-Date: Fri, 21 Nov 2014 12:34:34 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141121123434.279c5613@gandalf.local.home>
-In-Reply-To: <CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
-References: <alpine.DEB.2.11.1411202204030.3950@nanos>
-	<20141120221122.GA25393@htj.dyndns.org>
-	<alpine.DEB.2.11.1411202315230.3950@nanos>
-	<20141120230514.GB25393@htj.dyndns.org>
-	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
-	<20141120233920.GC25393@htj.dyndns.org>
-	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
-	<20141121162742.GB15461@htj.dyndns.org>
-	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
-	<CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
-	<20141121170805.GD30603@home.goodmis.org>
-	<CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Fri, 21 Nov 2014 12:35:52 -0500
+Message-ID: <546F77F3.3050002@suse.cz>
+Date: Fri, 21 Nov 2014 18:35:47 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>
+CC: Josh Poimboeuf <jpoimboe@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
+References: <1416522580-5593-1-git-send-email-sjenning@redhat.com> <1416522580-5593-3-git-send-email-sjenning@redhat.com> <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz> <20141121164027.GB11339@cerebellum.variantweb.net>
+In-Reply-To: <20141121164027.GB11339@cerebellum.variantweb.net>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014 09:19:02 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Fri, Nov 21, 2014 at 9:08 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > Actually, in_nmi() is now safe for vmalloc faults. In fact, it handles the
-> > clobbering of the cr2 register just fine.
+On 11/21/2014, 05:40 PM, Seth Jennings wrote:
+>>> --- /dev/null
+>>> +++ b/arch/x86/include/asm/livepatch.h
+>>> @@ -0,0 +1,37 @@
+...
+>>> +#ifndef _ASM_X86_LIVEPATCH_H
+>>> +#define _ASM_X86_LIVEPATCH_H
+>>> +
+>>> +#include <linux/module.h>
+>>> +
+>>> +#ifdef CONFIG_LIVE_PATCHING
+>>> +extern int klp_write_module_reloc(struct module *mod, unsigned long type,
+>>> +				  unsigned long loc, unsigned long value);
+>>> +
+>>> +#else
+>>> +static int klp_write_module_reloc(struct module *mod, unsigned long type,
+>>
+>> static inline?
 > 
-> That's not what I object to and find incorrect wrt NMI.
+> I think the practice is to let the compiler handle inline determination
+> unless you are sure that the compiler isn't inlining something you think
+> it should.
 
-I was commenting about the WARN_ON() itself.
+Although you are right, it is a correct C, gcc specs (6.39) suggests to
+use 'static inline' on such functions. gcc then shall inline such functions.
 
-> 
-> Compare the simple and correct 32-bit code to the complex and
-> incorrect 64-bit code.
-> 
-> In particular, look at how the 32-bit code relies *entirely* on hardware state.
-> 
-> Then look at where the 64-bit code does not.
+And if you look around in the kernel, we use that combination almost
+everywhere.
 
-I see. You have issues with the use of current->active_mm instead of
-just doing a read_cr3() (and I'm sure other things).
-
-Doing a series of git blame, 64 bit has been like that since 2005 (start
-of git).
-
-Looks to me we have more work to do with the merging of 64 bit and 32
-bit. Perhaps 64 bit can become more like 32 bit.
-
--- Steve
+thanks,
+-- 
+js
+suse labs
