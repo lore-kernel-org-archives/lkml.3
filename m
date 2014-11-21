@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758771AbaKUN6y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 08:58:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53771 "EHLO mx2.suse.de"
+	id S932380AbaKUN7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 08:59:11 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:34085 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758552AbaKUN6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 08:58:04 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>
-Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 09/10] mm: numa: Add paranoid check around pte_protnone_numa
-Date: Fri, 21 Nov 2014 13:57:47 +0000
-Message-Id: <1416578268-19597-10-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1416578268-19597-1-git-send-email-mgorman@suse.de>
-References: <1416578268-19597-1-git-send-email-mgorman@suse.de>
+	id S1755332AbaKUN7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 08:59:07 -0500
+Date: Fri, 21 Nov 2014 14:58:53 +0100
+From: Alban <albeu@free.fr>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Aban Bedel <albeu@free.fr>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Benoit Taine <benoit.taine@lip6.fr>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 1/2] 8139too: Allow setting MTU larger than 1500
+Message-ID: <20141121145853.1be898de@tock>
+In-Reply-To: <1416530074.7215.11.camel@decadent.org.uk>
+References: <1415447316-12424-1-git-send-email-albeu@free.fr>
+	<1416530074.7215.11.camel@decadent.org.uk>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pte_protnone_numa is only safe to use after VMA checks for PROT_NONE are
-complete. Treating a real PROT_NONE PTE as a NUMA hinting fault is going
-to result in strangeness so add a check for it. BUG_ON looks like overkill
-but if this is hit then it's a serious bug that could result in corruption
-so do not even try recovering. It would have been more comprehensive to
-check VMA flags in pte_protnone_numa but it would have made the API ugly
-just for a debugging check.
+On Fri, 21 Nov 2014 00:34:34 +0000
+Ben Hutchings <ben@decadent.org.uk> wrote:
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/huge_memory.c | 3 +++
- mm/memory.c      | 3 +++
- 2 files changed, 6 insertions(+)
+> On Sat, 2014-11-08 at 12:48 +0100, Alban Bedel wrote:
+> > Replace the default ndo_change_mtu callback with one that allow
+> > setting MTU that the driver can handle.
+> > 
+> > Signed-off-by: Alban Bedel <albeu@free.fr>
+> > ---
+> >  drivers/net/ethernet/realtek/8139too.c | 13 ++++++++++++-
+> >  1 file changed, 12 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/net/ethernet/realtek/8139too.c
+> > b/drivers/net/ethernet/realtek/8139too.c index 007b38c..8387de9
+> > 100644 --- a/drivers/net/ethernet/realtek/8139too.c
+> > +++ b/drivers/net/ethernet/realtek/8139too.c
+> > @@ -185,6 +185,9 @@ static int debug = -1;
+> >  /* max supported ethernet frame size -- must be at least
+> > (dev->mtu+14+4).*/ #define MAX_ETH_FRAME_SIZE	1536
+> >  
+> > +/* max supported payload size */
+> > +#define MAX_ETH_DATA_SIZE	(MAX_ETH_FRAME_SIZE - ETH_HLEN -
+> > ETH_FCS_LEN)
+> [...]
+> 
+> Does this maximum still allow for VLAN tags, or should it use
+> VLAN_ETH_HLEN instead of ETH_HLEN?
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index ad2a3ee..8546654 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1273,6 +1273,9 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	bool migrated = false;
- 	int flags = 0;
- 
-+	/* A PROT_NONE fault should not end up here */
-+	BUG_ON(!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)));
-+
- 	ptl = pmd_lock(mm, pmdp);
- 	if (unlikely(!pmd_same(pmd, *pmdp)))
- 		goto out_unlock;
-diff --git a/mm/memory.c b/mm/memory.c
-index 2ec07a9..7d97af5 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3109,6 +3109,9 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	bool migrated = false;
- 	int flags = 0;
- 
-+	/* A PROT_NONE fault should not end up here */
-+	BUG_ON(!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)));
-+
- 	/*
- 	* The "pte" at this point cannot be used safely without
- 	* validation through pte_unmap_same(). It's of NUMA type but
--- 
-2.1.2
+That might well be as the VLAN code seems to assume that the physical
+device can handle frames of MTU + VLAN_HLEN bytes. I can fix it, but to
+me it seems like the VLAN code should be fixed to respect the physical
+device MTU.
 
+Alban
