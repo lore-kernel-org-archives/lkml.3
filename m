@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751375AbaKUGYY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 01:24:24 -0500
-Received: from ozlabs.org ([103.22.144.67]:44910 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750766AbaKUGYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 01:24:23 -0500
-Date: Fri, 21 Nov 2014 17:24:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: linux-next: manual merge of the char-misc tree with the arm-soc
- tree
-Message-ID: <20141121172412.4caf89cc@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1753610AbaKUG0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 01:26:10 -0500
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:39981 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaKUG0I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 01:26:08 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/k6uxQZPRmWsK+5vU4GlSPZ_"; protocol="application/pgp-signature"
+In-Reply-To: <20141120100328.GO4042@n2100.arm.linux.org.uk>
+References: <1416461968-2057-1-git-send-email-amit.daniel@samsung.com>
+	<1416461968-2057-3-git-send-email-amit.daniel@samsung.com>
+	<20141120100328.GO4042@n2100.arm.linux.org.uk>
+Date: Fri, 21 Nov 2014 11:56:07 +0530
+X-Google-Sender-Auth: zQIZUuXKI7DfAvqM4zlt58UF3KY
+Message-ID: <CADGdYn6dQp2LtuQj5-ma18C-i4J4k0Cw5ZOrhfi7Lb_3Wzaung@mail.gmail.com>
+Subject: Re: [PATCH v3 2/5] drivers: soc: Add support for Exynos PMU driver
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Pankaj Dubey <pankaj.dubey@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/k6uxQZPRmWsK+5vU4GlSPZ_
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Nov 20, 2014 at 3:33 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Thu, Nov 20, 2014 at 11:09:25AM +0530, Amit Daniel Kachhap wrote:
+>> diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile
+>> index 063113d..44d220d 100644
+>> --- a/drivers/soc/Makefile
+>> +++ b/drivers/soc/Makefile
+>> @@ -6,3 +6,4 @@ obj-$(CONFIG_ARCH_QCOM)               += qcom/
+>>  obj-$(CONFIG_ARCH_TEGRA)     += tegra/
+>>  obj-$(CONFIG_SOC_TI)         += ti/
+>>  obj-$(CONFIG_PLAT_VERSATILE) += versatile/
+>> +obj-$(CONFIG_ARCH_EXYNOS)    += samsung/
+>
+> Is ARCH_EXYNOS appropriate here, or is your new SOC_SAMSUNG better?
+yes, SOC_SAMSUNG is more appropriate.
+>
+>> diff --git a/drivers/soc/samsung/Kconfig b/drivers/soc/samsung/Kconfig
+>> new file mode 100644
+>> index 0000000..a424ebc
+>> --- /dev/null
+>> +++ b/drivers/soc/samsung/Kconfig
+>> @@ -0,0 +1,20 @@
+>> +#
+>> +# SAMSUNG SOC drivers
+>> +#
+>> +menuconfig SOC_SAMSUNG
+>> +     bool "Samsung SOC drivers support"
+>
+> If you intend to select SOC_SAMSUNG, is there any point in making this
+> a user-visible symbol?
+Agreed, only menu "Samsung SOC drivers support" will be fine.
 
-Hi all,
-
-Today's linux-next merge of the char-misc tree got a conflict in
-arch/arm/mach-omap2/Kconfig between commit 9e1e632c4846 ("ARM: OMAP2+:
-Drop board file for ti8168evm") from the arm-soc tree and commit
-184901a06a36 ("ARM: removing support for etb/etm in
-"arch/arm/kernel/"") from the char-misc tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-omap2/Kconfig
-index 27ec8923ddf6,06020fe77e57..000000000000
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@@ -276,14 -282,16 +276,6 @@@ config MACH_SBC353
-  	default y
-  	select OMAP_PACKAGE_CUS
- =20
-- config OMAP3_EMU
-- 	bool "OMAP3 debugging peripherals"
-- 	depends on ARCH_OMAP3
-- 	select ARM_AMBA
-- 	select OC_ETM
-- 	help
-- 	  Say Y here to enable debugging hardware of omap3
- -config MACH_TI8168EVM
- -	bool "TI8168 Evaluation Module"
- -	depends on SOC_TI81XX
- -	default y
- -
- -config MACH_TI8148EVM
- -	bool "TI8148 Evaluation Module"
- -	depends on SOC_TI81XX
- -	default y
---
-  config OMAP3_SDRC_AC_TIMING
-  	bool "Enable SDRC AC timing register changes"
-  	depends on ARCH_OMAP3
-
---Sig_/k6uxQZPRmWsK+5vU4GlSPZ_
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUbtqSAAoJEMDTa8Ir7ZwVI8wP/3ZHFumpR4/oy+3s6J5H/Q0B
-96cZ1IFez6MDyH7ItPDjpxI4UUyetcY8FPtzjysvq6NHxYy50rIg+iFDlfYOPmhI
-Ni0dKDuiiboZKcEZQknG2KRmwxfTN0wC3/9+caTK1UO2UIBfS4MbY2s3Y2YVSytr
-KCNIOUg9M8ER/SKKfiu2jYmB/RplCL+QHbXC5QUvr10+RZzniEH/Vv4nKyRx7pux
-pWpydulgY5+JqhhFjjrYcSx6rymrj4WF511GfTs+K7e3shdNTzA4GvPhnyll2655
-j9KJsMnpDdvWC2sEA/bHZCJ3GSWvXaksFedccG7Nztgb1gq5iMAQ9GUzcAf5wODk
-WbKdGAHuQkPlpNAJlOCDilGSTsJ/slmiZnL/goKKrK9tAyOP+xl4RMdkQTTn9mRh
-5TCUozXepE3iGMXJd9WeiWVPE+jTZPD/NbbbTOf4V0Lus1QA/JsqBCy5RU8hzgc7
-3u60VV8BrrVMoYYcAEDGl5hwt5IMsbHDa21pr6Ls6iG3ooOh1OaKlAVP0cyKhWS3
-CX7aqSAazOXmHd3hR3HYOgDCwBK9VlFJJUL8Gc+1ym40vxhpd/dqbotgbxo6DTBS
-FCeQdZNyVhCpwqorGcLtbSeVNQZr9x4CzcwDGLWz0+XvTJmHAgs+jRJK88Qdnr7v
-aJ0PFMoGyooo++K9YRPM
-=Ops6
------END PGP SIGNATURE-----
-
---Sig_/k6uxQZPRmWsK+5vU4GlSPZ_--
+Regards,
+Amit
+>
+> --
+> FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+> according to speedtest.net.
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
