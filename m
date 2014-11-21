@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbaKUTWq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:22:46 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34088 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaKUTWp (ORCPT
+	id S1751788AbaKUTXR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:23:17 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:10617 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751480AbaKUTXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:22:45 -0500
-Date: Fri, 21 Nov 2014 19:21:09 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <20141121192109.GK3815@sirena.org.uk>
-References: <1416512485-7292-1-git-send-email-joshc@codeaurora.org>
- <1416512485-7292-4-git-send-email-joshc@codeaurora.org>
+	Fri, 21 Nov 2014 14:23:15 -0500
+Date: Fri, 21 Nov 2014 14:23:01 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141121142301.564f7eb7@gandalf.local.home>
+In-Reply-To: <CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
+References: <alpine.DEB.2.11.1411202204030.3950@nanos>
+	<20141120221122.GA25393@htj.dyndns.org>
+	<alpine.DEB.2.11.1411202315230.3950@nanos>
+	<20141120230514.GB25393@htj.dyndns.org>
+	<CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
+	<20141120233920.GC25393@htj.dyndns.org>
+	<CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
+	<20141121162742.GB15461@htj.dyndns.org>
+	<CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
+	<CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
+	<20141121170805.GD30603@home.goodmis.org>
+	<CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
+	<CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
+	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
+	<CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Z3MQA8rgdnnmvulu"
-Content-Disposition: inline
-In-Reply-To: <1416512485-7292-4-git-send-email-joshc@codeaurora.org>
-X-Cookie: Some optional equipment shown.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/3] regulator: rpm: add support for RPM-controller SMB208
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 21 Nov 2014 11:06:41 -0800
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+ 
+>   static noinline int vmalloc_fault(unsigned long address)
+>   {
+>         pgd_t *pgd_dst;
+>         pgdval_t pgd_entry;
+>         unsigned index = pgd_index(address);
+> 
+>         if (index < KERNEL_PGD_BOUNDARY)
+>                 return -1;
+> 
+>         pgd_entry = init_mm.pgd[index].pgd;
+>         if (!pgd_entry)
+>                 return -1;
 
---Z3MQA8rgdnnmvulu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Should we at least check to see if it is present?
 
-On Thu, Nov 20, 2014 at 01:41:25PM -0600, Josh Cartwright wrote:
-> The IPQ8064 reference boards make use of SMB208 regulators which are
-> controlled by RPM.  Implement support for these regulators in the RPM
-> regulator driver.
+	if (!(pgd_entry & 1))
+		return -1;
 
-Applied, thanks.
+?
 
---Z3MQA8rgdnnmvulu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- Steve
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> 
+>         pgd_dst = __va(PAGE_MASK & read_cr3());
+>         pgd_dst += index;
+> 
+>         if (pgd_dst->pgd)
+>                 return -1;
+> 
+>         ACCESS_ONCE(pgd_dst->pgd) = pgd_entry;
+>         return 0;
+>   }
+>   NOKPROBE_SYMBOL(vmalloc_fault);
+> 
+> Hmm? Does anybody see anything fundamentally wrong with this?
+> 
+>                      Linus
 
-iQEcBAEBAgAGBQJUb5CkAAoJECTWi3JdVIfQYsAH/3ec/LSQqK0va6WPmRwEqsf/
-guDrabfp2f8tXnbyNsRS0paPgmuXkYj8x8jUwRbxUwN5fQ5u9oZsWhfvioHd6rGu
-aABrKgOrfYvuHUD3moG/YXjwuAd1CBxWDBjzpxmzLLMTrGb2VhX6B6+mrNBU8Gxs
-y7XMXw4KCnsaNaWj9qFqhAd9dzReOr7ItVBWWpWxJ8U46VonMuvUHKwrjA/+M4ln
-GyGWy8chV8Dw0ld45TuOmqivZ+2HFUTp0H2BmxIUhzVW7k/mz83SVEqhm1M1Cv8R
-KzTm3h+GWVq3QLBl0xPOb4jhqVzeFQtKzE9dY+ENAiarIkZEdJKfo2smLF+TyMQ=
-=KyYL
------END PGP SIGNATURE-----
-
---Z3MQA8rgdnnmvulu--
