@@ -1,89 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478AbaKUF0N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 00:26:13 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:46014 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127AbaKUF0M (ORCPT
+	id S1753350AbaKUF1c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 00:27:32 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:52418 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715AbaKUF1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 00:26:12 -0500
-Date: Fri, 21 Nov 2014 05:26:08 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Vignesh R <vigneshr@ti.com>
-cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] ARM: OMAP2+: hwmod: AM335x/AM43x: add hwmod
- support for tscadc on am43x-evm
-In-Reply-To: <546EC6D4.7080906@ti.com>
-Message-ID: <alpine.DEB.2.02.1411210519520.9204@utopia.booyaka.com>
-References: <1415099728-10959-1-git-send-email-vigneshr@ti.com> <1415099728-10959-3-git-send-email-vigneshr@ti.com> <alpine.DEB.2.02.1411200706441.9204@utopia.booyaka.com> <546EC6D4.7080906@ti.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 21 Nov 2014 00:27:31 -0500
+Date: Fri, 21 Nov 2014 00:27:28 -0500 (EST)
+Message-Id: <20141121.002728.487856666097568926.davem@davemloft.net>
+To: jasowang@redhat.com
+Cc: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cornelia.huck@de.ibm.com,
+        gaowanlong@cn.fujitsu.com
+Subject: Re: [PATCH net V5] virtio-net: validate features during probe
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1416474185-10981-1-git-send-email-jasowang@redhat.com>
+References: <1416474185-10981-1-git-send-email-jasowang@redhat.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 20 Nov 2014 21:27:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014, Vignesh R wrote:
+From: Jason Wang <jasowang@redhat.com>
+Date: Thu, 20 Nov 2014 17:03:05 +0800
 
-> On 11/20/2014 12:39 PM, Paul Walmsley wrote:
-> > On Tue, 4 Nov 2014, Vignesh R wrote:
-> >
-> >> This patch adds hwmod support for tscadc to work on am43xx-evm. The am33xx
-> >> hwmod structures of tscadc has been moved to ipblock_data so that it can
-> >> be reused in am43xx. The clock domain names are separately set for am33xx
-> >> and am43xx. Thus tscadc dt entries can now be added to am43xx board
-> >> dt files.
-> >>
-> >> Signed-off-by: Vignesh R <vigneshr@ti.com>
-> > ...
-> >
-> >> diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
-> >> index 6e57b8ad0db5..b92a7c7825fa 100644
-> >> --- a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
-> >> +++ b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
-> > ...
-> >
-> >> +static void am33xx_hwmod_clockdomain(void)
-> >> +{
-> >> +	CLKDMNAME(am33xx_l4_hs_hwmod, "l4hs_clkdm");
-> >> +	CLKDMNAME(am33xx_adc_tsc_hwmod, "l4_wkup_clkdm");
-> >> +}
-> >> +
-> >> +static void am43xx_hwmod_clockdomain(void)
-> >> +{
-> >> +	CLKDMNAME(am33xx_l4_hs_hwmod, "l3_clkdm");
-> >> +	CLKDMNAME(am33xx_adc_tsc_hwmod, "l3s_tsc_clkdm");
-> >> +}
-> >> +
-> > ...
-> >
-> >> +	am33xx_hwmod_clockdomain();
-> > I looked at this patch and the one before it.  Is there some reason why we 
-> > need to share these two hwmods between AM33xx and AM43xx?  It seems 
-> > cleaner just to add the ADC data directly to the AM43xx hwmod data file, 
-> > not touch the AM33xx data, and not add another runtime data update for the 
-> > clockdomains.  Unless there's something that I'm missing?
+> We currently trigger BUG when VIRTIO_NET_F_CTRL_VQ
+> is not set but one of features depending on it is.
+> That's not a friendly way to report errors to
+> hypervisors.
+> Let's check, and fail probe instead.
 > 
-> 
-> I wanted to reuse hwmod structures. Except for clockdomain and offset,
-> rest of the hwmod data are same for AM33xx and AM43xx. Adding data to AM43xx
-> hwmod file just duplicates these structures. Do you still want me to move them
-> to AM43xx file?
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Yes.  It looks to me like the number of lines saved by eliminating the 
-duplication is not too different than the number of lines added with the 
-dynamic clockdomain rewriting.  Plus then we can avoid the dynamic 
-clockdomain rewriting that we are only doing for two IP blocks.  Ideally 
-the hwmod data is meant to be static, not changed at runtime.  For the 
-moment we are stuck with the CLKCTRL rewriting but I personally consider 
-that to be a hack.
-
-
-- Paul
+Applied, thanks.
