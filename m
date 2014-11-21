@@ -1,86 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987AbaKUCMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 21:12:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40936 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756956AbaKUCMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 21:12:16 -0500
-Date: Thu, 20 Nov 2014 21:11:36 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
-        hch@infradead.org, mst@redhat.com, rusty@rustcorp.com.au,
-        dm-devel@redhat.com
-Subject: [PATCH v2] virtio_blk: fix defaults for max_hw_sectors and
- max_segment_size
-Message-ID: <20141121021135.GD2287@redhat.com>
-References: <20141120190058.GA31214@redhat.com>
+	id S1757875AbaKUCPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 21:15:10 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:10397 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757055AbaKUCPH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 21:15:07 -0500
+Message-ID: <546E9F8C.4050307@huawei.com>
+Date: Fri, 21 Nov 2014 10:12:28 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141120190058.GA31214@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiang Liu <jiang.liu@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Marc Zyngier <marc.zyngier@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
+References: <546E1771.4030201@arm.com> <546E93DC.8010902@huawei.com> <alpine.DEB.2.11.1411210233250.6439@nanos> <546E9D80.3090405@linux.intel.com>
+In-Reply-To: <546E9D80.3090405@linux.intel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio_blk incorrectly established -1U as the default for these
-queue_limits.  Set these limits to sane default values to avoid crashing
-the kernel.  But the virtio-blk protocol should probably be extended to
-allow proper stacking of the disk's limits from the host.
+On 2014/11/21 10:03, Jiang Liu wrote:
+> On 2014/11/21 9:46, Thomas Gleixner wrote:
+>> On Fri, 21 Nov 2014, Yijing Wang wrote:
+>>> On 2014/11/21 0:31, Marc Zyngier wrote:
+>>>> Bjorn, Yijing,
+>>>>
+>>>> I've just realized that patch c167caf8d174 (PCI/MSI: Remove useless
+>>>> bus->msi assignment) completely breaks MSI on arm64 when using the new
+>>>> MSI stacked domain:
+>>>
+>>> Sorry, this is my first part to refactor MSI related code, now how
+>>> to get pci msi_controller depends arch
+>>> functions(pcibios_msi_controller() or arch_setup_msi_irq()), we are
+>>> working on generic pci_host_bridge, after that, we could eventually
+>>> eliminate MSI arch functions and find pci dev 's msi controller by
+>>> pci_host_bridge->get_msi_controller().
+>>
+>> The main question is why you think that pci_host_bridge is the proper
+>> place to store that information.
+>>
+>> On x86 we have DMAR units associated to a single device. Each DMAR
+>> unit is a seperate MSI irq domain. 
+>>
+>> Can you guarantee that the pci_host_bridge is the right point to
+>> provide the association of the device to the irq domain?
+>>
+>> So the real question is:
+>>
+>>    What is the association level requirement to properly identify the
+>>    irqdomain for a specific device on any given architecture with and
+>>    without IOMMU, interrupt redirection etc.
+>>
+>> To be honest: I don't know.
+>>
+>> My gut feeling tells me that it's at the device level, but I really
+>> leave that decision to the experts in that field.
+> Hi Thomas and Yijing,
+> 	Since we are allocating interrupts for a PCI device, it's
+> natural to get irqdomain from the PCI device itself. If we try to
+> get irqdomain from a PCI bus or host bridge like
+> pci_get_msi_irqdomain(bus or hostbridge), it may fail for x86
+> because x86 may build per-device irqdomain theoretically.
+> So the preferred interface prototype is:
+> 	pci_get_msi_irqdomain(pci_dev) or
+> 	pcibios_msi_controller(pci_dev)
+> It's flexible enough. For architectures on which irqdomain is
+> associated with PCI bus or host bridge, you could get the bus
+> or host bridge from pci_dev. And it won't cause extra computation
+> because you always need to get bus or host bridge from the pci_dev.
 
-This change fixes a crash that can occur if the max_sectors_kb is
-modified to even be half of virtio_blk's advertised max_hw_sectors_kb:
+Hi Gerry, I mean we could find msi_controller by calling
+pci_host_bridge->pci_get_msi_irqdomain/msi_controller(struct pci_dev *pdev)
+to avoid arch weak function like pcibios_get_msi_controller(struct pci_dev *pdev). :)
 
-  # cat /sys/block/vdb/queue/max_sectors_kb
-  512
-  # cat /sys/block/vdb/queue/max_hw_sectors_kb
-  2147483647
-  # echo 1073741824 > /sys/block/vdb/queue/max_sectors_kb
 
-Attempting to mkfs.xfs against /dev/vdb will result in hitting
-fs/direct-io.c:dio_send_cur_page()'s BUG_ON.
+> Regards!
+> Gerry
+>>
+>> Thanks,
+>>
+>> 	tglx
+>>
+> 
+> .
+> 
 
-While fixing the blk_queue_max_hw_sectors(q, -1U) call it was
-immediately apparent that the blk_queue_max_segment_size(q, -1U) also
-should be fixed.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Cc: stable@vger.kernel.org
----
- drivers/block/virtio_blk.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
-
-v2: revise header to simplify the scope of the problem explanation
-
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index c6a27d5..68efbdc 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -674,8 +674,11 @@ static int virtblk_probe(struct virtio_device *vdev)
- 	/* No need to bounce any requests */
- 	blk_queue_bounce_limit(q, BLK_BOUNCE_ANY);
- 
--	/* No real sector limit. */
--	blk_queue_max_hw_sectors(q, -1U);
-+	/*
-+	 * Limited by disk's max_hw_sectors in host, but
-+	 * without that info establish a sane default.
-+	 */
-+	blk_queue_max_hw_sectors(q, BLK_DEF_MAX_SECTORS);
- 
- 	/* Host can optionally specify maximum segment size and number of
- 	 * segments. */
-@@ -684,7 +687,7 @@ static int virtblk_probe(struct virtio_device *vdev)
- 	if (!err)
- 		blk_queue_max_segment_size(q, v);
- 	else
--		blk_queue_max_segment_size(q, -1U);
-+		blk_queue_max_segment_size(q, BLK_MAX_SEGMENT_SIZE);
- 
- 	/* Host can optionally specify the block size of the device */
- 	err = virtio_cread_feature(vdev, VIRTIO_BLK_F_BLK_SIZE,
 -- 
-1.7.4.4
+Thanks!
+Yijing
 
