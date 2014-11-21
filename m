@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758550AbaKUOoa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 09:44:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55214 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754269AbaKUOo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 09:44:29 -0500
-Date: Fri, 21 Nov 2014 15:44:35 +0100 (CET)
-From: Miroslav Benes <mbenes@suse.cz>
-To: Jiri Kosina <jkosina@suse.cz>
-cc: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
-In-Reply-To: <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1411211542180.27891@pobox.suse.cz>
-References: <1416522580-5593-1-git-send-email-sjenning@redhat.com> <1416522580-5593-3-git-send-email-sjenning@redhat.com> <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1758306AbaKUOsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 09:48:39 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36795 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806AbaKUOsi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 09:48:38 -0500
+Message-ID: <546F50BD.8070501@arm.com>
+Date: Fri, 21 Nov 2014 14:48:29 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>,
+        Mark Rutland <Mark.Rutland@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+CC: Liviu Dudau <Liviu.Dudau@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Lendacky, Thomas" <Thomas.Lendacky@amd.com>,
+        "Schopp, Joel" <Joel.Schopp@amd.com>
+Subject: Re: [PATCH V3] arm64: amd-seattle: Adding device tree for AMD Seattle
+ platform
+References: <D0955C2B.9B22%suravee.suthikulpanit@amd.com>
+In-Reply-To: <D0955C2B.9B22%suravee.suthikulpanit@amd.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014, Jiri Kosina wrote:
-
-[...]
-
-> [ ... snip ... ]
-> > +static int klp_init_patch(struct klp_patch *patch)
-> > +{
-> > +	int ret;
-> > +
-> > +	mutex_lock(&klp_mutex);
-> > +
-> > +	/* init */
-> > +	patch->state = LPC_DISABLED;
-> > +
-> > +	/* sysfs */
-> > +	ret = kobject_init_and_add(&patch->kobj, &klp_ktype_patch,
-> > +				   klp_root_kobj, patch->mod->name);
-> > +	if (ret)
-> > +		return ret;
+On 21/11/14 14:40, Suthikulpanit, Suravee wrote:
 > 
-> klp_mutex is leaked locked here.
 > 
-> > +
-> > +	/* create objects */
-> > +	ret = klp_init_objects(patch);
-> > +	if (ret) {
-> > +		kobject_put(&patch->kobj);
-> > +		return ret;
+> On 11/21/14, 19:57, "Marc Zyngier" <marc.zyngier@arm.com> wrote:
 > 
-> And here as well.
+>>> +	gic: interrupt-controller@e1101000 {
+>>> +		compatible = "arm,gic-400", "arm,cortex-a15-gic";
+>>> +		interrupt-controller;
+>>> +		#interrupt-cells = <3>;
+>>> +		#address-cells = <2>;
+>>> +		#size-cells = <2>;
+>>> +		reg = <0x0 0xe1110000 0 0x1000>,
+>>> +		      <0x0 0xe112f000 0 0x2000>,
+>>> +		      <0x0 0xe1140000 0 0x10000>,
+>>> +		      <0x0 0xe1160000 0 0x10000>;
+>>> +		interrupts = <1 8 0xf04>;
+>>
+>> Are you sure about this one? ARM systems usually have this wired on PPI9
+>> (interrupt 25)...
+>>
+>> Thanks,
+>>
+>> 	M.
 > 
-> All in all, this is looking very good to me. I think we are really close 
-> to having a code that all the parties would agree with. Thanks everybody,
+> I think you might be right. GIC-400 TRM says that this is should be
+> 25, and used for virtual maintenance interrupts. How can I verify
+> this in Linux? KVM?
 
-The leaking is my fault. I missed that somehow during rebasing.
+KVM is one way, but you'll never see the interrupt firing (we kill the
+interrupt while in HYP, before the kernel gets a chance to see it).
 
-Seth, could you please fix it in v4? 
+If you effectively have GIC400 on this system, then I know for sure this
+is interrupt 25.
 
-Thanks
---
-Miroslav Benes
-SUSE Labs
+Thanks,
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
