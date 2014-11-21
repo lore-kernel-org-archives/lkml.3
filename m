@@ -1,93 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301AbaKUAeu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 19:34:50 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33395 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756132AbaKUAet (ORCPT
+	id S1757152AbaKUAhZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 19:37:25 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:31886 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755788AbaKUAhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 19:34:49 -0500
-Message-ID: <1416530074.7215.11.camel@decadent.org.uk>
-Subject: Re: [PATCH 1/2] 8139too: Allow setting MTU larger than 1500
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Alban Bedel <albeu@free.fr>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Benoit Taine <benoit.taine@lip6.fr>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Fri, 21 Nov 2014 00:34:34 +0000
-In-Reply-To: <1415447316-12424-1-git-send-email-albeu@free.fr>
-References: <1415447316-12424-1-git-send-email-albeu@free.fr>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-QM3yg4dxsEitY9RYt6qF"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 20 Nov 2014 19:37:23 -0500
+Message-ID: <546E892C.8000209@oracle.com>
+Date: Fri, 21 Nov 2014 08:37:00 +0800
+From: ethan zhao <ethan.zhao@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+CC: Linda Knippers <linda.knippers@hp.com>, viresh.kumar@linaro.org,
+        rjw@rjwysocki.net, corbet@lwn.net, dirk.j.brandewie@intel.com,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
+        brian.maly@oracle.com
+Subject: Re: [PATCH 1/3] intel_pstate: skip the driver if Sun server has ACPI
+ _PPC method
+References: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com> <1416299826-15813-2-git-send-email-ethan.zhao@oracle.com> <546CFBEE.6090103@hp.com> <546E1BBE.7050906@intel.com>
+In-Reply-To: <546E1BBE.7050906@intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dirk,
 
---=-QM3yg4dxsEitY9RYt6qF
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 2014/11/21 0:50, Dirk Brandewie wrote:
+> On 11/19/2014 12:22 PM, Linda Knippers wrote:
+>> On 11/18/2014 3:37 AM, Ethan Zhao wrote:
+>>> Oracle Sun X86 servers have dynamic power capping capability that 
+>>> works via
+>>> ACPI _PPC method etc, so skip loading this driver if Sun server has 
+>>> ACPI _PPC
+>>> enabled.
+>>>
+>>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+>>> ---
+>>>   drivers/cpufreq/intel_pstate.c | 20 ++++++++++++++++++++
+>>>   1 file changed, 20 insertions(+)
+>>>
+>>> diff --git a/drivers/cpufreq/intel_pstate.c 
+>>> b/drivers/cpufreq/intel_pstate.c
+>>> index 27bb6d3..5498eb0 100644
+>>> --- a/drivers/cpufreq/intel_pstate.c
+>>> +++ b/drivers/cpufreq/intel_pstate.c
+>>> @@ -943,6 +943,21 @@ static bool intel_pstate_no_acpi_pss(void)
+>>>       return true;
+>>>   }
+>>>
+>>> +static bool intel_pstate_has_acpi_ppc(void)
+>>> +{
+>>> +    int i;
+>>> +
+>>> +    for_each_possible_cpu(i) {
+>>> +        struct acpi_processor *pr = per_cpu(processors, i);
+>>> +
+>>> +        if (!pr)
+>>> +            continue;
+>>> +        if (acpi_has_method(pr->handle, "_PPC"))
+>>> +            return true;
+>>> +    }
+>>> +    return false;
+>>> +}
+>>> +
+>>>   struct hw_vendor_info {
+>>>       u16  valid;
+>>>       char oem_id[ACPI_OEM_ID_SIZE];
+>>> @@ -952,6 +967,7 @@ struct hw_vendor_info {
+>>>   /* Hardware vendor-specific info that has its own power management 
+>>> modes */
+>>>   static struct hw_vendor_info vendor_info[] = {
+>>>       {1, "HP    ", "ProLiant"},
+>>> +    {1, "ORACLE", ""},
+>>>       {0, "", ""},
+>>>   };
+>>>
+>>> @@ -969,12 +985,16 @@ static bool 
+>>> intel_pstate_platform_pwr_mgmt_exists(void)
+>>>               !strncmp(hdr.oem_table_id, v_info->oem_table_id, 
+>>> ACPI_OEM_TABLE_ID_SIZE) &&
+>>>               intel_pstate_no_acpi_pss())
+>>>               return true;
+>>> +        if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
+>>> +            intel_pstate_has_acpi_ppc())
+>>
+>> We need try this on a few platforms to make sure this patch doesn't 
+>> break the
+>> HP platforms that may or may not need this driver, depending on the 
+>> BIOS settings.
+>>
+>
+> It looks like HP systems would get swept up in this check too if they 
+> have _PPC
+    No , this patch checks the oem_id against 'ORACLE" first, will not 
+affect other vendors
+   even they have _PPC.
 
-On Sat, 2014-11-08 at 12:48 +0100, Alban Bedel wrote:
-> Replace the default ndo_change_mtu callback with one that allow
-> setting MTU that the driver can handle.
->=20
-> Signed-off-by: Alban Bedel <albeu@free.fr>
-> ---
->  drivers/net/ethernet/realtek/8139too.c | 13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/net/ethernet/realtek/8139too.c b/drivers/net/etherne=
-t/realtek/8139too.c
-> index 007b38c..8387de9 100644
-> --- a/drivers/net/ethernet/realtek/8139too.c
-> +++ b/drivers/net/ethernet/realtek/8139too.c
-> @@ -185,6 +185,9 @@ static int debug =3D -1;
->  /* max supported ethernet frame size -- must be at least (dev->mtu+14+4)=
-.*/
->  #define MAX_ETH_FRAME_SIZE	1536
-> =20
-> +/* max supported payload size */
-> +#define MAX_ETH_DATA_SIZE	(MAX_ETH_FRAME_SIZE - ETH_HLEN - ETH_FCS_LEN)
-[...]
+>
+> What about extending the hw_vendor_info struct to include whether _PSS or
+  Except refer to ACPI DSDT, I don't know how to fill such info.
+> _PPC should be done for the platform since it appears that oracle and HP
+> have implemented similar functionality using two different methods.
+   Maybe Linda could answer this whether HP also has _PPC and should be 
+wept out.
+   But that doesn't happen with on the same box at the same time.
 
-Does this maximum still allow for VLAN tags, or should it use
-VLAN_ETH_HLEN instead of ETH_HLEN?
+   Thanks,
+   Ethan
+>
+>
+>> I don't suppose you tested on a ProLiant too?
+>>
+>> -- ljk
+>>
+>>> +            return true;
+>>>       }
+>>>
+>>>       return false;
+>>>   }
+>>>   #else /* CONFIG_ACPI not enabled */
+>>>   static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { 
+>>> return false; }
+>>> +static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
+>>>   #endif /* CONFIG_ACPI */
+>>>
+>>>   static int __init intel_pstate_init(void)
+>>>
+>>
+>
 
-Ben.
-
---=20
-Ben Hutchings
-Beware of bugs in the above code;
-I have only proved it correct, not tried it. - Donald Knuth
-
---=-QM3yg4dxsEitY9RYt6qF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUAVG6IoOe/yOyVhhEJAQphNg//arOAUbFfHPlZAgz+up1cRvKDuU99FrGP
-fPKdaHJ0UNCmnuW/VEUP5jUKWNIIOvOUQVOkrnOcEPhzsFMWpKOdXXX4RciRAeJw
-ICaW03kIZpbRqTJpBdsMLywOWGtvpWJlLa4r58Mm0KtxoxeE1emKGJxnOgKfzqT8
-LXSqHfpWA4RCP6Gtq1X+Ot3upDyy6lAvD2fr9xPK1Xh513uUCltHMLuOkUVPHLYP
-G7viORLvXXB7KMtJaz3sSQ/2JUGzg9Y2SNo1uN5Av/oRc5ObkuKVWfmpE2Nu7TYp
-b1BDMZnJP2oF2xOapz4MdYCsCjNoiKzM2zsdJzRRBfgZrioirnLcGeSNxxTMlU5H
-reGXKOWiKNKVZ4sLG+ToD11ndxhKYz2eA+3nAFwUjohGLVQAoVrdIU+zbq22CpBC
-AKg+gFwU/OVwO03sSPfqUgyt5v2oRzzW/gydYPAqWCYDI7K9rSKUlUfpPxqjZ2Ik
-V5FJojY6unlYGNZGiNo07grDGS0tvmFt2tYFlSTK/DOoOCK6y0q3J68PtDZL3qTa
-/1JaS7/qqv02QQHLi4kUnot5ZeLa+nAQO4carwhTiSDhhz50SRcKxSy+7+jTDciC
-dOuePs/p5EXKzj2vp97N8xoBVY+ywJnZaF1FtopFx8KN3XuAxn2wKUM9dsp+67A4
-83U9wddnMOI=
-=s1bc
------END PGP SIGNATURE-----
-
---=-QM3yg4dxsEitY9RYt6qF--
