@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758251AbaKUKua (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 05:50:30 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:56057 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758231AbaKUKu0 (ORCPT
+	id S1757987AbaKUKvS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 05:51:18 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46526 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbaKUKvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 05:50:26 -0500
+	Fri, 21 Nov 2014 05:51:16 -0500
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <CA+icZUVSdSDqUCf3+2SmGx4DfhKvxPi4ivvhNzTEnbe1j4eFQA@mail.gmail.com>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20141120164531.GB3596@tucsk>
 References: <20141120164531.GB3596@tucsk>
-	<CA+icZUVSdSDqUCf3+2SmGx4DfhKvxPi4ivvhNzTEnbe1j4eFQA@mail.gmail.com>
-Date: Fri, 21 Nov 2014 11:50:24 +0100
-Message-ID: <CAJfpegs6iF+O9W40k+L=kmydZA7O20H6aYdwtTF1vEsq4790xw@mail.gmail.com>
+Date: Fri, 21 Nov 2014 11:43:56 +0100
+Message-ID: <CA+icZUVSdSDqUCf3+2SmGx4DfhKvxPi4ivvhNzTEnbe1j4eFQA@mail.gmail.com>
 Subject: Re: [GIT PULL] overlay filesystem fixes for 3.18
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Sedat Dilek <sedat.dilek@gmail.com>
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
 Cc: Al Viro <viro@zeniv.linux.org.uk>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
@@ -26,16 +25,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 11:43 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs-current
->>
+On Thu, Nov 20, 2014 at 5:45 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> Hi Al,
 >
-> This seems to be the place where overlayfs-fixes are collected for a
-> git-pull request.
-> Can you add a "T:" line with the Git tree into MAINTAINERS file if
-> this is the case?
+> Please pull from
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs-current
+>
 
-Done that already.  See "ovl: update MAINTAINERS" patch in that series.
+This seems to be the place where overlayfs-fixes are collected for a
+git-pull request.
+Can you add a "T:" line with the Git tree into MAINTAINERS file if
+this is the case?
+If not please let the people know about current situation.
+Thanks.
 
-Thanks,
-Miklos
+- Sedat -
+
+> The biggest change is to rename the filesystem from "overlayfs" to "overlay".
+> This will allow legacy overlayfs to be easily carried by distros alongside the
+> new mainline one.  Also fix a couple of copy-up races and allow escaping comma
+> character in filenames.
+>
+> Thanks,
+> Miklos
+>
+> ---
+> Miklos Szeredi (8):
+>       ovl: rename filesystem type to "overlay"
+>       ovl: fix remove/copy-up race
+>       ovl: fix race in private xattr checks
+>       ovl: allow filenames with comma
+>       ovl: use lockless_dereference() for upperdentry
+>       ovl: pass dentry into ovl_dir_read_merged()
+>       ovl: update MAINTAINERS
+>       ovl: ovl_dir_fsync() cleanup
+>
+> ---
+>  Documentation/filesystems/overlayfs.txt |  2 +-
+>  MAINTAINERS                             |  7 ++--
+>  fs/Makefile                             |  2 +-
+>  fs/overlayfs/Kconfig                    |  2 +-
+>  fs/overlayfs/Makefile                   |  4 +--
+>  fs/overlayfs/dir.c                      | 31 ++++++++++-------
+>  fs/overlayfs/inode.c                    | 27 ++++++++++-----
+>  fs/overlayfs/readdir.c                  | 39 +++++++++------------
+>  fs/overlayfs/super.c                    | 61 ++++++++++++++++++++++++++-------
+>  9 files changed, 111 insertions(+), 64 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
