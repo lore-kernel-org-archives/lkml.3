@@ -1,78 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189AbaKUL3Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 06:29:25 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:42769 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaKUL3Y (ORCPT
+	id S1758256AbaKULai (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 06:30:38 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36450 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758225AbaKULah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 06:29:24 -0500
+	Fri, 21 Nov 2014 06:30:37 -0500
+Message-ID: <546F224E.2080106@arm.com>
+Date: Fri, 21 Nov 2014 11:30:22 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <546F16A5.8030405@users.sourceforge.net>
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
- <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
- <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
- <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien>
- <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien>
- <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <546F16A5.8030405@users.sourceforge.net>
-From: Andreas Noever <andreas.noever@gmail.com>
-Date: Fri, 21 Nov 2014 12:29:03 +0100
-Message-ID: <CAMxnaaVLhKHjbzUJy5p_0n8BUprzSQ=A3sdF6iQzW_wqmq8N4A@mail.gmail.com>
-Subject: Re: [PATCH 1/1] thunderbolt: Deletion of unnecessary checks before
- the function call "ring_free"
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
+References: <546E1771.4030201@arm.com> <546E93DC.8010902@huawei.com> <alpine.DEB.2.11.1411210233250.6439@nanos> <546F140B.1050607@arm.com> <alpine.DEB.2.11.1411211142051.6439@nanos>
+In-Reply-To: <alpine.DEB.2.11.1411211142051.6439@nanos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Markus,
+On 21/11/14 10:49, Thomas Gleixner wrote:
+> Marc,
+> 
+> On Fri, 21 Nov 2014, Marc Zyngier wrote:
+>> On 21/11/14 01:46, Thomas Gleixner wrote:
+>>> So the real question is:
+>>>
+>>>    What is the association level requirement to properly identify the
+>>>    irqdomain for a specific device on any given architecture with and
+>>>    without IOMMU, interrupt redirection etc.
+>>>
+>>> To be honest: I don't know.
+>>>
+>>> My gut feeling tells me that it's at the device level, but I really
+>>> leave that decision to the experts in that field.
+>>
+>> Given the above requirement (single device associated to DMAR), I can
+>> see two possibilities:
+>> - we represent DMAR as a single PCI bus: feels a bit artificial
+>> - we move the MSI domain to the device, as you suggested.
+>>
+>> The second one seems a lot more attractive to me.
+> 
+> And that's very useful if you want to support MSI on non PCI
+> devices.
+> 
+>> Also, it is not clear to me what is the advantage of getting rid of the
+>> MSI controller. By doing so, we loose an important part of the topology
+>> information (the irq domain is another level of abstraction).
+> 
+> That was probably my misunderstanding of the msi controller. I had the
+> impression it's just there to expose the MSI properties of a device,
+> i.e. a magic wrapper which can be replaced by the MSI irqdomain work.
+> 
+> If that handles other information as well, then it's probably a
+> misnomer to begin with.
 
-ring_free does not check for null:
-http://lxr.free-electrons.com/source/drivers/thunderbolt/nhi.c#L398
+At the moment, it serves multiple purpose:
+- MSI configuration via setup_irq/teardown_irq: this is what most 32bit
+ARM system are using (it has been introduced last year for that very
+purpose)
+- PCI controller vs MSI hw matching: both arm and arm64 are using this
+to associate the PCI controller with the matching MSI hw, using the
+device tree (msi-controller and msi-parent properties in DT, of_node
+field in the msi_controller structure).
+- associated irq_domain (I've added that bit).
 
-Maybe your software confuses the method with:
-http://lxr.free-electrons.com/source/drivers/char/tpm/xen-tpmfront.c#L268
+I expect setup_irq and co to disappear at some point, once all the users
+have been converted to stacked domains. The matching information is
+harder to let go though. But that could be a structure that doesn't have
+to be inflicted on everyone, if we can go from:
 
-Andreas
+pci-device -> msi-controller -> irq-domain
 
-On Fri, Nov 21, 2014 at 11:40 AM, SF Markus Elfring
-<elfring@users.sourceforge.net> wrote:
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Fri, 21 Nov 2014 11:30:18 +0100
->
-> The ring_free() function tests whether its argument is NULL and then
-> returns immediately. Thus the test around the call is not needed.
->
-> This issue was detected by using the Coccinelle software.
->
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
-> ---
->  drivers/thunderbolt/ctl.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/thunderbolt/ctl.c b/drivers/thunderbolt/ctl.c
-> index 799634b..55b9bdf 100644
-> --- a/drivers/thunderbolt/ctl.c
-> +++ b/drivers/thunderbolt/ctl.c
-> @@ -520,10 +520,8 @@ err:
->  void tb_ctl_free(struct tb_ctl *ctl)
->  {
->         int i;
-> -       if (ctl->rx)
-> -               ring_free(ctl->rx);
-> -       if (ctl->tx)
-> -               ring_free(ctl->tx);
-> +       ring_free(ctl->rx);
-> +       ring_free(ctl->tx);
->
->         /* free RX packets */
->         for (i = 0; i < TB_CTL_RX_PKG_COUNT; i++)
-> --
-> 2.1.3
->
+to
+
+pci-device -> irq-domain -> dt-topology-information
+
+Thoughts?
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
