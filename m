@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758126AbaKUI4S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 03:56:18 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:57353 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758075AbaKUI4R (ORCPT
+	id S1758148AbaKUJAJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 04:00:09 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:53020 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752836AbaKUJAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 03:56:17 -0500
-Date: Fri, 21 Nov 2014 00:56:11 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Dudley Du <dudley.dulixin@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v11 00/19] input: cyapa: instruction of cyapa patches
-Message-ID: <20141121085611.GA21999@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Dudley Du <dudley.dulixin@gmail.com>, linux-kernel@vger.kernel.org
-References: <1416386271-28167-1-git-send-email-dudley.dulixin@gmail.com>
+	Fri, 21 Nov 2014 04:00:07 -0500
+Date: Fri, 21 Nov 2014 09:59:54 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: "Jason Cooper" <jason@lakedaemon.net>, "Andrew Lunn" <andrew@lunn.ch>,
+        "Sebastian Hesselbarth" <sebastian.hesselbarth@gmail.com>,
+        "Gregory Clement" <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "Tawfik Bayouk" <tawfik@marvell.com>,
+        "Nadav Haklai" <nadavh@marvell.com>,
+        "Lior Amsalem" <alior@marvell.com>,
+        "Ezequiel Garcia" <ezequiel.garcia@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 08/16] clk: mvebu: add suspend/resume for gatable
+ clocks
+Message-ID: <20141121095954.5f708f54@free-electrons.com>
+In-Reply-To: <20141117224604.25314.96198@quantum>
+References: <1415978496-9334-1-git-send-email-thomas.petazzoni@free-electrons.com>
+	<1415978496-9334-9-git-send-email-thomas.petazzoni@free-electrons.com>
+	<20141117224604.25314.96198@quantum>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416386271-28167-1-git-send-email-dudley.dulixin@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dudley,
+Dear Mike Turquette,
 
-On Wed, Nov 19, 2014 at 04:37:32PM +0800, Dudley Du wrote:
-> V11 patches have below main updates compared with v10 patches:
-> 1) Add add acpi device id supported for old gen3 and new gen5 trackpad devices.
-> 2) Fix the unable to update firmware issue when cyapa_open is not called
->    which means the irq for firwmare update process is not enabled. This fix
-[]
+On Mon, 17 Nov 2014 14:46:04 -0800, Mike Turquette wrote:
+> Quoting Thomas Petazzoni (2014-11-14 07:21:28)
+> > This commit adds suspend/resume support for the gatable clock driver
+> > used on Marvell EBU platforms. When getting out of suspend, the
+> > Marvell EBU platforms go through the bootloader, which re-enables all
+> > gatable clocks. However, upon resume, the clock framework will not
+> > disable again all gatable clocks that are not used.
+> > 
+> > Therefore, if the clock driver does not save/restore the state of the
+> > gatable clocks, all gatable clocks that are not claimed by any device
+> > driver will remain enabled after a resume. This is why this driver
+> > saves and restores the state of those clocks.
+> 
+> It might be a good idea to call clk_disable_unused() from the clk core
+> after resuming from suspend.
 
-I am having a problem with an older patch which is currently in
-linux-next (20141120) and which might be related to this new patch set.
+Yes, this might be an interesting clk core improvement.
 
-On an Acer C720 if a suspend and resume is performed the touchpad will
-stop working.  If the cyapa driver is reloaded it will begin working
-again.
+> > @@ -177,14 +178,18 @@ struct clk_gating_ctrl {
+> >         spinlock_t *lock;
+> >         struct clk **gates;
+> >         int num_gates;
+> > +       struct syscore_ops syscore_ops;
+> 
+> You are registering suspend/resume ops per clock. Have you considered
+> registering a single set of ops for your clock controller driver? See
+> drivers/clk/samsung/clk-exynos5420.c for an example.
+> 
+> Combined with a table of clocks registered by your driver, centralized
+> suspend/resume methods might be a cleaner solution.
 
-I performed a bisect and found that the following patch was the cause.
+Ok, I've changed. To be honest, I don't think it makes much change: if
+we had two instances of a gatable clock controller, then we would have
+two calls to mvebu_clk_gating_setup(), which would register twice the
+same syscore_ops. But we were anyway already assuming that we have
+already one instance of a gatable clock controller, since the
+syscore_ops operation implementation already used a global pointer to
+the gatable clock controller.
 
-  From b1cfa7b4388285c0f0b486f152ab0cb18612c779 Mon Sep 17 00:00:00 2001
-  From: Dudley Du <dudley.dulixin@gmail.com>
-  Date: Sun, 9 Nov 2014 12:36:34 -0800
-  Subject: [PATCH] Input: cyapa - switch to using managed resources
-  
-  Use of managed resources simplifies error handling and device removal
-  code.
-  
-  Signed-off-by: Dudley Du <dudl@cypress.com>
-  [Dmitry: added open/close methods so cyapa_remove is no longer needed.]
-  Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Will be part of the upcoming v3.
 
-If I can provide any other information that would be of help let me know.
-I will try out your new patchset if I get a chance.
+Thanks for the review!
 
+Thomas
 -- 
-- Jeremiah Mahler
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
