@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307AbaKUSMF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:12:05 -0500
-Received: from mout.web.de ([212.227.15.3]:64771 "EHLO mout.web.de"
+	id S1751423AbaKUSNY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:13:24 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:55330 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848AbaKUSME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:12:04 -0500
-Message-ID: <546F8063.3090002@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 19:11:47 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1750859AbaKUSNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 13:13:22 -0500
+Date: Fri, 21 Nov 2014 16:13:16 -0200
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: Andreas Ruprecht <rupran@einserver.de>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au
+Subject: Re: [PATCH] media: pci: smipcie: Fix dependency for DVB_SMIPCIE
+Message-ID: <20141121161316.23963dc5@recife.lan>
+In-Reply-To: <1416592319-23644-1-git-send-email-rupran@einserver.de>
+References: <1416592319-23644-1-git-send-email-rupran@einserver.de>
+Organization: Samsung
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] ALSA: es1688_lib: Deletion of an unnecessary check before
- the function call "release_and_free_resource"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:pzhu3YZsk69jMVNqoGN/cvM01jiZtGMTt8B9g/MPy1UKKpJQ8zP
- 1EbxhFnS8wSUCsj5TGWMKHlFHDNgyht2i9o8ZSnIYuct9SfKX+dSf6gQMy8hVKBgOOTBMIg
- 5uNQI8SGIVMviffvLahfxcEvPt0WpqUKpY9v9pmfCNBLCw75YiootctGsqFU0QyGdWstNvt
- a9ONhn6Qrvc5Z6/bkNMvQ==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 19:05:50 +0100
+Em Fri, 21 Nov 2014 18:51:59 +0100
+Andreas Ruprecht <rupran@einserver.de> escreveu:
 
-The release_and_free_resource() function tests whether its argument is NULL
-and then returns immediately. Thus the test around the call is not needed.
+> In smipcie.c, the function i2c_bit_add_bus() is called. This
+> function is defined by the I2C bit-banging interfaces enabled
+> with CONFIG_I2C_ALGOBIT.
+> 
+> As there was no dependency in Kconfig, CONFIG_I2C_ALGOBIT could
+> be set to "m" while CONFIG_DVB_SMIPCIE was set to "y", resulting
+> in a build error due to an undefined reference. This patch adds
+> the dependency on CONFIG_I2C_ALGOBIT in Kconfig.
+> 
+> Signed-off-by: Andreas Ruprecht <rupran@einserver.de>
+> Reported-by: Jim Davis <jim.epost@gmail.com>
+> ---
+>  drivers/media/pci/smipcie/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/media/pci/smipcie/Kconfig b/drivers/media/pci/smipcie/Kconfig
+> index 75a2992..c728721 100644
+> --- a/drivers/media/pci/smipcie/Kconfig
+> +++ b/drivers/media/pci/smipcie/Kconfig
+> @@ -1,6 +1,6 @@
+>  config DVB_SMIPCIE
+>  	tristate "SMI PCIe DVBSky cards"
+> -	depends on DVB_CORE && PCI && I2C
+> +	depends on DVB_CORE && PCI && I2C && I2C_ALGOBIT
 
-This issue was detected by using the Coccinelle software.
+IMHO, the best would be, instead, to select I2C_ALGOBIT.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- sound/isa/es1688/es1688_lib.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/sound/isa/es1688/es1688_lib.c b/sound/isa/es1688/es1688_lib.c
-index b3b4f15..fb259491 100644
---- a/sound/isa/es1688/es1688_lib.c
-+++ b/sound/isa/es1688/es1688_lib.c
-@@ -614,8 +614,7 @@ static int snd_es1688_free(struct snd_es1688 *chip)
- {
- 	if (chip->hardware != ES1688_HW_UNDEF)
- 		snd_es1688_init(chip, 0);
--	if (chip->res_port)
--		release_and_free_resource(chip->res_port);
-+	release_and_free_resource(chip->res_port);
- 	if (chip->irq >= 0)
- 		free_irq(chip->irq, (void *) chip);
- 	if (chip->dma8 >= 0) {
--- 
-2.1.3
-
+>  	select DVB_M88DS3103 if MEDIA_SUBDRV_AUTOSELECT
+>  	select MEDIA_TUNER_M88TS2022 if MEDIA_SUBDRV_AUTOSELECT
+>  	select MEDIA_TUNER_M88RS6000T if MEDIA_SUBDRV_AUTOSELECT
