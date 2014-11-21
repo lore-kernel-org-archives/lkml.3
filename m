@@ -1,85 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249AbaKUXhc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 18:37:32 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:45114 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958AbaKUXha (ORCPT
+	id S1752747AbaKUXhh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 18:37:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58313 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290AbaKUXhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 18:37:30 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18aEJmDgW04C4V3qv/Z1SWi
-Date: Fri, 21 Nov 2014 15:37:10 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Felipe Balbi <balbi@ti.com>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        Igor Grinberg <grinberg@compulab.co.il>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        List for communicating with real GTA04 owners 
-	<gta04-owner@goldelico.com>
-Subject: Re: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration
- enabled
-Message-ID: <20141121233709.GA7046@atomide.com>
-References: <20141102180756.GH31454@atomide.com>
- <5458D29E.50908@compulab.co.il>
- <20141104154231.GP31454@atomide.com>
- <CANOLnOP8JmROaCruC8NEwh+Nzq_-fFit-+5d_W9vU9KtNTphoA@mail.gmail.com>
- <515E660B-B65D-41EF-97F5-74E4DE8FDD13@goldelico.com>
- <20141112212027.GK26481@atomide.com>
- <20141112223154.GP641@saruman>
- <20141119144348.169c4166@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141119144348.169c4166@notabene.brown>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 21 Nov 2014 18:37:34 -0500
+Date: Fri, 21 Nov 2014 15:37:31 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>, Dave Hansen <dave@sr71.net>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/7] mm/page_ext: resurrect struct page extending
+ code for debugging
+Message-Id: <20141121153731.b68bd8f0240a2eccb142e864@linux-foundation.org>
+In-Reply-To: <1416557646-21755-2-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1416557646-21755-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1416557646-21755-2-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* NeilBrown <neilb@suse.de> [141118 19:45]:
-> On Wed, 12 Nov 2014 16:31:54 -0600 Felipe Balbi <balbi@ti.com> wrote:
-> > 
-> > this is actually what the USB Battery Charging spec requires us to
-> > implement. If Linux is doing differently, it's a bug on Linux which
-> > should be fixed :-)
-> > 
-> > No host is allowed to source more then one unit load (100mA in LS/FS/HS,
-> > 150mA in SS) until the device is fully enumerated. Host are also
-> > required to drop max current budget to 8mA (IIRC) if the device doesn't
-> > enumerate for however many minutes (I guess it was a pretty long
-> > threshold, something like half an hour or so. My memory fails me right
-> > now).
-> > 
-> 
-> I think the twl4030 driver does do the "right" thing unless the "allow_usb"
-> module parameter is set, in which case it enables charging at a higher rate
-> which is 600mA (default value of BCIIREF1).
-> 
-> It would be nice if the driver could check if a charger was plugged in and
-> act accordingly.
-> The charger I have for my openmoko is identified by a 47K resistor between ID
-> and ground.  The twl4030 can detect that easily enough, but it isn't very
-> standard.
+On Fri, 21 Nov 2014 17:14:00 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
 
-Sounds doable to me, feel free to patch it up since you guys are using
-the twl4030 charger :)
+> When we debug something, we'd like to insert some information to
+> every page. For this purpose, we sometimes modify struct page itself.
+> But, this has drawbacks. First, it requires re-compile. This makes us
+> hesitate to use the powerful debug feature so development process is
+> slowed down. And, second, sometimes it is impossible to rebuild the kernel
+> due to third party module dependency. At third, system behaviour would be
+> largely different after re-compile, because it changes size of struct
+> page greatly and this structure is accessed by every part of kernel.
+> Keeping this as it is would be better to reproduce errornous situation.
+> 
+> This feature is intended to overcome above mentioned problems. This feature
+> allocates memory for extended data per page in certain place rather than
+> the struct page itself. This memory can be accessed by the accessor
+> functions provided by this code. During the boot process, it checks whether
+> allocation of huge chunk of memory is needed or not. If not, it avoids
+> allocating memory at all. With this advantage, we can include this feature
+> into the kernel in default and can avoid rebuild and solve related problems.
+> 
+> Until now, memcg uses this technique. But, now, memcg decides to embed
+> their variable to struct page itself and it's code to extend struct page
+> has been removed. I'd like to use this code to develop debug feature,
+> so this patch resurrect it.
+> 
+> To help these things to work well, this patch introduces two callbacks
+> for clients. One is the need callback which is mandatory if user wants
+> to avoid useless memory allocation at boot-time. The other is optional,
+> init callback, which is used to do proper initialization after memory
+> is allocated. Detailed explanation about purpose of these functions is
+> in code comment. Please refer it.
+> 
+> Others are completely same with previous extension code in memcg.
+>
+> ...
+>
+> +static bool __init invoke_need_callbacks(void)
+> +{
+> +	int i;
+> +	int entries = ARRAY_SIZE(page_ext_ops);
+> +
+> +	for (i = 0; i < entries; i++) {
+> +		if (page_ext_ops[i]->need && page_ext_ops[i]->need())
+> +			return true;
+> +	}
+> +
+> +	return false;
+> +}
+> +
+> +static void __init invoke_init_callbacks(void)
+> +{
+> +	int i;
+> +	int entries = sizeof(page_ext_ops) / sizeof(page_ext_ops[0]);
+
+ARRAY_SIZE()
+
+> +	for (i = 0; i < entries; i++) {
+> +		if (page_ext_ops[i]->init)
+> +			page_ext_ops[i]->init();
+> +	}
+> +}
+> +
+>
+> ...
+>
+> +void __init page_ext_init_flatmem(void)
+> +{
+> +
+> +	int nid, fail;
+> +
+> +	if (!invoke_need_callbacks)
+> +		return;
+> +
+> +	for_each_online_node(nid)  {
+> +		fail = alloc_node_page_ext(nid);
+> +		if (fail)
+> +			goto fail;
+> +	}
+> +	pr_info("allocated %ld bytes of page_ext\n", total_usage);
+> +	invoke_init_callbacks();
+> +	return;
+> +
+> +fail:
+> +	pr_crit("allocation of page_ext failed.\n");
+> +	panic("Out of memory");
+
+Did we really need to panic the machine?  The situation should be
+pretty easily recoverable by disabling the clients.  I guess it's OK as
+long as page_ext is being used for kernel developer debug things.
+
+> +}
+> +
+
+We'll need this to fix the build.  I'll queue it up.
+
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: include/linux/kmemleak.h: needs slab.h
+
+include/linux/kmemleak.h: In function 'kmemleak_alloc_recursive':
+include/linux/kmemleak.h:43: error: 'SLAB_NOLEAKTRACE' undeclared (first use in this function)
+
+--- a/include/linux/kmemleak.h~include-linux-kmemleakh-needs-slabh
++++ a/include/linux/kmemleak.h
+@@ -21,6 +21,8 @@
+ #ifndef __KMEMLEAK_H
+ #define __KMEMLEAK_H
  
-> The standard is of course to have D+ and D- shorted, but I don't know if the
-> twl4030 can detect that?  If it can, then getting some very early code to
-> check for the short (or the 47k resistor) and quickly enabling charging might
-> be a sufficient solution.
++#include <linux/slab.h>
++
+ #ifdef CONFIG_DEBUG_KMEMLEAK
+ 
+ extern void kmemleak_init(void) __ref;
 
-I guess. Note that there's also the USB BC1.2 spec that is more
-complicated than having the data lines shorted.
 
-Regards,
 
-Tony
+And here are a couple of tweaks for this patch:
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: mm-page_ext-resurrect-struct-page-extending-code-for-debugging-fix
+
+use ARRAY_SIZE, clean up 80-col tricks
+
+--- a/mm/page_ext.c~mm-page_ext-resurrect-struct-page-extending-code-for-debugging-fix
++++ a/mm/page_ext.c
+@@ -71,7 +71,7 @@ static bool __init invoke_need_callbacks
+ static void __init invoke_init_callbacks(void)
+ {
+ 	int i;
+-	int entries = sizeof(page_ext_ops) / sizeof(page_ext_ops[0]);
++	int entries = ARRAY_SIZE(page_ext_ops);
+ 
+ 	for (i = 0; i < entries; i++) {
+ 		if (page_ext_ops[i]->init)
+@@ -81,7 +81,6 @@ static void __init invoke_init_callbacks
+ 
+ #if !defined(CONFIG_SPARSEMEM)
+ 
+-
+ void __meminit pgdat_page_ext_init(struct pglist_data *pgdat)
+ {
+ 	pgdat->node_page_ext = NULL;
+@@ -232,8 +231,9 @@ static void free_page_ext(void *addr)
+ 		vfree(addr);
+ 	} else {
+ 		struct page *page = virt_to_page(addr);
+-		size_t table_size =
+-			sizeof(struct page_ext) * PAGES_PER_SECTION;
++		size_t table_size;
++
++		table_size = sizeof(struct page_ext) * PAGES_PER_SECTION;
+ 
+ 		BUG_ON(PageReserved(page));
+ 		free_pages_exact(addr, table_size);
+
