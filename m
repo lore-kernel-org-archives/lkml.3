@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758218AbaKULqP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 06:46:15 -0500
-Received: from mout.web.de ([212.227.17.11]:58146 "EHLO mout.web.de"
+	id S1758247AbaKULrr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 06:47:47 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:53880 "EHLO jenni2.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758062AbaKULqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 06:46:13 -0500
-Message-ID: <546F25EE.5090601@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 12:45:50 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1758223AbaKULrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 06:47:45 -0500
+Date: Fri, 21 Nov 2014 13:47:09 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@gentwo.org>,
+        Steve Capper <steve.capper@linaro.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 06/19] mm: store mapcount for compound page separate
+Message-ID: <20141121114709.GA16647@node.dhcp.inet.fi>
+References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1415198994-15252-7-git-send-email-kirill.shutemov@linux.intel.com>
+ <20141118084337.GA16714@hori1.linux.bs1.fc.nec.co.jp>
+ <20141118095811.GA21774@node.dhcp.inet.fi>
+ <87egsx6oo1.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linuxppc-dev@lists.ozlabs.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] tty-hvsi_lib: Deletion of an unnecessary check before
- the function call "tty_kref_put"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:cY66m3KlxAS612GCdVW9z62h+kwqS+TZKTw/hT6S39TdXBVyJ+a
- N9J+su66zlUf7Qhe+X/i3tB83fd1pPgteApDYq/4rksdC9trm4EBME2O48u0kl+oXLB3EaA
- tew3rCIgKmU7Ah6xiA4XenYJGnE7Y5tNpAmnPbM0saqjnc+lgB28PiPGMWb5MOtWpO4gZbp
- zN8iwVDiKJ0E/QQSQcWcQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87egsx6oo1.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 12:40:32 +0100
+On Fri, Nov 21, 2014 at 12:11:34PM +0530, Aneesh Kumar K.V wrote:
+> "Kirill A. Shutemov" <kirill@shutemov.name> writes:
+> 
+> > On Tue, Nov 18, 2014 at 08:43:00AM +0000, Naoya Horiguchi wrote:
+> >> > @@ -1837,6 +1839,9 @@ static void __split_huge_page_refcount(struct page *page,
+> >> >  	atomic_sub(tail_count, &page->_count);
+> >> >  	BUG_ON(atomic_read(&page->_count) <= 0);
+> >> >  
+> >> > +	page->_mapcount = *compound_mapcount_ptr(page);
+> >> 
+> >> Is atomic_set() necessary?
+> >
+> > Do you mean
+> > 	atomic_set(&page->_mapcount, atomic_read(compound_mapcount_ptr(page)));
+> > ?
+> >
+> > I don't see why we would need this. Simple assignment should work just
+> > fine. Or we have archs which will break?
+> 
+> Are you looking at architecture related atomic_set issues, or the fact
+> that we cannot have parallel _mapcount update and hence the above
+> assignment should be ok ? If the former, current thp code
+> use atomic_add instead of even using atomic_set when
+> updatinge page_tail->_count.  
+> 
+> 		 * from under us on the tail_page. If we used
+> 		 * atomic_set() below instead of atomic_add(), we
+> 		 * would then run atomic_set() concurrently with
+> 		 * get_page_unless_zero(), and atomic_set() is
+> 		 * implemented in C not using locked ops. spin_unlock
+> 		 * on x86 sometime uses locked ops because of PPro
+> 		 * errata 66, 92, so unless somebody can guarantee
+> 		 * atomic_set() here would be safe on all archs (and
+> 		 * not only on x86), it's safer to use atomic_add().
+> 		 */
+> 		atomic_add(page_mapcount(page) + page_mapcount(page_tail) + 1,
+> 			   &page_tail->_count);
 
-The tty_kref_put() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+We don't have anything like get_page_unless_zero() for _mapcount as far as
+I can see. And we have similar assignment there now:
 
-This issue was detected by using the Coccinelle software.
+	page_tail->_mapcount = page->_mapcount;
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/tty/hvc/hvsi_lib.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Anyway the assignment goes away by the end of patchset.
 
-diff --git a/drivers/tty/hvc/hvsi_lib.c b/drivers/tty/hvc/hvsi_lib.c
-index 7ae6c29..a270f04 100644
---- a/drivers/tty/hvc/hvsi_lib.c
-+++ b/drivers/tty/hvc/hvsi_lib.c
-@@ -405,8 +405,7 @@ void hvsilib_close(struct hvsi_priv *pv, struct hvc_struct *hp)
- 		hvsi_send_close(pv);
- 	}
- 
--	if (pv->tty)
--		tty_kref_put(pv->tty);
-+	tty_kref_put(pv->tty);
- 	pv->tty = NULL;
- }
- 
 -- 
-2.1.3
-
+ Kirill A. Shutemov
