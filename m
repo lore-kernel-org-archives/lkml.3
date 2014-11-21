@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750820AbaKURlJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 12:41:09 -0500
-Received: from mout.web.de ([212.227.15.4]:58596 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750704AbaKURlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 12:41:08 -0500
-Message-ID: <546F7921.2000406@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 18:40:49 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1750935AbaKURmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 12:42:13 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:61899 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733AbaKURmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 12:42:09 -0500
 MIME-Version: 1.0
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] ALSA: core: Deletion of unnecessary checks before two
- function calls
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:y34nu6WsO5Ap/99qmvyIUdaN31m0GLrVWqThZRcRryG6Mur5C4H
- lOQRPBQ64wJ4NIfXYd6R4JF2tkud6FLNA8f0YG1/LPDAiHKkjBGNn4xaLaU8Q9QcIiV1msx
- 4KCcc/4U83K27ucDjuRNceR94+Se6ABwNukKNxTzxTyIxl04P14nx04LDXR6lFfUrSxeDh4
- TfyIMKgzcHzyUHWvmO7bA==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <CAPDyKFrzGfDew0eLLEcA+_iS_mo-O2bFU58fjirfXXA8AJ9UYQ@mail.gmail.com>
+References: <1415109789-7046-1-git-send-email-addy.ke@rock-chips.com>
+	<1415678573-6093-1-git-send-email-addy.ke@rock-chips.com>
+	<CAPDyKFqUoBjhsbz8rkLa9PY_dpgMxnimz3k7OoA5WVhi7MacPQ@mail.gmail.com>
+	<CAD=FV=VQHZ6YmcoeAb1OEVLYRrYBnc_dM5Kjt1TZX_CQJC=EfA@mail.gmail.com>
+	<5464152E.7040209@rock-chips.com>
+	<CAPDyKFrzGfDew0eLLEcA+_iS_mo-O2bFU58fjirfXXA8AJ9UYQ@mail.gmail.com>
+Date: Fri, 21 Nov 2014 09:42:08 -0800
+X-Google-Sender-Auth: JNJuzB8oeNJx0rmMWJue8RPWdH8
+Message-ID: <CAD=FV=Ve1TY4+8quq1=18A1YOFvOWuFGrBmHLwMCwdWBSqzxOw@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: try pick the exact same voltage as vmmc for vqmmc
+From: Doug Anderson <dianders@chromium.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: addy ke <addy.ke@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Alexandru Stan <amstan@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
+        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris Zhong <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 18:34:48 +0100
+Ulf,
 
-The functions snd_seq_oss_timer_delete() and vunmap() perform also input
-parameter validation. Thus the test around the call is not needed.
+On Fri, Nov 21, 2014 at 4:06 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> [...]
+>
+>> Sure
+>> If the first card is sd2.0 since startup, dw_mci_switch_voltage will not be called,
+>
+> That can't be right. mmc_power_up() should trigger
+> dw_mci_switch_voltage() to be invoked.
 
-This issue was detected by using the Coccinelle software.
+Hmmm, I think you're right.  Addy: can you double check if it's only
+the 2nd card for you?  I was thinking that if a regulator is currently
+3.3V and you request 2.7 - 3.3V the regulator framework will treat
+that as a noop.  ...but that definitely doesn't appear to be the case.
+When I boot up the first time even with no SD card plugged in, I see
+this at bootup:
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- sound/core/seq/oss/seq_oss_init.c | 9 +++------
- sound/core/sgbuf.c                | 3 +--
- 2 files changed, 4 insertions(+), 8 deletions(-)
+[    3.042234] vccio_sd: 1800 <--> 3300 mV at 3300 mV
 
-diff --git a/sound/core/seq/oss/seq_oss_init.c b/sound/core/seq/oss/seq_oss_init.c
-index b9184d2..b0e32e1 100644
---- a/sound/core/seq/oss/seq_oss_init.c
-+++ b/sound/core/seq/oss/seq_oss_init.c
-@@ -403,14 +403,11 @@ free_devinfo(void *private)
- {
- 	struct seq_oss_devinfo *dp = (struct seq_oss_devinfo *)private;
- 
--	if (dp->timer)
--		snd_seq_oss_timer_delete(dp->timer);
-+	snd_seq_oss_timer_delete(dp->timer);
- 		
--	if (dp->writeq)
--		snd_seq_oss_writeq_delete(dp->writeq);
-+	snd_seq_oss_writeq_delete(dp->writeq);
- 
--	if (dp->readq)
--		snd_seq_oss_readq_delete(dp->readq);
-+	snd_seq_oss_readq_delete(dp->readq);
- 	
- 	kfree(dp);
- }
-diff --git a/sound/core/sgbuf.c b/sound/core/sgbuf.c
-index 0a41850..84fffab 100644
---- a/sound/core/sgbuf.c
-+++ b/sound/core/sgbuf.c
-@@ -39,8 +39,7 @@ int snd_free_sgbuf_pages(struct snd_dma_buffer *dmab)
- 	if (! sgbuf)
- 		return -EINVAL;
- 
--	if (dmab->area)
--		vunmap(dmab->area);
-+	vunmap(dmab->area);
- 	dmab->area = NULL;
- 
- 	tmpb.dev.type = SNDRV_DMA_TYPE_DEV;
--- 
-2.1.3
+...showing that it started at 3.3V.  Then I see:
 
+$ grep "" /sys/class/regulator/regulator.16/{name,microvolts}
+/sys/class/regulator/regulator.16/name:vccio_sd
+/sys/class/regulator/regulator.16/microvolts:2700000
+
+...so it is certainly getting changed even with no card plugged in.
+
+
+BTW: I don't actually have one of these failing cards--all of mine
+work.  Addy, do you know the make and model of the card you have that
+fails?
+
+
+-Doug
