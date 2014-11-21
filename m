@@ -1,103 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757141AbaKUDHG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 22:07:06 -0500
-Received: from mail-bn1on0113.outbound.protection.outlook.com ([157.56.110.113]:53888
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756487AbaKUDHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 22:07:04 -0500
-X-WSS-ID: 0NFDCNM-07-0CR-02
-X-M-MSG: 
-Message-ID: <546EAC4E.9050808@amd.com>
-Date: Thu, 20 Nov 2014 21:06:54 -0600
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1757587AbaKUDHY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 22:07:24 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:47028 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757301AbaKUDHU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 22:07:20 -0500
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: <marc.zyngier@arm.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] irqdomain: Fix NULL pointer dererence in irq_domain_free_irqs_parent
-References: <1416531745-24661-1-git-send-email-suravee.suthikulpanit@amd.com>
- <alpine.DEB.2.11.1411210219370.6439@nanos> <546E9E8E.5000303@amd.com>
- <546EA823.8030401@linux.intel.com>
-In-Reply-To: <546EA823.8030401@linux.intel.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(51704005)(199003)(479174003)(377454003)(164054003)(189002)(120916001)(99396003)(92566001)(76176999)(23746002)(50986999)(65816999)(68736004)(92726001)(19580395003)(80316001)(19580405001)(4396001)(46102003)(47776003)(50466002)(20776003)(31966008)(87936001)(101416001)(44976005)(97736003)(87266999)(83506001)(84676001)(33656002)(102836001)(64126003)(64706001)(65956001)(77156002)(86362001)(54356999)(106466001)(105586002)(62966003)(36756003)(93886004)(107046002)(21056001)(95666004)(59896002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB198;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
-X-Forefront-PRVS: 0402872DA1
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
-X-OriginatorOrg: amd4.onmicrosoft.com
+In-Reply-To: <20141120132317.00ad7210@kcaccard-desk.amr.corp.intel.com>
+References: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com>
+	<1416299826-15813-8-git-send-email-ethan.zhao@oracle.com>
+	<20141119110548.24a0a808@kcaccard-desk.amr.corp.intel.com>
+	<41ADCDB8-C204-4661-833B-F68E7D687B61@gmail.com>
+	<20141120132317.00ad7210@kcaccard-desk.amr.corp.intel.com>
+Date: Fri, 21 Nov 2014 11:07:19 +0800
+Message-ID: <CABawtvO57bTEs2qCd1SRaOX-R24_VJYmHFLAoUatTRnmuenrdg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] intel_pstate: add module and kernel command line
+ parameter to ignore ACPI _PPC
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Kristen Carlson Accardi <kristen@linux.intel.com>
+Cc: Ethan Zhao <ethan.zhao@oracle.com>,
+        "<dirk.j.brandewie@intel.com>" <dirk.j.brandewie@intel.com>,
+        "<viresh.kumar@linaro.org>" <viresh.kumar@linaro.org>,
+        "<rjw@rjwysocki.net>" <rjw@rjwysocki.net>,
+        "<corbet@lwn.net>" <corbet@lwn.net>,
+        "<linux-doc@vger.kernel.org>" <linux-doc@vger.kernel.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<linux-pm@vger.kernel.org>" <linux-pm@vger.kernel.org>,
+        "<joe.jin@oracle.com>" <joe.jin@oracle.com>,
+        "<brian.maly@oracle.com>" <brian.maly@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Kristen,
+   Whatever I would like there is a way to load intel_pstate and give
+it a try even it does not support all the PM features.
+   I think 'force' is OK.
+Linda,
+  Do you like it ? if the 'intel_pstate=force' would force the driver
+to be loaded on to HP too ?
 
+Thanks,
+Ethan
 
-On 11/20/2014 08:49 PM, Jiang Liu wrote:
+On Fri, Nov 21, 2014 at 5:23 AM, Kristen Carlson Accardi
+<kristen@linux.intel.com> wrote:
+> On Thu, 20 Nov 2014 08:57:34 +0800
+> ethan <ethan.kernel@gmail.com> wrote:
 >
+>>
+>>
+>> > 在 2014年11月20日，03:05，Kristen Carlson Accardi <kristen@linux.intel.com> 写道：
+>> >
+>> > On Tue, 18 Nov 2014 17:37:06 +0900
+>> > Ethan Zhao <ethan.zhao@oracle.com> wrote:
+>> >
+>> >> Add kernel command line parameter
+>> >> intel_pstate = ignore_acpi_ppc
+>> >> and module parameter
+>> >> ignore_acpi_ppc = 1
+>> >> to allow driver to ignore the ACPI _PPC existence even for Sun x86 servers.
+>> >> These parameter could be used for debug\test\workaround etc purpose.
+>> >>
+>> >> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+>> >
+>> > What if we used a more generic parameter like "force" that would bypass
+>> > any vendor specific checks and just load anyway?  This way we don't have
+>> > to add new parameters everything some new thing shows up that we want to
+>> > ignore.
+>> >
+>> To be honest, I prefer more generic parameter. But to avoid the possible negative affect
+>> To another vendors. I back to this way.
 >
-> On 2014/11/21 10:08, Suravee Suthikulpanit wrote:
->> On 11/20/2014 07:32 PM, Thomas Gleixner wrote:
->>> On Thu, 20 Nov 2014, suravee.suthikulpanit@amd.com wrote:
->>>> This patch checks if the parent domain is NULL before recursively
->>>> freeing
->>>> irqs in the parent domains.
->>>
->>> Which is nonsense, because if the thing has not been allocated in the
->>> first place, then it cannot explode in the free path magically, except
->>> there is a missing check in the allocation path error handling.
->>>
->>> And that's obviously not the case simply because this originates from:
->>>> [<fffffe0000449278>] pci_disable_msix+0x40/0x50
->>>
->>
->> Thomas,
->>
->> In this case, I have the following irq domain hierarchy:
->>
->> [GIC] -- [GICv2m] -- [MSI]
->>
->> which recursively calling the freeing function:
->>
->> In GIC domain, it currently defines the struct irq_domain_ops.free() with :
->>    --> irq_domain_free_irqs_top()
->>      |--> irq_domain_free_irqs_common()
->>        |--> irq_domain_free_irq_parent()
->>          |--> irq_domain_free_irqs_recursive()
->>
->> and there is no check before passing the NULL domain->parent into the
->> irq_domain_free_irqs_recursive(), which causes the error.
->>
->> Since the GIC is the top most domain, it does not have parent domain.
->> So, I'm not sure what is missing from the allocation path error
->> handling, as you mentioned.
-> Hi Thomas,
-> 	We have had a discussion about this issue in another thread.
-> Originally irq_domain_free_irqs_common() is designed to be used by
-> irqdomains with parent. But there are desires to reuse it to support
-> irqdomains without parent too for code reduction.
-> So I suggest to change irq_domain_free_irqs_common() instead of
-> irq_domain_free_irqs_parent() because caller of
-> irq_domain_free_irqs_parent() should guarantee current domain do have
-> a parent.
-> I'm preparing a patch for this:)
-> Regards!
-> Gerry
-
-Thanks Gerry and Thomas.
-
-Suravee
-
+> Well, your parameter can still impact other vendors as it is.  it
+> is pretty typical to assume that using a parameter like "force" means
+> you know what you are doing and accept the risks.  Especially if its
+> documented as such.
+>
 >>
 >> Thanks,
->>
->> Suravee
+>> Ethan
+>> >> ---
+>> >> Documentation/kernel-parameters.txt | 3 +++
+>> >> drivers/cpufreq/intel_pstate.c      | 8 +++++++-
+>> >> 2 files changed, 10 insertions(+), 1 deletion(-)
+>> >>
+>> >> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> >> index 4c81a86..f502b85 100644
+>> >> --- a/Documentation/kernel-parameters.txt
+>> >> +++ b/Documentation/kernel-parameters.txt
+>> >> @@ -1446,6 +1446,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>> >>               disable
+>> >>                 Do not enable intel_pstate as the default
+>> >>                 scaling driver for the supported processors
+>> >> +               ignore_acpi_ppc
+>> >> +             Ignore the existence of ACPI method _PPC for Sun x86 servers
+>> >> +             and load the driver.
+>> >>
+>> >>    intremap=    [X86-64, Intel-IOMMU]
+>> >>            on    enable Interrupt Remapping (default)
+>> >> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+>> >> index 7c5faea..388387b 100644
+>> >> --- a/drivers/cpufreq/intel_pstate.c
+>> >> +++ b/drivers/cpufreq/intel_pstate.c
+>> >> @@ -870,6 +870,7 @@ static struct cpufreq_driver intel_pstate_driver = {
+>> >> };
+>> >>
+>> >> static int __initdata no_load;
+>> >> +static unsigned int  ignore_acpi_ppc;
+>> >>
+>> >> static int intel_pstate_msrs_not_valid(void)
+>> >> {
+>> >> @@ -990,7 +991,7 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+>> >>            intel_pstate_no_acpi_pss())
+>> >>            return true;
+>> >>        if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
+>> >> -            intel_pstate_has_acpi_ppc())
+>> >> +            intel_pstate_has_acpi_ppc() && !ignore_acpi_ppc)
+>> >>            return true;
+>> >>    }
+>> >>
+>> >> @@ -1066,11 +1067,16 @@ static int __init intel_pstate_setup(char *str)
+>> >>
+>> >>    if (!strcmp(str, "disable"))
+>> >>        no_load = 1;
+>> >> +    if (!strcmp(str, "ignore_acpi_ppc"))
+>> >> +        ignore_acpi_ppc = 1;
+>> >>    return 0;
+>> >> }
+>> >> early_param("intel_pstate", intel_pstate_setup);
+>> >> #endif
+>> >>
+>> >> +module_param(ignore_acpi_ppc, uint, 0644);
+>> >> +MODULE_PARM_DESC(ignore_acpi_ppc,
+>> >> +    "value 0 or non-zero. non-zero -> ignore ACPI _PPC and load this driver");
+>> >> MODULE_AUTHOR("Dirk Brandewie <dirk.j.brandewie@intel.com>");
+>> >> MODULE_DESCRIPTION("'intel_pstate' - P state driver Intel Core processors");
+>> >> MODULE_LICENSE("GPL");
+>> >
+>
