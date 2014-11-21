@@ -1,85 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518AbaKUQ6A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:58:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55602 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932347AbaKUQ56 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:57:58 -0500
-Date: Fri, 21 Nov 2014 08:56:38 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Arnd Bergmann <arnd@arndb.de>,
-        ebiederm@xmission.com,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Daniel Mack <daniel@zonque.org>, Djalal Harouni <tixxdz@opendz.org>
-Subject: Re: kdbus: add node and filesystem implementation
-Message-ID: <20141121165638.GA24866@kroah.com>
-References: <1416546149-24799-1-git-send-email-gregkh@linuxfoundation.org>
- <1416546149-24799-7-git-send-email-gregkh@linuxfoundation.org>
- <546F606D.40407@oracle.com>
- <CANq1E4QkXv9Ak6eT+NZPsy+5nTGKE8oypLvdr97cFcvmtigS_A@mail.gmail.com>
+	id S932559AbaKURAR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 12:00:17 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:47071 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932288AbaKURAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 12:00:15 -0500
+X-IronPort-AV: E=Sophos;i="5.07,432,1413244800"; 
+   d="scan'208";a="193778543"
+Date: Fri, 21 Nov 2014 17:00:05 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <xen-devel@lists.xensource.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/2] small swiotlb-xen fixes
+Message-ID: <alpine.DEB.2.02.1411211657430.2675@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANq1E4QkXv9Ak6eT+NZPsy+5nTGKE8oypLvdr97cFcvmtigS_A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 05:13:26PM +0100, David Herrmann wrote:
-> Hi
-> 
-> On Fri, Nov 21, 2014 at 4:55 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> > On 11/21/2014 12:02 AM, Greg Kroah-Hartman wrote:
-> >> +static struct dentry *fs_dir_iop_lookup(struct inode *dir,
-> >> +                                     struct dentry *dentry,
-> >> +                                     unsigned int flags)
-> >> +{
-> >> +     struct dentry *dnew = NULL;
-> >> +     struct kdbus_node *parent;
-> >> +     struct kdbus_node *node;
-> >> +     struct inode *inode;
-> >> +
-> >> +     parent = kdbus_node_from_dentry(dentry->d_parent);
-> >> +     if (!kdbus_node_acquire(parent))
-> >> +             return NULL;
-> >> +
-> >> +     /* returns reference to _acquired_ child node */
-> >> +     node = kdbus_node_find_child(parent, dentry->d_name.name);
-> >> +     if (node) {
-> >> +             dentry->d_fsdata = node;
-> >> +             inode = fs_inode_get(dir->i_sb, node);
-> >> +             if (IS_ERR(inode))
-> >> +                     dnew = ERR_CAST(inode);
-> >> +             else
-> >> +                     dnew = d_materialise_unique(dentry, inode);
-> >
-> > d_materialise_unique() is gone in Al's fs tree:
-> >
-> > [mandatory]
-> >         d_materialise_unique() is gone; d_splice_alias() does everything you
-> >         need now.  Remember that they have opposite orders of arguments ;-/
-> 
-> That was actually pushed after we prepared v2, so I haven't seen it
-> yet. I now rebased on top of vfs.git#for-next, with
-> d_materialise_unique() -> d_splice_alias(). Thanks for the hint!
-> 
-> > Maybe it's worth basing your git tree on top of Al's rather than a random
-> > -rc, since it's now a filesystem?
-> 
-> Sure, sounds good.
+Hi all,
+I have a couple of small straightforward fixes for swiotlb-xen for 3.19.
 
-No, I'll keep it as is, we can handle the merge issues later when it
-hits Linus's tree, this makes it easier for me and others to test it
-out properly.
+Cheers,
 
-thanks,
+Stefano
 
-greg k-h
+
+Stefano Stabellini (2):
+      swiotlb-xen: call xen_dma_sync_single_for_device when appropriate
+      swiotlb-xen: pass dev_addr to swiotlb_tbl_unmap_single
+
+ drivers/xen/swiotlb-xen.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
