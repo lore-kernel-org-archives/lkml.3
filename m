@@ -1,169 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758866AbaKUQTB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:19:01 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:61348 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758177AbaKUQTA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:19:00 -0500
-From: Mahendran Ganesh <opensource.ganesh@gmail.com>
-To: minchan@kernel.org, ngupta@vflare.org, ddstreet@ieee.org,
-        sergey.senozhatsky@gmail.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mahendran Ganesh <opensource.ganesh@gmail.com>
-Subject: [PATCH] mm/zsmalloc: support max obj with length of PAGE_SIZE
-Date: Sat, 22 Nov 2014 00:18:39 +0800
-Message-Id: <1416586719-10125-1-git-send-email-opensource.ganesh@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1758886AbaKUQUD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:20:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41760 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757926AbaKUQUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 11:20:00 -0500
+Date: Fri, 21 Nov 2014 17:19:57 +0100
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm: x86: move ioapic.c and irq_comm.c back to arch/x86/
+Message-ID: <20141121161956.GA16941@potion.brq.redhat.com>
+References: <1416490931-21724-1-git-send-email-pbonzini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1416490931-21724-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-21 18:32 GMT+08:00 Minchan Kim <minchan@kernel.org>:
-> On Fri, Nov 21, 2014 at 06:48:49AM +0000, Minchan Kim wrote:
->> On Fri, Nov 21, 2014 at 01:33:26PM +0800, Ganesh Mahendran wrote:
->> > Hello
->> >
->> > 2014-11-21 11:54 GMT+08:00 Minchan Kim <minchan@kernel.org>:
->> > > On Thu, Nov 20, 2014 at 09:21:56PM +0800, Mahendran Ganesh wrote:
->> > >> ZS_SIZE_CLASSES is calc by:
->> > >>   ((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / ZS_SIZE_CLASS_DELTA + 1)
->> > >>
->> > >> So when i is in [0, ZS_SIZE_CLASSES - 1), the size:
->> > >>   size = ZS_MIN_ALLOC_SIZE + i * ZS_SIZE_CLASS_DELTA
->> > >> will not be greater than ZS_MAX_ALLOC_SIZE
->> > >>
->> > >> This patch removes the unnecessary check.
->> > >
->> > > It depends on ZS_MIN_ALLOC_SIZE.
->> > > For example, we would change min to 8 but MAX is still 4096.
->> > > ZS_SIZE_CLASSES is (4096 - 8) / 16 + 1 = 256 so 8 + 255 * 16 = 4088,
->> > > which exceeds the max.
->> > Here, 4088 is less than MAX(4096).
->> >
->> > ZS_SIZE_CLASSES = (MAX - MIN) / Delta + 1
->> > So, I think the value of
->> >     MIN + (ZS_SIZE_CLASSES - 1) * Delta =
->> >     MIN + ((MAX - MIN) / Delta) * Delta =
->> >     MAX
->> > will not exceed the MAX
->>
->> You're right. It was complext math for me.
->> I should go back to elementary school.
->>
->> Thanks!
->>
->> Acked-by: Minchan Kim <minchan@kernel.org>
->
-> I catch a nasty cold but above my poor math makes me think more.
-> ZS_SIZE_CLASSES is broken. In above my example, current code cannot
-> allocate 4096 size class so we should correct ZS_SIZE_CLASSES
-> at first.
->
-> zs_size_classes = zs_max - zs_min / delta + 1;
-> if ((zs_max - zs_min) % delta)
->         zs_size_classes += 1;
->
-> Then, we need to code piece you removed.
-> As well, we need to fix below.
->
-> - area->vm_buf = (char *)__get_free_page(GFP_KERNEL);
-> + area->vm_buf = kmalloc(ZS_MAX_ALLOC_SIZE);
->
-> Hope I am sane in this time :(
+2014-11-20 14:42+0100, Paolo Bonzini:
+> ia64 does not need them anymore.
 
-how about something like this?
+(Similar for device assignment and iommu, should I prepare patches?)
 
-In zsmalloc, if ZS_MIN_ALLOC_SIZE is less than ZS_SIZE_CLASS_DELTA.
-Max obj size (ZS_MIN_ALLOC_SIZE + ZS_SIZE_CLASSES * ZS_SIZE_CLASS_DELTA)
-will be less than ZS_MAX_ALLOC_SIZE(page size).
-And in zs_malloc(), we thought we can put an obj(len == PAGE_SIZE)
-into zsmalloc. But actually we can not. This will make user confused.
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
 
-This patch takes Minchan Kim's suggestion.
-    https://lkml.org/lkml/2014/11/21/172
+At least one compile-breaker on arches without IOAPIC,
 
-When (ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) % ZS_SIZE_CLASS_DELTA) != 0,
-we add increase sz_size_class by 1 to make the size of max obj equal to
-ZS_MAX_ALLOC_SIZE(PAGE_SIZE).
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index ea53b04993f2..d2d42709d6f4 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> +#ifdef __KVM_HAVE_IOAPIC
+> +void kvm_vcpu_request_scan_ioapic(struct kvm *kvm);
+> +#else
+> +static inline void kvm_vcpu_request-scan_ioapic(struct kvm *kvm)
+                                      ^_-
+> +{
+> +}
+> +#endif
+> +
 
-Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
+Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
+
+And we could clean them up as well:
+---8<---
+KVM: x86: remove IA64 from ioapic.c and irq_comm.c
+
+They won't get compiled in x86 tree.
+
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 ---
- mm/zsmalloc.c |   22 +++++++++++++++++-----
- 1 file changed, 17 insertions(+), 5 deletions(-)
+ arch/x86/kvm/ioapic.c   | 12 ------------
+ arch/x86/kvm/irq_comm.c | 41 ++---------------------------------------
+ 2 files changed, 2 insertions(+), 51 deletions(-)
 
-diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-index 810eda1..bcea72d 100644
---- a/mm/zsmalloc.c
-+++ b/mm/zsmalloc.c
-@@ -155,8 +155,6 @@
-  *  (reason above)
-  */
- #define ZS_SIZE_CLASS_DELTA	(PAGE_SIZE >> 8)
--#define ZS_SIZE_CLASSES		((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / \
--					ZS_SIZE_CLASS_DELTA + 1)
+diff --git a/arch/x86/kvm/ioapic.c b/arch/x86/kvm/ioapic.c
+index 0ba4057..b1947e0 100644
+--- a/arch/x86/kvm/ioapic.c
++++ b/arch/x86/kvm/ioapic.c
+@@ -270,7 +270,6 @@ void kvm_ioapic_scan_entry(struct kvm_vcpu *vcpu, u64 *eoi_exit_bitmap,
+ 	spin_unlock(&ioapic->lock);
+ }
  
- /*
-  * We do not maintain any list for completely empty or full pages
-@@ -214,7 +212,8 @@ struct link_free {
+-#ifdef CONFIG_X86
+ void kvm_vcpu_request_scan_ioapic(struct kvm *kvm)
+ {
+ 	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
+@@ -279,12 +278,6 @@ void kvm_vcpu_request_scan_ioapic(struct kvm *kvm)
+ 		return;
+ 	kvm_make_scan_ioapic_request(kvm);
+ }
+-#else
+-void kvm_vcpu_request_scan_ioapic(struct kvm *kvm)
+-{
+-	return;
+-}
+-#endif
+ 
+ static void ioapic_write_indirect(struct kvm_ioapic *ioapic, u32 val)
+ {
+@@ -586,11 +579,6 @@ static int ioapic_mmio_write(struct kvm_io_device *this, gpa_t addr, int len,
+ 	case IOAPIC_REG_WINDOW:
+ 		ioapic_write_indirect(ioapic, data);
+ 		break;
+-#ifdef	CONFIG_IA64
+-	case IOAPIC_REG_EOI:
+-		__kvm_ioapic_update_eoi(NULL, ioapic, data, IOAPIC_LEVEL_TRIG);
+-		break;
+-#endif
+ 
+ 	default:
+ 		break;
+diff --git a/arch/x86/kvm/irq_comm.c b/arch/x86/kvm/irq_comm.c
+index a8f988c..72298b3 100644
+--- a/arch/x86/kvm/irq_comm.c
++++ b/arch/x86/kvm/irq_comm.c
+@@ -26,9 +26,6 @@
+ #include <trace/events/kvm.h>
+ 
+ #include <asm/msidef.h>
+-#ifdef CONFIG_IA64
+-#include <asm/iosapic.h>
+-#endif
+ 
+ #include "irq.h"
+ 
+@@ -38,12 +35,8 @@ static int kvm_set_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+ 			   struct kvm *kvm, int irq_source_id, int level,
+ 			   bool line_status)
+ {
+-#ifdef CONFIG_X86
+ 	struct kvm_pic *pic = pic_irqchip(kvm);
+ 	return kvm_pic_set_irq(pic, e->irqchip.pin, irq_source_id, level);
+-#else
+-	return -1;
+-#endif
+ }
+ 
+ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
+@@ -57,12 +50,7 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
+ 
+ inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
+ {
+-#ifdef CONFIG_IA64
+-	return irq->delivery_mode ==
+-		(IOSAPIC_LOWEST_PRIORITY << IOSAPIC_DELIVERY_SHIFT);
+-#else
+ 	return irq->delivery_mode == APIC_DM_LOWEST;
+-#endif
+ }
+ 
+ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+@@ -202,9 +190,7 @@ int kvm_request_irq_source_id(struct kvm *kvm)
+ 	}
+ 
+ 	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
+-#ifdef CONFIG_X86
+ 	ASSERT(irq_source_id != KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID);
+-#endif
+ 	set_bit(irq_source_id, bitmap);
+ unlock:
+ 	mutex_unlock(&kvm->irq_lock);
+@@ -215,9 +201,7 @@ unlock:
+ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+ {
+ 	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
+-#ifdef CONFIG_X86
+ 	ASSERT(irq_source_id != KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID);
+-#endif
+ 
+ 	mutex_lock(&kvm->irq_lock);
+ 	if (irq_source_id < 0 ||
+@@ -230,9 +214,7 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+ 		goto unlock;
+ 
+ 	kvm_ioapic_clear_all(kvm->arch.vioapic, irq_source_id);
+-#ifdef CONFIG_X86
+ 	kvm_pic_clear_all(pic_irqchip(kvm), irq_source_id);
+-#endif
+ unlock:
+ 	mutex_unlock(&kvm->irq_lock);
+ }
+@@ -322,16 +304,11 @@ out:
+ 	  .u.irqchip = { .irqchip = KVM_IRQCHIP_IOAPIC, .pin = (irq) } }
+ #define ROUTING_ENTRY1(irq) IOAPIC_ROUTING_ENTRY(irq)
+ 
+-#ifdef CONFIG_X86
+-#  define PIC_ROUTING_ENTRY(irq) \
++#define PIC_ROUTING_ENTRY(irq) \
+ 	{ .gsi = irq, .type = KVM_IRQ_ROUTING_IRQCHIP,	\
+ 	  .u.irqchip = { .irqchip = SELECT_PIC(irq), .pin = (irq) % 8 } }
+-#  define ROUTING_ENTRY2(irq) \
++#define ROUTING_ENTRY2(irq) \
+ 	IOAPIC_ROUTING_ENTRY(irq), PIC_ROUTING_ENTRY(irq)
+-#else
+-#  define ROUTING_ENTRY2(irq) \
+-	IOAPIC_ROUTING_ENTRY(irq)
+-#endif
+ 
+ static const struct kvm_irq_routing_entry default_routing[] = {
+ 	ROUTING_ENTRY2(0), ROUTING_ENTRY2(1),
+@@ -346,20 +323,6 @@ static const struct kvm_irq_routing_entry default_routing[] = {
+ 	ROUTING_ENTRY1(18), ROUTING_ENTRY1(19),
+ 	ROUTING_ENTRY1(20), ROUTING_ENTRY1(21),
+ 	ROUTING_ENTRY1(22), ROUTING_ENTRY1(23),
+-#ifdef CONFIG_IA64
+-	ROUTING_ENTRY1(24), ROUTING_ENTRY1(25),
+-	ROUTING_ENTRY1(26), ROUTING_ENTRY1(27),
+-	ROUTING_ENTRY1(28), ROUTING_ENTRY1(29),
+-	ROUTING_ENTRY1(30), ROUTING_ENTRY1(31),
+-	ROUTING_ENTRY1(32), ROUTING_ENTRY1(33),
+-	ROUTING_ENTRY1(34), ROUTING_ENTRY1(35),
+-	ROUTING_ENTRY1(36), ROUTING_ENTRY1(37),
+-	ROUTING_ENTRY1(38), ROUTING_ENTRY1(39),
+-	ROUTING_ENTRY1(40), ROUTING_ENTRY1(41),
+-	ROUTING_ENTRY1(42), ROUTING_ENTRY1(43),
+-	ROUTING_ENTRY1(44), ROUTING_ENTRY1(45),
+-	ROUTING_ENTRY1(46), ROUTING_ENTRY1(47),
+-#endif
  };
  
- struct zs_pool {
--	struct size_class *size_class[ZS_SIZE_CLASSES];
-+	struct size_class **size_class;
-+	int nr_size_classes;
- 
- 	gfp_t flags;	/* allocation flags used when growing pool */
- 	atomic_long_t pages_allocated;
-@@ -956,17 +955,28 @@ struct zs_pool *zs_create_pool(gfp_t flags)
- {
- 	int i, ovhd_size;
- 	struct zs_pool *pool;
-+	int nr;
- 
- 	ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
- 	pool = kzalloc(ovhd_size, GFP_KERNEL);
- 	if (!pool)
- 		return NULL;
- 
-+	nr = (ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / ZS_SIZE_CLASS_DELTA + 1;
-+	if ((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) % ZS_SIZE_CLASS_DELTA)
-+		nr += 1;
-+
-+	pool->size_class = kcalloc(nr, sizeof(struct size_class *),
-+			GFP_KERNEL);
-+	if (!pool->size_class)
-+		goto err;
-+	pool->nr_size_classes = nr;
-+
- 	/*
- 	 * Iterate reversly, because, size of size_class that we want to use
- 	 * for merging should be larger or equal to current size.
- 	 */
--	for (i = ZS_SIZE_CLASSES - 1; i >= 0; i--) {
-+	for (i = pool->nr_size_classes - 1; i >= 0; i--) {
- 		int size;
- 		int pages_per_zspage;
- 		struct size_class *class;
-@@ -1020,7 +1030,7 @@ void zs_destroy_pool(struct zs_pool *pool)
- {
- 	int i;
- 
--	for (i = 0; i < ZS_SIZE_CLASSES; i++) {
-+	for (i = 0; i < pool->nr_size_classes; i++) {
- 		int fg;
- 		struct size_class *class = pool->size_class[i];
- 
-@@ -1038,6 +1048,8 @@ void zs_destroy_pool(struct zs_pool *pool)
- 		}
- 		kfree(class);
- 	}
-+
-+	kfree(pool->size_class);
- 	kfree(pool);
- }
- EXPORT_SYMBOL_GPL(zs_destroy_pool);
+ int kvm_setup_default_irq_routing(struct kvm *kvm)
 -- 
-1.7.9.5
+2.1.0
 
