@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359AbaKUBnL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 20:43:11 -0500
-Received: from smtprelay0031.hostedemail.com ([216.40.44.31]:45635 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756702AbaKUBnJ (ORCPT
+	id S1757438AbaKUBqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 20:46:15 -0500
+Received: from www.linutronix.de ([62.245.132.108]:54144 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756487AbaKUBqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 20:43:09 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:966:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2559:2562:2828:2914:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:4321:4385:5007:6261:7903:10004:10400:10848:11026:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: join19_1b3fc2d46292d
-X-Filterd-Recvd-Size: 1797
-Message-ID: <1416534185.6651.30.camel@perches.com>
-Subject: Re: [PATCH 1/8] of: Use vargs in __of_node_alloc
-From: Joe Perches <joe@perches.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Rob Herring <robh+dt@kernel.org>
-Date: Thu, 20 Nov 2014 17:43:05 -0800
-In-Reply-To: <1416533715-9758-2-git-send-email-grant.likely@linaro.org>
-References: <1416533715-9758-1-git-send-email-grant.likely@linaro.org>
-	 <1416533715-9758-2-git-send-email-grant.likely@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Nov 2014 20:46:14 -0500
+Date: Fri, 21 Nov 2014 02:46:06 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yijing Wang <wangyijing@huawei.com>
+cc: Marc Zyngier <marc.zyngier@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-pci@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
+In-Reply-To: <546E93DC.8010902@huawei.com>
+Message-ID: <alpine.DEB.2.11.1411210233250.6439@nanos>
+References: <546E1771.4030201@arm.com> <546E93DC.8010902@huawei.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-21 at 01:35 +0000, Grant Likely wrote:
-> The overlay code needs to construct a new full_name from the parent name
-> and the node name, but the current method has to allocate and then free
-> an temporary string which is wasteful. Fix this problem by using vargs
-> to pass in a format and arguments into __of_node_alloc().
-[]
-> diff --git a/drivers/of/of_private.h b/drivers/of/of_private.h
-[]
-> @@ -61,7 +61,7 @@ static inline int of_property_notify(int action, struct device_node *np,
->   * own the devtree lock or work on detached trees only.
->   */
->  struct property *__of_prop_dup(const struct property *prop, gfp_t allocflags);
-> -struct device_node *__of_node_alloc(const char *full_name, gfp_t allocflags);
+On Fri, 21 Nov 2014, Yijing Wang wrote:
+> On 2014/11/21 0:31, Marc Zyngier wrote:
+> > Bjorn, Yijing,
+> > 
+> > I've just realized that patch c167caf8d174 (PCI/MSI: Remove useless
+> > bus->msi assignment) completely breaks MSI on arm64 when using the new
+> > MSI stacked domain:
+> 
+> Sorry, this is my first part to refactor MSI related code, now how
+> to get pci msi_controller depends arch
+> functions(pcibios_msi_controller() or arch_setup_msi_irq()), we are
+> working on generic pci_host_bridge, after that, we could eventually
+> eliminate MSI arch functions and find pci dev 's msi controller by
+> pci_host_bridge->get_msi_controller().
 
-Please add
+The main question is why you think that pci_host_bridge is the proper
+place to store that information.
 
-__printf(1, 2)
-> +struct device_node *__of_node_alloc(const char *fmt, ...);
+On x86 we have DMAR units associated to a single device. Each DMAR
+unit is a seperate MSI irq domain. 
 
+Can you guarantee that the pci_host_bridge is the right point to
+provide the association of the device to the irq domain?
 
+So the real question is:
+
+   What is the association level requirement to properly identify the
+   irqdomain for a specific device on any given architecture with and
+   without IOMMU, interrupt redirection etc.
+
+To be honest: I don't know.
+
+My gut feeling tells me that it's at the device level, but I really
+leave that decision to the experts in that field.
+
+Thanks,
+
+	tglx
