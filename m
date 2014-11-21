@@ -1,113 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329AbaKUSkZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:40:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750755AbaKUSkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:40:24 -0500
-From: Josh Stone <jistone@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Josh Stone <jistone@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel@daenzer.net>
-Subject: [PATCH RESEND] Kbuild: Add an option to enable GCC VTA
-Date: Fri, 21 Nov 2014 10:40:00 -0800
-Message-Id: <1416595200-22359-1-git-send-email-jistone@redhat.com>
+	id S1751842AbaKUSkb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:40:31 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:34730 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755AbaKUSk3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 13:40:29 -0500
+Message-ID: <546F8711.70503@collabora.co.uk>
+Date: Fri, 21 Nov 2014 19:40:17 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Bill Richardson <wfrichar@chromium.org>
+CC: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] mfd: cros_ec: Create sysfs attributes for the ChromeOS
+ EC.
+References: <1416238213-15263-1-git-send-email-javier.martinez@collabora.co.uk> <1416238213-15263-3-git-send-email-javier.martinez@collabora.co.uk> <20141118142645.GD24004@x1> <546DD783.2030902@collabora.co.uk> <CAEgFhe+DQrJ6HqGF1_OWZ77Qs-hZLNgX1bHpx5FOt-y-3xh8gA@mail.gmail.com>
+In-Reply-To: <CAEgFhe+DQrJ6HqGF1_OWZ77Qs-hZLNgX1bHpx5FOt-y-3xh8gA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to recent codegen issues, gcc -fvar-tracking-assignments was
-unconditionally disabled in commit 2062afb4f804a ("Fix gcc-4.9.0
-miscompilation of load_balance() in scheduler").  However, this reduces
-the debuginfo coverage for variable locations, especially in inline
-functions.  VTA is certainly not perfect either in those cases, but it
-is much better than without.  With compiler versions that have fixed the
-codegen bugs, we would prefer to have the better details for SystemTap,
-and surely other debuginfo consumers like perf will benefit as well.
+Hello Bill,
 
-This patch simply makes CONFIG_DEBUG_INFO_VTA an option.  I considered
-Frank and Linus's discussion of a cc-option-like -fcompare-debug test,
-but I'm convinced that a narrow test of an arch-specific codegen issue
-is not really useful.  GCC has their own regression tests for this, so
-I'd suggest GCC_COMPARE_DEBUG=-fvar-tracking-assignments-toggle is more
-useful for kernel developers to test confidence.
+On 11/20/2014 07:16 PM, Bill Richardson wrote:
+>>
+>> I don't really know why there are two interfaces for this but I guess
+>> that different user-space utilities use one or another. Maybe the
+>> ChromiumOS folks can comment on this.
+> 
+> The /dev/cros_ec interface responds to ioctls and is the primary means
+> by which userspace applications talk to the EC (replacing three really
+> awkward bus-specific libraries). It emits a simplified version string
+> when read so that humans can tell if the EC is alive and speaking the
+> same protocol that the userspace app expects.
+> 
+> The /sys/class/chromeos/cros_ec/* tree was originally envisioned as a
+> way to provide additional human-readable interfaces to a subset of the
+> EC commands, but except for the lightbar it's not often used. The
+> version component here shows all the version-related info that the EC
+> can provide.
+> 
 
-In fact, I ran into a couple more issues when testing for this patch[1],
-although neither of those had any codegen impact.
- [1] https://bugzilla.redhat.com/show_bug.cgi?id=1140872
+Got it, thanks a lot for the explanation.
 
-With gcc-4.9.2-1.fc22, I can now build v3.18-rc5 with Fedora's i686 and
-x86_64 configs, and this is completely clean with GCC_COMPARE_DEBUG.
+Best regards,
+Javier
 
-Cc: Frank Ch. Eigler <fche@redhat.com>
-Cc: Jakub Jelinek <jakub@redhat.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Michel Dänzer <michel@daenzer.net>
-Signed-off-by: Josh Stone <jistone@redhat.com>
----
- Makefile          |  4 ++++
- lib/Kconfig.debug | 18 +++++++++++++++++-
- 2 files changed, 21 insertions(+), 1 deletion(-)
-
-diff --git a/Makefile b/Makefile
-index 00d618bbe8e7..a289efbe7e28 100644
---- a/Makefile
-+++ b/Makefile
-@@ -704,7 +704,11 @@ KBUILD_CFLAGS	+= -fomit-frame-pointer
- endif
- endif
- 
-+ifdef CONFIG_DEBUG_INFO_VTA
-+KBUILD_CFLAGS   += $(call cc-option, -fvar-tracking-assignments)
-+else
- KBUILD_CFLAGS   += $(call cc-option, -fno-var-tracking-assignments)
-+endif
- 
- ifdef CONFIG_DEBUG_INFO
- ifdef CONFIG_DEBUG_INFO_SPLIT
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 4e35a5d767ed..27410417de1d 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -165,7 +165,23 @@ config DEBUG_INFO_DWARF4
- 	  Generate dwarf4 debug info. This requires recent versions
- 	  of gcc and gdb. It makes the debug information larger.
- 	  But it significantly improves the success of resolving
--	  variables in gdb on optimized code.
-+	  variables in gdb on optimized code.  The gcc docs also
-+	  recommend enabling -fvar-tracking-assignments for maximum
-+	  benefit. (see DEBUG_INFO_VTA)
-+
-+config DEBUG_INFO_VTA
-+	bool "Enable var-tracking-assignments for debuginfo"
-+	depends on DEBUG_INFO
-+	help
-+	  Enable gcc -fvar-tracking-assignments for improved debug
-+	  information on variable locations in optimized code.  Per
-+	  gcc, DEBUG_INFO_DWARF4 is recommended for best use of VTA.
-+
-+	  VTA has been implicated in codegen bugs (gcc PR61801,
-+	  PR61904), so this may deserve some caution.  One can set
-+	  GCC_COMPARE_DEBUG=-fvar-tracking-assignments-toggle in the
-+	  environment to automatically compile everything both ways,
-+	  generating an error if anything differs.
- 
- config ENABLE_WARN_DEPRECATED
- 	bool "Enable __deprecated logic"
--- 
-2.1.0
 
