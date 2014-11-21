@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758716AbaKUN6A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 08:58:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53704 "EHLO mx2.suse.de"
+	id S1758749AbaKUN6I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 08:58:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53745 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758591AbaKUN54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 08:57:56 -0500
+	id S1758591AbaKUN6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 08:58:02 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
         LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>
@@ -18,9 +18,9 @@ Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
         Paul Mackerras <paulus@samba.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 04/10] ppc64: Add paranoid warnings for unexpected DSISR_PROTFAULT
-Date: Fri, 21 Nov 2014 13:57:42 +0000
-Message-Id: <1416578268-19597-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 07/10] mm: numa: Do not trap faults on the huge zero page
+Date: Fri, 21 Nov 2014 13:57:45 +0000
+Message-Id: <1416578268-19597-8-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1416578268-19597-1-git-send-email-mgorman@suse.de>
 References: <1416578268-19597-1-git-send-email-mgorman@suse.de>
@@ -28,83 +28,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ppc64 should not be depending on DSISR_PROTFAULT and it's unexpected
-if they are triggered. This patch adds warnings just in case they
-are being accidentally depended upon.
+Faults on the huge zero page are pointless and there is a BUG_ON
+to catch them during fault time. This patch reintroduces a check
+that avoids marking the zero page PAGE_NONE.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- arch/powerpc/mm/copro_fault.c |  8 ++++++--
- arch/powerpc/mm/fault.c       | 20 +++++++++-----------
- 2 files changed, 15 insertions(+), 13 deletions(-)
+ include/linux/huge_mm.h |  3 ++-
+ mm/huge_memory.c        | 13 ++++++++++++-
+ mm/memory.c             |  1 -
+ mm/mprotect.c           | 15 ++++++++++++++-
+ 4 files changed, 28 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
-index 5a236f0..0450d68 100644
---- a/arch/powerpc/mm/copro_fault.c
-+++ b/arch/powerpc/mm/copro_fault.c
-@@ -64,10 +64,14 @@ int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
- 		if (!(vma->vm_flags & VM_WRITE))
- 			goto out_unlock;
- 	} else {
--		if (dsisr & DSISR_PROTFAULT)
--			goto out_unlock;
- 		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
- 			goto out_unlock;
-+		/*
-+		 * protfault should only happen due to us
-+		 * mapping a region readonly temporarily. PROT_NONE
-+		 * is also covered by the VMA check above.
-+		 */
-+		WARN_ON_ONCE(dsisr & DSISR_PROTFAULT);
- 	}
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 554bbe3..ad9051b 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -31,7 +31,8 @@ extern int move_huge_pmd(struct vm_area_struct *vma,
+ 			 unsigned long new_addr, unsigned long old_end,
+ 			 pmd_t *old_pmd, pmd_t *new_pmd);
+ extern int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+-			unsigned long addr, pgprot_t newprot);
++			unsigned long addr, pgprot_t newprot,
++			int prot_numa);
  
- 	ret = 0;
-diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
-index b434153..1bcd378 100644
---- a/arch/powerpc/mm/fault.c
-+++ b/arch/powerpc/mm/fault.c
-@@ -389,17 +389,6 @@ good_area:
- #endif /* CONFIG_8xx */
+ enum transparent_hugepage_flag {
+ 	TRANSPARENT_HUGEPAGE_FLAG,
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 5618e22..ad2a3ee 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1502,7 +1502,7 @@ out:
+  *  - HPAGE_PMD_NR is protections changed and TLB flush necessary
+  */
+ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+-		unsigned long addr, pgprot_t newprot)
++		unsigned long addr, pgprot_t newprot, int prot_numa)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	spinlock_t *ptl;
+@@ -1510,6 +1510,17 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
  
- 	if (is_exec) {
--#ifdef CONFIG_PPC_STD_MMU
--		/* Protection fault on exec go straight to failure on
--		 * Hash based MMUs as they either don't support per-page
--		 * execute permission, or if they do, it's handled already
--		 * at the hash level. This test would probably have to
--		 * be removed if we change the way this works to make hash
--		 * processors use the same I/D cache coherency mechanism
--		 * as embedded.
--		 */
--#endif /* CONFIG_PPC_STD_MMU */
--
- 		/*
- 		 * Allow execution from readable areas if the MMU does not
- 		 * provide separate controls over reading and executing.
-@@ -414,6 +403,14 @@ good_area:
- 		    (cpu_has_feature(CPU_FTR_NOEXECUTE) ||
- 		     !(vma->vm_flags & (VM_READ | VM_WRITE))))
- 			goto bad_area;
-+#ifdef CONFIG_PPC_STD_MMU
+ 	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		pmd_t entry;
++
 +		/*
-+		 * protfault should only happen due to us
-+		 * mapping a region readonly temporarily. PROT_NONE
-+		 * is also covered by the VMA check above.
++		 * Avoid trapping faults against the zero page. The read-only
++		 * data is likely to be read-cached on the local CPU and
++		 * local/remote hits to the zero page are not interesting.
 +		 */
-+		WARN_ON_ONCE(error_code & DSISR_PROTFAULT);
-+#endif /* CONFIG_PPC_STD_MMU */
- 	/* a write */
- 	} else if (is_write) {
- 		if (!(vma->vm_flags & VM_WRITE))
-@@ -423,6 +420,7 @@ good_area:
- 	} else {
- 		if (!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)))
- 			goto bad_area;
-+		WARN_ON_ONCE(error_code & DSISR_PROTFAULT);
++		if (prot_numa && is_huge_zero_pmd(*pmd)) {
++			spin_unlock(ptl);
++			return 0;
++		}
++
+ 		ret = 1;
+ 		entry = pmdp_get_and_clear_notify(mm, addr, pmd);
+ 		entry = pmd_modify(entry, newprot);
+diff --git a/mm/memory.c b/mm/memory.c
+index 2100e0f..2ec07a9 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3136,7 +3136,6 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		pte_unmap_unlock(ptep, ptl);
+ 		return 0;
  	}
+-	BUG_ON(is_zero_pfn(page_to_pfn(page)));
  
  	/*
+ 	 * Avoid grouping on DSO/COW pages in specific and RO pages
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index dc65c0f..33dfafb 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -75,6 +75,19 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 		oldpte = *pte;
+ 		if (pte_present(oldpte)) {
+ 			pte_t ptent;
++
++			/*
++			 * Avoid trapping faults against the zero or KSM
++			 * pages. See similar comment in change_huge_pmd.
++			 */
++			if (prot_numa) {
++				struct page *page;
++
++				page = vm_normal_page(vma, addr, oldpte);
++				if (!page || PageKsm(page))
++					continue;
++			}
++
+ 			ptent = ptep_modify_prot_start(mm, addr, pte);
+ 			ptent = pte_modify(ptent, newprot);
+ 
+@@ -141,7 +154,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 				split_huge_page_pmd(vma, addr, pmd);
+ 			else {
+ 				int nr_ptes = change_huge_pmd(vma, pmd, addr,
+-						newprot);
++						newprot, prot_numa);
+ 
+ 				if (nr_ptes) {
+ 					if (nr_ptes == HPAGE_PMD_NR) {
 -- 
 2.1.2
 
