@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758118AbaKUC3u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 21:29:50 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:33501 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757877AbaKUC3r (ORCPT
+	id S1758142AbaKUC34 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 21:29:56 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:36929 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757877AbaKUC3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 21:29:47 -0500
-Subject: [PATCH ftrace/core v6 4/5] kprobes: Set IPMODIFY flag only if the
- probe can change regs->ip
+	Thu, 20 Nov 2014 21:29:53 -0500
+Subject: [PATCH ftrace/core v6 5/5] kselftest,
+ ftrace: Add ftrace IPMODIFY flag test
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -17,8 +17,8 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
         Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
         Ingo Molnar <mingo@kernel.org>
-Date: Fri, 21 Nov 2014 05:25:30 -0500
-Message-ID: <20141121102530.11844.41626.stgit@localhost.localdomain>
+Date: Fri, 21 Nov 2014 05:25:37 -0500
+Message-ID: <20141121102537.11844.9781.stgit@localhost.localdomain>
 In-Reply-To: <20141121102502.11844.82696.stgit@localhost.localdomain>
 References: <20141121102502.11844.82696.stgit@localhost.localdomain>
 User-Agent: StGit/0.17-dirty
@@ -29,247 +29,261 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set FTRACE_OPS_FL_IPMODIFY flag only for the probes which can change
-regs->ip, which has kprobe->break_handler.
-Currently we can not put jprobe and another ftrace handler which
-changes regs->ip on the same function because all kprobes have
-FTRACE_OPS_FL_IPMODIFY flag. This removes FTRACE_OPS_FL_IPMODIFY
-flag from kprobes and only when the user uses jprobe (or the
-kprobe.break_handler != NULL) we add additinal ftrace_ops with
-FTRACE_OPS_FL_IPMODIFY on target function.
-
-Note about the implementation: This uses a dummy ftrace_ops to
-reserve IPMODIFY flag on the given ftrace address, for the case
-that we have a enabled kprobe on a function entry and a jprobe
-is added on the same point. In that case, we already have a
-ftrace_ops without IPMODIFY flag on the entry, and we have to
-add another ftrace_ops with IPMODIFY on the same address.
-If we put a same handler on both ftrace_ops, the handler can
-be called twice on that entry until the first one is removed.
-This means that the kprobe and the jprobe are called twice too,
-and that will not what kprobes expected.
-Thus I added a dummy ftrace_ops just for reserving IPMODIFY flag.
+Add ftrace IPMODIFY flag test to selftest/ftrace. The
+test checks simple ftrace handler insertion and
+combinations of ftrace, kprobe, and jprobe.
+This test requires kernel build tree to build a test
+kernel module and root privilege to run.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
----
-Changes in v4:
- - Increment refcounter after succeeded to register ftrace_ops.
 
-Changes in v3:
- - Update __ftrace_add/remove_filter_ip() according to
-   Namhyng's comments (thanks!)
- - Split out regs->ip recovering code from this patch.
 ---
- Documentation/kprobes.txt |   12 ++--
- kernel/kprobes.c          |  125 +++++++++++++++++++++++++++++++++++++++------
- 2 files changed, 114 insertions(+), 23 deletions(-)
+Changes in v6:
+ - Fix macros to avoid errors by checkpatch.pl.
 
-diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
-index 4227ec2..eb03efc 100644
---- a/Documentation/kprobes.txt
-+++ b/Documentation/kprobes.txt
-@@ -264,15 +264,13 @@ stop-machine method that ksplice uses for supporting a CONFIG_PREEMPT=y
- kernel.
+Changes in v5:
+ - Add this test to kselftest.
+---
+ tools/testing/selftests/ftrace/Makefile            |   11 +
+ tools/testing/selftests/ftrace/ipmodify/Makefile   |   15 ++
+ tools/testing/selftests/ftrace/ipmodify/ipmodify.c |  170 ++++++++++++++++++++
+ .../selftests/ftrace/ipmodify/run_ipmodify.sh      |    6 +
+ 4 files changed, 202 insertions(+)
+ create mode 100644 tools/testing/selftests/ftrace/ipmodify/Makefile
+ create mode 100644 tools/testing/selftests/ftrace/ipmodify/ipmodify.c
+ create mode 100644 tools/testing/selftests/ftrace/ipmodify/run_ipmodify.sh
+
+diff --git a/tools/testing/selftests/ftrace/Makefile b/tools/testing/selftests/ftrace/Makefile
+index 76cc9f1..69f0b1a 100644
+--- a/tools/testing/selftests/ftrace/Makefile
++++ b/tools/testing/selftests/ftrace/Makefile
+@@ -1,7 +1,18 @@
++TARGETS += ipmodify
++
+ all:
++	for TARGET in $(TARGETS); do \
++		make -C $$TARGET; \
++	done;
  
- NOTE for geeks:
--The jump optimization changes the kprobe's pre_handler behavior.
--Without optimization, the pre_handler can change the kernel's execution
-+The jump optimization (and ftrace-based kprobes) changes the kprobe's
-+pre_handler behavior.
-+Without optimizations, the pre_handler can change the kernel's execution
- path by changing regs->ip and returning 1.  However, when the probe
- is optimized, that modification is ignored.  Thus, if you want to
--tweak the kernel's execution path, you need to suppress optimization,
--using one of the following techniques:
--- Specify an empty function for the kprobe's post_handler or break_handler.
-- or
--- Execute 'sysctl -w debug.kprobes_optimization=n'
-+tweak the kernel's execution path, you need to suppress optimization or
-+notify your handler will modify regs->ip by setting p->break_handler.
+ run_tests:
+ 	@/bin/sh ./ftracetest || echo "ftrace selftests: [FAIL]"
++	for TARGET in $(TARGETS); do \
++		make -C $$TARGET run_tests; \
++	done;
  
- 1.5 Blacklist
- 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 831978c..4b4b7c5 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -915,10 +915,93 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
- #ifdef CONFIG_KPROBES_ON_FTRACE
- static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
- 	.func = kprobe_ftrace_handler,
--	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
-+	.flags = FTRACE_OPS_FL_SAVE_REGS,
- };
- static int kprobe_ftrace_enabled;
- 
-+static void kprobe_ftrace_stub(unsigned long a0, unsigned long a1,
-+			struct ftrace_ops *op, struct pt_regs *regs)
+ clean:
+ 	rm -rf logs/*
++	for TARGET in $(TARGETS); do \
++		make -C $$TARGET clean; \
++	done;
+diff --git a/tools/testing/selftests/ftrace/ipmodify/Makefile b/tools/testing/selftests/ftrace/ipmodify/Makefile
+new file mode 100644
+index 0000000..416e9a8
+--- /dev/null
++++ b/tools/testing/selftests/ftrace/ipmodify/Makefile
+@@ -0,0 +1,15 @@
++BUILDDIR = /lib/modules/$(shell uname -r)/build
++HERE = $(abspath ./)
++
++obj-m := ipmodify.o
++
++ipmodify.ko: ipmodify.c
++	$(MAKE) -C $(BUILDDIR) M=$(HERE) $@
++
++all: ipmodify.ko
++
++run_tests:
++	@/bin/sh ./run_ipmodify.sh || echo "ftrace ipmodify test: [FAIL]"
++
++clean:
++	$(RM) -Rf .*.o.cmd .*.ko.cmd .tmp_versions *.o *.ko *.mod.c modules.order Module.symvers
+diff --git a/tools/testing/selftests/ftrace/ipmodify/ipmodify.c b/tools/testing/selftests/ftrace/ipmodify/ipmodify.c
+new file mode 100644
+index 0000000..85213f8
+--- /dev/null
++++ b/tools/testing/selftests/ftrace/ipmodify/ipmodify.c
+@@ -0,0 +1,170 @@
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/ftrace.h>
++#include <linux/kprobes.h>
++
++/* Testing the IPMODIFY flag by using kprobe, jprobe, and ftrace handler */
++
++static __used int ipmodify_target_function(int a1, int a2, int a3)
 +{
-+	/* Do nothing. This is just a dummy handler */
++	return a1 + a2 + a3;
 +}
 +
-+/* This is only for checking conflict with other ftrace users */
-+static struct ftrace_ops kprobe_ipmod_ftrace_ops __read_mostly = {
-+	.func = kprobe_ftrace_stub,
-+	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
-+};
-+static int kprobe_ipmod_ftrace_enabled;
-+
-+static int __ftrace_add_filter_ip(struct ftrace_ops *ops, unsigned long ip,
-+				  int *ref)
++/* Kprobe pre handler (IPMODIFY bit is NOT set) */
++static int kprobe_test_handler(struct kprobe *kp, struct pt_regs *regs)
 +{
-+	int ret;
-+
-+	/* Try to set given ip to filter */
-+	ret = ftrace_set_filter_ip(ops, ip, 0, 0);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (*ref == 0) {
-+		ret = register_ftrace_function(ops);
-+		if (ret < 0) {
-+			/* Rollback the filter */
-+			ftrace_set_filter_ip(ops, ip, 1, 0);
-+			goto out;
-+		}
-+	}
-+	(*ref)++;
-+
-+out:
-+	return ret;
-+}
-+
-+static int __ftrace_remove_filter_ip(struct ftrace_ops *ops, unsigned long ip,
-+				     int *ref)
-+{
-+	int ret;
-+
-+	if (*ref == 1) {
-+		ret = unregister_ftrace_function(ops);
-+		if (ret < 0)
-+			return ret;
-+		/*Ignore failure, because it is already unregistered */
-+		ftrace_set_filter_ip(ops, ip, 1, 0);
-+	} else {
-+		/* Try to remove given ip to filter */
-+		ret = ftrace_set_filter_ip(ops, ip, 1, 0);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	(*ref)--;
-+
 +	return 0;
 +}
 +
-+static int try_reserve_ftrace_ipmodify(struct kprobe *p)
-+{
-+	if (!p->break_handler)
-+		return 0;
++static struct kprobe test_kp, __test_kp = {
++	.pre_handler = kprobe_test_handler,
++	.addr = (void *)ipmodify_target_function,
++};
 +
-+	return __ftrace_add_filter_ip(&kprobe_ipmod_ftrace_ops,
-+				      (unsigned long)p->addr,
-+				      &kprobe_ipmod_ftrace_enabled);
++/* Jprobe entry handler (IPMODIFY should be set) */
++static void jprobe_test_handler(int a1, int a2, int a3)
++{
++	jprobe_return();
 +}
 +
-+static void release_ftrace_ipmodify(struct kprobe *p)
++static struct jprobe test_jp, __test_jp = {
++	.entry = jprobe_test_handler,
++	.kp = {
++		.addr = (void *)ipmodify_target_function,
++	},
++};
++
++/* Ftrace handler (with IPMODIFY flag) */
++static void ftrace_ipmodify_handler(unsigned long a0, unsigned long a1,
++				struct ftrace_ops *op, struct pt_regs *regs)
++{
++}
++
++static struct ftrace_ops test_ops __read_mostly, __test_ops = {
++	.func = ftrace_ipmodify_handler,
++	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
++};
++
++static void cleanup_probes(void)
++{
++	unregister_kprobe(&test_kp);
++	unregister_jprobe(&test_jp);
++	if (test_ops.flags & FTRACE_OPS_FL_ENABLED)
++		unregister_ftrace_function(&test_ops);
++	test_kp = __test_kp;
++	test_jp = __test_jp;
++}
++
++
++
++/* We'll test various probes on a target function. */
++static int __init ipmodify_init(void)
 +{
 +	int ret;
 +
-+	if (p->break_handler) {
-+		ret = __ftrace_remove_filter_ip(&kprobe_ipmod_ftrace_ops,
-+						(unsigned long)p->addr,
-+						&kprobe_ipmod_ftrace_enabled);
-+		WARN(ret < 0, "Failed to release ftrace at %p (%d)\n",
-+		     p->addr, ret);
++	test_kp = __test_kp;
++	test_jp = __test_jp;
++	test_ops = __test_ops;
++
++	/* Setup ftrace filter */
++	ret = ftrace_set_filter_ip(&test_ops,
++				 (unsigned long)ipmodify_target_function, 0, 0);
++	if (ret < 0) {
++		ret = pr_err("IPMODIFY test: ftrace_set_filter_ip\t[FAILED]\n");
++		goto err;
 +	}
++
++	ret = -EINVAL;
++
++/* For the test case which should pass */
++#define EXP_OK(cond)							\
++	do {								\
++		if ((cond) < 0) {					\
++			pr_cont("[FAIL]\n\t" #cond " is failed\n");	\
++			goto err;					\
++		}							\
++	} while (0)
++/* For the test case which should fail */
++#define EXP_NG(cond)							\
++	do {								\
++		if ((cond) >= 0) {					\
++			pr_cont("[XPASS]\n\t" #cond " is unexpectedly passed\n");\
++			goto err;					\
++		}							\
++	} while (0)
++
++	/* Case 1 */
++	pr_info("IPMODIFY test: ipmodify only\t");
++	EXP_OK(register_ftrace_function(&test_ops));
++	ipmodify_target_function(1, 2, 3);
++	pr_cont("[PASS]\n");
++	cleanup_probes();
++
++	/* Case 2 */
++	pr_info("IPMODIFY test: kprobe->ipmodify\t");
++	EXP_OK(register_kprobe(&test_kp));
++	EXP_OK(register_ftrace_function(&test_ops));
++	ipmodify_target_function(2, 3, 4);
++	pr_cont("[PASS]\n");
++	cleanup_probes();
++
++	/* Case 3 */
++	pr_info("IPMODIFY test: jprobe->ipmodify(NG)\t");
++	EXP_OK(register_jprobe(&test_jp));
++	EXP_NG(register_ftrace_function(&test_ops));
++	ipmodify_target_function(3, 4, 5);
++	pr_cont("[PASS]\n");
++	cleanup_probes();
++
++	/* Case 4 */
++	pr_info("IPMODIFY test: ipmodify->kprobe\t");
++	EXP_OK(register_ftrace_function(&test_ops));
++	EXP_OK(register_kprobe(&test_kp));
++	ipmodify_target_function(4, 5, 6);
++	pr_cont("[PASS]\n");
++	cleanup_probes();
++
++	/* Case 5 */
++	pr_info("IPMODIFY test: ipmodify->jprobe(NG)\t");
++	EXP_OK(register_ftrace_function(&test_ops));
++	EXP_NG(register_jprobe(&test_jp));
++	ipmodify_target_function(5, 6, 7);
++	pr_cont("[PASS]\n");
++	cleanup_probes();
++
++	/* Case 6 */
++	pr_info("IPMODIFY test: kprobe->jprobe->ipmodify(NG)\t");
++	EXP_OK(register_kprobe(&test_kp));
++	EXP_OK(register_jprobe(&test_jp));
++	EXP_NG(register_ftrace_function(&test_ops));
++	ipmodify_target_function(6, 7, 8);
++	pr_cont("[PASS]\n");
++	cleanup_probes();
++
++	/* Case 7 */
++	pr_info("IPMODIFY test: kprobe->ipmodify->jprobe(NG)\t");
++	EXP_OK(register_kprobe(&test_kp));
++	EXP_OK(register_ftrace_function(&test_ops));
++	EXP_NG(register_jprobe(&test_jp));
++	ipmodify_target_function(7, 8, 9);
++	pr_cont("[PASS]\n");
++	cleanup_probes();
++
++	/* Case 8 */
++	pr_info("IPMODIFY test: setting notrace filter with ipmodify(NG)\t");
++	EXP_NG(ftrace_set_notrace(&test_ops, "do_fork", 0, 0));
++	pr_cont("[PASS]\n");
++
++	return 0;
++err:
++	cleanup_probes();
++	return ret;
 +}
 +
- /* Must ensure p->addr is really on ftrace */
- static int prepare_kprobe(struct kprobe *p)
- {
-@@ -933,14 +1016,10 @@ static void arm_kprobe_ftrace(struct kprobe *p)
- {
- 	int ret;
- 
--	ret = ftrace_set_filter_ip(&kprobe_ftrace_ops,
--				   (unsigned long)p->addr, 0, 0);
-+	ret = __ftrace_add_filter_ip(&kprobe_ftrace_ops,
-+				     (unsigned long)p->addr,
-+				     &kprobe_ftrace_enabled);
- 	WARN(ret < 0, "Failed to arm kprobe-ftrace at %p (%d)\n", p->addr, ret);
--	kprobe_ftrace_enabled++;
--	if (kprobe_ftrace_enabled == 1) {
--		ret = register_ftrace_function(&kprobe_ftrace_ops);
--		WARN(ret < 0, "Failed to init kprobe-ftrace (%d)\n", ret);
--	}
- }
- 
- /* Caller must lock kprobe_mutex */
-@@ -948,17 +1027,16 @@ static void disarm_kprobe_ftrace(struct kprobe *p)
- {
- 	int ret;
- 
--	kprobe_ftrace_enabled--;
--	if (kprobe_ftrace_enabled == 0) {
--		ret = unregister_ftrace_function(&kprobe_ftrace_ops);
--		WARN(ret < 0, "Failed to init kprobe-ftrace (%d)\n", ret);
--	}
--	ret = ftrace_set_filter_ip(&kprobe_ftrace_ops,
--			   (unsigned long)p->addr, 1, 0);
--	WARN(ret < 0, "Failed to disarm kprobe-ftrace at %p (%d)\n", p->addr, ret);
-+	ret = __ftrace_remove_filter_ip(&kprobe_ftrace_ops,
-+					(unsigned long)p->addr,
-+					&kprobe_ftrace_enabled);
-+	WARN(ret < 0, "Failed to disarm kprobe-ftrace at %p (%d)\n",
-+	     p->addr, ret);
- }
- #else	/* !CONFIG_KPROBES_ON_FTRACE */
- #define prepare_kprobe(p)	arch_prepare_kprobe(p)
-+#define try_reserve_ftrace_ipmodify(p)	(0)
-+#define release_ftrace_ipmodify(p)	do {} while (0)
- #define arm_kprobe_ftrace(p)	do {} while (0)
- #define disarm_kprobe_ftrace(p)	do {} while (0)
- #endif
-@@ -1502,6 +1580,14 @@ int register_kprobe(struct kprobe *p)
- 	mutex_lock(&kprobe_mutex);
- 
- 	old_p = get_kprobe(p->addr);
++void ipmodify_exit(void)
++{
++}
 +
-+	/* Try to reserve ftrace ipmodify if needed */
-+	if (kprobe_ftrace(p) && (!old_p || !old_p->break_handler)) {
-+		ret = try_reserve_ftrace_ipmodify(p);
-+		if (ret < 0)
-+			goto out_noreserve;
-+	}
++module_init(ipmodify_init)
++module_exit(ipmodify_exit)
++MODULE_LICENSE("GPL");
+diff --git a/tools/testing/selftests/ftrace/ipmodify/run_ipmodify.sh b/tools/testing/selftests/ftrace/ipmodify/run_ipmodify.sh
+new file mode 100644
+index 0000000..4878d9d
+--- /dev/null
++++ b/tools/testing/selftests/ftrace/ipmodify/run_ipmodify.sh
+@@ -0,0 +1,6 @@
++#!/bin/sh
++set -e
++insmod ipmodify.ko
++rmmod ipmodify.ko
++dmesg | tail -n 8
 +
- 	if (old_p) {
- 		/* Since this may unoptimize old_p, locking text_mutex. */
- 		ret = register_aggr_kprobe(old_p, p);
-@@ -1525,6 +1611,9 @@ int register_kprobe(struct kprobe *p)
- 	try_to_optimize_kprobe(p);
- 
- out:
-+	if (ret < 0 && kprobe_ftrace(p))
-+		release_ftrace_ipmodify(p);
-+out_noreserve:
- 	mutex_unlock(&kprobe_mutex);
- 
- 	if (probed_mod)
-@@ -1639,6 +1728,10 @@ static void __unregister_kprobe_bottom(struct kprobe *p)
- {
- 	struct kprobe *ap;
- 
-+	/* Release reserved ftrace ipmodify if needed */
-+	if (kprobe_ftrace(p))
-+		release_ftrace_ipmodify(p);
-+
- 	if (list_empty(&p->list))
- 		/* This is an independent kprobe */
- 		arch_remove_kprobe(p);
 
 
