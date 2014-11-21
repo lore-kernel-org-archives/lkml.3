@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758602AbaKUPUi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:20:38 -0500
-Received: from mout.web.de ([212.227.17.11]:55064 "EHLO mout.web.de"
+	id S1758628AbaKUPVn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:21:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39108 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755332AbaKUPUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:20:36 -0500
-Message-ID: <546F5831.5060404@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 16:20:17 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755396AbaKUPVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:21:41 -0500
+Date: Fri, 21 Nov 2014 09:21:03 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Seth Jennings <sjenning@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
+Message-ID: <20141121152103.GB26264@treble.redhat.com>
+References: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
+ <1416522580-5593-3-git-send-email-sjenning@redhat.com>
+ <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] USB: serial: Deletion of an unnecessary check before
- the function call "release_firmware"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:NoYUrc9obLrF+r3Vz9gmGl6RKO8ValdHBW9fMruEX9D5LEuxr4t
- gIcrZbvlLRhuEt5KTD8EY0MIG0Ll7og5t5vj/jpWHXRdpCNd7QCb/FKunYOLQnh5BYLxb2O
- 2vwl3TvLVkMdTxPheJhR5HYsQoGIArmRHdiDgr32jps1g7vThPq2o4BrGFsDWER+jSlemyi
- myUl3GmtLQiSOlm4ZPf3Q==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1411210102280.23174@pobox.suse.cz>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 16:15:34 +0100
+On Fri, Nov 21, 2014 at 01:22:33AM +0100, Jiri Kosina wrote:
+> On Thu, 20 Nov 2014, Seth Jennings wrote:
+> > --- /dev/null
+> > +++ b/kernel/livepatch/Kconfig
+> > @@ -0,0 +1,18 @@
+> > +config ARCH_HAVE_LIVE_PATCHING
+> > +	boolean
+> > +	help
+> > +	  Arch supports kernel live patching
+> > +
+> > +config LIVE_PATCHING
+> > +	boolean "Kernel Live Patching"
+> > +	depends on DYNAMIC_FTRACE_WITH_REGS
+> > +	depends on MODULES
+> > +	depends on SYSFS
+> > +	depends on KALLSYMS_ALL
+> > +	depends on ARCH_HAVE_LIVE_PATCHING
+> 
+> We have to refuse to build on x86_64 if the compiler doesn't support 
+> fentry. mcount is not really usable (well, it would be possible to use it, 
+> be the obstacles are too big to care).
+> 
+> Something like [1] should be applicable here as well I believe.
+> 
+> [1] https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/commit/?h=kgraft&id=bd4bc097c72937d18036f1312a4d79ed0bea9991
 
-The release_firmware() function tests whether its argument is NULL
-and then returns immediately. Thus the test around the call is not needed.
+I think we can use "depends on HAVE_FENTRY" to accomplish this, since
+CC_USING_FENTRY gets set by the top level kernel Makefile if
+CONFIG_HAVE_FENTRY is set.
 
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/usb/serial/mxuport.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/usb/serial/mxuport.c b/drivers/usb/serial/mxuport.c
-index ab1d690..3653ec1 100644
---- a/drivers/usb/serial/mxuport.c
-+++ b/drivers/usb/serial/mxuport.c
-@@ -1101,8 +1101,7 @@ static int mxuport_probe(struct usb_serial *serial,
- 	 */
- 	usb_set_serial_data(serial, (void *)id->driver_info);
- out:
--	if (fw_p)
--		release_firmware(fw_p);
-+	release_firmware(fw_p);
- 	return err;
- }
- 
 -- 
-2.1.3
-
+Josh
