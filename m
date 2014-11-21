@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758503AbaKUJhi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 04:37:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43228 "EHLO mx1.redhat.com"
+	id S1758199AbaKUJbv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 04:31:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46933 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758226AbaKUJcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 04:32:00 -0500
+	id S1758146AbaKUJbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 04:31:48 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -17,18 +17,18 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 04/11] perf stat: Use perf_evsel__read_cb in read_counter
-Date: Fri, 21 Nov 2014 10:31:08 +0100
-Message-Id: <1416562275-12404-5-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 01/11] perf tools: Introduce perf_evsel__compute_deltas function
+Date: Fri, 21 Nov 2014 10:31:05 +0100
+Message-Id: <1416562275-12404-2-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1416562275-12404-1-git-send-email-jolsa@kernel.org>
 References: <1416562275-12404-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replacing __perf_evsel__read_on_cpu function with perf_evsel__read_cb
-function. The read_cb callback will be used later for global aggregation
-counter values as well.
+Making compute_deltas functions global and renaming it
+to perf_evsel__compute_deltas. It will be used in stat
+command in later patch.
 
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -43,58 +43,58 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/builtin-stat.c | 27 +++++++++++++++++++++------
- 1 file changed, 21 insertions(+), 6 deletions(-)
+ tools/perf/util/evsel.c | 9 ++++-----
+ tools/perf/util/evsel.h | 3 +++
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 055ce9232c9e..9cc0db1d7f06 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -388,6 +388,26 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
- 		update_stats(&runtime_itlb_cache_stats[0], count[0]);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index f2dc91fb87fa..1c73bc4d57d3 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -876,9 +876,8 @@ void perf_evsel__delete(struct perf_evsel *evsel)
+ 	free(evsel);
  }
  
-+static int read_cb(struct perf_evsel *evsel, int cpu, int thread __maybe_unused,
-+		   struct perf_counts_values *count)
-+{
-+	switch (aggr_mode) {
-+	case AGGR_CORE:
-+	case AGGR_SOCKET:
-+	case AGGR_NONE:
-+		perf_evsel__compute_deltas(evsel, cpu, count);
-+		perf_counts_values__scale(count, scale, NULL);
-+		evsel->counts->cpu[cpu] = *count;
-+		update_shadow_stats(evsel, count->values);
-+		break;
-+	case AGGR_GLOBAL:
-+	default:
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
- /*
-  * Read out the results of a single counter:
-  * aggregate counts across CPUs in system-wide mode
-@@ -424,16 +444,11 @@ static int read_counter_aggr(struct perf_evsel *counter)
-  */
- static int read_counter(struct perf_evsel *counter)
+-static inline void compute_deltas(struct perf_evsel *evsel,
+-				  int cpu,
+-				  struct perf_counts_values *count)
++void perf_evsel__compute_deltas(struct perf_evsel *evsel, int cpu,
++				struct perf_counts_values *count)
  {
--	u64 *count;
- 	int cpu;
+ 	struct perf_counts_values tmp;
  
- 	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
--		if (__perf_evsel__read_on_cpu(counter, cpu, 0, scale) < 0)
-+		if (perf_evsel__read_cb(counter, cpu, 0, read_cb))
- 			return -1;
--
--		count = counter->counts->cpu[cpu].values;
--
--		update_shadow_stats(counter, count);
+@@ -913,7 +912,7 @@ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
+ 	if (readn(FD(evsel, cpu, thread), &count, nv * sizeof(u64)) < 0)
+ 		return -errno;
+ 
+-	compute_deltas(evsel, cpu, &count);
++	perf_evsel__compute_deltas(evsel, cpu, &count);
+ 
+ 	if (scale) {
+ 		if (count.run == 0)
+@@ -956,7 +955,7 @@ int __perf_evsel__read(struct perf_evsel *evsel,
+ 		}
  	}
  
- 	return 0;
+-	compute_deltas(evsel, -1, aggr);
++	perf_evsel__compute_deltas(evsel, -1, aggr);
+ 
+ 	evsel->counts->scaled = 0;
+ 	if (scale) {
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 979790951bfb..746b7ea84589 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -110,6 +110,9 @@ struct thread_map;
+ struct perf_evlist;
+ struct record_opts;
+ 
++void perf_evsel__compute_deltas(struct perf_evsel *evsel, int cpu,
++				struct perf_counts_values *count);
++
+ int perf_evsel__object_config(size_t object_size,
+ 			      int (*init)(struct perf_evsel *evsel),
+ 			      void (*fini)(struct perf_evsel *evsel));
 -- 
 1.9.3
 
