@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750897AbaKURrt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 12:47:49 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:62166 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703AbaKURrr (ORCPT
+	id S1751055AbaKURsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 12:48:10 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:53028 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880AbaKURsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 12:47:47 -0500
+	Fri, 21 Nov 2014 12:48:08 -0500
 From: Kiran Raparthy <kiran.kumar@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: Kiran Raparthy <kiran.kumar@linaro.org>, Felipe Balbi <balbi@ti.com>,
@@ -17,10 +17,12 @@ Cc: Kiran Raparthy <kiran.kumar@linaro.org>, Felipe Balbi <balbi@ti.com>,
         Sumit Semwal <sumit.semwal@linaro.org>,
         =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         Benoit Goby <benoit@android.com>, Todd Poynor <toddpoynor@google.com>
-Subject: [PATCH v2 1/3] usb: phy: introduce usb_phy_set_event interface
-Date: Fri, 21 Nov 2014 23:16:29 +0530
-Message-Id: <1416591991-18925-1-git-send-email-kiran.kumar@linaro.org>
+Subject: [PATCH v2 2/3] usb: phy: Handle per-PHY event for connect and disconnect events
+Date: Fri, 21 Nov 2014 23:16:30 +0530
+Message-Id: <1416591991-18925-2-git-send-email-kiran.kumar@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416591991-18925-1-git-send-email-kiran.kumar@linaro.org>
+References: <1416591991-18925-1-git-send-email-kiran.kumar@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -28,10 +30,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PHY drivers require a generic interface to handle per-PHY events.
+usb: phy: Handle per-PHY event for connnect and disconnect events
 
-usb_phy_set_event interface sets event to phy event.
-PHY drivers call this interface for each phy event.
+When usb is connected and enumerated in device mode or when usb is
+disconnected,call usb_phy_set_event from phy drivers to handle per-PHY event.
 
 Cc: Felipe Balbi <balbi@ti.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -45,55 +47,193 @@ Cc: Benoit Goby <benoit@android.com>
 [Original patch in Android from Todd]
 Cc: Todd Poynor <toddpoynor@google.com>
 Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/usb/phy/phy.c   | 12 ++++++++++++
- include/linux/usb/phy.h |  5 +++++
- 2 files changed, 17 insertions(+)
+ drivers/usb/phy/phy-ab8500-usb.c    | 15 +++++++++++++++
+ drivers/usb/phy/phy-gpio-vbus-usb.c |  2 ++
+ drivers/usb/phy/phy-mv-usb.c        |  2 ++
+ drivers/usb/phy/phy-tahvo.c         |  2 ++
+ 4 files changed, 21 insertions(+)
 
-diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
-index e6bf801..b4066a0 100644
---- a/drivers/usb/phy/phy.c
-+++ b/drivers/usb/phy/phy.c
-@@ -446,3 +446,15 @@ int usb_bind_phy(const char *dev_name, u8 index,
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(usb_bind_phy);
-+
-+/**
-+ * usb_phy_set_event - set event to phy event
-+ * @x: the phy returned by usb_get_phy();
-+ *
-+ * This sets event to phy event
-+ */
-+void usb_phy_set_event(struct usb_phy *x, unsigned long event)
-+{
-+	x->last_event = event;
-+}
-+EXPORT_SYMBOL_GPL(usb_phy_set_event);
-diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-index ac7d791..f499c23 100644
---- a/include/linux/usb/phy.h
-+++ b/include/linux/usb/phy.h
-@@ -209,6 +209,7 @@ extern void usb_put_phy(struct usb_phy *);
- extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
- extern int usb_bind_phy(const char *dev_name, u8 index,
- 				const char *phy_dev_name);
-+extern void usb_phy_set_event(struct usb_phy *x, unsigned long event);
- #else
- static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
- {
-@@ -250,6 +251,10 @@ static inline int usb_bind_phy(const char *dev_name, u8 index,
- {
- 	return -EOPNOTSUPP;
- }
-+
-+static inline void usb_phy_set_event(struct usb_phy *x, unsigned long event)
-+{
-+}
- #endif
+diff --git a/drivers/usb/phy/phy-ab8500-usb.c b/drivers/usb/phy/phy-ab8500-usb.c
+index 30c96f0..8cd7d19 100644
+--- a/drivers/usb/phy/phy-ab8500-usb.c
++++ b/drivers/usb/phy/phy-ab8500-usb.c
+@@ -445,6 +445,7 @@ static int ab9540_usb_link_status_update(struct ab8500_usb *ab,
+ 			event = UX500_MUSB_NONE;
+ 		/* Fallback to default B_IDLE as nothing is connected. */
+ 		ab->phy.otg->state = OTG_STATE_B_IDLE;
++		usb_phy_set_event(&ab->phy, USB_EVENT_NONE);
+ 		break;
  
- static inline int
+ 	case USB_LINK_ACA_RID_C_NM_9540:
+@@ -459,12 +460,14 @@ static int ab9540_usb_link_status_update(struct ab8500_usb *ab,
+ 			ab8500_usb_peri_phy_en(ab);
+ 			atomic_notifier_call_chain(&ab->phy.notifier,
+ 					UX500_MUSB_PREPARE, &ab->vbus_draw);
++			usb_phy_set_event(&ab->phy, USB_EVENT_ENUMERATED);
+ 		}
+ 		if (ab->mode == USB_IDLE) {
+ 			ab->mode = USB_PERIPHERAL;
+ 			ab8500_usb_peri_phy_en(ab);
+ 			atomic_notifier_call_chain(&ab->phy.notifier,
+ 					UX500_MUSB_PREPARE, &ab->vbus_draw);
++			usb_phy_set_event(&ab->phy, USB_EVENT_ENUMERATED);
+ 		}
+ 		if (event != UX500_MUSB_RIDC)
+ 			event = UX500_MUSB_VBUS;
+@@ -500,6 +503,7 @@ static int ab9540_usb_link_status_update(struct ab8500_usb *ab,
+ 		event = UX500_MUSB_CHARGER;
+ 		atomic_notifier_call_chain(&ab->phy.notifier,
+ 				event, &ab->vbus_draw);
++		usb_phy_set_event(&ab->phy, USB_EVENT_CHARGER);
+ 		break;
+ 
+ 	case USB_LINK_PHYEN_NO_VBUS_NO_IDGND_9540:
+@@ -524,6 +528,7 @@ static int ab9540_usb_link_status_update(struct ab8500_usb *ab,
+ 				ab->mode = USB_IDLE;
+ 				ab->phy.otg->default_a = false;
+ 				ab->vbus_draw = 0;
++				usb_phy_set_event(&ab->phy, USB_EVENT_NONE);
+ 			}
+ 		}
+ 		break;
+@@ -583,6 +588,7 @@ static int ab8540_usb_link_status_update(struct ab8500_usb *ab,
+ 		 * is connected
+ 		 */
+ 		ab->phy.otg->state = OTG_STATE_B_IDLE;
++		usb_phy_set_event(&ab->phy, USB_EVENT_NONE);
+ 		break;
+ 
+ 	case USB_LINK_ACA_RID_C_NM_8540:
+@@ -596,6 +602,7 @@ static int ab8540_usb_link_status_update(struct ab8500_usb *ab,
+ 			ab8500_usb_peri_phy_en(ab);
+ 			atomic_notifier_call_chain(&ab->phy.notifier,
+ 					UX500_MUSB_PREPARE, &ab->vbus_draw);
++			usb_phy_set_event(&ab->phy, USB_EVENT_ENUMERATED);
+ 		}
+ 		if (event != UX500_MUSB_RIDC)
+ 			event = UX500_MUSB_VBUS;
+@@ -624,6 +631,7 @@ static int ab8540_usb_link_status_update(struct ab8500_usb *ab,
+ 		event = UX500_MUSB_CHARGER;
+ 		atomic_notifier_call_chain(&ab->phy.notifier,
+ 				event, &ab->vbus_draw);
++		usb_phy_set_event(&ab->phy, USB_EVENT_CHARGER);
+ 		break;
+ 
+ 	case USB_LINK_PHYEN_NO_VBUS_NO_IDGND_8540:
+@@ -646,6 +654,7 @@ static int ab8540_usb_link_status_update(struct ab8500_usb *ab,
+ 			ab->mode = USB_IDLE;
+ 			ab->phy.otg->default_a = false;
+ 			ab->vbus_draw = 0;
++		usb_phy_set_event(&ab->phy, USB_EVENT_NONE);
+ 		}
+ 		break;
+ 
+@@ -692,6 +701,7 @@ static int ab8505_usb_link_status_update(struct ab8500_usb *ab,
+ 		 * is connected
+ 		 */
+ 		ab->phy.otg->state = OTG_STATE_B_IDLE;
++		usb_phy_set_event(&ab->phy, USB_EVENT_NONE);
+ 		break;
+ 
+ 	case USB_LINK_ACA_RID_C_NM_8505:
+@@ -705,6 +715,7 @@ static int ab8505_usb_link_status_update(struct ab8500_usb *ab,
+ 			ab8500_usb_peri_phy_en(ab);
+ 			atomic_notifier_call_chain(&ab->phy.notifier,
+ 					UX500_MUSB_PREPARE, &ab->vbus_draw);
++			usb_phy_set_event(&ab->phy, USB_EVENT_ENUMERATED);
+ 		}
+ 		if (event != UX500_MUSB_RIDC)
+ 			event = UX500_MUSB_VBUS;
+@@ -732,6 +743,7 @@ static int ab8505_usb_link_status_update(struct ab8500_usb *ab,
+ 		event = UX500_MUSB_CHARGER;
+ 		atomic_notifier_call_chain(&ab->phy.notifier,
+ 				event, &ab->vbus_draw);
++		usb_phy_set_event(&ab->phy, USB_EVENT_CHARGER);
+ 		break;
+ 
+ 	default:
+@@ -775,6 +787,7 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab,
+ 			event = UX500_MUSB_NONE;
+ 		/* Fallback to default B_IDLE as nothing is connected */
+ 		ab->phy.otg->state = OTG_STATE_B_IDLE;
++		usb_phy_set_event(&ab->phy, USB_EVENT_NONE);
+ 		break;
+ 
+ 	case USB_LINK_ACA_RID_C_NM_8500:
+@@ -792,6 +805,7 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab,
+ 			ab8500_usb_peri_phy_en(ab);
+ 			atomic_notifier_call_chain(&ab->phy.notifier,
+ 					UX500_MUSB_PREPARE, &ab->vbus_draw);
++			usb_phy_set_event(&ab->phy, USB_EVENT_ENUMERATED);
+ 		}
+ 		if (event != UX500_MUSB_RIDC)
+ 			event = UX500_MUSB_VBUS;
+@@ -818,6 +832,7 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab,
+ 		event = UX500_MUSB_CHARGER;
+ 		atomic_notifier_call_chain(&ab->phy.notifier,
+ 				event, &ab->vbus_draw);
++		usb_phy_set_event(&ab->phy, USB_EVENT_CHARGER);
+ 		break;
+ 
+ 	case USB_LINK_RESERVED_8500:
+diff --git a/drivers/usb/phy/phy-gpio-vbus-usb.c b/drivers/usb/phy/phy-gpio-vbus-usb.c
+index 9fcf19b..5451172 100644
+--- a/drivers/usb/phy/phy-gpio-vbus-usb.c
++++ b/drivers/usb/phy/phy-gpio-vbus-usb.c
+@@ -134,6 +134,7 @@ static void gpio_vbus_work(struct work_struct *work)
+ 
+ 		atomic_notifier_call_chain(&gpio_vbus->phy.notifier,
+ 					   status, gpio_vbus->phy.otg->gadget);
++		usb_phy_set_event(&gpio_vbus->phy, USB_EVENT_ENUMERATED);
+ 	} else {
+ 		/* optionally disable D+ pullup */
+ 		if (gpio_is_valid(gpio))
+@@ -148,6 +149,7 @@ static void gpio_vbus_work(struct work_struct *work)
+ 
+ 		atomic_notifier_call_chain(&gpio_vbus->phy.notifier,
+ 					   status, gpio_vbus->phy.otg->gadget);
++		usb_phy_set_event(&gpio_vbus->phy, USB_EVENT_NONE);
+ 	}
+ }
+ 
+diff --git a/drivers/usb/phy/phy-mv-usb.c b/drivers/usb/phy/phy-mv-usb.c
+index 81d934f..b234d46 100644
+--- a/drivers/usb/phy/phy-mv-usb.c
++++ b/drivers/usb/phy/phy-mv-usb.c
+@@ -441,10 +441,12 @@ run:
+ 				mv_otg_start_periphrals(mvotg, 0);
+ 			mv_otg_reset(mvotg);
+ 			mv_otg_disable(mvotg);
++			usb_phy_set_event(&mvotg->phy, USB_EVENT_NONE);
+ 			break;
+ 		case OTG_STATE_B_PERIPHERAL:
+ 			mv_otg_enable(mvotg);
+ 			mv_otg_start_periphrals(mvotg, 1);
++			usb_phy_set_event(&mvotg->phy, USB_EVENT_ENUMERATED);
+ 			break;
+ 		case OTG_STATE_A_IDLE:
+ 			otg->default_a = 1;
+diff --git a/drivers/usb/phy/phy-tahvo.c b/drivers/usb/phy/phy-tahvo.c
+index 9cabc1a..d391c79 100644
+--- a/drivers/usb/phy/phy-tahvo.c
++++ b/drivers/usb/phy/phy-tahvo.c
+@@ -87,6 +87,7 @@ static void check_vbus_state(struct tahvo_usb *tu)
+ 			if (tu->phy.otg->gadget)
+ 				usb_gadget_vbus_connect(tu->phy.otg->gadget);
+ 			tu->phy.otg->state = OTG_STATE_B_PERIPHERAL;
++			usb_phy_set_event(&tu->phy, USB_EVENT_ENUMERATED);
+ 			break;
+ 		case OTG_STATE_A_IDLE:
+ 			/*
+@@ -105,6 +106,7 @@ static void check_vbus_state(struct tahvo_usb *tu)
+ 			if (tu->phy.otg->gadget)
+ 				usb_gadget_vbus_disconnect(tu->phy.otg->gadget);
+ 			tu->phy.otg->state = OTG_STATE_B_IDLE;
++			usb_phy_set_event(&tu->phy, USB_EVENT_NONE);
+ 			break;
+ 		case OTG_STATE_A_HOST:
+ 			tu->phy.otg->state = OTG_STATE_A_IDLE;
 -- 
 1.9.1
 
