@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911AbaKUGmP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 01:42:15 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:35841 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922AbaKUGmO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 01:42:14 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@gentwo.org>,
-        Steve Capper <steve.capper@linaro.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm\@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 06/19] mm: store mapcount for compound page separate
-In-Reply-To: <20141118095811.GA21774@node.dhcp.inet.fi>
-References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com> <1415198994-15252-7-git-send-email-kirill.shutemov@linux.intel.com> <20141118084337.GA16714@hori1.linux.bs1.fc.nec.co.jp> <20141118095811.GA21774@node.dhcp.inet.fi>
-User-Agent: Notmuch/0.18.2+162~g34d2c62 (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-pc-linux-gnu)
-Date: Fri, 21 Nov 2014 12:11:34 +0530
-Message-ID: <87egsx6oo1.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112106-0033-0000-0000-000000901A1A
+	id S1758138AbaKUGmm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 01:42:42 -0500
+Received: from 1wt.eu ([62.212.114.60]:57955 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750910AbaKUGml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 01:42:41 -0500
+Date: Fri, 21 Nov 2014 07:42:38 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Wang Zhe <wzedmund@gmail.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Kernel support on Loognson 3B
+Message-ID: <20141121064238.GB27040@1wt.eu>
+References: <CAMYNMg5g+-PpgqmdVEbRqWRFj0NAUPXxmZfwsZDVYaMKOnfAAQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMYNMg5g+-PpgqmdVEbRqWRFj0NAUPXxmZfwsZDVYaMKOnfAAQ@mail.gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Kirill A. Shutemov" <kirill@shutemov.name> writes:
+Hi,
 
-> On Tue, Nov 18, 2014 at 08:43:00AM +0000, Naoya Horiguchi wrote:
->> > @@ -1837,6 +1839,9 @@ static void __split_huge_page_refcount(struct page *page,
->> >  	atomic_sub(tail_count, &page->_count);
->> >  	BUG_ON(atomic_read(&page->_count) <= 0);
->> >  
->> > +	page->_mapcount = *compound_mapcount_ptr(page);
->> 
->> Is atomic_set() necessary?
->
-> Do you mean
-> 	atomic_set(&page->_mapcount, atomic_read(compound_mapcount_ptr(page)));
-> ?
->
-> I don't see why we would need this. Simple assignment should work just
-> fine. Or we have archs which will break?
+On Fri, Nov 21, 2014 at 02:31:39PM +0800, Wang Zhe wrote:
+> Hi,
+> Currently I am working on Loongson 3B CPU with modified kernel version
+> of linux 3.5.0. I encountered a problem when I boot up PC and it keeps
+> entering into emergency mode. I' ve tried many different ways to get
+> rid of this issue and nothing worked out. I wondered it could be an
+> issue of using wrong kernel version. May I ask which official kernel
+> verison has better support on loongson 3B CPU?
 
-Are you looking at architecture related atomic_set issues, or the fact
-that we cannot have parallel _mapcount update and hence the above
-assignment should be ok ? If the former, current thp code
-use atomic_add instead of even using atomic_set when
-updatinge page_tail->_count.  
+The stable list isn't about helping diagnose such issues. Also, you seem
+to be using a vendor-specific kernel, so nobody working on the official
+kernel will be able to help you. You need to contact your vendor to get
+support on this. Maybe they'll indicate you that a recent mainline kernel
+supports their CPU well, and even then it can depend on your board. Last
+point, 3.5.0 is quite outdated and unsupported. It lacks many bugfixes
+and important security fixes, so you should not run that anyway. Keep in
+mind that many vendor-specific kernels don't include fixes from mainline
+and based on that, you should always select your hardware based on its
+support in mainline instead of chosing the kernel based on the hardware.
 
-		 * from under us on the tail_page. If we used
-		 * atomic_set() below instead of atomic_add(), we
-		 * would then run atomic_set() concurrently with
-		 * get_page_unless_zero(), and atomic_set() is
-		 * implemented in C not using locked ops. spin_unlock
-		 * on x86 sometime uses locked ops because of PPro
-		 * errata 66, 92, so unless somebody can guarantee
-		 * atomic_set() here would be safe on all archs (and
-		 * not only on x86), it's safer to use atomic_add().
-		 */
-		atomic_add(page_mapcount(page) + page_mapcount(page_tail) + 1,
-			   &page_tail->_count);
-
-
-
--aneesh
+Regards,
+Willy
 
