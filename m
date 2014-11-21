@@ -1,158 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398AbaKUQIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 11:08:52 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:19794 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755442AbaKUQIi (ORCPT
+	id S1758668AbaKUQMu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 11:12:50 -0500
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:61332 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932155AbaKUQMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 11:08:38 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-98-546f63830935
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [PATCH v2 2/2] kernel: irq: use kmem_cache for allocating struct
- irqaction
-Date: Fri, 21 Nov 2014 19:08:19 +0300
-Message-id: <1416586099-13375-2-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 2.1.3
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMJMWRmVeSWpSXmKPExsVy+t/xa7rNyfkhBv/2Mlts+/WIzeL6tzeM
-	Fpd3zWGzaFuykcli86apzA6sHgs2lXq8O3eO3ePJlelMHn1bVjF6fN4kF8AaxWWTkpqTWZZa
-	pG+XwJVx/PZ8poIuuYrXs06yNDB2SXYxcnJICJhIbFx5mhXCFpO4cG89WxcjF4eQwFJGiWtb
-	vzBCOH1MEuv2bWcGqWIT0JP4N2s7G4gtIqAhsfHSLWaQImaBKYwS22c/YQdJCAuESvRvOQHW
-	wCKgKnFy/xmwFbwCbhIfTkxm6mLkAFonJ7F1nfcERu4FjAyrGEVTS5MLipPSc430ihNzi0vz
-	0vWS83M3MUIC4usOxqXHrA4xCnAwKvHwXpiVGyLEmlhWXJl7iFGCg1lJhLdcOD9EiDclsbIq
-	tSg/vqg0J7X4ECMTB6dUAyOb7y9ZcfFHxSvcbQO/q968X+IttexSKpflA3M25hNTq1+FcyaI
-	b53ypPbYpq9mN1KEyu/lzPgg6Pz+Qeh0G+Fvc20X/lvKynCm5+Qd+6zUI0t25a74eP/RhA8K
-	b4+a7ZhjvCV06eJN4Q9NzcynXdqw2VVWM3z9OvvAdx+9hbS4ap8llKp6PruuxFKckWioxVxU
-	nAgA2QHo2OYBAAA=
+	Fri, 21 Nov 2014 11:12:48 -0500
+Message-ID: <1416586364.8629.104.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH v2 9/9] netfilter: Replace smp_read_barrier_depends()
+ with lockless_dereference()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        "open list:NETWORKING [IPv4/..." <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Fri, 21 Nov 2014 08:12:44 -0800
+In-Reply-To: <1416582363-20661-10-git-send-email-bobby.prani@gmail.com>
+References: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
+	 <1416582363-20661-10-git-send-email-bobby.prani@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After enabling alignment checks in UBSan I've noticed several
-reports like this:
+On Fri, 2014-11-21 at 10:06 -0500, Pranith Kumar wrote:
+> Recently lockless_dereference() was added which can be used in place of
+> hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> ---
+>  net/ipv4/netfilter/arp_tables.c | 3 +--
+>  net/ipv4/netfilter/ip_tables.c  | 3 +--
+>  net/ipv6/netfilter/ip6_tables.c | 3 +--
+>  3 files changed, 3 insertions(+), 6 deletions(-)
+> 
+> diff --git a/net/ipv4/netfilter/arp_tables.c b/net/ipv4/netfilter/arp_tables.c
+> index f95b6f9..fc7533d 100644
+> --- a/net/ipv4/netfilter/arp_tables.c
+> +++ b/net/ipv4/netfilter/arp_tables.c
+> @@ -270,12 +270,11 @@ unsigned int arpt_do_table(struct sk_buff *skb,
+>  
+>  	local_bh_disable();
+>  	addend = xt_write_recseq_begin();
+> -	private = table->private;
+>  	/*
+>  	 * Ensure we load private-> members after we've fetched the base
+>  	 * pointer.
+>  	 */
+> -	smp_read_barrier_depends();
+> +	private = lockless_dereference(table->private);
+>  	table_base = private->entries[smp_processor_id()];
+>  
 
-   UBSan: Undefined behaviour in kernel/irq/manage.c:1315:13
-   member access within misaligned address ffff88007c274558
-   for type 'struct irqaction' which requires 64 byte alignment
 
-struct irqaction declared with ____cacheline_internodealigned_in_smp
-attribute. However in some cases it allocated dynamically via kmalloc().
-In general case kmalloc() guaranties only sizeof(void *) alignment.
-We should use a separate slab cache to make struct irqaction
-properly aligned on SMP configuration.
+Please carefully read the code, before and after your change, then
+you'll see this change broke the code.
 
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-Acked-by: David Rientjes <rientjes@google.com>
----
+Problem is that a bug like that can be really hard to diagnose and fix
+later, so really you have to be very careful doing these mechanical
+changes.
 
- kernel/irq/internals.h |  2 ++
- kernel/irq/irqdesc.c   |  1 +
- kernel/irq/manage.c    | 14 ++++++++------
- 3 files changed, 11 insertions(+), 6 deletions(-)
+IMO, current code+comment is better than with this
+lockless_dereference() which in this particular case obfuscates the
+code. more than anything.
 
-diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
-index 4332d76..95b61c5 100644
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -7,6 +7,7 @@
-  */
- #include <linux/irqdesc.h>
- #include <linux/kernel_stat.h>
-+#include <linux/slab.h>
- 
- #ifdef CONFIG_SPARSE_IRQ
- # define IRQ_BITMAP_BITS	(NR_IRQS + 8196)
-@@ -17,6 +18,7 @@
- #define istate core_internal_state__do_not_mess_with_it
- 
- extern bool noirqdebug;
-+extern struct kmem_cache *irqaction_cachep;
- 
- /*
-  * Bits used by threaded handlers:
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index c7a812c..cf99182 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -221,6 +221,7 @@ int __init early_irq_init(void)
- 	init_irq_default_affinity();
- 
- 	irq_desc_cachep = KMEM_CACHE(irq_desc, SLAB_PANIC);
-+	irqaction_cachep = KMEM_CACHE(irqaction, SLAB_PANIC);
- 
- 	/* Let arch update nr_irqs and return the nr of preallocated irqs */
- 	initcnt = arch_probe_nr_irqs();
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 0a9104b..7c69597 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -21,6 +21,8 @@
- 
- #include "internals.h"
- 
-+struct kmem_cache *irqaction_cachep;
-+
- #ifdef CONFIG_IRQ_FORCED_THREADING
- __read_mostly bool force_irqthreads;
- 
-@@ -1409,7 +1411,7 @@ void free_irq(unsigned int irq, void *dev_id)
- #endif
- 
- 	chip_bus_lock(desc);
--	kfree(__free_irq(irq, dev_id));
-+	kmem_cache_free(irqaction_cachep, __free_irq(irq, dev_id));
- 	chip_bus_sync_unlock(desc);
- }
- EXPORT_SYMBOL(free_irq);
-@@ -1487,7 +1489,7 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
- 		handler = irq_default_primary_handler;
- 	}
- 
--	action = kzalloc(sizeof(struct irqaction), GFP_KERNEL);
-+	action = kmem_cache_zalloc(irqaction_cachep, GFP_KERNEL);
- 	if (!action)
- 		return -ENOMEM;
- 
-@@ -1502,7 +1504,7 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
- 	chip_bus_sync_unlock(desc);
- 
- 	if (retval)
--		kfree(action);
-+		kmem_cache_free(irqaction_cachep, action);
- 
- #ifdef CONFIG_DEBUG_SHIRQ_FIXME
- 	if (!retval && (irqflags & IRQF_SHARED)) {
-@@ -1683,7 +1685,7 @@ void free_percpu_irq(unsigned int irq, void __percpu *dev_id)
- 		return;
- 
- 	chip_bus_lock(desc);
--	kfree(__free_percpu_irq(irq, dev_id));
-+	kmem_cache_free(irqaction_cachep, __free_percpu_irq(irq, dev_id));
- 	chip_bus_sync_unlock(desc);
- }
- 
-@@ -1738,7 +1740,7 @@ int request_percpu_irq(unsigned int irq, irq_handler_t handler,
- 	    !irq_settings_is_per_cpu_devid(desc))
- 		return -EINVAL;
- 
--	action = kzalloc(sizeof(struct irqaction), GFP_KERNEL);
-+	action = kmem_cache_zalloc(irqaction_cachep, GFP_KERNEL);
- 	if (!action)
- 		return -ENOMEM;
- 
-@@ -1752,7 +1754,7 @@ int request_percpu_irq(unsigned int irq, irq_handler_t handler,
- 	chip_bus_sync_unlock(desc);
- 
- 	if (retval)
--		kfree(action);
-+		kmem_cache_free(irqaction_cachep, action);
- 
- 	return retval;
- }
--- 
-2.1.3
+In this case we do have a lock (sort of), so lockless_dereference() is
+quite misleading.
+
 
