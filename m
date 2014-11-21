@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277AbaKUUGz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 15:06:55 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:47377 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016AbaKUUGx (ORCPT
+	id S1752369AbaKUUHH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:07:07 -0500
+Received: from mail-bl2on0136.outbound.protection.outlook.com ([65.55.169.136]:53316
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752308AbaKUUHD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 15:06:53 -0500
-Message-ID: <546F9B59.7060800@amacapital.net>
-Date: Fri, 21 Nov 2014 12:06:49 -0800
-From: Andy Lutomirski <luto@amacapital.net>
+	Fri, 21 Nov 2014 15:07:03 -0500
+X-WSS-ID: 0NFENVK-07-BYS-02
+X-M-MSG: 
+Message-ID: <546F9B56.2010900@amd.com>
+Date: Fri, 21 Nov 2014 22:06:46 +0200
+From: Oded Gabbay <oded.gabbay@amd.com>
+Organization: AMD
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-CC: Wanpeng Li <wanpeng.li@linux.intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        stable@vger.kernel.org, Nadav Amit <namit@cs.technion.ac.il>
-Subject: Re: [CFT PATCH 2/2] KVM: x86: support XSAVES usage in the host
-References: <1416594678-13011-1-git-send-email-pbonzini@redhat.com> <1416594678-13011-3-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1416594678-13011-3-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: randconfig build error with next-20141121, in drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c
+References: <CA+r1Zhj4+v+ggOhXm_3qz5=d8PgSDRexs1qQB9dk+KOC2TVzMA@mail.gmail.com>
+In-Reply-To: <CA+r1Zhj4+v+ggOhXm_3qz5=d8PgSDRexs1qQB9dk+KOC2TVzMA@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
+X-Originating-IP: [10.180.168.240]
+Content-Transfer-Encoding: 8BIT
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(51704005)(24454002)(164054003)(377454003)(479174003)(199003)(189002)(68736004)(97736003)(80316001)(92566001)(50466002)(47776003)(20776003)(44976005)(65956001)(86362001)(99396003)(64706001)(101416001)(120916001)(92726001)(102836001)(95666004)(87936001)(84676001)(83506001)(33656002)(105586002)(107886001)(107046002)(59896002)(62966003)(77156002)(31966008)(36756003)(54356999)(21056001)(64126003)(23676002)(87266999)(106466001)(50986999)(76176999)(65816999)(4396001)(46102003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB194;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
+X-Forefront-PRVS: 0402872DA1
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2014 10:31 AM, Paolo Bonzini wrote:
-> Userspace is expecting non-compacted format for KVM_GET_XSAVE, but
-> struct xsave_struct might be using the compacted format.  Convert
-> in order to preserve userspace ABI.
-> 
-> Fixes: f31a9f7c71691569359fa7fb8b0acaa44bce0324
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> Cc: stable@vger.kernel.org
-> Cc: Nadav Amit <namit@cs.technion.ac.il>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  arch/x86/kvm/x86.c | 48 +++++++++++++++++++++++++++++++++++++++++++-----
->  1 file changed, 43 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 5337039427c8..7e8a20e5615a 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -3131,15 +3131,53 @@ static int kvm_vcpu_ioctl_x86_set_debugregs(struct kvm_vcpu *vcpu,
->  	return 0;
->  }
->  
-> +#define XSTATE_COMPACTION_ENABLED (1ULL << 63)
-> +
-> +static void fill_xsave(u8 *dest, struct kvm_vcpu *vcpu)
-> +{
-> +	struct xsave_struct *xsave = &vcpu->arch.guest_fpu.state->xsave;
-> +	u64 xstate_bv = vcpu->arch.guest_supported_xcr0 | XSTATE_FPSSE;
-> +	u64 valid;
-> +
-> +	/*
-> +	 * Copy legacy XSAVE area, to avoid complications with CPUID
-> +	 * leaves 0 and 1 in the loop below.
-> +	 */
-> +	memcpy(dest, xsave, XSAVE_HDR_OFFSET);
-> +
-> +	/* Set XSTATE_BV */
-> +	*(u64 *)(dest + XSAVE_HDR_OFFSET) = xstate_bv;
-> +
-> +	/*
-> +	 * Copy each region from the possibly compacted offset to the
-> +	 * non-compacted offset.
-> +	 */
-> +	valid = xstate_bv & ~XSTATE_FPSSE;
-> +	if (xsave->xsave_hdr.xcomp_bv & XSTATE_COMPACTION_ENABLED)
-> +		valid &= xsave->xsave_hdr.xcomp_bv;
-> +
-> +	while (valid) {
-> +		u64 feature = valid & -valid;
-> +		int index = fls64(feature) - 1;
-> +		void *src = get_xsave_addr(xsave, feature);
-> +
-> +	        if (src) {
-> +			u32 size, offset, ecx, edx;
-> +			cpuid_count(XSTATE_CPUID, index,
-> +				    &size, &offset, &ecx, &edx);
-> +	                memcpy(dest + offset, src, size);
 
-Is this really the best way to do this?  cpuid is serializing, so this
-is possibly *very* slow.
 
---Andy
+On 11/21/2014 07:04 PM, Jim Davis wrote:
+> Building with the attached random configuration file,
+> 
+> drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c: In function ‘kfd_doorbell_init’:
+> drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c:97:2: error: implicit
+> declaration of function ‘ioremap’
+> [-Werror=implicit-function-declaration]
+>   kfd->doorbell_kernel_ptr = ioremap(kfd->doorbell_base,
+>   ^
+> drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c:97:27: warning: assignment
+> makes pointer from integer without a cast [enabled by default]
+>   kfd->doorbell_kernel_ptr = ioremap(kfd->doorbell_base,
+>                            ^
+> drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c: In function ‘write_kernel_doorbell’:
+> drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c:217:3: error: implicit declaration of
+> function ‘writel’ [-Werror=implicit-function-declaration]
+>    writel(value, db);
+>    ^
+> cc1: some warnings being treated as errors
+> make[4]: *** [drivers/gpu/drm/amd/amdkfd/kfd_doorbell.o] Error 1
+> 
+
+Thanks, I'm now sending a patch that fixes this problem.
+
+	Oded
