@@ -1,145 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaKVTQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 14:16:56 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:42542 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaKVTQy (ORCPT
+	id S1752193AbaKVTbi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 14:31:38 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:43419 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368AbaKVTbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 14:16:54 -0500
-From: Jungseung Lee <js07.lee@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Jungseung Lee <js07.lee@gmail.com>
-Subject: [RFC PATCH] fs/binfmt_elf.c: fix inconsistent vma dump size
-Date: Sun, 23 Nov 2014 04:16:39 +0900
-Message-Id: <1416683799-678-1-git-send-email-js07.lee@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 22 Nov 2014 14:31:36 -0500
+Date: Fri, 21 Nov 2014 14:09:40 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libsmbios-devel@lists.us.dell.com,
+        Srinivas_G_Gowda@dell.com, Michael_E_Brown@dell.com,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Rafael Wysocki <rjw@rjwysocki.net>,
+        Linux ACPI Mailing List <linux-acpi@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@intel.com>
+Subject: Re: [PATCH] platform: x86: dell-laptop: Add support for keyboard
+ backlight
+Message-ID: <20141121220939.GA24951@vmdeb7>
+References: <1415967813-7223-1-git-send-email-pali.rohar@gmail.com>
+ <201411192141.20190@pali>
+ <20141121203930.GA74402@vmdeb7>
+ <201411221946.25314@pali>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201411221946.25314@pali>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vma_dump_size() has been used several times on actual dumper
-and it is supposed to be same values for same vma.
-But vma_dump_size() could be different, while coredump is procceeded.
-(e.g. remove shared memory)
+On Sat, Nov 22, 2014 at 07:46:25PM +0100, Pali Rohár wrote:
 
-In that case, header info and vma size could be inconsistent
-and it cause wrong coredump file creation.
+> > > 0   Completed successfully
+> > > -1  Completed with error
+> > > -2  Function not supported
+> > > 
+> > > So we can return something other too (not always -EINVAL).
+> > > Do you have any idea which errno should we return for -1
+> > > and -2?
+> > 
+> > For -1, I should think  -EIO (I/O Error)
+> > For -2, I'd expect -ENXIO (No such device or address)
+> > 
+> 
+> What about -ENOSYS for -2?
 
-Fix the problem by always using the same vma dump size
-which is stored in vma_filsz.
+No. This specific topic came up at kernel summit this year. ENOSYS is
+specifically for not implemented system calls.
 
-Signed-off-by: Jungseung Lee <js07.lee@gmail.com>
----
- fs/binfmt_elf.c | 40 ++++++++++++++++++++++------------------
- 1 file changed, 22 insertions(+), 18 deletions(-)
+> 
+> > > > > +	if (convert) {
+> > > > > +		/* NOTE: this switch fall down */
+> > > > 
+> > > > "fall down" ? As in, it intentionally doesn't have breaks?
+> > > 
+> > > This code convert "value" in "units" to new value in minutes
+> > > units. So for unit == days it is: 24*60*60... So no breaks.
+> > 
+> > Right, so the language of the comment just wasn't clear, try:
+> > 
+> > /* Convert value from seconds to minutes */
+> > 
+> 
+> Err... to seconds :-) But OK, I will change comment.
 
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index d8fc060..3ba08ca 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1994,18 +1994,6 @@ static void fill_extnum_info(struct elfhdr *elf, struct elf_shdr *shdr4extnum,
- 	shdr4extnum->sh_info = segs;
- }
- 
--static size_t elf_core_vma_data_size(struct vm_area_struct *gate_vma,
--				     unsigned long mm_flags)
--{
--	struct vm_area_struct *vma;
--	size_t size = 0;
--
--	for (vma = first_vma(current, gate_vma); vma != NULL;
--	     vma = next_vma(vma, gate_vma))
--		size += vma_dump_size(vma, mm_flags);
--	return size;
--}
--
- /*
-  * Actual dumper
-  *
-@@ -2017,7 +2005,8 @@ static int elf_core_dump(struct coredump_params *cprm)
- {
- 	int has_dumped = 0;
- 	mm_segment_t fs;
--	int segs;
-+	int segs, i;
-+	size_t vma_data_size = 0;
- 	struct vm_area_struct *vma, *gate_vma;
- 	struct elfhdr *elf = NULL;
- 	loff_t offset = 0, dataoff;
-@@ -2026,6 +2015,7 @@ static int elf_core_dump(struct coredump_params *cprm)
- 	struct elf_shdr *shdr4extnum = NULL;
- 	Elf_Half e_phnum;
- 	elf_addr_t e_shoff;
-+	elf_addr_t *vma_filesz = NULL;
- 
- 	/*
- 	 * We no longer stop all VM operations.
-@@ -2093,7 +2083,20 @@ static int elf_core_dump(struct coredump_params *cprm)
- 
- 	dataoff = offset = roundup(offset, ELF_EXEC_PAGESIZE);
- 
--	offset += elf_core_vma_data_size(gate_vma, cprm->mm_flags);
-+	vma_filesz = kmalloc(sizeof(*vma_filesz) * (segs - 1), GFP_KERNEL);
-+	if (!vma_filesz)
-+		goto end_coredump;
-+
-+	for (i = 0, vma = first_vma(current, gate_vma); vma != NULL;
-+			vma = next_vma(vma, gate_vma)) {
-+		unsigned long dump_size;
-+
-+		dump_size = vma_dump_size(vma, cprm->mm_flags);
-+		vma_filesz[i++] = dump_size;
-+		vma_data_size += dump_size;
-+	}
-+
-+	offset += vma_data_size;
- 	offset += elf_core_extra_data_size();
- 	e_shoff = offset;
- 
-@@ -2113,7 +2116,7 @@ static int elf_core_dump(struct coredump_params *cprm)
- 		goto end_coredump;
- 
- 	/* Write program headers for segments dump */
--	for (vma = first_vma(current, gate_vma); vma != NULL;
-+	for (i = 0, vma = first_vma(current, gate_vma); vma != NULL;
- 			vma = next_vma(vma, gate_vma)) {
- 		struct elf_phdr phdr;
- 
-@@ -2121,7 +2124,7 @@ static int elf_core_dump(struct coredump_params *cprm)
- 		phdr.p_offset = offset;
- 		phdr.p_vaddr = vma->vm_start;
- 		phdr.p_paddr = 0;
--		phdr.p_filesz = vma_dump_size(vma, cprm->mm_flags);
-+		phdr.p_filesz = vma_filesz[i++];
- 		phdr.p_memsz = vma->vm_end - vma->vm_start;
- 		offset += phdr.p_filesz;
- 		phdr.p_flags = vma->vm_flags & VM_READ ? PF_R : 0;
-@@ -2149,12 +2152,12 @@ static int elf_core_dump(struct coredump_params *cprm)
- 	if (!dump_skip(cprm, dataoff - cprm->written))
- 		goto end_coredump;
- 
--	for (vma = first_vma(current, gate_vma); vma != NULL;
-+	for (i = 0, vma = first_vma(current, gate_vma); vma != NULL;
- 			vma = next_vma(vma, gate_vma)) {
- 		unsigned long addr;
- 		unsigned long end;
- 
--		end = vma->vm_start + vma_dump_size(vma, cprm->mm_flags);
-+		end = vma->vm_start + vma_filesz[i++];
- 
- 		for (addr = vma->vm_start; addr < end; addr += PAGE_SIZE) {
- 			struct page *page;
-@@ -2187,6 +2190,7 @@ end_coredump:
- cleanup:
- 	free_note_info(&info);
- 	kfree(shdr4extnum);
-+	kfree(vma_filesz);
- 	kfree(phdr4note);
- 	kfree(elf);
- out:
+Oops, duh.
+
+/* Convert value from current units to seconds. */
+
+> 
+> > > > > +		switch (unit) {
+> > > > > +		case KBD_TIMEOUT_DAYS:
+> > > > > +			value *= 24;
+> > > > > +		case KBD_TIMEOUT_HOURS:
+> > > > > +			value *= 60;
+> > > > > +		case KBD_TIMEOUT_MINUTES:
+> > > > > +			value *= 60;
+> > > > > +			unit = KBD_TIMEOUT_SECONDS;
+> > > > > +	 	}
+
 -- 
-1.9.1
-
+Darren Hart
+Intel Open Source Technology Center
