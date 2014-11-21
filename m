@@ -1,63 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758540AbaKUN4C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 08:56:02 -0500
-Received: from mout.web.de ([212.227.15.4]:56114 "EHLO mout.web.de"
+	id S1758579AbaKUN5z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 08:57:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53661 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755426AbaKUN4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 08:56:00 -0500
-Message-ID: <546F4460.5000205@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 14:55:44 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] USB: gadget: function: Deletion of an unnecessary check
- before the function call "rndis_add_hdr"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:kj6zlFZrKUIOYNJpu6kFYkRe/y+d324N6bic03TYvz3UdPg9MHO
- xzAANL46EmUIzt6wS8gW0EFxIfxac7CCqNFfgOVeErpgg3oYw22x6dcZZXy58qOmmQLzPRp
- /ihyst0o0eGljqUx1YEljgtBeizNIU0yBXkE+Kl4tZWL8AyJHugkLvhCQ6Tli9jEnD/l88X
- X5E09q7BGTNHS+KAqgeCg==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1755882AbaKUN5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 08:57:52 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>
+Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 01/10] mm: numa: Do not dereference pmd outside of the lock during NUMA hinting fault
+Date: Fri, 21 Nov 2014 13:57:39 +0000
+Message-Id: <1416578268-19597-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1416578268-19597-1-git-send-email-mgorman@suse.de>
+References: <1416578268-19597-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 14:51:43 +0100
+A transhuge NUMA hinting fault may find the page is migrating and should
+wait until migration completes. The check is race-prone because the pmd
+is deferenced outside of the page lock and while the race is tiny, it'll
+be larger if the PMD is cleared while marking PMDs for hinting fault.
+This patch closes the race.
 
-The rndis_add_hdr() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
-
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- drivers/usb/gadget/function/f_rndis.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ include/linux/migrate.h | 4 ----
+ mm/huge_memory.c        | 3 ++-
+ mm/migrate.c            | 6 ------
+ 3 files changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/usb/gadget/function/f_rndis.c b/drivers/usb/gadget/function/f_rndis.c
-index ddb09dc..da56a5f 100644
---- a/drivers/usb/gadget/function/f_rndis.c
-+++ b/drivers/usb/gadget/function/f_rndis.c
-@@ -375,8 +375,7 @@ static struct sk_buff *rndis_add_header(struct gether *port,
- 	struct sk_buff *skb2;
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index 01aad3e..a3edcdf 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -77,7 +77,6 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
  
- 	skb2 = skb_realloc_headroom(skb, sizeof(struct rndis_packet_msg_type));
--	if (skb2)
--		rndis_add_hdr(skb2);
-+	rndis_add_hdr(skb2);
+ #ifdef CONFIG_NUMA_BALANCING
+ extern bool pmd_trans_migrating(pmd_t pmd);
+-extern void wait_migrate_huge_page(struct anon_vma *anon_vma, pmd_t *pmd);
+ extern int migrate_misplaced_page(struct page *page,
+ 				  struct vm_area_struct *vma, int node);
+ extern bool migrate_ratelimited(int node);
+@@ -86,9 +85,6 @@ static inline bool pmd_trans_migrating(pmd_t pmd)
+ {
+ 	return false;
+ }
+-static inline void wait_migrate_huge_page(struct anon_vma *anon_vma, pmd_t *pmd)
+-{
+-}
+ static inline int migrate_misplaced_page(struct page *page,
+ 					 struct vm_area_struct *vma, int node)
+ {
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 817a875..a2cd021 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1283,8 +1283,9 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * check_same as the page may no longer be mapped.
+ 	 */
+ 	if (unlikely(pmd_trans_migrating(*pmdp))) {
++		page = pmd_page(*pmdp);
+ 		spin_unlock(ptl);
+-		wait_migrate_huge_page(vma->anon_vma, pmdp);
++		wait_on_page_locked(page);
+ 		goto out;
+ 	}
  
- 	dev_kfree_skb(skb);
- 	return skb2;
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 41945cb..11d86b4 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1698,12 +1698,6 @@ bool pmd_trans_migrating(pmd_t pmd)
+ 	return PageLocked(page);
+ }
+ 
+-void wait_migrate_huge_page(struct anon_vma *anon_vma, pmd_t *pmd)
+-{
+-	struct page *page = pmd_page(*pmd);
+-	wait_on_page_locked(page);
+-}
+-
+ /*
+  * Attempt to migrate a misplaced page to the specified destination
+  * node. Caller is expected to have an elevated reference count on
 -- 
-2.1.3
+2.1.2
 
