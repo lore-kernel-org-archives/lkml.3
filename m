@@ -1,92 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758611AbaKUPdl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:33:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43481 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755321AbaKUPdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:33:39 -0500
-Date: Fri, 21 Nov 2014 10:33:20 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: mmarek@suse.cz, d.kasatkin@samsung.com, rusty@rustcorp.com.au,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        zohar@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] X.509: Support X.509 lookup by Issuer+Serial form
- AuthorityKeyIdentifier
-Message-ID: <20141121153320.GB22306@redhat.com>
-References: <20141120165351.5264.61930.stgit@warthog.procyon.org.uk>
- <20141120165414.5264.95354.stgit@warthog.procyon.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141120165414.5264.95354.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1758753AbaKUPdw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:33:52 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:41172 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758620AbaKUPdt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:33:49 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] of: spi: Export single device registration method
+ =?iso-8859-1?Q?and=0D?= accessors (v2)
+To: Mark Brown <broonie@kernel.org>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
+        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+In-Reply-To: <20141029122204.GG18557@sirena.org.uk>
+References: <1414572037-11306-1-git-send-email-pantelis.antoniou@konsulko.com>
+	<20141029101420.GT18557@sirena.org.uk>
+	<6A3753C0-251A-4645-AD96-CB1D6521175F@antoniou-consulting.com>
+	<20141029122204.GG18557@sirena.org.uk>
+Date: Fri, 21 Nov 2014 15:33:29 +0000
+Message-Id: <20141121153329.C4DDDC40D85@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 04:54:14PM +0000, David Howells wrote:
+On Wed, 29 Oct 2014 12:22:04 +0000
+, Mark Brown <broonie@kernel.org>
+ wrote:
+> On Wed, Oct 29, 2014 at 01:48:06PM +0200, Pantelis Antoniou wrote:
+> > > On Oct 29, 2014, at 12:14 , Mark Brown <broonie@kernel.org> wrote:
+> 
+> > > This feels like there is an abstraction problem somewhere, whatever code
+> > > is supposed to use this is going to need to be taught about each
+> > > individual bus which is going to be tedious, I would expect that we'd
+> > > have something like the bus being able to provide a callback which will
+> > > get invoked whenever a new node appears on the parent node for the bus.
+> 
+> > There’s a whole patchset that does exactly this. 
+> > Look at "OF: spi: Add OF notifier handler” and you’ll where this is used.
+> 
+> I deleted that unread I'm afraid; one of the reasons that you should use
+> subject lines matching the styles for the subsystems is that it's one of
+> the things people use to filter out things that actually need attention,
+> if things are busy things that at first glance don't look terribly
+> relevant (like changes to the OF core in this case) are likely to get
+> looked at less urgently or just skipped.
+> 
+> A quick glance suggests that this is adding code inside the SPI core so
+> it's still not explaining why anything is being exported, can you
+> clarify please?
 
-[..]
-> @@ -215,21 +219,42 @@ static int pkcs7_verify_sig_chain(struct pkcs7_message *pkcs7,
->  		/* Look through the X.509 certificates in the PKCS#7 message's
->  		 * list to see if the next one is there.
->  		 */
-> -		pr_debug("- want %*phN\n",
-> -			 x509->auth_skid->len, x509->auth_skid->data);
-> -		for (p = pkcs7->certs; p; p = p->next) {
-> -			if (!p->skid)
-> -				continue;
-> -			pr_debug("- cmp [%u] %*phN\n",
-> -				 p->index, p->skid->len, p->skid->data);
-> -			if (asymmetric_key_id_same(p->skid, x509->auth_skid))
-> -				goto found_issuer;
-> +		auth = x509->auth_id;
-> +		if (auth) {
-> +			pr_debug("- want %*phN\n", auth->len, auth->data);
-> +			for (p = pkcs7->certs; p; p = p->next) {
-> +				pr_debug("- cmp [%u] %*phN\n",
-> +					 p->index, p->id->len, p->id->data);
-> +				if (asymmetric_key_id_same(p->id, auth))
-> +					goto found_issuer_check_skid;
-> +			}
-> +		} else {
-> +			auth = x509->auth_skid;
-> +			pr_debug("- want %*phN\n", auth->len, auth->data);
-> +			for (p = pkcs7->certs; p; p = p->next) {
-> +				if (!p->skid)
-> +					continue;
-> +				pr_debug("- cmp [%u] %*phN\n",
-> +					 p->index, p->skid->len, p->skid->data);
-> +				if (asymmetric_key_id_same(p->skid, auth))
-> +					goto found_issuer;
-> +			}
->  		}
->  
->  		/* We didn't find the root of this chain */
->  		pr_debug("- top\n");
->  		return 0;
->  
-> +	found_issuer_check_skid:
-> +		/* We matched issuer + serialNumber, but if there's an
-> +		 * authKeyId.keyId, that must match the CA subjKeyId also.
-> +		 */
-> +		if (x509->auth_skid &&
-> +		    !asymmetric_key_id_same(p->skid, x509->auth_skid)) {
-> +			pr_warn("Sig %u: X.509 chain contains auth-skid nonmatch (%u->%u)\n",
-> +				sinfo->index, x509->index, p->index);
-> +			return -EKEYREJECTED;
-> +		}
+I have the same question. This doesn't look like it should be exporting
+symbols.
 
-Hi David,
+Also, the way the patch is written causes a lot of code changes to get
+interleaved in the diff. It would be better to split into two patches;
+one that creates the new of_register_spi_device(), and a separate patch
+to add the other new functions. It would be certainly easier to review
+that way.
 
-A minor nit.
+> 
+> > > SubmittingPatches says.  Please also try to keep your CC list sane,
+> > > CCing random people just means that you're increasing the volume of mail
+> > > they have to process.  I'm surprised kernel.org accepts so many CCs.
+> 
+> > > I have to say I don't recall ever seeing v1...
+> 
+> > All of them are in the CC list for a reason. 
+> 
+> This is a single, standalone SPI patch - you didn't send it as part of a
+> series (which is the only reason I read it).
 
-pkcs7_verify_sig_chain() is getting big with multiple goto labels. Will
-it make sense to introduce a helper function to see if cert B is authority
-cert of cert A or not. And then we should be able to get rid of labels
-like found_issuer_check_skid() and some of the inline code also go away.
+Yes, this is part of the OF overlay series. It should have at least been
+marked as [PATCH 7/8] and that it replaced the previous, buggy, patch 7.
 
-Thanks
-Vivek
+g.
+
