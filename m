@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724AbaKUMmD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 07:42:03 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:35188 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaKUMl6 (ORCPT
+	id S1758393AbaKUMn4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 07:43:56 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:32579 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755075AbaKUMnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 07:41:58 -0500
+	Fri, 21 Nov 2014 07:43:55 -0500
+Date: Fri, 21 Nov 2014 07:43:43 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: linux-next: build failure after merge of the ftrace tree
+Message-ID: <20141121074343.00f72a6a@gandalf.local.home>
+In-Reply-To: <20141121183215.01ba539c@canb.auug.org.au>
+References: <20141121183215.01ba539c@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <1962959.JkOx4gJGaG@xrated>
-References: <20141120164531.GB3596@tucsk>
-	<1962959.JkOx4gJGaG@xrated>
-Date: Fri, 21 Nov 2014 13:41:57 +0100
-Message-ID: <CAJfpegtRktN8BdOogCMW++Gar02j06K=9OYOyDMBbwBZq6_=Hg@mail.gmail.com>
-Subject: Re: [GIT PULL] overlay filesystem fixes for 3.18
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Hans-Peter Jansen <hpj@urpla.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-unionfs@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 12:32 PM, Hans-Peter Jansen <hpj@urpla.net> wrote:
-> Dear Miklos,
->
-> On Donnerstag, 20. November 2014 17:45:31 Miklos Szeredi wrote:
->>
->> The biggest change is to rename the filesystem from "overlayfs" to
->> "overlay". This will allow legacy overlayfs to be easily carried by distros
->> alongside the new mainline one.
->
-> Would you kindly give a firm elaboration of this rename?
->
-> Why would a distro kernel maintainer want to keep the external overlayfs
-> patches together with the now in kernel module?
->
-> Isn't it enough to drop the external patches from distro kernels in order to
-> use it successfully or are there any semantic changes hidden that an admin
-> should know about?
+On Fri, 21 Nov 2014 18:32:15 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-See this thread:
+> Hi Steven,
+> 
+> After merging the ftrace tree, today's linux-next build (powerpc
+> allnoconfig) failed like this:
+> 
+> In file included from include/asm-generic/percpu.h:6:0,
+>                  from arch/powerpc/include/asm/percpu.h:19,
+>                  from include/linux/percpu.h:11,
+>                  from include/linux/sched.h:41,
+>                  from arch/powerpc/kernel/asm-offsets.c:17:
+> include/linux/percpu.h:138:17: error: 'printk_func_t' undeclared here (not in a function)
+>  DECLARE_PER_CPU(printk_func_t, printk_func);
+>                  ^
+> include/linux/percpu-defs.h:101:38: note: in definition of macro 'DECLARE_PER_CPU_SECTION'
+>   extern __PCPU_ATTRS(sec) __typeof__(type) name
+>                                       ^
+> include/linux/percpu.h:138:1: note: in expansion of macro 'DECLARE_PER_CPU'
+>  DECLARE_PER_CPU(printk_func_t, printk_func);
+>  ^
+> 
+> Caused by commit afdc34a3d3b8 ("printk: Add per_cpu printk func to
+> allow printk to be diverted").  See Rule 1 in
+> Documentation/SubmitChecklist.
+> 
 
-https://lkml.org/lkml/2014/11/18/433
+I had to fight header include hell with that change. That's why rule 1
+wasn't followed so well.
 
-Thanks,
-Miklos
+Thanks Jiri for fixing it. I'll start running your patch through my
+tests.
+
+-- Steve
