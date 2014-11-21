@@ -1,125 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491AbaKUC7G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 21:59:06 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:12554 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756487AbaKUC7E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 21:59:04 -0500
-Message-ID: <546EAA50.8000601@huawei.com>
-Date: Fri, 21 Nov 2014 10:58:24 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1757141AbaKUDHG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 22:07:06 -0500
+Received: from mail-bn1on0113.outbound.protection.outlook.com ([157.56.110.113]:53888
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756487AbaKUDHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 22:07:04 -0500
+X-WSS-ID: 0NFDCNM-07-0CR-02
+X-M-MSG: 
+Message-ID: <546EAC4E.9050808@amd.com>
+Date: Thu, 20 Nov 2014 21:06:54 -0600
+From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Liviu Dudau <liviu@dudau.co.uk>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-CC: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
-        Tony Luck <tony.luck@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        <linux-pci@vger.kernel.org>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        <Suravee.Suthikulpanit@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linux-ia64@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Wuyun <wuyun.wu@huawei.com>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [RFC PATCH 00/16] Refine PCI host bridge scan interfaces
-References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com> <1463511.o4kE8TX3Bd@wuerfel> <546DD688.60705@linaro.org> <20141120120850.GD9162@bart.dudau.co.uk> <546DE45C.6010306@linaro.org> <20141120163918.GE9162@bart.dudau.co.uk>
-In-Reply-To: <20141120163918.GE9162@bart.dudau.co.uk>
-Content-Type: text/plain; charset="UTF-8"
+To: Jiang Liu <jiang.liu@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: <marc.zyngier@arm.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] irqdomain: Fix NULL pointer dererence in irq_domain_free_irqs_parent
+References: <1416531745-24661-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <alpine.DEB.2.11.1411210219370.6439@nanos> <546E9E8E.5000303@amd.com>
+ <546EA823.8030401@linux.intel.com>
+In-Reply-To: <546EA823.8030401@linux.intel.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(51704005)(199003)(479174003)(377454003)(164054003)(189002)(120916001)(99396003)(92566001)(76176999)(23746002)(50986999)(65816999)(68736004)(92726001)(19580395003)(80316001)(19580405001)(4396001)(46102003)(47776003)(50466002)(20776003)(31966008)(87936001)(101416001)(44976005)(97736003)(87266999)(83506001)(84676001)(33656002)(102836001)(64126003)(64706001)(65956001)(77156002)(86362001)(54356999)(106466001)(105586002)(62966003)(36756003)(93886004)(107046002)(21056001)(95666004)(59896002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB198;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
+X-Forefront-PRVS: 0402872DA1
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/21 0:39, Liviu Dudau wrote:
-> On Thu, Nov 20, 2014 at 01:53:48PM +0100, Tomasz Nowicki wrote:
->> On 20.11.2014 13:08, Liviu Dudau wrote:
->>> On Thu, Nov 20, 2014 at 12:54:48PM +0100, Tomasz Nowicki wrote:
->>>> On 17.11.2014 15:13, Arnd Bergmann wrote:
->>>>> On Monday 17 November 2014 18:21:34 Yijing Wang wrote:
->>>>>> This series is based Linux 3.18-rc1 and Lorenzo Pieralisi's
->>>>>> arm PCI domain cleanup patches, link:
->>>>>> https://patchwork.ozlabs.org/patch/407585/
->>>>>>
->>>>>> Current pci scan interfaces like pci_scan_root_bus() and directly
->>>>>> call pci_create_root_bus()/pci_scan_child_bus() lack flexiblity.
->>>>>> Some platform infos like PCI domain and msi_chip have to be
->>>>>> associated to PCI bus by some arch specific function.
->>>>>> We want to make a generic pci_host_bridge, and make it hold
->>>>>> the platform infos or hook. Then we could eliminate the lots
->>>>>> of arch pci_domain_nr, also we could associate some platform
->>>>>> ops something like pci_get_msi_chip(struct pci_dev *dev)
->>>>>> with pci_host_bridge to avoid introduce arch weak functions.
->>>>>>
->>>>>> This RFC version not for all platforms, just applied the new
->>>>>> scan interface in x86/arm/powerpc/ia64, I will refresh other
->>>>>> platforms after the core pci scan interfaces are ok.
->>>>>
->>>>> I think overall this is a good direction to take, in particular
->>>>> moving more things into struct pci_host_bridge so we can
->>>>> slim down the architecture specific code.
->>>>>
->>>>> I don't particularly like the way you use the 'pci_host_info'
->>>>> to pass callback pointers and some of the generic information.
->>>>> This duplicates some of the issues we are currently trying
->>>>> to untangle in the arm32 code to make drivers easier to share
->>>>> between architectures.
->>>>>
->>>>> As a general approach, I'd rather see generic helper functions
->>>>> being exported by the PCI core that a driver may or may not
->>>>> call.
->>>>> The way you split the interface between things that happen
->>>>> before scanning the buses (pci_create_host_bridge) and
->>>>> the actual scanning (__pci_create_root_bus, pci_scan_child_bus)
->>>>> seems very helpful and I think we can expand that concept further:
->>>>>
->>>>> - The normal pci_create_host_bridge() function can contain
->>>>>   all of the DT scanning functions (finding bus/mem/io resources,
->>>>>   finding the msi-parent), while drivers that don't depend on DT
->>>>>   for this information can call the same function and fill the
->>>>>   same things after they have the pci_host_bridge pointer.
->>>>
->>>> How about finding PCI domain number (in the DT way) within
->>>> pci_create_host_bridge() too ?
+
+
+On 11/20/2014 08:49 PM, Jiang Liu wrote:
+>
+>
+> On 2014/11/21 10:08, Suravee Suthikulpanit wrote:
+>> On 11/20/2014 07:32 PM, Thomas Gleixner wrote:
+>>> On Thu, 20 Nov 2014, suravee.suthikulpanit@amd.com wrote:
+>>>> This patch checks if the parent domain is NULL before recursively
+>>>> freeing
+>>>> irqs in the parent domains.
 >>>
->>> It is an idea worth pursuing for the 99% of the cases. I would like
->>> to understand the 1% of the time when we want a domain number to be
->>> shared between two host bridges or the time when we want more than
->>> one domain per bridge.
->> Even though we have shared domain, this should be resolved via DT calls, do
->> I miss something ?
-> 
-> If we only going to hold one domain number per host bridge, then no, you're
-> not missing anything.
-> 
->>
+>>> Which is nonsense, because if the thing has not been allocated in the
+>>> first place, then it cannot explode in the free path magically, except
+>>> there is a missing check in the allocation path error handling.
 >>>
->>> Is that possible? Is it useful? Is it already in practice?
->> This is good question... IMO:
->> 1. Two host bridges can shared domain number if they are children of the
->> same parent host bridge.
->> 2. But I can not find good explanation for more than one domain per bridge.
-> 
-> Splitting a root bus into two or more "segments" ?
-
-It seems impossible.
-
-> 
-> Best regards,
-> Liviu
-> 
+>>> And that's obviously not the case simply because this originates from:
+>>>> [<fffffe0000449278>] pci_disable_msix+0x40/0x50
+>>>
 >>
->> Tomasz
+>> Thomas,
 >>
+>> In this case, I have the following irq domain hierarchy:
 >>
-> 
+>> [GIC] -- [GICv2m] -- [MSI]
+>>
+>> which recursively calling the freeing function:
+>>
+>> In GIC domain, it currently defines the struct irq_domain_ops.free() with :
+>>    --> irq_domain_free_irqs_top()
+>>      |--> irq_domain_free_irqs_common()
+>>        |--> irq_domain_free_irq_parent()
+>>          |--> irq_domain_free_irqs_recursive()
+>>
+>> and there is no check before passing the NULL domain->parent into the
+>> irq_domain_free_irqs_recursive(), which causes the error.
+>>
+>> Since the GIC is the top most domain, it does not have parent domain.
+>> So, I'm not sure what is missing from the allocation path error
+>> handling, as you mentioned.
+> Hi Thomas,
+> 	We have had a discussion about this issue in another thread.
+> Originally irq_domain_free_irqs_common() is designed to be used by
+> irqdomains with parent. But there are desires to reuse it to support
+> irqdomains without parent too for code reduction.
+> So I suggest to change irq_domain_free_irqs_common() instead of
+> irq_domain_free_irqs_parent() because caller of
+> irq_domain_free_irqs_parent() should guarantee current domain do have
+> a parent.
+> I'm preparing a patch for this:)
+> Regards!
+> Gerry
 
+Thanks Gerry and Thomas.
 
--- 
-Thanks!
-Yijing
+Suravee
 
+>>
+>> Thanks,
+>>
+>> Suravee
