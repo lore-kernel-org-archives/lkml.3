@@ -1,56 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758848AbaKUPLZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 10:11:25 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42367 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758448AbaKUPLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 10:11:21 -0500
-Message-ID: <546F5613.1020208@kernel.org>
-Date: Sat, 22 Nov 2014 00:11:15 +0900
-From: Kukjin Kim <kgene@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	id S1758335AbaKUPOu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 10:14:50 -0500
+Received: from mail1.vodafone.ie ([213.233.128.43]:5936 "EHLO
+	mail1.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175AbaKUPOt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 10:14:49 -0500
+X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Nov 2014 10:14:49 EST
+Authentication-Results: mail1.vodafone.ie; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ai0hACxUb1RdazkN/2dsb2JhbABcgw6BEAcXu1mHdgWMMIMigQwWAQEBAQF9hBQgMUUUSAwBAwsBHhOIKwEBAhIEAac+hzqKAwiFBYhGChkEChkaW4VnDCCQJhEBbYQ1BYgsgzM8kkaIASl7g3WIcXCEGk6BD4E8AQEB
+X-PureMessage: [Scanned]
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-To: Abhilash Kesavan <a.kesavan@samsung.com>
-CC: linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        kgene@kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de,
-        gregkh@linuxfoundation.org, jslaby@suse.cz, kesavan.abhilash@gmail.com,
-        Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: Re: [PATCH v2] serial: samsung: Fix serial config dependencies for
- exynos7
-References: <1416199491-4841-1-git-send-email-a.kesavan@samsung.com> <1416383812-714-1-git-send-email-a.kesavan@samsung.com>
-In-Reply-To: <1416383812-714-1-git-send-email-a.kesavan@samsung.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Charity Work
+To: <linux-kernel@vger.kernel.org>
+From: <luv2charitys@gmail.com>
+Date: Fri, 21 Nov 2014 09:03:55 -0600
+Reply-To: <paucharity@gmail.com>
+Message-ID: <HO-SRV2zSbeQvbLuc7t000143ed@office.horkans.com>
+X-OriginalArrivalTime: 21 Nov 2014 15:03:56.0654 (UTC) FILETIME=[5F5A60E0:01D0059C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/14 16:56, Abhilash Kesavan wrote:
-> From: Pankaj Dubey <pankaj.dubey@samsung.com>
-> 
-> Exynos7 has a similar serial controller to that present in older Samsung
-> SoCs. To re-use the existing serial driver on Exynos7 we need to have
-> SERIAL_SAMSUNG_UARTS_4 and SERIAL_SAMSUNG_UARTS selected. This is not
-> possible because these symbols are dependent on PLAT_SAMSUNG which is
-> not present for the ARMv8 based exynos7.
-> 
-> Change the dependency of these symbols from PLAT_SAMSUNG to the serial
-> driver thus making it available on exynos7. As the existing platform
-> specific code making use of these symbols is related to uart driver this
-> change in dependency should not cause any issues.
-> 
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
-> Changes in v2:
-> 	- Added Greg's ack and Kukjin Kim as a recepient
-
-Applied, thanks.
-
-- Kukjin
+Hello,this is Mr Paul N,i sent you an email on charity work but i am yet to hear fom you,do reply with this code CHA-2015 to my email address paulcharity@qq.com  i Look forward to hearing from you this time,God bless  Brother Paul
