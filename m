@@ -1,118 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265AbaKUS2x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:28:53 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:51485 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591AbaKUS2v (ORCPT
+	id S1751788AbaKUS34 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:29:56 -0500
+Received: from mail-bn1bon0110.outbound.protection.outlook.com ([157.56.111.110]:34720
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750892AbaKUS3z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:28:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
-References: <alpine.DEB.2.11.1411202204030.3950@nanos> <20141120221122.GA25393@htj.dyndns.org>
- <alpine.DEB.2.11.1411202315230.3950@nanos> <20141120230514.GB25393@htj.dyndns.org>
- <CALCETrUu56pLObcDxrNXO5uN_KV5ffDW3EkpLgZL2mh4-aofSQ@mail.gmail.com>
- <20141120233920.GC25393@htj.dyndns.org> <CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com>
- <20141121162742.GB15461@htj.dyndns.org> <CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com>
- <CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
- <20141121170805.GD30603@home.goodmis.org> <CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
- <CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com> <CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 21 Nov 2014 10:28:28 -0800
-Message-ID: <CALCETrUFHFvKU3hnD8w0oVYjKx2XPxTUrXynqpsm3J7yahbqYg@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+	Fri, 21 Nov 2014 13:29:55 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Dexuan Cui <decui@microsoft.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+CC: Haiyang Zhang <haiyangz@microsoft.com>,
+        Vitaly Kuznetsov <vkuznets@redhat.com>
+Subject: RE: [PATCH] hv: hv_fcopy: drop the obsolete message on transfer
+ failure
+Thread-Topic: [PATCH] hv: hv_fcopy: drop the obsolete message on transfer
+ failure
+Thread-Index: AQHP/ixzoWqBLlree0aJYfe1XGjx8ZxonIcQgACGI1CAALBG0IAAlUzAgAEL0jA=
+Date: Fri, 21 Nov 2014 18:29:51 +0000
+Message-ID: <63c8e399f3234b68b611da3c199fbaf2@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1415768606-28538-1-git-send-email-decui@microsoft.com>
+ <BN1PR0301MB0707ED3958628389255649FCA0890@BN1PR0301MB0707.namprd03.prod.outlook.com>
+ <F792CF86EFE20D4AB8064279AFBA51C613E577E6@HKNPRD3002MB017.064d.mgd.msft.net>
+ <6b6a1089b0104b3fb9c2e785d058cd1d@BY2PR0301MB0711.namprd03.prod.outlook.com>
+ <F792CF86EFE20D4AB8064279AFBA51C613E5BE28@HKNPRD3002MB017.064d.mgd.msft.net>
+In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C613E5BE28@HKNPRD3002MB017.064d.mgd.msft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e0:ee43::3]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0710;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0710;
+x-forefront-prvs: 0402872DA1
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(52314003)(164054003)(51704005)(199003)(189002)(377454003)(13464003)(33646002)(105586002)(77096003)(77156002)(62966003)(40100003)(31966008)(106356001)(120916001)(76576001)(99396003)(21056001)(95666004)(106116001)(15975445006)(20776003)(217423001)(87936001)(50986999)(93886004)(108616004)(1511001)(2656002)(64706001)(122556002)(107046002)(76176999)(54356999)(99286002)(2421001)(86612001)(2501002)(551934003)(92566001)(86362001)(2201001)(19580405001)(19580395003)(74316001)(101416001)(97736003)(46102003)(4396001)(2561002)(3826002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0710;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 10:22 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Nov 21, 2014 at 9:22 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> Both mystify me.  Why does the 32-bit version walk down the hierarchy
->> at all instead of just touching the top level?
->
-> Quite frankly, I think it's just due to historical reasons, and should
-> be removed.
->
-> But the historical reasons are that with the aliasing of the PUD and
-> PMD entries in the PGD, it's all fairly confusing. So I think we only
-> used to do the top level, but then when we expanded from two levels to
-> three, that "top level" became the pmd, and then when we expanded from
-> three to four, the pmd was actually two levels down. So it's all
-> basically mindless work.
->
-> So I do think we could simplify and unify things.
->
-> In 32-bit mode, we actually have two different cases:
->
->  - in PAE, there's the magic top-level 4-entry PGD that always *has*
-> to be present (the P bit isn't actually checked by hardware)
->
->     As a result, in PAE mode, the top PGD entries always exist, and
-> are always prepopulated, and for the kernel area (including obviously
-> the vmalloc space) always points to the init_pgd[] entry.
->
->     Ergo, in PAE mode, I don't think we should ever hit this case in
-> the first place.
->
->  - in non-PAE mode, we should just copy the top-level entry, and return.
->
-> And in 64-bit more, we only have the "copy the top-level entry" case.
->
-> So I think we should
->
->  (a) remove the 32-bit vs 64-bit difference, because that's not actually valid
->
->  (b) make it a PAE vs non-PAE difference
->
->  (c) the PAE case is a no-op
->
->  (d) the non-PAE case would look something like this:
->
->     static noinline int vmalloc_fault(unsigned long address)
->     {
->         unsigned index;
->         pgd_t *pgd_dst, pgd_entry;
->
->         /* Make sure we are in vmalloc area: */
->         if (!(address >= VMALLOC_START && address < VMALLOC_END))
->                 return -1;
->
->         index = pgd_index(address);
->         pgd_entry = init_mm.pgd[index];
->         if (!pgd_present(pgd_entry))
->                 return -1;
->
->         pgd_dst = __va(PAGE_MASK & read_cr3());
->         if (pgd_present(pgd_dst[index]))
->                 return -1;
->
->         ACCESS_ONCE(pgd_dst[index]) = pgd_entry;
->         return 0;
->     }
->     NOKPROBE_SYMBOL(vmalloc_fault);
->
-> and it's done.
->
-> Would anybody be willing to actually *test* something like the above?
-> The above may compile, but that's all the "testing" it got.
->
 
-I'd be happy to test it (i.e. boot it and try to use my computer), but
-I have nowhere near enough RAM to do it right.
 
-Is there any easy way to get the vmalloc code to randomize enough bits
-to exercise this?
+> -----Original Message-----
+> From: Dexuan Cui
+> Sent: Thursday, November 20, 2014 6:41 PM
+> To: KY Srinivasan; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; driverdev-devel@linuxdriverproject.org;
+> olaf@aepfle.de; apw@canonical.com; jasowang@redhat.com
+> Cc: Haiyang Zhang; Vitaly Kuznetsov
+> Subject: RE: [PATCH] hv: hv_fcopy: drop the obsolete message on transfer
+> failure
+> 
+> > -----Original Message-----
+> > From: KY Srinivasan
+> > Sent: Friday, November 21, 2014 1:58 AM
+> > To: Dexuan Cui; gregkh@linuxfoundation.org;
+> > linux-kernel@vger.kernel.org; driverdev-devel@linuxdriverproject.org;
+> > olaf@aepfle.de; apw@canonical.com; jasowang@redhat.com
+> > Cc: Haiyang Zhang
+> > Subject: RE: [PATCH] hv: hv_fcopy: drop the obsolete message on
+> > transfer failure
+> > > -----Original Message-----
+> > > From: Dexuan Cui
+> > > Sent: Wednesday, November 19, 2014 11:48 PM
+> > > To: KY Srinivasan; gregkh@linuxfoundation.org; linux-
+> > > kernel@vger.kernel.org; driverdev-devel@linuxdriverproject.org;
+> > > olaf@aepfle.de; apw@canonical.com; jasowang@redhat.com
+> > > Cc: Haiyang Zhang
+> > > Subject: RE: [PATCH] hv: hv_fcopy: drop the obsolete message on
+> > > transfer failure
+> > >
+> > > > -----Original Message-----
+> > > > From: KY Srinivasan
+> > > > Sent: Thursday, November 20, 2014 6:59 AM
+> > > > > diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c index
+> > > > > 23b2ce2..177122a 100644
+> > > > > --- a/drivers/hv/hv_fcopy.c
+> > > > > +++ b/drivers/hv/hv_fcopy.c
+> > > > > @@ -86,6 +86,15 @@ static void fcopy_work_func(struct
+> > work_struct
+> > > > > *dummy)
+> > > > >   * process the pending transaction.
+> > > > >   */
+> > > > >  fcopy_respond_to_host(HV_E_FAIL);
+> > > > > +
+> > > > > +/* In the case the user-space daemon crashes, hangs or is
+> > > > > +killed, we
+> > > > > + * need to down the semaphore, otherwise, after the daemon
+> > > > > +starts
+> > > > > next
+> > > > > + * time, the obsolete data in fcopy_transaction.message or
+> > > > > + * fcopy_transaction.fcopy_msg will be used immediately.
+> > > > > + */
+> > > > > +if (down_trylock(&fcopy_transaction.read_sema))
+> > > > > +pr_debug("FCP: failed to acquire the semaphore\n");
+> > > > > +
+> > > > >  }
+> > > >
+> > > > When the daemon is killed, we currently reset the state in the
+> > > > release function. Why can't we cleanup the semaphore state
+> > > > (initialize) here as
+> > > well.
+> > > >
+> > > > K. Y
+> > >
+> > > Hi KY,
+> > > 1) The down_trylock() here is necessary: the daemon can fail to
+> > > respond
+> > in 5
+> > > seconds due to many reasons, e.g., the VM's CPU and I/O are too
+> > > busy. In this case, the daemon may become running later(NOTE: in
+> > > this example,
+> > the
+> > > daemon is not killed), but from the host user's point of view, the
+> > PowerShell
+> > > copy-vmfile command has failed, so here we have to 'down' the
+> > semaphore
+> > > anyway, otherwise, the daemon can get obsolete data.
+> > >
+> > > 2) If we add a line
+> > > sema_init(&fcopy_transaction.read_sema, 0); in fcopy_release(), it
+> > > seems OK at a glance, but we have to handle the race
+> > > condition: the above down_trylock() and the sema_init() can, in
+> > > theory,
+> > run
+> > > simultaneously on different virtual CPUs.  It's tricky to address this.
+> > >
+> > > 3) So I think we can reuse the same semaphore without an actually
+> > > unnecessary re-initialization. :-)
+> >
+> > Agreed; you may want to get rid of the pr_debug() call though.
+> >
+> > Thanks,
+> >
+> > K. Y
+> 
+> The pr_debug() is added intentionally according to suggestion of Redhat's
+> Vitaly Kuznetsov in the bugzilla:
+> https://bugzilla.redhat.com/show_bug.cgi?id=1162100#c5
+> 
+> The function is declared with__must_check in include/linux/semaphore.h:
+> extern int __must_check down_trylock(struct semaphore *sem);
+> 
+> Without checking the return value, we'll get these warning if the "Kernel
+> hacking" options are enabled:
+> 
+> drivers/hv/hv_fcopy.c: In function 'fcopy_work_func':
+> drivers/hv/hv_fcopy.c:95:2: warning: ignoring return value of 'down_trylock',
+> declared with attribute warn_unused_result [-Wunused-result]
+>   (void)down_trylock(&fcopy_transaction.read_sema);
+>   ^
+> 
+> In practice, the message I add should be very rare since it's very unlikely to
+> fail to get the semaphore in this timeout case -- and in case this happens, it's
+> actually OK, because the driver has told the host user the PowerShell
+> command should fail.
+Clearly, we don't want to ignore the return value (to avoid the warning); but that does not mean
+that we need to print a message that is of questionable value. That said, I am fine with the code that
+you currently have as this message is going to be very rare.
 
---Andy
+Regards,
+
+K. Y 
+> 
+> Thanks,
+> -- Dexuan
+
