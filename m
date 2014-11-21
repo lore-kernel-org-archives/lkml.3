@@ -1,110 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761AbaKUBgw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Nov 2014 20:36:52 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:35019 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757686AbaKUBfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Nov 2014 20:35:33 -0500
-From: Grant Likely <grant.likely@linaro.org>
-To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH 8/8] of: Add debug output for OF_RECONFIG notifiers
-Date: Fri, 21 Nov 2014 01:35:15 +0000
-Message-Id: <1416533715-9758-9-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416533715-9758-1-git-send-email-grant.likely@linaro.org>
-References: <1416533715-9758-1-git-send-email-grant.likely@linaro.org>
+	id S1757858AbaKUBha (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Nov 2014 20:37:30 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:54105 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757806AbaKUBh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Nov 2014 20:37:28 -0500
+Message-ID: <546E974C.6010302@osg.samsung.com>
+Date: Thu, 20 Nov 2014 18:37:16 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.14 000/122] 3.14.25-stable review
+References: <20141119205208.812884198@linuxfoundation.org>
+In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add some additional debug output to cover OF_RECONFIG notifier activity.
-At the same time, refactor the changeset debug output to use the same
-strings as the notifier debug output.
+On 11/19/2014 01:50 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.14.25 release.
+> There are 122 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Fri Nov 21 20:51:52 UTC 2014.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.25-rc1.gz
+> and the diffstat can be found below.
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
----
- drivers/of/dynamic.c | 48 ++++++++++++++++++++++++++++++++----------------
- 1 file changed, 32 insertions(+), 16 deletions(-)
+Compiled and booted on my test system. No dmesg regressions.
 
-diff --git a/drivers/of/dynamic.c b/drivers/of/dynamic.c
-index 7634c2f69d4a..de20ae46b370 100644
---- a/drivers/of/dynamic.c
-+++ b/drivers/of/dynamic.c
-@@ -77,10 +77,38 @@ int of_reconfig_notifier_unregister(struct notifier_block *nb)
- }
- EXPORT_SYMBOL_GPL(of_reconfig_notifier_unregister);
- 
-+#ifdef DEBUG
-+const char *action_names[] = {
-+	[OF_RECONFIG_ATTACH_NODE] = "ATTACH_NODE",
-+	[OF_RECONFIG_DETACH_NODE] = "DETACH_NODE",
-+	[OF_RECONFIG_ADD_PROPERTY] = "ADD_PROPERTY",
-+	[OF_RECONFIG_REMOVE_PROPERTY] = "REMOVE_PROPERTY",
-+	[OF_RECONFIG_UPDATE_PROPERTY] = "UPDATE_PROPERTY",
-+};
-+#endif
-+
- int of_reconfig_notify(unsigned long action, void *p)
- {
- 	int rc;
-+#ifdef DEBUG
-+	struct device_node *dn = p;
-+	struct of_prop_reconfig *pr = p;
-+
-+	switch (action) {
-+	case OF_RECONFIG_ATTACH_NODE:
-+	case OF_RECONFIG_DETACH_NODE:
-+		pr_debug("of/notify %-15s %s\n", action_names[action],
-+			dn->full_name);
-+		break;
-+	case OF_RECONFIG_ADD_PROPERTY:
-+	case OF_RECONFIG_REMOVE_PROPERTY:
-+	case OF_RECONFIG_UPDATE_PROPERTY:
-+		pr_debug("of/notify %-15s %s:%s\n", action_names[action],
-+			pr->dn->full_name, pr->prop->name);
-+		break;
- 
-+	}
-+#endif
- 	rc = blocking_notifier_call_chain(&of_reconfig_chain, action, p);
- 	return notifier_to_errno(rc);
- }
-@@ -431,27 +459,15 @@ static void __of_changeset_entry_dump(struct of_changeset_entry *ce)
- {
- 	switch (ce->action) {
- 	case OF_RECONFIG_ADD_PROPERTY:
--		pr_debug("%p: %s %s/%s\n",
--			ce, "ADD_PROPERTY   ", ce->np->full_name,
--			ce->prop->name);
--		break;
- 	case OF_RECONFIG_REMOVE_PROPERTY:
--		pr_debug("%p: %s %s/%s\n",
--			ce, "REMOVE_PROPERTY", ce->np->full_name,
--			ce->prop->name);
--		break;
- 	case OF_RECONFIG_UPDATE_PROPERTY:
--		pr_debug("%p: %s %s/%s\n",
--			ce, "UPDATE_PROPERTY", ce->np->full_name,
--			ce->prop->name);
-+		pr_debug("of/cset<%p> %-15s %s/%s\n", ce, action_names[ce->action],
-+			ce->np->full_name, ce->prop->name);
- 		break;
- 	case OF_RECONFIG_ATTACH_NODE:
--		pr_debug("%p: %s %s\n",
--			ce, "ATTACH_NODE    ", ce->np->full_name);
--		break;
- 	case OF_RECONFIG_DETACH_NODE:
--		pr_debug("%p: %s %s\n",
--			ce, "DETACH_NODE    ", ce->np->full_name);
-+		pr_debug("of/cset<%p> %-15s %s\n", ce, action_names[ce->action],
-+			ce->np->full_name);
- 		break;
- 	}
- }
+-- Shuah
+
 -- 
-1.9.1
-
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
