@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaKUUHq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 15:07:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44317 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752384AbaKUUH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 15:07:27 -0500
-Date: Fri, 21 Nov 2014 15:07:18 -0500
-From: Rafael Aquini <aquini@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr@hp.com>
-Subject: Re: [PATCH] ipc,sem block sem_lock on sma->lock during sma
- initialization
-Message-ID: <20141121200717.GB26651@t510.redhat.com>
-References: <20141121145226.2ac598af@annuminas.surriel.com>
+	id S1752536AbaKUUIa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 15:08:30 -0500
+Received: from mail-bl2on0130.outbound.protection.outlook.com ([65.55.169.130]:55200
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751934AbaKUUI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 15:08:28 -0500
+X-WSS-ID: 0NFENXZ-07-C0T-02
+X-M-MSG: 
+From: Oded Gabbay <oded.gabbay@amd.com>
+To: <dri-devel@lists.freedesktop.org>, <jim.epost@gmail.com>
+CC: <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <airlied@linux.ie>
+Subject: [PATCH] amdkfd: explicitely include io.h in kfd_doorbell.c
+Date: Fri, 21 Nov 2014 22:07:59 +0200
+Message-ID: <1416600479-5767-1-git-send-email-oded.gabbay@amd.com>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141121145226.2ac598af@annuminas.surriel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(68736004)(50466002)(89996001)(92566001)(101416001)(88136002)(50986999)(84676001)(87936001)(48376002)(19580395003)(31966008)(19580405001)(104166001)(102836001)(44976005)(105586002)(62966003)(64706001)(77096003)(106466001)(77156002)(95666004)(46102003)(97736003)(120916001)(33646002)(229853001)(47776003)(36756003)(53416004)(21056001)(107046002)(99396003)(93916002)(50226001)(87286001)(92726001)(86362001)(4396001)(20776003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB201;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
+X-Forefront-PRVS: 0402872DA1
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 02:52:26PM -0500, Rik van Riel wrote:
-> When manipulating just one semaphore with semop, sem_lock only takes that
-> single semaphore's lock. This creates a problem during initialization of
-> the semaphore array, when the data structures used by sem_lock have not
-> been set up yet. The sma->lock is already held by newary, and we just
-> have to make sure everything else waits on that lock during initialization.
-> 
-> Luckily it is easy to make sem_lock wait on the sma->lock, by pretending
-> there is a complex operation in progress while the sma is being initialized.
-> 
-> The newary function already zeroes sma->complex_count before unlocking
-> the sma->lock.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  ipc/sem.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/ipc/sem.c b/ipc/sem.c
-> index 454f6c6..1823160 100644
-> --- a/ipc/sem.c
-> +++ b/ipc/sem.c
-> @@ -507,6 +507,9 @@ static int newary(struct ipc_namespace *ns, struct ipc_params *params)
->  		return retval;
->  	}
->  
-> +	/* Ensures sem_lock waits on &sma->lock until sma is ready. */
-> +	sma->complex_count = 1;
-> +
->  	id = ipc_addid(&sem_ids(ns), &sma->sem_perm, ns->sc_semmni);
->  	if (id < 0) {
->  		ipc_rcu_putref(sma, sem_rcu_free);
+This patch fixes a compilation error when using certain configuration by
+including the file io.h in kfd_doorbell.c
 
-Acked-by: Rafael Aquini <aquini@redhat.com>
+Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+---
+ drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c b/drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c
+index 0dcb787..b5791a5 100644
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_doorbell.c
+@@ -23,6 +23,7 @@
+ #include <linux/mm.h>
+ #include <linux/mman.h>
+ #include <linux/slab.h>
++#include <linux/io.h>
+ 
+ /*
+  * This extension supports a kernel level doorbells management for
+-- 
+2.1.0
+
