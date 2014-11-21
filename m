@@ -1,75 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758350AbaKUJcr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 04:32:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46858 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758332AbaKUJcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 04:32:42 -0500
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 11/11] perf stat: Add support for snapshot counters
-Date: Fri, 21 Nov 2014 10:31:15 +0100
-Message-Id: <1416562275-12404-12-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1416562275-12404-1-git-send-email-jolsa@kernel.org>
-References: <1416562275-12404-1-git-send-email-jolsa@kernel.org>
+	id S1758380AbaKUJdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 04:33:18 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36249 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757720AbaKUJdO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 04:33:14 -0500
+Message-ID: <546F06D1.30308@arm.com>
+Date: Fri, 21 Nov 2014 09:33:05 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>
+CC: Yijing Wang <wangyijing@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
+References: <546E1771.4030201@arm.com> <20141120215353.GA7987@google.com> <alpine.DEB.2.11.1411202355060.6439@nanos> <CAErSpo5UOUnPbsvAJX4kCeuKnPVLyRfq6k0FJPpS2W-5ALwisQ@mail.gmail.com>
+In-Reply-To: <CAErSpo5UOUnPbsvAJX4kCeuKnPVLyRfq6k0FJPpS2W-5ALwisQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The .snapshot file indicates that the provided event value is a
-snapshot value. Bypassing the delta computation logic for such
-event.
+Hi Bjorn,
 
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/builtin-stat.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+On 20/11/14 23:30, Bjorn Helgaas wrote:
+> On Thu, Nov 20, 2014 at 4:10 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> On Thu, 20 Nov 2014, Bjorn Helgaas wrote:
+>>> On Thu, Nov 20, 2014 at 04:31:45PM +0000, Marc Zyngier wrote:
+>>>> Bjorn, Yijing,
+>>>>
+>>>> I've just realized that patch c167caf8d174 (PCI/MSI: Remove useless
+>>>> bus->msi assignment) completely breaks MSI on arm64 when using the new
+>>>> MSI stacked domain:
+>>>>
+>>>> This patch relies on architectures to implement either
+>>>> pcibios_msi_controller() or arch_setup_msi_irq(). It turns out that with
+>>>> stacked domains, none of this is actually necessary, as long as you can
+>>>> access to the msi_controller.
+>>>>
+>>>> And everything was fine until this patch came around (and managed to
+>>>> test on a system where the PCI devices are not directly attached to the
+>>>> root bus). Of course, everything now breaks, as we cannot get to the MSI
+>>>> controller (which contains the domain we allocate the MSIs from).
+>>>>
+>>>> In short, this patch breaks an important feature on which arm64 relies,
+>>>> and I believe this patch should be reverted ASAP.
+>>>
+>>> I'm happy to revert it from pci/msi, but I think Thomas has already pulled
+>>> it into his branch, so he'd have to drop it, too.
+>>>
+>>> Thomas, let me know if you want to do that.  I suppose we could add a new
+>>> patch to add it back, but that would leave bisection broken for the
+>>> interval between c167caf8d174 and the patch that adds it back.
+>>
+>> Fortunately my irq/irqdomain branch is not immutable yet. So we have
+>> no problem at that point. I can rebase on your branch until tomorrow
+>> night. Or just rebase on mainline and we sort out the merge conflicts
+>> later, i.e. delegate them to Linus so his job of pulling stuff gets
+>> not completely boring.
+>>
+>> What I'm more worried about is whether this intended change is going
+>> to inflict a problem on Jiangs intention to deduce the MSI irq domain
+>> from the device, which we really need for making DMAR work w/o going
+>> through loops and hoops.
+>>
+>> I have limited knowledge about the actual scope of iommu (DMAR) units
+>> versus device/bus/host-controllers, so I would appreciate a proper
+>> explanation for that from you or Jiang or both.
+>>
+>> My guts feeling tells me that anything less granular than the bus
+>> level is wrong and according to my limited knowledge Intel even has
+>> DMARs which are assigned to a single device it's even more wrong. So
+>> the proper change would be not to push it from bus to something above
+>> the bus, but instead make it a per device property.
+> 
+> I'm not an expert, so hopefully Jiang and Marc will clarify this.
+> 
+> My understanding is that Intel VT-d can do MSI remapping on a
+> per-function basis, so I agree that pci_msi_controller() should
+> probably take a pci_dev instead of a pci_bus.  I think Yijing's series
+> only has one caller, which has the pci_dev, so that should be an easy
+> change.
+> 
+> Marc, does c167caf8d174 break arm64 by itself?  Or does the breakage
+> happen later on, after adding more stacked domain stuff?  If the
+> former, we should definitely revert c167caf8d174 to preserve
+> bisectability, independent of how we fix the pci_msi_controller()
+> interface.
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 860e8ad06616..891086376381 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -443,7 +443,8 @@ static int read_cb(struct perf_evsel *evsel, int cpu, int thread __maybe_unused,
- 	case AGGR_CORE:
- 	case AGGR_SOCKET:
- 	case AGGR_NONE:
--		perf_evsel__compute_deltas(evsel, cpu, count);
-+		if (!evsel->snapshot)
-+			perf_evsel__compute_deltas(evsel, cpu, count);
- 		perf_counts_values__scale(count, scale, NULL);
- 		evsel->counts->cpu[cpu] = *count;
- 		update_shadow_stats(evsel, count->values);
-@@ -479,7 +480,8 @@ static int read_counter_aggr(struct perf_evsel *counter)
- 	if (read_counter(counter))
- 		return -1;
- 
--	perf_evsel__compute_deltas(counter, -1, aggr);
-+	if (!counter->snapshot)
-+		perf_evsel__compute_deltas(counter, -1, aggr);
- 	perf_counts_values__scale(aggr, scale, &counter->counts->scaled);
- 
- 	for (i = 0; i < 3; i++)
+The breakage only happens once we'll add the MSI controller drivers that
+are actively using the stacked domain code (GICv2m and GICv3 ITS). That
+should give us some flexibility to tweak things.
+
+Thanks,
+
+	M.
 -- 
-1.9.3
-
+Jazz is not dead. It just smells funny...
