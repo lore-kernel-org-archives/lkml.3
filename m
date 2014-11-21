@@ -1,110 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757986AbaKUMDa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 07:03:30 -0500
-Received: from mta-out1.inet.fi ([62.71.2.203]:33190 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750839AbaKUMD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 07:03:28 -0500
-Date: Fri, 21 Nov 2014 14:02:55 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@gentwo.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Steve Capper <steve.capper@linaro.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 06/19] mm: store mapcount for compound page separate
-Message-ID: <20141121120255.GC16647@node.dhcp.inet.fi>
-References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1415198994-15252-7-git-send-email-kirill.shutemov@linux.intel.com>
- <87h9xt6pzw.fsf@linux.vnet.ibm.com>
+	id S1758245AbaKUMEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 07:04:25 -0500
+Received: from s250.sam-solutions.net ([217.21.49.219]:58483 "EHLO
+	s250.sam-solutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757322AbaKUMEY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 07:04:24 -0500
+From: Dmitry Lavnikevich <D.Lavnikevich@sam-solutions.com>
+To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+CC: Support Opensource <Support.Opensource@diasemi.com>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rtc: da9063: Fix ALARM interrupt registration.
+Thread-Topic: [PATCH] rtc: da9063: Fix ALARM interrupt registration.
+Thread-Index: AQHQBKf+aAnFetIHV0qwuDSOzEEmNpxpLRYAgAAdrYCAABozgIABZe2A
+Date: Fri, 21 Nov 2014 12:04:06 +0000
+Message-ID: <EFFD3D9B-9FA8-4DC6-9664-F62050232523@sam-solutions.com>
+References: <1416477273-975-1-git-send-email-d.lavnikevich@sam-solutions.com>
+ <6ED8E3B22081A4459DAC7699F3695FB7D0B4836D@SW-EX-MBX02.diasemi.com>
+ <8A823154-DC33-4A5A-9B4B-8B0E3BCFE83C@sam-solutions.com>
+ <6ED8E3B22081A4459DAC7699F3695FB7D0B483EE@SW-EX-MBX02.diasemi.com>
+In-Reply-To: <6ED8E3B22081A4459DAC7699F3695FB7D0B483EE@SW-EX-MBX02.diasemi.com>
+Accept-Language: en-US, ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.111.33]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <E3D2F3001B00364DA20BDE325C82EF97@sam-solutions.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87h9xt6pzw.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sALC4Wr0017169
 
-On Fri, Nov 21, 2014 at 11:42:51AM +0530, Aneesh Kumar K.V wrote:
-> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> writes:
-> 
-> > We're going to allow mapping of individual 4k pages of THP compound and
-> > we need a cheap way to find out how many time the compound page is
-> > mapped with PMD -- compound_mapcount() does this.
-> >
-> > page_mapcount() counts both: PTE and PMD mappings of the page.
-> >
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > ---
-> >  include/linux/mm.h   | 17 +++++++++++++++--
-> >  include/linux/rmap.h |  4 ++--
-> >  mm/huge_memory.c     | 23 ++++++++++++++---------
-> >  mm/hugetlb.c         |  4 ++--
-> >  mm/memory.c          |  2 +-
-> >  mm/migrate.c         |  2 +-
-> >  mm/page_alloc.c      | 13 ++++++++++---
-> >  mm/rmap.c            | 50 +++++++++++++++++++++++++++++++++++++++++++-------
-> >  8 files changed, 88 insertions(+), 27 deletions(-)
-> >
-> > diff --git a/include/linux/mm.h b/include/linux/mm.h
-> > index 1825c468f158..aef03acff228 100644
-> > --- a/include/linux/mm.h
-> > +++ b/include/linux/mm.h
-> > @@ -435,6 +435,19 @@ static inline struct page *compound_head(struct page *page)
-> >  	return page;
-> >  }
-> >  
-> > +static inline atomic_t *compound_mapcount_ptr(struct page *page)
-> > +{
-> > +	return (atomic_t *)&page[1].mapping;
-> > +}
-> > +
-> > +static inline int compound_mapcount(struct page *page)
-> > +{
-> > +	if (!PageCompound(page))
-> > +		return 0;
-> > +	page = compound_head(page);
-> > +	return atomic_read(compound_mapcount_ptr(page)) + 1;
-> > +}
-> 
-> 
-> How about 
-> 
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index 6e0b286649f1..59c9cf3d8510 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -46,6 +46,11 @@ struct page {
->  	unsigned long flags;		/* Atomic flags, some possibly
->  					 * updated asynchronously */
->  	union {
-> +		/*
-> +		  * For THP we use this to track the compound
-> +		  * page mapcount.
-> +		  */
-> +		atomic_t _compound_mapcount;
->  		struct address_space *mapping;	/* If low bit clear, points to
->  						 * inode address_space, or NULL.
->  						 * If page mapped as anonymous
-> 
-> and 
-> 
-> static inline atomic_t *compound_mapcount_ptr(struct page *page)
-> {
->         return (atomic_t *)&page[1]._compound_mapcount;
-> }
 
-Cast is redundant ;)
+> On 20Nov, 2014, at 15:43, Opensource [Steve Twiss] <stwiss.opensource@diasemi.com> wrote:
+> 
+> On 20 November 2014 13:09 Dmitry Lavnikevich wrote:
+> [...]
+>>> 
+>>> da9063-rtc da9063-rtc: Failed to request ALARM IRQ -22: -22
+>>> da9063-rtc: probe of da9063-rtc failed with error -22
+>> 
+>> I have tested this patch on pfla02 board and it was ok. On which
+>> board this fail occurred?
+> 
+> I am using a MCIMX6DL-SDP board -- although I the differences are in
+> my code base and not the platform in this case.
+> My apologies 
+> 
+> Regards,
+> Steve
+> 
+> patch follows:
+[â€¦]
 
-See answer to Christoph.
-
--- 
- Kirill A. Shutemov
+I see that your code also fixes the issue. And it is more consistent with da9055 implementation.
+So there is no need for my fix if yours is already there. Is it already accepted on some mainline branch?
+If not then are you going to submit it soon?ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
