@@ -1,121 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915AbaKUS6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:58:50 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55434 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751402AbaKUS6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:58:48 -0500
-Message-ID: <546F8B39.1080106@ti.com>
-Date: Fri, 21 Nov 2014 20:58:01 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Kevin Hilman <khilman@kernel.org>
-CC: Ulf Hansson <ulf.hansson@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>	<1709760.E0jX3Myv0h@wuerfel>	<546C7FDD.7030906@ti.com>	<2900095.WIocOu7ue2@wuerfel>	<CAPDyKFqeZ3YU2OEN4tCOdcQ0pAho67Q8U_eCEOroG9aS0mp+-Q@mail.gmail.com>	<546DD87B.3080806@ti.com>	<CAPDyKFrBhZyqozM98_4pPdW0EMFt5W6VX1X7cz6Z=yNhW4vYTA@mail.gmail.com>	<CAMuHMdWtHT7QX3Kpa-GCLa49ToGODwjnNVgfxDzJzcM-FU1ffg@mail.gmail.com>	<546E0970.5090301@ti.com>	<7hh9xtr5ac.fsf@deeprootsystems.com>	<CAMuHMdV7zASj8_NtLRir1VubXEKTkq0vBGMXeYXDACu8UC2tZA@mail.gmail.com>	<7hbno1r1af.fsf@deeprootsystems.com>	<CAMuHMdVXGPu7x706NxqO3rn3KuRbPbD_ZQsJtDH4Hf31AaRR+Q@mail.gmail.com>	<7hppchpcfm.fsf@deeprootsystems.com> <CAMuHMdU6G35SP-P7bt6RJQk59CrGcKE2XM4N3o8Dv3qxZU7gxA@mail.gmail.com>
-In-Reply-To: <CAMuHMdU6G35SP-P7bt6RJQk59CrGcKE2XM4N3o8Dv3qxZU7gxA@mail.gmail.com>
+	id S1751808AbaKUTAn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:00:43 -0500
+Received: from mail-bl2on0133.outbound.protection.outlook.com ([65.55.169.133]:17577
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750986AbaKUTAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 14:00:42 -0500
+X-WSS-ID: 0NFEKSV-08-6B4-02
+X-M-MSG: 
+From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+To: Alex Williamson <alex.williamson@redhat.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/4] PCI: quirk AMD/ATI VGA cards to avoid PM reset
+Thread-Topic: [PATCH 2/4] PCI: quirk AMD/ATI VGA cards to avoid PM reset
+Thread-Index: AQHQBbhgsI4pmA0aVkmuqD1BzzIbV5xrbw6A
+Date: Fri, 21 Nov 2014 19:00:32 +0000
+Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D05995CAA6@satlexdag05.amd.com>
+References: <20141121180322.26669.65689.stgit@gimli.home>
+ <20141121182414.26669.48397.stgit@gimli.home>
+In-Reply-To: <20141121182414.26669.48397.stgit@gimli.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.180.168.240]
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Alexander.Deucher@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(377454003)(189002)(51704005)(13464003)(19580395003)(92566001)(19580405001)(84676001)(31966008)(95666004)(44976005)(2501002)(92726001)(23676002)(120916001)(2656002)(97736003)(105586002)(68736004)(87936001)(54356999)(76176999)(55846006)(50986999)(21056001)(46102003)(64706001)(77156002)(106466001)(33656002)(62966003)(53416004)(47776003)(20776003)(107046002)(106116001)(50466002)(77096003)(86362001)(4396001)(101416001)(99396003)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB195;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
+X-Forefront-PRVS: 0402872DA1
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB421;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sALJ0owf020306
 
-Hi Kevin,
-On 11/21/2014 10:06 AM, Geert Uytterhoeven wrote:
-> On Fri, Nov 21, 2014 at 2:30 AM, Kevin Hilman <khilman@kernel.org> wrote:
->> Geert Uytterhoeven <geert@linux-m68k.org> writes:
->>> On Thu, Nov 20, 2014 at 10:48 PM, Kevin Hilman <khilman@kernel.org> wrote:
->>>>>> So what exactly are we talking about with "PM" clocks, and why are they
->>>>>> "special" when it comes to PM domains?  IOW, why are the clocks to be
->>>>>> managed during PM domain transitions for a given device any different
->>>>>> than the clocks that need to be managed for a runtime suspend/resume (or
->>>>>> system suspend/resume) sequence for the same device?
->>>>>
->>>>> (Speaking for my case, shmobile)
->>>>>
->>>>> They're not. The clocks to be managed during PM domain transitions are the
->>>>> same as the clocks that need to be managed for a runtime suspend/resume
->>>>> (or system suspend/resume) sequence.
->>>>>
->>>>> The special thing is that this is more a platform than a driver thing: the same
->>>>> module may have a "PM/functional" clock (that is documented to enable/disable
->>>>> the module) on one Soc, but noet on another.
->>>>
->>>> So why isn't the presence or absence of the clock described in the .dtsi
->>>> for the SoC instead of being handled by special PM domain logic?
->>>
->>> It is. Cfr. the presence/absence of clocks for renesas,rcar-gpio nodes.
->>
->> Hmm, OK, Good.
->>
->> So now I'm confused about why the PM domain has to do anything special
->> if the presence/absence of the clocks is already handled by the DT.
+> -----Original Message-----
+> From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> Sent: Friday, November 21, 2014 1:24 PM
+> To: bhelgaas@google.com
+> Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; Alex
+> Williamson; Deucher, Alexander
+> Subject: [PATCH 2/4] PCI: quirk AMD/ATI VGA cards to avoid PM reset
 > 
-> Just adding a clock property to a device node in DT doesn't enable the clock
-> automatically, nor make it runtime-managed automatically.
-> Compare this to e.g. pinctrl, where adding pinctrl properties to DT does enable
-> them automatically, without the driver for the device having to care about it.
+> Some AMD/ATI GPUs report that they support PM reset (NoSoftRst-) but
+> initiating such a reset has no apparent affect on the device.  The
+> monitor remains sync'd, the framebuffer contents are retained, etc.
+> Callers of pci_reset_function() don't necessarily have a way to
+> validate whether a reset was effective, so we really want to avoid
+> making use of a known non-effective reset.  Returning an error in
+> such cases appears to be the better option.  For users like vfio-pci,
+> this allows the driver to escalate to the bus reset interfaces.
 > 
-> Drivers interfacing external hardware typically do care about clocks, as they
-> have to program clock generators for the external hardware interface (e.g.
-> driving spi or i2c buses at specific frequencies).
+> If a device lives on the root bus, there's really no further
+> escalation path, so we exempt PM reset as potentially better than
+> nothing.
 > 
-> Other random drivers don't care about clocks, so they don't handle them.
-> But as long as they make basic pm_runtime_{enable,get_sync,put}() calls,
-> the (optional) clocks (and hardware PM domains) will "work" fine, if handled
-> by the PM (clock) domain.
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> Cc: Alex Deucher <alexander.deucher@amd.com>
 
-Personally, I don't see problems with "functional" clocks.
-The problem, in my opinion, is that we can't specify in DT that some clock is
-"optional", so no one should touch such clock except driver.
-For example:
-Keystone 2 NETCP module has 3 clocks:
-	clocks = <&papllclk>, <&clkcpgmac>, <&chipclk12>;
-	clock-names = "clk_pa", "clk_cpgmac", "cpsw_cpts_rft_clk";
- and CPTS functionality is optional (in general) and can be enabled/disabled.
-Also, usual example is MMC hosts 
-- OMAP hsmmc has "functional" clock "hsmmc1_fclk", and may have
-"optional" clock "mmchsdb_fck". As you may remember, PM runtime
-for OMAP2+ implemented by OMAP PM domain which performs many things,
-but one thing which is done always is enabling/disabling of "fck"
-when get/put() are called.
+Acked-by: Alex Deucher <alexander.deucher@amd.com>
 
-Actually, pm_clk is very simple case of OMAP PM domain which should only
-handle clocks.
+> ---
+> 
+>  drivers/pci/quirks.c |   21 +++++++++++++++++++++
+>  1 file changed, 21 insertions(+)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index 90acb32..561e10d 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -3008,6 +3008,27 @@
+> DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_REALTEK, 0x8169,
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MELLANOX, PCI_ANY_ID,
+>  			 quirk_broken_intx_masking);
+> 
+> +static void quirk_no_pm_reset(struct pci_dev *dev)
+> +{
+> +	/*
+> +	 * A non-effective PM reset may be better than nothing
+> +	 * if we can't do a bus reset
+> +	 */
+> +	if (!pci_is_root_bus(dev->bus))
+> +		dev->dev_flags |= PCI_DEV_FLAGS_NO_PM_RESET;
+> +}
+> +
+> +/*
+> + * Some AMD/ATI GPUS (HD8570 - Oland) report supporting PM reset via
+> D3->D0
+> + * transition (NoSoftRst-).  This reset mechanims seems to have no effect
+> + * whatsoever on the device, even retaining the framebuffer contents and
+> + * monitor sync.  Advertising this support makes other layers, like VFIO
+> + * assume pci_reset_function() is viable for this device.  Mark it as
+> + * unavailable to skip it when testing reset methods.
+> + */
+> +DECLARE_PCI_FIXUP_CLASS_HEADER(PCI_VENDOR_ID_ATI, PCI_ANY_ID,
+> +			       PCI_CLASS_DISPLAY_VGA, 8,
+> quirk_no_pm_reset);
+> +
+>  #ifdef CONFIG_ACPI
+>  /*
+>   * Apple: Shutdown Cactus Ridge Thunderbolt controller.
 
-In non-DT case, we have possibility to divide clocks on "fck" and "opt"
-(The way it can be done is not convenient, but it is - .con_id).
-
-For DT-case - no way now. Also, PM domains are not physically present on
-Keystone 2 and GPD was selected as glue layer to integrate DT, pm_clk and
-PM runtime all together (one big-fat-global PM domain :).
-
-So, I was able to find only following way to define "fck" clocks in DT:
-	clocks = <&papllclk>, <&clkcpgmac>, <&chipclk12>;
-	clock-names = "clk_pa", "clk_cpgmac", "cpsw_cpts_rft_clk";
-	fck-clocks = <&papllclk>, <&clkcpgmac>;
-As you can see - this will lead to data duplication in DT (
-
-Any propositions are welcome?
-
-Unfortunately, It seems that if we would not able to find DT solution
-then there will be following ways to move forward:
-- "remove the power domain proxy from your drivers and use the clocks directly" 
-((c) Arnd Bergmann).
-[As possibility - It can be allowed to use clk_pm APIs by drivers]
-- continue using platform specific implementations.
-
-regards,
--grygorii
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
