@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334AbaKUTq0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 14:46:26 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:60203 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107AbaKUTom (ORCPT
+	id S1752105AbaKUTol (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 14:44:41 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:43667 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073AbaKUToi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 14:44:42 -0500
+	Fri, 21 Nov 2014 14:44:38 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Arnd Bergmann <arnd.bergmann@linaro.org>,
-        "pang.xunlei" <pang.xunlei@linaro.org>,
+Cc: "pang.xunlei" <pang.xunlei@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
         Miroslav Lichvar <mlichvar@redhat.com>,
         Richard Cochran <richardcochran@gmail.com>,
         Prarit Bhargava <prarit@redhat.com>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: [PATCH 07/12] time: Expose getrawmonotonic64 for in-kernel uses
-Date: Fri, 21 Nov 2014 11:44:13 -0800
-Message-Id: <1416599058-13836-8-git-send-email-john.stultz@linaro.org>
+        Alessandro Zummo <a.zummo@towertech.it>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 04/12] time: Provide y2038 safe do_settimeofday() replacement
+Date: Fri, 21 Nov 2014 11:44:10 -0800
+Message-Id: <1416599058-13836-5-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416599058-13836-1-git-send-email-john.stultz@linaro.org>
 References: <1416599058-13836-1-git-send-email-john.stultz@linaro.org>
@@ -26,9 +27,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a timespec64 based getrawmonotonic64() implementation
-that can be used as we convert internal users of
-getrawmonotonic away from using timespecs.
+From: "pang.xunlei" <pang.xunlei@linaro.org>
+
+The kernel uses 32-bit signed value(time_t) for seconds elapsed
+1970-01-01:00:00:00, thus it will overflow at 2038-01-19 03:14:08
+on 32-bit systems. This is widely known as the y2038 problem.
+
+As part of addressing "y2038 problem" for in-kernel uses, this patch
+adds safe do_settimeofday64() using timespec64.
+
+After this patch, do_settimeofday() is deprecated and all its call
+sites will be fixed using do_settimeofday64(), after that it can be
+removed.
 
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -38,85 +48,113 @@ Cc: Miroslav Lichvar <mlichvar@redhat.com>
 Cc: Richard Cochran <richardcochran@gmail.com>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- include/linux/timekeeping.h | 15 ++++++++++++++-
- kernel/time/timekeeping.c   | 11 ++++++-----
- 2 files changed, 20 insertions(+), 6 deletions(-)
+ include/linux/timekeeping.h | 21 ++++++++++++++++++++-
+ kernel/time/timekeeping.c   | 19 +++++++++----------
+ 2 files changed, 29 insertions(+), 11 deletions(-)
 
 diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
-index 6d76c65..e40a8d6 100644
+index 1caa6b0..071ad7e 100644
 --- a/include/linux/timekeeping.h
 +++ b/include/linux/timekeeping.h
-@@ -26,7 +26,7 @@ struct timespec __current_kernel_time(void);
-  * timespec based interfaces
+@@ -10,7 +10,7 @@ extern int timekeeping_suspended;
+  * Get and set timeofday
   */
- struct timespec get_monotonic_coarse(void);
--extern void getrawmonotonic(struct timespec *ts);
-+extern void getrawmonotonic64(struct timespec64 *ts);
- extern void ktime_get_ts64(struct timespec64 *ts);
+ extern void do_gettimeofday(struct timeval *tv);
+-extern int do_settimeofday(const struct timespec *tv);
++extern int do_settimeofday64(const struct timespec64 *ts);
+ extern int do_sys_settimeofday(const struct timespec *tv,
+ 			       const struct timezone *tz);
  
- extern int __getnstimeofday64(struct timespec64 *tv);
-@@ -61,6 +61,11 @@ static inline void ktime_get_real_ts(struct timespec *ts)
- 	getnstimeofday64(ts);
- }
+@@ -33,6 +33,14 @@ extern int __getnstimeofday64(struct timespec64 *tv);
+ extern void getnstimeofday64(struct timespec64 *tv);
  
-+static inline void getrawmonotonic(struct timespec *ts)
+ #if BITS_PER_LONG == 64
++/**
++ * Deprecated. Use do_settimeofday64().
++ */
++static inline int do_settimeofday(const struct timespec *ts)
 +{
-+	getrawmonotonic64(ts);
++	return do_settimeofday64(ts);
 +}
 +
- #else
- /**
-  * Deprecated. Use do_settimeofday64().
-@@ -105,6 +110,14 @@ static inline void ktime_get_real_ts(struct timespec *ts)
- 	getnstimeofday64(&ts64);
- 	*ts = timespec64_to_timespec(ts64);
+ static inline int __getnstimeofday(struct timespec *ts)
+ {
+ 	return __getnstimeofday64(ts);
+@@ -54,6 +62,17 @@ static inline void ktime_get_real_ts(struct timespec *ts)
  }
-+
-+static inline void getrawmonotonic(struct timespec *ts)
+ 
+ #else
++/**
++ * Deprecated. Use do_settimeofday64().
++ */
++static inline int do_settimeofday(const struct timespec *ts)
 +{
 +	struct timespec64 ts64;
 +
-+	getrawmonotonic64(&ts64);
-+	*ts = timespec64_to_timespec(ts64);
++	ts64 = timespec_to_timespec64(*ts);
++	return do_settimeofday64(&ts64);
 +}
- #endif
- 
- extern void getboottime(struct timespec *ts);
++
+ static inline int __getnstimeofday(struct timespec *ts)
+ {
+ 	struct timespec64 ts64;
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index d37f775..b329586 100644
+index ec1791f..1d33550 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -894,12 +894,12 @@ int timekeeping_notify(struct clocksource *clock)
- }
+@@ -703,18 +703,18 @@ void do_gettimeofday(struct timeval *tv)
+ EXPORT_SYMBOL(do_gettimeofday);
  
  /**
-- * getrawmonotonic - Returns the raw monotonic time in a timespec
-- * @ts:		pointer to the timespec to be set
-+ * getrawmonotonic64 - Returns the raw monotonic time in a timespec
-+ * @ts:		pointer to the timespec64 to be set
+- * do_settimeofday - Sets the time of day
+- * @tv:		pointer to the timespec variable containing the new time
++ * do_settimeofday64 - Sets the time of day.
++ * @ts:     pointer to the timespec64 variable containing the new time
   *
-  * Returns the raw monotonic time (completely un-modified by ntp)
+  * Sets the time of day to the new time and update NTP and notify hrtimers
   */
--void getrawmonotonic(struct timespec *ts)
-+void getrawmonotonic64(struct timespec64 *ts)
+-int do_settimeofday(const struct timespec *tv)
++int do_settimeofday64(const struct timespec64 *ts)
  {
  	struct timekeeper *tk = &tk_core.timekeeper;
- 	struct timespec64 ts64;
-@@ -914,9 +914,10 @@ void getrawmonotonic(struct timespec *ts)
- 	} while (read_seqcount_retry(&tk_core.seq, seq));
+-	struct timespec64 ts_delta, xt, tmp;
++	struct timespec64 ts_delta, xt;
+ 	unsigned long flags;
  
- 	timespec64_add_ns(&ts64, nsecs);
--	*ts = timespec64_to_timespec(ts64);
-+	*ts = ts64;
+-	if (!timespec_valid_strict(tv))
++	if (!timespec64_valid_strict(ts))
+ 		return -EINVAL;
+ 
+ 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
+@@ -723,13 +723,12 @@ int do_settimeofday(const struct timespec *tv)
+ 	timekeeping_forward_now(tk);
+ 
+ 	xt = tk_xtime(tk);
+-	ts_delta.tv_sec = tv->tv_sec - xt.tv_sec;
+-	ts_delta.tv_nsec = tv->tv_nsec - xt.tv_nsec;
++	ts_delta.tv_sec = ts->tv_sec - xt.tv_sec;
++	ts_delta.tv_nsec = ts->tv_nsec - xt.tv_nsec;
+ 
+ 	tk_set_wall_to_mono(tk, timespec64_sub(tk->wall_to_monotonic, ts_delta));
+ 
+-	tmp = timespec_to_timespec64(*tv);
+-	tk_set_xtime(tk, &tmp);
++	tk_set_xtime(tk, ts);
+ 
+ 	timekeeping_update(tk, TK_CLEAR_NTP | TK_MIRROR | TK_CLOCK_WAS_SET);
+ 
+@@ -741,7 +740,7 @@ int do_settimeofday(const struct timespec *tv)
+ 
+ 	return 0;
  }
--EXPORT_SYMBOL(getrawmonotonic);
-+EXPORT_SYMBOL(getrawmonotonic64);
-+
+-EXPORT_SYMBOL(do_settimeofday);
++EXPORT_SYMBOL(do_settimeofday64);
  
  /**
-  * timekeeping_valid_for_hres - Check if timekeeping is suitable for hres
+  * timekeeping_inject_offset - Adds or subtracts from the current time.
 -- 
 1.9.1
 
