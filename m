@@ -1,119 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaKUSNi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 13:13:38 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37003 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859AbaKUSNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 13:13:37 -0500
-Date: Fri, 21 Nov 2014 19:13:34 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: rui wang <ruiv.wang@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
-        "Wang, Rui Y" <rui.y.wang@intel.com>
-Subject: Re: [PATCH v3] x86/mce: Try printing all machine check banks known
- before panic
-Message-ID: <20141121181334.GC4274@pd.tnic>
-References: <1416388961-24159-1-git-send-email-ruiv.wang@gmail.com>
- <20141119102954.GA5617@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F3294198E@ORSMSX114.amr.corp.intel.com>
- <20141120101505.GA791@pd.tnic>
- <CANVTcTa++Ef04JSYpfrCVuua5B0Wv=ASyr_H7nfHSQ-vC9GV3Q@mail.gmail.com>
- <20141121164140.GA4274@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F3294F888@ORSMSX114.amr.corp.intel.com>
+	id S1751389AbaKUSOc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 13:14:32 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33980 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710AbaKUSOb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 13:14:31 -0500
+Date: Fri, 21 Nov 2014 18:12:53 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-spi@vger.kernel.org
+Message-ID: <20141121181253.GX3815@sirena.org.uk>
+References: <20141120162418.04FAC1A9BFC@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RyRVxeT1fPSLkipE"
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3294F888@ORSMSX114.amr.corp.intel.com>
+In-Reply-To: <20141120162418.04FAC1A9BFC@localhost.localdomain>
+X-Cookie: Some optional equipment shown.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: fsl-spi: Don't use cpm_command on CPM1
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 05:20:53PM +0000, Luck, Tony wrote:
-> > leave them in. Then you can read them out again on panic time. The mce
-> > log buffer will have to become a circular buffer or something like that.
-> 
-> This is a mixed bag.  If there are a bunch of errors so that we overflow the buffer,
-> then general wisdom says that people want to see the first errors, as the later
-> ones may just be secondary effects from the earlier ones.
-> 
-> But - lots of systems don't run mcelog(8) daemon.  So the buffer just fills
-> up with the first 32 errors (perhaps all relatively harmless corrected errors)
-> and then when some serious stuff happens we have no place to log :-)
 
-Of course we do - we overwrite the first one. Changing it into a
-circular buffer will give us last 32 errors logged.
+--RyRVxeT1fPSLkipE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Perhaps we need separate buffers for UC=0 and UC=1?  Or something else??
+On Thu, Nov 20, 2014 at 05:24:17PM +0100, Christophe Leroy wrote:
+> On CPM1, when the SPI parameter RAM is relocated to somewhere else than t=
+he
+> default location, in accordance with freescale documentation
+> (refer micropatch SPI application note EB662), init RX/TX params command =
+shall
+> not be used because it doesn't take into account the new location, and
+> overwrites data that is in original location of SPI param ram at addresse=
+s=20
+> SCC2 param base +  (u32*)0x88 (u16*)0x90 (u32*)0x98 (u16*)0xA0, hence bre=
+aking
+> activity on SCC2 if SCC2 is used in a mode like QMC for instance.
 
-Well, adding yet another arbitrary length buffer of struct mces used in
-yet another context scenario doesn't help that either, does it?
+Applied, thanks.
 
-This chunk particularly makes me go WTH?!:
+--RyRVxeT1fPSLkipE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-+ * All valid error banks seen during MCE are temporarily saved here.
-+ * There are multiple components which can report an error. For now
-+ * 8 might be enough but it's subject to change in the future.
-+ */
-+#define MAX_ERRORS     8
-+static struct mce banks_saved[MAX_ERRORS];
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-It sounds to me like we need to go back to the drawing board and analyze
-why that thing happens first:
+iQEcBAEBAgAGBQJUb4CkAAoJECTWi3JdVIfQzEIIAIBpGFtzX4a+MGQh8q+sJtEs
+AwPTpoaGY/EzbgYSx39srYrjQD17FK5uogXnDRYcg62BEIbvix2PQrNgADXK0xLi
+wF6VY2ApnMnyoBZQKx+yT0d1esADAswtX8pfkD2yL2WroIwIfCtC1six4uXZB2WC
+UEantw8K25PTJfNLT3N82Cb21qclcuA1vUYe/Q+8dtQKJzz+kt+v4Q8dZCKqoiWf
+lvA43RWlFLXfjjQnCfpb4v4Cm1sNglJkuMsJS+opiKMvjq9b1NkPL3rs3ysb5NyG
+9haY99ntFjTYydZEmsQT1YBAsjfR01rCuaJnee6jWJZWMx46t5oLG1OGaymWQf8=
+=uMc0
+-----END PGP SIGNATURE-----
 
-[  177.806166] Kernel panic - not syncing: Machine check from unknown source
-
-Now this comes from mce_reign() which is entered by the CPU which
-entered the #MC handler first, according to the comments above it.
-
-So basically it tells me that we want all the MCEs from the last
-"round," so to speak, where we had to summon all cores into the indian
-clearing of #MC to quickly show each other's wounds :-) :-)
-
-Now, if MCE_LOG_LEN records, aka 32, are not enough because the error
-happened at some point in the past, there are two possibilities:
-
-* error got logged into mcelog and is long out to dmesg.
-
-So we go look at dmesg. Not very easy to do when we panic, I know, so we
-better make sure we have serial connected.
-
-
- [ Btw., we can know when userspace is eating up error data:
-   drivers/ras/debugfs.c. If it doesn't, we can then dump it to dmesg.
-   We'll have to teach mcelog/ras daemons to open that file so that we
-   don't issue to dmesg. ]
-
-
-* error is not logged yet so still in mcelog and we simply dump it out
-to dmesg.
-
-In any case, we cannot have fixed-size buffer for some number of errors
-and rely on it always having the error which caused the #MC as something
-will consume it at some point anyway.
-
-So maybe if we could get a more detailed explanation of when this thing
-happens, then we might address it better.
-
-And also:
-
-        /*
-         * No machine check event found. Must be some external
-         * source or one CPU is hung. Panic.
-         */
-        if (global_worst <= MCE_KEEP_SEVERITY && mca_cfg.tolerant < 3)
-                mce_panic("Machine check from unknown source", NULL, NULL);
-
-Provided this comment is correct, it doesn't sound like any MCE record
-will ever tell us what causes the error as an external source or a hung
-CPU doesn't generate an MCE record in any bank, does it?
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+--RyRVxeT1fPSLkipE--
