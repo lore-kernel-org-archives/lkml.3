@@ -1,134 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754AbaKVNF3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 08:05:29 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:33281 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750822AbaKVNF2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 08:05:28 -0500
-Date: Sat, 22 Nov 2014 08:05:15 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [GIT PULL] ftrace/x86: Add frames pointers to trampoline as
- necessary
-Message-ID: <20141122080515.1fbd62ef@gandalf.local.home>
-In-Reply-To: <CA+55aFx3AZpdU2YxFrNXvhWqJ2PyhyQBqTi7v_9hGH1UV-aY4g@mail.gmail.com>
-References: <20141121095037.2f5a4d4f@gandalf.local.home>
-	<CA+55aFx3AZpdU2YxFrNXvhWqJ2PyhyQBqTi7v_9hGH1UV-aY4g@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1751879AbaKVNL2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 08:11:28 -0500
+Received: from mout.web.de ([212.227.15.3]:63918 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750822AbaKVNL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 08:11:27 -0500
+Message-ID: <54708B5E.2080302@users.sourceforge.net>
+Date: Sat, 22 Nov 2014 14:10:54 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] x86: AMD-perf_event: Deletion of unnecessary checks before
+ the function call "free_percpu"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+X-Provags-ID: V03:K0:Mil20yIHZvxyZiu4bXPfK/cJAyy/Okqpc37U8VCcP4Vz4HAwqyC
+ D9NVkEjl5ctDO6yw61pbFLO61O6GOfE0OaWQ2Sb/i95SJ0hDeJD1B9sc4o9Hw2ZKp2f9qB1
+ 1vyzrndVh9wKJ0ZIpQgSbj1K4tZpWiuvcbC/Z2PtMZyKoG9HCsicaFlDb8QcWmJUkRhYouA
+ hS1k2XC1Uad8ZEgD5m+Bw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014 17:35:10 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Sat, 22 Nov 2014 14:01:27 +0100
 
-> On Fri, Nov 21, 2014 at 6:50 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > +.macro create_frame parent rip
-> > +#ifdef CC_USING_FENTRY
-> > +       pushq \parent
-> > +       pushq %rbp
-> > +       movq %rsp, %rbp
-> 
-> This is a very strange frame.
-> 
-> Why do you do the "pushq \parent" at all? Why isn't this just a *real*
-> frame and add it to MCOUNT_SAVE_FRAME.
-> 
-> You seem to create this fake frame-within-a-frame thing. It's not clear why.
-> 
+The free_percpu() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-Honestly, I did it this way because it was the simplest way to do it.
+This issue was detected by using the Coccinelle software.
 
-There's three different setups this covers:
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ arch/x86/kernel/cpu/perf_event_amd_uncore.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-1) frame pointers and mcount
+diff --git a/arch/x86/kernel/cpu/perf_event_amd_uncore.c b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
+index 30790d7..4856232 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
+@@ -592,11 +592,9 @@ fail_online:
+ fail_l2:
+ 	if (cpu_has_perfctr_nb)
+ 		perf_pmu_unregister(&amd_nb_pmu);
+-	if (amd_uncore_l2)
+-		free_percpu(amd_uncore_l2);
++	free_percpu(amd_uncore_l2);
+ fail_nb:
+-	if (amd_uncore_nb)
+-		free_percpu(amd_uncore_nb);
++	free_percpu(amd_uncore_nb);
+ 
+ fail_nodev:
+ 	return ret;
+-- 
+2.1.3
 
-2) frame pointers and fentry
-
-3) no frame pointers and fentry
-
-(mcount forces frame pointers, so there's no "no frame pointers and
-mcount)
-
-You probably know all this but I'm writing this for anyone else that
-might be reading this. And also let you know what I understand, which
-might be wrong too ;-)
-
-With #3 we don't need to do anything. But when frame pointers
-are enabled, we have in the main code:
-
-1) mcount
-
-func:
-		push %rbp
-		mov %rsp %rbp
-		[...]
-		call mcount
-
-2) fentry
-
-func:
-		call fentry
-		push %rbp
-		mov %rsp %rbp
-
-
-On mcount, the frame pointer of the parent is pushed to the stack, with
-fentry it is not.
-
-Now when fentry is called, the stack is:
-
-	address of return-to-parent-addr
-	address of return-to-func-addr
-
- If fentry does just:
-
-fentry:
-		push %rbp
-		mov  %rsp %rbp
-
-Then the stack trace will see after %rbp the return to func, but it
-will never see the return to parent, and the parent will be missing
-from the stack trace.
-
-At a minimum, fentry needs:
-
-fentry:
-		push 8(%rsp)    // Return to parent, not func
-		push %rbp
-		mov  %rsp %rbp
-		push 16(%rbp)	// Return to func:
-		push %rbp
-		mov  %rsp %rbp
-
-With mcount, the call is done after the parent frame pointer is setup,
-so we only really need to
-
-mcount:
-		push %rbp
-		mov  %rsp %rbp
-
-My version adds an extra push %rip in the mcount case but is the same
-in the fentry case which is now the default.
-
-The ftrace_caller_setup took a little bit to get right. I'm nervous
-about modifying that and breaking something. Better yet, after that is
-called, the parent rip is placed in %rsi and the func rip is placed in
-%rdi. By doing it the way I did it, it made it nice and convenient that
-I could just make a couple of macros that handle all three cases.
-
-If you want, I can add more comments to explain all this.
-
--- Steve
