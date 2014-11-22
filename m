@@ -1,60 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900AbaKVVtU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 16:49:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47675 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149AbaKVVtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 16:49:17 -0500
-Message-ID: <547104D5.4030803@suse.de>
-Date: Sat, 22 Nov 2014 22:49:09 +0100
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752992AbaKVVvH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 16:51:07 -0500
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:38270 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656AbaKVVvE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 16:51:04 -0500
+X-Originating-IP: 50.43.41.112
+Date: Sat, 22 Nov 2014 13:50:50 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Pieter Smith <pieter@boesman.nl>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Matt Turner <mattst88@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        =?utf-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Bertrand Jacquin <beber@meleeweb.net>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Fabian Frederick <fabf@skynet.be>, Peter Foley <pefoley2@pefoley.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Iulia Manda <iulia.manda21@gmail.com>,
+        Kees Cook <keescook@chromium.org>,
+        Catalina Mocanu <catalina.mocanu@gmail.com>,
+        linux-fsdevel@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>
+Subject: Re: [PATCH 3/6] fs/splice: support compiling out splice-family
+ syscalls
+Message-ID: <20141122215050.GC23711@thin>
+References: <1416690001-20817-1-git-send-email-pieter@boesman.nl>
+ <1416690001-20817-4-git-send-email-pieter@boesman.nl>
 MIME-Version: 1.0
-To: linux-samsung-soc@vger.kernel.org
-CC: Kukjin Kim <kgene@kernel.org>,
-        =?UTF-8?B?6rmA7ZWZ7KO8?= <ruppi.kim@hardkernel.com>,
-        Humberto Naves <hsnaves@gmail.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Johann Pfefferl <johann.pfefferl@siemens.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "open list:PIN CONTROL SUBSY..." <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH v2 3/5] pinctrl: exynos: add exynos5410 SoC specific data
-References: <1416687984-3546-1-git-send-email-afaerber@suse.de> <1416687984-3546-4-git-send-email-afaerber@suse.de>
-In-Reply-To: <1416687984-3546-4-git-send-email-afaerber@suse.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416690001-20817-4-git-send-email-pieter@boesman.nl>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 22.11.2014 um 21:26 schrieb Andreas Färber:
-> From: Hakjoo Kim <ruppi.kim@hardkernel.com>
+On Sat, Nov 22, 2014 at 09:59:58PM +0100, Pieter Smith wrote:
+> Many embedded systems will not need the splice-family syscalls (splice,
+> vmsplice, tee and sendfile). Omitting them saves space.  This adds a new EXPERT
+> config option CONFIG_SYSCALL_SPLICE (default y) to support compiling them out.
 > 
-> Add Samsung EXYNOS5410 SoC specific data to enable pinctrl
-> support for all platforms based on EXYNOS5410.
+> This patch removes almost all callers of .splice_read() and .splice_write()
+> in the file_operations struct. This paves the way to eventually compile out the
+> .splice_read and .splice_write members of the file_operations struct as well as
+> the remaining splice-related infrastructure.
+
+This commit message doesn't reflect the new approach of leaving those
+members in the structure.
+
+The patch looks good otherwise.
+
+- Josh Triplett
+
+> add/remove: 0/16 grow/shrink: 2/5 up/down: 114/-3693 (-3579)
+> function                                     old     new   delta
+> splice_direct_to_actor                       348     416     +68
+> splice_to_pipe                               371     417     +46
+> splice_from_pipe_next                        107     106      -1
+> fdput                                         11       -     -11
+> signal_pending                                39      26     -13
+> fdget                                         56      42     -14
+> user_page_pipe_buf_ops                        20       -     -20
+> user_page_pipe_buf_steal                      25       -     -25
+> file_end_write                                58      29     -29
+> file_start_write                              68      34     -34
+> pipe_to_user                                  43       -     -43
+> wakeup_pipe_readers                           54       -     -54
+> do_splice_to                                  87       -     -87
+> ipipe_prep.part                               92       -     -92
+> opipe_prep.part                              119       -    -119
+> sys_sendfile                                 122       -    -122
+> sys_sendfile64                               126       -    -126
+> sys_vmsplice                                 137       -    -137
+> vmsplice_to_user                             205       -    -205
+> sys_tee                                      491       -    -491
+> do_sendfile                                  492       -    -492
+> vmsplice_to_pipe                             558       -    -558
+> sys_splice                                  1020       -   -1020
 > 
-> Signed-off-by: Hakjoo Kim <ruppi.kim@hardkernel.com>
-> [AF: Rebased onto Exynos5260]
-> Signed-off-by: Andreas Färber <afaerber@suse.de>
+> Signed-off-by: Pieter Smith <pieter@boesman.nl>
 > ---
-> v1 -> v2:
-> * Filled in Sob from Hakjoo Kim
-> * Rebased (.svc, .{g,w}eint_{con,mask,pend} fields dropped)
-
-Ugh, this patch is actually missing exactly this change! Stay tuned...
-
-Andreas
-
--- 
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 21284 AG Nürnberg
+>  fs/splice.c     |  2 ++
+>  init/Kconfig    | 10 ++++++++++
+>  kernel/sys_ni.c |  8 ++++++++
+>  3 files changed, 20 insertions(+)
+> 
+> diff --git a/fs/splice.c b/fs/splice.c
+> index 44b201b..7c4c695 100644
+> --- a/fs/splice.c
+> +++ b/fs/splice.c
+> @@ -1316,6 +1316,7 @@ long do_splice_direct(struct file *in, loff_t *ppos, struct file *out,
+>  	return ret;
+>  }
+>  
+> +#ifdef CONFIG_SYSCALL_SPLICE
+>  static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
+>  			       struct pipe_inode_info *opipe,
+>  			       size_t len, unsigned int flags);
+> @@ -2200,4 +2201,5 @@ COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
+>  	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+>  }
+>  #endif
+> +#endif
+>  
+> diff --git a/init/Kconfig b/init/Kconfig
+> index d811d5f..dec9819 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -1571,6 +1571,16 @@ config NTP
+>  	  system clock to an NTP server, you can disable this option to save
+>  	  space.
+>  
+> +config SYSCALL_SPLICE
+> +	bool "Enable splice/vmsplice/tee/sendfile syscalls" if EXPERT
+> +	default y
+> +	help
+> +	  This option enables the splice, vmsplice, tee and sendfile syscalls. These
+> +	  are used by applications to: move data between buffers and arbitrary file
+> +	  descriptors; "copy" data between buffers; or copy data from userspace into
+> +	  buffers. If building an embedded system where no applications use these
+> +	  syscalls, you can disable this option to save space.
+> +
+>  config PCI_QUIRKS
+>  	default y
+>  	bool "Enable PCI quirk workarounds" if EXPERT
+> diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+> index d2f5b00..25d5551 100644
+> --- a/kernel/sys_ni.c
+> +++ b/kernel/sys_ni.c
+> @@ -170,6 +170,14 @@ cond_syscall(sys_fstat);
+>  cond_syscall(sys_stat);
+>  cond_syscall(sys_uname);
+>  cond_syscall(sys_olduname);
+> +cond_syscall(sys_vmsplice);
+> +cond_syscall(sys_splice);
+> +cond_syscall(sys_tee);
+> +cond_syscall(sys_sendfile);
+> +cond_syscall(sys_sendfile64);
+> +cond_syscall(compat_sys_vmsplice);
+> +cond_syscall(compat_sys_sendfile);
+> +cond_syscall(compat_sys_sendfile64);
+>  
+>  /* arch-specific weak syscall entries */
+>  cond_syscall(sys_pciconfig_read);
+> -- 
+> 1.9.1
+> 
