@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502AbaKVUsJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 15:48:09 -0500
-Received: from www.linutronix.de ([62.245.132.108]:33346 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbaKVUsI (ORCPT
+	id S1752594AbaKVUzu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 15:55:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49263 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaKVUzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 15:48:08 -0500
-Date: Sat, 22 Nov 2014 21:48:05 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT pull] timer updates for 3.18
-Message-ID: <alpine.DEB.2.11.1411222146450.6439@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Sat, 22 Nov 2014 15:55:49 -0500
+Date: Sat, 22 Nov 2014 12:54:27 -0800
+From: tip-bot for Dave Hansen <tipbot@zytor.com>
+Message-ID: <tip-9f7789f845cc100dd0d94fa1aa083e3373dc03db@git.kernel.org>
+Cc: dave@sr71.net, mingo@kernel.org, dave.hansen@linux.intel.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@zytor.com
+Reply-To: dave@sr71.net, mingo@kernel.org, dave.hansen@linux.intel.com,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com
+In-Reply-To: <20141122163711.0F037EE6@viggo.jf.intel.com>
+References: <20141122163711.0F037EE6@viggo.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mpx] asm-generic: Remove asm-generic arch_bprm_mm_init()
+Git-Commit-ID: 9f7789f845cc100dd0d94fa1aa083e3373dc03db
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Commit-ID:  9f7789f845cc100dd0d94fa1aa083e3373dc03db
+Gitweb:     http://git.kernel.org/tip/9f7789f845cc100dd0d94fa1aa083e3373dc03db
+Author:     Dave Hansen <dave.hansen@linux.intel.com>
+AuthorDate: Sat, 22 Nov 2014 08:37:11 -0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sat, 22 Nov 2014 21:52:08 +0100
 
-please pull the latest timers-urgent-for-linus git tree from:
+asm-generic: Remove asm-generic arch_bprm_mm_init()
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
+This is a follow-on to commit 62e88b1c00de 'mm: Make
+arch_unmap()/bprm_mm_init() available to all architectures'
 
-A single bugfix for an init order problem in the sun4i subarch
-clockevents code.
+I removed the asm-generic version of arch_unmap() in that patch,
+but missed arch_bprm_mm_init().  So this broke the build for
+architectures using asm-generic/mmu_context.h who actually have
+an MMU.
 
-Thanks,
+Fixes: 62e88b1c00de 'mm: Make arch_unmap()/bprm_mm_init() available to all architectures'
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: linux-arch@vger.kernel.org
+Cc: x86@kernel.org
+Link: http://lkml.kernel.org/r/20141122163711.0F037EE6@viggo.jf.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-	tglx
+---
+ include/asm-generic/mmu_context.h | 5 -----
+ 1 file changed, 5 deletions(-)
 
------------------->
-Maxime Ripard (1):
-      clockevent: sun4i: Fix race condition in the probe code
-
-
- drivers/clocksource/sun4i_timer.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-index efb17c3ee120..f4a9c0058b4d 100644
---- a/drivers/clocksource/sun4i_timer.c
-+++ b/drivers/clocksource/sun4i_timer.c
-@@ -182,6 +182,12 @@ static void __init sun4i_timer_init(struct device_node *node)
- 	/* Make sure timer is stopped before playing with interrupts */
- 	sun4i_clkevt_time_stop(0);
- 
-+	sun4i_clockevent.cpumask = cpu_possible_mask;
-+	sun4i_clockevent.irq = irq;
-+
-+	clockevents_config_and_register(&sun4i_clockevent, rate,
-+					TIMER_SYNC_TICKS, 0xffffffff);
-+
- 	ret = setup_irq(irq, &sun4i_timer_irq);
- 	if (ret)
- 		pr_warn("failed to setup irq %d\n", irq);
-@@ -189,12 +195,6 @@ static void __init sun4i_timer_init(struct device_node *node)
- 	/* Enable timer0 interrupt */
- 	val = readl(timer_base + TIMER_IRQ_EN_REG);
- 	writel(val | TIMER_IRQ_EN(0), timer_base + TIMER_IRQ_EN_REG);
--
--	sun4i_clockevent.cpumask = cpu_possible_mask;
--	sun4i_clockevent.irq = irq;
--
--	clockevents_config_and_register(&sun4i_clockevent, rate,
--					TIMER_SYNC_TICKS, 0xffffffff);
+diff --git a/include/asm-generic/mmu_context.h b/include/asm-generic/mmu_context.h
+index 1f2a8f9..a7eec91 100644
+--- a/include/asm-generic/mmu_context.h
++++ b/include/asm-generic/mmu_context.h
+@@ -42,9 +42,4 @@ static inline void activate_mm(struct mm_struct *prev_mm,
+ {
  }
- CLOCKSOURCE_OF_DECLARE(sun4i, "allwinner,sun4i-a10-timer",
- 		       sun4i_timer_init);
+ 
+-static inline void arch_bprm_mm_init(struct mm_struct *mm,
+-			struct vm_area_struct *vma)
+-{
+-}
+-
+ #endif /* __ASM_GENERIC_MMU_CONTEXT_H */
