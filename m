@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaKVAFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 19:05:09 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:47943 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467AbaKVAFG (ORCPT
+	id S1752827AbaKVALQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 19:11:16 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:38457 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608AbaKVALP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 19:05:06 -0500
-Message-ID: <1416614703.20938.0.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH v2 9/9] netfilter: Replace smp_read_barrier_depends()
- with lockless_dereference()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        "open list:NETWORKING [IPv4/..." <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Fri, 21 Nov 2014 16:05:03 -0800
-In-Reply-To: <CAJhHMCCCSU7PbWdgPouefbLJBcoxR8nmsS8dg_=BcuqVJZbDew@mail.gmail.com>
-References: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
-	 <1416582363-20661-10-git-send-email-bobby.prani@gmail.com>
-	 <1416586364.8629.104.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <CAJhHMCCCSU7PbWdgPouefbLJBcoxR8nmsS8dg_=BcuqVJZbDew@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Nov 2014 19:11:15 -0500
+Date: Fri, 21 Nov 2014 19:11:11 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141122001111.GA26007@htj.dyndns.org>
+References: <20141119235033.GE11386@lerouge>
+ <20141120122339.GA14877@htj.dyndns.org>
+ <alpine.DEB.2.11.1411202204030.3950@nanos>
+ <20141120221122.GA25393@htj.dyndns.org>
+ <alpine.DEB.2.11.1411202315230.3950@nanos>
+ <20141120230514.GB25393@htj.dyndns.org>
+ <alpine.DEB.2.11.1411210109460.6439@nanos>
+ <20141121141332.GA8808@lerouge>
+ <20141121162506.GA15461@htj.dyndns.org>
+ <20141121214444.GB9198@lerouge>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141121214444.GB9198@lerouge>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Frederic.
 
-On Fri, 2014-11-21 at 16:57 -0500, Pranith Kumar wrote:
+On Fri, Nov 21, 2014 at 10:44:46PM +0100, Frederic Weisbecker wrote:
+> I fear that enumerating and fix the existing issues won't be enough.
+> We can't find all the code sites out there which rely on not being
+> faulted.
 
-> Hi Eric,
-> 
-> Thanks for looking at this patch.
-> 
-> I've been scratching my head since morning trying to find out what was
-> so obviously wrong with this patch. Alas, I don't see what you do.
-> 
-> Could you point it out and show me how incompetent I am, please?
-> 
-> Thanks!
+Oh, sure but that can take some time so adding documentation in the
+mean time probably isn't a bad idea.
 
-Well, even it the code is _not_ broken, I don't see any value with this
-patch.
+> The best would be to fix that from the percpu allocator itself, or
+> vmalloc.
 
-If I use git blame on current code, line containing
-smp_read_barrier_depends() exactly points to the relevant commit [1]
+I don't think there's much percpu allocator itself can do.  The
+ability to grow dynamically comes from being able to allocate
+relatively consistent layout among areas for different CPUs and pretty
+much requires vmalloc area and it'd generally be a good idea to take
+out the vmalloc fault anyway.
 
-After your change, it will point to some cleanup, which makes little
-sense to me, considering you did not change the smp_wmb() in
-xt_replace_table().
+Thanks.
 
-I, as a netfilter contributor would like to keep current code as is,
-because it is how I feel safe with it.
-
-We have a proliferation of interfaces, but this does not help to
-understand the issues and code maintenance.
-
-smp_read_barrier_depends() better documents the read barrier than 
-lockless_dereference().
-
-The point of having a lock or not is irrelevant here.
-
-[1]
-http://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=b416c144f46af1a30ddfa4e4319a8f077381ad63
-
-
-
-
+-- 
+tejun
