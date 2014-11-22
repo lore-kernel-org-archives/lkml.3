@@ -1,379 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbaKVIo0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 03:44:26 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:57142 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878AbaKVIn1 (ORCPT
+	id S1751204AbaKVJUu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 04:20:50 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:60437 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750753AbaKVJUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 03:43:27 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <tixy@linaro.org>, <masami.hiramatsu.pt@hitachi.com>
-CC: <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        <taras.kondratiuk@linaro.org>, <ben.dooks@codethink.co.uk>,
-        <cl@linux.com>, <rabin@rab.in>, <davem@davemloft.net>,
-        <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v4 1/4] ARM: kprobes: introduces checker
-Date: Sat, 22 Nov 2014 16:40:10 +0800
-Message-ID: <1416645613-38904-2-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1416645613-38904-1-git-send-email-wangnan0@huawei.com>
-References: <1416645613-38904-1-git-send-email-wangnan0@huawei.com>
+	Sat, 22 Nov 2014 04:20:46 -0500
+Message-ID: <5470556B.6080608@free-electrons.com>
+Date: Sat, 22 Nov 2014 10:20:43 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020208.54704CAA.012D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 7785277317433ba3a5710ec421977c09
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Kishon Vijay Abraham I <kishon@ti.com>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 6/7] ARM: mvebu: add PHY support to the dts for the
+ USB controllers on Armada 375
+References: <1415879269-29711-1-git-send-email-gregory.clement@free-electrons.com> <1415879269-29711-7-git-send-email-gregory.clement@free-electrons.com> <20141122020811.GO22670@titan.lakedaemon.net>
+In-Reply-To: <20141122020811.GO22670@titan.lakedaemon.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introdces 'checker' to decoding phase, and calls checkers
-when instruction decoding. This allows further decoding for specific
-instructions.  This patch introduces a stub call of checkers in kprobe
-arch_prepare_kprobe() as an example and for further expansion.
+Hi Jason,
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Reviewed-by: Jon Medhurst <tixy@linaro.org>
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+On 22/11/2014 03:08, Jason Cooper wrote:
+> On Thu, Nov 13, 2014 at 12:47:48PM +0100, Gregory CLEMENT wrote:
+>> Now that the USB cluster node has been added, use it as a PHY provider
+>> for the USB controller linked to it: the first EHCI and the xHCI.
+>>
+>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+>> ---
+>>  arch/arm/boot/dts/armada-375.dtsi | 5 +++++
+>>  1 file changed, 5 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/armada-375.dtsi b/arch/arm/boot/dts/armada-375.dtsi
+>> index 8f45cf5d2a50..f344ec420c95 100644
+>> --- a/arch/arm/boot/dts/armada-375.dtsi
+>> +++ b/arch/arm/boot/dts/armada-375.dtsi
+>> @@ -14,6 +14,7 @@
+>>  #include "skeleton.dtsi"
+>>  #include <dt-bindings/interrupt-controller/arm-gic.h>
+>>  #include <dt-bindings/interrupt-controller/irq.h>
+>> +#include <dt-bindings/phy/phy.h>
+> 
+> Odd.  The previous patch in this series simply adds a line to phy.h,
+> however, I get the following error during 'make dtbs':
+> 
+> ########
+>   DTC     arch/arm/boot/dts/armada-375-db.dtb
+> In file included from arch/arm/boot/dts/armada-375-db.dts:17:0:arch/arm/boot/dts/armada-375.dtsi:17:33:
+> fatal error: dt-bindings/phy/phy.h: No such file or directory
+>  #include <dt-bindings/phy/phy.h>
+>                                  ^
+> compilation terminated.
+> scripts/Makefile.lib:282: recipe for target 'arch/arm/boot/dts/armada-37 5-db.dtb' failed
+> ########
+> 
+> mvebu/dt is based on v3.18-rc1.  Is there a missing dependency
+> somewhere?  Perhaps we should let Kishon take the whole series and
+> handle the (hopefully trivial) merge conflict?
 
----
+Actually Kishon asked me to use the dt-bindings/phy/phy.h file which
+was introduced by the patch "phy: Add PHY header file for DT x Driver
+defines". So indeed I had to have a dependency on the phy_dt_header
+branch (which is based on v3.18-rc4 and have only this single commit).
+The git tree is located at
+git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git
 
-v1 -> v2:
- - kprobe checker stubs are introduced in this patch.
 
-v2 -> v3:
- - Code cleanups following Masami Hiramatsu and Tixy's advises.
- - Commit message improvements.
----
- arch/arm/kernel/kprobes-arm.c   |  2 ++
- arch/arm/kernel/kprobes-thumb.c |  3 +++
- arch/arm/kernel/kprobes.c       |  6 ++++-
- arch/arm/kernel/kprobes.h       |  7 +++--
- arch/arm/kernel/probes-arm.c    |  5 ++--
- arch/arm/kernel/probes-arm.h    |  3 ++-
- arch/arm/kernel/probes-thumb.c  | 10 ++++---
- arch/arm/kernel/probes-thumb.h  |  6 +++--
- arch/arm/kernel/probes.c        | 60 ++++++++++++++++++++++++++++++++++++-----
- arch/arm/kernel/probes.h        | 11 +++++++-
- arch/arm/kernel/uprobes.c       |  2 +-
- 11 files changed, 95 insertions(+), 20 deletions(-)
+Maybe we could add this branch in mvebu as a dependency as it is done
+on arm-soc. I suggest this because I would prefer that we continue to
+be the only ones to merge the device tree files in order to reduce the
+merge conflict.
 
-diff --git a/arch/arm/kernel/kprobes-arm.c b/arch/arm/kernel/kprobes-arm.c
-index ac300c6..5a81275 100644
---- a/arch/arm/kernel/kprobes-arm.c
-+++ b/arch/arm/kernel/kprobes-arm.c
-@@ -341,3 +341,5 @@ const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
- 	[PROBES_BRANCH] = {.handler = simulate_bbl},
- 	[PROBES_LDMSTM] = {.decoder = kprobe_decode_ldmstm}
- };
-+
-+const struct decode_checker *kprobes_arm_checkers[] = {NULL};
-diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
-index 9495d7f..b8ba7d2 100644
---- a/arch/arm/kernel/kprobes-thumb.c
-+++ b/arch/arm/kernel/kprobes-thumb.c
-@@ -664,3 +664,6 @@ const union decode_action kprobes_t32_actions[NUM_PROBES_T32_ACTIONS] = {
- 	[PROBES_T32_MUL_ADD_LONG] = {
- 		.handler = t32_emulate_rdlo12rdhi8rn16rm0_noflags},
- };
-+
-+const struct decode_checker *kprobes_t32_checkers[] = {NULL};
-+const struct decode_checker *kprobes_t16_checkers[] = {NULL};
-diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
-index 6d64420..d7bee4b 100644
---- a/arch/arm/kernel/kprobes.c
-+++ b/arch/arm/kernel/kprobes.c
-@@ -61,6 +61,7 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
- 	kprobe_decode_insn_t *decode_insn;
- 	const union decode_action *actions;
- 	int is;
-+	const struct decode_checker **checkers;
- 
- 	if (in_exception_text(addr))
- 		return -EINVAL;
-@@ -74,9 +75,11 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
- 		insn = __opcode_thumb32_compose(insn, inst2);
- 		decode_insn = thumb32_probes_decode_insn;
- 		actions = kprobes_t32_actions;
-+		checkers = kprobes_t32_checkers;
- 	} else {
- 		decode_insn = thumb16_probes_decode_insn;
- 		actions = kprobes_t16_actions;
-+		checkers = kprobes_t16_checkers;
- 	}
- #else /* !CONFIG_THUMB2_KERNEL */
- 	thumb = false;
-@@ -85,12 +88,13 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
- 	insn = __mem_to_opcode_arm(*p->addr);
- 	decode_insn = arm_probes_decode_insn;
- 	actions = kprobes_arm_actions;
-+	checkers = kprobes_arm_checkers;
- #endif
- 
- 	p->opcode = insn;
- 	p->ainsn.insn = tmp_insn;
- 
--	switch ((*decode_insn)(insn, &p->ainsn, true, actions)) {
-+	switch ((*decode_insn)(insn, &p->ainsn, true, actions, checkers)) {
- 	case INSN_REJECTED:	/* not supported */
- 		return -EINVAL;
- 
-diff --git a/arch/arm/kernel/kprobes.h b/arch/arm/kernel/kprobes.h
-index 9a2712e..05f3b40 100644
---- a/arch/arm/kernel/kprobes.h
-+++ b/arch/arm/kernel/kprobes.h
-@@ -36,16 +36,19 @@ kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_probes_insn *asi,
- typedef enum probes_insn (kprobe_decode_insn_t)(probes_opcode_t,
- 						struct arch_probes_insn *,
- 						bool,
--						const union decode_action *);
-+						const union decode_action *,
-+						const struct decode_checker *[*]);
- 
- #ifdef CONFIG_THUMB2_KERNEL
- 
- extern const union decode_action kprobes_t32_actions[];
- extern const union decode_action kprobes_t16_actions[];
--
-+extern const struct decode_checker *kprobes_t32_checkers[];
-+extern const struct decode_checker *kprobes_t16_checkers[];
- #else /* !CONFIG_THUMB2_KERNEL */
- 
- extern const union decode_action kprobes_arm_actions[];
-+extern const struct decode_checker *kprobes_arm_checkers[];
- 
- #endif
- 
-diff --git a/arch/arm/kernel/probes-arm.c b/arch/arm/kernel/probes-arm.c
-index 8eaef81..125feda 100644
---- a/arch/arm/kernel/probes-arm.c
-+++ b/arch/arm/kernel/probes-arm.c
-@@ -725,10 +725,11 @@ static void __kprobes arm_singlestep(probes_opcode_t insn,
-  */
- enum probes_insn __kprobes
- arm_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
--		       bool emulate, const union decode_action *actions)
-+		       bool emulate, const union decode_action *actions,
-+		       const struct decode_checker *checkers[])
- {
- 	asi->insn_singlestep = arm_singlestep;
- 	asi->insn_check_cc = probes_condition_checks[insn>>28];
- 	return probes_decode_insn(insn, asi, probes_decode_arm_table, false,
--				  emulate, actions);
-+				  emulate, actions, checkers);
- }
-diff --git a/arch/arm/kernel/probes-arm.h b/arch/arm/kernel/probes-arm.h
-index ace6572..8b11ec4 100644
---- a/arch/arm/kernel/probes-arm.h
-+++ b/arch/arm/kernel/probes-arm.h
-@@ -68,6 +68,7 @@ extern const union decode_item probes_decode_arm_table[];
- 
- enum probes_insn arm_probes_decode_insn(probes_opcode_t,
- 		struct arch_probes_insn *, bool emulate,
--		const union decode_action *actions);
-+		const union decode_action *actions,
-+		const struct decode_checker *checkers[]);
- 
- #endif
-diff --git a/arch/arm/kernel/probes-thumb.c b/arch/arm/kernel/probes-thumb.c
-index 4131351..a5022b4 100644
---- a/arch/arm/kernel/probes-thumb.c
-+++ b/arch/arm/kernel/probes-thumb.c
-@@ -863,20 +863,22 @@ static void __kprobes thumb32_singlestep(probes_opcode_t opcode,
- 
- enum probes_insn __kprobes
- thumb16_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
--			   bool emulate, const union decode_action *actions)
-+			   bool emulate, const union decode_action *actions,
-+			   const struct decode_checker *checkers[])
- {
- 	asi->insn_singlestep = thumb16_singlestep;
- 	asi->insn_check_cc = thumb_check_cc;
- 	return probes_decode_insn(insn, asi, probes_decode_thumb16_table, true,
--				  emulate, actions);
-+				  emulate, actions, checkers);
- }
- 
- enum probes_insn __kprobes
- thumb32_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
--			   bool emulate, const union decode_action *actions)
-+			   bool emulate, const union decode_action *actions,
-+			   const struct decode_checker *checkers[])
- {
- 	asi->insn_singlestep = thumb32_singlestep;
- 	asi->insn_check_cc = thumb_check_cc;
- 	return probes_decode_insn(insn, asi, probes_decode_thumb32_table, true,
--				  emulate, actions);
-+				  emulate, actions, checkers);
- }
-diff --git a/arch/arm/kernel/probes-thumb.h b/arch/arm/kernel/probes-thumb.h
-index 7c6f6eb..ccfe3e4 100644
---- a/arch/arm/kernel/probes-thumb.h
-+++ b/arch/arm/kernel/probes-thumb.h
-@@ -89,9 +89,11 @@ extern const union decode_item probes_decode_thumb16_table[];
- 
- enum probes_insn __kprobes
- thumb16_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
--		bool emulate, const union decode_action *actions);
-+		bool emulate, const union decode_action *actions,
-+		const struct decode_checker *checkers[]);
- enum probes_insn __kprobes
- thumb32_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
--		bool emulate, const union decode_action *actions);
-+		bool emulate, const union decode_action *actions,
-+		const struct decode_checker *checkers[]);
- 
- #endif
-diff --git a/arch/arm/kernel/probes.c b/arch/arm/kernel/probes.c
-index a8ab540..6a7d92e 100644
---- a/arch/arm/kernel/probes.c
-+++ b/arch/arm/kernel/probes.c
-@@ -342,6 +342,31 @@ static const int decode_struct_sizes[NUM_DECODE_TYPES] = {
- 	[DECODE_TYPE_REJECT]	= sizeof(struct decode_reject)
- };
- 
-+static int run_checkers(const struct decode_checker *checkers[],
-+		int action, probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h)
-+{
-+	const struct decode_checker **p;
-+
-+	if (!checkers)
-+		return INSN_GOOD;
-+
-+	p = checkers;
-+	while (*p != NULL) {
-+		int retval;
-+		probes_check_t *checker_func = (*p)[action].checker;
-+
-+		retval = INSN_GOOD;
-+		if (checker_func)
-+			retval = checker_func(insn, asi, h);
-+		if (retval == INSN_REJECTED)
-+			return retval;
-+		p++;
-+	}
-+	return INSN_GOOD;
-+}
-+
- /*
-  * probes_decode_insn operates on data tables in order to decode an ARM
-  * architecture instruction onto which a kprobe has been placed.
-@@ -388,11 +413,17 @@ static const int decode_struct_sizes[NUM_DECODE_TYPES] = {
- int __kprobes
- probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
- 		   const union decode_item *table, bool thumb,
--		   bool emulate, const union decode_action *actions)
-+		   bool emulate, const union decode_action *actions,
-+		   const struct decode_checker *checkers[])
- {
- 	const struct decode_header *h = (struct decode_header *)table;
- 	const struct decode_header *next;
- 	bool matched = false;
-+	/*
-+	 * @insn can be modified by decode_regs. Save its original
-+	 * value for checkers.
-+	 */
-+	probes_opcode_t origin_insn = insn;
- 
- 	if (emulate)
- 		insn = prepare_emulated_insn(insn, asi, thumb);
-@@ -422,24 +453,41 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
- 		}
- 
- 		case DECODE_TYPE_CUSTOM: {
-+			int err;
- 			struct decode_custom *d = (struct decode_custom *)h;
--			return actions[d->decoder.action].decoder(insn, asi, h);
-+			int action = d->decoder.action;
-+
-+			err = run_checkers(checkers, action, origin_insn, asi, h);
-+			if (err == INSN_REJECTED)
-+				return INSN_REJECTED;
-+			return actions[action].decoder(insn, asi, h);
- 		}
- 
- 		case DECODE_TYPE_SIMULATE: {
-+			int err;
- 			struct decode_simulate *d = (struct decode_simulate *)h;
--			asi->insn_handler = actions[d->handler.action].handler;
-+			int action = d->handler.action;
-+
-+			err = run_checkers(checkers, action, origin_insn, asi, h);
-+			if (err == INSN_REJECTED)
-+				return INSN_REJECTED;
-+			asi->insn_handler = actions[action].handler;
- 			return INSN_GOOD_NO_SLOT;
- 		}
- 
- 		case DECODE_TYPE_EMULATE: {
-+			int err;
- 			struct decode_emulate *d = (struct decode_emulate *)h;
-+			int action = d->handler.action;
-+
-+			err = run_checkers(checkers, action, origin_insn, asi, h);
-+			if (err == INSN_REJECTED)
-+				return INSN_REJECTED;
- 
- 			if (!emulate)
--				return actions[d->handler.action].decoder(insn,
--					asi, h);
-+				return actions[action].decoder(insn, asi, h);
- 
--			asi->insn_handler = actions[d->handler.action].handler;
-+			asi->insn_handler = actions[action].handler;
- 			set_emulated_insn(insn, asi, thumb);
- 			return INSN_GOOD;
- 		}
-diff --git a/arch/arm/kernel/probes.h b/arch/arm/kernel/probes.h
-index dba9f24..b4bf1f5 100644
---- a/arch/arm/kernel/probes.h
-+++ b/arch/arm/kernel/probes.h
-@@ -314,6 +314,14 @@ union decode_action {
- 	probes_custom_decode_t	*decoder;
- };
- 
-+typedef enum probes_insn (probes_check_t)(probes_opcode_t,
-+					   struct arch_probes_insn *,
-+					   const struct decode_header *);
-+
-+struct decode_checker {
-+	probes_check_t	*checker;
-+};
-+
- #define DECODE_END			\
- 	{.bits = DECODE_TYPE_END}
- 
-@@ -402,6 +410,7 @@ probes_insn_handler_t probes_emulate_none;
- int __kprobes
- probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
- 		const union decode_item *table, bool thumb, bool emulate,
--		const union decode_action *actions);
-+		const union decode_action *actions,
-+		const struct decode_checker **checkers);
- 
- #endif
-diff --git a/arch/arm/kernel/uprobes.c b/arch/arm/kernel/uprobes.c
-index 56adf9c..372585a 100644
---- a/arch/arm/kernel/uprobes.c
-+++ b/arch/arm/kernel/uprobes.c
-@@ -88,7 +88,7 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 	auprobe->ixol[1] = __opcode_to_mem_arm(UPROBE_SS_ARM_INSN);
- 
- 	ret = arm_probes_decode_insn(insn, &auprobe->asi, false,
--				     uprobes_probes_actions);
-+				     uprobes_probes_actions, NULL);
- 	switch (ret) {
- 	case INSN_REJECTED:
- 		return -EINVAL;
+Thanks,
+
+Gregory
+
+
+
+> 
+> thx,
+> 
+> Jason.
+> 
+
+
 -- 
-1.8.4
-
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
