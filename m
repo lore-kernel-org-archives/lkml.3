@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750869AbaKVGJP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 01:09:15 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:48907 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711AbaKVGJO (ORCPT
+	id S1750878AbaKVGOg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 01:14:36 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:38468 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712AbaKVGOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 01:09:14 -0500
+	Sat, 22 Nov 2014 01:14:34 -0500
 From: Anjana Sasindran <anjanasasindran123@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
         Anjana Sasindran <anjanasasindran123@gmail.com>
 Subject: [PATCH] Drivers:Staging:rtl8188eu:hal:usb_halinit.c: Added blank lines after declarations
-Date: Sat, 22 Nov 2014 11:36:40 +0530
-Message-Id: <1416636400-3107-1-git-send-email-anjanasasindran123@gmail.com>
+Date: Sat, 22 Nov 2014 11:39:17 +0530
+Message-Id: <1416636557-3183-1-git-send-email-anjanasasindran123@gmail.com>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
