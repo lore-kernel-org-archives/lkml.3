@@ -1,73 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751108AbaKVHbL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 02:31:11 -0500
-Received: from mout.web.de ([212.227.15.14]:60571 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735AbaKVHbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 02:31:10 -0500
-Message-ID: <54703BB4.1040306@web.de>
-Date: Sat, 22 Nov 2014 08:31:00 +0100
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Wincy Van <fanwenyi0529@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bandan Das <bsd@redhat.com>
-Subject: Re: [PATCH] KVM: nVMX: nested MSR auto load/restore emulation.
-References: <CACzj_yU3evDWQdPbNHgE5sk_rJZicVfPhBG7K3J_wO2fQt5dcg@mail.gmail.com>
-In-Reply-To: <CACzj_yU3evDWQdPbNHgE5sk_rJZicVfPhBG7K3J_wO2fQt5dcg@mail.gmail.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="PnTrIEkFrp5pO97DM6BmHWWUnuF717M5p"
-X-Provags-ID: V03:K0:CLdN0bhZiLAfkdk+OidWusyNM2zt/Su45sO1Ut8+pLlykBmvu+w
- bkl0sR9qNjqGd/CBnbp5z6UPDQ6ahvXwYz9NDqUDOdHzUsv93QcSF4rLkK9dtqzTMU3w06o
- LoYEL0GwtFzlOwpsjKwB8uMG6VHv9K5CXQAkCwJjuudDoLmEnZIxmzcuemzRJAxf1+Vc2Ew
- s4+Qq3U/Go/wn72bctl9w==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1751165AbaKVHnP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 02:43:15 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:42962 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762AbaKVHnN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 02:43:13 -0500
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeremiah Mahler <jmmahler@gmail.com>
+Subject: [PATCH] can: eliminate banner[] variable and switch to pr_info()
+Date: Fri, 21 Nov 2014 23:42:35 -0800
+Message-Id: <1416642155-31816-1-git-send-email-jmmahler@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---PnTrIEkFrp5pO97DM6BmHWWUnuF717M5p
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Several CAN modules use a design pattern with a banner[] variable at the
+top which defines a string that is used once during init to print the
+banner.  The string is also embedded with KERN_INFO which makes it
+printk() specific.
 
-On 2014-11-22 05:24, Wincy Van wrote:
-> Some hypervisors need MSR auto load/restore feature.
->=20
-> We read MSRs from vm-entry MSR load area which specified by L1,
-> and load them via kvm_set_msr in the nested entry.
-> When nested exit occurs, we get MSRs via kvm_get_msr, writting
-> them to L1`s MSR store area. After this, we read MSRs from vm-exit
-> MSR load area, and load them via kvm_set_msr.
->=20
-> VirtualBox will work fine with this patch.
+Improve the code by eliminating the banner[] variable and moving the
+string to where it is printed.  Then switch from printk(KERN_INFO to
+pr_info() for the lines that were changed.
 
-Cool! This feature is long overdue.
+Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
+---
+ net/can/af_can.c | 5 +----
+ net/can/bcm.c    | 4 +---
+ net/can/raw.c    | 4 +---
+ 3 files changed, 3 insertions(+), 10 deletions(-)
 
-Patch is unfortunately misformatted which makes it very hard to read.
-Please check via linux/scripts/checkpatch.pl for the proper style.
+diff --git a/net/can/af_can.c b/net/can/af_can.c
+index ce82337..ac05be1 100644
+--- a/net/can/af_can.c
++++ b/net/can/af_can.c
+@@ -64,9 +64,6 @@
+ 
+ #include "af_can.h"
+ 
+-static __initconst const char banner[] = KERN_INFO
+-	"can: controller area network core (" CAN_VERSION_STRING ")\n";
+-
+ MODULE_DESCRIPTION("Controller Area Network PF_CAN core");
+ MODULE_LICENSE("Dual BSD/GPL");
+ MODULE_AUTHOR("Urs Thuermann <urs.thuermann@volkswagen.de>, "
+@@ -896,7 +893,7 @@ static __init int can_init(void)
+ 		     offsetof(struct can_frame, data) !=
+ 		     offsetof(struct canfd_frame, data));
+ 
+-	printk(banner);
++	pr_info("can: controller area network core (" CAN_VERSION_STRING ")\n");
+ 
+ 	memset(&can_rx_alldev_list, 0, sizeof(can_rx_alldev_list));
+ 
+diff --git a/net/can/bcm.c b/net/can/bcm.c
+index dcb75c0..9aa3f76 100644
+--- a/net/can/bcm.c
++++ b/net/can/bcm.c
+@@ -78,8 +78,6 @@
+ 		     (CAN_SFF_MASK | CAN_EFF_FLAG | CAN_RTR_FLAG))
+ 
+ #define CAN_BCM_VERSION CAN_VERSION
+-static __initconst const char banner[] = KERN_INFO
+-	"can: broadcast manager protocol (rev " CAN_BCM_VERSION " t)\n";
+ 
+ MODULE_DESCRIPTION("PF_CAN broadcast manager protocol");
+ MODULE_LICENSE("Dual BSD/GPL");
+@@ -1615,7 +1613,7 @@ static int __init bcm_module_init(void)
+ {
+ 	int err;
+ 
+-	printk(banner);
++	pr_info("can: broadcast manager protocol (rev " CAN_BCM_VERSION " t)\n");
+ 
+ 	err = can_proto_register(&bcm_can_proto);
+ 	if (err < 0) {
+diff --git a/net/can/raw.c b/net/can/raw.c
+index 081e81f..e3250e2 100644
+--- a/net/can/raw.c
++++ b/net/can/raw.c
+@@ -56,8 +56,6 @@
+ #include <net/net_namespace.h>
+ 
+ #define CAN_RAW_VERSION CAN_VERSION
+-static __initconst const char banner[] =
+-	KERN_INFO "can: raw protocol (rev " CAN_RAW_VERSION ")\n";
+ 
+ MODULE_DESCRIPTION("PF_CAN raw protocol");
+ MODULE_LICENSE("Dual BSD/GPL");
+@@ -810,7 +808,7 @@ static __init int raw_module_init(void)
+ {
+ 	int err;
+ 
+-	printk(banner);
++	pr_info("can: raw protocol (rev " CAN_RAW_VERSION ")\n");
+ 
+ 	err = can_proto_register(&raw_can_proto);
+ 	if (err < 0)
+-- 
+2.1.3
 
-Could you also write a corresponding kvm-unit-test (see x86/vmx_tests.c)?=
-
-
-Jan
-
-
-
---PnTrIEkFrp5pO97DM6BmHWWUnuF717M5p
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iEYEARECAAYFAlRwO7QACgkQitSsb3rl5xQwFgCfY0UXBsAiyB8Xefv1k/rbsJUx
-CkoAoIq4bRZd5lFrp2Iwkd+PCNj21Wm3
-=dX3X
------END PGP SIGNATURE-----
-
---PnTrIEkFrp5pO97DM6BmHWWUnuF717M5p--
