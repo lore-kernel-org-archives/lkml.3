@@ -1,172 +1,426 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaKVU4x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 15:56:53 -0500
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:34020 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752632AbaKVU4v (ORCPT
+	id S1752645AbaKVVBP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 16:01:15 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:49840 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751924AbaKVVBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 15:56:51 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnwIAIL3cFRXQ7vi/2dsb2JhbABcgw5VWbdRBQEBAQEBAQUBdZNChnKBAxcBAQEBAX2EMC8jL2s3iEUBvRGQYYY6hmaDa4RVBZI9hRCHNIFzlSeBSYI1RzCCSwEBAQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Joe Perches <joe@perches.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] scripts: add a graph generator based on checkpatch reports
-Date: Sat, 22 Nov 2014 21:56:40 +0100
-Message-Id: <1416689800-27146-1-git-send-email-fabf@skynet.be>
+	Sat, 22 Nov 2014 16:01:14 -0500
+From: Pieter Smith <pieter@boesman.nl>
+To: pieter@boesman.nl
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 1/6] fs: move sendfile syscall into fs/splice
+Date: Sat, 22 Nov 2014 21:59:56 +0100
+Message-Id: <1416690001-20817-2-git-send-email-pieter@boesman.nl>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416690001-20817-1-git-send-email-pieter@boesman.nl>
+References: <1416690001-20817-1-git-send-email-pieter@boesman.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This script generates a graph based on errors/warnings/checks detected
-by checkpatch -f recursively on each files of a directory.
-Results are grouped by subfolders and pushed in gnuplot datasets.
+sendfile functionally forms part of the splice group of syscalls (splice,
+vmsplice and tee). Grouping sendfile with splice paves the way to compiling out
+the splice group of syscalls for embedded systems that do not need these.
 
-By default checkstat.png is generated with an histogram.
+add/remove: 0/0 grow/shrink: 7/2 up/down: 86/-61 (25)
+function                                     old     new   delta
+file_start_write                              34      68     +34
+file_end_write                                29      58     +29
+sys_pwritev                                  115     122      +7
+sys_preadv                                   115     122      +7
+fdput_pos                                     29      36      +7
+sys_pwrite64                                 115     116      +1
+sys_pread64                                  115     116      +1
+sys_tee                                      497     491      -6
+sys_splice                                  1075    1020     -55
 
-This script should always be called from kernel source root.
-eg scripts/checkstat.pl fs
-
-Cc: Joe Perches <joe@perches.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Pieter Smith <pieter@boesman.nl>
 ---
- scripts/checkstat.pl | 120 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 120 insertions(+)
- create mode 100755 scripts/checkstat.pl
+ fs/read_write.c | 175 -------------------------------------------------------
+ fs/splice.c     | 178 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 178 insertions(+), 175 deletions(-)
 
-diff --git a/scripts/checkstat.pl b/scripts/checkstat.pl
-new file mode 100755
-index 0000000..8b7d451
---- /dev/null
-+++ b/scripts/checkstat.pl
-@@ -0,0 +1,120 @@
-+#!/usr/bin/perl
-+# (c) 2014, Fabian Frederick (fabf@skynet.be)
-+#
-+# Based on scripts/checkpatch.pl
-+#
-+# This script generates a graph based on errors/warnings/checks detected
-+# by checkpatch -f recursively on each files of a directory.
-+# Results are grouped by subfolders.
-+#
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 7d9318c..d9451ba 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -1191,178 +1191,3 @@ COMPAT_SYSCALL_DEFINE5(pwritev, compat_ulong_t, fd,
+ }
+ #endif
+ 
+-static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
+-		  	   size_t count, loff_t max)
+-{
+-	struct fd in, out;
+-	struct inode *in_inode, *out_inode;
+-	loff_t pos;
+-	loff_t out_pos;
+-	ssize_t retval;
+-	int fl;
+-
+-	/*
+-	 * Get input file, and verify that it is ok..
+-	 */
+-	retval = -EBADF;
+-	in = fdget(in_fd);
+-	if (!in.file)
+-		goto out;
+-	if (!(in.file->f_mode & FMODE_READ))
+-		goto fput_in;
+-	retval = -ESPIPE;
+-	if (!ppos) {
+-		pos = in.file->f_pos;
+-	} else {
+-		pos = *ppos;
+-		if (!(in.file->f_mode & FMODE_PREAD))
+-			goto fput_in;
+-	}
+-	retval = rw_verify_area(READ, in.file, &pos, count);
+-	if (retval < 0)
+-		goto fput_in;
+-	count = retval;
+-
+-	/*
+-	 * Get output file, and verify that it is ok..
+-	 */
+-	retval = -EBADF;
+-	out = fdget(out_fd);
+-	if (!out.file)
+-		goto fput_in;
+-	if (!(out.file->f_mode & FMODE_WRITE))
+-		goto fput_out;
+-	retval = -EINVAL;
+-	in_inode = file_inode(in.file);
+-	out_inode = file_inode(out.file);
+-	out_pos = out.file->f_pos;
+-	retval = rw_verify_area(WRITE, out.file, &out_pos, count);
+-	if (retval < 0)
+-		goto fput_out;
+-	count = retval;
+-
+-	if (!max)
+-		max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
+-
+-	if (unlikely(pos + count > max)) {
+-		retval = -EOVERFLOW;
+-		if (pos >= max)
+-			goto fput_out;
+-		count = max - pos;
+-	}
+-
+-	fl = 0;
+-#if 0
+-	/*
+-	 * We need to debate whether we can enable this or not. The
+-	 * man page documents EAGAIN return for the output at least,
+-	 * and the application is arguably buggy if it doesn't expect
+-	 * EAGAIN on a non-blocking file descriptor.
+-	 */
+-	if (in.file->f_flags & O_NONBLOCK)
+-		fl = SPLICE_F_NONBLOCK;
+-#endif
+-	file_start_write(out.file);
+-	retval = do_splice_direct(in.file, &pos, out.file, &out_pos, count, fl);
+-	file_end_write(out.file);
+-
+-	if (retval > 0) {
+-		add_rchar(current, retval);
+-		add_wchar(current, retval);
+-		fsnotify_access(in.file);
+-		fsnotify_modify(out.file);
+-		out.file->f_pos = out_pos;
+-		if (ppos)
+-			*ppos = pos;
+-		else
+-			in.file->f_pos = pos;
+-	}
+-
+-	inc_syscr(current);
+-	inc_syscw(current);
+-	if (pos > max)
+-		retval = -EOVERFLOW;
+-
+-fput_out:
+-	fdput(out);
+-fput_in:
+-	fdput(in);
+-out:
+-	return retval;
+-}
+-
+-SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd, off_t __user *, offset, size_t, count)
+-{
+-	loff_t pos;
+-	off_t off;
+-	ssize_t ret;
+-
+-	if (offset) {
+-		if (unlikely(get_user(off, offset)))
+-			return -EFAULT;
+-		pos = off;
+-		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
+-		if (unlikely(put_user(pos, offset)))
+-			return -EFAULT;
+-		return ret;
+-	}
+-
+-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+-}
+-
+-SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd, loff_t __user *, offset, size_t, count)
+-{
+-	loff_t pos;
+-	ssize_t ret;
+-
+-	if (offset) {
+-		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
+-			return -EFAULT;
+-		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
+-		if (unlikely(put_user(pos, offset)))
+-			return -EFAULT;
+-		return ret;
+-	}
+-
+-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+-}
+-
+-#ifdef CONFIG_COMPAT
+-COMPAT_SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd,
+-		compat_off_t __user *, offset, compat_size_t, count)
+-{
+-	loff_t pos;
+-	off_t off;
+-	ssize_t ret;
+-
+-	if (offset) {
+-		if (unlikely(get_user(off, offset)))
+-			return -EFAULT;
+-		pos = off;
+-		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
+-		if (unlikely(put_user(pos, offset)))
+-			return -EFAULT;
+-		return ret;
+-	}
+-
+-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+-}
+-
+-COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
+-		compat_loff_t __user *, offset, compat_size_t, count)
+-{
+-	loff_t pos;
+-	ssize_t ret;
+-
+-	if (offset) {
+-		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
+-			return -EFAULT;
+-		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
+-		if (unlikely(put_user(pos, offset)))
+-			return -EFAULT;
+-		return ret;
+-	}
+-
+-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+-}
+-#endif
+diff --git a/fs/splice.c b/fs/splice.c
+index f5cb9ba..c1a2861 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -28,6 +28,7 @@
+ #include <linux/export.h>
+ #include <linux/syscalls.h>
+ #include <linux/uio.h>
++#include <linux/fsnotify.h>
+ #include <linux/security.h>
+ #include <linux/gfp.h>
+ #include <linux/socket.h>
+@@ -2039,3 +2040,180 @@ SYSCALL_DEFINE4(tee, int, fdin, int, fdout, size_t, len, unsigned int, flags)
+ 
+ 	return error;
+ }
 +
-+use strict;
-+use Getopt::Long;
-+use File::Basename;
-+use Chart::Gnuplot;
++static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
++			   size_t count, loff_t max)
++{
++	struct fd in, out;
++	struct inode *in_inode, *out_inode;
++	loff_t pos;
++	loff_t out_pos;
++	ssize_t retval;
++	int fl;
 +
-+my $P = $0;
-+my $statdir = '.';
-+my $files;
-+my @cfiles = ();
-+my %stat;
-+my %stats;
-+my $report;
-+my $currentdir = '';
-+
-+my $checkpatch = "scripts/checkpatch.pl";
-+my $output = "checkstat.png";
-+my @dontcheck = qw/fs\/nls/;
-+
-+sub help {
-+	my $text = << "EOM";
-+Usage: $P [OPTION] [DIRECTORY]
-+
-+This script should always be called from kernel source root.
-+
-+Options:
-+	--output	name of generated png graph.
-+EOM
-+	my $std=shift;
-+	if ($std == 1) {
-+		print STDERR $text;
++	/*
++	 * Get input file, and verify that it is ok..
++	 */
++	retval = -EBADF;
++	in = fdget(in_fd);
++	if (!in.file)
++		goto out;
++	if (!(in.file->f_mode & FMODE_READ))
++		goto fput_in;
++	retval = -ESPIPE;
++	if (!ppos) {
++		pos = in.file->f_pos;
 +	} else {
-+		print $text;
++		pos = *ppos;
++		if (!(in.file->f_mode & FMODE_PREAD))
++			goto fput_in;
 +	}
-+	exit;
-+}
++	retval = rw_verify_area(READ, in.file, &pos, count);
++	if (retval < 0)
++		goto fput_in;
++	count = retval;
 +
-+GetOptions(
-+	'h|help'	=> \&help,
-+	'output=s'	=> \$output
-+);
++	/*
++	 * Get output file, and verify that it is ok..
++	 */
++	retval = -EBADF;
++	out = fdget(out_fd);
++	if (!out.file)
++		goto fput_in;
++	if (!(out.file->f_mode & FMODE_WRITE))
++		goto fput_out;
++	retval = -EINVAL;
++	in_inode = file_inode(in.file);
++	out_inode = file_inode(out.file);
++	out_pos = out.file->f_pos;
++	retval = rw_verify_area(WRITE, out.file, &out_pos, count);
++	if (retval < 0)
++		goto fput_out;
++	count = retval;
 +
-+if ($#ARGV >= 0) {
-+	$statdir = @ARGV[0];
-+}
++	if (!max)
++		max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
 +
-+my $graphreport = Chart::Gnuplot->new(
-+	output => $output,
-+	yrange => [0, '*'],
-+	imagesize => '3, 2',
-+	xtics => {
-+		rotate => '90 right',
-+	},
-+	bmargin => 15,
-+	title => 'Linux Kernel: checkstat - Date: `date`'
-+);
-+
-+$files = `find $statdir -name "*.c"`;
-+@cfiles = split('\n', $files);
-+
-+#Execute checkpatch on each file and store results
-+foreach my $file (@cfiles) {
-+	print "checkpatch: $file: ";
-+	$currentdir = dirname($file);
-+
-+	if (not grep(/^$currentdir$/, @dontcheck)){
-+		$report = `$checkpatch -f --terse $file | tail -n 1`;
-+
-+		if ($currentdir ne $statdir) {
-+			$currentdir =~ s/$statdir\///;
-+			$currentdir =~ s/\/(.*)//;
-+			$currentdir = $statdir."/".$currentdir;
-+		}
-+		print "adding to ".$currentdir." stats\n";
-+		my $i = 0;
-+
-+		foreach my $stat_type ("errors", "warnings", "checks") {
-+			$report =~ m/(\d+)\s$stat_type/;
-+			$stat{$currentdir}[$i++] += $1;
-+			$stats{$stat_type}{$currentdir} += $1;
-+		}
-+	} else {
-+		print "File in dontcheck list ...\n";
++	if (unlikely(pos + count > max)) {
++		retval = -EOVERFLOW;
++		if (pos >= max)
++			goto fput_out;
++		count = max - pos;
 +	}
-+}
 +
-+my @columns=();
-+my %colors=(
-+	errors => 'red',
-+	warnings => 'orange',
-+	checks => 'green'
-+);
++	fl = 0;
++#if 0
++	/*
++	 * We need to debate whether we can enable this or not. The
++	 * man page documents EAGAIN return for the output at least,
++	 * and the application is arguably buggy if it doesn't expect
++	 * EAGAIN on a non-blocking file descriptor.
++	 */
++	if (in.file->f_flags & O_NONBLOCK)
++		fl = SPLICE_F_NONBLOCK;
++#endif
++	file_start_write(out.file);
++	retval = do_splice_direct(in.file, &pos, out.file, &out_pos, count, fl);
++	file_end_write(out.file);
 +
-+#Reorder and push data in datasets.
-+foreach my $stat_type (keys %stats) {
-+	my @xdir=();
-+
-+	foreach my $dir (sort keys %{$stats{$stat_type}}){
-+		push @xdir, [$dir, $stats{$stat_type}{$dir}];
++	if (retval > 0) {
++		add_rchar(current, retval);
++		add_wchar(current, retval);
++		fsnotify_access(in.file);
++		fsnotify_modify(out.file);
++		out.file->f_pos = out_pos;
++		if (ppos)
++			*ppos = pos;
++		else
++			in.file->f_pos = pos;
 +	}
-+	push @columns, Chart::Gnuplot::DataSet->new(
-+		points => \@xdir,
-+		title => $stat_type,
-+		color => $colors{$stat_type},
-+		fill => {density => 1},
-+		style => "histograms",
-+	);
++
++	inc_syscr(current);
++	inc_syscw(current);
++	if (pos > max)
++		retval = -EOVERFLOW;
++
++fput_out:
++	fdput(out);
++fput_in:
++	fdput(in);
++out:
++	return retval;
 +}
 +
-+$graphreport->plot2d(@columns);
-+print("graph generated: $output\n");
++SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd, off_t __user *, offset, size_t, count)
++{
++	loff_t pos;
++	off_t off;
++	ssize_t ret;
++
++	if (offset) {
++		if (unlikely(get_user(off, offset)))
++			return -EFAULT;
++		pos = off;
++		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
++		if (unlikely(put_user(pos, offset)))
++			return -EFAULT;
++		return ret;
++	}
++
++	return do_sendfile(out_fd, in_fd, NULL, count, 0);
++}
++
++SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd, loff_t __user *, offset, size_t, count)
++{
++	loff_t pos;
++	ssize_t ret;
++
++	if (offset) {
++		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
++			return -EFAULT;
++		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
++		if (unlikely(put_user(pos, offset)))
++			return -EFAULT;
++		return ret;
++	}
++
++	return do_sendfile(out_fd, in_fd, NULL, count, 0);
++}
++
++#ifdef CONFIG_COMPAT
++COMPAT_SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd,
++		compat_off_t __user *, offset, compat_size_t, count)
++{
++	loff_t pos;
++	off_t off;
++	ssize_t ret;
++
++	if (offset) {
++		if (unlikely(get_user(off, offset)))
++			return -EFAULT;
++		pos = off;
++		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
++		if (unlikely(put_user(pos, offset)))
++			return -EFAULT;
++		return ret;
++	}
++
++	return do_sendfile(out_fd, in_fd, NULL, count, 0);
++}
++
++COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
++		compat_loff_t __user *, offset, compat_size_t, count)
++{
++	loff_t pos;
++	ssize_t ret;
++
++	if (offset) {
++		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
++			return -EFAULT;
++		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
++		if (unlikely(put_user(pos, offset)))
++			return -EFAULT;
++		return ret;
++	}
++
++	return do_sendfile(out_fd, in_fd, NULL, count, 0);
++}
++#endif
++
 -- 
 1.9.1
 
