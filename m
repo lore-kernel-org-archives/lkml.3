@@ -1,182 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884AbaKVBwU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 20:52:20 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:48106 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747AbaKVBwT (ORCPT
+	id S1752903AbaKVCAh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 21:00:37 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:38827 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847AbaKVCAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 20:52:19 -0500
-Message-ID: <546FEC46.8010406@gmail.com>
-Date: Fri, 21 Nov 2014 17:52:06 -0800
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 21 Nov 2014 21:00:36 -0500
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-pm@vger.kernel.org, edubezval@gmail.com, rui.zhang@intel.com,
-        computersforpeace@gmail.com
-Subject: Re: [PATCH v2] thermal: provide an UAPI header file
-References: <1416501177-17504-1-git-send-email-f.fainelli@gmail.com>
-In-Reply-To: <1416501177-17504-1-git-send-email-f.fainelli@gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141121233834.GW5050@linux.vnet.ibm.com>
+References: <cover.1416604491.git.luto@amacapital.net> <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
+ <CALCETrXLq1y7e_dKFPgou-FKHB6Pu-r8+t-6Ds+8=va7anBWDA@mail.gmail.com>
+ <20141121220704.GU5050@linux.vnet.ibm.com> <CALCETrXVRqZ2fJJNOWLFzhE7wQvWejXbw0OUpcm6rt_UdFP6CA@mail.gmail.com>
+ <20141121225508.GV5050@linux.vnet.ibm.com> <CALCETrXgd=5+RFugdi4CdCOzULK8u+ku-EQaJvY6JhXAMEW7rQ@mail.gmail.com>
+ <20141121233834.GW5050@linux.vnet.ibm.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 21 Nov 2014 18:00:14 -0800
+Message-ID: <CALCETrVNnDEcVu_BteA2gVBeRB7zOsQmrA6JCrE8ez4U=vc0MQ@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST context
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2014 08:32 AM, Florian Fainelli wrote:
-> include/linux/thermal.h contains definitions for the Thermal generic
-> netlink family, but none of the valuable information relevant to
-> user-space such as the Genl family name, multicast group, version or
-> command set and data types is exported to user-space.
-> 
-> Export all the relevant generic netlink information to user-space to
-> make this genl family usable by user-space, and while at it, export
-> THERMAL_NAME_LENGTH since it limits name length for thermal_hwmon
-> devices.
-> 
-> Kbuild and MAINTAINERS are also updated accordingly to reflect this new
-> file: include/uapi/linux/thermal.h.
+On Fri, Nov 21, 2014 at 3:38 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Fri, Nov 21, 2014 at 03:06:48PM -0800, Andy Lutomirski wrote:
+>> On Fri, Nov 21, 2014 at 2:55 PM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> > On Fri, Nov 21, 2014 at 02:19:17PM -0800, Andy Lutomirski wrote:
+>> >> On Fri, Nov 21, 2014 at 2:07 PM, Paul E. McKenney
+>> >> <paulmck@linux.vnet.ibm.com> wrote:
+>> >> > On Fri, Nov 21, 2014 at 01:32:50PM -0800, Andy Lutomirski wrote:
+>> >> >> On Fri, Nov 21, 2014 at 1:26 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> >> >> > We currently pretend that IST context is like standard exception
+>> >> >> > context, but this is incorrect.  IST entries from userspace are like
+>> >> >> > standard exceptions except that they use per-cpu stacks, so they are
+>> >> >> > atomic.  IST entries from kernel space are like NMIs from RCU's
+>> >> >> > perspective -- they are not quiescent states even if they
+>> >> >> > interrupted the kernel during a quiescent state.
+>> >> >> >
+>> >> >> > Add and use ist_enter and ist_exit to track IST context.  Even
+>> >> >> > though x86_32 has no IST stacks, we track these interrupts the same
+>> >> >> > way.
+>> >> >>
+>> >> >> I should add:
+>> >> >>
+>> >> >> I have no idea why RCU read-side critical sections are safe inside
+>> >> >> __do_page_fault today.  It's guarded by exception_enter(), but that
+>> >> >> doesn't do anything if context tracking is off, and context tracking
+>> >> >> is usually off. What am I missing here?
+>> >> >
+>> >> > Ah!  There are three cases:
+>> >> >
+>> >> > 1.      Context tracking is off on a non-idle CPU.  In this case, RCU is
+>> >> >         still paying attention to CPUs running in both userspace and in
+>> >> >         the kernel.  So if a page fault happens, RCU will be set up to
+>> >> >         notice any RCU read-side critical sections.
+>> >> >
+>> >> > 2.      Context tracking is on on a non-idle CPU.  In this case, RCU
+>> >> >         might well be ignoring userspace execution: NO_HZ_FULL and
+>> >> >         all that.  However, as you pointed out, in this case the
+>> >> >         context-tracking code lets RCU know that we have entered the
+>> >> >         kernel, which means that RCU will again be paying attention to
+>> >> >         RCU read-side critical sections.
+>> >> >
+>> >> > 3.      The CPU is idle.  In this case, RCU is ignoring the CPU, so
+>> >> >         if we take a page fault when context tracking is off, life
+>> >> >         will be hard.  But the kernel is not supposed to take page
+>> >> >         faults in the idle loop, so this is not a problem.
+>> >>
+>> >> I guess so, as long as there are really no page faults in the idle loop.
+>> >
+>> > As far as I know, there are not.  If there are, someone needs to let
+>> > me know!  ;-)
+>> >
+>> >> There are, however, machine checks in the idle loop, and maybe kprobes
+>> >> (haven't checked), so I think this patch might fix real bugs.
+>> >
+>> > If you can get ISTs from the idle loop, then the patch is needed.
+>> >
+>> >> > Just out of curiosity...  Can an NMI occur in IST context?  If it can,
+>> >> > I need to make rcu_nmi_enter() and rcu_nmi_exit() deal properly with
+>> >> > nested calls.
+>> >>
+>> >> Yes, and vice versa.  That code looked like it handled nesting
+>> >> correctly, but I wasn't entirely sure.
+>> >
+>> > It currently does not, please see below patch.  Are you able to test
+>> > nesting?  It would be really cool if you could do so -- I have no
+>> > way to test this patch.
+>>
+>> I can try.  It's sort of easy -- I'll put an int3 into do_nmi and add
+>> a fixup to avoid crashing.
+>>
+>> What should I look for?  Should I try to force full nohz on and assert
+>> something?  I don't really know how to make full nohz work.
+>
+> You should look for the WARN_ON_ONCE() calls in rcu_nmi_enter() and
+> rcu_nmi_exit() to fire.
 
-I forgot to include the definition for the thermal_event structure which
-is multi-casted through netlink, will resubmit with that.
+No warning with or without your patch, maybe because all of those
+returns skip the labels.
 
-> 
-> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
-> ---
-> Changes in v2:
-> - rebase against Eduardo's thermal/next tree
-> 
->  MAINTAINERS                  |  1 +
->  include/linux/thermal.h      | 31 +------------------------------
->  include/uapi/linux/Kbuild    |  1 +
->  include/uapi/linux/thermal.h | 35 +++++++++++++++++++++++++++++++++++
->  4 files changed, 38 insertions(+), 30 deletions(-)
->  create mode 100644 include/uapi/linux/thermal.h
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index c444907ccd69..790752a4fad2 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -9294,6 +9294,7 @@ Q:	https://patchwork.kernel.org/project/linux-pm/list/
->  S:	Supported
->  F:	drivers/thermal/
->  F:	include/linux/thermal.h
-> +F:	include/uapi/linux/thermal.h
->  F:	include/linux/cpu_cooling.h
->  F:	Documentation/devicetree/bindings/thermal/
->  
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index 5bc28a70014e..be959e9df06c 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -29,10 +29,10 @@
->  #include <linux/idr.h>
->  #include <linux/device.h>
->  #include <linux/workqueue.h>
-> +#include <uapi/linux/thermal.h>
->  
->  #define THERMAL_TRIPS_NONE	-1
->  #define THERMAL_MAX_TRIPS	12
-> -#define THERMAL_NAME_LENGTH	20
->  
->  /* invalid cooling state */
->  #define THERMAL_CSTATE_INVALID -1UL
-> @@ -49,11 +49,6 @@
->  #define MILLICELSIUS_TO_DECI_KELVIN_WITH_OFFSET(t, off) (((t) / 100) + (off))
->  #define MILLICELSIUS_TO_DECI_KELVIN(t) MILLICELSIUS_TO_DECI_KELVIN_WITH_OFFSET(t, 2732)
->  
-> -/* Adding event notification support elements */
-> -#define THERMAL_GENL_FAMILY_NAME                "thermal_event"
-> -#define THERMAL_GENL_VERSION                    0x01
-> -#define THERMAL_GENL_MCAST_GROUP_NAME           "thermal_mc_grp"
-> -
->  /* Default Thermal Governor */
->  #if defined(CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE)
->  #define DEFAULT_THERMAL_GOVERNOR       "step_wise"
-> @@ -86,30 +81,6 @@ enum thermal_trend {
->  	THERMAL_TREND_DROP_FULL, /* apply lowest cooling action */
->  };
->  
-> -/* Events supported by Thermal Netlink */
-> -enum events {
-> -	THERMAL_AUX0,
-> -	THERMAL_AUX1,
-> -	THERMAL_CRITICAL,
-> -	THERMAL_DEV_FAULT,
-> -};
-> -
-> -/* attributes of thermal_genl_family */
-> -enum {
-> -	THERMAL_GENL_ATTR_UNSPEC,
-> -	THERMAL_GENL_ATTR_EVENT,
-> -	__THERMAL_GENL_ATTR_MAX,
-> -};
-> -#define THERMAL_GENL_ATTR_MAX (__THERMAL_GENL_ATTR_MAX - 1)
-> -
-> -/* commands supported by the thermal_genl_family */
-> -enum {
-> -	THERMAL_GENL_CMD_UNSPEC,
-> -	THERMAL_GENL_CMD_EVENT,
-> -	__THERMAL_GENL_CMD_MAX,
-> -};
-> -#define THERMAL_GENL_CMD_MAX (__THERMAL_GENL_CMD_MAX - 1)
-> -
->  struct thermal_zone_device_ops {
->  	int (*bind) (struct thermal_zone_device *,
->  		     struct thermal_cooling_device *);
-> diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-> index 4c94f31a8c99..a1943e2d1264 100644
-> --- a/include/uapi/linux/Kbuild
-> +++ b/include/uapi/linux/Kbuild
-> @@ -383,6 +383,7 @@ header-y += tcp.h
->  header-y += tcp_metrics.h
->  header-y += telephony.h
->  header-y += termios.h
-> +header-y += thermal.h
->  header-y += time.h
->  header-y += times.h
->  header-y += timex.h
-> diff --git a/include/uapi/linux/thermal.h b/include/uapi/linux/thermal.h
-> new file mode 100644
-> index 000000000000..ac5535855982
-> --- /dev/null
-> +++ b/include/uapi/linux/thermal.h
-> @@ -0,0 +1,35 @@
-> +#ifndef _UAPI_LINUX_THERMAL_H
-> +#define _UAPI_LINUX_THERMAL_H
-> +
-> +#define THERMAL_NAME_LENGTH	20
-> +
-> +/* Adding event notification support elements */
-> +#define THERMAL_GENL_FAMILY_NAME                "thermal_event"
-> +#define THERMAL_GENL_VERSION                    0x01
-> +#define THERMAL_GENL_MCAST_GROUP_NAME           "thermal_mc_grp"
-> +
-> +/* Events supported by Thermal Netlink */
-> +enum events {
-> +	THERMAL_AUX0,
-> +	THERMAL_AUX1,
-> +	THERMAL_CRITICAL,
-> +	THERMAL_DEV_FAULT,
-> +};
-> +
-> +/* attributes of thermal_genl_family */
-> +enum {
-> +	THERMAL_GENL_ATTR_UNSPEC,
-> +	THERMAL_GENL_ATTR_EVENT,
-> +	__THERMAL_GENL_ATTR_MAX,
-> +};
-> +#define THERMAL_GENL_ATTR_MAX (__THERMAL_GENL_ATTR_MAX - 1)
-> +
-> +/* commands supported by the thermal_genl_family */
-> +enum {
-> +	THERMAL_GENL_CMD_UNSPEC,
-> +	THERMAL_GENL_CMD_EVENT,
-> +	__THERMAL_GENL_CMD_MAX,
-> +};
-> +#define THERMAL_GENL_CMD_MAX (__THERMAL_GENL_CMD_MAX - 1)
-> +
-> +#endif /* _UAPI_LINUX_THERMAL_H */
-> 
+Also, an NMI can happen *during* rcu_nmi_enter or rcu_nmi_exit.  Is
+that okay?  Should those dynticks_nmi_nesting++ things be local_inc
+and local_dec_and_test?
 
+That dynticks_nmi_nesting thing seems scary to me.  Shouldn't the code
+unconditionally increment dynticks_nmi_nesting in rcu_nmi_enter and
+unconditionally decrement it in rcu_nmi_exit?
+
+--Andy
+
+>
+>                                                         Thanx, Paul
+>
+>> >> Also, just to make sure: are we okay if rcu_nmi_enter() is called
+>> >> before exception_enter if context tracking is on and we came directly
+>> >> from userspace?
+>> >
+>> > If I understand correctly, this will result in context tracking invoking
+>> > rcu_user_enter(), which will result in the rcu_dynticks counter having an
+>> > odd value.  In that case, rcu_nmi_enter() will notice that RCU is already
+>> > paying attention to this CPU via its check of atomic_read(&rdtp->dynticks)
+>> > & 0x1), and will thus just return.  The matching rcu_nmi_exit() will
+>> > notice that the nesting count is zero, and will also just return.
+>> >
+>> > Thus, everything works in that case.
+>> >
+>> > In contrast, if rcu_nmi_enter() was invoked from the idle loop, it
+>> > would see that RCU is not paying attention to this CPU and that the
+>> > NMI nesting depth (which rcu_nmi_enter() increments) used to be zero.
+>> > It would then atomically increment rtdp->dynticks, forcing RCU to start
+>> > paying attention to this CPU.  The matching rcu_nmi_exit() will see
+>> > that the nesting count was non-zero, but became zero when decremented.
+>> > This will cause rcu_nmi_exit() to atomically increment rtdp->dynticks,
+>> > which will tell RCU to stop paying attention to this CPU.
+>> >
+>> >                                                         Thanx, Paul
+>> >
+>> > ------------------------------------------------------------------------
+>> >
+>> > rcu: Make rcu_nmi_enter() handle nesting
+>> >
+>> > Andy Lutomirski is introducing ISTs into x86, which from RCU's
+>> > viewpoint are NMIs.  Because ISTs and NMIs can nest, rcu_nmi_enter()
+>> > and rcu_nmi_exit() must now correctly handle nesting.  As luck would
+>> > have it, rcu_nmi_exit() handles nesting but rcu_nmi_enter() does not.
+>> > This patch therefore makes rcu_nmi_enter() handle nesting.
+>>
+>> Thanks.  Should I add this to v5 of my series?
+>>
+>> --Andy
+>>
+>> >
+>> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>> >
+>> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+>> > index 8749f43f3f05..875421aff6e3 100644
+>> > --- a/kernel/rcu/tree.c
+>> > +++ b/kernel/rcu/tree.c
+>> > @@ -770,7 +770,8 @@ void rcu_nmi_enter(void)
+>> >         if (rdtp->dynticks_nmi_nesting == 0 &&
+>> >             (atomic_read(&rdtp->dynticks) & 0x1))
+>> >                 return;
+>> > -       rdtp->dynticks_nmi_nesting++;
+>> > +       if (rdtp->dynticks_nmi_nesting++ != 0)
+>> > +               return; /* Nested NMI/IST/whatever. */
+>> >         smp_mb__before_atomic();  /* Force delay from prior write. */
+>> >         atomic_inc(&rdtp->dynticks);
+>> >         /* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
+>> >
+>>
+>>
+>>
+>> --
+>> Andy Lutomirski
+>> AMA Capital Management, LLC
+>>
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
