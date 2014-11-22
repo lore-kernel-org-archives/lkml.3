@@ -1,157 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbaKVVvH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 16:51:07 -0500
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:38270 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656AbaKVVvE (ORCPT
+	id S1752995AbaKVVxH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 16:53:07 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:37920 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750863AbaKVVxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 16:51:04 -0500
-X-Originating-IP: 50.43.41.112
-Date: Sat, 22 Nov 2014 13:50:50 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Pieter Smith <pieter@boesman.nl>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Matt Turner <mattst88@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        =?utf-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Bertrand Jacquin <beber@meleeweb.net>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Fabian Frederick <fabf@skynet.be>, Peter Foley <pefoley2@pefoley.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Iulia Manda <iulia.manda21@gmail.com>,
-        Kees Cook <keescook@chromium.org>,
-        Catalina Mocanu <catalina.mocanu@gmail.com>,
-        linux-fsdevel@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:ABI/API" <linux-api@vger.kernel.org>
-Subject: Re: [PATCH 3/6] fs/splice: support compiling out splice-family
- syscalls
-Message-ID: <20141122215050.GC23711@thin>
-References: <1416690001-20817-1-git-send-email-pieter@boesman.nl>
- <1416690001-20817-4-git-send-email-pieter@boesman.nl>
+	Sat, 22 Nov 2014 16:53:05 -0500
+Date: Sat, 22 Nov 2014 16:53:02 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKP <lkp@01.org>, linux-kernel@vger.kernel.org
+Subject: Re: [ftrace/x86/extable] WARNING: CPU: 0 PID: 1 at init/main.c:803
+ do_one_initcall()
+Message-ID: <20141122165302.3df22b18@gandalf.local.home>
+In-Reply-To: <20141122195926.GA1707@wfg-t540p.sh.intel.com>
+References: <20141122184349.GB29361@wfg-t540p.sh.intel.com>
+	<20141122141139.78927371@gandalf.local.home>
+	<20141122195926.GA1707@wfg-t540p.sh.intel.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416690001-20817-4-git-send-email-pieter@boesman.nl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/mixed; boundary="MP_//7A1ITOljLEOrb1hO6IDeDB"
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 22, 2014 at 09:59:58PM +0100, Pieter Smith wrote:
-> Many embedded systems will not need the splice-family syscalls (splice,
-> vmsplice, tee and sendfile). Omitting them saves space.  This adds a new EXPERT
-> config option CONFIG_SYSCALL_SPLICE (default y) to support compiling them out.
-> 
-> This patch removes almost all callers of .splice_read() and .splice_write()
-> in the file_operations struct. This paves the way to eventually compile out the
-> .splice_read and .splice_write members of the file_operations struct as well as
-> the remaining splice-related infrastructure.
+--MP_//7A1ITOljLEOrb1hO6IDeDB
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 
-This commit message doesn't reflect the new approach of leaving those
-members in the structure.
+On Sat, 22 Nov 2014 11:59:26 -0800
+Fengguang Wu <fengguang.wu@intel.com> wrote:
 
-The patch looks good otherwise.
+>
+> > Is it possible for your tests to see if a branch was rebased before
+> > posting bug reports to LKML? This gave me a scare that my new code had
+> > the same brain fart in it.
+> 
+> Sure and good idea! I'll implement it right now.
+> 
 
-- Josh Triplett
+It should also make sure that the rebase does not include the offending
+commit before not sending out the email. A rebase alone may still have
+the bug.
 
-> add/remove: 0/16 grow/shrink: 2/5 up/down: 114/-3693 (-3579)
-> function                                     old     new   delta
-> splice_direct_to_actor                       348     416     +68
-> splice_to_pipe                               371     417     +46
-> splice_from_pipe_next                        107     106      -1
-> fdput                                         11       -     -11
-> signal_pending                                39      26     -13
-> fdget                                         56      42     -14
-> user_page_pipe_buf_ops                        20       -     -20
-> user_page_pipe_buf_steal                      25       -     -25
-> file_end_write                                58      29     -29
-> file_start_write                              68      34     -34
-> pipe_to_user                                  43       -     -43
-> wakeup_pipe_readers                           54       -     -54
-> do_splice_to                                  87       -     -87
-> ipipe_prep.part                               92       -     -92
-> opipe_prep.part                              119       -    -119
-> sys_sendfile                                 122       -    -122
-> sys_sendfile64                               126       -    -126
-> sys_vmsplice                                 137       -    -137
-> vmsplice_to_user                             205       -    -205
-> sys_tee                                      491       -    -491
-> do_sendfile                                  492       -    -492
-> vmsplice_to_pipe                             558       -    -558
-> sys_splice                                  1020       -   -1020
-> 
-> Signed-off-by: Pieter Smith <pieter@boesman.nl>
-> ---
->  fs/splice.c     |  2 ++
->  init/Kconfig    | 10 ++++++++++
->  kernel/sys_ni.c |  8 ++++++++
->  3 files changed, 20 insertions(+)
-> 
-> diff --git a/fs/splice.c b/fs/splice.c
-> index 44b201b..7c4c695 100644
-> --- a/fs/splice.c
-> +++ b/fs/splice.c
-> @@ -1316,6 +1316,7 @@ long do_splice_direct(struct file *in, loff_t *ppos, struct file *out,
->  	return ret;
->  }
->  
-> +#ifdef CONFIG_SYSCALL_SPLICE
->  static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
->  			       struct pipe_inode_info *opipe,
->  			       size_t len, unsigned int flags);
-> @@ -2200,4 +2201,5 @@ COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
->  	return do_sendfile(out_fd, in_fd, NULL, count, 0);
->  }
->  #endif
-> +#endif
->  
-> diff --git a/init/Kconfig b/init/Kconfig
-> index d811d5f..dec9819 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1571,6 +1571,16 @@ config NTP
->  	  system clock to an NTP server, you can disable this option to save
->  	  space.
->  
-> +config SYSCALL_SPLICE
-> +	bool "Enable splice/vmsplice/tee/sendfile syscalls" if EXPERT
-> +	default y
-> +	help
-> +	  This option enables the splice, vmsplice, tee and sendfile syscalls. These
-> +	  are used by applications to: move data between buffers and arbitrary file
-> +	  descriptors; "copy" data between buffers; or copy data from userspace into
-> +	  buffers. If building an embedded system where no applications use these
-> +	  syscalls, you can disable this option to save space.
-> +
->  config PCI_QUIRKS
->  	default y
->  	bool "Enable PCI quirk workarounds" if EXPERT
-> diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-> index d2f5b00..25d5551 100644
-> --- a/kernel/sys_ni.c
-> +++ b/kernel/sys_ni.c
-> @@ -170,6 +170,14 @@ cond_syscall(sys_fstat);
->  cond_syscall(sys_stat);
->  cond_syscall(sys_uname);
->  cond_syscall(sys_olduname);
-> +cond_syscall(sys_vmsplice);
-> +cond_syscall(sys_splice);
-> +cond_syscall(sys_tee);
-> +cond_syscall(sys_sendfile);
-> +cond_syscall(sys_sendfile64);
-> +cond_syscall(compat_sys_vmsplice);
-> +cond_syscall(compat_sys_sendfile);
-> +cond_syscall(compat_sys_sendfile64);
->  
->  /* arch-specific weak syscall entries */
->  cond_syscall(sys_pciconfig_read);
-> -- 
-> 1.9.1
-> 
+And if you really want to be fancy, you can check to see if the code
+itself changed. The attached script takes two git releases (SHA1s,
+tags, etc) or one git release and uses HEAD, and finds where the two
+are different. Not just by commit id, but also by code. I use this
+because I'll modify a branch to add an acked-by and not change the code,
+but still want to know the last commit that I tested. It may not have
+the same commit id.
+
+
+-- Steve
+
+--MP_//7A1ITOljLEOrb1hO6IDeDB
+Content-Type: application/octet-stream; name=git-find-last-same
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename=git-find-last-same
+
+IyEvYmluL2Jhc2gKCmlmIFsgJCMgLWx0IDEgXTsgdGhlbgoJZWNobyAidXNhZ2U6IGdpdC1maW5k
+LWxhc3Qtc2FtZSBbYnJhbmNoMV0gYnJhbmNoMiIKCWV4aXQKZmkKCmlmIFsgJCMgLWx0IDIgXTsg
+dGhlbgoJYjE9IkhFQUQiCgliMj0kMQplbHNlCgliMT0kMQoJYjI9JDIKZmkKCgpsMT1gZ2l0IHJl
+di1saXN0IC0tcmV2ZXJzZSAkYjEuLiRiMmAKYzE9YGVjaG8gIiRsMSIgfCB3YyAtbGAKaWYgWyAk
+PyAtZ3QgMCBdOyB0aGVuCgllY2hvIGVycm9yIGluIGdpdAoJZXhpdApmaQoKbDI9YGdpdCByZXYt
+bGlzdCAtLXJldmVyc2UgJGIyLi4kYjFgCmMyPWBlY2hvICIkbDIiIHwgd2MgLWxgCmlmIFsgJD8g
+LWd0IDAgXTsgdGhlbgoJZWNobyBlcnJvciBpbiBnaXQKCWV4aXQKZmkKCmlmIFsgJGMxIC1lcSAw
+IC1hICRjMiAtZXEgMCBdOyB0aGVuCgllY2hvICJCcmFuY2ggJGIxIGFuZCAkYjIgYXJlIGVxdWFs
+IgoJZXhpdApmaQoKaWYgWyAkYzEgLWVxIDAgXTsgdGhlbgoJZWNobyAiQnJhbmNoICRiMiBjYW4g
+YmUgZmFzdCBmb3J3YXJkIHRvICRiMSBpbiAkYzIgY29tbWl0cyIKCWV4aXQKZmkKCmlmIFsgJGMy
+IC1lcSAwIF07IHRoZW4KCWVjaG8gIkJyYW5jaCAkYjEgY2FuIGJlIGZhc3QgZm9yd2FyZCB0byAk
+YjIgaW4gJGMxIGNvbW1pdHMiCglleGl0CmZpCgppZiBbICRjMSAtZ3QgJGMyIF07IHRoZW4KCXMx
+PSIkbDIiCglzMj0iJGwxIgplbHNlCglzMT0iJGwxIgoJczI9IiRsMiIKZmkKCnQxPWBlY2hvICIk
+czIiIHwgc2VkIC1uZSAnMXAnIGAKdDI9YGVjaG8gIiRzMiIgfCBzZWQgLW5lICcyLCRwJyBgCgpm
+b3IgdDEgaW4gJHMxOyBkbwoJdDI9YGVjaG8gIiRzMiIgfCBzZWQgLW5lICcxcCcgYAoJczI9YGVj
+aG8gIiRzMiIgfCBzZWQgLW5lICcyLCRwJyBgCglpZiAhIGdpdCBkaWZmIC0tcXVpZXQgJHQxICR0
+MjsgdGhlbgoJCWJyZWFrCglmaQpkb25lCgplY2hvICJmaXJzdCBkaWZmIGJldHdlZW4gJHQxIGFu
+ZCAkdDIiCgp0MT1gZ2l0IHJldi1saXN0IC0tbWF4LWNvdW50PTEgJHQxfjFgCnQyPWBnaXQgcmV2
+LWxpc3QgLS1tYXgtY291bnQ9MSAkdDJ+MWAKCmVjaG8gImZpcnN0IHNhbWUgYmV0d2VlbiAkdDEg
+YW5kICR0MiIKCg==
+
+--MP_//7A1ITOljLEOrb1hO6IDeDB--
