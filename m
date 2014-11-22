@@ -1,93 +1,415 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915AbaKVLRw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 06:17:52 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:40087 "EHLO
+	id S1751952AbaKVLSz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 06:18:55 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:40093 "EHLO
 	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaKVLRu (ORCPT
+	with ESMTP id S1751270AbaKVLSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 06:17:50 -0500
-Message-ID: <547070DD.9050907@kernel.org>
-Date: Sat, 22 Nov 2014 11:17:49 +0000
+	Sat, 22 Nov 2014 06:18:54 -0500
+Message-ID: <5470711C.5080707@kernel.org>
+Date: Sat, 22 Nov 2014 11:18:52 +0000
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
 To: Daniel Baluta <daniel.baluta@intel.com>, knaack.h@gmx.de
 CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        irina.tirdea@intel.com, daniel.baluta@inte.com
-Subject: Re: [PATCH v4 5/7] iio: core: Introduce IIO_CHAN_INFO_CALIBHEIGHT
-References: <1415623535-24337-1-git-send-email-daniel.baluta@intel.com> <1415623535-24337-6-git-send-email-daniel.baluta@intel.com>
-In-Reply-To: <1415623535-24337-6-git-send-email-daniel.baluta@intel.com>
+        irina.tirdea@intel.com
+Subject: Re: [PATCH v4 6/7] iio: dummy: Demonstrate the usage of new channel
+ types
+References: <1415623535-24337-1-git-send-email-daniel.baluta@intel.com> <1415623535-24337-7-git-send-email-daniel.baluta@intel.com> <54706DE7.7070107@kernel.org>
+In-Reply-To: <54706DE7.7070107@kernel.org>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/14 12:45, Daniel Baluta wrote:
-> From: Irina Tirdea <irina.tirdea@intel.com>
+On 22/11/14 11:05, Jonathan Cameron wrote:
+> On 10/11/14 12:45, Daniel Baluta wrote:
+>> Adds support for the new channel types in the dummy driver:
+>>   * a new channel IIO_ACTIVITY
+>>   * two state transition events (running and walking)
+>>   * a new channel IIO_STEPS and support for reading and writing
+>>     pedometer step counter
+>>   * step detect event
+>>   * a new IIO_CHAN_INFO_CALIBHEIGHT mask bit for reading and writing
+>>     user's height.
+>>
+>> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+> The only bit that makes me wonder in here is allowing writing to the steps
+> and activity _input attributes.
 > 
-> Some devices need the height of the user to compute various
-> parameters. One of this devices is Freescale's MMA9553L
-> (http://www.freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf)
-> that needs the height of the user to compute the stride length which
-> is used further to determine distance, speed and activity type.
+> Now I can see that it makes sense from the point of view of testing the
+> interface and any userspace code, but the question here is whether the 
+> 'normal IIO intefaces' of this dummy driver should correspond to real sensors
+> where writing to input channels isn't ever valid!.
 > 
-> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
-> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
-Applied to the togreg branch of iio.git pushed out as testing.
+> The alternative would be to create some deliberately not standard ABI for
+> these with a suitably obvious, 'I don't normally exist' naming - which
+> would then need documenting.  Perhaps what you have is the best option.
+> Pitty there isn't an out_steps_* interface.  Human interface control :)
+> Or even better out_activity_run_* which would be fun...
+> 
+> Upshot is - leave this be.  It's our dummy driver afterall and we can
+> change the ABI as much as we like without anyone having a valid argument
+> that we broke their system ;)
 
-What fun ;)
+Applied to the togreg branch of iio.git - initially pushed out as testing.
 
-J
-> ---
->  Documentation/ABI/testing/sysfs-bus-iio | 8 ++++++++
->  drivers/iio/industrialio-core.c         | 1 +
->  include/linux/iio/iio.h                 | 1 +
->  3 files changed, 10 insertions(+)
+Nicely done with cc'ing a miss-spelt version of your own email address ;)
+>> ---
+>>  drivers/staging/iio/iio_simple_dummy.c        | 199 +++++++++++++++++++++++---
+>>  drivers/staging/iio/iio_simple_dummy.h        |   5 +
+>>  drivers/staging/iio/iio_simple_dummy_events.c |  43 ++++++
+>>  3 files changed, 229 insertions(+), 18 deletions(-)
+>>
+>> diff --git a/drivers/staging/iio/iio_simple_dummy.c b/drivers/staging/iio/iio_simple_dummy.c
+>> index bf78e6f..10a9e08 100644
+>> --- a/drivers/staging/iio/iio_simple_dummy.c
+>> +++ b/drivers/staging/iio/iio_simple_dummy.c
+>> @@ -69,6 +69,34 @@ static const struct iio_event_spec iio_dummy_event = {
+>>  	.mask_separate = BIT(IIO_EV_INFO_VALUE) | BIT(IIO_EV_INFO_ENABLE),
+>>  };
+>>  
+>> +/*
+>> + * simple step detect event - triggered when a step is detected
+>> + */
+>> +static const struct iio_event_spec step_detect_event = {
+>> +	.type = IIO_EV_TYPE_INSTANCE,
+>> +	.dir = IIO_EV_DIR_NONE,
+>> +	.mask_separate = BIT(IIO_EV_INFO_ENABLE),
+>> +};
+>> +
+>> +/*
+>> + * simple transition event - triggered when the reported running confidence
+>> + * value rises above a threshold value
+>> + */
+>> +static const struct iio_event_spec iio_running_event = {
+>> +	.type = IIO_EV_TYPE_THRESH,
+>> +	.dir = IIO_EV_DIR_RISING,
+>> +	.mask_separate = BIT(IIO_EV_INFO_VALUE) | BIT(IIO_EV_INFO_ENABLE),
+>> +};
+>> +
+>> +/*
+>> + * simple transition event - triggered when the reported walking confidence
+>> + * value falls under a threshold value
+>> + */
+>> +static const struct iio_event_spec iio_walking_event = {
+>> +	.type = IIO_EV_TYPE_THRESH,
+>> +	.dir = IIO_EV_DIR_FALLING,
+>> +	.mask_separate = BIT(IIO_EV_INFO_VALUE) | BIT(IIO_EV_INFO_ENABLE),
+>> +};
+>>  #endif
+>>  
+>>  /*
+>> @@ -215,6 +243,37 @@ static const struct iio_chan_spec iio_dummy_channels[] = {
+>>  		.indexed = 1,
+>>  		.channel = 0,
+>>  	},
+>> +	{
+>> +		.type = IIO_STEPS,
+>> +		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_ENABLE) |
+>> +			BIT(IIO_CHAN_INFO_CALIBHEIGHT),
+>> +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
+>> +		.scan_index = -1,
+>> +#ifdef CONFIG_IIO_SIMPLE_DUMMY_EVENTS
+>> +		.event_spec = &step_detect_event,
+>> +		.num_event_specs = 1,
+>> +#endif /* CONFIG_IIO_SIMPLE_DUMMY_EVENTS */
+>> +	},
+>> +	{
+>> +		.type = IIO_ACTIVITY,
+>> +		.modified = 1,
+>> +		.channel2 = IIO_MOD_RUNNING,
+>> +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
+>> +#ifdef CONFIG_IIO_SIMPLE_DUMMY_EVENTS
+>> +		.event_spec = &iio_running_event,
+>> +		.num_event_specs = 1,
+>> +#endif /* CONFIG_IIO_SIMPLE_DUMMY_EVENTS */
+>> +	},
+>> +	{
+>> +		.type = IIO_ACTIVITY,
+>> +		.modified = 1,
+>> +		.channel2 = IIO_MOD_WALKING,
+>> +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
+>> +#ifdef CONFIG_IIO_SIMPLE_DUMMY_EVENTS
+>> +		.event_spec = &iio_walking_event,
+>> +		.num_event_specs = 1,
+>> +#endif /* CONFIG_IIO_SIMPLE_DUMMY_EVENTS */
+>> +	},
+>>  };
+>>  
+>>  /**
+>> @@ -263,24 +322,55 @@ static int iio_dummy_read_raw(struct iio_dev *indio_dev,
+>>  			break;
+>>  		}
+>>  		break;
+>> +	case IIO_CHAN_INFO_PROCESSED:
+>> +		switch (chan->type) {
+>> +		case IIO_STEPS:
+>> +			*val = st->steps;
+>> +			ret = IIO_VAL_INT;
+>> +			break;
+>> +		case IIO_ACTIVITY:
+>> +			switch (chan->channel2) {
+>> +			case IIO_MOD_RUNNING:
+>> +				*val = st->activity_running;
+>> +				ret = IIO_VAL_INT;
+>> +				break;
+>> +			case IIO_MOD_WALKING:
+>> +				*val = st->activity_walking;
+>> +				ret = IIO_VAL_INT;
+>> +				break;
+>> +			default:
+>> +				break;
+>> +			}
+>> +			break;
+>> +		default:
+>> +			break;
+>> +		}
+>> +		break;
+>>  	case IIO_CHAN_INFO_OFFSET:
+>>  		/* only single ended adc -> 7 */
+>>  		*val = 7;
+>>  		ret = IIO_VAL_INT;
+>>  		break;
+>>  	case IIO_CHAN_INFO_SCALE:
+>> -		switch (chan->differential) {
+>> -		case 0:
+>> -			/* only single ended adc -> 0.001333 */
+>> -			*val = 0;
+>> -			*val2 = 1333;
+>> -			ret = IIO_VAL_INT_PLUS_MICRO;
+>> +		switch (chan->type) {
+>> +		case IIO_VOLTAGE:
+>> +			switch (chan->differential) {
+>> +			case 0:
+>> +				/* only single ended adc -> 0.001333 */
+>> +				*val = 0;
+>> +				*val2 = 1333;
+>> +				ret = IIO_VAL_INT_PLUS_MICRO;
+>> +				break;
+>> +			case 1:
+>> +				/* all differential adc channels ->
+>> +				 * 0.000001344 */
+>> +				*val = 0;
+>> +				*val2 = 1344;
+>> +				ret = IIO_VAL_INT_PLUS_NANO;
+>> +			}
+>> +			break;
+>> +		default:
+>>  			break;
+>> -		case 1:
+>> -			/* all differential adc channels -> 0.000001344 */
+>> -			*val = 0;
+>> -			*val2 = 1344;
+>> -			ret = IIO_VAL_INT_PLUS_NANO;
+>>  		}
+>>  		break;
+>>  	case IIO_CHAN_INFO_CALIBBIAS:
+>> @@ -298,6 +388,27 @@ static int iio_dummy_read_raw(struct iio_dev *indio_dev,
+>>  		*val2 = 33;
+>>  		ret = IIO_VAL_INT_PLUS_NANO;
+>>  		break;
+>> +	case IIO_CHAN_INFO_ENABLE:
+>> +		switch (chan->type) {
+>> +		case IIO_STEPS:
+>> +			*val = st->steps_enabled;
+>> +			ret = IIO_VAL_INT;
+>> +			break;
+>> +		default:
+>> +			break;
+>> +		}
+>> +		break;
+>> +	case IIO_CHAN_INFO_CALIBHEIGHT:
+>> +		switch (chan->type) {
+>> +		case IIO_STEPS:
+>> +			*val = st->height;
+>> +			ret = IIO_VAL_INT;
+>> +			break;
+>> +		default:
+>> +			break;
+>> +		}
+>> +		break;
+>> +
+>>  	default:
+>>  		break;
+>>  	}
+>> @@ -330,14 +441,45 @@ static int iio_dummy_write_raw(struct iio_dev *indio_dev,
+>>  
+>>  	switch (mask) {
+>>  	case IIO_CHAN_INFO_RAW:
+>> -		if (chan->output == 0)
+>> +		switch (chan->type) {
+>> +		case IIO_VOLTAGE:
+>> +			if (chan->output == 0)
+>> +				return -EINVAL;
+>> +
+>> +			/* Locking not required as writing single value */
+>> +			mutex_lock(&st->lock);
+>> +			st->dac_val = val;
+>> +			mutex_unlock(&st->lock);
+>> +			return 0;
+>> +		default:
+>>  			return -EINVAL;
+>> -
+>> -		/* Locking not required as writing single value */
+>> -		mutex_lock(&st->lock);
+>> -		st->dac_val = val;
+>> -		mutex_unlock(&st->lock);
+>> -		return 0;
+>> +		}
+>> +	case IIO_CHAN_INFO_PROCESSED:
+>> +		switch (chan->type) {
+>> +		case IIO_STEPS:
+>> +			mutex_lock(&st->lock);
+>> +			st->steps = val;
+>> +			mutex_unlock(&st->lock);
+>> +			return 0;
+>> +		case IIO_ACTIVITY:
+>> +			if (val < 0)
+>> +				val = 0;
+>> +			if (val > 100)
+>> +				val = 100;
+>> +			switch (chan->channel2) {
+>> +			case IIO_MOD_RUNNING:
+>> +				st->activity_running = val;
+>> +				return 0;
+>> +			case IIO_MOD_WALKING:
+>> +				st->activity_walking = val;
+>> +				return 0;
+>> +			default:
+>> +				return -EINVAL;
+>> +			}
+>> +			break;
+>> +		default:
+>> +			return -EINVAL;
+>> +		}
+>>  	case IIO_CHAN_INFO_CALIBSCALE:
+>>  		mutex_lock(&st->lock);
+>>  		/* Compare against table - hard matching here */
+>> @@ -356,6 +498,24 @@ static int iio_dummy_write_raw(struct iio_dev *indio_dev,
+>>  		st->accel_calibbias = val;
+>>  		mutex_unlock(&st->lock);
+>>  		return 0;
+>> +	case IIO_CHAN_INFO_ENABLE:
+>> +		switch (chan->type) {
+>> +		case IIO_STEPS:
+>> +			mutex_lock(&st->lock);
+>> +			st->steps_enabled = val;
+>> +			mutex_unlock(&st->lock);
+>> +			return 0;
+>> +		default:
+>> +			return -EINVAL;
+>> +		}
+>> +	case IIO_CHAN_INFO_CALIBHEIGHT:
+>> +		switch (chan->type) {
+>> +		case IIO_STEPS:
+>> +			st->height = val;
+>> +			return 0;
+>> +		default:
+>> +			return -EINVAL;
+>> +		}
+>>  
+>>  	default:
+>>  		return -EINVAL;
+>> @@ -395,6 +555,9 @@ static int iio_dummy_init_device(struct iio_dev *indio_dev)
+>>  	st->accel_val = 34;
+>>  	st->accel_calibbias = -7;
+>>  	st->accel_calibscale = &dummy_scales[0];
+>> +	st->steps = 47;
+>> +	st->activity_running = 98;
+>> +	st->activity_walking = 4;
+>>  
+>>  	return 0;
+>>  }
+>> diff --git a/drivers/staging/iio/iio_simple_dummy.h b/drivers/staging/iio/iio_simple_dummy.h
+>> index ad89842..3b714b4 100644
+>> --- a/drivers/staging/iio/iio_simple_dummy.h
+>> +++ b/drivers/staging/iio/iio_simple_dummy.h
+>> @@ -34,9 +34,14 @@ struct iio_dummy_state {
+>>  	int differential_adc_val[2];
+>>  	int accel_val;
+>>  	int accel_calibbias;
+>> +	int activity_running;
+>> +	int activity_walking;
+>>  	const struct iio_dummy_accel_calibscale *accel_calibscale;
+>>  	struct mutex lock;
+>>  	struct iio_dummy_regs *regs;
+>> +	int steps_enabled;
+>> +	int steps;
+>> +	int height;
+>>  #ifdef CONFIG_IIO_SIMPLE_DUMMY_EVENTS
+>>  	int event_irq;
+>>  	int event_val;
+>> diff --git a/drivers/staging/iio/iio_simple_dummy_events.c b/drivers/staging/iio/iio_simple_dummy_events.c
+>> index 719dfa5..ac15a44 100644
+>> --- a/drivers/staging/iio/iio_simple_dummy_events.c
+>> +++ b/drivers/staging/iio/iio_simple_dummy_events.c
+>> @@ -72,6 +72,22 @@ int iio_simple_dummy_write_event_config(struct iio_dev *indio_dev,
+>>  				st->event_en = state;
+>>  			else
+>>  				return -EINVAL;
+>> +		default:
+>> +			return -EINVAL;
+>> +		}
+>> +		break;
+>> +	case IIO_ACTIVITY:
+>> +		switch (type) {
+>> +		case IIO_EV_TYPE_THRESH:
+>> +			st->event_en = state;
+>> +			break;
+>> +		default:
+>> +			return -EINVAL;
+>> +		}
+>> +	case IIO_STEPS:
+>> +		switch (type) {
+>> +		case IIO_EV_TYPE_INSTANCE:
+>> +			st->event_en = state;
+>>  			break;
+>>  		default:
+>>  			return -EINVAL;
+>> @@ -161,6 +177,33 @@ static irqreturn_t iio_simple_dummy_event_handler(int irq, void *private)
+>>  					      IIO_EV_TYPE_THRESH, 0, 0, 0),
+>>  			       iio_get_time_ns());
+>>  		break;
+>> +	case 1:
+>> +		if (st->activity_running > st->event_val)
+>> +			iio_push_event(indio_dev,
+>> +				       IIO_EVENT_CODE(IIO_ACTIVITY, 0,
+>> +						      IIO_MOD_RUNNING,
+>> +						      IIO_EV_DIR_RISING,
+>> +						      IIO_EV_TYPE_THRESH,
+>> +						      0, 0, 0),
+>> +				       iio_get_time_ns());
+>> +		break;
+>> +	case 2:
+>> +		if (st->activity_walking < st->event_val)
+>> +			iio_push_event(indio_dev,
+>> +				       IIO_EVENT_CODE(IIO_ACTIVITY, 0,
+>> +						      IIO_MOD_WALKING,
+>> +						      IIO_EV_DIR_FALLING,
+>> +						      IIO_EV_TYPE_THRESH,
+>> +						      0, 0, 0),
+>> +				       iio_get_time_ns());
+>> +		break;
+>> +	case 3:
+>> +		iio_push_event(indio_dev,
+>> +			       IIO_EVENT_CODE(IIO_STEPS, 0, IIO_NO_MOD,
+>> +					      IIO_EV_DIR_NONE,
+>> +					      IIO_EV_TYPE_INSTANCE, 0, 0, 0),
+>> +			       iio_get_time_ns());
+>> +		break;
+>>  	default:
+>>  		break;
+>>  	}
+>>
 > 
-> diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-> index c60b0a1..4a9e29a 100644
-> --- a/Documentation/ABI/testing/sysfs-bus-iio
-> +++ b/Documentation/ABI/testing/sysfs-bus-iio
-> @@ -323,6 +323,14 @@ Description:
->  		production inaccuracies).  If shared across all channels,
->  		<type>_calibscale is used.
->  
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_steps_calibheight
-> +KernelVersion:	3.19
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Height of the user (in centimeters) used by some pedometers
-> +		to compute the stride length, distance, speed and activity
-> +		type.
-> +
->  What:		/sys/bus/iio/devices/iio:deviceX/in_accel_scale_available
->  What:		/sys/.../iio:deviceX/in_voltageX_scale_available
->  What:		/sys/.../iio:deviceX/in_voltage-voltage_scale_available
-> diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-> index 1e060f3..45bb3a4 100644
-> --- a/drivers/iio/industrialio-core.c
-> +++ b/drivers/iio/industrialio-core.c
-> @@ -120,6 +120,7 @@ static const char * const iio_chan_info_postfix[] = {
->  	[IIO_CHAN_INFO_HYSTERESIS] = "hysteresis",
->  	[IIO_CHAN_INFO_INT_TIME] = "integration_time",
->  	[IIO_CHAN_INFO_ENABLE] = "en",
-> +	[IIO_CHAN_INFO_CALIBHEIGHT] = "calibheight",
->  };
->  
->  /**
-> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-> index f45a400..878d861 100644
-> --- a/include/linux/iio/iio.h
-> +++ b/include/linux/iio/iio.h
-> @@ -39,6 +39,7 @@ enum iio_chan_info_enum {
->  	IIO_CHAN_INFO_HYSTERESIS,
->  	IIO_CHAN_INFO_INT_TIME,
->  	IIO_CHAN_INFO_ENABLE,
-> +	IIO_CHAN_INFO_CALIBHEIGHT,
->  };
->  
->  enum iio_shared_by {
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 
