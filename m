@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaKVOlQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 09:41:16 -0500
-Received: from sabertooth01.qualcomm.com ([65.197.215.72]:51097 "EHLO
-	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120AbaKVOlO (ORCPT
+	id S1752149AbaKVOop (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 09:44:45 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:51827
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751932AbaKVOol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 09:41:14 -0500
-X-IronPort-AV: E=McAfee;i="5600,1067,7629"; a="78688475"
-X-IronPort-AV: E=Sophos;i="5.07,437,1413270000"; 
-   d="scan'208";a="796907703"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: nick <xerofoify@gmail.com>
-CC: <linville@tuxdriver.com>, <linux-wireless@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: FIX ME locking is implemented?
-References: <54709610.6020502@gmail.com>
-Date: Sat, 22 Nov 2014 16:41:07 +0200
-In-Reply-To: <54709610.6020502@gmail.com> (nick's message of "Sat, 22 Nov 2014
-	08:56:32 -0500")
-Message-ID: <87lhn38fi4.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [10.80.80.8]
-X-ClientProxiedBy: NASANEXM01D.na.qualcomm.com (10.85.0.84) To
- NASANEXM01G.na.qualcomm.com (10.85.0.33)
+	Sat, 22 Nov 2014 09:44:41 -0500
+X-IronPort-AV: E=Sophos;i="5.07,437,1413237600"; 
+   d="scan'208";a="90017236"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: kernel-janitors@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@alien8.de>, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/6] i7core_edac: fix error return code
+Date: Sat, 22 Nov 2014 15:39:15 +0100
+Message-Id: <1416667159-9808-3-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1416667159-9808-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1416667159-9808-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nick <xerofoify@gmail.com> writes:
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> I am wondering why the fix me in the code below still exists as this
-> code is clearly being locked properly with a spin lock on the lock
-> related to the created linked list in this code.
+Return a negative error code on failure.
 
-It would be nice to mention what driver and file you are referring to.
-So this is from ath6kl_tx_queue_full() in
-drivers/net/wireless/ath/ath6kl/txrx.c.
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-> /* FIXME: Locking */
-> spin_lock_bh(&ar->list_lock);
-> list_for_each_entry(vif, &ar->vif_list, list) {
-> 	if (vif->nw_type == ADHOC_NETWORK ||
->  			action != HTC_SEND_FULL_DROP) {
->                         spin_unlock_bh(&ar->list_lock);
->
->                          set_bit(NETQ_STOPPED, &vif->flags);
->                          netif_stop_queue(vif->ndev);
->
->                          return action;
->               }
->         }
->         spin_unlock_bh(&ar->list_lock);
+// <smpl>
+@@
+identifier ret; expression e1,e2;
+@@
+(
+if (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
+// </smpl>
 
-Most probably someone just forgot to update the comment, patches welcome :)
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
--- 
-Kalle Valo
+---
+ drivers/edac/i7core_edac.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+index 9cd0b30..5da90de 100644
+--- a/drivers/edac/i7core_edac.c
++++ b/drivers/edac/i7core_edac.c
+@@ -1177,7 +1177,7 @@ static int i7core_create_sysfs_devices(struct mem_ctl_info *mci)
+ 
+ 	pvt->addrmatch_dev = kzalloc(sizeof(*pvt->addrmatch_dev), GFP_KERNEL);
+ 	if (!pvt->addrmatch_dev)
+-		return rc;
++		return -ENOMEM;
+ 
+ 	pvt->addrmatch_dev->type = &addrmatch_type;
+ 	pvt->addrmatch_dev->bus = mci->dev.bus;
+@@ -1198,7 +1198,7 @@ static int i7core_create_sysfs_devices(struct mem_ctl_info *mci)
+ 		if (!pvt->chancounts_dev) {
+ 			put_device(pvt->addrmatch_dev);
+ 			device_del(pvt->addrmatch_dev);
+-			return rc;
++			return -ENOMEM;
+ 		}
+ 
+ 		pvt->chancounts_dev->type = &all_channel_counts_type;
+
