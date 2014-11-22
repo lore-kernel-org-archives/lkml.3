@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910AbaKVPYS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 10:24:18 -0500
-Received: from mga09.intel.com ([134.134.136.24]:10547 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757AbaKVPYQ convert rfc822-to-8bit (ORCPT
+	id S1752061AbaKVPYV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 10:24:21 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:58451 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaKVPYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 10:24:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,437,1413270000"; 
-   d="scan'208";a="612359179"
-From: "Jones, Peter A" <peter.a.jones@intel.com>
-To: Joe Perches <joe@perches.com>,
-        "hpdd-discuss-owner@lists.01.org" <hpdd-discuss-owner@ml01.01.org>
-CC: "Drokin, Oleg" <oleg.drokin@intel.com>,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Is the list moderated or not?
-Thread-Topic: Is the list moderated or not?
-Thread-Index: AQHQBRx8c3BK8p9hKEuHy5fYCk7Im5xsxqWA
-Date: Sat, 22 Nov 2014 15:24:14 +0000
-Message-ID: <D095EA47.77977%peter.a.jones@intel.com>
-References: <mailman.31138.1416527032.9748.hpdd-discuss@lists.01.org>
- <1416527288.6651.27.camel@perches.com>
-In-Reply-To: <1416527288.6651.27.camel@perches.com>
-Accept-Language: en-CA, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.252.131.6]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <E67238858A345A4EBA48546FA2B3B7BB@intel.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sat, 22 Nov 2014 10:24:18 -0500
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, Carlo Caione <carlo@caione.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>,
+        Beniamino Galvani <b.galvani@gmail.com>
+Subject: [PATCH v3 0/4] spi: Add support for Amlogic Meson SPIFC
+Date: Sat, 22 Nov 2014 16:21:38 +0100
+Message-Id: <1416669702-7841-1-git-send-email-b.galvani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry Joe. This list has traditionally always been moderated but I guess
-something was changed at some point (probably when we joined Intel). I
-have adjusted the list to be moderated and it behaved as expected in my
-tests. Thanks for drawing our attention to this!
+Hi,
 
-On 11/20/14, 3:48 PM, "Joe Perches" <joe@perches.com> wrote:
+this patchset adds a driver for the SPIFC (SPI flash controller)
+available in Amlogic Meson6 and Meson8 SoCs. The driver has been
+tested on a Meson8 based device to communicate with a Macronix
+mx25l1606e serial flash.
 
->On Thu, 2014-11-20 at 15:43 -0800, hpdd-discuss-owner@lists.01.org
->wrote:
->> You must be a subscriber to post to this list. Please make sure you
->> are sending from a subscribed email address.
->
->The linux-kernel MAINTAINERS file has this as a moderated list.
->If it's not moderated, this entry should be changed to subscriber-only.
->
->STAGING - LUSTRE PARALLEL FILESYSTEM
->M:	Oleg Drokin <oleg.drokin@intel.com>
->M:	Andreas Dilger <andreas.dilger@intel.com>
->L:	HPDD-discuss@lists.01.org (moderated for non-subscribers)
->W:	http://lustre.opensfs.org/
->S:	Maintained
->F:	drivers/staging/lustre
->
->If it's really subscriber only, please change the L: line to:
->
->L:	HPDD-discuss@lists.01.org (subscribers-only)
->
->
+Changes since v2 [ https://lkml.org/lkml/2014/11/17/669 ]:
+ - introduce spi_transfer_is_last() helper instead of using a flag
+   in spi_transfer structure
+ - rebase DTS patch on arm-soc
+
+Changes since v1 [ https://lkml.org/lkml/2014/11/9/35 ]:
+ - decrease busy wait timeout
+ - remove check on xfer->speed_hz value in meson_spifc_transfer_one()
+ - implement transfer_one() instead of transfer_one_message()
+ - remove useless memset of devdata
+ - use fixed regmap config
+ - implement PM operations
+ - don't set master->bus_num
+ - allow modular build of the driver
+
+Beniamino Galvani (4):
+  spi: core: Add spi_transfer_is_last() helper
+  spi: meson: Add device tree bindings documentation for SPIFC
+  spi: meson: Add support for Amlogic Meson SPIFC
+  ARM: dts: meson: add node for SPIFC
+
+ .../devicetree/bindings/spi/spi-meson.txt          |  22 +
+ arch/arm/boot/dts/meson.dtsi                       |   9 +
+ drivers/spi/Kconfig                                |   7 +
+ drivers/spi/Makefile                               |   1 +
+ drivers/spi/spi-meson-spifc.c                      | 462 +++++++++++++++++++++
+ include/linux/spi/spi.h                            |   6 +
+ 6 files changed, 507 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi-meson.txt
+ create mode 100644 drivers/spi/spi-meson-spifc.c
+
+-- 
+1.9.1
 
