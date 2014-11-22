@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099AbaKVPcE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 10:32:04 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:44766 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaKVPcB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 10:32:01 -0500
+	id S1752021AbaKVPxe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 10:53:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46718 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750851AbaKVPxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 10:53:33 -0500
+Message-ID: <5470B170.90007@redhat.com>
+Date: Sat, 22 Nov 2014 10:53:20 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-In-Reply-To: <20141122094433.GA12152@pd.tnic>
-References: <1416388961-24159-1-git-send-email-ruiv.wang@gmail.com>
-	<20141119102954.GA5617@pd.tnic>
-	<3908561D78D1C84285E8C5FCA982C28F3294198E@ORSMSX114.amr.corp.intel.com>
-	<20141120101505.GA791@pd.tnic>
-	<CANVTcTa++Ef04JSYpfrCVuua5B0Wv=ASyr_H7nfHSQ-vC9GV3Q@mail.gmail.com>
-	<20141121164140.GA4274@pd.tnic>
-	<3908561D78D1C84285E8C5FCA982C28F3294F888@ORSMSX114.amr.corp.intel.com>
-	<20141121181334.GC4274@pd.tnic>
-	<CANVTcTa_AVM01VeVBYiSiB3Q0sJagy2hh-xYAjJv70jCWoDHYA@mail.gmail.com>
-	<20141122094433.GA12152@pd.tnic>
-Date: Sat, 22 Nov 2014 23:32:00 +0800
-Message-ID: <CANVTcTaz6pZ=oc0omXa-nPD8G3uOfCVKag-VC66x5gNeGkrgvQ@mail.gmail.com>
-Subject: Re: [PATCH v3] x86/mce: Try printing all machine check banks known
- before panic
-From: rui wang <ruiv.wang@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
-        "Wang, Rui Y" <rui.y.wang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <dave@stgolabs.net>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Rafael Aquini <aquini@redhat.com>
+Subject: Re: [PATCH] ipc,sem block sem_lock on sma->lock during sma initialization
+References: <20141121145226.2ac598af@annuminas.surriel.com>	 <20141121120930.3cd8d0f233f9670d689de672@linux-foundation.org>	 <546FA0A7.2010507@redhat.com>	 <20141121124229.933a9b6ef9725a4032c95d45@linux-foundation.org>	 <546FC4D9.6010600@redhat.com> <1416617795.17594.14.camel@linux-t7sj.site> <547005A0.8020208@redhat.com> <54709601.9040606@colorfullife.com>
+In-Reply-To: <54709601.9040606@colorfullife.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/14, Borislav Petkov <bp@alien8.de> wrote:
-> On Sat, Nov 22, 2014 at 10:16:49AM +0800, rui wang wrote:
->> I think both possibilities are valid. But experiments show that the
->> error logs are not in the dmesg preserved by kdump in /var/crash/
->> after panic and reboot, and not in the mcelog.entry[] array in the
->> kernel. So they must be somewhere in user space memory. Even if we
->> have serial console connected we still can't cache them. The
->> difficulty is that there's no easy way to force a user space daemon to
->> do something during panic.
->>
->> The new banks_saved[] array acts like a safe guard when you pass
->> something to someone else - to prevent it from getting lost in the
->> interim.
->
-> ... and instead of duplicating the mcelog functionality partially by
-> adding yet another array of struct mces, simply change mcelog to not
-> zero out its contents and dump the last 32 errors that passed through
-> there.
->
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-But that means mcelog buffer will have to become circular, and we can
-only dump the last 32 errors. There must be a reason why it wasn't
-designed as circular. I guess its benefit is as Tony explained: on
-systems where mcelog isn't run or run at a later time, we may lose the
-first error which is more important.
+On 11/22/2014 08:56 AM, Manfred Spraul wrote:
+> Hi Rik,
+> 
+> good catch - I completely forgot to check the initialization
+> 
+> On 11/22/2014 04:40 AM, Rik van Riel wrote:
+>> 
+>> newary initializes a bunch of things after the call to ipc_addid,
+>> however some things are initialized inside ipc_addid as well
+>> 
+>> Looking closer at newary, I suppose that it should be possible to
+>> move those other initializations before the call to ipc_addid.
+>> That would likely get rid of the problem, too.
+>> 
+>> However, I also see this line in newary, and I have no idea what
+>> protects that data:
+>> 
+>> ns->used_sems += nsems;
+> It should be sem_ids.rwsem, and at least according to the
+> documentation both freeary() and newary() hold it.
 
-There's valid reasons why people may not run mcelog, because they may
-never see machine checks during their lifetime. However once their
-machine panics due to a machine check, it suddenly becomes important.
+You're right, that is properly protected already.
 
-Thanks
-Rui
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUcLFwAAoJEM553pKExN6DoGwIAJVr0SJWq1sxkRr6quw03OlU
+8GUNm8Mz4tVpt1PYSe5r3SIGeT0btEhXjRrqp3IOw7z85Iw5Ed2CwzuLS3aunmpg
+hZag9qyArxKBQkbnhtqiM/0AEHbRiju3+sFNC1cQxsdRvLV6QkRveoP5kKvv4v6d
+PCMJBHuxL01tPXe5eQC2WjLmI2YPgWWh3fXhDcLt2XTVBI0vwyBiVFc/CtSPERo0
+sBF01l/l5KRfOAHduW2kj7KrSF004IgLU7KN5fLG0BzvwlowcHjXgzX7mMCbZrm2
+8d8bdEtRJxDZqs4Z9XjDrjXfSdWH/H/5CnfAmvgXA4pswb1lLDLPFbgmt7NUtxk=
+=vUfd
+-----END PGP SIGNATURE-----
