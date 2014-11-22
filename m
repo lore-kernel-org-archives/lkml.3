@@ -1,90 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738AbaKVVoz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 16:44:55 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:59209 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaKVVoy (ORCPT
+	id S1752817AbaKVVtJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 16:49:09 -0500
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:59049 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbaKVVtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 16:44:54 -0500
+	Sat, 22 Nov 2014 16:49:07 -0500
 X-Originating-IP: 50.43.41.112
-Date: Sat, 22 Nov 2014 13:44:45 -0800
+Date: Sat, 22 Nov 2014 13:48:53 -0800
 From: Josh Triplett <josh@joshtriplett.org>
 To: Pieter Smith <pieter@boesman.nl>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Jeff Layton <jlayton@poochiereds.net>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
+Cc: "David S. Miller" <davem@davemloft.net>, Tom Herbert <therbert@google.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Willem de Bruijn <willemb@google.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>, Thomas Graf <tgraf@suug.ch>,
+        Jan Beulich <JBeulich@suse.com>, Miklos Szeredi <mszeredi@suse.cz>,
         open list <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 4/6] fs/fuse: support compiling out splice
-Message-ID: <20141122214445.GA23711@thin>
+        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>
+Subject: Re: [PATCH 5/6] net/core: support compiling out splice
+Message-ID: <20141122214853.GB23711@thin>
 References: <1416690001-20817-1-git-send-email-pieter@boesman.nl>
- <1416690001-20817-5-git-send-email-pieter@boesman.nl>
+ <1416690001-20817-6-git-send-email-pieter@boesman.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416690001-20817-5-git-send-email-pieter@boesman.nl>
+In-Reply-To: <1416690001-20817-6-git-send-email-pieter@boesman.nl>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 22, 2014 at 09:59:59PM +0100, Pieter Smith wrote:
-> Compile out splice support from fuse when the splice-family of syscalls is not
-> supported by the system (i.e. CONFIG_SYSCALL_SPLICE is undefined).
+On Sat, Nov 22, 2014 at 10:00:00PM +0100, Pieter Smith wrote:
+> Compile out splice support from networking core when the splice-family of
+> syscalls is not supported by the system (i.e. CONFIG_SYSCALL_SPLICE is
+> undefined).
 
-This patch needs some additional explanation.  Could you explain in the
-commit message why this particular splice_read function (and only the
-splice_read function, not the splice_write function) needs compiling
-out, when others do not?
+Please explain in the commit message why this particular bit of splice
+support needs compiling out when most other bits do not.
 
-- Josh Triplett
+Also, a couple of style comments below.
 
 > Signed-off-by: Pieter Smith <pieter@boesman.nl>
 > ---
->  fs/fuse/dev.c      | 4 ++--
->  include/linux/fs.h | 6 ++++++
->  2 files changed, 8 insertions(+), 2 deletions(-)
+>  include/linux/skbuff.h | 9 +++++++++
+>  net/core/skbuff.c      | 9 ++++++---
+>  2 files changed, 15 insertions(+), 3 deletions(-)
 > 
-> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-> index ca88731..f8f92a4 100644
-> --- a/fs/fuse/dev.c
-> +++ b/fs/fuse/dev.c
-> @@ -1291,7 +1291,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
->  	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
->  }
->  
-> -static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
-> +static ssize_t __maybe_unused fuse_dev_splice_read(struct file *in, loff_t *ppos,
->  				    struct pipe_inode_info *pipe,
->  				    size_t len, unsigned int flags)
->  {
-> @@ -2144,7 +2144,7 @@ const struct file_operations fuse_dev_operations = {
->  	.llseek		= no_llseek,
->  	.read		= do_sync_read,
->  	.aio_read	= fuse_dev_read,
-> -	.splice_read	= fuse_dev_splice_read,
-> +	.splice_read	= __splice_p(fuse_dev_splice_read),
->  	.write		= do_sync_write,
->  	.aio_write	= fuse_dev_write,
->  	.splice_write	= fuse_dev_splice_write,
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index a957d43..04c0975 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2443,6 +2443,12 @@ extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
->  			int datasync);
->  extern void block_sync_page(struct page *page);
->  
+> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+> index a59d934..8c28524 100644
+> --- a/include/linux/skbuff.h
+> +++ b/include/linux/skbuff.h
+> @@ -2640,9 +2640,18 @@ int skb_copy_bits(const struct sk_buff *skb, int offset, void *to, int len);
+>  int skb_store_bits(struct sk_buff *skb, int offset, const void *from, int len);
+>  __wsum skb_copy_and_csum_bits(const struct sk_buff *skb, int offset, u8 *to,
+>  			      int len, __wsum csum);
 > +#ifdef CONFIG_SYSCALL_SPLICE
-> +#define __splice_p(x) x
-> +#else
-> +#define __splice_p(x) NULL
-> +#endif
+>  int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
+>  		    struct pipe_inode_info *pipe, unsigned int len,
+>  		    unsigned int flags);
+> +#else /* #ifdef CONFIG_SYSCALL_SPLICE */
+> +static inline int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
+> +		    struct pipe_inode_info *pipe, unsigned int len,
+> +		    unsigned int flags)
+> +{
+> +	return -EPERM;
+> +}
+> +#endif /* #ifdef CONFIG_SYSCALL_SPLICE */
+
+These comments, and the one added below in the corresponding .c file,
+don't match the prevailing style.  These are so short (fitting on one
+screen) that they hardly seem worth the comments at all, but if you want
+to include them, s/#ifdef// in the comment.
+
+>  void skb_copy_and_csum_dev(const struct sk_buff *skb, u8 *to);
+>  unsigned int skb_zerocopy_headlen(const struct sk_buff *from);
+>  int skb_zerocopy(struct sk_buff *to, struct sk_buff *from,
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index 61059a0..74fad8a 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -1781,9 +1781,9 @@ static bool __splice_segment(struct page *page, unsigned int poff,
+>   * Map linear and fragment data from the skb to spd. It reports true if the
+>   * pipe is full or if we already spliced the requested length.
+>   */
+> -static bool __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
+> -			      unsigned int *offset, unsigned int *len,
+> -			      struct splice_pipe_desc *spd, struct sock *sk)
+> +static bool __maybe_unused __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
+> +					     unsigned int *offset, unsigned int *len,
+> +					     struct splice_pipe_desc *spd, struct sock *sk)
+>  {
+>  	int seg;
+>  
+> @@ -1821,6 +1821,7 @@ static bool __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
+>   * the frag list, if such a thing exists. We'd probably need to recurse to
+>   * handle that cleanly.
+>   */
+> +#ifdef CONFIG_SYSCALL_SPLICE
+>  int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
+>  		    struct pipe_inode_info *pipe, unsigned int tlen,
+>  		    unsigned int flags)
+> @@ -1876,6 +1877,8 @@ done:
+>  
+>  	return ret;
+>  }
+> +#endif /* #ifdef CONFIG_SYSCALL_SPLICE */
 > +
->  /* fs/splice.c */
->  extern ssize_t generic_file_splice_read(struct file *, loff_t *,
->  		struct pipe_inode_info *, size_t, unsigned int);
+
+This extra blank line shouldn't be here.
+
+>  /**
+>   *	skb_store_bits - store bits from kernel buffer to skb
 > -- 
 > 1.9.1
 > 
