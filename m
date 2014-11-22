@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750784AbaKVGFG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 01:05:06 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:34177 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703AbaKVGFE (ORCPT
+	id S1750869AbaKVGJP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 01:09:15 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:48907 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711AbaKVGJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 01:05:04 -0500
+	Sat, 22 Nov 2014 01:09:14 -0500
 From: Anjana Sasindran <anjanasasindran123@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
         Anjana Sasindran <anjanasasindran123@gmail.com>
-Subject: [PATCH]  Staging:skein: Fix trailing  whitespace error
-Date: Sat, 22 Nov 2014 11:34:29 +0530
-Message-Id: <1416636269-3030-1-git-send-email-anjanasasindran123@gmail.com>
+Subject: [PATCH] Drivers:Staging:rtl8188eu:hal:usb_halinit.c: Added blank lines after declarations
+Date: Sat, 22 Nov 2014 11:36:40 +0530
+Message-Id: <1416636400-3107-1-git-send-email-anjanasasindran123@gmail.com>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This patch fixes the checkpatch.pl error:
+    This patch fixes the five checkpatch.pl warnings:
 
-  ERROR: trailing whitespace
+    WARNING:Missing a blank line after declaration
 
 Signed-off-by: Anjana Sasindran <anjanasasindran123@gmail.com>
 ---
- drivers/staging/skein/skein_generic.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/rtl8188eu/hal/usb_halinit.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/staging/skein/skein_generic.c b/drivers/staging/skein/skein_generic.c
-index 7096d5a..8660509 100644
---- a/drivers/staging/skein/skein_generic.c
-+++ b/drivers/staging/skein/skein_generic.c
-@@ -190,6 +190,7 @@ static int __init skein_generic_init(void)
- 		goto unreg512;
- 
- 	return 0;
+diff --git a/drivers/staging/rtl8188eu/hal/usb_halinit.c b/drivers/staging/rtl8188eu/hal/usb_halinit.c
+index 14650e9..439828c 100644
+--- a/drivers/staging/rtl8188eu/hal/usb_halinit.c
++++ b/drivers/staging/rtl8188eu/hal/usb_halinit.c
+@@ -1931,6 +1931,7 @@ GetHalDefVar8188EUsb(
+ 	case HW_DEF_RA_INFO_DUMP:
+ 		{
+ 			u8 entry_id = *((u8 *)pValue);
 +
- unreg512:
- 	crypto_unregister_shash(&alg512);
- unreg256:
+ 			if (check_fwstate(&Adapter->mlmepriv, _FW_LINKED)) {
+ 				DBG_88E("============ RA status check ===================\n");
+ 				DBG_88E("Mac_id:%d , RateID = %d, RAUseRate = 0x%08x, RateSGI = %d, DecisionRate = 0x%02x ,PTStage = %d\n",
+@@ -1946,6 +1947,7 @@ GetHalDefVar8188EUsb(
+ 	case HW_DEF_ODM_DBG_FLAG:
+ 		{
+ 			struct odm_dm_struct *dm_ocm = &(haldata->odmpriv);
++
+ 			pr_info("dm_ocm->DebugComponents = 0x%llx\n", dm_ocm->DebugComponents);
+ 		}
+ 		break;
+@@ -1994,6 +1996,7 @@ static u8 SetHalDefVar8188EUsb(struct adapter *Adapter, enum hal_def_variable eV
+ 			} else if (dm_func == 6) {/* turn on all dynamic func */
+ 				if (!(podmpriv->SupportAbility  & DYNAMIC_BB_DIG)) {
+ 					struct rtw_dig *pDigTable = &podmpriv->DM_DigTable;
++
+ 					pDigTable->CurIGValue = usb_read8(Adapter, 0xc50);
+ 				}
+ 				podmpriv->SupportAbility = DYNAMIC_ALL_FUNC_ENABLE;
+@@ -2011,6 +2014,7 @@ static u8 SetHalDefVar8188EUsb(struct adapter *Adapter, enum hal_def_variable eV
+ 		{
+ 			u8 bRSSIDump = *((u8 *)pValue);
+ 			struct odm_dm_struct *dm_ocm = &(haldata->odmpriv);
++
+ 			if (bRSSIDump)
+ 				dm_ocm->DebugComponents	=	ODM_COMP_DIG|ODM_COMP_FA_CNT;
+ 			else
+@@ -2021,7 +2025,9 @@ static u8 SetHalDefVar8188EUsb(struct adapter *Adapter, enum hal_def_variable eV
+ 		{
+ 			u64	DebugComponents = *((u64 *)pValue);
+ 			struct odm_dm_struct *dm_ocm = &(haldata->odmpriv);
++
+ 			dm_ocm->DebugComponents = DebugComponents;
++
+ 		}
+ 		break;
+ 	default:
 -- 
 1.9.1
 
