@@ -1,108 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751165AbaKVHnP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 02:43:15 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:42962 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762AbaKVHnN (ORCPT
+	id S1751314AbaKVHoK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 02:44:10 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:39460 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784AbaKVHoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 02:43:13 -0500
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Oliver Hartkopp <socketcan@hartkopp.net>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeremiah Mahler <jmmahler@gmail.com>
-Subject: [PATCH] can: eliminate banner[] variable and switch to pr_info()
-Date: Fri, 21 Nov 2014 23:42:35 -0800
-Message-Id: <1416642155-31816-1-git-send-email-jmmahler@gmail.com>
-X-Mailer: git-send-email 2.1.3
+	Sat, 22 Nov 2014 02:44:09 -0500
+From: Anjana Sasindran <anjanasasindran123@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Anjana Sasindran <anjanasasindran123@gmail.com>
+Subject: [PATCH] drivers:staging:skein:skein_generic.c: Fixed a whitespace error
+Date: Sat, 22 Nov 2014 13:11:59 +0530
+Message-Id: <1416642119-5827-1-git-send-email-anjanasasindran123@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several CAN modules use a design pattern with a banner[] variable at the
-top which defines a string that is used once during init to print the
-banner.  The string is also embedded with KERN_INFO which makes it
-printk() specific.
+     This patch fixes the checkpatch.pl error:
 
-Improve the code by eliminating the banner[] variable and moving the
-string to where it is printed.  Then switch from printk(KERN_INFO to
-pr_info() for the lines that were changed.
+     ERROR: trailing whitespace
 
-Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
+Signed-off-by: Anjana Sasindran <anjanasasindran123@gmail.com>
 ---
- net/can/af_can.c | 5 +----
- net/can/bcm.c    | 4 +---
- net/can/raw.c    | 4 +---
- 3 files changed, 3 insertions(+), 10 deletions(-)
+ drivers/staging/skein/skein_generic.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/net/can/af_can.c b/net/can/af_can.c
-index ce82337..ac05be1 100644
---- a/net/can/af_can.c
-+++ b/net/can/af_can.c
-@@ -64,9 +64,6 @@
- 
- #include "af_can.h"
- 
--static __initconst const char banner[] = KERN_INFO
--	"can: controller area network core (" CAN_VERSION_STRING ")\n";
+diff --git a/drivers/staging/skein/skein_generic.c b/drivers/staging/skein/skein_generic.c
+index 7096d5a..268e4de 100644
+--- a/drivers/staging/skein/skein_generic.c
++++ b/drivers/staging/skein/skein_generic.c
+@@ -188,7 +188,6 @@ static int __init skein_generic_init(void)
+ 		goto unreg256;
+ 	if (crypto_register_shash(&alg1024))
+ 		goto unreg512;
 -
- MODULE_DESCRIPTION("Controller Area Network PF_CAN core");
- MODULE_LICENSE("Dual BSD/GPL");
- MODULE_AUTHOR("Urs Thuermann <urs.thuermann@volkswagen.de>, "
-@@ -896,7 +893,7 @@ static __init int can_init(void)
- 		     offsetof(struct can_frame, data) !=
- 		     offsetof(struct canfd_frame, data));
- 
--	printk(banner);
-+	pr_info("can: controller area network core (" CAN_VERSION_STRING ")\n");
- 
- 	memset(&can_rx_alldev_list, 0, sizeof(can_rx_alldev_list));
- 
-diff --git a/net/can/bcm.c b/net/can/bcm.c
-index dcb75c0..9aa3f76 100644
---- a/net/can/bcm.c
-+++ b/net/can/bcm.c
-@@ -78,8 +78,6 @@
- 		     (CAN_SFF_MASK | CAN_EFF_FLAG | CAN_RTR_FLAG))
- 
- #define CAN_BCM_VERSION CAN_VERSION
--static __initconst const char banner[] = KERN_INFO
--	"can: broadcast manager protocol (rev " CAN_BCM_VERSION " t)\n";
- 
- MODULE_DESCRIPTION("PF_CAN broadcast manager protocol");
- MODULE_LICENSE("Dual BSD/GPL");
-@@ -1615,7 +1613,7 @@ static int __init bcm_module_init(void)
- {
- 	int err;
- 
--	printk(banner);
-+	pr_info("can: broadcast manager protocol (rev " CAN_BCM_VERSION " t)\n");
- 
- 	err = can_proto_register(&bcm_can_proto);
- 	if (err < 0) {
-diff --git a/net/can/raw.c b/net/can/raw.c
-index 081e81f..e3250e2 100644
---- a/net/can/raw.c
-+++ b/net/can/raw.c
-@@ -56,8 +56,6 @@
- #include <net/net_namespace.h>
- 
- #define CAN_RAW_VERSION CAN_VERSION
--static __initconst const char banner[] =
--	KERN_INFO "can: raw protocol (rev " CAN_RAW_VERSION ")\n";
- 
- MODULE_DESCRIPTION("PF_CAN raw protocol");
- MODULE_LICENSE("Dual BSD/GPL");
-@@ -810,7 +808,7 @@ static __init int raw_module_init(void)
- {
- 	int err;
- 
--	printk(banner);
-+	pr_info("can: raw protocol (rev " CAN_RAW_VERSION ")\n");
- 
- 	err = can_proto_register(&raw_can_proto);
- 	if (err < 0)
+ 	return 0;
+ unreg512:
+ 	crypto_unregister_shash(&alg512);
 -- 
-2.1.3
+1.9.1
 
