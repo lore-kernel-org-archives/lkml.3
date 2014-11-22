@@ -1,101 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968AbaKVClH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 21:41:07 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:41953 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518AbaKVClE (ORCPT
+	id S1752963AbaKVC6t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 21:58:49 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:33770 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530AbaKVC6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 21:41:04 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/A5YhXUDFzo2HL08Sm3xcOcKiNKonw8Gc=
-X-DKIM: OpenDKIM Filter v2.0.1 titan E6B4A6214F5
-Date: Fri, 21 Nov 2014 21:40:52 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] Hot plug support for the Armada 38x SoCs
-Message-ID: <20141122024052.GP22670@titan.lakedaemon.net>
-References: <1414669184-16785-1-git-send-email-gregory.clement@free-electrons.com>
+	Fri, 21 Nov 2014 21:58:47 -0500
+Message-ID: <546FFBBD.8060909@gmail.com>
+Date: Sat, 22 Nov 2014 10:58:05 +0800
+From: Yijing Wang <wangyijing0307@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414669184-16785-1-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Bjorn Helgaas <bhelgaas@google.com>, Yijing Wang <wangyijing@huawei.com>,
+        g@google.com
+CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [PATCH 00/10] Save MSI chip in pci_sys_data
+References: <1414396127-30023-1-git-send-email-wangyijing@huawei.com> <20141112042359.GK28161@google.com> <20141121172018.GA6578@google.com>
+In-Reply-To: <20141121172018.GA6578@google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 12:39:40PM +0100, Gregory CLEMENT wrote:
-> Hi,
-> 
-> This patch set is the second version of the series adding the hot plug
-> and also kexec support for the Armada 38x Socs.
-> 
-> If nobody object we could push them in linux-next.
-> 
-> The first patch was done in order to have the same code between Armada
-> XP and the Cortex A9 based mvebu SoCs. In order to ensure the the
-> backward compatibility for the device tree, it is only a preliminary
-> work for it.
-> 
-> The second patch moves the SCU power up sequence in a dedicated
-> assembly function. It was done in order to reuse it in the 3rd patch.
-> 
-> The third patch fixes the secondary startup for the cortex A9 mvebu
-> SoC. Indeed, the initial code was written with the assumption the SCU
-> will be always power on, which is not only true especially in the
-> kexec case.
-> 
-> These 2 patches may worth to be pushed to the stable kernel.
-> 
-> Then the last patch adds the CPU hotplug support for Armada 38x. I
-> tested the hotplug using the /sys/devices/system/cpu/cpu1/online
-> virtual file.  I also tested the kexec feature and managed to switch
-> to a new kernel using kexec.
-> 
-> Thanks,
-> 
-> Gregory
-> 
-> Changelog:
-> 
-> v1 -> v2:
-> 
-> - Fix typo and improve the comment explaining why we need to keep the
->   .smp filed in the 1st patch.
-> 
-> - Add a prefix to the function power_up_scu function to keep it
->   private and not "pollute" the global namespace.
-> 
-> Gregory CLEMENT (4):
->   ARM: mvebu: Clean-up the Armada XP support
->   ARM: mvebu: Move SCU power up in a function
->   ARM: mvebu: Fix the secondary startup for Cortex A9 SoC
->   ARM: mvebu: Implement the CPU hotplug support for the Armada 38x SoCs
-> 
->  arch/arm/mach-mvebu/armada-370-xp.h |  6 -----
->  arch/arm/mach-mvebu/board-v7.c      |  5 ++++
->  arch/arm/mach-mvebu/coherency.c     |  1 -
->  arch/arm/mach-mvebu/cpu-reset.c     |  1 -
->  arch/arm/mach-mvebu/headsmp-a9.S    |  1 +
->  arch/arm/mach-mvebu/platsmp-a9.c    | 53 +++++++++++++++++++++++++++++++++++--
->  arch/arm/mach-mvebu/platsmp.c       |  2 ++
->  arch/arm/mach-mvebu/pmsu.c          |  3 +--
->  arch/arm/mach-mvebu/pmsu.h          |  2 ++
->  arch/arm/mach-mvebu/pmsu_ll.S       | 20 +++++++++-----
->  10 files changed, 75 insertions(+), 19 deletions(-)
 
-Applied to mvebu/soc with Thomas' Reviewed-by and Tested-by.
+在 2014/11/22 1:20, Bjorn Helgaas 写道:
+> [+cc Marc]
+>
+> On Tue, Nov 11, 2014 at 09:23:59PM -0700, Bjorn Helgaas wrote:
+>> On Mon, Oct 27, 2014 at 03:48:37PM +0800, Yijing Wang wrote:
+>>> Now PCI host bridge drivers in arm associate MSI chip and
+>>> PCI bus by adding .add_bus(), and assign MSI chip pointer
+>>> to every PCI bus. Associating MSI chip and every PCI bus
+>>> is not necessary. All PCI busses under same PCI host brdige
+>>> share the same MSI chip. So saving MSI chip in pci_sys_data
+>>> is a better solution, it make PCI host bridge drivers clean.
+>>> Because we still need to provide arch spec pcibios_msi_controller()
+>>> to extract MSI controller pointer, a better solution is to
+>>> refactor PCI host bridge, make a generic pci_host_bridge, and
+>>> save common info like PCI domain number, MSI chip, resources
+>>> in it. We will do that work in another series as soon.
+>>>
+>>> To Bjorn: Because struct msi_chip defined in struct hw_pci and pci_sys_data
+>>> is under the #ifdef CONFIG_PCI_MSI, if we use if(IS_ENABLED(CONFIG_PCI_MSI))
+>>> in PCI host bridge drivers, it will cause build errors when the CONFIG_PCI_MSI
+>>> is off. So I keep #ifdef CONFIG_PCI_MSI in this series.
+>>>
+>>> Yijing Wang (10):
+>>>    MSI: Rename msi_chip to msi_controller for better readability
+>>>    PCI/MSI: Introduce weak pcibios_msi_controller()
+>>>    arm/MSI: Save MSI controller in pci_sys_data
+>>>    PCI: tegra: Save MSI controller in pci_sys_data
+>>>    PCI: designware: Save MSI controller in pci_sys_data
+>>>    PCI: rcar: Save MSI controller in pci_sys_data
+>>>    PCI: mvebu: Save MSI controller in pci_sys_data
+>>>    PCI: xilinx: Save MSI controller in pci_sys_data
+>>>    arm/PCI: Clean unused pcibios_add_bus() and pcibios_remove_bus()
+>>>    PCI/MSI: Remove useless bus->msi assignment
+>>>
+>>>   arch/arm/include/asm/mach/pci.h     |   10 +++++---
+>>>   arch/arm/kernel/bios32.c            |   28 ++++++++++--------------
+>>>   drivers/irqchip/irq-armada-370-xp.c |   22 +++++++++---------
+>>>   drivers/of/of_pci.c                 |   40 +++++++++++++++++-----------------
+>>>   drivers/pci/host/pci-keystone-dw.c  |    4 +-
+>>>   drivers/pci/host/pci-keystone.h     |    2 +-
+>>>   drivers/pci/host/pci-mvebu.c        |   14 ++++-------
+>>>   drivers/pci/host/pci-tegra.c        |   37 +++++++++++++-------------------
+>>>   drivers/pci/host/pcie-designware.c  |   25 +++++++--------------
+>>>   drivers/pci/host/pcie-designware.h  |    2 +-
+>>>   drivers/pci/host/pcie-rcar.c        |   37 +++++++++++++-------------------
+>>>   drivers/pci/host/pcie-xilinx.c      |   27 +++++++----------------
+>>>   drivers/pci/msi.c                   |   22 ++++++++++++++-----
+>>>   drivers/pci/probe.c                 |    1 -
+>>>   include/linux/msi.h                 |    6 ++--
+>>>   include/linux/of_pci.h              |   14 ++++++------
+>>>   include/linux/pci.h                 |    2 +-
+>>>   17 files changed, 132 insertions(+), 161 deletions(-)
+>>>
+>> Applied to pci/msi for v3.19, thanks.
+> I reworked this series slightly to:
+>
+>    - Change pci_msi_controller() and pcibios_msi_controller() from taking a
+>      pci_bus * to taking a pci_dev *.  This is so the interface allows
+>      per-device MSI controllers.  I don't think there's any reason to assume
+>      all devices on a bus have to have the same controller.
+>
+>    - Drop the last patch ("PCI/MSI: Remove useless bus->msi assignment")
+>      because it broke Marc's follow-on patches.
+>
+> I updated pci/msi, but I haven't put it in my "next" branch yet because I
+> want confirmation from Fengguang's autobuilder that I didn't break
+> anything.
+>
+> Current status of my tree:
+>
+>      6cf00af0ae15 [1] pci/msi (contains this rework)
+>      149792795d2b [2] next (does *not* contain this rework)
+>
+> Thomas, if pci/msi looks good to you, feel free to pull it into your tree.
+> The only change you should need to make is to change the parameters to
+> pci_msi_controller() and pcibios_msi_controller().
+>
+> Just FYI, I'm leaving on vacation for a week, so I won't be able to fix any
+> issues until Dec 1.
 
-thx,
+Hi Bjorn, thanks very much for your improvement for this series.
+It looks good to me. :)
 
-Jason.
+>
+> Bjorn
+>
+> [1] https://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=next&id=6cf00af0ae15
+> [2] https://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=next&id=149792795d2b
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
