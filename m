@@ -1,108 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898AbaKVAoJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 19:44:09 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:42253 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845AbaKVAoH (ORCPT
+	id S1752884AbaKVAvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 19:51:12 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60092 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772AbaKVAvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 19:44:07 -0500
+	Fri, 21 Nov 2014 19:51:10 -0500
+Date: Sat, 22 Nov 2014 01:50:55 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Emmanuel Berthier <emmanuel.berthier@intel.com>
+cc: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, robert.jarzmik@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [LBR] Dump LBRs on Oops
+In-Reply-To: <1416589419-9952-1-git-send-email-emmanuel.berthier@intel.com>
+Message-ID: <alpine.DEB.2.11.1411212240390.6439@nanos>
+References: <1416589419-9952-1-git-send-email-emmanuel.berthier@intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1411141008020.1043-100000@iolanthe.rowland.org>
-References: <CANLzEksHgo_tQiwJoUtXd0iV7tDXq0ieNrAXgtXwPtxxPBWrgw@mail.gmail.com>
-	<Pine.LNX.4.44L0.1411141008020.1043-100000@iolanthe.rowland.org>
-Date: Fri, 21 Nov 2014 16:44:06 -0800
-X-Google-Sender-Auth: tzjDb74gV5VOlBf91cZd9vpx6Is
-Message-ID: <CANLzEkuPr0hhjecVHaMkGfX7_DZr4wUV=-yP2+V6uBaYdAkhXw@mail.gmail.com>
-Subject: Re: [PATCH] HID: usbhid: get/put around clearing needs_remote_wakeup
-From: Benson Leung <bleung@chromium.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: johan@kernel.org, Jiri Kosina <jkosina@suse.cz>, linux-usb@vger.kernel.org,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sameer Nanda <snanda@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On Fri, 21 Nov 2014, Emmanuel Berthier wrote:
 
-On Fri, Nov 14, 2014 at 7:17 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
->
-> The reason for the get/put is to force a call to autosuspend_check().
-> But in this case, if killing the interrupt URB causes
-> autosuspend_check() to run then the get/put isn't needed.
->
-> On the other hand, I don't see why killing the interrupt URB would
-> cause autosuspend_check() to run.  Can you explain that?
+> The purpose of this patch is to stop LBR at the early stage of
+> Exception Handling, and dump its content later in the dumpstack
+> process.
 
-Sorry for the delay in my response. I did some more checking of my
-particular failure, and my commit message is incorrect. The
-usb_kill_urb is actually not the cause of this problem. It does not
-result in autosuspend_check() itself, and is only serving to add some
-delay.
+And that's useful in what way? The changelog should not tell WHAT the
+patch does. It should tell WHY it is useful and what are the
+usecases/benefits. Neither does it tell how that feature can be
+used/enabled/disabled and how it provides useful information.
 
-hidraw_release() in hidraw.c calls drop_ref(), which calls the
-following in sequence upon clearing the last reader :
-/* close device for last reader */
-hid_hw_power(hidraw->hid, PM_HINT_NORMAL);
-hid_hw_close(hidraw->hid);
+Where is that sample output which demonstrates that this is something
+which adds debugging value rather than another level of pointless
+featuritis?
 
-hid_hw_power results in a usb_autopm_put_interface. In this case, the
-reference count is decremented to 0, and a delayed autosuspend request
-is attempted.
-hid_hw_close leads to usbhid_close, which clears needs_remote_wakeup.
+> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> @@ -4,7 +4,9 @@
+>  #include <asm/perf_event.h>
+>  #include <asm/msr.h>
+>  #include <asm/insn.h>
+> -
+> +#ifdef CONFIG_LBR_DUMP_ON_EXCEPTION
+> +#include <asm/processor.h>
+> +#endif
 
-However, there's no guarantee that the clear of needs_remote_wakeup
-will occur before the delayed work ( runtime_idle() ->
-autosuspend_check() )  runs. Moving usbhid->intf->needs_remote_wakeup
-= 0 to before the usb_kill_urb(usbhid->urbin) only serves to reduce
-the amount of time between these events and makes this particular
-failure less likely.
+We just can include that file unconditionally.
 
-The correct solution is to put get/put around each change of
-needs_remote_wakeup, as that will correctly trigger another delayed
-autosuspend_check(), whose result is affected by the state of
-needs_remote_wakeup.
+>  #include "perf_event.h"
+>  
+>  enum {
+> @@ -135,6 +137,9 @@ static void __intel_pmu_lbr_enable(void)
+>  	u64 debugctl;
+>  	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+>  
+> +	if (IS_ENABLED(CONFIG_LBR_DUMP_ON_EXCEPTION))
+> +		lbr_dump_on_exception = 0;
 
-Since autosuspend_check() occurs as delayed work, I think it is
-appropriate to add get/put around the clear in usbhid_stop as well.
+With certain compilers you might get a surprise here, because they are
+too stupid to remove that 'lbr_dump_on_exception = 0;' right
+away. They kill it in the optimization phase. So they complain about
+lbr_dump_on_exception not being defined.
 
--- 
-Benson Leung
-Software Engineer, Chrom* OS
-bleung@chromium.org
+So you need something like this:
 
-On Fri, Nov 14, 2014 at 7:17 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Thu, 13 Nov 2014, Benson Leung wrote:
->
->> Hi Alan,
->>
->> On Thu, Nov 13, 2014 at 2:11 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
->> > Wait a minute -- in your previous email you said this approach didn't
->> > work.  So does it work or doesn't it?
->>
->> Sorry for the confusion. The approach *does* work.
->>
->> That was actually my original idea to fix the problem, but I saw other
->> places in the kernel where it was done with a get/put.
->
-> The reason for the get/put is to force a call to autosuspend_check().
-> But in this case, if killing the interrupt URB causes
-> autosuspend_check() to run then the get/put isn't needed.
->
-> On the other hand, I don't see why killing the interrupt URB would
-> cause autosuspend_check() to run.  Can you explain that?
->
-> Alan Stern
->
->
->
+static inline void lbr_set_dump_on_oops(bool enable)
+{
+#ifdef CONFIG_LBR_DUMP_ON_EXCEPTION
+       ....
+#endif
+}
 
+and make that
 
+     if (IS_ENABLED(CONFIG_LBR_DUMP_ON_EXCEPTION))
+             lbr_set_dump_on_oops(false);
 
--- 
-Benson Leung
-Software Engineer, Chrom* OS
-bleung@chromium.org
+which is completely pointless as you can just call
+
+      lbr_set_dump_on_oops(false);
+
+unconditionally and be done with it.
+
+IS_ENABLED(CONFIG_XXX) is not a proper solution for all problems. It
+can avoid #ifdefs, but it also can introduce interesting nonsense.
+
+>  	if (cpuc->lbr_sel)
+>  		wrmsrl(MSR_LBR_SELECT, cpuc->lbr_sel->config);
+>  
+> @@ -147,6 +152,9 @@ static void __intel_pmu_lbr_disable(void)
+>  {
+>  	u64 debugctl;
+>  
+> +	if (IS_ENABLED(CONFIG_LBR_DUMP_ON_EXCEPTION))
+> +		lbr_dump_on_exception = 1;
+
+Now the even more interesting question is, WHY is
+lbr_dump_on_exception enabled in __intel_pmu_lbr_disable and disabled
+in __intel_pmu_lbr_enable?
+
+This obviously lacks a understandable comment, but before you
+elaborate on this see the next comment.
+
+> +void show_lbrs(void)
+> +{
+> +	if (IS_ENABLED(CONFIG_LBR_DUMP_ON_EXCEPTION)) {
+> +		u64 debugctl;
+> +		int i, lbr_on;
+> +
+> +		rdmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
+> +		lbr_on = debugctl & DEBUGCTLMSR_LBR;
+> +
+> +		pr_info("Last Branch Records:");
+> +		if (!lbr_dump_on_exception) {
+> +			pr_cont(" (Disabled by perf_event)\n");
+
+So, if perf uses LBR we do not print it? What a weird design
+decision. If the machine crashes, we want that information no matter
+whether perf is active or not. What kind of twisted logic is that?
+
+> +		} else if (x86_pmu.lbr_nr == 0) {
+> +			pr_cont(" (x86_model unknown, check intel_pmu_init())\n");
+
+Huch? Why we get here if the pmu does not support it at all? Why
+should we bother to print it? If it's not printed it's not
+available. It's that simple.
+
+> +		} else if (lbr_on) {
+> +			pr_cont(" (not halted)\n");
+
+Why would it be not halted? Code comments are optional, right?
+
+> +		} else {
+> +			struct cpu_hw_events *cpuc =
+> +						this_cpu_ptr(&cpu_hw_events);
+
+A simple #ifdef would have saved you an indentation level and actually
+made that code readable. IS_ENABLED() is a proper hammer for some
+things but not everything is a nail.
+
+> +			intel_pmu_lbr_read_64(cpuc);
+> +
+> +			pr_cont("\n");
+> +			for (i = 0; i < cpuc->lbr_stack.nr; i++) {
+> +				pr_info("   to: [<%016llx>] ",
+> +						cpuc->lbr_entries[i].to);
+> +				print_symbol("%s\n", cpuc->lbr_entries[i].to);
+> +				pr_info(" from: [<%016llx>] ",
+> +						cpuc->lbr_entries[i].from);
+> +				print_symbol("%s\n", cpuc->lbr_entries[i].from);
+> +			}
+> +		}
+> +	}
+> +}
+> +
+>  void show_regs(struct pt_regs *regs)
+>  {
+>  	int i;
+> @@ -314,10 +352,15 @@ void show_regs(struct pt_regs *regs)
+>  		unsigned char c;
+>  		u8 *ip;
+>  
+> +		/*
+> +		 * Called before show_stack_log_lvl() as it could trig
+> +		 * page_fault and reenable LBR
+
+Huch? The kernel stack dump is going to page fault? If that happens
+then you are in deep shit anyway. I doubt that anything useful gets
+out of the machine at this point, LBR or not.
+
+Aside of that if we want to debug with the LBR then we better freeze
+that whole thing across a dump and be done with it.
+
+> +		 */
+> +		show_lbrs();
+
+> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> index df088bb..120e989 100644
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -1035,6 +1035,42 @@ apicinterrupt IRQ_WORK_VECTOR \
+>  	irq_work_interrupt smp_irq_work_interrupt
+>  #endif
+>  
+> +.macro STOP_LBR
+> +#ifdef CONFIG_LBR_DUMP_ON_EXCEPTION
+> +	testl $1, lbr_dump_on_exception
+> +	jz 1f
+> +	push %rax
+> +	push %rcx
+> +	push %rdx
+> +	movl $MSR_IA32_DEBUGCTLMSR, %ecx
+> +	rdmsr
+> +	and $~1, %eax	/* Disable LBR recording */
+> +	wrmsr
+> +	pop %rdx
+> +	pop %rcx
+> +	pop %rax
+> +1:
+> +#endif
+> +.endm
+> +
+> +.macro START_LBR
+> +#ifdef CONFIG_LBR_DUMP_ON_EXCEPTION
+> +	testl $1, lbr_dump_on_exception
+> +	jz 1f
+> +	push %rax
+> +	push %rcx
+> +	push %rdx
+> +	movl $MSR_IA32_DEBUGCTLMSR, %ecx
+> +	rdmsr
+> +	or $1, %eax		/* Enable LBR recording */
+
+This is really brilliant. So the logic here is:
+
+Perf uses LBR  	LBR state at 	 LBR state at	Dump
+     	  	exception entry	 exception exit	  
+
+Yes		No change	 No change	No
+
+No		off -> off or	 off -> on	empty
+		on  -> off 	 off -> on    	perhaps useful
+
+So how does LBR get magically enabled?
+
+   By producing fault #1 and then on the exception exit enabling
+   LBR so that fault #2 can provide data?
+   
+   That's the only way I can see how to do that if you are not
+   magically tweaking MSR_IA32_DEBUGCTLMSR from user space.
+
+   Now that magically works, because you add that stuff into all
+   exception entry/exit stubs.
+
+   So it will be enabled magically no matter what and it will also be
+   enabled unconditonally on any machine whether it supports that
+   feature or not. That's the whole reason why you have no 32bit
+   support for this yet.
+
+How is that thing useful when perf uses LBR?
+
+   Not at all. We do not gain anything. We explode and have no value
+   at all.
+
+Aside of that what is setting the proper options for LBR recording in
+MSR_LBR_SELECT, if available?
+
+   Nothing, which is useless as well, as the dump might just conatin
+   completely useless crap. There is a reason why haswell introduced
+   LBR filtering.
+
+So what's the point of this?
+
+Thanks,
+
+	tglx
