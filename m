@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaKVPzY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 10:55:24 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:47741 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752039AbaKVPzW (ORCPT
+	id S1751915AbaKVQA2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 11:00:28 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:44900 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbaKVQA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 10:55:22 -0500
-Date: Sat, 22 Nov 2014 10:55:21 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Benson Leung <bleung@chromium.org>
-cc: johan@kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        <linux-usb@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sameer Nanda <snanda@chromium.org>
-Subject: Re: [PATCH] HID: usbhid: get/put around clearing needs_remote_wakeup
-In-Reply-To: <CANLzEkuPr0hhjecVHaMkGfX7_DZr4wUV=-yP2+V6uBaYdAkhXw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1411221043060.23393-100000@netrider.rowland.org>
+	Sat, 22 Nov 2014 11:00:26 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20141122111444.GA12445@pd.tnic>
+References: <54705C8E.1080400@googlemail.com>
+	<20141122111444.GA12445@pd.tnic>
+Date: Sat, 22 Nov 2014 08:00:26 -0800
+X-Google-Sender-Auth: utkjiGyxqg6Eq-WQe9auaP-ZkJI
+Message-ID: <CAGXu5jLV4SyqF_UYzic-h68cAD5A3Z_LJmrkoFPegNrYj+o3Zw@mail.gmail.com>
+Subject: Re: [PATCH]: cross-compiling x86_64 kernel on i386 user-space fails
+From: Kees Cook <keescook@chromium.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Chris Clayton <chris2553@googlemail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Junjie Mao <eternal.n08@gmail.com>, x86-ml <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014, Benson Leung wrote:
+On Sat, Nov 22, 2014 at 3:14 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Sat, Nov 22, 2014 at 09:51:10AM +0000, Chris Clayton wrote:
+>> Hi,
+>
+> Yeah, next time make sure you actually CC people :-)
+>
+> I've added them to CC now.
+>
+>> Commit e6023367d779060fddc9a52d1f474085b2b36298 broke building an x86_64 kernel in an i386. The change added a call to
+>> objdump but neglected to cater for cross-compiling.
+>>
+>> The patch below fixes the problem for me. I see the commit is now in 3.14 and 3.17 -stable, so the patch needs to go
+>> there too.
 
-> Sorry for the delay in my response. I did some more checking of my
-> particular failure, and my commit message is incorrect. The
-> usb_kill_urb is actually not the cause of this problem. It does not
-> result in autosuspend_check() itself, and is only serving to add some
-> delay.
-> 
-> hidraw_release() in hidraw.c calls drop_ref(), which calls the
-> following in sequence upon clearing the last reader :
-> /* close device for last reader */
-> hid_hw_power(hidraw->hid, PM_HINT_NORMAL);
-> hid_hw_close(hidraw->hid);
-> 
-> hid_hw_power results in a usb_autopm_put_interface. In this case, the
-> reference count is decremented to 0, and a delayed autosuspend request
-> is attempted.
-> hid_hw_close leads to usbhid_close, which clears needs_remote_wakeup.
-> 
-> However, there's no guarantee that the clear of needs_remote_wakeup
-> will occur before the delayed work ( runtime_idle() ->
-> autosuspend_check() )  runs. Moving usbhid->intf->needs_remote_wakeup
-> = 0 to before the usb_kill_urb(usbhid->urbin) only serves to reduce
-> the amount of time between these events and makes this particular
-> failure less likely.
-> 
-> The correct solution is to put get/put around each change of
-> needs_remote_wakeup, as that will correctly trigger another delayed
-> autosuspend_check(), whose result is affected by the state of
-> needs_remote_wakeup.
-> 
-> Since autosuspend_check() occurs as delayed work, I think it is
-> appropriate to add get/put around the clear in usbhid_stop as well.
+Good catch, thanks!
 
-As Oliver pointed out, there's no real need to resume a device which is
-already suspended (the only effect would be to allow it to suspend
-again but with wakeup disabled -- and this would happen anyway if a
-wakeup occurred).  Instead of using get and put, we should have an idle
-call.
+>
+> CC: stable@vger.kernel.org
+>
+> in the commit message should help there.
+>
+>
+>> CC: Junjie Mao <eternal.n08@gmail.com>
+>> CC: Kees Cook <keescook@chromium.org>
+>> CC: Thomas Gleixner <tglx@linutronix.de>
+>> CC: Ingo Molnar <mingo@kernel.org>
+>> Signed-off-by: Chris Clayton <chris2553@googlemail.com>
+>
+> Acked-by: Borislav Petkov <bp@suse.de>
 
-There is no USB wrapper for pm_runtime_idle calls, but one could be
-added.  Still, in the meantime can you check to see what happens if you
-add
+Acked-by: Kees Cook <keescook@chromium.org>
 
-	pm_runtime_idle(&usbhid->intf->dev);
+-Kees
 
-in usbhid_close() just after needs_remote_wakeup is set to 0?  You can 
-do the same thing in usbhid_stop() if you want.
+>
+>> ---
+>> --- linux/arch/x86/boot/compressed/Makefile~    2014-11-22 08:56:50.359706324 +0000
+>> +++ linux/arch/x86/boot/compressed/Makefile     2014-11-22 09:04:06.615693435 +0000
+>> @@ -76,7 +76,7 @@ suffix-$(CONFIG_KERNEL_XZ)    := xz
+>>  suffix-$(CONFIG_KERNEL_LZO)    := lzo
+>>  suffix-$(CONFIG_KERNEL_LZ4)    := lz4
+>>
+>> -RUN_SIZE = $(shell objdump -h vmlinux | \
+>> +RUN_SIZE = $(shell ${CROSS_COMPILE}objdump -h vmlinux | \
+>>              perl $(srctree)/arch/x86/tools/calc_run_size.pl)
+>>  quiet_cmd_mkpiggy = MKPIGGY $@
+>>        cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
 
-Alan Stern
 
+
+-- 
+Kees Cook
+Chrome OS Security
