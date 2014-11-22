@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125AbaKVQ70 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 11:59:26 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42552 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735AbaKVQ7Z (ORCPT
+	id S1751587AbaKVREw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 12:04:52 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:56107 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762AbaKVREv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 11:59:25 -0500
-Message-ID: <5470C0DB.9080900@pengutronix.de>
-Date: Sat, 22 Nov 2014 17:59:07 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Sat, 22 Nov 2014 12:04:51 -0500
+Date: Sat, 22 Nov 2014 09:04:48 -0800
+From: Shaohua Li <shli@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@fb.com>,
+        Kent Overstreet <kmo@daterainc.com>
+Subject: Re: [PATCH percpu/for-3.18-fixes] percpu-ref: fix DEAD flag
+ contamination of percpu pointer
+Message-ID: <20141122170448.GA2436@kernel.org>
+References: <995deb699f5b873c45d667df4add3b06f73c2c25.1416638887.git.shli@kernel.org>
+ <20141122142242.GB26007@htj.dyndns.org>
 MIME-Version: 1.0
-To: Jeremiah Mahler <jmmahler@gmail.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>
-CC: "David S. Miller" <davem@davemloft.net>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] can: eliminate banner[] variable and switch to pr_info()
-References: <1416642155-31816-1-git-send-email-jmmahler@gmail.com>
-In-Reply-To: <1416642155-31816-1-git-send-email-jmmahler@gmail.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="7KSnNMPQbH53b4pehpLxxXQNhAn3S8823"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141122142242.GB26007@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---7KSnNMPQbH53b4pehpLxxXQNhAn3S8823
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Sat, Nov 22, 2014 at 09:22:42AM -0500, Tejun Heo wrote:
+> While decoupling ATOMIC and DEAD flags, f47ad4578461 ("percpu_ref:
+> decouple switching to percpu mode and reinit") updated
+> __ref_is_percpu() so that it only tests ATOMIC flag to determine
+> whether the ref is in percpu mode or not; however, while DEAD implies
+> ATOMIC, the two flags are set separately during percpu_ref_kill() and
+> if __ref_is_percpu() races percpu_ref_kill(), it may see DEAD w/o
+> ATOMIC.  Because __ref_is_percpu() returns @ref->percpu_count_ptr
+> value verbatim as the percpu pointer after testing ATOMIC, the pointer
+> may now be contaminated with the DEAD flag.
+> 
+> This can be fixed by clearing the flag bits before returning the
+> pointer which was the fix proposed by Shaohua; however, as DEAD
+> implies ATOMIC, we can just test for both flags at once and avoid the
+> explicit masking.
+> 
+> Update __ref_is_percpu() so that it tests that both ATOMIC and DEAD
+> are clear before returning @ref->percpu_count_ptr as the percpu
+> pointer.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Shaohua Li <shli@kernel.org>
+> Link: http://lkml.kernel.org/r/995deb699f5b873c45d667df4add3b06f73c2c25.1416638887.git.shli@kernel.org
+> Fixes: f47ad4578461 ("percpu_ref: decouple switching to percpu mode and reinit")
+> ---
+> Hello, Shaohua.
+> 
+> That was a nasty one.  I think this fix is slightly better.  Can you
+> please confirm that this fixes the issues you're seeing too?
+> 
+> Thanks.
+> 
+>  include/linux/percpu-refcount.h |    8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
+> index d5c89e0..51ce60c 100644
+> --- a/include/linux/percpu-refcount.h
+> +++ b/include/linux/percpu-refcount.h
+> @@ -133,7 +133,13 @@ static inline bool __ref_is_percpu(struct percpu_ref *ref,
+>  	/* paired with smp_store_release() in percpu_ref_reinit() */
+>  	smp_read_barrier_depends();
+>  
+> -	if (unlikely(percpu_ptr & __PERCPU_REF_ATOMIC))
+> +	/*
+> +	 * Theoretically, the following could test just ATOMIC; however,
+> +	 * then we'd have to mask off DEAD separately as DEAD may be
+> +	 * visible without ATOMIC if we race with percpu_ref_kill().  DEAD
+> +	 * implies ATOMIC anyway.  Test them together.
+> +	 */
+> +	if (unlikely(percpu_ptr & __PERCPU_REF_ATOMIC_DEAD))
+>  		return false;
 
-On 11/22/2014 08:42 AM, Jeremiah Mahler wrote:
-> Several CAN modules use a design pattern with a banner[] variable at th=
-e
-> top which defines a string that is used once during init to print the
-> banner.  The string is also embedded with KERN_INFO which makes it
-> printk() specific.
->=20
-> Improve the code by eliminating the banner[] variable and moving the
-> string to where it is printed.  Then switch from printk(KERN_INFO to
-> pr_info() for the lines that were changed.
-
-Applied to can-next.
+this sounds not the correct answer. the DEAD/ATOMIC bit can be set by
+percpu_ref_kill() right after the check.
 
 Thanks,
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---7KSnNMPQbH53b4pehpLxxXQNhAn3S8823
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUcMDeAAoJECte4hHFiupUbiIP/j/eSss/WXIZf/EaxW6cui8D
-un16nudHbCmfuVAjSkMF7Be/wwtsSy0W2KTSOGI+PfgzYeInEsT+rfdMMeGEpIom
-bQNsG9J8Uv6vf32KQAC4G+h1GRL8YdTeDIWceFNNKFbtYBKp4xa5m94bVkgWeK5s
-B4OsaLV1eQOiw+gRqjWWe0BHsFhVQc0ifndLhTgkEcDh8Bsq58AAX9mWul0THAs3
-YJY1hbVu/lUTKkwahmvUS/5QcP0MjB9hUS/xBiCga4FNHvpu/XESZ97EjjZ10Xth
-BezRXcGNZCNZPzN/94aEGdQeZKg80vrfafjO8G9OHbFmozqR+TMT0RCwHq8+kTBa
-iDW9p+BUUyHeCcK9G6Q/m1F8MnSA2oGL0YZu6BzEAAWnXHaM9TPM9yi9zS/CzXAu
-c38Y//UyWM68ShUOE7Qlgpjxbm5Spgvsvir25lnVn9SspdD/iZ8kLgYt9Id214tU
-ewhfuaaFJNB+t0dc0/g+7BxA8p6RwwHQwFiOEVSgxMgfd4sGGOvjiqnJz77/Hm79
-ixJO3YMJ6LmOVOTX1ydRzSJHaVlA26VreTZ/gBgvOJFwm6qGUIuT5iYVz5wLkgkz
-ke5QwkzbmOmnxGR+wSrHctWeWCMDTObCUbGil7c3KnPmS90CdGKvUxisdpxLdiRd
-z+MqaSKGKFVLE/qxxaUT
-=7+dH
------END PGP SIGNATURE-----
-
---7KSnNMPQbH53b4pehpLxxXQNhAn3S8823--
+Shaohua
