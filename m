@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751982AbaKVOhW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 09:37:22 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:42387 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaKVOhU (ORCPT
+	id S1752059AbaKVOlQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 09:41:16 -0500
+Received: from sabertooth01.qualcomm.com ([65.197.215.72]:51097 "EHLO
+	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120AbaKVOlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 09:37:20 -0500
-Date: Sat, 22 Nov 2014 09:37:17 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 5/9] percpu: Replace smp_read_barrier_depends() with
- lockless_dereference()
-Message-ID: <20141122143717.GD26007@htj.dyndns.org>
-References: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
- <1416582363-20661-6-git-send-email-bobby.prani@gmail.com>
+	Sat, 22 Nov 2014 09:41:14 -0500
+X-IronPort-AV: E=McAfee;i="5600,1067,7629"; a="78688475"
+X-IronPort-AV: E=Sophos;i="5.07,437,1413270000"; 
+   d="scan'208";a="796907703"
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+To: nick <xerofoify@gmail.com>
+CC: <linville@tuxdriver.com>, <linux-wireless@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: FIX ME locking is implemented?
+References: <54709610.6020502@gmail.com>
+Date: Sat, 22 Nov 2014 16:41:07 +0200
+In-Reply-To: <54709610.6020502@gmail.com> (nick's message of "Sat, 22 Nov 2014
+	08:56:32 -0500")
+Message-ID: <87lhn38fi4.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416582363-20661-6-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [10.80.80.8]
+X-ClientProxiedBy: NASANEXM01D.na.qualcomm.com (10.85.0.84) To
+ NASANEXM01G.na.qualcomm.com (10.85.0.33)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 10:05:59AM -0500, Pranith Kumar wrote:
-> Recently lockless_dereference() was added which can be used in place of
-> hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+nick <xerofoify@gmail.com> writes:
 
-Applied to percpu/for-3.19.
+> I am wondering why the fix me in the code below still exists as this
+> code is clearly being locked properly with a spin lock on the lock
+> related to the created linked list in this code.
 
-Thanks.
+It would be nice to mention what driver and file you are referring to.
+So this is from ath6kl_tx_queue_full() in
+drivers/net/wireless/ath/ath6kl/txrx.c.
+
+> /* FIXME: Locking */
+> spin_lock_bh(&ar->list_lock);
+> list_for_each_entry(vif, &ar->vif_list, list) {
+> 	if (vif->nw_type == ADHOC_NETWORK ||
+>  			action != HTC_SEND_FULL_DROP) {
+>                         spin_unlock_bh(&ar->list_lock);
+>
+>                          set_bit(NETQ_STOPPED, &vif->flags);
+>                          netif_stop_queue(vif->ndev);
+>
+>                          return action;
+>               }
+>         }
+>         spin_unlock_bh(&ar->list_lock);
+
+Most probably someone just forgot to update the comment, patches welcome :)
 
 -- 
-tejun
+Kalle Valo
