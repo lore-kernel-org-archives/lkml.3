@@ -1,45 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaKVAZx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 19:25:53 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:57232 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567AbaKVAZw (ORCPT
+	id S1752869AbaKVA0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 19:26:37 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:19229 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752382AbaKVA0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 19:25:52 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+jvi1OHmwsyKVGbj8CLgqa
-Date: Fri, 21 Nov 2014 16:25:34 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Vignesh R <vigneshr@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>, Benoit Cousson <bcousson@baylibre.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] ARM: dts: AM43xx: add tscadc DT entries for
- am437x-evm and am43x-epos-evm
-Message-ID: <20141122002533.GK7046@atomide.com>
-References: <1416564862-23056-1-git-send-email-vigneshr@ti.com>
- <1416564862-23056-3-git-send-email-vigneshr@ti.com>
+	Fri, 21 Nov 2014 19:26:36 -0500
+Date: Fri, 21 Nov 2014 19:26:34 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Jiri Kosina <jkosina@suse.cz>
+Subject: [for-next][PATCH] printk/percpu: Define printk_func when printk is
+ not defined
+Message-ID: <20141121192634.5fcbe9b7@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416564862-23056-3-git-send-email-vigneshr@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Vignesh R <vigneshr@ti.com> [141121 02:18]:
-> This patch adds tscadc DT entries for am437x-gp-evm
-> and am43x-epos-evm.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+for-next
 
-Applying into omap-for-v3.19/dt-v2 thanks.
+Head SHA1: 04b74b27c2941e5d62120f6fee3a0a9388a30613
 
-Tony
+
+Steven Rostedt (Red Hat) (1):
+      printk/percpu: Define printk_func when printk is not defined
+
+----
+ include/linux/percpu.h | 1 +
+ include/linux/printk.h | 4 ++--
+ kernel/printk/printk.c | 3 +++
+ 3 files changed, 6 insertions(+), 2 deletions(-)
+---------------------------
+commit 04b74b27c2941e5d62120f6fee3a0a9388a30613
+Author: Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+Date:   Fri Nov 21 09:16:58 2014 -0500
+
+    printk/percpu: Define printk_func when printk is not defined
+    
+    To avoid include hell, the per_cpu variable printk_func was declared
+    in percpu.h. But it is only defined if printk is defined.
+    
+    As users of printk may also use the printk_func variable, it needs to
+    be defined even if CONFIG_PRINTK is not.
+    
+    Also add a printk.h include in percpu.h just to be safe.
+    
+    Link: http://lkml.kernel.org/r/20141121183215.01ba539c@canb.auug.org.au
+    
+    Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index ba2e85a0ff5b..caebf2a758dc 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -5,6 +5,7 @@
+ #include <linux/preempt.h>
+ #include <linux/smp.h>
+ #include <linux/cpumask.h>
++#include <linux/printk.h>
+ #include <linux/pfn.h>
+ #include <linux/init.h>
+ 
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 3bbd979d32fb..c69be9ee8f48 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -124,6 +124,8 @@ static inline __printf(1, 2) __cold
+ void early_printk(const char *s, ...) { }
+ #endif
+ 
++typedef int(*printk_func_t)(const char *fmt, va_list args);
++
+ #ifdef CONFIG_PRINTK
+ asmlinkage __printf(5, 0)
+ int vprintk_emit(int facility, int level,
+@@ -162,8 +164,6 @@ extern int kptr_restrict;
+ 
+ extern void wake_up_klogd(void);
+ 
+-typedef int(*printk_func_t)(const char *fmt, va_list args);
+-
+ void log_buf_kexec_setup(void);
+ void __init setup_log_buf(int early);
+ void dump_stack_set_arch_desc(const char *fmt, ...);
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index f7b723f98cb9..5af2b8bc88f0 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1896,6 +1896,9 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
+ 			     bool syslog, char *buf, size_t size) { return 0; }
+ static size_t cont_print_text(char *text, size_t size) { return 0; }
+ 
++/* Still needs to be defined for users */
++DEFINE_PER_CPU(printk_func_t, printk_func);
++
+ #endif /* CONFIG_PRINTK */
+ 
+ #ifdef CONFIG_EARLY_PRINTK
