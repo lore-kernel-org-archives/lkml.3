@@ -1,259 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaKVSBa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 13:01:30 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:58948 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaKVSB2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 13:01:28 -0500
-Date: Fri, 21 Nov 2014 12:39:30 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libsmbios-devel@lists.us.dell.com,
-        Srinivas_G_Gowda@dell.com, Michael_E_Brown@dell.com,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Rafael Wysocki <rjw@rjwysocki.net>,
-        Linux ACPI Mailing List <linux-acpi@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@intel.com>
-Subject: Re: [PATCH] platform: x86: dell-laptop: Add support for keyboard
- backlight
-Message-ID: <20141121203930.GA74402@vmdeb7>
-References: <1415967813-7223-1-git-send-email-pali.rohar@gmail.com>
- <20141119183416.GA100640@vmdeb7>
- <201411192141.20190@pali>
+	id S1752037AbaKVSLP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 13:11:15 -0500
+Received: from sauhun.de ([89.238.76.85]:34537 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750917AbaKVSLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 13:11:14 -0500
+Date: Sat, 22 Nov 2014 19:12:29 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Stijn Devriendt <highguy@gmail.com>
+Cc: linux-i2c@vger.kernel.org, linux-sh@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, Jean Delvare <jdelvare@suse.de>
+Subject: Re: [PATCH 2/3] i2c: slave-eeprom: add eeprom simulator driver
+Message-ID: <20141122181229.GB9698@katana>
+References: <1416326695-13083-1-git-send-email-wsa@the-dreams.de>
+ <1416326695-13083-3-git-send-email-wsa@the-dreams.de>
+ <CAOY=C6FSXWn2AKn9gp0oU69U8VkkyJAE7MMUTZsToy0P_Tf6AA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="s2ZSL+KKDSLx8OML"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201411192141.20190@pali>
+In-Reply-To: <CAOY=C6FSXWn2AKn9gp0oU69U8VkkyJAE7MMUTZsToy0P_Tf6AA@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 09:41:20PM +0100, Pali Rohár wrote:
-> Hello,
 
-Hi Pali,
+--s2ZSL+KKDSLx8OML
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> I removed other lines so mail is not too long.
-> 
-> On Wednesday 19 November 2014 19:34:16 Darren Hart wrote:
-...
-> > > +}
-> > > +
-> > > +static unsigned int kbd_get_max_level(void)
-> > > +{
-> > > +	if (kbd_info.levels != 0)
-> > > +		return kbd_info.levels;
-> > 
-> > This test.... does nothing? if it is 0, you still return 0
-> > below :-)
-> > 
-> > > +	if (kbd_mode_levels_count > 0)
-> > > +		return kbd_mode_levels_count - 1;
-> > > +	return 0;
-> > 
-> > So the function is:
-> > 
-> > return kbd_mode_levels_count > 0 ? kbd_mode_levels_count - 1 :
-> > kbd_info.levels;
-> > 
-> > The if blocks are more legible, so that's fine, but the first
-> > one doesn't seem to do anything and you can replace the final
-> > return with return kbd_info.levels.
-> > 
-> 
-> There are two main way for setting keyboard backlight level. One 
-> is setting level register and other one is setting special 
-> keyboard mode. And some dell laptops support only first and some 
-> only second. So this code choose first available/valid method and 
-> then return correct data. I'm not sure if those two methods are 
-> only one and also do not know if in future there will be 
-> something other. Because of this I use code pattern:
-> 
-> if (check_method_1) return value_method_1;
-> if (check_method_2) return value_method_2;
-> ...
-> return unsupported;
-> 
-> Same pattern logic is used in all functions which doing something 
-> with keyboard backlight level. (I will not other functions).
+Hi,
 
-Fair enough. Clear, legible, consistent coding is preferable to a few micro
-optimizations that the compiler is likely to catch anyway. I withdraw the
-comment :-)
+Please quote only relevant parts of the message (like I did). This
+improves readability a lot.
 
-> 
-> > > +static int kbd_set_state(struct kbd_state *state)
-> > > +{
-> > > +	int ret;
-> > > +
-> > > +	get_buffer();
-> > > +	buffer->input[0] = 0x2;
-> > > +	buffer->input[1] = BIT(state->mode_bit) & 0xFFFF;
-> > > +	buffer->input[1] |= (state->triggers & 0xFF) << 16;
-> > > +	buffer->input[1] |= (state->timeout_value & 0x3F) << 24;
-> > > +	buffer->input[1] |= (state->timeout_unit & 0x3) << 30;
-> > > +	buffer->input[2] = state->als_setting & 0xFF;
-> > > +	buffer->input[2] |= (state->level & 0xFF) << 16;
-> > > +	dell_send_request(buffer, 4, 11);
-> > > +	ret = buffer->output[0];
-> > > +	release_buffer();
-> > > +
-> > > +	if (ret)
-> > > +		return -EINVAL;
-> > 
-> > Also, is EINVAL right here and elsewhere? Or did something
-> > fail? EXIO?
-> > 
-> 
-> According to Dell documentation, return value is stored in 
-> buffer->output[0] and can be:
-> 
-> 0   Completed successfully
-> -1  Completed with error
-> -2  Function not supported
-> 
-> So we can return something other too (not always -EINVAL). Do you 
-> have any idea which errno should we return for -1 and -2?
+> > +static int i2c_slave_eeprom_slave_cb(struct i2c_client *client,
+> > +                                    enum i2c_slave_event event, u8 *va=
+l)
+> > +{
+> > +       struct eeprom_data *eeprom =3D i2c_get_clientdata(client);
+> > +
+> > +       switch (event) {
+> > +       case I2C_SLAVE_REQ_WRITE_END:
+> > +               if (eeprom->first_write) {
+> > +                       eeprom->buffer_idx =3D *val;
+> > +                       eeprom->first_write =3D false;
+> > +               } else {
+> > +                       spin_lock(&eeprom->buffer_lock);
+> > +                       eeprom->buffer[eeprom->buffer_idx++] =3D *val;
+> > +                       spin_unlock(&eeprom->buffer_lock);
+> > +               }
+> > +               break;
+> > +
+> > +       case I2C_SLAVE_REQ_READ_START:
+> > +               spin_lock(&eeprom->buffer_lock);
+> > +               *val =3D eeprom->buffer[eeprom->buffer_idx];
+> > +               spin_unlock(&eeprom->buffer_lock);
+> > +               break;
+> > +
+> > +       case I2C_SLAVE_REQ_READ_END:
+> > +               eeprom->buffer_idx++;
+> > +               break;
+> > +
+> > +       case I2C_SLAVE_STOP:
+> > +               eeprom->first_write =3D true;
+> > +               break;
+> > +
+> > +       default:
+> > +               break;
+> > +       }
+> > +
+> > +       return 0;
+> > +}
+>=20
+>=20
+> Would it make sense to have:
+> WRITE_START
+> WRITE_NEXT
+> WRITE_STOP
+> WRITE_REPEAT_START
+> READ_START
+> READ_NEXT
+> READ_STOP
+> READ_REPEAT_START
+>=20
+> Some devices may want different behavior for subsequent
+> reads when they are separate transactions, compared to
+> a single larger transaction.
 
-For -1, I should think  -EIO (I/O Error)
-For -2, I'd expect -ENXIO (No such device or address)
+This can all be handled with I2C_SLAVE_STOP.
 
-Cc Rafael, Mika, linux-acpi in case they have a better idea.
+> e.g. a single transaction may wraparound inside a >8bit
+> register (e.g. for 16bit: msb, lsb, msb, lsb, ...), but step
+> to the next register when a separate read/write is issued.
+> Alternatively, a WRITE/READ_NEXT may be implemented
+> more efficiently. This may not matter for current systems
+> compared to the low-frequency bus, but who knows what
+> IoT devices may bring to the table.
 
-> 
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +static int kbd_set_state_safe(struct kbd_state *state,
-> > > struct kbd_state *old) +{
-> > > +	int ret;
-> > > +
-> > > +	ret = kbd_set_state(state);
-> > > +	if (ret == 0)
-> > > +		return 0;
-> > > +
-> > > +	if (kbd_set_state(old))
-> > > +		pr_err("Setting old previous keyboard state 
-> failed\n");
-> > 
-> > And if we got an error and kbd_set_state(old) doesn't return
-> > !0, what's the state of things? Still a failure a presume?
-> > 
-> 
-> In some cases some laptops do not have to support everything. And 
-> when I (and Gabriele too) tried to set something unsupported Dell 
-> BIOS just resetted all settings to some default values. So this 
-> function try to set new state and if it fails then it try to 
-> restore previous settings.
+Let's start simple until we have more use cases. WRITE_NEXT may be
+useful when you have an internal u8 pointer to be set before actually
+sending data, but already less useful if this is u16. Also, slaves may
+decide to handle stops at unexpected places differently. Furthermore, my
+feeling is that slave drivers will be more robust if they handle those
+simple primitives properly.
 
-OK, that deserves a comment then as the rationale isn't obvious.
+What I could imagine, though, is that somewhen the eeprom simulator will
+be able to get data via other means than the shared memory, maybe via
+some callback. Then, the callback really only has to deal with "read
+this byte" or "write that byte" while for the outer world we have a
+proper well-known EEPROM like I2C interface.
 
-> 
-> > > +
-> > > +	return ret;
-> > > +}
-> 
-> > > +static void kbd_init(void)
-> > > +{
-> > > +	struct kbd_state state;
-> > > +	int ret;
-> > > +	int i;
-> > > +
-> > > +	ret = kbd_get_info(&kbd_info);
-> > > +
-> > > +	if (ret == 0) {
-> > > +
-> > 
-> > Checking for success, let's invert and avoid the indentation
-> > here too.
-> > 
-> 
-> Again this is hard and not possible. This function first process 
-> data from kbd_get_info (if does not fail), then process data for 
-> kbd_tokens (via function find_token_id) and then set 
-> kbd_led_present to true if at least kbd_get_info or kbd_tokens 
-> succed.
+That being said, the list of I2C_SLAVE_* events is extensible, of
+course. Though, I rather see low-level stuff there like "General Call
+Adress received".
 
-The goal here is to avoid more than 3 levels of indentations for improved
-legibility. Often there are logical inversions and such we can make to
-accomplish this. When that fails, we break things up into functions, static
-inlines, etc.
+>=20
+> Also, behavior may be different for repeat start versus
+> stop/start, although a repeat start could be a start
+> without a previous stop as well...
 
-For reference:
-https://lkml.org/lkml/2007/6/15/449
+IMO a repeated start is to ensure that two messages arrive at the slave
+without interruption from another master. I can't think why a slave
+should know which type of start that was. In fact, if it does that would
+raise an eyebrow for me. Do you have an example?
 
-Which elaborates on CodingStyle Chapter 1: Indentation a bit.
+> Of course, if an I2C adapter cannot distinguish these
+> events, this is probably a futile attempt at adding
+> semantics that will silently break depending on the
+> actual hardware/driver used.
 
-...
-> > > +static ssize_t kbd_led_timeout_store(struct device *dev,
-> > > +				     struct device_attribute *attr,
-> > > +				     const char *buf, size_t count)
-> > > +{
-> > > +	struct kbd_state state;
-> > > +	struct kbd_state new_state;
-> > > +	int ret;
-> > > +	bool convert;
-> > > +	char ch;
-> > > +	u8 unit;
-> > > +	int value;
-> > > +	int i;
-> > 
-> > Decreasing line lenth please.
-> > 
-> 
-> What do you mean?
+That as well. I have not seen an I2C adapter which could provide this
+information so far.
 
-This is a nit, but one other maintainers have imposed on me, as a means to
-improve legibility. The preference is to declare variables in decreasing line
-length, longest to shortest:
+Thanks,
 
-struct kbd_state new_state;
-struct kbd_state state;
-bool convert;
-int value;
-u8 unit;
-char ch;
-int ret;
-int i;
+   Wolfram
 
-This is a generalization and sometimes there are good reasons for doing
-something else, such as logical groupings for commenting groups, etc. But since
-this list appeared mostly random, defaulting to decreasing line length is
-preferred.
 
-> 
-> > > +	if (convert) {
-> > > +		/* NOTE: this switch fall down */
-> > 
-> > "fall down" ? As in, it intentionally doesn't have breaks?
-> > 
-> 
-> This code convert "value" in "units" to new value in minutes 
-> units. So for unit == days it is: 24*60*60... So no breaks.
-> 
+--s2ZSL+KKDSLx8OML
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Right, so the language of the comment just wasn't clear, try:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-/* Convert value from seconds to minutes */
+iQIcBAEBAgAGBQJUcNIMAAoJEBQN5MwUoCm2PugQAKjjIK4D8pzc1nECdCwUflEO
+B/sWORvZHHq+PUiJwf5j/f2lNR/pJ9UMizTGi2apZwTmpurRsgZh6GtSlpSjoPco
+pTF3nsfNH4LYiTqCUU5tnIjjLriIy+TjMSceR+laEFF78a5/1DqGAL+Gcb9CfbOj
+A8myWHpGx+5NcDoQLr438SjOBun6h7JWCM2zaAGl7MUwMkTirvN+3scOFurj7lI4
+Cs0qMhCnT7kZmp4XAUbTUXo9Zp9N4VbhlCRmyLo7jx1c4fkAFk9yZeMVqgS6ErRN
+pEXf6Abun5zsrrPuOYhIXgex10MkJs17Y1zhHfyHV7BuOXVqJOwpAE+sTpT27B5U
+7iy3OeZBhFXKyb5w8lGA6663gRl9e6+juHd6J+8ks2xUPMNfzd1xHFyrBifWwGA4
+4MqSxSBjc26CyJ4irwvgW4K0lwWAiHcXl6YBMFe21D/jPdUaVhJp1N/x6BMHVDYR
+BAcHjWcgcLnFAN2fwBWIxV7/3mQbCnIhuwKzR+yzcrTVDwuW5UGN+I57ScPa/DY4
+8k5i7VA0v39bTS7CFgzYXMW8+9kMOVWLQBknBidfa+h2y2btHec2KijcAkTeM2Eu
+/6wouYgOxBtC2itPdvTaVgNLnDnlXNrQ3Nwy2zCGl1R084Qt3oINjW3FWLSbPmTp
+2CFGdOsjd/r6sraa3k11
+=0dAB
+-----END PGP SIGNATURE-----
 
-> > > +		switch (unit) {
-> > > +		case KBD_TIMEOUT_DAYS:
-> > > +			value *= 24;
-> > > +		case KBD_TIMEOUT_HOURS:
-> > > +			value *= 60;
-> > > +		case KBD_TIMEOUT_MINUTES:
-> > > +			value *= 60;
-> > > +			unit = KBD_TIMEOUT_SECONDS;
-> > > +	 	}
-> > > +
-
--- 
-Darren Hart
-Intel Open Source Technology Center
+--s2ZSL+KKDSLx8OML--
