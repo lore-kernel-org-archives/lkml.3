@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026AbaKVDa2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 22:30:28 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:42375 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979AbaKVDa1 (ORCPT
+	id S1752939AbaKVDgm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 22:36:42 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34193 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480AbaKVDgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 22:30:27 -0500
-Date: Fri, 21 Nov 2014 22:30:22 -0500 (EST)
-Message-Id: <20141121.223022.399609321644415888.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jrajahalme@nicira.com,
-        pshelar@nicira.com
-Subject: Re: linux-next: build failure after merge of the net-next tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141117133404.525229b4@canb.auug.org.au>
-References: <20141117133404.525229b4@canb.auug.org.au>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 21 Nov 2014 19:30:26 -0800 (PST)
+	Fri, 21 Nov 2014 22:36:41 -0500
+Date: Sat, 22 Nov 2014 03:36:39 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, target-devel@vger.kernel.org,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [RFC] situation with csum_and_copy_... API
+Message-ID: <20141122033639.GY7996@ZenIV.linux.org.uk>
+References: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
+ <20141119.161744.1661940121298888832.davem@davemloft.net>
+ <20141119213006.GE7996@ZenIV.linux.org.uk>
+ <20141119.165340.2162829993279387495.davem@davemloft.net>
+ <20141120214753.GR7996@ZenIV.linux.org.uk>
+ <1416520542.8629.46.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20141120222506.GS7996@ZenIV.linux.org.uk>
+ <1416524035.8629.54.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20141121084956.GT7996@ZenIV.linux.org.uk>
+ <20141122032718.GA24457@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141122032718.GA24457@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 17 Nov 2014 13:34:04 +1100
+On Sat, Nov 22, 2014 at 03:27:18AM +0000, Al Viro wrote:
+  
+> @@ -566,38 +445,15 @@ static size_t copy_to_iter_bvec(void *from, size_t bytes, struct iov_iter *i)
+[snip]
+> +	iterate_bvec(i, bytes, page, off, len, true,
+> +		     memcpy_from_page((from += len) - len, page, off, len))
 
-> I applied the following merge fix patch:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 17 Nov 2014 13:31:33 +1100
-> Subject: [PATCH] openvswitch: fix up for OVS_NLERR API change
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+should be
++		     memcpy_to_page(page, off, (from += len) - len, len))
 
-Thanks Stephen, I integrated this into the merge commit when
-I merge net into net-next just now.
+and
 
-Thanks again.
+> @@ -605,35 +461,9 @@ static size_t copy_from_iter_bvec(void *to, size_t bytes, struct iov_iter *i)
+[snip]
+> +	iterate_bvec(i, bytes, page, off, len, true,
+> +		     memcpy_to_page(page, off, (to += len) - len, len))
+
+should be
++		     memcpy_from_page((to += len) - len, page, off, len))
+
+Sorry, wrong delta.
