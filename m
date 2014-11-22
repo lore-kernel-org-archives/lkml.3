@@ -1,123 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbaKVNmJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 08:42:09 -0500
-Received: from mail-yk0-f174.google.com ([209.85.160.174]:57919 "EHLO
-	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaKVNmH (ORCPT
+	id S1751833AbaKVN4W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 08:56:22 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:49321 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969AbaKVN4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 08:42:07 -0500
+	Sat, 22 Nov 2014 08:56:20 -0500
+Message-ID: <54709601.9040606@colorfullife.com>
+Date: Sat, 22 Nov 2014 14:56:17 +0100
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1416576954-11997-10-git-send-email-gautam.vivek@samsung.com>
-References: <1416576954-11997-1-git-send-email-gautam.vivek@samsung.com> <1416576954-11997-10-git-send-email-gautam.vivek@samsung.com>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Sat, 22 Nov 2014 19:11:25 +0530
-Message-ID: <CAGOxZ53TUvZhSDLfeCuyvBwVcrkQhFnftQzk1DbkU_krdoFbZA@mail.gmail.com>
-Subject: Re: [PATCH 09/11] arm64: exynos: Add bus1 pinctrl node on exynos7
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>, devicetree@vger.kernel.org,
-        balbi <balbi@ti.com>, kishon <kishon@ti.com>,
-        linux-omap <linux-omap@vger.kernel.org>, gregkh@linuxfoundation.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "robh+dt" <robh+dt@kernel.org>, stern <stern@rowland.harvard.edu>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Rik van Riel <riel@redhat.com>, Davidlohr Bueso <dave@stgolabs.net>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Rafael Aquini <aquini@redhat.com>
+Subject: Re: [PATCH] ipc,sem block sem_lock on sma->lock during sma initialization
+References: <20141121145226.2ac598af@annuminas.surriel.com>	 <20141121120930.3cd8d0f233f9670d689de672@linux-foundation.org>	 <546FA0A7.2010507@redhat.com>	 <20141121124229.933a9b6ef9725a4032c95d45@linux-foundation.org>	 <546FC4D9.6010600@redhat.com> <1416617795.17594.14.camel@linux-t7sj.site> <547005A0.8020208@redhat.com>
+In-Reply-To: <547005A0.8020208@redhat.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vivek,
+Hi Rik,
 
-On Fri, Nov 21, 2014 at 7:05 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> BUS1 pinctrl provides gpios for usb and power regulator
-> available on exynos7-espresso board. So add relevant device
-> node for pinctrl-bus1.
->
-> Signed-off-by: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
->  arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi |   26 +++++++++++++++++++++++
->  arch/arm64/boot/dts/exynos/exynos7.dtsi         |    7 ++++++
->  2 files changed, 33 insertions(+)
->
-> diff --git a/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi b/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
-> index 2eef4a2..9648e03 100644
-> --- a/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
-> +++ b/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
-> @@ -335,6 +335,32 @@
->         };
->  };
->
-> +&pinctrl_bus1 {
-> +       gpf0: gpf0 {
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +       };
-> +
-> +       gpf4: gpf4 {
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +       };
-> +
-> +       gph1: gph1 {
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +       };
-> +};
-> +
-See my comment on patch 01/11, accordingly you can modify this.
+good catch - I completely forgot to check the initialization
 
->  &pinctrl_nfc {
->         gpj0: gpj0 {
->                 gpio-controller;
-> diff --git a/arch/arm64/boot/dts/exynos/exynos7.dtsi b/arch/arm64/boot/dts/exynos/exynos7.dtsi
-> index d7a37c3..90048b2 100644
-> --- a/arch/arm64/boot/dts/exynos/exynos7.dtsi
-> +++ b/arch/arm64/boot/dts/exynos/exynos7.dtsi
-> @@ -26,6 +26,7 @@
->                 pinctrl5 = &pinctrl_ese;
->                 pinctrl6 = &pinctrl_fsys0;
->                 pinctrl7 = &pinctrl_fsys1;
-> +               pinctrl8 = &pinctrl_bus1;
->         };
+On 11/22/2014 04:40 AM, Rik van Riel wrote:
 >
->         cpus {
-> @@ -242,6 +243,12 @@
->                         interrupts = <0 383 0>;
->                 };
+> newary initializes a bunch of things after the call to
+> ipc_addid, however some things are initialized inside
+> ipc_addid as well
 >
-> +               pinctrl_bus1: pinctrl@14870000 {
-> +                       compatible = "samsung,exynos7-pinctrl";
-> +                       reg = <0x14870000 0x1000>;
-> +                       interrupts = <0 384 0>;
-> +               };
-> +
->                 pinctrl_nfc: pinctrl@14cd0000 {
->                         compatible = "samsung,exynos7-pinctrl";
->                         reg = <0x14cd0000 0x1000>;
-> --
-> 1.7.10.4
+> Looking closer at newary, I suppose that it should be
+> possible to move those other initializations before
+> the call to ipc_addid.  That would likely get rid of
+> the problem, too.
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> However, I also see this line in newary, and I have
+> no idea what protects that data:
+>
+>          ns->used_sems += nsems;
+It should be sem_ids.rwsem, and at least according to the documentation 
+both freeary() and newary() hold it.
 
 
-
--- 
-Regards,
-Alim
+--
+     Manfred
