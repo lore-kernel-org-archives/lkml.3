@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972AbaKVBXo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 20:23:44 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:62239 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748AbaKVBXm (ORCPT
+	id S1752995AbaKVBZX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 20:25:23 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:60191 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905AbaKVBZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 20:23:42 -0500
+	Fri, 21 Nov 2014 20:25:22 -0500
+Date: Sat, 22 Nov 2014 02:25:19 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
+        linux-kernel@vger.kernel.org, "Liang, Kan" <kan.liang@intel.com>
+Subject: Re: Implement lbr-as-callgraph v10
+Message-ID: <20141122012519.GP12538@two.firstfloor.org>
+References: <20141118104416.GE27645@krava.brq.redhat.com>
+ <20141118110007.GF27645@krava.brq.redhat.com>
+ <87zjbnpv64.fsf@sejong.aot.lge.com>
+ <20141119092323.GC2592@krava.brq.redhat.com>
+ <20141119105450.GA22132@krava.brq.redhat.com>
+ <20141119141027.GF3790@kernel.org>
+ <20141119160458.GG3790@kernel.org>
+ <20141119214822.GM12538@two.firstfloor.org>
+ <20141120193347.GL3790@kernel.org>
+ <20141121203057.GD18625@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <1416614703.20938.0.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
- <1416582363-20661-10-git-send-email-bobby.prani@gmail.com>
- <1416586364.8629.104.camel@edumazet-glaptop2.roam.corp.google.com>
- <CAJhHMCCCSU7PbWdgPouefbLJBcoxR8nmsS8dg_=BcuqVJZbDew@mail.gmail.com> <1416614703.20938.0.camel@edumazet-glaptop2.roam.corp.google.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Fri, 21 Nov 2014 20:23:11 -0500
-Message-ID: <CAJhHMCB4NfOGBKutkM0L42Vp5ASOLupMRMR07H4sUYy_Dc31KQ@mail.gmail.com>
-Subject: Re: [PATCH v2 9/9] netfilter: Replace smp_read_barrier_depends() with lockless_dereference()
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        "open list:NETWORKING [IPv4/..." <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141121203057.GD18625@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 7:05 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->
-> On Fri, 2014-11-21 at 16:57 -0500, Pranith Kumar wrote:
->
->> Hi Eric,
->>
->> Thanks for looking at this patch.
->>
->> I've been scratching my head since morning trying to find out what was
->> so obviously wrong with this patch. Alas, I don't see what you do.
->>
->> Could you point it out and show me how incompetent I am, please?
->>
->> Thanks!
->
-> Well, even it the code is _not_ broken, I don't see any value with this
-> patch.
+>      f1 tcall.c:9
+>      main tcall.c:17
+>      main tcall.c:17
+>      main tcall.c:16
+>      main tcall.c:16
+>      f1 tcall.c:12
+>      f1 tcall.c:12
+>      f2 tcall.c:6
+>      f2 tcall.c:4
+>      f1 tcall.c:11
+>      f1 tcall.c:11
+>      f2 tcall.c:6
+>      f2 tcall.c:4
+>      f1 tcall.c:10
+>      f1 tcall.c:9
+>      main tcall.c:17
+> <SNIP>
+> 
+> 
+> Do you see the diff?  The 87.65% and 12.35% doesn't appear on the --tui
+> output.
 
-Phew. Not being broken itself is a win :)
+I see the problem. It's some issue in hist_browser__show_callchain.
+--stdio doesn't show it because it doesn't seem to use that (?)
 
->
-> If I use git blame on current code, line containing
-> smp_read_barrier_depends() exactly points to the relevant commit [1]
+With this patch it shows percent for the first entry
 
-And that is an opinion I will respect. I don't want to muck the git
-history where it is significant.
+@@ -791,7 +791,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+                };
+ 
+                printed += hist_browser__show_callchain(browser,
+-                                       &entry->sorted_chain, 1, row, total,
++                                       &entry->sorted_chain, 2, row, total,
+                                        hist_browser__show_callchain_entry, &arg,
+                                        hist_browser__check_output_full);
 
-This effort is to eventually replace the uses of
-smp_read_barrier_depends() and to use either rcu or
-lockless_dereference() as documented in memory-barriers.txt.
+But the numbers are still different from what --stdio outputs,
+so there are some deeper issues.
 
->
-> After your change, it will point to some cleanup, which makes little
-> sense to me, considering you did not change the smp_wmb() in
-> xt_replace_table().
+I doubt I caused this, probably some latent bug that just got triggered.
 
-That does not need to change as it is fine as it is. It still pairs
-with the smp_read_barrier_depends() in lockless_dereference().
+Namhyung?
 
->
-> I, as a netfilter contributor would like to keep current code as is,
-> because it is how I feel safe with it.
->
-> We have a proliferation of interfaces, but this does not help to
-> understand the issues and code maintenance.
->
-> smp_read_barrier_depends() better documents the read barrier than
-> lockless_dereference().
-
-I think this is a matter of opinion. But in the current effort I've
-seen cases where it is not clear what the barrier is actually
-guaranteeing. I am glad that the current code is not one of those and
-it has reasonable comments.
-
-lockless_dereference() on the other hand makes the dependency explicit.
-
->
-> The point of having a lock or not is irrelevant here.
->
-> [1]
-> http://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=b416c144f46af1a30ddfa4e4319a8f077381ad63
->
->
->
->
-
-
-Thanks!
--- 
-Pranith
+-Andi
