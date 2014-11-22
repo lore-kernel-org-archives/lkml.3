@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455AbaKVP1R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 10:27:17 -0500
-Received: from mout.web.de ([212.227.15.4]:62870 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752053AbaKVP1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 10:27:16 -0500
-Message-ID: <5470AB2D.705@users.sourceforge.net>
-Date: Sat, 22 Nov 2014 16:26:37 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752099AbaKVPcE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 10:32:04 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:44766 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580AbaKVPcB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 10:32:01 -0500
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Paul Mackerras <paulus@samba.org>,
-        Scott Wood <scottwood@freescale.com>, linuxppc-dev@lists.ozlabs.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] PowerPC-83xx: Deletion of an unnecessary check before
- the function call "of_node_put"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:CreDny1L4cJgIYc3XzQntnZ2nQG7/NzegJtWMetiJ95ThAENmjU
- RH6I9LCw+76rP7yCJ9LUnqmRg8tOxBpQFEFiaqsS+gdW3Yv2AGDmIrl8Cs/aTfdzmxOVuiX
- CJB1oQDTB0GcdvpcYbWCphIW9DF9Nr8rTVTkS6ncPdEJg5yyAXbneyeEzj0eYAGJZvG65W1
- 6CTi/2wTpu8m4A7IdmWxw==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20141122094433.GA12152@pd.tnic>
+References: <1416388961-24159-1-git-send-email-ruiv.wang@gmail.com>
+	<20141119102954.GA5617@pd.tnic>
+	<3908561D78D1C84285E8C5FCA982C28F3294198E@ORSMSX114.amr.corp.intel.com>
+	<20141120101505.GA791@pd.tnic>
+	<CANVTcTa++Ef04JSYpfrCVuua5B0Wv=ASyr_H7nfHSQ-vC9GV3Q@mail.gmail.com>
+	<20141121164140.GA4274@pd.tnic>
+	<3908561D78D1C84285E8C5FCA982C28F3294F888@ORSMSX114.amr.corp.intel.com>
+	<20141121181334.GC4274@pd.tnic>
+	<CANVTcTa_AVM01VeVBYiSiB3Q0sJagy2hh-xYAjJv70jCWoDHYA@mail.gmail.com>
+	<20141122094433.GA12152@pd.tnic>
+Date: Sat, 22 Nov 2014 23:32:00 +0800
+Message-ID: <CANVTcTaz6pZ=oc0omXa-nPD8G3uOfCVKag-VC66x5gNeGkrgvQ@mail.gmail.com>
+Subject: Re: [PATCH v3] x86/mce: Try printing all machine check banks known
+ before panic
+From: rui wang <ruiv.wang@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Luck, Tony" <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
+        "Wang, Rui Y" <rui.y.wang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sat, 22 Nov 2014 16:18:20 +0100
+On 11/22/14, Borislav Petkov <bp@alien8.de> wrote:
+> On Sat, Nov 22, 2014 at 10:16:49AM +0800, rui wang wrote:
+>> I think both possibilities are valid. But experiments show that the
+>> error logs are not in the dmesg preserved by kdump in /var/crash/
+>> after panic and reboot, and not in the mcelog.entry[] array in the
+>> kernel. So they must be somewhere in user space memory. Even if we
+>> have serial console connected we still can't cache them. The
+>> difficulty is that there's no easy way to force a user space daemon to
+>> do something during panic.
+>>
+>> The new banks_saved[] array acts like a safe guard when you pass
+>> something to someone else - to prevent it from getting lost in the
+>> interim.
+>
+> ... and instead of duplicating the mcelog functionality partially by
+> adding yet another array of struct mces, simply change mcelog to not
+> zero out its contents and dump the last 32 errors that passed through
+> there.
+>
 
-The of_node_put() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+But that means mcelog buffer will have to become circular, and we can
+only dump the last 32 errors. There must be a reason why it wasn't
+designed as circular. I guess its benefit is as Tony explained: on
+systems where mcelog isn't run or run at a later time, we may lose the
+first error which is more important.
 
-This issue was detected by using the Coccinelle software.
+There's valid reasons why people may not run mcelog, because they may
+never see machine checks during their lifetime. However once their
+machine panics due to a machine check, it suddenly becomes important.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- arch/powerpc/platforms/83xx/usb.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/arch/powerpc/platforms/83xx/usb.c b/arch/powerpc/platforms/83xx/usb.c
-index 1ad748b..5c31d82 100644
---- a/arch/powerpc/platforms/83xx/usb.c
-+++ b/arch/powerpc/platforms/83xx/usb.c
-@@ -162,8 +162,7 @@ int mpc831x_usb_cfg(void)
- 
- 	iounmap(immap);
- 
--	if (immr_node)
--		of_node_put(immr_node);
-+	of_node_put(immr_node);
- 
- 	/* Map USB SOC space */
- 	ret = of_address_to_resource(np, 0, &res);
--- 
-2.1.3
-
+Thanks
+Rui
