@@ -1,120 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817AbaKVVtJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 16:49:09 -0500
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:59049 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaKVVtH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 16:49:07 -0500
-X-Originating-IP: 50.43.41.112
-Date: Sat, 22 Nov 2014 13:48:53 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Pieter Smith <pieter@boesman.nl>
-Cc: "David S. Miller" <davem@davemloft.net>, Tom Herbert <therbert@google.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Willem de Bruijn <willemb@google.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Paul Durrant <Paul.Durrant@citrix.com>, Thomas Graf <tgraf@suug.ch>,
-        Jan Beulich <JBeulich@suse.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 5/6] net/core: support compiling out splice
-Message-ID: <20141122214853.GB23711@thin>
-References: <1416690001-20817-1-git-send-email-pieter@boesman.nl>
- <1416690001-20817-6-git-send-email-pieter@boesman.nl>
+	id S1752900AbaKVVtU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 16:49:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47675 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751149AbaKVVtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 16:49:17 -0500
+Message-ID: <547104D5.4030803@suse.de>
+Date: Sat, 22 Nov 2014 22:49:09 +0100
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416690001-20817-6-git-send-email-pieter@boesman.nl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: linux-samsung-soc@vger.kernel.org
+CC: Kukjin Kim <kgene@kernel.org>,
+        =?UTF-8?B?6rmA7ZWZ7KO8?= <ruppi.kim@hardkernel.com>,
+        Humberto Naves <hsnaves@gmail.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Johann Pfefferl <johann.pfefferl@siemens.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        "open list:PIN CONTROL SUBSY..." <linux-gpio@vger.kernel.org>
+Subject: Re: [PATCH v2 3/5] pinctrl: exynos: add exynos5410 SoC specific data
+References: <1416687984-3546-1-git-send-email-afaerber@suse.de> <1416687984-3546-4-git-send-email-afaerber@suse.de>
+In-Reply-To: <1416687984-3546-4-git-send-email-afaerber@suse.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 22, 2014 at 10:00:00PM +0100, Pieter Smith wrote:
-> Compile out splice support from networking core when the splice-family of
-> syscalls is not supported by the system (i.e. CONFIG_SYSCALL_SPLICE is
-> undefined).
-
-Please explain in the commit message why this particular bit of splice
-support needs compiling out when most other bits do not.
-
-Also, a couple of style comments below.
-
-> Signed-off-by: Pieter Smith <pieter@boesman.nl>
+Am 22.11.2014 um 21:26 schrieb Andreas Färber:
+> From: Hakjoo Kim <ruppi.kim@hardkernel.com>
+> 
+> Add Samsung EXYNOS5410 SoC specific data to enable pinctrl
+> support for all platforms based on EXYNOS5410.
+> 
+> Signed-off-by: Hakjoo Kim <ruppi.kim@hardkernel.com>
+> [AF: Rebased onto Exynos5260]
+> Signed-off-by: Andreas Färber <afaerber@suse.de>
 > ---
->  include/linux/skbuff.h | 9 +++++++++
->  net/core/skbuff.c      | 9 ++++++---
->  2 files changed, 15 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-> index a59d934..8c28524 100644
-> --- a/include/linux/skbuff.h
-> +++ b/include/linux/skbuff.h
-> @@ -2640,9 +2640,18 @@ int skb_copy_bits(const struct sk_buff *skb, int offset, void *to, int len);
->  int skb_store_bits(struct sk_buff *skb, int offset, const void *from, int len);
->  __wsum skb_copy_and_csum_bits(const struct sk_buff *skb, int offset, u8 *to,
->  			      int len, __wsum csum);
-> +#ifdef CONFIG_SYSCALL_SPLICE
->  int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
->  		    struct pipe_inode_info *pipe, unsigned int len,
->  		    unsigned int flags);
-> +#else /* #ifdef CONFIG_SYSCALL_SPLICE */
-> +static inline int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
-> +		    struct pipe_inode_info *pipe, unsigned int len,
-> +		    unsigned int flags)
-> +{
-> +	return -EPERM;
-> +}
-> +#endif /* #ifdef CONFIG_SYSCALL_SPLICE */
+> v1 -> v2:
+> * Filled in Sob from Hakjoo Kim
+> * Rebased (.svc, .{g,w}eint_{con,mask,pend} fields dropped)
 
-These comments, and the one added below in the corresponding .c file,
-don't match the prevailing style.  These are so short (fitting on one
-screen) that they hardly seem worth the comments at all, but if you want
-to include them, s/#ifdef// in the comment.
+Ugh, this patch is actually missing exactly this change! Stay tuned...
 
->  void skb_copy_and_csum_dev(const struct sk_buff *skb, u8 *to);
->  unsigned int skb_zerocopy_headlen(const struct sk_buff *from);
->  int skb_zerocopy(struct sk_buff *to, struct sk_buff *from,
-> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> index 61059a0..74fad8a 100644
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -1781,9 +1781,9 @@ static bool __splice_segment(struct page *page, unsigned int poff,
->   * Map linear and fragment data from the skb to spd. It reports true if the
->   * pipe is full or if we already spliced the requested length.
->   */
-> -static bool __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
-> -			      unsigned int *offset, unsigned int *len,
-> -			      struct splice_pipe_desc *spd, struct sock *sk)
-> +static bool __maybe_unused __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
-> +					     unsigned int *offset, unsigned int *len,
-> +					     struct splice_pipe_desc *spd, struct sock *sk)
->  {
->  	int seg;
->  
-> @@ -1821,6 +1821,7 @@ static bool __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
->   * the frag list, if such a thing exists. We'd probably need to recurse to
->   * handle that cleanly.
->   */
-> +#ifdef CONFIG_SYSCALL_SPLICE
->  int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
->  		    struct pipe_inode_info *pipe, unsigned int tlen,
->  		    unsigned int flags)
-> @@ -1876,6 +1877,8 @@ done:
->  
->  	return ret;
->  }
-> +#endif /* #ifdef CONFIG_SYSCALL_SPLICE */
-> +
+Andreas
 
-This extra blank line shouldn't be here.
-
->  /**
->   *	skb_store_bits - store bits from kernel buffer to skb
-> -- 
-> 1.9.1
-> 
+-- 
+SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 21284 AG Nürnberg
