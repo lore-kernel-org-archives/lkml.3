@@ -1,128 +1,639 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963AbaKVC6t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 21:58:49 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33770 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530AbaKVC6r (ORCPT
+	id S1752981AbaKVD1Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 22:27:25 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34178 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418AbaKVD1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 21:58:47 -0500
-Message-ID: <546FFBBD.8060909@gmail.com>
-Date: Sat, 22 Nov 2014 10:58:05 +0800
-From: Yijing Wang <wangyijing0307@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 21 Nov 2014 22:27:23 -0500
+Date: Sat, 22 Nov 2014 03:27:18 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, target-devel@vger.kernel.org,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [RFC] situation with csum_and_copy_... API
+Message-ID: <20141122032718.GA24457@ZenIV.linux.org.uk>
+References: <CA+55aFyQR2gOzEDROcWFcQzLvTjOxyJRjFJXJ03JB5knd-Gsgg@mail.gmail.com>
+ <20141119.161744.1661940121298888832.davem@davemloft.net>
+ <20141119213006.GE7996@ZenIV.linux.org.uk>
+ <20141119.165340.2162829993279387495.davem@davemloft.net>
+ <20141120214753.GR7996@ZenIV.linux.org.uk>
+ <1416520542.8629.46.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20141120222506.GS7996@ZenIV.linux.org.uk>
+ <1416524035.8629.54.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20141121084956.GT7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Yijing Wang <wangyijing@huawei.com>,
-        g@google.com
-CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Subject: Re: [PATCH 00/10] Save MSI chip in pci_sys_data
-References: <1414396127-30023-1-git-send-email-wangyijing@huawei.com> <20141112042359.GK28161@google.com> <20141121172018.GA6578@google.com>
-In-Reply-To: <20141121172018.GA6578@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141121084956.GT7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 21, 2014 at 08:49:56AM +0000, Al Viro wrote:
 
-在 2014/11/22 1:20, Bjorn Helgaas 写道:
-> [+cc Marc]
->
-> On Tue, Nov 11, 2014 at 09:23:59PM -0700, Bjorn Helgaas wrote:
->> On Mon, Oct 27, 2014 at 03:48:37PM +0800, Yijing Wang wrote:
->>> Now PCI host bridge drivers in arm associate MSI chip and
->>> PCI bus by adding .add_bus(), and assign MSI chip pointer
->>> to every PCI bus. Associating MSI chip and every PCI bus
->>> is not necessary. All PCI busses under same PCI host brdige
->>> share the same MSI chip. So saving MSI chip in pci_sys_data
->>> is a better solution, it make PCI host bridge drivers clean.
->>> Because we still need to provide arch spec pcibios_msi_controller()
->>> to extract MSI controller pointer, a better solution is to
->>> refactor PCI host bridge, make a generic pci_host_bridge, and
->>> save common info like PCI domain number, MSI chip, resources
->>> in it. We will do that work in another series as soon.
->>>
->>> To Bjorn: Because struct msi_chip defined in struct hw_pci and pci_sys_data
->>> is under the #ifdef CONFIG_PCI_MSI, if we use if(IS_ENABLED(CONFIG_PCI_MSI))
->>> in PCI host bridge drivers, it will cause build errors when the CONFIG_PCI_MSI
->>> is off. So I keep #ifdef CONFIG_PCI_MSI in this series.
->>>
->>> Yijing Wang (10):
->>>    MSI: Rename msi_chip to msi_controller for better readability
->>>    PCI/MSI: Introduce weak pcibios_msi_controller()
->>>    arm/MSI: Save MSI controller in pci_sys_data
->>>    PCI: tegra: Save MSI controller in pci_sys_data
->>>    PCI: designware: Save MSI controller in pci_sys_data
->>>    PCI: rcar: Save MSI controller in pci_sys_data
->>>    PCI: mvebu: Save MSI controller in pci_sys_data
->>>    PCI: xilinx: Save MSI controller in pci_sys_data
->>>    arm/PCI: Clean unused pcibios_add_bus() and pcibios_remove_bus()
->>>    PCI/MSI: Remove useless bus->msi assignment
->>>
->>>   arch/arm/include/asm/mach/pci.h     |   10 +++++---
->>>   arch/arm/kernel/bios32.c            |   28 ++++++++++--------------
->>>   drivers/irqchip/irq-armada-370-xp.c |   22 +++++++++---------
->>>   drivers/of/of_pci.c                 |   40 +++++++++++++++++-----------------
->>>   drivers/pci/host/pci-keystone-dw.c  |    4 +-
->>>   drivers/pci/host/pci-keystone.h     |    2 +-
->>>   drivers/pci/host/pci-mvebu.c        |   14 ++++-------
->>>   drivers/pci/host/pci-tegra.c        |   37 +++++++++++++-------------------
->>>   drivers/pci/host/pcie-designware.c  |   25 +++++++--------------
->>>   drivers/pci/host/pcie-designware.h  |    2 +-
->>>   drivers/pci/host/pcie-rcar.c        |   37 +++++++++++++-------------------
->>>   drivers/pci/host/pcie-xilinx.c      |   27 +++++++----------------
->>>   drivers/pci/msi.c                   |   22 ++++++++++++++-----
->>>   drivers/pci/probe.c                 |    1 -
->>>   include/linux/msi.h                 |    6 ++--
->>>   include/linux/of_pci.h              |   14 ++++++------
->>>   include/linux/pci.h                 |    2 +-
->>>   17 files changed, 132 insertions(+), 161 deletions(-)
->>>
->> Applied to pci/msi for v3.19, thanks.
-> I reworked this series slightly to:
->
->    - Change pci_msi_controller() and pcibios_msi_controller() from taking a
->      pci_bus * to taking a pci_dev *.  This is so the interface allows
->      per-device MSI controllers.  I don't think there's any reason to assume
->      all devices on a bus have to have the same controller.
->
->    - Drop the last patch ("PCI/MSI: Remove useless bus->msi assignment")
->      because it broke Marc's follow-on patches.
->
-> I updated pci/msi, but I haven't put it in my "next" branch yet because I
-> want confirmation from Fengguang's autobuilder that I didn't break
-> anything.
->
-> Current status of my tree:
->
->      6cf00af0ae15 [1] pci/msi (contains this rework)
->      149792795d2b [2] next (does *not* contain this rework)
->
-> Thomas, if pci/msi looks good to you, feel free to pull it into your tree.
-> The only change you should need to make is to change the parameters to
-> pci_msi_controller() and pcibios_msi_controller().
->
-> Just FYI, I'm leaving on vacation for a week, so I won't be able to fix any
-> issues until Dec 1.
+> Overall, I think I have the whole series plotted in enough details to be
+> reasonably certain we can pull it off.  Right now I'm dealing with
+> mm/iov_iter.c stuff; the amount of boilerplate source is already high enough
+> and with those extra primitives it'll get really unpleasant.
+> 
+> What we need there is something templates-like, as much as I hate C++, and
+> I'm still not happy with what I have at the moment...  Hopefully I'll get
+> that in more or less tolerable form today.
 
-Hi Bjorn, thanks very much for your improvement for this series.
-It looks good to me. :)
+Folks, I would really like comments on the patch below.  It's an attempt
+to reduce the amount of boilerplate code in mm/iov_iter.c; no new primitives
+added, just trying to reduce the amount of duplication in there.  I'm not
+too fond of the way it currently looks, to put it mildly.  It seems to
+work, it's reasonably straightforward and it even generates slightly better
+code than before, but I would _very_ welcome any tricks that would allow to
+make it not so tasteless.  I like the effect on line count (+124-358), but...
 
->
-> Bjorn
->
-> [1] https://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=next&id=6cf00af0ae15
-> [2] https://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=next&id=149792795d2b
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+It defines two iterators (for iovec-backed and bvec-backed ones) and converts
+a bunch of primitives to those.  The last argument is an expression evaluated
+for a bunch of ranges; for bvec one it's void, for iovec - size_t; if it
+evaluates to non-0, we treat it as read/write/whatever short by that many
+bytes and do not proceed any further.
 
+Any suggestions are welcome.
+
+diff --git a/mm/iov_iter.c b/mm/iov_iter.c
+index eafcf60..611af2bd 100644
+--- a/mm/iov_iter.c
++++ b/mm/iov_iter.c
+@@ -4,11 +4,75 @@
+ #include <linux/slab.h>
+ #include <linux/vmalloc.h>
+ 
++#define iterate_iovec(i, n, buf, len, move, STEP) {	\
++	const struct iovec *iov = i->iov;		\
++	size_t skip = i->iov_offset;			\
++	size_t left;					\
++	size_t wanted = n;				\
++	buf = iov->iov_base + skip;			\
++	len = min(n, iov->iov_len - skip);		\
++	left = STEP;					\
++	len -= left;					\
++	skip += len;					\
++	n -= len;					\
++	while (unlikely(!left && n)) {			\
++		iov++;					\
++		buf = iov->iov_base;			\
++		len = min(n, iov->iov_len);		\
++		left = STEP;				\
++		len -= left;				\
++		skip = len;				\
++		n -= len;				\
++	}						\
++	n = wanted - n;					\
++	if (move) {					\
++		if (skip == iov->iov_len) {		\
++			iov++;				\
++			skip = 0;			\
++		}					\
++		i->count -= n;				\
++		i->nr_segs -= iov - i->iov;		\
++		i->iov = iov;				\
++		i->iov_offset = skip;			\
++	}						\
++}
++
++#define iterate_bvec(i, n, page, off, len, move, STEP) {\
++	const struct bio_vec *bvec = i->bvec;		\
++	size_t skip = i->iov_offset;			\
++	size_t wanted = n;				\
++	page = bvec->bv_page;				\
++	off = bvec->bv_offset + skip;	 		\
++	len = min_t(size_t, n, bvec->bv_len - skip);	\
++	STEP;						\
++	skip += len;					\
++	n -= len;					\
++	while (unlikely(n)) {				\
++		bvec++;					\
++		page = bvec->bv_page;			\
++		off = bvec->bv_offset;			\
++		len = min_t(size_t, n, bvec->bv_len);	\
++		STEP;					\
++		skip = len;				\
++		n -= len;				\
++	}						\
++	n = wanted;					\
++	if (move) {					\
++		if (skip == bvec->bv_len) {		\
++			bvec++;				\
++			skip = 0;			\
++		}					\
++		i->count -= n;				\
++		i->nr_segs -= bvec - i->bvec;		\
++		i->bvec = bvec;				\
++		i->iov_offset = skip;			\
++	}						\
++}
++
+ static size_t copy_to_iter_iovec(void *from, size_t bytes, struct iov_iter *i)
+ {
+-	size_t skip, copy, left, wanted;
+-	const struct iovec *iov;
+ 	char __user *buf;
++	size_t len;
+ 
+ 	if (unlikely(bytes > i->count))
+ 		bytes = i->count;
+@@ -16,44 +80,15 @@ static size_t copy_to_iter_iovec(void *from, size_t bytes, struct iov_iter *i)
+ 	if (unlikely(!bytes))
+ 		return 0;
+ 
+-	wanted = bytes;
+-	iov = i->iov;
+-	skip = i->iov_offset;
+-	buf = iov->iov_base + skip;
+-	copy = min(bytes, iov->iov_len - skip);
+-
+-	left = __copy_to_user(buf, from, copy);
+-	copy -= left;
+-	skip += copy;
+-	from += copy;
+-	bytes -= copy;
+-	while (unlikely(!left && bytes)) {
+-		iov++;
+-		buf = iov->iov_base;
+-		copy = min(bytes, iov->iov_len);
+-		left = __copy_to_user(buf, from, copy);
+-		copy -= left;
+-		skip = copy;
+-		from += copy;
+-		bytes -= copy;
+-	}
+-
+-	if (skip == iov->iov_len) {
+-		iov++;
+-		skip = 0;
+-	}
+-	i->count -= wanted - bytes;
+-	i->nr_segs -= iov - i->iov;
+-	i->iov = iov;
+-	i->iov_offset = skip;
+-	return wanted - bytes;
++	iterate_iovec(i, bytes, buf, len, true,
++			__copy_to_user(buf, (from += len) - len, len))
++	return bytes;
+ }
+ 
+ static size_t copy_from_iter_iovec(void *to, size_t bytes, struct iov_iter *i)
+ {
+-	size_t skip, copy, left, wanted;
+-	const struct iovec *iov;
+ 	char __user *buf;
++	size_t len;
+ 
+ 	if (unlikely(bytes > i->count))
+ 		bytes = i->count;
+@@ -61,37 +96,9 @@ static size_t copy_from_iter_iovec(void *to, size_t bytes, struct iov_iter *i)
+ 	if (unlikely(!bytes))
+ 		return 0;
+ 
+-	wanted = bytes;
+-	iov = i->iov;
+-	skip = i->iov_offset;
+-	buf = iov->iov_base + skip;
+-	copy = min(bytes, iov->iov_len - skip);
+-
+-	left = __copy_from_user(to, buf, copy);
+-	copy -= left;
+-	skip += copy;
+-	to += copy;
+-	bytes -= copy;
+-	while (unlikely(!left && bytes)) {
+-		iov++;
+-		buf = iov->iov_base;
+-		copy = min(bytes, iov->iov_len);
+-		left = __copy_from_user(to, buf, copy);
+-		copy -= left;
+-		skip = copy;
+-		to += copy;
+-		bytes -= copy;
+-	}
+-
+-	if (skip == iov->iov_len) {
+-		iov++;
+-		skip = 0;
+-	}
+-	i->count -= wanted - bytes;
+-	i->nr_segs -= iov - i->iov;
+-	i->iov = iov;
+-	i->iov_offset = skip;
+-	return wanted - bytes;
++	iterate_iovec(i, bytes, buf, len, true,
++			__copy_from_user((to += len) - len, buf, len))
++	return bytes;
+ }
+ 
+ static size_t copy_page_to_iter_iovec(struct page *page, size_t offset, size_t bytes,
+@@ -256,134 +263,6 @@ done:
+ 	return wanted - bytes;
+ }
+ 
+-static size_t zero_iovec(size_t bytes, struct iov_iter *i)
+-{
+-	size_t skip, copy, left, wanted;
+-	const struct iovec *iov;
+-	char __user *buf;
+-
+-	if (unlikely(bytes > i->count))
+-		bytes = i->count;
+-
+-	if (unlikely(!bytes))
+-		return 0;
+-
+-	wanted = bytes;
+-	iov = i->iov;
+-	skip = i->iov_offset;
+-	buf = iov->iov_base + skip;
+-	copy = min(bytes, iov->iov_len - skip);
+-
+-	left = __clear_user(buf, copy);
+-	copy -= left;
+-	skip += copy;
+-	bytes -= copy;
+-
+-	while (unlikely(!left && bytes)) {
+-		iov++;
+-		buf = iov->iov_base;
+-		copy = min(bytes, iov->iov_len);
+-		left = __clear_user(buf, copy);
+-		copy -= left;
+-		skip = copy;
+-		bytes -= copy;
+-	}
+-
+-	if (skip == iov->iov_len) {
+-		iov++;
+-		skip = 0;
+-	}
+-	i->count -= wanted - bytes;
+-	i->nr_segs -= iov - i->iov;
+-	i->iov = iov;
+-	i->iov_offset = skip;
+-	return wanted - bytes;
+-}
+-
+-static size_t __iovec_copy_from_user_inatomic(char *vaddr,
+-			const struct iovec *iov, size_t base, size_t bytes)
+-{
+-	size_t copied = 0, left = 0;
+-
+-	while (bytes) {
+-		char __user *buf = iov->iov_base + base;
+-		int copy = min(bytes, iov->iov_len - base);
+-
+-		base = 0;
+-		left = __copy_from_user_inatomic(vaddr, buf, copy);
+-		copied += copy;
+-		bytes -= copy;
+-		vaddr += copy;
+-		iov++;
+-
+-		if (unlikely(left))
+-			break;
+-	}
+-	return copied - left;
+-}
+-
+-/*
+- * Copy as much as we can into the page and return the number of bytes which
+- * were successfully copied.  If a fault is encountered then return the number of
+- * bytes which were copied.
+- */
+-static size_t copy_from_user_atomic_iovec(struct page *page,
+-		struct iov_iter *i, unsigned long offset, size_t bytes)
+-{
+-	char *kaddr;
+-	size_t copied;
+-
+-	kaddr = kmap_atomic(page);
+-	if (likely(i->nr_segs == 1)) {
+-		int left;
+-		char __user *buf = i->iov->iov_base + i->iov_offset;
+-		left = __copy_from_user_inatomic(kaddr + offset, buf, bytes);
+-		copied = bytes - left;
+-	} else {
+-		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
+-						i->iov, i->iov_offset, bytes);
+-	}
+-	kunmap_atomic(kaddr);
+-
+-	return copied;
+-}
+-
+-static void advance_iovec(struct iov_iter *i, size_t bytes)
+-{
+-	BUG_ON(i->count < bytes);
+-
+-	if (likely(i->nr_segs == 1)) {
+-		i->iov_offset += bytes;
+-		i->count -= bytes;
+-	} else {
+-		const struct iovec *iov = i->iov;
+-		size_t base = i->iov_offset;
+-		unsigned long nr_segs = i->nr_segs;
+-
+-		/*
+-		 * The !iov->iov_len check ensures we skip over unlikely
+-		 * zero-length segments (without overruning the iovec).
+-		 */
+-		while (bytes || unlikely(i->count && !iov->iov_len)) {
+-			int copy;
+-
+-			copy = min(bytes, iov->iov_len - base);
+-			BUG_ON(!i->count || i->count < copy);
+-			i->count -= copy;
+-			bytes -= copy;
+-			base += copy;
+-			if (iov->iov_len == base) {
+-				iov++;
+-				nr_segs--;
+-				base = 0;
+-			}
+-		}
+-		i->iov = iov;
+-		i->iov_offset = base;
+-		i->nr_segs = nr_segs;
+-	}
+-}
+-
+ /*
+  * Fault in the first iovec of the given iov_iter, to a maximum length
+  * of bytes. Returns 0 on success, or non-zero if the memory could not be
+@@ -557,8 +436,8 @@ static void memzero_page(struct page *page, size_t offset, size_t len)
+ 
+ static size_t copy_to_iter_bvec(void *from, size_t bytes, struct iov_iter *i)
+ {
+-	size_t skip, copy, wanted;
+-	const struct bio_vec *bvec;
++	struct page *page;
++	size_t off, len;
+ 
+ 	if (unlikely(bytes > i->count))
+ 		bytes = i->count;
+@@ -566,38 +445,15 @@ static size_t copy_to_iter_bvec(void *from, size_t bytes, struct iov_iter *i)
+ 	if (unlikely(!bytes))
+ 		return 0;
+ 
+-	wanted = bytes;
+-	bvec = i->bvec;
+-	skip = i->iov_offset;
+-	copy = min_t(size_t, bytes, bvec->bv_len - skip);
+-
+-	memcpy_to_page(bvec->bv_page, skip + bvec->bv_offset, from, copy);
+-	skip += copy;
+-	from += copy;
+-	bytes -= copy;
+-	while (bytes) {
+-		bvec++;
+-		copy = min(bytes, (size_t)bvec->bv_len);
+-		memcpy_to_page(bvec->bv_page, bvec->bv_offset, from, copy);
+-		skip = copy;
+-		from += copy;
+-		bytes -= copy;
+-	}
+-	if (skip == bvec->bv_len) {
+-		bvec++;
+-		skip = 0;
+-	}
+-	i->count -= wanted - bytes;
+-	i->nr_segs -= bvec - i->bvec;
+-	i->bvec = bvec;
+-	i->iov_offset = skip;
+-	return wanted - bytes;
++	iterate_bvec(i, bytes, page, off, len, true,
++		     memcpy_from_page((from += len) - len, page, off, len))
++	return bytes;
+ }
+ 
+ static size_t copy_from_iter_bvec(void *to, size_t bytes, struct iov_iter *i)
+ {
+-	size_t skip, copy, wanted;
+-	const struct bio_vec *bvec;
++	struct page *page;
++	size_t off, len;
+ 
+ 	if (unlikely(bytes > i->count))
+ 		bytes = i->count;
+@@ -605,35 +461,9 @@ static size_t copy_from_iter_bvec(void *to, size_t bytes, struct iov_iter *i)
+ 	if (unlikely(!bytes))
+ 		return 0;
+ 
+-	wanted = bytes;
+-	bvec = i->bvec;
+-	skip = i->iov_offset;
+-
+-	copy = min(bytes, bvec->bv_len - skip);
+-
+-	memcpy_from_page(to, bvec->bv_page, bvec->bv_offset + skip, copy);
+-
+-	to += copy;
+-	skip += copy;
+-	bytes -= copy;
+-
+-	while (bytes) {
+-		bvec++;
+-		copy = min(bytes, (size_t)bvec->bv_len);
+-		memcpy_from_page(to, bvec->bv_page, bvec->bv_offset, copy);
+-		skip = copy;
+-		to += copy;
+-		bytes -= copy;
+-	}
+-	if (skip == bvec->bv_len) {
+-		bvec++;
+-		skip = 0;
+-	}
+-	i->count -= wanted;
+-	i->nr_segs -= bvec - i->bvec;
+-	i->bvec = bvec;
+-	i->iov_offset = skip;
+-	return wanted;
++	iterate_bvec(i, bytes, page, off, len, true,
++		     memcpy_to_page(page, off, (to += len) - len, len))
++	return bytes;
+ }
+ 
+ static size_t copy_page_to_iter_bvec(struct page *page, size_t offset,
+@@ -654,101 +484,6 @@ static size_t copy_page_from_iter_bvec(struct page *page, size_t offset,
+ 	return wanted;
+ }
+ 
+-static size_t zero_bvec(size_t bytes, struct iov_iter *i)
+-{
+-	size_t skip, copy, wanted;
+-	const struct bio_vec *bvec;
+-
+-	if (unlikely(bytes > i->count))
+-		bytes = i->count;
+-
+-	if (unlikely(!bytes))
+-		return 0;
+-
+-	wanted = bytes;
+-	bvec = i->bvec;
+-	skip = i->iov_offset;
+-	copy = min_t(size_t, bytes, bvec->bv_len - skip);
+-
+-	memzero_page(bvec->bv_page, skip + bvec->bv_offset, copy);
+-	skip += copy;
+-	bytes -= copy;
+-	while (bytes) {
+-		bvec++;
+-		copy = min(bytes, (size_t)bvec->bv_len);
+-		memzero_page(bvec->bv_page, bvec->bv_offset, copy);
+-		skip = copy;
+-		bytes -= copy;
+-	}
+-	if (skip == bvec->bv_len) {
+-		bvec++;
+-		skip = 0;
+-	}
+-	i->count -= wanted - bytes;
+-	i->nr_segs -= bvec - i->bvec;
+-	i->bvec = bvec;
+-	i->iov_offset = skip;
+-	return wanted - bytes;
+-}
+-
+-static size_t copy_from_user_bvec(struct page *page,
+-		struct iov_iter *i, unsigned long offset, size_t bytes)
+-{
+-	char *kaddr;
+-	size_t left;
+-	const struct bio_vec *bvec;
+-	size_t base = i->iov_offset;
+-
+-	kaddr = kmap_atomic(page);
+-	for (left = bytes, bvec = i->bvec; left; bvec++, base = 0) {
+-		size_t copy = min(left, bvec->bv_len - base);
+-		if (!bvec->bv_len)
+-			continue;
+-		memcpy_from_page(kaddr + offset, bvec->bv_page,
+-				 bvec->bv_offset + base, copy);
+-		offset += copy;
+-		left -= copy;
+-	}
+-	kunmap_atomic(kaddr);
+-	return bytes;
+-}
+-
+-static void advance_bvec(struct iov_iter *i, size_t bytes)
+-{
+-	BUG_ON(i->count < bytes);
+-
+-	if (likely(i->nr_segs == 1)) {
+-		i->iov_offset += bytes;
+-		i->count -= bytes;
+-	} else {
+-		const struct bio_vec *bvec = i->bvec;
+-		size_t base = i->iov_offset;
+-		unsigned long nr_segs = i->nr_segs;
+-
+-		/*
+-		 * The !iov->iov_len check ensures we skip over unlikely
+-		 * zero-length segments (without overruning the iovec).
+-		 */
+-		while (bytes || unlikely(i->count && !bvec->bv_len)) {
+-			int copy;
+-
+-			copy = min(bytes, bvec->bv_len - base);
+-			BUG_ON(!i->count || i->count < copy);
+-			i->count -= copy;
+-			bytes -= copy;
+-			base += copy;
+-			if (bvec->bv_len == base) {
+-				bvec++;
+-				nr_segs--;
+-				base = 0;
+-			}
+-		}
+-		i->bvec = bvec;
+-		i->iov_offset = base;
+-		i->nr_segs = nr_segs;
+-	}
+-}
+-
+ static unsigned long alignment_bvec(const struct iov_iter *i)
+ {
+ 	const struct bio_vec *bvec = i->bvec;
+@@ -876,30 +611,61 @@ EXPORT_SYMBOL(copy_from_iter);
+ 
+ size_t iov_iter_zero(size_t bytes, struct iov_iter *i)
+ {
++	if (unlikely(bytes > i->count))
++		bytes = i->count;
++
++	if (unlikely(!bytes))
++		return 0;
++
+ 	if (i->type & ITER_BVEC) {
+-		return zero_bvec(bytes, i);
++		struct page *page;
++		size_t off, len;
++		iterate_bvec(i, bytes, page, off, len, true,
++				memzero_page(page, off, len))
+ 	} else {
+-		return zero_iovec(bytes, i);
++		char __user *buf;
++		size_t len;
++		iterate_iovec(i, bytes, buf, len, true,
++				__clear_user(buf, len))
+ 	}
++	return bytes;
+ }
+ EXPORT_SYMBOL(iov_iter_zero);
+ 
+ size_t iov_iter_copy_from_user_atomic(struct page *page,
+ 		struct iov_iter *i, unsigned long offset, size_t bytes)
+ {
+-	if (i->type & ITER_BVEC)
+-		return copy_from_user_bvec(page, i, offset, bytes);
+-	else
+-		return copy_from_user_atomic_iovec(page, i, offset, bytes);
++	char *kaddr = kmap_atomic(page), *p = kaddr + offset;
++	if (i->type & ITER_BVEC) {
++		struct page *page;
++		size_t off, len;
++		iterate_bvec(i, bytes, page, off, len, false,
++			     memcpy_from_page((p += len) - len, page, off, len))
++	} else {
++		char __user *buf;
++		size_t len;
++		iterate_iovec(i, bytes, buf, len, false,
++			      __copy_from_user_inatomic((p += len) - len,
++							buf, len))
++	}
++	kunmap_atomic(kaddr);
++	return bytes;
+ }
+ EXPORT_SYMBOL(iov_iter_copy_from_user_atomic);
+ 
+ void iov_iter_advance(struct iov_iter *i, size_t size)
+ {
+-	if (i->type & ITER_BVEC)
+-		advance_bvec(i, size);
+-	else
+-		advance_iovec(i, size);
++	if (i->type & ITER_BVEC) {
++		struct page *page;
++		size_t off, len;
++		iterate_bvec(i, size, page, off, len, true,
++				(void)0)
++	} else {
++		char __user *buf;
++		size_t len;
++		iterate_iovec(i, size, buf, len, true,
++				0)
++	}
+ }
+ EXPORT_SYMBOL(iov_iter_advance);
+ 
