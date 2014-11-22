@@ -1,109 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869AbaKVA0h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 19:26:37 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:19229 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752382AbaKVA0g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 19:26:36 -0500
-Date: Fri, 21 Nov 2014 19:26:34 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Jiri Kosina <jkosina@suse.cz>
-Subject: [for-next][PATCH] printk/percpu: Define printk_func when printk is
- not defined
-Message-ID: <20141121192634.5fcbe9b7@gandalf.local.home>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1752872AbaKVAcc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 19:32:32 -0500
+Received: from mail.anarazel.de ([217.115.131.40]:37902 "EHLO mail.anarazel.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752314AbaKVAcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Nov 2014 19:32:31 -0500
+X-Greylist: delayed 457 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Nov 2014 19:32:30 EST
+Date: Sat, 22 Nov 2014 01:24:45 +0100
+From: Andres Freund <andres@anarazel.de>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        "open list:NETWORKING [IPv4/..." <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 9/9] netfilter: Replace smp_read_barrier_depends()
+ with lockless_dereference()
+Message-ID: <20141122002445.GA4704@alap3.anarazel.de>
+References: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
+ <1416582363-20661-10-git-send-email-bobby.prani@gmail.com>
+ <1416586364.8629.104.camel@edumazet-glaptop2.roam.corp.google.com>
+ <CAJhHMCCCSU7PbWdgPouefbLJBcoxR8nmsS8dg_=BcuqVJZbDew@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCCCSU7PbWdgPouefbLJBcoxR8nmsS8dg_=BcuqVJZbDew@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-for-next
+Hi,
 
-Head SHA1: 04b74b27c2941e5d62120f6fee3a0a9388a30613
+On 2014-11-21 16:57:00 -0500, Pranith Kumar wrote:
+> On Fri, Nov 21, 2014 at 11:12 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > On Fri, 2014-11-21 at 10:06 -0500, Pranith Kumar wrote:
+> >> Recently lockless_dereference() was added which can be used in place of
+> >> hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
+> >>
+> >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> >> ---
+> >>  net/ipv4/netfilter/arp_tables.c | 3 +--
+> >>  net/ipv4/netfilter/ip_tables.c  | 3 +--
+> >>  net/ipv6/netfilter/ip6_tables.c | 3 +--
+> >>  3 files changed, 3 insertions(+), 6 deletions(-)
+> >>
+> >> diff --git a/net/ipv4/netfilter/arp_tables.c b/net/ipv4/netfilter/arp_tables.c
+> >> index f95b6f9..fc7533d 100644
+> >> --- a/net/ipv4/netfilter/arp_tables.c
+> >> +++ b/net/ipv4/netfilter/arp_tables.c
+> >> @@ -270,12 +270,11 @@ unsigned int arpt_do_table(struct sk_buff *skb,
+> >>
+> >>       local_bh_disable();
+> >>       addend = xt_write_recseq_begin();
+> >> -     private = table->private;
+> >>       /*
+> >>        * Ensure we load private-> members after we've fetched the base
+> >>        * pointer.
+> >>        */
+> >> -     smp_read_barrier_depends();
+> >> +     private = lockless_dereference(table->private);
+> >>       table_base = private->entries[smp_processor_id()];
+> >>
+> >
+> >
+> > Please carefully read the code, before and after your change, then
+> > you'll see this change broke the code.
+> >
+> > Problem is that a bug like that can be really hard to diagnose and fix
+> > later, so really you have to be very careful doing these mechanical
+> > changes.
+> >
+> > IMO, current code+comment is better than with this
+> > lockless_dereference() which in this particular case obfuscates the
+> > code. more than anything.
+> >
+> > In this case we do have a lock (sort of), so lockless_dereference() is
+> > quite misleading.
+> >
+> 
+> Hi Eric,
+> 
+> Thanks for looking at this patch.
+> 
+> I've been scratching my head since morning trying to find out what was
+> so obviously wrong with this patch. Alas, I don't see what you do.
 
+Afaics the read_barrier_depends protected the load from private->entries[x]
+earlier, not the load of table->private itself.
 
-Steven Rostedt (Red Hat) (1):
-      printk/percpu: Define printk_func when printk is not defined
+Greetings,
 
-----
- include/linux/percpu.h | 1 +
- include/linux/printk.h | 4 ++--
- kernel/printk/printk.c | 3 +++
- 3 files changed, 6 insertions(+), 2 deletions(-)
----------------------------
-commit 04b74b27c2941e5d62120f6fee3a0a9388a30613
-Author: Steven Rostedt (Red Hat) <rostedt@goodmis.org>
-Date:   Fri Nov 21 09:16:58 2014 -0500
-
-    printk/percpu: Define printk_func when printk is not defined
-    
-    To avoid include hell, the per_cpu variable printk_func was declared
-    in percpu.h. But it is only defined if printk is defined.
-    
-    As users of printk may also use the printk_func variable, it needs to
-    be defined even if CONFIG_PRINTK is not.
-    
-    Also add a printk.h include in percpu.h just to be safe.
-    
-    Link: http://lkml.kernel.org/r/20141121183215.01ba539c@canb.auug.org.au
-    
-    Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index ba2e85a0ff5b..caebf2a758dc 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -5,6 +5,7 @@
- #include <linux/preempt.h>
- #include <linux/smp.h>
- #include <linux/cpumask.h>
-+#include <linux/printk.h>
- #include <linux/pfn.h>
- #include <linux/init.h>
- 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 3bbd979d32fb..c69be9ee8f48 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -124,6 +124,8 @@ static inline __printf(1, 2) __cold
- void early_printk(const char *s, ...) { }
- #endif
- 
-+typedef int(*printk_func_t)(const char *fmt, va_list args);
-+
- #ifdef CONFIG_PRINTK
- asmlinkage __printf(5, 0)
- int vprintk_emit(int facility, int level,
-@@ -162,8 +164,6 @@ extern int kptr_restrict;
- 
- extern void wake_up_klogd(void);
- 
--typedef int(*printk_func_t)(const char *fmt, va_list args);
--
- void log_buf_kexec_setup(void);
- void __init setup_log_buf(int early);
- void dump_stack_set_arch_desc(const char *fmt, ...);
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index f7b723f98cb9..5af2b8bc88f0 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1896,6 +1896,9 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
- 			     bool syslog, char *buf, size_t size) { return 0; }
- static size_t cont_print_text(char *text, size_t size) { return 0; }
- 
-+/* Still needs to be defined for users */
-+DEFINE_PER_CPU(printk_func_t, printk_func);
-+
- #endif /* CONFIG_PRINTK */
- 
- #ifdef CONFIG_EARLY_PRINTK
+Andres Freund
