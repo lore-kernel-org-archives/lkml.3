@@ -1,79 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935AbaKVBSC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 20:18:02 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60138 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847AbaKVBSA (ORCPT
+	id S1752972AbaKVBXo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 20:23:44 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:62239 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748AbaKVBXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 20:18:00 -0500
-Date: Sat, 22 Nov 2014 02:17:52 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        xen-devel@lists.xenproject.org
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <20141121223309.GC19283@laptop.dumpdata.com>
-Message-ID: <alpine.DEB.2.11.1411220216570.6439@nanos>
-References: <CALCETrUh_6tWdTyDwZ4U1BDSnN1khbGDGBvCTO3MVcdU-X23QA@mail.gmail.com> <20141121162742.GB15461@htj.dyndns.org> <CALCETrUcuDh8c27cEHmoM7jo_kozJbYxV3p1H2LhmzBa16XOyQ@mail.gmail.com> <CA+55aFxU2q_-PVx+6fXGkXdAt3oaxvqxzy29Nrn989uTiVXvCg@mail.gmail.com>
- <20141121170805.GD30603@home.goodmis.org> <CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com> <CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com> <CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
- <CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com> <alpine.DEB.2.11.1411212049220.6439@nanos> <20141121223309.GC19283@laptop.dumpdata.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Fri, 21 Nov 2014 20:23:42 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1416614703.20938.0.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
+ <1416582363-20661-10-git-send-email-bobby.prani@gmail.com>
+ <1416586364.8629.104.camel@edumazet-glaptop2.roam.corp.google.com>
+ <CAJhHMCCCSU7PbWdgPouefbLJBcoxR8nmsS8dg_=BcuqVJZbDew@mail.gmail.com> <1416614703.20938.0.camel@edumazet-glaptop2.roam.corp.google.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Fri, 21 Nov 2014 20:23:11 -0500
+Message-ID: <CAJhHMCB4NfOGBKutkM0L42Vp5ASOLupMRMR07H4sUYy_Dc31KQ@mail.gmail.com>
+Subject: Re: [PATCH v2 9/9] netfilter: Replace smp_read_barrier_depends() with lockless_dereference()
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        "open list:NETWORKING [IPv4/..." <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014, Konrad Rzeszutek Wilk wrote:
-> On Fri, Nov 21, 2014 at 08:51:43PM +0100, Thomas Gleixner wrote:
- > > On Fri, 21 Nov 2014, Linus Torvalds wrote:
-> > > Here's the simplified end result. Again, this is TOTALLY UNTESTED. I
-> > > compiled it and verified that the code generation looks like what I'd
-> > > have expected, but that's literally it.
-> > > 
-> > >   static noinline int vmalloc_fault(unsigned long address)
-> > >   {
-> > >         pgd_t *pgd_dst;
-> > >         pgdval_t pgd_entry;
-> > >         unsigned index = pgd_index(address);
-> > > 
-> > >         if (index < KERNEL_PGD_BOUNDARY)
-> > >                 return -1;
-> > > 
-> > >         pgd_entry = init_mm.pgd[index].pgd;
-> > >         if (!pgd_entry)
-> > >                 return -1;
-> > > 
-> > >         pgd_dst = __va(PAGE_MASK & read_cr3());
-> > >         pgd_dst += index;
-> > > 
-> > >         if (pgd_dst->pgd)
-> > >                 return -1;
-> > > 
-> > >         ACCESS_ONCE(pgd_dst->pgd) = pgd_entry;
-> > 
-> > This will break paravirt. set_pgd/set_pmd are paravirt functions.
-> > 
-> > But I'm fine with breaking it, then you just need to change
-> > CONFIG_PARAVIRT to 'def_bool n'
-> 
-> That is not very nice.
+On Fri, Nov 21, 2014 at 7:05 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>
+> On Fri, 2014-11-21 at 16:57 -0500, Pranith Kumar wrote:
+>
+>> Hi Eric,
+>>
+>> Thanks for looking at this patch.
+>>
+>> I've been scratching my head since morning trying to find out what was
+>> so obviously wrong with this patch. Alas, I don't see what you do.
+>>
+>> Could you point it out and show me how incompetent I am, please?
+>>
+>> Thanks!
+>
+> Well, even it the code is _not_ broken, I don't see any value with this
+> patch.
 
-Maybe not nice, but sensible.
+Phew. Not being broken itself is a win :)
 
-Thanks,
+>
+> If I use git blame on current code, line containing
+> smp_read_barrier_depends() exactly points to the relevant commit [1]
 
-	tglx
+And that is an opinion I will respect. I don't want to muck the git
+history where it is significant.
 
+This effort is to eventually replace the uses of
+smp_read_barrier_depends() and to use either rcu or
+lockless_dereference() as documented in memory-barriers.txt.
+
+>
+> After your change, it will point to some cleanup, which makes little
+> sense to me, considering you did not change the smp_wmb() in
+> xt_replace_table().
+
+That does not need to change as it is fine as it is. It still pairs
+with the smp_read_barrier_depends() in lockless_dereference().
+
+>
+> I, as a netfilter contributor would like to keep current code as is,
+> because it is how I feel safe with it.
+>
+> We have a proliferation of interfaces, but this does not help to
+> understand the issues and code maintenance.
+>
+> smp_read_barrier_depends() better documents the read barrier than
+> lockless_dereference().
+
+I think this is a matter of opinion. But in the current effort I've
+seen cases where it is not clear what the barrier is actually
+guaranteeing. I am glad that the current code is not one of those and
+it has reasonable comments.
+
+lockless_dereference() on the other hand makes the dependency explicit.
+
+>
+> The point of having a lock or not is irrelevant here.
+>
+> [1]
+> http://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=b416c144f46af1a30ddfa4e4319a8f077381ad63
+>
+>
+>
+>
+
+
+Thanks!
+-- 
+Pranith
