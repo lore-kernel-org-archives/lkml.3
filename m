@@ -1,196 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903AbaKVCAh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 21:00:37 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:38827 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847AbaKVCAg (ORCPT
+	id S1752929AbaKVCI1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 21:08:27 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:62652 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259AbaKVCI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 21:00:36 -0500
+	Fri, 21 Nov 2014 21:08:26 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+VEEWpJTD0cneQYHuXyHzXidb1BJDC0y0=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 536B0621498
+Date: Fri, 21 Nov 2014 21:08:11 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 6/7] ARM: mvebu: add PHY support to the dts for the
+ USB controllers on Armada 375
+Message-ID: <20141122020811.GO22670@titan.lakedaemon.net>
+References: <1415879269-29711-1-git-send-email-gregory.clement@free-electrons.com>
+ <1415879269-29711-7-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <20141121233834.GW5050@linux.vnet.ibm.com>
-References: <cover.1416604491.git.luto@amacapital.net> <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
- <CALCETrXLq1y7e_dKFPgou-FKHB6Pu-r8+t-6Ds+8=va7anBWDA@mail.gmail.com>
- <20141121220704.GU5050@linux.vnet.ibm.com> <CALCETrXVRqZ2fJJNOWLFzhE7wQvWejXbw0OUpcm6rt_UdFP6CA@mail.gmail.com>
- <20141121225508.GV5050@linux.vnet.ibm.com> <CALCETrXgd=5+RFugdi4CdCOzULK8u+ku-EQaJvY6JhXAMEW7rQ@mail.gmail.com>
- <20141121233834.GW5050@linux.vnet.ibm.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 21 Nov 2014 18:00:14 -0800
-Message-ID: <CALCETrVNnDEcVu_BteA2gVBeRB7zOsQmrA6JCrE8ez4U=vc0MQ@mail.gmail.com>
-Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST context
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415879269-29711-7-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 3:38 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Fri, Nov 21, 2014 at 03:06:48PM -0800, Andy Lutomirski wrote:
->> On Fri, Nov 21, 2014 at 2:55 PM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->> > On Fri, Nov 21, 2014 at 02:19:17PM -0800, Andy Lutomirski wrote:
->> >> On Fri, Nov 21, 2014 at 2:07 PM, Paul E. McKenney
->> >> <paulmck@linux.vnet.ibm.com> wrote:
->> >> > On Fri, Nov 21, 2014 at 01:32:50PM -0800, Andy Lutomirski wrote:
->> >> >> On Fri, Nov 21, 2014 at 1:26 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> >> >> > We currently pretend that IST context is like standard exception
->> >> >> > context, but this is incorrect.  IST entries from userspace are like
->> >> >> > standard exceptions except that they use per-cpu stacks, so they are
->> >> >> > atomic.  IST entries from kernel space are like NMIs from RCU's
->> >> >> > perspective -- they are not quiescent states even if they
->> >> >> > interrupted the kernel during a quiescent state.
->> >> >> >
->> >> >> > Add and use ist_enter and ist_exit to track IST context.  Even
->> >> >> > though x86_32 has no IST stacks, we track these interrupts the same
->> >> >> > way.
->> >> >>
->> >> >> I should add:
->> >> >>
->> >> >> I have no idea why RCU read-side critical sections are safe inside
->> >> >> __do_page_fault today.  It's guarded by exception_enter(), but that
->> >> >> doesn't do anything if context tracking is off, and context tracking
->> >> >> is usually off. What am I missing here?
->> >> >
->> >> > Ah!  There are three cases:
->> >> >
->> >> > 1.      Context tracking is off on a non-idle CPU.  In this case, RCU is
->> >> >         still paying attention to CPUs running in both userspace and in
->> >> >         the kernel.  So if a page fault happens, RCU will be set up to
->> >> >         notice any RCU read-side critical sections.
->> >> >
->> >> > 2.      Context tracking is on on a non-idle CPU.  In this case, RCU
->> >> >         might well be ignoring userspace execution: NO_HZ_FULL and
->> >> >         all that.  However, as you pointed out, in this case the
->> >> >         context-tracking code lets RCU know that we have entered the
->> >> >         kernel, which means that RCU will again be paying attention to
->> >> >         RCU read-side critical sections.
->> >> >
->> >> > 3.      The CPU is idle.  In this case, RCU is ignoring the CPU, so
->> >> >         if we take a page fault when context tracking is off, life
->> >> >         will be hard.  But the kernel is not supposed to take page
->> >> >         faults in the idle loop, so this is not a problem.
->> >>
->> >> I guess so, as long as there are really no page faults in the idle loop.
->> >
->> > As far as I know, there are not.  If there are, someone needs to let
->> > me know!  ;-)
->> >
->> >> There are, however, machine checks in the idle loop, and maybe kprobes
->> >> (haven't checked), so I think this patch might fix real bugs.
->> >
->> > If you can get ISTs from the idle loop, then the patch is needed.
->> >
->> >> > Just out of curiosity...  Can an NMI occur in IST context?  If it can,
->> >> > I need to make rcu_nmi_enter() and rcu_nmi_exit() deal properly with
->> >> > nested calls.
->> >>
->> >> Yes, and vice versa.  That code looked like it handled nesting
->> >> correctly, but I wasn't entirely sure.
->> >
->> > It currently does not, please see below patch.  Are you able to test
->> > nesting?  It would be really cool if you could do so -- I have no
->> > way to test this patch.
->>
->> I can try.  It's sort of easy -- I'll put an int3 into do_nmi and add
->> a fixup to avoid crashing.
->>
->> What should I look for?  Should I try to force full nohz on and assert
->> something?  I don't really know how to make full nohz work.
->
-> You should look for the WARN_ON_ONCE() calls in rcu_nmi_enter() and
-> rcu_nmi_exit() to fire.
+On Thu, Nov 13, 2014 at 12:47:48PM +0100, Gregory CLEMENT wrote:
+> Now that the USB cluster node has been added, use it as a PHY provider
+> for the USB controller linked to it: the first EHCI and the xHCI.
+> 
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> ---
+>  arch/arm/boot/dts/armada-375.dtsi | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/armada-375.dtsi b/arch/arm/boot/dts/armada-375.dtsi
+> index 8f45cf5d2a50..f344ec420c95 100644
+> --- a/arch/arm/boot/dts/armada-375.dtsi
+> +++ b/arch/arm/boot/dts/armada-375.dtsi
+> @@ -14,6 +14,7 @@
+>  #include "skeleton.dtsi"
+>  #include <dt-bindings/interrupt-controller/arm-gic.h>
+>  #include <dt-bindings/interrupt-controller/irq.h>
+> +#include <dt-bindings/phy/phy.h>
 
-No warning with or without your patch, maybe because all of those
-returns skip the labels.
+Odd.  The previous patch in this series simply adds a line to phy.h,
+however, I get the following error during 'make dtbs':
 
-Also, an NMI can happen *during* rcu_nmi_enter or rcu_nmi_exit.  Is
-that okay?  Should those dynticks_nmi_nesting++ things be local_inc
-and local_dec_and_test?
+########
+  DTC     arch/arm/boot/dts/armada-375-db.dtb
+In file included from arch/arm/boot/dts/armada-375-db.dts:17:0:arch/arm/boot/dts/armada-375.dtsi:17:33:
+fatal error: dt-bindings/phy/phy.h: No such file or directory
+ #include <dt-bindings/phy/phy.h>
+                                 ^
+compilation terminated.
+scripts/Makefile.lib:282: recipe for target 'arch/arm/boot/dts/armada-37 5-db.dtb' failed
+########
 
-That dynticks_nmi_nesting thing seems scary to me.  Shouldn't the code
-unconditionally increment dynticks_nmi_nesting in rcu_nmi_enter and
-unconditionally decrement it in rcu_nmi_exit?
+mvebu/dt is based on v3.18-rc1.  Is there a missing dependency
+somewhere?  Perhaps we should let Kishon take the whole series and
+handle the (hopefully trivial) merge conflict?
 
---Andy
+thx,
 
->
->                                                         Thanx, Paul
->
->> >> Also, just to make sure: are we okay if rcu_nmi_enter() is called
->> >> before exception_enter if context tracking is on and we came directly
->> >> from userspace?
->> >
->> > If I understand correctly, this will result in context tracking invoking
->> > rcu_user_enter(), which will result in the rcu_dynticks counter having an
->> > odd value.  In that case, rcu_nmi_enter() will notice that RCU is already
->> > paying attention to this CPU via its check of atomic_read(&rdtp->dynticks)
->> > & 0x1), and will thus just return.  The matching rcu_nmi_exit() will
->> > notice that the nesting count is zero, and will also just return.
->> >
->> > Thus, everything works in that case.
->> >
->> > In contrast, if rcu_nmi_enter() was invoked from the idle loop, it
->> > would see that RCU is not paying attention to this CPU and that the
->> > NMI nesting depth (which rcu_nmi_enter() increments) used to be zero.
->> > It would then atomically increment rtdp->dynticks, forcing RCU to start
->> > paying attention to this CPU.  The matching rcu_nmi_exit() will see
->> > that the nesting count was non-zero, but became zero when decremented.
->> > This will cause rcu_nmi_exit() to atomically increment rtdp->dynticks,
->> > which will tell RCU to stop paying attention to this CPU.
->> >
->> >                                                         Thanx, Paul
->> >
->> > ------------------------------------------------------------------------
->> >
->> > rcu: Make rcu_nmi_enter() handle nesting
->> >
->> > Andy Lutomirski is introducing ISTs into x86, which from RCU's
->> > viewpoint are NMIs.  Because ISTs and NMIs can nest, rcu_nmi_enter()
->> > and rcu_nmi_exit() must now correctly handle nesting.  As luck would
->> > have it, rcu_nmi_exit() handles nesting but rcu_nmi_enter() does not.
->> > This patch therefore makes rcu_nmi_enter() handle nesting.
->>
->> Thanks.  Should I add this to v5 of my series?
->>
->> --Andy
->>
->> >
->> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->> >
->> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
->> > index 8749f43f3f05..875421aff6e3 100644
->> > --- a/kernel/rcu/tree.c
->> > +++ b/kernel/rcu/tree.c
->> > @@ -770,7 +770,8 @@ void rcu_nmi_enter(void)
->> >         if (rdtp->dynticks_nmi_nesting == 0 &&
->> >             (atomic_read(&rdtp->dynticks) & 0x1))
->> >                 return;
->> > -       rdtp->dynticks_nmi_nesting++;
->> > +       if (rdtp->dynticks_nmi_nesting++ != 0)
->> > +               return; /* Nested NMI/IST/whatever. */
->> >         smp_mb__before_atomic();  /* Force delay from prior write. */
->> >         atomic_inc(&rdtp->dynticks);
->> >         /* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
->> >
->>
->>
->>
->> --
->> Andy Lutomirski
->> AMA Capital Management, LLC
->>
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Jason.
