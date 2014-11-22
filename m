@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483AbaKVOp7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 09:45:59 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:51827
+	id S1752094AbaKVOol (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 09:44:41 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:54078
 	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752099AbaKVOom (ORCPT
+	by vger.kernel.org with ESMTP id S1750781AbaKVOoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 09:44:42 -0500
+	Sat, 22 Nov 2014 09:44:39 -0500
 X-IronPort-AV: E=Sophos;i="5.07,437,1413237600"; 
-   d="scan'208";a="90017237"
+   d="scan'208";a="90017235"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/6] HSI: nokia-modem: fix error return code
-Date: Sat, 22 Nov 2014 15:39:16 +0100
-Message-Id: <1416667159-9808-4-git-send-email-Julia.Lawall@lip6.fr>
+To: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
+Cc: kernel-janitors@vger.kernel.org,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/6] NFC: pn533: fix error return code
+Date: Sat, 22 Nov 2014 15:39:14 +0100
+Message-Id: <1416667159-9808-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1416667159-9808-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1416667159-9808-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -52,19 +55,26 @@ ret = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/hsi/clients/nokia-modem.c |    1 +
- 1 file changed, 1 insertion(+)
+The error code is chosen according to the other call to this function
+in the same file.
 
-diff --git a/drivers/hsi/clients/nokia-modem.c b/drivers/hsi/clients/nokia-modem.c
-index f0c2145..e07009a 100644
---- a/drivers/hsi/clients/nokia-modem.c
-+++ b/drivers/hsi/clients/nokia-modem.c
-@@ -199,6 +199,7 @@ static int nokia_modem_probe(struct device *dev)
- 	modem->ssi_protocol = hsi_new_client(port, &ssip);
- 	if (!modem->ssi_protocol) {
- 		dev_err(dev, "Could not register ssi-protocol device\n");
-+		err = -ENOMEM;
- 		goto error2;
+ drivers/nfc/pn533.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/nfc/pn533.c b/drivers/nfc/pn533.c
+index d46a700..a859303 100644
+--- a/drivers/nfc/pn533.c
++++ b/drivers/nfc/pn533.c
+@@ -2554,8 +2554,10 @@ static int pn533_data_exchange_complete(struct pn533 *dev, void *_arg,
  	}
  
+ 	skb = pn533_build_response(dev);
+-	if (!skb)
++	if (!skb) {
++		rc = -EIO;
+ 		goto error;
++	}
+ 
+ 	arg->cb(arg->cb_context, skb, 0);
+ 	kfree(arg);
 
