@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361AbaKVOpl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 09:45:41 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:53713
+	id S1752483AbaKVOp7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 09:45:59 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:51827
 	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752102AbaKVOon (ORCPT
+	by vger.kernel.org with ESMTP id S1752099AbaKVOom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 09:44:43 -0500
+	Sat, 22 Nov 2014 09:44:42 -0500
 X-IronPort-AV: E=Sophos;i="5.07,437,1413237600"; 
-   d="scan'208";a="90017239"
+   d="scan'208";a="90017237"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Chas Williams <chas@cmf.nrl.navy.mil>
-Cc: kernel-janitors@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/6] solos-pci: fix error return code
-Date: Sat, 22 Nov 2014 15:39:17 +0100
-Message-Id: <1416667159-9808-5-git-send-email-Julia.Lawall@lip6.fr>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/6] HSI: nokia-modem: fix error return code
+Date: Sat, 22 Nov 2014 15:39:16 +0100
+Message-Id: <1416667159-9808-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1416667159-9808-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1416667159-9808-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -53,25 +52,19 @@ ret = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/atm/solos-pci.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/hsi/clients/nokia-modem.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/atm/solos-pci.c b/drivers/atm/solos-pci.c
-index 7652e8d..21b0bc6 100644
---- a/drivers/atm/solos-pci.c
-+++ b/drivers/atm/solos-pci.c
-@@ -1225,11 +1225,13 @@ static int fpga_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	card->config_regs = pci_iomap(dev, 0, CONFIG_RAM_SIZE);
- 	if (!card->config_regs) {
- 		dev_warn(&dev->dev, "Failed to ioremap config registers\n");
+diff --git a/drivers/hsi/clients/nokia-modem.c b/drivers/hsi/clients/nokia-modem.c
+index f0c2145..e07009a 100644
+--- a/drivers/hsi/clients/nokia-modem.c
++++ b/drivers/hsi/clients/nokia-modem.c
+@@ -199,6 +199,7 @@ static int nokia_modem_probe(struct device *dev)
+ 	modem->ssi_protocol = hsi_new_client(port, &ssip);
+ 	if (!modem->ssi_protocol) {
+ 		dev_err(dev, "Could not register ssi-protocol device\n");
 +		err = -ENOMEM;
- 		goto out_release_regions;
- 	}
- 	card->buffers = pci_iomap(dev, 1, DATA_RAM_SIZE);
- 	if (!card->buffers) {
- 		dev_warn(&dev->dev, "Failed to ioremap data buffers\n");
-+		err = -ENOMEM;
- 		goto out_unmap_config;
+ 		goto error2;
  	}
  
 
