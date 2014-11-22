@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496AbaKVOd1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 09:33:27 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58171 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716AbaKVOdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 09:33:25 -0500
-Message-ID: <54709EAE.6020203@kernel.org>
-Date: Sat, 22 Nov 2014 23:33:18 +0900
-From: Kukjin Kim <kgene@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	id S1751982AbaKVOhW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 09:37:22 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:42387 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814AbaKVOhU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 09:37:20 -0500
+Date: Sat, 22 Nov 2014 09:37:17 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 5/9] percpu: Replace smp_read_barrier_depends() with
+ lockless_dereference()
+Message-ID: <20141122143717.GD26007@htj.dyndns.org>
+References: <1416582363-20661-1-git-send-email-bobby.prani@gmail.com>
+ <1416582363-20661-6-git-send-email-bobby.prani@gmail.com>
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-CC: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
-        linux-samsung-soc@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Ben Dooks <ben-linux@fluff.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/4] ARM: dts: Add usb3503 pinctrl to exynos5250-spring
-References: <1416412585-10809-1-git-send-email-afaerber@suse.de> <1416412585-10809-2-git-send-email-afaerber@suse.de> <546CCC89.1040502@collabora.co.uk>
-In-Reply-To: <546CCC89.1040502@collabora.co.uk>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416582363-20661-6-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/14 01:59, Javier Martinez Canillas wrote:
-> Hello Andreas,
+On Fri, Nov 21, 2014 at 10:05:59AM -0500, Pranith Kumar wrote:
+> Recently lockless_dereference() was added which can be used in place of
+> hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
 > 
-> On 11/19/2014 04:56 PM, Andreas Färber wrote:
->> Reported-by: Doug Anderson <dianders@chromium.org>
->> Signed-off-by: Andreas Färber <afaerber@suse.de>
-> 
-> Even though the patch is simple and is true that the subject explains
-> the change, I think that is always good to have a commit message anyways.
-> 
-> Patch looks good to me though:
-> 
-> Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> 
-Applied this series, thanks.
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-- Kukjin
+Applied to percpu/for-3.19.
+
+Thanks.
+
+-- 
+tejun
