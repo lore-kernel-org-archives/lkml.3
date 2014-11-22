@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750870AbaKVGtC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 01:49:02 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:62115 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737AbaKVGtA (ORCPT
+	id S1750856AbaKVHCN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 02:02:13 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:51746 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729AbaKVHCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 01:49:00 -0500
-From: Shaohua Li <shli@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <axboe@fb.com>, Tejun Heo <tj@kernel.org>,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH] percpu-ref: correctly get percpu pointer
-Date: Fri, 21 Nov 2014 22:48:57 -0800
-Message-Id: <995deb699f5b873c45d667df4add3b06f73c2c25.1416638887.git.shli@kernel.org>
-X-Mailer: git-send-email 1.8.3.2
+	Sat, 22 Nov 2014 02:02:12 -0500
+Date: Sat, 22 Nov 2014 12:32:02 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ben Hutchings <ben@decadent.org.uk>, devel@driverdev.osuosl.org,
+        Teddy Wang <teddy.wang@siliconmotion.com.cn>,
+        Markos Chandras <Markos.Chandras@imgtec.com>
+Subject: Re: [PATCH] Revert "staging: sm7xxfb: remove driver"
+Message-ID: <20141122070202.GB4490@sudip-PC>
+References: <20141120170925.5a435436@gandalf.local.home>
+ <20141120232329.GA27669@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141120232329.GA27669@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I saw randam system hang testing virtio with blk-mq enabled and cpu hotplug
-runing in the background. It turns out __ref_is_percpu() doesn't always return
-correct percpu pointer. percpu_ref_put() calls __ref_is_percpu(), which checks
-__PERCPU_REF_ATOMIC. After this check, the __PERCPU_REF_ATOMIC or
-__PERCPU_REF_DEAD might be set, so we must exclude the two bits from the percpu
-pointer. Fortunately we can still use percpu data for percpu_ref_put() even
-this happens, because the final transistion from percpu to atomic occurs at rcu
-context while __ref_is_percpu() is always called with rcu read lock protected.
+On Thu, Nov 20, 2014 at 03:23:29PM -0800, Greg Kroah-Hartman wrote:
+> On Thu, Nov 20, 2014 at 05:09:25PM -0500, Steven Rostedt wrote:
+> > 
+> > Someone reported a bug in the function graph tracer for MIPS. As I'm
+> > still waiting on my USB serial for my Imagination MIPS board, I decided
+> > to bring my Lemote Yeeloong laptop back up to the latest kernel. This
+> > is where I noticed that the screen no longer displays anything.
+> > 
+> > I ran a bisect, which came across a staging commit that removed the
+> > sm7xxfb driver. When I reverted it on a v3.18-rc5 kernel and booted it
+> > on my Lemote laptop, the display worked again.
+> > 
+> > I then did a search for this commit and found that Debian reverted it
+> > too. Seems that there's still some Debian users of this laptop. (RMS?)
+> > 
+> > What needs to be done to make this a "proper" driver? I can try to
+> > support it, although I have no idea how it works :-)
+> 
+> Have you read the TODO file in this patch?  If you are willing to work
+> on this, I'll be glad to apply it, but the reason I removed it was
+> because no one had done anything with it for a very long time.
+> 
+> It needs a maintainer / developer, otherwise I can't take this.
 
-CC: Jens Axboe <axboe@fb.com>
-CC: Tejun Heo <tj@kernel.org>
-CC: Kent Overstreet <kmo@daterainc.com>
-Signed-off-by: Shaohua Li <shli@fb.com>
----
- include/linux/percpu-refcount.h | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+i will like to help in this. Silicon Motion is still having SM712 in its product line and SM718 might also be a similar one.
 
-diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
-index d5c89e0..6beee08 100644
---- a/include/linux/percpu-refcount.h
-+++ b/include/linux/percpu-refcount.h
-@@ -136,7 +136,14 @@ static inline bool __ref_is_percpu(struct percpu_ref *ref,
- 	if (unlikely(percpu_ptr & __PERCPU_REF_ATOMIC))
- 		return false;
- 
--	*percpu_countp = (unsigned long __percpu *)percpu_ptr;
-+	/*
-+	 * At this point ATOMIC or DEAD might be set when percpu_ref_kill() is
-+	 * running. It's still safe to use percpu here, because the final
-+	 * transition from percpu to atomic occurs at rcu context while this
-+	 * routine is protected with rcu read lock.
-+	 */
-+	*percpu_countp = (unsigned long __percpu *)(percpu_ptr &
-+		~__PERCPU_REF_ATOMIC_DEAD);
- 	return true;
- }
- 
--- 
-1.8.3.2
+now the problems (as i see) for me to help in the driver :
+1) i am a newbie. though i have learnt a lot from the patches i sent , but still I am a newbie.
+2) most important - I do not have the hardware. So from the TODO list dual head and 2D acceleration support will be tough without actually checking on the hardware.
 
+thanks
+sudip
+
+> 
+> thanks,
+> 
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
