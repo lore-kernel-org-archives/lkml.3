@@ -1,226 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873AbaKVEVE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 23:21:04 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:42438 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748AbaKVEVC (ORCPT
+	id S1753005AbaKVEY5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 23:24:57 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:47046 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811AbaKVEYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 23:21:02 -0500
-Date: Fri, 21 Nov 2014 20:20:56 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
- context
-Message-ID: <20141122042056.GY5050@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <cover.1416604491.git.luto@amacapital.net>
- <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
- <CALCETrXLq1y7e_dKFPgou-FKHB6Pu-r8+t-6Ds+8=va7anBWDA@mail.gmail.com>
- <20141121220704.GU5050@linux.vnet.ibm.com>
- <CALCETrXVRqZ2fJJNOWLFzhE7wQvWejXbw0OUpcm6rt_UdFP6CA@mail.gmail.com>
- <20141121225508.GV5050@linux.vnet.ibm.com>
- <CALCETrXgd=5+RFugdi4CdCOzULK8u+ku-EQaJvY6JhXAMEW7rQ@mail.gmail.com>
- <20141121233834.GW5050@linux.vnet.ibm.com>
- <CALCETrVNnDEcVu_BteA2gVBeRB7zOsQmrA6JCrE8ez4U=vc0MQ@mail.gmail.com>
+	Fri, 21 Nov 2014 23:24:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVNnDEcVu_BteA2gVBeRB7zOsQmrA6JCrE8ez4U=vc0MQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112204-0021-0000-0000-00000655160B
+From: Wincy Van <fanwenyi0529@gmail.com>
+Date: Sat, 22 Nov 2014 12:24:31 +0800
+Message-ID: <CACzj_yU3evDWQdPbNHgE5sk_rJZicVfPhBG7K3J_wO2fQt5dcg@mail.gmail.com>
+Subject: [PATCH] KVM: nVMX: nested MSR auto load/restore emulation.
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?6IyD5paH5LiA?= <fanwenyi0529@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 06:00:14PM -0800, Andy Lutomirski wrote:
-> On Fri, Nov 21, 2014 at 3:38 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Fri, Nov 21, 2014 at 03:06:48PM -0800, Andy Lutomirski wrote:
-> >> On Fri, Nov 21, 2014 at 2:55 PM, Paul E. McKenney
-> >> <paulmck@linux.vnet.ibm.com> wrote:
-> >> > On Fri, Nov 21, 2014 at 02:19:17PM -0800, Andy Lutomirski wrote:
-> >> >> On Fri, Nov 21, 2014 at 2:07 PM, Paul E. McKenney
-> >> >> <paulmck@linux.vnet.ibm.com> wrote:
-> >> >> > On Fri, Nov 21, 2014 at 01:32:50PM -0800, Andy Lutomirski wrote:
-> >> >> >> On Fri, Nov 21, 2014 at 1:26 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> >> >> >> > We currently pretend that IST context is like standard exception
-> >> >> >> > context, but this is incorrect.  IST entries from userspace are like
-> >> >> >> > standard exceptions except that they use per-cpu stacks, so they are
-> >> >> >> > atomic.  IST entries from kernel space are like NMIs from RCU's
-> >> >> >> > perspective -- they are not quiescent states even if they
-> >> >> >> > interrupted the kernel during a quiescent state.
-> >> >> >> >
-> >> >> >> > Add and use ist_enter and ist_exit to track IST context.  Even
-> >> >> >> > though x86_32 has no IST stacks, we track these interrupts the same
-> >> >> >> > way.
-> >> >> >>
-> >> >> >> I should add:
-> >> >> >>
-> >> >> >> I have no idea why RCU read-side critical sections are safe inside
-> >> >> >> __do_page_fault today.  It's guarded by exception_enter(), but that
-> >> >> >> doesn't do anything if context tracking is off, and context tracking
-> >> >> >> is usually off. What am I missing here?
-> >> >> >
-> >> >> > Ah!  There are three cases:
-> >> >> >
-> >> >> > 1.      Context tracking is off on a non-idle CPU.  In this case, RCU is
-> >> >> >         still paying attention to CPUs running in both userspace and in
-> >> >> >         the kernel.  So if a page fault happens, RCU will be set up to
-> >> >> >         notice any RCU read-side critical sections.
-> >> >> >
-> >> >> > 2.      Context tracking is on on a non-idle CPU.  In this case, RCU
-> >> >> >         might well be ignoring userspace execution: NO_HZ_FULL and
-> >> >> >         all that.  However, as you pointed out, in this case the
-> >> >> >         context-tracking code lets RCU know that we have entered the
-> >> >> >         kernel, which means that RCU will again be paying attention to
-> >> >> >         RCU read-side critical sections.
-> >> >> >
-> >> >> > 3.      The CPU is idle.  In this case, RCU is ignoring the CPU, so
-> >> >> >         if we take a page fault when context tracking is off, life
-> >> >> >         will be hard.  But the kernel is not supposed to take page
-> >> >> >         faults in the idle loop, so this is not a problem.
-> >> >>
-> >> >> I guess so, as long as there are really no page faults in the idle loop.
-> >> >
-> >> > As far as I know, there are not.  If there are, someone needs to let
-> >> > me know!  ;-)
-> >> >
-> >> >> There are, however, machine checks in the idle loop, and maybe kprobes
-> >> >> (haven't checked), so I think this patch might fix real bugs.
-> >> >
-> >> > If you can get ISTs from the idle loop, then the patch is needed.
-> >> >
-> >> >> > Just out of curiosity...  Can an NMI occur in IST context?  If it can,
-> >> >> > I need to make rcu_nmi_enter() and rcu_nmi_exit() deal properly with
-> >> >> > nested calls.
-> >> >>
-> >> >> Yes, and vice versa.  That code looked like it handled nesting
-> >> >> correctly, but I wasn't entirely sure.
-> >> >
-> >> > It currently does not, please see below patch.  Are you able to test
-> >> > nesting?  It would be really cool if you could do so -- I have no
-> >> > way to test this patch.
-> >>
-> >> I can try.  It's sort of easy -- I'll put an int3 into do_nmi and add
-> >> a fixup to avoid crashing.
-> >>
-> >> What should I look for?  Should I try to force full nohz on and assert
-> >> something?  I don't really know how to make full nohz work.
-> >
-> > You should look for the WARN_ON_ONCE() calls in rcu_nmi_enter() and
-> > rcu_nmi_exit() to fire.
-> 
-> No warning with or without your patch, maybe because all of those
-> returns skip the labels.
+Some hypervisors need MSR auto load/restore feature.
 
-I will be guardedly optimistic and take this as a good sign.  ;-)
+We read MSRs from vm-entry MSR load area which specified by L1,
+and load them via kvm_set_msr in the nested entry.
+When nested exit occurs, we get MSRs via kvm_get_msr, writting
+them to L1`s MSR store area. After this, we read MSRs from vm-exit
+MSR load area, and load them via kvm_set_msr.
 
-> Also, an NMI can happen *during* rcu_nmi_enter or rcu_nmi_exit.  Is
-> that okay?  Should those dynticks_nmi_nesting++ things be local_inc
-> and local_dec_and_test?
+VirtualBox will work fine with this patch.
 
-Yep, it is OK during rcu_nmi_enter() or rcu_nmi_exit().  The nested
-NMI will put the dynticks_nmi_nesting counter back where it was, so
-no chance of confusion.
+Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
 
-> That dynticks_nmi_nesting thing seems scary to me.  Shouldn't the code
-> unconditionally increment dynticks_nmi_nesting in rcu_nmi_enter and
-> unconditionally decrement it in rcu_nmi_exit?
+diff --git a/arch/x86/include/uapi/asm/vmx.h b/arch/x86/include/uapi/asm/vmx.h
+index 990a2fe..986af3f 100644
+--- a/arch/x86/include/uapi/asm/vmx.h
++++ b/arch/x86/include/uapi/asm/vmx.h
+@@ -56,6 +56,7 @@
+ #define EXIT_REASON_MSR_READ            31
+ #define EXIT_REASON_MSR_WRITE           32
+ #define EXIT_REASON_INVALID_STATE       33
++#define EXIT_REASON_MSR_LOAD_FAIL       34
+ #define EXIT_REASON_MWAIT_INSTRUCTION   36
+ #define EXIT_REASON_MONITOR_INSTRUCTION 39
+ #define EXIT_REASON_PAUSE_INSTRUCTION   40
+@@ -114,8 +115,12 @@
+  { EXIT_REASON_APIC_WRITE,            "APIC_WRITE" }, \
+  { EXIT_REASON_EOI_INDUCED,           "EOI_INDUCED" }, \
+  { EXIT_REASON_INVALID_STATE,         "INVALID_STATE" }, \
++ { EXIT_REASON_MSR_LOAD_FAIL,         "MSR_LOAD_FAIL" }, \
+  { EXIT_REASON_INVD,                  "INVD" }, \
+  { EXIT_REASON_INVVPID,               "INVVPID" }, \
+  { EXIT_REASON_INVPCID,               "INVPCID" }
 
-You might be able to get that to work, but the reason it is not done
-that way is because we might get an NMI while not in dyntick-idle
-state.  In that case, it would be very bad to atomically increment
-rcu_dynticks, because that would tell RCU to ignore the CPU while it
-was in the NMI handler, which is the opposite of what we want.
++#define VMX_ABORT_SAVE_GUEST_MSR_FAIL        1
++#define VMX_ABORT_LOAD_HOST_MSR_FAIL         4
++
+ #endif /* _UAPIVMX_H */
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 6a951d8..377e405 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -6088,6 +6088,13 @@ static void nested_vmx_failValid(struct kvm_vcpu *vcpu,
+  */
+ }
 
-But what did you have in mind?
++static void nested_vmx_abort(struct kvm_vcpu *vcpu, u32 indicator)
++{
++ /* TODO: not to simply reset guest here. */
++ kvm_make_request(KVM_REQ_TRIPLE_FAULT, vcpu);
++ printk(KERN_WARNING"kvm: nested vmx abort, indicator %d\n", indicator);
++}
++
+ static enum hrtimer_restart vmx_preemption_timer_fn(struct hrtimer *timer)
+ {
+  struct vcpu_vmx *vmx =
+@@ -8215,6 +8222,88 @@ static void vmx_start_preemption_timer(struct
+kvm_vcpu *vcpu)
+       ns_to_ktime(preemption_timeout), HRTIMER_MODE_REL);
+ }
 
-							Thanx, Paul
++static inline int nested_msr_check_common(struct vmx_msr_entry *e)
++{
++ if (e->index >> 8 == 0x8 || e->reserved != 0)
++ return -EINVAL;
++        return 0;
++}
++
++static inline int nested_load_msr_check(struct vmx_msr_entry *e)
++{
++ if (e->index == MSR_FS_BASE ||
++    e->index == MSR_GS_BASE ||
++    nested_msr_check_common(e))
++ return -EINVAL;
++ return 0;
++}
++
++/* load guest msr at nested entry.
++ * return 0 for success, entry index for failed.
++ */
++static u32 nested_entry_load_msr(struct kvm_vcpu *vcpu, u64 gpa, u32 count)
++{
++ u32 i = 0;
++ struct vmx_msr_entry e;
++ struct msr_data msr;
++
++ msr.host_initiated = false;
++ while (i < count) {
++ kvm_read_guest(vcpu->kvm, gpa + i * sizeof(struct vmx_msr_entry),
++ &e, sizeof(struct vmx_msr_entry));
++ if (nested_load_msr_check(&e))
++ goto fail;
++ msr.index = e.index;
++ msr.data = e.value;
++ if (kvm_set_msr(vcpu, &msr))
++ goto fail;
++ ++i;
++        }
++ return 0;
++fail:
++ return i + 1;
++}
++
++static int nested_exit_store_msr(struct kvm_vcpu *vcpu, u64 gpa, u32 count)
++{
++ u32 i = 0;
++ struct vmx_msr_entry e;
++
++        while (i < count) {
++ kvm_read_guest(vcpu->kvm, gpa + i * sizeof(struct vmx_msr_entry),
++ &e, sizeof(struct vmx_msr_entry));
++ if (nested_msr_check_common(&e))
++ return -EINVAL;
++ if (kvm_get_msr(vcpu, e.index, &e.value))
++ return -EINVAL;
++ kvm_write_guest(vcpu->kvm, gpa + i * sizeof(struct vmx_msr_entry),
++ &e, sizeof(struct vmx_msr_entry));
++ ++i;
++ }
++ return 0;
++}
++
++static int nested_exit_load_msr(struct kvm_vcpu *vcpu, u64 gpa, u32 count)
++{
++ u32 i = 0;
++ struct vmx_msr_entry e;
++ struct msr_data msr;
++
++ msr.host_initiated = false;
++ while (i < count) {
++ kvm_read_guest(vcpu->kvm, gpa + i * sizeof(struct vmx_msr_entry),
++ &e, sizeof(struct vmx_msr_entry));
++ if (nested_load_msr_check(&e))
++ return -EINVAL;
++ msr.index = e.index;
++ msr.data = e.value;
++ if (kvm_set_msr(vcpu, &msr))
++ return -EINVAL;
++ ++i;
++ }
++ return 0;
++}
++
+ /*
+  * prepare_vmcs02 is called when the L1 guest hypervisor runs its nested
+  * L2 guest. L1 has a vmcs for L2 (vmcs12), and this function "merges" it
+@@ -8509,6 +8598,7 @@ static int nested_vmx_run(struct kvm_vcpu *vcpu,
+bool launch)
+  int cpu;
+  struct loaded_vmcs *vmcs02;
+  bool ia32e;
++ u32 msr_entry_idx;
 
-> --Andy
-> 
-> >
-> >                                                         Thanx, Paul
-> >
-> >> >> Also, just to make sure: are we okay if rcu_nmi_enter() is called
-> >> >> before exception_enter if context tracking is on and we came directly
-> >> >> from userspace?
-> >> >
-> >> > If I understand correctly, this will result in context tracking invoking
-> >> > rcu_user_enter(), which will result in the rcu_dynticks counter having an
-> >> > odd value.  In that case, rcu_nmi_enter() will notice that RCU is already
-> >> > paying attention to this CPU via its check of atomic_read(&rdtp->dynticks)
-> >> > & 0x1), and will thus just return.  The matching rcu_nmi_exit() will
-> >> > notice that the nesting count is zero, and will also just return.
-> >> >
-> >> > Thus, everything works in that case.
-> >> >
-> >> > In contrast, if rcu_nmi_enter() was invoked from the idle loop, it
-> >> > would see that RCU is not paying attention to this CPU and that the
-> >> > NMI nesting depth (which rcu_nmi_enter() increments) used to be zero.
-> >> > It would then atomically increment rtdp->dynticks, forcing RCU to start
-> >> > paying attention to this CPU.  The matching rcu_nmi_exit() will see
-> >> > that the nesting count was non-zero, but became zero when decremented.
-> >> > This will cause rcu_nmi_exit() to atomically increment rtdp->dynticks,
-> >> > which will tell RCU to stop paying attention to this CPU.
-> >> >
-> >> >                                                         Thanx, Paul
-> >> >
-> >> > ------------------------------------------------------------------------
-> >> >
-> >> > rcu: Make rcu_nmi_enter() handle nesting
-> >> >
-> >> > Andy Lutomirski is introducing ISTs into x86, which from RCU's
-> >> > viewpoint are NMIs.  Because ISTs and NMIs can nest, rcu_nmi_enter()
-> >> > and rcu_nmi_exit() must now correctly handle nesting.  As luck would
-> >> > have it, rcu_nmi_exit() handles nesting but rcu_nmi_enter() does not.
-> >> > This patch therefore makes rcu_nmi_enter() handle nesting.
-> >>
-> >> Thanks.  Should I add this to v5 of my series?
-> >>
-> >> --Andy
-> >>
-> >> >
-> >> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> >> >
-> >> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> >> > index 8749f43f3f05..875421aff6e3 100644
-> >> > --- a/kernel/rcu/tree.c
-> >> > +++ b/kernel/rcu/tree.c
-> >> > @@ -770,7 +770,8 @@ void rcu_nmi_enter(void)
-> >> >         if (rdtp->dynticks_nmi_nesting == 0 &&
-> >> >             (atomic_read(&rdtp->dynticks) & 0x1))
-> >> >                 return;
-> >> > -       rdtp->dynticks_nmi_nesting++;
-> >> > +       if (rdtp->dynticks_nmi_nesting++ != 0)
-> >> > +               return; /* Nested NMI/IST/whatever. */
-> >> >         smp_mb__before_atomic();  /* Force delay from prior write. */
-> >> >         atomic_inc(&rdtp->dynticks);
-> >> >         /* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
-> >> >
-> >>
-> >>
-> >>
-> >> --
-> >> Andy Lutomirski
-> >> AMA Capital Management, LLC
-> >>
-> >
-> 
-> 
-> 
-> -- 
-> Andy Lutomirski
-> AMA Capital Management, LLC
-> 
+  if (!nested_vmx_check_permission(vcpu) ||
+     !nested_vmx_check_vmcs12(vcpu))
+@@ -8556,11 +8646,12 @@ static int nested_vmx_run(struct kvm_vcpu
+*vcpu, bool launch)
+  return 1;
+  }
 
+- if (vmcs12->vm_entry_msr_load_count > 0 ||
+-    vmcs12->vm_exit_msr_load_count > 0 ||
+-    vmcs12->vm_exit_msr_store_count > 0) {
+- pr_warn_ratelimited("%s: VMCS MSR_{LOAD,STORE} unsupported\n",
+-    __func__);
++ if ((vmcs12->vm_entry_msr_load_count > 0 &&
++ !IS_ALIGNED(vmcs12->vm_entry_msr_load_addr, 16)) ||
++    (vmcs12->vm_exit_msr_load_count > 0 &&
++ !IS_ALIGNED(vmcs12->vm_exit_msr_load_addr, 16)) ||
++    (vmcs12->vm_exit_msr_store_count > 0 &&
++ !IS_ALIGNED(vmcs12->vm_exit_msr_store_addr, 16))) {
+  nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
+  return 1;
+  }
+@@ -8666,10 +8757,20 @@ static int nested_vmx_run(struct kvm_vcpu
+*vcpu, bool launch)
+
+  vmx_segment_cache_clear(vmx);
+
+- vmcs12->launch_state = 1;
+-
+  prepare_vmcs02(vcpu, vmcs12);
+
++ msr_entry_idx = nested_entry_load_msr(vcpu, vmcs12->vm_entry_msr_load_addr,
++ vmcs12->vm_entry_msr_load_count);
++ if (msr_entry_idx) {
++ leave_guest_mode(vcpu);
++ vmx_load_vmcs01(vcpu);
++ nested_vmx_entry_failure(vcpu, vmcs12,
++ EXIT_REASON_MSR_LOAD_FAIL, msr_entry_idx);
++ return 1;
++ }
++
++ vmcs12->launch_state = 1;
++
+  if (vmcs12->guest_activity_state == GUEST_ACTIVITY_HLT)
+  return kvm_emulate_halt(vcpu);
+
+@@ -9097,6 +9198,10 @@ static void load_vmcs12_host_state(struct kvm_vcpu *vcpu,
+
+  kvm_set_dr(vcpu, 7, 0x400);
+  vmcs_write64(GUEST_IA32_DEBUGCTL, 0);
++
++ if (nested_exit_load_msr(vcpu, vmcs12->vm_exit_msr_load_addr,
++ vmcs12->vm_exit_msr_load_count))
++ nested_vmx_abort(vcpu, VMX_ABORT_LOAD_HOST_MSR_FAIL);
+ }
+
+ /*
+@@ -9118,6 +9223,10 @@ static void nested_vmx_vmexit(struct kvm_vcpu
+*vcpu, u32 exit_reason,
+  prepare_vmcs12(vcpu, vmcs12, exit_reason, exit_intr_info,
+        exit_qualification);
+
++ if (nested_exit_store_msr(vcpu, vmcs12->vm_exit_msr_store_addr,
++ vmcs12->vm_exit_msr_store_count))
++ nested_vmx_abort(vcpu, VMX_ABORT_SAVE_GUEST_MSR_FAIL);
++
+  vmx_load_vmcs01(vcpu);
+
+  if ((exit_reason == EXIT_REASON_EXTERNAL_INTERRUPT)
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index a8f53a6..1c7eecc 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2323,6 +2323,7 @@ int kvm_get_msr(struct kvm_vcpu *vcpu, u32
+msr_index, u64 *pdata)
+ {
+  return kvm_x86_ops->get_msr(vcpu, msr_index, pdata);
+ }
++EXPORT_SYMBOL_GPL(kvm_get_msr);
+
+ static int get_msr_mtrr(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
+ {
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 751ece6..be02556 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1585,6 +1585,7 @@ int kvm_write_guest(struct kvm *kvm, gpa_t gpa,
+const void *data,
+  }
+  return 0;
+ }
++EXPORT_SYMBOL_GPL(kvm_write_guest);
+
+ int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
+       gpa_t gpa, unsigned long len)
