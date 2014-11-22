@@ -1,153 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499AbaKVRUb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 12:20:31 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:38124 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735AbaKVRUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 12:20:30 -0500
-Date: Sat, 22 Nov 2014 18:20:25 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: x86@kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Oleg Nesterov <oleg@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
- context
-Message-ID: <20141122172025.GC4395@pd.tnic>
-References: <cover.1416604491.git.luto@amacapital.net>
- <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
+	id S1751791AbaKVRst (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 12:48:49 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:58601 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbaKVRsr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 12:48:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141122042856.GZ7996@ZenIV.linux.org.uk>
+References: <20141119.165340.2162829993279387495.davem@davemloft.net>
+	<20141120214753.GR7996@ZenIV.linux.org.uk>
+	<20141120.182339.972861702759954603.davem@davemloft.net>
+	<20141121.122615.1091044030302005883.davem@davemloft.net>
+	<20141122042856.GZ7996@ZenIV.linux.org.uk>
+Date: Sat, 22 Nov 2014 09:48:46 -0800
+X-Google-Sender-Auth: qCO_EFYxsjQEwMV8CS1g3H65BvA
+Message-ID: <CA+55aFzFKhxs=oHHHs-Kr08qWNb4+q2NO1Vgrbp++-FWfJvuQg@mail.gmail.com>
+Subject: Re: [RFC] situation with csum_and_copy_... API
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: David Miller <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 01:26:08PM -0800, Andy Lutomirski wrote:
-> We currently pretend that IST context is like standard exception
-> context, but this is incorrect.  IST entries from userspace are like
-> standard exceptions except that they use per-cpu stacks, so they are
-> atomic.  IST entries from kernel space are like NMIs from RCU's
-> perspective -- they are not quiescent states even if they
-> interrupted the kernel during a quiescent state.
-> 
-> Add and use ist_enter and ist_exit to track IST context.  Even
-> though x86_32 has no IST stacks, we track these interrupts the same
-> way.
-> 
-> This fixes two issues:
-> 
->  - Scheduling from an IST interrupt handler will now warn.  It would
->    previously appear to work as long as we got lucky and nothing
->    overwrote the stack frame.  (I don't know of any bugs in this
->    that would trigger the warning, but it's good to be on the safe
->    side.)
-> 
->  - RCU handling in IST context was dangerous.  As far as I know,
->    only machine checks were likely to trigger this, but it's good to
->    be on the safe side.
-> 
-> Note that the machine check handlers appears to have been missing
-> any context tracking at all before this patch.
-> 
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Cc: Josh Triplett <josh@joshtriplett.org>
-> Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/include/asm/traps.h         |  4 +++
->  arch/x86/kernel/cpu/mcheck/mce.c     |  5 ++++
->  arch/x86/kernel/cpu/mcheck/p5.c      |  6 +++++
->  arch/x86/kernel/cpu/mcheck/winchip.c |  5 ++++
->  arch/x86/kernel/traps.c              | 49 ++++++++++++++++++++++++++++++------
->  5 files changed, 61 insertions(+), 8 deletions(-)
+On Fri, Nov 21, 2014 at 8:28 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>         OK, here's the next bunch.
 
-...
+Looks like good patches to me. Not that I actually _tested_ it, or
+even have a good test-case (yeah, that "historical" ATM fix? I don't
+think anybody cares ;), but it all seemed sane.
 
-> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-> index 0d0e922fafc1..f5c4b8813774 100644
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -107,6 +107,39 @@ static inline void preempt_conditional_cli(struct pt_regs *regs)
->  	preempt_count_dec();
->  }
->  
-> +enum ctx_state ist_enter(struct pt_regs *regs)
-> +{
-> +	/*
-> +	 * We are atomic because we're on the IST stack (or we're on x86_32,
-> +	 * in which case we still shouldn't schedule.
-> +	 */
-> +	preempt_count_add(HARDIRQ_OFFSET);
-> +
-> +	if (user_mode_vm(regs)) {
-> +		/* Other than that, we're just an exception. */
-> +		return exception_enter();
-> +	} else {
-> +		/*
-> +		 * We might have interrupted pretty much anything.  In
-> +		 * fact, if we're a machine check, we can even interrupt
-> +		 * NMI processing.  We don't want in_nmi() to return true,
-> +		 * but we need to notify RCU.
-> +		 */
-> +		rcu_nmi_enter();
-> +		return IN_KERNEL;  /* the value is irrelevant. */
-> +	}
-
-I guess dropping the explicit else-branch could make it look a bit nicer
-with the curly braces gone and all...
-
-enum ctx_state ist_enter(struct pt_regs *regs)
-{
-        /*
-         * We are atomic because we're on the IST stack (or we're on x86_32,
-         * in which case we still shouldn't schedule.
-         */
-        preempt_count_add(HARDIRQ_OFFSET);
-
-        if (user_mode_vm(regs))
-                /* Other than that, we're just an exception. */
-                return exception_enter();
-
-        /*
-         * We might have interrupted pretty much anything.  In fact, if we're a
-         * machine check, we can even interrupt NMI processing.  We don't want
-         * in_nmi() to return true, but we need to notify RCU.
-         */
-        rcu_nmi_enter();
-        return IN_KERNEL;  /* the value is irrelevant. */
-} 
-
-> +}
-> +
-> +void ist_exit(struct pt_regs *regs, enum ctx_state prev_state)
-> +{
-> +	preempt_count_sub(HARDIRQ_OFFSET);
-> +
-> +	if (user_mode_vm(regs))
-> +		return exception_exit(prev_state);
-> +	else
-> +		rcu_nmi_exit();
-> +}
-
-Ditto here.
-
-> +
->  static nokprobe_inline int
->  do_trap_no_signal(struct task_struct *tsk, int trapnr, char *str,
->  		  struct pt_regs *regs,	long error_code)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+              Linus
