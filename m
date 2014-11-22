@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872AbaKVVMF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 16:12:05 -0500
-Received: from sauhun.de ([89.238.76.85]:35734 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752253AbaKVVMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 16:12:03 -0500
-Date: Sat, 22 Nov 2014 22:13:24 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Alexander Kochetkov <al.kochet@gmail.com>
-Cc: Felipe Balbi <balbi@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] i2c: omap: fix i207 errata handling
-Message-ID: <20141122211324.GC1275@katana>
-References: <1416529011-21803-1-git-send-email-al.kochet@gmail.com>
- <20141121160828.GP7508@saruman>
- <B174E67D-9CCF-48B6-A5E5-911668161823@gmail.com>
+	id S1752738AbaKVVoz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 16:44:55 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:59209 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbaKVVoy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 16:44:54 -0500
+X-Originating-IP: 50.43.41.112
+Date: Sat, 22 Nov 2014 13:44:45 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Pieter Smith <pieter@boesman.nl>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Jeff Layton <jlayton@poochiereds.net>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 4/6] fs/fuse: support compiling out splice
+Message-ID: <20141122214445.GA23711@thin>
+References: <1416690001-20817-1-git-send-email-pieter@boesman.nl>
+ <1416690001-20817-5-git-send-email-pieter@boesman.nl>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="E/DnYTRukya0zdZ1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <B174E67D-9CCF-48B6-A5E5-911668161823@gmail.com>
+In-Reply-To: <1416690001-20817-5-git-send-email-pieter@boesman.nl>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Nov 22, 2014 at 09:59:59PM +0100, Pieter Smith wrote:
+> Compile out splice support from fuse when the splice-family of syscalls is not
+> supported by the system (i.e. CONFIG_SYSCALL_SPLICE is undefined).
 
---E/DnYTRukya0zdZ1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch needs some additional explanation.  Could you explain in the
+commit message why this particular splice_read function (and only the
+splice_read function, not the splice_write function) needs compiling
+out, when others do not?
 
+- Josh Triplett
 
-> Guys, I really appreciate you help.
-> So much testing and review.
-> I could not have done one.
-> Thank you!
-
-Well, thank YOU, for your hard work in verifying this controller at
-low-level and in corner-cases. This is very much appreciated. Plus, you
-have been very responsive to comments. Really good work! Hope you'll be
-around for more :)
-
-
---E/DnYTRukya0zdZ1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUcPx0AAoJEBQN5MwUoCm21oUP/RFIRB2F2KTchjzowvNmQpx+
-Rjd47jsBRH9kDHPdjJ0FMpxDXXfy3MziI79xkmB1nN6O2tVoo1hEUXi5qLcReKhD
-dMsL1dpaG/tvMluf4rQH8V7gL0I1kbRVoXtu6zgobwNsLnRWawbS4kY7vuxou70y
-TqazsdXKCCETLNzkrDOO0DmByZyW4imR8q3Zg9ouFribhR/k5D0fJErGKINJy1Mc
-G51m+yXg0YjH6qYmsK/99Qa4RywrkaoLNfedScrow0P4j0inNFWhl5soZNbW+WSE
-ikfg2D4VTouxwYqAfX1ew2X/Cd2MrwV8uMlJW2L0Ad6lrPEofNs0aqZDQ71tQVf8
-bb7dNz5ZjP2Ty9e40lOUO2p9OgLDTVWiKG2OpDMn+DK7we9hxMQnJHUqOowa1a2z
-vIVemzrihl+yRXSv75u5SpOfTbNZBXfxyulsT+96Ma62hjtpqF7d1T0Gnvhnuj2E
-4pVU4zaKKfTnaNuAa3bqqK26JpglucvtAmr51Y/VmOmFnu/EPlYM2bJ9vKT0DSoE
-m/Kuj5xouuf4+W/3w7bYmGnuBpFjTPL/tBGWML5VtU6QLdWRccz/qTPusLHrThCT
-j8xNBkipenTzbNGOulDJVCSF6TfFKnX55AxKWQL+SRRonBIhZc5VUAjJ+cFkpmm7
-Kl2U1nVnzmv3qmGY9fH7
-=sylc
------END PGP SIGNATURE-----
-
---E/DnYTRukya0zdZ1--
+> Signed-off-by: Pieter Smith <pieter@boesman.nl>
+> ---
+>  fs/fuse/dev.c      | 4 ++--
+>  include/linux/fs.h | 6 ++++++
+>  2 files changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> index ca88731..f8f92a4 100644
+> --- a/fs/fuse/dev.c
+> +++ b/fs/fuse/dev.c
+> @@ -1291,7 +1291,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
+>  	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
+>  }
+>  
+> -static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
+> +static ssize_t __maybe_unused fuse_dev_splice_read(struct file *in, loff_t *ppos,
+>  				    struct pipe_inode_info *pipe,
+>  				    size_t len, unsigned int flags)
+>  {
+> @@ -2144,7 +2144,7 @@ const struct file_operations fuse_dev_operations = {
+>  	.llseek		= no_llseek,
+>  	.read		= do_sync_read,
+>  	.aio_read	= fuse_dev_read,
+> -	.splice_read	= fuse_dev_splice_read,
+> +	.splice_read	= __splice_p(fuse_dev_splice_read),
+>  	.write		= do_sync_write,
+>  	.aio_write	= fuse_dev_write,
+>  	.splice_write	= fuse_dev_splice_write,
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index a957d43..04c0975 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -2443,6 +2443,12 @@ extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
+>  			int datasync);
+>  extern void block_sync_page(struct page *page);
+>  
+> +#ifdef CONFIG_SYSCALL_SPLICE
+> +#define __splice_p(x) x
+> +#else
+> +#define __splice_p(x) NULL
+> +#endif
+> +
+>  /* fs/splice.c */
+>  extern ssize_t generic_file_splice_read(struct file *, loff_t *,
+>  		struct pipe_inode_info *, size_t, unsigned int);
+> -- 
+> 1.9.1
+> 
