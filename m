@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaKVNL2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 08:11:28 -0500
-Received: from mout.web.de ([212.227.15.3]:63918 "EHLO mout.web.de"
+	id S1751921AbaKVNWA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 08:22:00 -0500
+Received: from sauhun.de ([89.238.76.85]:60889 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750822AbaKVNL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 08:11:27 -0500
-Message-ID: <54708B5E.2080302@users.sourceforge.net>
-Date: Sat, 22 Nov 2014 14:10:54 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751484AbaKVNV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 08:21:58 -0500
+Date: Sat, 22 Nov 2014 14:23:09 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Alexander Kochetkov <al.kochet@gmail.com>, linux-omap@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 2/4] i2c: omap: implement workaround for handling invalid
+ BB-bit values
+Message-ID: <20141122132309.GC2679@katana>
+References: <1416518925-20679-1-git-send-email-al.kochet@gmail.com>
+ <1416518925-20679-3-git-send-email-al.kochet@gmail.com>
+ <20141121160808.GM7508@saruman>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] x86: AMD-perf_event: Deletion of unnecessary checks before
- the function call "free_percpu"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:Mil20yIHZvxyZiu4bXPfK/cJAyy/Okqpc37U8VCcP4Vz4HAwqyC
- D9NVkEjl5ctDO6yw61pbFLO61O6GOfE0OaWQ2Sb/i95SJ0hDeJD1B9sc4o9Hw2ZKp2f9qB1
- 1vyzrndVh9wKJ0ZIpQgSbj1K4tZpWiuvcbC/Z2PtMZyKoG9HCsicaFlDb8QcWmJUkRhYouA
- hS1k2XC1Uad8ZEgD5m+Bw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XMCwj5IQnwKtuyBG"
+Content-Disposition: inline
+In-Reply-To: <20141121160808.GM7508@saruman>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sat, 22 Nov 2014 14:01:27 +0100
 
-The free_percpu() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+--XMCwj5IQnwKtuyBG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This issue was detected by using the Coccinelle software.
+On Fri, Nov 21, 2014 at 10:08:08AM -0600, Felipe Balbi wrote:
+> On Fri, Nov 21, 2014 at 01:28:43AM +0400, Alexander Kochetkov wrote:
+> > In a multimaster environment, after IP software reset, BB-bit value doe=
+sn't
+> > correspond to the current bus state. It may happen what BB-bit will be =
+0,
+> > while the bus is busy due to another I2C master activity.
+> >=20
+> > Any transfer started when BB=3D0 and bus is busy wouldn't be completed =
+by IP
+> > and results in controller timeout. More over, in some cases IP could
+> > interrupt another master's transfer and corrupt data on wire.
+> >=20
+> > The commit implement method allowing to prevent IP from entering into
+> > "controller timeout" state and from "data corruption" state.
+> >=20
+> > The one drawback is the need to wait for 10ms before the first transfer.
+> >=20
+> > Tested on Beagleboard XM C.
+> >=20
+> > Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
+>=20
+> Tested on BBB and AM437x Starter Kit
+>=20
+> Tested-by: Felipe Balbi <balbi@ti.com>
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- arch/x86/kernel/cpu/perf_event_amd_uncore.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+Huh, I can't apply this one? Which kernel version is this based on?
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_uncore.c b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-index 30790d7..4856232 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-@@ -592,11 +592,9 @@ fail_online:
- fail_l2:
- 	if (cpu_has_perfctr_nb)
- 		perf_pmu_unregister(&amd_nb_pmu);
--	if (amd_uncore_l2)
--		free_percpu(amd_uncore_l2);
-+	free_percpu(amd_uncore_l2);
- fail_nb:
--	if (amd_uncore_nb)
--		free_percpu(amd_uncore_nb);
-+	free_percpu(amd_uncore_nb);
- 
- fail_nodev:
- 	return ret;
--- 
-2.1.3
 
+--XMCwj5IQnwKtuyBG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUcI49AAoJEBQN5MwUoCm2Ba8P/0imzQrZvoLx7zKI+v5UpV1f
+mFRmNH5X7yvAhbt3dao6/hJ3hSs1x7wJp+momIObCXGhNZepzrqEdENPqKNnnx2f
+v30nl18b9Gt43D+DjzD7qLNlvlhNleKMUC4auXYnfmi2BuarMbVWY+ug7KcIPL2e
+WVyzRUejWoY3nbTkCnuinu9cGTUDH2+R2Ve6WIuIcV5n7uASgNYK+XAJf0Y3wXmu
+TeFJwV9tDEWcD32Fmdf0Vmfy1BaO8fz6KGkJ33rXG5E+O+QIH+ps96jKakMS27eZ
+pThbihzEs+tMK16Lwbg+qUA8TS3QSyvYLPI6Tk5/OUVs6qDxiWKUHoBynjNMczp8
+xtB2rl7YDvg1irwhevuh2ZQjVi+a+ceflejOca7zy9QBgtO2X2dMIM34UwL0OH2H
+4ayFM6SSKPWJjvoRcVQIA5dMAX3VZ6hmtxkVuZWAAi0bhvOTvvdqFklshPYbL2um
+uIh3uR+b8gRNvnao4LkI/To0LCUaa/8gFHG9UQHT3bb7BPToCH0ZUleJE6paYOx8
+TUWf3PmTnS/wd//gaqb7QkPrxd3088HvIGl7lAe0qMeokoTpusUMmrVTRAvm5Zq9
+4T75IHh0sE0TgVOAGgbkaELdv9lIiU1Wl52KOEi0MssgFqM93GZyvFangC02MBRI
+Exghg2WSfXCYtqwbYWrD
+=zLD2
+-----END PGP SIGNATURE-----
+
+--XMCwj5IQnwKtuyBG--
