@@ -1,515 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882AbaKVU1n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 15:27:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46935 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752706AbaKVU0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 15:26:47 -0500
-From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
-To: linux-samsung-soc@vger.kernel.org
-Cc: Kukjin Kim <kgene@kernel.org>,
-        =?UTF-8?q?=EA=B9=80=ED=95=99=EC=A3=BC?= <ruppi.kim@hardkernel.com>,
-        Humberto Naves <hsnaves@gmail.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Johann Pfefferl <johann.pfefferl@siemens.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...)
-Subject: [PATCH v2 4/5] ARM: dts: add pinctrl support to Exynos5410
-Date: Sat, 22 Nov 2014 21:26:23 +0100
-Message-Id: <1416687984-3546-5-git-send-email-afaerber@suse.de>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1416687984-3546-1-git-send-email-afaerber@suse.de>
-References: <1416687984-3546-1-git-send-email-afaerber@suse.de>
+	id S1752502AbaKVUsJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 15:48:09 -0500
+Received: from www.linutronix.de ([62.245.132.108]:33346 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940AbaKVUsI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 15:48:08 -0500
+Date: Sat, 22 Nov 2014 21:48:05 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [GIT pull] timer updates for 3.18
+Message-ID: <alpine.DEB.2.11.1411222146450.6439@nanos>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hakjoo Kim <ruppi.kim@hardkernel.com>
+Linus,
 
-Add the required pin configuration support to Exynos5410 using pinctrl
-interface.
+please pull the latest timers-urgent-for-linus git tree from:
 
-Signed-off-by: Hakjoo Kim <ruppi.kim@hardkernel.com>
-[AF: Rebased, style changes]
-Signed-off-by: Andreas Färber <afaerber@suse.de>
----
-v1 -> v2:
-* Filled in Sob from Hakjoo Kim
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
 
- arch/arm/boot/dts/exynos5410-pinctrl.dtsi | 406 ++++++++++++++++++++++++++++++
- arch/arm/boot/dts/exynos5410.dtsi         |  30 +++
- 2 files changed, 436 insertions(+)
- create mode 100644 arch/arm/boot/dts/exynos5410-pinctrl.dtsi
+A single bugfix for an init order problem in the sun4i subarch
+clockevents code.
 
-diff --git a/arch/arm/boot/dts/exynos5410-pinctrl.dtsi b/arch/arm/boot/dts/exynos5410-pinctrl.dtsi
-new file mode 100644
-index 000000000000..f9aa6bb55464
---- /dev/null
-+++ b/arch/arm/boot/dts/exynos5410-pinctrl.dtsi
-@@ -0,0 +1,406 @@
-+/*
-+ * Exynos5410 SoC pin-mux and pin-config device tree source
-+ *
-+ * Copyright (c) 2013 Hardkernel Co., Ltd.
-+ *              http://www.hardkernel.com
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+&pinctrl_0 {
-+	gpa0: gpa0 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpa1: gpa1 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpa2: gpa2 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpb0: gpb0 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpb1: gpb1 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpb2: gpb2 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpb3: gpb3 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpc0: gpc0 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpc3: gpc3 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpc1: gpc1 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpc2: gpc2 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpm5: gpm5 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	gpd1: gpd1 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpe0: gpe0 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpe1: gpe1 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpf0: gpf0 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpf1: gpf1 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpg0: gpg0 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpg1: gpg1 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpg2: gpg2 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gph0: gph0 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gph1: gph1 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpm7: gpm7 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	gpy0: gpy0 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	gpy1: gpy1 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	gpy2: gpy2 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	gpy3: gpy3 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	gpy4: gpy4 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	gpy5: gpy5 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	gpy6: gpy6 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	gpy7: gpy7 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	gpx0: gpx0 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		interrupt-parent = <&combiner>;
-+		#interrupt-cells = <2>;
-+		interrupts = <23 0>,
-+		             <24 0>,
-+		             <25 0>,
-+		             <25 1>,
-+		             <26 0>,
-+		             <26 1>,
-+		             <27 0>,
-+		             <27 1>;
-+	};
-+
-+	gpx1: gpx1 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		interrupt-parent = <&combiner>;
-+		#interrupt-cells = <2>;
-+		interrupts = <28 0>,
-+		             <28 1>,
-+		             <29 0>,
-+		             <29 1>,
-+		             <30 0>,
-+		             <30 1>,
-+		             <31 0>,
-+		             <31 1>;
-+	};
-+
-+	gpx2: gpx2 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpx3: gpx3 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+};
-+
-+&pinctrl_1 {
-+	gpj0: gpj0 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpj1: gpj1 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpj2: gpj2 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpj3: gpj3 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpj4: gpj4 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpk0: gpk0 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpk1: gpk1 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpk2: gpk2 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpk3: gpk3 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+};
-+
-+&pinctrl_2 {
-+	gpv0: gpv0 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpv1: gpv1 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpv2: gpv2 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpv3: gpv3 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+
-+	gpv4: gpv4 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+};
-+
-+&pinctrl_3 {
-+	gpz: gpz {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-+};
-diff --git a/arch/arm/boot/dts/exynos5410.dtsi b/arch/arm/boot/dts/exynos5410.dtsi
-index 731eefd23fa9..467b23328074 100644
---- a/arch/arm/boot/dts/exynos5410.dtsi
-+++ b/arch/arm/boot/dts/exynos5410.dtsi
-@@ -21,6 +21,10 @@
- 	interrupt-parent = <&gic>;
+Thanks,
+
+	tglx
+
+------------------>
+Maxime Ripard (1):
+      clockevent: sun4i: Fix race condition in the probe code
+
+
+ drivers/clocksource/sun4i_timer.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
+index efb17c3ee120..f4a9c0058b4d 100644
+--- a/drivers/clocksource/sun4i_timer.c
++++ b/drivers/clocksource/sun4i_timer.c
+@@ -182,6 +182,12 @@ static void __init sun4i_timer_init(struct device_node *node)
+ 	/* Make sure timer is stopped before playing with interrupts */
+ 	sun4i_clkevt_time_stop(0);
  
- 	aliases {
-+		pinctrl0 = &pinctrl_0;
-+		pinctrl1 = &pinctrl_1;
-+		pinctrl2 = &pinctrl_2;
-+		pinctrl3 = &pinctrl_3;
- 		serial0 = &uart0;
- 		serial1 = &uart1;
- 		serial2 = &uart2;
-@@ -218,4 +222,30 @@
- 			status = "disabled";
- 		};
- 	};
++	sun4i_clockevent.cpumask = cpu_possible_mask;
++	sun4i_clockevent.irq = irq;
 +
-+	pinctrl_0: pinctrl@13400000 {
-+		compatible = "samsung,exynos5410-pinctrl";
-+		reg = <0x13400000 0x1000>;
-+		interrupts = <0 45 0>;
-+	};
++	clockevents_config_and_register(&sun4i_clockevent, rate,
++					TIMER_SYNC_TICKS, 0xffffffff);
 +
-+	pinctrl_1: pinctrl@14000000 {
-+		compatible = "samsung,exynos5410-pinctrl";
-+		reg = <0x14000000 0x1000>;
-+		interrupts = <0 46 0>;
-+	};
-+
-+	pinctrl_2: pinctrl@10d10000 {
-+		compatible = "samsung,exynos5410-pinctrl";
-+		reg = <0x10d10000 0x1000>;
-+		interrupts = <0 50 0>;
-+	};
-+
-+	pinctrl_3: pinctrl@03860000 {
-+		compatible = "samsung,exynos5410-pinctrl";
-+		reg = <0x03860000 0x1000>;
-+		interrupts = <0 47 0>;
-+	};
- };
-+
-+#include "exynos5410-pinctrl.dtsi"
--- 
-2.1.2
-
+ 	ret = setup_irq(irq, &sun4i_timer_irq);
+ 	if (ret)
+ 		pr_warn("failed to setup irq %d\n", irq);
+@@ -189,12 +195,6 @@ static void __init sun4i_timer_init(struct device_node *node)
+ 	/* Enable timer0 interrupt */
+ 	val = readl(timer_base + TIMER_IRQ_EN_REG);
+ 	writel(val | TIMER_IRQ_EN(0), timer_base + TIMER_IRQ_EN_REG);
+-
+-	sun4i_clockevent.cpumask = cpu_possible_mask;
+-	sun4i_clockevent.irq = irq;
+-
+-	clockevents_config_and_register(&sun4i_clockevent, rate,
+-					TIMER_SYNC_TICKS, 0xffffffff);
+ }
+ CLOCKSOURCE_OF_DECLARE(sun4i, "allwinner,sun4i-a10-timer",
+ 		       sun4i_timer_init);
