@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679AbaKVLOB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 06:14:01 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:40064 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878AbaKVLOA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 06:14:00 -0500
-Message-ID: <54706FF6.5070703@kernel.org>
-Date: Sat, 22 Nov 2014 11:13:58 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751809AbaKVLOs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 06:14:48 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33163 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751555AbaKVLOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 06:14:47 -0500
+Date: Sat, 22 Nov 2014 12:14:44 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Chris Clayton <chris2553@googlemail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Junjie Mao <eternal.n08@gmail.com>,
+        Kees Cook <keescook@chromium.org>, x86-ml <x86@kernel.org>
+Subject: Re: [PATCH]: cross-compiling x86_64 kernel on i386 user-space fails
+Message-ID: <20141122111444.GA12445@pd.tnic>
+References: <54705C8E.1080400@googlemail.com>
 MIME-Version: 1.0
-To: Daniel Baluta <daniel.baluta@intel.com>, knaack.h@gmx.de
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        irina.tirdea@intel.com, daniel.baluta@inte.com
-Subject: Re: [PATCH v4 3/7] iio: core: Introduce IIO_EV_DIR_NONE
-References: <1415623535-24337-1-git-send-email-daniel.baluta@intel.com> <1415623535-24337-4-git-send-email-daniel.baluta@intel.com>
-In-Reply-To: <1415623535-24337-4-git-send-email-daniel.baluta@intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <54705C8E.1080400@googlemail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/14 12:45, Daniel Baluta wrote:
-> From: Irina Tirdea <irina.tirdea@intel.com>
+On Sat, Nov 22, 2014 at 09:51:10AM +0000, Chris Clayton wrote:
+> Hi,
+
+Yeah, next time make sure you actually CC people :-)
+
+I've added them to CC now.
+
+> Commit e6023367d779060fddc9a52d1f474085b2b36298 broke building an x86_64 kernel in an i386. The change added a call to
+> objdump but neglected to cater for cross-compiling.
 > 
-> For some events (e.g.: step detector) a direction does not make sense.
-> 
-> Add IIO_EV_DIR_NONE to be used with such events and generate sysfs event
-> attributes that do not contain direction.
-> 
-> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
-> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
-Applied -> iio.git:togreg, pushed->iio.git:testing.
+> The patch below fixes the problem for me. I see the commit is now in 3.14 and 3.17 -stable, so the patch needs to go
+> there too.
+
+CC: stable@vger.kernel.org
+
+in the commit message should help there.
+
+
+> CC: Junjie Mao <eternal.n08@gmail.com>
+> CC: Kees Cook <keescook@chromium.org>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Ingo Molnar <mingo@kernel.org>
+> Signed-off-by: Chris Clayton <chris2553@googlemail.com>
+
+Acked-by: Borislav Petkov <bp@suse.de>
 
 > ---
->  drivers/iio/industrialio-event.c | 12 +++++++++---
->  include/linux/iio/types.h        |  1 +
->  2 files changed, 10 insertions(+), 3 deletions(-)
+> --- linux/arch/x86/boot/compressed/Makefile~    2014-11-22 08:56:50.359706324 +0000
+> +++ linux/arch/x86/boot/compressed/Makefile     2014-11-22 09:04:06.615693435 +0000
+> @@ -76,7 +76,7 @@ suffix-$(CONFIG_KERNEL_XZ)    := xz
+>  suffix-$(CONFIG_KERNEL_LZO)    := lzo
+>  suffix-$(CONFIG_KERNEL_LZ4)    := lz4
 > 
-> diff --git a/drivers/iio/industrialio-event.c b/drivers/iio/industrialio-event.c
-> index 0c1e37e..1290290 100644
-> --- a/drivers/iio/industrialio-event.c
-> +++ b/drivers/iio/industrialio-event.c
-> @@ -327,9 +327,15 @@ static int iio_device_add_event(struct iio_dev *indio_dev,
->  	for_each_set_bit(i, mask, sizeof(*mask)*8) {
->  		if (i >= ARRAY_SIZE(iio_ev_info_text))
->  			return -EINVAL;
-> -		postfix = kasprintf(GFP_KERNEL, "%s_%s_%s",
-> -				iio_ev_type_text[type], iio_ev_dir_text[dir],
-> -				iio_ev_info_text[i]);
-> +		if (dir != IIO_EV_DIR_NONE)
-> +			postfix = kasprintf(GFP_KERNEL, "%s_%s_%s",
-> +					iio_ev_type_text[type],
-> +					iio_ev_dir_text[dir],
-> +					iio_ev_info_text[i]);
-> +		else
-> +			postfix = kasprintf(GFP_KERNEL, "%s_%s",
-> +					iio_ev_type_text[type],
-> +					iio_ev_info_text[i]);
->  		if (postfix == NULL)
->  			return -ENOMEM;
->  
-> diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
-> index b3a241d..52cb532 100644
-> --- a/include/linux/iio/types.h
-> +++ b/include/linux/iio/types.h
-> @@ -86,6 +86,7 @@ enum iio_event_direction {
->  	IIO_EV_DIR_EITHER,
->  	IIO_EV_DIR_RISING,
->  	IIO_EV_DIR_FALLING,
-> +	IIO_EV_DIR_NONE,
->  };
->  
->  #define IIO_VAL_INT 1
+> -RUN_SIZE = $(shell objdump -h vmlinux | \
+> +RUN_SIZE = $(shell ${CROSS_COMPILE}objdump -h vmlinux | \
+>              perl $(srctree)/arch/x86/tools/calc_run_size.pl)
+>  quiet_cmd_mkpiggy = MKPIGGY $@
+>        cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
