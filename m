@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751012AbaKWFWU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 00:22:20 -0500
-Received: from mx5-phx2.redhat.com ([209.132.183.37]:51338 "EHLO
-	mx5-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaKWFWS (ORCPT
+	id S1751351AbaKWFYc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 00:24:32 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:60862 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188AbaKWFYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 00:22:18 -0500
-Date: Sun, 23 Nov 2014 00:22:00 -0500 (EST)
-From: Pankaj Gupta <pagupta@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>, David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, jasowang@redhat.com,
-        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
-        vyasevic@redhat.com, hkchu@google.com, wuzhy@linux.vnet.ibm.com,
-        xemul@parallels.com, therbert@google.com, bhutchings@solarflare.com,
-        xii@google.com, stephen@networkplumber.org, jiri@resnulli.us,
-        sergei shtylyov <sergei.shtylyov@cogentembedded.com>
-Message-ID: <1279921267.2842813.1416720120277.JavaMail.zimbra@redhat.com>
-In-Reply-To: <20141119204427.GB30994@redhat.com>
-References: <1416327778-17716-1-git-send-email-pagupta@redhat.com> <20141119.151628.768548269128919029.davem@davemloft.net> <20141119204427.GB30994@redhat.com>
-Subject: Re: [PATCH net-net 0/4] Increase the limit of tuntap queues
+	Sun, 23 Nov 2014 00:24:31 -0500
+Date: Sat, 22 Nov 2014 00:02:39 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: David Miller <davem@davemloft.net>
+Cc: dvhart@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: futex testsuite suggestion...
+Message-ID: <20141122080239.GA7886@vmdeb7>
+References: <20141027.155656.1414383076601514662.davem@davemloft.net>
+ <544EAB1A.2030403@linux.intel.com>
+ <20141027.163116.627611711460671434.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF23 (Linux)/8.0.6_GA_5922)
-Thread-Topic: Increase the limit of tuntap queues
-Thread-Index: 8iMeCK7d6zv6oQiYJAWiIK+uxvQSTQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141027.163116.627611711460671434.davem@davemloft.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> On Wed, Nov 19, 2014 at 03:16:28PM -0500, David Miller wrote:
-> > From: Pankaj Gupta <pagupta@redhat.com>
-> > Date: Tue, 18 Nov 2014 21:52:54 +0530
-> > 
-> > > - Accept maximum number of queues as sysctl param so that any user space
-> > >   application like libvirt can use this value to limit number of queues.
-> > >   Also
-> > >   Administrators can specify maximum number of queues by updating this
-> > >   sysctl
-> > >   entry.
-> > 
-> > This is the only part I don't like.
-> > 
-> > Just let whoever has privileges to configure the tun device shoot
-> > themselves in the foot if they want to by configuring "too many"
-> > queues.
-> > 
-> > If the virtual entity runs itself out of resources by doing something
-> > stupid, it's purely their problem.
-
-We can configure some fixed number of queues like 16 or so at the start 
-if multiqueue is enabled and then if somebody needs more then that, they
-can do on their own.
-
-If we dont want anyone to directly increase the number of queues, we can add
-an ioctl command for increasing number of queues?
-
-
-
-Suggestions here. 
+On Mon, Oct 27, 2014 at 04:31:16PM -0400, David Miller wrote:
+> From: Darren Hart <dvhart@linux.intel.com>
+> Date: Mon, 27 Oct 2014 13:29:14 -0700
 > 
-> Well it will run host out of kernel, no?
+> > On 10/27/14 12:56, David Miller wrote:
+> >> I'd like to suggest that you add a test that triggers transparent
+> >> hugepages, because if an architecture doesn't implement
+> >> __get_user_pages_fast() such futexes cause a machine to hang.
+> >> 
+> >> I hacked up something simple that took the existing performance
+> >> test and made it operate in a register allocated using memalign().
+> >> 
+> >> I would suggest doing a memalign(HUGEPAGE_SIZE, HUGEPAGE_SIZE) then
+> >> iterating running a futex test within each normal page within that
+> >> hugepage.
+> > 
+> > Do you want this option for the performance tests, or would a less
+> > intensive functional test be sufficient?
 > 
-> --
-> MST
-> 
+> I think a functional test is sufficient.
+
+Hi David,
+
+>From your suggestion I put together a simple transparent hugepage functional
+test. See the "thp" branch, functional/futex_wait_thp.c.
+
+I'd like your thoughts on if this functions as desired. Is the simple single
+threaded timeout sufficient, or would you prefer to see a waiter/waker pair of
+threads for each iteration?
+
+Some TODOs still:
+
+I wasn't sure if there was a way to test for hugepagesize and my quick search
+didn't reveal anything (other than /proc/meminfo).
+
+Check at runtime if the test is getting a huge page, otherwise it just reports
+success, but used several regular pages instead.
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
