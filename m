@@ -1,127 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbaKVENw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Nov 2014 23:13:52 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:41985 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382AbaKVENu (ORCPT
+	id S1752873AbaKVEVE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Nov 2014 23:21:04 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:42438 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748AbaKVEVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Nov 2014 23:13:50 -0500
-Message-ID: <54700D52.9050109@gmail.com>
-Date: Sat, 22 Nov 2014 12:13:06 +0800
-From: Yijing Wang <wangyijing0307@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Yijing Wang <wangyijing@huawei.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Marc Zyngier <marc.zyngier@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-pci@vger.kernel.org,
+	Fri, 21 Nov 2014 23:21:02 -0500
+Date: Fri, 21 Nov 2014 20:20:56 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: Removal of bus->msi assignment breaks MSI with stacked domains
-References: <546E1771.4030201@arm.com> <20141120215353.GA7987@google.com> <alpine.DEB.2.11.1411202355060.6439@nanos> <546E9B60.9070706@huawei.com> <20141121173110.GB6578@google.com>
-In-Reply-To: <20141121173110.GB6578@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
+ context
+Message-ID: <20141122042056.GY5050@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <cover.1416604491.git.luto@amacapital.net>
+ <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
+ <CALCETrXLq1y7e_dKFPgou-FKHB6Pu-r8+t-6Ds+8=va7anBWDA@mail.gmail.com>
+ <20141121220704.GU5050@linux.vnet.ibm.com>
+ <CALCETrXVRqZ2fJJNOWLFzhE7wQvWejXbw0OUpcm6rt_UdFP6CA@mail.gmail.com>
+ <20141121225508.GV5050@linux.vnet.ibm.com>
+ <CALCETrXgd=5+RFugdi4CdCOzULK8u+ku-EQaJvY6JhXAMEW7rQ@mail.gmail.com>
+ <20141121233834.GW5050@linux.vnet.ibm.com>
+ <CALCETrVNnDEcVu_BteA2gVBeRB7zOsQmrA6JCrE8ez4U=vc0MQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVNnDEcVu_BteA2gVBeRB7zOsQmrA6JCrE8ez4U=vc0MQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112204-0021-0000-0000-00000655160B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 21, 2014 at 06:00:14PM -0800, Andy Lutomirski wrote:
+> On Fri, Nov 21, 2014 at 3:38 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Fri, Nov 21, 2014 at 03:06:48PM -0800, Andy Lutomirski wrote:
+> >> On Fri, Nov 21, 2014 at 2:55 PM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> > On Fri, Nov 21, 2014 at 02:19:17PM -0800, Andy Lutomirski wrote:
+> >> >> On Fri, Nov 21, 2014 at 2:07 PM, Paul E. McKenney
+> >> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> >> > On Fri, Nov 21, 2014 at 01:32:50PM -0800, Andy Lutomirski wrote:
+> >> >> >> On Fri, Nov 21, 2014 at 1:26 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> >> >> >> > We currently pretend that IST context is like standard exception
+> >> >> >> > context, but this is incorrect.  IST entries from userspace are like
+> >> >> >> > standard exceptions except that they use per-cpu stacks, so they are
+> >> >> >> > atomic.  IST entries from kernel space are like NMIs from RCU's
+> >> >> >> > perspective -- they are not quiescent states even if they
+> >> >> >> > interrupted the kernel during a quiescent state.
+> >> >> >> >
+> >> >> >> > Add and use ist_enter and ist_exit to track IST context.  Even
+> >> >> >> > though x86_32 has no IST stacks, we track these interrupts the same
+> >> >> >> > way.
+> >> >> >>
+> >> >> >> I should add:
+> >> >> >>
+> >> >> >> I have no idea why RCU read-side critical sections are safe inside
+> >> >> >> __do_page_fault today.  It's guarded by exception_enter(), but that
+> >> >> >> doesn't do anything if context tracking is off, and context tracking
+> >> >> >> is usually off. What am I missing here?
+> >> >> >
+> >> >> > Ah!  There are three cases:
+> >> >> >
+> >> >> > 1.      Context tracking is off on a non-idle CPU.  In this case, RCU is
+> >> >> >         still paying attention to CPUs running in both userspace and in
+> >> >> >         the kernel.  So if a page fault happens, RCU will be set up to
+> >> >> >         notice any RCU read-side critical sections.
+> >> >> >
+> >> >> > 2.      Context tracking is on on a non-idle CPU.  In this case, RCU
+> >> >> >         might well be ignoring userspace execution: NO_HZ_FULL and
+> >> >> >         all that.  However, as you pointed out, in this case the
+> >> >> >         context-tracking code lets RCU know that we have entered the
+> >> >> >         kernel, which means that RCU will again be paying attention to
+> >> >> >         RCU read-side critical sections.
+> >> >> >
+> >> >> > 3.      The CPU is idle.  In this case, RCU is ignoring the CPU, so
+> >> >> >         if we take a page fault when context tracking is off, life
+> >> >> >         will be hard.  But the kernel is not supposed to take page
+> >> >> >         faults in the idle loop, so this is not a problem.
+> >> >>
+> >> >> I guess so, as long as there are really no page faults in the idle loop.
+> >> >
+> >> > As far as I know, there are not.  If there are, someone needs to let
+> >> > me know!  ;-)
+> >> >
+> >> >> There are, however, machine checks in the idle loop, and maybe kprobes
+> >> >> (haven't checked), so I think this patch might fix real bugs.
+> >> >
+> >> > If you can get ISTs from the idle loop, then the patch is needed.
+> >> >
+> >> >> > Just out of curiosity...  Can an NMI occur in IST context?  If it can,
+> >> >> > I need to make rcu_nmi_enter() and rcu_nmi_exit() deal properly with
+> >> >> > nested calls.
+> >> >>
+> >> >> Yes, and vice versa.  That code looked like it handled nesting
+> >> >> correctly, but I wasn't entirely sure.
+> >> >
+> >> > It currently does not, please see below patch.  Are you able to test
+> >> > nesting?  It would be really cool if you could do so -- I have no
+> >> > way to test this patch.
+> >>
+> >> I can try.  It's sort of easy -- I'll put an int3 into do_nmi and add
+> >> a fixup to avoid crashing.
+> >>
+> >> What should I look for?  Should I try to force full nohz on and assert
+> >> something?  I don't really know how to make full nohz work.
+> >
+> > You should look for the WARN_ON_ONCE() calls in rcu_nmi_enter() and
+> > rcu_nmi_exit() to fire.
+> 
+> No warning with or without your patch, maybe because all of those
+> returns skip the labels.
 
-在 2014/11/22 1:31, Bjorn Helgaas 写道:
-> On Fri, Nov 21, 2014 at 09:54:40AM +0800, Yijing Wang wrote:
->>>> Thomas, let me know if you want to do that.  I suppose we could add a new
->>>> patch to add it back, but that would leave bisection broken for the
->>>> interval between c167caf8d174 and the patch that adds it back.
->>> Fortunately my irq/irqdomain branch is not immutable yet. So we have
->>> no problem at that point. I can rebase on your branch until tomorrow
->>> night. Or just rebase on mainline and we sort out the merge conflicts
->>> later, i.e. delegate them to Linus so his job of pulling stuff gets
->>> not completely boring.
->> Hi Thomas, sorry for my introducing the broken.
->>
->>> What I'm more worried about is whether this intended change is going
->>> to inflict a problem on Jiangs intention to deduce the MSI irq domain
->>> from the device, which we really need for making DMAR work w/o going
->>> through loops and hoops.
->>>
->>> I have limited knowledge about the actual scope of iommu (DMAR) units
->>> versus device/bus/host-controllers, so I would appreciate a proper
->>> explanation for that from you or Jiang or both.
->> In my personal opinion, if it's not necessary, we should not put stuff
->> into pci_dev or pci_bus. If we plan to save msi_controller in pci_bus or
->> pci_dev.
->> I have a proposal, I would be appreciated if you could give some comments.
->> First we refactor pci_host_bridge to make a generic
->> pci_host_bridge, then we could save pci domain in it to eliminate
->> arch specific functions. I aslo wanted to save msi_controller as
->> pci domain, but now Jiang refactor hierarchy irq domain, and
->> pci devices under the same pci host bridge may need to associate
->> to different msi_controllers.
-> I think this is getting ahead of ourselves.  Let's make small steps.
->
-> We currently have the msi_controller pointer in struct pci_bus.  That was
-> there even before your series.  Your series added pci_msi_controller(),
-> and I reworked it so it looks like this:
->
->      static struct msi_controller *pci_msi_controller(struct pci_dev *dev)
->      {
-> 	   struct msi_controller *msi_ctrl = dev->bus->msi;
->
-> 	   if (msi_ctrl)
-> 		   return msi_ctrl;
->
-> 	   return pcibios_msi_controller(dev);
->      }
->
-> So now your series basically just removes the ARM add_bus() and
-> remove_bus() methods and gets the MSI controller info from the ARM
-> pci_sys_data struct instead of from pci_bus.  Of course, that assumes that
-> on ARM, all devices under a host bridge have the same MSI controller.  That
-> seems like an unwarranted assumption, but if you want to do it for ARM,
-> that's fine with me.
+I will be guardedly optimistic and take this as a good sign.  ;-)
 
-Agree, we could use pci_msi_controller() to find msi_controller for 
-pci_dev before a
-better common way found.
+> Also, an NMI can happen *during* rcu_nmi_enter or rcu_nmi_exit.  Is
+> that okay?  Should those dynticks_nmi_nesting++ things be local_inc
+> and local_dec_and_test?
 
->
->> So I want to associate a msi_controller finding ops with generic pci_host_bridge,
->> then every pci device could find its msi_controller/irq_domain by a
->> common function
->>
->> E.g
->>
->> struct msi_controller *pci_msi_controller(struct pci_dev *pdev)
->> {
->> 	struct msi_controller *ctrl;
->> 	struct pci_host_bridge *host = find_pci_host_bridge(pdev->bus);
->> 	if (host && host->pci_get_msi_controller)
->> 		ctrl = pci_host_bridge->pci_get_msi_controller(struct pci_dev *pdev);
->>
->> 	return ctrl;	
->> }
-> You can do this for ARM if you want (and your series already accomplishes
-> the same effect, though implemented differently).  But I don't think this
-> is appropriate for the PCI core.
+Yep, it is OK during rcu_nmi_enter() or rcu_nmi_exit().  The nested
+NMI will put the dynticks_nmi_nesting counter back where it was, so
+no chance of confusion.
 
-OK. We need a better solution, not only for arm, also need to consider 
-arm64 and
-other platforms.
+> That dynticks_nmi_nesting thing seems scary to me.  Shouldn't the code
+> unconditionally increment dynticks_nmi_nesting in rcu_nmi_enter and
+> unconditionally decrement it in rcu_nmi_exit?
 
->
-> For anybody who is on this thread but not the original, I reworked the
-> series slightly, see [1].
->
-> Bjorn
->
-> [1] http://lkml.kernel.org/r/20141121172018.GA6578@google.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+You might be able to get that to work, but the reason it is not done
+that way is because we might get an NMI while not in dyntick-idle
+state.  In that case, it would be very bad to atomically increment
+rcu_dynticks, because that would tell RCU to ignore the CPU while it
+was in the NMI handler, which is the opposite of what we want.
+
+But what did you have in mind?
+
+							Thanx, Paul
+
+> --Andy
+> 
+> >
+> >                                                         Thanx, Paul
+> >
+> >> >> Also, just to make sure: are we okay if rcu_nmi_enter() is called
+> >> >> before exception_enter if context tracking is on and we came directly
+> >> >> from userspace?
+> >> >
+> >> > If I understand correctly, this will result in context tracking invoking
+> >> > rcu_user_enter(), which will result in the rcu_dynticks counter having an
+> >> > odd value.  In that case, rcu_nmi_enter() will notice that RCU is already
+> >> > paying attention to this CPU via its check of atomic_read(&rdtp->dynticks)
+> >> > & 0x1), and will thus just return.  The matching rcu_nmi_exit() will
+> >> > notice that the nesting count is zero, and will also just return.
+> >> >
+> >> > Thus, everything works in that case.
+> >> >
+> >> > In contrast, if rcu_nmi_enter() was invoked from the idle loop, it
+> >> > would see that RCU is not paying attention to this CPU and that the
+> >> > NMI nesting depth (which rcu_nmi_enter() increments) used to be zero.
+> >> > It would then atomically increment rtdp->dynticks, forcing RCU to start
+> >> > paying attention to this CPU.  The matching rcu_nmi_exit() will see
+> >> > that the nesting count was non-zero, but became zero when decremented.
+> >> > This will cause rcu_nmi_exit() to atomically increment rtdp->dynticks,
+> >> > which will tell RCU to stop paying attention to this CPU.
+> >> >
+> >> >                                                         Thanx, Paul
+> >> >
+> >> > ------------------------------------------------------------------------
+> >> >
+> >> > rcu: Make rcu_nmi_enter() handle nesting
+> >> >
+> >> > Andy Lutomirski is introducing ISTs into x86, which from RCU's
+> >> > viewpoint are NMIs.  Because ISTs and NMIs can nest, rcu_nmi_enter()
+> >> > and rcu_nmi_exit() must now correctly handle nesting.  As luck would
+> >> > have it, rcu_nmi_exit() handles nesting but rcu_nmi_enter() does not.
+> >> > This patch therefore makes rcu_nmi_enter() handle nesting.
+> >>
+> >> Thanks.  Should I add this to v5 of my series?
+> >>
+> >> --Andy
+> >>
+> >> >
+> >> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >> >
+> >> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> >> > index 8749f43f3f05..875421aff6e3 100644
+> >> > --- a/kernel/rcu/tree.c
+> >> > +++ b/kernel/rcu/tree.c
+> >> > @@ -770,7 +770,8 @@ void rcu_nmi_enter(void)
+> >> >         if (rdtp->dynticks_nmi_nesting == 0 &&
+> >> >             (atomic_read(&rdtp->dynticks) & 0x1))
+> >> >                 return;
+> >> > -       rdtp->dynticks_nmi_nesting++;
+> >> > +       if (rdtp->dynticks_nmi_nesting++ != 0)
+> >> > +               return; /* Nested NMI/IST/whatever. */
+> >> >         smp_mb__before_atomic();  /* Force delay from prior write. */
+> >> >         atomic_inc(&rdtp->dynticks);
+> >> >         /* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
+> >> >
+> >>
+> >>
+> >>
+> >> --
+> >> Andy Lutomirski
+> >> AMA Capital Management, LLC
+> >>
+> >
+> 
+> 
+> 
+> -- 
+> Andy Lutomirski
+> AMA Capital Management, LLC
+> 
 
