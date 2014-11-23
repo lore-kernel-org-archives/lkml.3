@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224AbaKWTDo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 14:03:44 -0500
-Received: from www.linutronix.de ([62.245.132.108]:34954 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818AbaKWTDn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 14:03:43 -0500
-Date: Sun, 23 Nov 2014 20:03:37 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: Jiang Liu <jiang.liu@linux.intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Ingo Molnar <mingo@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Hierarchical irqdomains - Status update
-Message-ID: <alpine.DEB.2.11.1411231915010.6439@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1752323AbaKWTD7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 14:03:59 -0500
+Received: from mout.web.de ([212.227.17.11]:58857 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752261AbaKWTD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 14:03:57 -0500
+Message-ID: <54722F88.8050805@users.sourceforge.net>
+Date: Sun, 23 Nov 2014 20:03:36 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Joe Perches <joe@perches.com>, Andreas Noever <andreas.noever@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
+Subject: Re: thunderbolt: Deletion of unnecessary checks before the function
+ call "ring_free"
+References: <5307CAA2.8060406@users.sourceforge.net>  <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>  <530B5FB6.6010207@users.sourceforge.net>  <alpine.DEB.2.10.1402241710370.2074@hadrien>  <530C5E18.1020800@users.sourceforge.net>  <alpine.DEB.2.10.1402251014170.2080@hadrien>  <530CD2C4.4050903@users.sourceforge.net>  <alpine.DEB.2.10.1402251840450.7035@hadrien>  <530CF8FF.8080600@users.sourceforge.net>  <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>  <530DD06F.4090703@users.sourceforge.net>  <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>  <5317A59D.4@users.sourceforge.net> <546F16A5.8030405@users.sourceforge.net>  <CAMxnaaVLhKHjbzUJy5p_0n8BUprzSQ=A3sdF6iQzW_wqmq8N4A@mail.gmail.com>  <546F2E50.5040804@users.sourceforge.net>  <1416593688.6651.39.camel@perches.com>  <5471EBAC.40903@users.sourceforge.net> <1416756022.6651.45.camel@perches.com> <54720061.7010401@users.sourceforge.net> <alpine.DEB.2.02.1411231650580.2037@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1411231650580.2037@localhost6.localdomain6>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:L8XVr5Dhr3kiexaIE2sS/iAmbgKNfwbOw7fHzb+oAYJblFZQmQL
+ gZj91+dZ2lgmX/dNlZu8AYkKbwTD5Qb8YyIrNahxKn3swwP1NfxPVJqOxV0GJ9ZcrejN2OY
+ /b01UE3mTOlbV2YSe2WDY8ziILiVCVWpff3eNvo1NfCOhKJEmCriXB7IFfAJctrL6HZgczF
+ yS4emFphMdcm8VBn219jQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Folks,
+> Why not just make the static source code analysis aware of the problem?
 
-I've rebased the hierarchical irqdomain code on top of Bjorns
-msi_controller rework.
+This is also possible, of course.
 
-Changes versus the previous version:
 
-   - Bjorns new pci/mci branch. See also:
-        http://lkml.kernel.org/r/20141121172018.GA6578@google.com
+> You can treat static functions differently that non-static ones.
 
-     Thanks Bjorn for fixing that just before your vacation!
+I have added this detail to my ideas around the next fine-tuning
+for the published semantic patch approach.
 
-   - Rename of msi_mask/unmask_irq et al so it's clear that these
-     functions are PCI related and cannot be used for non PCI based
-     MSI functionality.
 
-   - Folded back fixup patches
+> There is no need to change the code.
 
-   - Added the missing parent check as reported by Suravee
+Can name space prefixes help to make source code a bit safer eventually?
 
-The branch is now immutable and you can base your patches on it.
-
-If you need to pull the branch into your tree, please let me know.
-
-Patches which are mostly touching drivers/irqchip should go through
-Jason. Please post them against irq/irqdomain. We'll either create a
-seperate branch for them or merge irq/irqdomain into irq/core.
-
-Thanks for the fruitful discussions, testing, rebasing and patience.
-
-Thanks,
-
-	tglx
+Regards,
+Markus
