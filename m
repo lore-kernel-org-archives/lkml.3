@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaKWQLV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 11:11:21 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:58556 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781AbaKWQLT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 11:11:19 -0500
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Carlo Caione <carlo@caione.org>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jerry Cao <jerry.cao@amlogic.com>,
-        Victor Wan <victor.wan@amlogic.com>,
-        Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH] ARM: dts: meson: enable Ethernet controller
-Date: Sun, 23 Nov 2014 17:08:48 +0100
-Message-Id: <1416758928-12640-1-git-send-email-b.galvani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751894AbaKWQL1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 11:11:27 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:56978 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751781AbaKWQLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 11:11:23 -0500
+Date: Sun, 23 Nov 2014 17:11:20 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Chris Mason <clm@fb.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: New crashes walking proc with Saturday's git
+Message-ID: <20141123161120.GB7070@pd.tnic>
+References: <20141123010239.GA12691@ret.masoncoding.com>
+ <1416758187.24312.12@mail.thefacebook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1416758187.24312.12@mail.thefacebook.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a node for the Ethernet controller to Meson DTS file and
-enable it on the Geniatech ATV1200 board.
+On Sun, Nov 23, 2014 at 10:56:27AM -0500, Chris Mason wrote:
+> On Sun, Nov 23, 2014 at 10:02 AM, Chris Mason <clm@fb.com> wrote:
+> >Since it looks like a race between process exit and /proc, I'll try to
+> >hammer on that for a better reproduction.  But, here's hoping that
+> >someone has already seen this one:
+> 
+> It falls over in less than 5 minutes with a fork bomb going.  I'll try to
+> bisect.
 
-Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
----
- arch/arm/boot/dts/meson.dtsi         | 11 +++++++++++
- arch/arm/boot/dts/meson6-atv1200.dts |  4 ++++
- 2 files changed, 15 insertions(+)
+I'm seeing the same thing:
+https://lkml.kernel.org/r/20141123111220.GA6436@pd.tnic
 
-diff --git a/arch/arm/boot/dts/meson.dtsi b/arch/arm/boot/dts/meson.dtsi
-index 03bcff8..4704b95 100644
---- a/arch/arm/boot/dts/meson.dtsi
-+++ b/arch/arm/boot/dts/meson.dtsi
-@@ -143,5 +143,16 @@
- 			#size-cells = <0>;
- 			status = "disabled";
- 		};
-+
-+		ethmac: ethernet@c9410000 {
-+			compatible = "amlogic,meson6-dwmac", "snps,dwmac";
-+			reg = <0xc9410000 0x10000
-+			       0xc1108108 0x4>;
-+			interrupts = <0 8 1>;
-+			interrupt-names = "macirq";
-+			clocks = <&clk81>;
-+			clock-names = "stmmaceth";
-+			status = "disabled";
-+		};
- 	};
- }; /* end of / */
-diff --git a/arch/arm/boot/dts/meson6-atv1200.dts b/arch/arm/boot/dts/meson6-atv1200.dts
-index d7d351a..1237faa 100644
---- a/arch/arm/boot/dts/meson6-atv1200.dts
-+++ b/arch/arm/boot/dts/meson6-atv1200.dts
-@@ -64,3 +64,7 @@
- &uart_AO {
- 	status = "okay";
- };
-+
-+&ethmac {
-+	status = "okay";
-+};
+Happens here after I resume from suspend to disk.
+
 -- 
-1.9.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
