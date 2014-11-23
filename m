@@ -1,37 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaKWTA3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 14:00:29 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:55716 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751419AbaKWTA2 (ORCPT
+	id S1752153AbaKWTDA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 14:03:00 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:40527 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818AbaKWTC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 14:00:28 -0500
-X-Sasl-enc: XwCZ30Md96CblXd1Zjy01MPpvQDf7AzqoTejgl3+Q/7/ 1416769226
-Date: Sun, 23 Nov 2014 11:00:25 -0800
-From: Greg KH <greg@kroah.com>
-To: Balavasu kuppusammyprathaban <kp.balavasu@gmail.com>
-Cc: linux-kernel@vger.kernel.org, andreas.dilger@intel.com,
-        oleg.drokin@intel.com
-Subject: Re: [PATCH 1/2] staging: lustre: lnet: lnet: do not initialise
- statics to 0 or NULL
-Message-ID: <20141123190025.GA9346@kroah.com>
-References: <20141123184521.GA6581@vasu-Inspiron-3542>
+	Sun, 23 Nov 2014 14:02:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141123184521.GA6581@vasu-Inspiron-3542>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1416758928-12640-1-git-send-email-b.galvani@gmail.com>
+References: <1416758928-12640-1-git-send-email-b.galvani@gmail.com>
+Date: Sun, 23 Nov 2014 20:02:57 +0100
+X-Google-Sender-Auth: -DVvJm-gRED4GAP6_lnqofs54ng
+Message-ID: <CAOQ7t2ZZn9J-b9Vw0rpq7GSSSXRPcpK8FA2nxj4S9U319cwm9w@mail.gmail.com>
+Subject: Re: [PATCH] ARM: dts: meson: enable Ethernet controller
+From: Carlo Caione <carlo@caione.org>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: Carlo Caione <carlo@caione.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Jerry Cao <jerry.cao@amlogic.com>, Victor Wan <victor.wan@amlogic.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 12:15:21AM +0530, Balavasu kuppusammyprathaban wrote:
-> This patch fixes the checkpatch.pl issue
-> Error: do not initialise statics to 0 or NULL 
-> 
-> Signed-off-by: Balavasu <kp.balavasu@gmail.com>
+On Sun, Nov 23, 2014 at 5:08 PM, Beniamino Galvani <b.galvani@gmail.com> wrote:
+> Add a node for the Ethernet controller to Meson DTS file and
+> enable it on the Geniatech ATV1200 board.
+>
+> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+> ---
+>  arch/arm/boot/dts/meson.dtsi         | 11 +++++++++++
+>  arch/arm/boot/dts/meson6-atv1200.dts |  4 ++++
+>  2 files changed, 15 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/meson.dtsi b/arch/arm/boot/dts/meson.dtsi
+> index 03bcff8..4704b95 100644
+> --- a/arch/arm/boot/dts/meson.dtsi
+> +++ b/arch/arm/boot/dts/meson.dtsi
+> @@ -143,5 +143,16 @@
+>                         #size-cells = <0>;
+>                         status = "disabled";
+>                 };
+> +
+> +               ethmac: ethernet@c9410000 {
+> +                       compatible = "amlogic,meson6-dwmac", "snps,dwmac";
+> +                       reg = <0xc9410000 0x10000
+> +                              0xc1108108 0x4>;
+> +                       interrupts = <0 8 1>;
+> +                       interrupt-names = "macirq";
+> +                       clocks = <&clk81>;
+> +                       clock-names = "stmmaceth";
+> +                       status = "disabled";
+> +               };
+>         };
+>  }; /* end of / */
+> diff --git a/arch/arm/boot/dts/meson6-atv1200.dts b/arch/arm/boot/dts/meson6-atv1200.dts
+> index d7d351a..1237faa 100644
+> --- a/arch/arm/boot/dts/meson6-atv1200.dts
+> +++ b/arch/arm/boot/dts/meson6-atv1200.dts
+> @@ -64,3 +64,7 @@
+>  &uart_AO {
+>         status = "okay";
+>  };
+> +
+> +&ethmac {
+> +       status = "okay";
+> +};
+> --
+> 1.9.1
+>
 
-You seem to have ignored everything I said in my last response to your
-previous submission, which is a bit rude, don't you think?
+Tested-by: Carlo Caione <carlo@caione.org>
 
+Thanks,
+
+-- 
+Carlo Caione
