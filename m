@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaKWNSr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 08:18:47 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:51341 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127AbaKWNSp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 08:18:45 -0500
-Content-Type: text/plain; charset=koi8-r
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH 2/4] i2c: omap: implement workaround for handling invalid BB-bit values
-From: Alexander Kochetkov <al.kochet@gmail.com>
-In-Reply-To: <20141123044306.GA19898@saruman>
-Date: Sun, 23 Nov 2014 16:18:40 +0300
-Cc: Alexander Kochetkov <al.kochet@gmail.com>, linux-omap@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1CC68911-DF20-4FF0-A08A-1A6F0B565662@gmail.com>
-References: <1416518925-20679-1-git-send-email-al.kochet@gmail.com> <1416518925-20679-3-git-send-email-al.kochet@gmail.com> <20141121160808.GM7508@saruman> <20141122132309.GC2679@katana> <B6D9B4D7-25CB-456F-88B4-EB6A53E33A9D@gmail.com> <20141122180222.GA9698@katana> <20141123044306.GA19898@saruman>
-To: balbi@ti.com
-X-Mailer: Apple Mail (2.1878.6)
+	id S1751248AbaKWNZE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 08:25:04 -0500
+Received: from mout.web.de ([212.227.17.11]:60102 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751014AbaKWNZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 08:25:02 -0500
+Message-ID: <5471E010.2090105@users.sourceforge.net>
+Date: Sun, 23 Nov 2014 14:24:32 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, trivial@kernel.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: kernel-audit: Deletion of an unnecessary check before the function
+ call "audit_log_end"
+References: <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54687F1A.1010809@users.sourceforge.net> <20141116111023.GA4905@mwanda> <20141116111446.GA4956@mwanda> <54688F15.9070703@users.sourceforge.net> <20141117073408.GC4905@mwanda> <5469B836.8030507@users.sourceforge.net> <alpine.DEB.2.02.1411231249310.2261@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1411231249310.2261@localhost6.localdomain6>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:aPjMBGAsxFTEmYd/23a4FseKlNeriVb6lvWKl4pEe3AqUL9bpDK
+ CePIhJO4MQHAai/FVMpV6LAmvkb7NW39xdZHldlYl74bBYqtHXGVSGBCYMGuFh0pblM59w/
+ p4x54V+9aStGDQo2nI2xiNHig0FgKsKYRxoOsn90kRYSUhOK//YVKpc+NtMKsGWwoHox4vH
+ QUHkV2rqepcVibdZqsR1g==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Normally, tests only hurt readability if they cannot be false or cannot be true. 
+> Making a choice apparent when there really is a choice would seem 
+> to aid understanding.
 
-23 нояб. 2014 г., в 7:43, Felipe Balbi <balbi@ti.com> написал(а):
+I agree also to such facts.
 
-> maybe there was a typo? I tested on v3.18-rc3 :-)
 
-I do my tests on kernel from angstrom with almost all i2c-omap patches backported from linux/master.
-Then I rebased them to wrong (old) kernel version and posted to the list.
+> Program analysis tools can also potentially exploit this information,
 
-Angstrom kernel is from meta-ti layer. It's the same kernel as for arago.
-http://arago-project.org/wiki/index.php/Main_Page
+The published semantic patch scripts correspond to this desire.
 
-I would really like to switch to the recent kernel, but I don't know how good codec engine (CE) is supported on it.
-Initially all ti drivers for codec engine was done for 2.6.x kernels and later some of them was ported for 3.2.x.
 
-Felipe, do you know how CE is supported on v3.18-rc3?
+> which you are so systmatically removing.
+
+I try to delete redundant checks in various function implementations as much
+as possible.
 
 Regards,
-Alexander.
-
+Markus
