@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161AbaKWIe6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 03:34:58 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:37362 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171AbaKWIe4 (ORCPT
+	id S1753175AbaKWJsx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 04:48:53 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35678 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129AbaKWJsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 03:34:56 -0500
-Message-ID: <54719C29.9070102@gmail.com>
-Date: Sun, 23 Nov 2014 16:34:49 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 23 Nov 2014 04:48:51 -0500
+Date: Sun, 23 Nov 2014 10:48:43 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Austin S Hemmelgarn <ahferroin7@gmail.com>,
+        Martin Tournoij <martin@arp242.net>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] The SIGINFO signal from BSD
+Message-ID: <20141123094843.GA26434@Nokia-N900>
+References: <1415200663.3247743.187387481.75CE9317@webmail.messagingengine.com>
+ <545A7B00.1040309@gmail.com>
+ <20141105201404.GH27083@thunk.org>
+ <20141110142200.676b5d04@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-To: Nadav Amit <nadav.amit@gmail.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm list <kvm@vger.kernel.org>, Nadav Amit <namit@cs.technion.ac.il>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: Re: [CFT PATCH 0/2] KVM: support XSAVES usage in the host
-References: <1416594678-13011-1-git-send-email-pbonzini@redhat.com> <DE9192FA-6A22-4AEB-88C2-AE17DA503685@gmail.com> <547199B3.1040303@gmail.com> <89CF39F2-660B-4999-8D4D-08E4942C58FD@gmail.com>
-In-Reply-To: <89CF39F2-660B-4999-8D4D-08E4942C58FD@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141110142200.676b5d04@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon 2014-11-10 14:22:00, One Thousand Gnomes wrote:
+> > wouldn't be accepted.  (BTW, if you're going to do this, note that ^T
+> > could be remapped to any control character via stty; so to do this we
+> > would need to define an extra index in c_cc[] array in the struct
+> > termios.)
+> 
+> We have 19 entries in the array and no platforms that byte pack so that
+> would actually be doable I think.
+> 
+> I'm really dubious about its value in the Linux world. You could do far
+> better teaching the GUI desktop to walk the process tree of clients and
+> dump the window owners process subtrees in a nice pop up window.
 
-On 11/23/14, 4:31 PM, Nadav Amit wrote:
->> On Nov 23, 2014, at 10:24, Wanpeng Li <kernellwp@gmail.com> wrote:
->>
->> Hi Nadav,
->> On 11/23/14, 4:16 PM, Nadav Amit wrote:
->>> I’ll try to check it tomorrow (I don’t have access to the failing machine at the moment).
->> If the machine you mentioned support xsaves and what's machine you are using?
-> It supports xsaves. I am using an experimental setup.
+I use ssh way too much, so yes, I'd like to see SIGINFO.
 
-Interesting, I even can't get a machine which supports xsaves.
+Forgetting to add -v to cp command line is too common.
 
-Regards,
-Wanpeng Li
+I can help testing patches :-).
 
->
-> Nadav
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
