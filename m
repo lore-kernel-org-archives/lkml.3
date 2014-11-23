@@ -1,63 +1,501 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750964AbaKWKqs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 05:46:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750763AbaKWKqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 05:46:47 -0500
-Date: Sun, 23 Nov 2014 12:46:23 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: pagupta@redhat.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        jasowang@redhat.com, dgibson@redhat.com, vfalico@gmail.com,
-        edumazet@google.com, vyasevic@redhat.com, hkchu@google.com,
-        wuzhy@linux.vnet.ibm.com, xemul@parallels.com, therbert@google.com,
-        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org,
-        jiri@resnulli.us, sergei.shtylyov@cogentembedded.com
-Subject: Re: [PATCH net-net 0/4] Increase the limit of tuntap queues
-Message-ID: <20141123104623.GA31915@redhat.com>
-References: <1416327778-17716-1-git-send-email-pagupta@redhat.com>
- <20141119.151628.768548269128919029.davem@davemloft.net>
- <20141119204427.GB30994@redhat.com>
+	id S1750893AbaKWKwM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 05:52:12 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:64087 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbaKWKwK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 05:52:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141119204427.GB30994@redhat.com>
+From: Vladimir Shebordaev <vladimir.shebordaev@gmail.com>
+Date: Sun, 23 Nov 2014 14:51:29 +0400
+Message-ID: <CAKDHXDFAt3ng=+G-YUYr9XEWD0Ota_QdCqDRfhBzQvgrC+Ew6w@mail.gmail.com>
+Subject: [RFC] proc interface to show file page cache usage details
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 10:44:27PM +0200, Michael S. Tsirkin wrote:
-> On Wed, Nov 19, 2014 at 03:16:28PM -0500, David Miller wrote:
-> > From: Pankaj Gupta <pagupta@redhat.com>
-> > Date: Tue, 18 Nov 2014 21:52:54 +0530
-> > 
-> > > - Accept maximum number of queues as sysctl param so that any user space 
-> > >   application like libvirt can use this value to limit number of queues. Also
-> > >   Administrators can specify maximum number of queues by updating this sysctl
-> > >   entry.
-> > 
-> > This is the only part I don't like.
-> > 
-> > Just let whoever has privileges to configure the tun device shoot
-> > themselves in the foot if they want to by configuring "too many"
-> > queues.
-> > 
-> > If the virtual entity runs itself out of resources by doing something
-> > stupid, it's purely their problem.
-> 
-> Well it will run host out of kernel, no?
+Hi,
 
+I would like to suggest an interface to list inodes that currently
+occupy page cache in human readable form.
 
-To clarify:
+A piece of code below creates a dedicated proc entry, namely,
+/proc/kpagecache. Upon read request it traverses all the inodes of
+each superblock and shows their page cache usage summary. It is done
+in a stateful way, so it needs to access super_blocks list and has to
+get and put superblocks on its own.
 
-At the moment attaching/detaching queues is an unpriveledged operation.
+I am not quite sure who will give a fuck. Actually, it was a task for
+my recent job interview. I still don't know what they exactly meant. I
+just think it would be anyway nice to have such an interface.
 
-Shouldn't we worry that an application can cause large
-allocations, and provide a way to limit these?
+In the hope it helps.
 
-David, could you comment on this please?
+--
+Regards,
+Vladimir
 
-> -- 
-> MST
+diff -u a/fs/proc/Makefile b/fs/proc/Makefile
+--- a/fs/proc/Makefile
++++ b/fs/proc/Makefile
+@@ -29,4 +29,4 @@ proc-$(CONFIG_NET) += proc_net.o
+ proc-$(CONFIG_PROC_KCORE) += kcore.o
+ proc-$(CONFIG_PROC_VMCORE) += vmcore.o
+ proc-$(CONFIG_PRINTK) += kmsg.o
+-proc-$(CONFIG_PROC_PAGE_MONITOR) += page.o
++proc-$(CONFIG_PROC_PAGE_MONITOR) += page.o pagecache.o
+diff -u a/fs/internal.h b/fs/internal.h
+--- a/fs/internal.h
++++ b/fs/internal.h
+@@ -88,6 +88,9 @@ extern struct dentry *mount_fs(struct file_system_type *,
+        int, const char *, void *);
+ extern struct super_block *user_get_super(dev_t);
+
++extern void __put_super(struct super_block *sb);
++extern void put_super(struct super_block *sb);
++
+ /*
+  * open.c
+  */
+diff -u a/fs/super.c b/fs/super.c
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -242,7 +242,7 @@ fail:
+ /*
+  * Drop a superblock's refcount.  The caller must hold sb_lock.
+  */
+-static void __put_super(struct super_block *sb)
++void __put_super(struct super_block *sb)
+ {
+  if (!--sb->s_count) {
+  list_del_init(&sb->s_list);
+@@ -257,7 +257,7 @@ static void __put_super(struct super_block *sb)
+  * Drops a temporary reference, frees superblock if there's no
+  * references left.
+  */
+-static void put_super(struct super_block *sb)
++void put_super(struct super_block *sb)
+ {
+  spin_lock(&sb_lock);
+  __put_super(sb);
+diff -u a/fs/proc/pagecache.c b/fs/proc/pagecache.c
+--- /dev/null
++++ b/fs/proc/pagecache.c
+@@ -0,0 +1,412 @@
++/*
++ *  fs/proc/pagecache.c
++ *
++ *  Copyright (C) 2014
++ *
++ *  Author: Vladimir Shebordaev <vshebordaev@mail.ru>
++ *
++ *  /proc/kpagecache interface to show file page cache usage
++ */
++
++#include <linux/version.h>
++#include <linux/module.h>
++#include <linux/kernel.h>
++
++#include <linux/nsproxy.h>
++#include <linux/backing-dev.h>
++#include <linux/page-flags.h>
++#include <linux/slab.h>
++#include <linux/fs.h>
++#include <linux/mm.h>
++#include <linux/path.h>
++#include <linux/fs_struct.h>
++#include <linux/mount.h>
++#include <linux/ctype.h>
++#include <linux/unistd.h>
++
++#include <linux/seq_file.h>
++#include <linux/proc_fs.h>
++#include <linux/errno.h>
++
++#include "../internal.h"
++
++#define NR_PAGES (PAGE_ALIGN(PATH_MAX) >> PAGE_SHIFT)
++#define BUFSIZE (NR_PAGES << PAGE_SHIFT)
++
++struct iter {
++ struct inode *inode;
++ char *buf;
++};
++
++struct iter *iter_next(struct iter *iter)
++{
++ struct super_block *sb, *p;
++ struct inode *inode, *prev;
++
++ inode = iter->inode;
++ prev = inode;
++ sb = inode->i_sb;
++
++ spin_lock(&inode_sb_list_lock);
++next:
++ inode = list_next_entry(inode, i_sb_list);
++check:
++ if (&inode->i_sb_list == &sb->s_inodes)
++ inode = NULL;
++ if (inode) {
++ spin_lock(&inode->i_lock);
++ if ((inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) ||
++   !(mapping_cap_writeback_dirty(inode->i_mapping)) ||
++    (inode->i_mapping->nrpages == 0) ||
++    hlist_empty(&inode->i_dentry)) {
++ spin_unlock(&inode->i_lock);
++ goto next;
++ }
++ __iget(inode);
++ spin_unlock(&inode->i_lock);
++ }
++ spin_unlock(&inode_sb_list_lock);
++
++ iput(prev);
++ prev = NULL;
++
++ if (inode)
++ goto out;
++
++ up_read(&sb->s_umount);
++ p = sb;
++ spin_lock(&sb_lock);
++retry:
++ sb = list_next_entry(sb, s_list);
++ if (&sb->s_list == &super_blocks)
++ sb = NULL;
++ if (sb) {
++ if (hlist_unhashed(&sb->s_instances))
++ goto retry;
++ sb->s_count++;
++ }
++ if (p) {
++ __put_super(p);
++ p = NULL;
++ }
++ spin_unlock(&sb_lock);
++
++ if (sb) {
++ down_read(&sb->s_umount);
++ if (!sb->s_root || !(sb->s_flags & MS_BORN) || !sb->s_bdi ||
++    !bdi_cap_writeback_dirty(sb->s_bdi)) {
++ up_read(&sb->s_umount);
++ p = sb;
++ spin_lock(&sb_lock);
++ goto retry;
++ }
++ spin_lock(&inode_sb_list_lock);
++ if (list_empty(&sb->s_inodes)) {
++ spin_unlock(&inode_sb_list_lock);
++ up_read(&sb->s_umount);
++ p = sb;
++ spin_lock(&sb_lock);
++ goto retry;
++ }
++ inode = list_first_entry(&sb->s_inodes, struct inode, i_sb_list);
++ goto check;
++ }
++out:
++ iter->inode = inode;
++ return inode ? iter : NULL;
++}
++
++struct iter *iter_first(struct iter *iter)
++{
++ struct super_block *sb, *p;
++ struct inode *inode;
++
++ inode = NULL;
++ p = NULL;
++
++ spin_lock(&sb_lock);
++ sb = list_first_entry(&super_blocks, struct super_block, s_list);
++check:
++ if (&sb->s_list == &super_blocks)
++ sb = NULL;
++ if (sb) {
++ if (hlist_unhashed(&sb->s_instances)) {
++retry:
++ sb = list_next_entry(sb, s_list);
++ goto check;
++ }
++ sb->s_count++;
++ }
++ if (p) {
++ __put_super(p);
++ p = NULL;
++ }
++ spin_unlock(&sb_lock);
++
++ if (!sb)
++ goto out;
++
++ down_read(&sb->s_umount);
++ if (!sb->s_root || !(sb->s_flags & MS_BORN) || !sb->s_bdi ||
++    !bdi_cap_writeback_dirty(sb->s_bdi)) {
++ up_read(&sb->s_umount);
++ p = sb;
++ spin_lock(&sb_lock);
++ goto retry;
++ }
++
++ spin_lock(&inode_sb_list_lock);
++ if (list_empty(&sb->s_inodes)) {
++ spin_unlock(&inode_sb_list_lock);
++ up_read(&sb->s_umount);
++ p = sb;
++ spin_lock(&sb_lock);
++ goto retry;
++ }
++
++ inode = list_first_entry(&sb->s_inodes, struct inode, i_sb_list);
++next:
++ if (&inode->i_sb_list == &sb->s_inodes) {
++ spin_unlock(&inode_sb_list_lock);
++ up_read(&sb->s_umount);
++ inode = NULL;
++ p = sb;
++ spin_lock(&sb_lock);
++ goto retry;
++ }
++
++ if (inode) {
++ spin_lock(&inode->i_lock);
++ if ((inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) ||
++   !(mapping_cap_writeback_dirty(inode->i_mapping)) ||
++    (inode->i_mapping->nrpages == 0) ||
++    hlist_empty(&inode->i_dentry)) {
++ spin_unlock(&inode->i_lock);
++ inode = list_next_entry(inode, i_sb_list);
++ goto next;
++ }
++ __iget(inode);
++ spin_unlock(&inode->i_lock);
++ }
++ spin_unlock(&inode_sb_list_lock);
++out:
++ iter->inode = inode;
++ return inode ? iter : NULL;
++}
++
++static int iter_init(struct iter *iter)
++{
++ memset(iter, 0, sizeof(*iter));
++ iter->buf = (char *)__get_free_pages(GFP_TEMPORARY, order_base_2(NR_PAGES));
++
++ return iter->buf ? 0 : -ENOMEM;
++}
++
++static void iter_destroy(struct iter *iter)
++{
++ free_pages((unsigned long)iter->buf, order_base_2(NR_PAGES));
++}
++
++struct inode_stat {
++ unsigned long nr_pages;
++ unsigned long nr_shadow;
++ unsigned long nr_dirty;
++ unsigned long nr_active;
++ unsigned long nr_mlocked;
++ unsigned long nr_locked;
++ unsigned long nr_reclaim;
++};
++
++static int get_inode_stat(struct inode *inode, struct inode_stat *stat)
++{
++ int ret;
++ void **slot;
++ struct radix_tree_iter iter;
++
++ ret = 0;
++ memset(stat, 0, sizeof(*stat));
++
++ rcu_read_lock();
++retry:
++ radix_tree_for_each_slot(slot, &inode->i_mapping->page_tree, &iter, 0) {
++ struct page *page;
++
++ page = radix_tree_deref_slot(slot);
++ if (unlikely(!page))
++ continue;
++ if (radix_tree_exception(page)) {
++ if (radix_tree_deref_retry(page))
++ goto retry;
++ /* we are to avoid swap backed mappings */
++ BUG();
++ }
++ if (PageDirty(page))
++ ++stat->nr_dirty;
++ if (PageLocked(page))
++ ++stat->nr_locked;
++ if (PageActive(page))
++ ++stat->nr_active;
++ if (PageMlocked(page))
++ ++stat->nr_mlocked;
++ if (PageReclaim(page))
++ ++stat->nr_reclaim;
++ ++ret;
++ }
++ rcu_read_unlock();
++
++ stat->nr_pages = ret;
++
++ return ret;
++}
++
++static int seq_show(struct seq_file *m, void *priv)
++{
++ int ret;
++ struct iter *iter;
++ struct inode *inode;
++ struct inode_stat stat;
++ struct path path;
++
++ if (unlikely(priv == SEQ_START_TOKEN)) {
++ seq_printf(m, "              pages               "
++      "\t              device/path\n"
++      "    lo     ml     di     ac     re  total\n");
++ return 0;
++ }
++
++ iter = priv;
++ inode = iter->inode;
++
++ ret = get_inode_stat(inode, &stat);
++ if (ret < 0)
++ goto out;
++
++ get_fs_root(current->fs, &path);
++ dput(path.dentry);
++
++ /* only the name of the last instantiated link is displayed */
++ path.dentry = hlist_entry(inode->i_dentry.first, struct dentry, d_alias);
++
++ seq_printf(m, "% 6ld % 6ld % 6ld % 6ld % 6ld % 6ld\t(%u:%u)%s\n",
++ stat.nr_locked, stat.nr_mlocked, stat.nr_dirty,
++ stat.nr_active, stat.nr_reclaim, stat.nr_pages,
++ MAJOR(inode->i_sb->s_dev),
++ MINOR(inode->i_sb->s_dev),
++ d_path(&path, iter->buf, BUFSIZE));
++
++ mntput(path.mnt);
++out:
++ return 0;
++}
++
++static void *seq_next(struct seq_file *m, void *priv, loff_t *pos)
++{
++ ++(*pos);
++ return (priv == SEQ_START_TOKEN) ?
++ iter_first(m->private) :
++ iter_next(priv);
++}
++
++static void *seq_start(struct seq_file *m, loff_t *pos)
++{
++ struct iter *iter;
++ loff_t off;
++
++ if (!*pos)
++ return SEQ_START_TOKEN;
++
++ iter = iter_first(m->private);
++
++ for (off = 1; iter && off < *pos; ++off)
++ iter = iter_next(iter);
++
++ return iter;
++}
++
++static void seq_stop(struct seq_file *m, void *priv)
++{
++ struct iter *iter;
++ struct inode *inode;
++ struct super_block *sb;
++
++ if (priv == SEQ_START_TOKEN)
++ return;
++
++ iter = priv;
++ if (!iter)
++ return;
++
++ inode = iter->inode;
++ if (inode) {
++ sb = inode->i_sb;
++ iput(inode);
++ up_read(&sb->s_umount);
++ put_super(sb);
++ }
++}
++
++static const struct seq_operations seq_ops = {
++ .start = seq_start,
++ .next = seq_next,
++ .stop = seq_stop,
++ .show = seq_show
++};
++
++static int page_cache_open(struct inode *inode, struct file *file)
++{
++ int ret;
++ struct iter *iter;
++
++ ret = -ENOMEM;
++ iter = __seq_open_private(file, &seq_ops, sizeof(*iter));
++ if (!iter)
++ goto out;
++
++ ret = iter_init(iter);
++out:
++ return ret;
++}
++
++static int page_cache_release(struct inode *inode, struct file *file)
++{
++ struct seq_file *seq;
++
++ seq = file->private_data;
++ iter_destroy(seq->private);
++ kfree(seq->private);
++ return seq_release(inode, file);
++}
++
++static const struct file_operations page_cache_fops = {
++ .open = page_cache_open,
++ .read = seq_read,
++ .llseek = seq_lseek,
++ .release = page_cache_release
++};
++
++#ifndef PROCENTRY
++#define PROCENTRY "kpagecache"
++#endif
++
++static int __init page_cache_init(void)
++{
++ int ret;
++
++ ret = -ENOENT;
++
++ if (!proc_create(PROCENTRY, S_IFREG|0400, NULL, &page_cache_fops))
++ goto out;
++
++ ret = 0;
++out:
++ return ret;
++}
++module_init(page_cache_init);
++
++static void __exit page_cache_exit(void)
++{
++ remove_proc_entry(PROCENTRY, NULL);
++}
++module_exit(page_cache_exit);
++
++MODULE_LICENSE("GPL");
++
