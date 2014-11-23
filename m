@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673AbaKWNR7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 08:17:59 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:33680 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751270AbaKWNQk (ORCPT
+	id S1751775AbaKWNSr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 08:18:47 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51341 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127AbaKWNSp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 08:16:40 -0500
-X-IronPort-AV: E=Sophos;i="5.07,443,1413237600"; 
-   d="scan'208";a="109083687"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] mptfusion: fix error return code
-Date: Sun, 23 Nov 2014 14:11:14 +0100
-Message-Id: <1416748278-22881-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1416748278-22881-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1416748278-22881-1-git-send-email-Julia.Lawall@lip6.fr>
+	Sun, 23 Nov 2014 08:18:45 -0500
+Content-Type: text/plain; charset=koi8-r
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH 2/4] i2c: omap: implement workaround for handling invalid BB-bit values
+From: Alexander Kochetkov <al.kochet@gmail.com>
+In-Reply-To: <20141123044306.GA19898@saruman>
+Date: Sun, 23 Nov 2014 16:18:40 +0300
+Cc: Alexander Kochetkov <al.kochet@gmail.com>, linux-omap@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1CC68911-DF20-4FF0-A08A-1A6F0B565662@gmail.com>
+References: <1416518925-20679-1-git-send-email-al.kochet@gmail.com> <1416518925-20679-3-git-send-email-al.kochet@gmail.com> <20141121160808.GM7508@saruman> <20141122132309.GC2679@katana> <B6D9B4D7-25CB-456F-88B4-EB6A53E33A9D@gmail.com> <20141122180222.GA9698@katana> <20141123044306.GA19898@saruman>
+To: balbi@ti.com
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Return a negative error code on failure.
+23 нояб. 2014 г., в 7:43, Felipe Balbi <balbi@ti.com> написал(а):
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+> maybe there was a typo? I tested on v3.18-rc3 :-)
 
-// <smpl>
-@@
-identifier ret; expression e1,e2;
-@@
-(
-if (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-// </smpl>
+I do my tests on kernel from angstrom with almost all i2c-omap patches backported from linux/master.
+Then I rebased them to wrong (old) kernel version and posted to the list.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Angstrom kernel is from meta-ti layer. It's the same kernel as for arago.
+http://arago-project.org/wiki/index.php/Main_Page
 
----
- drivers/message/fusion/mptfc.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+I would really like to switch to the recent kernel, but I don't know how good codec engine (CE) is supported on it.
+Initially all ti drivers for codec engine was done for 2.6.x kernels and later some of them was ported for 3.2.x.
 
-diff --git a/drivers/message/fusion/mptfc.c b/drivers/message/fusion/mptfc.c
-index d8bf84a..629df6d 100644
---- a/drivers/message/fusion/mptfc.c
-+++ b/drivers/message/fusion/mptfc.c
-@@ -1325,8 +1325,10 @@ mptfc_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		 "mptfc_wq_%d", sh->host_no);
- 	ioc->fc_rescan_work_q =
- 		create_singlethread_workqueue(ioc->fc_rescan_work_q_name);
--	if (!ioc->fc_rescan_work_q)
-+	if (!ioc->fc_rescan_work_q) {
-+		error = -ENOMEM;
- 		goto out_mptfc_probe;
-+	}
- 
- 	/*
- 	 *  Pre-fetch FC port WWN and stuff...
+Felipe, do you know how CE is supported on v3.18-rc3?
+
+Regards,
+Alexander.
 
