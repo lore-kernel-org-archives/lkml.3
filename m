@@ -1,233 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaKWWWZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 17:22:25 -0500
-Received: from 1wt.eu ([62.212.114.60]:64586 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752384AbaKWWWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 17:22:23 -0500
-Date: Sun, 23 Nov 2014 23:22:21 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Linux 2.6.32.64
-Message-ID: <20141123222221.GA18563@1wt.eu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.3i
+	id S1752583AbaKWW3M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 17:29:12 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:53670 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089AbaKWW3J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 17:29:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <1416752468-1626-5-git-send-email-pieter@boesman.nl>
+References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
+	<1416752468-1626-5-git-send-email-pieter@boesman.nl>
+Date: Sun, 23 Nov 2014 23:29:08 +0100
+Message-ID: <CAFLxGvxq3Mr9n8xMO_fPZDhrGmBh=WKyU0+RF13JBdjssX6qfw@mail.gmail.com>
+Subject: Re: [fuse-devel] [PATCH 4/6] fs/fuse: support compiling out splice
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Pieter Smith <pieter@boesman.nl>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Bertrand Jacquin <beber@meleeweb.net>, Oleg Nesterov <oleg@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Eric Dumazet <edumazet@google.com>,
+        =?UTF-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
+        Jeff Layton <jlayton@poochiereds.net>,
+        Tom Herbert <therbert@google.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, Peter Foley <pefoley2@pefoley.com>,
+        Hugh Dickins <hughd@google.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mel Gorman <mgorman@suse.de>, Matt Turner <mattst88@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Catalina Mocanu <catalina.mocanu@gmail.com>,
+        Fabian Frederick <fabf@skynet.be>, Thomas Graf <tgraf@suug.ch>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jan Beulich <JBeulich@suse.com>, Willem de Bruijn <willemb@google.com>,
+        Iulia Manda <iulia.manda21@gmail.com>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've just released Linux 2.6.32.64.
+On Sun, Nov 23, 2014 at 3:20 PM, Pieter Smith <pieter@boesman.nl> wrote:
+> To implement splice support, fs/fuse makes use of nosteal_pipe_buf_ops. This
+> struct is exported by fs/splice. The goal of the larger patch set is to
+> completely compile out fs/splice, so uses of the exported struct need to be
+> compiled out along with fs/splice.
+>
+> This patch therefore compiles out splice support in fs/fuse when
+> CONFIG_SYSCALL_SPLICE is undefined.
+>
+> Signed-off-by: Pieter Smith <pieter@boesman.nl>
+> ---
+>  fs/fuse/dev.c      | 4 ++--
+>  include/linux/fs.h | 6 ++++++
+>  2 files changed, 8 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> index ca88731..f8f92a4 100644
+> --- a/fs/fuse/dev.c
+> +++ b/fs/fuse/dev.c
+> @@ -1291,7 +1291,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
+>         return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
+>  }
+>
+> -static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
+> +static ssize_t __maybe_unused fuse_dev_splice_read(struct file *in, loff_t *ppos,
+>                                     struct pipe_inode_info *pipe,
+>                                     size_t len, unsigned int flags)
+>  {
+> @@ -2144,7 +2144,7 @@ const struct file_operations fuse_dev_operations = {
+>         .llseek         = no_llseek,
+>         .read           = do_sync_read,
+>         .aio_read       = fuse_dev_read,
+> -       .splice_read    = fuse_dev_splice_read,
+> +       .splice_read    = __splice_p(fuse_dev_splice_read),
+>         .write          = do_sync_write,
+>         .aio_write      = fuse_dev_write,
+>         .splice_write   = fuse_dev_splice_write,
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index a957d43..04c0975 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -2443,6 +2443,12 @@ extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
+>                         int datasync);
+>  extern void block_sync_page(struct page *page);
+>
+> +#ifdef CONFIG_SYSCALL_SPLICE
+> +#define __splice_p(x) x
+> +#else
+> +#define __splice_p(x) NULL
+> +#endif
+> +
 
-The patch and changelog will appear soon at the following locations:
-  https://www.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/
-  https://www.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/patch-2.6.32.64.xz
-  https://www.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/patch-2.6.32.64.gz
-  https://www.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/ChangeLog-2.6.32.64
+This needs to go into a different patch.
+One logical change per patch please. :-)
 
-The updated 2.6.32.y git tree can be found at:
-   git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
-  http://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
-
-The tree can be browsed on the gitweb interface:
-  http://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/log/?h=linux-2.6.32.y
-
-Testing status (build/boot, OK/FAIL, otherwise not tested) :
-
-         ARCH  |         CONFIGURATION
-       --------+-----------------------------------
-               |  allmodconfig     other-config
-        x86_64 |    build:OK            -
-          i386 |    build:OK            -
-           arm |      -             build:OK
-
-Thanks to those who still take care of providing fixes, and to Greg
-for the final packaging.
-
-Willy
-
----------
- Documentation/lzo.txt               | 164 ++++++++++++++++
- Makefile                            |   2 +-
- arch/arm/lib/memset.S               | 100 +++++-----
- arch/mips/include/asm/thread_info.h |   3 +
- arch/mips/kernel/scall32-o32.S      |   2 +-
- arch/mips/kernel/scall64-64.S       |   2 +-
- arch/mips/kernel/scall64-n32.S      |   2 +-
- arch/mips/kernel/scall64-o32.S      |   2 +-
- arch/x86/include/asm/ptrace.h       |  16 ++
- arch/x86/kernel/entry_32.S          |  13 +-
- drivers/char/tty_io.c               |   7 +-
- drivers/md/dm-crypt.c               |  20 +-
- drivers/md/raid5.c                  |   2 +
- drivers/net/gianfar.c               |   6 -
- drivers/net/macvlan.c               |   1 +
- drivers/net/ppp_generic.c           |   2 +-
- drivers/net/pppoe.c                 |   2 +-
- drivers/net/sunvnet.c               |  20 +-
- drivers/scsi/sym53c8xx_2/sym_hipd.c |   4 +
- drivers/usb/serial/kobil_sct.c      |   4 +-
- drivers/usb/serial/option.c         | 129 ++++++++++++-
- fs/isofs/inode.c                    |  15 +-
- fs/isofs/isofs.h                    |  23 ++-
- fs/isofs/rock.c                     |  39 ++--
- fs/namei.c                          |   1 +
- fs/nfsd/nfs4xdr.c                   |   8 +-
- fs/proc/base.c                      |   1 -
- include/linux/lzo.h                 |  15 +-
- include/linux/ptrace.h              |   3 +
- include/net/sctp/sm.h               |   6 +-
- include/sound/core.h                |   2 +
- kernel/futex.c                      |   1 +
- kernel/trace/ring_buffer.c          |  12 +-
- lib/lzo/lzo1x_compress.c            | 335 ++++++++++++++++++--------------
- lib/lzo/lzo1x_decompress.c          | 370 +++++++++++++++++++-----------------
- lib/lzo/lzodefs.h                   |  38 ++--
- mm/mlock.c                          |   2 +
- mm/rmap.c                           |  14 +-
- net/appletalk/ddp.c                 |   3 -
- net/compat.c                        |   9 +-
- net/core/filter.c                   |   8 +-
- net/core/iovec.c                    |  10 +-
- net/core/skbuff.c                   |   2 +-
- net/ipv4/igmp.c                     |  10 +-
- net/ipv4/ip_options.c               |   4 +
- net/ipv4/tcp_input.c                |   2 +-
- net/ipv4/tcp_vegas.c                |   3 +-
- net/ipv4/tcp_veno.c                 |   2 +-
- net/netfilter/nfnetlink_log.c       |  14 +-
- net/sctp/associola.c                |  17 +-
- net/sctp/output.c                   |   2 +-
- net/sctp/sm_make_chunk.c            | 100 +++++-----
- net/sctp/sm_statefuns.c             |  18 +-
- net/sctp/ulpevent.c                 | 122 ++----------
- sound/core/control.c                |  38 +++-
- sound/core/init.c                   |   1 +
- 56 files changed, 1092 insertions(+), 661 deletions(-)
-
-Summary of changes from 2.6.32.63 to 2.6.32.64
-==============================================
-Al Viro (2):
-      fix autofs/afs/etc. magic mountpoint breakage
-      fix misuses of f_count() in ppp and netlink
-
-Andrey Ryabinin (1):
-      net: sendmsg: fix NULL pointer dereference
-
-Andrey Utkin (1):
-      appletalk: Fix socket referencing in skb
-
-Andy Lutomirski (1):
-      x86_32, entry: Do syscall exit work on badsys (CVE-2014-4508)
-
-Christoph Paasch (2):
-      tcp: Fix integer-overflows in TCP veno
-      tcp: Fix integer-overflow in TCP vegas
-
-Christoph Schulz (1):
-      net: pppoe: use correct channel MTU when using Multilink PPP
-
-Daniel Borkmann (3):
-      net: sctp: fix information leaks in ulpevent layer
-      net: sctp: inherit auth_capable on INIT collisions
-      net: sctp: fix skb_over_panic when receiving malformed ASCONF chunks
-
-Eric Dumazet (2):
-      ipv4: fix buffer overflow in ip_options_compile()
-      sctp: fix possible seqlock seadlock in sctp_packet_transmit()
-
-Florian Westphal (2):
-      netfilter: nf_log: account for size of NLMSG_DONE attribute
-      netfilter: nfnetlink_log: fix maximum packet length logged to userspace
-
-Ivan Djelic (1):
-      ARM: 7668/1: fix memset-related crashes caused by recent GCC (4.7.2) optimizations
-
-Jan Kara (1):
-      isofs: Fix unbounded recursion when processing relocated directories
-
-Johan Hovold (1):
-      USB: kobil_sct: fix non-atomic allocation in write path
-
-Lars-Peter Clausen (3):
-      ALSA: control: Make sure that id->index does not overflow
-      ALSA: control: Handle numid overflow
-      ALSA: control: Protect user controls against concurrent access
-
-Markos Chandras (1):
-      MIPS: asm: thread_info: Add _TIF_SECCOMP flag
-
-Markus F.X.J. Oberhumer (1):
-      lib/lzo: Update LZO compression to current upstream version
-
-Mathias Krause (1):
-      filter: prevent nla extensions to peek beyond the end of the message
-
-Mikulas Patocka (2):
-      sym53c8xx_2: Set DID_REQUEUE return code when aborting squeue
-      dm crypt: fix access beyond the end of allocated space
-
-Neal Cardwell (1):
-      tcp: fix tcp_match_skb_to_sack() for unaligned SACK at end of an skb
-
-NeilBrown (1):
-      md/raid6: avoid data corruption during recovery of double-degraded RAID6
-
-Nicolas Pitre (1):
-      ARM: 7670/1: fix the memset fix
-
-Peter Hurley (1):
-      tty: Fix high cpu load if tty is unreleaseable
-
-Ralf Baechle (1):
-      MIPS: Cleanup flags in syscall flags handlers.
-
-Rui li (1):
-      USB: add new zte 3g-dongle's pid to option.c
-
-Sasha Levin (1):
-      iovec: make sure the caller actually wants anything in memcpy_fromiovecend
-
-Sowmini Varadhan (1):
-      sunvnet: clean up objects created in vnet_new() on vnet_exit()
-
-Stefan Bader (1):
-      x86_32, entry: Clean up sysenter_badsys declaration
-
-Steven Rostedt (Red Hat) (1):
-      ring-buffer: Always reset iterator to reader page
-
-Sven Wegener (1):
-      x86_32, entry: Store badsys error code in %eax
-
-Tejun Heo (1):
-      ptrace,x86: force IRET path after a ptrace_stop()
-
-Thomas Gleixner (1):
-      futex: Unlock hb->lock in futex_wait_requeue_pi() error path
-
-Vlad Yasevich (2):
-      macvlan: Initialize vlan_features to turn on offload support.
-      net: Correctly set segment mac_len in skb_segment().
-
-Vlastimil Babka (1):
-      mm: try_to_unmap_cluster() should lock_page() before mlocking
-
-Willy Tarreau (4):
-      Revert "nfsd: correctly handle return value from nfsd_map_name_to_*"
-      Documentation: lzo: document part of the encoding
-      lzo: check for length overrun in variable length encoding.
-      Linux 2.6.32.64
-
-Xufeng Zhang (1):
-      sctp: Fix sk_ack_backlog wrap-around problem
-
-Zhu Yanjun (2):
-      gianfar: disable vlan tag insertion by default
-      sctp: not send SCTP_PEER_ADDR_CHANGE notifications with failed probe
-
-dingtianhong (1):
-      igmp: fix the problem when mc leave group
-
+-- 
+Thanks,
+//richard
