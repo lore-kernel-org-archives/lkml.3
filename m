@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192AbaKWTnw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 14:43:52 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:60236 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419AbaKWTnu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 14:43:50 -0500
-X-Originating-IP: 50.43.41.112
-Date: Sun, 23 Nov 2014 11:43:26 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: David Miller <davem@davemloft.net>
-Cc: pieter@boesman.nl, alexander.h.duyck@intel.com, viro@zeniv.linux.org.uk,
-        ast@plumgrid.com, akpm@linux-foundation.org, beber@meleeweb.net,
-        catalina.mocanu@gmail.com, dborkman@redhat.com, edumazet@google.com,
-        ebiederm@xmission.com, fabf@skynet.be,
-        fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
-        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
-        bfields@fieldses.org, jlayton@poochiereds.net,
-        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mcgrof@suse.com, mattst88@gmail.com,
-        mgorman@suse.de, mst@redhat.com, miklos@szeredi.hu,
-        netdev@vger.kernel.org, oleg@redhat.com, Paul.Durrant@citrix.com,
-        paulmck@linux.vnet.ibm.com, pefoley2@pefoley.com, tgraf@suug.ch,
-        therbert@google.com, willemb@google.com,
-        xiaoguangrong@linux.vnet.ibm.com, zhenglong.cai@cs2c.com.cn
-Subject: Re: [PATCH 0/6] kernel tinification: optionally compile out splice
- family of syscalls (splice, vmsplice, tee and sendfile)
-Message-ID: <20141123194326.GB8517@thin>
-References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
- <20141123.134623.2061031332250984539.davem@davemloft.net>
+	id S1752244AbaKWT5M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 14:57:12 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:49868 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751419AbaKWT5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 14:57:11 -0500
+Date: Sun, 23 Nov 2014 20:57:08 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Chris Clayton <chris2553@googlemail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Junjie Mao <eternal.n08@gmail.com>, Kees Cook <keescook@chromium.org>,
+        x86-ml <x86@kernel.org>
+Subject: Re: [PATCH]: cross-compiling x86_64 kernel on i386 user-space fails
+Message-ID: <20141123195708.GA7355@pd.tnic>
+References: <54705C8E.1080400@googlemail.com>
+ <20141122111444.GA12445@pd.tnic>
+ <alpine.DEB.2.11.1411232020020.6439@nanos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141123.134623.2061031332250984539.davem@davemloft.net>
+In-Reply-To: <alpine.DEB.2.11.1411232020020.6439@nanos>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 23, 2014 at 01:46:23PM -0500, David Miller wrote:
-> Truly removing sendfile/sendpage means that you can't even compile NFS
-> into the tree.
+On Sun, Nov 23, 2014 at 08:27:24PM +0100, Thomas Gleixner wrote:
+> While that works, this wants to be:
+> 
+> +RUN_SIZE = $(shell $(OBJDUMP) -h vmlinux | \
 
-If you mean the in-kernel nfsd (CONFIG_NFSD), that already has a large
-stack of "select" and "depends on", both directly and indirectly; adding
-a "select SPLICE_SYSCALL" to it seems fine.  (That select does need
-adding, though.  Pieter, you need to test-compile more than just
-tinyconfig and defconfig.  Try an allyesconfig with *just* splice turned
-off, and make sure that compiles.)
+Ah, true:
 
-Given the requirements of running a file server in the kernel, I'd
-expect CONFIG_NFSD to end up with several more selects of optional
-functionality in the future.  It seems rather likely that the average
-embedded system will be compiling out NFS. :)
+$ git grep OBJDUMP Makefile
+Makefile:363:OBJDUMP            = $(CROSS_COMPILE)objdump
+Makefile:420:export CPP AR NM STRIP OBJCOPY OBJDUMP
+Makefile:1483:  $(OBJDUMP) -d vmlinux $$(find . -name '*.ko') | \
 
-Also, this patch series compiles out splice and sendfile, including
-several *users* of sendpage; it doesn't compile out the sendpage
-support/infrastructure itself.
+Thanks.
 
-- Josh Triplett
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
