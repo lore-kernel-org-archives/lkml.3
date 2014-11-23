@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaKXU0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:26:35 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50178 "EHLO
+	id S1751768AbaKXU1A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:27:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50302 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433AbaKXU03 (ORCPT
+	with ESMTP id S1751412AbaKXU06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:26:29 -0500
-Date: Sun, 23 Nov 2014 10:08:48 -0800
+	Mon, 24 Nov 2014 15:26:58 -0500
+Date: Sun, 23 Nov 2014 10:11:28 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-d31eb342409b24e3d2e1989c775f3361e93acc08@git.kernel.org>
-Cc: jiang.liu@linux.intel.com, tglx@linutronix.de, bhelgaas@google.com,
-        matthias.bgg@gmail.com, marc.zyngier@arm.com, wangyijing@huawei.com,
-        hpa@zytor.com, tony.luck@intel.com, bp@alien8.de,
-        linux-kernel@vger.kernel.org, mingo@kernel.org,
-        yingjoe.chen@mediatek.com, agordeev@redhat.com,
-        grant.likely@linaro.org
-Reply-To: grant.likely@linaro.org, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, bp@alien8.de, tony.luck@intel.com,
-        yingjoe.chen@mediatek.com, agordeev@redhat.com, matthias.bgg@gmail.com,
-        wangyijing@huawei.com, hpa@zytor.com, marc.zyngier@arm.com,
-        jiang.liu@linux.intel.com, tglx@linutronix.de, bhelgaas@google.com
-In-Reply-To: <1416061447-9472-6-git-send-email-jiang.liu@linux.intel.com>
-References: <1416061447-9472-6-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-36d727310cb9f85efb5ac089ffb1797e7c3538e1@git.kernel.org>
+Cc: bhelgaas@google.com, tglx@linutronix.de, grant.likely@linaro.org,
+        matthias.bgg@gmail.com, marc.zyngier@arm.com, hpa@zytor.com,
+        wangyijing@huawei.com, yingjoe.chen@mediatek.com, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org, bp@alien8.de, benh@kernel.crashing.org,
+        jiang.liu@linux.intel.com, mingo@kernel.org
+Reply-To: tglx@linutronix.de, bhelgaas@google.com, grant.likely@linaro.org,
+        matthias.bgg@gmail.com, bp@alien8.de, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, benh@kernel.crashing.org, jiang.liu@linux.intel.com,
+        hpa@zytor.com, marc.zyngier@arm.com, tony.luck@intel.com,
+        yingjoe.chen@mediatek.com, wangyijing@huawei.com
+In-Reply-To: <1416061447-9472-4-git-send-email-jiang.liu@linux.intel.com>
+References: <1416061447-9472-4-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/irqdomain] PCI/MSI:
-  Introduce helpers to hide struct msi_desc implementation details
-Git-Commit-ID: d31eb342409b24e3d2e1989c775f3361e93acc08
+Subject: [tip:irq/irqdomain] irqdomain:
+  Implement a method to automatically call parent domains alloc/free
+Git-Commit-ID: 36d727310cb9f85efb5ac089ffb1797e7c3538e1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -39,18 +38,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d31eb342409b24e3d2e1989c775f3361e93acc08
-Gitweb:     http://git.kernel.org/tip/d31eb342409b24e3d2e1989c775f3361e93acc08
+Commit-ID:  36d727310cb9f85efb5ac089ffb1797e7c3538e1
+Gitweb:     http://git.kernel.org/tip/36d727310cb9f85efb5ac089ffb1797e7c3538e1
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Sat, 15 Nov 2014 22:24:03 +0800
+AuthorDate: Sat, 15 Nov 2014 22:24:01 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sun, 23 Nov 2014 13:01:45 +0100
+CommitDate: Sun, 23 Nov 2014 13:01:46 +0100
 
-PCI/MSI: Introduce helpers to hide struct msi_desc implementation details
+irqdomain: Implement a method to automatically call parent domains alloc/free
 
-Introduce helpers to hide struct msi_desc implementation details,
-so we could easily support non-PCI-compliant MSI devices later by
-moving msi_list into struct device.
+Add a flags to irq_domain.flags to control whether the irqdomain core
+should automatically call parent irqdomain's alloc/free callbacks. It
+help to reduce hierarchy irqdomains users' code size.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Tony Luck <tony.luck@intel.com>
@@ -61,41 +60,169 @@ Cc: Marc Zyngier <marc.zyngier@arm.com>
 Cc: Yijing Wang <wangyijing@huawei.com>
 Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
 Cc: Borislav Petkov <bp@alien8.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Link: http://lkml.kernel.org/r/1416061447-9472-6-git-send-email-jiang.liu@linux.intel.com
+Link: http://lkml.kernel.org/r/1416061447-9472-4-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/msi.h | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ include/linux/irqdomain.h | 24 ++++++--------
+ kernel/irq/irqdomain.c    | 82 +++++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 89 insertions(+), 17 deletions(-)
 
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 1dcad0c..e0d0851 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -43,6 +43,25 @@ struct msi_desc {
- 	struct msi_msg msg;
- };
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index 7aca1ad..dd2709b 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -134,6 +134,9 @@ enum {
+ 	/* Irq domain is hierarchical */
+ 	IRQ_DOMAIN_FLAG_HIERARCHY	= (1 << 0),
  
-+/* Helpers to hide struct msi_desc implementation details */
-+#define msi_desc_to_dev(desc)		(&(desc)->dev.dev)
-+#define dev_to_msi_list(dev)		(&to_pci_dev((dev))->msi_list)
-+#define first_msi_entry(dev)		\
-+	list_first_entry(dev_to_msi_list((dev)), struct msi_desc, list)
-+#define for_each_msi_entry(desc, dev)	\
-+	list_for_each_entry((desc), dev_to_msi_list((dev)), list)
++	/* Core calls alloc/free recursive through the domain hierarchy. */
++	IRQ_DOMAIN_FLAG_AUTO_RECURSIVE	= (1 << 1),
 +
-+#ifdef CONFIG_PCI_MSI
-+#define first_pci_msi_entry(pdev)	first_msi_entry(&(pdev)->dev)
-+#define for_each_pci_msi_entry(desc, pdev)	\
-+	for_each_msi_entry((desc), &(pdev)->dev)
-+
-+static inline struct pci_dev *msi_desc_to_pci_dev(struct msi_desc *desc)
+ 	/*
+ 	 * Flags starting from IRQ_DOMAIN_FLAG_NONCORE are reserved
+ 	 * for implementation specific purposes and ignored by the
+@@ -285,22 +288,13 @@ extern void irq_domain_free_irqs_common(struct irq_domain *domain,
+ extern void irq_domain_free_irqs_top(struct irq_domain *domain,
+ 				     unsigned int virq, unsigned int nr_irqs);
+ 
+-static inline int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
+-					       unsigned int irq_base,
+-					       unsigned int nr_irqs, void *arg)
+-{
+-	if (domain->parent && domain->parent->ops->alloc)
+-		return domain->parent->ops->alloc(domain->parent, irq_base,
+-						  nr_irqs, arg);
+-	return -ENOSYS;
+-}
++extern int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
++					unsigned int irq_base,
++					unsigned int nr_irqs, void *arg);
+ 
+-static inline void irq_domain_free_irqs_parent(struct irq_domain *domain,
+-				unsigned int irq_base, unsigned int nr_irqs)
+-{
+-	if (domain->parent && domain->parent->ops->free)
+-		domain->parent->ops->free(domain->parent, irq_base, nr_irqs);
+-}
++extern void irq_domain_free_irqs_parent(struct irq_domain *domain,
++					unsigned int irq_base,
++					unsigned int nr_irqs);
+ 
+ static inline bool irq_domain_is_hierarchy(struct irq_domain *domain)
+ {
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 4e62832..9c88db7 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -960,6 +960,43 @@ void irq_domain_free_irqs_top(struct irq_domain *domain, unsigned int virq,
+ 	irq_domain_free_irqs_common(domain, virq, nr_irqs);
+ }
+ 
++static bool irq_domain_is_auto_recursive(struct irq_domain *domain)
 +{
-+	return desc->dev;
++	return domain->flags & IRQ_DOMAIN_FLAG_AUTO_RECURSIVE;
 +}
-+#endif /* CONFIG_PCI_MSI */
 +
- void __pci_read_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
- void __pci_write_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
- void pci_write_msi_msg(unsigned int irq, struct msi_msg *msg);
++static void irq_domain_free_irqs_recursive(struct irq_domain *domain,
++					   unsigned int irq_base,
++					   unsigned int nr_irqs)
++{
++	domain->ops->free(domain, irq_base, nr_irqs);
++	if (irq_domain_is_auto_recursive(domain)) {
++		BUG_ON(!domain->parent);
++		irq_domain_free_irqs_recursive(domain->parent, irq_base,
++					       nr_irqs);
++	}
++}
++
++static int irq_domain_alloc_irqs_recursive(struct irq_domain *domain,
++					   unsigned int irq_base,
++					   unsigned int nr_irqs, void *arg)
++{
++	int ret = 0;
++	struct irq_domain *parent = domain->parent;
++	bool recursive = irq_domain_is_auto_recursive(domain);
++
++	BUG_ON(recursive && !parent);
++	if (recursive)
++		ret = irq_domain_alloc_irqs_recursive(parent, irq_base,
++						      nr_irqs, arg);
++	if (ret >= 0)
++		ret = domain->ops->alloc(domain, irq_base, nr_irqs, arg);
++	if (ret < 0 && recursive)
++		irq_domain_free_irqs_recursive(parent, irq_base, nr_irqs);
++
++	return ret;
++}
++
+ /**
+  * __irq_domain_alloc_irqs - Allocate IRQs from domain
+  * @domain:	domain to allocate from
+@@ -1016,7 +1053,7 @@ int __irq_domain_alloc_irqs(struct irq_domain *domain, int irq_base,
+ 	}
+ 
+ 	mutex_lock(&irq_domain_mutex);
+-	ret = domain->ops->alloc(domain, virq, nr_irqs, arg);
++	ret = irq_domain_alloc_irqs_recursive(domain, virq, nr_irqs, arg);
+ 	if (ret < 0) {
+ 		mutex_unlock(&irq_domain_mutex);
+ 		goto out_free_irq_data;
+@@ -1051,7 +1088,7 @@ void irq_domain_free_irqs(unsigned int virq, unsigned int nr_irqs)
+ 	mutex_lock(&irq_domain_mutex);
+ 	for (i = 0; i < nr_irqs; i++)
+ 		irq_domain_remove_irq(virq + i);
+-	data->domain->ops->free(data->domain, virq, nr_irqs);
++	irq_domain_free_irqs_recursive(data->domain, virq, nr_irqs);
+ 	mutex_unlock(&irq_domain_mutex);
+ 
+ 	irq_domain_free_irq_data(virq, nr_irqs);
+@@ -1059,6 +1096,47 @@ void irq_domain_free_irqs(unsigned int virq, unsigned int nr_irqs)
+ }
+ 
+ /**
++ * irq_domain_alloc_irqs_parent - Allocate interrupts from parent domain
++ * @irq_base:	Base IRQ number
++ * @nr_irqs:	Number of IRQs to allocate
++ * @arg:	Allocation data (arch/domain specific)
++ *
++ * Check whether the domain has been setup recursive. If not allocate
++ * through the parent domain.
++ */
++int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
++				 unsigned int irq_base, unsigned int nr_irqs,
++				 void *arg)
++{
++	/* irq_domain_alloc_irqs_recursive() has called parent's alloc() */
++	if (irq_domain_is_auto_recursive(domain))
++		return 0;
++
++	domain = domain->parent;
++	if (domain)
++		return irq_domain_alloc_irqs_recursive(domain, irq_base,
++						       nr_irqs, arg);
++	return -ENOSYS;
++}
++
++/**
++ * irq_domain_free_irqs_parent - Free interrupts from parent domain
++ * @irq_base:	Base IRQ number
++ * @nr_irqs:	Number of IRQs to free
++ *
++ * Check whether the domain has been setup recursive. If not free
++ * through the parent domain.
++ */
++void irq_domain_free_irqs_parent(struct irq_domain *domain,
++				 unsigned int irq_base, unsigned int nr_irqs)
++{
++	/* irq_domain_free_irqs_recursive() will call parent's free */
++	if (!irq_domain_is_auto_recursive(domain) && domain->parent)
++		irq_domain_free_irqs_recursive(domain->parent, irq_base,
++					       nr_irqs);
++}
++
++/**
+  * irq_domain_activate_irq - Call domain_ops->activate recursively to activate
+  *			     interrupt
+  * @irq_data:	outermost irq_data associated with interrupt
