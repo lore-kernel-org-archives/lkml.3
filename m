@@ -1,113 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583AbaKWW3M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 17:29:12 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:53670 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089AbaKWW3J (ORCPT
+	id S1752603AbaKWWv7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 17:51:59 -0500
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:63835 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488AbaKWWv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 17:29:09 -0500
+	Sun, 23 Nov 2014 17:51:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <1416752468-1626-5-git-send-email-pieter@boesman.nl>
-References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
-	<1416752468-1626-5-git-send-email-pieter@boesman.nl>
-Date: Sun, 23 Nov 2014 23:29:08 +0100
-Message-ID: <CAFLxGvxq3Mr9n8xMO_fPZDhrGmBh=WKyU0+RF13JBdjssX6qfw@mail.gmail.com>
-Subject: Re: [fuse-devel] [PATCH 4/6] fs/fuse: support compiling out splice
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Pieter Smith <pieter@boesman.nl>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Bertrand Jacquin <beber@meleeweb.net>, Oleg Nesterov <oleg@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Eric Dumazet <edumazet@google.com>,
-        =?UTF-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
-        Jeff Layton <jlayton@poochiereds.net>,
-        Tom Herbert <therbert@google.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, Peter Foley <pefoley2@pefoley.com>,
-        Hugh Dickins <hughd@google.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mel Gorman <mgorman@suse.de>, Matt Turner <mattst88@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Catalina Mocanu <catalina.mocanu@gmail.com>,
-        Fabian Frederick <fabf@skynet.be>, Thomas Graf <tgraf@suug.ch>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jan Beulich <JBeulich@suse.com>, Willem de Bruijn <willemb@google.com>,
-        Iulia Manda <iulia.manda21@gmail.com>,
-        "open list:ABI/API" <linux-api@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+In-Reply-To: <20141122080515.1fbd62ef@gandalf.local.home>
+References: <20141121095037.2f5a4d4f@gandalf.local.home>
+	<CA+55aFx3AZpdU2YxFrNXvhWqJ2PyhyQBqTi7v_9hGH1UV-aY4g@mail.gmail.com>
+	<20141122080515.1fbd62ef@gandalf.local.home>
+Date: Sun, 23 Nov 2014 14:51:57 -0800
+X-Google-Sender-Auth: aecrTZOht-e1byeYh931gWOt-lg
+Message-ID: <CA+55aFwF+qCGSKdGaEgW4p6N65GZ5_XTV=1NbtWDvxnd5yYLiw@mail.gmail.com>
+Subject: Re: [GIT PULL] ftrace/x86: Add frames pointers to trampoline as necessary
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 23, 2014 at 3:20 PM, Pieter Smith <pieter@boesman.nl> wrote:
-> To implement splice support, fs/fuse makes use of nosteal_pipe_buf_ops. This
-> struct is exported by fs/splice. The goal of the larger patch set is to
-> completely compile out fs/splice, so uses of the exported struct need to be
-> compiled out along with fs/splice.
+On Sat, Nov 22, 2014 at 5:05 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
 >
-> This patch therefore compiles out splice support in fs/fuse when
-> CONFIG_SYSCALL_SPLICE is undefined.
->
-> Signed-off-by: Pieter Smith <pieter@boesman.nl>
-> ---
->  fs/fuse/dev.c      | 4 ++--
->  include/linux/fs.h | 6 ++++++
->  2 files changed, 8 insertions(+), 2 deletions(-)
->
-> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-> index ca88731..f8f92a4 100644
-> --- a/fs/fuse/dev.c
-> +++ b/fs/fuse/dev.c
-> @@ -1291,7 +1291,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
->         return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
->  }
->
-> -static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
-> +static ssize_t __maybe_unused fuse_dev_splice_read(struct file *in, loff_t *ppos,
->                                     struct pipe_inode_info *pipe,
->                                     size_t len, unsigned int flags)
->  {
-> @@ -2144,7 +2144,7 @@ const struct file_operations fuse_dev_operations = {
->         .llseek         = no_llseek,
->         .read           = do_sync_read,
->         .aio_read       = fuse_dev_read,
-> -       .splice_read    = fuse_dev_splice_read,
-> +       .splice_read    = __splice_p(fuse_dev_splice_read),
->         .write          = do_sync_write,
->         .aio_write      = fuse_dev_write,
->         .splice_write   = fuse_dev_splice_write,
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index a957d43..04c0975 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2443,6 +2443,12 @@ extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
->                         int datasync);
->  extern void block_sync_page(struct page *page);
->
-> +#ifdef CONFIG_SYSCALL_SPLICE
-> +#define __splice_p(x) x
-> +#else
-> +#define __splice_p(x) NULL
-> +#endif
-> +
+> Honestly, I did it this way because it was the simplest way to do it.
 
-This needs to go into a different patch.
-One logical change per patch please. :-)
+So the thing is, I already dislike the whole setup, and your patch
+just makes it worse.
 
--- 
-Thanks,
-//richard
+And part of the problem is that there is *already* too many stupid
+layers of indirection, and "setup" macros.
+
+And yes, they really look pretty stupid.
+
+There's MCOUNT_SAVE_FRAME, which is supposed to create a frame, but,
+as you found out, doesn't actually do a good job of creating a real
+frame, despite its name.
+
+It's also in a really stupid place, excuse my french. Why is it in
+that header file?
+
+Then there's "ftrace_caller_setup", which uses MCOUNT_SAVE_FRAME, and
+sets up %rsi/rdi to have the parent/rip stuff.
+
+And that one does a particularly bad job *too*, since it's used in
+only two of the four places that want this, with the other two doing
+the whole thing by hand (look for things like
+
+        movq RIP(%rsp), %rsi
+        subq $MCOUNT_INSN_SIZE, %rsi
+
+being duplicated..)
+
+And it's also being particularly stupid about this all, because of the
+horrible MCOUNT_SAVE_FRAME placement somewhere else. That
+MCOUNT_SAVE_FRAME macro actually loads that %rip value into %rdx, but
+because of the extra indirection and odd extra macro in a header file
+(even though that one *.S file is the only apparent user),
+"ftrace_caller_setup" doesn't actually realize that, and instead just
+reloads it from where the previous macro just saved it. So the code it
+generates just looks bad too.
+
+And now your patch adds a *third* macro, to make up for the fact that
+the first macro did a bad job.
+
+You already have too many of these macros, and they are already ugly.
+Why not just *fix* the existing macro, instead of adding yet another
+layer of confusion and horror?
+
+> If you want, I can add more comments to explain all this.
+
+I'd really prefer the underlying problem to be fixed, not more
+explanations for odd code choices.
+
+Why can't MCOUNT_SAVE_FRAME just save the frame right? Maybe even do
+it unconditionally - the cost of setting up a frame is not that huge,
+and it might be better to have more understandable code and avoid yet
+another ifdef for a config option.
+
+And while at it, why not move it to where it's used, and maybe make it
+not scream?
+
+And maybe "ftrace_caller_setup" could be fixed so that the two cases
+that now do that magic MCOUNT_INSN_SIZE stuff could use it?
+
+Looking at that file, I just get the heebie-jeebies. It's like a
+Halloween house of horrors of macros and #ifdefs. I'd really prefer
+for a fix to not just be band-aid that makes it even worse.
+
+                   Linus
