@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983AbaKWBD0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 20:03:26 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:42008 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939AbaKWBDZ (ORCPT
+	id S1753080AbaKWB1T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 20:27:19 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:34829 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838AbaKWB1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 20:03:25 -0500
-Message-ID: <54713254.9020601@gmail.com>
-Date: Sun, 23 Nov 2014 09:03:16 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>
-Subject: Re: [PATCH v7 6/7] sched: replace capacity_factor by usage
-References: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org> <1412684017-16595-7-git-send-email-vincent.guittot@linaro.org> <20141009121643.GQ4750@worktop.programming.kicks-ass.net> <CAKfTPtCX687FkGgxLO7spfGvDxhDWeFDERLRZ-NakO2Jrpmnhw@mail.gmail.com>
-In-Reply-To: <CAKfTPtCX687FkGgxLO7spfGvDxhDWeFDERLRZ-NakO2Jrpmnhw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sat, 22 Nov 2014 20:27:16 -0500
+Message-ID: <1416706034.17888.9.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: net: Hyper-V: Deletion of an unnecessary check before the
+ function call "vfree"
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: David Miller <davem@davemloft.net>, Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Date: Sat, 22 Nov 2014 17:27:14 -0800
+In-Reply-To: <54712F8C.10206@users.sourceforge.net>
+References: <546DF9D7.6080801@users.sourceforge.net>
+		<20141121.151503.1986113223309494197.davem@davemloft.net>
+		<546FB98E.5070703@users.sourceforge.net>
+	 <20141121.172705.540279259389643572.davem@davemloft.net>
+	 <54712F8C.10206@users.sourceforge.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
-On 10/9/14, 10:18 PM, Vincent Guittot wrote:
-> On 9 October 2014 14:16, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Tue, Oct 07, 2014 at 02:13:36PM +0200, Vincent Guittot wrote:
->>> +static inline bool
->>> +group_has_capacity(struct lb_env *env, struct sg_lb_stats *sgs)
->>>   {
->>> +     if ((sgs->group_capacity * 100) >
->>> +                     (sgs->group_usage * env->sd->imbalance_pct))
->>> +             return true;
->> Why the imb_pct there? We're looking for 100% utilization, not 130 or
->> whatnot, right?
-> Having exactly 100% is quite difficult because of various rounding.
+On Sun, 2014-11-23 at 01:51 +0100, SF Markus Elfring wrote:
+> > This has nothing to do with me asking you to frame your patches
+> > against the correct tree.
+> 
+> I imagine than someone other can also pick up this update suggestion
+> (a simple change of two lines) quicker before I might try another
+> software build again from a different commit as a base.
 
-Could you give some examples about the various rounding？
+I have no idea why someone would do that.
 
-Regards,
-Wanpeng Li
+If you don't bother resubmit, nobody will.
 
-> So i have added a margin/threshold to prevent any excessive change of the state.
-> I have just to use the same margin/threshold than in other place in
-> load balance.
->
-> so the current threshold depends of the sched_level. it's around 14% at MC level
->
->>> +     if (sgs->sum_nr_running < sgs->group_weight)
->>> +             return true;
->> With the code as it stands, this is the cheaper test (no mults) so why
->> is it second?
->>
->>> +     return false;
->>> +}
->>>
->>> +static inline bool
->>> +group_is_overloaded(struct lb_env *env, struct sg_lb_stats *sgs)
->>> +{
->>> +     if (sgs->sum_nr_running <= sgs->group_weight)
->>> +             return false;
->>> +
->>> +     if ((sgs->group_capacity * 100) <
->>> +                     (sgs->group_usage * env->sd->imbalance_pct))
->>> +             return true;
->>>
->>> +     return false;
->>>   }
->> Same thing here wrt imb_pct
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
