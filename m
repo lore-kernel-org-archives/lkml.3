@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010AbaKWArI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 19:47:08 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:54234 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686AbaKWArH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 19:47:07 -0500
-Date: Sat, 22 Nov 2014 16:47:04 -0800
-From: Shaohua Li <shli@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@fb.com>,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: Re: [PATCH percpu/for-3.18-fixes] percpu-ref: fix DEAD flag
- contamination of percpu pointer
-Message-ID: <20141123004704.GA2245@kernel.org>
-References: <995deb699f5b873c45d667df4add3b06f73c2c25.1416638887.git.shli@kernel.org>
- <20141122142242.GB26007@htj.dyndns.org>
- <20141122170448.GA2436@kernel.org>
- <20141122170602.GE26007@htj.dyndns.org>
+	id S1753071AbaKWAv4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 19:51:56 -0500
+Received: from mout.web.de ([212.227.15.14]:64496 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750940AbaKWAvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 19:51:54 -0500
+Message-ID: <54712F8C.10206@users.sourceforge.net>
+Date: Sun, 23 Nov 2014 01:51:24 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141122170602.GE26007@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>
+CC: Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: net: Hyper-V: Deletion of an unnecessary check before the function
+ call "vfree"
+References: <546DF9D7.6080801@users.sourceforge.net>	<20141121.151503.1986113223309494197.davem@davemloft.net>	<546FB98E.5070703@users.sourceforge.net> <20141121.172705.540279259389643572.davem@davemloft.net>
+In-Reply-To: <20141121.172705.540279259389643572.davem@davemloft.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:2wDw877mq7x8BHx+A7yKuJWr+sA7v229KPFj1hHMrsXUWJMRU36
+ p66UCYoqaFFy3nne5TDXe8gCrDKJ0x+V1Df/GCPVjrRvbgOSBVj0Nom7nKGSl3SNlZ8YVe+
+ cVb9K8thYy8WSbBcN431ywyrV43hXVnmhwtBn11QFTEhkMB7jtixCWdx4AWskMKSIBpep4I
+ os11hsslhZvZV4itWDt9g==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 22, 2014 at 12:06:02PM -0500, Tejun Heo wrote:
-> On Sat, Nov 22, 2014 at 09:04:48AM -0800, Shaohua Li wrote:
-> ...
-> > > +	/*
-> > > +	 * Theoretically, the following could test just ATOMIC; however,
-> > > +	 * then we'd have to mask off DEAD separately as DEAD may be
-> > > +	 * visible without ATOMIC if we race with percpu_ref_kill().  DEAD
-> > > +	 * implies ATOMIC anyway.  Test them together.
-> > > +	 */
-> > > +	if (unlikely(percpu_ptr & __PERCPU_REF_ATOMIC_DEAD))
-> > >  		return false;
-> > 
-> > this sounds not the correct answer. the DEAD/ATOMIC bit can be set by
-> > percpu_ref_kill() right after the check.
-> 
-> Yes, but that's why we're fetching @percpu_ptr with ACCESS_ONCE()
-> before checking the flags.
+> This has nothing to do with me asking you to frame your patches
+> against the correct tree.
 
-Ok, I forgot we cache the percpu_ptr. Yes, this does work. You can add my
-signed-off in the patch.
+I imagine than someone other can also pick up this update suggestion
+(a simple change of two lines) quicker before I might try another
+software build again from a different commit as a base.
 
-Thanks,
-Shaohua
+Regards,
+Markus
