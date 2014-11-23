@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767AbaKXUUY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:20:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48564 "EHLO
+	id S1754891AbaKXUUh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:20:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48638 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907AbaKXUUW (ORCPT
+	with ESMTP id S1752217AbaKXUUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:20:22 -0500
-Date: Sun, 23 Nov 2014 12:24:27 -0800
-From: tip-bot for Chris Clayton <tipbot@zytor.com>
-Message-ID: <tip-e2e68ae688b0a3766cd75aedf4ed4e39be402009@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eternal.n08@gmail.com, keescook@chromium.org,
-        hpa@zytor.com, hpa@linux.intel.com, chris2553@googlemail.com,
-        tglx@linutronix.de, mingo@kernel.org, bp@suse.de
-Reply-To: linux-kernel@vger.kernel.org, eternal.n08@gmail.com,
-        keescook@chromium.org, hpa@linux.intel.com, hpa@zytor.com,
-        tglx@linutronix.de, chris2553@googlemail.com, bp@suse.de,
-        mingo@kernel.org
-In-Reply-To: <54705C8E.1080400@googlemail.com>
-References: <54705C8E.1080400@googlemail.com>
+	Mon, 24 Nov 2014 15:20:33 -0500
+Date: Sun, 23 Nov 2014 10:11:59 -0800
+From: tip-bot for Marc Zyngier <tipbot@zytor.com>
+Message-ID: <tip-f86eff222fabe30da5c536ef2b51bd98d14cfe3b@git.kernel.org>
+Cc: hpa@zytor.com, mingo@kernel.org, bhelgaas@google.com,
+        jiang.liu@linux.intel.com, tglx@linutronix.de, marc.zyngier@arm.com,
+        linux-kernel@vger.kernel.org, yingjoe.chen@mediatek.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, tglx@linutronix.de,
+        jiang.liu@linux.intel.com, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, marc.zyngier@arm.com,
+        yingjoe.chen@mediatek.com
+In-Reply-To: <1416048553-29289-3-git-send-email-marc.zyngier@arm.com>
+References: <1416048553-29289-3-git-send-email-marc.zyngier@arm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Use $(OBJDUMP) instead of plain objdump
-Git-Commit-ID: e2e68ae688b0a3766cd75aedf4ed4e39be402009
+Subject: [tip:irq/irqdomain] genirq:
+  Work around __irq_set_handler vs stacked domains ordering issues
+Git-Commit-ID: f86eff222fabe30da5c536ef2b51bd98d14cfe3b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,49 +35,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e2e68ae688b0a3766cd75aedf4ed4e39be402009
-Gitweb:     http://git.kernel.org/tip/e2e68ae688b0a3766cd75aedf4ed4e39be402009
-Author:     Chris Clayton <chris2553@googlemail.com>
-AuthorDate: Sat, 22 Nov 2014 09:51:10 +0000
+Commit-ID:  f86eff222fabe30da5c536ef2b51bd98d14cfe3b
+Gitweb:     http://git.kernel.org/tip/f86eff222fabe30da5c536ef2b51bd98d14cfe3b
+Author:     Marc Zyngier <marc.zyngier@arm.com>
+AuthorDate: Sat, 15 Nov 2014 10:49:13 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sun, 23 Nov 2014 21:21:53 +0100
+CommitDate: Sun, 23 Nov 2014 13:01:47 +0100
 
-x86: Use $(OBJDUMP) instead of plain objdump
+genirq: Work around __irq_set_handler vs stacked domains ordering issues
 
-commit e6023367d779 'x86, kaslr: Prevent .bss from overlaping initrd'
-broke the cross compile of x86. It added a objdump invocation, which
-invokes the host native objdump and ignores an active cross tool
-chain.
+With the introduction of stacked domains, we have the issue that,
+depending on where in the stack this is called, __irq_set_handler
+will succeed or fail: If this is called from the inner irqchip,
+__irq_set_handler() will fail, as it will look at the outer domain
+as the (desc->irq_data.chip == &no_irq_chip) test fails (we haven't
+set the top level yet).
 
-Use $(OBJDUMP) instead which takes the CROSS_COMPILE prefix into
-account.
+This patch implements the following: "If there is at least one
+valid irqchip in the domain, it will probably sort itself out".
+This is clearly not ideal, but it is far less confusing then
+crashing because the top-level domain is not up yet.
 
-[ tglx: Massage changelog and use $(OBJDUMP) ]
+[ tglx: Added comment and a protection against chained interrupts in
+  	that context ]
 
-Fixes: e6023367d779 'x86, kaslr: Prevent .bss from overlaping initrd'
-Signed-off-by: Chris Clayton <chris2553@googlemail.com>
-Acked-by: Kees Cook <keescook@chromium.org>
-Acked-by: Borislav Petkov <bp@suse.de>
-Cc: Junjie Mao <eternal.n08@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/54705C8E.1080400@googlemail.com
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Jiang Liu <jiang.liu@linux.intel.com>
+Link: http://lkml.kernel.org/r/1416048553-29289-3-git-send-email-marc.zyngier@arm.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/boot/compressed/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/irq/chip.c | 25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index be1e07d..45abc36 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -76,7 +76,7 @@ suffix-$(CONFIG_KERNEL_XZ)	:= xz
- suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
- suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index 63c16d1..6f1c7a5 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -731,7 +731,30 @@ __irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int is_chained,
+ 	if (!handle) {
+ 		handle = handle_bad_irq;
+ 	} else {
+-		if (WARN_ON(desc->irq_data.chip == &no_irq_chip))
++		struct irq_data *irq_data = &desc->irq_data;
++#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
++		/*
++		 * With hierarchical domains we might run into a
++		 * situation where the outermost chip is not yet set
++		 * up, but the inner chips are there.  Instead of
++		 * bailing we install the handler, but obviously we
++		 * cannot enable/startup the interrupt at this point.
++		 */
++		while (irq_data) {
++			if (irq_data->chip != &no_irq_chip)
++				break;
++			/*
++			 * Bail out if the outer chip is not set up
++			 * and the interrrupt supposed to be started
++			 * right away.
++			 */
++			if (WARN_ON(is_chained))
++				goto out;
++			/* Try the parent */
++			irq_data = irq_data->parent_data;
++		}
++#endif
++		if (WARN_ON(!irq_data || irq_data->chip == &no_irq_chip))
+ 			goto out;
+ 	}
  
--RUN_SIZE = $(shell objdump -h vmlinux | \
-+RUN_SIZE = $(shell $(OBJDUMP) -h vmlinux | \
- 	     perl $(srctree)/arch/x86/tools/calc_run_size.pl)
- quiet_cmd_mkpiggy = MKPIGGY $@
-       cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
