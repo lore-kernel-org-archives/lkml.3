@@ -1,122 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557AbaKWWE7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 17:04:59 -0500
-Received: from www.linutronix.de ([62.245.132.108]:35306 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318AbaKWWE5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 17:04:57 -0500
-Date: Sun, 23 Nov 2014 23:04:52 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chris Mason <clm@fb.com>
-cc: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] sched: Provide update_curr callbacks for stop/idle scheduling
- classes
-In-Reply-To: <1416778927.3019.1@mail.thefacebook.com>
-Message-ID: <alpine.DEB.2.11.1411232247520.6439@nanos>
-References: <20141123010239.GA12691@ret.masoncoding.com> <1416758187.24312.12@mail.thefacebook.com> <20141123161120.GB7070@pd.tnic> <1416759411.24312.13@mail.thefacebook.com> <20141123163258.GB6436@pd.tnic> <1416761342.24312.15@mail.thefacebook.com>
- <alpine.DEB.2.11.1411232141590.6439@nanos> <1416777079.1732.0@mail.thefacebook.com> <alpine.DEB.2.11.1411232235591.6439@nanos> <1416778927.3019.1@mail.thefacebook.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	id S1752569AbaKWWWZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 17:22:25 -0500
+Received: from 1wt.eu ([62.212.114.60]:64586 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752384AbaKWWWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 17:22:23 -0500
+Date: Sun, 23 Nov 2014 23:22:21 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Linux 2.6.32.64
+Message-ID: <20141123222221.GA18563@1wt.eu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris bisected a NULL pointer deference in task_sched_runtime() to
-commit 6e998916dfe3 'sched/cputime: Fix clock_nanosleep()/clock_gettime()
-inconsistency'.
+I've just released Linux 2.6.32.64.
 
-Chris observed crashes in atop or other /proc walking programs when he
-started fork bombs on his machine. He assumed that this is a new exit
-race, but that does not make any sense when looking at that commit.
+The patch and changelog will appear soon at the following locations:
+  https://www.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/
+  https://www.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/patch-2.6.32.64.xz
+  https://www.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/patch-2.6.32.64.gz
+  https://www.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/ChangeLog-2.6.32.64
 
-What's interesting is that, the commit provides update_curr callbacks
-for all scheduling classes except stop_task and idle_task.
+The updated 2.6.32.y git tree can be found at:
+   git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
+  http://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
 
-While nothing can ever hit that via the clock_nanosleep() and
-clock_gettime() interfaces, which have been the target of the commit
-in question, the author obviously forgot, that there are other code
-pathes which invoke task_sched_runtime()
+The tree can be browsed on the gitweb interface:
+  http://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/log/?h=linux-2.6.32.y
 
-do_task_stat(()
- thread_group_cputime_adjusted()
-   thread_group_cputime()
-     task_cputime()
-       task_sched_runtime()
-        if (task_current(rq, p) && task_on_rq_queued(p)) {
-          update_rq_clock(rq);
-          up->sched_class->update_curr(rq);
-        }
+Testing status (build/boot, OK/FAIL, otherwise not tested) :
 
-If the stats are read for a stomp machine task, aka 'migration/N' and
-that task is current on its cpu, this will happily call the NULL
-pointer of stop_task->update_curr. Ooops.
+         ARCH  |         CONFIGURATION
+       --------+-----------------------------------
+               |  allmodconfig     other-config
+        x86_64 |    build:OK            -
+          i386 |    build:OK            -
+           arm |      -             build:OK
 
-Chris observation that this happens faster when he runs the fork bomb
-makes sense as the fork bomb will kick migration threads more often so
-the probability to hit the issue will increase.
+Thanks to those who still take care of providing fixes, and to Greg
+for the final packaging.
 
-Add the missing update_curr callbacks to the scheduler classes
-stop_task and idle_task. While idle tasks cannot be monitored via
-/proc we have other means to hit the idle case.
+Willy
 
-Fixes: 6e998916dfe3 'sched/cputime: Fix clock_nanosleep()/clock_gettime() inconsistency'
-Reported-by: Chris Mason <clm@fb.com>
-Reported-and-tested-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+---------
+ Documentation/lzo.txt               | 164 ++++++++++++++++
+ Makefile                            |   2 +-
+ arch/arm/lib/memset.S               | 100 +++++-----
+ arch/mips/include/asm/thread_info.h |   3 +
+ arch/mips/kernel/scall32-o32.S      |   2 +-
+ arch/mips/kernel/scall64-64.S       |   2 +-
+ arch/mips/kernel/scall64-n32.S      |   2 +-
+ arch/mips/kernel/scall64-o32.S      |   2 +-
+ arch/x86/include/asm/ptrace.h       |  16 ++
+ arch/x86/kernel/entry_32.S          |  13 +-
+ drivers/char/tty_io.c               |   7 +-
+ drivers/md/dm-crypt.c               |  20 +-
+ drivers/md/raid5.c                  |   2 +
+ drivers/net/gianfar.c               |   6 -
+ drivers/net/macvlan.c               |   1 +
+ drivers/net/ppp_generic.c           |   2 +-
+ drivers/net/pppoe.c                 |   2 +-
+ drivers/net/sunvnet.c               |  20 +-
+ drivers/scsi/sym53c8xx_2/sym_hipd.c |   4 +
+ drivers/usb/serial/kobil_sct.c      |   4 +-
+ drivers/usb/serial/option.c         | 129 ++++++++++++-
+ fs/isofs/inode.c                    |  15 +-
+ fs/isofs/isofs.h                    |  23 ++-
+ fs/isofs/rock.c                     |  39 ++--
+ fs/namei.c                          |   1 +
+ fs/nfsd/nfs4xdr.c                   |   8 +-
+ fs/proc/base.c                      |   1 -
+ include/linux/lzo.h                 |  15 +-
+ include/linux/ptrace.h              |   3 +
+ include/net/sctp/sm.h               |   6 +-
+ include/sound/core.h                |   2 +
+ kernel/futex.c                      |   1 +
+ kernel/trace/ring_buffer.c          |  12 +-
+ lib/lzo/lzo1x_compress.c            | 335 ++++++++++++++++++--------------
+ lib/lzo/lzo1x_decompress.c          | 370 +++++++++++++++++++-----------------
+ lib/lzo/lzodefs.h                   |  38 ++--
+ mm/mlock.c                          |   2 +
+ mm/rmap.c                           |  14 +-
+ net/appletalk/ddp.c                 |   3 -
+ net/compat.c                        |   9 +-
+ net/core/filter.c                   |   8 +-
+ net/core/iovec.c                    |  10 +-
+ net/core/skbuff.c                   |   2 +-
+ net/ipv4/igmp.c                     |  10 +-
+ net/ipv4/ip_options.c               |   4 +
+ net/ipv4/tcp_input.c                |   2 +-
+ net/ipv4/tcp_vegas.c                |   3 +-
+ net/ipv4/tcp_veno.c                 |   2 +-
+ net/netfilter/nfnetlink_log.c       |  14 +-
+ net/sctp/associola.c                |  17 +-
+ net/sctp/output.c                   |   2 +-
+ net/sctp/sm_make_chunk.c            | 100 +++++-----
+ net/sctp/sm_statefuns.c             |  18 +-
+ net/sctp/ulpevent.c                 | 122 ++----------
+ sound/core/control.c                |  38 +++-
+ sound/core/init.c                   |   1 +
+ 56 files changed, 1092 insertions(+), 661 deletions(-)
 
----
-diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-index 67ad4e7f506a..c65dac8c97cd 100644
---- a/kernel/sched/idle_task.c
-+++ b/kernel/sched/idle_task.c
-@@ -75,6 +75,10 @@ static unsigned int get_rr_interval_idle(struct rq *rq, struct task_struct *task
- 	return 0;
- }
- 
-+static void update_curr_idle(struct rq *rq)
-+{
-+}
-+
- /*
-  * Simple, special scheduling class for the per-CPU idle tasks:
-  */
-@@ -101,4 +105,5 @@ const struct sched_class idle_sched_class = {
- 
- 	.prio_changed		= prio_changed_idle,
- 	.switched_to		= switched_to_idle,
-+	.update_curr		= update_curr_idle,
- };
-diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
-index 67426e529f59..79ffec45a6ac 100644
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -102,6 +102,10 @@ get_rr_interval_stop(struct rq *rq, struct task_struct *task)
- 	return 0;
- }
- 
-+static void update_curr_stop(struct rq *rq)
-+{
-+}
-+
- /*
-  * Simple, special scheduling class for the per-CPU stop tasks:
-  */
-@@ -128,4 +132,5 @@ const struct sched_class stop_sched_class = {
- 
- 	.prio_changed		= prio_changed_stop,
- 	.switched_to		= switched_to_stop,
-+	.update_curr		= update_curr_stop,
- };
+Summary of changes from 2.6.32.63 to 2.6.32.64
+==============================================
+Al Viro (2):
+      fix autofs/afs/etc. magic mountpoint breakage
+      fix misuses of f_count() in ppp and netlink
+
+Andrey Ryabinin (1):
+      net: sendmsg: fix NULL pointer dereference
+
+Andrey Utkin (1):
+      appletalk: Fix socket referencing in skb
+
+Andy Lutomirski (1):
+      x86_32, entry: Do syscall exit work on badsys (CVE-2014-4508)
+
+Christoph Paasch (2):
+      tcp: Fix integer-overflows in TCP veno
+      tcp: Fix integer-overflow in TCP vegas
+
+Christoph Schulz (1):
+      net: pppoe: use correct channel MTU when using Multilink PPP
+
+Daniel Borkmann (3):
+      net: sctp: fix information leaks in ulpevent layer
+      net: sctp: inherit auth_capable on INIT collisions
+      net: sctp: fix skb_over_panic when receiving malformed ASCONF chunks
+
+Eric Dumazet (2):
+      ipv4: fix buffer overflow in ip_options_compile()
+      sctp: fix possible seqlock seadlock in sctp_packet_transmit()
+
+Florian Westphal (2):
+      netfilter: nf_log: account for size of NLMSG_DONE attribute
+      netfilter: nfnetlink_log: fix maximum packet length logged to userspace
+
+Ivan Djelic (1):
+      ARM: 7668/1: fix memset-related crashes caused by recent GCC (4.7.2) optimizations
+
+Jan Kara (1):
+      isofs: Fix unbounded recursion when processing relocated directories
+
+Johan Hovold (1):
+      USB: kobil_sct: fix non-atomic allocation in write path
+
+Lars-Peter Clausen (3):
+      ALSA: control: Make sure that id->index does not overflow
+      ALSA: control: Handle numid overflow
+      ALSA: control: Protect user controls against concurrent access
+
+Markos Chandras (1):
+      MIPS: asm: thread_info: Add _TIF_SECCOMP flag
+
+Markus F.X.J. Oberhumer (1):
+      lib/lzo: Update LZO compression to current upstream version
+
+Mathias Krause (1):
+      filter: prevent nla extensions to peek beyond the end of the message
+
+Mikulas Patocka (2):
+      sym53c8xx_2: Set DID_REQUEUE return code when aborting squeue
+      dm crypt: fix access beyond the end of allocated space
+
+Neal Cardwell (1):
+      tcp: fix tcp_match_skb_to_sack() for unaligned SACK at end of an skb
+
+NeilBrown (1):
+      md/raid6: avoid data corruption during recovery of double-degraded RAID6
+
+Nicolas Pitre (1):
+      ARM: 7670/1: fix the memset fix
+
+Peter Hurley (1):
+      tty: Fix high cpu load if tty is unreleaseable
+
+Ralf Baechle (1):
+      MIPS: Cleanup flags in syscall flags handlers.
+
+Rui li (1):
+      USB: add new zte 3g-dongle's pid to option.c
+
+Sasha Levin (1):
+      iovec: make sure the caller actually wants anything in memcpy_fromiovecend
+
+Sowmini Varadhan (1):
+      sunvnet: clean up objects created in vnet_new() on vnet_exit()
+
+Stefan Bader (1):
+      x86_32, entry: Clean up sysenter_badsys declaration
+
+Steven Rostedt (Red Hat) (1):
+      ring-buffer: Always reset iterator to reader page
+
+Sven Wegener (1):
+      x86_32, entry: Store badsys error code in %eax
+
+Tejun Heo (1):
+      ptrace,x86: force IRET path after a ptrace_stop()
+
+Thomas Gleixner (1):
+      futex: Unlock hb->lock in futex_wait_requeue_pi() error path
+
+Vlad Yasevich (2):
+      macvlan: Initialize vlan_features to turn on offload support.
+      net: Correctly set segment mac_len in skb_segment().
+
+Vlastimil Babka (1):
+      mm: try_to_unmap_cluster() should lock_page() before mlocking
+
+Willy Tarreau (4):
+      Revert "nfsd: correctly handle return value from nfsd_map_name_to_*"
+      Documentation: lzo: document part of the encoding
+      lzo: check for length overrun in variable length encoding.
+      Linux 2.6.32.64
+
+Xufeng Zhang (1):
+      sctp: Fix sk_ack_backlog wrap-around problem
+
+Zhu Yanjun (2):
+      gianfar: disable vlan tag insertion by default
+      sctp: not send SCTP_PEER_ADDR_CHANGE notifications with failed probe
+
+dingtianhong (1):
+      igmp: fix the problem when mc leave group
+
