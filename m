@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894AbaKWQL1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 11:11:27 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:56978 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751781AbaKWQLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 11:11:23 -0500
-Date: Sun, 23 Nov 2014 17:11:20 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Chris Mason <clm@fb.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+	id S1751644AbaKWQRR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 11:17:17 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:48107 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751273AbaKWQRP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 11:17:15 -0500
+Date: Sun, 23 Nov 2014 11:16:51 -0500
+From: Chris Mason <clm@fb.com>
 Subject: Re: New crashes walking proc with Saturday's git
-Message-ID: <20141123161120.GB7070@pd.tnic>
+To: Borislav Petkov <bp@alien8.de>
+CC: <torvalds@linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Message-ID: <1416759411.24312.13@mail.thefacebook.com>
+In-Reply-To: <20141123161120.GB7070@pd.tnic>
 References: <20141123010239.GA12691@ret.masoncoding.com>
- <1416758187.24312.12@mail.thefacebook.com>
+	<1416758187.24312.12@mail.thefacebook.com> <20141123161120.GB7070@pd.tnic>
+X-Mailer: geary/0.8.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1416758187.24312.12@mail.thefacebook.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.28,0.0.0000
+ definitions=2014-11-23_03:2014-11-21,2014-11-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=5.55111512312578e-17 kscore.compositescore=0
+ circleOfTrustscore=3.20032130107151 compositescore=0.939076664828693
+ urlsuspect_oldscore=0.939076664828693 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.939076664828693 spamscore=0
+ recipient_to_sender_domain_totalscore=4 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1411230137
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 23, 2014 at 10:56:27AM -0500, Chris Mason wrote:
-> On Sun, Nov 23, 2014 at 10:02 AM, Chris Mason <clm@fb.com> wrote:
-> >Since it looks like a race between process exit and /proc, I'll try to
-> >hammer on that for a better reproduction.  But, here's hoping that
-> >someone has already seen this one:
+
+
+On Sun, Nov 23, 2014 at 11:11 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Sun, Nov 23, 2014 at 10:56:27AM -0500, Chris Mason wrote:
+>>  On Sun, Nov 23, 2014 at 10:02 AM, Chris Mason <clm@fb.com> wrote:
+>>  >Since it looks like a race between process exit and /proc, I'll 
+>> try to
+>>  >hammer on that for a better reproduction.  But, here's hoping that
+>>  >someone has already seen this one:
+>> 
+>>  It falls over in less than 5 minutes with a fork bomb going.  I'll 
+>> try to
+>>  bisect.
 > 
-> It falls over in less than 5 minutes with a fork bomb going.  I'll try to
-> bisect.
+> I'm seeing the same thing:
 
-I'm seeing the same thing:
-https://lkml.kernel.org/r/20141123111220.GA6436@pd.tnic
 
-Happens here after I resume from suspend to disk.
+It must be:
 
--- 
-Regards/Gruss,
-    Boris.
+commit 6e998916dfe327e785e7c2447959b2c1a3ea4930
+Author: Stanislaw Gruszka <sgruszka@redhat.com>
+Date:   Wed Nov 12 16:58:44 2014 +0100
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+    sched/cputime: Fix clock_nanosleep()/clock_gettime() inconsistency
+
+I'll do two runs to confirm, but it's the only related patch between 
+rc5 and now.
+
+-chris
+
+
+
+
