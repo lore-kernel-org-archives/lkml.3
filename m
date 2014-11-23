@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbaKWNQp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 08:16:45 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:57097 "EHLO
+	id S1751424AbaKWNQn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 08:16:43 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:56800 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751014AbaKWNQl (ORCPT
+	by vger.kernel.org with ESMTP id S1751353AbaKWNQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 23 Nov 2014 08:16:41 -0500
 X-IronPort-AV: E=Sophos;i="5.07,443,1413237600"; 
-   d="scan'208";a="109083691"
+   d="scan'208";a="109083690"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: David Airlie <airlied@linux.ie>
-Cc: kernel-janitors@vger.kernel.org, dri-devel@lists.freedesktop.org,
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: kernel-janitors@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] drivers/gpu/drm: fix error return code
-Date: Sun, 23 Nov 2014 14:11:18 +0100
-Message-Id: <1416748278-22881-6-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 4/5] drm/rcar-du: fix error return code
+Date: Sun, 23 Nov 2014 14:11:17 +0100
+Message-Id: <1416748278-22881-5-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1416748278-22881-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1416748278-22881-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -25,7 +26,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Return a negative error code on failure.
+Propagate the error code on failure.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -53,43 +54,20 @@ ret = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c         |    8 ++++++--
- drivers/gpu/drm/omapdrm/omap_dmm_tiler.c |    1 +
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/rcar-du/rcar_du_crtc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 6ec3a90..e405414 100644
---- a/drivers/gpu/drm/gma500/psb_drv.c
-+++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -306,12 +306,16 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
- 		goto out_err;
+diff --git a/drivers/gpu/drm/rcar-du/rcar_du_crtc.c b/drivers/gpu/drm/rcar-du/rcar_du_crtc.c
+index 088bfd8..23cc910 100644
+--- a/drivers/gpu/drm/rcar-du/rcar_du_crtc.c
++++ b/drivers/gpu/drm/rcar-du/rcar_du_crtc.c
+@@ -586,7 +586,7 @@ int rcar_du_crtc_create(struct rcar_du_group *rgrp, unsigned int index)
  
- 	dev_priv->mmu = psb_mmu_driver_init(dev, 1, 0, 0);
--	if (!dev_priv->mmu)
-+	if (!dev_priv->mmu) {
-+		ret = -ENOMEM;
- 		goto out_err;
-+	}
- 
- 	dev_priv->pf_pd = psb_mmu_alloc_pd(dev_priv->mmu, 1, 0);
--	if (!dev_priv->pf_pd)
-+	if (!dev_priv->pf_pd) {
-+		ret = -ENOMEM;
- 		goto out_err;
-+	}
- 
- 	ret = psb_do_init(dev);
- 	if (ret)
-diff --git a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
-index 56c6055..c0fb5fa 100644
---- a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
-+++ b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
-@@ -678,6 +678,7 @@ static int omap_dmm_probe(struct platform_device *dev)
- 				&omap_dmm->refill_pa, GFP_KERNEL);
- 	if (!omap_dmm->refill_va) {
- 		dev_err(&dev->dev, "could not allocate refill memory\n");
-+		ret = -ENOMEM;
- 		goto fail;
+ 	if (irq < 0) {
+ 		dev_err(rcdu->dev, "no IRQ for CRTC %u\n", index);
+-		return ret;
++		return irq;
  	}
  
+ 	ret = devm_request_irq(rcdu->dev, irq, rcar_du_crtc_irq, irqflags,
 
