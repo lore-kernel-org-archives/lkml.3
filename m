@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588AbaKWNRn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 08:17:43 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:56800 "EHLO
+	id S1751673AbaKWNR7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 08:17:59 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:33680 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751279AbaKWNQk (ORCPT
+	by vger.kernel.org with ESMTP id S1751270AbaKWNQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 23 Nov 2014 08:16:40 -0500
 X-IronPort-AV: E=Sophos;i="5.07,443,1413237600"; 
-   d="scan'208";a="109083689"
+   d="scan'208";a="109083687"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-pcmcia@lists.infradead.org
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] electra_cf: fix error return code
-Date: Sun, 23 Nov 2014 14:11:16 +0100
-Message-Id: <1416748278-22881-4-git-send-email-Julia.Lawall@lip6.fr>
+To: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] mptfusion: fix error return code
+Date: Sun, 23 Nov 2014 14:11:14 +0100
+Message-Id: <1416748278-22881-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1416748278-22881-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1416748278-22881-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -52,19 +57,23 @@ ret = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/pcmcia/electra_cf.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/message/fusion/mptfc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pcmcia/electra_cf.c b/drivers/pcmcia/electra_cf.c
-index 7f9950d..6a67a00 100644
---- a/drivers/pcmcia/electra_cf.c
-+++ b/drivers/pcmcia/electra_cf.c
-@@ -250,6 +250,7 @@ static int electra_cf_probe(struct platform_device *ofdev)
+diff --git a/drivers/message/fusion/mptfc.c b/drivers/message/fusion/mptfc.c
+index d8bf84a..629df6d 100644
+--- a/drivers/message/fusion/mptfc.c
++++ b/drivers/message/fusion/mptfc.c
+@@ -1325,8 +1325,10 @@ mptfc_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 		 "mptfc_wq_%d", sh->host_no);
+ 	ioc->fc_rescan_work_q =
+ 		create_singlethread_workqueue(ioc->fc_rescan_work_q_name);
+-	if (!ioc->fc_rescan_work_q)
++	if (!ioc->fc_rescan_work_q) {
++		error = -ENOMEM;
+ 		goto out_mptfc_probe;
++	}
  
- 	cf->socket.pci_irq = cf->irq;
- 
-+	status = -EINVAL;
- 	prop = of_get_property(np, "card-detect-gpio", NULL);
- 	if (!prop)
- 		goto fail1;
+ 	/*
+ 	 *  Pre-fetch FC port WWN and stuff...
 
