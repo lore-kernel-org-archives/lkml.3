@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaKWSoc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 13:44:32 -0500
-Received: from mout.web.de ([212.227.15.3]:56644 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751273AbaKWSoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 13:44:30 -0500
-Message-ID: <54722AF8.3000609@users.sourceforge.net>
-Date: Sun, 23 Nov 2014 19:44:08 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752310AbaKWSp1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 13:45:27 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:51581 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926AbaKWSp0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 13:45:26 -0500
+Date: Mon, 24 Nov 2014 00:15:21 +0530
+From: Balavasu kuppusammyprathaban <kp.balavasu@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: andreas.dilger@intel.com, oleg.drokin@intel.com, greg@kroah.com
+Subject: [PATCH 1/2] staging: lustre: lnet: lnet: do not initialise statics
+ to 0 or NULL
+Message-ID: <20141123184521.GA6581@vasu-Inspiron-3542>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 2/2] staging: android: ion: One function call less in ion_buffer_create()
- after error detection
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54722893.6020301@users.sourceforge.net>
-In-Reply-To: <54722893.6020301@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:bs4RqOxZUkuABk2s+mKl1sWh1BT+ZNuv8qmeUYbsVyHGh4FZ6Hu
- 5Kk4uQHamXmXC2uJLTrgswuWAw8kYaMYGfK/6SM6SOZsQucjil+M74NMOpx2n4RvNSyUsPe
- lxCaUZQpaMkkG6ws4kySg90+DXJF5+xjxtk30MsISdZcOzesCX45c6pTQBmCvapSLhu2I8l
- SyPEC7l/awCssS2VFOvEA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sun, 23 Nov 2014 19:12:29 +0100
+This patch fixes the checkpatch.pl issue
+Error: do not initialise statics to 0 or NULL 
 
-The jump label "err1" was used by the ion_buffer_create() function in case of
-a memory allocation failure just to pass a null pointer to a vfree() function
-call by a data structure element.
-This implementation detail could be improved by the deletion of this
-inappropriate jump label.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: Balavasu <kp.balavasu@gmail.com>
 ---
- drivers/staging/android/ion/ion.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/staging/lustre/lnet/lnet/router.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-index df12cc3..7a26b85 100644
---- a/drivers/staging/android/ion/ion.c
-+++ b/drivers/staging/android/ion/ion.c
-@@ -226,7 +226,7 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
- 		buffer->pages = vmalloc(sizeof(struct page *) * num_pages);
- 		if (!buffer->pages) {
- 			ret = -ENOMEM;
--			goto err1;
-+			goto err2;
- 		}
+diff --git a/drivers/staging/lustre/lnet/lnet/router.c b/drivers/staging/lustre/lnet/lnet/router.c
+index b5b8fb5..cdeb246 100644
+--- a/drivers/staging/lustre/lnet/lnet/router.c
++++ b/drivers/staging/lustre/lnet/lnet/router.c
+@@ -46,7 +46,7 @@ MODULE_PARM_DESC(small_router_buffers, "# of small (1 page) messages to buffer i
+ static int large_router_buffers;
+ module_param(large_router_buffers, int, 0444);
+ MODULE_PARM_DESC(large_router_buffers, "# of large messages to buffer in the router");
+-static int peer_buffer_credits = 0;
++static int peer_buffer_credits;
+ module_param(peer_buffer_credits, int, 0444);
+ MODULE_PARM_DESC(peer_buffer_credits, "# router buffer credits per peer");
  
- 		for_each_sg(table->sgl, sg, table->nents, i) {
-@@ -262,7 +262,6 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
- err:
- 	heap->ops->unmap_dma(heap, buffer);
- 	heap->ops->free(buffer);
--err1:
- 	vfree(buffer->pages);
- err2:
- 	kfree(buffer);
+@@ -80,7 +80,7 @@ lnet_peer_buffer_credits(lnet_ni_t *ni)
+ 
+ #endif
+ 
+-static int check_routers_before_use = 0;
++static int check_routers_before_use;
+ module_param(check_routers_before_use, int, 0444);
+ MODULE_PARM_DESC(check_routers_before_use, "Assume routers are down and ping them before use");
+ 
+@@ -245,7 +245,7 @@ lnet_find_net_locked (__u32 net)
+ 
+ static void lnet_shuffle_seed(void)
+ {
+-	static int seeded = 0;
++	static int seeded;
+ 	int lnd_type, seed[2];
+ 	struct timeval tv;
+ 	lnet_ni_t *ni;
+@@ -1584,8 +1584,8 @@ lnet_notify (lnet_ni_t *ni, lnet_nid_t nid, int alive, unsigned long when)
+ void
+ lnet_router_checker (void)
+ {
+-	static time_t last = 0;
+-	static int    running = 0;
++	static time_t last;
++	static int    running;
+ 
+ 	time_t	    now = get_seconds();
+ 	int	       interval = now - last;
 -- 
-2.1.3
+1.9.1
 
