@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071AbaKWAv4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 19:51:56 -0500
-Received: from mout.web.de ([212.227.15.14]:64496 "EHLO mout.web.de"
+	id S1753122AbaKWAwt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 19:52:49 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:45554 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750940AbaKWAvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 19:51:54 -0500
-Message-ID: <54712F8C.10206@users.sourceforge.net>
-Date: Sun, 23 Nov 2014 01:51:24 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752916AbaKWAws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Nov 2014 19:52:48 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        "moderated list:ARM/Rockchip SoC..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "open list:COMMON CLK FRAMEWORK" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: rockchip: fix rk3188 USB HSIC PHY clock divider
+Date: Sun, 23 Nov 2014 01:56:27 +0100
+Message-ID: <27247166.7eBDsnluOf@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <1416564527-21327-1-git-send-email-julien.chauveau@neo-technologies.fr>
+References: <1416564527-21327-1-git-send-email-julien.chauveau@neo-technologies.fr>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: Haiyang Zhang <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: net: Hyper-V: Deletion of an unnecessary check before the function
- call "vfree"
-References: <546DF9D7.6080801@users.sourceforge.net>	<20141121.151503.1986113223309494197.davem@davemloft.net>	<546FB98E.5070703@users.sourceforge.net> <20141121.172705.540279259389643572.davem@davemloft.net>
-In-Reply-To: <20141121.172705.540279259389643572.davem@davemloft.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:2wDw877mq7x8BHx+A7yKuJWr+sA7v229KPFj1hHMrsXUWJMRU36
- p66UCYoqaFFy3nne5TDXe8gCrDKJ0x+V1Df/GCPVjrRvbgOSBVj0Nom7nKGSl3SNlZ8YVe+
- cVb9K8thYy8WSbBcN431ywyrV43hXVnmhwtBn11QFTEhkMB7jtixCWdx4AWskMKSIBpep4I
- os11hsslhZvZV4itWDt9g==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This has nothing to do with me asking you to frame your patches
-> against the correct tree.
+Am Freitag, 21. November 2014, 11:08:47 schrieb Julien CHAUVEAU:
+> The USB HSIC PHY clock divider is set in the register RK2928_CLKSEL_CON(11).
+> 
+> Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
 
-I imagine than someone other can also pick up this update suggestion
-(a simple change of two lines) quicker before I might try another
-software build again from a different commit as a base.
+applied to my clk branch for 3.19
 
-Regards,
-Markus
+
+Thanks
+Heiko
+
+> ---
+>  drivers/clk/rockchip/clk-rk3188.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/clk/rockchip/clk-rk3188.c
+> b/drivers/clk/rockchip/clk-rk3188.c index 725d841..f27ea47 100644
+> --- a/drivers/clk/rockchip/clk-rk3188.c
+> +++ b/drivers/clk/rockchip/clk-rk3188.c
+> @@ -664,7 +664,7 @@ static struct rockchip_clk_branch rk3188_clk_branches[]
+> __initdata = { RK2928_CLKSEL_CON(30), 0, 2, DFLAGS,
+>  			RK2928_CLKGATE_CON(3), 6, GFLAGS),
+>  	DIV(0, "sclk_hsicphy_12m", "sclk_hsicphy_480m", 0,
+> -			RK2928_CLKGATE_CON(11), 8, 6, DFLAGS),
+> +			RK2928_CLKSEL_CON(11), 8, 6, DFLAGS),
+> 
+>  	MUX(0, "i2s_src", mux_pll_src_gpll_cpll_p, 0,
+>  			RK2928_CLKSEL_CON(2), 15, 1, MFLAGS),
+
