@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055AbaKWESR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Nov 2014 23:18:17 -0500
-Received: from ironport7-4T.isc.cl ([200.91.27.126]:50001 "EHLO
-	ironport7-4T.isc.cl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011AbaKWESP (ORCPT
+	id S1753103AbaKWEhC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Nov 2014 23:37:02 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:54334 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011AbaKWEg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Nov 2014 23:18:15 -0500
-X-Greylist: delayed 559 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Nov 2014 23:18:15 EST
-X-CTCH-RefID: str=0001.0A020201.547159E5.00BE,ss=3,sh,re=0.001,recu=0.000,reip=0.000,cl=3,cld=1,fgs=512
-X-CTCH-Spam: Bulk
-Date: Sun, 23 Nov 2014 05:08:33 +0100
-Message-ID: <546F53D700000871@ms2.isc.cl>
-From: "Help Desk" <aninahue@tie.cl>
-Subject: IMPORTANT MALWARE PRECAUTION!!!
-Reply-To: helpdesk466@gmail.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Sat, 22 Nov 2014 23:36:59 -0500
+Date: Sat, 22 Nov 2014 23:36:54 -0500 (EST)
+Message-Id: <20141122.233654.279540319568229037.davem@davemloft.net>
+To: elfring@users.sourceforge.net
+Cc: haiyangz@microsoft.com, kys@microsoft.com, devel@linuxdriverproject.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, julia.lawall@lip6.fr
+Subject: Re: net: Hyper-V: Deletion of an unnecessary check before the
+ function call "vfree"
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <54712F8C.10206@users.sourceforge.net>
+References: <546FB98E.5070703@users.sourceforge.net>
+	<20141121.172705.540279259389643572.davem@davemloft.net>
+	<54712F8C.10206@users.sourceforge.net>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 22 Nov 2014 20:36:58 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your e-mail account needs to be improved, with our new
-F-Secure ? HTK4S anti-virus/anti-Spam 2014-version. Due to increase in
-Account Hacking.
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+Date: Sun, 23 Nov 2014 01:51:24 +0100
 
-Fill in the columns below and send to Us or your account will be
-temporarily excluded from our services.
+>> This has nothing to do with me asking you to frame your patches
+>> against the correct tree.
+> 
+> I imagine than someone other can also pick up this update suggestion
+> (a simple change of two lines) quicker before I might try another
+> software build again from a different commit as a base.
 
-E-mail Address(ID):
-Old Password:
-Desired New Password:
-Desired New Password Again:
-Phone:
-Department:
-
-* Please note that your password is encrypted with
-1024-bit RSA keys for increased security.
-
-" ACCOUNT SUPPORT TEAM".
-? ACCOUNT ACCOUNT ABN 31 088 377 860 All Rights Reserved.
-E-Mail Account Maintenance
-
+Whereas if you learn how to base your changes cleanly on the correct
+base now, all of your future submissions will go quickly and smoothly
+into my tree.
