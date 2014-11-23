@@ -1,60 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485AbaKWSiY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 13:38:24 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44529 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453AbaKWSiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 13:38:21 -0500
-Date: Sun, 23 Nov 2014 19:38:18 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>
-Subject: Re: task_stat splat
-Message-ID: <20141123183818.GA6032@pd.tnic>
-References: <20141123111220.GA6436@pd.tnic>
- <20141123172256.GA9625@redhat.com>
- <20141123175641.GA11619@redhat.com>
- <20141123181717.GA13198@redhat.com>
- <20141123182108.GA15349@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141123182108.GA15349@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752588AbaKWSj2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 13:39:28 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:52399 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265AbaKWShj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 13:37:39 -0500
+From: Eric Auger <eric.auger@linaro.org>
+To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
+        alex.williamson@redhat.com, joel.schopp@amd.com,
+        kim.phillips@freescale.com, paulus@samba.org, gleb@kernel.org,
+        pbonzini@redhat.com, agraf@suse.de
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com, ming.lei@canonical.com, feng.wu@intel.com
+Subject: [PATCH v3 4/8] KVM: kvm-vfio: User API for IRQ forwarding
+Date: Sun, 23 Nov 2014 19:35:56 +0100
+Message-Id: <1416767760-14487-5-git-send-email-eric.auger@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416767760-14487-1-git-send-email-eric.auger@linaro.org>
+References: <1416767760-14487-1-git-send-email-eric.auger@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 23, 2014 at 07:21:08PM +0100, Oleg Nesterov wrote:
-> > Perhaps this is migration thread? stop_sched_class doesn't have ->update_curr.
-> 
-> Yes, I think this can explain the problem, but
-> 
-> > could you try to cat /proc/pid-of-migration-thread/stat on your machine?
-> 
-> This won't trigger the crash unless it is running.
+This patch adds and document a new KVM_DEV_VFIO_DEVICE group
+and 2 device attributes: KVM_DEV_VFIO_DEVICE_FORWARD_IRQ,
+KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ. The purpose is to be able
+to set a VFIO device IRQ as forwarded or not forwarded.
+the command takes as argument a handle to a new struct named
+kvm_arch_forwarded_irq.
 
-This ?
+Signed-off-by: Eric Auger <eric.auger@linaro.org>
 
-$ for pid in $(pgrep migration); do cat /proc/$pid/stat; done
-10 (migration/0) S 2 0 0 0 -1 69238848 0 0 0 0 0 10 0 0 -100 0 1 0 8 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 99 1 0 0 0 0 0 0 0 0 0 0 0
-13 (migration/1) S 2 0 0 0 -1 69238848 0 0 0 0 0 4 0 0 -100 0 1 0 9 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 1 99 1 0 0 0 0 0 0 0 0 0 0 0
-18 (migration/2) S 2 0 0 0 -1 69238848 0 0 0 0 0 4 0 0 -100 0 1 0 11 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 2 99 1 0 0 0 0 0 0 0 0 0 0 0
-23 (migration/3) S 2 0 0 0 -1 69238848 0 0 0 0 0 10 0 0 -100 0 1 0 14 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 3 99 1 0 0 0 0 0 0 0 0 0 0 0
-28 (migration/4) S 2 0 0 0 -1 69238848 0 0 0 0 0 4 0 0 -100 0 1 0 16 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 4 99 1 0 0 0 0 0 0 0 0 0 0 0
-33 (migration/5) S 2 0 0 0 -1 69238848 0 0 0 0 0 11 0 0 -100 0 1 0 19 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 5 99 1 0 0 0 0 0 0 0 0 0 0 0
-38 (migration/6) S 2 0 0 0 -1 69238848 0 0 0 0 0 10 0 0 -100 0 1 0 21 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 6 99 1 0 0 0 0 0 0 0 0 0 0 0
-43 (migration/7) S 2 0 0 0 -1 69238848 0 0 0 0 0 6 0 0 -100 0 1 0 23 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 7 99 1 0 0 0 0 0 0 0 0 0 0 0
+---
 
-It doesn't trigger, of course, as I've reverted the patch. Second resume
-looks ok.
+v2 -> v3:
+- rework vfio kvm device documentation
+- reword commit message and title
+- add subindex in kvm_arch_forwarded_irq to be closer to VFIO API
+- forwarding state can only be changed with VFIO IRQ signaling is off
 
+v1 -> v2:
+- struct kvm_arch_forwarded_irq moved from arch/arm/include/uapi/asm/kvm.h
+  to include/uapi/linux/kvm.h
+  also irq_index renamed into index and guest_irq renamed into gsi
+- ASSIGN/DEASSIGN renamed into FORWARD/UNFORWARD
+---
+ Documentation/virtual/kvm/devices/vfio.txt | 34 ++++++++++++++++++++++++------
+ include/uapi/linux/kvm.h                   | 10 +++++++++
+ 2 files changed, 38 insertions(+), 6 deletions(-)
+
+diff --git a/Documentation/virtual/kvm/devices/vfio.txt b/Documentation/virtual/kvm/devices/vfio.txt
+index ef51740..f7aff29 100644
+--- a/Documentation/virtual/kvm/devices/vfio.txt
++++ b/Documentation/virtual/kvm/devices/vfio.txt
+@@ -4,15 +4,24 @@ VFIO virtual device
+ Device types supported:
+   KVM_DEV_TYPE_VFIO
+ 
+-Only one VFIO instance may be created per VM.  The created device
+-tracks VFIO groups in use by the VM and features of those groups
+-important to the correctness and acceleration of the VM.  As groups
+-are enabled and disabled for use by the VM, KVM should be updated
+-about their presence.  When registered with KVM, a reference to the
+-VFIO-group is held by KVM.
++Only one VFIO instance may be created per VM.
++
++The created device tracks VFIO groups in use by the VM and features
++of those groups important to the correctness and acceleration of
++the VM.  As groups are enabled and disabled for use by the VM, KVM
++should be updated about their presence.  When registered with KVM,
++a reference to the VFIO-group is held by KVM.
++
++The device also tracks & enable VFIO device forwarded IRQs, if any.
++A physical forwarded IRQ is directly completed by the guest. This
++requires HW support in the interrupt controller which must be able
++to automatically complete the physical IRQ when it detects the guest
++has completed the corresponding virtual IRQ. The modality sometimes
++is named direct EOI.
+ 
+ Groups:
+   KVM_DEV_VFIO_GROUP
++  KVM_DEV_VFIO_DEVICE
+ 
+ KVM_DEV_VFIO_GROUP attributes:
+   KVM_DEV_VFIO_GROUP_ADD: Add a VFIO group to VFIO-KVM device tracking
+@@ -20,3 +29,16 @@ KVM_DEV_VFIO_GROUP attributes:
+ 
+ For each, kvm_device_attr.addr points to an int32_t file descriptor
+ for the VFIO group.
++
++KVM_DEV_VFIO_DEVICE attributes:
++  KVM_DEV_VFIO_DEVICE_FORWARD_IRQ: set a VFIO device IRQ as forwarded
++  KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ: set a VFIO device IRQ as not forwarded
++
++For each, kvm_device_attr.addr points to a kvm_arch_forwarded_irq struct.
++
++The forwarded state can only be changed when the VFIO signaling mechanism
++for this physical IRQ is not set. In other words, forwarding must be
++activated before VFIO_DEVICE_SET_IRQS has been called to trigger the IRQ
++or associate an eventfd to it. Unforwarding can only be called while the
++signaling has been disabled with VFIO_DEVICE_SET_IRQS. If this condition is
++not satisfied, the command returns an -EBUSY.
+diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+index 6076882..a269a42 100644
+--- a/include/uapi/linux/kvm.h
++++ b/include/uapi/linux/kvm.h
+@@ -946,6 +946,9 @@ struct kvm_device_attr {
+ #define  KVM_DEV_VFIO_GROUP			1
+ #define   KVM_DEV_VFIO_GROUP_ADD			1
+ #define   KVM_DEV_VFIO_GROUP_DEL			2
++#define  KVM_DEV_VFIO_DEVICE			2
++#define   KVM_DEV_VFIO_DEVICE_FORWARD_IRQ			1
++#define   KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ			2
+ 
+ enum kvm_device_type {
+ 	KVM_DEV_TYPE_FSL_MPIC_20	= 1,
+@@ -963,6 +966,13 @@ enum kvm_device_type {
+ 	KVM_DEV_TYPE_MAX,
+ };
+ 
++struct kvm_arch_forwarded_irq {
++	__u32 fd; /* file desciptor of the VFIO device */
++	__u32 index; /* VFIO device IRQ index */
++	__u32 subindex; /* VFIO device IRQ subindex */
++	__u32 gsi; /* gsi, ie. virtual IRQ number */
++};
++
+ /*
+  * ioctls for VM fds
+  */
 -- 
-Regards/Gruss,
-    Boris.
+1.9.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
