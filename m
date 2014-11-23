@@ -1,61 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751199AbaKWMxd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 07:53:33 -0500
+	id S1751324AbaKWMxi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 07:53:38 -0500
 Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:12854 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751014AbaKWMxb (ORCPT
+	by vger.kernel.org with ESMTP id S1751014AbaKWMxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 07:53:31 -0500
+	Sun, 23 Nov 2014 07:53:34 -0500
 X-IronPort-AV: E=Sophos;i="5.07,443,1413237600"; 
-   d="scan'208";a="109082620"
+   d="scan'208";a="109082623"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 To: Jaroslav Kysela <perex@perex.cz>
 Cc: kernel-janitors@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
         alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/10] fix error return code
-Date: Sun, 23 Nov 2014 13:48:01 +0100
-Message-Id: <1416746890-22719-1-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 8/9] sound/pci/rme9652/hdspm.c: fix error return code
+Date: Sun, 23 Nov 2014 13:48:04 +0100
+Message-Id: <1416746890-22719-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1416746890-22719-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1416746890-22719-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches fix cases where the return code appears to be unintentially
-nonnegative.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-The complete semantic match that finds the problem is as follows:
-(http://coccinelle.lip6.fr/)
+Convert a nonnegative error return code to a negative one, as returned
+elsewhere in the function.
+
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
 // <smpl>
-@ok exists@
-identifier f,ret,i;
-expression e;
-constant c;
-@@
-
-f(...) {
-<+...
-(
-return -c@i;
-|
-ret = -c@i;
-... when != ret = e
-return ret;
-|
-if (ret < 0) { ... return ret; }
-)
-...+> }
-
-@r exists@
-identifier ret,l,ok.f;
-expression e1,e2,e3;
-statement S;
-position p1,p2,p3;
-@@
-
-f(...) {
-... when any
 (
 if@p1 (\(ret < 0\|ret != 0\))
  { ... return ret; }
@@ -64,59 +40,32 @@ ret@p1 = 0
 )
 ... when != ret = e1
     when != &ret
-(
- if (<+... ret = e3 ...+>) S
-|
- if (<+... &ret ...+>) S
-|
-if@p2(...)
- {
+*if(...)
+{
   ... when != ret = e2
       when forall
- return@p3 ret;
-}
-)
-... when any
+ return ret;
 }
 
-@bad exists@
-position r.p1,r.p2;
-statement S1,S2;
-identifier r.ret;
-expression e1;
-@@
-
-(
-if@p1 (\(ret < 0\|ret != 0\)) S1
-|
-ret@p1 = 0
-)
-... when any
-ret = e1
-... when any
-if@p2(...) S2
-
-@bad2@
-position r.p1,r.p2;
-identifier r.ret;
-expression e1;
-statement S2;
-@@
-
-ret@p1 = 0
-... when != if (...) { ... ret = e1 ... return ret; }
-    when any
-if@p2(...) S2
-
-
-@script:python depends on !bad && !bad2@
-p1 << r.p1;
-p2 << r.p2;
-p3 << r.p3;
-@@
-
-cocci.print_main("",p1)
-cocci.print_secs("",p2)
-cocci.print_secs("",p3)
 // </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ sound/pci/rme9652/hdspm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sound/pci/rme9652/hdspm.c b/sound/pci/rme9652/hdspm.c
+index b8ac871..b12308b 100644
+--- a/sound/pci/rme9652/hdspm.c
++++ b/sound/pci/rme9652/hdspm.c
+@@ -6585,7 +6585,7 @@ static int __devinit snd_hdspm_create(struct snd_card *card,
+ 		snd_printk(KERN_ERR "HDSPM: "
+ 				"unable to kmalloc Mixer memory of %d Bytes\n",
+ 				(int)sizeof(struct hdspm_mixer));
+-		return err;
++		return -ENOMEM;
+ 	}
+ 
+ 	hdspm->port_names_in = NULL;
 
