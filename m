@@ -1,153 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514AbaKWP2T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 10:28:19 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:64237 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235AbaKWP2S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 10:28:18 -0500
-Message-ID: <5471FD0E.4060305@gmail.com>
-Date: Sun, 23 Nov 2014 18:28:14 +0300
-From: Dmitry Tunin <hanipouspilot@gmail.com>
+	id S1751635AbaKWPdq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 10:33:46 -0500
+Received: from mout.web.de ([212.227.17.11]:53675 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751283AbaKWPdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 10:33:44 -0500
+Message-ID: <5471FE45.4010802@users.sourceforge.net>
+Date: Sun, 23 Nov 2014 16:33:25 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Marcel Holtmann <marcel@holtmann.org>
-CC: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] ath3k: Add support of MCI 13d3:3408 bt device
-References: <5471CFE9.9070109@gmail.com> <4BD80C85-0288-404D-AB39-485359414DC9@holtmann.org>
-In-Reply-To: <4BD80C85-0288-404D-AB39-485359414DC9@holtmann.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] video: fbdev-VIA: Deletion of an unnecessary check before
+ the function call "framebuffer_release"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:IeX3Wg5MCSeI1B1RGuxTGqQBjEBp+WUR3bsatkn7vKOSuQ4N8zt
+ Rxx+C0VOUtrz3QISBXqguJsokIbPUEkwTjtpkK4liETw2ABkCwwZHyF1HrnqP2p/O/ZpuPk
+ hkIaGdBXrl5taKNiL/LIbhRl7v5crrottlvVPLfIudhl0HU5VA+6sc4oLhfXyH0KXX0DrPe
+ Kom4RuKWf1Bcm7vbUctSA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Finally I figured out how to set up the mailer not to spoil everything.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Sun, 23 Nov 2014 16:30:05 +0100
 
-Add support for bluetooth MCI WB335 (AR9565) Wi-Fi+bt module.
-This bluetooth module requires loading patch and sysconfig by ath3k driver.
+The framebuffer_release() function tests whether its argument is NULL
+and then returns immediately. Thus the test around the call is not needed.
 
-Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
+This issue was detected by using the Coccinelle software.
 
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 ---
+ drivers/video/fbdev/via/viafbdev.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index d85ced2..086240c 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -105,6 +105,7 @@ static const struct usb_device_id ath3k_table[] = {
-  	{ USB_DEVICE(0x13d3, 0x3375) },
-  	{ USB_DEVICE(0x13d3, 0x3393) },
-  	{ USB_DEVICE(0x13d3, 0x3402) },
-+	{ USB_DEVICE(0x13d3, 0x3408) },
-  	{ USB_DEVICE(0x13d3, 0x3432) },
+diff --git a/drivers/video/fbdev/via/viafbdev.c b/drivers/video/fbdev/via/viafbdev.c
+index 325c43c..f9718f0 100644
+--- a/drivers/video/fbdev/via/viafbdev.c
++++ b/drivers/video/fbdev/via/viafbdev.c
+@@ -1937,8 +1937,7 @@ out_fb1_unreg_lcd_cle266:
+ out_dealloc_cmap:
+ 	fb_dealloc_cmap(&viafbinfo->cmap);
+ out_fb1_release:
+-	if (viafbinfo1)
+-		framebuffer_release(viafbinfo1);
++	framebuffer_release(viafbinfo1);
+ out_fb_release:
+ 	i2c_bus_free(viaparinfo->shared);
+ 	framebuffer_release(viafbinfo);
+-- 
+2.1.3
 
-  	/* Atheros AR5BBU12 with sflash firmware */
-@@ -156,6 +157,7 @@ static const struct usb_device_id ath3k_blist_tbl[] = {
-  	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
-  	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
-  	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
-  	{ USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
-
-  	/* Atheros AR5BBU22 with sflash firmware */
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index edfc17b..091c813 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -182,6 +182,7 @@ static const struct usb_device_id blacklist_table[] = {
-  	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
-  	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
-  	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
-  	{ USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
-
-  	/* Atheros AR5BBU12 with sflash firmware */
-
---
-
-23.11.2014 17:56, Marcel Holtmann wrote:
-> Hi Dmitry,
->
->> Add support for bluetooth MCI WB335 (AR9565) Wi-Fi+bt module.
->> This bluetooth module requires loading patch and sysconfig by ath3k driver.
->>
->> /sys/kernel/debug/usb/devices
->>
->> T:  Bus=01 Lev=02 Prnt=03 Port=00 Cnt=01 Dev#= 20 Spd=12 MxCh= 0
->> D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
->> P:  Vendor=13d3 ProdID=3408 Rev= 0.02
->> C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
->> A:  FirstIf#= 0 IfCount= 2 Cls=e0(wlcon) Sub=01 Prot=01
->> I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
->> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
->> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
->> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
->> I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
->> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
->> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
->> I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
->> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
->> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
->> I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
->> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
->> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
->> I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
->> E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
->> E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
->> I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
->> E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
->> E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
->> I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
->> E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
->> E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
->>
->> Signed-off-by: Dmitry Tunin<hanipouspilot@gmail.com>
->
-> space between the name and the email address.
->
->>
->> ---
->>
->> diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
->> index d85ced2..086240c 100644
->> --- a/drivers/bluetooth/ath3k.c
->> +++ b/drivers/bluetooth/ath3k.c
->> @@ -105,6 +105,7 @@ static const struct usb_device_id ath3k_table[] = {
->>      { USB_DEVICE(0x13d3, 0x3375) },
->>      { USB_DEVICE(0x13d3, 0x3393) },
->>      { USB_DEVICE(0x13d3, 0x3402) },
->> +    { USB_DEVICE(0x13d3, 0x3408) },
->>      { USB_DEVICE(0x13d3, 0x3432) },
->
-> And your mail client messes up spaces vs tabs here.
->
->>
->>      /* Atheros AR5BBU12 with sflash firmware */
->> @@ -156,6 +157,7 @@ static const struct usb_device_id ath3k_blist_tbl[] = {
->>      { USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
->>      { USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
->>      { USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
->> +    { USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
->>      { USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
->>
->>      /* Atheros AR5BBU22 with sflash firmware */
->> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
->> index edfc17b..091c813 100644
->> --- a/drivers/bluetooth/btusb.c
->> +++ b/drivers/bluetooth/btusb.c
->> @@ -182,6 +182,7 @@ static const struct usb_device_id blacklist_table[] = {
->>      { USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
->>      { USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
->>      { USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
->> +    { USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
->>      { USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
->>
->>      /* Atheros AR5BBU12 with sflash firmware */
->
-> Regards
->
-> Marcel
->
