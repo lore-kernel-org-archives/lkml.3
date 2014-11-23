@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792AbaKWOWe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 09:22:34 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:65534 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701AbaKWOW2 (ORCPT
+	id S1751848AbaKWOWl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 09:22:41 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:45562 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788AbaKWOWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 09:22:28 -0500
+	Sun, 23 Nov 2014 09:22:35 -0500
 From: Pieter Smith <pieter@boesman.nl>
 To: pieter@boesman.nl
 Cc: Josh Triplett <josh@joshtriplett.org>,
@@ -43,9 +43,9 @@ Cc: Josh Triplett <josh@joshtriplett.org>,
         Willem de Bruijn <willemb@google.com>,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         =?UTF-8?q?=E8=94=A1=E6=AD=A3=E9=BE=99?= <zhenglong.cai@cs2c.com.cn>
-Subject: [PATCH 4/6] fs/fuse: support compiling out splice
-Date: Sun, 23 Nov 2014 15:20:48 +0100
-Message-Id: <1416752468-1626-5-git-send-email-pieter@boesman.nl>
+Subject: [PATCH 5/6] net/core: support compiling out splice
+Date: Sun, 23 Nov 2014 15:20:49 +0100
+Message-Id: <1416752468-1626-6-git-send-email-pieter@boesman.nl>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
 References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
@@ -53,59 +53,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To implement splice support, fs/fuse makes use of nosteal_pipe_buf_ops. This
+To implement splice support, net/core makes use of nosteal_pipe_buf_ops. This
 struct is exported by fs/splice. The goal of the larger patch set is to
 completely compile out fs/splice, so uses of the exported struct need to be
 compiled out along with fs/splice.
 
-This patch therefore compiles out splice support in fs/fuse when
-CONFIG_SYSCALL_SPLICE is undefined.
+This patch therefore compiles out splice support in net/core when
+CONFIG_SYSCALL_SPLICE is undefined. The compiled out function skb_splice_bits
+is transparently mocked out with a static inline. The greater patch set removes
+userspace splice support so it cannot be called anyway.
 
 Signed-off-by: Pieter Smith <pieter@boesman.nl>
 ---
- fs/fuse/dev.c      | 4 ++--
- include/linux/fs.h | 6 ++++++
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ include/linux/skbuff.h | 9 +++++++++
+ net/core/skbuff.c      | 9 ++++++---
+ 2 files changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-index ca88731..f8f92a4 100644
---- a/fs/fuse/dev.c
-+++ b/fs/fuse/dev.c
-@@ -1291,7 +1291,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
- 	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
- }
- 
--static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
-+static ssize_t __maybe_unused fuse_dev_splice_read(struct file *in, loff_t *ppos,
- 				    struct pipe_inode_info *pipe,
- 				    size_t len, unsigned int flags)
- {
-@@ -2144,7 +2144,7 @@ const struct file_operations fuse_dev_operations = {
- 	.llseek		= no_llseek,
- 	.read		= do_sync_read,
- 	.aio_read	= fuse_dev_read,
--	.splice_read	= fuse_dev_splice_read,
-+	.splice_read	= __splice_p(fuse_dev_splice_read),
- 	.write		= do_sync_write,
- 	.aio_write	= fuse_dev_write,
- 	.splice_write	= fuse_dev_splice_write,
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index a957d43..04c0975 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2443,6 +2443,12 @@ extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
- 			int datasync);
- extern void block_sync_page(struct page *page);
- 
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index a59d934..54a50c1 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -2640,9 +2640,18 @@ int skb_copy_bits(const struct sk_buff *skb, int offset, void *to, int len);
+ int skb_store_bits(struct sk_buff *skb, int offset, const void *from, int len);
+ __wsum skb_copy_and_csum_bits(const struct sk_buff *skb, int offset, u8 *to,
+ 			      int len, __wsum csum);
 +#ifdef CONFIG_SYSCALL_SPLICE
-+#define __splice_p(x) x
+ int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
+ 		    struct pipe_inode_info *pipe, unsigned int len,
+ 		    unsigned int flags);
 +#else
-+#define __splice_p(x) NULL
++static inline int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
++		    struct pipe_inode_info *pipe, unsigned int len,
++		    unsigned int flags)
++{
++	return -EPERM;
++}
 +#endif
+ void skb_copy_and_csum_dev(const struct sk_buff *skb, u8 *to);
+ unsigned int skb_zerocopy_headlen(const struct sk_buff *from);
+ int skb_zerocopy(struct sk_buff *to, struct sk_buff *from,
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 61059a0..74fad8a 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -1781,9 +1781,9 @@ static bool __splice_segment(struct page *page, unsigned int poff,
+  * Map linear and fragment data from the skb to spd. It reports true if the
+  * pipe is full or if we already spliced the requested length.
+  */
+-static bool __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
+-			      unsigned int *offset, unsigned int *len,
+-			      struct splice_pipe_desc *spd, struct sock *sk)
++static bool __maybe_unused __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
++					     unsigned int *offset, unsigned int *len,
++					     struct splice_pipe_desc *spd, struct sock *sk)
+ {
+ 	int seg;
+ 
+@@ -1821,6 +1821,7 @@ static bool __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
+  * the frag list, if such a thing exists. We'd probably need to recurse to
+  * handle that cleanly.
+  */
++#ifdef CONFIG_SYSCALL_SPLICE
+ int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
+ 		    struct pipe_inode_info *pipe, unsigned int tlen,
+ 		    unsigned int flags)
+@@ -1876,6 +1877,8 @@ done:
+ 
+ 	return ret;
+ }
++#endif /* #ifdef CONFIG_SYSCALL_SPLICE */
 +
- /* fs/splice.c */
- extern ssize_t generic_file_splice_read(struct file *, loff_t *,
- 		struct pipe_inode_info *, size_t, unsigned int);
+ 
+ /**
+  *	skb_store_bits - store bits from kernel buffer to skb
 -- 
 2.1.0
 
