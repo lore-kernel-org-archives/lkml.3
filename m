@@ -1,63 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750852AbaKWKL5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 05:11:57 -0500
-Received: from mout.web.de ([212.227.17.12]:62293 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750704AbaKWKLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 05:11:54 -0500
-Message-ID: <5471B2BF.4040707@users.sourceforge.net>
-Date: Sun, 23 Nov 2014 11:11:11 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1750804AbaKWK0I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 05:26:08 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:53719 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704AbaKWK0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 05:26:06 -0500
+Message-ID: <5471B635.3050006@gmail.com>
+Date: Sun, 23 Nov 2014 18:25:57 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Michal Januszewski <spock@gentoo.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] video: uvesafb: Deletion of an unnecessary check before
- the function call "uvesafb_free"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
+To: Vincent Guittot <vincent.guittot@linaro.org>, peterz@infradead.org,
+        mingo@kernel.org, linux-kernel@vger.kernel.org,
+        preeti@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org
+CC: riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
+        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com
+Subject: Re: [PATCH v4 01/12] sched: fix imbalance flag reset
+References: <1406569906-9763-1-git-send-email-vincent.guittot@linaro.org> <1406569906-9763-2-git-send-email-vincent.guittot@linaro.org>
+In-Reply-To: <1406569906-9763-2-git-send-email-vincent.guittot@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:ujYPjUXkZzT5sBtCmIzMo6Jy60Mdmf5doTvhI0sd10+6JFOUCeT
- +a1GU7kQ5d3kV3UPp+uhnbPS5m/x9d3BK50VRaUnMaa5lROZHFBiO10GPHDcuBf7cwizL8p
- I7wut5jATT0MI1NAYVWf+tzIjUHI3eKY2mg20YuOOmbloQVRZI2gKlNUOzCsEjo90dWxbe1
- cUqTyobOQjB4+bMY01WNA==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sun, 23 Nov 2014 11:00:26 +0100
+Hi Vincent,
+On 7/29/14, 1:51 AM, Vincent Guittot wrote:
+> The imbalance flag can stay set whereas there is no imbalance.
+>
+> Let assume that we have 3 tasks that run on a dual cores /dual cluster system.
+> We will have some idle load balance which are triggered during tick.
+> Unfortunately, the tick is also used to queue background work so we can reach
+> the situation where short work has been queued on a CPU which already runs a
+> task. The load balance will detect this imbalance (2 tasks on 1 CPU and an idle
+> CPU) and will try to pull the waiting task on the idle CPU. The waiting task is
+> a worker thread that is pinned on a CPU so an imbalance due to pinned task is
+> detected and the imbalance flag is set.
 
-The uvesafb_free() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+The waiting task is the third task or one the '2 tasks on 1 CPU' ?
 
-This issue was detected by using the Coccinelle software.
+Regards,
+Wanpeng Li
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/video/fbdev/uvesafb.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/video/fbdev/uvesafb.c b/drivers/video/fbdev/uvesafb.c
-index 509d452..f718627 100644
---- a/drivers/video/fbdev/uvesafb.c
-+++ b/drivers/video/fbdev/uvesafb.c
-@@ -1219,8 +1219,7 @@ static int uvesafb_release(struct fb_info *info, int user)
- 	uvesafb_vbe_state_restore(par, par->vbe_state_orig);
- out:
- 	atomic_dec(&par->ref_count);
--	if (task)
--		uvesafb_free(task);
-+	uvesafb_free(task);
- 	return 0;
- }
- 
--- 
-2.1.3
+> Then, we will not be able to clear the flag because we have at most 1 task on
+> each CPU but the imbalance flag will trig to useless active load balance
+> between the idle CPU and the busy CPU.
+>
+> We need to reset of the imbalance flag as soon as we have reached a balanced
+> state. If all tasks are pinned, we don't consider that as a balanced state and
+> let the imbalance flag set.
+>
+> Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>   kernel/sched/fair.c | 23 +++++++++++++++++++----
+>   1 file changed, 19 insertions(+), 4 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 923fe32..7eb9126 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -6672,10 +6672,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+>   		if (sd_parent) {
+>   			int *group_imbalance = &sd_parent->groups->sgc->imbalance;
+>   
+> -			if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0) {
+> +			if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0)
+>   				*group_imbalance = 1;
+> -			} else if (*group_imbalance)
+> -				*group_imbalance = 0;
+>   		}
+>   
+>   		/* All tasks on this runqueue were pinned by CPU affinity */
+> @@ -6686,7 +6684,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+>   				env.loop_break = sched_nr_migrate_break;
+>   				goto redo;
+>   			}
+> -			goto out_balanced;
+> +			goto out_all_pinned;
+>   		}
+>   	}
+>   
+> @@ -6760,6 +6758,23 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+>   	goto out;
+>   
+>   out_balanced:
+> +	/*
+> +	 * We reach balance although we may have faced some affinity
+> +	 * constraints. Clear the imbalance flag if it was set.
+> +	 */
+> +	if (sd_parent) {
+> +		int *group_imbalance = &sd_parent->groups->sgc->imbalance;
+> +
+> +		if (*group_imbalance)
+> +			*group_imbalance = 0;
+> +	}
+> +
+> +out_all_pinned:
+> +	/*
+> +	 * We reach balance because all tasks are pinned at this level so
+> +	 * we can't migrate them. Let the imbalance flag set so parent level
+> +	 * can try to migrate them.
+> +	 */
+>   	schedstat_inc(sd, lb_balanced[idle]);
+>   
+>   	sd->nr_balance_failed = 0;
 
