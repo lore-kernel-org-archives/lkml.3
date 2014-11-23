@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324AbaKWMxi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 07:53:38 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:12854 "EHLO
+	id S1751276AbaKWMxg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 07:53:36 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:14354 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751014AbaKWMxe (ORCPT
+	by vger.kernel.org with ESMTP id S1751134AbaKWMxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 07:53:34 -0500
+	Sun, 23 Nov 2014 07:53:33 -0500
 X-IronPort-AV: E=Sophos;i="5.07,443,1413237600"; 
-   d="scan'208";a="109082623"
+   d="scan'208";a="109082622"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Jaroslav Kysela <perex@perex.cz>
-Cc: kernel-janitors@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+To: Liam Girdwood <lrg@ti.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
         alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 8/9] sound/pci/rme9652/hdspm.c: fix error return code
-Date: Sun, 23 Nov 2014 13:48:04 +0100
-Message-Id: <1416746890-22719-4-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 1/10] sound/soc/ux500/ux500_msp_i2s.c: better use devm functions and fix error return code
+Date: Sun, 23 Nov 2014 13:48:03 +0100
+Message-Id: <1416746890-22719-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1416746890-22719-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1416746890-22719-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -25,10 +27,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Convert a nonnegative error return code to a negative one, as returned
-elsewhere in the function.
+Remove unnecessary calls to devm_kfree and replace iounmap by devm_iounmap
+(and use resource_size for the third argument).  These changes make it
+possible to remove the error-handling code at the end of
+ux500_msp_i2s_init_msp, and all of the gotos become direct returns.
 
-A simplified version of the semantic match that finds this problem is as
+In the case of the second call to devm_kzalloc, the return variable ret was
+not initialized.  Here it is changed to a direct return of -ENOMEM.
+
+A simplified version of the semantic match that finds the second problem is as
 follows: (http://coccinelle.lip6.fr/)
 
 // <smpl>
@@ -52,20 +59,75 @@ ret@p1 = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- sound/pci/rme9652/hdspm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/ux500/ux500_msp_i2s.c |   25 +++++--------------------
+ 1 file changed, 5 insertions(+), 20 deletions(-)
 
-diff --git a/sound/pci/rme9652/hdspm.c b/sound/pci/rme9652/hdspm.c
-index b8ac871..b12308b 100644
---- a/sound/pci/rme9652/hdspm.c
-+++ b/sound/pci/rme9652/hdspm.c
-@@ -6585,7 +6585,7 @@ static int __devinit snd_hdspm_create(struct snd_card *card,
- 		snd_printk(KERN_ERR "HDSPM: "
- 				"unable to kmalloc Mixer memory of %d Bytes\n",
- 				(int)sizeof(struct hdspm_mixer));
--		return err;
+diff --git a/sound/soc/ux500/ux500_msp_i2s.c b/sound/soc/ux500/ux500_msp_i2s.c
+index 36be11e..1b7c2f5 100644
+--- a/sound/soc/ux500/ux500_msp_i2s.c
++++ b/sound/soc/ux500/ux500_msp_i2s.c
+@@ -663,7 +663,6 @@ int ux500_msp_i2s_init_msp(struct platform_device *pdev,
+ 			struct ux500_msp **msp_p,
+ 			struct msp_i2s_platform_data *platform_data)
+ {
+-	int ret = 0;
+ 	struct resource *res = NULL;
+ 	struct i2s_controller *i2s_cont;
+ 	struct ux500_msp *msp;
+@@ -687,15 +686,14 @@ int ux500_msp_i2s_init_msp(struct platform_device *pdev,
+ 	if (res == NULL) {
+ 		dev_err(&pdev->dev, "%s: ERROR: Unable to get resource!\n",
+ 			__func__);
+-		ret = -ENOMEM;
+-		goto err_res;
 +		return -ENOMEM;
  	}
  
- 	hdspm->port_names_in = NULL;
+-	msp->registers = ioremap(res->start, (res->end - res->start + 1));
++	msp->registers = devm_ioremap(&pdev->dev, res->start,
++				      resource_size(res));
+ 	if (msp->registers == NULL) {
+ 		dev_err(&pdev->dev, "%s: ERROR: ioremap failed!\n", __func__);
+-		ret = -ENOMEM;
+-		goto err_res;
++		return -ENOMEM;
+ 	}
+ 
+ 	msp->msp_state = MSP_STATE_IDLE;
+@@ -707,7 +705,7 @@ int ux500_msp_i2s_init_msp(struct platform_device *pdev,
+ 		dev_err(&pdev->dev,
+ 			"%s: ERROR: Failed to allocate I2S-controller!\n",
+ 			__func__);
+-		goto err_i2s_cont;
++		return -ENOMEM;
+ 	}
+ 	i2s_cont->dev.parent = &pdev->dev;
+ 	i2s_cont->data = (void *)msp;
+@@ -718,14 +716,6 @@ int ux500_msp_i2s_init_msp(struct platform_device *pdev,
+ 	msp->i2s_cont = i2s_cont;
+ 
+ 	return 0;
+-
+-err_i2s_cont:
+-	iounmap(msp->registers);
+-
+-err_res:
+-	devm_kfree(&pdev->dev, msp);
+-
+-	return ret;
+ }
+ 
+ void ux500_msp_i2s_cleanup_msp(struct platform_device *pdev,
+@@ -734,11 +724,6 @@ void ux500_msp_i2s_cleanup_msp(struct platform_device *pdev,
+ 	dev_dbg(msp->dev, "%s: Enter (id = %d).\n", __func__, msp->id);
+ 
+ 	device_unregister(&msp->i2s_cont->dev);
+-	devm_kfree(&pdev->dev, msp->i2s_cont);
+-
+-	iounmap(msp->registers);
+-
+-	devm_kfree(&pdev->dev, msp);
+ }
+ 
+ MODULE_LICENSE("GPL v2");
 
