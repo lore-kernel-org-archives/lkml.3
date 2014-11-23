@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364AbaKWSqa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 13:46:30 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:34630 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419AbaKWSq2 (ORCPT
+	id S1752116AbaKWSvO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 13:51:14 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:62083 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419AbaKWSvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 13:46:28 -0500
-Date: Sun, 23 Nov 2014 13:46:23 -0500 (EST)
-Message-Id: <20141123.134623.2061031332250984539.davem@davemloft.net>
-To: pieter@boesman.nl
-Cc: josh@joshtriplett.org, alexander.h.duyck@intel.com,
-        viro@zeniv.linux.org.uk, ast@plumgrid.com, akpm@linux-foundation.org,
-        beber@meleeweb.net, catalina.mocanu@gmail.com, dborkman@redhat.com,
-        edumazet@google.com, ebiederm@xmission.com, fabf@skynet.be,
-        fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
-        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
-        bfields@fieldses.org, jlayton@poochiereds.net,
-        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mcgrof@suse.com, mattst88@gmail.com,
-        mgorman@suse.de, mst@redhat.com, miklos@szeredi.hu,
-        netdev@vger.kernel.org, oleg@redhat.com, Paul.Durrant@citrix.com,
-        paulmck@linux.vnet.ibm.com, pefoley2@pefoley.com, tgraf@suug.ch,
-        therbert@google.com, willemb@google.com,
-        xiaoguangrong@linux.vnet.ibm.com, zhenglong.cai@cs2c.com.cn
-Subject: Re: [PATCH 0/6] kernel tinification: optionally compile out splice
- family of syscalls (splice, vmsplice, tee and sendfile)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
-References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 23 Nov 2014 10:46:27 -0800 (PST)
+	Sun, 23 Nov 2014 13:51:11 -0500
+Date: Mon, 24 Nov 2014 00:21:06 +0530
+From: Balavasu <kp.balavasu@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: andreas.dilger@intel.com, oleg.drokin@intel.com, greg@kroah.com
+Subject: [PATCH 2/2] staging: lustre: lnet: lnet: trailing statements should
+ be on next line
+Message-ID: <20141123185106.GA6651@vasu-Inspiron-3542>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch fixes the checkpatch.pl issue
+Error: trailing statements should be on next line
 
-Truly removing sendfile/sendpage means that you can't even compile NFS
-into the tree.
+Signed-off-by: Balavasu <kp.balavasu@gmail.com>
+---
+ drivers/staging/lustre/lnet/lnet/router.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-I cannot take this patch series seriously, sorry.
+diff --git a/drivers/staging/lustre/lnet/lnet/router.c b/drivers/staging/lustre/lnet/lnet/router.c
+index cdeb246..0f569a0 100644
+--- a/drivers/staging/lustre/lnet/lnet/router.c
++++ b/drivers/staging/lustre/lnet/lnet/router.c
+@@ -1670,13 +1670,16 @@ lnet_get_tunables (void)
+ 	char *s;
+ 
+ 	s = getenv("LNET_ROUTER_PING_TIMEOUT");
+-	if (s != NULL) router_ping_timeout = atoi(s);
++	if (s != NULL)
++		router_ping_timeout = atoi(s);
+ 
+ 	s = getenv("LNET_LIVE_ROUTER_CHECK_INTERVAL");
+-	if (s != NULL) live_router_check_interval = atoi(s);
++	if (s != NULL)
++		live_router_check_interval = atoi(s);
+ 
+ 	s = getenv("LNET_DEAD_ROUTER_CHECK_INTERVAL");
+-	if (s != NULL) dead_router_check_interval = atoi(s);
++	if (s != NULL)
++		dead_router_check_interval = atoi(s);
+ 
+ 	/* This replaces old lnd_notify mechanism */
+ 	check_routers_before_use = 1;
+-- 
+1.9.1
+
