@@ -1,140 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265AbaKWNPl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 08:15:41 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:33030 "EHLO
+	id S1751481AbaKWNQp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 08:16:45 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:57097 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751014AbaKWNPj (ORCPT
+	by vger.kernel.org with ESMTP id S1751014AbaKWNQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 08:15:39 -0500
+	Sun, 23 Nov 2014 08:16:41 -0500
 X-IronPort-AV: E=Sophos;i="5.07,443,1413237600"; 
-   d="scan'208";a="109083657"
-Date: Sun, 23 Nov 2014 14:15:37 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-cc: Jaroslav Kysela <perex@perex.cz>, kernel-janitors@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+   d="scan'208";a="109083691"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: David Airlie <airlied@linux.ie>
+Cc: kernel-janitors@vger.kernel.org, dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/10] fix error return code
-In-Reply-To: <1416746890-22719-1-git-send-email-Julia.Lawall@lip6.fr>
-Message-ID: <alpine.DEB.2.02.1411231415030.2261@localhost6.localdomain6>
-References: <1416746890-22719-1-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Subject: [PATCH 5/5] drivers/gpu/drm: fix error return code
+Date: Sun, 23 Nov 2014 14:11:18 +0100
+Message-Id: <1416748278-22881-6-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1416748278-22881-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1416748278-22881-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops!!!  These are ancient patches.  I meant to send something else.  
-Sorry for the noise.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-julia
+Return a negative error code on failure.
 
-On Sun, 23 Nov 2014, Julia Lawall wrote:
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-> These patches fix cases where the return code appears to be unintentially
-> nonnegative.
-> 
-> The complete semantic match that finds the problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @ok exists@
-> identifier f,ret,i;
-> expression e;
-> constant c;
-> @@
-> 
-> f(...) {
-> <+...
-> (
-> return -c@i;
-> |
-> ret = -c@i;
-> ... when != ret = e
-> return ret;
-> |
-> if (ret < 0) { ... return ret; }
-> )
-> ...+> }
-> 
-> @r exists@
-> identifier ret,l,ok.f;
-> expression e1,e2,e3;
-> statement S;
-> position p1,p2,p3;
-> @@
-> 
-> f(...) {
-> ... when any
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> (
->  if (<+... ret = e3 ...+>) S
-> |
->  if (<+... &ret ...+>) S
-> |
-> if@p2(...)
->  {
->   ... when != ret = e2
->       when forall
->  return@p3 ret;
-> }
-> )
-> ... when any
-> }
-> 
-> @bad exists@
-> position r.p1,r.p2;
-> statement S1,S2;
-> identifier r.ret;
-> expression e1;
-> @@
-> 
-> (
-> if@p1 (\(ret < 0\|ret != 0\)) S1
-> |
-> ret@p1 = 0
-> )
-> ... when any
-> ret = e1
-> ... when any
-> if@p2(...) S2
-> 
-> @bad2@
-> position r.p1,r.p2;
-> identifier r.ret;
-> expression e1;
-> statement S2;
-> @@
-> 
-> ret@p1 = 0
-> ... when != if (...) { ... ret = e1 ... return ret; }
->     when any
-> if@p2(...) S2
-> 
-> 
-> @script:python depends on !bad && !bad2@
-> p1 << r.p1;
-> p2 << r.p2;
-> p3 << r.p3;
-> @@
-> 
-> cocci.print_main("",p1)
-> cocci.print_secs("",p2)
-> cocci.print_secs("",p3)
-> // </smpl>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+// <smpl>
+@@
+identifier ret; expression e1,e2;
+@@
+(
+if (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ drivers/gpu/drm/gma500/psb_drv.c         |    8 ++++++--
+ drivers/gpu/drm/omapdrm/omap_dmm_tiler.c |    1 +
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
+index 6ec3a90..e405414 100644
+--- a/drivers/gpu/drm/gma500/psb_drv.c
++++ b/drivers/gpu/drm/gma500/psb_drv.c
+@@ -306,12 +306,16 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+ 		goto out_err;
+ 
+ 	dev_priv->mmu = psb_mmu_driver_init(dev, 1, 0, 0);
+-	if (!dev_priv->mmu)
++	if (!dev_priv->mmu) {
++		ret = -ENOMEM;
+ 		goto out_err;
++	}
+ 
+ 	dev_priv->pf_pd = psb_mmu_alloc_pd(dev_priv->mmu, 1, 0);
+-	if (!dev_priv->pf_pd)
++	if (!dev_priv->pf_pd) {
++		ret = -ENOMEM;
+ 		goto out_err;
++	}
+ 
+ 	ret = psb_do_init(dev);
+ 	if (ret)
+diff --git a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
+index 56c6055..c0fb5fa 100644
+--- a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
++++ b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
+@@ -678,6 +678,7 @@ static int omap_dmm_probe(struct platform_device *dev)
+ 				&omap_dmm->refill_pa, GFP_KERNEL);
+ 	if (!omap_dmm->refill_va) {
+ 		dev_err(&dev->dev, "could not allocate refill memory\n");
++		ret = -ENOMEM;
+ 		goto fail;
+ 	}
+ 
+
