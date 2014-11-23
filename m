@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaKXUVo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:21:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49078 "EHLO
+	id S1752958AbaKXUVz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:21:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49132 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273AbaKXUVn (ORCPT
+	with ESMTP id S1751149AbaKXUVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:21:43 -0500
-Date: Sun, 23 Nov 2014 10:14:13 -0800
+	Mon, 24 Nov 2014 15:21:52 -0500
+Date: Sun, 23 Nov 2014 10:13:07 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-8e047adae969701c6cec136484bb9de8572af934@git.kernel.org>
-Cc: marc.zyngier@arm.com, bp@alien8.de, tglx@linutronix.de,
-        wangyijing@huawei.com, hpa@zytor.com, agordeev@redhat.com,
-        tony.luck@intel.com, bhelgaas@google.com, mingo@kernel.org,
-        yingjoe.chen@mediatek.com, linux-kernel@vger.kernel.org,
-        grant.likely@linaro.org, jiang.liu@linux.intel.com,
-        matthias.bgg@gmail.com
-Reply-To: jiang.liu@linux.intel.com, matthias.bgg@gmail.com,
-        grant.likely@linaro.org, linux-kernel@vger.kernel.org,
-        yingjoe.chen@mediatek.com, mingo@kernel.org, tony.luck@intel.com,
-        bhelgaas@google.com, agordeev@redhat.com, wangyijing@huawei.com,
-        tglx@linutronix.de, hpa@zytor.com, marc.zyngier@arm.com, bp@alien8.de
-In-Reply-To: <1416061447-9472-10-git-send-email-jiang.liu@linux.intel.com>
-References: <1416061447-9472-10-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-d9109698be6e7439e6082aa00d79d4556114739b@git.kernel.org>
+Cc: wangyijing@huawei.com, tglx@linutronix.de, marc.zyngier@arm.com,
+        matthias.bgg@gmail.com, yingjoe.chen@mediatek.com, tony.luck@intel.com,
+        hpa@zytor.com, grant.likely@linaro.org, bp@alien8.de,
+        bhelgaas@google.com, jiang.liu@linux.intel.com, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, agordeev@redhat.com
+Reply-To: agordeev@redhat.com, grant.likely@linaro.org, tony.luck@intel.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        jiang.liu@linux.intel.com, bp@alien8.de, bhelgaas@google.com,
+        marc.zyngier@arm.com, tglx@linutronix.de, wangyijing@huawei.com,
+        yingjoe.chen@mediatek.com, matthias.bgg@gmail.com
+In-Reply-To: <1416061447-9472-7-git-send-email-jiang.liu@linux.intel.com>
+References: <1416061447-9472-7-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/irqdomain] PCI/MSI: Provide mechanism to alloc/free MSI/
- MSIX interrupt from irqdomain
-Git-Commit-ID: 8e047adae969701c6cec136484bb9de8572af934
+Subject: [tip:irq/irqdomain] genirq: Introduce msi_domain_alloc/free_irqs(
+ )
+Git-Commit-ID: d9109698be6e7439e6082aa00d79d4556114739b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -39,23 +38,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8e047adae969701c6cec136484bb9de8572af934
-Gitweb:     http://git.kernel.org/tip/8e047adae969701c6cec136484bb9de8572af934
+Commit-ID:  d9109698be6e7439e6082aa00d79d4556114739b
+Gitweb:     http://git.kernel.org/tip/d9109698be6e7439e6082aa00d79d4556114739b
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Sat, 15 Nov 2014 22:24:07 +0800
+AuthorDate: Sat, 15 Nov 2014 22:24:04 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Sun, 23 Nov 2014 13:01:47 +0100
 
-PCI/MSI: Provide mechanism to alloc/free MSI/MSIX interrupt from irqdomain
+genirq: Introduce msi_domain_alloc/free_irqs()
 
-Provide mechanism to directly alloc/free MSI/MSIX interrupt from
-irqdomain, which will be used to replace arch_setup_msi_irq()/
-arch_setup_msi_irqs()/arch_teardown_msi_irq()/arch_teardown_msi_irqs().
-
-To kill weak functions, this patch introduce a new weak function
-arch_get_pci_msi_domain(), which is to retrieve the MSI irqdomain
-for a PCI device. This weak function could be killed once we get
-a common way to associate MSI domain with PCI device.
+Introduce msi_domain_{alloc|free}_irqs() to alloc/free interrupts
+from generic MSI irqdomain.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Tony Luck <tony.luck@intel.com>
@@ -68,128 +61,164 @@ Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
 Cc: Borislav Petkov <bp@alien8.de>
 Cc: Matthias Brugger <matthias.bgg@gmail.com>
 Cc: Alexander Gordeev <agordeev@redhat.com>
-Link: http://lkml.kernel.org/r/1416061447-9472-10-git-send-email-jiang.liu@linux.intel.com
+Link: http://lkml.kernel.org/r/1416061447-9472-7-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/pci/msi.c   | 67 ++++++++++++++++++++++++++++++++++++++++++++++++++---
- include/linux/msi.h |  3 +++
- 2 files changed, 67 insertions(+), 3 deletions(-)
+ include/linux/msi.h | 29 +++++++++++++++++++++
+ kernel/irq/msi.c    | 75 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 104 insertions(+)
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 36b0c2e..4befe09 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -28,6 +28,40 @@ int pci_msi_ignore_mask;
- 
- #define msix_table_size(flags)	((flags & PCI_MSIX_FLAGS_QSIZE) + 1)
- 
-+#ifdef CONFIG_PCI_MSI_IRQ_DOMAIN
-+static struct irq_domain *pci_msi_default_domain;
-+static DEFINE_MUTEX(pci_msi_domain_lock);
-+
-+struct irq_domain * __weak arch_get_pci_msi_domain(struct pci_dev *dev)
-+{
-+	return pci_msi_default_domain;
-+}
-+
-+static int pci_msi_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-+{
-+	struct irq_domain *domain;
-+
-+	domain = arch_get_pci_msi_domain(dev);
-+	if (domain)
-+		return pci_msi_domain_alloc_irqs(domain, dev, nvec, type);
-+
-+	return arch_setup_msi_irqs(dev, nvec, type);
-+}
-+
-+static void pci_msi_teardown_msi_irqs(struct pci_dev *dev)
-+{
-+	struct irq_domain *domain;
-+
-+	domain = arch_get_pci_msi_domain(dev);
-+	if (domain)
-+		pci_msi_domain_free_irqs(domain, dev);
-+	else
-+		arch_teardown_msi_irqs(dev);
-+}
-+#else
-+#define pci_msi_setup_msi_irqs		arch_setup_msi_irqs
-+#define pci_msi_teardown_msi_irqs	arch_teardown_msi_irqs
-+#endif
- 
- /* Arch hooks */
- 
-@@ -348,7 +382,7 @@ static void free_msi_irqs(struct pci_dev *dev)
- 			for (i = 0; i < entry->nvec_used; i++)
- 				BUG_ON(irq_has_action(entry->irq + i));
- 
--	arch_teardown_msi_irqs(dev);
-+	pci_msi_teardown_msi_irqs(dev);
- 
- 	list_for_each_entry_safe(entry, tmp, &dev->msi_list, list) {
- 		if (entry->msi_attrib.is_msix) {
-@@ -600,7 +634,7 @@ static int msi_capability_init(struct pci_dev *dev, int nvec)
- 	list_add_tail(&entry->list, &dev->msi_list);
- 
- 	/* Configure MSI capability structure */
--	ret = arch_setup_msi_irqs(dev, nvec, PCI_CAP_ID_MSI);
-+	ret = pci_msi_setup_msi_irqs(dev, nvec, PCI_CAP_ID_MSI);
- 	if (ret) {
- 		msi_mask_irq(entry, mask, ~mask);
- 		free_msi_irqs(dev);
-@@ -715,7 +749,7 @@ static int msix_capability_init(struct pci_dev *dev,
- 	if (ret)
- 		return ret;
- 
--	ret = arch_setup_msi_irqs(dev, nvec, PCI_CAP_ID_MSIX);
-+	ret = pci_msi_setup_msi_irqs(dev, nvec, PCI_CAP_ID_MSIX);
- 	if (ret)
- 		goto out_avail;
- 
-@@ -1258,4 +1292,31 @@ void pci_msi_domain_free_irqs(struct irq_domain *domain, struct pci_dev *dev)
- {
- 	msi_domain_free_irqs(domain, &dev->dev);
- }
-+
-+/**
-+ * pci_msi_create_default_irq_domain - Create a default MSI interrupt domain
-+ * @node:	Optional device-tree node of the interrupt controller
-+ * @info:	MSI domain info
-+ * @parent:	Parent irq domain
-+ *
-+ * Returns: A domain pointer or NULL in case of failure. If successful
-+ * the default PCI/MSI irqdomain pointer is updated.
-+ */
-+struct irq_domain *pci_msi_create_default_irq_domain(struct device_node *node,
-+		struct msi_domain_info *info, struct irq_domain *parent)
-+{
-+	struct irq_domain *domain;
-+
-+	mutex_lock(&pci_msi_domain_lock);
-+	if (pci_msi_default_domain) {
-+		pr_err("PCI: default irq domain for PCI MSI has already been created.\n");
-+		domain = NULL;
-+	} else {
-+		domain = pci_msi_create_irq_domain(node, info, parent);
-+		pci_msi_default_domain = domain;
-+	}
-+	mutex_unlock(&pci_msi_domain_lock);
-+
-+	return domain;
-+}
- #endif /* CONFIG_PCI_MSI_IRQ_DOMAIN */
 diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 1628788..692f217 100644
+index b5ca245..7a93a98 100644
 --- a/include/linux/msi.h
 +++ b/include/linux/msi.h
-@@ -228,6 +228,9 @@ struct irq_domain *pci_msi_create_irq_domain(struct device_node *node,
- int pci_msi_domain_alloc_irqs(struct irq_domain *domain, struct pci_dev *dev,
- 			      int nvec, int type);
- void pci_msi_domain_free_irqs(struct irq_domain *domain, struct pci_dev *dev);
-+struct irq_domain *pci_msi_create_default_irq_domain(struct device_node *node,
-+		 struct msi_domain_info *info, struct irq_domain *parent);
+@@ -115,6 +115,9 @@ struct msi_controller {
+ };
+ 
+ #ifdef CONFIG_GENERIC_MSI_IRQ_DOMAIN
 +
- irq_hw_number_t pci_msi_domain_calc_hwirq(struct pci_dev *dev,
- 					  struct msi_desc *desc);
- int pci_msi_domain_check_cap(struct irq_domain *domain,
++#include <asm/msi.h>
++
+ struct irq_domain;
+ struct irq_chip;
+ struct device_node;
+@@ -125,6 +128,18 @@ struct msi_domain_info;
+  * @get_hwirq:		Retrieve the resulting hw irq number
+  * @msi_init:		Domain specific init function for MSI interrupts
+  * @msi_free:		Domain specific function to free a MSI interrupts
++ * @msi_check:		Callback for verification of the domain/info/dev data
++ * @msi_prepare:	Prepare the allocation of the interrupts in the domain
++ * @msi_finish:		Optional callbacl to finalize the allocation
++ * @set_desc:		Set the msi descriptor for an interrupt
++ * @handle_error:	Optional error handler if the allocation fails
++ *
++ * @get_hwirq, @msi_init and @msi_free are callbacks used by
++ * msi_create_irq_domain() and related interfaces
++ *
++ * @msi_check, @msi_prepare, @msi_finish, @set_desc and @handle_error
++ * are callbacks used by msi_irq_domain_alloc_irqs() and related
++ * interfaces which are based on msi_desc.
+  */
+ struct msi_domain_ops {
+ 	irq_hw_number_t	(*get_hwirq)(struct msi_domain_info *info, void *arg);
+@@ -135,6 +150,17 @@ struct msi_domain_ops {
+ 	void		(*msi_free)(struct irq_domain *domain,
+ 				    struct msi_domain_info *info,
+ 				    unsigned int virq);
++	int		(*msi_check)(struct irq_domain *domain,
++				     struct msi_domain_info *info,
++				     struct device *dev);
++	int		(*msi_prepare)(struct irq_domain *domain,
++				       struct device *dev, int nvec,
++				       msi_alloc_info_t *arg);
++	void		(*msi_finish)(msi_alloc_info_t *arg, int retval);
++	void		(*set_desc)(msi_alloc_info_t *arg,
++				    struct msi_desc *desc);
++	int		(*handle_error)(struct irq_domain *domain,
++					struct msi_desc *desc, int error);
+ };
+ 
+ /**
+@@ -155,6 +181,9 @@ int msi_domain_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ struct irq_domain *msi_create_irq_domain(struct device_node *of_node,
+ 					 struct msi_domain_info *info,
+ 					 struct irq_domain *parent);
++int msi_domain_alloc_irqs(struct irq_domain *domain, struct device *dev,
++			  int nvec);
++void msi_domain_free_irqs(struct irq_domain *domain, struct device *dev);
+ struct msi_domain_info *msi_get_domain_info(struct irq_domain *domain);
+ 
+ #endif /* CONFIG_GENERIC_MSI_IRQ_DOMAIN */
+diff --git a/kernel/irq/msi.c b/kernel/irq/msi.c
+index 5e0cef4..23111aa 100644
+--- a/kernel/irq/msi.c
++++ b/kernel/irq/msi.c
+@@ -13,6 +13,9 @@
+ #include <linux/irqdomain.h>
+ #include <linux/msi.h>
+ 
++/* Temparory solution for building, will be removed later */
++#include <linux/pci.h>
++
+ #ifdef CONFIG_GENERIC_MSI_IRQ_DOMAIN
+ /**
+  * msi_domain_set_affinity - Generic affinity setter function for MSI domains
+@@ -127,6 +130,78 @@ struct irq_domain *msi_create_irq_domain(struct device_node *of_node,
+ }
+ 
+ /**
++ * msi_domain_alloc_irqs - Allocate interrupts from a MSI interrupt domain
++ * @domain:	The domain to allocate from
++ * @dev:	Pointer to device struct of the device for which the interrupts
++ *		are allocated
++ * @nvec:	The number of interrupts to allocate
++ *
++ * Returns 0 on success or an error code.
++ */
++int msi_domain_alloc_irqs(struct irq_domain *domain, struct device *dev,
++			  int nvec)
++{
++	struct msi_domain_info *info = domain->host_data;
++	struct msi_domain_ops *ops = info->ops;
++	msi_alloc_info_t arg;
++	struct msi_desc *desc;
++	int i, ret, virq = -1;
++
++	ret = ops->msi_check(domain, info, dev);
++	if (ret == 0)
++		ret = ops->msi_prepare(domain, dev, nvec, &arg);
++	if (ret)
++		return ret;
++
++	for_each_msi_entry(desc, dev) {
++		ops->set_desc(&arg, desc);
++
++		virq = __irq_domain_alloc_irqs(domain, -1, desc->nvec_used,
++					       dev_to_node(dev), &arg, false);
++		if (virq < 0) {
++			ret = -ENOSPC;
++			if (ops->handle_error)
++				ret = ops->handle_error(domain, desc, ret);
++			if (ops->msi_finish)
++				ops->msi_finish(&arg, ret);
++			return ret;
++		}
++
++		for (i = 0; i < desc->nvec_used; i++)
++			irq_set_msi_desc_off(virq, i, desc);
++	}
++
++	if (ops->msi_finish)
++		ops->msi_finish(&arg, 0);
++
++	for_each_msi_entry(desc, dev) {
++		if (desc->nvec_used == 1)
++			dev_dbg(dev, "irq %d for MSI\n", virq);
++		else
++			dev_dbg(dev, "irq [%d-%d] for MSI\n",
++				virq, virq + desc->nvec_used - 1);
++	}
++
++	return 0;
++}
++
++/**
++ * msi_domain_free_irqs - Free interrupts from a MSI interrupt @domain associated tp @dev
++ * @domain:	The domain to managing the interrupts
++ * @dev:	Pointer to device struct of the device for which the interrupts
++ *		are free
++ */
++void msi_domain_free_irqs(struct irq_domain *domain, struct device *dev)
++{
++	struct msi_desc *desc;
++
++	for_each_msi_entry(desc, dev) {
++		irq_domain_free_irqs(desc->irq, desc->nvec_used);
++		desc->irq = 0;
++	}
++}
++
++/**
+  * msi_get_domain_info - Get the MSI interrupt domain info for @domain
+  * @domain:	The interrupt domain to retrieve data from
+  *
