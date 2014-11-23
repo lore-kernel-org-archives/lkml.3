@@ -1,64 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962AbaKWQko (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 11:40:44 -0500
-Received: from mout.web.de ([212.227.15.4]:63873 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751762AbaKWQkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 11:40:41 -0500
-Message-ID: <54720DEB.4060109@users.sourceforge.net>
-Date: Sun, 23 Nov 2014 17:40:11 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751786AbaKWQpY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 11:45:24 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:59019
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751253AbaKWQpW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 11:45:22 -0500
+X-IronPort-AV: E=Sophos;i="5.07,443,1413237600"; 
+   d="scan'208";a="90113207"
+Date: Sun, 23 Nov 2014 17:45:18 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+cc: Julia Lawall <julia.lawall@lip6.fr>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        kexec@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Eric Biederman <ebiederm@xmission.com>, Michal Marek <mmarek@suse.cz>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, linux-crypto@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 1/2 v2] scripts/coccinelle: catch freeing cryptographic
+ structures via kfree
+In-Reply-To: <CALYGNiOiErex4-WfqfCKHuZAMoA6SPvQVHjAx0imeeB6bzcbNQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1411231743320.2037@localhost6.localdomain6>
+References: <20141117151420.10739.16342.stgit@buzz> <20141118114920.13498.73584.stgit@buzz> <alpine.DEB.2.10.1411191040020.2363@hadrien> <CALYGNiOiErex4-WfqfCKHuZAMoA6SPvQVHjAx0imeeB6bzcbNQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Bryan Wu <cooloney@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jingoo Han <jg1.han@samsung.com>, Lee Jones <lee.jones@linaro.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] backlight: lp8788: Deletion of an unnecessary check before
- the function call "backlight_device_unregister"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:oEfsIkn5ILx5q52ya2o4f58FKTv4fhv6V0dhou7HYaguKYLqNCW
- OFQiO4HFIt5vEMq1mtDT1itAIEzsCw/qeFpY5xZbFV3/5sRFROh3BdMOJEMs59c4QLPYPvp
- AUgirEPOdL60f52KdJbU5JJqpvdIMyB3j3uMQN7eB1TyYDfWSSd1ga4kkEpIHASJbza9J3D
- m0+OHOjXiwwx36xJXqdcw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sun, 23 Nov 2014 17:33:08 +0100
 
-The backlight_device_unregister() function tests whether its argument is NULL
-and then returns immediately. Thus the test around the call is not needed.
 
-This issue was detected by using the Coccinelle software.
+On Wed, 19 Nov 2014, Konstantin Khlebnikov wrote:
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/video/backlight/lp8788_bl.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> On Wed, Nov 19, 2014 at 12:41 PM, Julia Lawall <julia.lawall@lip6.fr> wrote:
+> >> +// Comments: There are false positives in crypto/ where they are
+> >> actually freed.
+> >
+> > I didn't really understand this comment.  I ran the semantic patch and got
+> > around 10 results, but it wasn't clear to me how to see which were false
+> > positives.
+> 
+> I mean false positives in code inside directory crypto/ where this
+> subsystem lives.
+> 
+> ./arch/x86/crypto/fpu.c:143:1-6: WARNING: invalid free of
+> crypto_alloc_* allocated data
+> ./crypto/algapi.c:846:1-6: WARNING: invalid free of crypto_alloc_*
+> allocated data
+> ./crypto/lrw.c:378:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+> ./crypto/ecb.c:163:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+> ./crypto/ctr.c:242:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+> ./crypto/ctr.c:419:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+> ./crypto/ctr.c:428:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+> ./crypto/pcbc.c:273:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+> ./crypto/cts.c:329:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+> ./crypto/cbc.c:267:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+> ./crypto/xts.c:340:1-6: WARNING: invalid free of crypto_alloc_* allocated data
+> 
+> This is kfree calls on error paths in constructors or in destructors
+> which actually frees memory when crypto_free_* is called.
 
-diff --git a/drivers/video/backlight/lp8788_bl.c b/drivers/video/backlight/lp8788_bl.c
-index d6c4f6a..24a055c 100644
---- a/drivers/video/backlight/lp8788_bl.c
-+++ b/drivers/video/backlight/lp8788_bl.c
-@@ -221,8 +221,7 @@ static void lp8788_backlight_unregister(struct lp8788_bl *bl)
- {
- 	struct backlight_device *bl_dev = bl->bl_dev;
- 
--	if (bl_dev)
--		backlight_device_unregister(bl_dev);
-+	backlight_device_unregister(bl_dev);
- }
- 
- static ssize_t lp8788_get_bl_ctl_mode(struct device *dev,
--- 
-2.1.3
+Sorry, but I am not sure to fully understand the issue.  Is it actually 
+just the case that crypto_alloc_instance and crypto_alloc_instance2 should 
+not be in the list of allocation functions, because their results should 
+be freed with kfree?
 
+julia
+
+
+> 
+> >
+> > I would suggest to extend the rule a little bit to include information
+> > about where the allocation call is:
+> 
+> Not sure if this is necessary. This part of crypto-api is simple.
+> 
+> >
+> > ///
+> > /// Structures allocated by crypto_alloc_* must be freed using crypto_free_*.
+> > /// This finds freeing them by kfree.
+> > ///
+> > // Confidence: Moderate
+> > // Copyright: (C) 2014 Konstantin Khlebnikov,  GPLv2.
+> > // Comments: There are false positives in crypto/ where they are actually freed.
+> > // Keywords: crypto, kfree
+> > // Options: --no-includes --include-headers
+> >
+> > virtual org
+> > virtual report
+> > virtual context
+> >
+> > @r depends on context || org || report@
+> > expression x;
+> > position p1;
+> > @@
+> >
+> > (
+> >  x = crypto_alloc_base@p1(...)
+> > |
+> >  x = crypto_alloc_cipher@p1(...)
+> > |
+> >  x = crypto_alloc_ablkcipher@p1(...)
+> > |
+> >  x = crypto_alloc_aead@p1(...)
+> > |
+> >  x = crypto_alloc_instance@p1(...)
+> > |
+> >  x = crypto_alloc_instance2@p1(...)
+> > |
+> >  x = crypto_alloc_comp@p1(...)
+> > |
+> >  x = crypto_alloc_pcomp@p1(...)
+> > |
+> >  x = crypto_alloc_hash@p1(...)
+> > |
+> >  x = crypto_alloc_ahash@p1(...)
+> > |
+> >  x = crypto_alloc_shash@p1(...)
+> > |
+> >  x = crypto_alloc_rng@p1(...)
+> > )
+> >
+> > @pb@
+> > expression r.x;
+> > position p;
+> > @@
+> >
+> > * kfree@p(x)
+> >
+> > @script:python depends on org@
+> > p << pb.p;
+> > p1 << r.p1;
+> > @@
+> >
+> > msg="WARNING: invalid free of crypto_alloc_* allocated data"
+> > coccilib.org.print_todo(p[0], msg)
+> > coccilib.org.print_link(p1[0], "allocation")
+> >
+> > @script:python depends on report@
+> > p << pb.p;
+> > p1 << r.p1;
+> > @@
+> >
+> > msg="WARNING: invalid free of crypto_alloc_* allocated data, allocated on line %s" % (p1[0].line)
+> > coccilib.report.print_report(p[0], msg)
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
