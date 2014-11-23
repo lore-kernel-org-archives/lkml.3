@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836AbaKWQgd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 11:36:33 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:16575 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751254AbaKWQgc (ORCPT
+	id S1751869AbaKWQjt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 11:39:49 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:54912 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280AbaKWQjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 11:36:32 -0500
-Date: Sun, 23 Nov 2014 11:36:06 -0500
-From: Chris Mason <clm@fb.com>
-Subject: Re: New crashes walking proc with Saturday's git
-To: Borislav Petkov <bp@alien8.de>
-CC: <torvalds@linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Message-ID: <1416760566.24312.14@mail.thefacebook.com>
-In-Reply-To: <20141123163258.GB6436@pd.tnic>
-References: <20141123010239.GA12691@ret.masoncoding.com>
-	<1416758187.24312.12@mail.thefacebook.com> <20141123161120.GB7070@pd.tnic>
-	<1416759411.24312.13@mail.thefacebook.com> <20141123163258.GB6436@pd.tnic>
-X-Mailer: geary/0.8.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format=flowed
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.28,0.0.0000
- definitions=2014-11-23_03:2014-11-21,2014-11-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=5.55111512312578e-17 kscore.compositescore=0
- circleOfTrustscore=3.22713754331347 compositescore=0.939076664828693
- urlsuspect_oldscore=0.939076664828693 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.939076664828693 spamscore=0
- recipient_to_sender_domain_totalscore=4 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1411230139
-X-FB-Internal: deliver
+	Sun, 23 Nov 2014 11:39:48 -0500
+Message-ID: <1416760785.17888.18.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH tip/core/rcu 3/9] drivers/md: Use rcu_dereference() for
+ accessing rcu pointer
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Date: Sun, 23 Nov 2014 08:39:45 -0800
+In-Reply-To: <CAJhHMCCE_p+xTibLZwoS5OqW--NO_uEVsW6tfN6LcgZGBquBTQ@mail.gmail.com>
+References: <20141028220944.GA26114@linux.vnet.ibm.com>
+	 <1414534202-27312-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1414534202-27312-3-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <20141121133145.GA17245@node.dhcp.inet.fi> <546F4C8C.4040904@gmail.com>
+	 <20141121145817.GA17710@node.dhcp.inet.fi>
+	 <CAJhHMCCE_p+xTibLZwoS5OqW--NO_uEVsW6tfN6LcgZGBquBTQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 23, 2014 at 11:32 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Sun, Nov 23, 2014 at 11:16:51AM -0500, Chris Mason wrote:
->>  It must be:
->> 
->>  commit 6e998916dfe327e785e7c2447959b2c1a3ea4930
->>  Author: Stanislaw Gruszka <sgruszka@redhat.com>
->>  Date:   Wed Nov 12 16:58:44 2014 +0100
->> 
->>     sched/cputime: Fix clock_nanosleep()/clock_gettime() 
->> inconsistency
->> 
->>  I'll do two runs to confirm, but it's the only related patch 
->> between rc5 and
->>  now.
+On Sun, 2014-11-23 at 07:21 -0500, Pranith Kumar wrote:
+
+> I am not sure we should be taking rcu_read_lock() there as I am not
+> sure how long that critical section might last. Can someone who is
+> more familiar with the code take a look?
 > 
-> Cool, let me know and I'll revert here too to verify. It might take a
-> while to confirm as it happens only during resume but I could try the
-> fork bomb if I must.
-> 
-> From looking at it I'm not getting any smarter. We iterate over the
-> threads under a rcu_read_lock() so we should be protected. Unless the
-> sched changes have somehow effect on RCU grace periods but WTH do I
-> know... This is crazy code.
+> I will try to look for a solution too in the mean time.
 
-+               p->sched_class->update_curr(rq);
-
-Total guess while I'm waiting for the test, but somehow this is NULL.
-
--chris
-
+I am sending a fix.
 
 
