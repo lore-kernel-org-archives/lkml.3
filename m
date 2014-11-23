@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599AbaKWMzA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 07:55:00 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:14354 "EHLO
+	id S1751571AbaKWMy7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 07:54:59 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:56950 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751116AbaKWMxe (ORCPT
+	by vger.kernel.org with ESMTP id S1751201AbaKWMxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 23 Nov 2014 07:53:34 -0500
 X-IronPort-AV: E=Sophos;i="5.07,443,1413237600"; 
-   d="scan'208";a="109082624"
+   d="scan'208";a="109082629"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 To: Jaroslav Kysela <perex@perex.cz>
 Cc: kernel-janitors@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
         alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/9] sound/pci/sis7019.c: fix error return code
-Date: Sun, 23 Nov 2014 13:48:05 +0100
-Message-Id: <1416746890-22719-5-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 6/9] sound/pci/ctxfi/ctatc.c: fix error return code
+Date: Sun, 23 Nov 2014 13:48:06 +0100
+Message-Id: <1416746890-22719-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1416746890-22719-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1416746890-22719-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -25,7 +25,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Initialize rc before returning on failure, as done elsewhere in the
+Initialize err before returning on failure, as done elsewhere in the
 function.
 
 A simplified version of the semantic match that finds this problem is as
@@ -52,22 +52,23 @@ ret@p1 = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- sound/pci/sis7019.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ sound/pci/ctxfi/ctatc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/sound/pci/sis7019.c b/sound/pci/sis7019.c
-index 535efe2..51e4340 100644
---- a/sound/pci/sis7019.c
-+++ b/sound/pci/sis7019.c
-@@ -1377,8 +1377,9 @@ static int __devinit sis_chip_create(struct snd_card *card,
- 	if (rc)
- 		goto error_out_cleanup;
+diff --git a/sound/pci/ctxfi/ctatc.c b/sound/pci/ctxfi/ctatc.c
+index 58b235c..a2f997a 100644
+--- a/sound/pci/ctxfi/ctatc.c
++++ b/sound/pci/ctxfi/ctatc.c
+@@ -1725,8 +1725,10 @@ int __devinit ct_atc_create(struct snd_card *card, struct pci_dev *pci,
+ 	atc_connect_resources(atc);
  
--	if (request_irq(pci->irq, sis_interrupt, IRQF_SHARED, KBUILD_MODNAME,
--			sis)) {
-+	rc = request_irq(pci->irq, sis_interrupt, IRQF_SHARED, KBUILD_MODNAME,
-+			 sis);
-+	if (rc) {
- 		dev_err(&pci->dev, "unable to allocate irq %d\n", sis->irq);
- 		goto error_out_cleanup;
- 	}
+ 	atc->timer = ct_timer_new(atc);
+-	if (!atc->timer)
++	if (!atc->timer) {
++		err = -ENOMEM;
+ 		goto error1;
++	}
+ 
+ 	err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, atc, &ops);
+ 	if (err < 0)
+
