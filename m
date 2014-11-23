@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750894AbaKWFGT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 00:06:19 -0500
-Received: from mga11.intel.com ([192.55.52.93]:64707 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750702AbaKWFGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 00:06:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,442,1413270000"; 
-   d="scan'208";a="636638555"
-Date: Sat, 22 Nov 2014 21:06:17 -0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKP <lkp@01.org>, linux-kernel@vger.kernel.org
-Subject: Re: [ftrace/x86/extable] WARNING: CPU: 0 PID: 1 at init/main.c:803
- do_one_initcall()
-Message-ID: <20141123050617.GA9218@wfg-t540p.sh.intel.com>
-References: <20141122184349.GB29361@wfg-t540p.sh.intel.com>
- <20141122141139.78927371@gandalf.local.home>
- <20141122195926.GA1707@wfg-t540p.sh.intel.com>
- <20141122165302.3df22b18@gandalf.local.home>
+	id S1751012AbaKWFWU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 00:22:20 -0500
+Received: from mx5-phx2.redhat.com ([209.132.183.37]:51338 "EHLO
+	mx5-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702AbaKWFWS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 00:22:18 -0500
+Date: Sun, 23 Nov 2014 00:22:00 -0500 (EST)
+From: Pankaj Gupta <pagupta@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>, David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, jasowang@redhat.com,
+        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
+        vyasevic@redhat.com, hkchu@google.com, wuzhy@linux.vnet.ibm.com,
+        xemul@parallels.com, therbert@google.com, bhutchings@solarflare.com,
+        xii@google.com, stephen@networkplumber.org, jiri@resnulli.us,
+        sergei shtylyov <sergei.shtylyov@cogentembedded.com>
+Message-ID: <1279921267.2842813.1416720120277.JavaMail.zimbra@redhat.com>
+In-Reply-To: <20141119204427.GB30994@redhat.com>
+References: <1416327778-17716-1-git-send-email-pagupta@redhat.com> <20141119.151628.768548269128919029.davem@davemloft.net> <20141119204427.GB30994@redhat.com>
+Subject: Re: [PATCH net-net 0/4] Increase the limit of tuntap queues
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141122165302.3df22b18@gandalf.local.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.11]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF23 (Linux)/8.0.6_GA_5922)
+Thread-Topic: Increase the limit of tuntap queues
+Thread-Index: 8iMeCK7d6zv6oQiYJAWiIK+uxvQSTQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 22, 2014 at 04:53:02PM -0500, Steven Rostedt wrote:
-> On Sat, 22 Nov 2014 11:59:26 -0800
-> Fengguang Wu <fengguang.wu@intel.com> wrote:
-> 
-> >
-> > > Is it possible for your tests to see if a branch was rebased before
-> > > posting bug reports to LKML? This gave me a scare that my new code had
-> > > the same brain fart in it.
-> > 
-> > Sure and good idea! I'll implement it right now.
-> > 
-> 
-> It should also make sure that the rebase does not include the offending
-> commit before not sending out the email. A rebase alone may still have
-> the bug.
-> 
-> And if you really want to be fancy, you can check to see if the code
-> itself changed. The attached script takes two git releases (SHA1s,
-> tags, etc) or one git release and uses HEAD, and finds where the two
-> are different. Not just by commit id, but also by code. I use this
-> because I'll modify a branch to add an acked-by and not change the code,
-> but still want to know the last commit that I tested. It may not have
-> the same commit id.
 
-I definitely would like to be fancy. I think I'll not only check if
-the branch has been rebased, but also test the rebased branch out to
-make sure the problem is still there. I've been doing this check for
-the build bisects. When doing so, it no longer matters how the rebased
-branch differs from the original branch in source code level. For
-example, even the simple rebase to a new RC base might make a problem
-disappear.
+> On Wed, Nov 19, 2014 at 03:16:28PM -0500, David Miller wrote:
+> > From: Pankaj Gupta <pagupta@redhat.com>
+> > Date: Tue, 18 Nov 2014 21:52:54 +0530
+> > 
+> > > - Accept maximum number of queues as sysctl param so that any user space
+> > >   application like libvirt can use this value to limit number of queues.
+> > >   Also
+> > >   Administrators can specify maximum number of queues by updating this
+> > >   sysctl
+> > >   entry.
+> > 
+> > This is the only part I don't like.
+> > 
+> > Just let whoever has privileges to configure the tun device shoot
+> > themselves in the foot if they want to by configuring "too many"
+> > queues.
+> > 
+> > If the virtual entity runs itself out of resources by doing something
+> > stupid, it's purely their problem.
 
-Thanks,
-Fengguang
+We can configure some fixed number of queues like 16 or so at the start 
+if multiqueue is enabled and then if somebody needs more then that, they
+can do on their own.
+
+If we dont want anyone to directly increase the number of queues, we can add
+an ioctl command for increasing number of queues?
+
+
+
+Suggestions here. 
+> 
+> Well it will run host out of kernel, no?
+> 
+> --
+> MST
+> 
