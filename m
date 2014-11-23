@@ -1,66 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606AbaKWPU3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 10:20:29 -0500
-Received: from smtprelay0105.hostedemail.com ([216.40.44.105]:34696 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751267AbaKWPU2 (ORCPT
+	id S1751514AbaKWP2T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 10:28:19 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:64237 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235AbaKWP2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 10:20:28 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:960:965:967:973:988:989:1042:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3350:3622:3865:3867:3868:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4390:5007:6261:8526:9025:10004:10400:10848:11232:11657:11658:11914:12043:12296:12438:12517:12519:12555:12740:13069:13161:13229:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cup20_3c796ac79b53
-X-Filterd-Recvd-Size: 2545
-Message-ID: <1416756022.6651.45.camel@perches.com>
-Subject: Re: thunderbolt: Deletion of unnecessary checks before the function
- call "ring_free"
-From: Joe Perches <joe@perches.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Andreas Noever <andreas.noever@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Date: Sun, 23 Nov 2014 07:20:22 -0800
-In-Reply-To: <5471EBAC.40903@users.sourceforge.net>
-References: <5307CAA2.8060406@users.sourceforge.net>
-	 <530A086E.8010901@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
-	 <530A72AA.3000601@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
-	 <530B5FB6.6010207@users.sourceforge.net>
-	 <alpine.DEB.2.10.1402241710370.2074@hadrien>
-	 <530C5E18.1020800@users.sourceforge.net>
-	 <alpine.DEB.2.10.1402251014170.2080@hadrien>
-	 <530CD2C4.4050903@users.sourceforge.net>
-	 <alpine.DEB.2.10.1402251840450.7035@hadrien>
-	 <530CF8FF.8080600@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
-	 <530DD06F.4090703@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-	 <5317A59D.4@users.sourceforge.net> <546F16A5.8030405@users.sourceforge.net>
-	 <CAMxnaaVLhKHjbzUJy5p_0n8BUprzSQ=A3sdF6iQzW_wqmq8N4A@mail.gmail.com>
-	 <546F2E50.5040804@users.sourceforge.net>
-	 <1416593688.6651.39.camel@perches.com>
-	 <5471EBAC.40903@users.sourceforge.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	Sun, 23 Nov 2014 10:28:18 -0500
+Message-ID: <5471FD0E.4060305@gmail.com>
+Date: Sun, 23 Nov 2014 18:28:14 +0300
+From: Dmitry Tunin <hanipouspilot@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] ath3k: Add support of MCI 13d3:3408 bt device
+References: <5471CFE9.9070109@gmail.com> <4BD80C85-0288-404D-AB39-485359414DC9@holtmann.org>
+In-Reply-To: <4BD80C85-0288-404D-AB39-485359414DC9@holtmann.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-11-23 at 15:14 +0100, SF Markus Elfring wrote:
-> >> 2. Are any additional prefixes appropriate so that further name space
-> >>    conflicts can be better avoided?
-> > 
-> > To avoid possible external naming conflicts, add tb_ prefix to
-> > various ring_<foo> structs and functions.
-> 
-> Do you imagine that any XEN software developers need also to reconsider
-> this implementation detail?
-> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/tree/drivers/char/tpm/xen-tpmfront.c?id=fc14f9c1272f62c3e8d01300f52467c0d9af50f9#n268
+Finally I figured out how to set up the mailer not to spoil everything.
 
-I think static functions can be named whatever
-the developer chooses.
+Add support for bluetooth MCI WB335 (AR9565) Wi-Fi+bt module.
+This bluetooth module requires loading patch and sysconfig by ath3k driver.
 
+Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
 
+---
+
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index d85ced2..086240c 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -105,6 +105,7 @@ static const struct usb_device_id ath3k_table[] = {
+  	{ USB_DEVICE(0x13d3, 0x3375) },
+  	{ USB_DEVICE(0x13d3, 0x3393) },
+  	{ USB_DEVICE(0x13d3, 0x3402) },
++	{ USB_DEVICE(0x13d3, 0x3408) },
+  	{ USB_DEVICE(0x13d3, 0x3432) },
+
+  	/* Atheros AR5BBU12 with sflash firmware */
+@@ -156,6 +157,7 @@ static const struct usb_device_id ath3k_blist_tbl[] = {
+  	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
+
+  	/* Atheros AR5BBU22 with sflash firmware */
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index edfc17b..091c813 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -182,6 +182,7 @@ static const struct usb_device_id blacklist_table[] = {
+  	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
+
+  	/* Atheros AR5BBU12 with sflash firmware */
+
+--
+
+23.11.2014 17:56, Marcel Holtmann wrote:
+> Hi Dmitry,
+>
+>> Add support for bluetooth MCI WB335 (AR9565) Wi-Fi+bt module.
+>> This bluetooth module requires loading patch and sysconfig by ath3k driver.
+>>
+>> /sys/kernel/debug/usb/devices
+>>
+>> T:  Bus=01 Lev=02 Prnt=03 Port=00 Cnt=01 Dev#= 20 Spd=12 MxCh= 0
+>> D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
+>> P:  Vendor=13d3 ProdID=3408 Rev= 0.02
+>> C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+>> A:  FirstIf#= 0 IfCount= 2 Cls=e0(wlcon) Sub=01 Prot=01
+>> I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+>> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+>> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+>> I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+>> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+>> I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+>> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+>> I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+>> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+>> I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+>> E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+>> I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+>> E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+>> I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+>> E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+>>
+>> Signed-off-by: Dmitry Tunin<hanipouspilot@gmail.com>
+>
+> space between the name and the email address.
+>
+>>
+>> ---
+>>
+>> diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+>> index d85ced2..086240c 100644
+>> --- a/drivers/bluetooth/ath3k.c
+>> +++ b/drivers/bluetooth/ath3k.c
+>> @@ -105,6 +105,7 @@ static const struct usb_device_id ath3k_table[] = {
+>>      { USB_DEVICE(0x13d3, 0x3375) },
+>>      { USB_DEVICE(0x13d3, 0x3393) },
+>>      { USB_DEVICE(0x13d3, 0x3402) },
+>> +    { USB_DEVICE(0x13d3, 0x3408) },
+>>      { USB_DEVICE(0x13d3, 0x3432) },
+>
+> And your mail client messes up spaces vs tabs here.
+>
+>>
+>>      /* Atheros AR5BBU12 with sflash firmware */
+>> @@ -156,6 +157,7 @@ static const struct usb_device_id ath3k_blist_tbl[] = {
+>>      { USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+>>      { USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+>>      { USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+>> +    { USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
+>>      { USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
+>>
+>>      /* Atheros AR5BBU22 with sflash firmware */
+>> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+>> index edfc17b..091c813 100644
+>> --- a/drivers/bluetooth/btusb.c
+>> +++ b/drivers/bluetooth/btusb.c
+>> @@ -182,6 +182,7 @@ static const struct usb_device_id blacklist_table[] = {
+>>      { USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+>>      { USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+>>      { USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+>> +    { USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
+>>      { USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
+>>
+>>      /* Atheros AR5BBU12 with sflash firmware */
+>
+> Regards
+>
+> Marcel
+>
