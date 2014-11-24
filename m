@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483AbaKXKyy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 05:54:54 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:37683 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854AbaKXKyw (ORCPT
+	id S1753510AbaKXKzk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 05:55:40 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39601 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854AbaKXKzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 05:54:52 -0500
-Message-ID: <54730E6C.1040708@arm.com>
-Date: Mon, 24 Nov 2014 10:54:36 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 24 Nov 2014 05:55:39 -0500
+Date: Mon, 24 Nov 2014 10:55:36 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] dealing with proc_ns_follow_link() and "namespace" dentries
+Message-ID: <20141124105536.GG7996@ZenIV.linux.org.uk>
+References: <20141013062945.GX7996@ZenIV.linux.org.uk>
+ <87r3ybwq0b.fsf@x220.int.ebiederm.org>
+ <20141101083804.GO7996@ZenIV.linux.org.uk>
+ <20141101150620.GP7996@ZenIV.linux.org.uk>
+ <20141101183037.GQ7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Christoffer Dall <christoffer.dall@linaro.org>,
-        Eric Auger <eric.auger@linaro.org>
-CC: "eric.auger@st.com" <eric.auger@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "joel.schopp@amd.com" <joel.schopp@amd.com>,
-        "kim.phillips@freescale.com" <kim.phillips@freescale.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "gleb@kernel.org" <gleb@kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "a.rigo@virtualopensystems.com" <a.rigo@virtualopensystems.com>,
-        "john.liuli@huawei.com" <john.liuli@huawei.com>,
-        "ming.lei@canonical.com" <ming.lei@canonical.com>,
-        "feng.wu@intel.com" <feng.wu@intel.com>
-Subject: Re: [RFC 0/4] vgic additions for forwarded irq
-References: <1416766373-13569-1-git-send-email-eric.auger@linaro.org> <20141124105037.GL3401@cbox>
-In-Reply-To: <20141124105037.GL3401@cbox>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141101183037.GQ7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/11/14 10:50, Christoffer Dall wrote:
-> On Sun, Nov 23, 2014 at 07:12:49PM +0100, Eric Auger wrote:
->> This series applies on top of "ARM: Forwarding physical
->> interrupts to a guest VM" (http://lwn.net/Articles/603514/)
->> series.
+On Sat, Nov 01, 2014 at 06:30:37PM +0000, Al Viro wrote:
+> On Sat, Nov 01, 2014 at 03:06:20PM +0000, Al Viro wrote:
+> > On Sat, Nov 01, 2014 at 08:38:04AM +0000, Al Viro wrote:
+> > > OK, interim branch (_completely_ untested, and there's quite a bit of
+> > > work remaining) is in vfs.git#nsfs.
+> > 
+> > ... except that what got pushed was completely buggered - the last changes
+> > not committed *and* include/linux/ns_common.h not git-add'ed at the very
+> > beginning.  Oh, well - it wasn't hard to reconstruct its history...
+> > 
+> > Anyway, that much got fixed and pushed; sorry about the noise - shouldn't
+> > have posted before grabbing some sleep...
 > 
-> Marc and Eric,
+> And now it even seems to work.  Poking in /proc/*/ns/*, mount --bind of those
+> suckers to regular files, unshare and nsenter (both by PID and by file,
+> including the ones we'd bound somewhere).  Eric, could you hit it with
+> whatever testsuite you are using and see if it survives?
 > 
-> Does it make sense to review and look at these patches given the current
-> state of the forwarding patches, or should we wait until Marc respins
-> that series?
+> It's vfs.git#nsfs (head should be at 2e64120), branched at -rc2.  The meat
+> of that sucker is in the next-to-last commit; the rest is preparation and
+> a minor cleanup.
 
-I'm still in the process of respining all of this (we've had a few
-iterations with tglx, but I got sidetracked with the ITS/v2m/MSI side of
-things).
-
-I'll get back onto this this week. Hopefully.
-
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+ping?
