@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604AbaKXOXR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:23:17 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:45428 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753003AbaKXOXP (ORCPT
+	id S1753905AbaKXOYW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:24:22 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:47275 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753514AbaKXOYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:23:15 -0500
-Message-ID: <54733F34.5080405@imgtec.com>
-Date: Mon, 24 Nov 2014 14:22:44 +0000
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 24 Nov 2014 09:24:21 -0500
 MIME-Version: 1.0
-To: Andy Yan <andy.yan@rock-chips.com>, <airlied@linux.ie>, <heiko@sntech.de>,
-        <fabio.estevam@freescale.com>, <rmk+kernel@arm.linux.org.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
-        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
-        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Lucas Stach <l.stach@pengutronix.de>, <djkurtz@google.com>,
-        <ykk@rock-chips.com>, <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>, <devel@driverdev.osuosl.org>,
-        <devicetree@vger.kernel.org>, <linux-rockchip@lists.infradead.org>,
-        <jay.xu@rock-chips.com>, Pawel Moll <pawel.moll@arm.com>,
-        <mark.yao@rock-chips.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v12 0/11] dw-hdmi: convert imx hdmi to bridge/dw_hdmi
-References: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com> <1416221635-12797-1-git-send-email-andy.yan@rock-chips.com> <54733DF3.7020609@rock-chips.com>
-In-Reply-To: <54733DF3.7020609@rock-chips.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.154.89]
+In-Reply-To: <20141121123559.GF23177@e105550-lin.cambridge.arm.com>
+References: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org>
+ <1415033687-23294-6-git-send-email-vincent.guittot@linaro.org> <20141121123559.GF23177@e105550-lin.cambridge.arm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Mon, 24 Nov 2014 15:24:00 +0100
+Message-ID: <CAKfTPtAo3PzZ=-KtH-YS2nf9R9srMGAUJ2A2qkHrsPZmj18-Jw@mail.gmail.com>
+Subject: Re: [PATCH v9 05/10] sched: make scale_rt invariant with frequency
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "kamalesh@linux.vnet.ibm.com" <kamalesh@linux.vnet.ibm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "riel@redhat.com" <riel@redhat.com>, "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+On 21 November 2014 at 13:35, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> On Mon, Nov 03, 2014 at 04:54:42PM +0000, Vincent Guittot wrote:
 
-On 24/11/14 14:17, Andy Yan wrote:
-> Hi ZubairLK, Russel King, Greg Kroah-Hartman , Philipp Zabel and Daniel:
->    Do you have any further opinions or suggestions about the
-> the current patch set?
+[snip]
 
-I have reviewed the patches as much as I could.
+>> The average running time of RT tasks is used to estimate the remaining compute
+>> @@ -5801,19 +5801,12 @@ static unsigned long scale_rt_capacity(int cpu)
+>>
+>>       total = sched_avg_period() + delta;
+>>
+>> -     if (unlikely(total < avg)) {
+>> -             /* Ensures that capacity won't end up being negative */
+>> -             available = 0;
+>> -     } else {
+>> -             available = total - avg;
+>> -     }
+>> +     used = div_u64(avg, total);
+>
+> I haven't looked through all the details of the rt avg tracking, but if
+> 'used' is in the range [0..SCHED_CAPACITY_SCALE], I believe it should
+> work. Is it guaranteed that total > 0 so we don't get division by zero?
 
-They look good to me.
+static inline u64 sched_avg_period(void)
+{
+return (u64)sysctl_sched_time_avg * NSEC_PER_MSEC / 2;
+}
 
-But I don't know the inner details of DRM to be able to comment further.
+>
+> It does get a slightly more complicated if we want to figure out the
+> available capacity at the current frequency (current < max) later. Say,
+> rt eats 25% of the compute capacity, but the current frequency is only
+> 50%. In that case get:
+>
+> curr_avail_capacity = (arch_scale_cpu_capacity() *
+>   (arch_scale_freq_capacity() - (SCHED_SCALE_CAPACITY - scale_rt_capacity())))
+>   >> SCHED_CAPACITY_SHIFT
 
-Please do cc me in further patches.
+You don't have to be so complicated but simply need to do:
+curr_avail_capacity for CFS = (capacity_of(CPU) *
+arch_scale_freq_capacity())  >> SCHED_CAPACITY_SHIFT
 
-Also, my mail client makes these patches look like the new series gets cascaded in the older patch 8 series.
+capacity_of(CPU) = 600 is the max available capacity for CFS tasks
+once we have removed the 25% of capacity that is used by RT tasks
+arch_scale_freq_capacity = 512 because we currently run at 50% of max freq
 
-It could be just my thunderbird. But please start a new thread when you send a new series.
+so curr_avail_capacity for CFS = 300
 
-Thank-you
-ZubairLK
-
-> On 2014年11月17日 18:53, Andy Yan wrote:
->> We found Freescale imx6 and Rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
->> use the interface compatible Designware HDMI IP, but they also have some
->> lightly differences, such as phy pll configuration, register width(imx hdmi
->> register is one byte, but rk3288 is 4 bytes width and can only be accessed
->> by word), 4K support(imx6 doesn't support 4k, but rk3288 does), and HDMI2.0
->> support.
+Vincent
+>
+> With numbers assuming arch_scale_cpu_capacity() = 800:
+>
+> curr_avail_capacity = 800 * (512 - (1024 - 758)) >> 10 = 200
+>
+> Which isn't actually that bad. Anyway, it isn't needed until we start
+> invovling energy models.
+>
+>>
+>> -     if (unlikely((s64)total < SCHED_CAPACITY_SCALE))
+>> -             total = SCHED_CAPACITY_SCALE;
+>> +     if (likely(used < SCHED_CAPACITY_SCALE))
+>> +             return SCHED_CAPACITY_SCALE - used;
+>>
+>> -     total >>= SCHED_CAPACITY_SHIFT;
+>> -
+>> -     return div_u64(available, total);
+>> +     return 1;
+>>  }
+>>
