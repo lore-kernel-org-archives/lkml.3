@@ -1,62 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751204AbaKXU4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:56:33 -0500
-Received: from www.linutronix.de ([62.245.132.108]:41299 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaKXU4c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:56:32 -0500
-Message-ID: <54739B7C.7020102@linutronix.de>
-Date: Mon, 24 Nov 2014 21:56:28 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Felipe Balbi <balbi@ti.com>, George Cherian <george.cherian@ti.com>,
-        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: musb: core: Disable the Interrupts till BABBLE is
- fully handled
-References: <1415953486-6000-1-git-send-email-george.cherian@ti.com> <20141118211734.GA19146@saruman> <54736FBE.6060505@linutronix.de> <20141124182053.GD25712@saruman> <20141124203908.4425.qmail@stuge.se>
-In-Reply-To: <20141124203908.4425.qmail@stuge.se>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1751027AbaKXU5B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:57:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41274 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750789AbaKXU47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 15:56:59 -0500
+Message-ID: <1416862562.11825.81.camel@bling.home>
+Subject: Re: [PATCH v3 6/8] KVM: kvm-vfio: wrapper to VFIO external API
+ device helpers
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Eric Auger <eric.auger@linaro.org>
+Cc: eric.auger@st.com, christoffer.dall@linaro.org, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, joel.schopp@amd.com, kim.phillips@freescale.com,
+        paulus@samba.org, gleb@kernel.org, pbonzini@redhat.com, agraf@suse.de,
+        linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com, ming.lei@canonical.com, feng.wu@intel.com
+Date: Mon, 24 Nov 2014 13:56:02 -0700
+In-Reply-To: <1416767760-14487-7-git-send-email-eric.auger@linaro.org>
+References: <1416767760-14487-1-git-send-email-eric.auger@linaro.org>
+	 <1416767760-14487-7-git-send-email-eric.auger@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2014 09:39 PM, Peter Stuge wrote:
-> Felipe Balbi wrote:
->>>> A babble only occurs when
->>>> the device side tries to move data without the host asking for anything.
->>>
->>> It also occurs if the device moves more than packet_size bytes. Not
->>> really helping, I know…
->>
->> hmm, why would the device move more than wMaxPacketSize at a time ?
+On Sun, 2014-11-23 at 19:35 +0100, Eric Auger wrote:
+> Provide wrapper functions that allow KVM-VFIO device code to
+> interact with a vfio device:
+> - kvm_vfio_device_get_external_user gets a handle to a struct
+>   vfio_device from the vfio device file descriptor and increments
+>   its reference counter,
+> - kvm_vfio_device_put_external_user decrements the reference counter
+>   to a vfio device,
+> - kvm_vfio_external_base_device returns a handle to the struct device
+>   of the vfio device.
 > 
-> Some devices are buggy.
-
-for instance if the device comes out of resume and the clock is not yet
-stable but the device sends data. That is not the case here, but an
-example :)
-I *think* for some reason the host did not really receive ep0
-set_config request as planned. And device's answer is probably then
-interpreted as data which is not expected (as Felipe said "device side
-tries to move data without the host asking for anything").
-
->> That's certainly babble :-)
+> The KVM-VFIO device uses the VFIO external API device functions.
 > 
-> Certainly! But musb shouldn't fall over or lock up because of it, should it?
-
-No and the patch fixes the issue. The strange thing is that it only
-happens on the same device. Not if you connect host<->device with two
-boards.
-
-> //Peter
+> Signed-off-by: Eric Auger <eric.auger@linaro.org>
 > 
+> ---
+> 
+> v2 -> v3:
+> reword the commit message and title
+> 
+> v1 -> v2:
+> - kvm_vfio_external_get_base_device renamed into
+>   kvm_vfio_external_base_device
+> - kvm_vfio_external_get_type removed
+> ---
+>  arch/arm/include/asm/kvm_host.h |  5 +++++
+>  virt/kvm/vfio.c                 | 45 +++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 50 insertions(+)
+> 
+> diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
+> index 53036e2..bca5b79 100644
+> --- a/arch/arm/include/asm/kvm_host.h
+> +++ b/arch/arm/include/asm/kvm_host.h
+> @@ -169,6 +169,11 @@ void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
+>  unsigned long kvm_arm_num_regs(struct kvm_vcpu *vcpu);
+>  int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *indices);
+>  
+> +struct vfio_device;
+> +struct vfio_device *kvm_vfio_device_get_external_user(struct file *filep);
+> +void kvm_vfio_device_put_external_user(struct vfio_device *vdev);
+> +struct device *kvm_vfio_external_base_device(struct vfio_device *vdev);
+> +
 
-Sebastian
+This doesn't look right, why doesn't kvm-vfio send the struct dev to the
+arch callback?  Then the below functions can be static.  Nothing outside
+of kvm-vfio device should need to do anything with vfio_device
+references.
+
+>  /* We do not have shadow page tables, hence the empty hooks */
+>  static inline int kvm_age_hva(struct kvm *kvm, unsigned long start,
+>  			      unsigned long end)
+> diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
+> index 620e37f..6f0cc34 100644
+> --- a/virt/kvm/vfio.c
+> +++ b/virt/kvm/vfio.c
+> @@ -60,6 +60,51 @@ static void kvm_vfio_group_put_external_user(struct vfio_group *vfio_group)
+>  	symbol_put(vfio_group_put_external_user);
+>  }
+>  
+> +struct vfio_device *kvm_vfio_device_get_external_user(struct file *filep)
+> +{
+> +	struct vfio_device *vdev;
+> +	struct vfio_device *(*fn)(struct file *);
+> +
+> +	fn = symbol_get(vfio_device_get_external_user);
+> +	if (!fn)
+> +		return ERR_PTR(-EINVAL);
+> +
+> +	vdev = fn(filep);
+> +
+> +	symbol_put(vfio_device_get_external_user);
+> +
+> +	return vdev;
+> +}
+> +
+> +void kvm_vfio_device_put_external_user(struct vfio_device *vdev)
+> +{
+> +	void (*fn)(struct vfio_device *);
+> +
+> +	fn = symbol_get(vfio_device_put_external_user);
+> +	if (!fn)
+> +		return;
+> +
+> +	fn(vdev);
+> +
+> +	symbol_put(vfio_device_put_external_user);
+> +}
+> +
+> +struct device *kvm_vfio_external_base_device(struct vfio_device *vdev)
+> +{
+> +	struct device *(*fn)(struct vfio_device *);
+> +	struct device *dev;
+> +
+> +	fn = symbol_get(vfio_external_base_device);
+> +	if (!fn)
+> +		return NULL;
+> +
+> +	dev = fn(vdev);
+> +
+> +	symbol_put(vfio_external_base_device);
+> +
+> +	return dev;
+> +}
+> +
+>  static bool kvm_vfio_group_is_coherent(struct vfio_group *vfio_group)
+>  {
+>  	long (*fn)(struct vfio_group *, unsigned long);
+
+
+
