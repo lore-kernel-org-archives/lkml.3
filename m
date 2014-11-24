@@ -1,107 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514AbaKXKrV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 05:47:21 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:43971 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062AbaKXKrT (ORCPT
+	id S1753452AbaKXKuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 05:50:08 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:64668 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaKXKuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 05:47:19 -0500
+	Mon, 24 Nov 2014 05:50:06 -0500
+Date: Mon, 24 Nov 2014 11:50:37 +0100
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Eric Auger <eric.auger@linaro.org>
+Cc: eric.auger@st.com, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, alex.williamson@redhat.com, joel.schopp@amd.com,
+        kim.phillips@freescale.com, paulus@samba.org, gleb@kernel.org,
+        pbonzini@redhat.com, linux-kernel@vger.kernel.org, patches@linaro.org,
+        will.deacon@arm.com, a.motakis@virtualopensystems.com,
+        a.rigo@virtualopensystems.com, john.liuli@huawei.com,
+        ming.lei@canonical.com, feng.wu@intel.com
+Subject: Re: [RFC 0/4] vgic additions for forwarded irq
+Message-ID: <20141124105037.GL3401@cbox>
+References: <1416766373-13569-1-git-send-email-eric.auger@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20141124103249.GA26217@ulmo.nvidia.com>
-References: <1416807683-2257-1-git-send-email-gautam.vivek@samsung.com>
-	<20141124103249.GA26217@ulmo.nvidia.com>
-Date: Mon, 24 Nov 2014 16:17:18 +0530
-Message-ID: <CAFp+6iE22FnHeXJZQyhytzGDNfnP4sdnYZuyFtmfzP_JVTVNPQ@mail.gmail.com>
-Subject: Re: [PATCH V2 RESEND] arm: dts: Exynos5: Use pmu_system_controller
- phandle for dp phy
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Ajay Kumar <ajaykumar.rs@samsung.com>, Kukjin Kim <kgene@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416766373-13569-1-git-send-email-eric.auger@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Nov 23, 2014 at 07:12:49PM +0100, Eric Auger wrote:
+> This series applies on top of "ARM: Forwarding physical
+> interrupts to a guest VM" (http://lwn.net/Articles/603514/)
+> series.
 
+Marc and Eric,
 
-On Mon, Nov 24, 2014 at 4:02 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Mon, Nov 24, 2014 at 11:11:23AM +0530, Vivek Gautam wrote:
->> DP PHY now require pmu-system-controller to handle PMU register
->> to control PHY's power isolation. Adding the same to dp-phy
->> node.
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> Reviewed-by: Jingoo Han <jg1.han@samsung.com>
->> Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> Cc: Kukjin Kim <kgene@kernel.org>
->> ---
->>  arch/arm/boot/dts/exynos5250.dtsi |    2 +-
->>  arch/arm/boot/dts/exynos5420.dtsi |    4 ++--
->>  2 files changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
->> index 0a588b4..bebd099 100644
->> --- a/arch/arm/boot/dts/exynos5250.dtsi
->> +++ b/arch/arm/boot/dts/exynos5250.dtsi
->> @@ -732,7 +732,7 @@
->>
->>       dp_phy: video-phy@10040720 {
->>               compatible = "samsung,exynos5250-dp-video-phy";
->> -             reg = <0x10040720 4>;
->> +             samsung,pmu-syscon = <&pmu_system_controller>;
->>               #phy-cells = <0>;
->>       };
->>
->> diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
->> index 8617a03..1353a09 100644
->> --- a/arch/arm/boot/dts/exynos5420.dtsi
->> +++ b/arch/arm/boot/dts/exynos5420.dtsi
->> @@ -503,8 +503,8 @@
->>       };
->>
->>       dp_phy: video-phy@10040728 {
->> -             compatible = "samsung,exynos5250-dp-video-phy";
->> -             reg = <0x10040728 4>;
->> +             compatible = "samsung,exynos5420-dp-video-phy";
->> +             samsung,pmu-syscon = <&pmu_system_controller>;
->>               #phy-cells = <0>;
->>       };
->>
->
-> It seems like these nodes have been in the Linux tree since 3.12 and
-> 3.17, respectively and these changes break backwards-compatibility. Has
-> anyone thought about the possible consequences?
+Does it make sense to review and look at these patches given the current
+state of the forwarding patches, or should we wait until Marc respins
+that series?
 
-Sorry for my ignorance, but i have a doubt.
-If the bindings and device node both are being changed in the same kernel
-version (as fixes),
-so that the stable will have both; then the only scenerio of backward
-compatibility comes when kernel is upgraded but not dtbs.
-Does such upgradation makes sense for distros ?
+> 
+> It brings some extra functionalities that were requested to
+> be able to inject virtual level sensitive IRQs triggered from
+> VFIO/irqfd.
+> 
+> It adds:
+> - a specific handling of forwarded IRQ into the VGIC state machine.
+> - deactivation of physical IRQ and unforwarding on vgic destruction
+> - handling of forwarded IRQ injection before the vgic readiness:
+>   this was needed because in a sample qemu/vfio use case, qemu
+>   registers forwarded IRQ and set up VFIO signaling before the first
+>   vcpu run and hence before vgic readiness. At that time some
+>   physical IRQ may hit before the VGIC readiness. This is typically
+>   observed with Calxeda xgmac on second QEMU run.
 
->
-> Although, looking more closely it seems like this isn't the first time
-> that backwards-compatibility was broken in these files, so perhaps
-> nobody cares...
->
-> Thierry
+this seems related to my note in the last patch?  Same or different
+problem?
 
+-Christoffer
 
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+> - rbtree lock addition.
+> 
+> Integrated pieces can be found at
+> ssh://git.linaro.org/people/eric.auger/linux.git
+> on branch irqfd_integ_v8
+> 
+> The first 2 patch files were previously part of [RFC v2 0/9]
+> KVM-VFIO IRQ forward control (https://lkml.org/lkml/2014/9/1/347).
+> 
+> 
+> Eric Auger (4):
+>   KVM: arm: vgic: fix state machine for forwarded IRQ
+>   KVM: arm: vgic: add forwarded irq rbtree lock
+>   KVM: arm: vgic: cleanup forwarded IRQs on destroy
+>   KVM: arm: vgic: handle irqfd forwarded IRQ injection before vgic
+>     readiness
+> 
+>  include/kvm/arm_vgic.h |   1 +
+>  virt/kvm/arm/vgic.c    | 128 +++++++++++++++++++++++++++++++++++++++++--------
+>  2 files changed, 110 insertions(+), 19 deletions(-)
+> 
+> -- 
+> 1.9.1
+> 
