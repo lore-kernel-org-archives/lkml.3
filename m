@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718AbaKXWfE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 17:35:04 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:56757 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396AbaKXWeP (ORCPT
+	id S1751788AbaKXWfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 17:35:06 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:35610 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaKXWeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 Nov 2014 17:34:15 -0500
 From: Grant Likely <grant.likely@linaro.org>
@@ -12,10 +12,10 @@ To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
         Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>, <linux-spi@vger.kernel.org>
-Subject: [PATCH v2 13/14] spi/of: Create new device registration method and accessors
-Date: Mon, 24 Nov 2014 22:33:41 +0000
-Message-Id: <1416868422-22103-14-git-send-email-grant.likely@linaro.org>
+        Grant Likely <grant.likely@linaro.org>, linux-i2c@vger.kernel.org
+Subject: [PATCH v2 12/14] i2c/of: Add OF_RECONFIG notifier handler
+Date: Mon, 24 Nov 2014 22:33:40 +0000
+Message-Id: <1416868422-22103-13-git-send-email-grant.likely@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416868422-22103-1-git-send-email-grant.likely@linaro.org>
 References: <1416868422-22103-1-git-send-email-grant.likely@linaro.org>
@@ -25,274 +25,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 
-Dynamically inserting spi device nodes requires the use of a single
-device registration method. Refactor the existing
-of_register_spi_devices() to split out the core functionality for a
-single device into a separate function; of_register_spi_device(). This
-function will be used by the OF_DYNAMIC overlay code to make live
-modifications to the tree.
-
-Methods to lookup a device/master using a device node are added
-as well, of_find_spi_master_by_node() & of_find_spi_device_by_node().
-
-Changes since v1:
-* Brown paper bug with parameter on of_register_spi_device().
+CONFIG_OF_DYNAMIC enables runtime changes to the device tree which in
+turn may trigger addition or removal of devices from Linux. Add an
+OF_RECONFIG notifier handler to receive tree change events and to
+creating or destroy i2c devices as required.
 
 Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-[grant.likely] Split patch into two pieces for clarity
+[grant.likely: clean up #ifdefs and drop unneeded error handling]
 Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: <linux-spi@vger.kernel.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: linux-i2c@vger.kernel.org
 ---
- drivers/spi/spi.c | 222 +++++++++++++++++++++++++++++-------------------------
- 1 file changed, 118 insertions(+), 104 deletions(-)
+ drivers/i2c/i2c-core.c | 52 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 52 insertions(+)
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index ebcb33df2eb2..a3557c57d4f7 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1220,6 +1220,121 @@ err_init_queue:
- /*-------------------------------------------------------------------------*/
- 
- #if defined(CONFIG_OF)
-+static struct spi_device *
-+of_register_spi_device(struct spi_master *master, struct device_node *nc)
-+{
-+	struct spi_device *spi;
-+	int rc;
-+	u32 value;
-+
-+	/* Alloc an spi_device */
-+	spi = spi_alloc_device(master);
-+	if (!spi) {
-+		dev_err(&master->dev, "spi_device alloc error for %s\n",
-+			nc->full_name);
-+		rc = -ENOMEM;
-+		goto err_out;
-+	}
-+
-+	/* Select device driver */
-+	rc = of_modalias_node(nc, spi->modalias,
-+				sizeof(spi->modalias));
-+	if (rc < 0) {
-+		dev_err(&master->dev, "cannot find modalias for %s\n",
-+			nc->full_name);
-+		goto err_out;
-+	}
-+
-+	/* Device address */
-+	rc = of_property_read_u32(nc, "reg", &value);
-+	if (rc) {
-+		dev_err(&master->dev, "%s has no valid 'reg' property (%d)\n",
-+			nc->full_name, rc);
-+		goto err_out;
-+	}
-+	spi->chip_select = value;
-+
-+	/* Mode (clock phase/polarity/etc.) */
-+	if (of_find_property(nc, "spi-cpha", NULL))
-+		spi->mode |= SPI_CPHA;
-+	if (of_find_property(nc, "spi-cpol", NULL))
-+		spi->mode |= SPI_CPOL;
-+	if (of_find_property(nc, "spi-cs-high", NULL))
-+		spi->mode |= SPI_CS_HIGH;
-+	if (of_find_property(nc, "spi-3wire", NULL))
-+		spi->mode |= SPI_3WIRE;
-+	if (of_find_property(nc, "spi-lsb-first", NULL))
-+		spi->mode |= SPI_LSB_FIRST;
-+
-+	/* Device DUAL/QUAD mode */
-+	if (!of_property_read_u32(nc, "spi-tx-bus-width", &value)) {
-+		switch (value) {
-+		case 1:
-+			break;
-+		case 2:
-+			spi->mode |= SPI_TX_DUAL;
-+			break;
-+		case 4:
-+			spi->mode |= SPI_TX_QUAD;
-+			break;
-+		default:
-+			dev_warn(&master->dev,
-+				"spi-tx-bus-width %d not supported\n",
-+				value);
-+			break;
-+		}
-+	}
-+
-+	if (!of_property_read_u32(nc, "spi-rx-bus-width", &value)) {
-+		switch (value) {
-+		case 1:
-+			break;
-+		case 2:
-+			spi->mode |= SPI_RX_DUAL;
-+			break;
-+		case 4:
-+			spi->mode |= SPI_RX_QUAD;
-+			break;
-+		default:
-+			dev_warn(&master->dev,
-+				"spi-rx-bus-width %d not supported\n",
-+				value);
-+			break;
-+		}
-+	}
-+
-+	/* Device speed */
-+	rc = of_property_read_u32(nc, "spi-max-frequency", &value);
-+	if (rc) {
-+		dev_err(&master->dev, "%s has no valid 'spi-max-frequency' property (%d)\n",
-+			nc->full_name, rc);
-+		goto err_out;
-+	}
-+	spi->max_speed_hz = value;
-+
-+	/* IRQ */
-+	spi->irq = irq_of_parse_and_map(nc, 0);
-+
-+	/* Store a pointer to the node in the device structure */
-+	of_node_get(nc);
-+	spi->dev.of_node = nc;
-+
-+	/* Register the new device */
-+	request_module("%s%s", SPI_MODULE_PREFIX, spi->modalias);
-+	rc = spi_add_device(spi);
-+	if (rc) {
-+		dev_err(&master->dev, "spi_device register error %s\n",
-+			nc->full_name);
-+		goto err_out;
-+	}
-+
-+	return spi;
-+
-+err_out:
-+	spi_dev_put(spi);
-+	return ERR_PTR(rc);
-+}
-+
- /**
-  * of_register_spi_devices() - Register child devices onto the SPI bus
-  * @master:	Pointer to spi_master device
-@@ -1231,116 +1346,15 @@ static void of_register_spi_devices(struct spi_master *master)
- {
- 	struct spi_device *spi;
- 	struct device_node *nc;
--	int rc;
--	u32 value;
- 
- 	if (!master->dev.of_node)
- 		return;
- 
- 	for_each_available_child_of_node(master->dev.of_node, nc) {
--		/* Alloc an spi_device */
--		spi = spi_alloc_device(master);
--		if (!spi) {
--			dev_err(&master->dev, "spi_device alloc error for %s\n",
-+		spi = of_register_spi_device(master, nc);
-+		if (IS_ERR(spi))
-+			dev_warn(&master->dev, "Failed to create SPI device for %s\n",
- 				nc->full_name);
--			spi_dev_put(spi);
--			continue;
--		}
--
--		/* Select device driver */
--		if (of_modalias_node(nc, spi->modalias,
--				     sizeof(spi->modalias)) < 0) {
--			dev_err(&master->dev, "cannot find modalias for %s\n",
--				nc->full_name);
--			spi_dev_put(spi);
--			continue;
--		}
--
--		/* Device address */
--		rc = of_property_read_u32(nc, "reg", &value);
--		if (rc) {
--			dev_err(&master->dev, "%s has no valid 'reg' property (%d)\n",
--				nc->full_name, rc);
--			spi_dev_put(spi);
--			continue;
--		}
--		spi->chip_select = value;
--
--		/* Mode (clock phase/polarity/etc.) */
--		if (of_find_property(nc, "spi-cpha", NULL))
--			spi->mode |= SPI_CPHA;
--		if (of_find_property(nc, "spi-cpol", NULL))
--			spi->mode |= SPI_CPOL;
--		if (of_find_property(nc, "spi-cs-high", NULL))
--			spi->mode |= SPI_CS_HIGH;
--		if (of_find_property(nc, "spi-3wire", NULL))
--			spi->mode |= SPI_3WIRE;
--		if (of_find_property(nc, "spi-lsb-first", NULL))
--			spi->mode |= SPI_LSB_FIRST;
--
--		/* Device DUAL/QUAD mode */
--		if (!of_property_read_u32(nc, "spi-tx-bus-width", &value)) {
--			switch (value) {
--			case 1:
--				break;
--			case 2:
--				spi->mode |= SPI_TX_DUAL;
--				break;
--			case 4:
--				spi->mode |= SPI_TX_QUAD;
--				break;
--			default:
--				dev_warn(&master->dev,
--					 "spi-tx-bus-width %d not supported\n",
--					 value);
--				break;
--			}
--		}
--
--		if (!of_property_read_u32(nc, "spi-rx-bus-width", &value)) {
--			switch (value) {
--			case 1:
--				break;
--			case 2:
--				spi->mode |= SPI_RX_DUAL;
--				break;
--			case 4:
--				spi->mode |= SPI_RX_QUAD;
--				break;
--			default:
--				dev_warn(&master->dev,
--					 "spi-rx-bus-width %d not supported\n",
--					 value);
--				break;
--			}
--		}
--
--		/* Device speed */
--		rc = of_property_read_u32(nc, "spi-max-frequency", &value);
--		if (rc) {
--			dev_err(&master->dev, "%s has no valid 'spi-max-frequency' property (%d)\n",
--				nc->full_name, rc);
--			spi_dev_put(spi);
--			continue;
--		}
--		spi->max_speed_hz = value;
--
--		/* IRQ */
--		spi->irq = irq_of_parse_and_map(nc, 0);
--
--		/* Store a pointer to the node in the device structure */
--		of_node_get(nc);
--		spi->dev.of_node = nc;
--
--		/* Register the new device */
--		request_module("%s%s", SPI_MODULE_PREFIX, spi->modalias);
--		rc = spi_add_device(spi);
--		if (rc) {
--			dev_err(&master->dev, "spi_device register error %s\n",
--				nc->full_name);
--			spi_dev_put(spi);
--		}
--
- 	}
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 15ba6185dba5..d8afd3f28ca4 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -1951,6 +1951,52 @@ void i2c_clients_command(struct i2c_adapter *adap, unsigned int cmd, void *arg)
  }
- #else
+ EXPORT_SYMBOL(i2c_clients_command);
+ 
++#if IS_ENABLED(CONFIG_OF_DYNAMIC)
++static int of_i2c_notify(struct notifier_block *nb, unsigned long action,
++			 void *arg)
++{
++	struct of_reconfig_data *rd = arg;
++	struct i2c_adapter *adap;
++	struct i2c_client *client;
++
++	switch (of_reconfig_get_state_change(action, rd)) {
++	case OF_RECONFIG_CHANGE_ADD:
++		adap = of_find_i2c_adapter_by_node(rd->dn->parent);
++		if (adap == NULL)
++			return NOTIFY_OK;	/* not for us */
++
++		client = of_i2c_register_device(adap, rd->dn);
++		put_device(&adap->dev);
++
++		if (IS_ERR(client)) {
++			pr_err("%s: failed to create for '%s'\n",
++					__func__, rd->dn->full_name);
++			return notifier_from_errno(PTR_ERR(client));
++		}
++		break;
++	case OF_RECONFIG_CHANGE_REMOVE:
++		/* find our device by node */
++		client = of_find_i2c_device_by_node(rd->dn);
++		if (client == NULL)
++			return NOTIFY_OK;	/* no? not meant for us */
++
++		/* unregister takes one ref away */
++		i2c_unregister_device(client);
++
++		/* and put the reference of the find */
++		put_device(&client->dev);
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++static struct notifier_block i2c_of_notifier = {
++	.notifier_call = of_i2c_notify,
++};
++#else
++extern struct notifier_block i2c_of_notifier;
++#endif /* CONFIG_OF_DYNAMIC */
++
+ static int __init i2c_init(void)
+ {
+ 	int retval;
+@@ -1968,6 +2014,10 @@ static int __init i2c_init(void)
+ 	retval = i2c_add_driver(&dummy_driver);
+ 	if (retval)
+ 		goto class_err;
++
++	if (IS_ENABLED(CONFIG_OF_DYNAMIC))
++		WARN_ON(of_reconfig_notifier_register(&i2c_of_notifier));
++
+ 	return 0;
+ 
+ class_err:
+@@ -1981,6 +2031,8 @@ bus_err:
+ 
+ static void __exit i2c_exit(void)
+ {
++	if (IS_ENABLED(CONFIG_OF_DYNAMIC))
++		WARN_ON(of_reconfig_notifier_unregister(&i2c_of_notifier));
+ 	i2c_del_driver(&dummy_driver);
+ #ifdef CONFIG_I2C_COMPAT
+ 	class_compat_unregister(i2c_adapter_compat_class);
 -- 
 1.9.1
 
