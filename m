@@ -1,43 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369AbaKXRSS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 12:18:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47856 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754338AbaKXRSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 12:18:15 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1416830320.25352.9.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <1416830320.25352.9.camel@dhcp-9-2-203-236.watson.ibm.com> <20141120165351.5264.61930.stgit@warthog.procyon.org.uk> <20141120165414.5264.95354.stgit@warthog.procyon.org.uk> <1416787243.9616.4.camel@dhcp-9-2-203-236.watson.ibm.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: dhowells@redhat.com, mmarek@suse.cz, keyrings@linux-nfs.org,
-        d.kasatkin@samsung.com, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        vgoyal@redhat.com
-Subject: Re: [Keyrings] [PATCH 2/5] X.509: Support X.509 lookup by Issuer+Serial form AuthorityKeyIdentifier
+	id S1754234AbaKXRUN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 12:20:13 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:50508 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477AbaKXRUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 12:20:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <598.1416848314.1@warthog.procyon.org.uk>
-Date: Mon, 24 Nov 2014 16:58:34 +0000
-Message-ID: <599.1416848314@warthog.procyon.org.uk>
+In-Reply-To: <CAJe_ZhdTvZZqERttAM_o6U6MZCOjk=oXpWFPf8W=DdW1j=Nx=g@mail.gmail.com>
+References: <1416264102-1323-1-git-send-email-abrestic@chromium.org>
+	<1416264102-1323-6-git-send-email-abrestic@chromium.org>
+	<CAJe_ZhdTvZZqERttAM_o6U6MZCOjk=oXpWFPf8W=DdW1j=Nx=g@mail.gmail.com>
+Date: Mon, 24 Nov 2014 09:20:07 -0800
+X-Google-Sender-Auth: XZjo_STaJHfAa3AHrWZ6kmdv46g
+Message-ID: <CAL1qeaFpYC8C5M_eJ8N8bjDvXVu0KBuxgTcrt12az374TnZ8rw@mail.gmail.com>
+Subject: Re: [PATCH V5 05/12] mailbox: Add NVIDIA Tegra XUSB mailbox driver
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+On Mon, Nov 24, 2014 at 12:34 AM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
+> On 18 November 2014 at 04:11, Andrew Bresticker <abrestic@chromium.org> wrote:
+>
+>> +
+>> +static int tegra_xusb_mbox_send_data(struct mbox_chan *chan, void *data)
+>> +{
+>> +       struct tegra_xusb_mbox *mbox = to_tegra_mbox(chan->mbox);
+>> +       struct tegra_xusb_mbox_msg *msg = data;
+>> +       unsigned long flags;
+>> +       u32 reg, owner;
+>> +
+>> +       dev_dbg(mbox->mbox.dev, "TX message %#x:%#x\n", msg->cmd, msg->data);
+>> +
+>> +       /* ACK/NAK must be sent with the controller as the mailbox owner */
+>> +       if (msg->cmd == MBOX_CMD_ACK || msg->cmd == MBOX_CMD_NAK)
+>> +               owner = MBOX_OWNER_FW;
+>> +       else
+>> +               owner = MBOX_OWNER_SW;
+>> +
+>> +       spin_lock_irqsave(&mbox->lock, flags);
+>> +
+>> +       /* Acquire mailbox */
+>> +       if (mbox_readl(mbox, XUSB_CFG_ARU_MBOX_OWNER) != MBOX_OWNER_NONE) {
+>> +               dev_err(mbox->mbox.dev, "Mailbox not idle\n");
+>> +               goto busy;
+>> +       }
+>> +       mbox_writel(mbox, owner, XUSB_CFG_ARU_MBOX_OWNER);
+>> +       if (mbox_readl(mbox, XUSB_CFG_ARU_MBOX_OWNER) != owner) {
+>> +               dev_err(mbox->mbox.dev, "Failed to acquire mailbox");
+>> +               goto busy;
+>> +       }
+>> +
+>> +       mbox_writel(mbox, mbox_pack_msg(msg), XUSB_CFG_ARU_MBOX_DATA_IN);
+>> +       reg = mbox_readl(mbox, XUSB_CFG_ARU_MBOX_CMD);
+>> +       reg |= MBOX_INT_EN | MBOX_DEST_FALC;
+>> +       mbox_writel(mbox, reg, XUSB_CFG_ARU_MBOX_CMD);
+>> +
+>> +       spin_unlock_irqrestore(&mbox->lock, flags);
+>> +
+>> +       return 0;
+>> +busy:
+>> +       spin_unlock_irqrestore(&mbox->lock, flags);
+>> +       return -EBUSY;
+>> +}
+>> +
+>> +static int tegra_xusb_mbox_startup(struct mbox_chan *chan)
+>> +{
+>> +       return 0;
+>> +}
+>> +
+>> +static void tegra_xusb_mbox_shutdown(struct mbox_chan *chan)
+>> +{
+>> +}
+>> +
+>> +static bool tegra_xusb_mbox_last_tx_done(struct mbox_chan *chan)
+>> +{
+>> +       /*
+>> +        * Transmissions are assumed to be completed as soon as they are
+>> +        * written to the mailbox.
+>> +        */
+>> +       return true;
+>>
+> In .send_data() you you mark the channel busy by setting the
+> XUSB_CFG_ARU_MBOX_OWNER to !MBOX_OWNER_NONE, which remains so until
+> you get an IRQ. So maybe you should check for the OWNER_NONE flag in
+> .last_tx_done()?
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-
-> +        if (id) {
-> +		lookup = id->data;
-> +		len = id->len;
-> +	}
->  	if (!lookup) {
-
-The last line here can then just be replaced by an else-clause.
-
-David
+Ah, you're right.  It does look like the controller firmware clears MBOX_OWNER.
