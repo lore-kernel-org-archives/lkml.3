@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749AbaKXAQm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 19:16:42 -0500
-Received: from ozlabs.org ([103.22.144.67]:36491 "EHLO ozlabs.org"
+	id S1752729AbaKXAXa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 19:23:30 -0500
+Received: from gate.crashing.org ([63.228.1.57]:37308 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752555AbaKXAQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 19:16:41 -0500
-Date: Mon, 24 Nov 2014 11:16:34 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the sunxi tree with the arm-soc tree
-Message-ID: <20141124111634.1498b6c1@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Ser9ctsfvOEy9L7mLVkfhNu"; protocol="application/pgp-signature"
+	id S1752555AbaKXAX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 19:23:28 -0500
+Message-ID: <1416788595.4998.5.camel@kernel.crashing.org>
+Subject: Re: [GIT PULL] Btrfs deadlock fix
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Chris Mason <clm@fb.com>
+Cc: torvalds@linux-foundation.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 24 Nov 2014 11:23:15 +1100
+In-Reply-To: <20141123151439.GA16816@ret.masoncoding.com>
+References: <20141123151439.GA16816@ret.masoncoding.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Ser9ctsfvOEy9L7mLVkfhNu
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Sun, 2014-11-23 at 10:14 -0500, Chris Mason wrote:
+> Hi Linus,
+> 
+> My for-linus branch:
 
-Hi Maxime,
+Not sure if this is related, but with -rc4, on this ppc64el box, when
+grub updates (it starts trying to mount everything under the sun with
+every filesystem), the box hangs with:
 
-Today's linux-next merge of the sunxi tree got a conflict in
-arch/arm/boot/dts/sun6i-a31.dtsi between commit 123ccfcc632a ("Revert
-merge of sunxi/dt") from the arm-soc tree and commits from the sunxi
-tree.
+[  177.344522] INFO: rcu_sched detected stalls on CPUs/tasks: { 8}
+(detected by 9, t=25883 jiffies, g=3642, c=3641, q=5206)
 
-I fixed it up (I just used the version from the sunxi tree) and can
-carry the fix as necessary (no action is required).
+With xmon I can catch it with this backtrace:
 
---=20
+[link register   ] d00000000ecec3f8 test_check_exists+0x1f8/0x280 [btrfs]
+[c000000f0cc63930] d00000000ecec2b0 test_check_exists+0xb0/0x280 [btrfs] (unreliable)
+[c000000f0cc63990] d00000000ed2a4b4 btrfs_test_free_space_cache+0x774/0x1150 [btrfs]
+[c000000f0cc63a20] d00000000ed30f04 init_btrfs_fs+0x11c/0x210 [btrfs]
+[c000000f0cc63a90] c00000000000b4dc do_one_initcall+0x12c/0x280
+[c000000f0cc63b60] c0000000001628b8 load_module+0x2088/0x2970
+[c000000f0cc63d50] c0000000001633d0 SyS_finit_module+0xc0/0x120
+[c000000f0cc63e30] c00000000000927c syscall_exit+0x0/0x7c
+--- Exception: c01 (System Call) at 00003fff88697184
+
+Note that afaik there isn't any btrfs partition on any disk on that
+machine... well not that I know of :)
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ben.
 
---Sig_/Ser9ctsfvOEy9L7mLVkfhNu
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+> git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+> 
+> Has a fix for a long standing deadlock that we've been trying to nail
+> down for a while.  It ended up being a bad interaction with the fair
+> reader/writer locks and the order btrfs reacquires locks in the btree.
+> 
+> Chris Mason (1) commits (+25/-15):
+>     btrfs: fix lockups from btrfs_clear_path_blocking
+> 
+> Total: (1) commits (+25/-15)
+> 
+>  fs/btrfs/ctree.c   | 14 ++------------
+>  fs/btrfs/locking.c | 24 +++++++++++++++++++++---
+>  fs/btrfs/locking.h |  2 ++
+>  3 files changed, 25 insertions(+), 15 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAEBCAAGBQJUcnjmAAoJEMDTa8Ir7ZwVMIIP/0UqRPK23D1zCKOUoNvEg/ON
-5mnfW+ffFNsPXiqX9cSO8E2VHuTBSNVnO49jXgr7tn5xlN7lH1058LgjqKsB57nW
-uNCkVr4/J3SMkDNZQ6r8kZovT4UawZ7kWCbC6qy2waHfs5N+syzp7mwaq2MGnf8G
-sdgdjLuQnAyPQLwsw1ZmJEKfrX7AbOm+yMOk0sbM5dco6Q3b9cR0QyuHpFbV9iAi
-eMHHk4mRvo7N6GiwzDk3VvGViBEQW7ewqO6nfIbj2sqrFZi8j/l7eAHFTb8L6kv8
-HIUQuHSRbG0mmUWIc4H9l6uGoG33N+2Nn/Pmr+plGcBgvN4goCQZNUviEFkdE3be
-z0gOjatQj5fcSa4+uu4imJm3eDv5THbnpf0t9ZqD4hKVOHc/jJOo+T1s33J7+IrJ
-W0f/eHdRH/6078YehmBxZsuSA2PyP8V7s5zAXbuvi4mxXSFuhBltx+wLPXvXtZAY
-d/laRyKW2WgVEjnhJyBYUKeUE290Tz0MAbUxTj8hNumDhYAJcZKA6K7fQ43dzhGQ
-2pSCj5fWmlL1C/S7KFNfnX+yvEaVNDC7V7EKlNbsGVOCH0Ei5vctvC2a24F6fpWB
-OwgJdIoruv/9v9FhSz4O/4pVyw7dMuW4lUwiKGCZqP+dl/4CvaUgzfkUScZ8Ivgd
-QcAM0453cKa0z8pQxPva
-=owmk
------END PGP SIGNATURE-----
-
---Sig_/Ser9ctsfvOEy9L7mLVkfhNu--
