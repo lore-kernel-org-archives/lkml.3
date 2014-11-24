@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970AbaKXDHZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 22:07:25 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60642 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882AbaKXDHY (ORCPT
+	id S1752125AbaKXDKT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 22:10:19 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:45237 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859AbaKXDKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 22:07:24 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 24 Nov 2014 12:10:17 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>, Dave Hansen <dave@sr71.net>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 7/7] mm/page_owner: correct owner information for
- early allocated pages
-Message-ID: <20141124031017.GD10828@js1304-P5Q-DELUXE>
-References: <1416557646-21755-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1416557646-21755-8-git-send-email-iamjoonsoo.kim@lge.com>
- <20141121153841.c15fa400fd5c76d3946523a8@linux-foundation.org>
+	Sun, 23 Nov 2014 22:10:15 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sAO3ADTW004328, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 1/2] r8152: redefine REALTEK_USB_DEVICE
+Date: Mon, 24 Nov 2014 11:09:48 +0800
+Message-ID: <1394712342-15778-102-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <1394712342-15778-101-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-101-Taiwan-albertk@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141121153841.c15fa400fd5c76d3946523a8@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 03:38:41PM -0800, Andrew Morton wrote:
-> On Fri, 21 Nov 2014 17:14:06 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> 
-> > Extended memory to store page owner information is initialized some time
-> > later than that page allocator starts. Until initialization, many pages
-> > can be allocated and they have no owner information. This make debugging
-> > using page owner harder, so some fixup will be helpful.
-> > 
-> > This patch fix up this situation by setting fake owner information
-> > immediately after page extension is initialized. Information doesn't
-> > tell the right owner, but, at least, it can tell whether page is
-> > allocated or not, more correctly.
-> > 
-> > On my testing, this patch catches 13343 early allocated pages, although
-> > they are mostly allocated from page extension feature. Anyway, after then,
-> > there is no page left that it is allocated and has no page owner flag.
-> 
-> We really should have a Documentation/vm/page_owner.txt which explains
-> all this stuff, provides examples, etc.
+Redefine REALTEK_USB_DEVICE for the desired USB interface for probe().
+There are three USB interfaces for the device. USB_CLASS_COMM and
+USB_CLASS_CDC_DATA are for ECM mode (config #2). USB_CLASS_VENDOR_SPEC
+is for the vendor mode (config #1). However, we are not interesting
+in USB_CLASS_CDC_DATA for probe(), so redefine REALTEK_USB_DEVICE
+to ignore the USB interface class of USB_CLASS_CDC_DATA.
 
-Okay. Will do in next spin.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 26 ++++++++++++++++++++------
+ 1 file changed, 20 insertions(+), 6 deletions(-)
 
-Thanks.
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index 4a9ece0..2d1c77e 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -24,6 +24,7 @@
+ #include <net/ip6_checksum.h>
+ #include <uapi/linux/mdio.h>
+ #include <linux/mdio.h>
++#include <linux/usb/cdc.h>
+ 
+ /* Version Information */
+ #define DRIVER_VERSION "v1.07.0 (2014/10/09)"
+@@ -466,9 +467,6 @@ enum rtl8152_flags {
+ #define MCU_TYPE_PLA			0x0100
+ #define MCU_TYPE_USB			0x0000
+ 
+-#define REALTEK_USB_DEVICE(vend, prod)	\
+-	USB_DEVICE_INTERFACE_CLASS(vend, prod, USB_CLASS_VENDOR_SPEC)
+-
+ struct tally_counter {
+ 	__le64	tx_packets;
+ 	__le64	rx_packets;
+@@ -3915,11 +3913,27 @@ static void rtl8152_disconnect(struct usb_interface *intf)
+ 	}
+ }
+ 
++#define REALTEK_USB_DEVICE(vend, prod)	\
++	.match_flags = USB_DEVICE_ID_MATCH_DEVICE | \
++		       USB_DEVICE_ID_MATCH_INT_CLASS, \
++	.idVendor = (vend), \
++	.idProduct = (prod), \
++	.bInterfaceClass = USB_CLASS_VENDOR_SPEC \
++}, \
++{ \
++	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO | \
++		       USB_DEVICE_ID_MATCH_DEVICE, \
++	.idVendor = (vend), \
++	.idProduct = (prod), \
++	.bInterfaceClass = USB_CLASS_COMM, \
++	.bInterfaceSubClass = USB_CDC_SUBCLASS_ETHERNET, \
++	.bInterfaceProtocol = USB_CDC_PROTO_NONE
++
+ /* table of devices that work with this driver */
+ static struct usb_device_id rtl8152_table[] = {
+-	{USB_DEVICE(VENDOR_ID_REALTEK, 0x8152)},
+-	{USB_DEVICE(VENDOR_ID_REALTEK, 0x8153)},
+-	{USB_DEVICE(VENDOR_ID_SAMSUNG, 0xa101)},
++	{REALTEK_USB_DEVICE(VENDOR_ID_REALTEK, 0x8152)},
++	{REALTEK_USB_DEVICE(VENDOR_ID_REALTEK, 0x8153)},
++	{REALTEK_USB_DEVICE(VENDOR_ID_SAMSUNG, 0xa101)},
+ 	{}
+ };
+ 
+-- 
+1.9.3
+
