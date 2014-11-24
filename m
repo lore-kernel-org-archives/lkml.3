@@ -1,109 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867AbaKXPI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:08:57 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54803 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753129AbaKXPIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:08:55 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v3 5/7] crypto: AF_ALG: add random number generator support
-Date: Mon, 24 Nov 2014 16:08:51 +0100
-Message-ID: <1924093.6oedGBDXii@tauon>
-User-Agent: KMail/4.14.2 (Linux/3.17.2-200.fc20.x86_64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <20141124143150.GC31469@gondor.apana.org.au>
-References: <4088013.2O8zCP0xXa@tachyon.chronox.de> <2490914.nzfN9gyyGH@tachyon.chronox.de> <20141124143150.GC31469@gondor.apana.org.au>
+	id S1753681AbaKXPJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 10:09:56 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:37243 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111AbaKXPJy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 10:09:54 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <1416654127-2433-1-git-send-email-mathieu.magnaudet@enac.fr>
+References: <1416654127-2433-1-git-send-email-mathieu.magnaudet@enac.fr>
+Date: Mon, 24 Nov 2014 10:09:53 -0500
+Message-ID: <CAN+gG=H=Nvis9JN_6ZaENrn3Q1fsHjbDS_w1GRk8WwuesCM7yA@mail.gmail.com>
+Subject: Re: [PATCH v2] hid-multitouch: Add quirk for VTL touch panels
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Mathieu Magnaudet <mathieu.magnaudet@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 24. November 2014, 22:31:50 schrieb Herbert Xu:
+Hi,
 
-Hi Herbert,
-
->On Fri, Nov 21, 2014 at 06:32:52AM +0100, Stephan Mueller wrote:
->> This patch adds the random number generator support for AF_ALG.
->> 
->> A random number generator's purpose is to generate data without
->> requiring the caller to provide any data. Therefore, the AF_ALG
->> interface handler for RNGs only implements a callback handler for
->> recvmsg.
->> 
->> The following parameters provided with a recvmsg are processed by the
->> 
->> RNG callback handler:
->>         * sock - to resolve the RNG context data structure accessing
->>         the
->>         
->>           RNG instance private to the socket
->>         
->>         * len - this parameter allows userspace callers to specify
->>         how
->>         
->>           many random bytes the RNG shall produce and return. As the
->>           kernel context for the RNG allocates a buffer of 128 bytes
->>           to
->>           store random numbers before copying them to userspace, the
->>           len
->>           parameter is checked that it is not larger than 128. If a
->>           caller wants more random numbers, a new request for recvmsg
->>           shall be made.
->> 
->> The size of 128 bytes is chose because of the following 
-considerations:
->>         * to increase the memory footprint of the kernel too much
->>         (note,
->>         
->>           that would be 128 bytes per open socket)
->>         
->>         * 128 is divisible by any typical cryptographic block size an
->>         
->>           RNG may have
->>         
->>         * A request for random numbers typically only shall supply
->>         small
->>         
->>           amount of data like for keys or IVs that should only
->>           require
->>           one invocation of the recvmsg function.
->> 
->> Note, during instantiation of the RNG, the code checks whether the
->> RNG
->> implementation requires seeding. If so, the RNG is seeded with output
->> from get_random_bytes.
->> 
->> A fully working example using all aspects of the RNG interface is
->> provided at http://www.chronox.de/libkcapi.html
->> 
->> Signed-off-by: Stephan Mueller <smueller@chronox.de>
+On Sat, Nov 22, 2014 at 6:02 AM, Mathieu Magnaudet
+<mathieu.magnaudet@gmail.com> wrote:
+> VTL panels do not switch to the multitouch mode until the input mode
+> feature is read by the host. This should normally be done by
+> usbhid, but it looks like an other bug prevents usbhid to properly
+> retrieve the feature state. As a workaround, we force the reading of
+> the feature in mt_set_input_mode for such devices.
 >
->Sorry but who is going to use this and for what purpose?
+> Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+
+Indeed, this is still reviewed by me.
+
+> Signed-off-by: Mathieu Magnaudet <mathieu.magnaudet@enac.fr>
+> ---
+> v1 -> v2
+>         use hid_alloc_report_buf instead of kzalloc
 >
->Every other algif interface exports real hardware features that
->cannot otherwise be accessed from user-space.  All crypto RNGs
->are by definition software-only, so what is the point of this?
+>  drivers/hid/hid-ids.h        |  3 +++
+>  drivers/hid/hid-multitouch.c | 27 +++++++++++++++++++++++++++
+>  2 files changed, 30 insertions(+)
+>
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index 7c86373..d6cc6a9 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -931,6 +931,9 @@
+>  #define USB_DEVICE_ID_VERNIER_CYCLOPS  0x0004
+>  #define USB_DEVICE_ID_VERNIER_LCSPEC   0x0006
+>
+> +#define USB_VENDOR_ID_VTL              0x0306
+> +#define USB_DEVICE_ID_VTL_MULTITOUCH_FF3F      0xff3f
+> +
+>  #define USB_VENDOR_ID_WACOM            0x056a
+>  #define USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH 0x81
+>  #define USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH   0x00BD
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 51e25b9..683cda6 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -67,6 +67,7 @@ MODULE_LICENSE("GPL");
+>  #define MT_QUIRK_IGNORE_DUPLICATES     (1 << 10)
+>  #define MT_QUIRK_HOVERING              (1 << 11)
+>  #define MT_QUIRK_CONTACT_CNT_ACCURATE  (1 << 12)
+> +#define MT_QUIRK_FORCE_GET_FEATURE     (1 << 13)
+>
+>  #define MT_INPUTMODE_TOUCHSCREEN       0x02
+>  #define MT_INPUTMODE_TOUCHPAD          0x03
+> @@ -150,6 +151,7 @@ static void mt_post_parse(struct mt_device *td);
+>  #define MT_CLS_FLATFROG                                0x0107
+>  #define MT_CLS_GENERALTOUCH_TWOFINGERS         0x0108
+>  #define MT_CLS_GENERALTOUCH_PWT_TENFINGERS     0x0109
+> +#define MT_CLS_VTL                             0x0110
+>
+>  #define MT_DEFAULT_MAXCONTACT  10
+>  #define MT_MAX_MAXCONTACT      250
+> @@ -255,6 +257,11 @@ static struct mt_class mt_classes[] = {
+>                 .sn_move = 2048,
+>                 .maxcontacts = 40,
+>         },
+> +       { .name = MT_CLS_VTL,
+> +               .quirks = MT_QUIRK_ALWAYS_VALID |
+> +                       MT_QUIRK_CONTACT_CNT_ACCURATE |
+> +                       MT_QUIRK_FORCE_GET_FEATURE,
+> +       },
+>         { }
+>  };
+>
+> @@ -809,6 +816,9 @@ static void mt_set_input_mode(struct hid_device *hdev)
+>         struct mt_device *td = hid_get_drvdata(hdev);
+>         struct hid_report *r;
+>         struct hid_report_enum *re;
+> +       struct mt_class *cls = &td->mtclass;
+> +       char *buf;
+> +       int report_len;
+>
+>         if (td->inputmode < 0)
+>                 return;
+> @@ -816,6 +826,18 @@ static void mt_set_input_mode(struct hid_device *hdev)
+>         re = &(hdev->report_enum[HID_FEATURE_REPORT]);
+>         r = re->report_id_hash[td->inputmode];
+>         if (r) {
+> +               if (cls->quirks & MT_QUIRK_FORCE_GET_FEATURE) {
+> +                       report_len = ((r->size - 1) >> 3) + 1 + (r->id > 0);
 
+I don't like seeing that a third time in the hid subsystem. Mathieu,
+would you mind sending an other patch on top of this one which would
+export hid_report_len() in hid.h (and replace the calls here and in
+wacom_sys.c)?
+I would say a "static inline" declaration would be good enough.
 
-My idea is twofold: The software-RNGs currently available (X9.31 and 
-DRBG) use other ciphers as backends. Therefore, they can be considered 
-as transforms on top of these backend ciphers. Now, if these backend 
-ciphers are available in kernel mode only, currently only these in-
-kernel RNGs can use the hardware.
+Cheers,
+Benjamin
 
-With the consideration of AEAD, all ciphers supported by the kernel 
-crypto API are available to user space. That means, there is no need for 
-an additional crypto library in user space in addition to provide 
-hardware access. The RNG part is there to complement the case for not 
-needing an additional crypto lib in user space.
-
-Ciao
-Stephan
+> +                       buf = hid_alloc_report_buf(r, GFP_KERNEL);
+> +                       if (!buf) {
+> +                               hid_err(hdev, "failed to allocate buffer for report\n");
+> +                               return;
+> +                       }
+> +                       hid_hw_raw_request(hdev, r->id, buf, report_len,
+> +                                          HID_FEATURE_REPORT,
+> +                                          HID_REQ_GET_REPORT);
+> +                       kfree(buf);
+> +               }
+>                 r->field[0]->value[td->inputmode_index] = td->inputmode_value;
+>                 hid_hw_request(hdev, r, HID_REQ_SET_REPORT);
+>         }
+> @@ -1281,6 +1303,11 @@ static const struct hid_device_id mt_devices[] = {
+>                 MT_USB_DEVICE(USB_VENDOR_ID_UNITEC,
+>                         USB_DEVICE_ID_UNITEC_USB_TOUCH_0A19) },
+>
+> +       /* VTL panels */
+> +       { .driver_data = MT_CLS_VTL,
+> +               MT_USB_DEVICE(USB_VENDOR_ID_VTL,
+> +                       USB_DEVICE_ID_VTL_MULTITOUCH_FF3F) },
+> +
+>         /* Wistron panels */
+>         { .driver_data = MT_CLS_NSMU,
+>                 MT_USB_DEVICE(USB_VENDOR_ID_WISTRON,
+> --
+> 1.9.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
