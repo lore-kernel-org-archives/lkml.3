@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752AbaKXUFV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:05:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49911 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754658AbaKXUFR convert rfc822-to-8bit (ORCPT
+	id S1754810AbaKXUF3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:05:29 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:55128 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658AbaKXUF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:05:17 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <547381D7.2070404@de.ibm.com>
-References: <547381D7.2070404@de.ibm.com> <1416834210-61738-1-git-send-email-borntraeger@de.ibm.com> <1416834210-61738-8-git-send-email-borntraeger@de.ibm.com> <15567.1416835858@warthog.procyon.org.uk> <CAADnVQJQydX9OU_rem+BObR0eWc-jrrwirUYVKH9rnN=Z8LG6A@mail.gmail.com> <CA+55aFxc72VsGTw4yFdeC1Sq65RUjYLKPD1ORnXB2d18WBMzvg@mail.gmail.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>, linux-x86_64@vger.kernel.org,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH/RFC 7/7] kernel: Force ACCESS_ONCE to work only on scalar types
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <12208.1416859494.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 24 Nov 2014 20:04:54 +0000
-Message-ID: <12209.1416859494@warthog.procyon.org.uk>
+	Mon, 24 Nov 2014 15:05:26 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v3 2/4] i2c: omap: implement workaround for handling invalid BB-bit values
+From: Alexander Kochetkov <al.kochet@gmail.com>
+In-Reply-To: <20141124194759.GG2757@atomide.com>
+Date: Mon, 24 Nov 2014 23:05:21 +0300
+Cc: Kevin Hilman <khilman@kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        linux-omap <linux-omap@vger.kernel.org>, linux-i2c@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Alexander Kochetkov <al.kochet@gmail.com>
+Content-Transfer-Encoding: 7bit
+Message-Id: <47749B61-5924-4E56-9931-77B0CFC0AAA0@gmail.com>
+References: <1416518925-20679-1-git-send-email-al.kochet@gmail.com> <1416685634-5864-1-git-send-email-al.kochet@gmail.com> <1416685634-5864-3-git-send-email-al.kochet@gmail.com> <CAMAWPa8whctBR6fBFaSzPvm3qn+QK06CimRrxFxxH=0kNkF4UA@mail.gmail.com> <47A1A441-952C-4AC3-859C-5A8E405767E0@gmail.com> <20141124194759.GG2757@atomide.com>
+To: Tony Lindgren <tony@atomide.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christian Borntraeger <borntraeger@de.ibm.com> wrote:
+Guys, I really sorry for that :(
 
-> Looks really nice, but does not work with ACCESS_ONCE is on the left-hand side:
-> 
-> 
-> include/linux/rculist.h: In function 'hlist_add_before_rcu':
-> ./arch/x86/include/asm/barrier.h:127:18: error: lvalue required as left operand of assignment
->   ACCESS_ONCE(*p) = (v);      \
-> 
-> Alexei's variant is also broken:
-> 
-> include/linux/cgroup.h: In function 'task_css':
-> include/linux/compiler.h:381:40: error: invalid operands to binary + (have 'struct css_set *' and 'struct css_set * volatile')
->  #define ACCESS_ONCE(x) (((typeof(x))0) + *(volatile typeof(x) *)&(x))
-> 
-> Anyone with a new propopal? ;-)                                        ^
+> Just try to boot it with your patch? :)
 
-Reserve ACCESS_ONCE() for reading and add an ASSIGN_ONCE() or something like
-that for writing?
+Yes, may be two-three times (max).
+Something (u-boot, may be) leave the bus in the wrong state.
+Really strange.
 
-David
+> But the test function should not loop forever in any case I take?
+
+It doesn't loop forever. It finish with message:
+"[    3.046691] omap_i2c 48070000.i2c: timeout waiting for bus ready"
+
+> So I doubt we just want to change the test for for a higher rev number
+> for  OMAP_I2C_REV_ON_3430_3530.
+
+
+Yes, I'll do it within 15 minutes.
+And later, if it possible, I'd try to see what happens.
+
+Alexander.
+
