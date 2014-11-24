@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678AbaKXSDA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:03:00 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:47690 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754597AbaKXSCx (ORCPT
+	id S1754658AbaKXSC6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:02:58 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:50088 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585AbaKXSCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 Nov 2014 13:02:53 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-a0-547372cab476
+X-AuditID: cbfec7f5-b7fc86d0000066b7-a4-547372ccc270
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
@@ -22,335 +22,266 @@ Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
         Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
         Vegard Nossum <vegard.nossum@gmail.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v7 11/12] lib: add kasan test module
-Date: Mon, 24 Nov 2014 21:02:24 +0300
-Message-id: <1416852146-9781-12-git-send-email-a.ryabinin@samsung.com>
+        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH v7 12/12] x86_64: kasan: add interceptors for
+ memset/memmove/memcpy functions
+Date: Mon, 24 Nov 2014 21:02:25 +0300
+Message-id: <1416852146-9781-13-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 2.1.3
 In-reply-to: <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
  <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t/xK7qniopDDHbd5rfY9usRm8XvvTNZ
-	LeasX8NmceTad3aL69/eMFp8evmA0WLL9SYmi+cPH7JbTHjYxm4xbaO4xcruZjaL7c/eMlms
-	7HzAanF51xw2i3tr/rNaLD5ym9ni3bPJzBZXVx1kt/ix4TGrg7DH/J0fGT12zrrL7rFgU6nH
-	4j0vmTw2repk89j0aRK7R9fbK0weJ2b8ZvF4cmU6k8fHp7dYPN7vu8rm0bdlFaPH501yHida
-	vrAG8EVx2aSk5mSWpRbp2yVwZbz9Ppul4IxZxf1Hd1gbGBt1uhg5OSQETCTOdS1ghLDFJC7c
-	W8/WxcjFISSwlFFi55G37CAJIYE+JomtU8FsNgE9iX+ztrOB2CICuhKrnu9iBrGZBVpZJU5t
-	Tepi5OAQBho6rcUJxGQRUJV4PL0IpIJXwE3iwtO3bCBhCQE5ia3rvEFMTqDwj6dlEEsbGSV6
-	Zm1mm8DIu4CRYRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSHR83cG49JjVIUYBDkYlHt4K
-	zeIQIdbEsuLK3EOMEhzMSiK8aflAId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYw7jmqwfjfmuW6+
-	dWPsMk/ezUvPVJunW6wR3RUzTfeH6anYwnj3lWo3RNfssHgQbjr7skOHxbwUs3krXtZ9eJm9
-	d66q1nZnrvxpXf592pfuLPj91sc88PCbwmPOHTGThL36Js3REo7YOL/l7w/r+em9nz15p/Jz
-	/s1YG6/p9ezZzfZnP2qYNT8qsRRnJBpqMRcVJwIA8EaAQmwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAAyWRXUhTYRzGfc/Z+XA5PJgfb16YDLpQ2DIRehEJhYiXuimSLhaoU08quSk7
+	bmh1YTMMV0yxMpvDRiLk0tTj/KT8WKaSYmFTUUs0Uxv4kcvMFDTX7n7/53ngd/FnyaBNMpzN
+	0RbwOq06V05LJaMHwy7FmE5IjhE/0Khj7xuN9t8+o5C1uZFGg1N/GDS9swaQx70AkGPaSKDV
+	xUUGVSyWMqiqNQw1PCihUefKOoEayhYo9LnHSqP5xkMKlXf+YNBEv41AdYNzJNpYeUSiNvEJ
+	iSbtAwzabVmiEkPx8+4tgLstXxlsE/W47o2bwKK9jMaip5LBpnUXgTfGxxk8Ur0vwd9dTwm8
+	tTwrwZu9kzQ2O+wA/xIj8Mi9bepyoEqakMnn5hh43elzadLstXftRH51QmHT6Ee6GDyONQGW
+	hVwcLDlMMgH/IwyFn+abaROQskFcPYBjfauk7zAT0NHXS3pXNKeEB5ZO2svBnALaV3v+j0hu
+	h4JTzT8Zb3GcS4Ur7g3gZQl3ChqNVuC1ybgL0Fmb4hNHwPbXl7zof5TuLht8qrsAPrS00RVA
+	ZgN+dhDC6zPyhfQsTaxSUGsEvTZLmZGnEYHvSb+7QP1QvBNwLJAHyAqjhOQgSm0QijROAFlS
+	Hiy7kXcUyTLVRbd4XV6qTp/LC05AsP7hxQCkD635KWprXHxV8azypiJmZn8AO5VTL7vMr86O
+	bluWrqTYrNe+lCfV3/+bBJ04Mg1sOxJb6RCHJUomFrT2Gi7GocgdZXVhl3HOUWNyv6h83z/j
+	CVOZ2YDQ2jt78cdUpZHCeZdn9+qJlsAmdfSIijjZMsxdjyi5rVVJJuQSIVt9JprUCep/vykJ
+	DYICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a test module doing various nasty things like
-out of bounds accesses, use after free. It is useful for testing
-kernel debugging features like kernel address sanitizer.
+Recently instrumentation of builtin functions calls was removed from GCC 5.0.
+To check the memory accessed by such functions, userspace asan always uses
+interceptors for them.
 
-It mostly concentrates on testing of slab allocator, but we
-might want to add more different stuff here in future (like
-stack/global variables out of bounds accesses and so on).
+So now we should do this as well. This patch declares memset/memmove/memcpy
+as weak symbols. In mm/kasan/kasan.c we have our own implementation
+of those functions which checks memory before accessing it.
+
+Default memset/memmove/memcpy now now always have aliases with '__' prefix.
+For files that built without kasan instrumentation (e.g. mm/slub.c)
+original mem* replaced (via #define) with prefixed variants,
+cause we don't want to check memory accesses there.
 
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- lib/Kconfig.kasan |   8 ++
- lib/Makefile      |   1 +
- lib/test_kasan.c  | 254 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 263 insertions(+)
- create mode 100644 lib/test_kasan.c
+ arch/x86/boot/compressed/eboot.c |  2 ++
+ arch/x86/boot/compressed/misc.h  |  1 +
+ arch/x86/include/asm/string_64.h | 18 +++++++++++++++++-
+ arch/x86/kernel/x8664_ksyms_64.c | 10 ++++++++--
+ arch/x86/lib/memcpy_64.S         |  2 ++
+ arch/x86/lib/memmove_64.S        |  4 ++++
+ arch/x86/lib/memset_64.S         | 10 ++++++----
+ mm/kasan/kasan.c                 | 28 +++++++++++++++++++++++++++-
+ 8 files changed, 67 insertions(+), 8 deletions(-)
 
-diff --git a/lib/Kconfig.kasan b/lib/Kconfig.kasan
-index 1fa4fe8..8548646 100644
---- a/lib/Kconfig.kasan
-+++ b/lib/Kconfig.kasan
-@@ -43,4 +43,12 @@ config KASAN_INLINE
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 1acf605..8f46fa7 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -14,6 +14,8 @@
+ #include <asm/desc.h>
  
- endchoice
+ #undef memcpy			/* Use memcpy from misc.c */
++#undef memset
++#undef memmove
  
-+config TEST_KASAN
-+	tristate "Module for testing kasan for bug detection"
-+	depends on m && KASAN
-+	help
-+	  This is a test module doing various nasty things like
-+	  out of bounds accesses, use after free. It is useful for testing
-+	  kernel debugging features like kernel address sanitizer.
+ #include "eboot.h"
+ 
+diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
+index 24e3e56..04477d6 100644
+--- a/arch/x86/boot/compressed/misc.h
++++ b/arch/x86/boot/compressed/misc.h
+@@ -7,6 +7,7 @@
+  * we just keep it from happening
+  */
+ #undef CONFIG_PARAVIRT
++#undef CONFIG_KASAN
+ #ifdef CONFIG_X86_32
+ #define _ASM_X86_DESC_H 1
+ #endif
+diff --git a/arch/x86/include/asm/string_64.h b/arch/x86/include/asm/string_64.h
+index 19e2c46..e466119 100644
+--- a/arch/x86/include/asm/string_64.h
++++ b/arch/x86/include/asm/string_64.h
+@@ -27,11 +27,12 @@ static __always_inline void *__inline_memcpy(void *to, const void *from, size_t
+    function. */
+ 
+ #define __HAVE_ARCH_MEMCPY 1
++extern void *__memcpy(void *to, const void *from, size_t len);
 +
- endif
-diff --git a/lib/Makefile b/lib/Makefile
-index 750617c..1d8211a 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -38,6 +38,7 @@ obj-$(CONFIG_TEST_LKM) += test_module.o
- obj-$(CONFIG_TEST_USER_COPY) += test_user_copy.o
- obj-$(CONFIG_TEST_BPF) += test_bpf.o
- obj-$(CONFIG_TEST_FIRMWARE) += test_firmware.o
-+obj-$(CONFIG_TEST_KASAN) += test_kasan.o
+ #ifndef CONFIG_KMEMCHECK
+ #if (__GNUC__ == 4 && __GNUC_MINOR__ >= 3) || __GNUC__ > 4
+ extern void *memcpy(void *to, const void *from, size_t len);
+ #else
+-extern void *__memcpy(void *to, const void *from, size_t len);
+ #define memcpy(dst, src, len)					\
+ ({								\
+ 	size_t __len = (len);					\
+@@ -53,9 +54,11 @@ extern void *__memcpy(void *to, const void *from, size_t len);
  
- ifeq ($(CONFIG_DEBUG_KOBJECT),y)
- CFLAGS_kobject.o += -DDEBUG
-diff --git a/lib/test_kasan.c b/lib/test_kasan.c
-new file mode 100644
-index 0000000..896dee5
---- /dev/null
-+++ b/lib/test_kasan.c
-@@ -0,0 +1,254 @@
+ #define __HAVE_ARCH_MEMSET
+ void *memset(void *s, int c, size_t n);
++void *__memset(void *s, int c, size_t n);
+ 
+ #define __HAVE_ARCH_MEMMOVE
+ void *memmove(void *dest, const void *src, size_t count);
++void *__memmove(void *dest, const void *src, size_t count);
+ 
+ int memcmp(const void *cs, const void *ct, size_t count);
+ size_t strlen(const char *s);
+@@ -63,6 +66,19 @@ char *strcpy(char *dest, const char *src);
+ char *strcat(char *dest, const char *src);
+ int strcmp(const char *cs, const char *ct);
+ 
++#if defined(CONFIG_KASAN) && !defined(__SANITIZE_ADDRESS__)
++
 +/*
-+ *
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ * Author: Andrey Ryabinin <a.ryabinin@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
++ * For files that not instrumented (e.g. mm/slub.c) we
++ * should use not instrumented version of mem* functions.
 + */
 +
-+#define pr_fmt(fmt) "kasan test: %s " fmt, __func__
++#undef memcpy
++#define memcpy(dst, src, len) __memcpy(dst, src, len)
++#define memmove(dst, src, len) __memmove(dst, src, len)
++#define memset(s, c, n) __memset(s, c, n)
++#endif
 +
-+#include <linux/kernel.h>
-+#include <linux/printk.h>
-+#include <linux/slab.h>
-+#include <linux/string.h>
-+#include <linux/module.h>
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_X86_STRING_64_H */
+diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
+index 0406819..37d8fa4 100644
+--- a/arch/x86/kernel/x8664_ksyms_64.c
++++ b/arch/x86/kernel/x8664_ksyms_64.c
+@@ -50,13 +50,19 @@ EXPORT_SYMBOL(csum_partial);
+ #undef memset
+ #undef memmove
+ 
++extern void *__memset(void *, int, __kernel_size_t);
++extern void *__memcpy(void *, const void *, __kernel_size_t);
++extern void *__memmove(void *, const void *, __kernel_size_t);
+ extern void *memset(void *, int, __kernel_size_t);
+ extern void *memcpy(void *, const void *, __kernel_size_t);
+-extern void *__memcpy(void *, const void *, __kernel_size_t);
++extern void *memmove(void *, const void *, __kernel_size_t);
 +
-+static noinline void __init kmalloc_oob_right(void)
++EXPORT_SYMBOL(__memset);
++EXPORT_SYMBOL(__memcpy);
++EXPORT_SYMBOL(__memmove);
+ 
+ EXPORT_SYMBOL(memset);
+ EXPORT_SYMBOL(memcpy);
+-EXPORT_SYMBOL(__memcpy);
+ EXPORT_SYMBOL(memmove);
+ 
+ #ifndef CONFIG_DEBUG_VIRTUAL
+diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
+index 56313a3..d79db86 100644
+--- a/arch/x86/lib/memcpy_64.S
++++ b/arch/x86/lib/memcpy_64.S
+@@ -53,6 +53,8 @@
+ .Lmemcpy_e_e:
+ 	.previous
+ 
++.weak memcpy
++
+ ENTRY(__memcpy)
+ ENTRY(memcpy)
+ 	CFI_STARTPROC
+diff --git a/arch/x86/lib/memmove_64.S b/arch/x86/lib/memmove_64.S
+index 65268a6..9c4b530 100644
+--- a/arch/x86/lib/memmove_64.S
++++ b/arch/x86/lib/memmove_64.S
+@@ -24,7 +24,10 @@
+  * Output:
+  * rax: dest
+  */
++.weak memmove
++
+ ENTRY(memmove)
++ENTRY(__memmove)
+ 	CFI_STARTPROC
+ 
+ 	/* Handle more 32 bytes in loop */
+@@ -220,4 +223,5 @@ ENTRY(memmove)
+ 		.Lmemmove_end_forward-.Lmemmove_begin_forward,	\
+ 		.Lmemmove_end_forward_efs-.Lmemmove_begin_forward_efs
+ 	.previous
++ENDPROC(__memmove)
+ ENDPROC(memmove)
+diff --git a/arch/x86/lib/memset_64.S b/arch/x86/lib/memset_64.S
+index 2dcb380..6f44935 100644
+--- a/arch/x86/lib/memset_64.S
++++ b/arch/x86/lib/memset_64.S
+@@ -56,6 +56,8 @@
+ .Lmemset_e_e:
+ 	.previous
+ 
++.weak memset
++
+ ENTRY(memset)
+ ENTRY(__memset)
+ 	CFI_STARTPROC
+@@ -147,8 +149,8 @@ ENDPROC(__memset)
+          * feature to implement the right patch order.
+ 	 */
+ 	.section .altinstructions,"a"
+-	altinstruction_entry memset,.Lmemset_c,X86_FEATURE_REP_GOOD,\
+-			     .Lfinal-memset,.Lmemset_e-.Lmemset_c
+-	altinstruction_entry memset,.Lmemset_c_e,X86_FEATURE_ERMS, \
+-			     .Lfinal-memset,.Lmemset_e_e-.Lmemset_c_e
++	altinstruction_entry __memset,.Lmemset_c,X86_FEATURE_REP_GOOD,\
++			     .Lfinal-__memset,.Lmemset_e-.Lmemset_c
++	altinstruction_entry __memset,.Lmemset_c_e,X86_FEATURE_ERMS, \
++			     .Lfinal-__memset,.Lmemset_e_e-.Lmemset_c_e
+ 	.previous
+diff --git a/mm/kasan/kasan.c b/mm/kasan/kasan.c
+index 9f5326e..190e471 100644
+--- a/mm/kasan/kasan.c
++++ b/mm/kasan/kasan.c
+@@ -44,7 +44,7 @@ static void kasan_poison_shadow(const void *address, size_t size, u8 value)
+ 	shadow_start = kasan_mem_to_shadow(addr);
+ 	shadow_end = kasan_mem_to_shadow(addr + size);
+ 
+-	memset((void *)shadow_start, value, shadow_end - shadow_start);
++	__memset((void *)shadow_start, value, shadow_end - shadow_start);
+ }
+ 
+ void kasan_unpoison_shadow(const void *address, size_t size)
+@@ -248,6 +248,32 @@ static __always_inline void check_memory_region(unsigned long addr,
+ 	kasan_report(addr, size, write);
+ }
+ 
++#undef memset
++void *memset(void *addr, int c, size_t len)
 +{
-+	char *ptr;
-+	size_t size = 123;
++	check_memory_region((unsigned long)addr, len, true);
 +
-+	pr_info("out-of-bounds to right\n");
-+	ptr = kmalloc(size, GFP_KERNEL);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	ptr[size] = 'x';
-+	kfree(ptr);
++	return __memset(addr, c, len);
 +}
 +
-+static noinline void __init kmalloc_oob_left(void)
++#undef memmove
++void *memmove(void *dest, const void *src, size_t count)
 +{
-+	char *ptr;
-+	size_t size = 15;
++	check_memory_region((unsigned long)src, count, false);
++	check_memory_region((unsigned long)dest, count, true);
 +
-+	pr_info("out-of-bounds to left\n");
-+	ptr = kmalloc(size, GFP_KERNEL);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	*ptr = *(ptr - 1);
-+	kfree(ptr);
++	return __memmove(dest, src, count);
 +}
 +
-+static noinline void __init kmalloc_node_oob_right(void)
++#undef memcpy
++void *memcpy(void *to, const void *from, size_t len)
 +{
-+	char *ptr;
-+	size_t size = 4096;
++	check_memory_region((unsigned long)from, len, false);
++	check_memory_region((unsigned long)to, len, true);
 +
-+	pr_info("kmalloc_node(): out-of-bounds to right\n");
-+	ptr = kmalloc_node(size, GFP_KERNEL, 0);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	ptr[size] = 0;
-+	kfree(ptr);
++	return __memcpy(to, from, len);
 +}
 +
-+static noinline void __init kmalloc_large_oob_rigth(void)
-+{
-+	char *ptr;
-+	size_t size = KMALLOC_MAX_CACHE_SIZE + 10;
-+
-+	pr_info("kmalloc large allocation: out-of-bounds to right\n");
-+	ptr = kmalloc(size, GFP_KERNEL);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	ptr[size] = 0;
-+	kfree(ptr);
-+}
-+
-+static noinline void __init kmalloc_oob_krealloc_more(void)
-+{
-+	char *ptr1, *ptr2;
-+	size_t size1 = 17;
-+	size_t size2 = 19;
-+
-+	pr_info("out-of-bounds after krealloc more\n");
-+	ptr1 = kmalloc(size1, GFP_KERNEL);
-+	ptr2 = krealloc(ptr1, size2, GFP_KERNEL);
-+	if (!ptr1 || !ptr2) {
-+		pr_err("Allocation failed\n");
-+		kfree(ptr1);
-+		return;
-+	}
-+
-+	ptr2[size2] = 'x';
-+	kfree(ptr2);
-+}
-+
-+static noinline void __init kmalloc_oob_krealloc_less(void)
-+{
-+	char *ptr1, *ptr2;
-+	size_t size1 = 17;
-+	size_t size2 = 15;
-+
-+	pr_info("out-of-bounds after krealloc less\n");
-+	ptr1 = kmalloc(size1, GFP_KERNEL);
-+	ptr2 = krealloc(ptr1, size2, GFP_KERNEL);
-+	if (!ptr1 || !ptr2) {
-+		pr_err("Allocation failed\n");
-+		kfree(ptr1);
-+		return;
-+	}
-+	ptr2[size1] = 'x';
-+	kfree(ptr2);
-+}
-+
-+static noinline void __init kmalloc_oob_16(void)
-+{
-+	struct {
-+		u64 words[2];
-+	} *ptr1, *ptr2;
-+
-+	pr_info("kmalloc out-of-bounds for 16-bytes access\n");
-+	ptr1 = kmalloc(sizeof(*ptr1) - 3, GFP_KERNEL);
-+	ptr2 = kmalloc(sizeof(*ptr2), GFP_KERNEL);
-+	if (!ptr1 || !ptr2) {
-+		pr_err("Allocation failed\n");
-+		kfree(ptr1);
-+		kfree(ptr2);
-+		return;
-+	}
-+	*ptr1 = *ptr2;
-+	kfree(ptr1);
-+	kfree(ptr2);
-+}
-+
-+static noinline void __init kmalloc_oob_in_memset(void)
-+{
-+	char *ptr;
-+	size_t size = 666;
-+
-+	pr_info("out-of-bounds in memset\n");
-+	ptr = kmalloc(size, GFP_KERNEL);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	memset(ptr, 0, size+5);
-+	kfree(ptr);
-+}
-+
-+static noinline void __init kmalloc_uaf(void)
-+{
-+	char *ptr;
-+	size_t size = 10;
-+
-+	pr_info("use-after-free\n");
-+	ptr = kmalloc(size, GFP_KERNEL);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	kfree(ptr);
-+	*(ptr + 8) = 'x';
-+}
-+
-+static noinline void __init kmalloc_uaf_memset(void)
-+{
-+	char *ptr;
-+	size_t size = 33;
-+
-+	pr_info("use-after-free in memset\n");
-+	ptr = kmalloc(size, GFP_KERNEL);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	kfree(ptr);
-+	memset(ptr, 0, size);
-+}
-+
-+static noinline void __init kmalloc_uaf2(void)
-+{
-+	char *ptr1, *ptr2;
-+	size_t size = 43;
-+
-+	pr_info("use-after-free after another kmalloc\n");
-+	ptr1 = kmalloc(size, GFP_KERNEL);
-+	if (!ptr1) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	kfree(ptr1);
-+	ptr2 = kmalloc(size, GFP_KERNEL);
-+	if (!ptr2) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	ptr1[40] = 'x';
-+	kfree(ptr2);
-+}
-+
-+static noinline void __init kmem_cache_oob(void)
-+{
-+	char *p;
-+	size_t size = 200;
-+	struct kmem_cache *cache = kmem_cache_create("test_cache",
-+						size, 0,
-+						0, NULL);
-+	if (!cache) {
-+		pr_err("Cache allocation failed\n");
-+		return;
-+	}
-+	pr_info("out-of-bounds in kmem_cache_alloc\n");
-+	p = kmem_cache_alloc(cache, GFP_KERNEL);
-+	if (!p) {
-+		pr_err("Allocation failed\n");
-+		kmem_cache_destroy(cache);
-+		return;
-+	}
-+
-+	*p = p[size];
-+	kmem_cache_free(cache, p);
-+	kmem_cache_destroy(cache);
-+}
-+
-+int __init kmalloc_tests_init(void)
-+{
-+	kmalloc_oob_right();
-+	kmalloc_oob_left();
-+	kmalloc_node_oob_right();
-+	kmalloc_large_oob_rigth();
-+	kmalloc_oob_krealloc_more();
-+	kmalloc_oob_krealloc_less();
-+	kmalloc_oob_16();
-+	kmalloc_oob_in_memset();
-+	kmalloc_uaf();
-+	kmalloc_uaf_memset();
-+	kmalloc_uaf2();
-+	kmem_cache_oob();
-+	return -EAGAIN;
-+}
-+
-+module_init(kmalloc_tests_init);
-+MODULE_LICENSE("GPL");
+ void kasan_alloc_pages(struct page *page, unsigned int order)
+ {
+ 	if (likely(!PageHighMem(page)))
 -- 
 2.1.3
 
