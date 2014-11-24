@@ -1,54 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaKXNnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 08:43:17 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:40562 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062AbaKXNnO (ORCPT
+	id S1753154AbaKXNna (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 08:43:30 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:51538 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaKXNn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 08:43:14 -0500
-Message-ID: <1416836587.25352.24.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 3/5] PKCS#7: Allow detached data to be supplied for
- signature checking purposes
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: mmarek@suse.cz, d.kasatkin@samsung.com, rusty@rustcorp.com.au,
-        vgoyal@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 24 Nov 2014 08:43:07 -0500
-In-Reply-To: <14157.1416833305@warthog.procyon.org.uk>
-References: <1416829928.25352.6.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <20141120165351.5264.61930.stgit@warthog.procyon.org.uk>
-	 <20141120165425.5264.24661.stgit@warthog.procyon.org.uk>
-	 <14157.1416833305@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Mon, 24 Nov 2014 08:43:28 -0500
+Message-ID: <547335FB.4020002@mvista.com>
+Date: Mon, 24 Nov 2014 07:43:23 -0600
+From: Corey Minyard <cminyard@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: minyard@acm.org, Wolfram Sang <wsa@the-dreams.de>,
+        linux-i2c@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: Add parameters to sysfs-added i2c devices
+References: <1415976117-27755-1-git-send-email-minyard@acm.org>
+In-Reply-To: <1415976117-27755-1-git-send-email-minyard@acm.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112413-0029-0000-0000-000005D2B4FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-24 at 12:48 +0000, David Howells wrote: 
-> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> 
-> > Ok, PCKS#7 supports detached data.  I assume this is not needed for
-> > kernel modules.  What is the motivation for adding this support to the
-> > kernel?
-> 
-> See patch #5.  I should probably note that in the commit message.
+Ping, I haven't heard anything on this.
 
-This patch set does not change the syscall.  The signature is still
-appended to the kernel module.  In fact, the call from
-kernel/module_signing.c: mod_verify_pkcs7() calls
-pkcs7_supply_detached_data() with a pointer to the module and the module
-length to set the data field. pkcs7_supply_detached_data() would not be
-defined or exported, unless it was going to be called elsewhere.  How
-else are you planning on using pkcs7_supply_detached_data()? 
+-corey
 
-Mimi
-
+On 11/14/2014 08:41 AM, minyard@acm.org wrote:
+> From: Corey Minyard <cminyard@mvista.com>
+>
+> Some devices might need parameters to control their operation,
+> add the ability to pass these parameters to the client.
+>
+> This also makes the parsing of sysfs-added I2C devices a little
+> more flexible, allowing tabs and arbitrary numbers of spaces.
+>
+> Signed-off-by: Corey Minyard <cminyard@mvista.com>
+> ---
+>  drivers/i2c/i2c-core.c | 46 ++++++++++++++++++++++++++++++++++------------
+>  include/linux/i2c.h    |  3 +++
+>  2 files changed, 37 insertions(+), 12 deletions(-)
+>
+> I'm adding an SMBus IPMI driver, and it needs to be able to have
+> the IPMI bus address specified in case it's not the default.
+>
+> Also, this seems like it would be useful for other devices that
+> need some sort of configuration.
+>
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index f43b4e1..9a2ab13 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -781,7 +781,10 @@ static int i2c_device_pm_restore(struct device *dev)
+>  
+>  static void i2c_client_dev_release(struct device *dev)
+>  {
+> -	kfree(to_i2c_client(dev));
+> +	struct i2c_client *client = to_i2c_client(dev);
+> +
+> +	kfree(client->parms);
+> +	kfree(client);
+>  }
+>  
+>  static ssize_t
+> @@ -1059,6 +1062,13 @@ i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
+>  	client->flags = info->flags;
+>  	client->addr = info->addr;
+>  	client->irq = info->irq;
+> +	if (info->parms) {
+> +		client->parms = kstrdup(info->parms, GFP_KERNEL);
+> +		if (!client->parms) {
+> +			dev_err(&adap->dev, "Out of memory allocating parms\n");
+> +			goto out_err_silent;
+> +		}
+> +	}
+>  
+>  	strlcpy(client->name, info->type, sizeof(client->name));
+>  
+> @@ -1207,31 +1217,43 @@ i2c_sysfs_new_device(struct device *dev, struct device_attribute *attr,
+>  	struct i2c_adapter *adap = to_i2c_adapter(dev);
+>  	struct i2c_board_info info;
+>  	struct i2c_client *client;
+> -	char *blank, end;
+> +	char *pos, end;
+>  	int res;
+>  
+>  	memset(&info, 0, sizeof(struct i2c_board_info));
+>  
+> -	blank = strchr(buf, ' ');
+> -	if (!blank) {
+> +	pos = strpbrk(buf, " \t");
+> +	if (!pos) {
+>  		dev_err(dev, "%s: Missing parameters\n", "new_device");
+>  		return -EINVAL;
+>  	}
+> -	if (blank - buf > I2C_NAME_SIZE - 1) {
+> +	if (pos - buf > I2C_NAME_SIZE - 1) {
+>  		dev_err(dev, "%s: Invalid device name\n", "new_device");
+>  		return -EINVAL;
+>  	}
+> -	memcpy(info.type, buf, blank - buf);
+> +	memcpy(info.type, buf, pos - buf);
+>  
+> -	/* Parse remaining parameters, reject extra parameters */
+> -	res = sscanf(++blank, "%hi%c", &info.addr, &end);
+> -	if (res < 1) {
+> +	while (isspace(*pos))
+> +		pos++;
+> +
+> +	/* Parse address, saving remaining parameters. */
+> +	res = sscanf(pos, "%hi%c", &info.addr, &end);
+> +	if (res < 1 || !isspace(end)) {
+>  		dev_err(dev, "%s: Can't parse I2C address\n", "new_device");
+>  		return -EINVAL;
+>  	}
+> -	if (res > 1  && end != '\n') {
+> -		dev_err(dev, "%s: Extra parameters\n", "new_device");
+> -		return -EINVAL;
+> +	if (res > 1 && end != '\n') {
+> +		if (isspace(end)) {
+> +			/* Extra parms, skip the address and space. */
+> +			while (!isspace(*pos))
+> +				pos++;
+> +			while (isspace(*pos))
+> +				pos++;
+> +			info.parms = pos;
+> +		} else {
+> +			dev_err(dev, "%s: Extra parameters\n", "new_device");
+> +			return -EINVAL;
+> +		}
+>  	}
+>  
+>  	client = i2c_new_device(adap, &info);
+> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+> index b556e0a..e40fc56 100644
+> --- a/include/linux/i2c.h
+> +++ b/include/linux/i2c.h
+> @@ -222,6 +222,7 @@ struct i2c_client {
+>  	char name[I2C_NAME_SIZE];
+>  	struct i2c_adapter *adapter;	/* the adapter we sit on	*/
+>  	struct device dev;		/* the device structure		*/
+> +	char *parms;			/* sysfs extra parms		*/
+>  	int irq;			/* irq issued by device		*/
+>  	struct list_head detected;
+>  };
+> @@ -255,6 +256,7 @@ static inline void i2c_set_clientdata(struct i2c_client *dev, void *data)
+>   * @archdata: copied into i2c_client.dev.archdata
+>   * @of_node: pointer to OpenFirmware device node
+>   * @acpi_node: ACPI device node
+> + * @parms: Parameters supplied on the sysfs command line
+>   * @irq: stored in i2c_client.irq
+>   *
+>   * I2C doesn't actually support hardware probing, although controllers and
+> @@ -276,6 +278,7 @@ struct i2c_board_info {
+>  	struct dev_archdata	*archdata;
+>  	struct device_node *of_node;
+>  	struct acpi_dev_node acpi_node;
+> +	char            *parms;
+>  	int		irq;
+>  };
+>  
 
