@@ -1,125 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473AbaKXQS5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 11:18:57 -0500
-Received: from mga02.intel.com ([134.134.136.20]:18110 "EHLO mga02.intel.com"
+	id S1754155AbaKXQVg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 11:21:36 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:39560 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754187AbaKXQST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 11:18:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,449,1413270000"; 
-   d="scan'208";a="613180668"
-From: Kan Liang <kan.liang@intel.com>
-To: acme@kernel.org, jolsa@redhat.com, namhyung@kernel.org
-Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com,
-        Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V5 3/3] perf tool: check buildid for symoff
-Date: Mon, 24 Nov 2014 11:00:29 -0500
-Message-Id: <1416844829-26945-3-git-send-email-kan.liang@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1416844829-26945-1-git-send-email-kan.liang@intel.com>
-References: <1416844829-26945-1-git-send-email-kan.liang@intel.com>
+	id S1752416AbaKXQVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 11:21:34 -0500
+Date: Mon, 24 Nov 2014 10:21:43 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Sumit Semwal <sumit.semwal@linaro.org>
+CC: balbi <balbi@ti.com>, Kiran Raparthy <kiran.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Arve =?utf-8?B?SGrvv71ubmV277+9Zw==?= <arve@android.com>,
+        Benoit Goby <benoit@android.com>, Todd Poynor <toddpoynor@google.com>
+Subject: Re: [PATCH v1 2/3] usb: phy: Handle per-PHY event for connect and
+ disconnect events
+Message-ID: <20141124162143.GI20705@saruman>
+Reply-To: <balbi@ti.com>
+References: <cover.1416547297.git.kiran.kumar@linaro.org>
+ <7a23b5f0af4463aea85384b6a67678b9c41b9d2d.1416547297.git.kiran.kumar@linaro.org>
+ <20141121151105.GC7508@saruman>
+ <CA+RfmHZo4FuH6-Z8+VFY7Ao5QVD-VmfdCm17ZrB6f7J8Xpo-Aw@mail.gmail.com>
+ <20141124143819.GB20705@saruman>
+ <CAO_48GFj2moODXtB1W9t6tbuvcyF2WgnakSDrbQRzPi+u=mc=g@mail.gmail.com>
+ <20141124155422.GH20705@saruman>
+ <CAO_48GFK_a=d+jUMR8-eqRVy1V_hSt8hKs2uOA00zzxstgV7pA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SBT+cnFS/G3NVgv4"
+Content-Disposition: inline
+In-Reply-To: <CAO_48GFK_a=d+jUMR8-eqRVy1V_hSt8hKs2uOA00zzxstgV7pA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan Liang <kan.liang@intel.com>
+--SBT+cnFS/G3NVgv4
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-symoff can support both same binaries and different binaries. However,
-the offset may be changed for different binaries. This patch checks the
-buildid of perf.data. If they are from different binaries, print a
-warning to notify the user.
+Hi,
 
-Signed-off-by: Kan Liang <kan.liang@intel.com>
----
- tools/perf/builtin-diff.c | 25 +++++++++++++++++++++++++
- tools/perf/util/sort.c    |  3 +++
- tools/perf/util/sort.h    |  1 +
- 3 files changed, 29 insertions(+)
+On Mon, Nov 24, 2014 at 09:45:35PM +0530, Sumit Semwal wrote:
+> On 24 November 2014 at 21:24, Felipe Balbi <balbi@ti.com> wrote:
+> > On Mon, Nov 24, 2014 at 09:19:09PM +0530, Sumit Semwal wrote:
+> >> Hi Felipe,
+> >>
+> >> On 24 November 2014 at 20:08, Felipe Balbi <balbi@ti.com> wrote:
+> >> > Hi,
+> >> >
+> >> > On Fri, Nov 21, 2014 at 09:13:00PM +0530, Kiran Raparthy wrote:
+> >> >> On 21 November 2014 20:41, Felipe Balbi <balbi@ti.com> wrote:
+> >> >> > On Fri, Nov 21, 2014 at 11:31:21AM +0530, Kiran Raparthy wrote:
+> >> >> >> usb: phy: Handle per-PHY event for connnect and disconnect events
+> >> >> >>
+> >> >> >> When usb is connected and enumerated in device mode or when usb =
+is
+> >> >> >> disconnected,call usb_phy_set_event from phy drivers to handle p=
+er-PHY event.
+> >> >> >>
+> >> >> >> Cc: Felipe Balbi <balbi@ti.com>
+> >> >> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> >> >> Cc: linux-kernel@vger.kernel.org
+> >> >> >> Cc: linux-usb@vger.kernel.org
+> >> >> >> Cc: Android Kernel Team <kernel-team@android.com>
+> >> >> >> Cc: John Stultz <john.stultz@linaro.org>
+> >> >> >> Cc: Sumit Semwal <sumit.semwal@linaro.org>
+> >> >> >> Cc: Arve Hj=EF=BF=BDnnev=EF=BF=BDg <arve@android.com>
+> >> >> >> Cc: Benoit Goby <benoit@android.com>
+> >> >> >> [Original patch in Android from Todd]
+> >> >> >> Cc: Todd Poynor <toddpoynor@google.com>
+> >> >> >> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+> >> >> >
+> >> >> > this patch doesn't apply, please rebase entire series on my testi=
+ng/next.
+> >> >
+> >> > your rebased version didn't apply either. Can you make sure you're
+> >> > rebasing on top of my today's testing/next branch ?
+> >> >
+> >> I just verified that I am able to apply both this patch (and the next
+> >> one - so 2/3 and 3/3) on your testing/next branch - just to make sure,
+> >> this is the git/branch right?
+> >>
+> >> https://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
+> >> branch:testing/next
+> >
+> > that's the correct branch, but here's what I get:
+>=20
+> That's very odd - I pulled your branch for the first time about 5
+> minutes before I sent the mail? perhaps local branch updates?
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 03a4001..2a8c17a 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -678,6 +678,28 @@ static void data__free(struct data__file *d)
- 	}
+
+$ git show
+commit c9d655dccea0cb6df20ba5b39294a24be045ea4f
+Author: Fabio Estevam <fabio.estevam@freescale.com>
+Date:   Wed Nov 19 12:37:53 2014 -0200
+
+    usb: dwc2: Fix build warning when CONFIG_PM_SLEEP=3Dn
+   =20
+    Building with bcm2835_defconfig, which has CONFIG_PM_SLEEP=3Dn causes t=
+he
+    following build warning:
+   =20
+    drivers/usb/dwc2/platform.c:227:12: warning: 'dwc2_suspend' defined but=
+ not used [-Wunused-function]
+    drivers/usb/dwc2/platform.c:237:12: warning: 'dwc2_resume' defined but =
+not used [-Wunused-function]
+   =20
+    Annotate these functions with '__maybe_unused' to prevent the warnings.
+   =20
+    Reported-by: Olof's autobuilder <build@lixom.net>
+    Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+    Signed-off-by: Felipe Balbi <balbi@ti.com>
+
+diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
+index ec5658a..6a795aa 100644
+--- a/drivers/usb/dwc2/platform.c
++++ b/drivers/usb/dwc2/platform.c
+@@ -226,7 +226,7 @@ static int dwc2_driver_probe(struct platform_device *de=
+v)
+ 	return retval;
  }
- 
-+static void buildid_check(void)
-+{
-+	struct dsos *base_k_dsos = &data__files[0].session->machines.host.kernel_dsos;
-+	struct dsos *base_u_dsos = &data__files[0].session->machines.host.user_dsos;
-+	struct dsos *k_dsos_tmp, *u_dsos_tmp;
-+	struct data__file *d;
-+	int i;
-+
-+	data__for_each_file_new(i, d) {
-+		k_dsos_tmp = &d->session->machines.host.kernel_dsos;
-+		u_dsos_tmp = &d->session->machines.host.user_dsos;
-+
-+		if (!dsos__build_ids_equal(base_k_dsos, k_dsos_tmp))
-+			pr_warning("The perf.data come from different kernel. "
-+				   "The kernel symbol offset may vary for different kernel.\n");
-+
-+		if (!dsos__build_ids_equal(base_u_dsos, u_dsos_tmp))
-+			pr_warning("The perf.data come from different user binary. "
-+				   "The user space symbol offset may vary for different binaries.\n");
-+	}
-+}
-+
- static int __cmd_diff(void)
+=20
+-static int dwc2_suspend(struct device *dev)
++static int __maybe_unused dwc2_suspend(struct device *dev)
  {
- 	struct data__file *d;
-@@ -700,6 +722,9 @@ static int __cmd_diff(void)
- 		perf_evlist__collapse_resort(d->session->evlist);
- 	}
- 
-+	if (sort__has_symoff)
-+		buildid_check();
-+
- 	data_process();
- 
-  out_delete:
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index e6583c9..c964cbc 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -21,6 +21,7 @@ int		sort__need_collapse = 0;
- int		sort__has_parent = 0;
- int		sort__has_sym = 0;
- int		sort__has_dso = 0;
-+int		sort__has_symoff = 0;
- enum sort_mode	sort__mode = SORT_MODE__NORMAL;
- 
- 
-@@ -1493,6 +1494,7 @@ int sort_dimension__add(const char *tok)
- 		} else if (sd->entry == &sort_dso) {
- 			sort__has_dso = 1;
- 		} else if (sd->entry == &sort_symoff) {
-+			sort__has_symoff = 1;
- 			/*
- 			 * For symoff sort key, not only the offset but also the
- 			 * symbol name should be compared.
-@@ -1877,6 +1879,7 @@ void reset_output_field(void)
- 	sort__has_parent = 0;
- 	sort__has_sym = 0;
- 	sort__has_dso = 0;
-+	sort__has_symoff = 0;
- 
- 	field_order = NULL;
- 	sort_order = NULL;
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index ea0122f..d2f9782 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -34,6 +34,7 @@ extern int have_ignore_callees;
- extern int sort__need_collapse;
- extern int sort__has_parent;
- extern int sort__has_sym;
-+extern int sort__has_symoff;
- extern enum sort_mode sort__mode;
- extern struct sort_entry sort_comm;
- extern struct sort_entry sort_dso;
--- 
-1.8.3.2
+ 	struct dwc2_hsotg *dwc2 =3D dev_get_drvdata(dev);
+ 	int ret =3D 0;
+@@ -236,7 +236,7 @@ static int dwc2_suspend(struct device *dev)
+ 	return ret;
+ }
+=20
+-static int dwc2_resume(struct device *dev)
++static int __maybe_unused dwc2_resume(struct device *dev)
+ {
+ 	struct dwc2_hsotg *dwc2 =3D dev_get_drvdata(dev);
+ 	int ret =3D 0;
 
+that's the head of my branch, which is testing/next. And I don't have
+anything in my index:
+
+$ git diff
+$ echo $?
+0
+
+
+--=20
+balbi
+
+--SBT+cnFS/G3NVgv4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUc1sXAAoJEIaOsuA1yqREayMP/iUruebvEPbCuCCHFkU0dCSD
+jJyjbfFPUhlNXhipzbTUrHC/H1s/vaHewqbY36LfCg6FyVAXLTcLKac7mIpF4JL1
+a5S5PZ2e3aGvkWy3oTCQhisVieIWEj5sK/vQuu4pWtd1cGi7CmeWOYUZ2JNxEoca
+NCNFptT52GZHNqQCUyLVEGJZIq8BFoeVt3oZjHbtQyh0HAtgrZZwVYp2L9EksRuZ
+GoPes2JtIrKRw3fbXz1J94c+PXSz0Q7pbp+/PND4IvMtZnoPHDbCU163OI7qhDkC
+crWNcIEYkQk3R/fLCSYuG6dJptf530tEdBJ4uxS/LLvo6KO0UFT9Pv8J3Xr44Njj
+TyHrBPp54qD7v880z1S7hZvi1AcOl+UnO13Q6gA6X44XVfWIcb2HYB3xHH+nqoRE
+rLIV4TpMfXKlgPkDmFOVz9aPcAVXeMlmUhCqPa5YLk+mn2TgrabVmKR6IwUWOqoe
+APhYBbNu0Z2dvtRp98ZDXF+VUH+VngR/IiSQ4nz59VnRaBu2Ipc9Ll+NVY/wV0go
+vl3f+m8bJEBd+OAqHTG5s84aAuNzmq+m5jzxQi+ZJYt8eutqQeg7r9k+6zUarBaJ
+AjIp6PUqJ0GCyYL0puCapUP7OZa1HU913H4X3Wn38zqB9F5zihHReOCMrdb121HG
+dtBNNF+fHHljWbxgEY4V
+=O5d9
+-----END PGP SIGNATURE-----
+
+--SBT+cnFS/G3NVgv4--
