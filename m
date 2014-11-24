@@ -1,121 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293AbaKXOzr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:55:47 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50570 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754126AbaKXOzn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:55:43 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        Kangkang.Shen@huawei.com, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH v5 03/18] ACPI / table: Count matched and successfully parsed entries without specifying max entries
-Date: Mon, 24 Nov 2014 16:16:55 +0100
-Message-ID: <2301926.MWJ5MneAen@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5472ED90.5010803@linaro.org>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <6619034.gHDuQJ1A7y@vostro.rjw.lan> <5472ED90.5010803@linaro.org>
+	id S1753808AbaKXO55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:57:57 -0500
+Received: from mga09.intel.com ([134.134.136.24]:35261 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750726AbaKXO54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 09:57:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,449,1413270000"; 
+   d="scan'208";a="613136593"
+Message-ID: <5473476E.5070305@linux.intel.com>
+Date: Mon, 24 Nov 2014 22:57:50 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Marc Zyngier <marc.zyngier@arm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Robert Richter <robert.richter@caviumnetworks.com>,
+        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
+Subject: Re: [PATCH v3 06/13] irqchip: GICv3: ITS: LPI allocator
+References: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com> <1416839720-18400-7-git-send-email-marc.zyngier@arm.com>
+In-Reply-To: <1416839720-18400-7-git-send-email-marc.zyngier@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 24, 2014 09:34:24 AM Tomasz Nowicki wrote:
-> On 24.11.2014 02:45, Rafael J. Wysocki wrote:
-> > On Friday, October 17, 2014 09:36:59 PM Hanjun Guo wrote:
-> >> From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> >>
-> >> It is very useful to traverse all available table entries without max
-> >> number of expected entries type. Current acpi_parse_entries()
-> >> implementation gives that feature but it does not count those entries,
-> >> it returns 0 instead, so fix it to count matched and successfully
-> >> entries and return it.
-> >
-> > Hmm.  I guess that the goal is for count to only be incremented when the
-> > condition is satisfied entirely, while without the patch it may be incremented
-> > even if that isn't the case.
+
+
+On 2014/11/24 22:35, Marc Zyngier wrote:
+> LPIs are the type of interrupts that are used by the ITS. Given
+> the size of the namespace (anywhere between 16 and 32bit), interrupt
+> IDs are allocated in chunks of 32.
 > 
-> That would be our goal if patch would look like:
-> -		    && (!max_entries || count++ < max_entries))
-> +		    && (!max_entries && count++ < max_entries)) {
-> but then we can not walk through all available entries (with max_entries==0)
-
-No, that's not what I was trying to say. :-)
-
-> >
-> > I'm not sure how that is related to the above paragraph, however.
-> >
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> ---
+>  drivers/irqchip/irq-gic-v3-its.c | 103 +++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 103 insertions(+)
 > 
-> Previous changelog is not clear, let me rewrite it:
-> 
-> acpi_parse_entries() allows to traverse all available table entries (aka 
-> subtables) by passing max_entries parameter equal to 0. But for that use 
-> case acpi_parse_entries() does not inform caller how many entries were 
-> matched and for how many entries handler was run against. That patch is 
-> going to fix it.
-
-Do I understand correctly that count is only ever incremented by current code
-if max_entries is different from 0?
-
-
-> >> NOTE: This change has no impact to x86 and ia64 archs since existing code
-> >> checks for error occurrence only (acpi_parse_entries(...,0) < 0).
-> >>
-> >> Acked-by: Grant Likely <grant.likely@linaro.org>
-> >> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> >> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> >> ---
-> >>   drivers/acpi/tables.c |    5 ++++-
-> >>   1 file changed, 4 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-> >> index 21ae521..b18e45e 100644
-> >> --- a/drivers/acpi/tables.c
-> >> +++ b/drivers/acpi/tables.c
-> >> @@ -225,10 +225,13 @@ acpi_parse_entries(unsigned long table_size,
-> >>   	while (((unsigned long)entry) + sizeof(struct acpi_subtable_header) <
-> >>   	       table_end) {
-> >>   		if (entry->type == entry_id
-> >> -		    && (!max_entries || count++ < max_entries))
-> >> +		    && (!max_entries || count < max_entries)) {
-> >>   			if (handler(entry, table_end))
-> >>   				return -EINVAL;
-> >>
-> >> +			count++;
-> >> +		}
-> >> +
-> >>   		/*
-> >>   		 * If entry->length is 0, break from this loop to avoid
-> >>   		 * infinite loop.
-> >>
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> diff --git a/drivers/irqchip/irq-gic-v3-its.c b/drivers/irqchip/irq-gic-v3-its.c
+> index d24bebd..4154a16 100644
+> --- a/drivers/irqchip/irq-gic-v3-its.c
+> +++ b/drivers/irqchip/irq-gic-v3-its.c
+> @@ -586,3 +586,106 @@ static struct irq_chip its_irq_chip = {
+>  	.irq_eoi		= its_eoi_irq,
+>  	.irq_set_affinity	= its_set_affinity,
+>  };
+> +
+> +/*
+> + * How we allocate LPIs:
+> + *
+> + * The GIC has id_bits bits for interrupt identifiers. From there, we
+> + * must subtract 8192 which are reserved for SGIs/PPIs/SPIs. Then, as
+> + * we allocate LPIs by chunks of 32, we can shift the whole thing by 5
+> + * bits to the right.
+Just curious, why 32? sizeof(long) is 4 on ARM64?
