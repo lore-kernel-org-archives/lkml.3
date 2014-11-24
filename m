@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaKWXhD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 18:37:03 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:36193 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752548AbaKWXhA (ORCPT
+	id S1752670AbaKXAAy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 19:00:54 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:46268 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604AbaKXAAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 18:37:00 -0500
-X-Originating-IP: 50.43.41.112
-Date: Sun, 23 Nov 2014 15:36:37 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Pieter Smith <pieter@boesman.nl>
-Cc: David Miller <davem@davemloft.net>, alexander.h.duyck@intel.com,
-        viro@zeniv.linux.org.uk, ast@plumgrid.com, akpm@linux-foundation.org,
-        beber@meleeweb.net, catalina.mocanu@gmail.com, dborkman@redhat.com,
-        edumazet@google.com, ebiederm@xmission.com, fabf@skynet.be,
-        fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
-        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
-        bfields@fieldses.org, jlayton@poochiereds.net,
-        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mcgrof@suse.com, mattst88@gmail.com,
-        mgorman@suse.de, mst@redhat.com, miklos@szeredi.hu,
-        netdev@vger.kernel.org, oleg@redhat.com, Paul.Durrant@citrix.com,
-        paulmck@linux.vnet.ibm.com, pefoley2@pefoley.com, tgraf@suug.ch,
-        therbert@google.com, willemb@google.com,
-        xiaoguangrong@linux.vnet.ibm.com, zhenglong.cai@cs2c.com.cn
-Subject: Re: [PATCH 0/6] kernel tinification: optionally compile out splice
- family of syscalls (splice, vmsplice, tee and sendfile)
-Message-ID: <20141123233637.GC12456@thin>
-References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
- <20141123.134623.2061031332250984539.davem@davemloft.net>
- <20141123194326.GB8517@thin>
- <20141123203040.GB26749@smipidev>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141123203040.GB26749@smipidev>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 23 Nov 2014 19:00:52 -0500
+Message-ID: <1416787243.9616.4.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 2/5] X.509: Support X.509 lookup by Issuer+Serial form
+ AuthorityKeyIdentifier
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: mmarek@suse.cz, d.kasatkin@samsung.com, rusty@rustcorp.com.au,
+        vgoyal@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 23 Nov 2014 19:00:43 -0500
+In-Reply-To: <20141120165414.5264.95354.stgit@warthog.procyon.org.uk>
+References: <20141120165351.5264.61930.stgit@warthog.procyon.org.uk>
+	 <20141120165414.5264.95354.stgit@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112400-8236-0000-0000-00000725BFF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 23, 2014 at 09:30:40PM +0100, Pieter Smith wrote:
-> On Sun, Nov 23, 2014 at 11:43:26AM -0800, Josh Triplett wrote:
-> > On Sun, Nov 23, 2014 at 01:46:23PM -0500, David Miller wrote:
-> > > Truly removing sendfile/sendpage means that you can't even compile NFS
-> > > into the tree.
-> > 
-> > If you mean the in-kernel nfsd (CONFIG_NFSD), that already has a large
-> > stack of "select" and "depends on", both directly and indirectly; adding
-> > a "select SPLICE_SYSCALL" to it seems fine.  (That select does need
-> > adding, though.  Pieter, you need to test-compile more than just
-> > tinyconfig and defconfig.  Try an allyesconfig with *just* splice turned
-> > off, and make sure that compiles.)
-> 
-> Did exacly that. Took forever on my hardware, but no problems.
+Don't assume that the issuer & serialNumber are specified.
 
-Ah, I see.  Looking more closely at nfsd, it looks like it already has a
-code path for filesystems that don't do splice.  I think, rather than
-making nfsd select SPLICE_SYSCALL, that it would suffice to change the
-"rqstp->rq_splice_ok = true;" in svc_process_common (net/sunrpc/svc.c)
-to:
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+---
+crypto/asymmetric_keys/x509_public_key.c | 11 +++++++----
+1 file changed, 7 insertions(+), 4 deletions(-)
 
-rqstp->rq_splice_ok = IS_ENABLED(CONFIG_SPLICE_SYSCALL);
+diff --git a/crypto/asymmetric_keys/x509_public_key.c
+b/crypto/asymmetric_keys/x509_public_key.c
+index 9c1a3d6..510269f 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -9,6 +9,7 @@
+  * 2 of the Licence, or (at your option) any later version.
+  */
 
-Then nfsd should simply *always* fall back to its non-splice support.
++#define DEBUG 1
+#define pr_fmt(fmt) "X.509: "fmt
+#include <linux/module.h>
+#include <linux/kernel.h>
+@@ -68,12 +69,14 @@ struct key *x509_request_asymmetric_key(struct key
+*keyring,
+{
+struct key *key;
+key_ref_t ref;
+- const char *lookup;
++ const char *lookup = NULL;
+char *req, *p;
+- int len;
++ int len = 0;
 
-That said, given that it seems exceedingly unlikely that anyone would
-use the in-kernel nfsd on a system trying to minimize kernel size, it
-still seems cleaner to just "select SPLICE_SYSCALL" from NFSD in
-Kconfig.  That avoids making any changes at all to the nfsd source in
-this patch series.
+- lookup = id->data;
+- len = id->len;
++        if (id) {
++ lookup = id->data;
++ len = id->len;
++ }
+if (!lookup) {
+lookup = skid->data;
+len = skid->len;
+-- 
+1.8.1.4
 
-- Josh Triplett
+
+
