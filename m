@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750994AbaKXUfX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:35:23 -0500
-Received: from mail-1.atlantis.sk ([80.94.52.57]:38754 "EHLO
-	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaKXUfW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:35:22 -0500
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH 2/3] wd719x: Introduce Western Digital WD7193/7197/7296 PCI SCSI card driver
-Date: Mon, 24 Nov 2014 21:34:43 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: linux-scsi@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <1416831074-24282-1-git-send-email-linux@rainbow-software.org> <1416831074-24282-3-git-send-email-linux@rainbow-software.org> <54732F83.6070306@suse.de>
-In-Reply-To: <54732F83.6070306@suse.de>
-X-KMail-QuotePrefix: > 
+	id S1751077AbaKXUfz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:35:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34336 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750819AbaKXUfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 15:35:53 -0500
+Date: Mon, 24 Nov 2014 18:35:33 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 04/11] perf stat: Use perf_evsel__read_cb in read_counter
+Message-ID: <20141124203533.GB12236@redhat.com>
+References: <1416562275-12404-1-git-send-email-jolsa@kernel.org>
+ <1416562275-12404-5-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201411242134.43508.linux@rainbow-software.org>
+In-Reply-To: <1416562275-12404-5-git-send-email-jolsa@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 24 November 2014 14:15:47 Hannes Reinecke wrote:
-> On 11/24/2014 01:11 PM, Ondrej Zary wrote:
-> > Introduce wd719x, a driver for Western Digital WD7193, WD7197 and WD7296
-> > PCI SCSI controllers based on WD33C296A chip.
-> > Tested with WD7193 card.
-> >
-> > Reviewed-by: Christoph Hellwig <hch@lst.de>
-> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Em Fri, Nov 21, 2014 at 10:31:08AM +0100, Jiri Olsa escreveu:
+> Replacing __perf_evsel__read_on_cpu function with perf_evsel__read_cb
+> function. The read_cb callback will be used later for global aggregation
+> counter values as well.
 
-[...]
-
-> > +	result = wd719x_send_scb(scb);
-> > +	if (result != DID_OK) {
-> > +		dev_warn(&wd->pdev->dev, "can't queue SCB\n");
-> > +		wd719x_finish_cmd(cmd, result);
-> > +	}
-> > +
-> > +	spin_unlock_irqrestore(wd->sh->host_lock, flags);
-> > +
-> > +	return 0;
-> > +}
->
-> Why did you use 'wait_ready' here?
-> Any sane HBA driver should set the queue depth parameters
-> correctly to avoid this from happening.
-> Wouldn't it be far better to just return HOST_BUSY here if
-> the command register isn't free and submit the command
-> directly otherwise?
-
-It probably comes from the original driver. Will send a new version.
-
--- 
-Ondrej Zary
+But the changeset makes it look like there are no changes made... Can
+you elaborate here?
+ 
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Matt Fleming <matt.fleming@intel.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> ---
+>  tools/perf/builtin-stat.c | 27 +++++++++++++++++++++------
+>  1 file changed, 21 insertions(+), 6 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+> index 055ce9232c9e..9cc0db1d7f06 100644
+> --- a/tools/perf/builtin-stat.c
+> +++ b/tools/perf/builtin-stat.c
+> @@ -388,6 +388,26 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
+>  		update_stats(&runtime_itlb_cache_stats[0], count[0]);
+>  }
+>  
+> +static int read_cb(struct perf_evsel *evsel, int cpu, int thread __maybe_unused,
+> +		   struct perf_counts_values *count)
+> +{
+> +	switch (aggr_mode) {
+> +	case AGGR_CORE:
+> +	case AGGR_SOCKET:
+> +	case AGGR_NONE:
+> +		perf_evsel__compute_deltas(evsel, cpu, count);
+> +		perf_counts_values__scale(count, scale, NULL);
+> +		evsel->counts->cpu[cpu] = *count;
+> +		update_shadow_stats(evsel, count->values);
+> +		break;
+> +	case AGGR_GLOBAL:
+> +	default:
+> +		break;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  /*
+>   * Read out the results of a single counter:
+>   * aggregate counts across CPUs in system-wide mode
+> @@ -424,16 +444,11 @@ static int read_counter_aggr(struct perf_evsel *counter)
+>   */
+>  static int read_counter(struct perf_evsel *counter)
+>  {
+> -	u64 *count;
+>  	int cpu;
+>  
+>  	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
+> -		if (__perf_evsel__read_on_cpu(counter, cpu, 0, scale) < 0)
+> +		if (perf_evsel__read_cb(counter, cpu, 0, read_cb))
+>  			return -1;
+> -
+> -		count = counter->counts->cpu[cpu].values;
+> -
+> -		update_shadow_stats(counter, count);
+>  	}
+>  
+>  	return 0;
+> -- 
+> 1.9.3
