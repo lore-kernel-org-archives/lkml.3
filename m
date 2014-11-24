@@ -1,54 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951AbaKXL5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 06:57:51 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:11159 "EHLO SMTP.CITRIX.COM"
+	id S1753956AbaKXL6P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 06:58:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45200 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753927AbaKXL5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 06:57:49 -0500
-X-IronPort-AV: E=Sophos;i="5.07,448,1413244800"; 
-   d="scan'208";a="195195543"
-Date: Mon, 24 Nov 2014 11:57:14 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>,
-        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] small swiotlb-xen fixes
-In-Reply-To: <20141121172652.GF8314@laptop.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1411241157020.2675@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1411211657430.2675@kaball.uk.xensource.com> <20141121172652.GF8314@laptop.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753789AbaKXLzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 06:55:20 -0500
+Date: Mon, 24 Nov 2014 13:54:57 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Tom Herbert <therbert@google.com>, Masatake YAMATO <yamato@redhat.com>,
+        Xi Wang <xii@google.com>, netdev@vger.kernel.org
+Subject: [PATCH v3 33/41] tun: drop most type defines
+Message-ID: <1416829787-14252-34-git-send-email-mst@redhat.com>
+References: <1416829787-14252-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416829787-14252-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014, Konrad Rzeszutek Wilk wrote:
-> On Fri, Nov 21, 2014 at 05:00:05PM +0000, Stefano Stabellini wrote:
-> > Hi all,
-> > I have a couple of small straightforward fixes for swiotlb-xen for 3.19.
-> > 
-> 
-> They look fine to me.
+It's just as easy to use IFF_ flags directly,
+there's no point in adding our own defines.
 
-Applied to devel/for-linus-3.19
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/net/tun.c | 62 +++++++++++++++++++++++++------------------------------
+ 1 file changed, 28 insertions(+), 34 deletions(-)
 
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index bc89d07..61c000c 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -109,12 +109,6 @@ do {								\
+  * overload it to mean fasync when stored there.
+  */
+ #define TUN_FASYNC	IFF_ATTACH_QUEUE
+-#define TUN_NO_PI	IFF_NO_PI
+-/* This flag has no real effect */
+-#define TUN_ONE_QUEUE	IFF_ONE_QUEUE
+-#define TUN_PERSIST 	IFF_PERSIST
+-#define TUN_VNET_HDR 	IFF_VNET_HDR
+-#define TUN_TAP_MQ      IFF_MULTI_QUEUE
+ 
+ #define TUN_FEATURES (IFF_NO_PI | IFF_ONE_QUEUE | IFF_VNET_HDR | \
+ 		      IFF_MULTI_QUEUE)
+@@ -487,7 +481,7 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
+ 		if (tun && tun->numqueues == 0 && tun->numdisabled == 0) {
+ 			netif_carrier_off(tun->dev);
+ 
+-			if (!(tun->flags & TUN_PERSIST) &&
++			if (!(tun->flags & IFF_PERSIST) &&
+ 			    tun->dev->reg_state == NETREG_REGISTERED)
+ 				unregister_netdevice(tun->dev);
+ 		}
+@@ -538,7 +532,7 @@ static void tun_detach_all(struct net_device *dev)
+ 	}
+ 	BUG_ON(tun->numdisabled != 0);
+ 
+-	if (tun->flags & TUN_PERSIST)
++	if (tun->flags & IFF_PERSIST)
+ 		module_put(THIS_MODULE);
+ }
+ 
+@@ -556,7 +550,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file, bool skip_filte
+ 		goto out;
+ 
+ 	err = -EBUSY;
+-	if (!(tun->flags & TUN_TAP_MQ) && tun->numqueues == 1)
++	if (!(tun->flags & IFF_MULTI_QUEUE) && tun->numqueues == 1)
+ 		goto out;
+ 
+ 	err = -E2BIG;
+@@ -935,7 +929,7 @@ static void tun_net_init(struct net_device *dev)
+ 	struct tun_struct *tun = netdev_priv(dev);
+ 
+ 	switch (tun->flags & TUN_TYPE_MASK) {
+-	case TUN_TUN_DEV:
++	case IFF_TUN:
+ 		dev->netdev_ops = &tun_netdev_ops;
+ 
+ 		/* Point-to-Point TUN Device */
+@@ -949,7 +943,7 @@ static void tun_net_init(struct net_device *dev)
+ 		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
+ 		break;
+ 
+-	case TUN_TAP_DEV:
++	case IFF_TAP:
+ 		dev->netdev_ops = &tap_netdev_ops;
+ 		/* Ethernet TAP Device */
+ 		ether_setup(dev);
+@@ -1040,7 +1034,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 	int err;
+ 	u32 rxhash;
+ 
+-	if (!(tun->flags & TUN_NO_PI)) {
++	if (!(tun->flags & IFF_NO_PI)) {
+ 		if (len < sizeof(pi))
+ 			return -EINVAL;
+ 		len -= sizeof(pi);
+@@ -1050,7 +1044,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 		offset += sizeof(pi);
+ 	}
+ 
+-	if (tun->flags & TUN_VNET_HDR) {
++	if (tun->flags & IFF_VNET_HDR) {
+ 		if (len < tun->vnet_hdr_sz)
+ 			return -EINVAL;
+ 		len -= tun->vnet_hdr_sz;
+@@ -1067,7 +1061,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 		offset += tun->vnet_hdr_sz;
+ 	}
+ 
+-	if ((tun->flags & TUN_TYPE_MASK) == TUN_TAP_DEV) {
++	if ((tun->flags & TUN_TYPE_MASK) == IFF_TAP) {
+ 		align += NET_IP_ALIGN;
+ 		if (unlikely(len < ETH_HLEN ||
+ 			     (gso.hdr_len && gso.hdr_len < ETH_HLEN)))
+@@ -1130,8 +1124,8 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 	}
+ 
+ 	switch (tun->flags & TUN_TYPE_MASK) {
+-	case TUN_TUN_DEV:
+-		if (tun->flags & TUN_NO_PI) {
++	case IFF_TUN:
++		if (tun->flags & IFF_NO_PI) {
+ 			switch (skb->data[0] & 0xf0) {
+ 			case 0x40:
+ 				pi.proto = htons(ETH_P_IP);
+@@ -1150,7 +1144,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 		skb->protocol = pi.proto;
+ 		skb->dev = tun->dev;
+ 		break;
+-	case TUN_TAP_DEV:
++	case IFF_TAP:
+ 		skb->protocol = eth_type_trans(skb, tun->dev);
+ 		break;
+ 	}
+@@ -1256,10 +1250,10 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+ 	if (vlan_tx_tag_present(skb))
+ 		vlan_hlen = VLAN_HLEN;
+ 
+-	if (tun->flags & TUN_VNET_HDR)
++	if (tun->flags & IFF_VNET_HDR)
+ 		vnet_hdr_sz = tun->vnet_hdr_sz;
+ 
+-	if (!(tun->flags & TUN_NO_PI)) {
++	if (!(tun->flags & IFF_NO_PI)) {
+ 		if ((len -= sizeof(pi)) < 0)
+ 			return -EINVAL;
+ 
+@@ -1592,7 +1586,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 			return -EINVAL;
+ 
+ 		if (!!(ifr->ifr_flags & IFF_MULTI_QUEUE) !=
+-		    !!(tun->flags & TUN_TAP_MQ))
++		    !!(tun->flags & IFF_MULTI_QUEUE))
+ 			return -EINVAL;
+ 
+ 		if (tun_not_capable(tun))
+@@ -1605,7 +1599,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 		if (err < 0)
+ 			return err;
+ 
+-		if (tun->flags & TUN_TAP_MQ &&
++		if (tun->flags & IFF_MULTI_QUEUE &&
+ 		    (tun->numqueues + tun->numdisabled > 1)) {
+ 			/* One or more queue has already been attached, no need
+ 			 * to initialize the device again.
+@@ -1628,11 +1622,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 		/* Set dev type */
+ 		if (ifr->ifr_flags & IFF_TUN) {
+ 			/* TUN device */
+-			flags |= TUN_TUN_DEV;
++			flags |= IFF_TUN;
+ 			name = "tun%d";
+ 		} else if (ifr->ifr_flags & IFF_TAP) {
+ 			/* TAP device */
+-			flags |= TUN_TAP_DEV;
++			flags |= IFF_TAP;
+ 			name = "tap%d";
+ 		} else
+ 			return -EINVAL;
+@@ -1825,7 +1819,7 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
+ 		ret = tun_attach(tun, file, false);
+ 	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
+ 		tun = rtnl_dereference(tfile->tun);
+-		if (!tun || !(tun->flags & TUN_TAP_MQ) || tfile->detached)
++		if (!tun || !(tun->flags & IFF_MULTI_QUEUE) || tfile->detached)
+ 			ret = -EINVAL;
+ 		else
+ 			__tun_detach(tfile, false);
+@@ -1931,12 +1925,12 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+ 		/* Disable/Enable persist mode. Keep an extra reference to the
+ 		 * module to prevent the module being unprobed.
+ 		 */
+-		if (arg && !(tun->flags & TUN_PERSIST)) {
+-			tun->flags |= TUN_PERSIST;
++		if (arg && !(tun->flags & IFF_PERSIST)) {
++			tun->flags |= IFF_PERSIST;
+ 			__module_get(THIS_MODULE);
+ 		}
+-		if (!arg && (tun->flags & TUN_PERSIST)) {
+-			tun->flags &= ~TUN_PERSIST;
++		if (!arg && (tun->flags & IFF_PERSIST)) {
++			tun->flags &= ~IFF_PERSIST;
+ 			module_put(THIS_MODULE);
+ 		}
+ 
+@@ -1994,7 +1988,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+ 	case TUNSETTXFILTER:
+ 		/* Can be set only for TAPs */
+ 		ret = -EINVAL;
+-		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
++		if ((tun->flags & TUN_TYPE_MASK) != IFF_TAP)
+ 			break;
+ 		ret = update_filter(&tun->txflt, (void __user *)arg);
+ 		break;
+@@ -2053,7 +2047,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+ 	case TUNATTACHFILTER:
+ 		/* Can be set only for TAPs */
+ 		ret = -EINVAL;
+-		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
++		if ((tun->flags & TUN_TYPE_MASK) != IFF_TAP)
+ 			break;
+ 		ret = -EFAULT;
+ 		if (copy_from_user(&tun->fprog, argp, sizeof(tun->fprog)))
+@@ -2065,7 +2059,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+ 	case TUNDETACHFILTER:
+ 		/* Can be set only for TAPs */
+ 		ret = -EINVAL;
+-		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
++		if ((tun->flags & TUN_TYPE_MASK) != IFF_TAP)
+ 			break;
+ 		ret = 0;
+ 		tun_detach_filter(tun, tun->numqueues);
+@@ -2073,7 +2067,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+ 
+ 	case TUNGETFILTER:
+ 		ret = -EINVAL;
+-		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
++		if ((tun->flags & TUN_TYPE_MASK) != IFF_TAP)
+ 			break;
+ 		ret = -EFAULT;
+ 		if (copy_to_user(argp, &tun->fprog, sizeof(tun->fprog)))
+@@ -2266,10 +2260,10 @@ static void tun_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info
+ 	strlcpy(info->version, DRV_VERSION, sizeof(info->version));
+ 
+ 	switch (tun->flags & TUN_TYPE_MASK) {
+-	case TUN_TUN_DEV:
++	case IFF_TUN:
+ 		strlcpy(info->bus_info, "tun", sizeof(info->bus_info));
+ 		break;
+-	case TUN_TAP_DEV:
++	case IFF_TAP:
+ 		strlcpy(info->bus_info, "tap", sizeof(info->bus_info));
+ 		break;
+ 	}
+-- 
+MST
 
-
-> Thanks.
-> > Cheers,
-> > 
-> > Stefano
-> > 
-> > 
-> > Stefano Stabellini (2):
-> >       swiotlb-xen: call xen_dma_sync_single_for_device when appropriate
-> >       swiotlb-xen: pass dev_addr to swiotlb_tbl_unmap_single
-> > 
-> >  drivers/xen/swiotlb-xen.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
