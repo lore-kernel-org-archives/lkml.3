@@ -1,99 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096AbaKXOyz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:54:55 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:58754 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758AbaKXOyx (ORCPT
+	id S1754293AbaKXOzr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:55:47 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50570 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754126AbaKXOzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:54:53 -0500
-X-Originating-IP: 50.43.41.112
-Date: Mon, 24 Nov 2014 06:54:27 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Pieter Smith <pieter@boesman.nl>
-Cc: Jeff Layton <jlayton@poochiereds.net>, David Miller <davem@davemloft.net>,
-        alexander.h.duyck@intel.com, viro@zeniv.linux.org.uk, ast@plumgrid.com,
-        akpm@linux-foundation.org, beber@meleeweb.net,
-        catalina.mocanu@gmail.com, dborkman@redhat.com, edumazet@google.com,
-        ebiederm@xmission.com, fabf@skynet.be,
-        fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
-        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
-        bfields@fieldses.org, linux-api@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mcgrof@suse.com, mattst88@gmail.com, mgorman@suse.de, mst@redhat.com,
-        miklos@szeredi.hu, netdev@vger.kernel.org, oleg@redhat.com,
-        Paul.Durrant@citrix.com, paulmck@linux.vnet.ibm.com,
-        pefoley2@pefoley.com, tgraf@suug.ch, therbert@google.com,
-        willemb@google.com, xiaoguangrong@linux.vnet.ibm.com,
-        zhenglong.cai@cs2c.com.cn
-Subject: Re: [PATCH 0/6] kernel tinification: optionally compile out splice
- family of syscalls (splice, vmsplice, tee and sendfile)
-Message-ID: <20141124145427.GB20712@thin>
-References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
- <20141123.134623.2061031332250984539.davem@davemloft.net>
- <20141123194326.GB8517@thin>
- <20141123203040.GB26749@smipidev>
- <20141123233637.GC12456@thin>
- <20141123192810.682a223e@tlielax.poochiereds.net>
- <20141124003251.GA13590@thin>
- <20141124100138.GB1055@smipidev>
+	Mon, 24 Nov 2014 09:55:43 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        Kangkang.Shen@huawei.com, linux-acpi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v5 03/18] ACPI / table: Count matched and successfully parsed entries without specifying max entries
+Date: Mon, 24 Nov 2014 16:16:55 +0100
+Message-ID: <2301926.MWJ5MneAen@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5472ED90.5010803@linaro.org>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <6619034.gHDuQJ1A7y@vostro.rjw.lan> <5472ED90.5010803@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141124100138.GB1055@smipidev>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 11:01:38AM +0100, Pieter Smith wrote:
-> On Sun, Nov 23, 2014 at 04:32:51PM -0800, Josh Triplett wrote:
-> > On Sun, Nov 23, 2014 at 07:28:10PM -0500, Jeff Layton wrote:
-> > > On Sun, 23 Nov 2014 15:36:37 -0800
-> > > Josh Triplett <josh@joshtriplett.org> wrote:
-> > > 
-> > > > On Sun, Nov 23, 2014 at 09:30:40PM +0100, Pieter Smith wrote:
-> > > > > On Sun, Nov 23, 2014 at 11:43:26AM -0800, Josh Triplett wrote:
-> > > > > > On Sun, Nov 23, 2014 at 01:46:23PM -0500, David Miller wrote:
-> > > > > > > Truly removing sendfile/sendpage means that you can't even compile NFS
-> > > > > > > into the tree.
-> > > > > > 
-> > > > > > If you mean the in-kernel nfsd (CONFIG_NFSD), that already has a large
-> > > > > > stack of "select" and "depends on", both directly and indirectly; adding
-> > > > > > a "select SPLICE_SYSCALL" to it seems fine.  (That select does need
-> > > > > > adding, though.  Pieter, you need to test-compile more than just
-> > > > > > tinyconfig and defconfig.  Try an allyesconfig with *just* splice turned
-> > > > > > off, and make sure that compiles.)
-> > > > > 
-> > > > > Did exacly that. Took forever on my hardware, but no problems.
-> > > > 
-> > > > Ah, I see.  Looking more closely at nfsd, it looks like it already has a
-> > > > code path for filesystems that don't do splice.  I think, rather than
-> > > > making nfsd select SPLICE_SYSCALL, that it would suffice to change the
-> > > > "rqstp->rq_splice_ok = true;" in svc_process_common (net/sunrpc/svc.c)
-> > > > to:
-> > > > 
-> > > > rqstp->rq_splice_ok = IS_ENABLED(CONFIG_SPLICE_SYSCALL);
-> > > > 
-> > > > Then nfsd should simply *always* fall back to its non-splice support.
-> > > > 
-> > > 
-> > > I'd probably prefer the above, actually. We have to keep supporting
-> > > non-splice enabled fs' for the forseeable future, so we may as well
-> > > allow people to run nfsd in such configurations. It could even be
-> > > useful for testing the non-splice-enabled codepaths.
-> > 
-> > Good point!
-> > 
-> > - Josh Triplett
+On Monday, November 24, 2014 09:34:24 AM Tomasz Nowicki wrote:
+> On 24.11.2014 02:45, Rafael J. Wysocki wrote:
+> > On Friday, October 17, 2014 09:36:59 PM Hanjun Guo wrote:
+> >> From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> >>
+> >> It is very useful to traverse all available table entries without max
+> >> number of expected entries type. Current acpi_parse_entries()
+> >> implementation gives that feature but it does not count those entries,
+> >> it returns 0 instead, so fix it to count matched and successfully
+> >> entries and return it.
+> >
+> > Hmm.  I guess that the goal is for count to only be incremented when the
+> > condition is satisfied entirely, while without the patch it may be incremented
+> > even if that isn't the case.
 > 
-> I'll add this to svc_process_common. I can squash this into PATCH 3, which is
-> where the syscalls can be compiled out. The log entry may however get a little
-> crowded and multi-functional.
+> That would be our goal if patch would look like:
+> -		    && (!max_entries || count++ < max_entries))
+> +		    && (!max_entries && count++ < max_entries)) {
+> but then we can not walk through all available entries (with max_entries==0)
+
+No, that's not what I was trying to say. :-)
+
+> >
+> > I'm not sure how that is related to the above paragraph, however.
+> >
 > 
-> Should I keep this as a separate patch?
+> Previous changelog is not clear, let me rewrite it:
+> 
+> acpi_parse_entries() allows to traverse all available table entries (aka 
+> subtables) by passing max_entries parameter equal to 0. But for that use 
+> case acpi_parse_entries() does not inform caller how many entries were 
+> matched and for how many entries handler was run against. That patch is 
+> going to fix it.
 
-I'd keep it as a separate patch, yes.  It doesn't become necessary until
-patch 6, so you can add it as a new patch between patches 3 and 6.
+Do I understand correctly that count is only ever incremented by current code
+if max_entries is different from 0?
 
-- Josh Triplett
+
+> >> NOTE: This change has no impact to x86 and ia64 archs since existing code
+> >> checks for error occurrence only (acpi_parse_entries(...,0) < 0).
+> >>
+> >> Acked-by: Grant Likely <grant.likely@linaro.org>
+> >> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> >> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> >> ---
+> >>   drivers/acpi/tables.c |    5 ++++-
+> >>   1 file changed, 4 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+> >> index 21ae521..b18e45e 100644
+> >> --- a/drivers/acpi/tables.c
+> >> +++ b/drivers/acpi/tables.c
+> >> @@ -225,10 +225,13 @@ acpi_parse_entries(unsigned long table_size,
+> >>   	while (((unsigned long)entry) + sizeof(struct acpi_subtable_header) <
+> >>   	       table_end) {
+> >>   		if (entry->type == entry_id
+> >> -		    && (!max_entries || count++ < max_entries))
+> >> +		    && (!max_entries || count < max_entries)) {
+> >>   			if (handler(entry, table_end))
+> >>   				return -EINVAL;
+> >>
+> >> +			count++;
+> >> +		}
+> >> +
+> >>   		/*
+> >>   		 * If entry->length is 0, break from this loop to avoid
+> >>   		 * infinite loop.
+> >>
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
