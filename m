@@ -1,209 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701AbaKXSpv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:45:51 -0500
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:43162 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753956AbaKXSpt (ORCPT
+	id S1754729AbaKXSqa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:46:30 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:21583 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754115AbaKXSq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:45:49 -0500
-Date: Mon, 24 Nov 2014 13:45:33 -0500 (EST)
-From: Pankaj Gupta <pagupta@redhat.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: davem@davemloft.net, jasowang@redhat.com, dgibson@redhat.com,
-        vfalico@gmail.com, edumazet@google.com, vyasevic@redhat.com,
-        hkchu@google.com, xemul@parallels.com, therbert@google.com,
-        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org,
-        jiri@resnulli.us, sergei shtylyov <sergei.shtylyov@cogentembedded.com>
-Message-ID: <6511577.3326070.1416854733107.JavaMail.zimbra@redhat.com>
-In-Reply-To: <1416854044-10124-1-git-send-email-pagupta@redhat.com>
-References: <1416854044-10124-1-git-send-email-pagupta@redhat.com>
-Subject: Re: [PATCH v2 net-next 2/3] tuntap: reduce the size of tun_struct
- by  using flex array.
+	Mon, 24 Nov 2014 13:46:29 -0500
+Message-ID: <54737CD7.7080908@oracle.com>
+Date: Mon, 24 Nov 2014 13:45:43 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF23 (Linux)/8.0.6_GA_5922)
-Thread-Topic: tuntap: reduce the size of tun_struct by using flex array.
-Thread-Index: 6b4W//WG2T8p5+z83OTvdLDLUwFZ6w==
+To: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v7 03/12] x86_64: add KASan support
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com> <1416852146-9781-4-git-send-email-a.ryabinin@samsung.com>
+In-Reply-To: <1416852146-9781-4-git-send-email-a.ryabinin@samsung.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry! forgot to cc Michael, doing now.
-> 
-> This patch switches to flex array to implement the flow caches, it brings
-> several advantages:
-> 
-> - Reduce the size of the tun_struct structure, which allows us to increase
-> the
->   upper limit of queues in future.
-> - Avoid higher order memory allocation. It will be useful when switching to
->   pure hashing in flow cache which may demand a larger size array in future.
-> 
-> After this patch, the size of tun_struct on x86_64 reduced from 8512 to
-> 328
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
-> Reviewed-by: David Gibson <dgibson@redhat.com>
-> ---
->  drivers/net/tun.c | 49 +++++++++++++++++++++++++++++++++++++------------
->  1 file changed, 37 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index e3fa65a..bd07a6d 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -65,6 +65,7 @@
->  #include <linux/nsproxy.h>
->  #include <linux/virtio_net.h>
->  #include <linux/rcupdate.h>
-> +#include <linux/flex_array.h>
->  #include <net/ipv6.h>
->  #include <net/net_namespace.h>
->  #include <net/netns/generic.h>
-> @@ -188,7 +189,7 @@ struct tun_struct {
->  	int debug;
->  #endif
->  	spinlock_t lock;
-> -	struct hlist_head flows[TUN_NUM_FLOW_ENTRIES];
-> +	struct flex_array *flows;
->  	struct timer_list flow_gc_timer;
->  	unsigned long ageing_time;
->  	unsigned int numdisabled;
-> @@ -249,10 +250,11 @@ static void tun_flow_flush(struct tun_struct *tun)
->  
->  	spin_lock_bh(&tun->lock);
->  	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
-> +		struct hlist_head *h = flex_array_get(tun->flows, i);
->  		struct tun_flow_entry *e;
->  		struct hlist_node *n;
->  
-> -		hlist_for_each_entry_safe(e, n, &tun->flows[i], hash_link)
-> +		hlist_for_each_entry_safe(e, n, h, hash_link)
->  			tun_flow_delete(tun, e);
->  	}
->  	spin_unlock_bh(&tun->lock);
-> @@ -264,10 +266,11 @@ static void tun_flow_delete_by_queue(struct tun_struct
-> *tun, u16 queue_index)
->  
->  	spin_lock_bh(&tun->lock);
->  	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
-> +		struct hlist_head *h = flex_array_get(tun->flows, i);
->  		struct tun_flow_entry *e;
->  		struct hlist_node *n;
->  
-> -		hlist_for_each_entry_safe(e, n, &tun->flows[i], hash_link) {
-> +		hlist_for_each_entry_safe(e, n, h, hash_link) {
->  			if (e->queue_index == queue_index)
->  				tun_flow_delete(tun, e);
->  		}
-> @@ -287,10 +290,11 @@ static void tun_flow_cleanup(unsigned long data)
->  
->  	spin_lock_bh(&tun->lock);
->  	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
-> +		struct hlist_head *h = flex_array_get(tun->flows, i);
->  		struct tun_flow_entry *e;
->  		struct hlist_node *n;
->  
-> -		hlist_for_each_entry_safe(e, n, &tun->flows[i], hash_link) {
-> +		hlist_for_each_entry_safe(e, n, h, hash_link) {
->  			unsigned long this_timer;
->  			count++;
->  			this_timer = e->updated + delay;
-> @@ -317,7 +321,7 @@ static void tun_flow_update(struct tun_struct *tun, u32
-> rxhash,
->  	if (!rxhash)
->  		return;
->  	else
-> -		head = &tun->flows[tun_hashfn(rxhash)];
-> +		head = flex_array_get(tun->flows, tun_hashfn(rxhash));
->  
->  	rcu_read_lock();
->  
-> @@ -380,7 +384,8 @@ static u16 tun_select_queue(struct net_device *dev,
-> struct sk_buff *skb,
->  
->  	txq = skb_get_hash(skb);
->  	if (txq) {
-> -		e = tun_flow_find(&tun->flows[tun_hashfn(txq)], txq);
-> +		e = tun_flow_find(flex_array_get(tun->flows,
-> +						 tun_hashfn(txq)), txq);
->  		if (e) {
->  			tun_flow_save_rps_rxhash(e, txq);
->  			txq = e->queue_index;
-> @@ -760,8 +765,8 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb,
-> struct net_device *dev)
->  		rxhash = skb_get_hash(skb);
->  		if (rxhash) {
->  			struct tun_flow_entry *e;
-> -			e = tun_flow_find(&tun->flows[tun_hashfn(rxhash)],
-> -					rxhash);
-> +			e = tun_flow_find(flex_array_get(tun->flows,
-> +							 tun_hashfn(rxhash)), rxhash);
->  			if (e)
->  				tun_flow_save_rps_rxhash(e, rxhash);
->  		}
-> @@ -896,23 +901,40 @@ static const struct net_device_ops tap_netdev_ops = {
->  #endif
->  };
->  
-> -static void tun_flow_init(struct tun_struct *tun)
-> +static int tun_flow_init(struct tun_struct *tun)
->  {
-> -	int i;
-> +	struct flex_array *buckets;
-> +	int i, err;
-> +
-> +	buckets = flex_array_alloc(sizeof(struct hlist_head),
-> +				   TUN_NUM_FLOW_ENTRIES, GFP_KERNEL);
-> +	if (!buckets)
-> +		return -ENOMEM;
-> +
-> +	err = flex_array_prealloc(buckets, 0, TUN_NUM_FLOW_ENTRIES, GFP_KERNEL);
-> +	if (err) {
-> +		flex_array_free(buckets);
-> +		return -ENOMEM;
+On 11/24/2014 01:02 PM, Andrey Ryabinin wrote:
+> +static int kasan_die_handler(struct notifier_block *self,
+> +			     unsigned long val,
+> +			     void *data)
+> +{
+> +	if (val == DIE_GPF) {
+> +		pr_emerg("CONFIG_KASAN_INLINE enabled\n");
+> +		pr_emerg("GPF could be caused by NULL-ptr deref or user memory access\n");
 > +	}
->  
-> +	tun->flows = buckets;
->  	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++)
-> -		INIT_HLIST_HEAD(&tun->flows[i]);
-> +		INIT_HLIST_HEAD((struct hlist_head *)
-> +				flex_array_get(buckets, i));
->  
->  	tun->ageing_time = TUN_FLOW_EXPIRE;
->  	setup_timer(&tun->flow_gc_timer, tun_flow_cleanup, (unsigned long)tun);
->  	mod_timer(&tun->flow_gc_timer,
->  		  round_jiffies_up(jiffies + tun->ageing_time));
+> +	return NOTIFY_OK;
+> +}
 > +
-> +	return 0;
->  }
->  
->  static void tun_flow_uninit(struct tun_struct *tun)
->  {
->  	del_timer_sync(&tun->flow_gc_timer);
->  	tun_flow_flush(tun);
-> +	flex_array_free(tun->flows);
->  }
->  
->  /* Initialize net device. */
-> @@ -1674,7 +1696,10 @@ static int tun_set_iff(struct net *net, struct file
-> *file, struct ifreq *ifr)
->  			goto err_free_dev;
->  
->  		tun_net_init(dev);
-> -		tun_flow_init(tun);
-> +
-> +		err = tun_flow_init(tun);
-> +		if (err < 0)
-> +			goto err_free_dev;
->  
->  		dev->hw_features = NETIF_F_SG | NETIF_F_FRAGLIST |
->  				   TUN_USER_FEATURES | NETIF_F_HW_VLAN_CTAG_TX |
-> --
-> 1.8.3.1
-> 
-> 
+> +static struct notifier_block kasan_die_notifier = {
+> +	.notifier_call = kasan_die_handler,
+> +};
+
+This part fails to compile:
+
+  CC      arch/x86/mm/kasan_init_64.o
+arch/x86/mm/kasan_init_64.c: In function ‘kasan_die_handler’:
+arch/x86/mm/kasan_init_64.c:72:13: error: ‘DIE_GPF’ undeclared (first use in this function)
+  if (val == DIE_GPF) {
+             ^
+arch/x86/mm/kasan_init_64.c:72:13: note: each undeclared identifier is reported only once for each function it appears in
+arch/x86/mm/kasan_init_64.c: In function ‘kasan_init’:
+arch/x86/mm/kasan_init_64.c:89:2: error: implicit declaration of function ‘register_die_notifier’ [-Werror=implicit-function-declaration]
+  register_die_notifier(&kasan_die_notifier);
+  ^
+cc1: some warnings being treated as errors
+make[1]: *** [arch/x86/mm/kasan_init_64.o] Error 1
+
+
+Simple fix:
+
+diff --git a/arch/x86/mm/kasan_init_64.c b/arch/x86/mm/kasan_init_64.c
+index 70041fd..c8f7f3e 100644
+--- a/arch/x86/mm/kasan_init_64.c
++++ b/arch/x86/mm/kasan_init_64.c
+@@ -5,6 +5,7 @@
+ #include <linux/vmalloc.h>
+
+ #include <asm/tlbflush.h>
++#include <linux/kdebug.h>
+
+ extern pgd_t early_level4_pgt[PTRS_PER_PGD];
+ extern struct range pfn_mapped[E820_X_MAX];
+
+
+Thanks,
+Sasha
