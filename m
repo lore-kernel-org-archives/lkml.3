@@ -1,112 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103AbaKXOdc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:33:32 -0500
-Received: from mga03.intel.com ([134.134.136.65]:51514 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753356AbaKXOdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:33:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,449,1413270000"; 
-   d="scan'208";a="642588583"
-Message-ID: <547341AA.9070506@linux.intel.com>
-Date: Mon, 24 Nov 2014 22:33:14 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+	id S932197AbaKXOfv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:35:51 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38022 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754389AbaKXOfr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 09:35:47 -0500
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <jiang.liu@linux.intel.com>,
         Bjorn Helgaas <bhelgaas@google.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
         Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 01/16] irqdomain: Introduce new interfaces to support
- hierarchy irqdomains
-References: <20141112133941.647950773@linutronix.de> <20141112134119.881823615@linutronix.de> <547325A9.3000109@huawei.com> <alpine.DEB.2.11.1411241405560.6439@nanos> <54733A4E.8020304@huawei.com> <54733C7D.2010405@linux.intel.com> <54733E7C.60005@huawei.com>
-In-Reply-To: <54733E7C.60005@huawei.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+        Will Deacon <will.deacon@arm.com>,
+        Catalin marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Robert Richter <robert.richter@caviumnetworks.com>,
+        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
+Subject: [PATCH v3 09/13] irqchip: GICv3: ITS: MSI support
+Date: Mon, 24 Nov 2014 14:35:16 +0000
+Message-Id: <1416839720-18400-10-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
+References: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/24 22:19, Yun Wu (Abel) wrote:
-> On 2014/11/24 22:11, Jiang Liu wrote:
-> 
->> On 2014/11/24 22:01, Yun Wu (Abel) wrote:
->>> On 2014/11/24 21:13, Thomas Gleixner wrote:
->>>
->>>> On Mon, 24 Nov 2014, Yun Wu (Abel) wrote:
->>>>> Hi Thomas, Jiang,
->>>>> On 2014/11/12 21:42, Thomas Gleixner wrote:
->>>>>
->>>>>> From: Jiang Liu <jiang.liu@linux.intel.com>
->>>>>>
->>>>> [...]
->>>>>>  /* Number of irqs reserved for a legacy isa controller */
->>>>>>  #define NUM_ISA_INTERRUPTS	16
->>>>>> @@ -64,6 +66,16 @@ struct irq_domain_ops {
->>>>>>  	int (*xlate)(struct irq_domain *d, struct device_node *node,
->>>>>>  		     const u32 *intspec, unsigned int intsize,
->>>>>>  		     unsigned long *out_hwirq, unsigned int *out_type);
->>>>>> +
->>>>>> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
->>>>>> +	/* extended V2 interfaces to support hierarchy irq_domains */
->>>>>> +	int (*alloc)(struct irq_domain *d, unsigned int virq,
->>>>>> +		     unsigned int nr_irqs, void *arg);
->>>>>> +	void (*free)(struct irq_domain *d, unsigned int virq,
->>>>>> +		     unsigned int nr_irqs);
->>>>>> +	void (*activate)(struct irq_domain *d, struct irq_data *irq_data);
->>>>>> +	void (*deactivate)(struct irq_domain *d, struct irq_data *irq_data);
->>>>>
->>>>> What's the usage of the parameter domain reference in activate/deactivate?
->>>>> I think the purpose of the two callbacks is to activate/deactivate the
->>>>> irq_data->hwirq in irq_data->domain. If so, the first parameter @domain is
->>>>> required to be equal to irq_data->domain (which makes @domain useless).
->>>>> Besides, the main responsibility of interrupt domains is to manage mappings
->>>>> between hardware and linux interrupt numbers, so would it be better if move
->>>>> the two callbacks into struct irq_chip?
->>>>
->>>> No. It's not a function of the irq_chip to activate/deactivate a
->>>> hierarchy. As I explained you before:
->>>>
->>>> The existing irqdomain code maps between hardware and virtual
->>>> interrupts and thereby activates the interrupt in hardware.
->>>>
->>>> In the hierarchical case we do not touch the hardware in the
->>>> allocation step, so we need to activate the allocated interrupt in the
->>>> hardware before we can use it. And that's clearly a domain interface
->>>> not a irq chip issue.
->>>>
->>>
->>> Makes sense, now the interrupt domain seems to be the best place.
->>> And when the @domain parameter can be really useful? I haven't see
->>> anyone using it so far.
->> We will use it for IOAPIC on x86, as below:
->> void mp_irqdomain_deactivate(struct irq_domain *domain,
->>                              struct irq_data *irq_data)
->> {
->>         ioapic_mask_entry(mp_irqdomain_ioapic_idx(domain),
->>                           (int)irq_data->hwirq);
->> }
->>
->> >From an object oriented point of view, we pass the object as the
->> first parameter. It's true that we could retrieve domain from
->> irq_data->domain instead of explicitly passing it in, but that
->> will cause irqdomain interfaces depends on irq_data, not sounds
->> a good situation:)
-> 
-> Hi Gerry,
-> 
-> Is there any possibility that domain doesn't equal to irq_data->domain?
-> I'm a little confused..
-Hi Yun,
-	Currently they are always the same, but we don't want irqdomain
-interfaces make assumption of struct irq_data. If it will bring big
-performance improvement, we will try to kill the first parameter,
-otherwise we may prefer keeping irqdomain interfaces clear.
-Thanks!
-Gerry
+Now, the bit of code that allow us to use the ITS as a MSI controller.
+Both MSI and MSI-X are supported.
+
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+---
+ drivers/irqchip/irq-gic-v3-its.c   | 176 +++++++++++++++++++++++++++++++++++++
+ include/linux/irqchip/arm-gic-v3.h |   6 ++
+ 2 files changed, 182 insertions(+)
+
+diff --git a/drivers/irqchip/irq-gic-v3-its.c b/drivers/irqchip/irq-gic-v3-its.c
+index d687fd4..532c6df 100644
+--- a/drivers/irqchip/irq-gic-v3-its.c
++++ b/drivers/irqchip/irq-gic-v3-its.c
+@@ -587,12 +587,47 @@ static int its_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
+ 	return IRQ_SET_MASK_OK_DONE;
+ }
+ 
++static void its_irq_compose_msi_msg(struct irq_data *d, struct msi_msg *msg)
++{
++	struct its_device *its_dev = irq_data_get_irq_chip_data(d);
++	struct its_node *its;
++	u64 addr;
++
++	its = its_dev->its;
++	addr = its->phys_base + GITS_TRANSLATER;
++
++	msg->address_lo		= addr & ((1UL << 32) - 1);
++	msg->address_hi		= addr >> 32;
++	msg->data		= its_get_event_id(d);
++}
++
+ static struct irq_chip its_irq_chip = {
+ 	.name			= "ITS",
+ 	.irq_mask		= its_mask_irq,
+ 	.irq_unmask		= its_unmask_irq,
+ 	.irq_eoi		= its_eoi_irq,
+ 	.irq_set_affinity	= its_set_affinity,
++	.irq_compose_msi_msg	= its_irq_compose_msi_msg,
++};
++
++static void its_mask_msi_irq(struct irq_data *d)
++{
++	pci_msi_mask_irq(d);
++	irq_chip_mask_parent(d);
++}
++
++static void its_unmask_msi_irq(struct irq_data *d)
++{
++	pci_msi_unmask_irq(d);
++	irq_chip_unmask_parent(d);
++}
++
++static struct irq_chip its_msi_irq_chip = {
++	.name			= "ITS-MSI",
++	.irq_unmask		= its_unmask_msi_irq,
++	.irq_mask		= its_mask_msi_irq,
++	.irq_eoi		= irq_chip_eoi_parent,
++	.irq_write_msi_msg	= pci_msi_domain_write_msg,
+ };
+ 
+ /*
+@@ -1055,3 +1090,144 @@ static void its_free_device(struct its_device *its_dev)
+ 	kfree(its_dev->itt);
+ 	kfree(its_dev);
+ }
++
++static int its_alloc_device_irq(struct its_device *dev, irq_hw_number_t *hwirq)
++{
++	int idx;
++
++	idx = find_first_zero_bit(dev->lpi_map, dev->nr_lpis);
++	if (idx == dev->nr_lpis)
++		return -ENOSPC;
++
++	*hwirq = dev->lpi_base + idx;
++	set_bit(idx, dev->lpi_map);
++
++	/* Map the GIC irq ID to the device */
++	its_send_mapvi(dev, *hwirq, idx);
++
++	return 0;
++}
++
++static int its_msi_prepare(struct irq_domain *domain, struct device *dev,
++			   int nvec, msi_alloc_info_t *info)
++{
++	struct pci_dev *pdev;
++	struct its_node *its;
++	u32 dev_id;
++	struct its_device *its_dev;
++
++	if (!dev_is_pci(dev))
++		return -EINVAL;
++
++	pdev = to_pci_dev(dev);
++	dev_id = PCI_DEVID(pdev->bus->number, pdev->devfn);
++	its = domain->parent->host_data;
++
++	its_dev = its_find_device(its, dev_id);
++	if (WARN_ON(its_dev))
++		return -EINVAL;
++
++	its_dev = its_create_device(its, dev_id, nvec);
++	if (!its_dev)
++		return -ENOMEM;
++
++	dev_dbg(&pdev->dev, "ITT %d entries, %d bits\n", nvec, ilog2(nvec));
++
++	info->scratchpad[0].ptr = its_dev;
++	info->scratchpad[1].ptr = dev;
++	return 0;
++}
++
++static struct msi_domain_ops its_pci_msi_ops = {
++	.msi_prepare	= its_msi_prepare,
++};
++
++static struct msi_domain_info its_pci_msi_domain_info = {
++	.flags	= (MSI_FLAG_USE_DEF_DOM_OPS | MSI_FLAG_USE_DEF_CHIP_OPS |
++		   MSI_FLAG_MULTI_PCI_MSI | MSI_FLAG_PCI_MSIX),
++	.ops	= &its_pci_msi_ops,
++	.chip	= &its_msi_irq_chip,
++};
++
++static int its_irq_gic_domain_alloc(struct irq_domain *domain,
++				    unsigned int virq,
++				    irq_hw_number_t hwirq)
++{
++	struct of_phandle_args args;
++
++	args.np = domain->parent->of_node;
++	args.args_count = 3;
++	args.args[0] = GIC_IRQ_TYPE_LPI;
++	args.args[1] = hwirq;
++	args.args[2] = IRQ_TYPE_EDGE_RISING;
++
++	return irq_domain_alloc_irqs_parent(domain, virq, 1, &args);
++}
++
++static int its_irq_domain_alloc(struct irq_domain *domain, unsigned int virq,
++				unsigned int nr_irqs, void *args)
++{
++	msi_alloc_info_t *info = args;
++	struct its_device *its_dev = info->scratchpad[0].ptr;
++	irq_hw_number_t hwirq;
++	int err;
++	int i;
++
++	for (i = 0; i < nr_irqs; i++) {
++		err = its_alloc_device_irq(its_dev, &hwirq);
++		if (err)
++			return err;
++
++		err = its_irq_gic_domain_alloc(domain, virq + i, hwirq);
++		if (err)
++			return err;
++
++		irq_domain_set_hwirq_and_chip(domain, virq + i,
++					      hwirq, &its_irq_chip, its_dev);
++		dev_dbg(info->scratchpad[1].ptr, "ID:%d pID:%d vID:%d\n",
++			(int)(hwirq - its_dev->lpi_base), (int)hwirq, virq + i);
++	}
++
++	return 0;
++}
++
++static void its_irq_domain_free(struct irq_domain *domain, unsigned int virq,
++				unsigned int nr_irqs)
++{
++	struct irq_data *d = irq_domain_get_irq_data(domain, virq);
++	struct its_device *its_dev = irq_data_get_irq_chip_data(d);
++	int i;
++
++	for (i = 0; i < nr_irqs; i++) {
++		struct irq_data *data = irq_domain_get_irq_data(domain,
++								virq + i);
++		int event = its_get_event_id(data);
++
++		/* Stop the delivery of interrupts */
++		its_send_discard(its_dev, event);
++
++		/* Mark interrupt index as unused */
++		clear_bit(event, its_dev->lpi_map);
++
++		/* Nuke the entry in the domain */
++		irq_domain_reset_irq_data(d);
++	}
++
++	/* If all interrupts have been freed, start mopping the floor */
++	if (bitmap_empty(its_dev->lpi_map, its_dev->nr_lpis)) {
++		its_lpi_free(its_dev->lpi_map,
++			     its_dev->lpi_base,
++			     its_dev->nr_lpis);
++
++		/* Unmap device/itt */
++		its_send_mapd(its_dev, 0);
++		its_free_device(its_dev);
++	}
++
++	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
++}
++
++static const struct irq_domain_ops its_domain_ops = {
++	.alloc			= its_irq_domain_alloc,
++	.free			= its_irq_domain_free,
++};
+diff --git a/include/linux/irqchip/arm-gic-v3.h b/include/linux/irqchip/arm-gic-v3.h
+index 21c9d70..0ed30d7 100644
+--- a/include/linux/irqchip/arm-gic-v3.h
++++ b/include/linux/irqchip/arm-gic-v3.h
+@@ -295,6 +295,12 @@
+ 
+ #include <linux/stringify.h>
+ 
++/*
++ * We need a value to serve as a irq-type for LPIs. Choose one that will
++ * hopefully pique the interest of the reviewer.
++ */
++#define GIC_IRQ_TYPE_LPI		0xa110c8ed
++
+ struct rdists {
+ 	struct {
+ 		void __iomem	*rd_base;
+-- 
+2.1.3
 
