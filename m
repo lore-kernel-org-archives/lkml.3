@@ -1,94 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125AbaKXJEB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 04:04:01 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:48737 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414AbaKXJD6 convert rfc822-to-8bit (ORCPT
+	id S1753162AbaKXJEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 04:04:13 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20870 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414AbaKXJEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 04:03:58 -0500
+	Mon, 24 Nov 2014 04:04:07 -0500
+Date: Mon, 24 Nov 2014 12:03:38 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Julia Lawall <julia.lawall@lip6.fr>, trivial@kernel.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: kernel-audit: Deletion of an unnecessary check before the
+ function call "audit_log_end"
+Message-ID: <20141124090337.GA7104@mwanda>
+References: <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <54687F1A.1010809@users.sourceforge.net>
+ <20141116111023.GA4905@mwanda>
+ <20141116111446.GA4956@mwanda>
+ <54688F15.9070703@users.sourceforge.net>
+ <20141117073408.GC4905@mwanda>
+ <5469B836.8030507@users.sourceforge.net>
+ <alpine.DEB.2.02.1411231249310.2261@localhost6.localdomain6>
+ <5471E010.2090105@users.sourceforge.net>
 MIME-Version: 1.0
-In-Reply-To: <1416819560-10931-1-git-send-email-geert@linux-m68k.org>
-References: <1416819560-10931-1-git-send-email-geert@linux-m68k.org>
-Date: Mon, 24 Nov 2014 10:03:56 +0100
-X-Google-Sender-Auth: As2ZMkRM8DKD4fPvlNmk2MTWWfw
-Message-ID: <CAMuHMdWWoBRm3QRpVaymiqV5afhp5mYg_v3vifb4iJrNE5_TPw@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.18-rc6
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5471E010.2090105@users.sourceforge.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 9:59 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.18-rc6[1]  to v3.18-rc5[3], the summaries are:
->   - build errors: +27/-8
+On Sun, Nov 23, 2014 at 02:24:32PM +0100, SF Markus Elfring wrote:
+> > Program analysis tools can also potentially exploit this information,
+> 
+> The published semantic patch scripts correspond to this desire.
+> 
 
-  + /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error:
-(near initialization for ‘virtblk_dev_page.blk_config.capacity’):  =>
-152:3
-  + /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error:
-(near initialization for ‘virtblk_dev_page.blk_config.seg_max’):  =>
-151:3
-  + /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error:
-(near initialization for ‘virtblk_dev_page.host_features’):  => 149:3
-  + /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error:
-(near initialization for ‘virtnet_dev_page.host_features’):  => 119:3
-  + /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error:
-braced-group within expression allowed only inside a function:  =>
-116:10, 93:10, 113:10, 146:10, 96:10
-  + /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error:
-initializer element is not constant:  => 149:3, 152:3, 151:3, 119:3
-  + /home/kisskb/slave/src/Documentation/prctl/disable-tsc-ctxt-sw-stress-test.c:
-error: impossible register constraint in ‘asm’:  => 34:1
-  + /home/kisskb/slave/src/Documentation/prctl/disable-tsc-on-off-stress-test.c:
-error: impossible register constraint in ‘asm’:  => 36:1
-  + /home/kisskb/slave/src/Documentation/prctl/disable-tsc-test.c:
-error: impossible register constraint in ‘asm’:  => 36:1
-  + /home/kisskb/slave/src/Documentation/vDSO/vdso_standalone_test_x86.c:
-error: impossible register constraint in ‘asm’:  => 49:2
+Sorry for that.
 
-i386-randconfig
+I have deleted the Smatch check for this so it no longer warns about:
 
-  + /home/kisskb/slave/src/arch/powerpc/lib/sstep.c: error: 'do_lfd'
-undeclared (first use in this function):  => 1874:29
-  + /home/kisskb/slave/src/arch/powerpc/lib/sstep.c: error: 'do_lfs'
-undeclared (first use in this function):  => 1872:29
-  + /home/kisskb/slave/src/arch/powerpc/lib/sstep.c: error: 'do_stfd'
-undeclared (first use in this function):  => 1928:30
-  + /home/kisskb/slave/src/arch/powerpc/lib/sstep.c: error: 'do_stfs'
-undeclared (first use in this function):  => 1926:30
-  + /home/kisskb/slave/src/arch/powerpc/lib/sstep.c: error: implicit
-declaration of function 'do_fp_load'
-[-Werror=implicit-function-declaration]:  => 1872:4
-  + /home/kisskb/slave/src/arch/powerpc/lib/sstep.c: error: implicit
-declaration of function 'do_fp_store'
-[-Werror=implicit-function-declaration]:  => 1926:4
+	if (foo)
+		kfree(foo);
 
-powerpc-randconfig
+regards,
+dan carpenter
 
-  + /home/kisskb/slave/src/fs/hostfs/hostfs_user.c: error: 'AT_FDCWD'
-undeclared (first use in this function):  => 378
-  + /home/kisskb/slave/src/fs/hostfs/hostfs_user.c: error: (Each
-undeclared identifier is reported only once:  => 378
-  + /home/kisskb/slave/src/fs/hostfs/hostfs_user.c: error: for each
-function it appears in.):  => 378
-
-um_defconfig (broken userspace)
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/8117/ (120 out of 119 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/8092/ (120 out of 119 configs)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
