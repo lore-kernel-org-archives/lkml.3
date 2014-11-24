@@ -1,95 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbaKXFwk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 00:52:40 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43968 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaKXFwi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 00:52:38 -0500
-Message-ID: <5472C745.6040300@ti.com>
-Date: Mon, 24 Nov 2014 11:21:01 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-CC: Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        "Nadav Haklai" <nadavh@marvell.com>,
-        Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Rob Herring" <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 6/7] ARM: mvebu: add PHY support to the dts for the
- USB controllers on Armada 375
-References: <1415879269-29711-1-git-send-email-gregory.clement@free-electrons.com> <1415879269-29711-7-git-send-email-gregory.clement@free-electrons.com> <20141122020811.GO22670@titan.lakedaemon.net> <5470556B.6080608@free-electrons.com>
-In-Reply-To: <5470556B.6080608@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	id S1752156AbaKXFwy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 00:52:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47578 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751920AbaKXFww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 00:52:52 -0500
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Cc: Jaegeuk Kim <jaegeuk@kernel.org>
+Subject: [PATCH 1/2] f2fs: introduce f2fs_dentry_kunmap to clean up
+Date: Sun, 23 Nov 2014 21:52:52 -0800
+Message-Id: <1416808373-24417-1-git-send-email-jaegeuk@kernel.org>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch introduces f2fs_dentry_kunmap to clean up dirty codes.
 
-On Saturday 22 November 2014 02:50 PM, Gregory CLEMENT wrote:
-> Hi Jason,
-> 
-> On 22/11/2014 03:08, Jason Cooper wrote:
->> On Thu, Nov 13, 2014 at 12:47:48PM +0100, Gregory CLEMENT wrote:
->>> Now that the USB cluster node has been added, use it as a PHY provider
->>> for the USB controller linked to it: the first EHCI and the xHCI.
->>>
->>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
->>> ---
->>>  arch/arm/boot/dts/armada-375.dtsi | 5 +++++
->>>  1 file changed, 5 insertions(+)
->>>
->>> diff --git a/arch/arm/boot/dts/armada-375.dtsi b/arch/arm/boot/dts/armada-375.dtsi
->>> index 8f45cf5d2a50..f344ec420c95 100644
->>> --- a/arch/arm/boot/dts/armada-375.dtsi
->>> +++ b/arch/arm/boot/dts/armada-375.dtsi
->>> @@ -14,6 +14,7 @@
->>>  #include "skeleton.dtsi"
->>>  #include <dt-bindings/interrupt-controller/arm-gic.h>
->>>  #include <dt-bindings/interrupt-controller/irq.h>
->>> +#include <dt-bindings/phy/phy.h>
->>
->> Odd.  The previous patch in this series simply adds a line to phy.h,
->> however, I get the following error during 'make dtbs':
->>
->> ########
->>   DTC     arch/arm/boot/dts/armada-375-db.dtb
->> In file included from arch/arm/boot/dts/armada-375-db.dts:17:0:arch/arm/boot/dts/armada-375.dtsi:17:33:
->> fatal error: dt-bindings/phy/phy.h: No such file or directory
->>  #include <dt-bindings/phy/phy.h>
->>                                  ^
->> compilation terminated.
->> scripts/Makefile.lib:282: recipe for target 'arch/arm/boot/dts/armada-37 5-db.dtb' failed
->> ########
->>
->> mvebu/dt is based on v3.18-rc1.  Is there a missing dependency
->> somewhere?  Perhaps we should let Kishon take the whole series and
->> handle the (hopefully trivial) merge conflict?
-> 
-> Actually Kishon asked me to use the dt-bindings/phy/phy.h file which
-> was introduced by the patch "phy: Add PHY header file for DT x Driver
-> defines". So indeed I had to have a dependency on the phy_dt_header
-> branch (which is based on v3.18-rc4 and have only this single commit).
-> The git tree is located at
-> git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git
+Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+---
+ fs/f2fs/dir.c      |  3 +--
+ fs/f2fs/f2fs.h     |  6 ++++++
+ fs/f2fs/namei.c    | 30 ++++++++++--------------------
+ fs/f2fs/recovery.c |  3 +--
+ 4 files changed, 18 insertions(+), 24 deletions(-)
 
-right, I have a immutable tag @
-git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git
-phy-dt-header which is based on 3.18-rc4 (I should have based it on -rc1 as
-pointed out by Maxime but it is too late now).
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index 5a49995..b1a7d57 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -271,8 +271,7 @@ ino_t f2fs_inode_by_name(struct inode *dir, struct qstr *qstr)
+ 	de = f2fs_find_entry(dir, qstr, &page);
+ 	if (de) {
+ 		res = le32_to_cpu(de->ino);
+-		if (!f2fs_has_inline_dentry(dir))
+-			kunmap(page);
++		f2fs_dentry_kunmap(dir, page);
+ 		f2fs_put_page(page, 0);
+ 	}
+ 
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 418c852..d042813 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -1229,6 +1229,12 @@ static inline void *inline_dentry_addr(struct page *page)
+ 	return (void *)&(ri->i_addr[1]);
+ }
+ 
++static inline void f2fs_dentry_kunmap(struct inode *dir, struct page *page)
++{
++	if (!f2fs_has_inline_dentry(dir))
++		kunmap(page);
++}
++
+ static inline int f2fs_readonly(struct super_block *sb)
+ {
+ 	return sb->s_flags & MS_RDONLY;
+diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+index 2bee559..547a2de 100644
+--- a/fs/f2fs/namei.c
++++ b/fs/f2fs/namei.c
+@@ -200,8 +200,7 @@ static struct dentry *f2fs_lookup(struct inode *dir, struct dentry *dentry,
+ 	de = f2fs_find_entry(dir, &dentry->d_name, &page);
+ 	if (de) {
+ 		nid_t ino = le32_to_cpu(de->ino);
+-		if (!f2fs_has_inline_dentry(dir))
+-			kunmap(page);
++		f2fs_dentry_kunmap(dir, page);
+ 		f2fs_put_page(page, 0);
+ 
+ 		inode = f2fs_iget(dir->i_sb, ino);
+@@ -231,8 +230,7 @@ static int f2fs_unlink(struct inode *dir, struct dentry *dentry)
+ 	err = acquire_orphan_inode(sbi);
+ 	if (err) {
+ 		f2fs_unlock_op(sbi);
+-		if (!f2fs_has_inline_dentry(dir))
+-			kunmap(page);
++		f2fs_dentry_kunmap(dir, page);
+ 		f2fs_put_page(page, 0);
+ 		goto fail;
+ 	}
+@@ -469,8 +467,7 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 						old_dir_page, new_dir);
+ 			update_inode_page(old_inode);
+ 		} else {
+-			if (!f2fs_has_inline_dentry(old_inode))
+-				kunmap(old_dir_page);
++			f2fs_dentry_kunmap(old_inode, old_dir_page);
+ 			f2fs_put_page(old_dir_page, 0);
+ 		}
+ 		drop_nlink(old_dir);
+@@ -486,18 +483,15 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 
+ put_out_dir:
+ 	f2fs_unlock_op(sbi);
+-	if (!f2fs_has_inline_dentry(new_dir))
+-		kunmap(new_page);
++	f2fs_dentry_kunmap(new_dir, new_page);
+ 	f2fs_put_page(new_page, 0);
+ out_dir:
+ 	if (old_dir_entry) {
+-		if (!f2fs_has_inline_dentry(old_inode))
+-			kunmap(old_dir_page);
++		f2fs_dentry_kunmap(old_inode, old_dir_page);
+ 		f2fs_put_page(old_dir_page, 0);
+ 	}
+ out_old:
+-	if (!f2fs_has_inline_dentry(old_dir))
+-		kunmap(old_page);
++	f2fs_dentry_kunmap(old_dir, old_page);
+ 	f2fs_put_page(old_page, 0);
+ out:
+ 	return err;
+@@ -632,23 +626,19 @@ out_unlock:
+ 	f2fs_unlock_op(sbi);
+ out_new_dir:
+ 	if (new_dir_entry) {
+-		if (!f2fs_has_inline_dentry(new_inode))
+-			kunmap(new_dir_page);
++		f2fs_dentry_kunmap(new_inode, new_dir_page);
+ 		f2fs_put_page(new_dir_page, 0);
+ 	}
+ out_old_dir:
+ 	if (old_dir_entry) {
+-		if (!f2fs_has_inline_dentry(old_inode))
+-			kunmap(old_dir_page);
++		f2fs_dentry_kunmap(old_inode, old_dir_page);
+ 		f2fs_put_page(old_dir_page, 0);
+ 	}
+ out_new:
+-	if (!f2fs_has_inline_dentry(new_dir))
+-		kunmap(new_page);
++	f2fs_dentry_kunmap(new_dir, new_page);
+ 	f2fs_put_page(new_page, 0);
+ out_old:
+-	if (!f2fs_has_inline_dentry(old_dir))
+-		kunmap(old_page);
++	f2fs_dentry_kunmap(old_dir, old_page);
+ 	f2fs_put_page(old_page, 0);
+ out:
+ 	return err;
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+index 4b180bb..9a93a6e 100644
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -129,8 +129,7 @@ retry:
+ 	goto out;
+ 
+ out_unmap_put:
+-	if (!f2fs_has_inline_dentry(dir))
+-		kunmap(page);
++	f2fs_dentry_kunmap(dir, page);
+ 	f2fs_put_page(page, 0);
+ out_err:
+ 	iput(dir);
+-- 
+2.1.1
 
-So they have based their branch on -rc4 and them merged phy-dt-header. Can you
-do something similar?
-
-Thanks
-Kishon
