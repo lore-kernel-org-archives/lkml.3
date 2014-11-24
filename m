@@ -1,219 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261AbaKXOgD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:36:03 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38052 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932241AbaKXOf6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:35:58 -0500
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Robert Richter <robert.richter@caviumnetworks.com>,
-        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-Subject: [PATCH v3 10/13] irqchip: GICv3: ITS: DT probing and initialization
-Date: Mon, 24 Nov 2014 14:35:17 +0000
-Message-Id: <1416839720-18400-11-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
-References: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
+	id S932348AbaKXOgn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:36:43 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:34188 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932322AbaKXOgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 09:36:40 -0500
+Date: Mon, 24 Nov 2014 08:36:46 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Arjun Sreedharan <arjun024@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <kernel-build-reports@lists.linaro.org>
+Subject: Re: [PATCH] usb:phy: propagate __of_usb_find_phy()'s error on failure
+Message-ID: <20141124143646.GA20705@saruman>
+Reply-To: <balbi@ti.com>
+References: <1416498816-3292-1-git-send-email-arjun024@gmail.com>
+ <20141124131034.GB4061@ulmo.nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sm4nu43k4a2Rpi4c"
+Content-Disposition: inline
+In-Reply-To: <20141124131034.GB4061@ulmo.nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the code that probes the ITS from the device tree,
-and initialize it.
+--sm4nu43k4a2Rpi4c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
----
- drivers/irqchip/irq-gic-v3-its.c | 169 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 169 insertions(+)
+Hi,
 
-diff --git a/drivers/irqchip/irq-gic-v3-its.c b/drivers/irqchip/irq-gic-v3-its.c
-index 532c6df..e9d1615 100644
---- a/drivers/irqchip/irq-gic-v3-its.c
-+++ b/drivers/irqchip/irq-gic-v3-its.c
-@@ -1231,3 +1231,172 @@ static const struct irq_domain_ops its_domain_ops = {
- 	.alloc			= its_irq_domain_alloc,
- 	.free			= its_irq_domain_free,
- };
-+
-+static int its_probe(struct device_node *node, struct irq_domain *parent)
-+{
-+	struct resource res;
-+	struct its_node *its;
-+	void __iomem *its_base;
-+	u32 val;
-+	u64 baser, tmp;
-+	int err;
-+
-+	err = of_address_to_resource(node, 0, &res);
-+	if (err) {
-+		pr_warn("%s: no regs?\n", node->full_name);
-+		return -ENXIO;
-+	}
-+
-+	its_base = ioremap(res.start, resource_size(&res));
-+	if (!its_base) {
-+		pr_warn("%s: unable to map registers\n", node->full_name);
-+		return -ENOMEM;
-+	}
-+
-+	val = readl_relaxed(its_base + GITS_PIDR2) & GIC_PIDR2_ARCH_MASK;
-+	if (val != 0x30 && val != 0x40) {
-+		pr_warn("%s: no ITS detected, giving up\n", node->full_name);
-+		err = -ENODEV;
-+		goto out_unmap;
-+	}
-+
-+	pr_info("ITS: %s\n", node->full_name);
-+
-+	its = kzalloc(sizeof(*its), GFP_KERNEL);
-+	if (!its) {
-+		err = -ENOMEM;
-+		goto out_unmap;
-+	}
-+
-+	raw_spin_lock_init(&its->lock);
-+	INIT_LIST_HEAD(&its->entry);
-+	INIT_LIST_HEAD(&its->its_device_list);
-+	its->base = its_base;
-+	its->phys_base = res.start;
-+	its->msi_chip.of_node = node;
-+	its->ite_size = ((readl_relaxed(its_base + GITS_TYPER) >> 4) & 0xf) + 1;
-+
-+	its->cmd_base = kzalloc(ITS_CMD_QUEUE_SZ, GFP_KERNEL);
-+	if (!its->cmd_base) {
-+		err = -ENOMEM;
-+		goto out_free_its;
-+	}
-+	its->cmd_write = its->cmd_base;
-+
-+	err = its_alloc_tables(its);
-+	if (err)
-+		goto out_free_cmd;
-+
-+	err = its_alloc_collections(its);
-+	if (err)
-+		goto out_free_tables;
-+
-+	baser = (virt_to_phys(its->cmd_base)	|
-+		 GITS_CBASER_WaWb		|
-+		 GITS_CBASER_InnerShareable	|
-+		 (ITS_CMD_QUEUE_SZ / SZ_4K - 1)	|
-+		 GITS_CBASER_VALID);
-+
-+	writeq_relaxed(baser, its->base + GITS_CBASER);
-+	tmp = readq_relaxed(its->base + GITS_CBASER);
-+	writeq_relaxed(0, its->base + GITS_CWRITER);
-+	writel_relaxed(1, its->base + GITS_CTLR);
-+
-+	if ((tmp ^ baser) & GITS_BASER_SHAREABILITY_MASK) {
-+		pr_info("ITS: using cache flushing for cmd queue\n");
-+		its->flags |= ITS_FLAGS_CMDQ_NEEDS_FLUSHING;
-+	}
-+
-+	if (of_property_read_bool(its->msi_chip.of_node, "msi-controller")) {
-+		its->domain = irq_domain_add_tree(NULL, &its_domain_ops, its);
-+		if (!its->domain) {
-+			err = -ENOMEM;
-+			goto out_free_tables;
-+		}
-+
-+		its->domain->parent = parent;
-+
-+		its->msi_chip.domain = pci_msi_create_irq_domain(node,
-+								 &its_pci_msi_domain_info,
-+								 its->domain);
-+		if (!its->msi_chip.domain) {
-+			err = -ENOMEM;
-+			goto out_free_domains;
-+		}
-+
-+		err = of_pci_msi_chip_add(&its->msi_chip);
-+		if (err)
-+			goto out_free_domains;
-+	}
-+
-+	spin_lock(&its_lock);
-+	list_add(&its->entry, &its_nodes);
-+	spin_unlock(&its_lock);
-+
-+	return 0;
-+
-+out_free_domains:
-+	if (its->msi_chip.domain)
-+		irq_domain_remove(its->msi_chip.domain);
-+	if (its->domain)
-+		irq_domain_remove(its->domain);
-+out_free_tables:
-+	its_free_tables(its);
-+out_free_cmd:
-+	kfree(its->cmd_base);
-+out_free_its:
-+	kfree(its);
-+out_unmap:
-+	iounmap(its_base);
-+	pr_err("ITS: failed probing %s (%d)\n", node->full_name, err);
-+	return err;
-+}
-+
-+static bool gic_rdists_supports_plpis(void)
-+{
-+	return !!(readl_relaxed(gic_data_rdist_rd_base() + GICR_TYPER) & GICR_TYPER_PLPIS);
-+}
-+
-+int its_cpu_init(void)
-+{
-+	if (!gic_rdists_supports_plpis()) {
-+		pr_info("CPU%d: LPIs not supported\n", smp_processor_id());
-+		return -ENXIO;
-+	}
-+
-+	if (!list_empty(&its_nodes)) {
-+		its_cpu_init_lpis();
-+		its_cpu_init_collection();
-+	}
-+
-+	return 0;
-+}
-+
-+static struct of_device_id its_device_id[] = {
-+	{	.compatible	= "arm,gic-v3-its",	},
-+	{},
-+};
-+
-+int its_init(struct device_node *node, struct rdists *rdists,
-+	     struct irq_domain *parent_domain)
-+{
-+	struct device_node *np;
-+
-+	for (np = of_find_matching_node(node, its_device_id); np;
-+	     np = of_find_matching_node(np, its_device_id)) {
-+		its_probe(np, parent_domain);
-+	}
-+
-+	if (list_empty(&its_nodes)) {
-+		pr_warn("ITS: No ITS available, not enabling LPIs\n");
-+		return -ENXIO;
-+	}
-+
-+	gic_rdists = rdists;
-+	gic_root_node = node;
-+
-+	its_alloc_lpi_tables();
-+	its_lpi_init(rdists->id_bits);
-+
-+	return 0;
-+}
--- 
-2.1.3
+On Mon, Nov 24, 2014 at 02:10:41PM +0100, Thierry Reding wrote:
+> On Thu, Nov 20, 2014 at 09:23:36PM +0530, Arjun Sreedharan wrote:
+> > When __of_usb_find_phy() fails, it returns -ENODEV - its
+> > error code has to be returned by devm_usb_get_phy_by_phandle().
+> > Only when the former function succeeds and try_module_get()
+> > fails should -EPROBE_DEFER be returned.
+> >=20
+> > Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+> > ---
+> >  drivers/usb/phy/phy.c | 4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+>=20
+> This causes a boot regression on at least NVIDIA Dalmore (I boot over
+> NFS using a USB network adapter).
+>=20
+> The commit message is somewhat insufficient because while it explains
+> what the code does and asserts that it is the right thing to do, it
+> fails to explain why.
 
+you also fail to explain it causes a regressions with Dalmore. This is
+really the correct patch, we shouldn't be overwritting the error passed
+in by upper layers.
+
+> > diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
+> > index 045cd30..0310112 100644
+> > --- a/drivers/usb/phy/phy.c
+> > +++ b/drivers/usb/phy/phy.c
+> > @@ -191,7 +191,9 @@ struct usb_phy *devm_usb_get_phy_by_phandle(struct =
+device *dev,
+> > =20
+> >  	phy =3D __of_usb_find_phy(node);
+> >  	if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
+> > -		phy =3D ERR_PTR(-EPROBE_DEFER);
+> > +		if (!IS_ERR(phy))
+> > +			phy =3D ERR_PTR(-EPROBE_DEFER);
+>=20
+> If we look at this closer, __of_usb_find_phy() return a valid pointer if
+> a PHY was found or ERR_PTR(-ENODEV) otherwise. But since the phandle has
+> already been validated, the only reason why __of_usb_find_phy() fails is
+> because the PHY that the phandle refers to hasn't been registered yet.
+>=20
+> Returning -EPROBE_DEFER is the correct thing to do in this situation
+> because it gives the PHY driver an opportunity to register and the USB
+> host controller to try probing again. I suppose one could argue that
+> __of_usb_find_phy() should return ERR_PTR(-EPROBE_DEFER) on failure
+> instead of ERR_PTR(-ENODEV), since evidently the device does exist, it
+> just hasn't been registered yet. On the other hand it could happen that
+> the phandle refers to a device tree node that's status =3D "disabled", in
+> which case ERR_PTR(-ENODEV) might be appropriate.
+>=20
+> Also, -EPROBE_DEFER isn't really the proper error for try_module_get()
+> failure. Other functions (usb_get_phy() and usb_get_phy_dev()) return
+> -ENODEV instead, so it'd be more consistent to stick with that. Hence I
+> propose something like the below instead.
+
+I don't mind patch below, but I want to know why Dalmore regressed with
+$subject.
+
+--=20
+balbi
+
+--sm4nu43k4a2Rpi4c
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUc0J+AAoJEIaOsuA1yqREyOEP/2ilkTZC9Jmtuw8CS+fRxqLB
+fforWtsEn/aooK8kARGh9s64I8UfPDTslUg4+Y8AW39Ltu2ZyILhHJ/GZNvTeGxz
++0hlA3VHT9qMW8SI6vl4pS81SPDn91YoAGk9Kx+pzNvRyU/2JRglrO+I+0RCo+2+
+yosArAi5QLK61UVPXej1n8c2b1EHPYsT5HJWWfzVOTl1LOMrZAz0dxC0YXHpNxRz
+zn8L8zoB64+Be1onzyXbjQR4jsIskwYv/PDsx8ASJZBTcSPfwoJHd++4zR/PiaHc
+8+pnjzERJukBpX4YAhm7NLDuzXuUMBBrQs/S+e8Mbee93l+CNJt0YOxWtOBtPMH7
+wdl2pExoY2BWUE3pKJ+OjaUlwZeETYFcIW7ae+WTp9uvUrV1SCGtdjNnBzeP2ezH
++3L0Ezz5IGfJd9+KxH5Mg7CievHqm8Muixq45aVGbtpRRoci+76ltKlSJ6rJo7FC
+xrnJGhj66klhlHojlVW/DCD5QBCQvU/Bl+3/cOD2kwgWz9m6coMkU4Q04TtjA5po
+nm7qlq6bUDGF6+UoWsq17deoGQp4uNONK4Hg8ej/kVkF02WzaVTsdWO/+9BNS4GX
+JVXCO/4Ff8i3XcTMVG3lLEuquygxQVHv9w0a6GRODRj1pzeTWpIpco41ZdHWqizO
+Y8LCk1G6W64XfywZpcjr
+=775j
+-----END PGP SIGNATURE-----
+
+--sm4nu43k4a2Rpi4c--
