@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751083AbaKXVdZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 16:33:25 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:64335 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755AbaKXVdY (ORCPT
+	id S1751412AbaKXVdr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 16:33:47 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:62800 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223AbaKXVdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 16:33:24 -0500
-Date: Mon, 24 Nov 2014 17:25:08 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Rui Zhang <rui.zhang@intel.com>
-Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] thermal-soc updates for v3.18-rc7
-Message-ID: <20141124212506.GA1685@developer>
+	Mon, 24 Nov 2014 16:33:45 -0500
+Date: Mon, 24 Nov 2014 13:33:42 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mm/thp: Always allocate transparent hugepages on
+ local node
+In-Reply-To: <20141124150342.GA3889@node.dhcp.inet.fi>
+Message-ID: <alpine.DEB.2.10.1411241317430.21237@chino.kir.corp.google.com>
+References: <1416838791-30023-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20141124150342.GA3889@node.dhcp.inet.fi>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KsGdsel6WgEHnImy"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 24 Nov 2014, Kirill A. Shutemov wrote:
 
---KsGdsel6WgEHnImy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > This make sure that we try to allocate hugepages from local node. If
+> > we can't we fallback to small page allocation based on
+> > mempolicy. This is based on the observation that allocating pages
+> > on local node is more beneficial that allocating hugepages on remote node.
+> 
+> Local node on allocation is not necessary local node for use.
+> If policy says to use a specific node[s], we should follow.
+> 
 
+True, and the interaction between thp and mempolicies is fragile: if a 
+process has a MPOL_BIND mempolicy over a set of nodes, that does not 
+necessarily mean that we want to allocate thp remotely if it will always 
+be accessed remotely.  It's simple to benchmark and show that remote 
+access latency of a hugepage can exceed that of local pages.  MPOL_BIND 
+itself is a policy of exclusion, not inclusion, and it's difficult to 
+define when local pages and its cost of allocation is better than remote 
+thp.
 
-Hello Rui,
+For MPOL_BIND, if the local node is allowed then thp should be forced from 
+that node, if the local node is disallowed then allocate from any node in 
+the nodemask.  For MPOL_INTERLEAVE, I think we should only allocate thp 
+from the next node in order, otherwise fail the allocation and fallback to 
+small pages.  Is this what you meant as well?
 
-Please pull from
+> I think it makes sense to force local allocation if policy is interleave
+> or if current node is in preferred or bind set.
+>  
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.=
-git fixes
+If local allocation were forced for MPOL_INTERLEAVE and all memory is 
+initially faulted by cpus on a single node, then the policy has 
+effectively become MPOL_DEFAULT, there's no interleave.
 
-to receive thermal-soc updates for v3.18-rc7 with top-most
-
-d3e19567fa85e1a0dab02205b89b2908084ecadd:
-
-  thermal: Exynos: Deletion of unnecessary checks before two function calls=
- (2014-11-21 15:20:17 -0400)
-
-on top of commit fc14f9c1272f62c3e8d01300f52467c0d9af50f9:
-
-  Linux 3.18-rc5 (2014-11-16 16:36:20 -0800)
-
-Specifics:
-
-In this -rc still very minor changes:
- - Lee Jones fixes compilation warning in sti thermal driver;
- - Marjus Elfring removes unnecessary checks in exynos thermal driver
-   (as per coccinelle); and
- - Now we always update cpufreq policies, and thus get (hopefully) always i=
-n sync with cpufreq,
-   thanks to Yadwinder.=20
-
-BR,
-
-Eduardo Valentin
-
-----------------------------------------------------------------
-Lee Jones (1):
-      thermal: sti: Ignore suspend/resume functions when !PM_SLEEP
-
-Markus Elfring (1):
-      thermal: Exynos: Deletion of unnecessary checks before two function c=
-alls
-
-Yadwinder Singh Brar (1):
-      thermal: cpu_cooling: Update always cpufreq policy with thermal const=
-raints
-
- drivers/thermal/cpu_cooling.c                   | 37 ++++++++++++++-------=
-----
- drivers/thermal/samsung/exynos_thermal_common.c |  9 ++----
- drivers/thermal/st/st_thermal.c                 |  3 ++
- 3 files changed, 27 insertions(+), 22 deletions(-)
-
---KsGdsel6WgEHnImy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUc6IqAAoJEMLUO4d9pOJW3v4IAI2MfS9q+drdYAhAnNCoSLOr
-CPdkbQiGuXlju+Cpu798sp6osAwbZQWYwWZNMwjznXO6M6JNAoYgW1hljAto0KZR
-P6pxVnr48LIT5HxhdAChB09YWn+25RAFbRqmbX7PTlNx+LkmZexcDxSprozI35jO
-yBbks46ycFSvM1MfIRT5LAkwiST8j2NYIb7OM39zEjKL5ZIcrbDskPKrEKBiIeye
-98Uf5c+d1RBntIaw242NdaLggY3k8IzzBkzubUoxdExM050IrPvPcHCZJ57R8ltw
-/hrh0vNRVGe43q4VnoiTGtXOXzEyAOzg7k8RpyYc0Cu/2ymtalHjMqFS9qfd6VY=
-=kwn7
------END PGP SIGNATURE-----
-
---KsGdsel6WgEHnImy--
+Aside: the patch is also buggy since it passes numa_node_id() and thp is 
+supported on platforms that allow memoryless nodes.
