@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074AbaKXOGT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:06:19 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:60074 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679AbaKXOGQ (ORCPT
+	id S1753601AbaKXOIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:08:13 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:35559 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005AbaKXOIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:06:16 -0500
-Message-ID: <1416837968.25352.34.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 5/5] MODSIGN: Use PKCS#7 messages as module signatures
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: mmarek@suse.cz, d.kasatkin@samsung.com, rusty@rustcorp.com.au,
-        vgoyal@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 24 Nov 2014 09:06:08 -0500
-In-Reply-To: <20141120165448.5264.72787.stgit@warthog.procyon.org.uk>
-References: <20141120165351.5264.61930.stgit@warthog.procyon.org.uk>
-	 <20141120165448.5264.72787.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Nov 2014 09:08:11 -0500
+From: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Cc: mpe@ellerman.id.au, benh@kernel.crashing.org, paulus@samba.org,
+        Laurent Dufour <ldufour@linux.vnet.ibm.com>
+Subject: [PATCH] pseries/le: Fix endiannes issue in RTAS call from xmon
+Date: Mon, 24 Nov 2014 15:07:53 +0100
+Message-Id: <1416838073-16642-1-git-send-email-ldufour@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.1
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112414-0009-0000-0000-0000068F1A82
+x-cbid: 14112414-0017-0000-0000-000001F4B3C6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-20 at 16:54 +0000, David Howells wrote:
+On pseries system (LPAR) xmon failed to enter when running in LE mode, system
+is hunging. Inititating xmon will lead to such an output on the console:
 
-> 
->  /*
-> @@ -186,12 +81,8 @@ static struct key *request_asymmetric_key(const char *signer, size_t signer_len,
->   */
->  int mod_verify_sig(const void *mod, unsigned long *_modlen)
->  {
-> -	struct public_key_signature *pks;
->  	struct module_signature ms;
-> -	struct key *key;
-> -	const void *sig;
->  	size_t modlen = *_modlen, sig_len;
-> -	int ret;
-> 
->  	pr_devel("==>%s(,%zu)\n", __func__, modlen);
-> 
-> @@ -205,46 +96,23 @@ int mod_verify_sig(const void *mod, unsigned long *_modlen)
->  	if (sig_len >= modlen)
->  		return -EBADMSG;
->  	modlen -= sig_len;
-> -	if ((size_t)ms.signer_len + ms.key_id_len >= modlen)
-> -		return -EBADMSG;
-> -	modlen -= (size_t)ms.signer_len + ms.key_id_len;
-> -
->  	*_modlen = modlen;
-> -	sig = mod + modlen;
-> -
-> -	/* For the moment, only support RSA and X.509 identifiers */
-> -	if (ms.algo != PKEY_ALGO_RSA ||
-> -	    ms.id_type != PKEY_ID_X509)
-> -		return -ENOPKG;
-> 
-> -	if (ms.hash >= PKEY_HASH__LAST ||
-> -	    !hash_algo_name[ms.hash])
-> +	if (ms.id_type != PKEY_ID_PKCS7) {
-> +		pr_err("Module is not signed with expected PKCS#7 message\n");
->  		return -ENOPKG;
+SysRq : Entering xmon
+cpu 0x15: Vector: 0  at [c0000003f39ffb10]
+    pc: c00000000007ed7c: sysrq_handle_xmon+0x5c/0x70
+    lr: c00000000007ed7c: sysrq_handle_xmon+0x5c/0x70
+    sp: c0000003f39ffc70
+   msr: 8000000000009033
+  current = 0xc0000003fafa7180
+  paca    = 0xc000000007d75e80	 softe: 0	 irq_happened: 0x01
+    pid   = 14617, comm = bash
+Bad kernel stack pointer fafb4b0 at eca7cc4
+cpu 0x15: Vector: 300 (Data Access) at [c000000007f07d40]
+    pc: 000000000eca7cc4
+    lr: 000000000eca7c44
+    sp: fafb4b0
+   msr: 8000000000001000
+   dar: 10000000
+ dsisr: 42000000
+  current = 0xc0000003fafa7180
+  paca    = 0xc000000007d75e80	 softe: 0	 irq_happened: 0x01
+    pid   = 14617, comm = bash
+cpu 0x15: Exception 300 (Data Access) in xmon, returning to main loop
+xmon: WARNING: bad recursive fault on cpu 0x15
 
-Perhaps because modules are resigned with each kernel build, it is
-acceptable to totally replace one signature format with another like
-this, and fail the old method.
+The root cause is that xmon is calling RTAS to turn off the surveillance
+when entering xmon, and RTAS is requiring big endian parameters.
 
-Mimi
+This patch is byte swapping the RTAS arguments when running in LE mode.
+
+Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+---
+ arch/powerpc/xmon/xmon.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/powerpc/xmon/xmon.c b/arch/powerpc/xmon/xmon.c
+index b988b5addf86..c8efbb37d6e0 100644
+--- a/arch/powerpc/xmon/xmon.c
++++ b/arch/powerpc/xmon/xmon.c
+@@ -293,10 +293,10 @@ static inline void disable_surveillance(void)
+ 	args.token = rtas_token("set-indicator");
+ 	if (args.token == RTAS_UNKNOWN_SERVICE)
+ 		return;
+-	args.nargs = 3;
+-	args.nret = 1;
++	args.nargs = cpu_to_be32(3);
++	args.nret = cpu_to_be32(1);
+ 	args.rets = &args.args[3];
+-	args.args[0] = SURVEILLANCE_TOKEN;
++	args.args[0] = cpu_to_be32(SURVEILLANCE_TOKEN);
+ 	args.args[1] = 0;
+ 	args.args[2] = 0;
+ 	enter_rtas(__pa(&args));
+-- 
+1.9.1
 
