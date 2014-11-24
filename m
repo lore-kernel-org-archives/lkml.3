@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaKYGw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 01:52:27 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53452 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaKYGwZ (ORCPT
+	id S1752017AbaKYGzS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 01:55:18 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:54982 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209AbaKYGzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 01:52:25 -0500
-X-Original-SENDERIP: 10.186.119.199
-X-Original-MAILFROM: chanho.min@lge.com
-From: Chanho Min <chanho.min@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        HyoJun Im <hyojun.im@lge.com>, Gunho Lee <gunho.lee@lge.com>,
-        Wonhong Kwon <wonhong.kwon@lge.com>, Chanho Min <chanho.min@lge.com>
-Subject: [PATCH] mm: add parameter to disable faultaround
-Date: Tue, 25 Nov 2014 15:51:58 +0900
-Message-Id: <1416898318-17409-1-git-send-email-chanho.min@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 25 Nov 2014 01:55:17 -0500
+Date: Mon, 24 Nov 2014 00:18:23 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: Azael Avalos <coproscefalo@gmail.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] toshiba_acpi: Fix regression caused by backlight
+ extra check code
+Message-ID: <20141124081823.GB97532@vmdeb7>
+References: <1416882576-3203-1-git-send-email-coproscefalo@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416882576-3203-1-git-send-email-coproscefalo@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The faultaround improves the file read performance, whereas pages which
-can be dropped by drop_caches are reduced. On some systems, The amount of
-freeable pages under memory pressure is more important than read
-performance. So It prefers to be selectable.
+On Mon, Nov 24, 2014 at 07:29:36PM -0700, Azael Avalos wrote:
+> Bug 86521 uncovered that some TOS6208 devices also return
+> non zero values on a write call to the backlight method,
+> thus getting caught and bailed out by the extra check code.
+> 
+> This patch changes the set_lcd_brightness function to its
+> "original" state by just adapting it to the new function
+> format.
+> 
+> Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
+> ---
+> Changes since v1:
+> - Simply revert the commit to its original state by just
+>   adapting the code to the new function format
+> 
+> Darren,
+> 
+> This patch simply reverts the commit so the bug can be closed,
+> I'll send a few patches later which will include the change
+> needed to block the backlight on TOS1900 devices for review.
 
-This patch adds a new kernel cmdline parameter "nofaultaround"
-for situations where users want to disable faultaround.
+Queued.
 
-Signed-off-by: Chanho Min <chanho.min@lge.com>
----
- mm/memory.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+Thanks Azael,
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 4879b42..c36a96f 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2888,6 +2888,14 @@ static int __init fault_around_debugfs(void)
- late_initcall(fault_around_debugfs);
- #endif
- 
-+static bool enable_fault_around = true;
-+static int __init disable_fault_around(char *s)
-+{
-+	enable_fault_around = false;
-+	return 1;
-+}
-+__setup("nofaultaround", disable_fault_around);
-+
- /*
-  * do_fault_around() tries to map few pages around the fault address. The hope
-  * is that the pages will be needed soon and this will lower the number of
-@@ -2965,7 +2973,8 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * if page by the offset is not ready to be mapped (cold cache or
- 	 * something).
- 	 */
--	if (vma->vm_ops->map_pages && !(flags & FAULT_FLAG_NONLINEAR) &&
-+	if (enable_fault_around && vma->vm_ops->map_pages &&
-+	    !(flags & FAULT_FLAG_NONLINEAR) &&
- 	    fault_around_pages() > 1) {
- 		pte = pte_offset_map_lock(mm, pmd, address, &ptl);
- 		do_fault_around(vma, address, pte, pgoff, flags);
 -- 
-1.7.9.5
-
+Darren Hart
+Intel Open Source Technology Center
