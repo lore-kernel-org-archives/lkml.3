@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297AbaKXUsQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:48:16 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:39238 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875AbaKXUsL (ORCPT
+	id S1751323AbaKXUsq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:48:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55662 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726AbaKXUsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:48:11 -0500
-Date: Mon, 24 Nov 2014 12:48:05 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>, linux-x86_64@vger.kernel.org,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH/RFC 7/7] kernel: Force ACCESS_ONCE to work only on scalar
- types
-Message-ID: <20141124204805.GV5050@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAADnVQJ6eXGiasoQwyAzuejLncEHdy6MOf+m3AHnpjgn0h3+OQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAADnVQJ6eXGiasoQwyAzuejLncEHdy6MOf+m3AHnpjgn0h3+OQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112420-0025-0000-0000-000006598DAD
+	Mon, 24 Nov 2014 15:48:45 -0500
+Date: Mon, 24 Nov 2014 12:49:07 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        Davidlohr Bueso <davidlohr@hp.com>, Rafael Aquini <aquini@redhat.com>,
+        1vier1@web.de
+Subject: Re: [PATCH] ipc,sem block sem_lock on sma->lock during sma
+ initialization
+Message-Id: <20141124124907.a8ba40e5.akpm@linux-foundation.org>
+In-Reply-To: <54722639.1040605@colorfullife.com>
+References: <20141121145226.2ac598af@annuminas.surriel.com>
+	<54722639.1040605@colorfullife.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 12:29:07PM -0800, Alexei Starovoitov wrote:
-> On Mon, Nov 24, 2014 at 11:07 AM, Christian Borntraeger
-> <borntraeger@de.ibm.com> wrote:
-> >
-> > Anyone with a new propopal? ;-)                                        ^
-> 
-> one more proposal :)
-> #define __ACCESS_ONCE(x) ({ typeof(x) __var = 0; (volatile typeof(x) *)&(x); })
-> #define ACCESS_ONCE(x) (*__ACCESS_ONCE(x))
-> 
-> works as lvalue...
-> the basic idea is the same:
-> constant zero can be used to initialize any scalar
-> (including pointers), but unions and structs will fail to compile as:
-> "error: invalid initializer"
-> 
-> If I'm reading pr58145 gcc bug report correctly, it
-> miscompiles only structs, so we can let ACCESS_ONCE
-> to work on unions. Then the following will rejects structs only:
-> #define __ACCESS_ONCE(x) ({ (typeof(x))0; (volatile typeof(x) *)&(x); })
-> #define ACCESS_ONCE(x) (*__ACCESS_ONCE(x))
+On Sun, 23 Nov 2014 19:23:53 +0100 Manfred Spraul <manfred@colorfullife.com> wrote:
 
-You beat me to it.  ;-)
+> Subject: [PATCH] ipc/sem.c: Fully initialize sem_array before making it
+>  visible
+> 
+> ipc_addid() makes a new ipc identifier visible to everyone.
+> New objects start as locked, so that the caller can complete
+> the initialization after the call.
+> Within struct sem_array, at least sma->sem_base and sma->sem_nsems
+> are accessed without any locks, therefore this approach doesn't work.
+> 
+> Thus: Move the ipc_addid() to the end of the initialization.
 
-However, your approach would allow an ACCESS_ONCE() of a long long
-to compile on 32-bit systems where it has to be broken up into a
-pair of 32-bit accesses.
-
-							Thanx, Paul
+Any thoughts on which kernel version(s) need the patch?  I'm still
+rather fuzzy on the end-user impact of this bug.
 
