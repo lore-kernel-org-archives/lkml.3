@@ -1,135 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362AbaKXQFn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 11:05:43 -0500
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:50717 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754078AbaKXQFk (ORCPT
+	id S1754424AbaKXQHq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 11:07:46 -0500
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:64406 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951AbaKXQHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 11:05:40 -0500
-X-Originating-IP: 173.246.103.110
-Date: Mon, 24 Nov 2014 08:05:10 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Pieter Smith <pieter@boesman.nl>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Bertrand Jacquin <beber@meleeweb.net>, Oleg Nesterov <oleg@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Eric Dumazet <edumazet@google.com>,
-        =?utf-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
-        Jeff Layton <jlayton@poochiereds.net>,
-        Tom Herbert <therbert@google.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, Peter Foley <pefoley2@pefoley.com>,
-        Hugh Dickins <hughd@google.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mel Gorman <mgorman@suse.de>, Matt Turner <mattst88@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Catalina Mocanu <catalina.mocanu@gmail.com>,
-        Fabian Frederick <fabf@skynet.be>, Thomas Graf <tgraf@suug.ch>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jan Beulich <JBeulich@suse.com>, Willem de Bruijn <willemb@google.com>,
-        Iulia Manda <iulia.manda21@gmail.com>,
-        "open list:ABI/API" <linux-api@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [fuse-devel] [PATCH 4/6] fs/fuse: support compiling out splice
-Message-ID: <20141124160510.GA2446@jtriplet-mobl1>
-References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
- <1416752468-1626-5-git-send-email-pieter@boesman.nl>
- <CAFLxGvxq3Mr9n8xMO_fPZDhrGmBh=WKyU0+RF13JBdjssX6qfw@mail.gmail.com>
- <20141123232302.GA12456@thin>
- <20141124094931.GA1055@smipidev>
+	Mon, 24 Nov 2014 11:07:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141124094931.GA1055@smipidev>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1416415597-21235-1-git-send-email-borneo.antonio@gmail.com>
+References: <1416149064-25655-1-git-send-email-borneo.antonio@gmail.com>
+	<1416415597-21235-1-git-send-email-borneo.antonio@gmail.com>
+Date: Mon, 24 Nov 2014 11:07:42 -0500
+Message-ID: <CAN+gG=HttchOAYcumPkZHKqfGb5FN83P3P8c3aKod25NXxZX1Q@mail.gmail.com>
+Subject: Re: [PATCH V2] HID: i2c-hid: fix race condition reading reports
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Antonio Borneo <borneo.antonio@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 10:49:31AM +0100, Pieter Smith wrote:
-> On Sun, Nov 23, 2014 at 03:23:02PM -0800, Josh Triplett wrote:
-> > On Sun, Nov 23, 2014 at 11:29:08PM +0100, Richard Weinberger wrote:
-> > > On Sun, Nov 23, 2014 at 3:20 PM, Pieter Smith <pieter@boesman.nl> wrote:
-> > > > To implement splice support, fs/fuse makes use of nosteal_pipe_buf_ops. This
-> > > > struct is exported by fs/splice. The goal of the larger patch set is to
-> > > > completely compile out fs/splice, so uses of the exported struct need to be
-> > > > compiled out along with fs/splice.
-> > > >
-> > > > This patch therefore compiles out splice support in fs/fuse when
-> > > > CONFIG_SYSCALL_SPLICE is undefined.
-> > > >
-> > > > Signed-off-by: Pieter Smith <pieter@boesman.nl>
-> > > > ---
-> > > >  fs/fuse/dev.c      | 4 ++--
-> > > >  include/linux/fs.h | 6 ++++++
-> > > >  2 files changed, 8 insertions(+), 2 deletions(-)
-> > > >
-> > > > diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-> > > > index ca88731..f8f92a4 100644
-> > > > --- a/fs/fuse/dev.c
-> > > > +++ b/fs/fuse/dev.c
-> > > > @@ -1291,7 +1291,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
-> > > >         return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
-> > > >  }
-> > > >
-> > > > -static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
-> > > > +static ssize_t __maybe_unused fuse_dev_splice_read(struct file *in, loff_t *ppos,
-> > > >                                     struct pipe_inode_info *pipe,
-> > > >                                     size_t len, unsigned int flags)
-> > > >  {
-> > > > @@ -2144,7 +2144,7 @@ const struct file_operations fuse_dev_operations = {
-> > > >         .llseek         = no_llseek,
-> > > >         .read           = do_sync_read,
-> > > >         .aio_read       = fuse_dev_read,
-> > > > -       .splice_read    = fuse_dev_splice_read,
-> > > > +       .splice_read    = __splice_p(fuse_dev_splice_read),
-> > > >         .write          = do_sync_write,
-> > > >         .aio_write      = fuse_dev_write,
-> > > >         .splice_write   = fuse_dev_splice_write,
-> > > > diff --git a/include/linux/fs.h b/include/linux/fs.h
-> > > > index a957d43..04c0975 100644
-> > > > --- a/include/linux/fs.h
-> > > > +++ b/include/linux/fs.h
-> > > > @@ -2443,6 +2443,12 @@ extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
-> > > >                         int datasync);
-> > > >  extern void block_sync_page(struct page *page);
-> > > >
-> > > > +#ifdef CONFIG_SYSCALL_SPLICE
-> > > > +#define __splice_p(x) x
-> > > > +#else
-> > > > +#define __splice_p(x) NULL
-> > > > +#endif
-> > > > +
-> > > 
-> > > This needs to go into a different patch.
-> > > One logical change per patch please. :-)
-> > 
-> > Easy enough to merge this one into the patch introducing
-> > CONFIG_SYSCALL_SPLICE, then.
-> > 
-> > - Josh Triplett
-> 
-> The patch introducing CONFIG_SYSCALL_SPLICE (PATCH 3) only compiles out the
-> syscalls. PATCH 6 on the other hand, compiles out fs/splice.c. This patch
-> allows fs/fuse to be compiled when fs/splice.c is compiled out. If I am to
-> squash it, it would be logical to include it in PATCH 6, not 3.
+On Wed, Nov 19, 2014 at 11:46 AM, Antonio Borneo
+<borneo.antonio@gmail.com> wrote:
+> From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+>
+> Current driver uses a common buffer for reading reports either
+> synchronously in i2c_hid_get_raw_report() and asynchronously in
+> the interrupt handler.
+> There is race condition if an interrupt arrives immediately after
+> the report is received in i2c_hid_get_raw_report(); the common
+> buffer is modified by the interrupt handler with the new report
+> and then i2c_hid_get_raw_report() proceed using wrong data.
+>
+> Fix it by using a separate buffers for synchronous reports.
+>
+> Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+> [Antonio Borneo: cleanup, rebase to v3.17, submit mainline]
+> Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
+> Cc: stable@vger.kernel.org
+> ---
+> V1 -> V2
+>         rename the synchronous buffer as rawbuf (instead of the
+>         asynchronous one)
 
-The suggestion wasn't to move the fs/fuse/dev.c bits; those should
-definitely stay in this patch.  The suggestion was just to move the bit
-of the patch defining __splice_p from this patch to patch 3.  (Note that
-you need to define it before you use it, so it can't go in patch 6.)
+Sorry for the lag and thanks for resubmitting.
 
-- Josh Triplett
+This one is reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+
+Cheers,
+Benjamin
+
+>
+>  drivers/hid/i2c-hid/i2c-hid.c | 12 ++++++++----
+>  1 file changed, 8 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+> index 933bf10..c66e6ac 100644
+> --- a/drivers/hid/i2c-hid/i2c-hid.c
+> +++ b/drivers/hid/i2c-hid/i2c-hid.c
+> @@ -137,6 +137,7 @@ struct i2c_hid {
+>                                                    * descriptor. */
+>         unsigned int            bufsize;        /* i2c buffer size */
+>         char                    *inbuf;         /* Input buffer */
+> +       char                    *rawbuf;        /* Raw Input buffer */
+>         char                    *cmdbuf;        /* Command buffer */
+>         char                    *argsbuf;       /* Command arguments buffer */
+>
+> @@ -504,9 +505,11 @@ static void i2c_hid_find_max_report(struct hid_device *hid, unsigned int type,
+>  static void i2c_hid_free_buffers(struct i2c_hid *ihid)
+>  {
+>         kfree(ihid->inbuf);
+> +       kfree(ihid->rawbuf);
+>         kfree(ihid->argsbuf);
+>         kfree(ihid->cmdbuf);
+>         ihid->inbuf = NULL;
+> +       ihid->rawbuf = NULL;
+>         ihid->cmdbuf = NULL;
+>         ihid->argsbuf = NULL;
+>         ihid->bufsize = 0;
+> @@ -522,10 +525,11 @@ static int i2c_hid_alloc_buffers(struct i2c_hid *ihid, size_t report_size)
+>                        report_size; /* report */
+>
+>         ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
+> +       ihid->rawbuf = kzalloc(report_size, GFP_KERNEL);
+>         ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
+>         ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
+>
+> -       if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
+> +       if (!ihid->inbuf || !ihid->rawbuf || !ihid->argsbuf || !ihid->cmdbuf) {
+>                 i2c_hid_free_buffers(ihid);
+>                 return -ENOMEM;
+>         }
+> @@ -552,12 +556,12 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
+>
+>         ret = i2c_hid_get_report(client,
+>                         report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
+> -                       report_number, ihid->inbuf, ask_count);
+> +                       report_number, ihid->rawbuf, ask_count);
+>
+>         if (ret < 0)
+>                 return ret;
+>
+> -       ret_count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
+> +       ret_count = ihid->rawbuf[0] | (ihid->rawbuf[1] << 8);
+>
+>         if (ret_count <= 2)
+>                 return 0;
+> @@ -566,7 +570,7 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
+>
+>         /* The query buffer contains the size, dropping it in the reply */
+>         count = min(count, ret_count - 2);
+> -       memcpy(buf, ihid->inbuf + 2, count);
+> +       memcpy(buf, ihid->rawbuf + 2, count);
+>
+>         return count;
+>  }
+> --
+> 2.1.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
