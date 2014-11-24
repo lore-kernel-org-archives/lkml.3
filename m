@@ -1,294 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967AbaKXUWJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:22:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49181 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832AbaKXUWF (ORCPT
+	id S1755014AbaKXUWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:22:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55297 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaKXUWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:22:05 -0500
-Date: Sun, 23 Nov 2014 10:13:22 -0800
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-aeeb59657c35da64068336c20068da237f41ab76@git.kernel.org>
-Cc: matthias.bgg@gmail.com, hpa@zytor.com, agordeev@redhat.com,
-        tglx@linutronix.de, mingo@kernel.org, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org, bp@alien8.de, grant.likely@linaro.org,
-        tony.luck@intel.com, yingjoe.chen@mediatek.com, marc.zyngier@arm.com,
-        jiang.liu@linux.intel.com, wangyijing@huawei.com
-Reply-To: agordeev@redhat.com, tglx@linutronix.de, matthias.bgg@gmail.com,
-        hpa@zytor.com, yingjoe.chen@mediatek.com, marc.zyngier@arm.com,
-        jiang.liu@linux.intel.com, wangyijing@huawei.com, bhelgaas@google.com,
-        mingo@kernel.org, linux-kernel@vger.kernel.org, bp@alien8.de,
-        tony.luck@intel.com, grant.likely@linaro.org
-In-Reply-To: <1416061447-9472-8-git-send-email-jiang.liu@linux.intel.com>
-References: <1416061447-9472-8-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/irqdomain] genirq:
-  Provide default callbacks for msi_domain_ops
-Git-Commit-ID: aeeb59657c35da64068336c20068da237f41ab76
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 24 Nov 2014 15:22:15 -0500
+Date: Mon, 24 Nov 2014 12:22:14 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: josh@joshtriplett.org
+Cc: Pieter Smith <pieter@boesman.nl>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Bertrand Jacquin <beber@meleeweb.net>, Oleg Nesterov <oleg@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Eric Dumazet <edumazet@google.com>,
+        =?utf-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
+        Jeff Layton <jlayton@poochiereds.net>,
+        Tom Herbert <therbert@google.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, Peter Foley <pefoley2@pefoley.com>,
+        Hugh Dickins <hughd@google.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mel Gorman <mgorman@suse.de>, Matt Turner <mattst88@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Catalina Mocanu <catalina.mocanu@gmail.com>,
+        Fabian Frederick <fabf@skynet.be>, Thomas Graf <tgraf@suug.ch>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jan Beulich <JBeulich@suse.com>, Willem de Bruijn <willemb@google.com>,
+        Iulia Manda <iulia.manda21@gmail.com>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [fuse-devel] [PATCH 4/6] fs/fuse: support compiling out splice
+Message-ID: <20141124202214.GA11362@kroah.com>
+References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
+ <1416752468-1626-5-git-send-email-pieter@boesman.nl>
+ <CAFLxGvxq3Mr9n8xMO_fPZDhrGmBh=WKyU0+RF13JBdjssX6qfw@mail.gmail.com>
+ <20141123232302.GA12456@thin>
+ <20141124094931.GA1055@smipidev>
+ <20141124160510.GA2446@jtriplet-mobl1>
+ <20141124193412.GB31618@kroah.com>
+ <20141124201450.GA18776@cloud>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20141124201450.GA18776@cloud>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  aeeb59657c35da64068336c20068da237f41ab76
-Gitweb:     http://git.kernel.org/tip/aeeb59657c35da64068336c20068da237f41ab76
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Sat, 15 Nov 2014 22:24:05 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sun, 23 Nov 2014 13:01:47 +0100
+On Mon, Nov 24, 2014 at 12:14:50PM -0800, josh@joshtriplett.org wrote:
+> > I would, again, argue that stuff like __splice_p() not be implemented at
+> > all please.  It will only cause a huge proliferation of stuff like this
+> > that will not make any sense, and only cause a trivial, if any, amount
+> > of code savings.
+> > 
+> > I thought you were going to not do this type of thing until you got the
+> > gcc optimizer working for function callbacks.
+> 
+> Compared to the previous patchset, there are now only two instances of
+> ifdefs outside of the splice code for this, and this is one of them.  In
+> this case, the issue is no longer about making the code for this
+> splice_read function disappear, but rather to eliminate a reference to a
+> bit of splice functionality (used *inside* the FUSE splice code) that
+> will not work without SPLICE_SYSCALL.
+> 
+> Would you prefer to see this specific case handled via an #ifdef in
+> fs/fuse/dev.c rather than introducing a __splice_p that people might be
+> inclined to propagate?  That'd be fine; the code could simply wrap
+> fuse_dev_splice_read in an #ifdef and have the #else define a NULL
+> fuse_dev_splice_read.
 
-genirq: Provide default callbacks for msi_domain_ops
+Yes, I would prefer that, but I'm not the fuse maintainer.
 
-Extend struct msi_domain_info and provide default callbacks for
-msi_domain_ops.
+thanks,
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Yijing Wang <wangyijing@huawei.com>
-Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Link: http://lkml.kernel.org/r/1416061447-9472-8-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/msi.h |  42 +++++++++++++++++---
- kernel/irq/msi.c    | 111 ++++++++++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 140 insertions(+), 13 deletions(-)
-
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 7a93a98..0098e2c 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -116,6 +116,7 @@ struct msi_controller {
- 
- #ifdef CONFIG_GENERIC_MSI_IRQ_DOMAIN
- 
-+#include <linux/irqhandler.h>
- #include <asm/msi.h>
- 
- struct irq_domain;
-@@ -142,11 +143,12 @@ struct msi_domain_info;
-  * interfaces which are based on msi_desc.
-  */
- struct msi_domain_ops {
--	irq_hw_number_t	(*get_hwirq)(struct msi_domain_info *info, void *arg);
-+	irq_hw_number_t	(*get_hwirq)(struct msi_domain_info *info,
-+				     msi_alloc_info_t *arg);
- 	int		(*msi_init)(struct irq_domain *domain,
- 				    struct msi_domain_info *info,
- 				    unsigned int virq, irq_hw_number_t hwirq,
--				    void *arg);
-+				    msi_alloc_info_t *arg);
- 	void		(*msi_free)(struct irq_domain *domain,
- 				    struct msi_domain_info *info,
- 				    unsigned int virq);
-@@ -165,16 +167,46 @@ struct msi_domain_ops {
- 
- /**
-  * struct msi_domain_info - MSI interrupt domain data
-- * @ops:	The callback data structure
-- * @chip:	The associated interrupt chip
-- * @data:	Domain specific data
-+ * @flags:		Flags to decribe features and capabilities
-+ * @ops:		The callback data structure
-+ * @chip:		Optional: associated interrupt chip
-+ * @chip_data:		Optional: associated interrupt chip data
-+ * @handler:		Optional: associated interrupt flow handler
-+ * @handler_data:	Optional: associated interrupt flow handler data
-+ * @handler_name:	Optional: associated interrupt flow handler name
-+ * @data:		Optional: domain specific data
-  */
- struct msi_domain_info {
-+	u32			flags;
- 	struct msi_domain_ops	*ops;
- 	struct irq_chip		*chip;
-+	void			*chip_data;
-+	irq_flow_handler_t	handler;
-+	void			*handler_data;
-+	const char		*handler_name;
- 	void			*data;
- };
- 
-+/* Flags for msi_domain_info */
-+enum {
-+	/*
-+	 * Init non implemented ops callbacks with default MSI domain
-+	 * callbacks.
-+	 */
-+	MSI_FLAG_USE_DEF_DOM_OPS	= (1 << 0),
-+	/*
-+	 * Init non implemented chip callbacks with default MSI chip
-+	 * callbacks.
-+	 */
-+	MSI_FLAG_USE_DEF_CHIP_OPS	= (1 << 1),
-+	/* Build identity map between hwirq and irq */
-+	MSI_FLAG_IDENTITY_MAP		= (1 << 2),
-+	/* Support multiple PCI MSI interrupts */
-+	MSI_FLAG_MULTI_PCI_MSI		= (1 << 3),
-+	/* Support PCI MSIX interrupts */
-+	MSI_FLAG_PCI_MSIX		= (1 << 4),
-+};
-+
- int msi_domain_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 			    bool force);
- 
-diff --git a/kernel/irq/msi.c b/kernel/irq/msi.c
-index 23111aa..d0fe84d 100644
---- a/kernel/irq/msi.c
-+++ b/kernel/irq/msi.c
-@@ -9,6 +9,8 @@
-  * This file contains common code to support Message Signalled Interrupt for
-  * PCI compatible and non PCI compatible devices.
-  */
-+#include <linux/types.h>
-+#include <linux/device.h>
- #include <linux/irq.h>
- #include <linux/irqdomain.h>
- #include <linux/msi.h>
-@@ -110,23 +112,112 @@ static struct irq_domain_ops msi_domain_ops = {
- 	.deactivate	= msi_domain_deactivate,
- };
- 
-+#ifdef GENERIC_MSI_DOMAIN_OPS
-+static irq_hw_number_t msi_domain_ops_get_hwirq(struct msi_domain_info *info,
-+						msi_alloc_info_t *arg)
-+{
-+	return arg->hwirq;
-+}
-+
-+static int msi_domain_ops_prepare(struct irq_domain *domain, struct device *dev,
-+				  int nvec, msi_alloc_info_t *arg)
-+{
-+	memset(arg, 0, sizeof(*arg));
-+	return 0;
-+}
-+
-+static void msi_domain_ops_set_desc(msi_alloc_info_t *arg,
-+				    struct msi_desc *desc)
-+{
-+	arg->desc = desc;
-+}
-+#else
-+#define msi_domain_ops_get_hwirq	NULL
-+#define msi_domain_ops_prepare		NULL
-+#define msi_domain_ops_set_desc		NULL
-+#endif /* !GENERIC_MSI_DOMAIN_OPS */
-+
-+static int msi_domain_ops_init(struct irq_domain *domain,
-+			       struct msi_domain_info *info,
-+			       unsigned int virq, irq_hw_number_t hwirq,
-+			       msi_alloc_info_t *arg)
-+{
-+	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, info->chip,
-+				      info->chip_data);
-+	if (info->handler && info->handler_name) {
-+		__irq_set_handler(virq, info->handler, 0, info->handler_name);
-+		if (info->handler_data)
-+			irq_set_handler_data(virq, info->handler_data);
-+	}
-+	return 0;
-+}
-+
-+static int msi_domain_ops_check(struct irq_domain *domain,
-+				struct msi_domain_info *info,
-+				struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static struct msi_domain_ops msi_domain_ops_default = {
-+	.get_hwirq	= msi_domain_ops_get_hwirq,
-+	.msi_init	= msi_domain_ops_init,
-+	.msi_check	= msi_domain_ops_check,
-+	.msi_prepare	= msi_domain_ops_prepare,
-+	.set_desc	= msi_domain_ops_set_desc,
-+};
-+
-+static void msi_domain_update_dom_ops(struct msi_domain_info *info)
-+{
-+	struct msi_domain_ops *ops = info->ops;
-+
-+	if (ops == NULL) {
-+		info->ops = &msi_domain_ops_default;
-+		return;
-+	}
-+
-+	if (ops->get_hwirq == NULL)
-+		ops->get_hwirq = msi_domain_ops_default.get_hwirq;
-+	if (ops->msi_init == NULL)
-+		ops->msi_init = msi_domain_ops_default.msi_init;
-+	if (ops->msi_check == NULL)
-+		ops->msi_check = msi_domain_ops_default.msi_check;
-+	if (ops->msi_prepare == NULL)
-+		ops->msi_prepare = msi_domain_ops_default.msi_prepare;
-+	if (ops->set_desc == NULL)
-+		ops->set_desc = msi_domain_ops_default.set_desc;
-+}
-+
-+static void msi_domain_update_chip_ops(struct msi_domain_info *info)
-+{
-+	struct irq_chip *chip = info->chip;
-+
-+	BUG_ON(!chip);
-+	if (!chip->irq_mask)
-+		chip->irq_mask = pci_msi_mask_irq;
-+	if (!chip->irq_unmask)
-+		chip->irq_unmask = pci_msi_unmask_irq;
-+	if (!chip->irq_set_affinity)
-+		chip->irq_set_affinity = msi_domain_set_affinity;
-+}
-+
- /**
-  * msi_create_irq_domain - Create a MSI interrupt domain
-  * @of_node:	Optional device-tree node of the interrupt controller
-  * @info:	MSI domain info
-  * @parent:	Parent irq domain
-  */
--struct irq_domain *msi_create_irq_domain(struct device_node *of_node,
-+struct irq_domain *msi_create_irq_domain(struct device_node *node,
- 					 struct msi_domain_info *info,
- 					 struct irq_domain *parent)
- {
--	struct irq_domain *domain;
-+	if (info->flags & MSI_FLAG_USE_DEF_DOM_OPS)
-+		msi_domain_update_dom_ops(info);
-+	if (info->flags & MSI_FLAG_USE_DEF_CHIP_OPS)
-+		msi_domain_update_chip_ops(info);
- 
--	domain = irq_domain_add_tree(of_node, &msi_domain_ops, info);
--	if (domain)
--		domain->parent = parent;
--
--	return domain;
-+	return irq_domain_add_hierarchy(parent, 0, 0, node, &msi_domain_ops,
-+					info);
- }
- 
- /**
-@@ -155,8 +246,12 @@ int msi_domain_alloc_irqs(struct irq_domain *domain, struct device *dev,
- 
- 	for_each_msi_entry(desc, dev) {
- 		ops->set_desc(&arg, desc);
-+		if (info->flags & MSI_FLAG_IDENTITY_MAP)
-+			virq = (int)ops->get_hwirq(info, &arg);
-+		else
-+			virq = -1;
- 
--		virq = __irq_domain_alloc_irqs(domain, -1, desc->nvec_used,
-+		virq = __irq_domain_alloc_irqs(domain, virq, desc->nvec_used,
- 					       dev_to_node(dev), &arg, false);
- 		if (virq < 0) {
- 			ret = -ENOSPC;
+greg k-h
