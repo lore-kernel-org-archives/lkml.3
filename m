@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548AbaKXOmj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:42:39 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38001 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754375AbaKXOfl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:35:41 -0500
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Catalin marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Robert Richter <robert.richter@caviumnetworks.com>,
-        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-Subject: [PATCH v3 01/13] arm64: PCI/MSI: Use asm-generic/msi.h
-Date: Mon, 24 Nov 2014 14:35:08 +0000
-Message-Id: <1416839720-18400-2-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
-References: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
+	id S1754555AbaKXOmv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:42:51 -0500
+Received: from host.manna.ro ([74.200.89.108]:42973 "EHLO host.cashmatters.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753361AbaKXOmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 09:42:49 -0500
+X-Greylist: delayed 5015 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Nov 2014 09:42:49 EST
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Mon, 24 Nov 2014 08:14:27 -0500
+From: lamirada@cashmatters.com
+To: undisclosed-recipients:;
+Subject: Vinder No. 009
+Reply-To: msoftagencynl@gmail.com
+Mail-Reply-To: msoftagencynl@gmail.com
+Message-ID: <9cba0eea5702ca8c1f1b6a890efd46d7@cashmatters.com>
+User-Agent: Roundcube Webmail/0.9.5
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host.cashmatters.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - cashmatters.com
+X-Get-Message-Sender-Via: host.cashmatters.com: authenticated_id: lamirada@cashmatters.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to support CONFIG_GENERIC_MSI_IRQ_DOMAIN, we need to
-define msi_alloc_info_t. As the generic version exposed in
-asm-generic/msi.h is perfectly convenient, import this file
-as asm/msi.h.
+Vinder No. 009,
 
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
----
- arch/arm64/include/asm/Kbuild | 1 +
- 1 file changed, 1 insertion(+)
+Det er indlysende, at denne meddelelse vil komme til dig som en 
+overraskelse, men du finde tid til at læse det omhyggeligt, som vi 
+lykønsker dig over din succes i følgende officielle offentliggørelse af 
+resultaterne af e-mail elektroniske online-konkurrencer arrangeret af 
+Microsoft Corporation, sammenholdt med grundlaget for fremme af software 
+produkter, (FPS) afholdt i Amsterdam-Holland.
 
-diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
-index dc770bd..e315bd8 100644
---- a/arch/arm64/include/asm/Kbuild
-+++ b/arch/arm64/include/asm/Kbuild
-@@ -28,6 +28,7 @@ generic-y += local64.h
- generic-y += mcs_spinlock.h
- generic-y += mman.h
- generic-y += msgbuf.h
-+generic-y += msi.h
- generic-y += mutex.h
- generic-y += pci.h
- generic-y += pci-bridge.h
--- 
-2.1.3
+En betaling på 815.810.00 euro (otte hundrede og femten tusinde, otte 
+hundrede og kun ti euro) vil blive udbetalt i dit navn.
 
+Det er vigtigt at bemærke, at din tildeling blev frigivet med følgende 
+oplysninger, der er knyttet til den.
+
+(1) Fil nummer: MS1267-2014
+(2) Tilskud nummer: MIWT / 11846563459/266
+(3) Ref. Kode: KB23 / 857 / MCL5 / CO
+
+Videresend Ovenstående oplysninger, jf til Microsoft Agency NL.
+
+Microsoft Group Agency NL:
+Instruktør: Dr.David Bengal
+Kontakt E-mail: msoftagencynl@gmail.com
+
+Snart som ovenstående oplysninger er modtaget via e-mail til: 
+msoftagencynl@gmail.com , vil din betaling blive behandlet og udbetalt 
+til dig.
+
+Med venlig hilsen
+Mrs. Angela Banks
