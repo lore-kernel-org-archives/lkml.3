@@ -1,211 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650AbaKXCrQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 21:47:16 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57271 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090AbaKXCrO (ORCPT
+	id S1751887AbaKXCrw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 21:47:52 -0500
+Received: from mga11.intel.com ([192.55.52.93]:41186 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750989AbaKXCru convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 21:47:14 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 24 Nov 2014 11:50:07 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>, Dave Hansen <dave@sr71.net>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/7] mm/page_ext: resurrect struct page extending code
- for debugging
-Message-ID: <20141124025007.GA10828@js1304-P5Q-DELUXE>
-References: <1416557646-21755-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1416557646-21755-2-git-send-email-iamjoonsoo.kim@lge.com>
- <20141121153731.b68bd8f0240a2eccb142e864@linux-foundation.org>
+	Sun, 23 Nov 2014 21:47:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="420602238"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Lv Zheng (zetalog@gmail.com)" <zetalog@gmail.com>
+Subject: RE: [UPDATE RFC PATCH 2] ACPICA: Events: Introduce
+ ACPI_GPE_HANDLER_RAW to fix 2 issues for the current GPE APIs.
+Thread-Topic: [UPDATE RFC PATCH 2] ACPICA: Events: Introduce
+ ACPI_GPE_HANDLER_RAW to fix 2 issues for the current GPE APIs.
+Thread-Index: AQHQBSYhRzlAGri28kme8Fqqv9om0ZxqQxMwgAA9RACABIXEoA==
+Date: Mon, 24 Nov 2014 02:47:45 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88026A46B1@SHSMSX101.ccr.corp.intel.com>
+References: <1416531434-3454-1-git-send-email-lv.zheng@intel.com>
+ <1AE640813FDE7649BE1B193DEA596E88026A417D@SHSMSX101.ccr.corp.intel.com>
+ <20141121124048.GA17006@node.dhcp.inet.fi>
+In-Reply-To: <20141121124048.GA17006@node.dhcp.inet.fi>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141121153731.b68bd8f0240a2eccb142e864@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 03:37:31PM -0800, Andrew Morton wrote:
-> On Fri, 21 Nov 2014 17:14:00 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+Hi,
+
+Adding people that were disturbed by my fault previously.
+
+You should also reply in the same thread with this validation result.
+As we might need this to be the motivation for the proposal that the GPE dead lock issue should be fixed in a higher priority way.
+I've reported this at:
+https://bugs.acpica.org/show_bug.cgi?id=1100
+
+Thanks and best regards
+-Lv
+
+> From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
+> Sent: Friday, November 21, 2014 8:41 PM
 > 
-> > When we debug something, we'd like to insert some information to
-> > every page. For this purpose, we sometimes modify struct page itself.
-> > But, this has drawbacks. First, it requires re-compile. This makes us
-> > hesitate to use the powerful debug feature so development process is
-> > slowed down. And, second, sometimes it is impossible to rebuild the kernel
-> > due to third party module dependency. At third, system behaviour would be
-> > largely different after re-compile, because it changes size of struct
-> > page greatly and this structure is accessed by every part of kernel.
-> > Keeping this as it is would be better to reproduce errornous situation.
-> > 
-> > This feature is intended to overcome above mentioned problems. This feature
-> > allocates memory for extended data per page in certain place rather than
-> > the struct page itself. This memory can be accessed by the accessor
-> > functions provided by this code. During the boot process, it checks whether
-> > allocation of huge chunk of memory is needed or not. If not, it avoids
-> > allocating memory at all. With this advantage, we can include this feature
-> > into the kernel in default and can avoid rebuild and solve related problems.
-> > 
-> > Until now, memcg uses this technique. But, now, memcg decides to embed
-> > their variable to struct page itself and it's code to extend struct page
-> > has been removed. I'd like to use this code to develop debug feature,
-> > so this patch resurrect it.
-> > 
-> > To help these things to work well, this patch introduces two callbacks
-> > for clients. One is the need callback which is mandatory if user wants
-> > to avoid useless memory allocation at boot-time. The other is optional,
-> > init callback, which is used to do proper initialization after memory
-> > is allocated. Detailed explanation about purpose of these functions is
-> > in code comment. Please refer it.
-> > 
-> > Others are completely same with previous extension code in memcg.
+> On Fri, Nov 21, 2014 at 01:05:40AM +0000, Zheng, Lv wrote:
+> > Hi, Kirill
 > >
-> > ...
+> > Please help to check again to use the updated patch.
+> > Sorry for my mistake.
 > >
-> > +static bool __init invoke_need_callbacks(void)
-> > +{
-> > +	int i;
-> > +	int entries = ARRAY_SIZE(page_ext_ops);
-> > +
-> > +	for (i = 0; i < entries; i++) {
-> > +		if (page_ext_ops[i]->need && page_ext_ops[i]->need())
-> > +			return true;
-> > +	}
-> > +
-> > +	return false;
-> > +}
-> > +
-> > +static void __init invoke_init_callbacks(void)
-> > +{
-> > +	int i;
-> > +	int entries = sizeof(page_ext_ops) / sizeof(page_ext_ops[0]);
-> 
-> ARRAY_SIZE()
-
-Oops... Sorry. I will fix it.
-
-> 
-> > +	for (i = 0; i < entries; i++) {
-> > +		if (page_ext_ops[i]->init)
-> > +			page_ext_ops[i]->init();
-> > +	}
-> > +}
-> > +
+> > I originally used a patch that will unlock before invoking all handlers.
+> > But as requested by maintainers, the new ACPICA part will use a ACPI_GPE_HANDLER_RAW flag, and I updated my patch in a hurry
+> for you without updating the ec.c.
 > >
-> > ...
-> >
-> > +void __init page_ext_init_flatmem(void)
-> > +{
-> > +
-> > +	int nid, fail;
-> > +
-> > +	if (!invoke_need_callbacks)
-> > +		return;
-> > +
-> > +	for_each_online_node(nid)  {
-> > +		fail = alloc_node_page_ext(nid);
-> > +		if (fail)
-> > +			goto fail;
-> > +	}
-> > +	pr_info("allocated %ld bytes of page_ext\n", total_usage);
-> > +	invoke_init_callbacks();
-> > +	return;
-> > +
-> > +fail:
-> > +	pr_crit("allocation of page_ext failed.\n");
-> > +	panic("Out of memory");
+> > It's my fault.
+> > I can also do some local confirmation before disturbing you.
+> > Could you tell me how can I reproduce this?
 > 
-> Did we really need to panic the machine?  The situation should be
-> pretty easily recoverable by disabling the clients.  I guess it's OK as
-> long as page_ext is being used for kernel developer debug things.
-
-I think that panic() would be better. If the feature is disabled silently
-or with some printk output, user can't easily notice that situation
-and will try to do real work for debugging. This would waste user's time
-so panic() looks better to me.
-
-> > +}
-> > +
-> 
-> We'll need this to fix the build.  I'll queue it up.
-
-Thank you!
-
-> 
-> 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: include/linux/kmemleak.h: needs slab.h
-> 
-> include/linux/kmemleak.h: In function 'kmemleak_alloc_recursive':
-> include/linux/kmemleak.h:43: error: 'SLAB_NOLEAKTRACE' undeclared (first use in this function)
-> 
-> --- a/include/linux/kmemleak.h~include-linux-kmemleakh-needs-slabh
-> +++ a/include/linux/kmemleak.h
-> @@ -21,6 +21,8 @@
->  #ifndef __KMEMLEAK_H
->  #define __KMEMLEAK_H
->  
-> +#include <linux/slab.h>
-> +
->  #ifdef CONFIG_DEBUG_KMEMLEAK
->  
->  extern void kmemleak_init(void) __ref;
-> 
-> 
-> 
-> And here are a couple of tweaks for this patch:
-
-Okay. I will include below changes in next spin.
-
-Thanks.
-
-> 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: mm-page_ext-resurrect-struct-page-extending-code-for-debugging-fix
-> 
-> use ARRAY_SIZE, clean up 80-col tricks
-> 
-> --- a/mm/page_ext.c~mm-page_ext-resurrect-struct-page-extending-code-for-debugging-fix
-> +++ a/mm/page_ext.c
-> @@ -71,7 +71,7 @@ static bool __init invoke_need_callbacks
->  static void __init invoke_init_callbacks(void)
->  {
->  	int i;
-> -	int entries = sizeof(page_ext_ops) / sizeof(page_ext_ops[0]);
-> +	int entries = ARRAY_SIZE(page_ext_ops);
->  
->  	for (i = 0; i < entries; i++) {
->  		if (page_ext_ops[i]->init)
-> @@ -81,7 +81,6 @@ static void __init invoke_init_callbacks
->  
->  #if !defined(CONFIG_SPARSEMEM)
->  
-> -
->  void __meminit pgdat_page_ext_init(struct pglist_data *pgdat)
->  {
->  	pgdat->node_page_ext = NULL;
-> @@ -232,8 +231,9 @@ static void free_page_ext(void *addr)
->  		vfree(addr);
->  	} else {
->  		struct page *page = virt_to_page(addr);
-> -		size_t table_size =
-> -			sizeof(struct page_ext) * PAGES_PER_SECTION;
-> +		size_t table_size;
-> +
-> +		table_size = sizeof(struct page_ext) * PAGES_PER_SECTION;
->  
->  		BUG_ON(PageReserved(page));
->  		free_pages_exact(addr, table_size);
+> This one seems works
 > 
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>  Kirill A. Shutemov
