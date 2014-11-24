@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760AbaKXH26 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 02:28:58 -0500
-Received: from ozlabs.org ([103.22.144.67]:55579 "EHLO ozlabs.org"
+	id S1752787AbaKXHbb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 02:31:31 -0500
+Received: from ozlabs.org ([103.22.144.67]:42605 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752348AbaKXH25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 02:28:57 -0500
-Date: Mon, 24 Nov 2014 18:28:49 +1100
+	id S1752535AbaKXHb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 02:31:29 -0500
+Date: Mon, 24 Nov 2014 18:31:22 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Stephen Warren <swarren@nvidia.com>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Thierry Reding <treding@nvidia.com>
+To: Greg KH <greg@kroah.com>, Mauro Carvalho Chehab <mchehab@infradead.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: linux-next: manual merge of the driver-core tree with the tegra
+        Wolfram Sang <wsa@the-dreams.de>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: linux-next: manual merge of the driver-core tree with the v4l-dvb
  tree
-Message-ID: <20141124182849.185fd5d6@canb.auug.org.au>
+Message-ID: <20141124183122.4f318d48@canb.auug.org.au>
 X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/XrWHbgS9nsKoEbuPbzlZdiY"; protocol="application/pgp-signature"
+ boundary="Sig_/XOX+OO=RtEl8a92mAh4k8GN"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/XrWHbgS9nsKoEbuPbzlZdiY
+--Sig_/XOX+OO=RtEl8a92mAh4k8GN
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
 Hi Greg,
 
 Today's linux-next merge of the driver-core tree got a conflict in
-drivers/memory/tegra30-mc.c between commit a2257374a4bd ("memory: Add
-NVIDIA Tegra memory controller support") from the tegra tree and commit
-0f0d7e7b022b ("memory: drop owner assignment from platform_drivers")
-from the driver-core tree.
+drivers/staging/media/omap24xx/omap24xxcam.c between commit
+db85a0403be4 ("[media] omap24xx/tcm825x: remove deprecated omap2 camera
+drivers") from the v4l-dvb tree and commit 8c5bd8111b45 ("staging:
+media: omap24xx: drop owner assignment from platform_drivers") from the
+driver-core tree.
 
 I fixed it up (the former removed the file, so I did that) and can
 carry the fix as necessary (no action is required).
@@ -43,26 +43,26 @@ carry the fix as necessary (no action is required).
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Sig_/XrWHbgS9nsKoEbuPbzlZdiY
+--Sig_/XOX+OO=RtEl8a92mAh4k8GN
 Content-Type: application/pgp-signature
 Content-Description: OpenPGP digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBCAAGBQJUct43AAoJEMDTa8Ir7ZwVQc4P/jorOe2x7aXt4oZsa+uXh2+s
-Bh2SMKglw8Ln2r519dXv1wdOlCAdm2isfRL5RtcvL0y7jfDB9J4h0KYqvNsyBn0r
-zwa0zkTLmdU8gYHSw9E4jIJUUaozCwRGTI5bWuoZ4/M82o3/WpSX7/0bYsySpwYK
-75HxCJbI60NvwG3N/+N0micXgUzhmtJQfAVhECnpyrwcVu5lB/nhqIy9yV0krzHp
-uRkybamo4bqWWTpgpO2gi/XmmuuwbcVhLsQUtk9y5W44H4gJF0EMkg8fayAtn3qt
-UTB9Q+/6Yw2oKVvY6PVtBURLRKmbS1LKHiovrEarzndUZrr7ZPkcrk3TPHBlUUvG
-k/0Am3cTgMLhCr45U4kh3burwhofTJXtil9fLEMhOPLTWZDTOAT5K1sIfo1xLvzs
-5jDsRkovEiLWHmQH1hFIxuqvBxaeYoK7relrRbYOA0mBRR8hyxDZZqZ9ntZVHkmt
-/dbRvtA39Nj4IcfD/o5oqpmUlN1aZFQzYWosC6xpmsrkNRxAWTXwWYcWK4ldLxy2
-m4dG0uhlPYQzQot2KDS8VehO8sHIWh3rjGxmLdwG6wHWccBjr84C781lL9MrWyHL
-jOz2H62ArjYR+IoYmdYU03kR7+8RjpJpx15yA3ksA6v7nQZ7W1xprpHf9TaxSxqq
-WuU3dT0neXGIWb3stIZJ
-=+jq4
+iQIcBAEBCAAGBQJUct7OAAoJEMDTa8Ir7ZwVSVwP/i4BiU8dBmxELIw19oXVtfbV
+N57T8QHVNWn5yQADND6pEa/KEjos0PirS9NZaiaYN7aYb9/odrjH8lLY68yODET+
+bvaCT7AKUDd3Qi0XkMJYsgnDikgYS3G3yJpF64QvNMeiq8wzkP+EPQJ+Xn9SH93C
+Mu8Ws5fdxdvp044DUf7+5jiV6PtS59DSVov8rhU8LfiokXDJTbIxJ0v8zvlGKulw
+w9WeVljXFiCdbZjapGSM0hh/62kVUtibdMcFaE9g8P6BvXaOyheAfMpWpnoVCbGR
+m9tWzrAe46OO0kJGPF9JeSluZLezToMGEQboaJdT01ZR07YnXJhX/z4G96bAMghm
+v5QmJrWrb7whTm+xqDGY3Xv9H7XSSNrKf7rxlLZyd1QyOkwRNkJF5updfEbUo7gN
+IAn7uP9gvatouw+iyw1knzNrtBB7tlQyJf22MTt61hWptheV3KknqNi4p1kvhnw9
+v7jpU9owo8iImp7niahxzGDR4XWb+oCzPy2ppIUXTvczo4+Jml6q3xeVvMYO3hFn
+Kfj0OqucRadvq22JY8VU/UXFAQARPKio+4SfH9tDPLtvZKPJr227z/RKVRruQKQs
+A2DOwuFg6ctph3iIqc6DULad0vI4+4OHhCIEenyIFnFqL4qL7mhAsBhlQWXZ1fDT
+fFH9eSve/rCnGx8OcrUa
+=WaCc
 -----END PGP SIGNATURE-----
 
---Sig_/XrWHbgS9nsKoEbuPbzlZdiY--
+--Sig_/XOX+OO=RtEl8a92mAh4k8GN--
