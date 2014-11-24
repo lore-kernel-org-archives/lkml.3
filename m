@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346AbaKXKHu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 05:07:50 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:49834 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaKXKHt (ORCPT
+	id S1753032AbaKXKJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 05:09:33 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:44656 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227AbaKXKJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 05:07:49 -0500
-Date: Mon, 24 Nov 2014 10:07:43 +0000
+	Mon, 24 Nov 2014 05:09:31 -0500
+Date: Mon, 24 Nov 2014 10:09:24 +0000
 From: Lee Jones <lee.jones@linaro.org>
-To: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
-Cc: support.opensource@diasemi.com, sameo@linux.intel.com, lgirdwood@gmail.com,
-        broonie@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] mfd: da9063: Get irq base dynamically before
- registering device
-Message-ID: <20141124100743.GB4241@x1>
-References: <1416583748-6622-1-git-send-email-d.lavnikevich@sam-solutions.com>
- <1416583748-6622-2-git-send-email-d.lavnikevich@sam-solutions.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Bryan Wu <cooloney@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 1/1] backlight: lp8788: Deletion of an unnecessary check
+ before the function call "backlight_device_unregister"
+Message-ID: <20141124100924.GC4241@x1>
+References: <530C5E18.1020800@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <54720DEB.4060109@users.sourceforge.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416583748-6622-2-git-send-email-d.lavnikevich@sam-solutions.com>
+In-Reply-To: <54720DEB.4060109@users.sourceforge.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Nov 2014, Dmitry Lavnikevich wrote:
+On Sun, 23 Nov 2014, SF Markus Elfring wrote:
 
-> After registering mfd device with proper irq_base
-> platform_get_irq_byname() calls will return VIRQ instead of local IRQ.
-> This fixes da9063 rtc registration issue:
-> da9063-rtc da9063-rtc: Failed to request ALARM IRQ 1: -22
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Sun, 23 Nov 2014 17:33:08 +0100
+
+What format is this?
+
+Can you use `git format-patch` and `git send-email` instead please?
+ 
+> The backlight_device_unregister() function tests whether its argument is NULL
+> and then returns immediately. Thus the test around the call is not needed.
 > 
-> Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+> This issue was detected by using the Coccinelle software.
+> 
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 > ---
->  drivers/mfd/da9063-core.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-
-Applied, thanks.
-
-> diff --git a/drivers/mfd/da9063-core.c b/drivers/mfd/da9063-core.c
-> index 93db8bb..f38bc98 100644
-> --- a/drivers/mfd/da9063-core.c
-> +++ b/drivers/mfd/da9063-core.c
-> @@ -118,7 +118,7 @@ int da9063_device_init(struct da9063 *da9063, unsigned int irq)
->  		da9063->irq_base = pdata->irq_base;
->  	} else {
->  		da9063->flags = 0;
-> -		da9063->irq_base = 0;
-> +		da9063->irq_base = -1;
->  	}
->  	da9063->chip_irq = irq;
+>  drivers/video/backlight/lp8788_bl.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/lp8788_bl.c b/drivers/video/backlight/lp8788_bl.c
+> index d6c4f6a..24a055c 100644
+> --- a/drivers/video/backlight/lp8788_bl.c
+> +++ b/drivers/video/backlight/lp8788_bl.c
+> @@ -221,8 +221,7 @@ static void lp8788_backlight_unregister(struct lp8788_bl *bl)
+>  {
+>  	struct backlight_device *bl_dev = bl->bl_dev;
 >  
-> @@ -168,6 +168,8 @@ int da9063_device_init(struct da9063 *da9063, unsigned int irq)
->  		return ret;
->  	}
+> -	if (bl_dev)
+> -		backlight_device_unregister(bl_dev);
+> +	backlight_device_unregister(bl_dev);
+>  }
 >  
-> +	da9063->irq_base = regmap_irq_chip_get_base(da9063->regmap_irq);
-> +
->  	ret = mfd_add_devices(da9063->dev, -1, da9063_devs,
->  			      ARRAY_SIZE(da9063_devs), NULL, da9063->irq_base,
->  			      NULL);
+>  static ssize_t lp8788_get_bl_ctl_mode(struct device *dev,
 
 -- 
 Lee Jones
