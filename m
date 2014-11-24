@@ -1,108 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946AbaKXOO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:14:28 -0500
-Received: from mga02.intel.com ([134.134.136.20]:58179 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752749AbaKXOO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:14:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,449,1413270000"; 
-   d="scan'208";a="642577483"
-Message-ID: <54733C7D.2010405@linux.intel.com>
-Date: Mon, 24 Nov 2014 22:11:09 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753712AbaKXOQg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:16:36 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:59760 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005AbaKXOQe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 09:16:34 -0500
+Date: Mon, 24 Nov 2014 15:16:19 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] softirq/preempt: add missing current->preempt_disable_ip
+ update
+Message-ID: <20141124141619.GB3738@osiris>
 MIME-Version: 1.0
-To: "Yun Wu (Abel)" <wuyun.wu@huawei.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 01/16] irqdomain: Introduce new interfaces to support
- hierarchy irqdomains
-References: <20141112133941.647950773@linutronix.de> <20141112134119.881823615@linutronix.de> <547325A9.3000109@huawei.com> <alpine.DEB.2.11.1411241405560.6439@nanos> <54733A4E.8020304@huawei.com>
-In-Reply-To: <54733A4E.8020304@huawei.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112414-0009-0000-0000-0000021D2C6B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/24 22:01, Yun Wu (Abel) wrote:
-> On 2014/11/24 21:13, Thomas Gleixner wrote:
-> 
->> On Mon, 24 Nov 2014, Yun Wu (Abel) wrote:
->>> Hi Thomas, Jiang,
->>> On 2014/11/12 21:42, Thomas Gleixner wrote:
->>>
->>>> From: Jiang Liu <jiang.liu@linux.intel.com>
->>>>
->>> [...]
->>>>  /* Number of irqs reserved for a legacy isa controller */
->>>>  #define NUM_ISA_INTERRUPTS	16
->>>> @@ -64,6 +66,16 @@ struct irq_domain_ops {
->>>>  	int (*xlate)(struct irq_domain *d, struct device_node *node,
->>>>  		     const u32 *intspec, unsigned int intsize,
->>>>  		     unsigned long *out_hwirq, unsigned int *out_type);
->>>> +
->>>> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
->>>> +	/* extended V2 interfaces to support hierarchy irq_domains */
->>>> +	int (*alloc)(struct irq_domain *d, unsigned int virq,
->>>> +		     unsigned int nr_irqs, void *arg);
->>>> +	void (*free)(struct irq_domain *d, unsigned int virq,
->>>> +		     unsigned int nr_irqs);
->>>> +	void (*activate)(struct irq_domain *d, struct irq_data *irq_data);
->>>> +	void (*deactivate)(struct irq_domain *d, struct irq_data *irq_data);
->>>
->>> What's the usage of the parameter domain reference in activate/deactivate?
->>> I think the purpose of the two callbacks is to activate/deactivate the
->>> irq_data->hwirq in irq_data->domain. If so, the first parameter @domain is
->>> required to be equal to irq_data->domain (which makes @domain useless).
->>> Besides, the main responsibility of interrupt domains is to manage mappings
->>> between hardware and linux interrupt numbers, so would it be better if move
->>> the two callbacks into struct irq_chip?
->>
->> No. It's not a function of the irq_chip to activate/deactivate a
->> hierarchy. As I explained you before:
->>
->> The existing irqdomain code maps between hardware and virtual
->> interrupts and thereby activates the interrupt in hardware.
->>
->> In the hierarchical case we do not touch the hardware in the
->> allocation step, so we need to activate the allocated interrupt in the
->> hardware before we can use it. And that's clearly a domain interface
->> not a irq chip issue.
->>
-> 
-> Makes sense, now the interrupt domain seems to be the best place.
-> And when the @domain parameter can be really useful? I haven't see
-> anyone using it so far.
-We will use it for IOAPIC on x86, as below:
-void mp_irqdomain_deactivate(struct irq_domain *domain,
-                             struct irq_data *irq_data)
-{
-        ioapic_mask_entry(mp_irqdomain_ioapic_idx(domain),
-                          (int)irq_data->hwirq);
-}
+While debugging some "sleeping function called from invalid context" bug I
+realized that the debug message "Preemption disabled at:" pointed to an
+incorrect function.
+In particular if the function/action that disabled preemption was
+spin_lock_bh() then current->preempt_disable_ip won't be updated.
 
->From an object oriented point of view, we pass the object as the
-first parameter. It's true that we could retrieve domain from
-irq_data->domain instead of explicitly passing it in, but that
-will cause irqdomain interfaces depends on irq_data, not sounds
-a good situation:)
-Thanks!
-Gerry
-> 
-> Thanks,
-> 	Abel
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+The reason for this is that __local_bh_disable_ip() will increase
+preempt_count manually instead of calling preempt_count_add(), which
+would handle the update correctly.
+It look like the manual handling was done to work around some lockdep issue.
+
+So add the missing update of current->preempt_disable_ip to
+__local_bh_disable_ip() as well.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ kernel/softirq.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 501baa9ac1be..edd51027e3ab 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -114,8 +114,13 @@ void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
+ 		trace_softirqs_off(ip);
+ 	raw_local_irq_restore(flags);
+ 
+-	if (preempt_count() == cnt)
+-		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
++	if (preempt_count() == cnt) {
++		unsigned long ip = get_parent_ip(CALLER_ADDR1);
++#ifdef CONFIG_DEBUG_PREEMPT
++		current->preempt_disable_ip = ip;
++#endif
++		trace_preempt_off(CALLER_ADDR0, ip);
++	}
+ }
+ EXPORT_SYMBOL(__local_bh_disable_ip);
+ #endif /* CONFIG_TRACE_IRQFLAGS */
+-- 
+1.8.5.5
+
