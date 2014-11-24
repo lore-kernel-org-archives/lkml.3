@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983AbaKXROs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 12:14:48 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:57295 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680AbaKXROq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 12:14:46 -0500
-Message-ID: <1416849247.4921.2.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 0/5] MODSIGN: Use PKCS#7 for module signatures
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, mmarek@suse.cz,
-        rusty@rustcorp.com.au, vgoyal@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 24 Nov 2014 12:14:07 -0500
-In-Reply-To: <31431.1416845619@warthog.procyon.org.uk>
-References: <14276.1416833541@warthog.procyon.org.uk>
-	 <5472F806.8000403@samsung.com>
-	 <20141120165351.5264.61930.stgit@warthog.procyon.org.uk>
-	 <546F3742.9010702@samsung.com> <31431.1416845619@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1754276AbaKXRPZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 12:15:25 -0500
+Received: from mout.web.de ([212.227.15.14]:53529 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753808AbaKXRPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 12:15:23 -0500
+Message-ID: <5473679F.1000909@users.sourceforge.net>
+Date: Mon, 24 Nov 2014 18:15:11 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: "James E. J. Bottomley" <JBottomley@parallels.com>,
+        Robert Love <robert.w.love@intel.com>, linux-scsi@vger.kernel.org,
+        fcoe-devel@open-fcoe.org
+CC: kernel-janitors@vger.kernel.org, trivial@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/6] SCSI-libfc: Fix typos for the word "destroy"
+References: <54736422.90409@users.sourceforge.net>
+In-Reply-To: <54736422.90409@users.sourceforge.net>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112417-0025-0000-0000-00000657AD8E
+X-Provags-ID: V03:K0:c7Y+U86vzZlDPjm99+r5ZZU4xTa/+xLreIesQGKM9xPzn3UqoNq
+ GGigmJMj+Oi5u2UFR6CMNS+CIS6KxdNlrEPSBmpSwJbQ2XQiHucB4mInkna7qAZc8/uVVCO
+ Fj5u5K2csi7+mzXcGltVswPQj7VJfJcJswl3pbcqtxDOhLd7Ol/qMFwSbdWYj/6+DAiYsxT
+ qBNHu98/kShiZ3T7wJo5w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-24 at 16:13 +0000, David Howells wrote: 
-> David Howells <dhowells@redhat.com> wrote:
-> 
-> > > Actually after cleaning the tree and re-signing the modules, I get following
-> > > 
-> > > Unrecognized character \x7F; marked by <-- HERE after <-- HERE near
-> > > column 1 at ./scripts/sign-file line 1.
-> > > make[1]: *** [arch/x86/crypto/aes-x86_64.ko] Error 255
-> > 
-> > warthog>grep -r sign-file Makefile 
-> > mod_sign_cmd = perl $(srctree)/scripts/sign-file $(CONFIG_MODULE_SIG_HASH) $(MODSECKEY) $(MODPUBKEY)
-> > 
-> > Because of that.  I need to remove the 'perl' bit.
-> 
-> It's a little more involved than that.  The X.509 cert being passed to the
-> program is binary, whereas the one I've been testing with is PEM encoded - and
-> libssl has separate routines that don't work out for themselves which encoding
-> is in force.  Proposed changes below.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 24 Nov 2014 15:40:41 +0100
 
-With this patch, I'm now able to install and boot the new kernel and
-modules.
+Identifiers were corrected in descriptions for the functions
+fc_fcp_pkt_destroy() and fc_fcp_destroy().
 
-Mimi
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/scsi/libfc/fc_fcp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/libfc/fc_fcp.c b/drivers/scsi/libfc/fc_fcp.c
+index 1d7e76e..5649fc9 100644
+--- a/drivers/scsi/libfc/fc_fcp.c
++++ b/drivers/scsi/libfc/fc_fcp.c
+@@ -191,7 +191,7 @@ static void fc_fcp_pkt_hold(struct fc_fcp_pkt *fsp)
+ }
+ 
+ /**
+- * fc_fcp_pkt_destory() - Release hold on a fcp_pkt
++ * fc_fcp_pkt_destroy() - Release hold on a fcp_pkt
+  * @seq: The sequence that the FCP packet is on (required by destructor API)
+  * @fsp: The FCP packet to be released
+  *
+@@ -2216,7 +2216,7 @@ int fc_change_queue_type(struct scsi_device *sdev, int tag_type)
+ EXPORT_SYMBOL(fc_change_queue_type);
+ 
+ /**
+- * fc_fcp_destory() - Tear down the FCP layer for a given local port
++ * fc_fcp_destroy() - Tear down the FCP layer for a given local port
+  * @lport: The local port that no longer needs the FCP layer
+  */
+ void fc_fcp_destroy(struct fc_lport *lport)
+-- 
+2.1.3
 
