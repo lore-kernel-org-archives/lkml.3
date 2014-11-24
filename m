@@ -1,38 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751036AbaKXVhf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 16:37:35 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:64952 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaKXVhe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 16:37:34 -0500
-Date: Mon, 24 Nov 2014 13:37:31 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-cc: Christoph Lameter <cl@linux.com>, Min-Hua Chen <orca.chen@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] slub: fix confusing error messages in check_slab
-In-Reply-To: <CAPAsAGxbA-3gi+vgoK2NtPM4UOeARw2+5xJtnp1kh8VzrfOHeg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1411241336000.21237@chino.kir.corp.google.com>
-References: <CAHkaATSEn9WMKJNRp5QvzPsno_vddtMXY39yvi=BGtb4M+Hqdw@mail.gmail.com> <alpine.DEB.2.11.1411241117030.8951@gentwo.org> <CAPAsAGxbA-3gi+vgoK2NtPM4UOeARw2+5xJtnp1kh8VzrfOHeg@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1751144AbaKXVi2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 16:38:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35909 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750729AbaKXVi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 16:38:27 -0500
+Date: Mon, 24 Nov 2014 22:38:17 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Aaron Tomlin <atomlin@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] exit/pid_ns: comments + simple fix
+Message-ID: <20141124213817.GA25020@redhat.com>
+References: <20141107201424.GA22209@redhat.com> <20141124200602.GA20575@redhat.com> <87fvd8gugc.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87fvd8gugc.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014, Andrey Ryabinin wrote:
+On 11/24, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > Eric, Pavel, could you review 1/2 ? (documentation only). It is based on the
+> > code inspection, I didn't bother to verify that my understanding matches the
+> > reality ;)
+>
+> Oleg you are being subtle, introducing some gratuitous changes and
+> slightly off base which makes this all very hard to review.
 
-> It's in -mm already
-> http://ozlabs.org/~akpm/mmotm/broken-out/mm-slub-fix-format-mismatches-in-slab_err-callers.patch
+Eric, this doesn't depend on other changes I sent ;)
+
+> Eric
 > 
+> 
+> > On 11/20, Oleg Nesterov wrote:
+> >>
+> >>
+> >> Probably this is not the last series... in particular it seems that we
+> >> have some problems with sys_setns() in this area, but I need to recheck.
+> >
+> > So far only the documentation fix. I'll write another email (hopefully with the
+> > patch), afaics at least setns() doesn't play well with PR_SET_CHILD_SUBREAPER.
+> >
+> > Contrary to what I thought zap_pid_ns_processes() looks fine, but it seems only
+> > by accident. Unless I am totally confused, wait for "nr_hashed == init_pids"
+> > could be removed after 0a01f2cc390e10633a "pidns: Make the pidns proc mount/
+> > umount logic obvious". However, now that setns() + fork() can inject a task
+> > into a child namespace, we need this code again for another reason.
+> >
+> > I _think_ we can actually remove it and simplify free_pid() as well, but lets
+> > discuss this later and fix the wrong/confusing documentation first.
+> >
+> > 2/2 looks "obviously correct", but I'll appreciate your review anyway.
+> >
+> > Oleg.
+> >
+> >  kernel/pid.c           |    7 +++----
+> >  kernel/pid_namespace.c |   23 +++++++++++++++++++----
+> >  2 files changed, 22 insertions(+), 8 deletions(-)
 
-Yeah, and the one in -mm isn't whitespace damaged.  Since the issue has 
-existed for years, I don't think there's any rush in getting this in 3.18.
