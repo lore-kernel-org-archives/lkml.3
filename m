@@ -1,87 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766AbaKXPHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:07:41 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:48992 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753613AbaKXPHj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:07:39 -0500
-Date: Mon, 24 Nov 2014 10:07:27 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
-        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
-        Ingo Molnar <mingo@kernel.org>, Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH ftrace/core v6 5/5] kselftest, ftrace: Add ftrace
- IPMODIFY flag test
-Message-ID: <20141124100727.19531a3b@gandalf.local.home>
-In-Reply-To: <54733C80.6060509@hitachi.com>
-References: <20141121102502.11844.82696.stgit@localhost.localdomain>
-	<20141121102537.11844.9781.stgit@localhost.localdomain>
-	<20141121160329.575fd043@gandalf.local.home>
-	<54729CDE.5030700@hitachi.com>
-	<20141123232932.1ed70d18@gandalf.local.home>
-	<54733C80.6060509@hitachi.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1753867AbaKXPI5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 10:08:57 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54803 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753129AbaKXPIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 10:08:55 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v3 5/7] crypto: AF_ALG: add random number generator support
+Date: Mon, 24 Nov 2014 16:08:51 +0100
+Message-ID: <1924093.6oedGBDXii@tauon>
+User-Agent: KMail/4.14.2 (Linux/3.17.2-200.fc20.x86_64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <20141124143150.GC31469@gondor.apana.org.au>
+References: <4088013.2O8zCP0xXa@tachyon.chronox.de> <2490914.nzfN9gyyGH@tachyon.chronox.de> <20141124143150.GC31469@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014 23:11:12 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
- 
-> So, if your server directory is mounted with noexec, it's an environmental
-> problem. I guess you can not build any kernel drivers on that testbox, can you?
-> 
+Am Montag, 24. November 2014, 22:31:50 schrieb Herbert Xu:
 
-You're right about the noexec, even though my fstab has "exec" in it ??
+Hi Herbert,
 
-I use a custom distcc build to build the kernel, and I don't waste time
-setting up that environment for a testbox, which means I can't build a
-module for the test kernels because it would be using a different
-compiler in that case.
+>On Fri, Nov 21, 2014 at 06:32:52AM +0100, Stephan Mueller wrote:
+>> This patch adds the random number generator support for AF_ALG.
+>> 
+>> A random number generator's purpose is to generate data without
+>> requiring the caller to provide any data. Therefore, the AF_ALG
+>> interface handler for RNGs only implements a callback handler for
+>> recvmsg.
+>> 
+>> The following parameters provided with a recvmsg are processed by the
+>> 
+>> RNG callback handler:
+>>         * sock - to resolve the RNG context data structure accessing
+>>         the
+>>         
+>>           RNG instance private to the socket
+>>         
+>>         * len - this parameter allows userspace callers to specify
+>>         how
+>>         
+>>           many random bytes the RNG shall produce and return. As the
+>>           kernel context for the RNG allocates a buffer of 128 bytes
+>>           to
+>>           store random numbers before copying them to userspace, the
+>>           len
+>>           parameter is checked that it is not larger than 128. If a
+>>           caller wants more random numbers, a new request for recvmsg
+>>           shall be made.
+>> 
+>> The size of 128 bytes is chose because of the following 
+considerations:
+>>         * to increase the memory footprint of the kernel too much
+>>         (note,
+>>         
+>>           that would be 128 bytes per open socket)
+>>         
+>>         * 128 is divisible by any typical cryptographic block size an
+>>         
+>>           RNG may have
+>>         
+>>         * A request for random numbers typically only shall supply
+>>         small
+>>         
+>>           amount of data like for keys or IVs that should only
+>>           require
+>>           one invocation of the recvmsg function.
+>> 
+>> Note, during instantiation of the RNG, the code checks whether the
+>> RNG
+>> implementation requires seeding. If so, the RNG is seeded with output
+>> from get_random_bytes.
+>> 
+>> A fully working example using all aspects of the RNG interface is
+>> provided at http://www.chronox.de/libkcapi.html
+>> 
+>> Signed-off-by: Stephan Mueller <smueller@chronox.de>
+>
+>Sorry but who is going to use this and for what purpose?
+>
+>Every other algif interface exports real hardware features that
+>cannot otherwise be accessed from user-space.  All crypto RNGs
+>are by definition software-only, so what is the point of this?
 
 
-> Anyway, this gives us a good question, "should test binaries be made by
-> server or client(testbox) environment?" This ipmodify driver is a binary
-> and it should be built with the kernel binary (by server) I think.
-> But yes, I missed the Makefile didn't allow that (this always referred
-> installed running kernel builddir).
-> 
-> I hope to have CONFIG_KSELFTEST_BINARIES for Kconfig, or make prep_kselftest
-> target to build these binaries with kernel...
+My idea is twofold: The software-RNGs currently available (X9.31 and 
+DRBG) use other ciphers as backends. Therefore, they can be considered 
+as transforms on top of these backend ciphers. Now, if these backend 
+ciphers are available in kernel mode only, currently only these in-
+kernel RNGs can use the hardware.
 
-Is that what this would need? I would think we could add a
-CONFIG_KSELFTEST_MODULES, that would build any modules needed for
-selftests and have them in /lib/modules just like any other module.
+With the consideration of AEAD, all ciphers supported by the kernel 
+crypto API are available to user space. That means, there is no need for 
+an additional crypto library in user space in addition to provide 
+hardware access. The RNG part is there to complement the case for not 
+needing an additional crypto lib in user space.
 
--- Steve
-
-> 
-> Shuah, what would you think about this?
-> 
-> > make[4]: *** [ipmodify.ko] Error 2
-> > make[3]: *** [sub-make] Error 2
-> > make[2]: *** [__sub-make] Error 2
-> > make[2]: Leaving directory `/home/rostedt/work/git/nobackup/bxtest/trace'
-> > make[1]: *** [ipmodify.ko] Error 2
-> > make[1]: Leaving directory `/work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify'
-> > make: *** [all] Error 2
-> > 
-> > 
-> > Thanks (on my way to bed),
-> 
-> Thank you :),
-> 
-> 
-
+Ciao
+Stephan
