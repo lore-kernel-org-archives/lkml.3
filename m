@@ -1,59 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaKXSsl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:48:41 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:32792 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031AbaKXSsk (ORCPT
+	id S1754240AbaKXSsy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:48:54 -0500
+Received: from www.linutronix.de ([62.245.132.108]:40657 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754135AbaKXSsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:48:40 -0500
-Date: Mon, 24 Nov 2014 19:48:31 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com
-Subject: Re: [PATCH v3 00/41] linux: towards virtio-1 guest support
-Message-ID: <20141124194831.252318e4.cornelia.huck@de.ibm.com>
-In-Reply-To: <1416829787-14252-1-git-send-email-mst@redhat.com>
-References: <1416829787-14252-1-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112418-0041-0000-0000-0000023C5EAA
+	Mon, 24 Nov 2014 13:48:53 -0500
+Date: Mon, 24 Nov 2014 19:48:49 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+cc: Jason Cooper <jason@lakedaemon.net>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [PATCH 3.18-rc3 v8 1/4] irqchip: gic: Make gic_raise_softirq()
+ FIQ-safe
+In-Reply-To: <alpine.DEB.2.11.1411241918090.6439@nanos>
+Message-ID: <alpine.DEB.2.11.1411241928300.6439@nanos>
+References: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org> <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <1415968543-29469-2-git-send-email-daniel.thompson@linaro.org> <alpine.DEB.2.11.1411241918090.6439@nanos>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014 13:52:32 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
-
-> Based on patches by Cornelia Rusty and others, but
-> with an API that should allow better static checking of code,
-> and slightly more concervative changes in vring,net and blk.
+On Mon, 24 Nov 2014, Thomas Gleixner wrote:
+> On Fri, 14 Nov 2014, Daniel Thompson wrote:
+> > diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+> > index 38493ff28fa5..0db62a6f1ee3 100644
+> > --- a/drivers/irqchip/irq-gic.c
+> > +++ b/drivers/irqchip/irq-gic.c
+> > @@ -73,6 +73,13 @@ struct gic_chip_data {
+> >  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+> >  
+> >  /*
+> > + * This lock may be locked for reading by FIQ handlers. Thus although
+> > + * read locking may be used liberally, write locking must only take
+> > + * place only when local FIQ handling is disabled.
+> > + */
+> > +static DEFINE_RWLOCK(fiq_safe_cpu_map_lock);
+> > +
+> > +/*
+> >   * The GIC mapping of CPU interfaces does not necessarily match
+> >   * the logical CPU numbering.  Let's use a mapping as returned
+> >   * by the GIC itself.
+> > @@ -624,7 +631,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+> >  	int cpu;
+> >  	unsigned long flags, map = 0;
+> >  
+> > -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
+> > +	read_lock_irqsave(&fiq_safe_cpu_map_lock, flags);
 > 
-> Based on patches by Cornelia and others, but
-> with an API that should allow better static checking of code,
-> slightly more concervative changes in vring and drivers,
-> and compatibility for existing drivers so that
-> this series be applied before all drivers are converted.
+> Just for the record:
 > 
-> virtio net,blk and scsi drivers have been converted.
-> They now pass sparse without warnings.
-> 
-> net and blk patches have been tested on s390.
+> You might have noticed that you replace a raw lock with a non raw
+> one. That's not an issue on mainline, but that pretty much renders
+> that code broken for RT.
+>   
+> Surely nothing I worry too much about given the current state of RT.
 
-vring_transport_features() seems to knock off the version 1 bit (I
-wonder why I did not see that before, maybe VIRTIO_TRANSPORT_F_END had
-not been increased before?). If I add VIRTIO_F_VERSION_1 in this
-function, virtio-net and virtio-blk seem to work fine with version 1 on
-virtio-ccw (tested with my old virtio-1 qemu branch).
+And having a second thought here. Looking at the protection scope
+independent of the spin vs. rw lock
 
-I'll try to do a bit of reviewing tomorrow.
+gic_raise_softirq()
 
+	lock();
+
+	/* Does not need any protection */
+	for_each_cpu(cpu, mask)
+                map |= gic_cpu_map[cpu];
+
+	/*
+	 * Can be outside the lock region as well as it makes sure
+	 * that previous writes (usually the IPI data) are visible
+	 * before the write to the SOFTINT register.
+	 */
+	 dmb(ishst);
+
+	/* Why needs this protection? */
+	write(map, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT));
+
+	unlock();
+
+gic_migrate_target()
+
+	....
+	lock();
+
+	/* Migrate all peripheral interrupts */
+
+	unlock();
+
+So what's the point of that protection?
+
+gic_raise_softirq() is used to send IPIs, which are PPIs on the target
+CPUs so they are not affected from the migration of the peripheral
+interrupts at all.
+
+The write to the SOFTINT register in gic_migrate_target() is not
+inside the lock region. So what's serialized by the lock in
+gic_raise_softirq() at all?
+
+Either I'm missing something really important here or this locking
+exercise in gic_raise_softirq() and therefor the rwlock conversion is
+completely pointless.
+
+Thanks,
+
+	tglx
