@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032AbaKXKJd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 05:09:33 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:44656 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227AbaKXKJb (ORCPT
+	id S1753301AbaKXKKP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 05:10:15 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:46924 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998AbaKXKKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 05:09:31 -0500
-Date: Mon, 24 Nov 2014 10:09:24 +0000
+	Mon, 24 Nov 2014 05:10:13 -0500
+Date: Mon, 24 Nov 2014 10:10:06 +0000
 From: Lee Jones <lee.jones@linaro.org>
 To: SF Markus Elfring <elfring@users.sourceforge.net>
 Cc: Bryan Wu <cooloney@gmail.com>,
@@ -18,7 +18,7 @@ Cc: Bryan Wu <cooloney@gmail.com>,
         Julia Lawall <julia.lawall@lip6.fr>
 Subject: Re: [PATCH 1/1] backlight: lp8788: Deletion of an unnecessary check
  before the function call "backlight_device_unregister"
-Message-ID: <20141124100924.GC4241@x1>
+Message-ID: <20141124101006.GD4241@x1>
 References: <530C5E18.1020800@users.sourceforge.net>
  <alpine.DEB.2.10.1402251014170.2080@hadrien>
  <530CD2C4.4050903@users.sourceforge.net>
@@ -43,14 +43,12 @@ On Sun, 23 Nov 2014, SF Markus Elfring wrote:
 
 > From: Markus Elfring <elfring@users.sourceforge.net>
 > Date: Sun, 23 Nov 2014 17:33:08 +0100
-
-What format is this?
-
-Can you use `git format-patch` and `git send-email` instead please?
- 
+> 
 > The backlight_device_unregister() function tests whether its argument is NULL
 > and then returns immediately. Thus the test around the call is not needed.
-> 
+
+Also the $SUBJECT should be less than 75 chars.
+
 > This issue was detected by using the Coccinelle software.
 > 
 > Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
