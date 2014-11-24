@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352AbaKXGQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 01:16:46 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:10442 "EHLO
+	id S1752552AbaKXGQy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 01:16:54 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:10491 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130AbaKXGQi (ORCPT
+	with ESMTP id S1752398AbaKXGQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 01:16:38 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-e5-5472cd44e3ef
+	Mon, 24 Nov 2014 01:16:50 -0500
+X-AuditID: cbfee68d-f79296d000004278-67-5472cd509b94
 From: Namjae Jeon <namjae.jeon@samsung.com>
 To: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>
 Cc: linux-fsdevel@vger.kernel.org, linux-ext4 <linux-ext4@vger.kernel.org>,
         xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
         Ashish Sangwan <a.sangwan@samsung.com>
-Subject: [PATCH v6 3/10] ext4: Add support FALLOC_FL_INSERT_RANGE for fallocate
-Date: Mon, 24 Nov 2014 15:16:36 +0900
-Message-id: <002c01d007ae$3395e5b0$9ac1b110$@samsung.com>
+Subject: [PATCH v6 5/10] xfstests: generic/038: Standard insert range tests
+Date: Mon, 24 Nov 2014 15:16:48 +0900
+Message-id: <002e01d007ae$3a8f7b10$afae7130$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAHrG3YCrdc3xXeQBWqz5EsoMIIjA==
+Thread-index: AdAHrOimcfpjb+/xQxKJHnDXlcDGyw==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsWyRsSkWNf1bFGIwXRji6UTLzFbbDl2j9Fi
-	5rw7bBZ79p5ksbi8aw6bRWvPT3aLRX23GB3YPU4tkvBoOnOU2WP1ha2MHn1bVjF6fN4kF8Aa
-	xWWTkpqTWZZapG+XwJXRNnEJc8Gsqoqbv3+wNjAuS+hi5OSQEDCRmDxlHTuELSZx4d56ti5G
-	Lg4hgaWMEpP/9TDDFN1o28YMkVjEKNHw+BArhPOXUeLr1E9AGQ4ONgFtiT9bREEaRARcJebd
-	/c4IUsMMMuni4yeMIAlhAX+Jdd9Pgk1lEVCVOLl3PyuIzStgKdG75RkLhC0o8WPyPTCbWUBL
-	Yv3O40wQtrzE5jVvoS5SkNhx9jUjxDI9ibc7L7JC1IhI7HvxDmyxhMA5domNCz+xQCwTkPg2
-	+RALyKESArISmw5AzZGUOLjiBssERrFZSFbPQrJ6FpLVs5CsWMDIsopRNLUguaA4Kb3ISK84
-	Mbe4NC9dLzk/dxMjMBpP/3vWt4Px5gHrQ4wCHIxKPLwfNhaFCLEmlhVX5h5iNAW6aCKzlGhy
-	PjDm80riDY3NjCxMTUyNjcwtzZTEeROkfgYLCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYJy4
-	LsV9H/szPZGtIYFXLgqz//68bO6+6Qo3/FfvfxUrw7Atz8pd8X7eTEkWx48nerb+feUY2aq3
-	QHQCb/biQt5W0yLLH7vq+1b1O6/yXRvIJjnRKLSO3fWkvo7KEQmjtefncjNl/vjg9nlOUf+L
-	1m0d145fkio6JBuo3xxUnB5bzsl97smUFUosxRmJhlrMRcWJAOYRiPnBAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jAV2Xs0UhBhenG1ssnXiJ2WLLsXuM
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsWyRsSkUDfgbFGIweomDYulEy8xW2w5do/R
+	Yua8O2wWe/aeZLG4vGsOm0Vrz092i0V9txgd2D1OLZLwaDpzlNlj9YWtjB59W1YxenzeJBfA
+	GsVlk5Kak1mWWqRvl8CVMbfrI1vBTf2K41OmsTUwdqh3MXJySAiYSEy+u4IVwhaTuHBvPVsX
+	IxeHkMBSRon5Mw8xwxRdfbSUESKxiFHi0NcrzBDOX0aJLVdPsHcxcnCwCWhL/NkiCtIgIuAq
+	Me/ud7AGZpBJFx8/YQSpERbwlnjxTxekhkVAVeLc5E6wzbwClhJ/l71lgrAFJX5MvscCYjML
+	aEms33mcCcKWl9i85i3UQQoSO86+BhspIqAn8eauBkSJiMS+F+/A1koIXGKXuHDrDxPELgGJ
+	b5MPsYDUSwjISmw6ADVGUuLgihssExjFZiHZPAvJ5llINs9CsmIBI8sqRtHUguSC4qT0IkO9
+	4sTc4tK8dL3k/NxNjMBYPP3vWe8OxtsHrA8xCnAwKvHwfthYFCLEmlhWXJl7iNEU6KKJzFKi
+	yfnAiM8riTc0NjOyMDUxNTYytzRTEudVlPoZLCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFR
+	8eS15fd603qk7kafSI7jmOhw/nOXQACvJ6/d4nL+1e0F91l+Fh2UlCq4urejPCApYcnJLf13
+	BWXYV54rTiqeG3hW/6LC4SKpwPBsz13qrbrdN05UJ5sLrHjA/76+cPXNzkcrRLUXLWrWWyoT
+	qlvAv3nSkaLcLqf9Kt1OVxqmvYxnt/zn1qvEUpyRaKjFXFScCAAIwNaRwAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t9jAd2As0UhBnP/y1ksnXiJ2WLLsXuM
 	FjPn3WGz2LP3JIvF5V1z2Cxae36yWyzqu8XowO5xapGER9OZo8weqy9sZfTo27KK0ePzJrkA
 	1qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoDOU
-	FMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBltE5cwF8yqqrj5+wdrA+Oy
-	hC5GTg4JAROJG23bmCFsMYkL99azdTFycQgJLGKUaHh8iBXC+cso8XXqJ6AqDg42AW2JP1tE
-	QRpEBFwl5t39zghSwyywlFHi4uMnjCAJYQF/iXXfT4JNZRFQlTi5dz8riM0rYCnRu+UZC4Qt
-	KPFj8j0wm1lAS2L9zuNMELa8xOY1b6EuUpDYcfY1I8QyPYm3Oy+yQtSISOx78Y5xAqPALCSj
-	ZiEZNQvJqFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI72Z1I7GFc2WBxiFOBg
-	VOLh/bCxKESINbGsuDL3EKMEB7OSCO/Zf4UhQrwpiZVVqUX58UWlOanFhxhNgT6dyCwlmpwP
-	TER5JfGGxiZmRpZG5oYWRsbmSuK8N27mhggJpCeWpGanphakFsH0MXFwSjUw8hv9mv8+c2Nf
-	0/a+Hzrh1T2Wl3beCovb+vJURNHEB2uLXrX/u7GZd4VCqnmC/bZ9nvG7tp4rtw7zE3sz5/08
-	8Ze7djzkj03wUpD4NfPYIivrA+I79/tJmh39eUJFom/WP8Mpph3JBTwaSufj/m+ILyvXO7r1
-	r/GfsKerPf0bYkO1ylh0F0/QU2Ipzkg01GIuKk4EABoB+38MAwAA
+	FMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBlzuz6yFdzUrzg+ZRpbA2OH
+	ehcjJ4eEgInE1UdLGSFsMYkL99azdTFycQgJLGKUOPT1CjOE85dRYsvVE+xdjBwcbALaEn+2
+	iII0iAi4Ssy7+50RpIZZYCmjxMXHTxhBaoQFvCVe/NMFqWERUJU4N7mTFcTmFbCU+LvsLROE
+	LSjxY/I9FhCbWUBLYv3O40wQtrzE5jVvmSEOUpDYcfY12EgRAT2JN3c1IEpEJPa9eMc4gVFg
+	FpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEf6M6kdjCsbLA4x
+	CnAwKvHwfthYFCLEmlhWXJl7iFGCg1lJhPfsv8IQId6UxMqq1KL8+KLSnNTiQ4ymQI9OZJYS
+	Tc4HJqG8knhDYxMzI0sjc0MLI2NzJXHeGzdzQ4QE0hNLUrNTUwtSi2D6mDg4pRoYGQ4umuUu
+	+aWxqODRlNkK827ezGJjse2693Ld+yy+j8ZXpT9zH6wyPt6spPKkIv12kMcZMenHU7qO1Oqe
+	aem4XxmuX96jHKe346j87YDwIl6LL/G7Z1U/in9ese3gEc/ffy6cTHC80qwin3zbq8O0UN8u
+	tcfj2KysOgehvmsvm0OOXQuYmblSiaU4I9FQi7moOBEAq9F8jQoDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,500 +54,217 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements fallocate's FALLOC_FL_INSERT_RANGE for Ext4.
-
-1) Make sure that both offset and len are block size aligned.
-2) Update the i_size of inode by len bytes.
-3) Compute the file's logical block number against offset. If the computed
-   block number is not the starting block of the extent, split the extent
-   such that the block number is the starting block of the extent.
-4) Shift all the extents which are lying bewteen [offset, last allocated extent]
-   towards right by len bytes. This step will make a hole of len bytes
-   at offset.
+This testcase(038) tries to test various corner cases for finsert range
+functionality over different type of extents.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
 ---
-Changelog
+ common/punch          |  5 ++++
+ common/rc             |  2 +-
+ tests/generic/038     | 65 ++++++++++++++++++++++++++++++++++++++++++
+ tests/generic/038.out | 78 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/generic/group   |  1 +
+ 5 files changed, 150 insertions(+), 1 deletion(-)
+ create mode 100644 tests/generic/038
+ create mode 100644 tests/generic/038.out
 
-v6:
- - Instead of having seperate functions for shifting extents left/right, the
-   current extent shift function is made generic to shift in both directions.
-
-v5:
- - remove allocation part.
-
- fs/ext4/ext4.h              |   6 +
- fs/ext4/extents.c           | 302 ++++++++++++++++++++++++++++++++++++--------
- include/trace/events/ext4.h |  25 ++++
- 3 files changed, 282 insertions(+), 51 deletions(-)
-
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index db3f772..0cf212a 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -90,6 +90,11 @@ typedef __u32 ext4_lblk_t;
- /* data type for block group number */
- typedef unsigned int ext4_group_t;
+diff --git a/common/punch b/common/punch
+index 237b4d8..a75f4cf 100644
+--- a/common/punch
++++ b/common/punch
+@@ -527,6 +527,11 @@ _test_generic_punch()
+ 		return
+ 	fi
  
-+enum SHIFT_DIRECTION {
-+	SHIFT_LEFT = 0,
-+	SHIFT_RIGHT,
-+};
++	# If zero_cmd is finsert, don't check unaligned offsets
++	if [ "$zero_cmd" == "finsert" ]; then
++		return
++	fi
 +
- /*
-  * Flags used in mballoc's allocation_context flags field.
-  *
-@@ -2760,6 +2765,7 @@ extern int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
- 			__u64 start, __u64 len);
- extern int ext4_ext_precache(struct inode *inode);
- extern int ext4_collapse_range(struct inode *inode, loff_t offset, loff_t len);
-+extern int ext4_insert_range(struct inode *inode, loff_t offset, loff_t len);
- extern int ext4_swap_extents(handle_t *handle, struct inode *inode1,
- 				struct inode *inode2, ext4_lblk_t lblk1,
- 			     ext4_lblk_t lblk2,  ext4_lblk_t count,
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 0b16fb4..0baebc5 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4913,7 +4913,8 @@ long ext4_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 
- 	/* Return error if mode is not supported */
- 	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
--		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE))
-+		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE |
-+		     FALLOC_FL_INSERT_RANGE))
- 		return -EOPNOTSUPP;
- 
- 	if (mode & FALLOC_FL_PUNCH_HOLE)
-@@ -4933,6 +4934,9 @@ long ext4_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 	if (mode & FALLOC_FL_COLLAPSE_RANGE)
- 		return ext4_collapse_range(inode, offset, len);
- 
-+	if (mode & FALLOC_FL_INSERT_RANGE)
-+		return ext4_insert_range(inode, offset, len);
+ 	echo "	16. data -> cache cold ->hole"
+ 	if [ "$remove_testfile" ]; then
+ 		rm -f $testfile
+diff --git a/common/rc b/common/rc
+index d5e3aff..ca4177f 100644
+--- a/common/rc
++++ b/common/rc
+@@ -1486,7 +1486,7 @@ _require_xfs_io_command()
+ 	"falloc" )
+ 		testio=`$XFS_IO_PROG -F -f -c "falloc 0 1m" $testfile 2>&1`
+ 		;;
+-	"fpunch" | "fcollapse" | "zero" | "fzero" )
++	"fpunch" | "fcollapse" | "zero" | "fzero" | "finsert" )
+ 		testio=`$XFS_IO_PROG -F -f -c "pwrite 0 20k" -c "fsync" \
+ 			-c "$command 4k 8k" $testfile 2>&1`
+ 		;;
+diff --git a/tests/generic/038 b/tests/generic/038
+new file mode 100644
+index 0000000..0ce0e61
+--- /dev/null
++++ b/tests/generic/038
+@@ -0,0 +1,65 @@
++#! /bin/bash
++# FS QA Test No. generic/038
++#
++# Standard insert range tests
++# This testcase is one of the 4 testcases which tries to
++# test various corner cases for finsert range functionality over different
++# type of extents. These tests are based on generic/255 test case.
++# For the type of tests, check the description of _test_generic_punch
++# in common/rc.
++#-----------------------------------------------------------------------
++# Copyright (c) 2013 Samsung Electronics.  All Rights Reserved.
++#
++# This program is free software; you can redistribute it and/or
++# modify it under the terms of the GNU General Public License as
++# published by the Free Software Foundation.
++#
++# This program is distributed in the hope that it would be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, write the Free Software Foundation,
++# Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++#
++#-----------------------------------------------------------------------
++#
 +
- 	if (mode & FALLOC_FL_ZERO_RANGE)
- 		return ext4_zero_range(file, offset, len, mode);
- 
-@@ -5219,13 +5223,13 @@ ext4_access_path(handle_t *handle, struct inode *inode,
- /*
-  * ext4_ext_shift_path_extents:
-  * Shift the extents of a path structure lying between path[depth].p_ext
-- * and EXT_LAST_EXTENT(path[depth].p_hdr) downwards, by subtracting shift
-- * from starting block for each extent.
-+ * and EXT_LAST_EXTENT(path[depth].p_hdr), by @shift blocks. @SHIFT tells
-+ * if it is right shift or left shift operation.
-  */
- static int
- ext4_ext_shift_path_extents(struct ext4_ext_path *path, ext4_lblk_t shift,
- 			    struct inode *inode, handle_t *handle,
--			    ext4_lblk_t *start)
-+			    enum SHIFT_DIRECTION SHIFT)
- {
- 	int depth, err = 0;
- 	struct ext4_extent *ex_start, *ex_last;
-@@ -5249,19 +5253,25 @@ ext4_ext_shift_path_extents(struct ext4_ext_path *path, ext4_lblk_t shift,
- 			if (ex_start == EXT_FIRST_EXTENT(path[depth].p_hdr))
- 				update = 1;
- 
--			*start = le32_to_cpu(ex_last->ee_block) +
--				ext4_ext_get_actual_len(ex_last);
--
- 			while (ex_start <= ex_last) {
--				le32_add_cpu(&ex_start->ee_block, -shift);
--				/* Try to merge to the left. */
--				if ((ex_start >
--				     EXT_FIRST_EXTENT(path[depth].p_hdr)) &&
--				    ext4_ext_try_to_merge_right(inode,
--							path, ex_start - 1))
-+				if (SHIFT == SHIFT_LEFT) {
-+					le32_add_cpu(&ex_start->ee_block,
-+						-shift);
-+					/* Try to merge to the left. */
-+					if ((ex_start >
-+					    EXT_FIRST_EXTENT(path[depth].p_hdr))
-+					    &&
-+					    ext4_ext_try_to_merge_right(inode,
-+					    path, ex_start - 1))
-+						ex_last--;
-+					else
-+						ex_start++;
-+				} else {
-+					le32_add_cpu(&ex_last->ee_block, shift);
-+					ext4_ext_try_to_merge_right(inode, path,
-+						ex_last);
- 					ex_last--;
--				else
--					ex_start++;
-+				}
- 			}
- 			err = ext4_ext_dirty(handle, inode, path + depth);
- 			if (err)
-@@ -5276,7 +5286,10 @@ ext4_ext_shift_path_extents(struct ext4_ext_path *path, ext4_lblk_t shift,
- 		if (err)
- 			goto out;
- 
--		le32_add_cpu(&path[depth].p_idx->ei_block, -shift);
-+		if (SHIFT == SHIFT_LEFT)
-+			le32_add_cpu(&path[depth].p_idx->ei_block, -shift);
-+		else
-+			le32_add_cpu(&path[depth].p_idx->ei_block, shift);
- 		err = ext4_ext_dirty(handle, inode, path + depth);
- 		if (err)
- 			goto out;
-@@ -5294,19 +5307,20 @@ out:
- 
- /*
-  * ext4_ext_shift_extents:
-- * All the extents which lies in the range from start to the last allocated
-- * block for the file are shifted downwards by shift blocks.
-+ * All the extents which lies in the range from @start to the last allocated
-+ * block for the @inode are shifted either towards left or right (depending
-+ * upon @SHIFT) by @shift blocks.
-  * On success, 0 is returned, error otherwise.
-  */
- static int
- ext4_ext_shift_extents(struct inode *inode, handle_t *handle,
--		       ext4_lblk_t start, ext4_lblk_t shift)
-+		       ext4_lblk_t start, ext4_lblk_t shift,
-+		       enum SHIFT_DIRECTION SHIFT)
- {
- 	struct ext4_ext_path *path;
- 	int ret = 0, depth;
- 	struct ext4_extent *extent;
--	ext4_lblk_t stop_block;
--	ext4_lblk_t ex_start, ex_end;
-+	ext4_lblk_t stop, *iterator, ex_start, ex_end;
- 
- 	/* Let path point to the last extent */
- 	path = ext4_find_extent(inode, EXT_MAX_BLOCKS - 1, NULL, 0);
-@@ -5318,58 +5332,84 @@ ext4_ext_shift_extents(struct inode *inode, handle_t *handle,
- 	if (!extent)
- 		goto out;
- 
--	stop_block = le32_to_cpu(extent->ee_block) +
-+	stop = le32_to_cpu(extent->ee_block) +
- 			ext4_ext_get_actual_len(extent);
- 
--	/* Nothing to shift, if hole is at the end of file */
--	if (start >= stop_block)
--		goto out;
-+       /*
-+	 * In case of left shift, Don't start shifting extents until we make
-+	 * sure the hole is big enough to accommodate the shift.
-+	*/
-+	if (SHIFT == SHIFT_LEFT) {
-+		path = ext4_find_extent(inode, start - 1, &path, 0);
-+		if (IS_ERR(path))
-+			return PTR_ERR(path);
-+		depth = path->p_depth;
-+		extent =  path[depth].p_ext;
-+		if (extent) {
-+			ex_start = le32_to_cpu(extent->ee_block);
-+			ex_end = le32_to_cpu(extent->ee_block) +
-+				ext4_ext_get_actual_len(extent);
-+		} else {
-+			ex_start = 0;
-+			ex_end = 0;
-+		}
- 
--	/*
--	 * Don't start shifting extents until we make sure the hole is big
--	 * enough to accomodate the shift.
--	 */
--	path = ext4_find_extent(inode, start - 1, &path, 0);
--	if (IS_ERR(path))
--		return PTR_ERR(path);
--	depth = path->p_depth;
--	extent =  path[depth].p_ext;
--	if (extent) {
--		ex_start = le32_to_cpu(extent->ee_block);
--		ex_end = le32_to_cpu(extent->ee_block) +
--			ext4_ext_get_actual_len(extent);
--	} else {
--		ex_start = 0;
--		ex_end = 0;
-+		if ((start == ex_start && shift > ex_start) ||
-+		    (shift > start - ex_end)) {
-+			ext4_ext_drop_refs(path);
-+			kfree(path);
-+			return -EINVAL;
-+		}
- 	}
- 
--	if ((start == ex_start && shift > ex_start) ||
--	    (shift > start - ex_end))
--		return -EINVAL;
-+	/*
-+	 * In case of left shift, iterator points to start and it is increased
-+	 * till we reach stop. In case of right shift, iterator points to stop
-+	 * and it is decreased till we reach start.
-+	 */
-+	if (SHIFT == SHIFT_LEFT)
-+		iterator = &start;
-+	else
-+		iterator = &stop;
- 
- 	/* Its safe to start updating extents */
--	while (start < stop_block) {
--		path = ext4_find_extent(inode, start, &path, 0);
-+	while (start < stop) {
-+		path = ext4_find_extent(inode, *iterator, &path, 0);
- 		if (IS_ERR(path))
- 			return PTR_ERR(path);
- 		depth = path->p_depth;
- 		extent = path[depth].p_ext;
- 		if (!extent) {
- 			EXT4_ERROR_INODE(inode, "unexpected hole at %lu",
--					 (unsigned long) start);
-+					 (unsigned long) *iterator);
- 			return -EIO;
- 		}
--		if (start > le32_to_cpu(extent->ee_block)) {
-+		if (SHIFT == SHIFT_LEFT && *iterator >
-+		    le32_to_cpu(extent->ee_block)) {
- 			/* Hole, move to the next extent */
- 			if (extent < EXT_LAST_EXTENT(path[depth].p_hdr)) {
- 				path[depth].p_ext++;
- 			} else {
--				start = ext4_ext_next_allocated_block(path);
-+				*iterator = ext4_ext_next_allocated_block(path);
- 				continue;
- 			}
- 		}
++seq=`basename $0`
++seqres=$RESULT_DIR/$seq
++echo "QA output created by $seq"
 +
-+		if (SHIFT == SHIFT_LEFT) {
-+			extent = EXT_LAST_EXTENT(path[depth].p_hdr);
-+			*iterator = le32_to_cpu(extent->ee_block) +
-+					ext4_ext_get_actual_len(extent);
-+		} else {
-+			extent = EXT_FIRST_EXTENT(path[depth].p_hdr);
-+			*iterator =  le32_to_cpu(extent->ee_block) > 0 ?
-+				le32_to_cpu(extent->ee_block) - 1 : 0;
-+			/* Update path extent in case we need to stop */
-+			while (le32_to_cpu(extent->ee_block) < start)
-+				extent++;
-+			path[depth].p_ext = extent;
-+		}
- 		ret = ext4_ext_shift_path_extents(path, shift, inode,
--				handle, &start);
-+				handle, SHIFT);
- 		if (ret)
- 			break;
- 	}
-@@ -5474,7 +5514,7 @@ int ext4_collapse_range(struct inode *inode, loff_t offset, loff_t len)
- 	ext4_discard_preallocations(inode);
- 
- 	ret = ext4_ext_shift_extents(inode, handle, punch_stop,
--				     punch_stop - punch_start);
-+				     punch_stop - punch_start, SHIFT_LEFT);
- 	if (ret) {
- 		up_write(&EXT4_I(inode)->i_data_sem);
- 		goto out_stop;
-@@ -5499,6 +5539,166 @@ out_mutex:
- 	return ret;
- }
- 
-+/*
-+ * ext4_insert_range:
-+ * This function implements the FALLOC_FL_INSERT_RANGE flag of fallocate.
-+ * The data blocks starting from @offset to the EOF are shifted by @len
-+ * towards right to create a hole in the @inode. Inode size is increased
-+ * by len bytes.
-+ * Returns 0 on success, error otherwise.
-+ */
-+int ext4_insert_range(struct inode *inode, loff_t offset, loff_t len)
++here=`pwd`
++tmp=/tmp/$$
++status=1	# failure is the default!
++
++_cleanup()
 +{
-+	struct super_block *sb = inode->i_sb;
-+	handle_t *handle;
-+	struct ext4_ext_path *path;
-+	struct ext4_extent *extent;
-+	ext4_lblk_t offset_lblk, len_lblk, ee_start_lblk = 0;
-+	unsigned int credits, ee_len;
-+	int ret = 0, depth, split_flag = 0;
-+	loff_t ioffset;
-+
-+	/* Insert range works only on fs block size aligned offsets. */
-+	if (offset & (EXT4_CLUSTER_SIZE(sb) - 1) ||
-+			len & (EXT4_CLUSTER_SIZE(sb) - 1))
-+		return -EINVAL;
-+
-+	if (!S_ISREG(inode->i_mode))
-+		return -EOPNOTSUPP;
-+
-+	trace_ext4_insert_range(inode, offset, len);
-+
-+	offset_lblk = offset >> EXT4_BLOCK_SIZE_BITS(sb);
-+	len_lblk = len >> EXT4_BLOCK_SIZE_BITS(sb);
-+
-+	/* Call ext4_force_commit to flush all data in case of data=journal */
-+	if (ext4_should_journal_data(inode)) {
-+		ret = ext4_force_commit(inode->i_sb);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	/*
-+	 * Need to round down to align start offset to page size boundary
-+	 * for page size > block size.
-+	 */
-+	ioffset = round_down(offset, PAGE_SIZE);
-+
-+	/* Write out all dirty pages */
-+	ret = filemap_write_and_wait_range(inode->i_mapping, ioffset,
-+			LLONG_MAX);
-+	if (ret)
-+		return ret;
-+
-+	/* Take mutex lock */
-+	mutex_lock(&inode->i_mutex);
-+
-+	/* Currently just for extent based files */
-+	if (!ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)) {
-+		ret = -EOPNOTSUPP;
-+		goto out_mutex;
-+	}
-+
-+	/* Check for wrap through zero */
-+	if (inode->i_size + len > inode->i_sb->s_maxbytes) {
-+		ret = -EFBIG;
-+		goto out_mutex;
-+	}
-+
-+	/* Offset should be less than i_size */
-+	if (offset >= i_size_read(inode)) {
-+		ret = -EINVAL;
-+		goto out_mutex;
-+	}
-+
-+	truncate_pagecache(inode, ioffset);
-+
-+	/* Wait for existing dio to complete */
-+	ext4_inode_block_unlocked_dio(inode);
-+	inode_dio_wait(inode);
-+
-+	credits = ext4_writepage_trans_blocks(inode);
-+	handle = ext4_journal_start(inode, EXT4_HT_TRUNCATE, credits);
-+	if (IS_ERR(handle)) {
-+		ret = PTR_ERR(handle);
-+		goto out_dio;
-+	}
-+
-+	/* Expand file to avoid data loss if there is error while shifting */
-+	inode->i_size += len;
-+	EXT4_I(inode)->i_disksize += len;
-+	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
-+	ret = ext4_mark_inode_dirty(handle, inode);
-+	if (ret)
-+		goto out_stop;
-+
-+	down_write(&EXT4_I(inode)->i_data_sem);
-+	ext4_discard_preallocations(inode);
-+
-+	path = ext4_find_extent(inode, offset_lblk, NULL, 0);
-+	if (IS_ERR(path)) {
-+		up_write(&EXT4_I(inode)->i_data_sem);
-+		goto out_stop;
-+	}
-+
-+	depth = ext_depth(inode);
-+	extent = path[depth].p_ext;
-+	if (extent) {
-+		ee_start_lblk = le32_to_cpu(extent->ee_block);
-+		ee_len = ext4_ext_get_actual_len(extent);
-+
-+		/*
-+		 * If offset_lblk is not the starting block of extent, split
-+		 * the extent @offset_lblk
-+		 */
-+		if ((offset_lblk > ee_start_lblk) &&
-+				(offset_lblk < (ee_start_lblk + ee_len))) {
-+			if (ext4_ext_is_unwritten(extent))
-+				split_flag = EXT4_EXT_MARK_UNWRIT1 |
-+					EXT4_EXT_MARK_UNWRIT2;
-+			ret = ext4_split_extent_at(handle, inode, &path,
-+					offset_lblk, split_flag,
-+					EXT4_EX_NOCACHE |
-+					EXT4_GET_BLOCKS_PRE_IO |
-+					EXT4_GET_BLOCKS_METADATA_NOFAIL);
-+		}
-+
-+		ext4_ext_drop_refs(path);
-+		kfree(path);
-+		if (ret < 0) {
-+			up_write(&EXT4_I(inode)->i_data_sem);
-+			goto out_stop;
-+		}
-+	}
-+
-+	ret = ext4_es_remove_extent(inode, offset_lblk,
-+			EXT_MAX_BLOCKS - offset_lblk);
-+	if (ret) {
-+		up_write(&EXT4_I(inode)->i_data_sem);
-+		goto out_stop;
-+	}
-+
-+	/*
-+	 * if offset_lblk lies in a hole which is at start of file, use
-+	 * ee_start_lblk to shift extents
-+	 */
-+	ret = ext4_ext_shift_extents(inode, handle,
-+		ee_start_lblk > offset_lblk ? ee_start_lblk : offset_lblk,
-+		len_lblk, SHIFT_RIGHT);
-+
-+	up_write(&EXT4_I(inode)->i_data_sem);
-+	if (IS_SYNC(inode))
-+		ext4_handle_sync(handle);
-+
-+out_stop:
-+	ext4_journal_stop(handle);
-+out_dio:
-+	ext4_inode_resume_unlocked_dio(inode);
-+out_mutex:
-+	mutex_unlock(&inode->i_mutex);
-+	return ret;
++    rm -f $tmp.*
 +}
 +
- /**
-  * ext4_swap_extents - Swap extents between two inodes
-  *
-diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
-index ff4bd1b..1a88c8b 100644
---- a/include/trace/events/ext4.h
-+++ b/include/trace/events/ext4.h
-@@ -2450,6 +2450,31 @@ TRACE_EVENT(ext4_collapse_range,
- 		  __entry->offset, __entry->len)
- );
- 
-+TRACE_EVENT(ext4_insert_range,
-+	TP_PROTO(struct inode *inode, loff_t offset, loff_t len),
++trap "_cleanup ; exit \$status" 0 1 2 3 15
 +
-+	TP_ARGS(inode, offset, len),
++# get standard environment, filters and checks
++# we need to include common/punch to get defination fo filter functions
++. ./common/rc
++. ./common/filter
++. ./common/punch
 +
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(ino_t,	ino)
-+		__field(loff_t,	offset)
-+		__field(loff_t, len)
-+	),
++# real QA test starts here
++_supported_fs generic
++_supported_os Linux
 +
-+	TP_fast_assign(
-+		__entry->dev	= inode->i_sb->s_dev;
-+		__entry->ino	= inode->i_ino;
-+		__entry->offset	= offset;
-+		__entry->len	= len;
-+	),
++_require_xfs_io_command "fpunch"
++_require_xfs_io_command "falloc"
++_require_xfs_io_command "fiemap"
++_require_xfs_io_command "finsert"
 +
-+	TP_printk("dev %d,%d ino %lu offset %lld len %lld",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  (unsigned long) __entry->ino,
-+		  __entry->offset, __entry->len)
-+);
++testfile=$TEST_DIR/$seq.$$
 +
- TRACE_EVENT(ext4_es_shrink,
- 	TP_PROTO(struct super_block *sb, int nr_shrunk, u64 scan_time,
- 		 int skip_precached, int nr_skipped, int retried),
++_test_generic_punch falloc fpunch finsert fiemap _filter_hole_fiemap $testfile
++_check_test_fs
++
++status=0
++exit
+diff --git a/tests/generic/038.out b/tests/generic/038.out
+new file mode 100644
+index 0000000..3ebdb43
+--- /dev/null
++++ b/tests/generic/038.out
+@@ -0,0 +1,78 @@
++QA output created by 038
++	1. into a hole
++cf845a781c107ec1346e849c9dd1b7e8
++	2. into allocated space
++0: [0..7]: extent
++1: [8..23]: hole
++2: [24..55]: extent
++64e72217eebcbdf31b1b058f9f5f476a
++	3. into unwritten space
++0: [0..7]: extent
++1: [8..23]: hole
++2: [24..55]: extent
++cf845a781c107ec1346e849c9dd1b7e8
++	4. hole -> data
++0: [0..31]: hole
++1: [32..47]: extent
++2: [48..55]: hole
++adb08a6d94a3b5eff90fdfebb2366d31
++	5. hole -> unwritten
++0: [0..31]: hole
++1: [32..47]: extent
++2: [48..55]: hole
++cf845a781c107ec1346e849c9dd1b7e8
++	6. data -> hole
++0: [0..7]: extent
++1: [8..23]: hole
++2: [24..31]: extent
++3: [32..55]: hole
++be0f35d4292a20040766d87883b0abd1
++	7. data -> unwritten
++0: [0..7]: extent
++1: [8..23]: hole
++2: [24..47]: extent
++3: [48..55]: hole
++be0f35d4292a20040766d87883b0abd1
++	8. unwritten -> hole
++0: [0..7]: extent
++1: [8..23]: hole
++2: [24..31]: extent
++3: [32..55]: hole
++cf845a781c107ec1346e849c9dd1b7e8
++	9. unwritten -> data
++0: [0..7]: extent
++1: [8..23]: hole
++2: [24..47]: extent
++3: [48..55]: hole
++adb08a6d94a3b5eff90fdfebb2366d31
++	10. hole -> data -> hole
++0: [0..39]: hole
++1: [40..47]: extent
++2: [48..63]: hole
++0487b3c52810f994c541aa166215375f
++	11. data -> hole -> data
++0: [0..7]: extent
++1: [8..31]: hole
++2: [32..39]: extent
++3: [40..47]: hole
++4: [48..63]: extent
++e3a8d52acc4d91a8ed19d7b6f4f26a71
++	12. unwritten -> data -> unwritten
++0: [0..7]: extent
++1: [8..31]: hole
++2: [32..63]: extent
++0487b3c52810f994c541aa166215375f
++	13. data -> unwritten -> data
++0: [0..7]: extent
++1: [8..31]: hole
++2: [32..63]: extent
++2b22165f4a24a2c36fd05ef00b41df88
++	14. data -> hole @ EOF
++0: [0..23]: extent
++1: [24..39]: hole
++2: [40..55]: extent
++aa0f20d1edcdbce60d8ef82700ba30c3
++	15. data -> hole @ 0
++0: [0..15]: hole
++1: [16..55]: extent
++86c9d033be2761385c9cfa203c426bb2
+diff --git a/tests/generic/group b/tests/generic/group
+index 9f355fc..7d6f227 100644
+--- a/tests/generic/group
++++ b/tests/generic/group
+@@ -40,6 +40,7 @@
+ 035 auto quick
+ 036 auto aio rw stress
+ 037 metadata auto quick
++038 auto quick prealloc
+ 053 acl repair auto quick
+ 062 attr udf auto quick
+ 068 other auto freeze dangerous stress
 -- 
 1.7.11-rc0
 
