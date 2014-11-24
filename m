@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472AbaKXKwK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 05:52:10 -0500
-Received: from www.linutronix.de ([62.245.132.108]:37230 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaKXKwI (ORCPT
+	id S1753476AbaKXKyE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 05:54:04 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:54994 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753113AbaKXKyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 05:52:08 -0500
-Date: Mon, 24 Nov 2014 11:51:32 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: linux-next: manual merge of the tip tree with the pci tree
-In-Reply-To: <20141124161842.02251126@canb.auug.org.au>
-Message-ID: <alpine.DEB.2.11.1411241147180.6439@nanos>
-References: <20141124161842.02251126@canb.auug.org.au>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 24 Nov 2014 05:54:01 -0500
+Message-ID: <1416826438.10073.11.camel@x220>
+Subject: [PATCH] [media] omap24xx/tcm825x: remove pointless Makefile entry
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Mon, 24 Nov 2014 11:53:58 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Nov 2014 10:53:58.0755 (UTC) FILETIME=[F325DB30:01D007D4]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014, Stephen Rothwell wrote:
-> Today's linux-next merge of the tip tree got a conflict in
-> drivers/pci/host/pcie-rcar.c between commit 3c70637f7569 ("PCI: rcar:
-> Make rcar_pci static") from the pci tree and commit 7c35c8cc32f3 ("PCI:
-> rcar: Save MSI controller in pci_sys_data") from the tip tree.
+The deprecated omap2 camera drivers were recently removed. Both the
+Kconfig symbol VIDEO_TCM825X and the drivers/staging/media/omap24xx
+directory are gone. So the Makefile entry that references both is now
+pointless. Remove it too.
 
-Bjorn redid his pci/msi branch. The older version of this branch has
-been in the tip/tree to base a larger set of MSI irq related changes
-on it. I rebased on Bjorns latest so that conflict should be gone
-tomorrow.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested by grepping the tree.
 
-Thanks,
+Triggered by commit db85a0403be4 ("[media] omap24xx/tcm825x: remove
+deprecated omap2 camera drivers."), which is included in next-20141124.
+What happened is that it removed only one of the two Makefile entries
+for omap24xx.
 
-	tglx
+ drivers/staging/media/Makefile | 1 -
+ 1 file changed, 1 deletion(-)
 
-	
+diff --git a/drivers/staging/media/Makefile b/drivers/staging/media/Makefile
+index 97bfef97f838..30fb352fc4a9 100644
+--- a/drivers/staging/media/Makefile
++++ b/drivers/staging/media/Makefile
+@@ -4,7 +4,6 @@ obj-$(CONFIG_LIRC_STAGING)	+= lirc/
+ obj-$(CONFIG_VIDEO_DT3155)	+= dt3155v4l/
+ obj-$(CONFIG_VIDEO_DM365_VPFE)	+= davinci_vpfe/
+ obj-$(CONFIG_VIDEO_OMAP4)	+= omap4iss/
+-obj-$(CONFIG_VIDEO_TCM825X)     += omap24xx/
+ obj-$(CONFIG_DVB_MN88472)       += mn88472/
+ obj-$(CONFIG_DVB_MN88473)       += mn88473/
+ 
+-- 
+1.9.3
+
