@@ -1,91 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205AbaKXSSz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:18:55 -0500
-Received: from smtp10.online.nl ([194.134.42.55]:59274 "EHLO smtp10.online.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753943AbaKXSSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:18:53 -0500
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Nov 2014 13:18:52 EST
-Message-ID: <54737532.1050808@milosoftware.com>
-Date: Mon, 24 Nov 2014 19:13:06 +0100
-From: Mike Looijmans <info@milosoftware.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754426AbaKXSUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:20:11 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10591 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752322AbaKXSUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 13:20:08 -0500
+Message-ID: <547376D3.7070709@sonymobile.com>
+Date: Mon, 24 Nov 2014 10:20:03 -0800
+From: Tim Bird <tim.bird@sonymobile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>,
-        =?windows-1252?Q?Uwe_?= =?windows-1252?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Ben Gardiner <bengardiner@nanometrics.ca>,
-        Mike Looijmans <milo-software@users.sourceforge.net>
-Subject: Re: [5/5] i2c: davinci: use ICPFUNC to toggle I2C as gpio for bus
- recovery
-References: <1416477788-5544-6-git-send-email-grygorii.strashko@ti.com> <20141123170400.GC4431@pengutronix.de> <54732F8E.4080105@ti.com>
-In-Reply-To: <54732F8E.4080105@ti.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Online-Scanned: by Cloudmark authority (on smtp10.online.nl)
+To: Shuah Khan <shuahkh@osg.samsung.com>, <linux-api@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH v3] selftest: size: Add size test for Linux kernel
+References: <546D084D.20002@sonymobile.com> <546D321F.2080405@sonymobile.com>
+In-Reply-To: <546D321F.2080405@sonymobile.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24-11-2014 14:15, Grygorii Strashko wrote:
-> Hi Uwe,
-> On 11/23/2014 07:04 PM, Uwe Kleine-König wrote:
->> On Thu, Nov 20, 2014 at 12:03:08PM +0200, Grygorii Strashko wrote:
->>> @@ -664,6 +759,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
->>>    		if (!of_property_read_u32(pdev->dev.of_node, "clock-frequency",
->>>    			&prop))
->>>    			dev->pdata->bus_freq = prop / 1000;
->>> +		dev->pdata->has_pfunc = true;
->> I don't understand this. Why does this ICPFUNC recovery work if the bus
->> is probed by oftree, but doesn't if not?
-> I've mentioned this in commit message:
->   Allow platforms to indicate the presence of the ICPFUNC registers with a has_pfunc
->   platform data flag and enable this mode for platforms which supports DT (da850 and
->   Keystone 2 are two SoCs which support DT now and they also support ICPFUNC registers).
->
-> I'll add proper comment here.
 
-Just thinking: What happens if you try to use the ICPFUNC registers on 
-platforms that don't support it? If the answer is "nothing bad", then 
-you might as well assume that if the platform doesn't specify its own 
-GPIOs, you can always try using the ICPFUNC registers to shake the I2C 
-bus. Better to try and fail than to never try at all...
+This test shows the amount of memory used by the system.
+Note that this is dependent on the user-space that is loaded
+when this program runs.  Optimally, this program would be
+run as the init program itself.
 
->
->>>    	} else if (!dev->pdata) {
->>>    		dev->pdata = &davinci_i2c_platform_data_default;
->>>    	}
->>> @@ -705,7 +801,9 @@ static int davinci_i2c_probe(struct platform_device *pdev)
->>>    	adap->timeout = DAVINCI_I2C_TIMEOUT;
->>>    	adap->dev.of_node = pdev->dev.of_node;
->>>    
->>> -	if (dev->pdata->scl_pin) {
->>> +	if (dev->pdata->has_pfunc)
->>> +		adap->bus_recovery_info = &davinci_i2c_scl_recovery_info;
->>> +	else if (dev->pdata->scl_pin) {
->>>    		adap->bus_recovery_info = &davinci_i2c_gpio_recovery_info;
->>>    		adap->bus_recovery_info->scl_gpio = dev->pdata->scl_pin;
->>>    		adap->bus_recovery_info->sda_gpio = dev->pdata->sda_pin;
->>> diff --git a/include/linux/platform_data/i2c-davinci.h b/include/linux/platform_data/i2c-davinci.h
->>> index 2312d19..89fd347 100644
->>> --- a/include/linux/platform_data/i2c-davinci.h
->>> +++ b/include/linux/platform_data/i2c-davinci.h
->>> @@ -18,6 +18,7 @@ struct davinci_i2c_platform_data {
->>>    	unsigned int	bus_delay;	/* post-transaction delay (usec) */
->>>    	unsigned int    sda_pin;        /* GPIO pin ID to use for SDA */
->>>    	unsigned int    scl_pin;        /* GPIO pin ID to use for SCL */
->>> +	bool		has_pfunc;	/*chip has a ICPFUNC register */
->> Space after /* please
->>
-> regards,
-> -grygorii
->
->
->
+The program is optimized for size itself, to avoid conflating
+its own execution with that of the system software.
+The code is compiled statically, with no stdlibs. On my x86_64 system,
+this results in a statically linked binary of less than 5K.
 
+Changes from v2:
+  - add return values to print routines
+  - add .gitignore file
+
+Changes from v1:
+  - use more correct Copyright string in get_size.c
+
+Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+---
+ tools/testing/selftests/Makefile        |   1 +
+ tools/testing/selftests/size/.gitignore |   1 +
+ tools/testing/selftests/size/Makefile   |  21 +++++++
+ tools/testing/selftests/size/get_size.c | 105 ++++++++++++++++++++++++++++++++
+ 4 files changed, 128 insertions(+)
+ create mode 100644 tools/testing/selftests/size/.gitignore
+ create mode 100644 tools/testing/selftests/size/Makefile
+ create mode 100644 tools/testing/selftests/size/get_size.c
+
+diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+index 45f145c..fa91aef 100644
+--- a/tools/testing/selftests/Makefile
++++ b/tools/testing/selftests/Makefile
+@@ -15,6 +15,7 @@ TARGETS += user
+ TARGETS += sysctl
+ TARGETS += firmware
+ TARGETS += ftrace
++TARGETS += size
+ 
+ TARGETS_HOTPLUG = cpu-hotplug
+ TARGETS_HOTPLUG += memory-hotplug
+diff --git a/tools/testing/selftests/size/.gitignore b/tools/testing/selftests/size/.gitignore
+new file mode 100644
+index 0000000..189b781
+--- /dev/null
++++ b/tools/testing/selftests/size/.gitignore
+@@ -0,0 +1 @@
++get_size
+diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
+new file mode 100644
+index 0000000..51e5fbd
+--- /dev/null
++++ b/tools/testing/selftests/size/Makefile
+@@ -0,0 +1,21 @@
++#ifndef CC
++	CC = $(CROSS_COMPILE)gcc
++#endif
++
++#ifndef STRIP
++	STRIP = $(CROSS_COMPILE)strip
++#endif
++
++all: get_size
++
++get_size: get_size.c
++	$(CC) --static -ffreestanding -nostartfiles \
++		-Wl,--entry=main get_size.c -o get_size \
++		`cc -print-libgcc-file-name`
++	$(STRIP) -s get_size
++
++run_tests: all
++	./get_size
++
++clean:
++	$(RM) get_size
+diff --git a/tools/testing/selftests/size/get_size.c b/tools/testing/selftests/size/get_size.c
+new file mode 100644
+index 0000000..9c8d3cd
+--- /dev/null
++++ b/tools/testing/selftests/size/get_size.c
+@@ -0,0 +1,105 @@
++/*
++ * Copyright 2014 Sony
++ *
++ * Licensed under the terms of the GNU GPL License version 2
++ *
++ * Selftest for runtime system size
++ *
++ * Prints the amount of RAM that the currently running system is using.
++ *
++ * This program tries to be as small as possible itself, to
++ * avoid perturbing the system memory utilization with its
++ * own execution.  It also attempts to have as few dependencies
++ * on kernel features as possible.
++ *
++ * It should be statically linked, with startup libs avoided.
++ * It uses no library calls, and only the following 3 syscalls:
++ *   sysinfo(), write(), and _exit()
++ *
++ * For output, it avoids printf (which in some C libraries
++ * has large external dependencies) by implementing its own
++ * strlen(), number output and print() routines.
++ */
++
++#include <sys/sysinfo.h>
++#include <unistd.h>
++
++#define STDOUT_FILENO 1
++
++int my_strlen(const char *s)
++{
++	int len = 0;
++
++	while (*s++)
++		len++;
++	return len;
++}
++
++/*
++ * num_to_str - put digits from num into *s, left to right
++ *   do this by dividing the number by powers of 10
++ *   the tricky part is to omit leading zeros
++ *   don't print zeros until we've started printing any numbers at all
++ */
++void num_to_str(unsigned long num, char *s)
++{
++	unsigned long long temp, div;
++	int started;
++
++	temp = num;
++	div = 1000000000000000000LL;
++	started = 0;
++	while (div) {
++		if (temp/div || started) {
++			*s++ = (unsigned char)(temp/div + '0');
++			started = 1;
++		}
++		temp -= (temp/div)*div;
++		div /= 10;
++	}
++	*s = 0;
++}
++
++int print_num(unsigned long num)
++{
++	char num_buf[30];
++
++	num_to_str(num, num_buf);
++	return write(STDOUT_FILENO, num_buf, my_strlen(num_buf));
++}
++
++int print(char *s)
++{
++	return write(STDOUT_FILENO, s, my_strlen(s));
++}
++
++void main(int argc, char **argv)
++{
++	int ccode;
++	unsigned long used;
++	struct sysinfo info;
++	unsigned long long temp;
++
++	print("Testing system size.\n");
++	print("1..1\n");
++
++	ccode = sysinfo(&info);
++	if (ccode < 0) {
++		print("not ok 1 get size runtime size\n");
++		print("# could not get sysinfo\n");
++		_exit(ccode);
++	}
++
++	/* ignore cache complexities for now */
++	temp = info.totalram - info.freeram - info.bufferram;
++	temp = temp * info.mem_unit;
++	temp = temp / 1024;
++
++	used = temp;
++
++	print("ok 1 get runtime size # size = ");
++	print_num(used);
++	print(" K\n");
++
++	_exit(0);
++}
+-- 
+1.8.2.2
