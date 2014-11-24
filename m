@@ -1,43 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920AbaKXUOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:14:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34866 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753772AbaKXUOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:14:48 -0500
-Date: Mon, 24 Nov 2014 21:14:41 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Aaron Tomlin <atomlin@redhat.com>,
+	id S1755049AbaKXUPH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:15:07 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:50312 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596AbaKXUPE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 15:15:04 -0500
+Date: Mon, 24 Nov 2014 12:14:50 -0800
+From: josh@joshtriplett.org
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Pieter Smith <pieter@boesman.nl>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Bertrand Jacquin <beber@meleeweb.net>, Oleg Nesterov <oleg@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Eric Dumazet <edumazet@google.com>,
+        =?utf-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
+        Jeff Layton <jlayton@poochiereds.net>,
+        Tom Herbert <therbert@google.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, Peter Foley <pefoley2@pefoley.com>,
+        Hugh Dickins <hughd@google.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mel Gorman <mgorman@suse.de>, Matt Turner <mattst88@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Catalina Mocanu <catalina.mocanu@gmail.com>,
+        Fabian Frederick <fabf@skynet.be>, Thomas Graf <tgraf@suug.ch>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jan Beulich <JBeulich@suse.com>, Willem de Bruijn <willemb@google.com>,
+        Iulia Manda <iulia.manda21@gmail.com>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] exit: reparent: fix/update the comments in
-	zap_pid_ns_processes()
-Message-ID: <20141124201441.GA21311@redhat.com>
-References: <20141124200602.GA20575@redhat.com> <20141124200626.GA21006@redhat.com>
+        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [fuse-devel] [PATCH 4/6] fs/fuse: support compiling out splice
+Message-ID: <20141124201450.GA18776@cloud>
+References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
+ <1416752468-1626-5-git-send-email-pieter@boesman.nl>
+ <CAFLxGvxq3Mr9n8xMO_fPZDhrGmBh=WKyU0+RF13JBdjssX6qfw@mail.gmail.com>
+ <20141123232302.GA12456@thin>
+ <20141124094931.GA1055@smipidev>
+ <20141124160510.GA2446@jtriplet-mobl1>
+ <20141124193412.GB31618@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141124200626.GA21006@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20141124193412.GB31618@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24, Oleg Nesterov wrote:
->
-> +	 * sys_wait4() above can't reap the TASK_DEAD children but we do not
-> +	 * really care, we could reparent them to the global init. We could
-> +	 * exit and reap ->child_reaper even if it is not the last thread in
-> +	 * this pid_ns, free_pid(nr_hashed == 0) calls proc_cleanup_work(),
-> +	 * pid_ns can not go away until proc_kill_sb() drops the reference.
-> +	 *
-> +	 * But this namespace can also have other tasks injected by setns().
-                                                                    ^^^^^
-I meant setns() + fork(), but I hope this is clear.
+On Mon, Nov 24, 2014 at 11:34:12AM -0800, Greg KH wrote:
+> On Mon, Nov 24, 2014 at 08:05:10AM -0800, Josh Triplett wrote:
+> > On Mon, Nov 24, 2014 at 10:49:31AM +0100, Pieter Smith wrote:
+> > > On Sun, Nov 23, 2014 at 03:23:02PM -0800, Josh Triplett wrote:
+> > > > On Sun, Nov 23, 2014 at 11:29:08PM +0100, Richard Weinberger wrote:
+> > > > > On Sun, Nov 23, 2014 at 3:20 PM, Pieter Smith <pieter@boesman.nl> wrote:
+> > > > > > To implement splice support, fs/fuse makes use of nosteal_pipe_buf_ops. This
+> > > > > > struct is exported by fs/splice. The goal of the larger patch set is to
+> > > > > > completely compile out fs/splice, so uses of the exported struct need to be
+> > > > > > compiled out along with fs/splice.
+> > > > > >
+> > > > > > This patch therefore compiles out splice support in fs/fuse when
+> > > > > > CONFIG_SYSCALL_SPLICE is undefined.
+> > > > > >
+> > > > > > Signed-off-by: Pieter Smith <pieter@boesman.nl>
+> > > > > > ---
+> > > > > >  fs/fuse/dev.c      | 4 ++--
+> > > > > >  include/linux/fs.h | 6 ++++++
+> > > > > >  2 files changed, 8 insertions(+), 2 deletions(-)
+> > > > > >
+> > > > > > diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> > > > > > index ca88731..f8f92a4 100644
+> > > > > > --- a/fs/fuse/dev.c
+> > > > > > +++ b/fs/fuse/dev.c
+> > > > > > @@ -1291,7 +1291,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
+> > > > > >         return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
+> > > > > >  }
+> > > > > >
+> > > > > > -static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
+> > > > > > +static ssize_t __maybe_unused fuse_dev_splice_read(struct file *in, loff_t *ppos,
+> > > > > >                                     struct pipe_inode_info *pipe,
+> > > > > >                                     size_t len, unsigned int flags)
+> > > > > >  {
+> > > > > > @@ -2144,7 +2144,7 @@ const struct file_operations fuse_dev_operations = {
+> > > > > >         .llseek         = no_llseek,
+> > > > > >         .read           = do_sync_read,
+> > > > > >         .aio_read       = fuse_dev_read,
+> > > > > > -       .splice_read    = fuse_dev_splice_read,
+> > > > > > +       .splice_read    = __splice_p(fuse_dev_splice_read),
+> > > > > >         .write          = do_sync_write,
+> > > > > >         .aio_write      = fuse_dev_write,
+> > > > > >         .splice_write   = fuse_dev_splice_write,
+> > > > > > diff --git a/include/linux/fs.h b/include/linux/fs.h
+> > > > > > index a957d43..04c0975 100644
+> > > > > > --- a/include/linux/fs.h
+> > > > > > +++ b/include/linux/fs.h
+> > > > > > @@ -2443,6 +2443,12 @@ extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
+> > > > > >                         int datasync);
+> > > > > >  extern void block_sync_page(struct page *page);
+> > > > > >
+> > > > > > +#ifdef CONFIG_SYSCALL_SPLICE
+> > > > > > +#define __splice_p(x) x
+> > > > > > +#else
+> > > > > > +#define __splice_p(x) NULL
+> > > > > > +#endif
+> > > > > > +
+> > > > > 
+> > > > > This needs to go into a different patch.
+> > > > > One logical change per patch please. :-)
+> > > > 
+> > > > Easy enough to merge this one into the patch introducing
+> > > > CONFIG_SYSCALL_SPLICE, then.
+> > > > 
+> > > > - Josh Triplett
+> > > 
+> > > The patch introducing CONFIG_SYSCALL_SPLICE (PATCH 3) only compiles out the
+> > > syscalls. PATCH 6 on the other hand, compiles out fs/splice.c. This patch
+> > > allows fs/fuse to be compiled when fs/splice.c is compiled out. If I am to
+> > > squash it, it would be logical to include it in PATCH 6, not 3.
+> > 
+> > The suggestion wasn't to move the fs/fuse/dev.c bits; those should
+> > definitely stay in this patch.  The suggestion was just to move the bit
+> > of the patch defining __splice_p from this patch to patch 3.  (Note that
+> > you need to define it before you use it, so it can't go in patch 6.)
+> 
+> I would, again, argue that stuff like __splice_p() not be implemented at
+> all please.  It will only cause a huge proliferation of stuff like this
+> that will not make any sense, and only cause a trivial, if any, amount
+> of code savings.
+> 
+> I thought you were going to not do this type of thing until you got the
+> gcc optimizer working for function callbacks.
 
-Oleg.
+Compared to the previous patchset, there are now only two instances of
+ifdefs outside of the splice code for this, and this is one of them.  In
+this case, the issue is no longer about making the code for this
+splice_read function disappear, but rather to eliminate a reference to a
+bit of splice functionality (used *inside* the FUSE splice code) that
+will not work without SPLICE_SYSCALL.
 
+Would you prefer to see this specific case handled via an #ifdef in
+fs/fuse/dev.c rather than introducing a __splice_p that people might be
+inclined to propagate?  That'd be fine; the code could simply wrap
+fuse_dev_splice_read in an #ifdef and have the #else define a NULL
+fuse_dev_splice_read.
+
+- Josh Triplett
