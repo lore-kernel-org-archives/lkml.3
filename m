@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893AbaKXUGo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:06:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43598 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754353AbaKXUGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:06:42 -0500
-Date: Mon, 24 Nov 2014 21:06:29 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Aaron Tomlin <atomlin@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] exit: pidns: alloc_pid() leaks pid_namespace if
-	child_reaper is exiting
-Message-ID: <20141124200629.GA21009@redhat.com>
+	id S1754914AbaKXUH6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:07:58 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49011 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754804AbaKXUH4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 15:07:56 -0500
+Date: Mon, 24 Nov 2014 21:07:54 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Murali Karicheri <m-karicheri2@ti.com>
+Subject: Re: [4/5] i2c: davinci: use bus recovery infrastructure
+Message-ID: <20141124200754.GW4431@pengutronix.de>
+References: <1416477788-5544-5-git-send-email-grygorii.strashko@ti.com>
+ <20141121190744.GB4431@pengutronix.de>
+ <546F9382.40102@ti.com>
+ <20141123203634.GG4431@pengutronix.de>
+ <547331F2.3000006@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20141124200602.GA20575@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <547331F2.3000006@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alloc_pid() does get_pid_ns() beforehand but forgets to put_pid_ns()
-if it fails because disable_pid_allocation() was called by the exiting
-child_reaper. We can move get_pid_ns() down to successful return.
+Hi Grygorii,
 
-While at it, simplify/cleanup the "goto out" mess, no need to confuse
-the success/error return paths.
+On Mon, Nov 24, 2014 at 03:26:10PM +0200, Grygorii Strashko wrote:
+> On 11/23/2014 10:36 PM, Uwe Kleine-König wrote:
+> > On Fri, Nov 21, 2014 at 09:33:22PM +0200, Grygorii Strashko wrote:
+> >> On 11/21/2014 09:07 PM, Uwe Kleine-König wrote:
+> >>> On Thu, Nov 20, 2014 at 12:03:07PM +0200, Grygorii Strashko wrote:
+> >>> Just another general comment about the driver that doesn't influence the
+> >>> correctness of this patch: The i2c-davinci driver is quite quick to
+> >>> reset the bus. I wonder how often this reset triggers. Is the bus in
+> >>> question less "stable" than others?
+> >>
+> >> In comparison to ..? :)
+> > In comparison to other bus drivers in other SoCs. I know this might be
+> > hard to answer. I just wonder where the reason for this has to be
+> > located. Strange hardware? Software bug? Or is this SoC just operating
+> > with strange slaves more often than others?
+> 
+> Davinci driver does reset in two cases:
+> - when I2C transaction isn't completed due to timeout (no irq received)
+> - when BB is detected
+> both cases are reasonable, because in 1st case HW state is undefined
+> in 2d case - Davinci I2C supports only master mode and if BB detected
+> we need perform some recovery procedure.
+note that for multi-master scenarios bus recovery might be bad. So that
+has not necessarily something to do with "master mode only".
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/pid.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+> Also, this patch doesn't introduce functional changes - it's just code
+> reworking intended to reuse I2C bus recovery infrastructure
+Yeah this is fine, and my concern shouldn't stop your patch from getting
+in as it is an improvement for sure. Still I only had to handle BB once
+in my linux lifetime, and that was for a different reason. (Machine
+doing massive i2c transfers and so a client was often holding the bus
+busy when the watchdog resetted the cpu.) So I just wondered how often
+the need for recovery arises.
 
-diff --git a/kernel/pid.c b/kernel/pid.c
-index 9b9a266..dfc2f3b 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -320,7 +320,6 @@ struct pid *alloc_pid(struct pid_namespace *ns)
- 			goto out_free;
- 	}
- 
--	get_pid_ns(ns);
- 	atomic_set(&pid->count, 1);
- 	for (type = 0; type < PIDTYPE_MAX; ++type)
- 		INIT_HLIST_HEAD(&pid->tasks[type]);
-@@ -336,7 +335,7 @@ struct pid *alloc_pid(struct pid_namespace *ns)
- 	}
- 	spin_unlock_irq(&pidmap_lock);
- 
--out:
-+	get_pid_ns(ns);
- 	return pid;
- 
- out_unlock:
-@@ -346,8 +345,8 @@ out_free:
- 		free_pidmap(pid->numbers + i);
- 
- 	kmem_cache_free(ns->pid_cachep, pid);
--	pid = NULL;
--	goto out;
-+out:
-+	return NULL;
- }
- 
- void disable_pid_allocation(struct pid_namespace *ns)
+Best regards
+Uwe
+
 -- 
-1.5.5.1
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
