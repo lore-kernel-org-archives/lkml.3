@@ -1,139 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576AbaKXSbw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:31:52 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:61100 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322AbaKXSbt (ORCPT
+	id S1754578AbaKXSeS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:34:18 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:59860 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753924AbaKXSeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:31:49 -0500
-From: Andrey Smirnov <andrew.smirnov@gmail.com>
-To: linux-spi@vger.kernel.org
-Cc: andrew.smirnov@gmail.com, yurovsky@gmail.com, broonie@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC, PATCH, RESEND] spi, spidev: Add support for long SPI transfers
-Date: Mon, 24 Nov 2014 10:31:33 -0800
-Message-Id: <1416853893-1993-1-git-send-email-andrew.smirnov@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Mon, 24 Nov 2014 13:34:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <11772640.IZcxoRkMEM@wuerfel>
+References: <1416796846-28149-1-git-send-email-cernekee@gmail.com>
+	<1416796846-28149-12-git-send-email-cernekee@gmail.com>
+	<11772640.IZcxoRkMEM@wuerfel>
+Date: Mon, 24 Nov 2014 10:34:15 -0800
+X-Google-Sender-Auth: FBoW6-OK76MnjoFJtngZEebsfv8
+Message-ID: <CAL1qeaH8d0DAZ5SEyioPUM1WXvTgyEoXOqM88-tibnsd-MDT=Q@mail.gmail.com>
+Subject: Re: [PATCH V3 11/11] MIPS: Add multiplatform BMIPS target
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Kevin Cernekee <cernekee@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Florian Fainelli <f.fainelli@gmail.com>, jfraser@broadcom.com,
+        Dmitry Torokhov <dtor@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Jonas Gorski <jogo@openwrt.org>,
+        computersforpeace@gmail.com, Linux-MIPS <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SPI controllers found on modern SoCs have rather large SPI FIFOs and
-allow for uninterrupted SPI transaction that are more then 255 bits
-long. This commit adds necessary plumbing for such SPI transfers.
-
-Signed-off-by: Andrey Smirnov <andrew.smirnov@gmail.com>
----
-
-Changes:
- - Fixed commit message
- - Ditched the cover letter
- - Used correct address for linux-kernel mailing list
-
 Hi,
 
-This patch is a very first, very preliminary version of the feature I
-am implementing for niche usecase of SPI in a system I am working
-on. It by no means contains production code and is purely RFC to "test
-the water" and see if there would be any interest in including this in
-mainline tree.
+On Mon, Nov 24, 2014 at 6:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> ---
+>>  .../devicetree/bindings/mips/brcm/bmips.txt        |   8 +
+>>  .../devicetree/bindings/mips/brcm/soc.txt          |  12 ++
+>>  arch/mips/Kbuild.platforms                         |   1 +
+>>  arch/mips/Kconfig                                  |  36 ++++
+>>  arch/mips/bmips/Kconfig                            |  50 ++++++
+>>  arch/mips/bmips/Makefile                           |   1 +
+>>  arch/mips/bmips/Platform                           |   7 +
+>>  arch/mips/bmips/dma.c                              | 141 +++++++++++++++
+>>  arch/mips/bmips/irq.c                              |  38 ++++
+>>  arch/mips/bmips/setup.c                            | 195 +++++++++++++++++++++
+>>  arch/mips/boot/dts/Makefile                        |   9 +
+>>  arch/mips/boot/dts/bcm3384_viper.dtsi              | 108 ++++++++++++
+>>  arch/mips/boot/dts/bcm3384_zephyr.dtsi             | 126 +++++++++++++
+>>  arch/mips/boot/dts/bcm6328.dtsi                    |  87 +++++++++
+>>  arch/mips/boot/dts/bcm6368.dtsi                    |  94 ++++++++++
+>>  arch/mips/boot/dts/bcm7125.dtsi                    | 107 +++++++++++
+>>  arch/mips/boot/dts/bcm7346.dtsi                    | 192 ++++++++++++++++++++
+>>  arch/mips/boot/dts/bcm7360.dtsi                    | 129 ++++++++++++++
+>>  arch/mips/boot/dts/bcm7420.dtsi                    | 151 ++++++++++++++++
+>>  arch/mips/boot/dts/bcm7425.dtsi                    | 191 ++++++++++++++++++++
+>
+> I hadn't noticed before that the dts files are now all in one
+> directory on MIPS, apparently after a patch from Andrew Brewsticker.
+> We should really coordinate these things better, we have just merged
+> an arm64 patch to split out the files into multiple directories.
 
-The system I am working with implements a lion's share of its
-functionality in an extrenal FPGA connected to an ARM SoC via SPI
-bus. In my use-case SPI bus used both for initial bitfile programming
-of the FPGA and sending/fetching data to/from FPGA as well. Both use
-cases, can benefit greatly from ability to send very long bit streams
-over SPI as a single transaction during which CS line stays low the
-whole time. The use-case of programming the FPGA is the most important
-for me, since it is mandatory to program the FPGA before the rest of
-the system can proceed to a functioning state and therefore my
-"Applied power -> Functional State" time is greatly influenced by that
-operation.
-
-As things are right now both SPI subsystem and SPIDEV driver are
-limited by their APIs to SPI transactions that are no longer than 255
-bits and that problem is exacerbated by the fact that transction
-length validity verification code does not have provisions for
-anything bigger than 32 bits.
-
-The code in this RFC deals only with the first problem, as I am not
-sure what would best way to tackle the second one.
-
-So I guess my two maing questions for this RFC are the following:
-
- - Is this work seem like a good fit to be included in the mainline
-   kernel, or should I just keep doing it as my system specifica hack
-   and not bother with upsteaming?
-
- - If the idea is good for upstreaming what would be a good way to
-   improve length checking code? I was thinking of ditching the
-   bitmask in favour of driver provided function that would take
-   transfer length as an argument, are there any better options?
-
-Thank you.
-
-Andrey Smirnov
-
-
- drivers/spi/spidev.c            | 7 ++++++-
- include/linux/spi/spi.h         | 4 ++--
- include/uapi/linux/spi/spidev.h | 2 +-
- 3 files changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
-index d7c6e36..45d8905 100644
---- a/drivers/spi/spidev.c
-+++ b/drivers/spi/spidev.c
-@@ -265,7 +265,12 @@ static int spidev_message(struct spidev_data *spidev,
- 		buf += k_tmp->len;
- 
- 		k_tmp->cs_change = !!u_tmp->cs_change;
--		k_tmp->bits_per_word = u_tmp->bits_per_word;
-+
-+		if (!u_tmp->bits_per_word && u_tmp->bits_per_burst)
-+			k_tmp->bits_per_word = u_tmp->bits_per_burst;
-+		else
-+			k_tmp->bits_per_word = u_tmp->bits_per_word;
-+
- 		k_tmp->delay_usecs = u_tmp->delay_usecs;
- 		k_tmp->speed_hz = u_tmp->speed_hz;
- #ifdef VERBOSE
-diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-index 4203c66..a0c34c1 100644
---- a/include/linux/spi/spi.h
-+++ b/include/linux/spi/spi.h
-@@ -75,7 +75,7 @@ struct spi_device {
- 	struct spi_master	*master;
- 	u32			max_speed_hz;
- 	u8			chip_select;
--	u8			bits_per_word;
-+	u32			bits_per_word;
- 	u16			mode;
- #define	SPI_CPHA	0x01			/* clock phase */
- #define	SPI_CPOL	0x02			/* clock polarity */
-@@ -586,7 +586,7 @@ struct spi_transfer {
- #define	SPI_NBITS_SINGLE	0x01 /* 1bit transfer */
- #define	SPI_NBITS_DUAL		0x02 /* 2bits transfer */
- #define	SPI_NBITS_QUAD		0x04 /* 4bits transfer */
--	u8		bits_per_word;
-+	u32		bits_per_word;
- 	u16		delay_usecs;
- 	u32		speed_hz;
- 
-diff --git a/include/uapi/linux/spi/spidev.h b/include/uapi/linux/spi/spidev.h
-index 52d9ed0..b70f3d4 100644
---- a/include/uapi/linux/spi/spidev.h
-+++ b/include/uapi/linux/spi/spidev.h
-@@ -92,7 +92,7 @@ struct spi_ioc_transfer {
- 	__u16		delay_usecs;
- 	__u8		bits_per_word;
- 	__u8		cs_change;
--	__u32		pad;
-+	__u32		bits_per_burst;
- 
- 	/* If the contents of 'struct spi_ioc_transfer' ever change
- 	 * incompatibly, then the ioctl number (currently 0) must change;
--- 
-1.9.3
-
+FWIW, I'm planning on sending a patch once 3.19-rc1 is released to
+move the DTs into per-vendor sub-directories.  I was expecting to do
+it for 3.19, but Robert Richter's series which added kbuild support
+for the vendor sub-directories did not end up landing in 3.18.
