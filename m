@@ -1,102 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222AbaKXO6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:58:42 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54798 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752915AbaKXO6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:58:39 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v3 4/7] crypto: AF_ALG: add AEAD support
-Date: Mon, 24 Nov 2014 15:58:34 +0100
-Message-ID: <5492722.Cc6uZ9OM2L@tauon>
-User-Agent: KMail/4.14.2 (Linux/3.17.2-200.fc20.x86_64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <20141124142945.GB31469@gondor.apana.org.au>
-References: <4088013.2O8zCP0xXa@tachyon.chronox.de> <2175035.5IWBGpA0Ko@tachyon.chronox.de> <20141124142945.GB31469@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1753548AbaKXO7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:59:34 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:55586 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753223AbaKXO7c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 09:59:32 -0500
+Message-ID: <1416841165.25352.42.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 3/5] PKCS#7: Allow detached data to be supplied for
+ signature checking purposes
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: mmarek@suse.cz, d.kasatkin@samsung.com, rusty@rustcorp.com.au,
+        vgoyal@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 24 Nov 2014 09:59:25 -0500
+In-Reply-To: <26417.1416840116@warthog.procyon.org.uk>
+References: <1416836587.25352.24.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <1416829928.25352.6.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <20141120165351.5264.61930.stgit@warthog.procyon.org.uk>
+	 <20141120165425.5264.24661.stgit@warthog.procyon.org.uk>
+	 <14157.1416833305@warthog.procyon.org.uk>
+	 <26417.1416840116@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112414-0017-0000-0000-00000687BEAF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 24. November 2014, 22:29:46 schrieb Herbert Xu:
+On Mon, 2014-11-24 at 14:41 +0000, David Howells wrote: 
+> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> 
+> > > > Ok, PCKS#7 supports detached data.  I assume this is not needed for
+> > > > kernel modules.  What is the motivation for adding this support to the
+> > > > kernel?
+> > > 
+> > > See patch #5.  I should probably note that in the commit message.
+> > 
+> > This patch set does not change the syscall.  The signature is still
+> > appended to the kernel module.
+> 
+> Ummm, yes, so?
+> 
+> > In fact, the call from kernel/module_signing.c: mod_verify_pkcs7() calls
+> > pkcs7_supply_detached_data() with a pointer to the module and the module
+> > length to set the data field. pkcs7_supply_detached_data() would not be
+> > defined or exported, unless it was going to be called elsewhere.  How else
+> > are you planning on using pkcs7_supply_detached_data()?
+> 
+> Is your point that I exported it unnecessarily?  That I have now fixed.
 
-Hi Herbert,
+No, it was more a comment on the function name
+pkcs7_supply_detached_data() being a bit weird, as the signature is
+appended to the data.
 
->On Fri, Nov 21, 2014 at 06:32:16AM +0100, Stephan Mueller wrote:
->> This patch adds the AEAD support for AF_ALG.
->> 
->> The AEAD implementation uses the entire memory handling and
->> infrastructure of the existing skcipher implementation.
->> 
->> To use AEAD, the user space consumer has to use the salg_type named
->> "aead". The AEAD extension only uses the bind callback as the key
->> differentiator. The previously added functions that select whether to
->> use AEAD or ablkcipher crypto API functions depend on the TFM type
->> allocated during the bind() call.
->> 
->> The addition of AEAD brings a bit of overhead to calculate the size
->> of
->> the ciphertext, because the AEAD implementation of the kernel crypto
->> API makes implied assumption on the location of the authentication
->> tag. When performing an encryption, the tag will be added to the
->> created ciphertext (note, the tag is placed adjacent to the
->> ciphertext). For decryption, the caller must hand in the ciphertext
->> with the tag appended to the ciphertext. Therefore, the selection of
->> the used memory needs to add/subtract the tag size from the
->> source/destination buffers depending on the encryption type. The
->> code is provided with comments explainint when and how that
->> operation is performed.
->> 
->> Note: The AF_ALG interface does not support zero length input data.
->> Such zero length input data may be used if one wants to access the
->> hash implementation of an AEAD directly (e.g. the GHASH of GCM or
->> CMAC for CCM). However, this is a use case that is not of interest.
->> GHASH or CMAC is directly available via the hash AF_ALG interface
->> and we therefore do not need to take precautions for this use case.
->> 
->> A fully working example using all aspects of AEAD is provided at
->> http://www.chronox.de/libkcapi.html
->> 
->> Signed-off-by: Stephan Mueller <smueller@chronox.de>
->
->I appreciate the effort to share code, but shoe-horning AEAD into
->algif_skcipher is just too ugly.
+Mimi
 
-Ok. But in the code you see that skcipher is a 100% subset of AEAD. For 
-AEAD, all we need to do in addition to normal symmetric ciphers is to 
-select the AEAD kernel crypto API calls, to locate and use the AD and to 
-ensure we have the right memory size to process the tag.
-
-How about the following:
-
-Use algif_skcipher.c as the common code which requires:
-
-- function pointers for the kernel crypto API backends
-
-- function pointers for the AEAD specific handling which are invoked at 
-the right places -- they are NULL in case of skcipher
->
->How about let's just start with a separate algif_aead and then
->add helpers to merge common code as applicable?
-
-When we have a separate algif_aead, then I guess we want to allow 
-skcipher and aead to be configured and compiled independently.
-
-That raises the question where the common code should go? I would not 
-suggest to put it into a header file. However, when adding it to a C 
-file, how do you propose it should be considered in the Makefile. That C 
-file needs to be compile once with either skcipher or aead.
->
->Thanks,
-
-
-Ciao
-Stephan
