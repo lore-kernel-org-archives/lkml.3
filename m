@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335AbaKXPZq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:25:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:50034 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750955AbaKXPZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:25:45 -0500
-Date: Mon, 24 Nov 2014 12:25:41 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>
-Subject: Re: probe + report for following branch history. was Re: [PATCH 1/2]
- perf hists browser: Print overhead percent value for first-level callchain
-Message-ID: <20141124152541.GB13167@kernel.org>
-References: <20141124145227.GE18625@kernel.org>
- <20141124152312.GA13167@kernel.org>
+	id S1753565AbaKXP0h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 10:26:37 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36858 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055AbaKXP0f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 10:26:35 -0500
+Date: Mon, 24 Nov 2014 15:24:33 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Alban Bedel <alban.bedel@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>
+Message-ID: <20141124152433.GD7712@sirena.org.uk>
+References: <1416834123-23139-1-git-send-email-alban.bedel@avionic-design.de>
+ <1416834123-23139-3-git-send-email-alban.bedel@avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tEFtbjk+mNEviIIX"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141124152312.GA13167@kernel.org>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <1416834123-23139-3-git-send-email-alban.bedel@avionic-design.de>
+X-Cookie: Celebrity voices impersonated.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/4] devicetree: add a binding for a group of regulator
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Nov 24, 2014 at 12:23:12PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Mon, Nov 24, 2014 at 11:52:27AM -0300, Arnaldo Carvalho de Melo escreveu:
-> > Em Mon, Nov 24, 2014 at 05:13:26PM +0900, Namhyung Kim escreveu:
-> > > Currently perf report on TUI doesn't print percent for first-level
-> > > callchain entry.  I guess it (wrongly) assumes that there's only a
-> > > single callchain in the first level.  This patch fixes it by handling
-> > > the first level callchains same as others - if it's not 100% it should
-> > > print the percent value.  Also it'll affect other callchains in the
-> > > other way around - if it's 100% (single callchain) it should not print
-> > > the percentage.
-> > > 
-> > > Before:
-> > >   -   30.95%     6.84%  abc2     abc2              [.] a
-> > >      - a
-> > 
-> > Thanks, with this the --stdio output matches --tui when --branch-history
-> > is used in 'report', will push soon.
-> 
-> [acme@zoo linux]$ time make -C tools/perf build-test
-> make: Entering directory `/home/git/linux/tools/perf'
-> - make_pure: cd . && make -f Makefile DESTDIR=/tmp/tmp.z11aKMiurz 
 
-Right to the point:
+--tEFtbjk+mNEviIIX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[acme@zoo linux]$ make -C tools/perf NO_DEMANGLE=1 util/srcline.o
-make: Entering directory `/home/git/linux/tools/perf'
-  BUILD:   Doing 'make -j4' parallel build
-  CC       util/srcline.o
-In file included from util/srcline.c:18:0:
-/usr/include/bfd.h:6197:7: error: conflicting types for ‘bfd_demangle’
- char *bfd_demangle (bfd *, const char *, int);
-       ^
-In file included from util/srcline.c:11:0:
-util/symbol.h:35:21: note: previous definition of ‘bfd_demangle’ was
-here
- static inline char *bfd_demangle(void __maybe_unused *v,
-                     ^
-make[1]: *** [util/srcline.o] Error 1
-make: *** [util/srcline.o] Error 2
-make: Leaving directory `/home/git/linux/tools/perf'
-[acme@zoo linux]$ 
+On Mon, Nov 24, 2014 at 02:02:02PM +0100, Alban Bedel wrote:
+
+> +This binding allow creating a group of regulators for use with simple
+> +drivers that only expect a single power supply. Additionally it is
+> +possible to enforce the enable ordering to create simple power up
+> +sequences.
+
+Absoutely not, this sort of scripting is not sensible - if the consumer
+device has multiple supplies the consumer device should be working with
+them independently and if the consumer has ordering constraints it needs
+to enforce them itself.  Trying to solve this problem with a bodge in
+the regulator API just isn't the right place, leaving aside the above
+most power sequences involve things other than regulators like clocks
+and reset signals so just doing things purely at the regulator API level
+isn't ging to solve the problem. =20
+
+Please look for the generic power sequence stuff that was getting
+discussed a while back and try to resurrect that if you feel there's a
+compelling reason to have this functionality without doing it for
+drivers.
+
+--tEFtbjk+mNEviIIX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUc02xAAoJECTWi3JdVIfQAb0H+wYUhYLOS3n1+LVp11OOqK07
+4PQp5AtIDF5crOcHO5pivr7gB5eqNE6KpZZWZFk5ON7HbBIkIhnSlG/6QLOSvW8v
+CIZk6SRZrhemYMJ5KdqNy76ytk1jdTFPWlJ0QXKeJ+X/r7VDbyvRTFh/BIKx4EP6
+Ut6WFKvYfTJZIaJ+b0FpNGd5s7kdQ+S9iGsbvjpRszM+lqJH1upNlK2GK6R9WVW7
+MiIMgJBGgsohsY/YUmyY5QbqsDg9ZDLSBWWx1qzCZgRvJBVTyvl+GSo7GdctxcQV
+4Dd0xZlwtJ8zh4hATHOTaFi7eDrutEsrIAiSpEOr0+yly/whwhbK2RvQrC8RDsk=
+=qh7o
+-----END PGP SIGNATURE-----
+
+--tEFtbjk+mNEviIIX--
