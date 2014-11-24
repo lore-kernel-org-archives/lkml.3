@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473AbaKXRas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 12:30:48 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:33606 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204AbaKXRap (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 12:30:45 -0500
+	id S1754500AbaKXRbV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 12:31:21 -0500
+Received: from mout.web.de ([212.227.15.4]:51816 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753881AbaKXRbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 12:31:19 -0500
+Message-ID: <54736B59.7040108@users.sourceforge.net>
+Date: Mon, 24 Nov 2014 18:31:05 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <15567.1416835858@warthog.procyon.org.uk>
-References: <1416834210-61738-1-git-send-email-borntraeger@de.ibm.com>
-	<1416834210-61738-8-git-send-email-borntraeger@de.ibm.com>
-	<15567.1416835858@warthog.procyon.org.uk>
-Date: Mon, 24 Nov 2014 09:30:43 -0800
-X-Google-Sender-Auth: WSZ8a2SwKmKP0SxSp4DEK1DAHg4
-Message-ID: <CA+55aFyhFfB52HCpnDeg0pbR-0=t=hsVjOACwnmMEQ=fhvaO2Q@mail.gmail.com>
-Subject: Re: [PATCH/RFC 7/7] kernel: Force ACCESS_ONCE to work only on scalar types
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>, linux-x86_64@vger.kernel.org,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Jiri Kosina <jkosina@suse.cz>, linux-doc@vger.kernel.org
+CC: kernel-janitors@vger.kernel.org, trivial@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 6/6] Documentation-SCSI: Fix a typo for the word "destroy"
+References: <54736422.90409@users.sourceforge.net>
+In-Reply-To: <54736422.90409@users.sourceforge.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:Kx5e8CjQkiI/mM6HeDX8iouHYiGzICIKOrYFzRRtULR3m3eodaX
+ RgBZLc7xaf1a80aqD0d5ucq8zuMwWX0MnYu/NFruig+3JdgG+MujB8mKOnPAULHVq5qOkz0
+ YmxEEl/PLl4i+LSBoRHOxuC/ELwVJWovBT0TbMf7HzhtaWF5WpOkTy3PZDaHJ65lumzvjj6
+ KXcax8O7cnxBT5umOmetw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 5:30 AM, David Howells <dhowells@redhat.com> wrote:
-> Christian Borntraeger <borntraeger@de.ibm.com> wrote:
->
->> +#define get_scalar_volatile_pointer(x) ({ \
->> +     typeof(x) *__p = &(x); \
->> +     volatile typeof(x) *__vp = __p; \
->> +     (void)(long)*__p; __vp; })
->> +#define ACCESS_ONCE(x) (*get_scalar_volatile_pointer(x))
->
-> Might this cause two loads from memory under some conditions?  Once for the
-> fourth line and once for the fifth?
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 24 Nov 2014 17:25:30 +0100
 
-Hmm. Since the fourth line isn't volatile, I'd expect gcc to optimize
-it away. But you're right, it might be safer to make sure the "test
-type" part is something like
+An identifier was corrected in a change log entry because it contained a typo.
 
-   (void)sizeof((long)*__p)
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ Documentation/scsi/ChangeLog.lpfc | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-instead - the "sizeof()" means that it will never actually get
-evaluated, but the type-checking of casting *__p to (long) will still
-catch the case of *__p being some non-scalar type that cannot be cast.
+diff --git a/Documentation/scsi/ChangeLog.lpfc b/Documentation/scsi/ChangeLog.lpfc
+index 2f6d595..24d6508 100644
+--- a/Documentation/scsi/ChangeLog.lpfc
++++ b/Documentation/scsi/ChangeLog.lpfc
+@@ -1263,7 +1263,7 @@ Changes from 20040515 to 20040526
+ 	* Switch from using internal bus/id/lun to similar data from
+ 	  scsi_device structure.
+ 	* Eliminate one-line function lpfc_find_target()
+-	* Added slave_alloc, slave_destory
++	* Added slave_alloc, slave_destroy
+ 	* lpfc_scsi_cmd_start can now acquire lun pointer from
+ 	  scsi_device->hostdata, which is setup in slave_alloc.
+ 	* Eliminate unnecessary checking on every cmd just to see if we
+-- 
+2.1.3
 
-                   Linus
