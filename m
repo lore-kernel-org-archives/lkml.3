@@ -1,129 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749AbaKXNUZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 08:20:25 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:28489 "EHLO
+	id S1753927AbaKXNUh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 08:20:37 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:28506 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622AbaKXNUX (ORCPT
+	with ESMTP id S1753794AbaKXNUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 08:20:23 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-09-54733095b686
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk
-Subject: Re: [PATCH v4 0/5] exynos: Move pmu driver to driver/soc folder and
- add exynos7 support
-Date: Mon, 24 Nov 2014 14:20:08 +0100
-Message-id: <36336460.BrNftCFaUT@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-70-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1416794775-1605-1-git-send-email-amit.daniel@samsung.com>
-References: <1416794775-1605-1-git-send-email-amit.daniel@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t9jQd2pBsUhBtca1C0aroZY9C64ymax
-	6fE1VovLu+awWcw4v4/J4vZlXgc2j5bmHjaPzUvqPfq2rGL0+LxJLoAlissmJTUnsyy1SN8u
-	gSvjzLWdrAXzFStO/7/K3sDYKtnFyMEhIWAicfylVhcjJ5ApJnHh3nq2LkYuDiGB6YwSGyev
-	Z4FwWpgkFvWvYgepYhOwkpjYvooRxBYRMJQ4fmApWAezwCxGiWv3ZoMlhAWSJPbt/sIMYrMI
-	qErsPj0VrJlXQEviypc+FhBbVMBTYuf0A2D1nALuEs1H54PZQgJuEnu+dzBB1AtK/Jh8D6ye
-	WUBeYt/+qawQto7E/tZpbBMYgbYilM1CUjYLSdkCRuZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ
-	+bmbGMHB/Ex6B+OqBotDjAIcjEo8vDPWF4UIsSaWFVfmHmKU4GBWEuEVEysOEeJNSaysSi3K
-	jy8qzUktPsQozcGiJM5742ZuiJBAemJJanZqakFqEUyWiYNTqoGRaZrAr5gE2/p9P2LS58zp
-	Pb2CP9Gh2cN+X4GQa7Ktbt8PR5NbPur6pbcn/ko9U1bHrilyZT/3fVazzYtFD0w8Oa8q8/Bx
-	sYuRrD1GRXM33Tsg83lT/I+jquqLS19N2/q/T8JgQXbwie8V8vr6HFXm5TdUFefMafk6d6Ha
-	61fnm+3i9iyPOtOrxFKckWioxVxUnAgA8y/m4mICAAA=
+	Mon, 24 Nov 2014 08:20:34 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-22-547330a08297
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org
+Cc: kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
+        s.nawrocki@samsung.com, pankaj.dubey@samsung.com,
+        ulf.hansson@linaro.org, khilman@kernel.org, linux-pm@vger.kernel.org,
+        geert@linux-m68k.org, rjw@rjwysocki.net, devicetree@vger.kernel.org,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Subject: [PATCH RFC v2 10/12] drivers: soc: samsung: Add support for clock
+ enabling in power domain
+Date: Mon, 24 Nov 2014 18:34:14 +0530
+Message-id: <1416834256-11225-10-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1416834256-11225-1-git-send-email-amit.daniel@samsung.com>
+References: <1416833572-6880-1-git-send-email-amit.daniel@samsung.com>
+ <1416834256-11225-1-git-send-email-amit.daniel@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42JZI2JSrbvAoDjE4NNHPouGqyEW84+cY7V4
+	dmsvk0XvgqtsFk83P2ay2PT4GqvF5V1z2Cw+9x5htJhxfh+TxaKtX9gtzpy+xGpx+E07q8Xx
+	teEOvB6bVnWyedy5tofN49DhDkaPzUvqPbZcbWfx6NuyitHj8ya5APYoLpuU1JzMstQifbsE
+	row93y+yFOxzqPjbepKlgXGLSRcjJ4eEgInElhu9zBC2mMSFe+vZuhi5OIQEljJKfP9wiwWm
+	aGrvGVaIxHRGiRU9U6CqJjBJtK9qZAKpYhMwlvi5cz97FyMHh4iAt8Tya4ogNcwCq5kktrZ/
+	AKsRFkiVWHl1MTuIzSKgKrFjwnawel4BD4kn0+VATAkBBYk5k2xAKjiBoi8OtjBDrGphlLj0
+	eC7YERICl9glli2YzQwxR0Di2+RDLBDNshKbDkB9IylxcMUNlgmMwgsYGVYxiqYWJBcUJ6UX
+	GekVJ+YWl+al6yXn525iBEbM6X/P+nYw3jxgfYhRgINRiYf3w8aiECHWxLLiytxDjKZAGyYy
+	S4km5wPjMq8k3tDYzMjC1MTU2Mjc0kxJnDdB6mewkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6p
+	BsaaD5oXf9jH8Fk7SG2JeyS52uyl4tpN59Ns+D8YeZSbpW13W39VqyTkWKHWC72G1W+Fz5U1
+	TzEMjjgy6SaT540l6+ImFDfs/Hf5m1Ddlkm2y+6xntKXtlx1hpmHbePzV1cL32vbLRL4bt0W
+	6CJ41GDfm79NL0xF1W62Wr0J8tgVVjnpdnFn4wMlluKMREMt5qLiRADD4KT0kwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t9jQd0FBsUhBtPnsVg0XA2xmH/kHKvF
+	s1t7mSx6F1xls3i6+TGTxabH11gtLu+aw2bxufcIo8WM8/uYLBZt/cJuceb0JVaLw2/aWS2O
+	rw134PXYtKqTzePOtT1sHocOdzB6bF5S77HlajuLR9+WVYwenzfJBbBHNTDaZKQmpqQWKaTm
+	JeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gAdq6RQlphTChQKSCwuVtK3
+	wzQhNMRN1wKmMULXNyQIrsfIAA0krGHM2PP9IkvBPoeKv60nWRoYt5h0MXJySAiYSEztPcMK
+	YYtJXLi3nq2LkYtDSGA6o8SKnilQzgQmifZVjUwgVWwCxhI/d+5n72Lk4BAR8JZYfk0RpIZZ
+	YDWTxNb2D2A1wgKpEiuvLmYHsVkEVCV2TNgOVs8r4CHxZLociCkhoCAxZ5INSAUnUPTFwRZm
+	iFUtjBKXHs9lncDIu4CRYRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcDw+k97BuKrB4hCj
+	AAejEg/vjPVFIUKsiWXFlbmHGCU4mJVEeMXEikOEeFMSK6tSi/Lji0pzUosPMZoCHTWRWUo0
+	OR+YKvJK4g2NTcxNjU0tTSxMzCyVxHlv3MwNERJITyxJzU5NLUgtgulj4uCUamA0/ttupf86
+	R7++rTCDydfW8Jfa/S+M6jutREpnfDid83sS4+njN0znMM4RULfOfr1buervlTsak7IjNs1r
+	6g2916rdrsArsWpmd9a7jld1KX12wfVLjpfcfLVjUcXyd7ZVZ/82xEglneDluvm8YHtCqkvS
+	ulfKj81a6099T1r77e8uz/QnN/4qsRRnJBpqMRcVJwIANvvw6N0CAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+While turning power domain to on/off, some clocks need to be enabled
+in the Exynos7 SOC. This patch adds the framework for enabling those
+clocks before on/off and restoring it back after the operation. Also
+these list of clocks may be different for on/off operation so not using
+the generic pm domain suspend/resume interface.
 
-Hi,
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+ .../bindings/arm/exynos/power_domain.txt           |   12 ++
+ drivers/soc/samsung/pm_domains.c                   |  138 +++++++++++++++++++-
+ 2 files changed, 146 insertions(+), 4 deletions(-)
 
-On Monday, November 24, 2014 07:36:10 AM Amit Daniel Kachhap wrote:
-> This patch series [1 - 5] performs,
-> 
-> 1) Moves pmu driver to driver/soc/samsung folder. This is needed as exynos7 is
->    an arm64 based platform and hence PMU driver should be in driver folder.
->    Some discussion happened about this in the v1 version. Finally adding it in
->    driver/soc folder as it too SoC specific and not a general driver.
->    Entire discussion can be found here (A).
-> 2) Add exynos7 PMU support.
-
-Some months ago (when the work on moving PMU driver out of mach-exynos
-started) I asked how much code would be shared between arm32 and arm64
-SoCs.  Now it seems that the code in question is minimal so I still
-wonder whether it is really worth to have a common driver (please note
-that in case of arm32 kernel all arm64 PMU code is just a dead code,
-similarly for arm64 kernel and arm32 PMU code).  Would it be possible
-to do the analysis of the additional source code needed vs saved code
-in the resulting binary for the case of having separate drivers?
-
-Could you also please take a look into fixing patch #4 to be compatible
-with http://lkml.iu.edu/hypermail/linux/kernel/1407.1/00298.html ?
-(It seems that just adding separate struct exynos_pmu_conf_extra for
-->pmu_config_extra shold be okay.)
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
-> 3) Enables the driver for 32bit arm exynos platforms.
-> 
-> Changes from V3:
-> * Fixed Kconfig as per Russell feedback
-> * Rebased the series against Pankaj SoC restart consolidation patches (D) as per
->   Kukjin request.
-> * Link to V3 can be found here (C)
-> 
-> Changes from V2:
-> * Added review comment changes suggested by Pankaj.
-> * Removed mfd client support in this patch series. This will be added later in
->   the power domain patch series.
-> * Link to V2 can be found here (B)
-> 
-> Changes from V1:
-> * Move pmu driver in driver/soc/samsung folder
-> * Removed the power domain features. They will posted as a separate series.
-> * Added exynos7 PMU support.
-> * Link to v1 can be found here (A)
-> 
-> This complete patch series is rebased on Kukjin for-next tree.
-> 
-> (A) - http://www.spinics.net/lists/linux-samsung-soc/msg38442.html
-> (B) - http://www.spinics.net/lists/arm-kernel/msg375910.html
-> (C) - http://www.spinics.net/lists/linux-samsung-soc/msg39237.html 
-> (D) - http://www.spinics.net/lists/linux-samsung-soc/msg39095.html
-> 
-> Amit Daniel Kachhap (5):
->   ARM: EXYNOS: Move pmu specific header files under "linux/soc/samsung"
->   drivers: soc: Add support for Exynos PMU driver
->   driver: soc: exynos-pmu: Add an API to be called after wakeup
->   drivers: soc: exynos-pmu: Add support for Exynos7
->   arm: exynos: Select SOC_SAMSUNG config option
-> 
->  .../devicetree/bindings/arm/samsung/pmu.txt        |    1 +
->  arch/arm/mach-exynos/Kconfig                       |    1 +
->  arch/arm/mach-exynos/Makefile                      |    2 +-
->  arch/arm/mach-exynos/exynos.c                      |    2 +-
->  arch/arm/mach-exynos/mcpm-exynos.c                 |    2 +-
->  arch/arm/mach-exynos/platsmp.c                     |    2 +-
->  arch/arm/mach-exynos/pm.c                          |    4 +-
->  arch/arm/mach-exynos/suspend.c                     |    4 +-
->  drivers/soc/Kconfig                                |    1 +
->  drivers/soc/Makefile                               |    1 +
->  drivers/soc/samsung/Kconfig                        |   20 +
->  drivers/soc/samsung/Makefile                       |    1 +
->  .../pmu.c => drivers/soc/samsung/exynos-pmu.c      |  442 +++++++++++++++++++-
->  .../linux/soc/samsung}/exynos-pmu.h                |    1 +
->  .../linux/soc/samsung/exynos-regs-pmu.h            |  273 ++++++++++++
->  15 files changed, 744 insertions(+), 13 deletions(-)
->  create mode 100644 drivers/soc/samsung/Kconfig
->  create mode 100644 drivers/soc/samsung/Makefile
->  rename arch/arm/mach-exynos/pmu.c => drivers/soc/samsung/exynos-pmu.c (64%)
->  rename {arch/arm/mach-exynos => include/linux/soc/samsung}/exynos-pmu.h (89%)
->  rename arch/arm/mach-exynos/regs-pmu.h => include/linux/soc/samsung/exynos-regs-pmu.h (63%)
+diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+index 8d913b9..c48769e 100644
+--- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
++++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+@@ -24,6 +24,14 @@ Optional Properties:
+ 	- pclkN, clkN: Pairs of parent of input clock and input clock to the
+ 	devices in this power domain.
+ 	Maximum of 10 sets (N = 0 to 9) are supported.
++- pd-on-en-clocks: List of clock handles. These clocks are required to enabled
++	before turning on a power domain.
++- pd-on-en-clock-names: clocks can be specified as,
++	- clkN: N can vary between 0-30.
++- pd-off-en-clocks: List of clock handles. These clocks are required to enabled
++	before turning off a power domain.
++- pd-off-en-clock-names: clocks can be specified as,
++	- clkN: N can vary between 0-30.
+ - parents: phandle of parent power domains.
+ 
+ Node of a device using power domains must have a samsung,power-domain property
+@@ -43,6 +51,10 @@ Example:
+ 		pd-parent-clocks = <&clock CLK_FIN_PLL>, <&clock CLK_MOUT_SW_ACLK333>,
+ 			<&clock CLK_MOUT_USER_ACLK333>;
+ 		pd-parent-clock-names = "tclk0", "pclk0", "clk0";
++		pd-on-en-clocks = <&clock CLK_IP1>, <&clock CLK_IP2>,
++		pd-on-en-clock-names = "clk0", "clk1";
++		pd-off-en-clocks = <&clock CLK_IP1>, <&clock CLK_IP2>,
++		pd-off-en-clock-names = "clk0", "clk1";
+ 		#power-domain-cells = <0>;
+ 	};
+ 
+diff --git a/drivers/soc/samsung/pm_domains.c b/drivers/soc/samsung/pm_domains.c
+index 96196f8..5407eb7 100644
+--- a/drivers/soc/samsung/pm_domains.c
++++ b/drivers/soc/samsung/pm_domains.c
+@@ -18,6 +18,7 @@
+ #include <linux/slab.h>
+ #include <linux/pm_domain.h>
+ #include <linux/clk.h>
++#include <linux/clk-provider.h>
+ #include <linux/delay.h>
+ #include <linux/of_address.h>
+ #include <linux/of_platform.h>
+@@ -29,6 +30,12 @@
+ 
+ static struct exynos_pmu_pd_ops *pd_ops;
+ 
++struct clk_enable_list {
++	struct clk **clks;
++	unsigned int count;
++	unsigned int en_status;
++};
++
+ struct clk_parent_list {
+ 	struct clk **clks;
+ 	struct clk **parent_clks;
+@@ -44,6 +51,8 @@ struct exynos_pm_domain {
+ 	char const *name;
+ 	bool is_off;
+ 	struct generic_pm_domain pd;
++	struct clk_enable_list *clk_pd_on;
++	struct clk_enable_list *clk_pd_off;
+ 	struct clk_parent_list *clk_parent;
+ };
+ 
+@@ -72,6 +81,55 @@ static struct clk *exynos_pd_clk_get(struct device_node *np,
+ 	return clk;
+ }
+ 
++static int pd_init_enable_clocks(struct platform_device *pdev,
++		struct device_node *np, bool on, struct exynos_pm_domain *pd)
++{
++	struct clk_enable_list *list;
++	char propname[32], clk_name[8];
++	int count, i;
++	struct clk *clk = ERR_PTR(-ENOENT);
++
++	list = devm_kzalloc(&pdev->dev, sizeof(*list), GFP_KERNEL);
++	if (!list)
++		return -ENOMEM;
++
++	if (on) {
++		pd->clk_pd_on = list;
++		snprintf(propname, sizeof(propname), "pd-on-en-clock-names");
++	} else {
++		pd->clk_pd_off = list;
++		snprintf(propname, sizeof(propname), "pd-off-en-clock-names");
++	}
++
++	count = of_property_count_strings(np, propname);
++	if (!count || count > MAX_CLK_PER_DOMAIN)
++		return -EINVAL;
++
++	list->count = count;
++	list->clks = devm_kzalloc(&pdev->dev, sizeof(*list->clks) * count,
++				GFP_KERNEL);
++	if (!list->clks)
++		return -ENOMEM;
++
++	if (on)
++		snprintf(propname, sizeof(propname), "pd-on-en");
++	else
++		snprintf(propname, sizeof(propname), "pd-off-en");
++
++	for (i = 0; i < count; i++) {
++		snprintf(clk_name, sizeof(clk_name), "clk%d", i);
++		clk = exynos_pd_clk_get(np, propname, clk_name);
++		if (IS_ERR(clk)) {
++			dev_err(&pdev->dev, "%s clock not found\n", clk_name);
++			return -EINVAL;
++		}
++		list->clks[i] = clk;
++	}
++	dev_info(&pdev->dev, "pd %s enable clocks initialised\n",
++				on ? "on" : "off");
++	return 0;
++}
++
+ static int pd_init_parent_clocks(struct platform_device *pdev,
+ 		struct device_node *np, struct exynos_pm_domain *pd)
+ {
+@@ -140,25 +198,67 @@ static int pd_init_parent_clocks(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
++static void exynos_pd_poweron_prepare(struct exynos_pm_domain *pd)
++{
++	struct clk_enable_list *en_list;
++	int i;
++
++	en_list = pd->clk_pd_on;
++	if (!en_list)
++		return;
++
++	/* Enable the necessary clocks not enabled and update the status */
++	for (i = 0; i < en_list->count; i++) {
++		if (__clk_is_enabled(en_list->clks[i]))
++			continue;
++		clk_enable(en_list->clks[i]);
++		en_list->en_status |= (1 << i);
++	}
++}
++
+ static void exynos_pd_post_poweron(struct exynos_pm_domain *pd)
+ {
+ 	struct clk_parent_list *p_list;
++	struct clk_enable_list *en_list;
+ 	int i;
+ 
+ 	p_list = pd->clk_parent;
+-	if (!p_list)
++	if (p_list) {
++		/* Set the parents clocks correctly */
++		for (i = 0; i < p_list->count; i++)
++			clk_set_parent(p_list->clks[i], p_list->parent_clks[i]);
++	}
++
++	en_list = pd->clk_pd_on;
++	if (!en_list)
+ 		return;
+ 
+-	/* Set the parents clocks correctly */
+-	for (i = 0; i < p_list->count; i++)
+-		clk_set_parent(p_list->clks[i], p_list->parent_clks[i]);
++	/* Disable the clocks enabled during power off preperation */
++	for (i = 0; i < en_list->count; i++) {
++		if (!(en_list->en_status & (1 << i)))
++			continue;
++		clk_disable(en_list->clks[i]);
++		en_list->en_status &= ~(1 << i);
++	}
+ }
+ 
+ static void exynos_pd_poweroff_prepare(struct exynos_pm_domain *pd)
+ {
+ 	struct clk_parent_list *p_list;
++	struct clk_enable_list *en_list;
+ 	int i;
+ 
++	en_list = pd->clk_pd_off;
++	if (en_list) {
++		/* Enable the clocks not enabled and update the status */
++		for (i = 0; i < en_list->count; i++) {
++			if (__clk_is_enabled(en_list->clks[i]))
++				continue;
++			clk_enable(en_list->clks[i]);
++			en_list->en_status |= (1 << i);
++		}
++	}
++
+ 	p_list = pd->clk_parent;
+ 	if (!p_list)
+ 		return;
+@@ -168,12 +268,31 @@ static void exynos_pd_poweroff_prepare(struct exynos_pm_domain *pd)
+ 		clk_set_parent(p_list->clks[i], p_list->trans_clks[i]);
+ }
+ 
++static void exynos_pd_post_poweroff(struct exynos_pm_domain *pd)
++{
++	struct clk_enable_list *en_list;
++	int i;
++
++	en_list = pd->clk_pd_off;
++	if (!en_list)
++		return;
++
++	/* Disable the clocks enabled during power off preperation */
++	for (i = 0; i < en_list->count; i++) {
++		if (!(en_list->en_status & (1 << i)))
++			continue;
++		clk_disable(en_list->clks[i]);
++		en_list->en_status &= ~(1 << i);
++	}
++}
++
+ static int exynos_pd_power_on(struct generic_pm_domain *domain)
+ {
+ 	int ret = 0;
+ 	struct exynos_pm_domain *pd;
+ 
+ 	pd = container_of(domain, struct exynos_pm_domain, pd);
++	exynos_pd_poweron_prepare(pd);
+ 	ret = pd_ops->pd_on(domain->name, pd->base);
+ 	if (ret)
+ 		return ret;
+@@ -189,6 +308,9 @@ static int exynos_pd_power_off(struct generic_pm_domain *domain)
+ 	pd = container_of(domain, struct exynos_pm_domain, pd);
+ 	exynos_pd_poweroff_prepare(pd);
+ 	ret = pd_ops->pd_off(domain->name, pd->base);
++	if (ret)
++		return ret;
++	exynos_pd_post_poweroff(pd);
+ 	return ret;
+ }
+ 
+@@ -232,6 +354,14 @@ static int exynos_power_domain_probe(struct platform_device *pdev)
+ 		pd->pd.power_off = exynos_pd_power_off;
+ 		pd->pd.power_on = exynos_pd_power_on;
+ 
++		if (of_find_property(np, "pd-on-en-clocks", NULL))
++			if (pd_init_enable_clocks(pdev, np, true, pd))
++				return -EINVAL;
++
++		if (of_find_property(np, "pd-off-en-clocks", NULL))
++			if (pd_init_enable_clocks(pdev, np, false, pd))
++				return -EINVAL;
++
+ 		if (of_find_property(np, "pd-parent-clocks", NULL))
+ 			if (pd_init_parent_clocks(pdev, np, pd))
+ 				return -EINVAL;
+-- 
+1.7.9.5
 
