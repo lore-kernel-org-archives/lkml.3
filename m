@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaKXM6q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 07:58:46 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:52237 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078AbaKXM6o (ORCPT
+	id S1752951AbaKXM6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 07:58:54 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:56019 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754AbaKXM6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 07:58:44 -0500
+	Mon, 24 Nov 2014 07:58:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141124121503.GB14353@redhat.com>
-References: <1416829787-14252-1-git-send-email-mst@redhat.com>
-	<1416829787-14252-5-git-send-email-mst@redhat.com>
-	<CAMuHMdWiCqbaOs-oBW3QU+_d3GsH19A2Ynv9EB_eF2sTvcWy4w@mail.gmail.com>
-	<20141124121503.GB14353@redhat.com>
-Date: Mon, 24 Nov 2014 13:58:43 +0100
-X-Google-Sender-Auth: NA8ooCuYEuEXVexzwi0aTFxJASo
-Message-ID: <CAMuHMdWJA4aUyHo8wq=RX-+0w+PX3NtG1ZgvWgcMwKT5KYT_Tg@mail.gmail.com>
-Subject: Re: [PATCH v3 04/41] virtio: memory access APIs
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
-        rusty@au1.ibm.com, Nicholas Bellinger <nab@linux-iscsi.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
-        Anup Patel <anup.patel@linaro.org>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
-        stephen hemminger <stephen@networkplumber.org>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+In-Reply-To: <20141124113518.GC6875@localhost>
+References: <1415885699-1465-1-git-send-email-user@radxa>
+	<1415885699-1465-2-git-send-email-user@radxa>
+	<20141121105951.GA20679@localhost>
+	<20141124102456.GE4241@x1>
+	<20141124113518.GC6875@localhost>
+Date: Mon, 24 Nov 2014 13:58:50 +0100
+Message-ID: <CABgxDoLA=QL6vzU-v1w4vMZ3qhorjRdYOWFFMrjJE6xvZ7QO3g@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] of: Rename "poweroff-source" property to "system-power-controller"
+From: Romain Perier <romain.perier@gmail.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Grant Likely <grant.likely@linaro.org>, robh <robh@kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Felipe Balbi <balbi@ti.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 1:15 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> On Mon, Nov 24, 2014 at 01:03:24PM +0100, Geert Uytterhoeven wrote:
->> On Mon, Nov 24, 2014 at 12:52 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
->> > virtio 1.0 makes all memory structures LE, so
->> > we need APIs to conditionally do a byteswap on BE
->> > architectures.
+2014-11-24 12:35 GMT+01:00 Johan Hovold <johan@kernel.org>:
+> On Mon, Nov 24, 2014 at 10:24:56AM +0000, Lee Jones wrote:
+>> On Fri, 21 Nov 2014, Johan Hovold wrote:
+>> > On Thu, Nov 13, 2014 at 01:34:58PM +0000, Auto Configured wrote:
+>> > > From: Romain Perier <romain.perier@gmail.com>
+>> > >
+>> > > It reverts commit a4b4e0461ec5 ("of: Add standard property for poweroff capability").
+>> > > As discussed on the mailing list, it makes more sense to rename back to the
+>> > > old established property name, without the vendor prefix. Problem being that
+>> > > the word "source" usually tends to be used for inputs and that is out of control
+>> > > of the OS. The poweroff capability is an output which simply turns the
+>> > > system-power off. Also, this property might be used by drivers which power-off
+>> > > the system and power back on subsequent RTC alarms. This seems to suggest to
+>> > > remove "poweroff" from the property name and to choose "system-power-controller"
+>> > > as the more generic name. This patchs adds the required renaming changes and
+>> > > defines an helper function which is compatible with both properties, the old one
+>> > > which was only used by tps65910 and the new one without vendor-prefix.
 >> >
->> > To make it easier to check code statically,
->> > add virtio specific types for multi-byte integers
->> > in memory.
+>> > Now this is a bit of a mess.
 >> >
->> > Add low level wrappers that do a byteswap conditionally, these will be
->> > useful e.g. for vhost.  Add high level wrappers that
->> > query device endian-ness and act accordingly.
+>> > There's a commit in the mfd tree, 25f833c1171d ("mfd: tps65910: Convert
+>> > ti,system-power-controller DT property to poweroff-source"), which
+>> > breaks all dts using tps65910 since these are never updated to the now
+>> > retracted property name ("poweroff-source").
 >>
->> > diff --git a/include/linux/virtio_byteorder.h b/include/linux/virtio_byteorder.h
->> > new file mode 100644
->> > index 0000000..824ed0b
->> > --- /dev/null
->> > +++ b/include/linux/virtio_byteorder.h
+>> My word!
 >>
->> > +static inline u16 __virtio16_to_cpu(bool little_endian, __virtio16 val)
->> > +{
->> > +       if (little_endian)
->> > +               return le16_to_cpu((__force __le16)val);
->> > +       else
->> > +               return (__force u16)val;
->> > +}
->>
->> What's wrong with just using le16-to_cpu() ...
+>> Romain, what conversation on the MLs are you talking about?
 >
-> le16-to_cpu() is simply wrong: virtio needs to be
-> LE or native endian, depending on whether it's running
-> in 0.9 or 1.0 mode.
+> I think Romain is referring to this thread:
+>
+>         https://lkml.org/lkml/2014/10/23/161
 
-IC, that was not clear from the description for this patch.
-I thought it was dependent on BE architectures.
+Yes, this is this one.
 
-Nevertheless, any chance you can get rid of the "conditional"?
+>
+>> > This one should simply be reverted ASAP.
+>>
+>> No need to revert, I can just remove the patch from the MFD tree.
+>
+> Ok, good. Then this is limited to the regulator tree, and we could
+> proceed as I outlined below.
+>
+>
+> Romain, care to resend this patch without the tps65910 chunks?
 
-Gr{oetje,eeting}s,
+If you can just drop the patch from mfd tree Lee, please do.
+Yes Johan, np, what I want is that we find a smart solution, nothing more.
 
-                        Geert
+>
+> You should also fix the commit message, which claims to define a "helper
+> function which is compatible with both properties", something which was
+> no longer the case.
+>
+> Thanks,
+> Johan
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+So I need to resend this patch which would only introduce an helper
+function which checks for "system-power-controller" property (it would
+also have a new commit message).
+As you suggested, this helper might be named
+"of_device_is_system_power_controller" ?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Everything is okay ?
+
+Romain
