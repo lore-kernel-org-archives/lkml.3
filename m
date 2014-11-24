@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426AbaKXE7k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 23:59:40 -0500
-Received: from regular1.263xmail.com ([211.150.99.134]:47018 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323AbaKXE7h (ORCPT
+	id S1751081AbaKXFA0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 00:00:26 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:49725 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaKXFAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 23:59:37 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <70414e9dfb7e45a299120b268df37cc8>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
-Cc: zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dmitry.torokhov@gmail.com, huangtao@rock-chips.com,
-        fzf@rock-chips.com, caesar.wang@rock-chips.com
-Subject: [PATCH v19 5/5] ARM: dts: enable Thermal on rk3288-evb board
-Date: Mon, 24 Nov 2014 12:59:02 +0800
-Message-Id: <1416805142-27304-6-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416805142-27304-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1416805142-27304-1-git-send-email-caesar.wang@rock-chips.com>
+	Mon, 24 Nov 2014 00:00:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAGOxZ53d_Vk1cF8Y2LNgMNeuCFeQJKmHQeN19pO5HfAdp4hx8A@mail.gmail.com>
+References: <1416576954-11997-1-git-send-email-gautam.vivek@samsung.com>
+	<1416576954-11997-2-git-send-email-gautam.vivek@samsung.com>
+	<CAGOxZ53d_Vk1cF8Y2LNgMNeuCFeQJKmHQeN19pO5HfAdp4hx8A@mail.gmail.com>
+Date: Mon, 24 Nov 2014 10:30:19 +0530
+Message-ID: <CAFp+6iF-N63YSsdv2a6=MYp_mD=eQY_Oi8=9JVNU5dG0BA7YGQ@mail.gmail.com>
+Subject: Re: [PATCH 01/11] pinctrl: exynos: Add BUS1 pin controller for exynos7
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Alim Akhtar <alim.akhtar@gmail.com>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, kishon <kishon@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "robh+dt" <robh+dt@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-when a thermal temperature over TSHUT.Default to via
-CRU reset the entire chip on rk3288-evb Board,
-TSHUT is low active on rk3288-evb board.
+Hi Alim,
 
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- arch/arm/boot/dts/rk3288-evb.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
-index cb83cea..3e067dd 100644
---- a/arch/arm/boot/dts/rk3288-evb.dtsi
-+++ b/arch/arm/boot/dts/rk3288-evb.dtsi
-@@ -148,6 +148,12 @@
- 	status = "okay";
- };
- 
-+&tsadc {
-+	rockchip,hw-tshut-mode = <0>; /* tshut mode 0:CRU 1:GPIO */
-+	rockchip,hw-tshut-polarity = <0>; /* tshut polarity 0:LOW 1:HIGH */
-+	status = "okay";
-+};
-+
- &pinctrl {
- 	backlight {
- 		bl_en: bl-en {
+On Sat, Nov 22, 2014 at 7:07 PM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
+> Hi Vivek,
+>
+> On Fri, Nov 21, 2014 at 7:05 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+>> USB and Power regulator on Exynos7 require gpios available
+>> in BUS1 pin controller block.
+>> So adding the BUS1 pinctrl support.
+>>
+>> Signed-off-by: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>> ---
+>>  drivers/pinctrl/samsung/pinctrl-exynos.c |   12 ++++++++++++
+>>  1 file changed, 12 insertions(+)
+>>
+>> diff --git a/drivers/pinctrl/samsung/pinctrl-exynos.c b/drivers/pinctrl/samsung/pinctrl-exynos.c
+>> index d5d4cfc..caca5b5 100644
+>> --- a/drivers/pinctrl/samsung/pinctrl-exynos.c
+>> +++ b/drivers/pinctrl/samsung/pinctrl-exynos.c
+>> @@ -1300,6 +1300,13 @@ static const struct samsung_pin_bank_data exynos7_pin_banks7[] __initconst = {
+>>         EXYNOS_PIN_BANK_EINTG(8, 0x060, "gpr3", 0x0c),
+>>  };
+>>
+>> +/* pin banks of exynos7 pin-controller - BUS1 */
+>> +static const struct samsung_pin_bank_data exynos7_pin_banks8[] __initconst = {
+>> +       EXYNOS_PIN_BANK_EINTG(8, 0x020, "gpf0", 0x00),
+>> +       EXYNOS_PIN_BANK_EINTG(8, 0x0a0, "gpf4", 0x10),
+>> +       EXYNOS_PIN_BANK_EINTG(6, 0x120, "gph1", 0x20),
+>> +};
+>> +
+> Looks like you are just trying to touch pin banks only related to USB
+> stuffs, but as this patch does not have any dependencies on other
+> patches in this series, will you consider adding other pin banks of
+> BUS1, just for completeness of BUS1 pin-controller.
+
+True, this just touches the USB related pinctrl.
+Will add the rest pin banks of BUS1 for completeness.
+Thanks for pointing out. :-)
+
+[snip]
+
+
+
 -- 
-1.9.1
-
-
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
