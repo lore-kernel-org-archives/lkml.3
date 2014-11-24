@@ -1,34 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaKXE5g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 23:57:36 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:41056 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946AbaKXE5e (ORCPT
+	id S1752228AbaKXE7Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 23:59:25 -0500
+Received: from regular1.263xmail.com ([211.150.99.138]:43362 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912AbaKXE7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 23:57:34 -0500
-Date: Sun, 23 Nov 2014 23:57:06 -0500 (EST)
-Message-Id: <20141123.235706.1877570472649367521.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next 0/2] r8152: use ECM mode for future chips
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394712342-15778-101-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-101-Taiwan-albertk@realtek.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 23 Nov 2014 20:57:34 -0800 (PST)
+	Sun, 23 Nov 2014 23:59:21 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: wxt@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wxt@rock-chips.com
+X-UNIQUE-TAG: <2fc4fa9b9af6658852e741dee1749aac>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Caesar Wang <caesar.wang@rock-chips.com>
+To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
+Cc: zyf@rock-chips.com, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        cf@rock-chips.com, dmitry.torokhov@gmail.com, huangtao@rock-chips.com,
+        fzf@rock-chips.com, caesar.wang@rock-chips.com
+Subject: [PATCH v19 0/5] Rockchip soc thermal driver
+Date: Mon, 24 Nov 2014 12:58:57 +0800
+Message-Id: <1416805142-27304-1-git-send-email-caesar.wang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Mon, 24 Nov 2014 11:09:47 +0800
+This series patchs tested on rk3288 SDK board and pinky-v1,v2 board.
+I believe the driver can be used on the rk3288-evb board.
 
-> For the future chips which the r8152 doesn't support yet, we could
-> still use ECM mode for basic transmission.
+Add this driver, The system will shutdown when
+the thermal temperture over 100C.If for some reason we are unable to
+shut it down in orderly fashion (kernel is stuck holding a lock or similar)
+then hardware will reset it.
 
-Gross, please don't do this.
+The patchs 1/5,2/5 can applay Eduardo's Branch
+git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.git	
+[branch "next-kernel"]
+	remote = origin
+	merge = refs/heads/next
+
+
+The patchs 3/5,4/5,5/5 can apply Heiko's Branch 
+https://github.com/mmind/linux-rockchip.git
+[branch "3.19-armsoc/dts"]
+	remote = origin
+	merge = refs/heads/wip/v3.19-armsoc/dts
+
+Changes in v19:
+	- update driver to fit Eduardo new API design.
+	https://patchwork.kernel.org/patch/5329801/
+
+Changes in v18:
+	* address comments from Eduardo Valentin and Dmitry Torokhov.
+	- we need reset tsadc-controller before enable tsadc auto mode,
+	  when we add the thermal function in coreboot,we always enable tsadc controller.
+	  So we need reset tsadc-controller to avoid the TSADC is abnormal.
+	- put the document behind the driver.
+	- Tested on pinky1,2,jeffy board,we will fix cooling-map temperature from 80C to 70C,
+	  critical temperature from 100C to 90C.
+
+Changes in v17:
+	* address comments from Heiko Stubner and .
+	- rename the tshut property
+	- the critiacal temperature only indeed 100C when add the cooling map,
+	  it's for the more secure,fix the temperature from 120C to 100C.
+
+Changes in v16:
+	* address comments from Dmitry Torokhov.
+	- add thermal->chip->control(thermal->regs, false) in remove()
+	- adjust TSHUT in resume().
+
+Changes in v15:
+	* address comments from Dmitry Torokhov.
+	- enable TSHUT move into rk_tsadcv2_tshut_temp().
+	- drop the id argument in rk_tsadcv2_control().
+
+Changes in v14:
+	* address comments from Dmitry Torokhov.
+	- adjust-alarm-rate-depending-on-clock.
+	- 0001-rockchip-thermal-do-not-register-cpufreq-cooling-dev.
+
+Changes in v13:
+	- add cooling-maps for cpu-thermal.
+	- put tshut polarity in device tree.
+
+Changes in v12:
+	* address comments from Dmitry Torokhov and Vladimir Zapolskiy.
+	- split-sensor-handling.
+	- rename-rockchip_tsadc_platform_data.
+
+Changes in v11:
+	* address comments from Vladimir Zapolskiy.
+	- fix cpufreq_cooling_unregister() to put in correct position.
+	- fix "data->chn",at least can get valid Tsensor temp.
+
+Changes in v10:
+	* address comments from Doug Anderson.
+	- fix TSHUT polarity,ensure support TSHUT.
+	- add the decription for rk_tsadcv2_initialize().
+
+Changes in v9:
+	* address comments from Dmitry Torokhov.
+	- fix some style be defined
+	- remove some unused code.
+	- clk_disable_unprepare->clk_disable in suspend()
+
+Changes in v8:
+	* address comments from Dmitry Torokhov and Doug Anderson.
+	- add three Teperture Sensors.
+	- support CRU and GPIO reset chip.
+	- rename rk3xxx-cpu-thermal.dtsi as rk3288-thermal.dtsi
+	- alarm-temp via set_trips() callback
+	- remove "reset-gpios"
+
+Changes in v7:
+	- fix get data->clk=0 when in probe() function.
+	- fix some style code.
+	- modify dts,main add rk3xxx-cpu-thermal.dtsi
+
+Changes in v6:
+	* address comments from Tomeu Vizoso.
+	- use thermal's generic framework.
+
+Changes in v5:
+	* address comments from Eduardo Valentin,rui.zhang and Heiko Stubner:
+	- with BIT() macro
+	- manage clocks in suspend/resume.
+	- license is fixed as GPLv2.
+	- #include "thermal_core.h"->#include <linux/thermal.h>
+	- use the generic trip-points.the hw-shut-temp isn't generic trip-points.
+	- The method of binding and unbinding be fixed.
+	- The pin-name tsadc->otp_out
+
+Changes in v4:
+	* address comments from Jonathan Cameron,huangtao and zhaoyifeng:
+	- this series thermal driver still be put in driver/thermal/
+	- modify the thermal driver description.
+
+Changes in v3:(add dts configure)
+	* address comments from Dmitry Torokhov and Arnd Bergmann:
+	- fix clock-names in rockchip-thermal.txt
+	- remove rockchip_thermal_control() in rockchip_set_mode()
+	- fix some code style.
+	- add dts configure.
+
+Changes in v2:
+	* address comments from Heiko Stubner:
+	- fix dt-bindings in rockchip-thermal.txt
+	- remove Author mark
+	- rename TSADC_XXX->TSADCV2_XXX,it eill ready to merge compatible other SoCs.
+	- fix a identation
+	- remove clk_set_rate(),it's no necessary.
+	- fix the SIMPLE_DEV_PM_OPS() function  style.
+
+Caesar Wang (5):
+  thermal: rockchip: add driver for thermal
+  dt-bindings: document Rockchip thermal
+  ARM: dts: add RK3288 Thermal data
+  ARM: dts: add main Thermal info to rk3288
+  ARM: dts: enable Thermal on rk3288-evb board
+
+ .../bindings/thermal/rockchip-thermal.txt          |  45 ++
+ arch/arm/boot/dts/rk3288-evb.dtsi                  |   5 +
+ arch/arm/boot/dts/rk3288-thermal.dtsi              |  58 ++
+ arch/arm/boot/dts/rk3288.dtsi                      |  23 +
+ drivers/thermal/Kconfig                            |   9 +
+ drivers/thermal/Makefile                           |   1 +
+ drivers/thermal/rockchip_thermal.c                 | 628 +++++++++++++++++++++
+ 7 files changed, 769 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+ create mode 100644 arch/arm/boot/dts/rk3288-thermal.dtsi
+ create mode 100644 drivers/thermal/rockchip_thermal.c
+
+-- 
+1.9.1
+
+
