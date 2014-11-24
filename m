@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaKXErJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 23:47:09 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:56040
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751414AbaKXErI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 23:47:08 -0500
-x-originating-ip: 72.167.245.219
-From: Dexuan Cui <decui@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com, kys@microsoft.com
-Cc: haiyangz@microsoft.com
-Subject: [PATCH] hv: hv_balloon: avoid memory leak on alloc_error of 2MB memory block
-Date: Sun, 23 Nov 2014 21:56:15 -0800
-Message-Id: <1416808575-5383-1-git-send-email-decui@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751991AbaKXE4h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 23:56:37 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:49088 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414AbaKXE4g convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 23:56:36 -0500
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+From: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+User-Agent: alot/0.3.5
+To: torvalds@linux-foundation.org
+Message-ID: <20141124045631.12298.63239@quantum>
+Subject: [GIT PULL] clk: fixes for 3.18
+Date: Sun, 23 Nov 2014 20:56:31 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If num_ballooned is not 0, we shouldn't neglect the already-allocated 2MB
-memory block(s).
+The following changes since commit 206c5f60a3d902bc4b56dab2de3e88de5eb06108:
 
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Dexuan Cui <decui@microsoft.com>
----
- drivers/hv/hv_balloon.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+  Linux 3.18-rc4 (2014-11-09 14:55:29 -0800)
 
-diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index 5e90c5d..cba2d3b 100644
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -1091,6 +1091,8 @@ static void balloon_up(struct work_struct *dummy)
- 	bool done = false;
- 	int i;
- 
-+	/* The host does balloon_up in 2MB. */
-+	WARN_ON(num_pages % PAGES_IN_2M != 0);
- 
- 	/*
- 	 * We will attempt 2M allocations. However, if we fail to
-@@ -1111,7 +1113,7 @@ static void balloon_up(struct work_struct *dummy)
- 						bl_resp, alloc_unit,
- 						 &alloc_error);
- 
--		if ((alloc_error) && (alloc_unit != 1)) {
-+		if (alloc_error && (alloc_unit != 1) && num_ballooned == 0) {
- 			alloc_unit = 1;
- 			continue;
- 		}
--- 
-1.9.1
+are available in the git repository at:
 
+  https://git.linaro.org/people/mike.turquette/linux.git tags/clk-fixes-for-linus
+
+for you to fetch changes up to dcf3d458304aafda3d12413ade39fdf19740dbc3:
+
+  clk: pxa: fix pxa27x CCCR bit usage (2014-11-17 11:25:29 -0800)
+
+----------------------------------------------------------------
+The fixes for the clock framework are all regressions in drivers, plus a
+single fix in one of the basic clock templates. No fixes to the core
+this time around. As with most clock driver fixes these run the gamut
+from fixing a build warning to fixing wrecked memory timings, with a
+little USB tossed in for fun. Please consider pulling.
+
+----------------------------------------------------------------
+Boris Brezillon (2):
+      clk: at91: usb: fix at91rm9200 round and set rate
+      clk: at91: usb: fix at91sam9x5 recalc, round and set rate
+
+Georgi Djakov (1):
+      clk: qcom: Fix duplicate rbcpr clock name
+
+James Hogan (1):
+      clk-divider: Fix READ_ONLY when divider > 1
+
+Robert Jarzmik (1):
+      clk: pxa: fix pxa27x CCCR bit usage
+
+ drivers/clk/at91/clk-usb.c                    | 35 ++++++++++++++-------------
+ drivers/clk/clk-divider.c                     | 18 +++++++-------
+ drivers/clk/pxa/clk-pxa27x.c                  |  4 +--
+ drivers/clk/qcom/mmcc-apq8084.c               |  2 +-
+ drivers/clk/rockchip/clk.c                    |  4 +--
+ include/dt-bindings/clock/qcom,mmcc-apq8084.h |  2 +-
+ include/linux/clk-provider.h                  |  1 -
+ 7 files changed, 32 insertions(+), 34 deletions(-)
