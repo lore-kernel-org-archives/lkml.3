@@ -1,72 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177AbaKXJKK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 04:10:10 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:63750 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790AbaKXJKI (ORCPT
+	id S1752826AbaKXJLk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 04:11:40 -0500
+Received: from mail-bn1bon0116.outbound.protection.outlook.com ([157.56.111.116]:58400
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750834AbaKXJLh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 04:10:08 -0500
-Date: Mon, 24 Nov 2014 10:10:03 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
-Subject: Re: USB: serial: Deletion of an unnecessary check before the
- function call "release_firmware"
-Message-ID: <20141124091003.GA6875@localhost>
-References: <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net>
- <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net>
- <546F5831.5060404@users.sourceforge.net>
- <alpine.DEB.2.10.1411211625380.2433@hadrien>
- <546F5ED7.1000206@users.sourceforge.net>
- <alpine.DEB.2.10.1411211857590.2433@hadrien>
+	Mon, 24 Nov 2014 04:11:37 -0500
+From: Dexuan Cui <decui@microsoft.com>
+To: Jason Wang <jasowang@redhat.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        KY Srinivasan <kys@microsoft.com>
+CC: Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH] hv: hv_balloon: avoid memory leak on alloc_error of 2MB
+ memory block
+Thread-Topic: [PATCH] hv: hv_balloon: avoid memory leak on alloc_error of
+ 2MB memory block
+Thread-Index: AQHQB6k84XUNZum87EGSQXE5iVJZTZxvRrkAgAAaVQCAAANSUIAAEt6AgAABQ5A=
+Date: Mon, 24 Nov 2014 08:55:26 +0000
+Message-ID: <F792CF86EFE20D4AB8064279AFBA51C613E5FFC0@HKNPRD3002MB017.064d.mgd.msft.net>
+References: <1416808575-5383-1-git-send-email-decui@microsoft.com>
+ <5472BF95.2000904@redhat.com>
+ <F792CF86EFE20D4AB8064279AFBA51C613E5FD2B@HKNPRD3002MB017.064d.mgd.msft.net>
+ <5472DE06.6000307@redhat.com>
+ <F792CF86EFE20D4AB8064279AFBA51C613E5FE48@HKNPRD3002MB017.064d.mgd.msft.net>
+ <5472F0A3.1010702@redhat.com>
+In-Reply-To: <5472F0A3.1010702@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [141.251.55.133]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1411211857590.2433@hadrien>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(479174003)(164054003)(377454003)(189002)(24454002)(199003)(52604005)(51704005)(13464003)(50986999)(76176999)(54356999)(97736003)(2561002)(84676001)(68736004)(69596002)(19580395003)(19580405001)(4396001)(120916001)(44976005)(6806004)(99396003)(93886004)(97756001)(2656002)(87936001)(2501002)(86146001)(55846006)(21056001)(95666004)(86362001)(107046002)(86612001)(50466002)(106116001)(23726002)(81156004)(106466001)(26826002)(1511001)(33656002)(2201001)(92726001)(2421001)(92566001)(46406003)(46102003)(31966008)(16796002)(77096003)(77156002)(62966003)(47776003)(20776003)(64706001)(66066001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY1PR0301MB1205;H:mail.microsoft.com;FPR:;SPF:Pass;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1205;
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1205;
+X-Forefront-PRVS: 040513D301
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=decui@microsoft.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1205;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 06:59:00PM +0100, Julia Lawall wrote:
-> On Fri, 21 Nov 2014, SF Markus Elfring wrote:
+> -----Original Message-----
+> From: Jason Wang [mailto:jasowang@redhat.com]
+> Sent: Monday, November 24, 2014 16:48 PM
+> To: Dexuan Cui; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> driverdev-devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; KY Srinivasan
+> Cc: Haiyang Zhang
+> Subject: Re: [PATCH] hv: hv_balloon: avoid memory leak on alloc_error of
+> 2MB memory block
 > 
-> > >> diff --git a/drivers/usb/serial/mxuport.c b/drivers/usb/serial/mxuport.c
-> > >> index ab1d690..3653ec1 100644
-> > >> --- a/drivers/usb/serial/mxuport.c
-> > >> +++ b/drivers/usb/serial/mxuport.c
-> > >> @@ -1101,8 +1101,7 @@ static int mxuport_probe(struct usb_serial *serial,
-> > >>  	 */
-> > >>  	usb_set_serial_data(serial, (void *)id->driver_info);
-> > >>  out:
-> > >> -	if (fw_p)
-> > >> -		release_firmware(fw_p);
-> > >> +	release_firmware(fw_p);
-> > >
-> > > I think that the if should stay.
+> On 11/24/2014 03:54 PM, Dexuan Cui wrote:
+> >> -----Original Message-----
+> >> From: Jason Wang [mailto:jasowang@redhat.com]
+> >> Sent: Monday, November 24, 2014 15:28 PM
+> >> To: Dexuan Cui; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org;
+> >> driverdev-devel@linuxdriverproject.org; olaf@aepfle.de;
+> >> apw@canonical.com; KY Srinivasan
+> >> Cc: Haiyang Zhang
+> >> Subject: Re: [PATCH] hv: hv_balloon: avoid memory leak on alloc_error
+> of
+> >> 2MB memory block
+> >>
+> >> On 11/24/2014 02:08 PM, Dexuan Cui wrote:
+> >>>> -----Original Message-----
+> >>>>> From: Jason Wang [mailto:jasowang@redhat.com]
+> >>>>> Sent: Monday, November 24, 2014 13:18 PM
+> >>>>> To: Dexuan Cui; gregkh@linuxfoundation.org; linux-
+> >> kernel@vger.kernel.org;
+> >>>>> driverdev-devel@linuxdriverproject.org; olaf@aepfle.de;
+> >>>>> apw@canonical.com; KY Srinivasan
+> >>>>> Cc: Haiyang Zhang
+> >>>>> Subject: Re: [PATCH] hv: hv_balloon: avoid memory leak on
+> >> alloc_error of
+> >>>>> 2MB memory block
+> >>>>>
+> >>>>> On 11/24/2014 01:56 PM, Dexuan Cui wrote:
+> >>>>>>> If num_ballooned is not 0, we shouldn't neglect the already-
+> >> allocated
+> >>>>> 2MB
+> >>>>>>> memory block(s).
+> >>>>>>>
+> >>>>>>> Cc: K. Y. Srinivasan <kys@microsoft.com>
+> >>>>>>> Cc: <stable@vger.kernel.org>
+> >>>>>>> Signed-off-by: Dexuan Cui <decui@microsoft.com>
+> >>>>>>> ---
+> >>>>>>>  drivers/hv/hv_balloon.c | 4 +++-
+> >>>>>>>  1 file changed, 3 insertions(+), 1 deletion(-)
+> >>>>>>>
+> >>>>>>> diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
+> >>>>>>> index 5e90c5d..cba2d3b 100644
+> >>>>>>> --- a/drivers/hv/hv_balloon.c
+> >>>>>>> +++ b/drivers/hv/hv_balloon.c
+> >>>>>>> @@ -1091,6 +1091,8 @@ static void balloon_up(struct
+> >> work_struct
+> >>>>> *dummy)
+> >>>>>>>  	bool done = false;
+> >>>>>>>  	int i;
+> >>>>>>>
+> >>>>>>> +	/* The host does balloon_up in 2MB. */
+> >>>>>>> +	WARN_ON(num_pages % PAGES_IN_2M != 0);
+> >>>>>>>
+> >>>>>>>  	/*
+> >>>>>>>  	 * We will attempt 2M allocations. However, if we fail to
+> >>>>>>> @@ -1111,7 +1113,7 @@ static void balloon_up(struct
+> >> work_struct
+> >>>>> *dummy)
+> >>>>>>>  						bl_resp, alloc_unit,
+> >>>>>>>  						 &alloc_error);
+> >>>>>>>
+> >>>>>>> -		if ((alloc_error) && (alloc_unit != 1)) {
+> >>>>>>> +		if (alloc_error && (alloc_unit != 1) &&
+> >> num_ballooned == 0)
+> >>>>> {
+> >>>>>>>  			alloc_unit = 1;
+> >>>>>>>  			continue;
+> >>>>>>>  		}
+> >>>>> Before the change, we may retry the 4K allocation when part or all
+> 2M
+> >>>>> allocations were failed. This makes sense when memory is
+> fragmented.
+> >> But
+> >>> Yes, but all the partially-allocated 2MB memory blocks are lost(mem
+> leak).
+> >>>
+> >>>>> after the change, if part of 2M allocation were failed, we won't retry
+> >>>>> 4K allocation. Is this expected?
+> >>> Hi Jason,
+> >>> The patch doesn't break the "try 2MB first; then try 4K" logic:
+> >>>
+> >>> With the change, we'll retry the 2MB allocation in the next iteration of
+> the
+> >>> same while (!done) loop -- we expect this retry will cause
+> >>> "alloc_error && (alloc_unit != 1) && num_ballooned == 0" to be true,
+> >>> so we'll later try 4K allocation, as we did before.
+> >> If I read the code correctly, if part of 2M allocation fails.
+> >> alloc_balloon_pages() will have a non zero return value with alloc_error
+> >> set. Then it will match the following check:
+> >>
+> >>                 if ((alloc_error) || (num_ballooned == num_pages))
+> >> {
+> >>
+> >> which will set done to true. So there's no second iteration of while
+> >> (!done) loop?
+> > Oh... I see the issue in my patch.
+> > Thanks for pointing this out, Jason!
 > >
-> > I have got an other opinion.
+> >> Probably you need something like:
+> >>
+> >> if ((alloc_unit != 1) && (num_ballooned == 0)) {
+> >>     alloc_unit = 1;
+> >>     continue;
+> >> }
+> >>
+> >> if ((alloc_unit == 1) || (num_ballooned == num_pages)) {
+> >>     ...
+> >> }
+> > Your code is good, except for one thing:
+> > alloc_balloon_pages() can return due to:
+> >
+> > if (bl_resp->hdr.size + sizeof(union dm_mem_page_range) >
+> >                          PAGE_SIZE)
+> >                         return i * alloc_unit;
+> >
+> > In this case, "alloc_unit == 1" is true, but we shouldn't run "done = true".
+> >
+> > How do you like this? I made a few changes based on your code.
+> >
+> > @@ -1086,16 +1088,18 @@ static void balloon_up(struct work_struct
+> *dummy)
+> >                 num_pages -= num_ballooned;
+> > +               alloc_error = false;
+> >                 num_ballooned = alloc_balloon_pages(&dm_device, num_pages,
+> >                                                 bl_resp, alloc_unit,
+> >                                                  &alloc_error);
+> >
+> > -               if ((alloc_error) && (alloc_unit != 1)) {
+> > +               if (alloc_unit != 1 && num_ballooned == 0) {
+> >                         alloc_unit = 1;
+> >                         continue;
+> >                 }
+> >
+> > -               if ((alloc_error) || (num_ballooned == num_pages)) {
+> > +               if ((alloc_unit == 1 && alloc_error) ||
+> > +                       (num_ballooned == num_pages)) {
+> >                         bl_resp->more_pages = 0;
+> >                         done = true;
+> >                         dm_device.state = DM_INITIALIZED;
 > >
 > >
-> > > There were two cases on the allocation, so there should be two cases
-> > > on the release.
-> >
-> > I find that this implementation detail does not really matter for the
-> > necessity of a null pointer check directly before such a function call.
+> > If you're Ok with this, I'll send out a v2 patch.
+> > -- Dexuan
 > 
-> Conceptually, if it is clear 10 lines above that nothing was allocated,
-> and there is a fallback to existing data (according to the comment above)
-> it is strange to be releasing something.
+> Looks good.
+Thanks, Jason!
 
-I agree with Julia here and will not apply this one.
+Let's wait for KY's clarification about if the host can balloon up 1MB.
 
-Thanks,
-Johan
+I'll send the v2 thereafter.
+
+-- Dexuan
+
