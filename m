@@ -1,150 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaKXGSw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 01:18:52 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:10464 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275AbaKXGQp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 01:16:45 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-7d-5472cd4b68d4
-From: Namjae Jeon <namjae.jeon@samsung.com>
-To: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4 <linux-ext4@vger.kernel.org>,
-        xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
-        Ashish Sangwan <a.sangwan@samsung.com>
-Subject: [PATCH v6 4/10] xfsprogs: xfs_io: add finsert command for insert range
- via fallocate
-Date: Mon, 24 Nov 2014 15:16:42 +0900
-Message-id: <002d01d007ae$374e80e0$a5eb82a0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAHrMy8LNEDdO5mTqa623W1G8zaIQ==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsWyRsSkQNf7bFGIwZQDnBZLJ15itthy7B6j
-	xcx5d9gs9uw9yWJxedccNovWnp/sFov6bjE6sHucWiTh0XTmKLPH6gtbGT36tqxi9Pi8SS6A
-	NYrLJiU1J7MstUjfLoEr49eB1ywFdwUrnk1YxdbAOIOvi5GTQ0LAROLHtF/MELaYxIV769m6
-	GLk4hASWMkq03mlmhinas+svE0RiOqPEm9lrmCGcv4wSe9vOMXYxcnCwCWhL/NkiCtIgIuAq
-	Me/ud0aQGmaQSRcfP2EESQgLxEscmP8OzGYRUJWY9HAZE4jNK2ApsWzxBjYIW1Dix+R7LCA2
-	s4CWxPqdx5kgbHmJzWveQl2kILHj7GtGiGV6Ejf2dEDVi0jse/EObLGEwCV2iYsNr5gglglI
-	fJt8iAXkUAkBWYlNB6DmSEocXHGDZQKj2Cwkq2chWT0LyepZSFYsYGRZxSiaWpBcUJyUXmSi
-	V5yYW1yal66XnJ+7iREYj6f/PZuwg/HeAetDjAIcjEo8vB82FoUIsSaWFVfmHmI0BbpoIrOU
-	aHI+MOrzSuINjc2MLExNTI2NzC3NlMR5X0v9DBYSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXA
-	WMZ27fP6skcvUxtOp8lwztFkiox0Wlo5cYca97yvVSsqmqZF1Db9jgya0xYk+MnyLp/7Wus5
-	ldULZ37fmsTJNHlD3dPk6xf5F2bVnVR4mrHvnpvLqaU6gmvjv534cVzQrZh988+ALXq+5p37
-	UhyE9llcXb9W32ffnpx/+2MfbEmdZb8x1kNDTYmlOCPRUIu5qDgRAHjpAfbCAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jQV3vs0UhBqsPMFksnXiJ2WLLsXuM
-	FjPn3WGz2LP3JIvF5V1z2Cxae36yWyzqu8XowO5xapGER9OZo8weqy9sZfTo27KK0ePzJrkA
-	1qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoDOU
-	FMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBm/DrxmKbgrWPFswiq2BsYZ
-	fF2MnBwSAiYSe3b9ZYKwxSQu3FvP1sXIxSEkMJ1R4s3sNcwQzl9Gib1t5xi7GDk42AS0Jf5s
-	EQVpEBFwlZh39zsjSA2zwFJGiYuPnzCCJIQF4iUOzH8HZrMIqEpMergMbAOvgKXEssUb2CBs
-	QYkfk++xgNjMAloS63ceZ4Kw5SU2r3nLDHGRgsSOs68ZIZbpSdzY0wFVLyKx78U7xgmMArOQ
-	jJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM42p9J7WBc2WBxiFGA
-	g1GJh/fDxqIQIdbEsuLK3EOMEhzMSiK8Z/8VhgjxpiRWVqUW5ccXleakFh9iNAX6dCKzlGhy
-	PjAR5ZXEGxqbmBlZGpkbWhgZmyuJ8964mRsiJJCeWJKanZpakFoE08fEwSnVwBi61aV3Go+7
-	R6tB9JybDRkSmxzTv0ebfrodfrl1V0vmLuf9rp9s5iTP+/V5l2/IqZfP1ilqpZ4IyEn5MVVx
-	1qKiNVsOp90/uDlv7qYKDZ9H8Wl3OBh1J9guSvD65r/twtKLkp9qBdj9GPeWmTo0V4X2Fs94
-	ZX99DmNxquiWWvE7NZU1Hxv3zVNiKc5INNRiLipOBABhA9lUDAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752862AbaKXGTS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 01:19:18 -0500
+Received: from ozlabs.org ([103.22.144.67]:48465 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752449AbaKXGTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 01:19:16 -0500
+Date: Mon, 24 Nov 2014 17:19:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the kvm tree
+Message-ID: <20141124171908.034b2fa1@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/p+yLM8q3xdlWZ19mojmqv4S"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add finsert command for fallocate FALLOC_FL_INSERT_RANGE flag.
+--Sig_/p+yLM8q3xdlWZ19mojmqv4S
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
----
- io/prealloc.c | 39 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 38 insertions(+), 1 deletion(-)
+Hi all,
 
-diff --git a/io/prealloc.c b/io/prealloc.c
-index aba6b44..11b1e12 100644
---- a/io/prealloc.c
-+++ b/io/prealloc.c
-@@ -37,6 +37,10 @@
- #define FALLOC_FL_ZERO_RANGE 0x10
- #endif
- 
-+#ifndef FALLOC_FL_INSERT_RANGE
-+#define FALLOC_FL_INSERT_RANGE 0x20
-+#endif
-+
- static cmdinfo_t allocsp_cmd;
- static cmdinfo_t freesp_cmd;
- static cmdinfo_t resvsp_cmd;
-@@ -46,6 +50,7 @@ static cmdinfo_t zero_cmd;
- static cmdinfo_t falloc_cmd;
- static cmdinfo_t fpunch_cmd;
- static cmdinfo_t fcollapse_cmd;
-+static cmdinfo_t finsert_cmd;
- static cmdinfo_t fzero_cmd;
- #endif
- 
-@@ -169,11 +174,14 @@ fallocate_f(
- 	int		mode = 0;
- 	int		c;
- 
--	while ((c = getopt(argc, argv, "ckp")) != EOF) {
-+	while ((c = getopt(argc, argv, "cikp")) != EOF) {
- 		switch (c) {
- 		case 'c':
- 			mode = FALLOC_FL_COLLAPSE_RANGE;
- 			break;
-+		case 'i':
-+			mode = FALLOC_FL_INSERT_RANGE;
-+			break;
- 		case 'k':
- 			mode = FALLOC_FL_KEEP_SIZE;
- 			break;
-@@ -237,6 +245,25 @@ fcollapse_f(
- }
- 
- static int
-+finsert_f(
-+	int		argc,
-+	char		**argv)
-+{
-+	xfs_flock64_t	segment;
-+	int		mode = FALLOC_FL_INSERT_RANGE;
-+
-+	if (!offset_length(argv[1], argv[2], &segment))
-+		return 0;
-+
-+	if (fallocate(file->fd, mode,
-+			segment.l_start, segment.l_len)) {
-+		perror("fallocate");
-+		return 0;
-+	}
-+	return 0;
-+}
-+
-+static int
- fzero_f(
- 	int		argc,
- 	char		**argv)
-@@ -345,6 +372,16 @@ prealloc_init(void)
- 	_("de-allocates space and eliminates the hole by shifting extents");
- 	add_command(&fcollapse_cmd);
- 
-+	finsert_cmd.name = "finsert";
-+	finsert_cmd.cfunc = finsert_f;
-+	finsert_cmd.argmin = 2;
-+	finsert_cmd.argmax = 2;
-+	finsert_cmd.flags = CMD_NOMAP_OK | CMD_FOREIGN_OK;
-+	finsert_cmd.args = _("off len");
-+	finsert_cmd.oneline =
-+	_("creates new space for writing within file by shifting extents");
-+	add_command(&finsert_cmd);
-+
- 	fzero_cmd.name = "fzero";
- 	fzero_cmd.cfunc = fzero_f;
- 	fzero_cmd.argmin = 2;
--- 
-1.7.11-rc0
+After merging the kvm tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
+ERROR: "get_xsave_addr" [arch/x86/kvm/kvm.ko] undefined!
+
+Caused by commit 1d7fe1d1fb18 ("KVM: x86: support XSAVES usage in the
+host").
+
+I have used the kvm tree from next-20141121 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/p+yLM8q3xdlWZ19mojmqv4S
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUcs3hAAoJEMDTa8Ir7ZwV8HMP/34Rbbe2XRrqWyF6q17BDWUy
+JUPsVAjfpl8mc6x8awehOD6sF4E9n9sw2r63kCF47C4c6zw+mdF7jePuXciUX5Qe
+IRGxK7xV7+ZJ9YsWwMNt7rzlrBQvoAiTJqjax2tpXeAGunEtZ4f6/NEP2TX72wcH
+ae12tovDZtAbLyXiMR4LNjgkIvCUZ0ZRH06aLlPlb2tTqxb7d0fpUv2xAYed+m5l
+TrPD9VtRv18o/nnnmYHjNVXUcTHrSETGTroVwReT04CysVf3IE9AXsuIyc/F3Utp
+JRgkkoKqsp4xcyVtAqZ4CfwF/p10+AjzWRCGpRfsu6iE5DeMBQrEEVBby5rxuoMO
+AlvMW9kfzXlLQCou5DBr+rTKhruhS+JHesibjvJjIusSAtJHzaYiE/ukfhSz+grj
+z4bHLm8j4b+MWhDz/urVglVhI8gxZjxZKO9IiLjJtpCvLh/UVPBAKYxTmKtR+tN6
+6A3COSB3EuKiI3eRMhHO6qYvWZcMGGcMjL1CEp714AJ1Osdiy34EpJa21xVP6w6p
+SNL9+yItjmeI9IRuph1M+wDatcfnCTQZMnprVpDoF7wZidYSdqOPTjhwEWXnlkfX
+tXdX2PUSXm16pcYqb4AfFAVjuLByNl0pt1G8BoRh2H/0PAOMx90zzAauis4O6OMr
+noFzdR3zpAIK8/u9bXpZ
+=jDIh
+-----END PGP SIGNATURE-----
+
+--Sig_/p+yLM8q3xdlWZ19mojmqv4S--
