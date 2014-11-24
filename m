@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239AbaKXOf5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:35:57 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38022 "EHLO
+	id S932261AbaKXOgD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:36:03 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38052 "EHLO
 	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932195AbaKXOfv (ORCPT
+	with ESMTP id S932241AbaKXOf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:35:51 -0500
+	Mon, 24 Nov 2014 09:35:58 -0500
 From: Marc Zyngier <marc.zyngier@arm.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -19,9 +19,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
         Robert Richter <robert.richter@caviumnetworks.com>,
         "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-Subject: [PATCH v3 11/13] irqchip: GICv3: ITS: plug ITS init into main GICv3 code
-Date: Mon, 24 Nov 2014 14:35:18 +0000
-Message-Id: <1416839720-18400-12-git-send-email-marc.zyngier@arm.com>
+Subject: [PATCH v3 10/13] irqchip: GICv3: ITS: DT probing and initialization
+Date: Mon, 24 Nov 2014 14:35:17 +0000
+Message-Id: <1416839720-18400-11-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
 References: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
@@ -29,143 +29,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the ITS is always a subsystem if GICv3, its probing/init is
-driven by the main GICv3 code.
-
-Plug that code in (guarded by a config option).
+Add the code that probes the ITS from the device tree,
+and initialize it.
 
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 ---
- drivers/irqchip/irq-gic-v3.c       | 41 ++++++++++++++++++++++++++++++++------
- include/linux/irqchip/arm-gic-v3.h |  5 +++++
- 2 files changed, 40 insertions(+), 6 deletions(-)
+ drivers/irqchip/irq-gic-v3-its.c | 169 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 169 insertions(+)
 
-diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
-index 43e57da..1a146cc 100644
---- a/drivers/irqchip/irq-gic-v3.c
-+++ b/drivers/irqchip/irq-gic-v3.c
-@@ -76,9 +76,6 @@ static inline void __iomem *gic_dist_base(struct irq_data *d)
- 	if (d->hwirq <= 1023)		/* SPI -> dist_base */
- 		return gic_data.dist_base;
- 
--	if (d->hwirq >= 8192)
--		BUG();		/* LPI Detected!!! */
--
- 	return NULL;
- }
- 
-@@ -276,11 +273,11 @@ static asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs
- 	do {
- 		irqnr = gic_read_iar();
- 
--		if (likely(irqnr > 15 && irqnr < 1020)) {
-+		if (likely(irqnr > 15 && irqnr < 1020) || irqnr >= 8192) {
- 			int err;
- 			err = handle_domain_irq(gic_data.domain, irqnr, regs);
- 			if (err) {
--				WARN_ONCE(true, "Unexpected SPI received!\n");
-+				WARN_ONCE(true, "Unexpected interrupt received!\n");
- 				gic_write_eoir(irqnr);
- 			}
- 			continue;
-@@ -393,6 +390,11 @@ static void gic_cpu_sys_reg_init(void)
- 	gic_write_grpen1(1);
- }
- 
-+static int gic_dist_supports_lpis(void)
-+{
-+	return !!(readl_relaxed(gic_data.dist_base + GICD_TYPER) & GICD_TYPER_LPIS);
-+}
-+
- static void gic_cpu_init(void)
- {
- 	void __iomem *rbase;
-@@ -407,6 +409,10 @@ static void gic_cpu_init(void)
- 
- 	gic_cpu_config(rbase, gic_redist_wait_for_rwp);
- 
-+	/* Give LPIs a spin */
-+	if (IS_ENABLED(CONFIG_ARM_GIC_V3_ITS) && gic_dist_supports_lpis())
-+		its_cpu_init();
-+
- 	/* initialise system registers */
- 	gic_cpu_sys_reg_init();
- }
-@@ -593,12 +599,21 @@ static struct irq_chip gic_chip = {
- 	.irq_set_affinity	= gic_set_affinity,
+diff --git a/drivers/irqchip/irq-gic-v3-its.c b/drivers/irqchip/irq-gic-v3-its.c
+index 532c6df..e9d1615 100644
+--- a/drivers/irqchip/irq-gic-v3-its.c
++++ b/drivers/irqchip/irq-gic-v3-its.c
+@@ -1231,3 +1231,172 @@ static const struct irq_domain_ops its_domain_ops = {
+ 	.alloc			= its_irq_domain_alloc,
+ 	.free			= its_irq_domain_free,
  };
- 
-+#define GIC_ID_NR		(1U << gic_data.rdists.id_bits)
 +
- static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
- 			      irq_hw_number_t hw)
- {
- 	/* SGIs are private to the core kernel */
- 	if (hw < 16)
- 		return -EPERM;
-+	/* Nothing here */
-+	if (hw >= gic_data.irq_nr && hw < 8192)
-+		return -EPERM;
-+	/* Off limits */
-+	if (hw >= GIC_ID_NR)
-+		return -EPERM;
++static int its_probe(struct device_node *node, struct irq_domain *parent)
++{
++	struct resource res;
++	struct its_node *its;
++	void __iomem *its_base;
++	u32 val;
++	u64 baser, tmp;
++	int err;
 +
- 	/* PPIs */
- 	if (hw < 32) {
- 		irq_set_percpu_devid(irq);
-@@ -612,7 +627,15 @@ static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
- 				    handle_fasteoi_irq, NULL, NULL);
- 		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
- 	}
--	irq_set_chip_data(irq, d->host_data);
-+	/* LPIs */
-+	if (hw >= 8192 && hw < GIC_ID_NR) {
-+		if (!gic_dist_supports_lpis())
-+			return -EPERM;
-+		irq_domain_set_info(d, irq, hw, &gic_chip, d->host_data,
-+				    handle_fasteoi_irq, NULL, NULL);
-+		set_irq_flags(irq, IRQF_VALID);
++	err = of_address_to_resource(node, 0, &res);
++	if (err) {
++		pr_warn("%s: no regs?\n", node->full_name);
++		return -ENXIO;
 +	}
 +
- 	return 0;
- }
- 
-@@ -633,6 +656,9 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
- 	case 1:			/* PPI */
- 		*out_hwirq = intspec[1] + 16;
- 		break;
-+	case GIC_IRQ_TYPE_LPI:	/* LPI */
-+		*out_hwirq = intspec[1];
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
-@@ -759,6 +785,9 @@ static int __init gic_of_init(struct device_node *node, struct device_node *pare
- 
- 	set_handle_irq(gic_handle_irq);
- 
-+	if (IS_ENABLED(CONFIG_ARM_GIC_V3_ITS) && gic_dist_supports_lpis())
-+		its_init(node, &gic_data.rdists, gic_data.domain);
++	its_base = ioremap(res.start, resource_size(&res));
++	if (!its_base) {
++		pr_warn("%s: unable to map registers\n", node->full_name);
++		return -ENOMEM;
++	}
 +
- 	gic_smp_init();
- 	gic_dist_init();
- 	gic_cpu_init();
-diff --git a/include/linux/irqchip/arm-gic-v3.h b/include/linux/irqchip/arm-gic-v3.h
-index 0ed30d7..1e8b0cf 100644
---- a/include/linux/irqchip/arm-gic-v3.h
-+++ b/include/linux/irqchip/arm-gic-v3.h
-@@ -318,6 +318,11 @@ static inline void gic_write_eoir(u64 irq)
- 	isb();
- }
- 
-+struct irq_domain;
-+int its_cpu_init(void);
++	val = readl_relaxed(its_base + GITS_PIDR2) & GIC_PIDR2_ARCH_MASK;
++	if (val != 0x30 && val != 0x40) {
++		pr_warn("%s: no ITS detected, giving up\n", node->full_name);
++		err = -ENODEV;
++		goto out_unmap;
++	}
++
++	pr_info("ITS: %s\n", node->full_name);
++
++	its = kzalloc(sizeof(*its), GFP_KERNEL);
++	if (!its) {
++		err = -ENOMEM;
++		goto out_unmap;
++	}
++
++	raw_spin_lock_init(&its->lock);
++	INIT_LIST_HEAD(&its->entry);
++	INIT_LIST_HEAD(&its->its_device_list);
++	its->base = its_base;
++	its->phys_base = res.start;
++	its->msi_chip.of_node = node;
++	its->ite_size = ((readl_relaxed(its_base + GITS_TYPER) >> 4) & 0xf) + 1;
++
++	its->cmd_base = kzalloc(ITS_CMD_QUEUE_SZ, GFP_KERNEL);
++	if (!its->cmd_base) {
++		err = -ENOMEM;
++		goto out_free_its;
++	}
++	its->cmd_write = its->cmd_base;
++
++	err = its_alloc_tables(its);
++	if (err)
++		goto out_free_cmd;
++
++	err = its_alloc_collections(its);
++	if (err)
++		goto out_free_tables;
++
++	baser = (virt_to_phys(its->cmd_base)	|
++		 GITS_CBASER_WaWb		|
++		 GITS_CBASER_InnerShareable	|
++		 (ITS_CMD_QUEUE_SZ / SZ_4K - 1)	|
++		 GITS_CBASER_VALID);
++
++	writeq_relaxed(baser, its->base + GITS_CBASER);
++	tmp = readq_relaxed(its->base + GITS_CBASER);
++	writeq_relaxed(0, its->base + GITS_CWRITER);
++	writel_relaxed(1, its->base + GITS_CTLR);
++
++	if ((tmp ^ baser) & GITS_BASER_SHAREABILITY_MASK) {
++		pr_info("ITS: using cache flushing for cmd queue\n");
++		its->flags |= ITS_FLAGS_CMDQ_NEEDS_FLUSHING;
++	}
++
++	if (of_property_read_bool(its->msi_chip.of_node, "msi-controller")) {
++		its->domain = irq_domain_add_tree(NULL, &its_domain_ops, its);
++		if (!its->domain) {
++			err = -ENOMEM;
++			goto out_free_tables;
++		}
++
++		its->domain->parent = parent;
++
++		its->msi_chip.domain = pci_msi_create_irq_domain(node,
++								 &its_pci_msi_domain_info,
++								 its->domain);
++		if (!its->msi_chip.domain) {
++			err = -ENOMEM;
++			goto out_free_domains;
++		}
++
++		err = of_pci_msi_chip_add(&its->msi_chip);
++		if (err)
++			goto out_free_domains;
++	}
++
++	spin_lock(&its_lock);
++	list_add(&its->entry, &its_nodes);
++	spin_unlock(&its_lock);
++
++	return 0;
++
++out_free_domains:
++	if (its->msi_chip.domain)
++		irq_domain_remove(its->msi_chip.domain);
++	if (its->domain)
++		irq_domain_remove(its->domain);
++out_free_tables:
++	its_free_tables(its);
++out_free_cmd:
++	kfree(its->cmd_base);
++out_free_its:
++	kfree(its);
++out_unmap:
++	iounmap(its_base);
++	pr_err("ITS: failed probing %s (%d)\n", node->full_name, err);
++	return err;
++}
++
++static bool gic_rdists_supports_plpis(void)
++{
++	return !!(readl_relaxed(gic_data_rdist_rd_base() + GICR_TYPER) & GICR_TYPER_PLPIS);
++}
++
++int its_cpu_init(void)
++{
++	if (!gic_rdists_supports_plpis()) {
++		pr_info("CPU%d: LPIs not supported\n", smp_processor_id());
++		return -ENXIO;
++	}
++
++	if (!list_empty(&its_nodes)) {
++		its_cpu_init_lpis();
++		its_cpu_init_collection();
++	}
++
++	return 0;
++}
++
++static struct of_device_id its_device_id[] = {
++	{	.compatible	= "arm,gic-v3-its",	},
++	{},
++};
++
 +int its_init(struct device_node *node, struct rdists *rdists,
-+	     struct irq_domain *domain);
++	     struct irq_domain *parent_domain)
++{
++	struct device_node *np;
 +
- #endif
- 
- #endif
++	for (np = of_find_matching_node(node, its_device_id); np;
++	     np = of_find_matching_node(np, its_device_id)) {
++		its_probe(np, parent_domain);
++	}
++
++	if (list_empty(&its_nodes)) {
++		pr_warn("ITS: No ITS available, not enabling LPIs\n");
++		return -ENXIO;
++	}
++
++	gic_rdists = rdists;
++	gic_root_node = node;
++
++	its_alloc_lpi_tables();
++	its_lpi_init(rdists->id_bits);
++
++	return 0;
++}
 -- 
 2.1.3
 
