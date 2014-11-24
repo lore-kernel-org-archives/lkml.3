@@ -1,63 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaKYDAo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 22:00:44 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:16515 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763AbaKYDAm (ORCPT
+	id S1751842AbaKYDAj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 22:00:39 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:29726 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783AbaKYDAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 22:00:42 -0500
+	Mon, 24 Nov 2014 22:00:37 -0500
 From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 To: david.vrabel@citrix.com, konrad.wilk@oracle.com,
         stefano.stabellini@eu.citrix.com
 Cc: jun.nakajima@intel.com, linux-kernel@vger.kernel.org,
         xen-devel@lists.xen.org, boris.ostrovsky@oracle.com
-Subject: [PATCH v3 0/2] xen/pci: Use APIC for MSIs when APIC virtualization is supported
-Date: Mon, 24 Nov 2014 18:06:16 -0500
-Message-Id: <1416870378-32481-1-git-send-email-boris.ostrovsky@oracle.com>
+Subject: [PATCH v3 2/2] xen/pci: Use APIC directly when APIC virtualization is supported by hardware
+Date: Mon, 24 Nov 2014 18:06:18 -0500
+Message-Id: <1416870378-32481-3-git-send-email-boris.ostrovsky@oracle.com>
 X-Mailer: git-send-email 1.9.3
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1416870378-32481-1-git-send-email-boris.ostrovsky@oracle.com>
+References: <1416870378-32481-1-git-send-email-boris.ostrovsky@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes in v3:
-* Explicitly include asm/apic.h in arch/x86/pci/xen.c for !CONFIG_SMP.
+When hardware supports APIC/x2APIC virtualization we don't need to use pirqs
+for MSI handling and instead use APIC since most APIC accesses (MMIO or MSR)
+will now be processed without VMEXITs.
 
-Changes in v2:
-* New version of cpuid.h file from Xen tree (with a couple of style adjustments)
-* Whitespace cleanup
+As an example, netperf on the original code produces this profile
+(collected wih 'xentrace -e 0x0008ffff -T 5'):
 
-Currently HVM guests handle MSI interrupts using pirqs/event channels, allowing
-us to not issue APIC accesses that result in somewhat expensive VMEXITs. When
-hardware supports APIC virtualization we don't need to use pirqs anymore
-since now guest's APIC accesses can be handled by the processor itself.
+    342 cpu_change
+    260 CPUID
+  34638 HLT
+  64067 INJ_VIRQ
+  28374 INTR
+  82733 INTR_WINDOW
+     10 NPF
+  24337 TRAP
+ 370610 vlapic_accept_pic_intr
+ 307528 VMENTRY
+ 307527 VMEXIT
+ 140998 VMMCALL
+    127 wrap_buffer
 
-There are two patches in this series:
+After applying this patch the same test shows
 
-1. Move setting of x86_msi ops to a later point. The reason for doing so is that
-we currently decide whether or not to use pirqs before kernel had a chance to
-see whether it should be using x2APIC instead of plain APIC. Since hardware may
-virtualize either or both of those two we can only make pirqs vs. APIC selection
-after kernel has settled down on which APIC version it will use. (Note that
-currently x2APIC is not used by HVM guests so technically this patch is not
-necessary. However, it probably makes sense to apply it now to avoid
-forgetting to do it when we enable x2APIC).
+    230 cpu_change
+    260 CPUID
+  36542 HLT
+    174 INJ_VIRQ
+  27250 INTR
+    222 INTR_WINDOW
+     20 NPF
+  24999 TRAP
+ 381812 vlapic_accept_pic_intr
+ 166480 VMENTRY
+ 166479 VMEXIT
+  77208 VMMCALL
+     81 wrap_buffer
 
-2. Set x86_msi ops to use pirqs only when APIC virtualization is not available.
-The commit message describes performance improvements that this change brings.
+ApacheBench results (ab -n 10000 -c 200) improve by about 10%
 
-Boris Ostrovsky (2):
-  xen/pci: Defer initialization of MSI ops on HVM guests until after
-    x2APIC has been set up
-  xen/pci: Use APIC directly when APIC virtualization is supported by
-    hardware
-
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+---
  arch/x86/include/asm/xen/cpuid.h | 91 ++++++++++++++++++++++++++++++++++++++++
- arch/x86/pci/xen.c               | 25 ++++++++++-
- 2 files changed, 114 insertions(+), 2 deletions(-)
+ arch/x86/pci/xen.c               | 10 +++++
+ 2 files changed, 101 insertions(+)
  create mode 100644 arch/x86/include/asm/xen/cpuid.h
 
+diff --git a/arch/x86/include/asm/xen/cpuid.h b/arch/x86/include/asm/xen/cpuid.h
+new file mode 100644
+index 0000000..0d809e9
+--- /dev/null
++++ b/arch/x86/include/asm/xen/cpuid.h
+@@ -0,0 +1,91 @@
++/******************************************************************************
++ * arch-x86/cpuid.h
++ *
++ * CPUID interface to Xen.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to
++ * deal in the Software without restriction, including without limitation the
++ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
++ * sell copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++ * DEALINGS IN THE SOFTWARE.
++ *
++ * Copyright (c) 2007 Citrix Systems, Inc.
++ *
++ * Authors:
++ *    Keir Fraser <keir@xen.org>
++ */
++
++#ifndef __XEN_PUBLIC_ARCH_X86_CPUID_H__
++#define __XEN_PUBLIC_ARCH_X86_CPUID_H__
++
++/*
++ * For compatibility with other hypervisor interfaces, the Xen cpuid leaves
++ * can be found at the first otherwise unused 0x100 aligned boundary starting
++ * from 0x40000000.
++ *
++ * e.g If viridian extensions are enabled for an HVM domain, the Xen cpuid
++ * leaves will start at 0x40000100
++ */
++
++#define XEN_CPUID_FIRST_LEAF 0x40000000
++#define XEN_CPUID_LEAF(i)    (XEN_CPUID_FIRST_LEAF + (i))
++
++/*
++ * Leaf 1 (0x40000x00)
++ * EAX: Largest Xen-information leaf. All leaves up to an including @EAX
++ *      are supported by the Xen host.
++ * EBX-EDX: "XenVMMXenVMM" signature, allowing positive identification
++ *      of a Xen host.
++ */
++#define XEN_CPUID_SIGNATURE_EBX 0x566e6558 /* "XenV" */
++#define XEN_CPUID_SIGNATURE_ECX 0x65584d4d /* "MMXe" */
++#define XEN_CPUID_SIGNATURE_EDX 0x4d4d566e /* "nVMM" */
++
++/*
++ * Leaf 2 (0x40000x01)
++ * EAX[31:16]: Xen major version.
++ * EAX[15: 0]: Xen minor version.
++ * EBX-EDX: Reserved (currently all zeroes).
++ */
++
++/*
++ * Leaf 3 (0x40000x02)
++ * EAX: Number of hypercall transfer pages. This register is always guaranteed
++ *      to specify one hypercall page.
++ * EBX: Base address of Xen-specific MSRs.
++ * ECX: Features 1. Unused bits are set to zero.
++ * EDX: Features 2. Unused bits are set to zero.
++ */
++
++/* Does the host support MMU_PT_UPDATE_PRESERVE_AD for this guest? */
++#define _XEN_CPUID_FEAT1_MMU_PT_UPDATE_PRESERVE_AD 0
++#define XEN_CPUID_FEAT1_MMU_PT_UPDATE_PRESERVE_AD  (1u<<0)
++
++/*
++ * Leaf 5 (0x40000x04)
++ * HVM-specific features
++ */
++
++/* EAX Features */
++/* Virtualized APIC registers */
++#define XEN_HVM_CPUID_APIC_ACCESS_VIRT (1u << 0)
++/* Virtualized x2APIC accesses */
++#define XEN_HVM_CPUID_X2APIC_VIRT      (1u << 1)
++/* Memory mapped from other domains has valid IOMMU entries */
++#define XEN_HVM_CPUID_IOMMU_MAPPINGS   (1u << 2)
++
++#define XEN_CPUID_MAX_NUM_LEAVES 4
++
++#endif /* __XEN_PUBLIC_ARCH_X86_CPUID_H__ */
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index 1370716..e4a5bab 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -23,6 +23,8 @@
+ #include <xen/features.h>
+ #include <xen/events.h>
+ #include <asm/xen/pci.h>
++#include <asm/xen/cpuid.h>
++#include <asm/apic.h>
+ #include <asm/i8259.h>
+ 
+ static int xen_pcifront_enable_irq(struct pci_dev *dev)
+@@ -434,6 +436,14 @@ int __init pci_xen_init(void)
+ #ifdef CONFIG_PCI_MSI
+ void __init xen_msi_init(void)
+ {
++	if (!disable_apic) {
++		uint32_t eax = cpuid_eax(xen_cpuid_base() + 4);
++
++		if (((eax & XEN_HVM_CPUID_X2APIC_VIRT) && x2apic_mode) ||
++		    ((eax & XEN_HVM_CPUID_APIC_ACCESS_VIRT) && cpu_has_apic))
++			return;
++	}
++
+ 	x86_msi.setup_msi_irqs = xen_hvm_setup_msi_irqs;
+ 	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
+ }
 -- 
 1.9.3
 
