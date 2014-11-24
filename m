@@ -1,99 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895AbaKXJBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 04:01:32 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:49602 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097AbaKXJBa (ORCPT
+	id S1753016AbaKXJBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 04:01:44 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:36775 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935AbaKXJBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 04:01:30 -0500
-X-Originating-IP: 50.43.41.112
-Date: Mon, 24 Nov 2014 01:00:54 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Pieter Smith <pieter@boesman.nl>, David Miller <davem@davemloft.net>,
-        alexander.h.duyck@intel.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>, beber@meleeweb.net,
-        catalina.mocanu@gmail.com, Daniel Borkmann <dborkman@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Fabian Frederick <fabf@skynet.be>, fuse-devel@lists.sourceforge.net,
-        Hugh Dickins <hughd@google.com>, iulia.manda21@gmail.com,
-        Jan Beulich <JBeulich@suse.com>, bfields@fieldses.org,
-        jlayton@poochiereds.net, linux-api@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Matt Turner <mattst88@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, Paul.Durrant@citrix.com,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Peter Foley <pefoley2@pefoley.com>, Thomas Graf <tgraf@suug.ch>,
-        Tom Herbert <therbert@google.com>, willemb@google.com,
-        xiaoguangrong@linux.vnet.ibm.com, zhenglong.cai@cs2c.com.cn
-Subject: Re: [PATCH 0/6] kernel tinification: optionally compile out splice
- family of syscalls (splice, vmsplice, tee and sendfile)
-Message-ID: <20141124090054.GA20119@thin>
-References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
- <20141123.134623.2061031332250984539.davem@davemloft.net>
- <20141123194326.GB8517@thin>
- <20141123203040.GB26749@smipidev>
- <20141123233637.GC12456@thin>
- <CAMuHMdW8gAiyFiPHu-N4Dg_+b6Qg9JXZZ3PqOn=VmZLcEH-Xkg@mail.gmail.com>
+	Mon, 24 Nov 2014 04:01:41 -0500
+Message-ID: <5472F3F0.8060701@linaro.org>
+Date: Mon, 24 Nov 2014 10:01:36 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdW8gAiyFiPHu-N4Dg_+b6Qg9JXZZ3PqOn=VmZLcEH-Xkg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Sonny Rao <sonnyrao@chromium.org>, linux-arm-kernel@lists.infradead.org
+CC: linux-kernel@vger.kernel.org, dianders@chromium.org,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, stable@vger.kernel.org
+Subject: Re: [PATCH v5] clocksource: arch_timer: Fix code to use physical
+ timers when requested
+References: <1416812564-26465-1-git-send-email-sonnyrao@chromium.org>
+In-Reply-To: <1416812564-26465-1-git-send-email-sonnyrao@chromium.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 09:38:20AM +0100, Geert Uytterhoeven wrote:
-> On Mon, Nov 24, 2014 at 12:36 AM, Josh Triplett <josh@joshtriplett.org> wrote:
-> > On Sun, Nov 23, 2014 at 09:30:40PM +0100, Pieter Smith wrote:
-> >> On Sun, Nov 23, 2014 at 11:43:26AM -0800, Josh Triplett wrote:
-> >> > On Sun, Nov 23, 2014 at 01:46:23PM -0500, David Miller wrote:
-> >> > > Truly removing sendfile/sendpage means that you can't even compile NFS
-> >> > > into the tree.
-> >> >
-> >> > If you mean the in-kernel nfsd (CONFIG_NFSD), that already has a large
-> >> > stack of "select" and "depends on", both directly and indirectly; adding
-> >> > a "select SPLICE_SYSCALL" to it seems fine.  (That select does need
-> >> > adding, though.  Pieter, you need to test-compile more than just
-> >> > tinyconfig and defconfig.  Try an allyesconfig with *just* splice turned
-> >> > off, and make sure that compiles.)
-> >>
-> >> Did exacly that. Took forever on my hardware, but no problems.
-> >
-> > Ah, I see.  Looking more closely at nfsd, it looks like it already has a
-> > code path for filesystems that don't do splice.  I think, rather than
-> > making nfsd select SPLICE_SYSCALL, that it would suffice to change the
-> > "rqstp->rq_splice_ok = true;" in svc_process_common (net/sunrpc/svc.c)
-> > to:
-> >
-> > rqstp->rq_splice_ok = IS_ENABLED(CONFIG_SPLICE_SYSCALL);
-> >
-> > Then nfsd should simply *always* fall back to its non-splice support.
-> 
-> Hence I suggest adding to the nfsd help text:
-> 
->     While nfsd works without SPLICE_SYSCALL, you may want to enable
->     SPLICE_SYSCALL for <...> (performance?) reasons.
+On 11/24/2014 08:02 AM, Sonny Rao wrote:
+> This is a bug fix for using physical arch timers when
+> the arch_timer_use_virtual boolean is false.  It restores the
+> arch_counter_get_cntpct() function after removal in
+>
+> 0d651e4e "clocksource: arch_timer: use virtual counters"
+>
+> We need this on certain ARMv7 systems which are architected like this:
+>
+> * The firmware doesn't know and doesn't care about hypervisor mode and
+>    we don't want to add the complexity of hypervisor there.
+>
+> * The firmware isn't involved in SMP bringup or resume.
+>
+> * The ARCH timer come up with an uninitialized offset between the
+>    virtual and physical counters.  Each core gets a different random
+>    offset.
+>
+> * The device boots in "Secure SVC" mode.
+>
+> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
+>    CNTHCTL.PL1PCTEN (both default to 1 at reset)
+>
+> One example of such as system is RK3288 where it is much simpler to
+> use the physical counter since there's nobody managing the offset and
+> each time a core goes down and comes back up it will get reinitialized
+> to some other random value.
+>
+> Fixes: 0d651e4e65e9 ("clocksource: arch_timer: use virtual counters")
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+> Acked-by: Olof Johansson <olof@lixom.net>
 
-It already seems sufficiently unlikely to enable NFSD while disabling
-SPLICE_SYSCALL (in the latter case, turning on EXPERT to do so).  It
-doesn't seem worth adding such a note to NFSD.  At most, I'd say that
-NFSD might want a note somewhere in its documentation saying that it
-takes advantage of filesystems with splice support if serving files from
-one, and if running on a kernel that has splice.
 
-> (Hmm, does Kconfig need a "suggests", cfr. Debian package dependencies?)
+Catalin,
 
-Perhaps, though that seems much lower priority than, for instance,
-transitive "select".
+are you ok with this patch ?
 
-- Josh Triplett
+Thanks
+   -- Daniel
+
+> ---
+> v2: Add fixes tag to commit message, cc stable, copy Doug's
+>      description of the systems which need this in commit message.
+> v3: Don't change the memory-mapped physical timer/counter code
+> v4: remove the memory-mapped physical counter code since it's not used
+> v5: rebase and make AArch64 version of arch_counter_get_cntpct call BUG()
+> ---
+>   arch/arm/include/asm/arch_timer.h    | 9 +++++++++
+>   arch/arm64/include/asm/arch_timer.h  | 9 +++++++++
+>   drivers/clocksource/arm_arch_timer.c | 5 ++++-
+>   3 files changed, 22 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+> index 92793ba..d4ebf56 100644
+> --- a/arch/arm/include/asm/arch_timer.h
+> +++ b/arch/arm/include/asm/arch_timer.h
+> @@ -78,6 +78,15 @@ static inline u32 arch_timer_get_cntfrq(void)
+>   	return val;
+>   }
+>
+> +static inline u64 arch_counter_get_cntpct(void)
+> +{
+> +	u64 cval;
+> +
+> +	isb();
+> +	asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (cval));
+> +	return cval;
+> +}
+> +
+>   static inline u64 arch_counter_get_cntvct(void)
+>   {
+>   	u64 cval;
+> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+> index f190971..b1fa4e6 100644
+> --- a/arch/arm64/include/asm/arch_timer.h
+> +++ b/arch/arm64/include/asm/arch_timer.h
+> @@ -104,6 +104,15 @@ static inline void arch_timer_set_cntkctl(u32 cntkctl)
+>   	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+>   }
+>
+> +static inline u64 arch_counter_get_cntpct(void)
+> +{
+> +	/*
+> +	 * AArch64 kernel and user space mandate the use of CNTVCT.
+> +	 */
+> +	BUG();
+> +	return 0;
+> +}
+> +
+>   static inline u64 arch_counter_get_cntvct(void)
+>   {
+>   	u64 cval;
+> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+> index 43005d4..1fa2af9 100644
+> --- a/drivers/clocksource/arm_arch_timer.c
+> +++ b/drivers/clocksource/arm_arch_timer.c
+> @@ -462,7 +462,10 @@ static void __init arch_counter_register(unsigned type)
+>
+>   	/* Register the CP15 based counter if we have one */
+>   	if (type & ARCH_CP15_TIMER) {
+> -		arch_timer_read_counter = arch_counter_get_cntvct;
+> +		if (arch_timer_use_virtual)
+> +			arch_timer_read_counter = arch_counter_get_cntvct;
+> +		else
+> +			arch_timer_read_counter = arch_counter_get_cntpct;
+>   	} else {
+>   		arch_timer_read_counter = arch_counter_get_cntvct_mem;
+>
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
