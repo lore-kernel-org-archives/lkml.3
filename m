@@ -1,125 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573AbaKXPBd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:01:33 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:52544 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069AbaKXPBb (ORCPT
+	id S1753610AbaKXPCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 10:02:38 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:26723 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751111AbaKXPCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:01:31 -0500
-Message-ID: <54734844.1070505@linaro.org>
-Date: Mon, 24 Nov 2014 16:01:24 +0100
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 24 Nov 2014 10:02:36 -0500
+Message-ID: <54734888.8020008@fb.com>
+Date: Mon, 24 Nov 2014 08:02:32 -0700
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        Kangkang.Shen@huawei.com, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH v5 03/18] ACPI / table: Count matched and successfully
- parsed entries without specifying max entries
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <6619034.gHDuQJ1A7y@vostro.rjw.lan> <5472ED90.5010803@linaro.org> <2301926.MWJ5MneAen@vostro.rjw.lan>
-In-Reply-To: <2301926.MWJ5MneAen@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Christoph Hellwig <hch@lst.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH] blk-mq: handle the single queue case in blk_mq_hctx_next_cpu
+References: <1416817643-17888-1-git-send-email-hch@lst.de>
+In-Reply-To: <1416817643-17888-1-git-send-email-hch@lst.de>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.28,0.0.0000
+ definitions=2014-11-24_02:2014-11-24,2014-11-24,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.928997573525383 urlsuspect_oldscore=0.928997573525383
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.928997573525383 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1411240124
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.11.2014 16:16, Rafael J. Wysocki wrote:
-> On Monday, November 24, 2014 09:34:24 AM Tomasz Nowicki wrote:
->> On 24.11.2014 02:45, Rafael J. Wysocki wrote:
->>> On Friday, October 17, 2014 09:36:59 PM Hanjun Guo wrote:
->>>> From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
->>>>
->>>> It is very useful to traverse all available table entries without max
->>>> number of expected entries type. Current acpi_parse_entries()
->>>> implementation gives that feature but it does not count those entries,
->>>> it returns 0 instead, so fix it to count matched and successfully
->>>> entries and return it.
->>>
->>> Hmm.  I guess that the goal is for count to only be incremented when the
->>> condition is satisfied entirely, while without the patch it may be incremented
->>> even if that isn't the case.
->>
->> That would be our goal if patch would look like:
->> -		    && (!max_entries || count++ < max_entries))
->> +		    && (!max_entries && count++ < max_entries)) {
->> but then we can not walk through all available entries (with max_entries==0)
->
-> No, that's not what I was trying to say. :-)
->
->>>
->>> I'm not sure how that is related to the above paragraph, however.
->>>
->>
->> Previous changelog is not clear, let me rewrite it:
->>
->> acpi_parse_entries() allows to traverse all available table entries (aka
->> subtables) by passing max_entries parameter equal to 0. But for that use
->> case acpi_parse_entries() does not inform caller how many entries were
->> matched and for how many entries handler was run against. That patch is
->> going to fix it.
->
-> Do I understand correctly that count is only ever incremented by current code
-> if max_entries is different from 0?
+On 11/24/2014 01:27 AM, Christoph Hellwig wrote:
+> Don't duplicate the code to handle the not cpu bounce case in the
+> caller, do it inside blk_mq_hctx_next_cpu instead.
 
-Right. Currently "count" is incremented only if max_entries > 0.
+Thanks, applied.
 
-Tomasz
+-- 
+Jens Axboe
 
->
->
->>>> NOTE: This change has no impact to x86 and ia64 archs since existing code
->>>> checks for error occurrence only (acpi_parse_entries(...,0) < 0).
->>>>
->>>> Acked-by: Grant Likely <grant.likely@linaro.org>
->>>> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
->>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->>>> ---
->>>>    drivers/acpi/tables.c |    5 ++++-
->>>>    1 file changed, 4 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
->>>> index 21ae521..b18e45e 100644
->>>> --- a/drivers/acpi/tables.c
->>>> +++ b/drivers/acpi/tables.c
->>>> @@ -225,10 +225,13 @@ acpi_parse_entries(unsigned long table_size,
->>>>    	while (((unsigned long)entry) + sizeof(struct acpi_subtable_header) <
->>>>    	       table_end) {
->>>>    		if (entry->type == entry_id
->>>> -		    && (!max_entries || count++ < max_entries))
->>>> +		    && (!max_entries || count < max_entries)) {
->>>>    			if (handler(entry, table_end))
->>>>    				return -EINVAL;
->>>>
->>>> +			count++;
->>>> +		}
->>>> +
->>>>    		/*
->>>>    		 * If entry->length is 0, break from this loop to avoid
->>>>    		 * infinite loop.
->>>>
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
