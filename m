@@ -1,121 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186AbaKXINh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 03:13:37 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:42279 "EHLO
+	id S1753217AbaKXINx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 03:13:53 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:42778 "EHLO
 	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685AbaKXIMm (ORCPT
+	with ESMTP id S1753159AbaKXINe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 03:12:42 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>, Dave Hansen <dave@sr71.net>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v3 5/8] stacktrace: introduce snprint_stack_trace for buffer output
-Date: Mon, 24 Nov 2014 17:15:23 +0900
-Message-Id: <1416816926-7756-6-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1416816926-7756-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1416816926-7756-1-git-send-email-iamjoonsoo.kim@lge.com>
+	Mon, 24 Nov 2014 03:13:34 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 2/2] perf tools: Collapse first level callchain entry if it has sibling
+Date: Mon, 24 Nov 2014 17:13:27 +0900
+Message-Id: <1416816807-6495-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1416816807-6495-1-git-send-email-namhyung@kernel.org>
+References: <1416816807-6495-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current stacktrace only have the function for console output.
-page_owner that will be introduced in following patch needs to print
-the output of stacktrace into the buffer for our own output format
-so so new function, snprint_stack_trace(), is needed.
+If first level callchain has more than single path like when -g caller
+option is given, it should show only first one in the path and hide
+others.  But it didn't do it properly nad just hindered the output.
 
-v3:
- fix potential buffer overflow case
- make snprint_stack_trace() return generated string length rather than
- printed string length like as snprint* functions semantic.
+Before:
+  -   80.33%    11.11%  abc2     abc2              [.] main
+     + 86.18% main
+       13.82% __libc_start_main
+          main
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+After:
+  -   80.33%    11.11%  abc2     abc2              [.] main
+     + 86.18% main
+     + 13.82% __libc_start_main
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- include/linux/stacktrace.h |    5 +++++
- kernel/stacktrace.c        |   32 ++++++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+)
+ tools/perf/ui/browsers/hists.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/stacktrace.h b/include/linux/stacktrace.h
-index 115b570..669045a 100644
---- a/include/linux/stacktrace.h
-+++ b/include/linux/stacktrace.h
-@@ -1,6 +1,8 @@
- #ifndef __LINUX_STACKTRACE_H
- #define __LINUX_STACKTRACE_H
- 
-+#include <linux/types.h>
-+
- struct task_struct;
- struct pt_regs;
- 
-@@ -20,6 +22,8 @@ extern void save_stack_trace_tsk(struct task_struct *tsk,
- 				struct stack_trace *trace);
- 
- extern void print_stack_trace(struct stack_trace *trace, int spaces);
-+extern int snprint_stack_trace(char *buf, size_t size,
-+			struct stack_trace *trace, int spaces);
- 
- #ifdef CONFIG_USER_STACKTRACE_SUPPORT
- extern void save_stack_trace_user(struct stack_trace *trace);
-@@ -32,6 +36,7 @@ extern void save_stack_trace_user(struct stack_trace *trace);
- # define save_stack_trace_tsk(tsk, trace)		do { } while (0)
- # define save_stack_trace_user(trace)			do { } while (0)
- # define print_stack_trace(trace, spaces)		do { } while (0)
-+# define snprint_stack_trace(buf, size, trace, spaces)	do { } while (0)
- #endif
- 
- #endif
-diff --git a/kernel/stacktrace.c b/kernel/stacktrace.c
-index 00fe55c..b6e4c16 100644
---- a/kernel/stacktrace.c
-+++ b/kernel/stacktrace.c
-@@ -25,6 +25,38 @@ void print_stack_trace(struct stack_trace *trace, int spaces)
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 8d22905a4687..502daff76ceb 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -227,10 +227,14 @@ static void callchain_node__init_have_children_rb_tree(struct callchain_node *no
+ 	}
  }
- EXPORT_SYMBOL_GPL(print_stack_trace);
  
-+int snprint_stack_trace(char *buf, size_t size,
-+			struct stack_trace *trace, int spaces)
-+{
-+	int i;
-+	unsigned long ip;
-+	int generated;
-+	int total = 0;
+-static void callchain_node__init_have_children(struct callchain_node *node)
++static void callchain_node__init_have_children(struct callchain_node *node,
++					       bool has_sibling)
+ {
+ 	struct callchain_list *chain;
+ 
++	chain = list_entry(node->val.next, struct callchain_list, list);
++	chain->ms.has_children = has_sibling;
 +
-+	if (WARN_ON(!trace->entries))
-+		return 0;
-+
-+	for (i = 0; i < trace->nr_entries; i++) {
-+		ip = trace->entries[i];
-+		generated = snprintf(buf, size, "%*c[<%p>] %pS\n",
-+				1 + spaces, ' ', (void *) ip, (void *) ip);
-+
-+		total += generated;
-+
-+		/* Assume that generated isn't a negative number */
-+		if (generated >= size) {
-+			buf += size;
-+			size = 0;
-+		} else {
-+			buf += generated;
-+			size -= generated;
-+		}
-+	}
-+
-+	return total;
-+}
-+EXPORT_SYMBOL_GPL(snprint_stack_trace);
-+
- /*
-  * Architectures that do not implement save_stack_trace_tsk or
-  * save_stack_trace_regs get this weak alias and a once-per-bootup warning
+ 	if (!list_empty(&node->val)) {
+ 		chain = list_entry(node->val.prev, struct callchain_list, list);
+ 		chain->ms.has_children = !RB_EMPTY_ROOT(&node->rb_root);
+@@ -241,11 +245,12 @@ static void callchain_node__init_have_children(struct callchain_node *node)
+ 
+ static void callchain__init_have_children(struct rb_root *root)
+ {
+-	struct rb_node *nd;
++	struct rb_node *nd = rb_first(root);
++	bool has_sibling = nd && rb_next(nd);
+ 
+ 	for (nd = rb_first(root); nd; nd = rb_next(nd)) {
+ 		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
+-		callchain_node__init_have_children(node);
++		callchain_node__init_have_children(node, has_sibling);
+ 	}
+ }
+ 
 -- 
-1.7.9.5
+2.1.2
 
