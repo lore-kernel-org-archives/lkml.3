@@ -1,139 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071AbaKXPyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:54:17 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:40523 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117AbaKXPyQ (ORCPT
+	id S1754132AbaKXPy2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 10:54:28 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:49761 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117AbaKXPyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:54:16 -0500
-Date: Mon, 24 Nov 2014 09:54:22 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Sumit Semwal <sumit.semwal@linaro.org>
-CC: <balbi@ti.com>, Kiran Raparthy <kiran.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Arve =?utf-8?B?SGrvv71ubmV277+9Zw==?= <arve@android.com>,
-        Benoit Goby <benoit@android.com>, Todd Poynor <toddpoynor@google.com>
-Subject: Re: [PATCH v1 2/3] usb: phy: Handle per-PHY event for connect and
- disconnect events
-Message-ID: <20141124155422.GH20705@saruman>
-Reply-To: <balbi@ti.com>
-References: <cover.1416547297.git.kiran.kumar@linaro.org>
- <7a23b5f0af4463aea85384b6a67678b9c41b9d2d.1416547297.git.kiran.kumar@linaro.org>
- <20141121151105.GC7508@saruman>
- <CA+RfmHZo4FuH6-Z8+VFY7Ao5QVD-VmfdCm17ZrB6f7J8Xpo-Aw@mail.gmail.com>
- <20141124143819.GB20705@saruman>
- <CAO_48GFj2moODXtB1W9t6tbuvcyF2WgnakSDrbQRzPi+u=mc=g@mail.gmail.com>
+	Mon, 24 Nov 2014 10:54:25 -0500
+Message-ID: <547354AD.3010609@hp.com>
+Date: Mon, 24 Nov 2014 10:54:21 -0500
+From: Linda Knippers <linda.knippers@hp.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4LwthZj+AV2mq5CX"
-Content-Disposition: inline
-In-Reply-To: <CAO_48GFj2moODXtB1W9t6tbuvcyF2WgnakSDrbQRzPi+u=mc=g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: ethan zhao <ethan.zhao@oracle.com>, Linda Knippers <ljklists@gmail.com>
+CC: Dirk Brandewie <dirk.brandewie@gmail.com>, viresh.kumar@linaro.org,
+        rjw@rjwysocki.net, corbet@lwn.net, dirk.j.brandewie@intel.com,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
+        brian.maly@oracle.com
+Subject: Re: [PATCH 1/3] intel_pstate: skip the driver if Sun server has ACPI
+ _PPC method
+References: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com> <1416299826-15813-2-git-send-email-ethan.zhao@oracle.com> <546CFBEE.6090103@hp.com> <546E1BBE.7050906@intel.com> <546E892C.8000209@oracle.com> <546EC348.1000001@gmail.com> <54728CC0.1030708@oracle.com>
+In-Reply-To: <54728CC0.1030708@oracle.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---4LwthZj+AV2mq5CX
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/23/2014 8:41 PM, ethan zhao wrote:
+> Linda,
+> 
+> On 2014/11/21 12:44, Linda Knippers wrote:
+>>
+>> On 11/20/2014 07:37 PM, ethan zhao wrote:
+>>> Dirk,
+>>>
+>>> On 2014/11/21 0:50, Dirk Brandewie wrote:
+>>>> On 11/19/2014 12:22 PM, Linda Knippers wrote:
+>>>>> On 11/18/2014 3:37 AM, Ethan Zhao wrote:
+>>>>>> Oracle Sun X86 servers have dynamic power capping capability that
+>>>>>> works via
+>>>>>> ACPI _PPC method etc, so skip loading this driver if Sun server has
+>>>>>> ACPI _PPC
+>>>>>> enabled.
+>>>>>>
+>>>>>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+>>>>>> ---
+>>>>>>    drivers/cpufreq/intel_pstate.c | 20 ++++++++++++++++++++
+>>>>>>    1 file changed, 20 insertions(+)
+>>>>>>
+>>>>>> diff --git a/drivers/cpufreq/intel_pstate.c
+>>>>>> b/drivers/cpufreq/intel_pstate.c
+>>>>>> index 27bb6d3..5498eb0 100644
+>>>>>> --- a/drivers/cpufreq/intel_pstate.c
+>>>>>> +++ b/drivers/cpufreq/intel_pstate.c
+>>>>>> @@ -943,6 +943,21 @@ static bool intel_pstate_no_acpi_pss(void)
+>>>>>>        return true;
+>>>>>>    }
+>>>>>>
+>>>>>> +static bool intel_pstate_has_acpi_ppc(void)
+>>>>>> +{
+>>>>>> +    int i;
+>>>>>> +
+>>>>>> +    for_each_possible_cpu(i) {
+>>>>>> +        struct acpi_processor *pr = per_cpu(processors, i);
+>>>>>> +
+>>>>>> +        if (!pr)
+>>>>>> +            continue;
+>>>>>> +        if (acpi_has_method(pr->handle, "_PPC"))
+>>>>>> +            return true;
+>>>>>> +    }
+>>>>>> +    return false;
+>>>>>> +}
+>>>>>> +
+>>>>>>    struct hw_vendor_info {
+>>>>>>        u16  valid;
+>>>>>>        char oem_id[ACPI_OEM_ID_SIZE];
+>>>>>> @@ -952,6 +967,7 @@ struct hw_vendor_info {
+>>>>>>    /* Hardware vendor-specific info that has its own power management
+>>>>>> modes */
+>>>>>>    static struct hw_vendor_info vendor_info[] = {
+>>>>>>        {1, "HP    ", "ProLiant"},
+>>>>>> +    {1, "ORACLE", ""},
+>>>>>>        {0, "", ""},
+>>>>>>    };
+>>>>>>
+>>>>>> @@ -969,12 +985,16 @@ static bool
+>>>>>> intel_pstate_platform_pwr_mgmt_exists(void)
+>>>>>>                !strncmp(hdr.oem_table_id, v_info->oem_table_id,
+>>>>>> ACPI_OEM_TABLE_ID_SIZE) &&
+>>>>>>                intel_pstate_no_acpi_pss())
+>>>>>>                return true;
+>>>>>> +        if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
+>>>>>> +            intel_pstate_has_acpi_ppc())
+>>>>> We need try this on a few platforms to make sure this patch doesn't
+>>>>> break the
+>>>>> HP platforms that may or may not need this driver, depending on the
+>>>>> BIOS settings.
+>>>>>
+>>>> It looks like HP systems would get swept up in this check too if they
+>>>> have _PPC
+>> Right.  This patch breaks HP ProLiant platforms when they are
+>> configured to have the OS do power management.  In that case,
+>> the firmware exposes _PPC information.
+>   Okay, got it, The HP ProLiant has an option in BIOS could be enabled to "OS
+> PM", so
+>  will export _PSS, _PPC, and  this patch break this case.
+> 
+>>
+>>>     No , this patch checks the oem_id against 'ORACLE" first, will not
+>>> affect other vendors even they have _PPC.
+>> I don't think that's how your code works.  This patch will match any
+>> vendor that is in the table, not just "ORACLE".
+>  Will change patch to match the oem-id out of the loop, such as following , how
+> about it ?
+> 
+>  static bool intel_pstate_platform_pwr_mgmt_exists(void)
+> {
+>         struct acpi_table_header hdr;
+>         struct hw_vendor_info *v_info;
+> 
+>         if (acpi_disabled
+>             || ACPI_FAILURE(acpi_get_table_header(ACPI_SIG_FADT, 0, &hdr)))
+>                 return false;
+> 
+>         for (v_info = vendor_info; v_info->valid; v_info++) {
+>                 if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE)
+>                     && !strncmp(hdr.oem_table_id, v_info->oem_table_id,
+> ACPI_OEM_TABLE_ID_SIZE)
+>                     && intel_pstate_no_acpi_pss())
+>                         return true;
+>         }
+> 
+>    if (!strncmp(hdr.oem_id, v_info[1]->oem_id, ACPI_OEM_ID_SIZE) &&
+>           intel_pstate_has_acpi_ppc())
 
-On Mon, Nov 24, 2014 at 09:19:09PM +0530, Sumit Semwal wrote:
-> Hi Felipe,
->=20
-> On 24 November 2014 at 20:08, Felipe Balbi <balbi@ti.com> wrote:
-> > Hi,
-> >
-> > On Fri, Nov 21, 2014 at 09:13:00PM +0530, Kiran Raparthy wrote:
-> >> On 21 November 2014 20:41, Felipe Balbi <balbi@ti.com> wrote:
-> >> > On Fri, Nov 21, 2014 at 11:31:21AM +0530, Kiran Raparthy wrote:
-> >> >> usb: phy: Handle per-PHY event for connnect and disconnect events
-> >> >>
-> >> >> When usb is connected and enumerated in device mode or when usb is
-> >> >> disconnected,call usb_phy_set_event from phy drivers to handle per-=
-PHY event.
-> >> >>
-> >> >> Cc: Felipe Balbi <balbi@ti.com>
-> >> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >> >> Cc: linux-kernel@vger.kernel.org
-> >> >> Cc: linux-usb@vger.kernel.org
-> >> >> Cc: Android Kernel Team <kernel-team@android.com>
-> >> >> Cc: John Stultz <john.stultz@linaro.org>
-> >> >> Cc: Sumit Semwal <sumit.semwal@linaro.org>
-> >> >> Cc: Arve Hj=EF=BF=BDnnev=EF=BF=BDg <arve@android.com>
-> >> >> Cc: Benoit Goby <benoit@android.com>
-> >> >> [Original patch in Android from Todd]
-> >> >> Cc: Todd Poynor <toddpoynor@google.com>
-> >> >> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
-> >> >
-> >> > this patch doesn't apply, please rebase entire series on my testing/=
-next.
-> >
-> > your rebased version didn't apply either. Can you make sure you're
-> > rebasing on top of my today's testing/next branch ?
-> >
-> I just verified that I am able to apply both this patch (and the next
-> one - so 2/3 and 3/3) on your testing/next branch - just to make sure,
-> this is the git/branch right?
->=20
-> https://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
-> branch:testing/next
+I really don't think you want to hard code a 1 there.
 
-that's the correct branch, but here's what I get:
+I think you need to do what Dirk suggested, which is to expand the
+hw_vendor_info structure to specify the check that needs to be done
+for each entry.  For a ProLiant, it would be to call intel_pstate_no_acpi_pss()
+and for an Oracle box, it would be to call intel_pstate_has_acpi_ppc().
 
-checking file drivers/usb/phy/phy-ab8500-usb.c
-Hunk #1 FAILED at 447.
-Hunk #2 succeeded at 459 (offset -2 lines).
-Hunk #3 succeeded at 502 (offset -2 lines).
-Hunk #4 succeeded at 527 (offset -2 lines).
-Hunk #5 FAILED at 589.
-Hunk #6 succeeded at 600 (offset -2 lines).
-Hunk #7 succeeded at 629 (offset -2 lines).
-Hunk #8 succeeded at 652 (offset -2 lines).
-Hunk #9 FAILED at 701.
-Hunk #10 succeeded at 712 (offset -2 lines).
-Hunk #11 succeeded at 740 (offset -2 lines).
-Hunk #12 FAILED at 786.
-Hunk #13 succeeded at 801 (offset -2 lines).
-Hunk #14 succeeded at 828 (offset -2 lines).
-4 out of 14 hunks FAILED
-checking file drivers/usb/phy/phy-gpio-vbus-usb.c
-checking file drivers/usb/phy/phy-mv-usb.c
-checking file drivers/usb/phy/phy-tahvo.c
-Hunk #1 FAILED at 87.
-Hunk #2 FAILED at 105.
-2 out of 2 hunks FAILED
+-- ljk
 
-cheers
+>            return true;
+> 
+>         return false;
+> }
+> 
+>>>> What about extending the hw_vendor_info struct to include whether _PSS or
+>>>   Except refer to ACPI DSDT, I don't know how to fill such info.
+>>>> _PPC should be done for the platform since it appears that oracle and HP
+>>>> have implemented similar functionality using two different methods.
+>>>    Maybe Linda could answer this whether HP also has _PPC and should be
+>>> wept out.
+>>>    But that doesn't happen with on the same box at the same time.
+>> I don't know how an Oracle box works but on a ProLiant, customers can
+>> choose to have platform power management or OS power management.
+>> When the platform is managing the power, we don't provide the _PSS
+>> information.  Since our oem information is in the table and there is
+>> no _PSS, the intel_pstate driver doesn't stay loaded.  That's what we want.
+>>
+>> When the platform configured to have the OS do the power management,
+>> the firmware has _PSS and _PPC and we want the intel_pstate driver,
+>> That's what your patch breaks.  With your patch, the driver won't
+>> stay loaded because our platform is in the table and the check for
+>> _PPC passes.
+>>
+>> How does an Oracle box work?
+>   Oracle Sun servers (X86) don't have the option in BIOS to change the PM mode
+> to firmware/OS,
+>   The BIOS always has _PSS and _PPC exported to OS whatever 'soft power capping'
+> or 'hard power capping' enabled
+>   in SP configuration web page. if the power policy violation happened, firmware
+> will notify OS via SCI with the changed _PPC
+>   number.
+> 
+>   Thanks,
+>   Ethan
+>>
+>> -- ljk
+>>
+>>>    Thanks,
+>>>    Ethan
+>>>>
+>>>>> I don't suppose you tested on a ProLiant too?
+>>>>>
+>>>>> -- ljk
+>>>>>
+>>>>>> +            return true;
+>>>>>>        }
+>>>>>>
+>>>>>>        return false;
+>>>>>>    }
+>>>>>>    #else /* CONFIG_ACPI not enabled */
+>>>>>>    static inline bool intel_pstate_platform_pwr_mgmt_exists(void) {
+>>>>>> return false; }
+>>>>>> +static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
+>>>>>>    #endif /* CONFIG_ACPI */
+>>>>>>
+>>>>>>    static int __init intel_pstate_init(void)
+>>>>>>
+>>> -- 
+>>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
---=20
-balbi
-
---4LwthZj+AV2mq5CX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUc1SuAAoJEIaOsuA1yqRE9SIQAIPwmYs7v0Nuz5pbDS4aIAcf
-Z/Jr9ggCTNS1urZobqNFDD4zz1jqQQjpV8IYuC3O75V+ZYHZ6wXa+Q+Uzw8cxQSJ
-S7w0on1C+aTAT7Ud5PPBwdI81lM4al5UO+K6yoFn6tFH3KVvlj3TUtkhCALfD+QY
-vIBGDKD23CVL+csTVC3wiSjo+Ofc/Iy0ju2k7TFYysmRIKhqP8SUCvaSok7DvQEk
-gtQuW4OYnonCDiZJxHmxIjyQpTwx5N+oTwrdT9oBbD6vYXnsRRPfeTJRQOmEYl/7
-YIvsgonn3kIR7QGIv5Ap+rP3BaKmTVvOfpTOCBz5bxE9wbtcAbBvBk7bvU2kHBX8
-Yk9xMDQjgaraFtDwpPTgfCyg3IOk63DRhUmQZpZvosCGWdMggRIANt2cFGJhyq9D
-cwa3wNSc+UN7PwASBtTmnbJovt/1jL5u5+UnYRw1Vd4WsPe06s4XSOZIoOREShSJ
-bh+m1+hV0IbvOusX11LjxdP8ufy0mcOJM6hoKqkMXjuPC1Q+By2JNpYMat8gmQ+5
-eR5b0bO9E8C7CnygZjXA3+x2+9SCjUsANY+mZ43kQyOfJWLwtto15ZyiCYqpyGAo
-mEgpnYPFpA1vvN2gTkiyAL8Vuq4159qsnzA3P03HkipCkiNCt/Ua5cypFFwpg1JK
-w8rCoofGuS2oAn31BMHV
-=tG73
------END PGP SIGNATURE-----
-
---4LwthZj+AV2mq5CX--
