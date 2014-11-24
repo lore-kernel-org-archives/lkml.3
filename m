@@ -1,114 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100AbaKXMEl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 07:04:41 -0500
-Received: from mail-lb0-f201.google.com ([209.85.217.201]:36929 "EHLO
-	mail-lb0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453AbaKXLyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 06:54:11 -0500
-From: David Drysdale <drysdale@google.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Oleg Nesterov <oleg@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rich Felker <dalias@aerifal.cx>, Christoph Hellwig <hch@infradead.org>,
-        x86@kernel.org, linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
-        sparclinux@vger.kernel.org, David Drysdale <drysdale@google.com>
-Subject: [PATCHv10 4/5] sparc: Hook up execveat system call.
-Date: Mon, 24 Nov 2014 11:53:58 +0000
-Message-Id: <1416830039-21952-5-git-send-email-drysdale@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1416830039-21952-1-git-send-email-drysdale@google.com>
-References: <1416830039-21952-1-git-send-email-drysdale@google.com>
+	id S1753240AbaKXMGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 07:06:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37319 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753297AbaKXLxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 06:53:50 -0500
+Date: Mon, 24 Nov 2014 13:53:34 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        Thomas Huth <thuth@linux.vnet.ibm.com>,
+        David Hildenbrand <dahi@linux.vnet.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
+Subject: [PATCH v3 13/41] KVM: s390: Set virtio-ccw transport revision
+Message-ID: <1416829787-14252-14-git-send-email-mst@redhat.com>
+References: <1416829787-14252-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416829787-14252-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Drysdale <drysdale@google.com>
----
- arch/sparc/include/uapi/asm/unistd.h |  3 ++-
- arch/sparc/kernel/syscalls.S         | 10 ++++++++++
- arch/sparc/kernel/systbls_32.S       |  1 +
- arch/sparc/kernel/systbls_64.S       |  2 ++
- 4 files changed, 15 insertions(+), 1 deletion(-)
+From: Thomas Huth <thuth@linux.vnet.ibm.com>
 
-diff --git a/arch/sparc/include/uapi/asm/unistd.h b/arch/sparc/include/uapi/asm/unistd.h
-index 46d83842eddc..6f35f4df17f2 100644
---- a/arch/sparc/include/uapi/asm/unistd.h
-+++ b/arch/sparc/include/uapi/asm/unistd.h
-@@ -415,8 +415,9 @@
- #define __NR_getrandom		347
- #define __NR_memfd_create	348
- #define __NR_bpf		349
-+#define __NR_execveat		350
+With the new SET-VIRTIO-REVISION command of the virtio 1.0 standard, we
+can now negotiate the virtio-ccw revision after setting a channel online.
+
+Note that we don't negotiate version 1 yet.
+
+[Cornelia Huck: reworked revision loop a bit]
+Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Signed-off-by: Thomas Huth <thuth@linux.vnet.ibm.com>
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/s390/kvm/virtio_ccw.c | 63 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 63 insertions(+)
+
+diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+index abba04d..193e8f1 100644
+--- a/drivers/s390/kvm/virtio_ccw.c
++++ b/drivers/s390/kvm/virtio_ccw.c
+@@ -55,6 +55,7 @@ struct virtio_ccw_device {
+ 	struct ccw_device *cdev;
+ 	__u32 curr_io;
+ 	int err;
++	unsigned int revision; /* Transport revision */
+ 	wait_queue_head_t wait_q;
+ 	spinlock_t lock;
+ 	struct list_head virtqueues;
+@@ -86,6 +87,15 @@ struct virtio_thinint_area {
+ 	u8 isc;
+ } __packed;
  
--#define NR_syscalls		350
-+#define NR_syscalls		351
- 
- /* Bitmask values returned from kern_features system call.  */
- #define KERN_FEATURE_MIXED_MODE_STACK	0x00000001
-diff --git a/arch/sparc/kernel/syscalls.S b/arch/sparc/kernel/syscalls.S
-index 33a17e7b3ccd..bb0008927598 100644
---- a/arch/sparc/kernel/syscalls.S
-+++ b/arch/sparc/kernel/syscalls.S
-@@ -6,6 +6,11 @@ sys64_execve:
- 	jmpl	%g1, %g0
- 	 flushw
- 
-+sys64_execveat:
-+	set	sys_execveat, %g1
-+	jmpl	%g1, %g0
-+	 flushw
++struct virtio_rev_info {
++	__u16 revision;
++	__u16 length;
++	__u8 data[];
++};
 +
- #ifdef CONFIG_COMPAT
- sunos_execv:
- 	mov	%g0, %o2
-@@ -13,6 +18,11 @@ sys32_execve:
- 	set	compat_sys_execve, %g1
- 	jmpl	%g1, %g0
- 	 flushw
++/* the highest virtio-ccw revision we support */
++#define VIRTIO_CCW_REV_MAX 0
 +
-+sys32_execveat:
-+	set	compat_sys_execveat, %g1
-+	jmpl	%g1, %g0
-+	 flushw
- #endif
+ struct virtio_ccw_vq_info {
+ 	struct virtqueue *vq;
+ 	int num;
+@@ -122,6 +132,7 @@ static struct airq_info *airq_areas[MAX_AIRQ_AREAS];
+ #define CCW_CMD_WRITE_STATUS 0x31
+ #define CCW_CMD_READ_VQ_CONF 0x32
+ #define CCW_CMD_SET_IND_ADAPTER 0x73
++#define CCW_CMD_SET_VIRTIO_REV 0x83
  
- 	.align	32
-diff --git a/arch/sparc/kernel/systbls_32.S b/arch/sparc/kernel/systbls_32.S
-index ad0cdf497b78..e31a9056a303 100644
---- a/arch/sparc/kernel/systbls_32.S
-+++ b/arch/sparc/kernel/systbls_32.S
-@@ -87,3 +87,4 @@ sys_call_table:
- /*335*/	.long sys_syncfs, sys_sendmmsg, sys_setns, sys_process_vm_readv, sys_process_vm_writev
- /*340*/	.long sys_ni_syscall, sys_kcmp, sys_finit_module, sys_sched_setattr, sys_sched_getattr
- /*345*/	.long sys_renameat2, sys_seccomp, sys_getrandom, sys_memfd_create, sys_bpf
-+/*350*/	.long sys_execveat
-diff --git a/arch/sparc/kernel/systbls_64.S b/arch/sparc/kernel/systbls_64.S
-index 580cde9370c9..d72f76ae70eb 100644
---- a/arch/sparc/kernel/systbls_64.S
-+++ b/arch/sparc/kernel/systbls_64.S
-@@ -88,6 +88,7 @@ sys_call_table32:
- 	.word sys_syncfs, compat_sys_sendmmsg, sys_setns, compat_sys_process_vm_readv, compat_sys_process_vm_writev
- /*340*/	.word sys_kern_features, sys_kcmp, sys_finit_module, sys_sched_setattr, sys_sched_getattr
- 	.word sys32_renameat2, sys_seccomp, sys_getrandom, sys_memfd_create, sys_bpf
-+/*350*/	.word sys32_execveat
+ #define VIRTIO_CCW_DOING_SET_VQ 0x00010000
+ #define VIRTIO_CCW_DOING_RESET 0x00040000
+@@ -134,6 +145,7 @@ static struct airq_info *airq_areas[MAX_AIRQ_AREAS];
+ #define VIRTIO_CCW_DOING_READ_VQ_CONF 0x02000000
+ #define VIRTIO_CCW_DOING_SET_CONF_IND 0x04000000
+ #define VIRTIO_CCW_DOING_SET_IND_ADAPTER 0x08000000
++#define VIRTIO_CCW_DOING_SET_VIRTIO_REV 0x10000000
+ #define VIRTIO_CCW_INTPARM_MASK 0xffff0000
  
- #endif /* CONFIG_COMPAT */
+ static struct virtio_ccw_device *to_vc_device(struct virtio_device *vdev)
+@@ -933,6 +945,7 @@ static void virtio_ccw_int_handler(struct ccw_device *cdev,
+ 		case VIRTIO_CCW_DOING_RESET:
+ 		case VIRTIO_CCW_DOING_READ_VQ_CONF:
+ 		case VIRTIO_CCW_DOING_SET_IND_ADAPTER:
++		case VIRTIO_CCW_DOING_SET_VIRTIO_REV:
+ 			vcdev->curr_io &= ~activity;
+ 			wake_up(&vcdev->wait_q);
+ 			break;
+@@ -1048,6 +1061,51 @@ static int virtio_ccw_offline(struct ccw_device *cdev)
+ 	return 0;
+ }
  
-@@ -167,3 +168,4 @@ sys_call_table:
- 	.word sys_syncfs, sys_sendmmsg, sys_setns, sys_process_vm_readv, sys_process_vm_writev
- /*340*/	.word sys_kern_features, sys_kcmp, sys_finit_module, sys_sched_setattr, sys_sched_getattr
- 	.word sys_renameat2, sys_seccomp, sys_getrandom, sys_memfd_create, sys_bpf
-+/*350*/	.word sys64_execveat
++static int virtio_ccw_set_transport_rev(struct virtio_ccw_device *vcdev)
++{
++	struct virtio_rev_info *rev;
++	struct ccw1 *ccw;
++	int ret;
++
++	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
++	if (!ccw)
++		return -ENOMEM;
++	rev = kzalloc(sizeof(*rev), GFP_DMA | GFP_KERNEL);
++	if (!rev) {
++		kfree(ccw);
++		return -ENOMEM;
++	}
++
++	/* Set transport revision */
++	ccw->cmd_code = CCW_CMD_SET_VIRTIO_REV;
++	ccw->flags = 0;
++	ccw->count = sizeof(*rev);
++	ccw->cda = (__u32)(unsigned long)rev;
++
++	vcdev->revision = VIRTIO_CCW_REV_MAX;
++	do {
++		rev->revision = vcdev->revision;
++		/* none of our supported revisions carry payload */
++		rev->length = 0;
++		ret = ccw_io_helper(vcdev, ccw,
++				    VIRTIO_CCW_DOING_SET_VIRTIO_REV);
++		if (ret == -EOPNOTSUPP) {
++			if (vcdev->revision == 0)
++				/*
++				 * The host device does not support setting
++				 * the revision: let's operate it in legacy
++				 * mode.
++				 */
++				ret = 0;
++			else
++				vcdev->revision--;
++		}
++	} while (ret == -EOPNOTSUPP);
++
++	kfree(ccw);
++	kfree(rev);
++	return ret;
++}
+ 
+ static int virtio_ccw_online(struct ccw_device *cdev)
+ {
+@@ -1088,6 +1146,11 @@ static int virtio_ccw_online(struct ccw_device *cdev)
+ 	spin_unlock_irqrestore(get_ccwdev_lock(cdev), flags);
+ 	vcdev->vdev.id.vendor = cdev->id.cu_type;
+ 	vcdev->vdev.id.device = cdev->id.cu_model;
++
++	ret = virtio_ccw_set_transport_rev(vcdev);
++	if (ret)
++		goto out_free;
++
+ 	ret = register_virtio_device(&vcdev->vdev);
+ 	if (ret) {
+ 		dev_warn(&cdev->dev, "Failed to register virtio device: %d\n",
 -- 
-2.1.0.rc2.206.gedb03e5
+MST
 
