@@ -1,144 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915AbaKXGBS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 01:01:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47745 "EHLO mail.kernel.org"
+	id S1752152AbaKXGBg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 01:01:36 -0500
+Received: from mga09.intel.com ([134.134.136.24]:39574 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899AbaKXGBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 01:01:17 -0500
-Date: Sun, 23 Nov 2014 22:01:18 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Simon Baatz <gmbnomis@gmail.com>
-Cc: Changman Lee <cm224.lee@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH 1/3] f2fs: call flush_dcache_page when the
- page was updated
-Message-ID: <20141124060118.GA24467@jaegeuk-mac02.hsd1.ca.comcast.net>
-References: <1416436510-6251-1-git-send-email-jaegeuk@kernel.org>
- <20141120060410.GB3117@lcm>
- <20141120064533.GA8860@jaegeuk-mac02.hsd1.ca.comcast.net>
- <20141120084729.GA4740@lcm>
- <20141123100853.GA6356@schnuecks.de>
+	id S1751972AbaKXGBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 01:01:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,447,1413270000"; 
+   d="scan'208";a="642368037"
+Message-ID: <5472C9B9.5020508@intel.com>
+Date: Mon, 24 Nov 2014 14:01:29 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141123100853.GA6356@schnuecks.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Lee Jones <lee.jones@linaro.org>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Yegnesh Iyer <yegnesh.s.iyer@intel.com>, linux-acpi@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/3] ACPI / PMIC: AXP288: support virtual GPIO in ACPI
+ table
+References: <1416553911-22990-1-git-send-email-aaron.lu@intel.com> <1416553911-22990-4-git-send-email-aaron.lu@intel.com> <1648486.coeVgHKNdn@vostro.rjw.lan>
+In-Reply-To: <1648486.coeVgHKNdn@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 23, 2014 at 11:08:54AM +0100, Simon Baatz wrote:
-> Hi Changman, Jaegeuk,
+On 11/24/2014 09:06 AM, Rafael J. Wysocki wrote:
+> On Friday, November 21, 2014 03:11:51 PM Aaron Lu wrote:
+>> The same virtual GPIO strategy is also used for the AXP288 PMIC in that
+>> various control methods that are used to do power rail handling and
+>> sensor reading/setting will touch GPIO fields defined under the PMIC
+>> device. The GPIO fileds are only defined by the ACPI code while the
+>> actual hardware doesn't really have a GPIO controller, but to make those
+>> control method execution succeed, we have to install a GPIO handler for
+>> the PMIC device handle. Since we do not need the virtual GPIO strategy,
+>> we can simply do nothing in that handler.
+>>
+>> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+>> ---
+>>  drivers/acpi/pmic/intel_pmic_xpower.c | 27 +++++++++++++++++++++++----
+>>  1 file changed, 23 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/acpi/pmic/intel_pmic_xpower.c b/drivers/acpi/pmic/intel_pmic_xpower.c
+>> index 6c4d6ce0cff1..480c41c36444 100644
+>> --- a/drivers/acpi/pmic/intel_pmic_xpower.c
+>> +++ b/drivers/acpi/pmic/intel_pmic_xpower.c
+>> @@ -251,13 +251,32 @@ static struct intel_pmic_opregion_data intel_xpower_pmic_opregion_data = {
+>>  	.thermal_table_count = ARRAY_SIZE(thermal_table),
+>>  };
+>>  
+>> +static acpi_status intel_xpower_pmic_gpio_handler(u32 function,
+>> +		acpi_physical_address address, u32 bit_width, u64 *value,
+>> +		void *handler_context, void *region_context)
+>> +{
+>> +	return AE_OK;
+>> +}
+>>  
+>>  static int intel_xpower_pmic_opregion_probe(struct platform_device *pdev)
+>>  {
+>> -	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
+>> -	return intel_pmic_install_opregion_handler(&pdev->dev,
+>> -			ACPI_HANDLE(pdev->dev.parent), axp20x->regmap,
+>> -			&intel_xpower_pmic_opregion_data);
+>> +	struct device *parent = pdev->dev.parent;
+>> +	struct axp20x_dev *axp20x = dev_get_drvdata(parent);
+>> +	acpi_status status;
+>> +	int result;
+>> +
+>> +	result = intel_pmic_install_opregion_handler(&pdev->dev,
+>> +					ACPI_HANDLE(parent), axp20x->regmap,
+>> +					&intel_xpower_pmic_opregion_data);
+>> +	if (!result) {
+>> +		status = acpi_install_address_space_handler(
+>> +				ACPI_HANDLE(parent), ACPI_ADR_SPACE_GPIO,
+>> +				intel_xpower_pmic_gpio_handler, NULL, NULL);
+> 
+> So here we have a problem, because we can't unregister the opregion handler
+> registered above if this fails.  Not nice.
 
-Hi Simon,
+I'll add a remove_opregion_handler call if the above install failed, the
+chance the remove_opregion_handler will trigger a problem during init time
+is pretty low.
 
-> 
-> On Thu, Nov 20, 2014 at 05:47:29PM +0900, Changman Lee wrote:
-> > On Wed, Nov 19, 2014 at 10:45:33PM -0800, Jaegeuk Kim wrote:
-> > > On Thu, Nov 20, 2014 at 03:04:10PM +0900, Changman Lee wrote:
-> > > > Hi Jaegeuk,
-> > > > 
-> > > > We should call flush_dcache_page before kunmap because the purpose of the cache flush is to address aliasing problem related to virtual address.
-> > > 
-> > > Oh, I just followed zero_user_segments below.
-> > > 
-> > > static inline void zero_user_segments(struct page *page,
-> > > 	unsigned start1, unsigned end1,
-> > > 	unsigned start2, unsigned end2)
-> > > {
-> > > 	void *kaddr = kmap_atomic(page);
-> > > 
-> > > 	BUG_ON(end1 > PAGE_SIZE || end2 > PAGE_SIZE);
-> > > 
-> > > 	if (end1 > start1)
-> > > 		memset(kaddr + start1, 0, end1 - start1);
-> > > 
-> > > 	if (end2 > start2)
-> > > 		memset(kaddr + start2, 0, end2 - start2);
-> > > 
-> > > 	kunmap_atomic(kaddr);
-> > > 	flush_dcache_page(page);
-> > > }
-> > > 
-> > > Is this a wrong reference? Or, a bug?
-> > > 
-> > 
-> > Well.. Data in cache only have to be flushed until before other users read the data.
-> > If so, it's not a bug.
-> > 
-> 
-> Yes, it is not a bug, since flush_dcache_page() needs to be able to
-> deal with non-kmapped pages. However, this may create overhead in
-> some situations.
-
-Ok.
-
-> 
-> According to documentation (see Documentation/cachetlb.txt), this is
-> a use for flush_kernel_dcache_page(), since the page has been
-> modified by the kernel only.  In contrast to flush_dcache_page(),
-> this function must be called before kunmap().
-> 
-> flush_kernel_dcache_page() does not need to flush the user space
-> aliases.  Additionally, at least on ARM, it does not flush at all
-> when called within kmap_atomic()/kunmap_atomic(), when
-> kunmap_atomic() is going to flush the page anyway.  (I know that
-> almost no one uses flush_kernel_dcache_page() (probably because
-> almost no one knows when to use which of the two functions), but it
-> may save a few cache flushes on architectures which are affected by
-> aliasing)
-
-Thank you very much for the explanation. :)
-
-> 
-> 
-> > > Anyway I modified as below.
-> > > 
-> > > Thanks,
-> > > 
-> > > >From 7cb7b27c8cd2efc8a31d79239bef5b41c6e79216 Mon Sep 17 00:00:00 2001
-> > > From: Jaegeuk Kim <jaegeuk@kernel.org>
-> > > Date: Tue, 18 Nov 2014 10:50:21 -0800
-> > > Subject: [PATCH] f2fs: call flush_dcache_page when the page was updated
-> > > 
-> > > Whenever f2fs updates mapped pages, it needs to call flush_dcache_page.
-> > > 
-> > > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> > > ---
-> > >  fs/f2fs/dir.c    | 7 ++++++-
-> > >  fs/f2fs/inline.c | 2 ++
-> > >  2 files changed, 8 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-> > > index 5a49995..fabf4ee 100644
-> > > --- a/fs/f2fs/dir.c
-> > > +++ b/fs/f2fs/dir.c
-> > > @@ -287,8 +287,10 @@ void f2fs_set_link(struct inode *dir, struct f2fs_dir_entry *de,
-> > >  	f2fs_wait_on_page_writeback(page, type);
-> > >  	de->ino = cpu_to_le32(inode->i_ino);
-> > >  	set_de_type(de, inode);
-> > > -	if (!f2fs_has_inline_dentry(dir))
-> > > +	if (!f2fs_has_inline_dentry(dir)) {
-> > > +		flush_dcache_page(page);
-> > >  		kunmap(page);
-> > > +	}
-> 
-> Is this a page that may be mapped into user space? (I may be
-> completely wrong here, since I have no idea how this code works.  But
-> it looks like as if the answer is "no" ;-) ).
-> 
-> It is not necessary to flush pages that cannot be seen by user space
-> (see also the NOTE in the documentation of flush_dcache_page() in
-> cachetlb.txt). Thus, if you know that a page will not be mapped into
-> user space, please don't create the overhead of flushing it.
-
-Right, users do not modify directory entry pages, so I should remove flushing
-them. The only thing that I have to do is our inlined data, which are file-
-backed pages likely modified by users.
+If that is not desired, I can install the operation region handler for
+the virtual GPIO first and then the real PMIC operation region handler,
+the cost of leaving a virtual GPIO operation region handler is essential
+zero I think.
 
 Thanks,
+Aaron
 
 > 
+>> +		if (ACPI_FAILURE(status))
+>> +			result = -ENODEV;
+>> +	}
+>> +
+>> +	return result;
+>>  }
+>>  
+>>  static struct platform_driver intel_xpower_pmic_opregion_driver = {
+>>
 > 
-> - Simon
+
