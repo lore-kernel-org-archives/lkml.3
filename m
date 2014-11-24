@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437AbaKXKpD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 05:45:03 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:35860 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750954AbaKXKpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 05:45:01 -0500
-Message-ID: <54730C2A.3020108@ispras.ru>
-Date: Mon, 24 Nov 2014 13:44:58 +0300
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753475AbaKXKpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 05:45:13 -0500
+Received: from www.linutronix.de ([62.245.132.108]:37176 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092AbaKXKpL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 05:45:11 -0500
+Date: Mon, 24 Nov 2014 11:45:09 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Paolo Bonzini <pbonzini@redhat.com>
+cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, x86@kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] KVM: x86: export get_xsave_addr
+In-Reply-To: <1416823471-30846-1-git-send-email-pbonzini@redhat.com>
+Message-ID: <alpine.DEB.2.11.1411241144220.6439@nanos>
+References: <1416823471-30846-1-git-send-email-pbonzini@redhat.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: Ian Campbell <ian.campbell@citrix.com>, xen-devel@lists.xenproject.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: Re: [PATCH] xen-netback: do not report success if xenvif_alloc()
- fails
-References: <1416610588-19816-1-git-send-email-khoroshilov@ispras.ru> <20141124100053.GC30053@zion.uk.xensource.com>
-In-Reply-To: <20141124100053.GC30053@zion.uk.xensource.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.11.2014 13:00, Wei Liu wrote:
-> On Sat, Nov 22, 2014 at 01:56:28AM +0300, Alexey Khoroshilov wrote:
->> If xenvif_alloc() failes, netback_probe() reports success as well as
->> "online" uevent is emitted. It does not make any sense, but it just
-> Sorry, I don't follow. KOBJ_ONLINE event is not emitted in the event of
-> xenvif_alloc fails, is it?
-Yes, you are right.
->
->> misleads users.
->>
->> The patch implements propagation of error code if xenvif creation fails.
->>
-> This patch not only implements propagation of error code when xenvif
-> creation fails, but also when xenbus_scanf fails. You can simply write
-> "This patch implements propagation of error code for
-> backend_create_xenvif".
->
-> The rest of this patch looks good to me. Can you rewrite commit message
-> and resubmit, thanks.
-Ok.
+On Mon, 24 Nov 2014, Paolo Bonzini wrote:
+> get_xsave_addr is the API to access XSAVE states, and KVM would
+> like to use it.  Export it.
+> 
+> Cc: x86@kernel.org
+> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+> 	Peter, can you please ACK this for inclusion in the KVM tree?
 
---
-Thank you,
-Alexey
+Are you content with my acked-by as well?
+
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+
