@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaKXGRM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 01:17:12 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:24605 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627AbaKXGRG (ORCPT
+	id S1752834AbaKXGSw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 01:18:52 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:10464 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275AbaKXGQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 01:17:06 -0500
-X-AuditID: cbfee68d-f79296d000004278-32-5472cd605b25
+	Mon, 24 Nov 2014 01:16:45 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-7d-5472cd4b68d4
 From: Namjae Jeon <namjae.jeon@samsung.com>
 To: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>
 Cc: linux-fsdevel@vger.kernel.org, linux-ext4 <linux-ext4@vger.kernel.org>,
         xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
         Ashish Sangwan <a.sangwan@samsung.com>
-Subject: [PATCH v6 8/10] xfstests: generic/041: Delayed allocation multi insert
-Date: Mon, 24 Nov 2014 15:17:03 +0900
-Message-id: <003101d007ae$43db3dd0$cb91b970$@samsung.com>
+Subject: [PATCH v6 4/10] xfsprogs: xfs_io: add finsert command for insert range
+ via fallocate
+Date: Mon, 24 Nov 2014 15:16:42 +0900
+Message-id: <002d01d007ae$374e80e0$a5eb82a0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAHrYBh9OZ4pxRDR0y7jADD+YLUvA==
+Thread-index: AdAHrMy8LNEDdO5mTqa623W1G8zaIQ==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsWyRsSkQDfhbFGIwfX7PBZLJ15itthy7B6j
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsWyRsSkQNf7bFGIwZQDnBZLJ15itthy7B6j
 	xcx5d9gs9uw9yWJxedccNovWnp/sFov6bjE6sHucWiTh0XTmKLPH6gtbGT36tqxi9Pi8SS6A
-	NYrLJiU1J7MstUjfLoErY21jI1PBFs2K3dPWsTQwrlXqYuTkkBAwkXhy5AAThC0mceHeerYu
-	Ri4OIYGljBIvzpxmhym6fWImE0RiOqPExkdroar+AjnzrjJ3MXJwsAloS/zZIgrSICLgKjHv
-	7ndGkBpmkEkXHz9hBEkIC/hL9D9ZyAxiswioSux4cg1sNa+ApcTxWcdZIWxBiR+T77GA2MwC
-	WhLrdx5ngrDlJTavecsMcZGCxI6zrxkhlulJHNjxlRmiRkRi34t3jBA159glvnWnQewSkPg2
-	+RALyJ0SArISmw5AjZGUOLjiBssERrFZSDbPQrJ5FpLNs5BsWMDIsopRNLUguaA4Kb3IUK84
-	Mbe4NC9dLzk/dxMjMBpP/3vWu4Px9gHrQ4wCHIxKPLwfNhaFCLEmlhVX5h5iNAW6aCKzlGhy
-	PjDm80riDY3NjCxMTUyNjcwtzZTEeRWlfgYLCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYJTY
-	wH3O9bjNn5wVk5KbCpZ5yjvtlBJLP6109OX3bM3u9jmXFhXPkxOSLe+zsS2vdNxVHXllW1X4
-	+7DTkpZbD9+am8Fzo2+WR1LVSfWDeUVHt17IOWAXELG3f6N2okeXUdxkzSLbPxY1W7ZI/3nb
-	JxXmkRyXerzzx9ldjLfzd2pvdLvv/T+hQYmlOCPRUIu5qDgRAKboBD/BAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jQd2Es0UhBo9/sFgsnXiJ2WLLsXuM
+	NYrLJiU1J7MstUjfLoEr49eB1ywFdwUrnk1YxdbAOIOvi5GTQ0LAROLHtF/MELaYxIV769m6
+	GLk4hASWMkq03mlmhinas+svE0RiOqPEm9lrmCGcv4wSe9vOMXYxcnCwCWhL/NkiCtIgIuAq
+	Me/ud0aQGmaQSRcfP2EESQgLxEscmP8OzGYRUJWY9HAZE4jNK2ApsWzxBjYIW1Dix+R7LCA2
+	s4CWxPqdx5kgbHmJzWveQl2kILHj7GtGiGV6Ejf2dEDVi0jse/EObLGEwCV2iYsNr5gglglI
+	fJt8iAXkUAkBWYlNB6DmSEocXHGDZQKj2Cwkq2chWT0LyepZSFYsYGRZxSiaWpBcUJyUXmSi
+	V5yYW1yal66XnJ+7iREYj6f/PZuwg/HeAetDjAIcjEo8vB82FoUIsSaWFVfmHmI0BbpoIrOU
+	aHI+MOrzSuINjc2MLExNTI2NzC3NlMR5X0v9DBYSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXA
+	WMZ27fP6skcvUxtOp8lwztFkiox0Wlo5cYca97yvVSsqmqZF1Db9jgya0xYk+MnyLp/7Wus5
+	ldULZ37fmsTJNHlD3dPk6xf5F2bVnVR4mrHvnpvLqaU6gmvjv534cVzQrZh988+ALXq+5p37
+	UhyE9llcXb9W32ffnpx/+2MfbEmdZb8x1kNDTYmlOCPRUIu5qDgRAHjpAfbCAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jQV3vs0UhBqsPMFksnXiJ2WLLsXuM
 	FjPn3WGz2LP3JIvF5V1z2Cxae36yWyzqu8XowO5xapGER9OZo8weqy9sZfTo27KK0ePzJrkA
 	1qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoDOU
-	FMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBlrGxuZCrZoVuyeto6lgXGt
-	UhcjJ4eEgInE7RMzmSBsMYkL99azdTFycQgJTGeU2PhoLZTzF8iZd5W5i5GDg01AW+LPFlGQ
-	BhEBV4l5d78zgtQwCyxllLj4+AkjSEJYwF+i/8lCZhCbRUBVYseTa2AbeAUsJY7POs4KYQtK
-	/Jh8jwXEZhbQkli/8zgThC0vsXnNW2aIixQkdpx9zQixTE/iwI6vzBA1IhL7XrxjnMAoMAvJ
-	qFlIRs1CMmoWkpYFjCyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYKj/ZnUDsaVDRaHGAU4
-	GJV4eD9sLAoRYk0sK67MPcQowcGsJMJ79l9hiBBvSmJlVWpRfnxRaU5q8SFGU6BPJzJLiSbn
-	AxNRXkm8obGJmZGlkbmhhZGxuZI4742buSFCAumJJanZqakFqUUwfUwcnFINjFo8SjZfm2yP
-	1Wop3FyU9Xa7R9JhNc5rW7fuyH0f38z/6riFm4T9X4Ycx0MeW+87G39dUFi072NuzoSMpxaH
-	c45wFJnditQR+fKdt0b9VcRM3rOfEnREg0oyHNa1ny6z+JGXdMkyuuzwRc4J+b//5jHY9HN6
-	74l5+kwvgutG1rq5976Lq76XUGIpzkg01GIuKk4EABQnOlUMAwAA
+	FMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBm/DrxmKbgrWPFswiq2BsYZ
+	fF2MnBwSAiYSe3b9ZYKwxSQu3FvP1sXIxSEkMJ1R4s3sNcwQzl9Gib1t5xi7GDk42AS0Jf5s
+	EQVpEBFwlZh39zsjSA2zwFJGiYuPnzCCJIQF4iUOzH8HZrMIqEpMergMbAOvgKXEssUb2CBs
+	QYkfk++xgNjMAloS63ceZ4Kw5SU2r3nLDHGRgsSOs68ZIZbpSdzY0wFVLyKx78U7xgmMArOQ
+	jJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM42p9J7WBc2WBxiFGA
+	g1GJh/fDxqIQIdbEsuLK3EOMEhzMSiK8Z/8VhgjxpiRWVqUW5ccXleakFh9iNAX6dCKzlGhy
+	PjAR5ZXEGxqbmBlZGpkbWhgZmyuJ8964mRsiJJCeWJKanZpakFoE08fEwSnVwBi61aV3Go+7
+	R6tB9JybDRkSmxzTv0ebfrodfrl1V0vmLuf9rp9s5iTP+/V5l2/IqZfP1ilqpZ4IyEn5MVVx
+	1qKiNVsOp90/uDlv7qYKDZ9H8Wl3OBh1J9guSvD65r/twtKLkp9qBdj9GPeWmTo0V4X2Fs94
+	ZX99DmNxquiWWvE7NZU1Hxv3zVNiKc5INNRiLipOBABhA9lUDAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,189 +55,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This testcase(041) tries to test various corner cases with delayed extents and
-pre-existing holes for finsert range functionality over different type of
-extents.
+Add finsert command for fallocate FALLOC_FL_INSERT_RANGE flag.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
 ---
- tests/generic/041     | 65 +++++++++++++++++++++++++++++++++++++++++
- tests/generic/041.out | 80 +++++++++++++++++++++++++++++++++++++++++++++++++++
- tests/generic/group   |  1 +
- 3 files changed, 146 insertions(+)
- create mode 100644 tests/generic/041
- create mode 100644 tests/generic/041.out
+ io/prealloc.c | 39 ++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 38 insertions(+), 1 deletion(-)
 
-diff --git a/tests/generic/041 b/tests/generic/041
-new file mode 100644
-index 0000000..abaa2f4
---- /dev/null
-+++ b/tests/generic/041
-@@ -0,0 +1,65 @@
-+#! /bin/bash
-+# FS QA Test No. generic/041
-+#
-+# Delayed allocation multi insert range tests
-+# This testcase is one of the 4 testcases which tries to
-+# test various corner cases for finsert range functionality over different
-+# type of extents. These tests are based on generic/255 test case.
-+# For the type of tests, check the description of _test_generic_punch
-+# in common/rc.
-+#-----------------------------------------------------------------------
-+# Copyright (c) 2013 Samsung Electronics.  All Rights Reserved.
-+#
-+# This program is free software; you can redistribute it and/or
-+# modify it under the terms of the GNU General Public License as
-+# published by the Free Software Foundation.
-+#
-+# This program is distributed in the hope that it would be useful,
-+# but WITHOUT ANY WARRANTY; without even the implied warranty of
-+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+# GNU General Public License for more details.
-+#
-+# You should have received a copy of the GNU General Public License
-+# along with this program; if not, write the Free Software Foundation,
-+# Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-+#
-+#-----------------------------------------------------------------------
-+#
+diff --git a/io/prealloc.c b/io/prealloc.c
+index aba6b44..11b1e12 100644
+--- a/io/prealloc.c
++++ b/io/prealloc.c
+@@ -37,6 +37,10 @@
+ #define FALLOC_FL_ZERO_RANGE 0x10
+ #endif
+ 
++#ifndef FALLOC_FL_INSERT_RANGE
++#define FALLOC_FL_INSERT_RANGE 0x20
++#endif
 +
-+seq=`basename $0`
-+seqres=$RESULT_DIR/$seq
-+echo "QA output created by $seq"
-+
-+here=`pwd`
-+tmp=/tmp/$$
-+status=1	# failure is the default!
-+
-+_cleanup()
+ static cmdinfo_t allocsp_cmd;
+ static cmdinfo_t freesp_cmd;
+ static cmdinfo_t resvsp_cmd;
+@@ -46,6 +50,7 @@ static cmdinfo_t zero_cmd;
+ static cmdinfo_t falloc_cmd;
+ static cmdinfo_t fpunch_cmd;
+ static cmdinfo_t fcollapse_cmd;
++static cmdinfo_t finsert_cmd;
+ static cmdinfo_t fzero_cmd;
+ #endif
+ 
+@@ -169,11 +174,14 @@ fallocate_f(
+ 	int		mode = 0;
+ 	int		c;
+ 
+-	while ((c = getopt(argc, argv, "ckp")) != EOF) {
++	while ((c = getopt(argc, argv, "cikp")) != EOF) {
+ 		switch (c) {
+ 		case 'c':
+ 			mode = FALLOC_FL_COLLAPSE_RANGE;
+ 			break;
++		case 'i':
++			mode = FALLOC_FL_INSERT_RANGE;
++			break;
+ 		case 'k':
+ 			mode = FALLOC_FL_KEEP_SIZE;
+ 			break;
+@@ -237,6 +245,25 @@ fcollapse_f(
+ }
+ 
+ static int
++finsert_f(
++	int		argc,
++	char		**argv)
 +{
-+    rm -f $tmp.*
++	xfs_flock64_t	segment;
++	int		mode = FALLOC_FL_INSERT_RANGE;
++
++	if (!offset_length(argv[1], argv[2], &segment))
++		return 0;
++
++	if (fallocate(file->fd, mode,
++			segment.l_start, segment.l_len)) {
++		perror("fallocate");
++		return 0;
++	}
++	return 0;
 +}
 +
-+trap "_cleanup ; exit \$status" 0 1 2 3 15
++static int
+ fzero_f(
+ 	int		argc,
+ 	char		**argv)
+@@ -345,6 +372,16 @@ prealloc_init(void)
+ 	_("de-allocates space and eliminates the hole by shifting extents");
+ 	add_command(&fcollapse_cmd);
+ 
++	finsert_cmd.name = "finsert";
++	finsert_cmd.cfunc = finsert_f;
++	finsert_cmd.argmin = 2;
++	finsert_cmd.argmax = 2;
++	finsert_cmd.flags = CMD_NOMAP_OK | CMD_FOREIGN_OK;
++	finsert_cmd.args = _("off len");
++	finsert_cmd.oneline =
++	_("creates new space for writing within file by shifting extents");
++	add_command(&finsert_cmd);
 +
-+# get standard environment, filters and checks
-+# we need to include common/punch to get defination fo filter functions
-+. ./common/rc
-+. ./common/filter
-+. ./common/punch
-+
-+# real QA test starts here
-+_supported_fs generic
-+_supported_os Linux
-+
-+_require_xfs_io_command "fpunch"
-+_require_xfs_io_command "falloc"
-+_require_xfs_io_command "fiemap"
-+_require_xfs_io_command "finsert"
-+
-+testfile=$TEST_DIR/$seq.$$
-+
-+_test_generic_punch -d -k falloc fpunch finsert fiemap _filter_hole_fiemap $testfile
-+_check_test_fs
-+
-+status=0
-+exit
-diff --git a/tests/generic/041.out b/tests/generic/041.out
-new file mode 100644
-index 0000000..5fe3c5e
---- /dev/null
-+++ b/tests/generic/041.out
-@@ -0,0 +1,80 @@
-+QA output created by 041
-+	1. into a hole
-+cf845a781c107ec1346e849c9dd1b7e8
-+	2. into allocated space
-+0: [0..7]: extent
-+1: [8..23]: hole
-+2: [24..55]: extent
-+64e72217eebcbdf31b1b058f9f5f476a
-+	3. into unwritten space
-+0: [0..7]: extent
-+1: [8..23]: hole
-+2: [24..55]: extent
-+22b7303d274481990b5401b6263effe0
-+	4. hole -> data
-+0: [0..7]: extent
-+1: [8..31]: hole
-+2: [32..55]: extent
-+c4fef62ba1de9d91a977cfeec6632f19
-+	5. hole -> unwritten
-+0: [0..7]: extent
-+1: [8..31]: hole
-+2: [32..55]: extent
-+1ca74f7572a0f4ab477fdbb5682e5f61
-+	6. data -> hole
-+0: [0..7]: extent
-+1: [8..23]: hole
-+2: [24..31]: extent
-+3: [32..47]: hole
-+4: [48..55]: extent
-+be0f35d4292a20040766d87883b0abd1
-+	7. data -> unwritten
-+0: [0..7]: extent
-+1: [8..23]: hole
-+2: [24..47]: extent
-+3: [48..55]: hole
-+bddb1f3895268acce30d516a99cb0f2f
-+	8. unwritten -> hole
-+0: [0..7]: extent
-+1: [8..23]: hole
-+2: [24..31]: extent
-+3: [32..39]: hole
-+4: [40..55]: extent
-+f8fc47adc45b7cf72f988b3ddf5bff64
-+	9. unwritten -> data
-+0: [0..7]: extent
-+1: [8..23]: hole
-+2: [24..47]: extent
-+3: [48..55]: hole
-+c4fef62ba1de9d91a977cfeec6632f19
-+	10. hole -> data -> hole
-+0: [0..7]: extent
-+1: [8..39]: hole
-+2: [40..63]: extent
-+52af1bfcbf43f28af2328de32e0567e5
-+	11. data -> hole -> data
-+0: [0..7]: extent
-+1: [8..31]: hole
-+2: [32..39]: extent
-+3: [40..47]: hole
-+4: [48..63]: extent
-+e3a8d52acc4d91a8ed19d7b6f4f26a71
-+	12. unwritten -> data -> unwritten
-+0: [0..7]: extent
-+1: [8..31]: hole
-+2: [32..63]: extent
-+52af1bfcbf43f28af2328de32e0567e5
-+	13. data -> unwritten -> data
-+0: [0..7]: extent
-+1: [8..31]: hole
-+2: [32..63]: extent
-+2b22165f4a24a2c36fd05ef00b41df88
-+	14. data -> hole @ EOF
-+0: [0..23]: extent
-+1: [24..39]: hole
-+2: [40..55]: extent
-+aa0f20d1edcdbce60d8ef82700ba30c3
-+	15. data -> hole @ 0
-+0: [0..15]: hole
-+1: [16..55]: extent
-+86c9d033be2761385c9cfa203c426bb2
-diff --git a/tests/generic/group b/tests/generic/group
-index 9d5f72d..34e223d 100644
---- a/tests/generic/group
-+++ b/tests/generic/group
-@@ -43,6 +43,7 @@
- 038 auto quick prealloc
- 039 auto quick prealloc
- 040 auto quick prealloc
-+041 auto quick prealloc
- 053 acl repair auto quick
- 062 attr udf auto quick
- 068 other auto freeze dangerous stress
+ 	fzero_cmd.name = "fzero";
+ 	fzero_cmd.cfunc = fzero_f;
+ 	fzero_cmd.argmin = 2;
 -- 
 1.7.11-rc0
 
