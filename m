@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaKXHVG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 02:21:06 -0500
-Received: from mga09.intel.com ([134.134.136.24]:36533 "EHLO mga09.intel.com"
+	id S1752639AbaKXHW6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 02:22:58 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:54998 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752243AbaKXHVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 02:21:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,447,1413270000"; 
-   d="scan'208";a="642402254"
-Message-ID: <5472DC59.5040407@linux.intel.com>
-Date: Mon, 24 Nov 2014 15:20:57 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751919AbaKXHW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 02:22:56 -0500
+Date: Mon, 24 Nov 2014 08:22:46 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Stephan Mueller <smueller@chronox.de>
+CC: Herbert Xu <herbert@gondor.apana.org.au>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: crypto: user - crypto_alg_match removal
+Message-ID: <20141124072246.GX6390@secunet.com>
+References: <3095384.PkgHxCg8eG@tauon>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Ingo Molnar <mingo@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: Hierarchical irqdomains - Status update
-References: <alpine.DEB.2.11.1411231915010.6439@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411231915010.6439@nanos>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <3095384.PkgHxCg8eG@tauon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.182.7.102]
+X-EXCLAIMER-MD-CONFIG: 2c86f778-e09b-4440-8b15-867914633a10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/24 3:03, Thomas Gleixner wrote:
-> Folks,
-> 
-> I've rebased the hierarchical irqdomain code on top of Bjorns
-> msi_controller rework.
-> 
-> Changes versus the previous version:
-> 
->    - Bjorns new pci/mci branch. See also:
->         http://lkml.kernel.org/r/20141121172018.GA6578@google.com
-> 
->      Thanks Bjorn for fixing that just before your vacation!
-> 
->    - Rename of msi_mask/unmask_irq et al so it's clear that these
->      functions are PCI related and cannot be used for non PCI based
->      MSI functionality.
-> 
->    - Folded back fixup patches
-> 
->    - Added the missing parent check as reported by Suravee
-> 
-> The branch is now immutable and you can base your patches on it.
-> 
-> If you need to pull the branch into your tree, please let me know.
-> 
-> Patches which are mostly touching drivers/irqchip should go through
-> Jason. Please post them against irq/irqdomain. We'll either create a
-> seperate branch for them or merge irq/irqdomain into irq/core.
-> 
-> Thanks for the fruitful discussions, testing, rebasing and patience.
-Thanks for your great support to enable hierarchy irqdomain.
-Learned much about how to organize patches:)
+Hi Stephan.
 
+On Sat, Nov 22, 2014 at 11:25:05PM +0100, Stephan Mueller wrote:
+> Hi Steffen, Herbert,
 > 
-> Thanks,
+> may I ask for the reasons why crypto_alg_match exists? Doesn't it 
+> implement crypto_alg_lookup -- and that not even complete? Is there a 
+> particular reason why this exact flag of crypto_alg_match is really 
+> needed in the context of crypto_user?
 > 
-> 	tglx
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Unless there is such valid reason, may I ask whether we can remove 
+> crypto_alg_match and simply use crypto_alg_lookup in all instances where 
+> crypto_alg_match is invoked using the following replacement:
 > 
+> alg = crypto_alg_lookup(p->cru_name, p->cru_type, p->cru_mask)
+> 
+> The only problem with this replacement is that p->cru_driver_name is not 
+> considered with that. 
+
+With crypto_alg_lookup() we don't know whether the match is based on
+the driver or the algorithm name. That's why we have crypto_alg_match(),
+here we can ask for a driver or an algorithm match. In some situations it
+is important to have an exact match on the crypto driver name. For example
+if a user wants to instantiate or delete a certain inplementation of an
+algorithm. In this case we need to know whether this exact algorithm
+driver is registered in the system.
+
+> Do you think a double invocation of 
+> crypto_alg_lookup should be done or that even the user space interface 
+> should be changed such that cru_driver_name is removed from it?
+
+Whatever we do, we can't remove cru_driver_name as this is exported
+to userspace and tools already use it.
+
