@@ -1,97 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971AbaKXOM3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:12:29 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54139 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752679AbaKXOM2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:12:28 -0500
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: [PATCH] regulator: core: Add PRE_DISABLE notification
-Date: Mon, 24 Nov 2014 14:10:52 +0000
-Message-Id: <1416838252-15508-1-git-send-email-rf@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1753946AbaKXOO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:14:28 -0500
+Received: from mga02.intel.com ([134.134.136.20]:58179 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752749AbaKXOO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 09:14:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,449,1413270000"; 
+   d="scan'208";a="642577483"
+Message-ID: <54733C7D.2010405@linux.intel.com>
+Date: Mon, 24 Nov 2014 22:11:09 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: "Yun Wu (Abel)" <wuyun.wu@huawei.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [patch 01/16] irqdomain: Introduce new interfaces to support
+ hierarchy irqdomains
+References: <20141112133941.647950773@linutronix.de> <20141112134119.881823615@linutronix.de> <547325A9.3000109@huawei.com> <alpine.DEB.2.11.1411241405560.6439@nanos> <54733A4E.8020304@huawei.com>
+In-Reply-To: <54733A4E.8020304@huawei.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a PRE_DISABLE notification so that consumers can use a
-notifier to run any steps required to prepare for the
-regulator being switched off. Since the regulator disable
-can fail an abort notification is also added.
+On 2014/11/24 22:01, Yun Wu (Abel) wrote:
+> On 2014/11/24 21:13, Thomas Gleixner wrote:
+> 
+>> On Mon, 24 Nov 2014, Yun Wu (Abel) wrote:
+>>> Hi Thomas, Jiang,
+>>> On 2014/11/12 21:42, Thomas Gleixner wrote:
+>>>
+>>>> From: Jiang Liu <jiang.liu@linux.intel.com>
+>>>>
+>>> [...]
+>>>>  /* Number of irqs reserved for a legacy isa controller */
+>>>>  #define NUM_ISA_INTERRUPTS	16
+>>>> @@ -64,6 +66,16 @@ struct irq_domain_ops {
+>>>>  	int (*xlate)(struct irq_domain *d, struct device_node *node,
+>>>>  		     const u32 *intspec, unsigned int intsize,
+>>>>  		     unsigned long *out_hwirq, unsigned int *out_type);
+>>>> +
+>>>> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
+>>>> +	/* extended V2 interfaces to support hierarchy irq_domains */
+>>>> +	int (*alloc)(struct irq_domain *d, unsigned int virq,
+>>>> +		     unsigned int nr_irqs, void *arg);
+>>>> +	void (*free)(struct irq_domain *d, unsigned int virq,
+>>>> +		     unsigned int nr_irqs);
+>>>> +	void (*activate)(struct irq_domain *d, struct irq_data *irq_data);
+>>>> +	void (*deactivate)(struct irq_domain *d, struct irq_data *irq_data);
+>>>
+>>> What's the usage of the parameter domain reference in activate/deactivate?
+>>> I think the purpose of the two callbacks is to activate/deactivate the
+>>> irq_data->hwirq in irq_data->domain. If so, the first parameter @domain is
+>>> required to be equal to irq_data->domain (which makes @domain useless).
+>>> Besides, the main responsibility of interrupt domains is to manage mappings
+>>> between hardware and linux interrupt numbers, so would it be better if move
+>>> the two callbacks into struct irq_chip?
+>>
+>> No. It's not a function of the irq_chip to activate/deactivate a
+>> hierarchy. As I explained you before:
+>>
+>> The existing irqdomain code maps between hardware and virtual
+>> interrupts and thereby activates the interrupt in hardware.
+>>
+>> In the hierarchical case we do not touch the hardware in the
+>> allocation step, so we need to activate the allocated interrupt in the
+>> hardware before we can use it. And that's clearly a domain interface
+>> not a irq chip issue.
+>>
+> 
+> Makes sense, now the interrupt domain seems to be the best place.
+> And when the @domain parameter can be really useful? I haven't see
+> anyone using it so far.
+We will use it for IOAPIC on x86, as below:
+void mp_irqdomain_deactivate(struct irq_domain *domain,
+                             struct irq_data *irq_data)
+{
+        ioapic_mask_entry(mp_irqdomain_ioapic_idx(domain),
+                          (int)irq_data->hwirq);
+}
 
-Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
----
- drivers/regulator/core.c           |   16 ++++++++++++++++
- include/linux/regulator/consumer.h |    4 ++++
- 2 files changed, 20 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index bbf93c9..8f48df4 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1976,9 +1976,18 @@ static int _regulator_disable(struct regulator_dev *rdev)
- 
- 		/* we are last user */
- 		if (_regulator_can_change_status(rdev)) {
-+			ret = _notifier_call_chain(rdev,
-+						   REGULATOR_EVENT_PRE_DISABLE,
-+						   NULL);
-+			if (ret & NOTIFY_STOP_MASK)
-+				return -EINVAL;
-+
- 			ret = _regulator_do_disable(rdev);
- 			if (ret < 0) {
- 				rdev_err(rdev, "failed to disable\n");
-+				_notifier_call_chain(rdev,
-+						REGULATOR_EVENT_ABORT_DISABLE,
-+						NULL);
- 				return ret;
- 			}
- 			_notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
-@@ -2035,9 +2044,16 @@ static int _regulator_force_disable(struct regulator_dev *rdev)
- {
- 	int ret = 0;
- 
-+	ret = _notifier_call_chain(rdev, REGULATOR_EVENT_FORCE_DISABLE |
-+			REGULATOR_EVENT_PRE_DISABLE, NULL);
-+	if (ret & NOTIFY_STOP_MASK)
-+		return -EINVAL;
-+
- 	ret = _regulator_do_disable(rdev);
- 	if (ret < 0) {
- 		rdev_err(rdev, "failed to force disable\n");
-+		_notifier_call_chain(rdev, REGULATOR_EVENT_FORCE_DISABLE |
-+				REGULATOR_EVENT_ABORT_DISABLE, NULL);
- 		return ret;
- 	}
- 
-diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
-index 3c4fad5..d17e1ff 100644
---- a/include/linux/regulator/consumer.h
-+++ b/include/linux/regulator/consumer.h
-@@ -101,6 +101,8 @@ struct regmap;
-  *                      Data passed is "struct pre_voltage_change_data"
-  * ABORT_VOLTAGE_CHANGE Regulator voltage change failed for some reason.
-  *                      Data passed is old voltage cast to (void *).
-+ * PRE_DISABLE    Regulator is about to be disabled
-+ * ABORT_DISABLE  Regulator disable failed for some reason
-  *
-  * NOTE: These events can be OR'ed together when passed into handler.
-  */
-@@ -115,6 +117,8 @@ struct regmap;
- #define REGULATOR_EVENT_DISABLE 		0x80
- #define REGULATOR_EVENT_PRE_VOLTAGE_CHANGE	0x100
- #define REGULATOR_EVENT_ABORT_VOLTAGE_CHANGE	0x200
-+#define REGULATOR_EVENT_PRE_DISABLE		0x400
-+#define REGULATOR_EVENT_ABORT_DISABLE		0x800
- 
- /**
-  * struct pre_voltage_change_data - Data sent with PRE_VOLTAGE_CHANGE event
--- 
-1.7.2.5
-
+>From an object oriented point of view, we pass the object as the
+first parameter. It's true that we could retrieve domain from
+irq_data->domain instead of explicitly passing it in, but that
+will cause irqdomain interfaces depends on irq_data, not sounds
+a good situation:)
+Thanks!
+Gerry
+> 
+> Thanks,
+> 	Abel
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
