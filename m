@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915AbaKXPc5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:32:57 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38159 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836AbaKXPc4 (ORCPT
+	id S1754006AbaKXPdY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 10:33:24 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:42677 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605AbaKXPdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:32:56 -0500
-Message-ID: <54734F99.7000609@arm.com>
-Date: Mon, 24 Nov 2014 15:32:41 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Robert Richter <robert.richter@caviumnetworks.com>,
-        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-Subject: Re: [PATCH v3 06/13] irqchip: GICv3: ITS: LPI allocator
-References: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com> <1416839720-18400-7-git-send-email-marc.zyngier@arm.com> <5473476E.5070305@linux.intel.com>
-In-Reply-To: <5473476E.5070305@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252
+	Mon, 24 Nov 2014 10:33:23 -0500
+Message-ID: <1416843200.17888.53.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: net_tx_action race condition?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Angelo Rizzi <angelo.rizzi@3dautomazione.it>
+Cc: netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 24 Nov 2014 07:33:20 -0800
+In-Reply-To: <547332D7.7050104@3dautomazione.it>
+References: <547332D7.7050104@3dautomazione.it>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/11/14 14:57, Jiang Liu wrote:
+On Mon, 2014-11-24 at 14:29 +0100, Angelo Rizzi wrote:
+> Hi Daniel,
+> Here attached the patch file you required.
+> The problem i've found is on the declaration of 'struct softnet_data 
+> *sd' in function 'net_tx_action'
+> What happens to me (i have an embedded system based on FPGA and a NIOS2 
+> cpu) is that, due to compiler optimization, the content of 
+> 'sd->completion_queue' is saved in a CPU register before interrupt 
+> disabling (when the instruction 'if (sd->completion_queue) {' is 
+> executed) and then the register contents is used for interrupt-disabled 
+> assignment ('clist = sd->completion_queue') instead of re-read the 
+> variable contents.
+> This seems to lead to a race condition when an interrupt modifies the 
+> content of 'sd->completion_queue' between these two instructions.
+> What i have done to avoid this situation is to change the declaration of 
+> 'struct softnet_data *sd' to 'volatile struct softnet_data *sd' and now 
+> everything seems to be ok.
+> I hope this will help.
 > 
+> Regards,
+> Angelo
 > 
-> On 2014/11/24 22:35, Marc Zyngier wrote:
->> LPIs are the type of interrupts that are used by the ITS. Given
->> the size of the namespace (anywhere between 16 and 32bit), interrupt
->> IDs are allocated in chunks of 32.
->>
->> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
->> ---
->>  drivers/irqchip/irq-gic-v3-its.c | 103 +++++++++++++++++++++++++++++++++++++++
->>  1 file changed, 103 insertions(+)
->>
->> diff --git a/drivers/irqchip/irq-gic-v3-its.c b/drivers/irqchip/irq-gic-v3-its.c
->> index d24bebd..4154a16 100644
->> --- a/drivers/irqchip/irq-gic-v3-its.c
->> +++ b/drivers/irqchip/irq-gic-v3-its.c
->> @@ -586,3 +586,106 @@ static struct irq_chip its_irq_chip = {
->>  	.irq_eoi		= its_eoi_irq,
->>  	.irq_set_affinity	= its_set_affinity,
->>  };
->> +
->> +/*
->> + * How we allocate LPIs:
->> + *
->> + * The GIC has id_bits bits for interrupt identifiers. From there, we
->> + * must subtract 8192 which are reserved for SGIs/PPIs/SPIs. Then, as
->> + * we allocate LPIs by chunks of 32, we can shift the whole thing by 5
->> + * bits to the right.
-> Just curious, why 32? sizeof(long) is 4 on ARM64?
 
-No, sizeof(long) == 8, as on any sane 64bit architecture.
+Do not add volatile in the kernel, this is not how we solve this kind of
+problems.  Documentation/memory-barriers.txt and
 
-There are two reasons for this:
-- the ID space is rather large (at least 16 bits, possibly 32 bits), so
-we're trying not to allocate the whole bitmap in one go.
-- 32 is the maximum a MSI-capable device can request. Allocating 32
-interrupts in one go makes sure that these interrupts are contiguous and
-satisfy the MSI requirements.
+Documentation/00-INDEX:476:volatile-considered-harmful.txt
+Documentation/00-INDEX:477:     - Why the "volatile" type class should not be used
 
-Hope this helps,
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+I am surprised this patch is needed. Many other 'bugs' would need
+similar fixes.
+
+local_irq_disable() MUST have a memory barrier. This looks like a bug in
+one particular arch implementation.
+
+
+On x86 for example, native_irq_disable() is really :
+
+	asm volatile("cli": : :"memory");
+
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index ac4836241a965a71952469ba054f87d8dfca2d32..fa73072e515aa07fa8ae1bc39174b7d59c7a31a5 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3406,7 +3406,7 @@ static void net_tx_action(struct softirq_action *h)
+ 		struct sk_buff *clist;
+ 
+ 		local_irq_disable();
+-		clist = sd->completion_queue;
++		clist = ACCESS_ONCE(sd->completion_queue);
+ 		sd->completion_queue = NULL;
+ 		local_irq_enable();
+ 
+
+
