@@ -1,125 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991AbaKXUKZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:10:25 -0500
-Received: from xavier.telenet-ops.be ([195.130.132.52]:59915 "EHLO
-	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443AbaKXUKV (ORCPT
+	id S1755111AbaKXUM3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:12:29 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:60670 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525AbaKXUM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:10:21 -0500
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ulrich Hecht <ulrich.hecht+renesas@gmail.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH RFC 0/3] Add "Simple" / Renesas Bus State Controller Driver
-Date: Mon, 24 Nov 2014 21:10:05 +0100
-Message-Id: <1416859808-18503-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
+	Mon, 24 Nov 2014 15:12:28 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ding Tianhong <dingtianhong@huawei.com>
+Subject: Re: For the problem when using swiotlb
+Date: Mon, 24 Nov 2014 21:12:09 +0100
+Message-ID: <2166613.l2i4mdmtLA@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141121180925.GG19783@e104818-lin.cambridge.arm.com>
+References: <5469E26B.2010905@huawei.com> <20141121175118.GA10451@localhost> <20141121180925.GG19783@e104818-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:s/GmglhpG2wwD3Ta4RPNG+a3Y9tWxD8Rh3292UkAM4R
+ Q+h6U7EN+6g36B8VvPnSc6PHrzZgg6peE9EiT4ysf/95liUe99
+ fZC7pcVN442svKUUIfSpt9aTS4XhJ94nHfR4pLuKbHXsXBRiSM
+ q9jjkFQcb4T5yQHwRLAESHLCDqNg3AbHwaGN/n2mi5zvV26Klr
+ raIj0FFhs+oUePy7OiDnX6Aogs+8czsjTdoym92icfcQOZXD0a
+ pyKJNVvCAfQlkYOPErAjQeLNNC8jDS0ULtT9DWlWWkjTI/2p7F
+ KVHJ1CBzNXilAlOPAu7n1YrlwyUH1Z0ta85oHNEkLW5860tpIx
+ 0ObwJy2BGxb+sosAHMFo=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi all,
+On Friday 21 November 2014 18:09:25 Catalin Marinas wrote:
+> On Fri, Nov 21, 2014 at 05:51:19PM +0000, Catalin Marinas wrote:
+> > On Fri, Nov 21, 2014 at 05:04:28PM +0000, Arnd Bergmann wrote:
+> > > On Friday 21 November 2014 16:57:09 Catalin Marinas wrote:
+> > > > There is a scenario where smaller mask would work on arm64. For example
+> > > > Juno, you can have 2GB of RAM in the 32-bit phys range (starting at
+> > > > 0x80000000). A device with 31-bit mask and a dma_pfn_offset of
+> > > > 0x80000000 would still work (there isn't any but just as an example). So
+> > > > the check in dma_alloc_coherent() would be something like:
+> > > > 
+> > > > 	phys_to_dma(top of ZONE_DMA) - dma_pfn_offset <= coherent_dma_mask
+> > > > 
+> > > > (or assuming RAM starts at 0 and ignoring dma_pfn_offset for now)
+> > > > 
+> > > > If the condition above fails, dma_alloc_coherent() would no longer fall
+> > > > back to swiotlb but issue a dev_warn() and return NULL.
+> > > 
+> > > Ah, that looks like it should work on all architectures, very nice.
+> > > How about checking this condition, and then printing a small warning
+> > > (dev_warn, not WARN_ON) and setting the dma_mask pointer to NULL?
+> > 
+> > I would not add the above ZONE_DMA check to of_dma_configure(). For
+> > example on arm64, we may not support a small coherent_dma_mask but the
+> > same value for dma_mask could be fine via swiotlb bouncing (or IOMMU).
+> > However, that's an arch-specific decision. Maybe after the above setting
+> > of dev->coherent_dma_mask in of_dma_configure(), we could add:
+> > 
 
-The Renesas Bus State Controller (BSC) provides an external bus for
-connecting multiple external devices to an SoC, driving several chip
-select lines, for e.g. NOR FLASH, Ethernet and USB.
-On the kzm9g development board, an smsc9220 Ethernet controller is
-connnected to the BSC of the SH-Mobile AG5 (sh73a0) SoC.
+You seem to implement the opposite:
 
-The BSC is a fairly simple memory-mapped bus, hence a "simple-bus"
-compatibility seems suitable.  However, the BSC is special in two ways:
-  1. It is part of a PM domain (A4S),
-  2. It has a gateable functional clock (ZB).
-Before a device connected to the BSC can be accessed, the PM domain
-containing the BSC must be powered on, and the functional clock driving
-the BSC must be enabled.
+> +	/*
+> +	 * If the bus dma-ranges property specifies a size smaller than 4GB,
+> +	 * the device would not be capable of accessing the whole 32-bit
+> +	 * space, so reduce the default coherent_dma_mask accordingly.
+> +	 */
+> +	if (size && size < (1ULL << 32))
+> +		dev->coherent_dma_mask = DMA_BIT_MASK(ilog2(size));
+> +
+> +	/*
+> +	 * Set dma_mask to coherent_dma_mask by default if the architecture
+> +	 * code has not set it and DMA on such mask is supported.
+> +	 */
+> +	if (!dev->dma_mask && dma_supported(dev, dev->coherent_dma_mask))
+> +		dev->dma_mask = &dev->coherent_dma_mask;
+>  }
+>  
 
-Both special properties can be described in DT in a standardized way
-("power-domains = <&pd_a4s>" and "clocks = <&zb_clk>", cfr. patch 1).
-Externally connected devices are described as children of the BSC node
-(cfr. patch 2).
+Here, coherent_dma_mask wouldn't work while dma_mask might be
+fine in case of swiotlb, but you set a nonzero coherent_dma_mask
+and an invalid dma_mask.
 
-Unfortunately this doesn't mean everything will work out-of-the-box.
-There are two problems:
-  1. Without a device driver bound to the BSC device, this device is not
-     attached to the PM domain. And although a child device is present
-     and active, the PM domain may be powered down, as it's considered
-     unused by the PM domain core.
-  2. Without a device driver calling pm_runtime_enable(), its functional
-     clock is not enabled. Once runtime PM is enabled, the R-Mobile PM
-     domain platform driver manages the functional clock using runtime
-     PM.
-
-Hence patch 3 adds a very simple BSC driver, matching against
-"renesas-bsc", and enabling runtime PM for the BSC device.
-
-Due to the child-parent relationship of devices connected to the BSC, as
-long as the device drivers for the child devices are runtime PM enabled
-(see dependency 1), the BSC's PM domain will be powered, and the BSC's
-clock will be enabled automatically when needed.
-If any child device driver lacks runtime PM support, the BSC driver also
-has to call pm_runtime_get_sync() in its .probe() function.
-System suspend and resume (s2ram) also works fine.
-
-As this minimal BSC driver isn't hardware-specific at all, I'm wondering
-if there's a simpler way to do this?
-  - Should the driver be renamed to "simple-bus", and match "simple-bus"?
-  - Should this be moved to core code, without an explicit driver for
-    "simple-bus"? I.e. should the driver core just enable runtime PM for
-    all devices not bound to a driver, as they may represent buses with
-    child devices that do rely on runtime PM?
-
-Thanks for your comments and suggestions!
-
-Dependencies:
-  1. [PATCH] net/smsc911x: Add minimal runtime PM support
-     (https://lkml.org/lkml/2014/11/24/610),
-  2. [PATCH] clk: shmobile: div6: Avoid changing divisor in .disable()
-     (http://marc.info/?l=linux-sh&m=141684607012727&w=2),
-  3. [PATCH v6 0/6] sh73a0 common clock framework implementation
-     (http://marc.info/?l=linux-sh&m=141650048308960&w=2),
-  4. sh73a0 DT PM domain support (not yet posted),
-  5. Alphabetical sorting of drivers/bus/{Kconfig,Makefile) (not yet
-     posted).
-
-References:
-  1. [PATCH v3 7/7] ARM: shmobile: kzm9g-reference: require ZB clock for
-     Ethernet controller (http://www.spinics.net/lists/linux-sh/msg36601.html)
-     is an earlier workaround for getting the functional clock enabled, by
-     letting the smc911x driver handle it. This predates sh73a0 PM domain
-     support.
-
-Patches:
-  1. ARM: shmobile: sh73a0 dtsi: Add Bus State Controller node
-  2. ARM: shmobile: kzm9g-reference dts: Move Ethernet node to BSC
-  3. drivers: bus: Add Renesas Bus State Controller Driver
-
- arch/arm/boot/dts/sh73a0-kzm9g.dts | 28 +++++++++++----------
- arch/arm/boot/dts/sh73a0.dtsi      | 11 ++++++++
- drivers/bus/Kconfig                |  8 ++++++
- drivers/bus/Makefile               |  1 +
- drivers/bus/renesas-bsc.c          | 51 ++++++++++++++++++++++++++++++++++++++
- 5 files changed, 86 insertions(+), 13 deletions(-)
- create mode 100644 drivers/bus/renesas-bsc.c
-
--- 
-1.9.1
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+	Arnd
