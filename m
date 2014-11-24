@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750863AbaKXUd0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:33:26 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:63205 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747AbaKXUdY (ORCPT
+	id S1750942AbaKXUei (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:34:38 -0500
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:55686 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784AbaKXUeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:33:24 -0500
-From: Alexander Kochetkov <al.kochet@gmail.com>
-To: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Felipe Balbi <balbi@ti.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Kevin Hilman <khilman@kernel.org>,
-        Alexander Kochetkov <al.kochet@gmail.com>
-Subject: [PATCH] omap: i2c: don't check bus state IP rev3.3 and earlier
-Date: Tue, 25 Nov 2014 00:33:09 +0400
-Message-Id: <1416861189-17109-1-git-send-email-al.kochet@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1416685634-5864-3-git-send-email-al.kochet@gmail.com>
-References: <1416685634-5864-3-git-send-email-al.kochet@gmail.com>
+	Mon, 24 Nov 2014 15:34:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <12209.1416859494@warthog.procyon.org.uk>
+References: <1416834210-61738-1-git-send-email-borntraeger@de.ibm.com>
+	<1416834210-61738-8-git-send-email-borntraeger@de.ibm.com>
+	<15567.1416835858@warthog.procyon.org.uk>
+	<CAADnVQJQydX9OU_rem+BObR0eWc-jrrwirUYVKH9rnN=Z8LG6A@mail.gmail.com>
+	<CA+55aFxc72VsGTw4yFdeC1Sq65RUjYLKPD1ORnXB2d18WBMzvg@mail.gmail.com>
+	<547381D7.2070404@de.ibm.com>
+	<12209.1416859494@warthog.procyon.org.uk>
+Date: Mon, 24 Nov 2014 12:34:35 -0800
+X-Google-Sender-Auth: VActRMrBy4irOfx9ZVi3KcHXGRQ
+Message-ID: <CA+55aFwHJyyo1y=-u=t798PFTeZN796hnwd9-XzEnL=JaqVmDw@mail.gmail.com>
+Subject: Re: [PATCH/RFC 7/7] kernel: Force ACCESS_ONCE to work only on scalar types
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        linux-mips <linux-mips@linux-mips.org>, linux-x86_64@vger.kernel.org,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 903c3859f77f9b0aace551da03267ef7a211dbc4 ("i2c: omap: implement
-workaround for handling invalid BB-bit values") introduce the error result
-in boot test fault on OMAP3530 boards
+On Mon, Nov 24, 2014 at 12:04 PM, David Howells <dhowells@redhat.com> wrote:
+>
+> Reserve ACCESS_ONCE() for reading and add an ASSIGN_ONCE() or something like
+> that for writing?
 
-The patch fix the error (disable i2c bus test for OMAP3530).
+I wouldn't mind that. We've had situations where reading and writing
+isn't really similar - like alpha where reading a byte is atomic, but
+writing one isn't.
 
-Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-Fixes: 903c3859f77f9b0aace551da03267ef7a211dbc4
----
- drivers/i2c/busses/i2c-omap.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Then we could also make it have the "get_user()/put_user()" kind of
+semantics - .and then use the same "sizeopf()" tricks that we use for
+get_user/put_user.
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index 5d92d0e..4563200 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -344,8 +344,10 @@ static int omap_i2c_reset(struct omap_i2c_dev *dev)
- 		/* SYSC register is cleared by the reset; rewrite it */
- 		omap_i2c_write_reg(dev, OMAP_I2C_SYSC_REG, sysc);
- 
--		/* Schedule I2C-bus monitoring on the next transfer */
--		dev->bb_valid = 0;
-+		if (dev->rev > OMAP_I2C_REV_ON_3430_3530) {
-+			/* Schedule I2C-bus monitoring on the next transfer */
-+			dev->bb_valid = 0;
-+		}
- 	}
- 
- 	return 0;
-@@ -460,7 +462,7 @@ static int omap_i2c_init(struct omap_i2c_dev *dev)
- 	dev->scllstate = scll;
- 	dev->sclhstate = sclh;
- 
--	if (dev->rev < OMAP_I2C_OMAP1_REV_2) {
-+	if (dev->rev <= OMAP_I2C_REV_ON_3430_3530) {
- 		/* Not implemented */
- 		dev->bb_valid = 1;
- 	}
--- 
-1.7.9.5
+That would actually work around the gcc bug a completely different way:
 
+  #define ACCESS_ONCE(p) \
+      ({ typeof(*p) __val; __read_once_size(p, &__val, sizeof(__val)); __val; })
+
+and then we can do things like this:
+
+  static __always_inline void __read_once_size(volatile void *p, void
+*res, int size)
+  {
+       switch (size) {
+       case 1: *(u8 *)res = *(volatile u8 *)p; break;
+       case 2: *(u16 *)res = *(volatile u16 *)p; break;
+       case 4: *(u32 *)res = *(volatile u32 *)p; break;
+#ifdef CONFIG_64BIT
+       case 8: *(u64 *)res = *(volatile u64 *)p; break;
+#endif
+       }
+  }
+
+and same for ASSIGN_ONCE(val, p).
+
+That also hopefully avoids the whole "oops, gcc has a bug", because
+the actual volatile access is always done using a scalar type, even if
+the type of "__val" may in fact be a structure.
+
+Christian, how painful would that be? Sorry to try to make you do a
+totally different approach..
+
+                  Linus
