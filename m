@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbaKXSFU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:05:20 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:28052 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481AbaKXSCp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:02:45 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-8d-547372c023c6
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH v7 05/12] mm: slub: introduce virt_to_obj function.
-Date: Mon, 24 Nov 2014 21:02:18 +0300
-Message-id: <1416852146-9781-6-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 2.1.3
-In-reply-to: <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xK7oHiopDDP5u07fY9usRm8XvvTNZ
-	LeasX8NmceTad3aL69/eMFp8evmA0WLL9SYmi+cPH7JbTHjYxm4xbaO4xcruZjaL7c/eMlms
-	7HzAanF51xw2i3tr/rNatH3+BySWbGSyWHzkNrPFu2eTmS2urjrIbvFjw2NWB1GP+Ts/Mnrs
-	nHWX3WPBplKPxXteMnlsWtXJ5rHp0yR2j663V5g8Tsz4zeLx5Mp0Jo+PT2+xeLzfd5XNo2/L
-	KkaPz5vkPE60fGEN4IvisklJzcksSy3St0vgypjad4W94D5rRc+eOywNjI9Yuhg5OSQETCTm
-	L25jhbDFJC7cW8/WxcjFISSwlFFi9puf7BBOH5PEp01fGUGq2AT0JP7N2s4GYosI6Eqser6L
-	GaSIWeACq0Rf1xx2kISwgLPEkv1bmEFsFgFVidaVp8AaeAVcJT60bwOKcwCtk5PYus4bxOQU
-	cJP48bQMYlcjo0TPrM1sExh5FzAyrGIUTS1NLihOSs810itOzC0uzUvXS87P3cQIiZyvOxiX
-	HrM6xCjAwajEw1uhWRwixJpYVlyZe4hRgoNZSYQ3LR8oxJuSWFmVWpQfX1Sak1p8iJGJg1Oq
-	gfH04fDcFw4rp/I9uezHva1/dUPu7OOt7y837Kx+uWSiVuBV0b6y9y432nvlj2e8/LJMc4m7
-	rkCV9UQLlmdvfQz6t9yZwmjMv4P3xNIKlesT2dfPEo/isY/69/HWqRl8Fe+3/36kIlPts8TL
-	8Pf335pllVvlNvrvqppj/tXB9ab12tZvx2urZRYosRRnJBpqMRcVJwIAbbP1V3oCAAA=
+	id S1754745AbaKXSFs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:05:48 -0500
+Received: from mout.web.de ([212.227.17.12]:58638 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754508AbaKXSFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 13:05:46 -0500
+Message-ID: <5473736F.8070705@users.sourceforge.net>
+Date: Mon, 24 Nov 2014 19:05:35 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: Bryan Wu <cooloney@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH v2] backlight: lp8788: Deletion of a check before backlight_device_unregister()
+References: <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54720DEB.4060109@users.sourceforge.net> <20141124101006.GD4241@x1>
+In-Reply-To: <20141124101006.GD4241@x1>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:29I3W/HReuiL/fJocNqrXedRkK/OAfJkbLjEaE83W9ezZPnmjFb
+ gT1AW1ERRCCIaX5517AgzBDwpTrxJ2loE6D1950QzJld6FJm1U0EXhzof8+qRFAygpdBj1G
+ jjthzM+YeUVeNOMUkQ/1yJvoLs9Eza4CEsF6992KMsKdTCiFpkjg9QGCaoilS5Po7gM+CdS
+ LiyF0Cegb9Wd+zAtH1/PQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virt_to_obj takes kmem_cache address, address of slab page,
-address x pointing somewhere inside slab object,
-and returns address of the begging of object.
+From: Markus Elfring <elfring@users.sourceforge.net>
 
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+The backlight_device_unregister() function tests whether its argument is NULL
+and then returns immediately. Thus the test around the call is not needed.
+
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 ---
- include/linux/slub_def.h | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/video/backlight/lp8788_bl.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index d82abd4..c75bc1d 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -110,4 +110,9 @@ static inline void sysfs_slab_remove(struct kmem_cache *s)
- }
- #endif
+diff --git a/drivers/video/backlight/lp8788_bl.c b/drivers/video/backlight/lp8788_bl.c
+index d6c4f6a..24a055c 100644
+--- a/drivers/video/backlight/lp8788_bl.c
++++ b/drivers/video/backlight/lp8788_bl.c
+@@ -221,8 +221,7 @@ static void lp8788_backlight_unregister(struct lp8788_bl *bl)
+ {
+ 	struct backlight_device *bl_dev = bl->bl_dev;
  
-+static inline void *virt_to_obj(struct kmem_cache *s, void *slab_page, void *x)
-+{
-+	return x - ((x - slab_page) % s->size);
-+}
-+
- #endif /* _LINUX_SLUB_DEF_H */
+-	if (bl_dev)
+-		backlight_device_unregister(bl_dev);
++	backlight_device_unregister(bl_dev);
+ }
+ 
+ static ssize_t lp8788_get_bl_ctl_mode(struct device *dev,
 -- 
 2.1.3
 
