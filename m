@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751006AbaKXWDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 17:03:09 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:53292 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaKXWDG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 17:03:06 -0500
-Date: Mon, 24 Nov 2014 14:03:02 -0800
-From: Omar Sandoval <osandov@osandov.com>
-To: Filipe David Manana <fdmanana@gmail.com>, David Sterba <dsterba@suse.cz>,
-        linux-btrfs@vger.kernel.org
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-nfs@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH v2 5/5] btrfs: enable swap file support
-Message-ID: <20141124220302.GA5785@mew.dhcp4.washington.edu>
-References: <cover.1416563833.git.osandov@osandov.com>
- <afd3c1009172a4a1cfa10e73a64caf35c631a6d4.1416563833.git.osandov@osandov.com>
- <20141121180045.GF8568@twin.jikos.cz>
- <20141122200357.GA15189@mew>
+	id S1751160AbaKXWDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 17:03:46 -0500
+Received: from mout.web.de ([212.227.15.4]:59639 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750768AbaKXWDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 17:03:44 -0500
+Message-ID: <5473AB1F.7090303@users.sourceforge.net>
+Date: Mon, 24 Nov 2014 23:03:11 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141122200357.GA15189@mew>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Daniel Drake <dsd@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jens Frederich <jfrederich@gmail.com>,
+        Jon Nettleton <jon.nettleton@gmail.com>, devel@driverdev.osuosl.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] staging: olpc_dcon: Deletion of a check before backlight_device_unregister()
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:KRRmwGVWzSXbTUZRePGpZnT0KWXrJ5MEc9XIc3qmUCLhvZxyPOi
+ tPTXxXGuRQZhbADomc+dlIK8JbLl1r8cFAW0LjT6KzzGzVwg3sd9WcIDW72tHgHzvKBAb9d
+ sgYJIvoD2ZmcawCtnOsNTRcFNdsf6CMVHXY1dem7K75KDH2jrzr/c/zyBlRsjVNCet30PBO
+ MbQ6OF6dITcrxBDJJJ0mA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 22, 2014 at 12:03:57PM -0800, Omar Sandoval wrote:
-> On Fri, Nov 21, 2014 at 07:00:45PM +0100, David Sterba wrote:
-> > > +			ret = -EINVAL;
-> > > +			goto out;
-> > > +		}
-> > > +		if (test_bit(EXTENT_FLAG_COMPRESSED, &em->flags)) {
-> > > +			pr_err("BTRFS: swapfile is compresed");
-> > > +			ret = -EINVAL;
-> > > +			goto out;
-> > > +		}
-> > 
-> > I think the preallocated extents should be refused as well. This means
-> > the filesystem has enough space to hold the data but it would still have
-> > to go through the allocation and could in turn stress the memory
-> > management code that triggered the swapping activity in the first place.
-> > 
-> > Though it's probably still possible to reach such corner case even with
-> > fully allocated nodatacow file, this should be reviewed anyway.
-> > 
-> I'll definitely take a closer look at this. In particular,
-> btrfs_get_blocks_direct and btrfs_get_extent do allocations in some cases which
-> I'll look into.
-> 
-Alright, I took a look at this. My understanding is that a PREALLOC extent
-represents a region on disk that has already been allocated but isn't in use
-yet, but please correct me if I'm wrong. Judging by this comment in
-btrfs_get_blocks_direct, we don't have to worry about PREALLOC extents in
-general:
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 24 Nov 2014 22:58:48 +0100
 
-/*
- * We don't allocate a new extent in the following cases
- *
- * 1) The inode is marked as NODATACOW.  In this case we'll just use the
- * existing extent.
- * 2) The extent is marked as PREALLOC.  We're good to go here and can
- * just use the extent.
- *
- */
+The backlight_device_unregister() function tests whether its argument is NULL
+and then returns immediately. Thus the test around the call is not needed.
 
-A couple of other considerations that cropped up:
+This issue was detected by using the Coccinelle software.
 
-- btrfs_get_extent does a bunch of extra work if the extent is not cached in
-  the extent map tree that would be nice to avoid when swapping
-- We might still have to do a COW if the swap file is in a snapshot
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/staging/olpc_dcon/olpc_dcon.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-We can avoid the btrfs_get_extent by pinning the extents in memory one way or
-another in btrfs_swap_activate.
-
-The snapshot issue is a little tricker to resolve. I see a few options:
-
-1. Just do the COW and hope for the best
-2. As part of btrfs_swap_activate, COW any shared extents. If a snapshot
-happens while a swap file is active, we'll fall back to 1.
-3. Clobber any swap file extents which are in a snapshot, i.e., always use the
-existing extent.
-
-I'm partial to 3, as it's the simplest approach, and I don't think it makes
-much sense for a swap file to be in a snapshot anyways. I'd appreciate any
-comments that anyone might have.
-
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
+index eb83b28..6a9a881 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon.c
+@@ -682,8 +682,7 @@ static int dcon_remove(struct i2c_client *client)
+ 
+ 	free_irq(DCON_IRQ, dcon);
+ 
+-	if (dcon->bl_dev)
+-		backlight_device_unregister(dcon->bl_dev);
++	backlight_device_unregister(dcon->bl_dev);
+ 
+ 	if (dcon_device != NULL)
+ 		platform_device_unregister(dcon_device);
 -- 
-Omar
+2.1.3
+
