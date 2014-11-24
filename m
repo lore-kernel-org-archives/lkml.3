@@ -1,83 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006AbaKXPdY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:33:24 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:42677 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605AbaKXPdX (ORCPT
+	id S1753823AbaKXPgS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 10:36:18 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:39542 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589AbaKXPgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:33:23 -0500
-Message-ID: <1416843200.17888.53.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: net_tx_action race condition?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Angelo Rizzi <angelo.rizzi@3dautomazione.it>
-Cc: netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 24 Nov 2014 07:33:20 -0800
-In-Reply-To: <547332D7.7050104@3dautomazione.it>
-References: <547332D7.7050104@3dautomazione.it>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Nov 2014 10:36:15 -0500
+Date: Mon, 24 Nov 2014 09:36:21 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Felipe Balbi <balbi@ti.com>, Arjun Sreedharan <arjun024@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <kernel-build-reports@lists.linaro.org>
+Subject: Re: [PATCH] usb:phy: propagate __of_usb_find_phy()'s error on failure
+Message-ID: <20141124153621.GF20705@saruman>
+Reply-To: <balbi@ti.com>
+References: <1416498816-3292-1-git-send-email-arjun024@gmail.com>
+ <20141124131034.GB4061@ulmo.nvidia.com>
+ <20141124143646.GA20705@saruman>
+ <20141124151644.GC4061@ulmo.nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="L1c6L/cjZjI9d0Eq"
+Content-Disposition: inline
+In-Reply-To: <20141124151644.GC4061@ulmo.nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-24 at 14:29 +0100, Angelo Rizzi wrote:
-> Hi Daniel,
-> Here attached the patch file you required.
-> The problem i've found is on the declaration of 'struct softnet_data 
-> *sd' in function 'net_tx_action'
-> What happens to me (i have an embedded system based on FPGA and a NIOS2 
-> cpu) is that, due to compiler optimization, the content of 
-> 'sd->completion_queue' is saved in a CPU register before interrupt 
-> disabling (when the instruction 'if (sd->completion_queue) {' is 
-> executed) and then the register contents is used for interrupt-disabled 
-> assignment ('clist = sd->completion_queue') instead of re-read the 
-> variable contents.
-> This seems to lead to a race condition when an interrupt modifies the 
-> content of 'sd->completion_queue' between these two instructions.
-> What i have done to avoid this situation is to change the declaration of 
-> 'struct softnet_data *sd' to 'volatile struct softnet_data *sd' and now 
-> everything seems to be ok.
-> I hope this will help.
-> 
-> Regards,
-> Angelo
-> 
+--L1c6L/cjZjI9d0Eq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Do not add volatile in the kernel, this is not how we solve this kind of
-problems.  Documentation/memory-barriers.txt and
+Hi,
 
-Documentation/00-INDEX:476:volatile-considered-harmful.txt
-Documentation/00-INDEX:477:     - Why the "volatile" type class should not be used
+On Mon, Nov 24, 2014 at 04:16:46PM +0100, Thierry Reding wrote:
+> On Mon, Nov 24, 2014 at 08:36:46AM -0600, Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > On Mon, Nov 24, 2014 at 02:10:41PM +0100, Thierry Reding wrote:
+> > > On Thu, Nov 20, 2014 at 09:23:36PM +0530, Arjun Sreedharan wrote:
+> > > > When __of_usb_find_phy() fails, it returns -ENODEV - its
+> > > > error code has to be returned by devm_usb_get_phy_by_phandle().
+> > > > Only when the former function succeeds and try_module_get()
+> > > > fails should -EPROBE_DEFER be returned.
+> > > >=20
+> > > > Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+> > > > ---
+> > > >  drivers/usb/phy/phy.c | 4 +++-
+> > > >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > >=20
+> > > This causes a boot regression on at least NVIDIA Dalmore (I boot over
+> > > NFS using a USB network adapter).
+> > >=20
+> > > The commit message is somewhat insufficient because while it explains
+> > > what the code does and asserts that it is the right thing to do, it
+> > > fails to explain why.
+> >=20
+> > you also fail to explain it causes a regressions with Dalmore.
+>=20
+> I thought my explanation below was sufficient, but maybe I should say it
+> in other words: __of_usb_find_phy() returns -ENODEV if no PHY was found
+> to be registered for a given phandle. That causes the driver to abort
+> probing with a -ENODEV error and does not trigger the probe deferral
+> that'd be necessary to get the host controller to find the PHY the next
+> time it was triggered.
 
+right, and before $subject dev_usb_get_phy_by_phandle() was overwriting
+whatever error code passed by __of_usb_find_phy() to -EPROBE_DEFER.
 
-I am surprised this patch is needed. Many other 'bugs' would need
-similar fixes.
+> > This is really the correct patch, we shouldn't be overwritting the
+> > error passed in by upper layers.
+>=20
+> No, it's very obviously not the correct patch if it causes a regression.
 
-local_irq_disable() MUST have a memory barrier. This looks like a bug in
-one particular arch implementation.
+or it exposes a bug elsewhere :-)
 
+> > > > diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
+> > > > index 045cd30..0310112 100644
+> > > > --- a/drivers/usb/phy/phy.c
+> > > > +++ b/drivers/usb/phy/phy.c
+> > > > @@ -191,7 +191,9 @@ struct usb_phy *devm_usb_get_phy_by_phandle(str=
+uct device *dev,
+> > > > =20
+> > > >  	phy =3D __of_usb_find_phy(node);
+> > > >  	if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
+> > > > -		phy =3D ERR_PTR(-EPROBE_DEFER);
+> > > > +		if (!IS_ERR(phy))
+> > > > +			phy =3D ERR_PTR(-EPROBE_DEFER);
+> > >=20
+> > > If we look at this closer, __of_usb_find_phy() return a valid pointer=
+ if
+> > > a PHY was found or ERR_PTR(-ENODEV) otherwise. But since the phandle =
+has
+> > > already been validated, the only reason why __of_usb_find_phy() fails=
+ is
+> > > because the PHY that the phandle refers to hasn't been registered yet.
+> > >=20
+> > > Returning -EPROBE_DEFER is the correct thing to do in this situation
+> > > because it gives the PHY driver an opportunity to register and the USB
+> > > host controller to try probing again. I suppose one could argue that
+> > > __of_usb_find_phy() should return ERR_PTR(-EPROBE_DEFER) on failure
+> > > instead of ERR_PTR(-ENODEV), since evidently the device does exist, it
+> > > just hasn't been registered yet. On the other hand it could happen th=
+at
+> > > the phandle refers to a device tree node that's status =3D "disabled"=
+, in
+> > > which case ERR_PTR(-ENODEV) might be appropriate.
+> > >=20
+> > > Also, -EPROBE_DEFER isn't really the proper error for try_module_get()
+> > > failure. Other functions (usb_get_phy() and usb_get_phy_dev()) return
+> > > -ENODEV instead, so it'd be more consistent to stick with that. Hence=
+ I
+> > > propose something like the below instead.
+> >=20
+> > I don't mind patch below, but I want to know why Dalmore regressed with
+> > $subject.
+>=20
+> Note that this isn't only an issue specific to Dalmore. This affects
+> every device that uses a USB PHY and where the PHY is registered after
+> the first probe of the USB host controller.
 
-On x86 for example, native_irq_disable() is really :
+although, I have been running this for the last few days with
+BeagleBoneBlack and AM437x SK and haven't noticed any issues.
 
-	asm volatile("cli": : :"memory");
+--=20
+balbi
 
+--L1c6L/cjZjI9d0Eq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index ac4836241a965a71952469ba054f87d8dfca2d32..fa73072e515aa07fa8ae1bc39174b7d59c7a31a5 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3406,7 +3406,7 @@ static void net_tx_action(struct softirq_action *h)
- 		struct sk_buff *clist;
- 
- 		local_irq_disable();
--		clist = sd->completion_queue;
-+		clist = ACCESS_ONCE(sd->completion_queue);
- 		sd->completion_queue = NULL;
- 		local_irq_enable();
- 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIbBAEBAgAGBQJUc1B1AAoJEIaOsuA1yqREyGUP+Ks4brrW23+H1W6F9Pu/FOty
+nEai4XkSIbApqWp7G0Vi3TsOSm6+z1kBCQU5EHYX62r43lBRbXzNwfAdCm3IwzUQ
+AXn0y4chwNeVJG5hXvPU18Y+1rC060jU4E4M9gYZbLO9l1N11oxJzctevR7k+xkc
+TXdmfNh2lAuzp7V9Gpqa6Cgi/GjzU7/S3ez7hQEu9JUdA49O1WrC+yCfxHOIFf3Y
+6rZmb/zrYFXNKT3UipnfQERwA6rc/9YMdHqbcRAagaIfJid3wLNxAD25DA8t6kKm
+FL+jM6IaF5AfTBusHvWtNR0Arp/aTKn13OjjjdYNMcKPcvgE0JsLEZzCbD7qvpJ0
+3UrDQafX2y6GG0il5pnwfqYJ8k3KH3ZLrNcJX2mnjkAvd21p/qo/CpzAVY5K0QTT
+1I2ruKrTpIRaGyzrz0suv4p4lLk9VHP7V/nCluWr7mxAt53lb5gRy32jHYs9E+/G
+ZepEWWL0MyEV0jleBSAG1qudaZ/0k3juWZ11VB8HuPA5cs7cQUopIeNRJeI3PdyL
+9JuZIHXHkLQkWK3HljmUYBdAanv0tj8uvwF7yI5c/gVznpiGb4UrLEPGrcjSgWiq
+GmKb+1fnBInUSgUTcd3k5ccANj4GsjyN6W1uMVxp4Jcjo02hdwwpTenEzsclKQVS
+F4zRIflpervtXbfVLvw=
+=zVXg
+-----END PGP SIGNATURE-----
 
+--L1c6L/cjZjI9d0Eq--
