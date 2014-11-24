@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750936AbaKXFJM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 00:09:12 -0500
-Received: from gate.crashing.org ([63.228.1.57]:54107 "EHLO gate.crashing.org"
+	id S1751051AbaKXFSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 00:18:51 -0500
+Received: from ozlabs.org ([103.22.144.67]:43933 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736AbaKXFJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 00:09:10 -0500
-Message-ID: <1416805719.4998.15.camel@kernel.crashing.org>
-Subject: linuxppc-dev list <linuxppc-dev@ozlabs.org>
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michael Ellerman <mpe@ellerman.id.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Alex Deucher <alexdeucher@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Date: Mon, 24 Nov 2014 16:08:39 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1750789AbaKXFSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 00:18:49 -0500
+Date: Mon, 24 Nov 2014 16:18:42 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>, Yijing Wang <wangyijing@huawei.com>
+Subject: linux-next: manual merge of the tip tree with the pci tree
+Message-ID: <20141124161842.02251126@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/IIB_jLdIHgJGPcHF.Qb9+1W"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+--Sig_/IIB_jLdIHgJGPcHF.Qb9+1W
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-This series fix a nasty issue with radeon adapters on powerpc servers,
-it's all CC'ed stable and has the relevant maintainers ack's/reviews.
+Hi all,
 
-Basically, some (radeon) adapters have issues with MSI addresses above
-1T (only support 40-bits). We had powerpc specific quirk but it only
-listed a specific revision of an adapter that we shipped with our
-machines and didn't properly handle the audio function which some distros
-enable nowadays.
+Today's linux-next merge of the tip tree got a conflict in
+drivers/pci/host/pcie-rcar.c between commit 3c70637f7569 ("PCI: rcar:
+Make rcar_pci static") from the pci tree and commit 7c35c8cc32f3 ("PCI:
+rcar: Save MSI controller in pci_sys_data") from the tip tree.
 
-So we made the quirk generic and fixed both the graphic and audio drivers
-properly to use it.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Without that, ppc64 server machines will crash at boot with a radeon adapter.
-
-Note: This has been brewing for a while, it just needed a last respin which
-got delayed due to us moving ozlabs to a new location in town and other such
-things taking priority.
-
+--=20
 Cheers,
-Ben.
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The following changes since commit 5d01410fe4d92081f349b013a2e7a95429e4f2c9:
+diff --cc drivers/pci/host/pcie-rcar.c
+index 0df9b2941221,c1177cd55ce3..000000000000
+--- a/drivers/pci/host/pcie-rcar.c
++++ b/drivers/pci/host/pcie-rcar.c
+@@@ -380,16 -380,7 +380,7 @@@ static int rcar_pcie_setup(int nr, stru
+  	return 1;
+  }
+ =20
+- static void rcar_pcie_add_bus(struct pci_bus *bus)
+- {
+- 	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+- 		struct rcar_pcie *pcie =3D sys_to_pcie(bus->sysdata);
+-=20
+- 		bus->msi =3D &pcie->msi.chip;
+- 	}
+- }
+-=20
+ -struct hw_pci rcar_pci =3D {
+ +static struct hw_pci rcar_pci =3D {
+  	.setup          =3D rcar_pcie_setup,
+  	.map_irq        =3D of_irq_parse_and_map_pci,
+  	.ops            =3D &rcar_pcie_ops,
 
-  Linux 3.18-rc6 (2014-11-23 15:25:20 -0800)
+--Sig_/IIB_jLdIHgJGPcHF.Qb9+1W
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-are available in the git repository at:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git 
+iQIcBAEBCAAGBQJUcr+2AAoJEMDTa8Ir7ZwVdqYQAIYmsRU2Lb130GZDr5PCYEQf
+DY7Wz0QS9bQ4LBmlTwaGc8jsdeh+1SnpnzSkCgzJnmZ1XeLSJW2y7bPFhrgYSsMB
+tbaZIZ4TgRDNatWYpgPwg25qPMeUP2zRjXN1kLu/VCWGSasslr0bblYJx+fYxPmk
+v+MhHsQug+q5PlkKwbYjVmnNxos4xAEJ3WtIVSQ/VwkI5p/h7cfM9gtN3VTIGtQC
+b74rtBeIGzCqLFZhZZh3dbf1DgLqlDGDUTJMT49rff4Q1QCpD32kNueZ7LpFu+4f
+ESRC0YeTTn835fAqq4xh4qwDWKV30uktgaZtfv0wfp7XrCLwTcJ9LiSN2xFQS2Cy
+IrGrFytuAGMLTM4BP6BBkjLou/RziKAD7DGKdHH8E7jl8jKrLAMIK5xM8Hd01s+U
+QGGl21KztrCZVvvw0ELwmsV/f9HRYcdIRRBc5tzTgiaEHAylOIfGQphcbOsNzAU0
+QmtNBE04bdn44chh/JJitGRDHhZfF/gYi7C6g86Ef71ehn5BPVvcwl8Pm4W3PFkT
+ZZtVGsrZlKTxdz6yWXJN/ersaYGudRcwFMi/IW2q2/9yTsAmEeC05wZVaKB06DYf
+pOiBiTROczA1USc+1pI2R5G08/gfZ0jir1aMx+OBzreFxrAh+ZyWcojCZ2LHbd3k
+da55Km7Eu5p2Rk1GMdsR
+=iQHh
+-----END PGP SIGNATURE-----
 
-for you to fetch changes up to 31345e1a071e4e5f2fa8b6be5ca7d1cbce20cfca:
-
-  powerpc/pci: Remove unused force_32bit_msi quirk (2014-11-24 14:36:02 +1100)
-
-----------------------------------------------------------------
-Benjamin Herrenschmidt (6):
-      PCI/MSI: Add device flag indicating that 64-bit MSIs don't work
-      gpu/radeon: Set flag to indicate broken 64-bit MSI
-      sound/radeon: Move 64-bit MSI quirk from arch to driver
-      powerpc/powernv: Honor the generic "no_64bit_msi" flag
-      powerpc/pseries: Honor the generic "no_64bit_msi" flag
-      powerpc/pci: Remove unused force_32bit_msi quirk
-
-Takashi Iwai (1):
-      ALSA: hda - Limit 40bit DMA for AMD HDMI controllers
-
- arch/powerpc/include/asm/pci-bridge.h     |  2 --
- arch/powerpc/kernel/pci_64.c              | 10 ----------
- arch/powerpc/platforms/powernv/pci-ioda.c |  3 +--
- arch/powerpc/platforms/powernv/pci.c      |  3 +--
- arch/powerpc/platforms/pseries/msi.c      |  2 +-
- drivers/gpu/drm/radeon/radeon_irq_kms.c   | 10 ++++++++++
- drivers/pci/msi.c                         | 26 ++++++++++++++++++++++++++
- include/linux/pci.h                       |  1 +
- sound/pci/hda/hda_intel.c                 | 24 +++++++++++++++++++-----
- sound/pci/hda/hda_priv.h                  |  1 +
- 10 files changed, 60 insertions(+), 22 deletions(-)
-
-
+--Sig_/IIB_jLdIHgJGPcHF.Qb9+1W--
