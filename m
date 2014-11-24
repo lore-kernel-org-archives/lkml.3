@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552AbaKXGQy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 01:16:54 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:10491 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398AbaKXGQu (ORCPT
+	id S1752617AbaKXGRA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 01:17:00 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:52416 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752541AbaKXGQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 01:16:50 -0500
-X-AuditID: cbfee68d-f79296d000004278-67-5472cd509b94
+	Mon, 24 Nov 2014 01:16:55 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-18-5472cd550dc4
 From: Namjae Jeon <namjae.jeon@samsung.com>
 To: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>
 Cc: linux-fsdevel@vger.kernel.org, linux-ext4 <linux-ext4@vger.kernel.org>,
-        xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
         Ashish Sangwan <a.sangwan@samsung.com>
-Subject: [PATCH v6 5/10] xfstests: generic/038: Standard insert range tests
-Date: Mon, 24 Nov 2014 15:16:48 +0900
-Message-id: <002e01d007ae$3a8f7b10$afae7130$@samsung.com>
+Subject: [PATCH v6 6/10] xfstests: generic/039: Delayed allocation insert range
+Date: Mon, 24 Nov 2014 15:16:53 +0900
+Message-id: <002f01d007ae$3d94cbd0$b8be6370$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAHrOimcfpjb+/xQxKJHnDXlcDGyw==
+Thread-index: AdAHrUqXoFhx1EAzR/GqkF6lIa9eNA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsWyRsSkUDfgbFGIweomDYulEy8xW2w5do/R
-	Yua8O2wWe/aeZLG4vGsOm0Vrz092i0V9txgd2D1OLZLwaDpzlNlj9YWtjB59W1YxenzeJBfA
-	GsVlk5Kak1mWWqRvl8CVMbfrI1vBTf2K41OmsTUwdqh3MXJySAiYSEy+u4IVwhaTuHBvPVsX
-	IxeHkMBSRon5Mw8xwxRdfbSUESKxiFHi0NcrzBDOX0aJLVdPsHcxcnCwCWhL/NkiCtIgIuAq
-	Me/ud7AGZpBJFx8/YQSpERbwlnjxTxekhkVAVeLc5E6wzbwClhJ/l71lgrAFJX5MvscCYjML
-	aEms33mcCcKWl9i85i3UQQoSO86+BhspIqAn8eauBkSJiMS+F+/A1koIXGKXuHDrDxPELgGJ
-	b5MPsYDUSwjISmw6ADVGUuLgihssExjFZiHZPAvJ5llINs9CsmIBI8sqRtHUguSC4qT0IkO9
-	4sTc4tK8dL3k/NxNjMBYPP3vWe8OxtsHrA8xCnAwKvHwfthYFCLEmlhWXJl7iNEU6KKJzFKi
-	yfnAiM8riTc0NjOyMDUxNTYytzRTEudVlPoZLCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFR
-	8eS15fd603qk7kafSI7jmOhw/nOXQACvJ6/d4nL+1e0F91l+Fh2UlCq4urejPCApYcnJLf13
-	BWXYV54rTiqeG3hW/6LC4SKpwPBsz13qrbrdN05UJ5sLrHjA/76+cPXNzkcrRLUXLWrWWyoT
-	qlvAv3nSkaLcLqf9Kt1OVxqmvYxnt/zn1qvEUpyRaKjFXFScCAAIwNaRwAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t9jAd2As0UhBnP/y1ksnXiJ2WLLsXuM
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsWyRsSkQDf0bFGIwaFlxhZLJ15itthy7B6j
+	xcx5d9gs9uw9yWJxedccNovWnp/sFov6bjE6sHucWiTh0XTmKLPH6gtbGT36tqxi9Pi8SS6A
+	NYrLJiU1J7MstUjfLoEr49O5jWwFzzUq7p2ewNLA+Faxi5GTQ0LARGLry11MELaYxIV769m6
+	GLk4hASWMkrcWrWBCaZo5dl+VojEIkaJy896oKr+Mkq07//E2MXIwcEmoC3xZ4soSIOIgKvE
+	vLvfGUFqmEEmPf76BGySsIC/xL+VvSwgNouAqsShZ12MIDavgKXEzUntLBC2oMSPyffAbGYB
+	LYn1O48zQdjyEpvXvGWGuEhBYsfZ14wQy/QkTi65CVUvIrHvxTuwxRIC59glGm79Y4NYJiDx
+	bfIhFpBDJQRkJTYdgJojKXFwxQ2WCYxis5CsnoVk9Swkq2chWbGAkWUVo2hqQXJBcVJ6kYle
+	cWJucWleul5yfu4mRmA8nv73bMIOxnsHrA8xCnAwKvHwfthYFCLEmlhWXJl7iNEU6KKJzFKi
+	yfnAqM8riTc0NjOyMDUxNTYytzRTEud9LfUzWEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOj
+	dInsB11lhYcHkgVsnz3+8cTt9PX+pK8zl5xa/njDs2gu2YtOpxd+dD208YbqlqtRDhFSttMY
+	L9TVqXMmL6u+t6otvb6t7u+mi4dC5z8pWH2uq7rIfuopr5cf5fZsOCns9ORnsXpZxGTn7CZZ
+	p+YZzcHSnZyb1gjtPPLbaFEs74fjX2oYBNOClViKMxINtZiLihMBxlgL0cICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jAd3Qs0UhBn/naFssnXiJ2WLLsXuM
 	FjPn3WGz2LP3JIvF5V1z2Cxae36yWyzqu8XowO5xapGER9OZo8weqy9sZfTo27KK0ePzJrkA
 	1qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoDOU
-	FMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBlzuz6yFdzUrzg+ZRpbA2OH
-	ehcjJ4eEgInE1UdLGSFsMYkL99azdTFycQgJLGKUOPT1CjOE85dRYsvVE+xdjBwcbALaEn+2
-	iII0iAi4Ssy7+50RpIZZYCmjxMXHTxhBaoQFvCVe/NMFqWERUJU4N7mTFcTmFbCU+LvsLROE
-	LSjxY/I9FhCbWUBLYv3O40wQtrzE5jVvmSEOUpDYcfY12EgRAT2JN3c1IEpEJPa9eMc4gVFg
-	FpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEf6M6kdjCsbLA4x
-	CnAwKvHwfthYFCLEmlhWXJl7iFGCg1lJhPfsv8IQId6UxMqq1KL8+KLSnNTiQ4ymQI9OZJYS
-	Tc4HJqG8knhDYxMzI0sjc0MLI2NzJXHeGzdzQ4QE0hNLUrNTUwtSi2D6mDg4pRoYGQ4umuUu
-	+aWxqODRlNkK827ezGJjse2693Ld+yy+j8ZXpT9zH6wyPt6spPKkIv12kMcZMenHU7qO1Oqe
-	aem4XxmuX96jHKe346j87YDwIl6LL/G7Z1U/in9ese3gEc/ffy6cTHC80qwin3zbq8O0UN8u
-	tcfj2KysOgehvmsvm0OOXQuYmblSiaU4I9FQi7moOBEAq9F8jQoDAAA=
+	FMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBmfzm1kK3iuUXHv9ASWBsa3
+	il2MnBwSAiYSK8/2s0LYYhIX7q1n62Lk4hASWMQocflZD5Tzl1Giff8nxi5GDg42AW2JP1tE
+	QRpEBFwl5t39zghSwyywlFHi8dcnTCAJYQF/iX8re1lAbBYBVYlDz7oYQWxeAUuJm5PaWSBs
+	QYkfk++B2cwCWhLrdx5ngrDlJTavecsMcZGCxI6zrxkhlulJnFxyE6peRGLfi3eMExgFZiEZ
+	NQvJqFlIRs1C0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnC0P5PewbiqweIQowAH
+	oxIP74z1RSFCrIllxZW5hxglOJiVRHjP/isMEeJNSaysSi3Kjy8qzUktPsRoCvTpRGYp0eR8
+	YCLKK4k3NDYxM7I0Mje0MDI2VxLnvXEzN0RIID2xJDU7NbUgtQimj4mDU6qBUc2/Ujp69sGb
+	GofKzsV8PHLSj88rV+kg24nsj+VqEl/730Q8NBLsXqvySudTk+SWx08j9rRYdARyc4sU7djL
+	vXdaySXV+RGMJWn3Vi+95y1uHS/6snr5eWdxe4XkfdHb9UT+7Q5Mss/Z81mr8uuefxXP0366
+	hmXUibOGJHActFyt/C3q6+8/SizFGYmGWsxFxYkAOIrFDwwDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,60 +54,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This testcase(038) tries to test various corner cases for finsert range
-functionality over different type of extents.
+This testcase(039) tries to test various corner cases with delayed extents
+for finsert range functionality over different type of extents.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
 ---
- common/punch          |  5 ++++
- common/rc             |  2 +-
- tests/generic/038     | 65 ++++++++++++++++++++++++++++++++++++++++++
- tests/generic/038.out | 78 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/generic/039     | 65 ++++++++++++++++++++++++++++++++++++++++++
+ tests/generic/039.out | 78 +++++++++++++++++++++++++++++++++++++++++++++++++++
  tests/generic/group   |  1 +
- 5 files changed, 150 insertions(+), 1 deletion(-)
- create mode 100644 tests/generic/038
- create mode 100644 tests/generic/038.out
+ 3 files changed, 144 insertions(+)
+ create mode 100644 tests/generic/039
+ create mode 100644 tests/generic/039.out
 
-diff --git a/common/punch b/common/punch
-index 237b4d8..a75f4cf 100644
---- a/common/punch
-+++ b/common/punch
-@@ -527,6 +527,11 @@ _test_generic_punch()
- 		return
- 	fi
- 
-+	# If zero_cmd is finsert, don't check unaligned offsets
-+	if [ "$zero_cmd" == "finsert" ]; then
-+		return
-+	fi
-+
- 	echo "	16. data -> cache cold ->hole"
- 	if [ "$remove_testfile" ]; then
- 		rm -f $testfile
-diff --git a/common/rc b/common/rc
-index d5e3aff..ca4177f 100644
---- a/common/rc
-+++ b/common/rc
-@@ -1486,7 +1486,7 @@ _require_xfs_io_command()
- 	"falloc" )
- 		testio=`$XFS_IO_PROG -F -f -c "falloc 0 1m" $testfile 2>&1`
- 		;;
--	"fpunch" | "fcollapse" | "zero" | "fzero" )
-+	"fpunch" | "fcollapse" | "zero" | "fzero" | "finsert" )
- 		testio=`$XFS_IO_PROG -F -f -c "pwrite 0 20k" -c "fsync" \
- 			-c "$command 4k 8k" $testfile 2>&1`
- 		;;
-diff --git a/tests/generic/038 b/tests/generic/038
+diff --git a/tests/generic/039 b/tests/generic/039
 new file mode 100644
-index 0000000..0ce0e61
+index 0000000..3421f93
 --- /dev/null
-+++ b/tests/generic/038
++++ b/tests/generic/039
 @@ -0,0 +1,65 @@
 +#! /bin/bash
-+# FS QA Test No. generic/038
++# FS QA Test No. generic/039
 +#
-+# Standard insert range tests
++# Delayed allocation insert range tests
 +# This testcase is one of the 4 testcases which tries to
 +# test various corner cases for finsert range functionality over different
 +# type of extents. These tests are based on generic/255 test case.
@@ -164,18 +133,18 @@ index 0000000..0ce0e61
 +
 +testfile=$TEST_DIR/$seq.$$
 +
-+_test_generic_punch falloc fpunch finsert fiemap _filter_hole_fiemap $testfile
++_test_generic_punch -d falloc fpunch finsert fiemap _filter_hole_fiemap $testfile
 +_check_test_fs
 +
 +status=0
 +exit
-diff --git a/tests/generic/038.out b/tests/generic/038.out
+diff --git a/tests/generic/039.out b/tests/generic/039.out
 new file mode 100644
-index 0000000..3ebdb43
+index 0000000..d1e8320
 --- /dev/null
-+++ b/tests/generic/038.out
++++ b/tests/generic/039.out
 @@ -0,0 +1,78 @@
-+QA output created by 038
++QA output created by 039
 +	1. into a hole
 +cf845a781c107ec1346e849c9dd1b7e8
 +	2. into allocated space
@@ -254,14 +223,14 @@ index 0000000..3ebdb43
 +1: [16..55]: extent
 +86c9d033be2761385c9cfa203c426bb2
 diff --git a/tests/generic/group b/tests/generic/group
-index 9f355fc..7d6f227 100644
+index 7d6f227..4beb27f 100644
 --- a/tests/generic/group
 +++ b/tests/generic/group
-@@ -40,6 +40,7 @@
- 035 auto quick
+@@ -41,6 +41,7 @@
  036 auto aio rw stress
  037 metadata auto quick
-+038 auto quick prealloc
+ 038 auto quick prealloc
++039 auto quick prealloc
  053 acl repair auto quick
  062 attr udf auto quick
  068 other auto freeze dangerous stress
