@@ -1,104 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329AbaKXNBG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 08:01:06 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:46594 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966AbaKXNBD (ORCPT
+	id S1753413AbaKXNCh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 08:02:37 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:51636 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483AbaKXNCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 08:01:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <CABgxDoLA=QL6vzU-v1w4vMZ3qhorjRdYOWFFMrjJE6xvZ7QO3g@mail.gmail.com>
-References: <1415885699-1465-1-git-send-email-user@radxa>
-	<1415885699-1465-2-git-send-email-user@radxa>
-	<20141121105951.GA20679@localhost>
-	<20141124102456.GE4241@x1>
-	<20141124113518.GC6875@localhost>
-	<CABgxDoLA=QL6vzU-v1w4vMZ3qhorjRdYOWFFMrjJE6xvZ7QO3g@mail.gmail.com>
-Date: Mon, 24 Nov 2014 14:01:02 +0100
-Message-ID: <CABgxDo+t1DUMHwWygibR-w=FL458N6k0G68HM2M7R76gJugyVg@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] of: Rename "poweroff-source" property to "system-power-controller"
-From: Romain Perier <romain.perier@gmail.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Grant Likely <grant.likely@linaro.org>, robh <robh@kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Felipe Balbi <balbi@ti.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 24 Nov 2014 08:02:33 -0500
+From: Alban Bedel <alban.bedel@avionic-design.de>
+To: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org, Alban Bedel <alban.bedel@avionic-design.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: [PATCH 2/4] regulator: add a regulator that constrain its supply
+Date: Mon, 24 Nov 2014 14:02:01 +0100
+Message-Id: <1416834123-23139-2-git-send-email-alban.bedel@avionic-design.de>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1416834123-23139-1-git-send-email-alban.bedel@avionic-design.de>
+References: <1416834123-23139-1-git-send-email-alban.bedel@avionic-design.de>
+X-Provags-ID: V02:K0:mgXjN3QS+gEt6FmJ+qzXQsbPS65N9RpxCt2HhtRFtdd
+ oWBPOoV4T74+iYAmMPDMBeEKVGF55BSUAUXuHUdZvDVrFcxKPv
+ VbZnYm7Ro9rwulvTrVHZ7+9II1CwVREGmpIyEDdVYrTlKVGccf
+ 9JTUwvzxlJ1GRVQ4E6jIii9sP2GcMy6hn5+Z7vQDPwizvLpx3C
+ TFgg7KsDgvRj62nunrFXRSJJB2YMf6G7AdslCFvN0kyqc0m9GJ
+ HNzLkUUdLcXWyx5vXGR4DzwwIX4QpbuIVWAmBZUv2WvRmTz7bV
+ wYzGgs61x8aJJxk1LeSxe1s5sjZ3i5RnVzBfVqiO4HRf66nFeE
+ tPmY9IgQWdp8dbraLBArrjY+TFKF/CiELBMkxotLinSBR/XZlR
+ iraKx0uwOFWy5uL1dPo6cGiNxffVbSrOKRbOzZylUkQqY/gjQ+
+ 0FDBXGJi2U9WvjMmHNO8mJRMsFg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-24 13:58 GMT+01:00 Romain Perier <romain.perier@gmail.com>:
-> 2014-11-24 12:35 GMT+01:00 Johan Hovold <johan@kernel.org>:
->> On Mon, Nov 24, 2014 at 10:24:56AM +0000, Lee Jones wrote:
->>> On Fri, 21 Nov 2014, Johan Hovold wrote:
->>> > On Thu, Nov 13, 2014 at 01:34:58PM +0000, Auto Configured wrote:
->>> > > From: Romain Perier <romain.perier@gmail.com>
->>> > >
->>> > > It reverts commit a4b4e0461ec5 ("of: Add standard property for poweroff capability").
->>> > > As discussed on the mailing list, it makes more sense to rename back to the
->>> > > old established property name, without the vendor prefix. Problem being that
->>> > > the word "source" usually tends to be used for inputs and that is out of control
->>> > > of the OS. The poweroff capability is an output which simply turns the
->>> > > system-power off. Also, this property might be used by drivers which power-off
->>> > > the system and power back on subsequent RTC alarms. This seems to suggest to
->>> > > remove "poweroff" from the property name and to choose "system-power-controller"
->>> > > as the more generic name. This patchs adds the required renaming changes and
->>> > > defines an helper function which is compatible with both properties, the old one
->>> > > which was only used by tps65910 and the new one without vendor-prefix.
->>> >
->>> > Now this is a bit of a mess.
->>> >
->>> > There's a commit in the mfd tree, 25f833c1171d ("mfd: tps65910: Convert
->>> > ti,system-power-controller DT property to poweroff-source"), which
->>> > breaks all dts using tps65910 since these are never updated to the now
->>> > retracted property name ("poweroff-source").
->>>
->>> My word!
->>>
->>> Romain, what conversation on the MLs are you talking about?
->>
->> I think Romain is referring to this thread:
->>
->>         https://lkml.org/lkml/2014/10/23/161
->
-> Yes, this is this one.
->
->>
->>> > This one should simply be reverted ASAP.
->>>
->>> No need to revert, I can just remove the patch from the MFD tree.
->>
->> Ok, good. Then this is limited to the regulator tree, and we could
->> proceed as I outlined below.
->>
->>
->> Romain, care to resend this patch without the tps65910 chunks?
->
-> If you can just drop the patch from mfd tree Lee, please do.
-> Yes Johan, np, what I want is that we find a smart solution, nothing more.
->
->>
->> You should also fix the commit message, which claims to define a "helper
->> function which is compatible with both properties", something which was
->> no longer the case.
->>
->> Thanks,
->> Johan
->
-> So I need to resend this patch which would only introduce an helper
-> function which checks for "system-power-controller" property (it would
-> also have a new commit message).
-> As you suggested, this helper might be named
-> "of_device_is_system_power_controller" ?
+This driver is meant for devices that are supplied by a settable
+regulator but that don't set their supply voltage explicitly.
+With this reglator those simple driver can just get and enable the
+regulator and they will get the correct voltage.
 
-I mean, the backward compatibility can be handled directly from the
-device driver which would use the new property, no ?
+Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+---
+ drivers/regulator/Kconfig              |   8 +++
+ drivers/regulator/Makefile             |   1 +
+ drivers/regulator/constrained-supply.c | 126 +++++++++++++++++++++++++++++++++
+ 3 files changed, 135 insertions(+)
+ create mode 100644 drivers/regulator/constrained-supply.c
+
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index c8767b7..ebfd9a7 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -54,6 +54,14 @@ config REGULATOR_USERSPACE_CONSUMER
+ 
+ 	  If unsure, say no.
+ 
++config REGULATOR_CONSTRAINED_SUPPLY
++	tristate "Voltage regulator that constrain its supply"
++	depends on OF
++	help
++	  This driver provides a virtual regulator that constrains its supply.
++	  This is mostly useful to use drivers that don't explicitly set a
++	  voltage on boards that use variable regulators.
++
+ config REGULATOR_88PM800
+ 	tristate "Marvell 88PM800 Power regulators"
+ 	depends on MFD_88PM800
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 37bb4b7..99c7979 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -8,6 +8,7 @@ obj-$(CONFIG_OF) += of_regulator.o
+ obj-$(CONFIG_REGULATOR_FIXED_VOLTAGE) += fixed.o
+ obj-$(CONFIG_REGULATOR_VIRTUAL_CONSUMER) += virtual.o
+ obj-$(CONFIG_REGULATOR_USERSPACE_CONSUMER) += userspace-consumer.o
++obj-$(CONFIG_REGULATOR_CONSTRAINED_SUPPLY) += constrained-supply.o
+ 
+ obj-$(CONFIG_REGULATOR_88PM800) += 88pm800.o
+ obj-$(CONFIG_REGULATOR_88PM8607) += 88pm8607.o
+diff --git a/drivers/regulator/constrained-supply.c b/drivers/regulator/constrained-supply.c
+new file mode 100644
+index 0000000..1ab94b0
+--- /dev/null
++++ b/drivers/regulator/constrained-supply.c
+@@ -0,0 +1,126 @@
++/*
++ * Regulator driver that constrain its supply
++ *
++ * Copyright (C) 2014 - Alban Bedel
++ *
++ * Author: Alban Bedel <alban.bedel@avionic-design.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/err.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/of_regulator.h>
++
++/* Here we can't use rdev->supply as these functions are also
++ * called before the supply is set.
++ */
++static int constrained_supply_set_voltage(struct regulator_dev *rdev,
++					int min_uV, int max_uV,
++					unsigned *selector)
++{
++	struct regulator *supply = rdev_get_drvdata(rdev);
++
++	return regulator_set_voltage(supply, min_uV, max_uV);
++}
++
++static int constrained_supply_get_voltage(struct regulator_dev *rdev)
++{
++	struct regulator *supply = rdev_get_drvdata(rdev);
++
++	return regulator_get_voltage(supply);
++}
++
++static int constrained_supply_regulator_enable(struct regulator_dev *rdev)
++{
++	return 0;
++}
++
++static int constrained_supply_regulator_disable(struct regulator_dev *rdev)
++{
++	return 0;
++}
++
++static int constrained_supply_regulator_is_enabled(struct regulator_dev *rdev)
++{
++	return rdev->use_count > 0;
++}
++
++static struct regulator_ops constrained_supply_regulator_ops = {
++	.get_voltage	= constrained_supply_get_voltage,
++	.set_voltage	= constrained_supply_set_voltage,
++	.enable		= constrained_supply_regulator_enable,
++	.disable	= constrained_supply_regulator_disable,
++	.is_enabled	= constrained_supply_regulator_is_enabled,
++};
++
++static const struct regulator_desc constrained_supply_regulator_desc = {
++	.name		= "constrained-supply",
++	.ops		= &constrained_supply_regulator_ops,
++	.type		= REGULATOR_VOLTAGE,
++	.owner		= THIS_MODULE,
++	.supply_name    = "vin",
++};
++
++static int constrained_supply_regulator_probe(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node;
++	struct regulator_config config = {};
++	struct regulator_dev *regulator;
++	struct regulator *supply;
++
++	if (!np)
++		return -EINVAL;
++
++	/* We need the supply to be available */
++	supply = devm_regulator_get(&pdev->dev,
++				constrained_supply_regulator_desc.supply_name);
++	if (IS_ERR(supply)) {
++		dev_err(&pdev->dev, "Failed to get supply regulator\n");
++		return PTR_ERR(supply);
++	}
++
++	config.init_data = of_get_regulator_init_data(&pdev->dev, np);
++	if (!config.init_data)
++		return -ENOMEM;
++
++	config.of_node = np;
++	config.dev = &pdev->dev;
++	config.driver_data = supply;
++
++	regulator = devm_regulator_register(
++		&pdev->dev, &constrained_supply_regulator_desc, &config);
++	if (IS_ERR(regulator)) {
++		dev_err(&pdev->dev, "Failed to register regulator\n");
++		return PTR_ERR(regulator);
++	}
++
++	return 0;
++}
++
++static const struct of_device_id constrained_supply_of_match[] = {
++	{ .compatible = "regulator-constrained-supply" },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, constrained_supply_of_match);
++
++static struct platform_driver constrained_supply_regulator_driver = {
++	.driver = {
++		.name		= "constrained-supply-regulator",
++		.owner		= THIS_MODULE,
++		.of_match_table = of_match_ptr(constrained_supply_of_match),
++	},
++	.probe = constrained_supply_regulator_probe,
++};
++module_platform_driver(constrained_supply_regulator_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Alban Bedel <alban.bedel@avionic-design.de>");
++MODULE_DESCRIPTION("Constrained Supply Regulator Driver");
++MODULE_ALIAS("platform:-regulator");
+-- 
+2.1.3
+
