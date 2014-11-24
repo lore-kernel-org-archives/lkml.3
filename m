@@ -1,52 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328AbaKXKPv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 05:15:51 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39483 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaKXKPt (ORCPT
+	id S1753386AbaKXKQb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 05:16:31 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:56866 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753347AbaKXKQa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 05:15:49 -0500
-Date: Mon, 24 Nov 2014 10:15:46 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        target-devel@vger.kernel.org, nab@linux-iscsi.org, hch@infradead.org
-Subject: Re: [PATCH 08/17] {macvtap,tun}_get_user(): switch to iov_iter
-Message-ID: <20141124101546.GE7996@ZenIV.linux.org.uk>
-References: <20141119.165340.2162829993279387495.davem@davemloft.net>
- <20141120214753.GR7996@ZenIV.linux.org.uk>
- <20141120.182339.972861702759954603.davem@davemloft.net>
- <20141121.122615.1091044030302005883.davem@davemloft.net>
- <20141122042856.GZ7996@ZenIV.linux.org.uk>
- <20141122043352.GH30478@ZenIV.linux.org.uk>
- <1416788862.7215.65.camel@decadent.org.uk>
+	Mon, 24 Nov 2014 05:16:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416788862.7215.65.camel@decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54713254.9020601@gmail.com>
+References: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
+ <1412684017-16595-7-git-send-email-vincent.guittot@linaro.org>
+ <20141009121643.GQ4750@worktop.programming.kicks-ass.net> <CAKfTPtCX687FkGgxLO7spfGvDxhDWeFDERLRZ-NakO2Jrpmnhw@mail.gmail.com>
+ <54713254.9020601@gmail.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Mon, 24 Nov 2014 11:16:09 +0100
+Message-ID: <CAKfTPtDspf4ozpejACB8Lrc2B7vmF1sN28+H+iGnCsQs_k3L4w@mail.gmail.com>
+Subject: Re: [PATCH v7 6/7] sched: replace capacity_factor by usage
+To: Wanpeng Li <kernellwp@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 12:27:42AM +0000, Ben Hutchings wrote:
-> >  		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
-> >  		if (copylen > good_linear)
-> >  			copylen = good_linear;
-> >  		linear = copylen;
-> > -		if (iov_pages(iv, vnet_hdr_len + copylen, count)
-> > -		    <= MAX_SKB_FRAGS)
-> > +		i = *from;
-> > +		iov_iter_advance(&i, copylen);
-> > +		if (iov_iter_npages(&i, INT_MAX) <= MAX_SKB_FRAGS)
-> 
-> The maxpages argument should be MAX_SKB_FRAGS + 1 as we don't need the
-> exact number.
+On 23 November 2014 at 02:03, Wanpeng Li <kernellwp@gmail.com> wrote:
+> Hi Vincent,
+> On 10/9/14, 10:18 PM, Vincent Guittot wrote:
+>>
+>> On 9 October 2014 14:16, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>
+>>> On Tue, Oct 07, 2014 at 02:13:36PM +0200, Vincent Guittot wrote:
+>>>>
+>>>> +static inline bool
+>>>> +group_has_capacity(struct lb_env *env, struct sg_lb_stats *sgs)
+>>>>   {
+>>>> +     if ((sgs->group_capacity * 100) >
+>>>> +                     (sgs->group_usage * env->sd->imbalance_pct))
+>>>> +             return true;
+>>>
+>>> Why the imb_pct there? We're looking for 100% utilization, not 130 or
+>>> whatnot, right?
+>>
+>> Having exactly 100% is quite difficult because of various rounding.
+>
+>
+> Could you give some examples about the various rounding？
 
-In principle, that's true, but...  Do we really care?  It only buys you
-anything if you have a monstrously fragmented iovec.  And if you end up
-spending too considerable amount of time in that loop in iov_iter_npages,
-you are by definition on the slow path - it *will* fail, since we do not
-even try to merge adjacent iovec segments.  Never had...
+As an example while I was monitoring the runnable_load_sum and the
+runnable_load_period, they were varying a bit around the max value but
+was not always the same which can change the load_avg_contrib by few
+unit
+
+Regards,
+Vincent
+
+>
+> Regards,
+> Wanpeng Li
+>
+>> So i have added a margin/threshold to prevent any excessive change of the
+>> state.
+>> I have just to use the same margin/threshold than in other place in
+>> load balance.
+>>
+>> so the current threshold depends of the sched_level. it's around 14% at MC
+>> level
+>>
+>>>> +     if (sgs->sum_nr_running < sgs->group_weight)
+>>>> +             return true;
+>>>
+>>> With the code as it stands, this is the cheaper test (no mults) so why
+>>> is it second?
+>>>
+>>>> +     return false;
+>>>> +}
+>>>>
+>>>> +static inline bool
+>>>> +group_is_overloaded(struct lb_env *env, struct sg_lb_stats *sgs)
+>>>> +{
+>>>> +     if (sgs->sum_nr_running <= sgs->group_weight)
+>>>> +             return false;
+>>>> +
+>>>> +     if ((sgs->group_capacity * 100) <
+>>>> +                     (sgs->group_usage * env->sd->imbalance_pct))
+>>>> +             return true;
+>>>>
+>>>> +     return false;
+>>>>   }
+>>>
+>>> Same thing here wrt imb_pct
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
