@@ -1,62 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814AbaKXP2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:28:49 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:34641 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915AbaKXP2r convert rfc822-to-8bit (ORCPT
+	id S1753235AbaKXPbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 10:31:38 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:50406 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055AbaKXPbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:28:47 -0500
-Content-Type: text/plain; charset=utf-8
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [CFT PATCH 0/2] KVM: support XSAVES usage in the host
-From: Nadav Amit <nadav.amit@gmail.com>
-In-Reply-To: <547318E5.8070408@redhat.com>
-Date: Mon, 24 Nov 2014 17:28:41 +0200
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm list <kvm@vger.kernel.org>, Nadav Amit <namit@cs.technion.ac.il>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <DAC65E0B-06CC-4B34-85B2-72AD5F86826B@gmail.com>
-References: <1416594678-13011-1-git-send-email-pbonzini@redhat.com> <DE9192FA-6A22-4AEB-88C2-AE17DA503685@gmail.com> <547318E5.8070408@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-X-Mailer: Apple Mail (2.1993)
+	Mon, 24 Nov 2014 10:31:37 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18BmrJq2BWMyJzxjpzrcJLn
+Date: Mon, 24 Nov 2014 07:28:37 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: linux-next: manual merge of the v4l-dvb tree with the arm-soc
+ tree
+Message-ID: <20141124152836.GA2817@atomide.com>
+References: <20141124132214.2f756b6a@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141124132214.2f756b6a@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> On Nov 24, 2014, at 13:39, Paolo Bonzini <pbonzini@redhat.com> wrote:
+* Stephen Rothwell <sfr@canb.auug.org.au> [141123 18:24]:
+> Hi Mauro,
 > 
+> Today's linux-next merge of the v4l-dvb tree got a conflict in
+> arch/arm/mach-omap2/devices.c between commit e7e42b9d2a7f ("ARM:
+> OMAP4+: Remove unused omap_l3_noc platform init") from the arm-soc tree
+> and commit 1b65729a186b ("[media] mach-omap2: remove deprecated
+> VIDEO_OMAP2 support") from the v4l-dvb tree.
 > 
-> 
-> On 23/11/2014 09:16, Nadav Amit wrote:
->> I’ll try to check it tomorrow (I don’t have access to the failing machine at the moment).
-> 
-> Thanks, you'll need to squash this in:
-> 
-> diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-> index 4c540c4719d8..0de1fae2bdf0 100644
-> --- a/arch/x86/kernel/xsave.c
-> +++ b/arch/x86/kernel/xsave.c
-> @@ -738,3 +738,4 @@ void *get_xsave_addr(struct xsave_struct *xsave, int xstate)
-> 
-> 	return (void *)xsave + xstate_comp_offsets[feature];
-> }
-> +EXPORT_SYMBOL_GPL(get_xsave_addr);
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-I tested the patches but there are still problems.
+Oops, that's a self-inflicted merge conflict, sorry. I should have
+waited a bit longer on the removal of the now unnecessary l3_init.
 
-Since kvm_load_guest_fpu is called before the guest_fpu is ever stored, there are 2 more problems that currently cause #GP:
-1. XCOMP_BV[63] = 0
-2. XSTATE_BV sets a bit (including bit 63) that is not set in XCOMP_BV (XCOMP_BV is initialised to zero).
+Anyways, the resolution is correct thanks.
 
-[see SDM 13.11 "OPERATION OF XRSTORS”]
+Regards,
 
-Once I initialise XCOMP_BV to (1ull << 63) | XSTATE_BV, the guest runs successfully.
-I have not checked any other qemu functionality that might be affected by the patch.
+Tony
 
-Nadav
-
+> diff --cc arch/arm/mach-omap2/devices.c
+> index 492ef1607115,1b623a06cdcd..000000000000
+> --- a/arch/arm/mach-omap2/devices.c
+> +++ b/arch/arm/mach-omap2/devices.c
+> @@@ -67,28 -67,40 +67,6 @@@ static int __init omap3_l3_init(void
+>   }
+>   omap_postcore_initcall(omap3_l3_init);
+>   
+> - #if defined(CONFIG_VIDEO_OMAP2) || defined(CONFIG_VIDEO_OMAP2_MODULE)
+>  -static int __init omap4_l3_init(void)
+>  -{
+>  -	int i;
+>  -	struct omap_hwmod *oh[3];
+>  -	struct platform_device *pdev;
+>  -	char oh_name[L3_MODULES_MAX_LEN];
+> --
+> - static struct resource omap2cam_resources[] = {
+> - 	{
+> - 		.start		= OMAP24XX_CAMERA_BASE,
+> - 		.end		= OMAP24XX_CAMERA_BASE + 0xfff,
+> - 		.flags		= IORESOURCE_MEM,
+> - 	},
+> - 	{
+> - 		.start		= 24 + OMAP_INTC_START,
+> - 		.flags		= IORESOURCE_IRQ,
+>  -	/* If dtb is there, the devices will be created dynamically */
+>  -	if (of_have_populated_dt())
+>  -		return -ENODEV;
+>  -
+>  -	/*
+>  -	 * To avoid code running on other OMAPs in
+>  -	 * multi-omap builds
+>  -	 */
+>  -	if (!cpu_is_omap44xx() && !soc_is_omap54xx())
+>  -		return -ENODEV;
+>  -
+>  -	for (i = 0; i < L3_MODULES; i++) {
+>  -		snprintf(oh_name, L3_MODULES_MAX_LEN, "l3_main_%d", i+1);
+>  -
+>  -		oh[i] = omap_hwmod_lookup(oh_name);
+>  -		if (!(oh[i]))
+>  -			pr_err("could not look up %s\n", oh_name);
+> --	}
+> - };
+> --
+> - static struct platform_device omap2cam_device = {
+> - 	.name		= "omap24xxcam",
+> - 	.id		= -1,
+> - 	.num_resources	= ARRAY_SIZE(omap2cam_resources),
+> - 	.resource	= omap2cam_resources,
+> - };
+> - #endif
+>  -	pdev = omap_device_build_ss("omap_l3_noc", 0, oh, 3, NULL, 0);
+>  -
+>  -	WARN(IS_ERR(pdev), "could not build omap_device for %s\n", oh_name);
+>  -
+>  -	return PTR_RET(pdev);
+>  -}
+>  -omap_postcore_initcall(omap4_l3_init);
+> --
+>   #if defined(CONFIG_IOMMU_API)
+>   
+>   #include <linux/platform_data/iommu-omap.h>
 
 
