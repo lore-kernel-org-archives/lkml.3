@@ -1,49 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750935AbaKXUlF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:41:05 -0500
-Received: from www.linutronix.de ([62.245.132.108]:41227 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaKXUlD (ORCPT
+	id S1750874AbaKXUox (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:44:53 -0500
+Received: from mail1.vodafone.ie ([213.233.128.43]:10499 "EHLO
+	mail1.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaKXUow convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:41:03 -0500
-Date: Mon, 24 Nov 2014 21:41:00 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-cc: Jason Cooper <jason@lakedaemon.net>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Subject: Re: [PATCH 3.18-rc3 v8 1/4] irqchip: gic: Make gic_raise_softirq()
- FIQ-safe
-In-Reply-To: <547396D0.5030309@linaro.org>
-Message-ID: <alpine.DEB.2.11.1411242139240.6439@nanos>
-References: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org> <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <1415968543-29469-2-git-send-email-daniel.thompson@linaro.org> <alpine.DEB.2.11.1411241918090.6439@nanos>
- <alpine.DEB.2.11.1411241928300.6439@nanos> <547396D0.5030309@linaro.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Mon, 24 Nov 2014 15:44:52 -0500
+Authentication-Results: mail1.vodafone.ie; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApcaAFyYc1RdazkN/2dsb2JhbABbgw6BEAcXumyHfAWLaYMtgSsWAQEBAQF9hBQgMUUUSAwBAwsBHhOIKwEBAhIEAapxhz2KAwiFBIgGChkEChkaW4VeDCCQKREBbYQ4BYg0gzU8klyICimBAoN7iHpwhBxZgQ+BPAEBAQ
+X-PureMessage: [Scanned]
+Content-Type: text/plain; charset=US-ASCII
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Charity Work
+To: <linux-kernel@vger.kernel.org>
+From: <luv2charitys@gmail.com>
+Date: Mon, 24 Nov 2014 14:44:48 -0600
+Reply-To: <paucharity@gmail.com>
+Message-ID: <HO-SRV2J5GaEzImMyRq00053cac@office.horkans.com>
+X-OriginalArrivalTime: 24 Nov 2014 20:44:50.0502 (UTC) FILETIME=[7E092660:01D00827]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014, Daniel Thompson wrote:
-> I did want to remove the lock too. However when I reviewed this code I
-> concluded the lock was still required. Without it I think it is possible
-> for gic_raise_softirq() to raise an IPI on the old core *after* the code
-> to migrate pending IPIs has been run.
-
-And I bet it took you quite some time to figure that out from that
-overly documented abuse of irq_controller_lock. See my other reply.
-
-Thanks,
-
-	tglx
+Hello,this is Mr Paul N,i sent you an email on charity work but i am yet to hear fom you,do reply with this code CHA-2015 to my email address paulcharity@qq.com  i Look forward to hearing from you this time,God bless  Brother Paul
