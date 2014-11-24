@@ -1,120 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240AbaKXSsy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:48:54 -0500
-Received: from www.linutronix.de ([62.245.132.108]:40657 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754135AbaKXSsx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:48:53 -0500
-Date: Mon, 24 Nov 2014 19:48:49 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-cc: Jason Cooper <jason@lakedaemon.net>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Subject: Re: [PATCH 3.18-rc3 v8 1/4] irqchip: gic: Make gic_raise_softirq()
- FIQ-safe
-In-Reply-To: <alpine.DEB.2.11.1411241918090.6439@nanos>
-Message-ID: <alpine.DEB.2.11.1411241928300.6439@nanos>
-References: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org> <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <1415968543-29469-2-git-send-email-daniel.thompson@linaro.org> <alpine.DEB.2.11.1411241918090.6439@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1754439AbaKXStk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:49:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34315 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753739AbaKXSti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 13:49:38 -0500
+Date: Mon, 24 Nov 2014 20:49:09 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
+        Anup Patel <anup.patel@linaro.org>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
+        stephen hemminger <stephen@networkplumber.org>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v3 04/41] virtio: memory access APIs
+Message-ID: <20141124184909.GA19382@redhat.com>
+References: <1416829787-14252-1-git-send-email-mst@redhat.com>
+ <1416829787-14252-5-git-send-email-mst@redhat.com>
+ <CAMuHMdWiCqbaOs-oBW3QU+_d3GsH19A2Ynv9EB_eF2sTvcWy4w@mail.gmail.com>
+ <20141124121503.GB14353@redhat.com>
+ <CAMuHMdWJA4aUyHo8wq=RX-+0w+PX3NtG1ZgvWgcMwKT5KYT_Tg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdWJA4aUyHo8wq=RX-+0w+PX3NtG1ZgvWgcMwKT5KYT_Tg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014, Thomas Gleixner wrote:
-> On Fri, 14 Nov 2014, Daniel Thompson wrote:
-> > diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> > index 38493ff28fa5..0db62a6f1ee3 100644
-> > --- a/drivers/irqchip/irq-gic.c
-> > +++ b/drivers/irqchip/irq-gic.c
-> > @@ -73,6 +73,13 @@ struct gic_chip_data {
-> >  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
-> >  
-> >  /*
-> > + * This lock may be locked for reading by FIQ handlers. Thus although
-> > + * read locking may be used liberally, write locking must only take
-> > + * place only when local FIQ handling is disabled.
-> > + */
-> > +static DEFINE_RWLOCK(fiq_safe_cpu_map_lock);
-> > +
-> > +/*
-> >   * The GIC mapping of CPU interfaces does not necessarily match
-> >   * the logical CPU numbering.  Let's use a mapping as returned
-> >   * by the GIC itself.
-> > @@ -624,7 +631,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
-> >  	int cpu;
-> >  	unsigned long flags, map = 0;
-> >  
-> > -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-> > +	read_lock_irqsave(&fiq_safe_cpu_map_lock, flags);
+On Mon, Nov 24, 2014 at 01:58:43PM +0100, Geert Uytterhoeven wrote:
+> On Mon, Nov 24, 2014 at 1:15 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> > On Mon, Nov 24, 2014 at 01:03:24PM +0100, Geert Uytterhoeven wrote:
+> >> On Mon, Nov 24, 2014 at 12:52 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> >> > virtio 1.0 makes all memory structures LE, so
+> >> > we need APIs to conditionally do a byteswap on BE
+> >> > architectures.
+> >> >
+> >> > To make it easier to check code statically,
+> >> > add virtio specific types for multi-byte integers
+> >> > in memory.
+> >> >
+> >> > Add low level wrappers that do a byteswap conditionally, these will be
+> >> > useful e.g. for vhost.  Add high level wrappers that
+> >> > query device endian-ness and act accordingly.
+> >>
+> >> > diff --git a/include/linux/virtio_byteorder.h b/include/linux/virtio_byteorder.h
+> >> > new file mode 100644
+> >> > index 0000000..824ed0b
+> >> > --- /dev/null
+> >> > +++ b/include/linux/virtio_byteorder.h
+> >>
+> >> > +static inline u16 __virtio16_to_cpu(bool little_endian, __virtio16 val)
+> >> > +{
+> >> > +       if (little_endian)
+> >> > +               return le16_to_cpu((__force __le16)val);
+> >> > +       else
+> >> > +               return (__force u16)val;
+> >> > +}
+> >>
+> >> What's wrong with just using le16-to_cpu() ...
+> >
+> > le16-to_cpu() is simply wrong: virtio needs to be
+> > LE or native endian, depending on whether it's running
+> > in 0.9 or 1.0 mode.
 > 
-> Just for the record:
+> IC, that was not clear from the description for this patch.
+> I thought it was dependent on BE architectures.
 > 
-> You might have noticed that you replace a raw lock with a non raw
-> one. That's not an issue on mainline, but that pretty much renders
-> that code broken for RT.
->   
-> Surely nothing I worry too much about given the current state of RT.
+> Nevertheless, any chance you can get rid of the "conditional"?
 
-And having a second thought here. Looking at the protection scope
-independent of the spin vs. rw lock
+I don't see how - this is fundamental to any virtio device
+that wants to support both 0.9 and 1.0 from the same
+codebase.
 
-gic_raise_softirq()
-
-	lock();
-
-	/* Does not need any protection */
-	for_each_cpu(cpu, mask)
-                map |= gic_cpu_map[cpu];
-
-	/*
-	 * Can be outside the lock region as well as it makes sure
-	 * that previous writes (usually the IPI data) are visible
-	 * before the write to the SOFTINT register.
-	 */
-	 dmb(ishst);
-
-	/* Why needs this protection? */
-	write(map, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT));
-
-	unlock();
-
-gic_migrate_target()
-
-	....
-	lock();
-
-	/* Migrate all peripheral interrupts */
-
-	unlock();
-
-So what's the point of that protection?
-
-gic_raise_softirq() is used to send IPIs, which are PPIs on the target
-CPUs so they are not affected from the migration of the peripheral
-interrupts at all.
-
-The write to the SOFTINT register in gic_migrate_target() is not
-inside the lock region. So what's serialized by the lock in
-gic_raise_softirq() at all?
-
-Either I'm missing something really important here or this locking
-exercise in gic_raise_softirq() and therefor the rwlock conversion is
-completely pointless.
-
-Thanks,
-
-	tglx
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
