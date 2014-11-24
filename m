@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191AbaKXN01 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 08:26:27 -0500
-Received: from www.linutronix.de ([62.245.132.108]:39028 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988AbaKXN0X (ORCPT
+	id S1754196AbaKXN0i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 08:26:38 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:33362 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754177AbaKXN00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 08:26:23 -0500
-Date: Mon, 24 Nov 2014 14:26:08 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiri Kosina <jkosina@suse.cz>
-cc: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
-In-Reply-To: <alpine.LNX.2.00.1411241414280.23174@pobox.suse.cz>
-Message-ID: <alpine.DEB.2.11.1411241423270.6439@nanos>
-References: <1416522580-5593-1-git-send-email-sjenning@redhat.com> <1416522580-5593-3-git-send-email-sjenning@redhat.com> <alpine.DEB.2.11.1411241209050.6439@nanos> <alpine.LNX.2.00.1411241414280.23174@pobox.suse.cz>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Mon, 24 Nov 2014 08:26:26 -0500
+Message-ID: <547331F2.3000006@ti.com>
+Date: Mon, 24 Nov 2014 15:26:10 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: =?windows-1252?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Wolfram Sang <wsa@the-dreams.de>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Murali Karicheri <m-karicheri2@ti.com>
+Subject: Re: [4/5] i2c: davinci: use bus recovery infrastructure
+References: <1416477788-5544-5-git-send-email-grygorii.strashko@ti.com> <20141121190744.GB4431@pengutronix.de> <546F9382.40102@ti.com> <20141123203634.GG4431@pengutronix.de>
+In-Reply-To: <20141123203634.GG4431@pengutronix.de>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014, Jiri Kosina wrote:
-> On Mon, 24 Nov 2014, Thomas Gleixner wrote:
-> > How is determined whether a change can be applied w/o a consistency
-> > mechanism or not?
-> 
-> By a human being producing the "live patch" code.
-> 
-> If the semantics of the patch requires consistency mechanism to be applied 
-> (such as "old and new function must not run in parallel, because locking 
-> rules would be violated", or "return value from a function that is being 
-> called in a loop is changing its meaning", etc.), then this first naive 
-> implementation simply can't be used.
-> 
-> For simple things though, such as "add a missing bounds check to sys_foo() 
-> prologue and return -EINVAL if out-of-bounds", this is sufficient.
-> 
-> It's being designed in a way that more advanced consistency models (such 
-> as the ones kgraft and kpatch are currently implementing) can be built on 
-> top of it.
-> 
-> The person writing the patch would always need to understand what he is 
-> doing to be able to pick correct consistency model to be used. I 
-> personally think this is a good thing -- this is nothing where we should 
-> be relying on any kinds of tools.
+Hi Uwe,
 
-But why want we to provide a mechanism which has no consistency
-enforcement at all?
+On 11/23/2014 10:36 PM, Uwe Kleine-König wrote:
+> On Fri, Nov 21, 2014 at 09:33:22PM +0200, Grygorii Strashko wrote:
+>> On 11/21/2014 09:07 PM, Uwe Kleine-König wrote:
+>>> On Thu, Nov 20, 2014 at 12:03:07PM +0200, Grygorii Strashko wrote:
+>>> Just another general comment about the driver that doesn't influence the
+>>> correctness of this patch: The i2c-davinci driver is quite quick to
+>>> reset the bus. I wonder how often this reset triggers. Is the bus in
+>>> question less "stable" than others?
+>>
+>> In comparison to ..? :)
+> In comparison to other bus drivers in other SoCs. I know this might be
+> hard to answer. I just wonder where the reason for this has to be
+> located. Strange hardware? Software bug? Or is this SoC just operating
+> with strange slaves more often than others?
 
-Surely you can argue that the person who is doing that is supposed to
-know what he's doing, but what's the downside of enforcing consistency
-mechanisms on all live code changes?
+Davinci driver does reset in two cases:
+- when I2C transaction isn't completed due to timeout (no irq received)
+- when BB is detected
+both cases are reasonable, because in 1st case HW state is undefined
+in 2d case - Davinci I2C supports only master mode and if BB detected
+we need perform some recovery procedure.
 
-Thanks,
+Also, this patch doesn't introduce functional changes - it's just code
+reworking intended to reuse I2C bus recovery infrastructure
 
-	tglx
+i2c-omap.c - OMAP I2C driver does mostly the same now.
+i2c-tegra.c - seems, It will do reset even frequently.
+i2c-imx.c - if understand right, it will reinitialize I2C controller 
+before each transfer, because it enables/disables I2C clocks.
+... 
+
+So, what i can say here is just "In comparison to ..?" :)
+
+regards,
+-grygorii
