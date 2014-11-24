@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427AbaKXR21 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 12:28:27 -0500
-Received: from mout.web.de ([212.227.17.11]:51484 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753170AbaKXR20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 12:28:26 -0500
-Message-ID: <54736AA9.9020305@users.sourceforge.net>
-Date: Mon, 24 Nov 2014 18:28:09 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932096AbaKXR27 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 12:28:59 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:38562 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436AbaKXR26 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 12:28:58 -0500
+Message-ID: <54736AD0.4070909@collabora.co.uk>
+Date: Mon, 24 Nov 2014 18:28:48 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-CC: kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/6] video: fbdev-MMP: Fix a typo for the word "destroyed"
-References: <54736422.90409@users.sourceforge.net>
-In-Reply-To: <54736422.90409@users.sourceforge.net>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Kevin Hilman <khilman@kernel.org>
+Subject: Re: [RFC 0/2] Fix Arndale Octa/Peach Pi boot on Audio subsystem clocks
+References: <1416842312-4405-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1416842312-4405-1-git-send-email-k.kozlowski@samsung.com>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:gFuYTNnAUhTOBlisIQ8O7T2uKBWGoW0ud2PpqnIHdJK5mLiC5Dl
- lmKTSBjYI2gfesFOXHeSuIYn6I4WGpoIdAOKzee4oXXw+eOfAs3yGZrTxQcE5t+nG58ZCvW
- +L4Tqfx/ce6vS8JmkgN5vZ4xrRQAQarVH8/c1ncAoeOSjbLbnVMA7n4mOdStkB0Dqw8W61b
- vYRyjSxyUhvlqJ0wS9tzA==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Mon, 24 Nov 2014 15:55:23 +0100
+Hello Krzysztof,
 
-A word was corrected in the description for a parameter of
-the mmp_unregister_path() function.
+On 11/24/2014 04:18 PM, Krzysztof Kozlowski wrote:
+> Hi,
+> 
+> 
+> This is initial idea to solve dependency between AudioSS clocks
+> and main clock controller on Exynos platform.
+> 
+> This solves boot failure of Peach Pi/Pit and Arndale Octa [1].
+> 
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/video/fbdev/mmp/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I tested this series on an Exynos5420 Peach Pit but I still
+have the boot hang so it doesn't solve the issue on this board.
 
-diff --git a/drivers/video/fbdev/mmp/core.c b/drivers/video/fbdev/mmp/core.c
-index 43ed576..a0f4960 100644
---- a/drivers/video/fbdev/mmp/core.c
-+++ b/drivers/video/fbdev/mmp/core.c
-@@ -224,7 +224,7 @@ EXPORT_SYMBOL_GPL(mmp_register_path);
- 
- /*
-  * mmp_unregister_path - unregister and destroy path
-- * @p: path to be destoried.
-+ * @p: path to be destroyed.
-  *
-  * this function registers path and destroys it.
-  */
--- 
-2.1.3
+I'm using linux-next + your patches with exynos_defconfig and
+without the clk_ignore_unused command line parameter.
 
+Best regards,
+Javier
