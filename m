@@ -1,96 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221AbaKXOfy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:35:54 -0500
-Received: from lucky1.263xmail.com ([211.157.147.133]:54517 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932184AbaKXOfw (ORCPT
+	id S932239AbaKXOf5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:35:57 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38022 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195AbaKXOfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:35:52 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: l.stach@pengutronix.de
-X-SENDER-IP: 121.15.173.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <55a1a7481edddcf4f6dd407468005e5d>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <54734240.8070402@rock-chips.com>
-Date: Mon, 24 Nov 2014 22:35:44 +0800
-From: Andy Yan <andy.yan@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>, airlied@linux.ie,
-        heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk
-CC: Mark Rutland <mark.rutland@arm.com>, dri-devel@lists.freedesktop.org,
-        ykk@rock-chips.com, devel@driverdev.osuosl.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-rockchip@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Dave Airlie <airlied@redhat.com>, jay.xu@rock-chips.com,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Inki Dae <inki.dae@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Sean Paul <seanpaul@chromium.org>, mark.yao@rock-chips.com,
-        Josh Boyer <jwboyer@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, djkurtz@google.com,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Lucas Stach <l.stach@pengutronix.de>
-Subject: Re: [PATCH v12 0/11] dw-hdmi: convert imx hdmi to bridge/dw_hdmi
-References: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com> <1416221635-12797-1-git-send-email-andy.yan@rock-chips.com> <54733DF3.7020609@rock-chips.com> <54733F34.5080405@imgtec.com>
-In-Reply-To: <54733F34.5080405@imgtec.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 24 Nov 2014 09:35:51 -0500
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Robert Richter <robert.richter@caviumnetworks.com>,
+        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
+Subject: [PATCH v3 11/13] irqchip: GICv3: ITS: plug ITS init into main GICv3 code
+Date: Mon, 24 Nov 2014 14:35:18 +0000
+Message-Id: <1416839720-18400-12-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
+References: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi ZubairLK:
-On 2014年11月24日 22:22, Zubair Lutfullah Kakakhel wrote:
-> Hi Andy,
->
-> On 24/11/14 14:17, Andy Yan wrote:
->> Hi ZubairLK, Russel King, Greg Kroah-Hartman , Philipp Zabel and Daniel:
->>     Do you have any further opinions or suggestions about the
->> the current patch set?
-> I have reviewed the patches as much as I could.
->
-> They look good to me.
->
-> But I don't know the inner details of DRM to be able to comment further.
->
-> Please do cc me in further patches.
+As the ITS is always a subsystem if GICv3, its probing/init is
+driven by the main GICv3 code.
 
-  Thanks very much for your carefully review work.
-  And if you have further ideas , please let me know.
->
-> Also, my mail client makes these patches look like the new series gets cascaded in the older patch 8 series.
->
-> It could be just my thunderbird. But please start a new thread when you send a new series.
+Plug that code in (guarded by a config option).
 
-    I do these by taking Russell King's advice in PATCH#10(use the same 
-reference message id).
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+---
+ drivers/irqchip/irq-gic-v3.c       | 41 ++++++++++++++++++++++++++++++++------
+ include/linux/irqchip/arm-gic-v3.h |  5 +++++
+ 2 files changed, 40 insertions(+), 6 deletions(-)
 
->
-> Thank-you
-> ZubairLK
->
->> On 2014年11月17日 18:53, Andy Yan wrote:
->>> We found Freescale imx6 and Rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
->>> use the interface compatible Designware HDMI IP, but they also have some
->>> lightly differences, such as phy pll configuration, register width(imx hdmi
->>> register is one byte, but rk3288 is 4 bytes width and can only be accessed
->>> by word), 4K support(imx6 doesn't support 4k, but rk3288 does), and HDMI2.0
->>> support.
-> _______________________________________________
-> Linux-rockchip mailing list
-> Linux-rockchip@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-rockchip
-
+diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
+index 43e57da..1a146cc 100644
+--- a/drivers/irqchip/irq-gic-v3.c
++++ b/drivers/irqchip/irq-gic-v3.c
+@@ -76,9 +76,6 @@ static inline void __iomem *gic_dist_base(struct irq_data *d)
+ 	if (d->hwirq <= 1023)		/* SPI -> dist_base */
+ 		return gic_data.dist_base;
+ 
+-	if (d->hwirq >= 8192)
+-		BUG();		/* LPI Detected!!! */
+-
+ 	return NULL;
+ }
+ 
+@@ -276,11 +273,11 @@ static asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs
+ 	do {
+ 		irqnr = gic_read_iar();
+ 
+-		if (likely(irqnr > 15 && irqnr < 1020)) {
++		if (likely(irqnr > 15 && irqnr < 1020) || irqnr >= 8192) {
+ 			int err;
+ 			err = handle_domain_irq(gic_data.domain, irqnr, regs);
+ 			if (err) {
+-				WARN_ONCE(true, "Unexpected SPI received!\n");
++				WARN_ONCE(true, "Unexpected interrupt received!\n");
+ 				gic_write_eoir(irqnr);
+ 			}
+ 			continue;
+@@ -393,6 +390,11 @@ static void gic_cpu_sys_reg_init(void)
+ 	gic_write_grpen1(1);
+ }
+ 
++static int gic_dist_supports_lpis(void)
++{
++	return !!(readl_relaxed(gic_data.dist_base + GICD_TYPER) & GICD_TYPER_LPIS);
++}
++
+ static void gic_cpu_init(void)
+ {
+ 	void __iomem *rbase;
+@@ -407,6 +409,10 @@ static void gic_cpu_init(void)
+ 
+ 	gic_cpu_config(rbase, gic_redist_wait_for_rwp);
+ 
++	/* Give LPIs a spin */
++	if (IS_ENABLED(CONFIG_ARM_GIC_V3_ITS) && gic_dist_supports_lpis())
++		its_cpu_init();
++
+ 	/* initialise system registers */
+ 	gic_cpu_sys_reg_init();
+ }
+@@ -593,12 +599,21 @@ static struct irq_chip gic_chip = {
+ 	.irq_set_affinity	= gic_set_affinity,
+ };
+ 
++#define GIC_ID_NR		(1U << gic_data.rdists.id_bits)
++
+ static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
+ 			      irq_hw_number_t hw)
+ {
+ 	/* SGIs are private to the core kernel */
+ 	if (hw < 16)
+ 		return -EPERM;
++	/* Nothing here */
++	if (hw >= gic_data.irq_nr && hw < 8192)
++		return -EPERM;
++	/* Off limits */
++	if (hw >= GIC_ID_NR)
++		return -EPERM;
++
+ 	/* PPIs */
+ 	if (hw < 32) {
+ 		irq_set_percpu_devid(irq);
+@@ -612,7 +627,15 @@ static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
+ 				    handle_fasteoi_irq, NULL, NULL);
+ 		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
+ 	}
+-	irq_set_chip_data(irq, d->host_data);
++	/* LPIs */
++	if (hw >= 8192 && hw < GIC_ID_NR) {
++		if (!gic_dist_supports_lpis())
++			return -EPERM;
++		irq_domain_set_info(d, irq, hw, &gic_chip, d->host_data,
++				    handle_fasteoi_irq, NULL, NULL);
++		set_irq_flags(irq, IRQF_VALID);
++	}
++
+ 	return 0;
+ }
+ 
+@@ -633,6 +656,9 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
+ 	case 1:			/* PPI */
+ 		*out_hwirq = intspec[1] + 16;
+ 		break;
++	case GIC_IRQ_TYPE_LPI:	/* LPI */
++		*out_hwirq = intspec[1];
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -759,6 +785,9 @@ static int __init gic_of_init(struct device_node *node, struct device_node *pare
+ 
+ 	set_handle_irq(gic_handle_irq);
+ 
++	if (IS_ENABLED(CONFIG_ARM_GIC_V3_ITS) && gic_dist_supports_lpis())
++		its_init(node, &gic_data.rdists, gic_data.domain);
++
+ 	gic_smp_init();
+ 	gic_dist_init();
+ 	gic_cpu_init();
+diff --git a/include/linux/irqchip/arm-gic-v3.h b/include/linux/irqchip/arm-gic-v3.h
+index 0ed30d7..1e8b0cf 100644
+--- a/include/linux/irqchip/arm-gic-v3.h
++++ b/include/linux/irqchip/arm-gic-v3.h
+@@ -318,6 +318,11 @@ static inline void gic_write_eoir(u64 irq)
+ 	isb();
+ }
+ 
++struct irq_domain;
++int its_cpu_init(void);
++int its_init(struct device_node *node, struct rdists *rdists,
++	     struct irq_domain *domain);
++
+ #endif
+ 
+ #endif
+-- 
+2.1.3
 
