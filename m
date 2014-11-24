@@ -1,70 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732AbaKXTcS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 14:32:18 -0500
-Received: from mail-bn1bon0089.outbound.protection.outlook.com ([157.56.111.89]:13344
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751033AbaKXTcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 14:32:16 -0500
-Date: Mon, 24 Nov 2014 20:31:56 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Nicholas Krause <xerofoify@gmail.com>, <michal.simek@xilinx.com>
-CC: <soren.brinkmann@xilinx.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers:block Remove unneeded Fix me message in xsyace.c
-References: <1416857108-2618-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1416857108-2618-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21128.001
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <fd1c5863660447cfb2b959e80d42c27c@BN1AFFO11FD018.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(51704005)(164054003)(199003)(24454002)(377454003)(479174003)(74316001)(62966003)(120916001)(6806004)(31966008)(87936001)(92566001)(33646002)(50986999)(104016003)(95666004)(64126003)(20776003)(46102003)(107046002)(108616004)(99396003)(44976005)(65956001)(21056001)(47776003)(19580405001)(65806001)(54356999)(86362001)(106466001)(4396001)(83506001)(23746002)(77156002)(102836001)(19580395003)(76176999)(50466002)(64706001)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB029;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB029;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB029;
-X-Forefront-PRVS: 040513D301
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB029;
-X-OriginatorOrg: xilinx.com
+	id S1754787AbaKXTcp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 14:32:45 -0500
+Received: from [114.143.55.155] ([114.143.55.155]:28691 "EHLO
+	dhcp223-82.pnq.redhat.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751705AbaKXTcn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 14:32:43 -0500
+X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Nov 2014 14:32:42 EST
+From: Pankaj Gupta <pagupta@redhat.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: davem@davemloft.net, jasowang@redhat.com, dgibson@redhat.com,
+        vfalico@gmail.com, edumazet@google.com, vyasevic@redhat.com,
+        hkchu@google.com, xemul@parallels.com, therbert@google.com,
+        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org,
+        jiri@resnulli.us, sergei.shtylyov@cogentembedded.com,
+        pagupta@redhat.com
+Subject: [PATCH v2 net-next 3/3] tuntap: reduce the size of tun_struct by  using flex array.
+Date: Tue, 25 Nov 2014 00:04:04 +0530
+Message-Id: <1416854044-10124-1-git-send-email-pagupta@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2014 08:25 PM, Nicholas Krause wrote:
-> Removes unneeded FIXME message related to using a hard coded value for ACE_BUS_WIDTH
-> due to it needing to be 8 bits, this is wrong as this function here needs all 16 bits
-> of the bus width and not just the lower or higher 16 depending on the machine's bit
-> order.
-> 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  drivers/block/xsysace.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
-> index c4328d9..1b807ed 100644
-> --- a/drivers/block/xsysace.c
-> +++ b/drivers/block/xsysace.c
-> @@ -1152,7 +1152,7 @@ static void ace_free(struct device *dev)
->  static int ace_probe(struct platform_device *dev)
->  {
->  	resource_size_t physaddr = 0;
-> -	int bus_width = ACE_BUS_WIDTH_16; /* FIXME: should not be hard coded */
-> +	int bus_width = ACE_BUS_WIDTH_16;
->  	u32 id = dev->id;
->  	int irq = 0;
->  	int i;
-> 
+This patch switches to flex array to implement the flow caches, it brings
+several advantages:
 
-Reviewed-by: Michal Simek <michal.simek@xilinx.com>
+- Reduce the size of the tun_struct structure, which allows us to increase the
+  upper limit of queues in future.
+- Avoid higher order memory allocation. It will be useful when switching to
+  pure hashing in flow cache which may demand a larger size array in future.
 
-Thanks,
-Michal
+After this patch, the size of tun_struct on x86_64 reduced from 8512 to
+328
+
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+Reviewed-by: David Gibson <dgibson@redhat.com>
+---
+ drivers/net/tun.c | 49 +++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 37 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index e3fa65a..bd07a6d 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -65,6 +65,7 @@
+ #include <linux/nsproxy.h>
+ #include <linux/virtio_net.h>
+ #include <linux/rcupdate.h>
++#include <linux/flex_array.h>
+ #include <net/ipv6.h>
+ #include <net/net_namespace.h>
+ #include <net/netns/generic.h>
+@@ -188,7 +189,7 @@ struct tun_struct {
+ 	int debug;
+ #endif
+ 	spinlock_t lock;
+-	struct hlist_head flows[TUN_NUM_FLOW_ENTRIES];
++	struct flex_array *flows;
+ 	struct timer_list flow_gc_timer;
+ 	unsigned long ageing_time;
+ 	unsigned int numdisabled;
+@@ -249,10 +250,11 @@ static void tun_flow_flush(struct tun_struct *tun)
+ 
+ 	spin_lock_bh(&tun->lock);
+ 	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
++		struct hlist_head *h = flex_array_get(tun->flows, i);
+ 		struct tun_flow_entry *e;
+ 		struct hlist_node *n;
+ 
+-		hlist_for_each_entry_safe(e, n, &tun->flows[i], hash_link)
++		hlist_for_each_entry_safe(e, n, h, hash_link)
+ 			tun_flow_delete(tun, e);
+ 	}
+ 	spin_unlock_bh(&tun->lock);
+@@ -264,10 +266,11 @@ static void tun_flow_delete_by_queue(struct tun_struct *tun, u16 queue_index)
+ 
+ 	spin_lock_bh(&tun->lock);
+ 	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
++		struct hlist_head *h = flex_array_get(tun->flows, i);
+ 		struct tun_flow_entry *e;
+ 		struct hlist_node *n;
+ 
+-		hlist_for_each_entry_safe(e, n, &tun->flows[i], hash_link) {
++		hlist_for_each_entry_safe(e, n, h, hash_link) {
+ 			if (e->queue_index == queue_index)
+ 				tun_flow_delete(tun, e);
+ 		}
+@@ -287,10 +290,11 @@ static void tun_flow_cleanup(unsigned long data)
+ 
+ 	spin_lock_bh(&tun->lock);
+ 	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
++		struct hlist_head *h = flex_array_get(tun->flows, i);
+ 		struct tun_flow_entry *e;
+ 		struct hlist_node *n;
+ 
+-		hlist_for_each_entry_safe(e, n, &tun->flows[i], hash_link) {
++		hlist_for_each_entry_safe(e, n, h, hash_link) {
+ 			unsigned long this_timer;
+ 			count++;
+ 			this_timer = e->updated + delay;
+@@ -317,7 +321,7 @@ static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
+ 	if (!rxhash)
+ 		return;
+ 	else
+-		head = &tun->flows[tun_hashfn(rxhash)];
++		head = flex_array_get(tun->flows, tun_hashfn(rxhash));
+ 
+ 	rcu_read_lock();
+ 
+@@ -380,7 +384,8 @@ static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb,
+ 
+ 	txq = skb_get_hash(skb);
+ 	if (txq) {
+-		e = tun_flow_find(&tun->flows[tun_hashfn(txq)], txq);
++		e = tun_flow_find(flex_array_get(tun->flows,
++						 tun_hashfn(txq)), txq);
+ 		if (e) {
+ 			tun_flow_save_rps_rxhash(e, txq);
+ 			txq = e->queue_index;
+@@ -760,8 +765,8 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		rxhash = skb_get_hash(skb);
+ 		if (rxhash) {
+ 			struct tun_flow_entry *e;
+-			e = tun_flow_find(&tun->flows[tun_hashfn(rxhash)],
+-					rxhash);
++			e = tun_flow_find(flex_array_get(tun->flows,
++							 tun_hashfn(rxhash)), rxhash);
+ 			if (e)
+ 				tun_flow_save_rps_rxhash(e, rxhash);
+ 		}
+@@ -896,23 +901,40 @@ static const struct net_device_ops tap_netdev_ops = {
+ #endif
+ };
+ 
+-static void tun_flow_init(struct tun_struct *tun)
++static int tun_flow_init(struct tun_struct *tun)
+ {
+-	int i;
++	struct flex_array *buckets;
++	int i, err;
++
++	buckets = flex_array_alloc(sizeof(struct hlist_head),
++				   TUN_NUM_FLOW_ENTRIES, GFP_KERNEL);
++	if (!buckets)
++		return -ENOMEM;
++
++	err = flex_array_prealloc(buckets, 0, TUN_NUM_FLOW_ENTRIES, GFP_KERNEL);
++	if (err) {
++		flex_array_free(buckets);
++		return -ENOMEM;
++	}
+ 
++	tun->flows = buckets;
+ 	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++)
+-		INIT_HLIST_HEAD(&tun->flows[i]);
++		INIT_HLIST_HEAD((struct hlist_head *)
++				flex_array_get(buckets, i));
+ 
+ 	tun->ageing_time = TUN_FLOW_EXPIRE;
+ 	setup_timer(&tun->flow_gc_timer, tun_flow_cleanup, (unsigned long)tun);
+ 	mod_timer(&tun->flow_gc_timer,
+ 		  round_jiffies_up(jiffies + tun->ageing_time));
++
++	return 0;
+ }
+ 
+ static void tun_flow_uninit(struct tun_struct *tun)
+ {
+ 	del_timer_sync(&tun->flow_gc_timer);
+ 	tun_flow_flush(tun);
++	flex_array_free(tun->flows);
+ }
+ 
+ /* Initialize net device. */
+@@ -1674,7 +1696,10 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 			goto err_free_dev;
+ 
+ 		tun_net_init(dev);
+-		tun_flow_init(tun);
++
++		err = tun_flow_init(tun);
++		if (err < 0)
++			goto err_free_dev;
+ 
+ 		dev->hw_features = NETIF_F_SG | NETIF_F_FRAGLIST |
+ 				   TUN_USER_FEATURES | NETIF_F_HW_VLAN_CTAG_TX |
+-- 
+1.8.3.1
+
