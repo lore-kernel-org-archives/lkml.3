@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750876AbaKXWB7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 17:01:59 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:54329 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729AbaKXWB6 (ORCPT
+	id S1751006AbaKXWDJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 17:03:09 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:53292 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaKXWDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 17:01:58 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH 1/3] platform: x86: dell-rbtn: Dell Airplane Mode Switch driver
-Date: Mon, 24 Nov 2014 23:01:54 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
-Cc: Darren Hart <dvhart@infradead.org>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Alex Hung <alex.hung@canonical.com>
-References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com> <201411242155.48087@pali> <20141124215026.GA14361@srcf.ucam.org>
-In-Reply-To: <20141124215026.GA14361@srcf.ucam.org>
+	Mon, 24 Nov 2014 17:03:06 -0500
+Date: Mon, 24 Nov 2014 14:03:02 -0800
+From: Omar Sandoval <osandov@osandov.com>
+To: Filipe David Manana <fdmanana@gmail.com>, David Sterba <dsterba@suse.cz>,
+        linux-btrfs@vger.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
+        Josef Bacik <jbacik@fb.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-nfs@vger.kernel.org,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH v2 5/5] btrfs: enable swap file support
+Message-ID: <20141124220302.GA5785@mew.dhcp4.washington.edu>
+References: <cover.1416563833.git.osandov@osandov.com>
+ <afd3c1009172a4a1cfa10e73a64caf35c631a6d4.1416563833.git.osandov@osandov.com>
+ <20141121180045.GF8568@twin.jikos.cz>
+ <20141122200357.GA15189@mew>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1984965.SaYcFr637E";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411242301.55012@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141122200357.GA15189@mew>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1984965.SaYcFr637E
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Sat, Nov 22, 2014 at 12:03:57PM -0800, Omar Sandoval wrote:
+> On Fri, Nov 21, 2014 at 07:00:45PM +0100, David Sterba wrote:
+> > > +			ret = -EINVAL;
+> > > +			goto out;
+> > > +		}
+> > > +		if (test_bit(EXTENT_FLAG_COMPRESSED, &em->flags)) {
+> > > +			pr_err("BTRFS: swapfile is compresed");
+> > > +			ret = -EINVAL;
+> > > +			goto out;
+> > > +		}
+> > 
+> > I think the preallocated extents should be refused as well. This means
+> > the filesystem has enough space to hold the data but it would still have
+> > to go through the allocation and could in turn stress the memory
+> > management code that triggered the swapping activity in the first place.
+> > 
+> > Though it's probably still possible to reach such corner case even with
+> > fully allocated nodatacow file, this should be reviewed anyway.
+> > 
+> I'll definitely take a closer look at this. In particular,
+> btrfs_get_blocks_direct and btrfs_get_extent do allocations in some cases which
+> I'll look into.
+> 
+Alright, I took a look at this. My understanding is that a PREALLOC extent
+represents a region on disk that has already been allocated but isn't in use
+yet, but please correct me if I'm wrong. Judging by this comment in
+btrfs_get_blocks_direct, we don't have to worry about PREALLOC extents in
+general:
 
-On Monday 24 November 2014 22:50:26 Matthew Garrett wrote:
-> On Mon, Nov 24, 2014 at 09:55:47PM +0100, Pali Roh=C3=A1r wrote:
-> > This is complicated. HW switch controls all radio devices
-> > and you do not know which are present in specified running
-> > machine. Also list of devices which HW switch controls can
-> > be edited in BIOS (on some machines). So what to do? We
-> > only know that it controls some devices...
->=20
-> Typically there'll be a firmware method that provides a mask
-> of the controlled devices. Do you have the ACPI tables for a
-> device that implements this? Registering an rfkill interface
-> that claims to only control wifi but which also kills other
-> devices is likely to confuse userspace - it would probably be
-> better to avoid registering the rfkill interface at all in
-> that case.
+/*
+ * We don't allocate a new extent in the following cases
+ *
+ * 1) The inode is marked as NODATACOW.  In this case we'll just use the
+ * existing extent.
+ * 2) The extent is marked as PREALLOC.  We're good to go here and can
+ * just use the extent.
+ *
+ */
 
-Currently you cannot control soft state of rfkill. It receive=20
-events when hard state was changed and update hard rfkill status=20
-(if is enabled or disabled).
+A couple of other considerations that cropped up:
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+- btrfs_get_extent does a bunch of extra work if the extent is not cached in
+  the extent map tree that would be nice to avoid when swapping
+- We might still have to do a COW if the swap file is in a snapshot
 
---nextPart1984965.SaYcFr637E
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+We can avoid the btrfs_get_extent by pinning the extents in memory one way or
+another in btrfs_swap_activate.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+The snapshot issue is a little tricker to resolve. I see a few options:
 
-iEYEABECAAYFAlRzqtMACgkQi/DJPQPkQ1LgAwCePI66O6RkHqKOhqVPa8eLju9/
-czcAoLiVkd0bx2TT9xm3/NqqLWV54h58
-=2ZFn
------END PGP SIGNATURE-----
+1. Just do the COW and hope for the best
+2. As part of btrfs_swap_activate, COW any shared extents. If a snapshot
+happens while a swap file is active, we'll fall back to 1.
+3. Clobber any swap file extents which are in a snapshot, i.e., always use the
+existing extent.
 
---nextPart1984965.SaYcFr637E--
+I'm partial to 3, as it's the simplest approach, and I don't think it makes
+much sense for a swap file to be in a snapshot anyways. I'd appreciate any
+comments that anyone might have.
+
+-- 
+Omar
