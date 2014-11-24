@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751072AbaKXWq0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 17:46:26 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:57988 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747AbaKXWqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 17:46:25 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: dianders@chromium.org, mturquette@linaro.org,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>, khilman@kernel.org,
-        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        Tony Xie <xxx@rock-chips.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v8 0/4] This is the 1st version of suspend for RK3288.
-Date: Mon, 24 Nov 2014 23:50 +0100
-Message-ID: <2829328.asIzdRTr9b@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1416051910-16730-1-git-send-email-zyw@rock-chips.com>
-References: <1416051910-16730-1-git-send-email-zyw@rock-chips.com>
+	id S1751002AbaKXWws (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 17:52:48 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:41882 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747AbaKXWwr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 17:52:47 -0500
+Date: Mon, 24 Nov 2014 23:52:44 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>
+Subject: Re: perf/branch-history branch build broken with NO_DEMANGLE=1
+ perf hists browser: Print overhead percent value for first-level callchain
+Message-ID: <20141124225244.GS12538@two.firstfloor.org>
+References: <20141124145227.GE18625@kernel.org>
+ <20141124152312.GA13167@kernel.org>
+ <20141124152541.GB13167@kernel.org>
+ <20141124153204.GC13167@kernel.org>
+ <20141124154841.GD13167@kernel.org>
+ <20141124212308.GE13167@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141124212308.GE13167@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+> [root@zoo acme]# perf record -a -g -b sleep 2s
+> [ perf record: Woken up 7 times to write data ]
+> [ perf record: Captured and wrote 3.033 MB perf.data (~132504 samples) ]
+> [root@zoo acme]# perf report --stdio --branch-history
+> # To display the perf.data header info, please use --header/--header-only options.
+> #
+> BFD: Dwarf Error: Offset (2585882475) greater than or equal to .debug_str size (44321517).
+> BFD: Dwarf Error: Could not find abbrev number 11800.
+> <BIG SNIP>
+> BFD: Dwarf Error: Offset (83496016) greater than or equal to .debug_str size (44321517).
+> BFD: Dwarf Error: Offset (48628447) greater than or equal to .debug_str size (44321517).
+> (END)Segmentation fault (core dumped)
+> [root@zoo acme]# 
+> 
+> Will investigate this later today/tomorrow, if nobody finds a fix in the meantime.
 
-Am Samstag, 15. November 2014, 19:45:06 schrieb Chris Zhong:
-> This suspend patch is only support cut off the power of cpu and some
-> external devices, since we still lack power_domain driver, so the other
-> power rail of rk3288 need keep power on.
-> I have tested it on rk3288-evb board, atop next-20141112. goto suspend by
-> type "echo mem > /sys/power/state", vdd_cpu is about 0mv by measuring, so
-> it can be determined in sleep mode, then press power button to wakeup it.
+I cannot reproduce this.
 
-with this version my board can finally wake up again. Although it wakes 
-immediatly again. But as it wakes at all, I'm quite happy :-) .
+For me it looks like you have some binary or debuginfo that your libbfd
+doesn't like. --branch-history resolves all addresses as srcline, 
+so it will actually walk all the line numbers.
 
-I remember this being mentioned before, but I don't remember what was 
-responsible for that. Was it because we only enter the light suspend mode 
-instead of the deep one or some interrupt somewhere?
+Can you please find out which one it is? Probably can be seen
+by just going up a few levels in gdb and dumping the event.
 
+If you can find the address that explodes you can also try it directly with
+addr2line. If that works it's some problem in the perf implementation.
 
-I've been running on top of linux-next from 20141124 with the following 
-patches applied on top of your v8 series:
+It is likely that it would need to be fixed in libbfd.
 
-pinctrl: rockchip: Fix enable/disable/mask/unmask
-pinctrl: rockchip: Handle wakeup pins
-serial: 8250_dw: Handle no_console_suspend when uart loses state
+To work around it we could turn off force resolving the srcline,
+but that would make the output much less useful too unfortuantely...
 
+-Andi
 
-Heiko
-
+-- 
+ak@linux.intel.com -- Speaking for myself only.
