@@ -1,118 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955AbaKXIc2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 03:32:28 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:41592 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679AbaKXIcZ convert rfc822-to-8bit (ORCPT
+	id S1753024AbaKXIec (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 03:34:32 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:32997 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685AbaKXIeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 03:32:25 -0500
+	Mon, 24 Nov 2014 03:34:31 -0500
+Message-ID: <5472ED90.5010803@linaro.org>
+Date: Mon, 24 Nov 2014 09:34:24 +0100
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <912A29987EAE174BA6CF187D7CDFA9CE26F6D664@DLEE08.ent.ti.com>
-References: <1415941651-28962-4-git-send-email-vigneshr@ti.com>
-	<20141118143005.GF24004@x1>
-	<20141118171240.GB3003@dtor-ws>
-	<546DF2F0.9080405@ti.com>
-	<20141120144028.GB5809@localhost.localdomain>
-	<546F2BA4.4000808@ti.com>
-	<20141121131036.GA18931@localhost.localdomain>
-	<CAJKbBDDVTA+=priRu7sCD=vHrC8AUg4DM3kycuGrqbpF-5FGAA@mail.gmail.com>
-	<546F5C27.7040004@ti.com>
-	<CAJKbBDD=eYmU=LuViwLPNV=kYCziDQgKjL07bT7og4vsj0Ee7A@mail.gmail.com>
-	<20141121214005.GA4020@localhost.localdomain>
-	<912A29987EAE174BA6CF187D7CDFA9CE26F6D664@DLEE08.ent.ti.com>
-Date: Mon, 24 Nov 2014 09:32:23 +0100
-Message-ID: <CAJKbBDCSjSWfXrbJawP3peRFhEk9ZaMyPyS=bNNVvqBv2am8ag@mail.gmail.com>
-Subject: Re: [PATCH v4 3/6] mfd: ti_am335x_tscadc: Remove unwanted
- reg_se_cache save
-From: Johannes Pointner <johannes.pointner@gmail.com>
-To: "Griffis, Brad" <bgriffis@ti.com>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>, "R, Vignesh" <vigneshr@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, "Balbi, Felipe" <balbi@ti.com>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kardell <jan.kardell@telliq.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-iio <linux-iio@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Robert Nelson <robertcnelson@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Hanjun Guo <hanjun.guo@linaro.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        Kangkang.Shen@huawei.com, linux-acpi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v5 03/18] ACPI / table: Count matched and successfully
+ parsed entries without specifying max entries
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1413553034-20956-4-git-send-email-hanjun.guo@linaro.org> <6619034.gHDuQJ1A7y@vostro.rjw.lan>
+In-Reply-To: <6619034.gHDuQJ1A7y@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-21 23:25 GMT+01:00 Griffis, Brad <bgriffis@ti.com>:
->
->> -----Original Message-----
->> From: Richard Cochran [mailto:richardcochran@gmail.com]
+On 24.11.2014 02:45, Rafael J. Wysocki wrote:
+> On Friday, October 17, 2014 09:36:59 PM Hanjun Guo wrote:
+>> From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 >>
->> On Fri, Nov 21, 2014 at 07:17:18PM +0100, Johannes Pointner wrote:
->> > Before the patches were also jumps but I thought it is something
->> > Vignesh should know. Maybe there is some fix for that too?
+>> It is very useful to traverse all available table entries without max
+>> number of expected entries type. Current acpi_parse_entries()
+>> implementation gives that feature but it does not count those entries,
+>> it returns 0 instead, so fix it to count matched and successfully
+>> entries and return it.
 >
-> I believe I've seen the "jumping" behavior pop up at a couple random times in my testing.  I think it relates to the hardware not properly registering a pen-up interrupt.  When that's happening can you try running ts_calibrate?  If you're not registering a pen-up event then you won't be able to advance through those touch points.  Is this behavior related to capturing ADC samples, or do you see this behavior even without capturing ADC samples?
+> Hmm.  I guess that the goal is for count to only be incremented when the
+> condition is satisfied entirely, while without the patch it may be incremented
+> even if that isn't the case.
 
-Is it the right way to test? Because I think the ts_lib will cover
-misbehavior of the touchscreen driver.
+That would be our goal if patch would look like:
+-		    && (!max_entries || count++ < max_entries))
++		    && (!max_entries && count++ < max_entries)) {
+but then we can not walk through all available entries (with max_entries==0)
 
 >
->> > As Richard also noted, it would be nice if ti could let us know how to
->> > get the delay values right. By trial and error is IMHO not the best
->> > way.
+> I'm not sure how that is related to the above paragraph, however.
+>
+
+Previous changelog is not clear, let me rewrite it:
+
+acpi_parse_entries() allows to traverse all available table entries (aka 
+subtables) by passing max_entries parameter equal to 0. But for that use 
+case acpi_parse_entries() does not inform caller how many entries were 
+matched and for how many entries handler was run against. That patch is 
+going to fix it.
+
+Regards,
+Tomasz
+
+>> NOTE: This change has no impact to x86 and ia64 archs since existing code
+>> checks for error occurrence only (acpi_parse_entries(...,0) < 0).
 >>
->> That is not only an opinion, it is a matter of fact. TI really dropped the ball on
->> this one. I thought the patch series was a sign they finally were going to
->> properly address this issue. Wrong again.
->
-> These patches originate from work I did on TI's SDK 7.00 (3.12 kernel).  The touchscreen is working beautifully in that environment and we are putting forth significant effort to bring those improvements to the community.
->
-> Things do not seem to be working as well with the current mainline kernel.  I've been reviewing various patches between 3.12 and the mainline to understand why it's different.  I believe I have figured this out, and I have discussions going separately with individuals that contributed those patches in order to come up with the best possible solution, i.e. we likely need a few additional changes to this patch set.
-
-Ok, then I'm looking forward for a new patch set to test. Furthermore,
-I would be interested which changes you are talking about.
-
->
-> The CHARGECONFIG delay serves precisely the same purpose as the udelay in the original code base.  How did you determine the udelay value in the first place?  I went through the effort of figuring out a way to make the delay into a HARDWARE delay instead of a software delay so that it could be removed from the ISR.  That delay time relates to "settling time" and so it's going to be dependent on your PCB.  You could hook up an oscilloscope and attempt to capture this parameter from the signals themselves.  Personally I think that's a lot more difficult than just doing a few iterations of testing.
-
-I did measure with an oscilloscope to get the right charge delay and
-it looks fine to me. But I can't affect the jumps with the charge
-delay, the only thing that helped, was to add some sample delay. But
-it didn't solve it.
-
->
->> The data sheet for the TI part used to have a reference to an app-note for
->> the touch controller.
+>> Acked-by: Grant Likely <grant.likely@linaro.org>
+>> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> ---
+>>   drivers/acpi/tables.c |    5 ++++-
+>>   1 file changed, 4 insertions(+), 1 deletion(-)
 >>
->>       spruh73f page 1154
+>> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+>> index 21ae521..b18e45e 100644
+>> --- a/drivers/acpi/tables.c
+>> +++ b/drivers/acpi/tables.c
+>> @@ -225,10 +225,13 @@ acpi_parse_entries(unsigned long table_size,
+>>   	while (((unsigned long)entry) + sizeof(struct acpi_subtable_header) <
+>>   	       table_end) {
+>>   		if (entry->type == entry_id
+>> -		    && (!max_entries || count++ < max_entries))
+>> +		    && (!max_entries || count < max_entries)) {
+>>   			if (handler(entry, table_end))
+>>   				return -EINVAL;
 >>
->>       The Pen IRQ can only occur if the correct Pen Ctrl bits are high
->>       (AFE Pen Ctrl bits 6:5 in the TSC_ADC control register) and if
->>       the correct ground transistor biasing is set in the StepConfig
->>       [N] Register. Refer to the application notes for the correct
->>       settings.
+>> +			count++;
+>> +		}
+>> +
+>>   		/*
+>>   		 * If entry->length is 0, break from this loop to avoid
+>>   		 * infinite loop.
 >>
->> I searched high and low for this application note. Then, the data sheet got
->> revised.
 >
-> Such an application note does not exist, which explains why you didn't find it and why we have removed that reference from the TRM.  Sorry for your trouble.  We always strive for accurate documentation.
-
-Thanks,
-Hannes
