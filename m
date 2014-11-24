@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659AbaKXP2F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:28:05 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36869 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084AbaKXP2D (ORCPT
+	id S1753814AbaKXP2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 10:28:49 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:34641 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752915AbaKXP2r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:28:03 -0500
-Date: Mon, 24 Nov 2014 15:26:09 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Message-ID: <20141124152609.GE7712@sirena.org.uk>
-References: <1416838252-15508-1-git-send-email-rf@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8vCeF2GUdMpe9ZbK"
-Content-Disposition: inline
-In-Reply-To: <1416838252-15508-1-git-send-email-rf@opensource.wolfsonmicro.com>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: Add PRE_DISABLE notification
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 24 Nov 2014 10:28:47 -0500
+Content-Type: text/plain; charset=utf-8
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: [CFT PATCH 0/2] KVM: support XSAVES usage in the host
+From: Nadav Amit <nadav.amit@gmail.com>
+In-Reply-To: <547318E5.8070408@redhat.com>
+Date: Mon, 24 Nov 2014 17:28:41 +0200
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm list <kvm@vger.kernel.org>, Nadav Amit <namit@cs.technion.ac.il>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <DAC65E0B-06CC-4B34-85B2-72AD5F86826B@gmail.com>
+References: <1416594678-13011-1-git-send-email-pbonzini@redhat.com> <DE9192FA-6A22-4AEB-88C2-AE17DA503685@gmail.com> <547318E5.8070408@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---8vCeF2GUdMpe9ZbK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Nov 24, 2014, at 13:39, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> 
+> 
+> 
+> On 23/11/2014 09:16, Nadav Amit wrote:
+>> I’ll try to check it tomorrow (I don’t have access to the failing machine at the moment).
+> 
+> Thanks, you'll need to squash this in:
+> 
+> diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+> index 4c540c4719d8..0de1fae2bdf0 100644
+> --- a/arch/x86/kernel/xsave.c
+> +++ b/arch/x86/kernel/xsave.c
+> @@ -738,3 +738,4 @@ void *get_xsave_addr(struct xsave_struct *xsave, int xstate)
+> 
+> 	return (void *)xsave + xstate_comp_offsets[feature];
+> }
+> +EXPORT_SYMBOL_GPL(get_xsave_addr);
 
-On Mon, Nov 24, 2014 at 02:10:52PM +0000, Richard Fitzgerald wrote:
-> Add a PRE_DISABLE notification so that consumers can use a
-> notifier to run any steps required to prepare for the
-> regulator being switched off. Since the regulator disable
-> can fail an abort notification is also added.
+I tested the patches but there are still problems.
 
-Applied, thanks.
+Since kvm_load_guest_fpu is called before the guest_fpu is ever stored, there are 2 more problems that currently cause #GP:
+1. XCOMP_BV[63] = 0
+2. XSTATE_BV sets a bit (including bit 63) that is not set in XCOMP_BV (XCOMP_BV is initialised to zero).
 
---8vCeF2GUdMpe9ZbK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+[see SDM 13.11 "OPERATION OF XRSTORS”]
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Once I initialise XCOMP_BV to (1ull << 63) | XSTATE_BV, the guest runs successfully.
+I have not checked any other qemu functionality that might be affected by the patch.
 
-iQEcBAEBAgAGBQJUc04RAAoJECTWi3JdVIfQiDEH/ROy7NT+PPsI9y28QdhBssz6
-4Lz16lcKJI2cu7944hm3cwnzdgQk/xa/pfG+SBaReU28nwREtGpNczGRZevrOtXd
-6Lk2mZX/f3NjE/6XOftK0rcVXr2syUXhBgFkQNto0njiDdtUsECgj6W8vlHPNxLb
-E4TuHBwRIsFOBx11TJc9IVo3nMYVBoiD04m0diyGI4VcjZeMv2eNNN1zuAaXBZPU
-KleoXW7dPf6OPB5FcUvav00UwFEf9Ofa6W5B351KSDFynpwcmI4Iwr04/GWu1SEr
-ktVBE8NjrFuU0IIwkalDHnUfmERkNSiMe69uO39xP2Uh7AJm1dw0UYcCWbSSWqE=
-=UjIz
------END PGP SIGNATURE-----
+Nadav
 
---8vCeF2GUdMpe9ZbK--
+
+
