@@ -1,314 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751309AbaKXXgT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 18:36:19 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:63437 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120AbaKXXgR (ORCPT
+	id S1751429AbaKXXhG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 18:37:06 -0500
+Received: from www.linutronix.de ([62.245.132.108]:42085 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313AbaKXXhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 18:36:17 -0500
+	Mon, 24 Nov 2014 18:37:02 -0500
+Date: Tue, 25 Nov 2014 00:35:44 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Khalid Aziz <khalid.aziz@oracle.com>
+cc: corbet@lwn.net, mingo@redhat.com, hpa@zytor.com, peterz@infradead.org,
+        riel@redhat.com, akpm@linux-foundation.org, rientjes@google.com,
+        ak@linux.intel.com, mgorman@suse.de, liwanp@linux.vnet.ibm.com,
+        raistlin@linux.it, kirill.shutemov@linux.intel.com, atomlin@redhat.com,
+        avagin@openvz.org, gorcunov@openvz.org, serge.hallyn@canonical.com,
+        athorlton@sgi.com, oleg@redhat.com, vdavydov@parallels.com,
+        daeseok.youn@gmail.com, keescook@chromium.org,
+        yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu, vishnu.ps@samsung.com,
+        axboe@fb.com, paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v3] sched/fair: Add advisory flag for borrowing a timeslice
+ (was: Pre-emption control for userspace)
+In-Reply-To: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com>
+Message-ID: <alpine.DEB.2.11.1411242317380.6439@nanos>
+References: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20141124233101.GA2819@linux.vnet.ibm.com>
-References: <20141122042056.GY5050@linux.vnet.ibm.com> <CALCETrXSY9JpW3uE6H8WYk81sg56qasA2aqmjMPsq5dOtzso=g@mail.gmail.com>
- <20141122234157.GB5050@linux.vnet.ibm.com> <CALCETrVzeK=VWnAhpkPhxj9C012ETgArEPmLMFfhKJ7k1pHsXA@mail.gmail.com>
- <20141124205441.GW5050@linux.vnet.ibm.com> <CALCETrXBofV3oxDwK4MiSvFQcX3yxX_sL_KY63EZ8DgS8LnJSg@mail.gmail.com>
- <20141124213501.GX5050@linux.vnet.ibm.com> <20141124223407.GB8512@linux.vnet.ibm.com>
- <CALCETrUA+z5z6bnOw63-EUiFD4WQtBXm1TE2DSRj3uG+d_k-bQ@mail.gmail.com>
- <20141124225754.GY5050@linux.vnet.ibm.com> <20141124233101.GA2819@linux.vnet.ibm.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 24 Nov 2014 15:35:55 -0800
-Message-ID: <CALCETrV37kqC658AzBHZ5z_vH2b_1T821q5EfbMcS9Ecpj8EEw@mail.gmail.com>
-Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST context
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 3:31 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Mon, Nov 24, 2014 at 02:57:54PM -0800, Paul E. McKenney wrote:
->> On Mon, Nov 24, 2014 at 02:36:18PM -0800, Andy Lutomirski wrote:
->> > On Mon, Nov 24, 2014 at 2:34 PM, Paul E. McKenney
->> > <paulmck@linux.vnet.ibm.com> wrote:
->> > > On Mon, Nov 24, 2014 at 01:35:01PM -0800, Paul E. McKenney wrote:
->>
->> [ . . . ]
->>
->> > > And the following Promela model claims that your approach works.
->> > > Should I trust it?  ;-)
->> > >
->> >
->> > I think so.
->> >
->> > Want to write a patch?  If so, whose tree should it go in?  I can add
->> > it to my IST series, but that seems a bit odd.
->>
->> Working on it.  ;-)
->
-> And here is a sneak preview of the patch.  Thoughts?
->
->                                                         Thanx, Paul
->
-> ------------------------------------------------------------------------
->
-> rcu: Make rcu_nmi_enter() handle nesting
->
-> Andy Lutomirski is introducing ISTs into x86, which from RCU's
-> viewpoint are NMIs.  Because ISTs and NMIs can nest, rcu_nmi_enter() and
-> rcu_nmi_exit() must now correctly handle nesting.
+On Mon, 24 Nov 2014, Khalid Aziz wrote:
+> sched/fair: Add advisory flag for borrowing a timeslice
+> 
+> This patch adds a way for a task to request to borrow one timeslice
+> from future if it is about to be preempted, so it could delay
+> preemption and complete any critical task it is in the middle of.
+> 
+> This feature helps with performance on databases and has been
+> used for many years on other OSs by the databases. This feature
+> helps in situation where a task acquires a lock before performing a
+> critical operation on the database and happens to get preempted before
+> it completes its task.  This lock being held causes all other tasks
+> that also acquire the same lock to perform their critical operation
+> on the database, to start queueing up and causing large number of
+> context switches.  This queueing problem can be avoided if the task
+> that acquires lock first could request scheduler to let it borrow one
+> timeslice once it enters its critical section and hence allow it to
+> complete its critical section without causing queueing problem. If
 
-You must not be a frequent reader of entry_64.S and the Intel SDM :)
-IOW, IST is just a stack switching mechanism, and these interrupts
-have been around forever -- they're just buggy right now.
+While you are niftily avoiding to talk about the nature of the lock, I
+can take it for granted that you are talking about user space
+spinlocks, right?
 
-How about:
+Simply if you would talk about futexes and pthread_mutexes then it
+would have occured to you while implementing that feature, that the
+kernel already has a mechanism to record a reference to a user space
+data structure (robust_list_head) which is updated when a futex is
+acquired in user space, i.e. when a critical section is entered. It's
+not the same as you need, but it would be relatively simple to convey
+that information there.
 
-x86 has multiple types of NMI-like interrupts: real NMIs, machine
-checks, and, for some values of NMI-like, debugging and breakpoint
-interrupts.  These interrupts can nest inside each other.  Andy
-Lutomirski is adding RCU support to these interrupts, so
-rcu_nmi_enter() and rcu_nmi_exit() must now correctly handle nesting.
+So what are the actual lock types and use cases and why can't you
+combine that with the existing robust list mechanism?
 
-Other than that, I like it.
+> critical section completes before the task is due for preemption,
+> the task can simply desassert its request. A task sends the
 
->  This commit therefore
-> introduces nesting, using a clever NMI-coordination algorithm suggested
-> by Andy.  The trick is to atomically increment ->dynticks (if needed)
-> before manipulating ->dynticks_nmi_nesting on entry (and, accordingly,
-> after on exit).  In addition, ->dynticks_nmi_nesting is incremented by
-> one if ->dynticks was incremented and by two otherwise.  This means that
-> when rcu_nmi_exit() sees ->dynticks_nmi_nesting equal to one, it knows
-> that ->dynticks must be atomically incremented.
->
-> This NMI-coordination algorithms has been validated by the following
-> Promela model, for whatever that might be worth:
->
-> /*
->  * Promela model for Andy Lutomirski's suggested change to rcu_nmi_enter()
->  * that allows nesting.
->  *
->  * This program is free software; you can redistribute it and/or modify
->  * it under the terms of the GNU General Public License as published by
->  * the Free Software Foundation; either version 2 of the License, or
->  * (at your option) any later version.
->  *
->  * This program is distributed in the hope that it will be useful,
->  * but WITHOUT ANY WARRANTY; without even the implied warranty of
->  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->  * GNU General Public License for more details.
->  *
->  * You should have received a copy of the GNU General Public License
->  * along with this program; if not, you can access it online at
->  * http://www.gnu.org/licenses/gpl-2.0.html.
->  *
->  * Copyright IBM Corporation, 2014
->  *
->  * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->  */
->
-> byte dynticks_nesting = 0;
-> byte dynticks_nmi_nesting = 0;
-> byte dynticks = 0;
->
-> /*
->  * Promela verision of rcu_nmi_enter().
->  */
-> inline rcu_nmi_enter()
-> {
->         byte incby;
->
->         incby = 2;
->         assert(dynticks_nmi_nesting >= 0);
->         if
->         :: (dynticks & 1) == 0 ->
->                 atomic {
->                         dynticks = dynticks + 1;
->                 }
->                 assert((dynticks & 1) == 1);
->                 incby = 1;
->         :: else ->
->                 skip;
->         fi;
->         dynticks_nmi_nesting = dynticks_nmi_nesting + incby;
->         assert(dynticks_nmi_nesting >= 1);
-> }
->
-> /*
->  * Promela verision of rcu_nmi_exit().
->  */
-> inline rcu_nmi_exit()
-> {
->         assert(dynticks_nmi_nesting > 0);
->         assert((dynticks & 1) != 0);
->         if
->         :: dynticks_nmi_nesting != 1 ->
->                 dynticks_nmi_nesting = dynticks_nmi_nesting - 2;
->         :: else ->
->                 dynticks_nmi_nesting = 0;
->                 atomic {
->                         dynticks = dynticks + 1;
->                 }
->                 assert((dynticks & 1) == 0);
->         fi;
-> }
->
-> /*
->  * Base-level NMI runs non-atomically.  Crudely emulates process-level
->  * dynticks-idle entry/exit.
->  */
-> proctype base_NMI()
-> {
->         byte busy;
->
->         busy = 0;
->         do
->         ::      if
->                 :: 1 -> atomic {
->                                 dynticks = dynticks + 1;
->                         }
->                         busy = 0;
->                 :: 1 -> skip;
->                 fi;
->                 rcu_nmi_enter();
->                 assert((dynticks & 1) == 1);
->                 rcu_nmi_exit();
->                 if
->                 :: busy -> skip;
->                 :: !busy ->
->                         atomic {
->                                 dynticks = dynticks + 1;
->                         }
->                         busy = 1;
->                 fi;
->         od;
-> }
->
-> /*
->  * Nested NMI runs atomically to emulate interrupting base_level().
->  */
-> proctype nested_NMI()
-> {
->         do
->         ::      atomic {
->                         rcu_nmi_enter();
->                         assert((dynticks & 1) == 1);
->                         rcu_nmi_exit();
->                 }
->         od;
-> }
->
-> init {
->         run base_NMI();
->         run nested_NMI();
-> }
->
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index 8749f43f3f05..fc0236992655 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -759,39 +759,71 @@ void rcu_irq_enter(void)
->  /**
->   * rcu_nmi_enter - inform RCU of entry to NMI context
->   *
-> - * If the CPU was idle with dynamic ticks active, and there is no
-> - * irq handler running, this updates rdtp->dynticks_nmi to let the
-> - * RCU grace-period handling know that the CPU is active.
-> + * If the CPU was idle from RCU's viewpoint, update rdtp->dynticks and
-> + * rdtp->dynticks_nmi_nesting to let the RCU grace-period handling know
-> + * that the CPU is active.  This implementation permits nested NMIs, as
-> + * long as the nesting level does not overflow an int.  (You will probably
-> + * run out of stack space first.)
->   */
->  void rcu_nmi_enter(void)
+And that deassertion has which consequences before the next preempt
+check happens?
+
+> +config SCHED_PREEMPT_DELAY
+> +	def_bool n
+> +	prompt "Scheduler preemption delay support"
+> +	depends on PROC_FS
+
+Why so?
+
+> @@ -1324,6 +1325,13 @@ struct task_struct {
+>  	/* Revert to default priority/policy when forking */
+>  	unsigned sched_reset_on_fork:1;
+>  	unsigned sched_contributes_to_load:1;
+> +#ifdef CONFIG_SCHED_PREEMPT_DELAY
+> +	struct preempt_delay {
+> +		u32 __user *delay_req;		/* delay request flag pointer */
+> +		unsigned char delay_granted;	/* currently in delay */
+> +		unsigned char yield_penalty;	/* failure to yield penalty */
+> +	} sched_preempt_delay;
+
+No. First of all this wants to be a proper struct declaration outside
+of task_struct.
+
+Aside of that your user space side is actually a structure and not a
+opaque u32 pointer, so this should be an explicit data type and not
+something randomly defined in the guts of task_struct.
+
+> +#if defined(CONFIG_SCHED_PREEMPT_DELAY) && defined(CONFIG_PROC_FS)
+> +extern void sched_preempt_delay_show(struct seq_file *m,
+> +					struct task_struct *task);
+> +extern void sched_preempt_delay_set(struct task_struct *task,
+> +					unsigned char *val);
+> +#endif
+
+Can you please get rid of the leftovers of your previous patches
+yourself and before posting? It's annoying as hell to review patches
+which contain stale code.
+
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 9b7d746..7f0d843 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1671,6 +1671,11 @@ long do_fork(unsigned long clone_flags,
+>  			init_completion(&vfork);
+>  			get_task_struct(p);
+>  		}
+> +#ifdef CONFIG_SCHED_PREEMPT_DELAY
+> +		p->sched_preempt_delay.delay_req = NULL;
+> +		p->sched_preempt_delay.delay_granted = 0;
+> +		p->sched_preempt_delay.yield_penalty = 0;
+> +#endif
+
+Sigh. We do not sprinkle that kind of #ifdef crap all over the
+place. That's what inline functions in header files are for.
+
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 240157c..38cb515 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4230,6 +4230,14 @@ SYSCALL_DEFINE0(sched_yield)
 >  {
->         struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
-> +       int incby = 2;
->
-> -       if (rdtp->dynticks_nmi_nesting == 0 &&
-> -           (atomic_read(&rdtp->dynticks) & 0x1))
-> -               return;
-> -       rdtp->dynticks_nmi_nesting++;
-> -       smp_mb__before_atomic();  /* Force delay from prior write. */
-> -       atomic_inc(&rdtp->dynticks);
-> -       /* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
-> -       smp_mb__after_atomic();  /* See above. */
-> -       WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
-> +       /* Complain about underflow. */
-> +       WARN_ON_ONCE(rdtp->dynticks_nmi_nesting < 0);
-> +
-> +       /*
-> +        * If idle from RCU viewpoint, atomically increment ->dynticks
-> +        * to mark non-idle and increment ->dynticks_nmi_nesting by one.
-> +        * Otherwise, increment ->dynticks_nmi_nesting by two.  This means
-> +        * if ->dynticks_nmi_nesting is equal to one, we are guaranteed
-> +        * to be in the outermost NMI handler that interrupted an RCU-idle
-> +        * period (observation due to Andy Lutomirski).
-> +        */
-> +       if (!(atomic_read(&rdtp->dynticks) & 0x1)) {
-> +               smp_mb__before_atomic();  /* Force delay from prior write. */
-> +               atomic_inc(&rdtp->dynticks);
-> +               /* atomic_inc() before later RCU read-side crit sects */
-> +               smp_mb__after_atomic();  /* See above. */
-> +               WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
-> +               incby = 1;
-> +       }
-> +       rdtp->dynticks_nmi_nesting += incby;
-> +       barrier();
->  }
->
->  /**
->   * rcu_nmi_exit - inform RCU of exit from NMI context
->   *
-> - * If the CPU was idle with dynamic ticks active, and there is no
-> - * irq handler running, this updates rdtp->dynticks_nmi to let the
-> - * RCU grace-period handling know that the CPU is no longer active.
-> + * If we are returning from the outermost NMI handler that interrupted an
-> + * RCU-idle period, update rdtp->dynticks and rdtp->dynticks_nmi_nesting
-> + * to let the RCU grace-period handling know that the CPU is back to
-> + * being RCU-idle.
->   */
->  void rcu_nmi_exit(void)
->  {
->         struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
->
-> -       if (rdtp->dynticks_nmi_nesting == 0 ||
-> -           --rdtp->dynticks_nmi_nesting != 0)
-> +       /*
-> +        * Check for ->dynticks_nmi_nesting underflow and bad ->dynticks.
-> +        * (We are exiting an NMI handler, so RCU better be paying attention
-> +        * to us!)
-> +        */
-> +       WARN_ON_ONCE(rdtp->dynticks_nmi_nesting <= 0);
-> +       WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
-> +
-> +       /*
-> +        * If the nesting level is not 1, the CPU wasn't RCU-idle, so
-> +        * leave it in non-RCU-idle state.
-> +        */
-> +       if (rdtp->dynticks_nmi_nesting != 1) {
-> +               rdtp->dynticks_nmi_nesting -= 2;
->                 return;
-> +       }
-> +
-> +       /* This NMI interrupted an RCU-idle CPU, restore RCU-idleness. */
-> +       rdtp->dynticks_nmi_nesting = 0;
->         /* CPUs seeing atomic_inc() must see prior RCU read-side crit sects */
->         smp_mb__before_atomic();  /* See above. */
->         atomic_inc(&rdtp->dynticks);
->
+>  	struct rq *rq = this_rq_lock();
+>  
+> +#ifdef CONFIG_SCHED_PREEMPT_DELAY
+> +	/*
+> +	 * Clear the penalty flag for current task to reward it for
+> +	 * palying by the rules
 
+Looking at that mess makes me palying^Wpale.
 
+> +	 */
+> +	current->sched_preempt_delay.yield_penalty = 0;
+> +#endif
+> +
+>  	schedstat_inc(rq, yld_count);
+>  	current->sched_class->yield_task(rq);
+  
+> +#ifdef CONFIG_SCHED_PREEMPT_DELAY
+> +/*
+> + * delay_resched_rq(): Check if the task about to be preempted has
+> + *	requested an additional time slice. If it has, grant it additional
+> + *	timeslice once.
+> + */
+> +static void
+> +delay_resched_rq(struct rq *rq)
+> +{
+> +	struct task_struct *curr = rq->curr;
+> +	struct sched_entity *se;
+> +	int cpu = task_cpu(curr);
+> +	u32 __user *delay_req;
+> +	unsigned int delay_req_flag;
+> +	unsigned char *delay_flag;
+> +
+> +	/*
+> +	 * Check if task is using pre-emption delay feature. If address
+> +	 * for preemption delay request flag is not set, this task is
+> +	 * not using preemption delay feature, we can reschedule without
+> +	 * any delay
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+So what happens if:
+
+   kernel.preempt_delay_available = 1;
+   
+   prctl(PR_SET_PREEMPT_DELAY, ...);
+
+   kernel.preempt_delay_available = 0;
+
+Nothing happens at all because you fail to give the sysop control over
+the feature once you unleashed it.
+
+The proper solution for this is to use a static key to control the
+feature itself. That also reduces the overhead for those who are not
+interested in that.
+
+> +	 */
+> +	delay_req = curr->sched_preempt_delay.delay_req;
+> +
+> +	if ((delay_req == NULL) || (cpu != smp_processor_id()))
+
+check_preempt_tick() clearly does not care about that, but you inflict
+a smp_processor_id() on every caller. I can see that you really care
+about performance.
+
+> +		goto resched_now;
+> +
+> +	/*
+> +	 * Pre-emption delay will  be granted only once. If this task
+> +	 * has already been granted delay, rechedule now
+> +	 */
+> +	if (curr->sched_preempt_delay.delay_granted) {
+> +		curr->sched_preempt_delay.delay_granted = 0;
+> +		goto resched_now;
+> +	}
+> +	/*
+> +	 * Get the value of preemption delay request flag from userspace.
+> +	 * Task had already passed us the address where the flag is stored
+> +	 * in userspace earlier. This flag is just like the PROCESS_PRIVATE
+> +	 * futex, leverage the futex code here to read the flag. If there
+> +	 * is a page fault accessing this flag in userspace, that means
+> +	 * userspace has not touched this flag recently and we can
+> +	 * assume no preemption delay is needed.
+> +	 *
+> +	 * If task is not requesting additional timeslice, resched now
+> +	 */
+> +	if (delay_req) {
+
+Surely we need to recheck delay_req here.
+
+> +		int ret;
+> +
+> +		pagefault_disable();
+> +		ret = __copy_from_user_inatomic(&delay_req_flag, delay_req,
+> +				sizeof(u32));
+> +		pagefault_enable();
+> +		delay_flag = &delay_req_flag;
+> +		if (ret || !delay_flag[0])
+
+This is really a well designed kernel/user space interface. NOT.
+
+> +			goto resched_now;
+> +	} else {
+> +		goto resched_now;
+> +	}
+> +
+> +	/*
+> +	 * Current thread has requested preemption delay and has not
+> +	 * been granted an extension yet. If this thread failed to yield
+> +	 * processor after being granted amnesty last time, penalize it
+> +	 * by not granting this delay request, otherwise give it an extra
+> +	 * timeslice.
+> +	 */
+> +	if (curr->sched_preempt_delay.yield_penalty) {
+> +		curr->sched_preempt_delay.yield_penalty = 0;
+> +		goto resched_now;
+> +	}
+> +
+> +	se = &curr->se;
+> +	curr->sched_preempt_delay.delay_granted = 1;
+> +	/*
+> +	 * Set the penalty flag for failing to yield the processor after
+> +	 * being granted immunity. This flag will be cleared in
+> +	 * sched_yield() if the thread indeed calls sched_yield
+> +	 */
+> +	curr->sched_preempt_delay.yield_penalty = 1;
+
+Why on earth do we need two flags here? Just because we can create
+more code in the guts of the scheduler hot pathes that way?
+
+And surely we want to put them into two adjacent u8 to make life
+easier for all architectures.
+
+> +	/*
+> +	 * Let the thread know it got amnesty and it should call
+> +	 * sched_yield() when it is done to avoid penalty next time
+> +	 * it wants amnesty. We need to write to userspace location.
+> +	 * Since we just read from this location, chances are extremley
+> +	 * low we might page fault. If we do page fault, we will ignore
+> +	 * it and accept the cost of failed write in form of unnecessary
+> +	 * penalty for userspace task for not yielding processor.
+
+This is the completely wrong argument. We know that the task was
+asking for an extra time slice because the copy from user above
+succeeded. So we are better of to let the task actually handle its
+pagefault than scheduling it out.
+
+> +	 * This is a highly unlikely scenario.
+> +	 */
+> +	delay_flag[0] = 0;
+> +	delay_flag[1] = 1;
+
+Sigh.
+
+> +#ifdef CONFIG_SCHED_PREEMPT_DELAY
+
+And all of this needs to be in kernel/sys.c just because...
+
+> +int sysctl_preempt_delay_available;
+> +
+> +static int
+> +preempt_delay_write(struct task_struct *task, unsigned long preempt_delay_addr)
+> +{
+> +	/*
+> +	 * Do not allow write if pointer is currently set
+> +	 */
+> +	if (task->sched_preempt_delay.delay_req &&
+> +			((void *)preempt_delay_addr != NULL))
+> +		return -EINVAL;
+> +	/*
+> +	 * Validate the pointer. It should be aligned to 4-byte boundary.
+
+So 4 bytes is a perfect boundary for everyone, right? Pulled that
+number out of thin air or what?
+
+> +	 */
+> +	if (unlikely(!IS_ALIGNED(preempt_delay_addr, 4)))
+> +		return -EFAULT;
+> +	if (unlikely(!access_ok(rw, preempt_delay_addr, sizeof(u32))))
+> +		return -EFAULT;
+> +
+> +	task->sched_preempt_delay.delay_req = (u32 __user *) preempt_delay_addr;
+> +
+> +	/* zero out flags */
+
+Brilliant comment. I can see what the code is doing. What's way more
+interesting and of course undocumented is why you are ignoring the
+return value of put_user() ..
+
+> +	put_user(0, (uint32_t *)preempt_delay_addr);
+
+Aside of the general issues I have with this (see the inline replies
+to your changelog) the overall impression of this patch is that it is
+a half baken and carelessly cobbled together extract of some data base
+specific kernel hackery, which I prefer not to see at all.
+
+Thanks,
+
+	tglx
