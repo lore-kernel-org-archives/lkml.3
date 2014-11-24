@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905AbaKXOYW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:24:22 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:47275 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753514AbaKXOYV (ORCPT
+	id S1754121AbaKXOZG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:25:06 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:46536 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319AbaKXOZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:24:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141121123559.GF23177@e105550-lin.cambridge.arm.com>
-References: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org>
- <1415033687-23294-6-git-send-email-vincent.guittot@linaro.org> <20141121123559.GF23177@e105550-lin.cambridge.arm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Mon, 24 Nov 2014 15:24:00 +0100
-Message-ID: <CAKfTPtAo3PzZ=-KtH-YS2nf9R9srMGAUJ2A2qkHrsPZmj18-Jw@mail.gmail.com>
-Subject: Re: [PATCH v9 05/10] sched: make scale_rt invariant with frequency
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "kamalesh@linux.vnet.ibm.com" <kamalesh@linux.vnet.ibm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "riel@redhat.com" <riel@redhat.com>, "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Nov 2014 09:25:03 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-33-54733fbc687f
+Date: Mon, 24 Nov 2014 15:24:49 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincenzo Frascino <vincenzo.frascino@st.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] thermal:core:fix: Check return code of the
+ ->get_max_state() callback
+Message-id: <20141124152449.595d5d34@amdc2363>
+In-reply-to: <CAKohpok3pTEk05L7t+o6BYoODnBboAegg1o9dAj8=VOk8G7odQ@mail.gmail.com>
+References: <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
+ <1416305790-27746-1-git-send-email-l.majewski@samsung.com>
+ <20141121180826.GA3331@developer> <20141124113854.36975fb2@amdc2363>
+ <CAKohpok3pTEk05L7t+o6BYoODnBboAegg1o9dAj8=VOk8G7odQ@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t9jQd099sUhBvdfKVlsnLGe1WL+lWus
+	FqdPLWC1OPfqEYvF2+Zii1eHdzFavHnEbXF51xw2i8+9RxgtOr/MYrN4cHUam8WTh31sFq8O
+	trFY/Nw1j8Xi2IkZrBYbv3o4CHg82XSR0WPnrLvsHov3vGTyuHNtD5vHumlvmT0OTD7H6tHb
+	/I7N49uZiSwefVtWMXo8/bGX2ePzJjmPjXNDA3iiuGxSUnMyy1KL9O0SuDI+fHnPWLCKreJI
+	/wL2BsZ+1i5GTg4JAROJY/dnskPYYhIX7q1n62Lk4hASmM4o8eJCEyuE84tR4snDlWBVLAKq
+	Es8/bmYEsdkE9CQ+333K1MXIwSEioCXx8mYqSD2zwClWic0dc5hAaoQF4iUubmgF28YLVN/0
+	5S0LiM0pECzxZcEXJogFE5kkZv/8BlbELyAp0f7vBzPESXYS5z5tYIdoFpT4MfkeWDMz0LLN
+	25pYIWx5ic1r3jJPYBSchaRsFpKyWUjKFjAyr2IUTS1ILihOSs810itOzC0uzUvXS87P3cQI
+	jsxn0jsYVzVYHGIU4GBU4uGdsb4oRIg1say4MvcQowQHs5IIr5hYcYgQb0piZVVqUX58UWlO
+	avEhRmkOFiVx3hs3c0OEBNITS1KzU1MLUotgskwcnFINjHrs3zNeyas35lpH8LBsLj71wHry
+	DbHXL53/qK/Z1/FIxUB6kf2mC9dXsvBv890bVirYzypX8EHlfLbEB8ug4pv3VtRXb2reePLF
+	z8f3ZDrlbtdOW9qe4R2g6MVx/wnnBnfJxtTfvsZaV55ZzgjP72R0W3Te93CoNO81ic/LN5gV
+	P+5ik5ezUmIpzkg01GIuKk4EAEsCcJPIAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 November 2014 at 13:35, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
-> On Mon, Nov 03, 2014 at 04:54:42PM +0000, Vincent Guittot wrote:
+Hi Viresh,
 
-[snip]
+> On 24 November 2014 at 16:08, Lukasz Majewski
+> <l.majewski@samsung.com> wrote:
+> > As I look into the cpufreq-dt.c driver - in the cpufreq_init()
+> > function, the call to of_cpufreq_cooling_register() is performed
+> > just before cpufreq_table_validate_and_show().
+> > It looks like a mistake in the cpufreq-dt.c code.
+> 
+> Yes. Just fixed it up and sent a patch. Please provide your
+> tested-by's..
 
->> The average running time of RT tasks is used to estimate the remaining compute
->> @@ -5801,19 +5801,12 @@ static unsigned long scale_rt_capacity(int cpu)
->>
->>       total = sched_avg_period() + delta;
->>
->> -     if (unlikely(total < avg)) {
->> -             /* Ensures that capacity won't end up being negative */
->> -             available = 0;
->> -     } else {
->> -             available = total - avg;
->> -     }
->> +     used = div_u64(avg, total);
->
-> I haven't looked through all the details of the rt avg tracking, but if
-> 'used' is in the range [0..SCHED_CAPACITY_SCALE], I believe it should
-> work. Is it guaranteed that total > 0 so we don't get division by zero?
+Thanks for your prompt response. I don't have board which uses both
+of-thermal.c and cpufreq-dt.c (exynos uses old approach for cpufreq).
 
-static inline u64 sched_avg_period(void)
-{
-return (u64)sysctl_sched_time_avg * NSEC_PER_MSEC / 2;
-}
+I think that Eduardo may have some boards for testing.
 
->
-> It does get a slightly more complicated if we want to figure out the
-> available capacity at the current frequency (current < max) later. Say,
-> rt eats 25% of the compute capacity, but the current frequency is only
-> 50%. In that case get:
->
-> curr_avail_capacity = (arch_scale_cpu_capacity() *
->   (arch_scale_freq_capacity() - (SCHED_SCALE_CAPACITY - scale_rt_capacity())))
->   >> SCHED_CAPACITY_SHIFT
+Regarding the patch:
+Reviewed-by: Lukasz Majewski <l.majewski@samsung.com>
 
-You don't have to be so complicated but simply need to do:
-curr_avail_capacity for CFS = (capacity_of(CPU) *
-arch_scale_freq_capacity())  >> SCHED_CAPACITY_SHIFT
+-- 
+Best regards,
 
-capacity_of(CPU) = 600 is the max available capacity for CFS tasks
-once we have removed the 25% of capacity that is used by RT tasks
-arch_scale_freq_capacity = 512 because we currently run at 50% of max freq
+Lukasz Majewski
 
-so curr_avail_capacity for CFS = 300
-
-Vincent
->
-> With numbers assuming arch_scale_cpu_capacity() = 800:
->
-> curr_avail_capacity = 800 * (512 - (1024 - 758)) >> 10 = 200
->
-> Which isn't actually that bad. Anyway, it isn't needed until we start
-> invovling energy models.
->
->>
->> -     if (unlikely((s64)total < SCHED_CAPACITY_SCALE))
->> -             total = SCHED_CAPACITY_SCALE;
->> +     if (likely(used < SCHED_CAPACITY_SCALE))
->> +             return SCHED_CAPACITY_SCALE - used;
->>
->> -     total >>= SCHED_CAPACITY_SHIFT;
->> -
->> -     return div_u64(available, total);
->> +     return 1;
->>  }
->>
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
