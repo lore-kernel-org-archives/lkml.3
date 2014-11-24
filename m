@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796AbaKXXCW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 18:02:22 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:49809 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745AbaKXXCR (ORCPT
+	id S1751890AbaKXXCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 18:02:38 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:35711 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799AbaKXXCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 18:02:17 -0500
+	Mon, 24 Nov 2014 18:02:34 -0500
 From: Pieter Smith <pieter@boesman.nl>
 To: pieter@boesman.nl
 Cc: Josh Triplett <josh@joshtriplett.org>,
@@ -45,9 +45,9 @@ Cc: Josh Triplett <josh@joshtriplett.org>,
         Willem de Bruijn <willemb@google.com>,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         =?UTF-8?q?=E8=94=A1=E6=AD=A3=E9=BE=99?= <zhenglong.cai@cs2c.com.cn>
-Subject: [PATCH v4 2/7] fs: moved kernel_write to fs/read_write
-Date: Tue, 25 Nov 2014 00:01:01 +0100
-Message-Id: <1416870079-15254-3-git-send-email-pieter@boesman.nl>
+Subject: [PATCH v4 4/7] fs/fuse: support compiling out splice
+Date: Tue, 25 Nov 2014 00:01:03 +0100
+Message-Id: <1416870079-15254-5-git-send-email-pieter@boesman.nl>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416870079-15254-1-git-send-email-pieter@boesman.nl>
 References: <1416870079-15254-1-git-send-email-pieter@boesman.nl>
@@ -55,68 +55,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernel_write shares infrastructure with the read_write translation unit but not
-with the splice translation unit. Grouping kernel_write with the read_write
-translation unit is more logical. It also paves the way to compiling out the
-splice group of syscalls for embedded systems that do not need them.
+To implement splice support, fs/fuse makes use of nosteal_pipe_buf_ops. This
+struct is exported by fs/splice. The goal of the larger patch set is to
+completely compile out fs/splice, so uses of the exported struct need to be
+compiled out along with fs/splice.
+
+This patch therefore compiles out splice support in fs/fuse when
+CONFIG_SYSCALL_SPLICE is undefined.
 
 Signed-off-by: Pieter Smith <pieter@boesman.nl>
 ---
- fs/read_write.c | 16 ++++++++++++++++
- fs/splice.c     | 16 ----------------
- 2 files changed, 16 insertions(+), 16 deletions(-)
+ fs/fuse/dev.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/fs/read_write.c b/fs/read_write.c
-index d9451ba..f4c8d8b 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -1191,3 +1191,19 @@ COMPAT_SYSCALL_DEFINE5(pwritev, compat_ulong_t, fd,
- }
- #endif
- 
-+ssize_t kernel_write(struct file *file, const char *buf, size_t count,
-+			    loff_t pos)
-+{
-+	mm_segment_t old_fs;
-+	ssize_t res;
-+
-+	old_fs = get_fs();
-+	set_fs(get_ds());
-+	/* The cast to a user pointer is valid due to the set_fs() */
-+	res = vfs_write(file, (__force const char __user *)buf, count, &pos);
-+	set_fs(old_fs);
-+
-+	return res;
-+}
-+EXPORT_SYMBOL(kernel_write);
-+
-diff --git a/fs/splice.c b/fs/splice.c
-index c1a2861..44b201b 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -583,22 +583,6 @@ static ssize_t kernel_readv(struct file *file, const struct iovec *vec,
- 	return res;
+diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+index ca88731..e984302 100644
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -1191,8 +1191,9 @@ __releases(fc->lock)
+  * request_end().  Otherwise add it to the processing list, and set
+  * the 'sent' flag.
+  */
+-static ssize_t fuse_dev_do_read(struct fuse_conn *fc, struct file *file,
+-				struct fuse_copy_state *cs, size_t nbytes)
++static ssize_t __maybe_unused
++fuse_dev_do_read(struct fuse_conn *fc, struct file *file,
++		 struct fuse_copy_state *cs, size_t nbytes)
+ {
+ 	int err;
+ 	struct fuse_req *req;
+@@ -1291,6 +1292,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
+ 	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
  }
  
--ssize_t kernel_write(struct file *file, const char *buf, size_t count,
--			    loff_t pos)
--{
--	mm_segment_t old_fs;
--	ssize_t res;
--
--	old_fs = get_fs();
--	set_fs(get_ds());
--	/* The cast to a user pointer is valid due to the set_fs() */
--	res = vfs_write(file, (__force const char __user *)buf, count, &pos);
--	set_fs(old_fs);
--
--	return res;
--}
--EXPORT_SYMBOL(kernel_write);
--
- ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
- 				 struct pipe_inode_info *pipe, size_t len,
- 				 unsigned int flags)
++#ifdef CONFIG_SYSCALL_SPLICE
+ static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
+ 				    struct pipe_inode_info *pipe,
+ 				    size_t len, unsigned int flags)
+@@ -1368,6 +1370,9 @@ out:
+ 	kfree(bufs);
+ 	return ret;
+ }
++#else /* CONFIG_SYSCALL_SPLICE */
++#define fuse_dev_splice_read NULL
++#endif
+ 
+ static int fuse_notify_poll(struct fuse_conn *fc, unsigned int size,
+ 			    struct fuse_copy_state *cs)
 -- 
 2.1.0
 
