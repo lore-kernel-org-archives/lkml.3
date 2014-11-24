@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775AbaKXSGZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:06:25 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37021 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752AbaKXSGX (ORCPT
+	id S1754786AbaKXSGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:06:52 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:50052 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754439AbaKXSCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:06:23 -0500
-Date: Mon, 24 Nov 2014 18:04:22 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Alban Bedel <alban.bedel@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>
-Message-ID: <20141124180422.GO7712@sirena.org.uk>
-References: <1416834123-23139-1-git-send-email-alban.bedel@avionic-design.de>
- <20141124151527.GC7712@sirena.org.uk>
- <20141124181233.53580998@avionic-0020>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yUmmepPgoWmUqRhm"
-Content-Disposition: inline
-In-Reply-To: <20141124181233.53580998@avionic-0020>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/4] devicetree: add a binding for a regulator that
- constrains its supply
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 24 Nov 2014 13:02:36 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-88-547372bbe859
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH v7 02/12] x86_64: load_percpu_segment: read
+ irq_stack_union.gs_base before load_segment
+Date: Mon, 24 Nov 2014 21:02:15 +0300
+Message-id: <1416852146-9781-3-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 2.1.3
+In-reply-to: <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t/xK7q7i4pDDG5dkbTY9usRm8XvvTNZ
+	LeasX8NmceTad3aL69/eMFp8evmA0WLL9SYmi+cPH7JbTHjYxm4xbaO4xcruZjaL7c/eMlms
+	7HzAanF51xw2i3tr/rNaXDqwgMli8ZHbzBbvnk1mtti8aSqzxdVVB9ktfmx4zOog6jF/50dG
+	j52z7rJ7LNhU6rF4z0smj02rOtk8Nn2axO7R9fYKk8e7c+fYPU7M+M3i8eTKdCaPj09vsXi8
+	33eVzaNvyypGj8+b5DxOtHxhDeCP4rJJSc3JLEst0rdL4Mpom3KavWAjd8XuTztYGxhvcXYx
+	cnJICJhI9JyawAhhi0lcuLeerYuRi0NIYCmjxJLGtWAJIYE+JomJbX4gNpuAnsS/WdvZQGwR
+	AV2JVc93MYM0MAucZZX482cXWEJYIFNi1cG9rCA2i4CqxOU/vewgNq+Aq0Tv2rtANRxA2+Qk
+	tq7zBjE5Bdwkfjwtg9jbyCjRM2sz2wRG3gWMDKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcx
+	QiLoyw7GxcesDjEKcDAq8fD+6CkMEWJNLCuuzD3EKMHBrCTCm5ZfHCLEm5JYWZValB9fVJqT
+	WnyIkYmDU6qB0fLstvK36xXnrTQ0m94k/fOif8XRXIYzp/fYZ2lIx6/prcpiL9wuUuv3wujZ
+	R2NfZ3aRrorZC7krL0Ry256dUbz6j5U+5/wZM851Tb68tnG7hZpBfN9bq660i6JM0ckhfH+2
+	hrxm6O/0akqTuLlZs/xmAW/snSr7OXJ7v657PI3X9aGox6ZbSizFGYmGWsxFxYkAgN2gW34C	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Reading irq_stack_union.gs_base after load_segment creates troubles for kasan.
+Compiler inserts __asan_load in between load_segment and wrmsrl. If kernel
+built with stackprotector this will result in boot failure because __asan_load
+has stackprotector.
 
---yUmmepPgoWmUqRhm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To avoid this irq_stack_union.gs_base stored to temporary variable before
+load_segment, so __asan_load will be called before load_segment().
 
-On Mon, Nov 24, 2014 at 06:12:33PM +0100, Alban Bedel wrote:
+There are two alternative ways to fix this:
+ a) Add __attribute__((no_sanitize_address)) to load_percpu_segment(),
+    which tells compiler to not instrument this function. However this
+    will result in build failure with CONFIG_KASAN=y and CONFIG_OPTIMIZE_INLINING=y.
 
-> Using this driver the DTS for the add-on board can further constrain
-> this supply to get the voltage it need, for example 3.3V. I understand
+ b) Add -fno-stack-protector for mm/kasan/kasan.c
 
-> I saw 3 ways to solve this problem:
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+---
+ arch/x86/kernel/cpu/common.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-> 1) This, use a "filter" regulator
-> 2) Extend each and every driver that use a voltage regulator to
->    optionally set the voltage
-> 3) Include the required range in the phandle reference
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 8779d63..97f56f6 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -389,8 +389,10 @@ void load_percpu_segment(int cpu)
+ #ifdef CONFIG_X86_32
+ 	loadsegment(fs, __KERNEL_PERCPU);
+ #else
++	void *gs_base = per_cpu(irq_stack_union.gs_base, cpu);
++
+ 	loadsegment(gs, 0);
+-	wrmsrl(MSR_GS_BASE, (unsigned long)per_cpu(irq_stack_union.gs_base, cpu));
++	wrmsrl(MSR_GS_BASE, (unsigned long)gs_base);
+ #endif
+ 	load_stack_canary_segment();
+ }
+-- 
+2.1.3
 
-> #1 was the easiest :) #2 doesn't seems practical to me, #3 seems pretty
-> good but I'm really not sure if that would be acceptable.
-
-The DT overlay for the add on board should be setting the constraints
-for the parent regulator.  I wouldn't expect the final DT to look any
-different to how it looks with no hardware modularity unless the actual
-module is interesting enough to have a driver of its own.
-
---yUmmepPgoWmUqRhm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUc3MmAAoJECTWi3JdVIfQcb8H+wW0MTogKJyCaC7YefFGslSg
-GRAxfsH8dH14IZkbN2jMwrPjoEq0xqKXXQdTfhbqe7Qpy0z6zQR+4gpYR5EjiCxX
-x7iKw7o/loKB0ODFAOqGrxg6qopYbKFVm7sl6+f9Yg9dVULLGQ6N535rnNXm3R3t
-d5r8WRrN2UzQ0CbTTDRtKqNHhTrWX36AIfQfUKn9zXRZiXpt5JDaRxr1gYbIc72n
-BnRzELSjIOXsxZQQukY1bv4zkLzBWhbridC67FceXv1SsX1822xcfSEHab00e32/
-3mC9TjczMldjckcVYc2xbYwPQxYj7zc6DM8v8dtkj7WTHLNDUfTvP48Po+LQK2Q=
-=JUCo
------END PGP SIGNATURE-----
-
---yUmmepPgoWmUqRhm--
