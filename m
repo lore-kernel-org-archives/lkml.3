@@ -1,473 +1,614 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227AbaKXU5G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:57:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60466 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852AbaKXU5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:57:03 -0500
-Message-ID: <1416862573.11825.83.camel@bling.home>
-Subject: Re: [PATCH v3 7/8] KVM: kvm-vfio: generic forwarding control
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Eric Auger <eric.auger@linaro.org>
-Cc: eric.auger@st.com, christoffer.dall@linaro.org, marc.zyngier@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, joel.schopp@amd.com, kim.phillips@freescale.com,
-        paulus@samba.org, gleb@kernel.org, pbonzini@redhat.com, agraf@suse.de,
-        linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
-        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        john.liuli@huawei.com, ming.lei@canonical.com, feng.wu@intel.com
-Date: Mon, 24 Nov 2014 13:56:13 -0700
-In-Reply-To: <1416767760-14487-8-git-send-email-eric.auger@linaro.org>
-References: <1416767760-14487-1-git-send-email-eric.auger@linaro.org>
-	 <1416767760-14487-8-git-send-email-eric.auger@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751276AbaKXU5M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:57:12 -0500
+Received: from mailout.easymail.ca ([64.68.201.169]:59912 "EHLO
+	mailout.easymail.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219AbaKXU5H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 15:57:07 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -4.056
+From: Khalid Aziz <khalid.aziz@oracle.com>
+To: tglx@linutronix.de, corbet@lwn.net, mingo@redhat.com, hpa@zytor.com,
+        peterz@infradead.org, riel@redhat.com, akpm@linux-foundation.org,
+        rientjes@google.com, ak@linux.intel.com, mgorman@suse.de,
+        liwanp@linux.vnet.ibm.com, raistlin@linux.it,
+        kirill.shutemov@linux.intel.com, atomlin@redhat.com, avagin@openvz.org,
+        gorcunov@openvz.org, serge.hallyn@canonical.com, athorlton@sgi.com,
+        oleg@redhat.com, vdavydov@parallels.com, daeseok.youn@gmail.com,
+        keescook@chromium.org, yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu,
+        vishnu.ps@samsung.com, axboe@fb.com, paulmck@linux.vnet.ibm.com
+Cc: Khalid Aziz <khalid.aziz@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-api@vger.kernel.org
+Subject: [PATCH v3] sched/fair: Add advisory flag for borrowing a timeslice (was: Pre-emption control for userspace)
+Date: Mon, 24 Nov 2014 13:56:35 -0700
+Message-Id: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-11-23 at 19:35 +0100, Eric Auger wrote:
-> This patch introduces a new KVM_DEV_VFIO_DEVICE group.
-> 
-> This is a new control channel which enables KVM to cooperate with
-> viable VFIO devices.
-> 
-> Functions are introduced to check the validity of a VFIO device
-> file descriptor, increment/decrement the ref counter of the VFIO
-> device.
-> 
-> The patch introduces 2 attributes for this new device group:
-> KVM_DEV_VFIO_DEVICE_FORWARD_IRQ, KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ.
-> Their purpose is to turn a VFIO device IRQ into a forwarded IRQ and
-> unset respectively unset the feature.
-> 
-> The VFIO device stores a list of registered forwarded IRQs. The reference
-> counter of the device is incremented each time a new IRQ is forwarded.
-> Reference counter is decremented when the IRQ forwarding is unset.
-> 
-> The forwarding programmming is architecture specific, implemented in
-> kvm_arch_set_fwd_state function. Architecture specific implementation is
-> enabled when __KVM_HAVE_ARCH_KVM_VFIO_FORWARD is set. When not set those
-> functions are void.
-> 
-> Signed-off-by: Eric Auger <eric.auger@linaro.org>
-> 
-> ---
-> 
-> v2 -> v3:
-> - add API comments in kvm_host.h
-> - improve the commit message
-> - create a private kvm_vfio_fwd_irq struct
-> - fwd_irq_action replaced by a bool and removal of VFIO_IRQ_CLEANUP. This
->   latter action will be handled in vgic.
-> - add a vfio_device handle argument to kvm_arch_set_fwd_state. The goal is
->   to move platform specific stuff in architecture specific code.
-> - kvm_arch_set_fwd_state renamed into kvm_arch_vfio_set_forward
-> - increment the ref counter each time we do an IRQ forwarding and decrement
->   this latter each time one IRQ forward is unset. Simplifies the whole
->   ref counting.
-> - simplification of list handling: create, search, removal
-> 
-> v1 -> v2:
-> - __KVM_HAVE_ARCH_KVM_VFIO renamed into __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
-> - original patch file separated into 2 parts: generic part moved in vfio.c
->   and ARM specific part(kvm_arch_set_fwd_state)
-> ---
->  include/linux/kvm_host.h |  28 ++++++
->  virt/kvm/vfio.c          | 249 ++++++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 274 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index ea53b04..0b9659d 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -1076,6 +1076,15 @@ struct kvm_device_ops {
->  		      unsigned long arg);
->  };
->  
-> +/* internal self-contained structure describing a forwarded IRQ */
-> +struct kvm_fwd_irq {
-> +	struct kvm *kvm; /* VM to inject the GSI into */
-> +	struct vfio_device *vdev; /* vfio device the IRQ belongs to */
-> +	__u32 index; /* VFIO device IRQ index */
-> +	__u32 subindex; /* VFIO device IRQ subindex */
-> +	__u32 gsi; /* gsi, ie. virtual IRQ number */
-> +};
-> +
->  void kvm_device_get(struct kvm_device *dev);
->  void kvm_device_put(struct kvm_device *dev);
->  struct kvm_device *kvm_device_from_filp(struct file *filp);
-> @@ -1085,6 +1094,25 @@ void kvm_unregister_device_ops(u32 type);
->  extern struct kvm_device_ops kvm_mpic_ops;
->  extern struct kvm_device_ops kvm_xics_ops;
->  
-> +#ifdef __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
-> +/**
-> + * kvm_arch_vfio_set_forward - changes the forwarded state of an IRQ
-> + *
-> + * @fwd_irq: handle to the forwarded irq struct
-> + * @forward: true means forwarded, false means not forwarded
-> + * returns 0 on success, < 0 on failure
-> + */
-> +int kvm_arch_vfio_set_forward(struct kvm_fwd_irq *fwd_irq,
-> +			      bool forward);
+sched/fair: Add advisory flag for borrowing a timeslice
 
-We could add a struct device* to the args list or into struct
-kvm_fwd_irq so that arch code doesn't need to touch the vdev.  arch code
-has no business dealing with references to the vfio_device.
+This patch adds a way for a task to request to borrow one timeslice
+from future if it is about to be preempted, so it could delay
+preemption and complete any critical task it is in the middle of.
 
-> +
-> +#else
-> +static inline int kvm_arch_vfio_set_forward(struct kvm_fwd_irq *fwd_irq,
-> +					    bool forward)
-> +{
-> +	return 0;
-> +}
-> +#endif
-> +
->  #ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
->  
->  static inline void kvm_vcpu_set_in_spin_loop(struct kvm_vcpu *vcpu, bool val)
-> diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
-> index 6f0cc34..af178bb 100644
-> --- a/virt/kvm/vfio.c
-> +++ b/virt/kvm/vfio.c
-> @@ -25,8 +25,16 @@ struct kvm_vfio_group {
->  	struct vfio_group *vfio_group;
->  };
->  
-> +/* private linkable kvm_fwd_irq struct */
-> +struct kvm_vfio_fwd_irq_node {
-> +	struct list_head link;
-> +	struct kvm_fwd_irq fwd_irq;
-> +};
-> +
->  struct kvm_vfio {
->  	struct list_head group_list;
-> +	/* list of registered VFIO forwarded IRQs */
-> +	struct list_head fwd_node_list;
->  	struct mutex lock;
->  	bool noncoherent;
->  };
-> @@ -247,12 +255,239 @@ static int kvm_vfio_set_group(struct kvm_device *dev, long attr, u64 arg)
->  	return -ENXIO;
->  }
->  
-> +/**
-> + * kvm_vfio_get_vfio_device - Returns a handle to a vfio-device
-> + *
-> + * Checks it is a valid vfio device and increments its reference counter
-> + * @fd: file descriptor of the vfio platform device
-> + */
-> +static struct vfio_device *kvm_vfio_get_vfio_device(int fd)
-> +{
-> +	struct fd f = fdget(fd);
-> +	struct vfio_device *vdev;
-> +
-> +	if (!f.file)
-> +		return NULL;
+This feature helps with performance on databases and has been
+used for many years on other OSs by the databases. This feature
+helps in situation where a task acquires a lock before performing a
+critical operation on the database and happens to get preempted before
+it completes its task.  This lock being held causes all other tasks
+that also acquire the same lock to perform their critical operation
+on the database, to start queueing up and causing large number of
+context switches.  This queueing problem can be avoided if the task
+that acquires lock first could request scheduler to let it borrow one
+timeslice once it enters its critical section and hence allow it to
+complete its critical section without causing queueing problem. If
+critical section completes before the task is due for preemption,
+the task can simply desassert its request. A task sends the
+scheduler this request by setting a flag in a memory location it has
+shared with the kernel.  Kernel uses bytes in the same memory location
+to let the task know when its request for amnesty from preemption
+has been granted.
 
-ERR_PTR(-EINVAL)?
+These rules apply to the use of this feature:
 
-ie. propagate errors from the point where they're encountered so we
-don't need to make up an errno later.
+- Request to borrow timeslice is not guranteed to be honored.
+- If the task is allowed to borrow, kernel will inform the task
+  of this. When this happens, task must yield the processor as soon
+  as it completes its critical section.
+- If the task fails to yield processor after being allowed to
+  borrow, it is penalized by forcing it to skip its next time slot
+  by the scheduler.
+- Task is charged additional time for the borrowed timeslice as
+  accumulated run time. This pushes it further down in consideration
+  for the next task to run.
 
-> +	vdev = kvm_vfio_device_get_external_user(f.file);
-> +	fdput(f);
-> +	return vdev;
-> +}
-> +
-> +/**
-> + * kvm_vfio_put_vfio_device: decrements the reference counter of the
-> + * vfio platform * device
-> + *
-> + * @vdev: vfio_device handle to release
-> + */
-> +static void kvm_vfio_put_vfio_device(struct vfio_device *vdev)
-> +{
-> +	kvm_vfio_device_put_external_user(vdev);
-> +}
-> +
-> +/**
-> + * kvm_vfio_find_fwd_irq - checks whether a forwarded IRQ already is
-> + * registered in the list of forwarded IRQs
-> + *
-> + * @kv: handle to the kvm-vfio device
-> + * @fwd: handle to the forwarded irq struct
-> + * In the positive returns the handle to its node in the kvm-vfio
-> + * forwarded IRQ list, returns NULL otherwise.
-> + * Must be called with kv->lock hold.
-> + */
-> +static struct kvm_vfio_fwd_irq_node *kvm_vfio_find_fwd_irq(
-> +				struct kvm_vfio *kv,
-> +				struct kvm_fwd_irq *fwd)
-> +{
-> +	struct kvm_vfio_fwd_irq_node *node;
-> +
-> +	list_for_each_entry(node, &kv->fwd_node_list, link) {
-> +		if ((node->fwd_irq.index == fwd->index) &&
-> +		    (node->fwd_irq.subindex == fwd->subindex) &&
-> +		    (node->fwd_irq.vdev == fwd->vdev))
-> +			return node;
-> +	}
-> +	return NULL;
-> +}
-> +/**
-> + * kvm_vfio_register_fwd_irq - Allocates, populates and registers a
-> + * forwarded IRQ
-> + *
-> + * @kv: handle to the kvm-vfio device
-> + * @fwd: handle to the forwarded irq struct
-> + * In case of success returns a handle to the new list node,
-> + * NULL otherwise.
-> + * Must be called with kv->lock hold.
-> + */
-> +static struct kvm_vfio_fwd_irq_node *kvm_vfio_register_fwd_irq(
-> +				struct kvm_vfio *kv,
-> +				struct kvm_fwd_irq *fwd)
-> +{
-> +	struct kvm_vfio_fwd_irq_node *node;
-> +
-> +	node = kmalloc(sizeof(*node), GFP_KERNEL);
-> +	if (!node)
-> +		return NULL;
+This feature was tested with a TPC-C workload. TPC-C workload shows
+a 3% improvement in tpcc throughput when using this feature, which
+is a significant improvement.
 
-ERR_PTR(-ENOMEM)?
+A new sysctl tunable kernel.preempt_delay_available enables this
+feature at run time. The kernel boots up with this feature disabled
+by default.
 
-> +
-> +	node->fwd_irq = *fwd;
-> +
-> +	list_add(&node->link, &kv->fwd_node_list);
-> +
-> +	return node;
-> +}
-> +
-> +/**
-> + * kvm_vfio_unregister_fwd_irq - unregisters and frees a forwarded IRQ
-> + *
-> + * @node: handle to the node struct
-> + * Must be called with kv->lock hold.
-> + */
-> +static void kvm_vfio_unregister_fwd_irq(struct kvm_vfio_fwd_irq_node *node)
-> +{
-> +	list_del(&node->link);
-> +	kfree(node);
-> +}
-> +
-> +/**
-> + * kvm_vfio_set_forward - turns a VFIO device IRQ into a forwarded IRQ
-> + * @kv: handle to the kvm-vfio device
-> + * @fd: file descriptor of the vfio device the IRQ belongs to
-> + * @fwd: handle to the forwarded irq struct
-> + *
-> + * Registers an IRQ as forwarded and calls the architecture specific
-> + * implementation of set_forward. In case of operation failure, the IRQ
-> + * is unregistered. In case of success, the vfio device ref counter is
-> + * incremented.
-> + */
-> +static int kvm_vfio_set_forward(struct kvm_vfio *kv, int fd,
-> +				struct kvm_fwd_irq *fwd)
-> +{
-> +	int ret;
-> +	struct kvm_vfio_fwd_irq_node *node =
-> +			kvm_vfio_find_fwd_irq(kv, fwd);
-> +
-> +	if (node)
-> +		return -EINVAL;
+Documentation file included in this patch contains details on how to
+use this feature, and conditions associated with its use. This patch
+also adds a new field in scheduler statistics which keeps track of
+how many times a task was granted amnesty from preemption.
 
-I assume you're saving -EBUSY for arch code for the case where the IRQ
-is already active?
+Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+---
 
-> +	node = kvm_vfio_register_fwd_irq(kv, fwd);
-> +	if (!node)
-> +		return -ENOMEM;
+With this new version of this patch, the kernel will not enable
+preemption delay by default. This feature must be turned on by using
+sysctl tunable kernel.preempt_delay_available. With this change, there
+are now two ways to eliminate the impact of this feature on systems
+that do not intend to use it and are sensitive to scheduling delays
+that may be caused by the use of this feature. This feature can be
+configured out for custom built kernels. For pre-compiled kernels where
+this feature may have been configured in, it will stay off until enabled
+through sysctl tunable.
 
-if (IS_ERR(node))
-	return PTR_ERR(node);
+Changelog:
+v3:
+	- Use prctl() syscall to give kernel the location for shared flag 
+	  instead of using a proc file.
+	- Disabled this feature by default on a newly booted kernel and
+	  added a sysctl tunable to enable/disable it at runtime.
+v2:
+	- Replaced mmap operation with a more memory efficient futex
+	  like communication between userspace and kernel
+	- Added a flag to let userspace know if it was granted amnesty
+	- Added a penalty for tasks failing to yield CPU when they
+	  are granted amnesty from pre-emption
 
-> +	ret = kvm_arch_vfio_set_forward(fwd, true);
-> +	if (ret < 0)  {
-> +		kvm_vfio_unregister_fwd_irq(node);
-> +		return ret;
-> +	}
-> +	/* increment the ref counter */
-> +	kvm_vfio_get_vfio_device(fd);
+v1:
+	- Initial RFC patch with mmap for communication between userspace
+	  and kernel
 
-Wouldn't it be easier if the reference counting were coupled with the
-register/unregister_fwd_irq?  I'd be tempted to pass your user_fwd_irq
-to this function instead of a kvm_fwd_irq.
+ Documentation/scheduler/sched-preempt-delay.txt | 117 ++++++++++++++++++++++++
+ arch/x86/Kconfig                                |  12 +++
+ include/linux/sched.h                           |  15 +++
+ include/linux/sched/sysctl.h                    |   4 +
+ include/uapi/linux/prctl.h                      |   3 +
+ kernel/fork.c                                   |   5 +
+ kernel/sched/core.c                             |   8 ++
+ kernel/sched/debug.c                            |   1 +
+ kernel/sched/fair.c                             | 115 ++++++++++++++++++++++-
+ kernel/sys.c                                    |  43 +++++++++
+ kernel/sysctl.c                                 |   9 ++
+ 11 files changed, 329 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/scheduler/sched-preempt-delay.txt
 
-> +	return ret;
-> +}
-> +
-> +/**
-> + * kvm_vfio_unset_forward - Sets a VFIO device IRQ as non forwarded
-> + * @kv: handle to the kvm-vfio device
-> + * @fwd: handle to the forwarded irq struct
-> + *
-> + * Calls the architecture specific implementation of set_forward and
-> + * unregisters the IRQ from the forwarded IRQ list. Decrements the vfio
-> + * device reference counter.
-> + */
-> +static int kvm_vfio_unset_forward(struct kvm_vfio *kv,
-> +				  struct kvm_fwd_irq *fwd)
-> +{
-> +	int ret;
-> +	struct kvm_vfio_fwd_irq_node *node =
-> +			kvm_vfio_find_fwd_irq(kv, fwd);
-> +	if (!node)
-> +		return -EINVAL;
-> +	ret = kvm_arch_vfio_set_forward(fwd, false);
-
-Whoa, if the unforward fails we continue to undo everything else?  How
-does userspace cleanup from this?  We need a guaranteed shutdown path
-for cleanup code, we can never trust userspace to do things in the
-correct order.  Can we really preclude the user calling unforward with
-an active IRQ?  Maybe _forward() and _unforward() need to be separate
-functions so that 'un' can be made void to indicate it can't fail.
-
-> +	kvm_vfio_unregister_fwd_irq(node);
-> +
-> +	/* decrement the ref counter */
-> +	kvm_vfio_put_vfio_device(fwd->vdev);
-
-Again, seems like the unregister should do this.
-
-> +	return ret;
-> +}
-> +
-> +static int kvm_vfio_control_irq_forward(struct kvm_device *kdev, long attr,
-> +					int32_t __user *argp)
-> +{
-> +	struct kvm_arch_forwarded_irq user_fwd_irq;
-> +	struct kvm_fwd_irq fwd;
-> +	struct vfio_device *vdev;
-> +	struct kvm_vfio *kv = kdev->private;
-> +	int ret;
-> +
-> +	if (copy_from_user(&user_fwd_irq, argp, sizeof(user_fwd_irq)))
-> +		return -EFAULT;
-> +
-> +	vdev = kvm_vfio_get_vfio_device(user_fwd_irq.fd);
-> +	if (IS_ERR(vdev)) {
-> +		ret = PTR_ERR(vdev);
-> +		goto out;
-> +	}
-> +
-> +	fwd.vdev =  vdev;
-> +	fwd.kvm =  kdev->kvm;
-> +	fwd.index = user_fwd_irq.index;
-> +	fwd.subindex = user_fwd_irq.subindex;
-> +	fwd.gsi = user_fwd_irq.gsi;
-> +
-> +	switch (attr) {
-> +	case KVM_DEV_VFIO_DEVICE_FORWARD_IRQ:
-> +		mutex_lock(&kv->lock);
-> +		ret = kvm_vfio_set_forward(kv, user_fwd_irq.fd, &fwd);
-> +		mutex_unlock(&kv->lock);
-> +		break;
-> +	case KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ:
-> +		mutex_lock(&kv->lock);
-> +		ret = kvm_vfio_unset_forward(kv, &fwd);
-> +		mutex_unlock(&kv->lock);
-> +		break;
-> +	}
-> +out:
-> +	kvm_vfio_put_vfio_device(vdev);
-
-It might add a little extra code, but logically the reference being tied
-to the register/unregister feels a bit cleaner than this.
-
-> +	return ret;
-> +}
-> +
-> +static int kvm_vfio_set_device(struct kvm_device *kdev, long attr, u64 arg)
-> +{
-> +	int32_t __user *argp = (int32_t __user *)(unsigned long)arg;
-> +	int ret;
-> +
-> +	switch (attr) {
-> +	case KVM_DEV_VFIO_DEVICE_FORWARD_IRQ:
-> +	case KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ:
-> +		ret = kvm_vfio_control_irq_forward(kdev, attr, argp);
-> +		break;
-> +	default:
-> +		ret = -ENXIO;
-> +	}
-> +	return ret;
-> +}
-> +
-> +/**
-> + * kvm_vfio_clean_fwd_irq - Unset forwarding state of all
-> + * registered forwarded IRQs and free their list nodes.
-> + * @kv: kvm-vfio device
-> + *
-> + * Loop on all registered device/IRQ combos, reset the non forwarded state,
-> + * void the lists and release the reference
-> + */
-> +static int kvm_vfio_clean_fwd_irq(struct kvm_vfio *kv)
-> +{
-> +	struct kvm_vfio_fwd_irq_node *node, *tmp;
-> +
-> +	list_for_each_entry_safe(node, tmp, &kv->fwd_node_list, link) {
-> +		kvm_vfio_unset_forward(kv, &node->fwd_irq);
-> +	}
-> +	return 0;
-
-This shouldn't be able to fail, make it void.
-
-> +}
-> +
->  static int kvm_vfio_set_attr(struct kvm_device *dev,
->  			     struct kvm_device_attr *attr)
->  {
->  	switch (attr->group) {
->  	case KVM_DEV_VFIO_GROUP:
->  		return kvm_vfio_set_group(dev, attr->attr, attr->addr);
-> +	case KVM_DEV_VFIO_DEVICE:
-> +		return kvm_vfio_set_device(dev, attr->attr, attr->addr);
->  	}
->  
->  	return -ENXIO;
-> @@ -268,10 +503,17 @@ static int kvm_vfio_has_attr(struct kvm_device *dev,
->  		case KVM_DEV_VFIO_GROUP_DEL:
->  			return 0;
->  		}
-> -
->  		break;
-> +#ifdef __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
-> +	case KVM_DEV_VFIO_DEVICE:
-> +		switch (attr->attr) {
-> +		case KVM_DEV_VFIO_DEVICE_FORWARD_IRQ:
-> +		case KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ:
-> +			return 0;
-> +		}
-> +		break;
-> +#endif
->  	}
-> -
->  	return -ENXIO;
->  }
->  
-> @@ -285,7 +527,7 @@ static void kvm_vfio_destroy(struct kvm_device *dev)
->  		list_del(&kvg->node);
->  		kfree(kvg);
->  	}
-> -
-> +	kvm_vfio_clean_fwd_irq(kv);
->  	kvm_vfio_update_coherency(dev);
->  
->  	kfree(kv);
-> @@ -317,6 +559,7 @@ static int kvm_vfio_create(struct kvm_device *dev, u32 type)
->  		return -ENOMEM;
->  
->  	INIT_LIST_HEAD(&kv->group_list);
-> +	INIT_LIST_HEAD(&kv->fwd_node_list);
->  	mutex_init(&kv->lock);
->  
->  	dev->private = kv;
-
-
+diff --git a/Documentation/scheduler/sched-preempt-delay.txt b/Documentation/scheduler/sched-preempt-delay.txt
+new file mode 100644
+index 0000000..07dd699
+--- /dev/null
++++ b/Documentation/scheduler/sched-preempt-delay.txt
+@@ -0,0 +1,117 @@
++=================================
++What is preemption delay feature?
++=================================
++
++There are times when a userspace task is executing a critical section
++which gates a number of other tasks that want access to the same
++critical section. If the task holding the lock that guards this critical
++section is preempted by the scheduler in the middle of its critical
++section because its timeslice is up, scheduler ends up scheduling other
++threads which immediately try to grab the lock to enter the critical
++section. This only results in lots of context changes are tasks wake up
++and go to sleep immediately again. If on the other hand, the original
++task were allowed to run for an extra timeslice, it could have completed
++executing its critical section allowing other tasks to make progress
++when they get scheduled. Preemption delay feature allows a task to
++request scheduler to grant it one extra timeslice, if possible.
++
++
++==================================
++Using the preemption delay feature
++==================================
++
++This feature is compiled in the kernel by setting
++CONFIG_SCHED_PREEMPT_DELAY in kernel configuration. By default, the
++kernel boots up with this feature disabled. Enable it using sysctl
++tunable kernel.preempt_delay_available. Once this feature is
++enabled, the userspace process communicates with the kernel using a
++4-byte memory location in its address space. This location must be
++aligned to 4-byte boundary. It first gives the kernel address for this
++memory location by making a prctl() system call with PR_SET_PREEMPT_DELAY
++option. This memory location is interpreted as a sequence of 4 bytes:
++
++	byte[0] = flag to request preemption delay
++	byte[1] = flag from kernel indicating preemption delay was granted
++	byte[2] = reserved for future use
++	byte[3] = reserved for future use
++
++Task requests a preemption delay by writing a non-zero value to the
++first byte. Scheduler checks this value before preempting the task.
++Scheduler can choose to grant one and only an additional time slice to
++the task for each delay request but this delay is not guaranteed.
++If scheduler does grant an additional timeslice, it will set the flag
++in second byte. Upon completion of the section of code where the task
++wants preemption delay, task should check the second byte. If the flag
++in second byte is set, it should clear this flag and call sched_yield()
++so as to not hog the processor. If a thread was granted additional
++timeslice and it fails to call sched_yield(), scheduler will penalize
++it by denying its next request for additional timeslice. Following sample
++code illustrates how to use this feature:
++
++int main()
++{
++	unsigned char buf[256];
++	union {
++		struct {
++			unsigned char nopreempt;
++			unsigned char yield;
++			unsigned char rsvd[2];
++		} flags;
++		uint32_t preempt_delay;
++	} delay;
++
++	delay.preempt_delay = 0;
++
++	/* Tell kernel where the flag lives */
++	prctl(PR_SET_PREEMPT_DELAY, &delay);
++
++	while (/* some condition is true */) {
++		/* do some work and get ready to enter critical section */
++		delay.flags.nopreempt = 1;
++		/*
++		 * Obtain lock for critical section
++		 */
++		/*
++		 * critical section
++		 */
++		/*
++		 * Release lock for critical section
++		 */
++		delay.flags.nopreempt = 0;
++		/* Give the CPU up if required */
++		if (delay.flags.yield) {
++			delay.flags.yield = 0;
++			sched_yield();
++		}
++		/* do some more work */
++	}
++	/*
++	 * Tell kernel we are done asking for preemption delay
++	 */
++	prctl(PR_SET_PREEMPT_DELAY, NULL);
++}
++
++
++====================
++Scheduler statistics
++====================
++
++Preemption delay features adds a new field to scheduler statictics -
++nr_preempt_delayed. This is a per thread statistic that tracks the
++number of times a thread was granted amnesty from preemption when it
++requested for one. "cat /proc/<pid>/task/<tid>/sched" will list this
++number along with other scheduler statistics.
++
++
++=====
++Notes
++=====
++
++1. Location of shared flag can be set using prctl() only once. To
++   write a new memory address, the previous memory address must be
++   cleared first by writing NULL. Each new memory address requires
++   validation in the kernel and update of pointers. Changing this
++   address too many times creates too much overhead.
++
++2. If the location of shared flag is not aligned to 4-byte boundary,
++   prctl() will terminate with EFAULT.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ded8a67..3dac536 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -852,6 +852,18 @@ config SCHED_MC
+ 	  making when dealing with multi-core CPU chips at a cost of slightly
+ 	  increased overhead in some places. If unsure say N here.
+ 
++config SCHED_PREEMPT_DELAY
++	def_bool n
++	prompt "Scheduler preemption delay support"
++	depends on PROC_FS
++	---help---
++	  Say Y here if you want to be able to delay scheduler preemption
++	  when possible by setting a flag in a memory location after
++	  sharing the address of this location with kernel using
++	  PR_SET_PREEMPT_DELAY prctl() call. See
++	  Documentation/scheduler/sched-preempt-delay.txt for details.
++	  If in doubt, say "N".
++
+ source "kernel/Kconfig.preempt"
+ 
+ config X86_UP_APIC
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5e344bb..f5150e4 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1116,6 +1116,7 @@ struct sched_statistics {
+ 	u64			nr_wakeups_affine_attempts;
+ 	u64			nr_wakeups_passive;
+ 	u64			nr_wakeups_idle;
++	u64			nr_preempt_delayed;
+ };
+ #endif
+ 
+@@ -1324,6 +1325,13 @@ struct task_struct {
+ 	/* Revert to default priority/policy when forking */
+ 	unsigned sched_reset_on_fork:1;
+ 	unsigned sched_contributes_to_load:1;
++#ifdef CONFIG_SCHED_PREEMPT_DELAY
++	struct preempt_delay {
++		u32 __user *delay_req;		/* delay request flag pointer */
++		unsigned char delay_granted;	/* currently in delay */
++		unsigned char yield_penalty;	/* failure to yield penalty */
++	} sched_preempt_delay;
++#endif
+ 
+ 	unsigned long atomic_flags; /* Flags needing atomic access. */
+ 
+@@ -2179,6 +2187,13 @@ extern u64 scheduler_tick_max_deferment(void);
+ static inline bool sched_can_stop_tick(void) { return false; }
+ #endif
+ 
++#if defined(CONFIG_SCHED_PREEMPT_DELAY) && defined(CONFIG_PROC_FS)
++extern void sched_preempt_delay_show(struct seq_file *m,
++					struct task_struct *task);
++extern void sched_preempt_delay_set(struct task_struct *task,
++					unsigned char *val);
++#endif
++
+ #ifdef CONFIG_SCHED_AUTOGROUP
+ extern void sched_autogroup_create_attach(struct task_struct *p);
+ extern void sched_autogroup_detach(struct task_struct *p);
+diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+index 596a0e0..516f74e 100644
+--- a/include/linux/sched/sysctl.h
++++ b/include/linux/sched/sysctl.h
+@@ -107,4 +107,8 @@ extern int sysctl_numa_balancing(struct ctl_table *table, int write,
+ 				 void __user *buffer, size_t *lenp,
+ 				 loff_t *ppos);
+ 
++#ifdef CONFIG_SCHED_PREEMPT_DELAY
++extern int sysctl_preempt_delay_available;
++#endif
++
+ #endif /* _SCHED_SYSCTL_H */
+diff --git a/include/uapi/linux/prctl.h b/include/uapi/linux/prctl.h
+index 513df75..ecfd2cd 100644
+--- a/include/uapi/linux/prctl.h
++++ b/include/uapi/linux/prctl.h
+@@ -179,4 +179,7 @@ struct prctl_mm_map {
+ #define PR_SET_THP_DISABLE	41
+ #define PR_GET_THP_DISABLE	42
+ 
++#define PR_SET_PREEMPT_DELAY	43
++#define PR_GET_PREEMPT_DELAY	44
++
+ #endif /* _LINUX_PRCTL_H */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 9b7d746..7f0d843 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1671,6 +1671,11 @@ long do_fork(unsigned long clone_flags,
+ 			init_completion(&vfork);
+ 			get_task_struct(p);
+ 		}
++#ifdef CONFIG_SCHED_PREEMPT_DELAY
++		p->sched_preempt_delay.delay_req = NULL;
++		p->sched_preempt_delay.delay_granted = 0;
++		p->sched_preempt_delay.yield_penalty = 0;
++#endif
+ 
+ 		wake_up_new_task(p);
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 240157c..38cb515 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4230,6 +4230,14 @@ SYSCALL_DEFINE0(sched_yield)
+ {
+ 	struct rq *rq = this_rq_lock();
+ 
++#ifdef CONFIG_SCHED_PREEMPT_DELAY
++	/*
++	 * Clear the penalty flag for current task to reward it for
++	 * palying by the rules
++	 */
++	current->sched_preempt_delay.yield_penalty = 0;
++#endif
++
+ 	schedstat_inc(rq, yld_count);
+ 	current->sched_class->yield_task(rq);
+ 
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index ce33780..618d2ac 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -597,6 +597,7 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
+ 	P(se.statistics.nr_wakeups_affine_attempts);
+ 	P(se.statistics.nr_wakeups_passive);
+ 	P(se.statistics.nr_wakeups_idle);
++	P(se.statistics.nr_preempt_delayed);
+ 
+ 	{
+ 		u64 avg_atom, avg_per_cpu;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 34baa60..58f6e1b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -428,6 +428,115 @@ find_matching_se(struct sched_entity **se, struct sched_entity **pse)
+ 
+ #endif	/* CONFIG_FAIR_GROUP_SCHED */
+ 
++#ifdef CONFIG_SCHED_PREEMPT_DELAY
++/*
++ * delay_resched_rq(): Check if the task about to be preempted has
++ *	requested an additional time slice. If it has, grant it additional
++ *	timeslice once.
++ */
++static void
++delay_resched_rq(struct rq *rq)
++{
++	struct task_struct *curr = rq->curr;
++	struct sched_entity *se;
++	int cpu = task_cpu(curr);
++	u32 __user *delay_req;
++	unsigned int delay_req_flag;
++	unsigned char *delay_flag;
++
++	/*
++	 * Check if task is using pre-emption delay feature. If address
++	 * for preemption delay request flag is not set, this task is
++	 * not using preemption delay feature, we can reschedule without
++	 * any delay
++	 */
++	delay_req = curr->sched_preempt_delay.delay_req;
++
++	if ((delay_req == NULL) || (cpu != smp_processor_id()))
++		goto resched_now;
++
++	/*
++	 * Pre-emption delay will  be granted only once. If this task
++	 * has already been granted delay, rechedule now
++	 */
++	if (curr->sched_preempt_delay.delay_granted) {
++		curr->sched_preempt_delay.delay_granted = 0;
++		goto resched_now;
++	}
++
++	/*
++	 * Get the value of preemption delay request flag from userspace.
++	 * Task had already passed us the address where the flag is stored
++	 * in userspace earlier. This flag is just like the PROCESS_PRIVATE
++	 * futex, leverage the futex code here to read the flag. If there
++	 * is a page fault accessing this flag in userspace, that means
++	 * userspace has not touched this flag recently and we can
++	 * assume no preemption delay is needed.
++	 *
++	 * If task is not requesting additional timeslice, resched now
++	 */
++	if (delay_req) {
++		int ret;
++
++		pagefault_disable();
++		ret = __copy_from_user_inatomic(&delay_req_flag, delay_req,
++				sizeof(u32));
++		pagefault_enable();
++		delay_flag = &delay_req_flag;
++		if (ret || !delay_flag[0])
++			goto resched_now;
++	} else {
++		goto resched_now;
++	}
++
++	/*
++	 * Current thread has requested preemption delay and has not
++	 * been granted an extension yet. If this thread failed to yield
++	 * processor after being granted amnesty last time, penalize it
++	 * by not granting this delay request, otherwise give it an extra
++	 * timeslice.
++	 */
++	if (curr->sched_preempt_delay.yield_penalty) {
++		curr->sched_preempt_delay.yield_penalty = 0;
++		goto resched_now;
++	}
++
++	se = &curr->se;
++	curr->sched_preempt_delay.delay_granted = 1;
++
++	/*
++	 * Set the penalty flag for failing to yield the processor after
++	 * being granted immunity. This flag will be cleared in
++	 * sched_yield() if the thread indeed calls sched_yield
++	 */
++	curr->sched_preempt_delay.yield_penalty = 1;
++
++	/*
++	 * Let the thread know it got amnesty and it should call
++	 * sched_yield() when it is done to avoid penalty next time
++	 * it wants amnesty. We need to write to userspace location.
++	 * Since we just read from this location, chances are extremley
++	 * low we might page fault. If we do page fault, we will ignore
++	 * it and accept the cost of failed write in form of unnecessary
++	 * penalty for userspace task for not yielding processor.
++	 * This is a highly unlikely scenario.
++	 */
++	delay_flag[0] = 0;
++	delay_flag[1] = 1;
++	pagefault_disable();
++	__copy_to_user_inatomic(delay_req, &delay_req_flag, sizeof(u32));
++	pagefault_enable();
++
++	schedstat_inc(curr, se.statistics.nr_preempt_delayed);
++	return;
++
++resched_now:
++	resched_curr(rq);
++}
++#else
++#define delay_resched_rq(rq) resched_curr(rq)
++#endif /* CONFIG_SCHED_PREEMPT_DELAY */
++
+ static __always_inline
+ void account_cfs_rq_runtime(struct cfs_rq *cfs_rq, u64 delta_exec);
+ 
+@@ -2939,7 +3048,7 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+ 	ideal_runtime = sched_slice(cfs_rq, curr);
+ 	delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;
+ 	if (delta_exec > ideal_runtime) {
+-		resched_curr(rq_of(cfs_rq));
++		delay_resched_rq(rq_of(cfs_rq));
+ 		/*
+ 		 * The current task ran long enough, ensure it doesn't get
+ 		 * re-elected due to buddy favours.
+@@ -2963,7 +3072,7 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+ 		return;
+ 
+ 	if (delta > ideal_runtime)
+-		resched_curr(rq_of(cfs_rq));
++		delay_resched_rq(rq_of(cfs_rq));
+ }
+ 
+ static void
+@@ -4780,7 +4889,7 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
+ 	return;
+ 
+ preempt:
+-	resched_curr(rq);
++	delay_resched_rq(rq);
+ 	/*
+ 	 * Only set the backward buddy when the current task is still
+ 	 * on the rq. This can happen when a wakeup gets interleaved
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 1eaa2f0..9edf572 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -2025,6 +2025,36 @@ static int prctl_get_tid_address(struct task_struct *me, int __user **tid_addr)
+ }
+ #endif
+ 
++#ifdef CONFIG_SCHED_PREEMPT_DELAY
++int sysctl_preempt_delay_available;
++
++static int
++preempt_delay_write(struct task_struct *task, unsigned long preempt_delay_addr)
++{
++	/*
++	 * Do not allow write if pointer is currently set
++	 */
++	if (task->sched_preempt_delay.delay_req &&
++			((void *)preempt_delay_addr != NULL))
++		return -EINVAL;
++
++	/*
++	 * Validate the pointer. It should be aligned to 4-byte boundary.
++	 */
++	if (unlikely(!IS_ALIGNED(preempt_delay_addr, 4)))
++		return -EFAULT;
++	if (unlikely(!access_ok(rw, preempt_delay_addr, sizeof(u32))))
++		return -EFAULT;
++
++	task->sched_preempt_delay.delay_req = (u32 __user *) preempt_delay_addr;
++
++	/* zero out flags */
++	put_user(0, (uint32_t *)preempt_delay_addr);
++
++	return 0;
++}
++#endif
++
+ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 		unsigned long, arg4, unsigned long, arg5)
+ {
+@@ -2203,6 +2233,19 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 			me->mm->def_flags &= ~VM_NOHUGEPAGE;
+ 		up_write(&me->mm->mmap_sem);
+ 		break;
++#ifdef CONFIG_SCHED_PREEMPT_DELAY
++	case PR_SET_PREEMPT_DELAY:
++		if (sysctl_preempt_delay_available)
++			error = preempt_delay_write(current, arg2);
++		else
++			error = -EPERM;
++		break;
++	case PR_GET_PREEMPT_DELAY:
++		error = put_user(
++			(unsigned long)current->sched_preempt_delay.delay_req,
++					(unsigned long __user *)arg2);
++		break;
++#endif
+ 	default:
+ 		error = -EINVAL;
+ 		break;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 15f2511..ad450cf 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1104,6 +1104,15 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ #endif
++#ifdef CONFIG_SCHED_PREEMPT_DELAY
++	{
++		.procname	= "preempt_delay_available",
++		.data		= &sysctl_preempt_delay_available,
++		.maxlen		= sizeof(int),
++		.mode		= 0600,
++		.proc_handler	= proc_dointvec,
++	},
++#endif
+ 	{ }
+ };
+ 
+-- 
+1.9.1
 
