@@ -1,560 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750878AbaKXXRO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 18:17:14 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:58204 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759AbaKXXRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 18:17:12 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: dianders@chromium.org, mturquette@linaro.org,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>, khilman@kernel.org,
-        linux-rockchip@lists.infradead.org, Tony Xie <xxx@rock-chips.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 1/4] ARM: rockchip: add suspend and resume for RK3288
-Date: Tue, 25 Nov 2014 00:20:50 +0100
-Message-ID: <708464816.ZORhtdDuUb@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1416051910-16730-2-git-send-email-zyw@rock-chips.com>
-References: <1416051910-16730-1-git-send-email-zyw@rock-chips.com> <1416051910-16730-2-git-send-email-zyw@rock-chips.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751156AbaKXXWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 18:22:50 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:32586 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaKXXWs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 18:22:48 -0500
+Message-ID: <1416871244.17110.11.camel@concerto>
+Subject: Re: [PATCH v3] sched/fair: Add advisory flag for borrowing a
+ timeslice (was: Pre-emption control for userspace)
+From: Khalid Aziz <khalid.aziz@oracle.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: tglx@linutronix.de, corbet@lwn.net, mingo@redhat.com, hpa@zytor.com,
+        peterz@infradead.org, riel@redhat.com, akpm@linux-foundation.org,
+        rientjes@google.com, mgorman@suse.de, liwanp@linux.vnet.ibm.com,
+        raistlin@linux.it, kirill.shutemov@linux.intel.com, atomlin@redhat.com,
+        avagin@openvz.org, gorcunov@openvz.org, serge.hallyn@canonical.com,
+        athorlton@sgi.com, oleg@redhat.com, vdavydov@parallels.com,
+        daeseok.youn@gmail.com, keescook@chromium.org,
+        yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu, vishnu.ps@samsung.com,
+        axboe@fb.com, paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-api@vger.kernel.org
+Date: Mon, 24 Nov 2014 16:20:44 -0700
+In-Reply-To: <20141124224302.GL10824@tassilo.jf.intel.com>
+References: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com>
+	 <20141124224302.GL10824@tassilo.jf.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
-
-Am Samstag, 15. November 2014, 19:45:07 schrieb Chris Zhong:
-> It's a basic version of suspend and resume for rockchip,
-> it only support RK3288 now.
-
-please fold in both in the two patches from Doug
-https://chromium-review.googlesource.com/#/c/231181/
-https://chromium-review.googlesource.com/#/c/231182/
-
-as they make the code nicer to read :-)
-
-
-But overall, this looks quite nice now. I've found some small nits inside - 
-some of them are already also addressed by Dougs patches.
-
-
-> Signed-off-by: Tony Xie <xxx@rock-chips.com>
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-> Tested-by: Doug Anderson <dianders@chromium.org>
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
+On Mon, 2014-11-24 at 14:43 -0800, Andi Kleen wrote:
+> > +1. Location of shared flag can be set using prctl() only once. To
+> > +   write a new memory address, the previous memory address must be
+> > +   cleared first by writing NULL. Each new memory address requires
+> > +   validation in the kernel and update of pointers. Changing this
+> > +   address too many times creates too much overhead.
 > 
-> ---
+> Can you explain this more? Doesn't make any sense to me.
+> The validation is just access_ok() which is only a few instructions?
 
-[...]
+>From userspace app point of view, each call to prctl() incurs the
+overhead of a system call.
 
-> diff --git a/arch/arm/mach-rockchip/pm.c b/arch/arm/mach-rockchip/pm.c
-> new file mode 100644
-> index 0000000..e059b84
-> --- /dev/null
-> +++ b/arch/arm/mach-rockchip/pm.c
-> @@ -0,0 +1,264 @@
-> +/*
-> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-> + * Author: Tony Xie <tony.xie@rock-chips.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-> for + * more details.
-> + *
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/regmap.h>
-> +#include <linux/suspend.h>
-> +#include <linux/mfd/syscon.h>
-> +#include <linux/regulator/machine.h>
-> +
-> +#include <asm/cacheflush.h>
-> +#include <asm/tlbflush.h>
-> +#include <asm/suspend.h>
-> +
-> +#include "pm.h"
-> +
-> +/* These enum are option of low power mode */
-> +enum {
-> +	ROCKCHIP_ARM_OFF_LOGIC_NORMAL = 0,
-> +	ROCKCHIP_ARM_OFF_LOGIC_DEEP = 1,
-> +};
-> +
-> +struct rockchip_pm_device_id {
-> +	const char *compatible;
-> +	const struct platform_suspend_ops *ops;
-> +	int (*init)(void);
-> +};
-> +
-> +static void __iomem *rk3288_bootram_base;
-> +static phys_addr_t rk3288_bootram_phy;
-> +
-> +static struct regmap *pmu_regmap;
-> +static struct regmap *sgrf_regmap;
-> +
-> +static u32 rk3288_pmu_pwr_mode_con;
-> +static u32 rk3288_sgrf_soc_con0;
-> +
-> +static inline u32 rk3288_l2_config(void)
-> +{
-> +	u32 l2ctlr;
-> +
-> +	asm("mrc p15, 1, %0, c9, c0, 2" : "=r" (l2ctlr));
-> +	return l2ctlr;
-> +}
-> +
-> +static void rk3288_config_bootdata(void)
-> +{
-> +	rkpm_bootdata_cpusp = rk3288_bootram_phy + (SZ_4K - 8);
-> +	rkpm_bootdata_cpu_code = virt_to_phys(cpu_resume);
-> +
-> +	rkpm_bootdata_l2ctlr_f  = 1;
-> +	rkpm_bootdata_l2ctlr = rk3288_l2_config();
-> +}
-> +
-> +static void rk3288_slp_mode_set(int level)
-> +{
-> +	u32 mode_set, mode_set1;
-> +
-> +	regmap_read(sgrf_regmap, RK3288_SGRF_SOC_CON0, &rk3288_sgrf_soc_con0);
-> +
-> +	regmap_read(pmu_regmap, RK3288_PMU_PWRMODE_CON,
-> +		    &rk3288_pmu_pwr_mode_con);
-> +
-> +	/* set bit 8 so that system will resume to FAST_BOOT_ADDR */
-> +	regmap_write(sgrf_regmap, RK3288_SGRF_SOC_CON0,
-> +		     SGRF_FAST_BOOT_EN | SGRF_FAST_BOOT_EN_WRITE);
-> +
-> +	/* booting address of resuming system is from this register value */
-> +	regmap_write(sgrf_regmap, RK3288_SGRF_FAST_BOOT_ADDR,
-> +		     rk3288_bootram_phy);
-> +
-> +	regmap_write(pmu_regmap, RK3288_PMU_WAKEUP_CFG1,
-> +		     PMU_ARMINT_WAKEUP_EN);
-> +
-> +	mode_set = BIT(PMU_GLOBAL_INT_DISABLE) | BIT(PMU_L2FLUSH_EN) |
-> +		   BIT(PMU_SREF0_ENTER_EN) | BIT(PMU_SREF1_ENTER_EN) |
-> +		   BIT(PMU_DDR0_GATING_EN) | BIT(PMU_DDR1_GATING_EN) |
-> +		   BIT(PMU_PWR_MODE_EN) | BIT(PMU_CHIP_PD_EN) |
-> +		   BIT(PMU_SCU_EN);
-> +
-> +	mode_set1 = BIT(PMU_CLR_CORE) | BIT(PMU_CLR_CPUP);
-> +
-> +	if (level == ROCKCHIP_ARM_OFF_LOGIC_DEEP) {
-> +		/* arm off, logic deep sleep */
-> +		mode_set |= BIT(PMU_BUS_PD_EN) |
-> +			    BIT(PMU_DDR1IO_RET_EN) | BIT(PMU_DDR0IO_RET_EN) |
-> +			    BIT(PMU_OSC_24M_DIS) | BIT(PMU_PMU_USE_LF) |
-> +			    BIT(PMU_ALIVE_USE_LF) | BIT(PMU_PLL_PD_EN);
-> +
-> +		mode_set1 |= BIT(PMU_CLR_ALIVE) | BIT(PMU_CLR_BUS) |
-> +			     BIT(PMU_CLR_PERI) | BIT(PMU_CLR_DMA);
-> +	} else {
-> +		/*
-> +		 * arm off, logic normal
-> +		 * if pmu_clk_core_src_gate_en is not set,
-> +		 * wakeup will be error
-> +		 */
-> +		mode_set |= BIT(PMU_CLK_CORE_SRC_GATE_EN);
-> +	}
-> +
-> +	regmap_write(pmu_regmap, RK3288_PMU_PWRMODE_CON, mode_set);
-> +	regmap_write(pmu_regmap, RK3288_PMU_PWRMODE_CON1, mode_set1);
-> +}
-> +
-> +static void rk3288_slp_mode_set_resume(void)
-> +{
-> +	regmap_write(pmu_regmap, RK3288_PMU_PWRMODE_CON,
-> +		     rk3288_pmu_pwr_mode_con);
-> +
-> +	regmap_write(sgrf_regmap, RK3288_SGRF_SOC_CON0,
-> +		     rk3288_sgrf_soc_con0 | SGRF_FAST_BOOT_EN_WRITE);
-> +}
-> +
-> +static int rockchip_lpmode_enter(unsigned long arg)
-> +{
-> +	flush_cache_all();
-> +
-> +	cpu_do_idle();
-> +
-> +	pr_info("Failed to suspend the system\n");
-
-I guess this should be a pr_err. Also could you try for a format like
-	pr_err("%s: Failed to suspend\n", __func__);
-
-This way it at least gives an indication where is failed ... often this 
-shortens the time spent searching for the place of origin :-)
-
-> +
-> +	return 1;
-> +}
-> +
-> +static int rk3288_suspend_enter(suspend_state_t state)
-> +{
-> +	local_fiq_disable();
-> +
-> +	rk3288_slp_mode_set(ROCKCHIP_ARM_OFF_LOGIC_NORMAL);
-> +
-> +	cpu_suspend(0, rockchip_lpmode_enter);
-> +
-> +	rk3288_slp_mode_set_resume();
-> +
-> +	local_fiq_enable();
-> +
-> +	return 0;
-> +}
-> +
-> +static int rk3288_suspend_prepare(void)
-> +{
-> +	return regulator_suspend_prepare(PM_SUSPEND_MEM);
-> +}
-> +
-> +static void rk3288_suspend_finish(void)
-> +{
-> +	if (regulator_suspend_finish())
-> +		pr_warn("suspend finish failed\n");
-
-pr_err and the format containing the function name
-
-> +}
-> +
-> +static int rk3288_suspend_iomap(void)
-> +{
-> +	struct device_node *node;
-> +	struct resource res;
-> +
-> +	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3288-pmu-sram");
-> +	if (!node) {
-> +		pr_err("%s: could not find bootram dt node\n", __func__);
-> +		return -1;
-
-	return -ENODEV;
-
-> +	}
-> +
-> +	rk3288_bootram_base = of_iomap(node, 0);
-> +	if (!rk3288_bootram_base) {
-> +		pr_err("%s: could not map bootram base\n", __func__);
-> +		return -1;
-
-	return -ENOMEM;
-
-> +	}
-> +
-> +	if (of_address_to_resource(node, 0, &res)) {
-> +		pr_err("%s: could not get bootram phy addr\n", __func__);
-> +		return -1;
-> +	}
-
-ret = of_address_to_resource(node, 0, &res)
-if (ret) {
-	pr_err("%s: could not get bootram phy addr\n", __func__);
-	return ret;
-}
-
-
-> +
-> +	rk3288_bootram_phy = res.start;
-> +
-> +	rk3288_config_bootdata();
-> +
-> +	/* copy resume code and data to bootsram */
-> +	memcpy(rk3288_bootram_base, rockchip_slp_cpu_resume,
-> +	       rk3288_bootram_sz);
-> +
-> +	return 0;
-> +}
-> +
-> +static int rk3288_suspend_init(void)
-> +{
-> +	int ret;
-> +
-> +	pmu_regmap = syscon_regmap_lookup_by_compatible(
-> +				"rockchip,rk3288-pmu");
-> +
-> +	if (IS_ERR(pmu_regmap)) {
-> +		pr_err("%s: could not find pmu regmap\n", __func__);
-> +		return -1;
-
-	return PTR_ERR(pmu_regmap);
-
-
-> +	}
-> +
-> +	sgrf_regmap = syscon_regmap_lookup_by_compatible(
-> +				"rockchip,rk3288-sgrf");
-> +
-> +	if (IS_ERR(sgrf_regmap)) {
-> +		pr_err("%s: could not find sgrf regmap\n", __func__);
-> +		return -1;
-
-	return PTR_ERR(sgrf_regmap);
-
-
-> +	}
-> +
-> +	ret = rk3288_suspend_iomap();
-> +
-> +	return ret;
-> +}
-> +
-> +static const struct platform_suspend_ops rk3288_suspend_ops = {
-> +	.enter   = rk3288_suspend_enter,
-> +	.valid   = suspend_valid_only_mem,
-> +	.prepare = rk3288_suspend_prepare,
-> +	.finish  = rk3288_suspend_finish,
-> +};
-> +
-> +static const struct rockchip_pm_device_id rockchip_pm_dt_match[]
-> __initconst = { +	{
-> +		.compatible = "rockchip,rk3288",
-> +		.ops = &rk3288_suspend_ops,
-> +		.init = rk3288_suspend_init,
-> +	},
-> +	{ /* sentinel */ },
-> +};
-> +
-> +void __init rockchip_suspend_init(void)
-> +{
-> +	const struct rockchip_pm_device_id *matches =
-> +		rockchip_pm_dt_match;
-> +
-> +	while (matches->compatible && matches->ops) {
-> +		if (of_machine_is_compatible(matches->compatible))
-> +			break;
-> +		matches++;
-> +	}
-> +
-> +	if (!matches->compatible || !matches->ops) {
-> +		pr_err("%s:there is not a machine matched\n", __func__);
-> +		return;
-> +	}
-> +
-> +	if (matches->init) {
-> +		if (matches->init()) {
-> +			pr_err("%s: matches init error\n", __func__);
-> +			return;
-> +		}
-> +	}
-> +
-> +	suspend_set_ops(matches->ops);
-> +}
-> diff --git a/arch/arm/mach-rockchip/pm.h b/arch/arm/mach-rockchip/pm.h
-> new file mode 100644
-> index 0000000..99722d0
-> --- /dev/null
-> +++ b/arch/arm/mach-rockchip/pm.h
-> @@ -0,0 +1,99 @@
-> +/*
-> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-> + * Author: Tony Xie <tony.xie@rock-chips.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-> for + * more details.
-> + */
-> +
-> +#ifndef __MACH_ROCKCHIP_PM_H
-> +#define __MACH_ROCKCHIP_PM_H
-> +
-> +extern unsigned long rkpm_bootdata_cpusp;
-> +extern unsigned long rkpm_bootdata_cpu_code;
-> +extern unsigned long rkpm_bootdata_l2ctlr_f;
-> +extern unsigned long rkpm_bootdata_l2ctlr;
-> +extern unsigned long rkpm_bootdata_ddr_code;
-> +extern unsigned long rkpm_bootdata_ddr_data;
-> +extern unsigned long rk3288_bootram_sz;
-> +
-> +void rockchip_slp_cpu_resume(void);
-> +void __init rockchip_suspend_init(void);
-> +
-> +/****** following is rk3288 defined **********/
-> +#define RK3288_PMU_WAKEUP_CFG0          0x00
-> +#define RK3288_PMU_WAKEUP_CFG1          0x04
-> +#define RK3288_PMU_PWRMODE_CON          0x18
-> +#define RK3288_PMU_OSC_CNT              0x20
-> +#define RK3288_PMU_PLL_CNT              0x24
-> +#define RK3288_PMU_STABL_CNT            0x28
-> +#define RK3288_PMU_DDR0IO_PWRON_CNT     0x2c
-> +#define RK3288_PMU_DDR1IO_PWRON_CNT     0x30
-> +#define RK3288_PMU_CORE_PWRDWN_CNT      0x34
-> +#define RK3288_PMU_CORE_PWRUP_CNT       0x38
-> +#define RK3288_PMU_GPU_PWRDWN_CNT       0x3c
-> +#define RK3288_PMU_GPU_PWRUP_CNT        0x40
-> +#define RK3288_PMU_WAKEUP_RST_CLR_CNT   0x44
-> +#define RK3288_PMU_PWRMODE_CON1         0x90
-> +
-> +#define RK3288_SGRF_SOC_CON0            (0x0000)
-> +#define RK3288_SGRF_FAST_BOOT_ADDR      (0x0120)
-> +#define SGRF_FAST_BOOT_EN		BIT(8)
-> +#define SGRF_FAST_BOOT_EN_WRITE		BIT(24)
-> +
-> +#define RK3288_CRU_MODE_CON (0x50)
-> +#define RK3288_CRU_SEL0_CON (0x60)
-> +#define RK3288_CRU_SEL1_CON (0x64)
-> +#define RK3288_CRU_SEL10_CON (0x88)
-> +#define RK3288_CRU_SEL33_CON (0xe4)
-> +#define RK3288_CRU_SEL37_CON (0xf4)
-> +
-> +/* PMU_WAKEUP_CFG1 bits */
-> +#define PMU_ARMINT_WAKEUP_EN BIT(0)
-> +
-> +enum rk3288_pwr_mode_con {
-> +	PMU_PWR_MODE_EN = 0,
-> +	PMU_CLK_CORE_SRC_GATE_EN,
-> +	PMU_GLOBAL_INT_DISABLE,
-> +	PMU_L2FLUSH_EN,
-> +	PMU_BUS_PD_EN,
-> +	PMU_A12_0_PD_EN,
-> +	PMU_SCU_EN,
-> +	PMU_PLL_PD_EN,
-> +	PMU_CHIP_PD_EN, /* POWER OFF PIN ENABLE */
-> +	PMU_PWROFF_COMB,
-> +	PMU_ALIVE_USE_LF,
-> +	PMU_PMU_USE_LF,
-> +	PMU_OSC_24M_DIS,
-> +	PMU_INPUT_CLAMP_EN,
-> +	PMU_WAKEUP_RESET_EN,
-> +	PMU_SREF0_ENTER_EN,
-> +	PMU_SREF1_ENTER_EN,
-> +	PMU_DDR0IO_RET_EN,
-> +	PMU_DDR1IO_RET_EN,
-> +	PMU_DDR0_GATING_EN,
-> +	PMU_DDR1_GATING_EN,
-> +	PMU_DDR0IO_RET_DE_REQ,
-> +	PMU_DDR1IO_RET_DE_REQ
-> +};
-> +
-> +enum rk3288_pwr_mode_con1 {
-> +	PMU_CLR_BUS = 0,
-> +	PMU_CLR_CORE,
-> +	PMU_CLR_CPUP,
-> +	PMU_CLR_ALIVE,
-> +	PMU_CLR_DMA,
-> +	PMU_CLR_PERI,
-> +	PMU_CLR_GPU,
-> +	PMU_CLR_VIDEO,
-> +	PMU_CLR_HEVC,
-> +	PMU_CLR_VIO,
-> +};
-> +
-> +#endif /* __MACH_ROCKCHIP_PM_H */
-> diff --git a/arch/arm/mach-rockchip/rockchip.c
-> b/arch/arm/mach-rockchip/rockchip.c index d226b71..2b68a1a 100644
-> --- a/arch/arm/mach-rockchip/rockchip.c
-> +++ b/arch/arm/mach-rockchip/rockchip.c
-> @@ -23,9 +23,11 @@
->  #include <asm/mach/map.h>
->  #include <asm/hardware/cache-l2x0.h>
->  #include "core.h"
-> +#include "pm.h"
 > 
->  static void __init rockchip_dt_init(void)
->  {
-> +	rockchip_suspend_init();
->  	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
->  	platform_device_register_simple("cpufreq-dt", 0, NULL, 0);
->  }
-> diff --git a/arch/arm/mach-rockchip/sleep.S b/arch/arm/mach-rockchip/sleep.S
-> new file mode 100644
-> index 0000000..2eec9a3
-> --- /dev/null
-> +++ b/arch/arm/mach-rockchip/sleep.S
-> @@ -0,0 +1,73 @@
-> +/*
-> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-> + * Author: Tony Xie <tony.xie@rock-chips.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-> for + * more details.
-> + *
-> + */
-> +
-> +#include <linux/linkage.h>
-> +#include <asm/assembler.h>
-> +#include <asm/memory.h>
-> +
-> +.data
-> +/*
-> + * this code will be copied from
-> + * ddr to sram for system resumeing.
-> + * so it is ".data section".
-> + */
-> +.align
-> +
-> +ENTRY(rockchip_slp_cpu_resume)
-> +	setmode	PSR_I_BIT | PSR_F_BIT | SVC_MODE, r1  @ set svc, irqs off
-> +	mrc	p15, 0, r1, c0, c0, 5
-> +	and	r1, r1, #0xf
-> +	cmp	r1, #0
-> +	/* olny cpu0 can continue to run, the others is halt here */
-> +	beq	cpu0run
-> +secondary_loop:
-> +	wfe
-> +	b	secondary_loop
-> +cpu0run:
-> +	ldr	r3, rkpm_bootdata_l2ctlr_f
-> +	cmp	r3, #0
-> +	beq	sp_set
-> +	ldr	r3, rkpm_bootdata_l2ctlr
-> +	mcr	p15, 1, r3, c9, c0, 2
-> +sp_set:
-> +	ldr	sp, rkpm_bootdata_cpusp
-> +	ldr	r1, rkpm_bootdata_cpu_code
-> +	bx	r1
-> +ENDPROC(rockchip_slp_cpu_resume)
-> +
-> +/* Parameters filled in by the kernel */
-> +
-> +/* Flag for whether to restore L2CTLR on resume */
-> +	.global rkpm_bootdata_l2ctlr_f
-> +rkpm_bootdata_l2ctlr_f:
-> +	.long 0
-> +
-> +/* Saved L2CTLR to restore on resume */
-> +	.global rkpm_bootdata_l2ctlr
-> +rkpm_bootdata_l2ctlr:
-> +	.long 0
-> +
-> +/* CPU resume SP addr */
-> +	.globl rkpm_bootdata_cpusp
-> +rkpm_bootdata_cpusp:
-> +	.long 0
-> +
-> +/* CPU resume function (physical address) */
-> +	.globl rkpm_bootdata_cpu_code
-> +rkpm_bootdata_cpu_code:
-> +	.long 0
-> +
-> +ENTRY(rk3288_bootram_sz)
-> +        .word   . - rockchip_slp_cpu_resume
+> Also I would drop the config symbol. Linux normally doesn't
+> do CONFIG for things like that.
+
+CONFIG_SCHED_PREEMPT_DELAY allows one to keep this code out of compiled
+kernel for custom kernels if this feature is definitely not needed.
+Concerns were raised last time about this feature impacting other tasks.
+Nevertheless, I am ok with removing the config option if that is the
+consensus.
+
+> 
+> > diff --git a/kernel/fork.c b/kernel/fork.c
+> > index 9b7d746..7f0d843 100644
+> > --- a/kernel/fork.c
+> > +++ b/kernel/fork.c
+> > @@ -1671,6 +1671,11 @@ long do_fork(unsigned long clone_flags,
+> >  			init_completion(&vfork);
+> >  			get_task_struct(p);
+> >  		}
+> > +#ifdef CONFIG_SCHED_PREEMPT_DELAY
+> > +		p->sched_preempt_delay.delay_req = NULL;
+> > +		p->sched_preempt_delay.delay_granted = 0;
+> > +		p->sched_preempt_delay.yield_penalty = 0;
+> > +#endif
+> 
+> FWIW this would lead to every new thread having to reexecute
+> this. No good way around it, but it may eventually make
+> thread spawns more expensive if it was widely used.
+
+Yes, that is true. Newly allocated task_struct is not zero'd out, so
+this becomes necessary.
+
+> 
+> >  
+> > +#ifdef CONFIG_SCHED_PREEMPT_DELAY
+> > +	/*
+> > +	 * Clear the penalty flag for current task to reward it for
+> > +	 * palying by the rules
+> > +	 */
+> > +	current->sched_preempt_delay.yield_penalty = 0;
+> > +#endif
+> 
+> Doesn't that need to be quantified? After all they may yield
+> only near the end of their time slice.
+
+and that should be ok because the task was allowed to borrow a full
+timeslice and it can use it up almost completely. Is there a reason to
+differentiate between tasks yielding well before their borrowed
+timeslice is up and tasks not yielding until almost the end of borrowed
+timeslice?
+
+> 
+> > +	}
+> > +
+> > +	/*
+> > +	 * Get the value of preemption delay request flag from userspace.
+> > +	 * Task had already passed us the address where the flag is stored
+> > +	 * in userspace earlier. This flag is just like the PROCESS_PRIVATE
+> > +	 * futex, leverage the futex code here to read the flag. If there
+> 
+> I don't think any of the calls below are futex code.
+
+Following code was borrowed from get_futex_value_locked() but this
+comment is not really necessary here and can be removed if it causes
+confusion.
+
+> 
+> > +	case PR_GET_PREEMPT_DELAY:
+> > +		error = put_user(
+> > +			(unsigned long)current->sched_preempt_delay.delay_req,
+> > +					(unsigned long __user *)arg2);
+> > +		break;
+> > +#endif
+> 
+> Unnecessary cast.
+
+I get bunch of warnings and errors if I remove either of the casts.
+
+> 
+> > --- a/kernel/sysctl.c
+> > +++ b/kernel/sysctl.c
+> > @@ -1104,6 +1104,15 @@ static struct ctl_table kern_table[] = {
+> >  		.proc_handler	= proc_dointvec,
+> >  	},
+> >  #endif
+> > +#ifdef CONFIG_SCHED_PREEMPT_DELAY
+> > +	{
+> > +		.procname	= "preempt_delay_available",
+> > +		.data		= &sysctl_preempt_delay_available,
+> > +		.maxlen		= sizeof(int),
+> > +		.mode		= 0600,
+> 
+> Better 0644, so users can know if they can use it.
+
+OK, I can change that.
+
+> 
+> Rest looks reasonable to me.
+> 
+> -Andi
+
+Thanks, Andi! I appreciate your feedback.
+
+--
+Khalid
+
 
