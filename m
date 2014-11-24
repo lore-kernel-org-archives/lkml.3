@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330AbaKXFTj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 00:19:39 -0500
-Received: from gate.crashing.org ([63.228.1.57]:52709 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835AbaKXFTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 00:19:37 -0500
-Message-ID: <1416806356.4998.18.camel@kernel.crashing.org>
-Subject: Re: linuxppc-dev list <linuxppc-dev@ozlabs.org>
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michael Ellerman <mpe@ellerman.id.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Alex Deucher <alexdeucher@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Date: Mon, 24 Nov 2014 16:19:16 +1100
-In-Reply-To: <1416805719.4998.15.camel@kernel.crashing.org>
-References: <1416805719.4998.15.camel@kernel.crashing.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
+	id S1751187AbaKXFcF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 00:32:05 -0500
+Received: from pegasus3.altlinux.org ([194.107.17.103]:56420 "EHLO
+	pegasus3.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaKXFcB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 00:32:01 -0500
+X-Greylist: delayed 481 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Nov 2014 00:32:00 EST
+Date: Mon, 24 Nov 2014 08:23:57 +0300
+From: Michael Shigorin <mike@altlinux.org>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: Lan Tianyu <tianyu.lan@intel.com>, rjw@rjwysocki.net, lenb@kernel.org,
+        wsa@the-dreams.de, robert.moore@intel.com, lv.zheng@intel.com,
+        shigorin@gmail.com, adamw@happyassassin.net, jan.brummer@tabos.org,
+        mika.westerberg@linux.intel.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        devel@acpica.org
+Subject: Re: [PATCH V3] ACPI: Add _DEP(Operation Region Dependencies) support to fix battery issue on the Asus T100TA
+Message-ID: <20141124052357.GL18607@imap.altlinux.org>
+Mail-Followup-To: "Li, Aubrey" <aubrey.li@linux.intel.com>,
+	Lan Tianyu <tianyu.lan@intel.com>, rjw@rjwysocki.net,
+	lenb@kernel.org, wsa@the-dreams.de, robert.moore@intel.com,
+	lv.zheng@intel.com, shigorin@gmail.com, adamw@happyassassin.net,
+	jan.brummer@tabos.org, mika.westerberg@linux.intel.com,
+	linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-i2c@vger.kernel.org, devel@acpica.org
+References: <1416748974-24124-1-git-send-email-tianyu.lan@intel.com> <54729A7B.4050007@linux.intel.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54729A7B.4050007@linux.intel.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-24 at 16:08 +1100, Benjamin Herrenschmidt wrote:
-> Hi Linus !
-> 
-> This series fix a nasty issue with radeon adapters on powerpc servers,
-> it's all CC'ed stable and has the relevant maintainers ack's/reviews.
+On Mon, Nov 24, 2014 at 10:39:55AM +0800, Li, Aubrey wrote:
+> Well, Can we explicitly tied this up with ASUS T100TA in the code?
 
-Hrm... git request-pull can't find the commit on the server (it's been
-quite a while now, maybe some mirroring issue), so didn't put the
-branch name in properly.
+It works for me on Aava Inari 8 too.
 
-The branch name is "merge", ie:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-Cheers
-Ben.
-
-> Basically, some (radeon) adapters have issues with MSI addresses above
-> 1T (only support 40-bits). We had powerpc specific quirk but it only
-> listed a specific revision of an adapter that we shipped with our
-> machines and didn't properly handle the audio function which some distros
-> enable nowadays.
-> 
-> So we made the quirk generic and fixed both the graphic and audio drivers
-> properly to use it.
-> 
-> Without that, ppc64 server machines will crash at boot with a radeon adapter.
-> 
-> Note: This has been brewing for a while, it just needed a last respin which
-> got delayed due to us moving ozlabs to a new location in town and other such
-> things taking priority.
-> 
-> Cheers,
-> Ben.
-
-
+-- 
+š---- WBR, Michael Shigorin / http://altlinux.org
+šš------ http://opennet.ru / http://anna-news.info
