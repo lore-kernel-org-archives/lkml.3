@@ -1,90 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbaKXHwT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 02:52:19 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22590 "EHLO
+	id S1752852AbaKXHw0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 02:52:26 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22624 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176AbaKXHwR (ORCPT
+	with ESMTP id S1752176AbaKXHwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 02:52:17 -0500
+	Mon, 24 Nov 2014 02:52:24 -0500
 From: Ethan Zhao <ethan.zhao@oracle.com>
 To: linda.knippers@hp.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
         corbet@lwn.net, dirk.j.brandewie@intel.com
 Cc: linux-doc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, ethan.kernel@gmail.com,
         Ethan Zhao <ethan.zhao@oracle.com>
-Subject: [PATCH 1/2 v2] intel_pstate: skip this driver if Sun server has _PPC method
-Date: Mon, 24 Nov 2014 16:50:57 +0900
-Message-Id: <1416815458-25312-2-git-send-email-ethan.zhao@oracle.com>
+Subject: [PATCH 2/2 v2] intel_pstate: add kernel parameter to enable loading on Sun X86 servers.
+Date: Mon, 24 Nov 2014 16:50:58 +0900
+Message-Id: <1416815458-25312-3-git-send-email-ethan.zhao@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1416815458-25312-1-git-send-email-ethan.zhao@oracle.com>
 References: <1416815458-25312-1-git-send-email-ethan.zhao@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oracle Sun X86 servers have dynamic power capping capability that works via
-ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
-enabled.
+To force loading on Oracle Sun X86 servers, provide one kernel command line
+parameter
+
+  intel_pstate = onora
+
+For those who be aware of the risk doing so.
 
 Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
 
-v2: only match ORACLE oem id.
+v2: change the command line parameter naming to specific to Oracle Sun servers.
 ---
- drivers/cpufreq/intel_pstate.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ Documentation/kernel-parameters.txt | 3 +++
+ drivers/cpufreq/intel_pstate.c      | 6 +++++-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 479f332..e4b1b81 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1446,6 +1446,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 		       disable
+ 		         Do not enable intel_pstate as the default
+ 		         scaling driver for the supported processors
++		       onora
++		         Enable loading intel_pstate on Oracle Sun Servers(X86).
++			 only for those who be aware of the risk.
+ 
+ 	intremap=	[X86-64, Intel-IOMMU]
+ 			on	enable Interrupt Remapping (default)
 diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 27bb6d3..dacc15a 100644
+index dacc15a..f28c725 100644
 --- a/drivers/cpufreq/intel_pstate.c
 +++ b/drivers/cpufreq/intel_pstate.c
-@@ -943,6 +943,21 @@ static bool intel_pstate_no_acpi_pss(void)
- 	return true;
- }
- 
-+static bool intel_pstate_has_acpi_ppc(void)
-+{
-+	int i;
-+
-+	for_each_possible_cpu(i) {
-+		struct acpi_processor *pr = per_cpu(processors, i);
-+
-+		if (!pr)
-+			continue;
-+		if (acpi_has_method(pr->handle, "_PPC"))
-+			return true;
-+	}
-+	return false;
-+}
-+
- struct hw_vendor_info {
- 	u16  valid;
- 	char oem_id[ACPI_OEM_ID_SIZE];
-@@ -952,6 +967,7 @@ struct hw_vendor_info {
- /* Hardware vendor-specific info that has its own power management modes */
- static struct hw_vendor_info vendor_info[] = {
- 	{1, "HP    ", "ProLiant"},
-+	{1, "ORACLE", ""},
- 	{0, "", ""},
+@@ -866,6 +866,7 @@ static struct cpufreq_driver intel_pstate_driver = {
  };
  
-@@ -970,11 +986,15 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
- 		    intel_pstate_no_acpi_pss())
+ static int __initdata no_load;
++static unsigned int  load_on_sun;
+ 
+ static int intel_pstate_msrs_not_valid(void)
+ {
+@@ -987,7 +988,8 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
  			return true;
  	}
-+	if (!strncmp(hdr.oem_id, vendor_info[1].oem_id, ACPI_OEM_ID_SIZE) &&
-+		intel_pstate_has_acpi_ppc())
-+		return true;
+ 	if (!strncmp(hdr.oem_id, vendor_info[1].oem_id, ACPI_OEM_ID_SIZE) &&
+-		intel_pstate_has_acpi_ppc())
++		intel_pstate_has_acpi_ppc() &&
++		!load_on_sun)
+ 		return true;
  
  	return false;
- }
- #else /* CONFIG_ACPI not enabled */
- static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return false; }
-+static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
- #endif /* CONFIG_ACPI */
+@@ -1061,6 +1063,8 @@ static int __init intel_pstate_setup(char *str)
  
- static int __init intel_pstate_init(void)
+ 	if (!strcmp(str, "disable"))
+ 		no_load = 1;
++	if (!strcmp(str, "onora"))
++		load_on_sun = 1;
+ 	return 0;
+ }
+ early_param("intel_pstate", intel_pstate_setup);
 -- 
 1.8.3.1
 
