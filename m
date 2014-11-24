@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138AbaKXINd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 03:13:33 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:42323 "EHLO
+	id S1753109AbaKXINc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 03:13:32 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:42318 "EHLO
 	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866AbaKXIMm (ORCPT
+	with ESMTP id S1752864AbaKXIMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 Nov 2014 03:12:42 -0500
 X-Original-SENDERIP: 10.177.222.213
@@ -17,9 +17,9 @@ Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
         Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v3 3/8] mm/debug-pagealloc: make debug-pagealloc boottime configurable
-Date: Mon, 24 Nov 2014 17:15:21 +0900
-Message-Id: <1416816926-7756-4-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 7/8] mm/page_owner: correct owner information for early allocated pages
+Date: Mon, 24 Nov 2014 17:15:25 +0900
+Message-Id: <1416816926-7756-8-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1416816926-7756-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1416816926-7756-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -27,208 +27,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, we have prepared to avoid using debug-pagealloc in boottime. So
-introduce new kernel-parameter to disable debug-pagealloc in boottime,
-and makes related functions to be disabled in this case.
+Extended memory to store page owner information is initialized some time
+later than that page allocator starts. Until initialization, many pages
+can be allocated and they have no owner information. This make debugging
+using page owner harder, so some fixup will be helpful.
 
-Only non-intuitive part is change of guard page functions. Because
-guard page is effective only if debug-pagealloc is enabled, turning off
-according to debug-pagealloc is reasonable thing to do.
+This patch fix up this situation by setting fake owner information
+immediately after page extension is initialized. Information doesn't
+tell the right owner, but, at least, it can tell whether page is
+allocated or not, more correctly.
 
-v2: makes debug-pagealloc boottime configurable for page poisoning, too
+On my testing, this patch catches 13343 early allocated pages, although
+they are mostly allocated from page extension feature. Anyway, after then,
+there is no page left that it is allocated and has no page owner flag.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 ---
- Documentation/kernel-parameters.txt |    8 ++++++++
- arch/powerpc/mm/hash_utils_64.c     |    2 +-
- arch/powerpc/mm/pgtable_32.c        |    2 +-
- arch/s390/mm/pageattr.c             |    2 +-
- arch/sparc/mm/init_64.c             |    2 +-
- arch/x86/mm/pageattr.c              |    2 +-
- include/linux/mm.h                  |   17 ++++++++++++++++-
- mm/debug-pagealloc.c                |    8 +++++++-
- mm/page_alloc.c                     |   16 ++++++++++++++++
- 9 files changed, 52 insertions(+), 7 deletions(-)
+ mm/page_owner.c |   93 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 91 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 3c5a178..b5ac055 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -858,6 +858,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			causing system reset or hang due to sending
- 			INIT from AP to BSP.
+diff --git a/mm/page_owner.c b/mm/page_owner.c
+index 85eec7e..9ab4a9b 100644
+--- a/mm/page_owner.c
++++ b/mm/page_owner.c
+@@ -10,6 +10,8 @@
+ static bool page_owner_disabled = true;
+ bool page_owner_inited __read_mostly;
  
-+	disable_debug_pagealloc
-+			[KNL] When CONFIG_DEBUG_PAGEALLOC is set, this
-+			parameter allows user to disable it at boot time.
-+			With this parameter, we can avoid allocating huge
-+			chunk of memory for debug pagealloc and then
-+			the system will work mostly same with the kernel
-+			built without CONFIG_DEBUG_PAGEALLOC.
++static void init_early_allocated_pages(void);
 +
- 	disable_ddw     [PPC/PSERIES]
- 			Disable Dynamic DMA Window support. Use this if
- 			to workaround buggy firmware.
-diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-index d5339a3..57b9c23 100644
---- a/arch/powerpc/mm/hash_utils_64.c
-+++ b/arch/powerpc/mm/hash_utils_64.c
-@@ -1432,7 +1432,7 @@ static void kernel_unmap_linear_page(unsigned long vaddr, unsigned long lmi)
- 			       mmu_kernel_ssize, 0);
- }
- 
--void kernel_map_pages(struct page *page, int numpages, int enable)
-+void __kernel_map_pages(struct page *page, int numpages, int enable)
+ static int early_page_owner_param(char *buf)
  {
- 	unsigned long flags, vaddr, lmi;
- 	int i;
-diff --git a/arch/powerpc/mm/pgtable_32.c b/arch/powerpc/mm/pgtable_32.c
-index cf11342..b98aac6 100644
---- a/arch/powerpc/mm/pgtable_32.c
-+++ b/arch/powerpc/mm/pgtable_32.c
-@@ -430,7 +430,7 @@ static int change_page_attr(struct page *page, int numpages, pgprot_t prot)
- }
- 
- 
--void kernel_map_pages(struct page *page, int numpages, int enable)
-+void __kernel_map_pages(struct page *page, int numpages, int enable)
- {
- 	if (PageHighMem(page))
+ 	if (!buf)
+@@ -36,6 +38,7 @@ static void init_page_owner(void)
  		return;
-diff --git a/arch/s390/mm/pageattr.c b/arch/s390/mm/pageattr.c
-index 3fef3b2..426c9d4 100644
---- a/arch/s390/mm/pageattr.c
-+++ b/arch/s390/mm/pageattr.c
-@@ -120,7 +120,7 @@ static void ipte_range(pte_t *pte, unsigned long address, int nr)
- 	}
+ 
+ 	page_owner_inited = true;
++	init_early_allocated_pages();
  }
  
--void kernel_map_pages(struct page *page, int numpages, int enable)
-+void __kernel_map_pages(struct page *page, int numpages, int enable)
- {
- 	unsigned long address;
- 	int nr, i, j;
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 2d91c62..3ea267c 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -1621,7 +1621,7 @@ static void __init kernel_physical_mapping_init(void)
+ struct page_ext_operations page_owner_ops = {
+@@ -184,8 +187,8 @@ read_page_owner(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+ 		page_ext = lookup_page_ext(page);
+ 
+ 		/*
+-		 * Pages allocated before initialization of page_owner are
+-		 * non-buddy and have no page_owner info.
++		 * Some pages could be missed by concurrent allocation or free,
++		 * because we don't hold the zone lock.
+ 		 */
+ 		if (!test_bit(PAGE_EXT_OWNER, &page_ext->flags))
+ 			continue;
+@@ -199,6 +202,92 @@ read_page_owner(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+ 	return 0;
  }
  
- #ifdef CONFIG_DEBUG_PAGEALLOC
--void kernel_map_pages(struct page *page, int numpages, int enable)
-+void __kernel_map_pages(struct page *page, int numpages, int enable)
- {
- 	unsigned long phys_start = page_to_pfn(page) << PAGE_SHIFT;
- 	unsigned long phys_end = phys_start + (numpages * PAGE_SIZE);
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index 36de293..4d304e1 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -1801,7 +1801,7 @@ static int __set_pages_np(struct page *page, int numpages)
- 	return __change_page_attr_set_clr(&cpa, 0);
- }
- 
--void kernel_map_pages(struct page *page, int numpages, int enable)
-+void __kernel_map_pages(struct page *page, int numpages, int enable)
- {
- 	if (PageHighMem(page))
- 		return;
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 5a8d4d4..5dc11e7 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -2055,7 +2055,22 @@ static inline void vm_stat_account(struct mm_struct *mm,
- #endif /* CONFIG_PROC_FS */
- 
- #ifdef CONFIG_DEBUG_PAGEALLOC
--extern void kernel_map_pages(struct page *page, int numpages, int enable);
-+extern bool _debug_pagealloc_enabled;
-+extern void __kernel_map_pages(struct page *page, int numpages, int enable);
-+
-+static inline bool debug_pagealloc_enabled(void)
++static void init_pages_in_zone(pg_data_t *pgdat, struct zone *zone)
 +{
-+	return _debug_pagealloc_enabled;
++	struct page *page;
++	struct page_ext *page_ext;
++	unsigned long pfn = zone->zone_start_pfn, block_end_pfn;
++	unsigned long end_pfn = pfn + zone->spanned_pages;
++	unsigned long count = 0;
++
++	/* Scan block by block. First and last block may be incomplete */
++	pfn = zone->zone_start_pfn;
++
++	/*
++	 * Walk the zone in pageblock_nr_pages steps. If a page block spans
++	 * a zone boundary, it will be double counted between zones. This does
++	 * not matter as the mixed block count will still be correct
++	 */
++	for (; pfn < end_pfn; ) {
++		if (!pfn_valid(pfn)) {
++			pfn = ALIGN(pfn + 1, MAX_ORDER_NR_PAGES);
++			continue;
++		}
++
++		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
++		block_end_pfn = min(block_end_pfn, end_pfn);
++
++		page = pfn_to_page(pfn);
++
++		for (; pfn < block_end_pfn; pfn++) {
++			if (!pfn_valid_within(pfn))
++				continue;
++
++			page = pfn_to_page(pfn);
++
++			/*
++			 * We are safe to check buddy flag and order, because
++			 * this is init stage and only single thread runs.
++			 */
++			if (PageBuddy(page)) {
++				pfn += (1UL << page_order(page)) - 1;
++				continue;
++			}
++
++			if (PageReserved(page))
++				continue;
++
++			page_ext = lookup_page_ext(page);
++
++			/* Maybe overraping zone */
++			if (test_bit(PAGE_EXT_OWNER, &page_ext->flags))
++				continue;
++
++			/* Found early allocated page */
++			set_page_owner(page, 0, 0);
++			count++;
++		}
++	}
++
++	pr_info("Node %d, zone %8s: page owner found early allocated %lu pages\n",
++		pgdat->node_id, zone->name, count);
 +}
 +
-+static inline void
-+kernel_map_pages(struct page *page, int numpages, int enable)
++static void init_zones_in_node(pg_data_t *pgdat)
 +{
-+	if (!debug_pagealloc_enabled())
-+		return;
++	struct zone *zone;
++	struct zone *node_zones = pgdat->node_zones;
++	unsigned long flags;
 +
-+	__kernel_map_pages(page, numpages, enable);
++	for (zone = node_zones; zone - node_zones < MAX_NR_ZONES; ++zone) {
++		if (!populated_zone(zone))
++			continue;
++
++		spin_lock_irqsave(&zone->lock, flags);
++		init_pages_in_zone(pgdat, zone);
++		spin_unlock_irqrestore(&zone->lock, flags);
++	}
 +}
- #ifdef CONFIG_HIBERNATION
- extern bool kernel_page_present(struct page *page);
- #endif /* CONFIG_HIBERNATION */
-diff --git a/mm/debug-pagealloc.c b/mm/debug-pagealloc.c
-index 0072f2c..5bf5906 100644
---- a/mm/debug-pagealloc.c
-+++ b/mm/debug-pagealloc.c
-@@ -10,11 +10,17 @@ static bool page_poisoning_enabled __read_mostly;
- 
- static bool need_page_poisoning(void)
- {
-+	if (!debug_pagealloc_enabled())
-+		return false;
 +
- 	return true;
- }
- 
- static void init_page_poisoning(void)
- {
-+	if (!debug_pagealloc_enabled())
-+		return;
-+
- 	page_poisoning_enabled = true;
- }
- 
-@@ -119,7 +125,7 @@ static void unpoison_pages(struct page *page, int n)
- 		unpoison_page(page + i);
- }
- 
--void kernel_map_pages(struct page *page, int numpages, int enable)
-+void __kernel_map_pages(struct page *page, int numpages, int enable)
- {
- 	if (!page_poisoning_enabled)
- 		return;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 7534733..4eea173 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -426,15 +426,31 @@ static inline void prep_zero_page(struct page *page, unsigned int order,
- 
- #ifdef CONFIG_DEBUG_PAGEALLOC
- unsigned int _debug_guardpage_minorder;
-+bool _debug_pagealloc_enabled __read_mostly = true;
- bool _debug_guardpage_enabled __read_mostly;
- 
-+static int __init early_disable_debug_pagealloc(char *buf)
++static void init_early_allocated_pages(void)
 +{
-+	_debug_pagealloc_enabled = false;
++	pg_data_t *pgdat;
 +
-+	return 0;
++	drain_all_pages(NULL);
++	for_each_online_pgdat(pgdat)
++		init_zones_in_node(pgdat);
 +}
-+early_param("disable_debug_pagealloc", early_disable_debug_pagealloc);
 +
- static bool need_debug_guardpage(void)
- {
-+	/* If we don't use debug_pagealloc, we don't need guard page */
-+	if (!debug_pagealloc_enabled())
-+		return false;
-+
- 	return true;
- }
- 
- static void init_debug_guardpage(void)
- {
-+	if (!debug_pagealloc_enabled())
-+		return;
-+
- 	_debug_guardpage_enabled = true;
- }
- 
+ static const struct file_operations proc_page_owner_operations = {
+ 	.read		= read_page_owner,
+ };
 -- 
 1.7.9.5
 
