@@ -1,69 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595AbaKXG5C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 01:57:02 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:28301 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508AbaKXG47 (ORCPT
+	id S1752554AbaKXHCv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 02:02:51 -0500
+Received: from mail-ig0-f202.google.com ([209.85.213.202]:51893 "EHLO
+	mail-ig0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400AbaKXHCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 01:56:59 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-06-5472d6b948d3
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: gregkh@linuxfoundation.org
-Cc: akpm@linux-foundation.org, jslaby@suse.cz, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 3/4] serial: samsung: prefer to use fifosize from driver data
-Date: Mon, 24 Nov 2014 07:56:23 +0100
-Message-id: <1416812184-4496-4-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1416812184-4496-1-git-send-email-r.baldyga@samsung.com>
-References: <1416812184-4496-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t9jAd2d14pCDHbfEbGYs34Nm0Xz4vVs
-	Fp9/72K1uLxrDpvFmcW97BZrj9xlt3hweCe7A7vHiRm/WTz2z13D7tG3ZRWjx5kFR9g9Pm+S
-	C2CN4rJJSc3JLEst0rdL4Mp49/8cc8EKzorpb2exNzB+YO9i5OSQEDCR2DltNROELSZx4d56
-	ti5GLg4hgUWMEu9ubmeGcNqZJC4+XMsGUsUmoCOx5fsERhBbREBO4sntP2BFzALrGSVe3F8B
-	NlZYwFfiyqzPrCA2i4CqRM+sI2ANvAIuEo//P4JaLSdx8thksBpOAVeJ5zengi0QAqr5tGIC
-	+wRG3gWMDKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxggPrmdQOxpUNFocYBTgYlXh4P2ws
-	ChFiTSwrrsw9xCjBwawkwnv2X2GIEG9KYmVValF+fFFpTmrxIUZpDhYlcd4bN3NDhATSE0tS
-	s1NTC1KLYLJMHJxSDYzprxT2Wors/NIWE7jJ6sJ8K3GWELbn15PMmpKDshp9bQv6d0krxjRt
-	slCY33SV9QiDTnq5QbaUmInmgca5UQc25sRl3Jtyd63k6r0fhYpNnfueWTda7XEvYQ4svB12
-	cu29KrM7W6M4ZB+3L1keEmUmnct57vde7dxd/9Yf9Ba+zFD21WOLtBJLcUaioRZzUXEiAKD9
-	wq4oAgAA
+	Mon, 24 Nov 2014 02:02:49 -0500
+From: Sonny Rao <sonnyrao@chromium.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, dianders@chromium.org,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Sonny Rao <sonnyrao@chromium.org>,
+        stable@vger.kernel.org
+Subject: [PATCH v5] clocksource: arch_timer: Fix code to use physical timers when requested
+Date: Sun, 23 Nov 2014 23:02:44 -0800
+Message-Id: <1416812564-26465-1-git-send-email-sonnyrao@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we have fifosize set in driver data we prefer to use it instead of default
-fifosize value (which is always 16). If there is defined fifosize for particular
-serial we prefer to use it, otherwise we use value from info, which is
-common for all serials on given platform.
+This is a bug fix for using physical arch timers when
+the arch_timer_use_virtual boolean is false.  It restores the
+arch_counter_get_cntpct() function after removal in
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+0d651e4e "clocksource: arch_timer: use virtual counters"
+
+We need this on certain ARMv7 systems which are architected like this:
+
+* The firmware doesn't know and doesn't care about hypervisor mode and
+  we don't want to add the complexity of hypervisor there.
+
+* The firmware isn't involved in SMP bringup or resume.
+
+* The ARCH timer come up with an uninitialized offset between the
+  virtual and physical counters.  Each core gets a different random
+  offset.
+
+* The device boots in "Secure SVC" mode.
+
+* Nothing has touched the reset value of CNTHCTL.PL1PCEN or
+  CNTHCTL.PL1PCTEN (both default to 1 at reset)
+
+One example of such as system is RK3288 where it is much simpler to
+use the physical counter since there's nobody managing the offset and
+each time a core goes down and comes back up it will get reinitialized
+to some other random value.
+
+Fixes: 0d651e4e65e9 ("clocksource: arch_timer: use virtual counters")
+Cc: stable@vger.kernel.org
+Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+Acked-by: Olof Johansson <olof@lixom.net>
 ---
- drivers/tty/serial/samsung.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+v2: Add fixes tag to commit message, cc stable, copy Doug's
+    description of the systems which need this in commit message.
+v3: Don't change the memory-mapped physical timer/counter code
+v4: remove the memory-mapped physical counter code since it's not used
+v5: rebase and make AArch64 version of arch_counter_get_cntpct call BUG()
+---
+ arch/arm/include/asm/arch_timer.h    | 9 +++++++++
+ arch/arm64/include/asm/arch_timer.h  | 9 +++++++++
+ drivers/clocksource/arm_arch_timer.c | 5 ++++-
+ 3 files changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
-index d05c32c..8808490 100644
---- a/drivers/tty/serial/samsung.c
-+++ b/drivers/tty/serial/samsung.c
-@@ -1310,11 +1310,10 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
- 		of_property_read_u32(np,
- 			"samsung,uart-fifosize", &ourport->port.fifosize);
+diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+index 92793ba..d4ebf56 100644
+--- a/arch/arm/include/asm/arch_timer.h
++++ b/arch/arm/include/asm/arch_timer.h
+@@ -78,6 +78,15 @@ static inline u32 arch_timer_get_cntfrq(void)
+ 	return val;
+ }
  
--	if (!ourport->port.fifosize) {
--		ourport->port.fifosize = (ourport->info->fifosize) ?
--			ourport->info->fifosize :
--			ourport->drv_data->fifosize[index];
--	}
-+	if (ourport->drv_data->fifosize[index])
-+		ourport->port.fifosize = ourport->drv_data->fifosize[index];
-+	else if (ourport->info->fifosize)
-+		ourport->port.fifosize = ourport->info->fifosize;
++static inline u64 arch_counter_get_cntpct(void)
++{
++	u64 cval;
++
++	isb();
++	asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (cval));
++	return cval;
++}
++
+ static inline u64 arch_counter_get_cntvct(void)
+ {
+ 	u64 cval;
+diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+index f190971..b1fa4e6 100644
+--- a/arch/arm64/include/asm/arch_timer.h
++++ b/arch/arm64/include/asm/arch_timer.h
+@@ -104,6 +104,15 @@ static inline void arch_timer_set_cntkctl(u32 cntkctl)
+ 	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+ }
  
- 	probe_index++;
++static inline u64 arch_counter_get_cntpct(void)
++{
++	/*
++	 * AArch64 kernel and user space mandate the use of CNTVCT.
++	 */
++	BUG();
++	return 0;
++}
++
+ static inline u64 arch_counter_get_cntvct(void)
+ {
+ 	u64 cval;
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index 43005d4..1fa2af9 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -462,7 +462,10 @@ static void __init arch_counter_register(unsigned type)
+ 
+ 	/* Register the CP15 based counter if we have one */
+ 	if (type & ARCH_CP15_TIMER) {
+-		arch_timer_read_counter = arch_counter_get_cntvct;
++		if (arch_timer_use_virtual)
++			arch_timer_read_counter = arch_counter_get_cntvct;
++		else
++			arch_timer_read_counter = arch_counter_get_cntpct;
+ 	} else {
+ 		arch_timer_read_counter = arch_counter_get_cntvct_mem;
  
 -- 
-1.9.1
+2.1.0.rc2.206.gedb03e5
 
