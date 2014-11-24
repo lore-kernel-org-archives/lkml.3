@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217AbaKXINx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 03:13:53 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:42778 "EHLO
+	id S1752589AbaKXINv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 03:13:51 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:42772 "EHLO
 	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159AbaKXINe (ORCPT
+	with ESMTP id S1753162AbaKXINf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 03:13:34 -0500
+	Mon, 24 Nov 2014 03:13:35 -0500
 X-Original-SENDERIP: 10.177.222.235
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -17,72 +17,100 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 2/2] perf tools: Collapse first level callchain entry if it has sibling
-Date: Mon, 24 Nov 2014 17:13:27 +0900
-Message-Id: <1416816807-6495-2-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 1/2] perf hists browser: Print overhead percent value for first-level callchain
+Date: Mon, 24 Nov 2014 17:13:26 +0900
+Message-Id: <1416816807-6495-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1416816807-6495-1-git-send-email-namhyung@kernel.org>
-References: <1416816807-6495-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If first level callchain has more than single path like when -g caller
-option is given, it should show only first one in the path and hide
-others.  But it didn't do it properly nad just hindered the output.
+Currently perf report on TUI doesn't print percent for first-level
+callchain entry.  I guess it (wrongly) assumes that there's only a
+single callchain in the first level.  This patch fixes it by handling
+the first level callchains same as others - if it's not 100% it should
+print the percent value.  Also it'll affect other callchains in the
+other way around - if it's 100% (single callchain) it should not print
+the percentage.
 
 Before:
-  -   80.33%    11.11%  abc2     abc2              [.] main
-     + 86.18% main
-       13.82% __libc_start_main
-          main
+  -   30.95%     6.84%  abc2     abc2              [.] a
+     - a
+        - 70.00% c
+           - 100.00% apic_timer_interrupt
+                smp_apic_timer_interrupt
+                local_apic_timer_interrupt
+                hrtimer_interrupt
+                ...
+        + 30.00% b
+     + __libc_start_main
 
 After:
-  -   80.33%    11.11%  abc2     abc2              [.] main
-     + 86.18% main
-     + 13.82% __libc_start_main
+  -   30.95%     6.84%  abc2     abc2              [.] a
+     - 77.90% a
+        - 70.00% c
+           - apic_timer_interrupt
+             smp_apic_timer_interrupt
+             local_apic_timer_interrupt
+             hrtimer_interrupt
+             ...
+        + 30.00% b
+     + 22.10% __libc_start_main
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/browsers/hists.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ tools/perf/ui/browsers/hists.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 8d22905a4687..502daff76ceb 100644
+index 12c17c5a3d68..8d22905a4687 100644
 --- a/tools/perf/ui/browsers/hists.c
 +++ b/tools/perf/ui/browsers/hists.c
-@@ -227,10 +227,14 @@ static void callchain_node__init_have_children_rb_tree(struct callchain_node *no
- 	}
- }
+@@ -542,8 +542,11 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
+ 	struct rb_node *node;
+ 	int first_row = row, offset = level * LEVEL_OFFSET_STEP;
+ 	u64 new_total;
++	bool need_percent;
  
--static void callchain_node__init_have_children(struct callchain_node *node)
-+static void callchain_node__init_have_children(struct callchain_node *node,
-+					       bool has_sibling)
- {
- 	struct callchain_list *chain;
- 
-+	chain = list_entry(node->val.next, struct callchain_list, list);
-+	chain->ms.has_children = has_sibling;
+ 	node = rb_first(root);
++	need_percent = !!rb_next(node);
 +
- 	if (!list_empty(&node->val)) {
- 		chain = list_entry(node->val.prev, struct callchain_list, list);
- 		chain->ms.has_children = !RB_EMPTY_ROOT(&node->rb_root);
-@@ -241,11 +245,12 @@ static void callchain_node__init_have_children(struct callchain_node *node)
+ 	while (node) {
+ 		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
+ 		struct rb_node *next = rb_next(node);
+@@ -560,7 +563,7 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
  
- static void callchain__init_have_children(struct rb_root *root)
- {
--	struct rb_node *nd;
-+	struct rb_node *nd = rb_first(root);
-+	bool has_sibling = nd && rb_next(nd);
+ 			if (first)
+ 				first = false;
+-			else if (level > 1)
++			else if (need_percent)
+ 				extra_offset = LEVEL_OFFSET_STEP;
  
- 	for (nd = rb_first(root); nd; nd = rb_next(nd)) {
- 		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
--		callchain_node__init_have_children(node);
-+		callchain_node__init_have_children(node, has_sibling);
- 	}
- }
+ 			folded_sign = callchain_list__folded(chain);
+@@ -573,7 +576,7 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
+ 			str = callchain_list__sym_name(chain, bf, sizeof(bf),
+ 						       browser->show_dso);
  
+-			if (was_first && level > 1) {
++			if (was_first && need_percent) {
+ 				double percent = cumul * 100.0 / total;
+ 
+ 				if (asprintf(&alloc_str, "%2.2f%% %s", percent, str) < 0)
+@@ -790,6 +793,13 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 			.is_current_entry = current_entry,
+ 		};
+ 
++		if (callchain_param.mode == CHAIN_GRAPH_REL) {
++			if (symbol_conf.cumulate_callchain)
++				total = entry->stat_acc->period;
++			else
++				total = entry->stat.period;
++		}
++
+ 		printed += hist_browser__show_callchain(browser,
+ 					&entry->sorted_chain, 1, row, total,
+ 					hist_browser__show_callchain_entry, &arg,
 -- 
 2.1.2
 
