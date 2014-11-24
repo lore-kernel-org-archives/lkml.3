@@ -1,93 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474AbaKXSlD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:41:03 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:62661 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589AbaKXSlB (ORCPT
+	id S1754574AbaKXSls (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:41:48 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:34918 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754270AbaKXSlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:41:01 -0500
-Message-ID: <54737BB3.8060205@linaro.org>
-Date: Mon, 24 Nov 2014 18:40:51 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 24 Nov 2014 13:41:46 -0500
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jason Cooper <jason@lakedaemon.net>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Subject: Re: [PATCH 3.18-rc3 v8 1/4] irqchip: gic: Make gic_raise_softirq()
- FIQ-safe
-References: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org> <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <1415968543-29469-2-git-send-email-daniel.thompson@linaro.org> <alpine.DEB.2.11.1411241918090.6439@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411241918090.6439@nanos>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141124104530.78a0050e@lwn.net>
+References: <1416847159-3895-1-git-send-email-sj38.park@gmail.com> <20141124104530.78a0050e@lwn.net>
+From: SeongJae Park <sj38.park@gmail.com>
+Date: Tue, 25 Nov 2014 03:41:15 +0900
+Message-ID: <CAEjAshqxpgAsO69zkNkb-CgbofHtXDriKP3CWwDeEcZJLF6jwA@mail.gmail.com>
+Subject: Re: [PATCH] cgroups: Documentation: fix wrong cgroupfs paths
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: tj@kernel.org, lizefan@huawei.com, cgroups@vger.kernel.org,
+        linux-doc <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/11/14 18:20, Thomas Gleixner wrote:
-> On Fri, 14 Nov 2014, Daniel Thompson wrote:
->> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->> index 38493ff28fa5..0db62a6f1ee3 100644
->> --- a/drivers/irqchip/irq-gic.c
->> +++ b/drivers/irqchip/irq-gic.c
->> @@ -73,6 +73,13 @@ struct gic_chip_data {
->>  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
->>  
->>  /*
->> + * This lock may be locked for reading by FIQ handlers. Thus although
->> + * read locking may be used liberally, write locking must only take
->> + * place only when local FIQ handling is disabled.
->> + */
->> +static DEFINE_RWLOCK(fiq_safe_cpu_map_lock);
->> +
->> +/*
->>   * The GIC mapping of CPU interfaces does not necessarily match
->>   * the logical CPU numbering.  Let's use a mapping as returned
->>   * by the GIC itself.
->> @@ -624,7 +631,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->>  	int cpu;
->>  	unsigned long flags, map = 0;
->>  
->> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
->> +	read_lock_irqsave(&fiq_safe_cpu_map_lock, flags);
-> 
-> Just for the record:
-> 
-> You might have noticed that you replace a raw lock with a non raw
-> one. That's not an issue on mainline, but that pretty much renders
-> that code broken for RT.
+On Tue, Nov 25, 2014 at 2:45 AM, Jonathan Corbet <corbet@lwn.net> wrote:
+> On Tue, 25 Nov 2014 01:39:19 +0900
+> SeongJae Park <sj38.park@gmail.com> wrote:
+>
+>>   6) Attach that task to the new cgroup by writing its PID to the
+>> -    /sys/fs/cgroup/cpuset/tasks file for that cgroup.
+>> +    /sys/fs/cgroup/cpuset tasks file for that cgroup.
+>
+> That one looks like it was correct before the change...?  What am I
+> missing here?
 
-Indeed. For that reason I've been pretty anxious to hear your views on
-this one.
+It should represents /sys/fs/cgroup/cpuset/<*new cgroup name*>/tasks,
+not /sys/fs/cgroup/cpuset/tasks.
 
-Older versions of this patch did retain the raw lock but the code ends
-up looking a bit weird and resulted in negative comments during review:
+If there are better suggestions or anything I am missing, please let me
+know.
 
-if (in_nmi())
-        raw_spin_lock(&fiq_exclusive_cpu_map_lock);
-else
-        raw_spin_lock_irqsave(&irq_controller_lock, flags);
+Thanks,
+SeongJae Park
 
-The above form relies for correctness on the fact the b.L switcher code
-can take both locks and already runs with FIQ disabled.
-
-
-> Surely nothing I worry too much about given the current state of RT.
-
-Hobby or not, I don't want to make your work here any harder. I could go
-back to the old form.
-
-Alternatively I could provide a patch to go in -rt that converts the rw
-locks to spin locks but that just sounds like a maintenance hassle for you.
-
-
-Daniel.
-
+>
+> Thanks,
+>
+> jon
