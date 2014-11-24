@@ -1,717 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610AbaKXMeS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 07:34:18 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:4847 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaKXMeQ (ORCPT
+	id S1752836AbaKXMfM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 07:35:12 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:10229 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaKXMfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 07:34:16 -0500
-Message-ID: <547325A9.3000109@huawei.com>
-Date: Mon, 24 Nov 2014 20:33:45 +0800
-From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 01/16] irqdomain: Introduce new interfaces to support
- hierarchy irqdomains
-References: <20141112133941.647950773@linutronix.de> <20141112134119.881823615@linutronix.de>
-In-Reply-To: <20141112134119.881823615@linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.136]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020205.547325B5.02BA,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 7e1ae2310568d419ea66557ddbfd4639
+	Mon, 24 Nov 2014 07:35:08 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-19-547325f9ec84
+Message-id: <547325A2.7070408@samsung.com>
+Date: Mon, 24 Nov 2014 14:33:38 +0200
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: David Howells <dhowells@redhat.com>, mmarek@suse.cz, rusty@rustcorp.com.au,
+        vgoyal@redhat.com
+Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        zohar@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] MODSIGN: Use PKCS#7 for module signatures
+References: <20141120165351.5264.61930.stgit@warthog.procyon.org.uk>
+In-reply-to: <20141120165351.5264.61930.stgit@warthog.procyon.org.uk>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t/xK7o/VYtDDI5vUrB41/SbxWL2rocs
+	Fpd3zWGz+NDziM2iZd8FJoub0y6wWFy7tY/N4tOKScwOHB7TTixj8XhwaDOLx/t9V9k8Vmw4
+	wexxZsERdo/Pm+QC2KK4bFJSczLLUov07RK4MjpX3GUp2CJbsWLzd/YGxm+iXYycHBICJhJv
+	mlvZIWwxiQv31rN1MXJxCAksZZR4MmciM0hCSKCRSWLlNE2IxCxGiears9lAErwCWhKflzYx
+	gtgsAqoS677/ArPZBPQkNjT/AJsqKhAhcWXNHEaIekGJH5PvsYDYIgLJEjvv7wSLMwtUS9xc
+	8gcsLizgJHF80WZ2iMUuEjOndjKB2JwCrhLtx88AHcQBVK8uMWVKLkSrvMTmNW+h7lSV6F67
+	lg3iGUWJ05PPMU9gFJ6FZPMshO5ZSLoXMDKvYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAiJ
+	ny87GBcfszrEKMDBqMTD+6OnMESINbGsuDL3EKMEB7OSCK+YWHGIEG9KYmVValF+fFFpTmrx
+	IUYmDk6pBkbm9OUhwU+UndZw1nLyr/wdOz+te13FlRzLH7cj9t0yPc8W3Bm4YcPZnZz6G+4a
+	35N21riw9XJV9Ltd/ObdzcuMNVhX1N+8JRkq4LWmbsIq5tZVXAuFwzf7rlmnFsN0fIXpW921
+	GRaldws0/09fMqkw3rH0xaT8A3ZznKdcVfUR5cwqtXsyKV2JpTgj0VCLuag4EQAA7ku/fQIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas, Jiang,
-On 2014/11/12 21:42, Thomas Gleixner wrote:
+On 20/11/14 18:53, David Howells wrote:
+> Here's a set of patches that does the following:
+>
+>  (1) Extracts both parts of an X.509 AuthorityKeyIdentifier (AKID) extension.
+>      We already extract the bit that can match the subjectKeyIdentifier (SKID)
+>      of the parent X.509 cert, but we currently ignore the bits that can match
+>      the issuer and serialNumber.
+>
+>      Looks up an X.509 cert by issuer and serialNumber if those are provided in
+>      the AKID.  If the keyIdentifier is also provided, checks that the
+>      subjectKeyIdentifier of the cert found matches that also.
+>
+>      If no issuer and serialNumber are provided in the AKID, looks up an X.509
+>      cert by SKID using the AKID keyIdentifier.
+>
+>      This allows module signing to be done with certificates that don't have an
+>      SKID by which they can be looked up.
+>
+>  (2) Makes use of the PKCS#7 facility to provide module signatures.
+>
+>      sign-file is replaced with a program that generates a PKCS#7 message that
+>      has no X.509 certs embedded and that has detached data (the module
+>      content) and adds it onto the message with magic string and descriptor.
 
-> From: Jiang Liu <jiang.liu@linux.intel.com>
-> 
-[...]
->  /* Number of irqs reserved for a legacy isa controller */
->  #define NUM_ISA_INTERRUPTS	16
-> @@ -64,6 +66,16 @@ struct irq_domain_ops {
->  	int (*xlate)(struct irq_domain *d, struct device_node *node,
->  		     const u32 *intspec, unsigned int intsize,
->  		     unsigned long *out_hwirq, unsigned int *out_type);
-> +
-> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
-> +	/* extended V2 interfaces to support hierarchy irq_domains */
-> +	int (*alloc)(struct irq_domain *d, unsigned int virq,
-> +		     unsigned int nr_irqs, void *arg);
-> +	void (*free)(struct irq_domain *d, unsigned int virq,
-> +		     unsigned int nr_irqs);
-> +	void (*activate)(struct irq_domain *d, struct irq_data *irq_data);
-> +	void (*deactivate)(struct irq_domain *d, struct irq_data *irq_data);
+Why do you highlight that X509 is not embedded?
+Current module signing does not embed X509 also.
 
-What's the usage of the parameter domain reference in activate/deactivate?
-I think the purpose of the two callbacks is to activate/deactivate the
-irq_data->hwirq in irq_data->domain. If so, the first parameter @domain is
-required to be equal to irq_data->domain (which makes @domain useless).
-Besides, the main responsibility of interrupt domains is to manage mappings
-between hardware and linux interrupt numbers, so would it be better if move
-the two callbacks into struct irq_chip?
+- Dmitry
 
-Thanks,
-	Abel.
-
-> +#endif
->  };
->  
->  extern struct irq_domain_ops irq_generic_chip_ops;
-> @@ -77,6 +89,7 @@ struct irq_domain_chip_generic;
->   * @ops: pointer to irq_domain methods
->   * @host_data: private data pointer for use by owner.  Not touched by irq_domain
->   *             core code.
-> + * @flags: host per irq_domain flags
->   *
->   * Optional elements
->   * @of_node: Pointer to device tree nodes associated with the irq_domain. Used
-> @@ -84,6 +97,7 @@ struct irq_domain_chip_generic;
->   * @gc: Pointer to a list of generic chips. There is a helper function for
->   *      setting up one or more generic chips for interrupt controllers
->   *      drivers using the generic chip library which uses this pointer.
-> + * @parent: Pointer to parent irq_domain to support hierarchy irq_domains
->   *
->   * Revmap data, used internally by irq_domain
->   * @revmap_direct_max_irq: The largest hwirq that can be set for controllers that
-> @@ -97,10 +111,14 @@ struct irq_domain {
->  	const char *name;
->  	const struct irq_domain_ops *ops;
->  	void *host_data;
-> +	unsigned int flags;
->  
->  	/* Optional data */
->  	struct device_node *of_node;
->  	struct irq_domain_chip_generic *gc;
-> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
-> +	struct irq_domain *parent;
-> +#endif
->  
->  	/* reverse map data. The linear map gets appended to the irq_domain */
->  	irq_hw_number_t hwirq_max;
-> @@ -110,6 +128,9 @@ struct irq_domain {
->  	unsigned int linear_revmap[];
->  };
->  
-> +#define	IRQ_DOMAIN_FLAG_HIERARCHY	0x1
-> +#define	IRQ_DOMAIN_FLAG_ARCH1		0x10000
-> +
->  #ifdef CONFIG_IRQ_DOMAIN
->  struct irq_domain *__irq_domain_add(struct device_node *of_node, int size,
->  				    irq_hw_number_t hwirq_max, int direct_max,
-> @@ -220,8 +241,73 @@ int irq_domain_xlate_onetwocell(struct i
->  			const u32 *intspec, unsigned int intsize,
->  			irq_hw_number_t *out_hwirq, unsigned int *out_type);
->  
-> +/* V2 interfaces to support hierarchy IRQ domains. */
-> +extern struct irq_data *irq_domain_get_irq_data(struct irq_domain *domain,
-> +						unsigned int virq);
-> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
-> +extern int __irq_domain_alloc_irqs(struct irq_domain *domain, int irq_base,
-> +				   unsigned int nr_irqs, int node, void *arg,
-> +				   bool realloc);
-> +extern void irq_domain_free_irqs(unsigned int virq, unsigned int nr_irqs);
-> +extern void irq_domain_activate_irq(struct irq_data *irq_data);
-> +extern void irq_domain_deactivate_irq(struct irq_data *irq_data);
-> +
-> +static inline int irq_domain_alloc_irqs(struct irq_domain *domain,
-> +			unsigned int nr_irqs, int node, void *arg)
-> +{
-> +	return __irq_domain_alloc_irqs(domain, -1, nr_irqs, node, arg, false);
-> +}
-> +
-> +extern int irq_domain_set_hwirq_and_chip(struct irq_domain *domain,
-> +					 unsigned int virq,
-> +					 irq_hw_number_t hwirq,
-> +					 struct irq_chip *chip,
-> +					 void *chip_data);
-> +extern void irq_domain_reset_irq_data(struct irq_data *irq_data);
-> +extern void irq_domain_free_irqs_common(struct irq_domain *domain,
-> +					int virq, int nr_irqs);
-> +extern void irq_domain_free_irqs_top(struct irq_domain *domain,
-> +				     int virq, int nr_irqs);
-> +
-> +static inline int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
-> +				int irq_base, unsigned int nr_irqs, void *arg)
-> +{
-> +	if (domain->parent && domain->parent->ops->alloc)
-> +		return domain->parent->ops->alloc(domain->parent, irq_base,
-> +						  nr_irqs, arg);
-> +	return -ENOSYS;
-> +}
-> +
-> +static inline void irq_domain_free_irqs_parent(struct irq_domain *domain,
-> +					int irq_base, unsigned int nr_irqs)
-> +{
-> +	if (domain->parent && domain->parent->ops->free)
-> +		domain->parent->ops->free(domain->parent, irq_base, nr_irqs);
-> +}
-> +
-> +static inline bool irq_domain_is_hierarchy(struct irq_domain *domain)
-> +{
-> +	return domain->flags & IRQ_DOMAIN_FLAG_HIERARCHY;
-> +}
-> +#else	/* CONFIG_IRQ_DOMAIN_HIERARCHY */
-> +static inline void irq_domain_activate_irq(struct irq_data *data) { }
-> +static inline void irq_domain_deactivate_irq(struct irq_data *data) { }
-> +static inline int irq_domain_alloc_irqs(struct irq_domain *domain,
-> +			unsigned int nr_irqs, int node, void *arg)
-> +{
-> +	return -1;
-> +}
-> +
-> +static inline bool irq_domain_is_hierarchy(struct irq_domain *domain)
-> +{
-> +	return false;
-> +}
-> +#endif	/* CONFIG_IRQ_DOMAIN_HIERARCHY */
-> +
->  #else /* CONFIG_IRQ_DOMAIN */
->  static inline void irq_dispose_mapping(unsigned int virq) { }
-> +static inline void irq_domain_activate_irq(struct irq_data *data) { }
-> +static inline void irq_domain_deactivate_irq(struct irq_data *data) { }
->  #endif /* !CONFIG_IRQ_DOMAIN */
->  
->  #endif /* _LINUX_IRQDOMAIN_H */
-> Index: tip/kernel/irq/Kconfig
-> ===================================================================
-> --- tip.orig/kernel/irq/Kconfig
-> +++ tip/kernel/irq/Kconfig
-> @@ -55,6 +55,11 @@ config GENERIC_IRQ_CHIP
->  config IRQ_DOMAIN
->  	bool
->  
-> +# Support for hierarchical irq domains
-> +config IRQ_DOMAIN_HIERARCHY
-> +	bool
-> +	select IRQ_DOMAIN
-> +
->  config HANDLE_DOMAIN_IRQ
->  	bool
->  
-> Index: tip/kernel/irq/chip.c
-> ===================================================================
-> --- tip.orig/kernel/irq/chip.c
-> +++ tip/kernel/irq/chip.c
-> @@ -15,6 +15,7 @@
->  #include <linux/module.h>
->  #include <linux/interrupt.h>
->  #include <linux/kernel_stat.h>
-> +#include <linux/irqdomain.h>
->  
->  #include <trace/events/irq.h>
->  
-> @@ -178,6 +179,7 @@ int irq_startup(struct irq_desc *desc, b
->  	irq_state_clr_disabled(desc);
->  	desc->depth = 0;
->  
-> +	irq_domain_activate_irq(&desc->irq_data);
->  	if (desc->irq_data.chip->irq_startup) {
->  		ret = desc->irq_data.chip->irq_startup(&desc->irq_data);
->  		irq_state_clr_masked(desc);
-> @@ -199,6 +201,7 @@ void irq_shutdown(struct irq_desc *desc)
->  		desc->irq_data.chip->irq_disable(&desc->irq_data);
->  	else
->  		desc->irq_data.chip->irq_mask(&desc->irq_data);
-> +	irq_domain_deactivate_irq(&desc->irq_data);
->  	irq_state_set_masked(desc);
->  }
->  
-> Index: tip/kernel/irq/irqdomain.c
-> ===================================================================
-> --- tip.orig/kernel/irq/irqdomain.c
-> +++ tip/kernel/irq/irqdomain.c
-> @@ -23,6 +23,10 @@ static DEFINE_MUTEX(irq_domain_mutex);
->  static DEFINE_MUTEX(revmap_trees_mutex);
->  static struct irq_domain *irq_default_domain;
->  
-> +static int irq_domain_alloc_descs(int virq, unsigned int nr_irqs,
-> +				  irq_hw_number_t hwirq, int node);
-> +static void irq_domain_check_hierarchy(struct irq_domain *domain);
-> +
->  /**
->   * __irq_domain_add() - Allocate a new irq_domain data structure
->   * @of_node: optional device-tree node of the interrupt controller
-> @@ -30,7 +34,7 @@ static struct irq_domain *irq_default_do
->   * @hwirq_max: Maximum number of interrupts supported by controller
->   * @direct_max: Maximum value of direct maps; Use ~0 for no limit; 0 for no
->   *              direct mapping
-> - * @ops: map/unmap domain callbacks
-> + * @ops: domain callbacks
->   * @host_data: Controller private data pointer
->   *
->   * Allocates and initialize and irq_domain structure.
-> @@ -56,6 +60,7 @@ struct irq_domain *__irq_domain_add(stru
->  	domain->hwirq_max = hwirq_max;
->  	domain->revmap_size = size;
->  	domain->revmap_direct_max_irq = direct_max;
-> +	irq_domain_check_hierarchy(domain);
->  
->  	mutex_lock(&irq_domain_mutex);
->  	list_add(&domain->link, &irq_domain_list);
-> @@ -109,7 +114,7 @@ EXPORT_SYMBOL_GPL(irq_domain_remove);
->   * @first_irq: first number of irq block assigned to the domain,
->   *	pass zero to assign irqs on-the-fly. If first_irq is non-zero, then
->   *	pre-map all of the irqs in the domain to virqs starting at first_irq.
-> - * @ops: map/unmap domain callbacks
-> + * @ops: domain callbacks
->   * @host_data: Controller private data pointer
->   *
->   * Allocates an irq_domain, and optionally if first_irq is positive then also
-> @@ -174,10 +179,8 @@ struct irq_domain *irq_domain_add_legacy
->  
->  	domain = __irq_domain_add(of_node, first_hwirq + size,
->  				  first_hwirq + size, 0, ops, host_data);
-> -	if (!domain)
-> -		return NULL;
-> -
-> -	irq_domain_associate_many(domain, first_irq, first_hwirq, size);
-> +	if (domain)
-> +		irq_domain_associate_many(domain, first_irq, first_hwirq, size);
->  
->  	return domain;
->  }
-> @@ -388,7 +391,6 @@ EXPORT_SYMBOL_GPL(irq_create_direct_mapp
->  unsigned int irq_create_mapping(struct irq_domain *domain,
->  				irq_hw_number_t hwirq)
->  {
-> -	unsigned int hint;
->  	int virq;
->  
->  	pr_debug("irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
-> @@ -410,12 +412,8 @@ unsigned int irq_create_mapping(struct i
->  	}
->  
->  	/* Allocate a virtual interrupt number */
-> -	hint = hwirq % nr_irqs;
-> -	if (hint == 0)
-> -		hint++;
-> -	virq = irq_alloc_desc_from(hint, of_node_to_nid(domain->of_node));
-> -	if (virq <= 0)
-> -		virq = irq_alloc_desc_from(1, of_node_to_nid(domain->of_node));
-> +	virq = irq_domain_alloc_descs(-1, 1, hwirq,
-> +				      of_node_to_nid(domain->of_node));
->  	if (virq <= 0) {
->  		pr_debug("-> virq allocation failed\n");
->  		return 0;
-> @@ -471,7 +469,7 @@ unsigned int irq_create_of_mapping(struc
->  	struct irq_domain *domain;
->  	irq_hw_number_t hwirq;
->  	unsigned int type = IRQ_TYPE_NONE;
-> -	unsigned int virq;
-> +	int virq;
->  
->  	domain = irq_data->np ? irq_find_host(irq_data->np) : irq_default_domain;
->  	if (!domain) {
-> @@ -480,6 +478,11 @@ unsigned int irq_create_of_mapping(struc
->  		return 0;
->  	}
->  
-> +	if (irq_domain_is_hierarchy(domain)) {
-> +		virq = irq_domain_alloc_irqs(domain, 1, NUMA_NO_NODE, irq_data);
-> +		return virq <= 0 ? 0 : virq;
-> +	}
-> +
->  	/* If domain has no translation, then we assume interrupt line */
->  	if (domain->ops->xlate == NULL)
->  		hwirq = irq_data->args[0];
-> @@ -540,8 +543,8 @@ unsigned int irq_find_mapping(struct irq
->  		return 0;
->  
->  	if (hwirq < domain->revmap_direct_max_irq) {
-> -		data = irq_get_irq_data(hwirq);
-> -		if (data && (data->domain == domain) && (data->hwirq == hwirq))
-> +		data = irq_domain_get_irq_data(domain, hwirq);
-> +		if (data && data->hwirq == hwirq)
->  			return hwirq;
->  	}
->  
-> @@ -709,3 +712,359 @@ const struct irq_domain_ops irq_domain_s
->  	.xlate = irq_domain_xlate_onetwocell,
->  };
->  EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
-> +
-> +static int irq_domain_alloc_descs(int virq, unsigned int cnt,
-> +				  irq_hw_number_t hwirq, int node)
-> +{
-> +	unsigned int hint;
-> +
-> +	if (virq >= 0) {
-> +		virq = irq_alloc_descs(virq, virq, cnt, node);
-> +	} else {
-> +		hint = hwirq % nr_irqs;
-> +		if (hint == 0)
-> +			hint++;
-> +		virq = irq_alloc_descs_from(hint, cnt, node);
-> +		if (virq <= 0 && hint > 1)
-> +			virq = irq_alloc_descs_from(1, cnt, node);
-> +	}
-> +
-> +	return virq;
-> +}
-> +
-> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
-> +static void irq_domain_insert_irq(int virq)
-> +{
-> +	struct irq_data *data;
-> +
-> +	for (data = irq_get_irq_data(virq); data; data = data->parent_data) {
-> +		struct irq_domain *domain = data->domain;
-> +		irq_hw_number_t hwirq = data->hwirq;
-> +
-> +		if (hwirq < domain->revmap_size) {
-> +			domain->linear_revmap[hwirq] = virq;
-> +		} else {
-> +			mutex_lock(&revmap_trees_mutex);
-> +			radix_tree_insert(&domain->revmap_tree, hwirq, data);
-> +			mutex_unlock(&revmap_trees_mutex);
-> +		}
-> +
-> +		/* If not already assigned, give the domain the chip's name */
-> +		if (!domain->name && data->chip)
-> +			domain->name = data->chip->name;
-> +	}
-> +
-> +	irq_clear_status_flags(virq, IRQ_NOREQUEST);
-> +}
-> +
-> +static void irq_domain_remove_irq(int virq)
-> +{
-> +	struct irq_data *data;
-> +
-> +	irq_set_status_flags(virq, IRQ_NOREQUEST);
-> +	irq_set_chip_and_handler(virq, NULL, NULL);
-> +	synchronize_irq(virq);
-> +	smp_mb();
-> +
-> +	for (data = irq_get_irq_data(virq); data; data = data->parent_data) {
-> +		struct irq_domain *domain = data->domain;
-> +		irq_hw_number_t hwirq = data->hwirq;
-> +
-> +		if (hwirq < domain->revmap_size) {
-> +			domain->linear_revmap[hwirq] = 0;
-> +		} else {
-> +			mutex_lock(&revmap_trees_mutex);
-> +			radix_tree_delete(&domain->revmap_tree, hwirq);
-> +			mutex_unlock(&revmap_trees_mutex);
-> +		}
-> +	}
-> +}
-> +
-> +static struct irq_data *irq_domain_insert_irq_data(struct irq_domain *domain,
-> +						   struct irq_data *child)
-> +{
-> +	struct irq_data *irq_data;
-> +
-> +	irq_data = kzalloc_node(sizeof(*irq_data), GFP_KERNEL, child->node);
-> +	if (irq_data) {
-> +		child->parent_data = irq_data;
-> +		irq_data->irq = child->irq;
-> +		irq_data->node = child->node;
-> +		irq_data->domain = domain;
-> +	}
-> +
-> +	return irq_data;
-> +}
-> +
-> +static void irq_domain_free_irq_data(unsigned int virq, unsigned int nr_irqs)
-> +{
-> +	int i;
-> +	struct irq_data *irq_data, *tmp;
-> +
-> +	for (i = 0; i < nr_irqs; i++) {
-> +		irq_data = irq_get_irq_data(virq + i);
-> +		tmp = irq_data->parent_data;
-> +		irq_data->parent_data = NULL;
-> +		irq_data->domain = NULL;
-> +
-> +		while (tmp) {
-> +			irq_data = tmp;
-> +			tmp = tmp->parent_data;
-> +			kfree(irq_data);
-> +		}
-> +	}
-> +}
-> +
-> +static int irq_domain_alloc_irq_data(struct irq_domain *domain,
-> +				     unsigned int virq, unsigned int nr_irqs)
-> +{
-> +	int i;
-> +	struct irq_data *irq_data;
-> +	struct irq_domain *parent;
-> +
-> +	/* The outermost irq_data is embedded in struct irq_desc */
-> +	for (i = 0; i < nr_irqs; i++) {
-> +		irq_data = irq_get_irq_data(virq + i);
-> +		irq_data->domain = domain;
-> +
-> +		for (parent = domain->parent; parent; parent = parent->parent) {
-> +			irq_data = irq_domain_insert_irq_data(parent, irq_data);
-> +			if (!irq_data) {
-> +				irq_domain_free_irq_data(virq, i + 1);
-> +				return -ENOMEM;
-> +			}
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * irq_domain_get_irq_data - Get irq_data associated with @virq and @domain
-> + * @domain: domain to match
-> + * @virq: IRQ number to get irq_data
-> + */
-> +struct irq_data *irq_domain_get_irq_data(struct irq_domain *domain,
-> +					 unsigned int virq)
-> +{
-> +	struct irq_data *irq_data;
-> +
-> +	for (irq_data = irq_get_irq_data(virq); irq_data;
-> +	     irq_data = irq_data->parent_data)
-> +		if (irq_data->domain == domain)
-> +			return irq_data;
-> +
-> +	return NULL;
-> +}
-> +
-> +int irq_domain_set_hwirq_and_chip(struct irq_domain *domain, unsigned int virq,
-> +				  irq_hw_number_t hwirq, struct irq_chip *chip,
-> +				  void *chip_data)
-> +{
-> +	struct irq_data *irq_data = irq_domain_get_irq_data(domain, virq);
-> +
-> +	if (!irq_data)
-> +		return -ENOENT;
-> +
-> +	irq_data->hwirq = hwirq;
-> +	irq_data->chip = chip ? chip : &no_irq_chip;
-> +	irq_data->chip_data = chip_data;
-> +
-> +	return 0;
-> +}
-> +
-> +void irq_domain_reset_irq_data(struct irq_data *irq_data)
-> +{
-> +	irq_data->hwirq = 0;
-> +	irq_data->chip = &no_irq_chip;
-> +	irq_data->chip_data = NULL;
-> +}
-> +
-> +void irq_domain_free_irqs_common(struct irq_domain *domain, int virq,
-> +				 int nr_irqs)
-> +{
-> +	int i;
-> +	struct irq_data *irq_data;
-> +
-> +	for (i = 0; i < nr_irqs; i++) {
-> +		irq_data = irq_domain_get_irq_data(domain, virq + i);
-> +		if (irq_data)
-> +			irq_domain_reset_irq_data(irq_data);
-> +	}
-> +	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
-> +}
-> +
-> +void irq_domain_free_irqs_top(struct irq_domain *domain, int virq,
-> +			      int nr_irqs)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < nr_irqs; i++) {
-> +		irq_set_handler_data(virq + i, NULL);
-> +		irq_set_handler(virq + i, NULL);
-> +	}
-> +	irq_domain_free_irqs_common(domain, virq, nr_irqs);
-> +}
-> +
-> +/**
-> + * __irq_domain_alloc_irqs - Allocate IRQs from domain
-> + * @domain: domain to allocate from
-> + * @irq_base: allocate specified IRQ nubmer if irq_base >= 0
-> + * @nr_irqs: number of IRQs to allocate
-> + * @node: NUMA node id for memory allocation
-> + * @arg: domain specific argument
-> + * @realloc: IRQ descriptors have already been allocated if true
-> + *
-> + * Allocate IRQ numbers and initialized all data structures to support
-> + * hiearchy IRQ domains.
-> + * Parameter @realloc is mainly to support legacy IRQs.
-> + * Returns error code or allocated IRQ number
-> + *
-> + * The whole process to setup an IRQ has been split into two steps.
-> + * The first step, __irq_domain_alloc_irqs(), is to allocate IRQ
-> + * descriptor and required hardware resources. The second step,
-> + * irq_domain_activate_irq(), is to program hardwares with preallocated
-> + * resources. In this way, it's easier to rollback when failing to
-> + * allocate resources.
-> + */
-> +int __irq_domain_alloc_irqs(struct irq_domain *domain, int irq_base,
-> +			    unsigned int nr_irqs, int node, void *arg,
-> +			    bool realloc)
-> +{
-> +	int i, ret, virq;
-> +
-> +	if (domain == NULL) {
-> +		domain = irq_default_domain;
-> +		if (WARN(!domain, "domain is NULL; cannot allocate IRQ\n"))
-> +			return -EINVAL;
-> +	}
-> +
-> +	if (!domain->ops->alloc) {
-> +		pr_debug("domain->ops->alloc() is NULL\n");
-> +		return -ENOSYS;
-> +	}
-> +
-> +	if (realloc && irq_base >= 0) {
-> +		virq = irq_base;
-> +	} else {
-> +		virq = irq_domain_alloc_descs(irq_base, nr_irqs, 0, node);
-> +		if (virq < 0) {
-> +			pr_debug("cannot allocate IRQ(base %d, count %d)\n",
-> +				 irq_base, nr_irqs);
-> +			return virq;
-> +		}
-> +	}
-> +
-> +	if (irq_domain_alloc_irq_data(domain, virq, nr_irqs)) {
-> +		pr_debug("cannot allocate memory for IRQ%d\n", virq);
-> +		ret = -ENOMEM;
-> +		goto out_free_desc;
-> +	}
-> +
-> +	mutex_lock(&irq_domain_mutex);
-> +	ret = domain->ops->alloc(domain, virq, nr_irqs, arg);
-> +	if (ret < 0) {
-> +		mutex_unlock(&irq_domain_mutex);
-> +		goto out_free_irq_data;
-> +	}
-> +	for (i = 0; i < nr_irqs; i++)
-> +		irq_domain_insert_irq(virq + i);
-> +	mutex_unlock(&irq_domain_mutex);
-> +
-> +	return virq;
-> +
-> +out_free_irq_data:
-> +	irq_domain_free_irq_data(virq, nr_irqs);
-> +out_free_desc:
-> +	irq_free_descs(virq, nr_irqs);
-> +	return ret;
-> +}
-> +
-> +/**
-> + * irq_domain_free_irqs - Free IRQ number and associated data structures
-> + * @virq: base IRQ number
-> + * @nr_irqs: number of IRQs to free
-> + */
-> +void irq_domain_free_irqs(unsigned int virq, unsigned int nr_irqs)
-> +{
-> +	int i;
-> +	struct irq_data *data = irq_get_irq_data(virq);
-> +
-> +	if (WARN(!data || !data->domain || !data->domain->ops->free,
-> +		 "NULL pointer, cannot free irq\n"))
-> +		return;
-> +
-> +	mutex_lock(&irq_domain_mutex);
-> +	for (i = 0; i < nr_irqs; i++)
-> +		irq_domain_remove_irq(virq + i);
-> +	data->domain->ops->free(data->domain, virq, nr_irqs);
-> +	mutex_unlock(&irq_domain_mutex);
-> +
-> +	irq_domain_free_irq_data(virq, nr_irqs);
-> +	irq_free_descs(virq, nr_irqs);
-> +}
-> +
-> +/**
-> + * irq_domain_activate_irq - Call domain_ops->activate recursively to activate
-> + *			     interrupt
-> + * @irq_data: outermost irq_data associated with interrupt
-> + *
-> + * This is the second step to call domain_ops->activate to program interrupt
-> + * controllers, so the interrupt could actually get delivered.
-> + */
-> +void irq_domain_activate_irq(struct irq_data *irq_data)
-> +{
-> +	if (irq_data && irq_data->domain) {
-> +		struct irq_domain *domain = irq_data->domain;
-> +
-> +		if (irq_data->parent_data)
-> +			irq_domain_activate_irq(irq_data->parent_data);
-> +		if (domain->ops->activate)
-> +			domain->ops->activate(domain, irq_data);
-> +	}
-> +}
-> +
-> +/**
-> + * irq_domain_deactivate_irq - Call domain_ops->deactivate recursively to
-> + *			       deactivate interrupt
-> + * @irq_data: outermost irq_data associated with interrupt
-> + *
-> + * It calls domain_ops->deactivate to program interrupt controllers to disable
-> + * interrupt delivery.
-> + */
-> +void irq_domain_deactivate_irq(struct irq_data *irq_data)
-> +{
-> +	if (irq_data && irq_data->domain) {
-> +		struct irq_domain *domain = irq_data->domain;
-> +
-> +		if (domain->ops->deactivate)
-> +			domain->ops->deactivate(domain, irq_data);
-> +		if (irq_data->parent_data)
-> +			irq_domain_deactivate_irq(irq_data->parent_data);
-> +	}
-> +}
-> +
-> +static void irq_domain_check_hierarchy(struct irq_domain *domain)
-> +{
-> +	/* Hierarchy irq_domains must implement callback alloc() */
-> +	if (domain->ops->alloc)
-> +		domain->flags |= IRQ_DOMAIN_FLAG_HIERARCHY;
-> +}
-> +#else	/* CONFIG_IRQ_DOMAIN_HIERARCHY */
-> +/**
-> + * irq_domain_get_irq_data - Get irq_data associated with @virq and @domain
-> + * @domain: domain to match
-> + * @virq: IRQ number to get irq_data
-> + */
-> +struct irq_data *irq_domain_get_irq_data(struct irq_domain *domain,
-> +					 unsigned int virq)
-> +{
-> +	struct irq_data *irq_data = irq_get_irq_data(virq);
-> +
-> +	return (irq_data && irq_data->domain == domain) ? irq_data : NULL;
-> +}
-> +
-> +static void irq_domain_check_hierarchy(struct irq_domain *domain)
-> +{
-> +}
-> +#endif	/* CONFIG_IRQ_DOMAIN_HIERARCHY */
-> 
-> 
+>  (3) The PKCS#7 message (and matching X.509 cert) supply all the information
+>      that is needed to select the X.509 cert to be used to verify the signature
+>      by standard means (including selection of digest algorithm and public key
+>      algorithm).  No kernel-specific magic values are required.
+>
+> Note that the revised sign-file program no longer supports the "-s <signature>"
+> option as I'm not sure what the best way to deal with this is.  Do we generate
+> a PKCS#7 cert from the signature given, or do we get given a PKCS#7 cert?  I
+> lean towards the latter.
+>
+> They can be found here also:
+>
+> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=modsign-pkcs7
+>
+> These patches are based on the security tree's next branch.
+>
+> David
+> ---
+> David Howells (5):
+>       X.509: Extract both parts of the AuthorityKeyIdentifier
+>       X.509: Support X.509 lookup by Issuer+Serial form AuthorityKeyIdentifier
+>       PKCS#7: Allow detached data to be supplied for signature checking purposes
+>       MODSIGN: Provide a utility to append a PKCS#7 signature to a module
+>       MODSIGN: Use PKCS#7 messages as module signatures
+>
+>
+>  crypto/asymmetric_keys/Makefile           |    8 -
+>  crypto/asymmetric_keys/pkcs7_trust.c      |   10 -
+>  crypto/asymmetric_keys/pkcs7_verify.c     |   81 ++++--
+>  crypto/asymmetric_keys/x509_akid.asn1     |   35 ++
+>  crypto/asymmetric_keys/x509_cert_parser.c |  142 ++++++----
+>  crypto/asymmetric_keys/x509_parser.h      |    3 
+>  crypto/asymmetric_keys/x509_public_key.c  |   85 ++++--
+>  include/crypto/pkcs7.h                    |    3 
+>  include/crypto/public_key.h               |    4 
+>  init/Kconfig                              |    1 
+>  kernel/module_signing.c                   |  220 +++------------
+>  scripts/Makefile                          |    2 
+>  scripts/sign-file                         |  421 -----------------------------
+>  scripts/sign-file.c                       |  189 +++++++++++++
+>  14 files changed, 505 insertions(+), 699 deletions(-)
+>  create mode 100644 crypto/asymmetric_keys/x509_akid.asn1
+>  delete mode 100755 scripts/sign-file
+>  create mode 100755 scripts/sign-file.c
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> .
-> 
-> 
-
-
+>
 
