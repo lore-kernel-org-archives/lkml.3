@@ -1,153 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155AbaKXO2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:28:14 -0500
-Received: from lucky1.263xmail.com ([211.157.147.133]:38594 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439AbaKXO2L (ORCPT
+	id S1754213AbaKXO2i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:28:38 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:33992 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717AbaKXO2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:28:11 -0500
-X-Greylist: delayed 636 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Nov 2014 09:28:10 EST
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: galak@codeaurora.org
-X-SENDER-IP: 121.15.173.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <41acc8039b8000f49ef7e32a4dc46c0d>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <54733DF3.7020609@rock-chips.com>
-Date: Mon, 24 Nov 2014 22:17:23 +0800
-From: Andy Yan <andy.yan@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 24 Nov 2014 09:28:34 -0500
+Message-ID: <5473408A.2090308@fr.ibm.com>
+Date: Mon, 24 Nov 2014 15:28:26 +0100
+From: Cedric Le Goater <clg@fr.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
-        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
-        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Lucas Stach <l.stach@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
-        djkurtz@google.com, ykk@rock-chips.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, devel@driverdev.osuosl.org,
-        devicetree@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        jay.xu@rock-chips.com, Pawel Moll <pawel.moll@arm.com>,
-        mark.yao@rock-chips.com, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v12 0/11] dw-hdmi: convert imx hdmi to bridge/dw_hdmi
-References: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com> <1416221635-12797-1-git-send-email-andy.yan@rock-chips.com>
-In-Reply-To: <1416221635-12797-1-git-send-email-andy.yan@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
+CC: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v3 26/41] vhost: virtio 1.0 endian-ness support
+References: <1416829787-14252-1-git-send-email-mst@redhat.com> <1416829787-14252-27-git-send-email-mst@redhat.com>
+In-Reply-To: <1416829787-14252-27-git-send-email-mst@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112414-0025-0000-0000-0000028C9AF4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi ZubairLK, Russel King, Greg Kroah-Hartman , Philipp Zabel and Daniel:
-    Do you have any further opinions or suggestions about the
-the current patch set?
-On 2014年11月17日 18:53, Andy Yan wrote:
-> We found Freescale imx6 and Rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
-> use the interface compatible Designware HDMI IP, but they also have some
-> lightly differences, such as phy pll configuration, register width(imx hdmi
-> register is one byte, but rk3288 is 4 bytes width and can only be accessed
-> by word), 4K support(imx6 doesn't support 4k, but rk3288 does), and HDMI2.0
-> support.
->
-> To reuse the imx-hdmi driver, we make this patch set:
-> (1): fix some CodingStyle warning to make checkpatch happy
-> (2): convert imx-hdmi to drm_bridge
-> (3): move imx-hdmi to bridge/dw_hdmi, and split platform specific code
-> (4): extend dw_hdmi.c to support rk3288 hdmi
-> (5): add rockchip rk3288 platform specific code dw_hdmi-rockchip.c
->
-> Changes in v12:
-> - refactor of_node_put(ddc_node)
-> - squash patch <convert dw_hdmi to drm_bridge> & <split imx soc specific code from imx-hdmi>
-> - add comment for the depend on patch
->
-> Changes in v11:
-> - squash patch  <split some phy configuration to platform driver>
-> - split form patch <dw_hdmi: add rk3288 support>
-> - split from patch <dw_hdmi: add rk3288 support>
->
-> Changes in v10:
-> - split generic dw_hdmi.c improvements from patch#11 (add rk3288 support)
-> - add more display mode support mpll configuration for rk3288
->
-> Changes in v9:
-> - move some phy configuration to platform driver
->
-> Changes in v8:
-> - correct some spelling mistake
-> - modify ddc-i2c-bus and interrupt description
-> - Add documentation for rockchip dw hdmi
->
-> Changes in v7:
-> - remove unused variables from structure dw_hdmi
-> - remove a wrong modification
-> - add copyrights for dw_hdmi-imx.c
->
-> Changes in v6:
-> - rearrange the patch order
-> - move some modification to  patch#6
-> - refactor register access without reg_shift
->
-> Changes in v5:
-> - refactor reg-io-width
->
-> Changes in v4:
-> - fix checkpatch CHECK
-> - defer probe ddc i2c adapter
->
-> Changes in v3:
-> - split multi-register access to one indepent patch
->
-> Changes in v2:
-> - use git format -M to generate these patch
->
-> Andy Yan (11):
->    staging: imx-drm: imx-hdmi: make checkpatch happy
->    staging: imx-drm: imx-hdmi: return defer if can't get ddc i2c adapter
->    staging: imx-drm: imx-hdmi: convert imx-hdmi to drm_bridge mode
->    staging: imx-drm: imx-hdmi: move imx-hdmi to bridge/dw_hdmi
->    dt-bindings: add document for dw_hdmi
->    drm: bridge/dw_hdmi: add support for multi-byte register width access
->    drm: bridge/dw_hdmi: add mode_valid support
->    drm: bridge/dw_hdmi: clear i2cmphy_stat0 reg in hdmi_phy_wait_i2c_done
->    drm: bridge/dw_hdmi: add function dw_hdmi_phy_enable_spare
->    dt-bindings: Add documentation for rockchip dw hdmi
->    drm: bridge/dw_hdmi: add rockchip rk3288 support
->
->   .../devicetree/bindings/drm/bridge/dw_hdmi.txt     |  40 ++
->   .../devicetree/bindings/video/dw_hdmi-rockchip.txt |  43 ++
->   drivers/gpu/drm/bridge/Kconfig                     |   5 +
->   drivers/gpu/drm/bridge/Makefile                    |   1 +
->   .../imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c}        | 767 +++++++++------------
->   .../imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h}        |   7 +-
->   drivers/gpu/drm/rockchip/Kconfig                   |  10 +
->   drivers/gpu/drm/rockchip/Makefile                  |   2 +-
->   drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c        | 355 ++++++++++
->   drivers/staging/imx-drm/Kconfig                    |   1 +
->   drivers/staging/imx-drm/Makefile                   |   2 +-
->   drivers/staging/imx-drm/dw_hdmi-imx.c              | 274 ++++++++
->   include/drm/bridge/dw_hdmi.h                       |  60 ++
->   13 files changed, 1139 insertions(+), 428 deletions(-)
->   create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
->   create mode 100644 Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
->   rename drivers/{staging/imx-drm/imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c} (70%)
->   rename drivers/{staging/imx-drm/imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h} (99%)
->   create mode 100644 drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
->   create mode 100644 drivers/staging/imx-drm/dw_hdmi-imx.c
->   create mode 100644 include/drm/bridge/dw_hdmi.h
->
+Hi Michael,
 
+Do you have a tree from where I could pull these patches ? 
+
+Thanks,
+
+C.
+
+On 11/24/2014 12:54 PM, Michael S. Tsirkin wrote:
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/vhost/vhost.c | 93 +++++++++++++++++++++++++++++++--------------------
+>  1 file changed, 56 insertions(+), 37 deletions(-)
+> 
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index c90f437..4d379ed 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -33,8 +33,8 @@ enum {
+>  	VHOST_MEMORY_F_LOG = 0x1,
+>  };
+> 
+> -#define vhost_used_event(vq) ((u16 __user *)&vq->avail->ring[vq->num])
+> -#define vhost_avail_event(vq) ((u16 __user *)&vq->used->ring[vq->num])
+> +#define vhost_used_event(vq) ((__virtio16 __user *)&vq->avail->ring[vq->num])
+> +#define vhost_avail_event(vq) ((__virtio16 __user *)&vq->used->ring[vq->num])
+> 
+>  static void vhost_poll_func(struct file *file, wait_queue_head_t *wqh,
+>  			    poll_table *pt)
+> @@ -1001,7 +1001,7 @@ EXPORT_SYMBOL_GPL(vhost_log_write);
+>  static int vhost_update_used_flags(struct vhost_virtqueue *vq)
+>  {
+>  	void __user *used;
+> -	if (__put_user(vq->used_flags, &vq->used->flags) < 0)
+> +	if (__put_user(cpu_to_vhost16(vq, vq->used_flags), &vq->used->flags) < 0)
+>  		return -EFAULT;
+>  	if (unlikely(vq->log_used)) {
+>  		/* Make sure the flag is seen before log. */
+> @@ -1019,7 +1019,7 @@ static int vhost_update_used_flags(struct vhost_virtqueue *vq)
+> 
+>  static int vhost_update_avail_event(struct vhost_virtqueue *vq, u16 avail_event)
+>  {
+> -	if (__put_user(vq->avail_idx, vhost_avail_event(vq)))
+> +	if (__put_user(cpu_to_vhost16(vq, vq->avail_idx), vhost_avail_event(vq)))
+>  		return -EFAULT;
+>  	if (unlikely(vq->log_used)) {
+>  		void __user *used;
+> @@ -1038,6 +1038,7 @@ static int vhost_update_avail_event(struct vhost_virtqueue *vq, u16 avail_event)
+> 
+>  int vhost_init_used(struct vhost_virtqueue *vq)
+>  {
+> +	__virtio16 last_used_idx;
+>  	int r;
+>  	if (!vq->private_data)
+>  		return 0;
+> @@ -1046,7 +1047,13 @@ int vhost_init_used(struct vhost_virtqueue *vq)
+>  	if (r)
+>  		return r;
+>  	vq->signalled_used_valid = false;
+> -	return get_user(vq->last_used_idx, &vq->used->idx);
+> +	if (!access_ok(VERIFY_READ, &vq->used->idx, sizeof vq->used->idx))
+> +		return -EFAULT;
+> +	r = __get_user(last_used_idx, &vq->used->idx);
+> +	if (r)
+> +		return r;
+> +	vq->last_used_idx = vhost16_to_cpu(vq, last_used_idx);
+> +	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(vhost_init_used);
+> 
+> @@ -1087,16 +1094,16 @@ static int translate_desc(struct vhost_virtqueue *vq, u64 addr, u32 len,
+>  /* Each buffer in the virtqueues is actually a chain of descriptors.  This
+>   * function returns the next descriptor in the chain,
+>   * or -1U if we're at the end. */
+> -static unsigned next_desc(struct vring_desc *desc)
+> +static unsigned next_desc(struct vhost_virtqueue *vq, struct vring_desc *desc)
+>  {
+>  	unsigned int next;
+> 
+>  	/* If this descriptor says it doesn't chain, we're done. */
+> -	if (!(desc->flags & VRING_DESC_F_NEXT))
+> +	if (!(desc->flags & cpu_to_vhost16(vq, VRING_DESC_F_NEXT)))
+>  		return -1U;
+> 
+>  	/* Check they're not leading us off end of descriptors. */
+> -	next = desc->next;
+> +	next = vhost16_to_cpu(vq, desc->next);
+>  	/* Make sure compiler knows to grab that: we don't want it changing! */
+>  	/* We will use the result as an index in an array, so most
+>  	 * architectures only need a compiler barrier here. */
+> @@ -1113,18 +1120,19 @@ static int get_indirect(struct vhost_virtqueue *vq,
+>  {
+>  	struct vring_desc desc;
+>  	unsigned int i = 0, count, found = 0;
+> +	u32 len = vhost32_to_cpu(vq, indirect->len);
+>  	int ret;
+> 
+>  	/* Sanity check */
+> -	if (unlikely(indirect->len % sizeof desc)) {
+> +	if (unlikely(len % sizeof desc)) {
+>  		vq_err(vq, "Invalid length in indirect descriptor: "
+>  		       "len 0x%llx not multiple of 0x%zx\n",
+> -		       (unsigned long long)indirect->len,
+> +		       (unsigned long long)vhost32_to_cpu(vq, indirect->len),
+>  		       sizeof desc);
+>  		return -EINVAL;
+>  	}
+> 
+> -	ret = translate_desc(vq, indirect->addr, indirect->len, vq->indirect,
+> +	ret = translate_desc(vq, vhost64_to_cpu(vq, indirect->addr), len, vq->indirect,
+>  			     UIO_MAXIOV);
+>  	if (unlikely(ret < 0)) {
+>  		vq_err(vq, "Translation failure %d in indirect.\n", ret);
+> @@ -1135,7 +1143,7 @@ static int get_indirect(struct vhost_virtqueue *vq,
+>  	 * architectures only need a compiler barrier here. */
+>  	read_barrier_depends();
+> 
+> -	count = indirect->len / sizeof desc;
+> +	count = len / sizeof desc;
+>  	/* Buffers are chained via a 16 bit next field, so
+>  	 * we can have at most 2^16 of these. */
+>  	if (unlikely(count > USHRT_MAX + 1)) {
+> @@ -1155,16 +1163,17 @@ static int get_indirect(struct vhost_virtqueue *vq,
+>  		if (unlikely(memcpy_fromiovec((unsigned char *)&desc,
+>  					      vq->indirect, sizeof desc))) {
+>  			vq_err(vq, "Failed indirect descriptor: idx %d, %zx\n",
+> -			       i, (size_t)indirect->addr + i * sizeof desc);
+> +			       i, (size_t)vhost64_to_cpu(vq, indirect->addr) + i * sizeof desc);
+>  			return -EINVAL;
+>  		}
+> -		if (unlikely(desc.flags & VRING_DESC_F_INDIRECT)) {
+> +		if (unlikely(desc.flags & cpu_to_vhost16(vq, VRING_DESC_F_INDIRECT))) {
+>  			vq_err(vq, "Nested indirect descriptor: idx %d, %zx\n",
+> -			       i, (size_t)indirect->addr + i * sizeof desc);
+> +			       i, (size_t)vhost64_to_cpu(vq, indirect->addr) + i * sizeof desc);
+>  			return -EINVAL;
+>  		}
+> 
+> -		ret = translate_desc(vq, desc.addr, desc.len, iov + iov_count,
+> +		ret = translate_desc(vq, vhost64_to_cpu(vq, desc.addr),
+> +				     vhost32_to_cpu(vq, desc.len), iov + iov_count,
+>  				     iov_size - iov_count);
+>  		if (unlikely(ret < 0)) {
+>  			vq_err(vq, "Translation failure %d indirect idx %d\n",
+> @@ -1172,11 +1181,11 @@ static int get_indirect(struct vhost_virtqueue *vq,
+>  			return ret;
+>  		}
+>  		/* If this is an input descriptor, increment that count. */
+> -		if (desc.flags & VRING_DESC_F_WRITE) {
+> +		if (desc.flags & cpu_to_vhost16(vq, VRING_DESC_F_WRITE)) {
+>  			*in_num += ret;
+>  			if (unlikely(log)) {
+> -				log[*log_num].addr = desc.addr;
+> -				log[*log_num].len = desc.len;
+> +				log[*log_num].addr = vhost64_to_cpu(vq, desc.addr);
+> +				log[*log_num].len = vhost32_to_cpu(vq, desc.len);
+>  				++*log_num;
+>  			}
+>  		} else {
+> @@ -1189,7 +1198,7 @@ static int get_indirect(struct vhost_virtqueue *vq,
+>  			}
+>  			*out_num += ret;
+>  		}
+> -	} while ((i = next_desc(&desc)) != -1);
+> +	} while ((i = next_desc(vq, &desc)) != -1);
+>  	return 0;
+>  }
+> 
+> @@ -1209,15 +1218,18 @@ int vhost_get_vq_desc(struct vhost_virtqueue *vq,
+>  	struct vring_desc desc;
+>  	unsigned int i, head, found = 0;
+>  	u16 last_avail_idx;
+> +	__virtio16 avail_idx;
+> +	__virtio16 ring_head;
+>  	int ret;
+> 
+>  	/* Check it isn't doing very strange things with descriptor numbers. */
+>  	last_avail_idx = vq->last_avail_idx;
+> -	if (unlikely(__get_user(vq->avail_idx, &vq->avail->idx))) {
+> +	if (unlikely(__get_user(avail_idx, &vq->avail->idx))) {
+>  		vq_err(vq, "Failed to access avail idx at %p\n",
+>  		       &vq->avail->idx);
+>  		return -EFAULT;
+>  	}
+> +	vq->avail_idx = vhost16_to_cpu(vq, avail_idx);
+> 
+>  	if (unlikely((u16)(vq->avail_idx - last_avail_idx) > vq->num)) {
+>  		vq_err(vq, "Guest moved used index from %u to %u",
+> @@ -1234,7 +1246,7 @@ int vhost_get_vq_desc(struct vhost_virtqueue *vq,
+> 
+>  	/* Grab the next descriptor number they're advertising, and increment
+>  	 * the index we've seen. */
+> -	if (unlikely(__get_user(head,
+> +	if (unlikely(__get_user(ring_head,
+>  				&vq->avail->ring[last_avail_idx % vq->num]))) {
+>  		vq_err(vq, "Failed to read head: idx %d address %p\n",
+>  		       last_avail_idx,
+> @@ -1242,6 +1254,8 @@ int vhost_get_vq_desc(struct vhost_virtqueue *vq,
+>  		return -EFAULT;
+>  	}
+> 
+> +	head = vhost16_to_cpu(vq, ring_head);
+> +
+>  	/* If their number is silly, that's an error. */
+>  	if (unlikely(head >= vq->num)) {
+>  		vq_err(vq, "Guest says index %u > %u is available",
+> @@ -1274,7 +1288,7 @@ int vhost_get_vq_desc(struct vhost_virtqueue *vq,
+>  			       i, vq->desc + i);
+>  			return -EFAULT;
+>  		}
+> -		if (desc.flags & VRING_DESC_F_INDIRECT) {
+> +		if (desc.flags & cpu_to_vhost16(vq, VRING_DESC_F_INDIRECT)) {
+>  			ret = get_indirect(vq, iov, iov_size,
+>  					   out_num, in_num,
+>  					   log, log_num, &desc);
+> @@ -1286,20 +1300,21 @@ int vhost_get_vq_desc(struct vhost_virtqueue *vq,
+>  			continue;
+>  		}
+> 
+> -		ret = translate_desc(vq, desc.addr, desc.len, iov + iov_count,
+> +		ret = translate_desc(vq, vhost64_to_cpu(vq, desc.addr),
+> +				     vhost32_to_cpu(vq, desc.len), iov + iov_count,
+>  				     iov_size - iov_count);
+>  		if (unlikely(ret < 0)) {
+>  			vq_err(vq, "Translation failure %d descriptor idx %d\n",
+>  			       ret, i);
+>  			return ret;
+>  		}
+> -		if (desc.flags & VRING_DESC_F_WRITE) {
+> +		if (desc.flags & cpu_to_vhost16(vq, VRING_DESC_F_WRITE)) {
+>  			/* If this is an input descriptor,
+>  			 * increment that count. */
+>  			*in_num += ret;
+>  			if (unlikely(log)) {
+> -				log[*log_num].addr = desc.addr;
+> -				log[*log_num].len = desc.len;
+> +				log[*log_num].addr = vhost64_to_cpu(vq, desc.addr);
+> +				log[*log_num].len = vhost32_to_cpu(vq, desc.len);
+>  				++*log_num;
+>  			}
+>  		} else {
+> @@ -1312,7 +1327,7 @@ int vhost_get_vq_desc(struct vhost_virtqueue *vq,
+>  			}
+>  			*out_num += ret;
+>  		}
+> -	} while ((i = next_desc(&desc)) != -1);
+> +	} while ((i = next_desc(vq, &desc)) != -1);
+> 
+>  	/* On success, increment avail index. */
+>  	vq->last_avail_idx++;
+> @@ -1335,7 +1350,10 @@ EXPORT_SYMBOL_GPL(vhost_discard_vq_desc);
+>   * want to notify the guest, using eventfd. */
+>  int vhost_add_used(struct vhost_virtqueue *vq, unsigned int head, int len)
+>  {
+> -	struct vring_used_elem heads = { head, len };
+> +	struct vring_used_elem heads = {
+> +		cpu_to_vhost32(vq, head),
+> +		cpu_to_vhost32(vq, len)
+> +	};
+> 
+>  	return vhost_add_used_n(vq, &heads, 1);
+>  }
+> @@ -1404,7 +1422,7 @@ int vhost_add_used_n(struct vhost_virtqueue *vq, struct vring_used_elem *heads,
+> 
+>  	/* Make sure buffer is written before we update index. */
+>  	smp_wmb();
+> -	if (put_user(vq->last_used_idx, &vq->used->idx)) {
+> +	if (__put_user(cpu_to_vhost16(vq, vq->last_used_idx), &vq->used->idx)) {
+>  		vq_err(vq, "Failed to increment used idx");
+>  		return -EFAULT;
+>  	}
+> @@ -1422,7 +1440,8 @@ EXPORT_SYMBOL_GPL(vhost_add_used_n);
+> 
+>  static bool vhost_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+>  {
+> -	__u16 old, new, event;
+> +	__u16 old, new;
+> +	__virtio16 event;
+>  	bool v;
+>  	/* Flush out used index updates. This is paired
+>  	 * with the barrier that the Guest executes when enabling
+> @@ -1434,12 +1453,12 @@ static bool vhost_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+>  		return true;
+> 
+>  	if (!vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX)) {
+> -		__u16 flags;
+> +		__virtio16 flags;
+>  		if (__get_user(flags, &vq->avail->flags)) {
+>  			vq_err(vq, "Failed to get flags");
+>  			return true;
+>  		}
+> -		return !(flags & VRING_AVAIL_F_NO_INTERRUPT);
+> +		return !(flags & cpu_to_vhost16(vq, VRING_AVAIL_F_NO_INTERRUPT));
+>  	}
+>  	old = vq->signalled_used;
+>  	v = vq->signalled_used_valid;
+> @@ -1449,11 +1468,11 @@ static bool vhost_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+>  	if (unlikely(!v))
+>  		return true;
+> 
+> -	if (get_user(event, vhost_used_event(vq))) {
+> +	if (__get_user(event, vhost_used_event(vq))) {
+>  		vq_err(vq, "Failed to get used event idx");
+>  		return true;
+>  	}
+> -	return vring_need_event(event, new, old);
+> +	return vring_need_event(vhost16_to_cpu(vq, event), new, old);
+>  }
+> 
+>  /* This actually signals the guest, using eventfd. */
+> @@ -1488,7 +1507,7 @@ EXPORT_SYMBOL_GPL(vhost_add_used_and_signal_n);
+>  /* OK, now we need to know about added descriptors. */
+>  bool vhost_enable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+>  {
+> -	u16 avail_idx;
+> +	__virtio16 avail_idx;
+>  	int r;
+> 
+>  	if (!(vq->used_flags & VRING_USED_F_NO_NOTIFY))
+> @@ -1519,7 +1538,7 @@ bool vhost_enable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+>  		return false;
+>  	}
+> 
+> -	return avail_idx != vq->avail_idx;
+> +	return vhost16_to_cpu(vq, avail_idx) != vq->avail_idx;
+>  }
+>  EXPORT_SYMBOL_GPL(vhost_enable_notify);
+> 
 
