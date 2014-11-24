@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131AbaKXNXf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 08:23:35 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:64407 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536AbaKXNXd (ORCPT
+	id S1753249AbaKXNX5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 08:23:57 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:14386 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753547AbaKXNUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 08:23:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <54727D03.4090909@gmail.com>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-10-git-send-email-vincent.guittot@linaro.org>
- <20140528105855.GR30445@twins.programming.kicks-ass.net> <CAKfTPtAvFEmAmPMQsEN-=ftudQwd0fHOxq4MRs3HDyHYjLPGZQ@mail.gmail.com>
- <54727D03.4090909@gmail.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Mon, 24 Nov 2014 14:23:12 +0100
-Message-ID: <CAKfTPtARJwLXqUaKaTf5wNFK_gMEk8GiY3qerY2oSk=zrZx=tw@mail.gmail.com>
-Subject: Re: [PATCH v2 09/11] sched: test the cpu's capacity in wake affine
-To: Wanpeng Li <kernellwp@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Nov 2014 08:20:46 -0500
+From: Richard Weinberger <richard@nod.at>
+To: dedekind1@gmail.com
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 1/6] UBI: Fastmap: Care about the protection queue
+Date: Mon, 24 Nov 2014 14:20:31 +0100
+Message-Id: <1416835236-25185-2-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1416835236-25185-1-git-send-email-richard@nod.at>
+References: <1416835236-25185-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 November 2014 at 01:34, Wanpeng Li <kernellwp@gmail.com> wrote:
-> Hi Vincent,
-> On 5/28/14, 7:15 PM, Vincent Guittot wrote:
->>
->> On 28 May 2014 12:58, Peter Zijlstra <peterz@infradead.org> wrote:
->>>
->>> On Fri, May 23, 2014 at 05:53:03PM +0200, Vincent Guittot wrote:
->
-> [snip]
->>>
->>> Now I'm only struggling to understand the rationale for this, its got
->>> LLC in there somewhere, but I'm failing to comprehend.
->>
->> Ah.. i have probably overestimated the fact that wake_affine was only
->> done at MC or SMT level but after reading more deeply the glags
->> configuration of all  sched_domain level , my assumption is not true.
->
->
-> What's level the wake_affine should happen?
+Fastmap can miss a PEB if it is in the protection queue
+and not jet in the used tree.
+Treat every protected PEB as used.
 
-In 1st version of this patch, it was proposed to test the cpu_capacity
-of idle CPU only if they were sharing their cache
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/mtd/ubi/fastmap.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-Regards,
-Vincent
->
-> Regards,
-> Wanpeng Li
->
->> So I need to test sd flag to make sure that their share their cache at
->> this level
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
+index b56672b..db3defd 100644
+--- a/drivers/mtd/ubi/fastmap.c
++++ b/drivers/mtd/ubi/fastmap.c
+@@ -1196,6 +1196,19 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
+ 		fm_pos += sizeof(*fec);
+ 		ubi_assert(fm_pos <= ubi->fm_size);
+ 	}
++
++	for (i = 0; i < UBI_PROT_QUEUE_LEN; i++) {
++		list_for_each_entry(wl_e, &ubi->pq[i], u.list) {
++			fec = (struct ubi_fm_ec *)(fm_raw + fm_pos);
++
++			fec->pnum = cpu_to_be32(wl_e->pnum);
++			fec->ec = cpu_to_be32(wl_e->ec);
++
++			used_peb_count++;
++			fm_pos += sizeof(*fec);
++			ubi_assert(fm_pos <= ubi->fm_size);
++		}
++	}
+ 	fmh->used_peb_count = cpu_to_be32(used_peb_count);
+ 
+ 	for (node = rb_first(&ubi->scrub); node; node = rb_next(node)) {
+-- 
+1.8.4.5
+
