@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583AbaKXK6S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 05:58:18 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:22552 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753526AbaKXK56 (ORCPT
+	id S1753616AbaKXK6e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 05:58:34 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:62345 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753592AbaKXK6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 05:57:58 -0500
-X-AuditID: cbfee68f-f791c6d000004834-f3-54730f31ad0a
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: kgene.kim@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com
-Cc: jh80.chung@samsung.com, inki.dae@samsung.com, sw0312.kim@samsung.com,
-        yj44.cho@samsung.com, geunsik.lim@samsung.com,
-        kyungmin.park@samsung.com, cw00.choi@samsung.com,
-        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCHv3 3/3] ARM: dts: Remove unused command line from
- Exynos3250-based Rinato board
-Date: Mon, 24 Nov 2014 19:57:50 +0900
-Message-id: <1416826670-29438-4-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.5.5
-In-reply-to: <1416826670-29438-1-git-send-email-cw00.choi@samsung.com>
-References: <1416826670-29438-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42JZI2JSqGvIXxxi8KeD2+L6l+esFvOPnGO1
-	+DOhlc1i0v0JLBY3frWxWvQuuMpmcbbpDbvFpsfXWC0u75rDZjHj/D4mi6XXLzJZTJi+lsWi
-	de8RdosZk1+yWezdOZnRgd9jzbw1jB6bVnWyeWxeUu/Rt2UVo8fnTXIBrFFcNimpOZllqUX6
-	dglcGefu7GYrWMBWse/QY/YGxvmsXYwcHBICJhK37tp2MXICmWISF+6tZ+ti5OIQEljKKPH4
-	/gZGiISJxINvrcwQiemMEr8u7oCqamKSeH2gnxWkik1AS2L/ixtsILaIQKTEynU/WEGKmAW2
-	MEk8mvgDrEhYIEHi571XYGNZBFQlbn37ywZyBq+Aq8Td+/UQ2xQkli2fCVbOKeAmsXLmK3YQ
-	WwioZM+FOewgMyUErrFLrL4KM0dA4tvkQywQ78hKbDrADDFHUuLgihssExiFFzAyrGIUTS1I
-	LihOSi8y1itOzC0uzUvXS87P3cQIjJrT/57172C8e8D6EKMAB6MSD++M9UUhQqyJZcWVuYcY
-	TYE2TGSWEk3OB8ZmXkm8obGZkYWpiamxkbmlmZI470Kpn8FCAumJJanZqakFqUXxRaU5qcWH
-	GJk4OKUaGK3Xie55++dCRM+U2oKdb/vMHE1zT7Od5PWvDLzNplYxJ+NfSH6rp6Mw71zGYHbF
-	Wx+8p8yMfbxX2aD72GfG4J32HWILpr7/KLl+vXyg4GxTsctHNjWq3jnKFn9d8LWElHL58/kb
-	Nglp7br+tHmL6cbJG0x2H+b0nK31RcLe/pX6k0+9HneZZJVYijMSDbWYi4oTATD30B+VAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t9jQV1D/uIQg54uZovrX56zWsw/co7V
-	4s+EVjaLSfcnsFjc+NXGatG74CqbxdmmN+wWmx5fY7W4vGsOm8WM8/uYLJZev8hkMWH6WhaL
-	1r1H2C1mTH7JZrF352RGB36PNfPWMHpsWtXJ5rF5Sb1H35ZVjB6fN8kFsEY1MNpkpCampBYp
-	pOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAJ2rpFCWmFMKFApILC5W
-	0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsYcw4d2c3W8ECtop9hx6zNzDOZ+1i5OSQEDCRePCt
-	lRnCFpO4cG89WxcjF4eQwHRGiV8Xd0A5TUwSrw/0g3WwCWhJ7H9xgw3EFhGIlFi57gcrSBGz
-	wBYmiUcTf4AVCQskSPy894oRxGYRUJW49e0vUAMHB6+Aq8Td+/UQ2xQkli2fCVbOKeAmsXLm
-	K3YQWwioZM+FOewTGHkXMDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiOymdSOxhXNlgc
-	YhTgYFTi4f2wsShEiDWxrLgy9xCjBAezkgjvPsbiECHelMTKqtSi/Pii0pzU4kOMpkBHTWSW
-	Ek3OByaMvJJ4Q2MTMyNLI3NDCyNjcyVx3hs3c0OEBNITS1KzU1MLUotg+pg4OKUaGBX2l59I
-	bX9/6G+8j7B4ep9T14TZeTMttVtPNV2VcA9hPr7jZuOh/Ws+OvuseDKvP7O1+LHNHzn1NMP2
-	c3nzZ/vMi2TJudG1rmXr/1NFck/ZD668vXHxz4mycY9O6V98GDf5SzSv95zHUgLCqec0OiT+
-	b27cMHfJPIWKOoE6/1D9m5MutbYeOKfEUpyRaKjFXFScCABEQu+e4AIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 24 Nov 2014 05:58:31 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, jeffrey.t.kirsher@intel.com, rpao@paonet.org,
+        linux-kernel@vger.kernel.org, linux-pcmcia@lists.infradead.org
+Subject: Re: [PATCH 1/2] net/am2150: fix nmclan_cs.c shared interrupt handling
+Date: Mon, 24 Nov 2014 11:57:55 +0100
+Message-ID: <2416727.91yS5gqAdt@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141121.151735.1432199551923486515.davem@davemloft.net>
+References: <4353896.15JnC91eLO@wuerfel> <20141121.151735.1432199551923486515.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Z6xyVI1p9Uoy6KizON+nzdmesBUTKB5eWa2a3l0NDFy
+ fesjRIMUOOG17ckL1rBDjIYtoxWCFlJJfHIEkZr8Ykg97Ss/Os
+ YW0m0VPQH94kbG5Sk0BsHxH+uhKZuo9u03/QUJNHjWpQZKNm9T
+ LxpIFJZ07AHAlP+q5xqHA/AkOdmadymEzlSNmmRT/TpGy6428J
+ lroAUuyyit/7uJBZb3JdOkUOv4U4o6NxrhdFy1XuqbjKVrs24t
+ o9MwqUvc++0o9qWLOswTglZrZtvOpckQqc4wwT4aFlLvQFfeBb
+ wKKE5I/yvR+PZUu5upQxDZ5ZFWghfa+HpQ0FwuuuLxN5u9y2/S
+ 8L23Wx/d0QzBimQo8if0=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes unused dt node of command line from Exynos3250-based
-Rinato board because kernel use the command line from bootloader.
+On Friday 21 November 2014 15:17:35 David Miller wrote:
+> From: Arnd Bergmann <arnd@arndb.de>
+> Date: Thu, 20 Nov 2014 16:11:14 +0100
+> 
+> > A recent patch tried to work around a valid warning for the use of a
+> > deprecated interface by blindly changing from the old
+> > pcmcia_request_exclusive_irq() interface to pcmcia_request_irq().
+> > 
+> > This driver has an interrupt handler that is not currently aware
+> > of shared interrupts, but can be easily converted to be.
+> > At the moment, the driver reads the interrupt status register
+> > repeatedly until it contains only zeroes in the interesting bits,
+> > and handles each bit individually.
+> > 
+> > This patch adds the missing part of returning IRQ_NONE in case none
+> > of the bits are set to start with, so we can move on to the next
+> > interrupt source.
+> > 
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > Fixes: 5f5316fcd08ef7 ("am2150: Update nmclan_cs.c to use update PCMCIA API")
+> > ---
+> > I had this patch in my queue of things to submit and noticed that
+> > the warning had gone away upstream but my patch was still there.
+> > 
+> > For all I can tell, the driver is broken without this, although it
+> > would rarely be a problem.
+> 
+> I'm happy for this to go alongside patch #2 via another tree:
+> 
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
----
- arch/arm/boot/dts/exynos3250-rinato.dts | 4 ----
- 1 file changed, 4 deletions(-)
+I was hoping you could take at least this one, possibly both.
+Since you already had Jeff's patch in it, the first patch now
+fixes a (mostly harmless) 3.18 regression, and the second patch
+is just a cosmetic cleanup, but there is no longer any dependency
+between the two.
 
-diff --git a/arch/arm/boot/dts/exynos3250-rinato.dts b/arch/arm/boot/dts/exynos3250-rinato.dts
-index 84380fa..80aa8b4 100644
---- a/arch/arm/boot/dts/exynos3250-rinato.dts
-+++ b/arch/arm/boot/dts/exynos3250-rinato.dts
-@@ -28,10 +28,6 @@
- 		reg =  <0x40000000 0x1ff00000>;
- 	};
- 
--	chosen {
--		bootargs = "console=ttySAC1,115200N8 root=/dev/mmcblk0p15 rootwait earlyprintk panic=5";
--	};
--
- 	firmware@0205F000 {
- 		compatible = "samsung,secure-firmware";
- 		reg = <0x0205F000 0x1000>;
--- 
-1.8.5.5
+It looks like Greg is now handling most of the PCMCIA patches
+in the absence of a subsystem maintainer, so I'll send him the
+second one for 3.19, let me know if you still want me to send
+him the first one too.
 
+	Arnd
