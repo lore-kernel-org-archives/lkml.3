@@ -1,251 +1,420 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444AbaKXSCS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:02:18 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:55264 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887AbaKXSCP (ORCPT
+	id S1754502AbaKXSCh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:02:37 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:50052 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304AbaKXSCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:02:15 -0500
-Date: Mon, 24 Nov 2014 14:02:25 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincenzo Frascino <vincenzo.frascino@st.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH v2] thermal:core:fix: Check return code of the
- ->get_max_state() callback
-Message-ID: <20141124180222.GA1449@developer>
-References: <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
- <1416305790-27746-1-git-send-email-l.majewski@samsung.com>
- <20141121180826.GA3331@developer>
- <20141124113854.36975fb2@amdc2363>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZGiS0Q5IWpPtfppv"
-Content-Disposition: inline
-In-Reply-To: <20141124113854.36975fb2@amdc2363>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Mon, 24 Nov 2014 13:02:35 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-7f-547372b78683
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Joe Perches <joe@perches.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v7 00/12] Kernel address sanitizer - runtime memory debugger.
+Date: Mon, 24 Nov 2014 21:02:13 +0300
+Message-id: <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 2.1.3
+In-reply-to: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAAyWRfSzUcRzH+/6e3dz8XMovW9bOsmWjbNY+tVJrY99lpdptbbWWcy40j/eL
+	xT+hIkKWyePQjpxLHo6IievylBqWxyXyFGNOSKUscvnv9Xl/Xtv7jzdHygopBy447JZaE6YM
+	kTMS6v1m54Brg0ZUHJnfkkP9nykGNl7n0lBQVcFA29AvFoZ/LiKYMSYhWJ2fQFA3nEDA3OQk
+	CxmTiSw8qbGH8od3Gcj/Mk1Bw6yZgPLkCRr6mwoYGK/YouGjsZiAey19BCR+36ShM81IgPlz
+	NgWJJTUEaNtGSViazSSh1pBFwlS6mYVB/RsWev920rBePU2fdsRFjSsIN+aNsbjYEIVrdS5Y
+	2zxPYIM+mcGG1ccsTjEPEHipp4fFXTkbFJ4ZyCawNj2TxitfP1F4TT9E4m8tgwxOr9OjC3ZX
+	JCcC1CHB0WrNYU8/SVD3o6dkxO8EdDvvRwoVh5ZVKciKE3gPYXxhGe3wXqFvvIpJQRJOxpci
+	QV/QTu4c6YTQMVxMWiyGdxM28xoYC9vxroJ+rum/RPJlnFAT30pZHrv5c0J8ViVhYYo/KPR1
+	P2AtLOW9hLWR3m2H265zFF5W+lhiK95byMgeIi2xbFvJ0DlnIGkx2qVHe9RRqgjRPzDU3U1U
+	hopRYYFuqvBQA9rZdO0V0nYcNyGeQ3Jr6XpqpEJGK6PFmFATEjhSbie9ES4qZNIAZUysWhN+
+	XRMVohZNiOCsHOKQu4up/mwVEfk888BF72r/Ox4LN4+au6rf2ZzKbbK2SYq9v3hN22L3Yb7s
+	6iXTyLPUofNGnzRIcLId0xW9OANMc/vJHGMTYyrZR1728szVlQYqfP2OlTgHeNrnAd2ocpxU
+	rDqltq7j/YX9ATP5vv3ekpC3pN/KqFOaCqk7bA/JKTFI6e5CakTlP5CjzTWxAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+KASan is a runtime memory debugger designed to find use-after-free
+and out-of-bounds bugs.
 
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Currently KASAN supported only for x86_64 architecture and requires kernel
+to be build with SLUB allocator.
+KASAN uses compile-time instrumentation for checking every memory access, therefore you
+will need a fresh GCC >= v4.9.2
 
+Patches are based should apply cleanly on top of 3.18-rc6 and mmotm-2014-11-19-16-16.
+Patches  available in git as well:
 
-Hello Lukasz,
+	git://github.com/aryabinin/linux --branch=kasan/kasan_v7
 
-On Mon, Nov 24, 2014 at 11:38:54AM +0100, Lukasz Majewski wrote:
-> Hi Eduardo,
->=20
-> >=20
-> > Lukasz,
-> >=20
-> > On Tue, Nov 18, 2014 at 11:16:30AM +0100, Lukasz Majewski wrote:
-> > > The return code from ->get_max_state() callback was not checked
-> > > during binding cooling device to thermal zone device.
-> > >=20
-> > > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> > > ---
-> > > Changes for v2:
-> > > - It turned out that patches from 1 to 6 from v1 are not needed,
-> > > since they either already solve the problem (like imx_thermal.c) or
-> > > not use cpufreq as a thermal cooling device.
-> > > - The patch 7 from v1 is also not needed since this patch on error
-> > > exits this function without using max_state variable.
-> > > - In thermal driver probe the cpufreq_cooling_register() method
-> > > presence is crucial to evaluate if the thermal driver needs any
-> > > actions with -EPROBE_DEFER.
-> >=20
-> > Have you tried this patch with of-thermal based systems?
->=20
-> Yes. I did try it with Exynos (after the rework). And there weren't
-> any regressions.
->=20
-> To be precise - do you refer to of_cpufreq_cooling_register() [1] or
-> cpufreq_cooling_register() [2]?
->=20
+Changes since v6:
+   - New patch 'x86_64: kasan: add interceptors for memset/memmove/memcpy functions'
+        Recently instrumentation of builtin functions calls (memset/memmove/memcpy)
+        was removed in GCC 5.0. So to check the memory accessed by such functions,
+        we now need interceptors for them.
 
-[1]
+   - Added kasan's die notifier which prints a hint message before General protection fault,
+       explaining that GPF could be caused by NULL-ptr dereference or user memory access.
 
-> For the latter [2] - drivers like imx_thermal.c are fully prepared for
-> -EDEFER_PROBE.
->=20
-> For the former [1] - only cpufreq-dt.c uses it (and Exynos SoC after
-> the rework).
->=20
-> >=20
-> > The above proposal works if the thermal driver is dealing with loading
-> > cpu_cooling. But for of-thermal based drivers, the idea is to leave to
-> > cpufreq code to load it.=20
->=20
-> I assume, that you mean case [1]?
->=20
+   - Minor refactoring in 3/n patch. Rename kasan_map_shadow() to kasan_init() and call it
+     from setup_arch() instead of zone_sizes_init().
 
-yup
+   - Slightly tweak kasan's report layout.
 
-> >=20
-> > As an example, I am taking the ti-soc-thermal, but we already have
-> > other of-thermal based drivers. Booting with this patch ti-soc-thermal
-> > (of-based boot) loads fine, but the cpu_cooling never gets bound to
-> > the thermal zone.
->=20
-> Could you share the exact SoC/board/_defconfig setup to reproduce this
-> behavior? I possess Beagle Bone Black, but it doesn't have thermal
-> support (perhaps because its lack of accuracy).
->
+   - Update changelog for 1/n patch.
 
-Well, it may happen any system a driver with of-thermal + cpufreq-dt.
+Historical background of address sanitizer from Dmitry Vyukov <dvyukov@google.com>:
+	"We've developed the set of tools, AddressSanitizer (Asan),
+	ThreadSanitizer and MemorySanitizer, for user space. We actively use
+	them for testing inside of Google (continuous testing, fuzzing,
+	running prod services). To date the tools have found more than 10'000
+	scary bugs in Chromium, Google internal codebase and various
+	open-source projects (Firefox, OpenSSL, gcc, clang, ffmpeg, MySQL and
+	lots of others):
+	https://code.google.com/p/address-sanitizer/wiki/FoundBugs
+	https://code.google.com/p/thread-sanitizer/wiki/FoundBugs
+	https://code.google.com/p/memory-sanitizer/wiki/FoundBugs
+	The tools are part of both gcc and clang compilers.
 
-One board that is easily available is OMAP4460 panda board (tried
-myself, the problem is there).
+	We have not yet done massive testing under the Kernel AddressSanitizer
+	(it's kind of chicken and egg problem, you need it to be upstream to
+	start applying it extensively). To date it has found about 50 bugs.
+	Bugs that we've found in upstream kernel are listed here:
+	https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel#Trophies
+	We've also found ~20 bugs in out internal version of the kernel. Also
+	people from Samsung and Oracle have found some. It's somewhat expected
+	that when we boot the kernel and run a trivial workload, we do not
+	find hundreds of bugs -- most of the harmful bugs in kernel codebase
+	were already fixed the hard way (the kernel is quite stable, right).
+	Based on our experience with user-space version of the tool, most of
+	the bugs will be discovered by continuously testing new code (new bugs
+	discovered the easy way), running fuzzers (that can discover existing
+	bugs that are not hit frequently enough) and running end-to-end tests
+	of production systems.
 
-> With my Exynos setup I didn't experience any problems with this patch.
->=20
-> >=20
-> > The thing is that the bind may happen before cpufreq-dt code loads the
-> > cpufreq driver, and when cpu_cooling is checking what is the max freq,
-> > by using cpufreq table, it won't be able to do it, as there is no
-> > table.
->=20
-> As I look into the cpufreq-dt.c driver - in the cpufreq_init()
-> function, the call to of_cpufreq_cooling_register() is performed just
-> before cpufreq_table_validate_and_show().
-> It looks like a mistake in the cpufreq-dt.c code.
->=20
+	As others noted, the main feature of AddressSanitizer is its
+	performance due to inline compiler instrumentation and simple linear
+	shadow memory. User-space Asan has ~2x slowdown on computational
+	programs and ~2x memory consumption increase. Taking into account that
+	kernel usually consumes only small fraction of CPU and memory when
+	running real user-space programs, I would expect that kernel Asan will
+	have ~10-30% slowdown and similar memory consumption increase (when we
+	finish all tuning).
 
-Well, I believe for our case, better would be if the cpu_cooling could
-be done after cpufreq driver registration call.
+	I agree that Asan can well replace kmemcheck. We have plans to start
+	working on Kernel MemorySanitizer that finds uses of uninitialized
+	memory. Asan+Msan will provide feature-parity with kmemcheck. As
+	others noted, Asan will unlikely replace debug slab and pagealloc that
+	can be enabled at runtime. Asan uses compiler instrumentation, so even
+	if it is disabled, it still incurs visible overheads.
+
+	Asan technology is easily portable to other architectures. Compiler
+	instrumentation is fully portable. Runtime has some arch-dependent
+	parts like shadow mapping and atomic operation interception. They are
+	relatively easy to port.
+
+	Thanks"
 
 
-> >=20
-> > While, without the patch, it will use wrong in the binding, but after
-> > it gets bound, and cpufreq loads, the max will be used correctly.
->=20
-> Correct. Such _wrong_ behavior was the original motivation to prepare
-> this patch.
->=20
-> >=20
-> > And in this case, the system still works besides this bug.=20
->=20
-> Unfortunately there is also a "window" in which the driver is not
-> properly configured and can cause system crash, although it is unlikely.
->=20
+Comparison with other debugging features:
+=======================================
 
-Agreed.
+KMEMCHECK:
+	- KASan can do almost everything that kmemcheck can. KASan uses compile-time
+	  instrumentation, which makes it significantly faster than kmemcheck.
+	  The only advantage of kmemcheck over KASan is detection of uninitialized
+	  memory reads.
 
->=20
-> > The
-> > reasoning is because the max state comes from DT (2) and lower and
-> > upper wont be equal to THERMAL_NO_LIMIT. Then, the following check
-> > will use the parameter, instead of max_state:
-> >=20
-> >         cdev->ops->get_max_state(cdev, &max_state);
-> >=20
-> > 	/* lower default 0, upper default max_state */
-> > 	lower =3D lower =3D=3D THERMAL_NO_LIMIT ? 0 : lower;
-> > 	upper =3D upper =3D=3D THERMAL_NO_LIMIT ?
-> > 				max_state : upper;
-> >=20
-> > In summary, introducing this patch, although it fix a problem, will
-> > introduce regressions, in of-thermal based drivers.
->=20
-> To be more precise - it will affect systems, which use of-thermal.c and
-> cpufreq-dt.c in the same time, due to wrong ordering in the latter file.
->=20
+	  Some brief performance testing showed that kasan could be x500-x600 times
+	  faster than kmemcheck:
 
-Exactly.
+$ netperf -l 30
+		MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to localhost (127.0.0.1) port 0 AF_INET
+		Recv   Send    Send
+		Socket Socket  Message  Elapsed
+		Size   Size    Size     Time     Throughput
+		bytes  bytes   bytes    secs.    10^6bits/sec
 
-> Could you give me a hint about the exact affected system? I've grep'ed
-> for CPUFREQ_DT in the ./arch/arm/configs with no success.
->=20
+ no debug:	87380  16384  16384    30.00    41624.72
 
-Yeah, the grepping is correct. But well, just because it is not in
-defconfigs does not mean it won't be used.=20
+ kasan inline:	87380  16384  16384    30.00    12870.54
 
-> >=20
-> > I believe, to have this fix, you need to provide a way to have probing
-> > deferring also in cpu_cooling. That needs also the change in the
-> > cpufreq driver, as I mentioned in the other thread.
->=20
-> I will think about possible solution and refer to previous discussion.=20
->=20
+ kasan outline:	87380  16384  16384    30.00    10586.39
 
-Good. For your patch, it is still sane to have it. But needs to be taken
-after fixing the ordering between cpufreq-dt and cpu_cooling.
+ kmemcheck: 	87380  16384  16384    30.03      20.23
+
+	- Also kmemcheck couldn't work on several CPUs. It always sets number of CPUs to 1.
+	  KASan doesn't have such limitation.
+
+DEBUG_PAGEALLOC:
+	- KASan is slower than DEBUG_PAGEALLOC, but KASan works on sub-page
+	  granularity level, so it able to find more bugs.
+
+SLUB_DEBUG (poisoning, redzones):
+	- SLUB_DEBUG has lower overhead than KASan.
+
+	- SLUB_DEBUG in most cases are not able to detect bad reads,
+	  KASan able to detect both reads and writes.
+
+	- In some cases (e.g. redzone overwritten) SLUB_DEBUG detect
+	  bugs only on allocation/freeing of object. KASan catch
+	  bugs right before it will happen, so we always know exact
+	  place of first bad read/write.
+
+Basic idea:
+===========
+
+    The main idea of KASAN is to use shadow memory to record whether each byte of memory
+    is safe to access or not, and use compiler's instrumentation to check the shadow memory
+    on each memory access.
+
+    Address sanitizer uses 1/8 of the memory addressable in kernel for shadow memory
+    (on x86_64 16TB of virtual address space reserved for shadow to cover all 128TB)
+    and uses direct mapping with a scale and offset to translate a memory
+    address to its corresponding shadow address.
+
+    Here is function to translate address to corresponding shadow address:
+
+         unsigned long kasan_mem_to_shadow(unsigned long addr)
+         {
+                    return (addr >> KASAN_SHADOW_SCALE_SHIFT) + KASAN_SHADOW_OFFSET;
+         }
+    where KASAN_SHADOW_SCALE_SHIFT = 3.
+
+    So for every 8 bytes there is one corresponding byte of shadow memory.
+    The following encoding used for each shadow byte: 0 means that all 8 bytes of the
+    corresponding memory region are valid for access; k (1 <= k <= 7) means that
+    the first k bytes are valid for access, and other (8 - k) bytes are not;
+    Any negative value indicates that the entire 8-bytes are inaccessible.
+    Different negative values used to distinguish between different kinds of
+    inaccessible memory (redzones, freed memory) (see mm/kasan/kasan.h).
+
+    To be able to detect accesses to bad memory we need a special compiler.
+    Such compiler inserts a specific function calls (__asan_load*(addr), __asan_store*(addr))
+    before each memory access of size 1, 2, 4, 8 or 16.
+
+    These functions check whether memory region is valid to access or not by checking
+    corresponding shadow memory. If access is not valid an error printed.
 
 
-> >=20
-> > Cheers,
-> >=20
-> > > ---
-> > >  drivers/thermal/thermal_core.c | 6 ++++--
-> > >  1 file changed, 4 insertions(+), 2 deletions(-)
-> > >=20
-> > > diff --git a/drivers/thermal/thermal_core.c
-> > > b/drivers/thermal/thermal_core.c index 43b9070..8567929 100644
-> > > --- a/drivers/thermal/thermal_core.c
-> > > +++ b/drivers/thermal/thermal_core.c
-> > > @@ -928,7 +928,7 @@ int thermal_zone_bind_cooling_device(struct
-> > > thermal_zone_device *tz, struct thermal_zone_device *pos1;
-> > >  	struct thermal_cooling_device *pos2;
-> > >  	unsigned long max_state;
-> > > -	int result;
-> > > +	int result, ret;
-> > > =20
-> > >  	if (trip >=3D tz->trips || (trip < 0 && trip !=3D
-> > > THERMAL_TRIPS_NONE)) return -EINVAL;
-> > > @@ -945,7 +945,9 @@ int thermal_zone_bind_cooling_device(struct
-> > > thermal_zone_device *tz, if (tz !=3D pos1 || cdev !=3D pos2)
-> > >  		return -EINVAL;
-> > > =20
-> > > -	cdev->ops->get_max_state(cdev, &max_state);
-> > > +	ret =3D cdev->ops->get_max_state(cdev, &max_state);
-> > > +	if (ret)
-> > > +		return ret;
-> > > =20
-> > >  	/* lower default 0, upper default max_state */
-> > >  	lower =3D lower =3D=3D THERMAL_NO_LIMIT ? 0 : lower;
-> > > --=20
-> > > 2.0.0.rc2
-> > >=20
->=20
->=20
-> --=20
-> Best regards,
->=20
-> Lukasz Majewski
->=20
-> Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+Changelog for previous versions:
+===============================
 
---ZGiS0Q5IWpPtfppv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Changes since v5:
+    - Added  __printf(3, 4) to slab_err to catch format mismatches (Joe Perches)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+    - Changed in Documentation/kasan.txt per Jonathan.
 
-iQEcBAEBAgAGBQJUc3KmAAoJEMLUO4d9pOJW6+MH/2OtzuPuyRglPkTJIhtHdZRt
-9xEAK/5Rf5HtMFqAFCD7SdKnO0Qt6lkFlXgq0mpCyT6p0FWrUwEm1Axsus5MIKv0
-iCMhpAflxYanY06x2uwVbLXlzc+JP9ngJXJjlNlt8PCPn4+jr951Xul2aMf5ixDO
-Jwtbx6OqCIg3pP1FEh3ln7U7gXMv6+pRC5Nizjh6mn0/LM9T5EW8lnF3nnEh3Qvb
-OUEgZA/MaK3nxCGRCQLBfU9FijCSdrKjM8Du5KYsJ1pIxx1MipT0uEj6vDT5Flal
-ImpBwvXp+ivaoOnVySyThYgVnGlArZ1u/Hw94agD2OELG/v9JTQTi0VgwnSf+r0=
-=pWWw
------END PGP SIGNATURE-----
+    - Patch for inline instrumentation support merged to the first patch.
+        GCC 5.0 finally has support for this.
+    - Patch 'kasan: Add support for upcoming GCC 5.0 asan ABI changes' also merged into the first.
+         Those GCC ABI changes are in GCC's master branch now.
 
---ZGiS0Q5IWpPtfppv--
+    - Added information about instrumentation types to documentation.
+
+    - Added -fno-conserve-stack to CFLAGS for mm/kasan/kasan.c file, because -fconserve-stack is bogus
+      and it causing unecessary split in __asan_load1/__asan_store1. Because of this split
+      kasan_report() is actually not inlined (even though it __always_inline) and _RET_IP_ gives
+      unexpected value. GCC bugzilla entry: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63533
+
+Changes since v4:
+    - rebased on top of mmotm-2014-10-23-16-26
+
+    - merge patch 'efi: libstub: disable KASAN for efistub in' into the first patch.
+        No reason to keep it separate.
+
+    - Added support for upcoming asan ABI changes in GCC 5.0 (second patch).
+        GCC patch has not been published/upstreamed yet, but to will be soon. I'm adding this in advance
+        in order to avoid breaking kasan with future GCC update.
+        Details about gcc ABI changes in this thread: https://gcc.gnu.org/ml/gcc-patches/2014-10/msg02510.html
+
+    - Updated GCC verison requirements in doc (GCC kasan patches were backported into 4.9 branch)
+
+    - Dropped last patch with inline instrumentation support. At first let's wait for merging GCC patches.
+
+Changes since v3:
+
+    - rebased on last mm
+    - Added comment about rcu slabs.
+    - Removed useless kasan_free_slab_pages().
+    - Removed __asan_init_v*() stub. GCC doesn't generate this call anymore:
+       https://gcc.gnu.org/ml/gcc-patches/2014-10/msg00269.html
+    - Replaced CALL_KASAN_REPORT define with inline function
+
+Changes since v2:
+
+    - Shadow moved to vmalloc area.
+    - Added posion page. This page mapped to shadow correspondig to
+      shadow region itself:
+       [kasan_mem_to_shadow(KASAN_SHADOW_START) - kasan_mem_to_shadow(KASAN_SHADOW_END)]
+      It used to catch memory access to shadow outside mm/kasan/.
+
+    - Fixed boot with CONFIG_DEBUG_VIRTUAL=y
+    - Fixed boot with KASan and stack protector enabled
+         (patch "x86_64: load_percpu_segment: read irq_stack_union.gs_base before load_segment")
+
+    - Fixed build with CONFIG_EFI_STUB=y
+    - Some slub specific stuf moved from mm/slab.h to include/linux/slub_def.h
+    - Fixed Kconfig dependency. CONFIG_KASAN depends on CONFIG_SLUB_DEBUG.
+    - Optimizations of __asan_load/__asan_store.
+    - Spelling fixes from Randy.
+    - Misc minor cleanups in different places.
+
+
+    - Added inline instrumentation in last patch. This will require two not
+         yet-in-trunk-patches for GCC:
+             https://gcc.gnu.org/ml/gcc-patches/2014-09/msg00452.html
+             https://gcc.gnu.org/ml/gcc-patches/2014-09/msg00605.html
+
+Changes since v1:
+
+    - The main change is in shadow memory laoyut.
+      Now for shadow memory we reserve 1/8 of all virtual addresses available for kernel.
+      16TB on x86_64 to cover all 128TB of kernel's address space.
+      At early stage we map whole shadow region with zero page.
+      Latter, after physical memory mapped to direct mapping address range
+      we unmap zero pages from corresponding shadow and allocate and map a real
+      memory.
+
+     - Since per-arch work is much bigger now, support for arm/x86_32 platforms was dropped.
+
+     - CFLAGS was change from -fsanitize=address with different --params to -fsanitize=kernel-address
+
+     - If compiler doesn't support -fsanitize=kernel-address warning printed and build continues without -fsanitize
+
+     - Removed kasan_memset/kasan_memcpy/kasan_memmove hooks. It turned out that this hooks are not needed. Compiler
+       already instrument memset/memcpy/memmove (inserts __asan_load/__asan_store call before mem*() calls).
+
+     - branch profiling disabled for mm/kasan/kasan.c to avoid recursion (__asan_load -> ftrace_likely_update -> __asan_load -> ...)
+
+     - kasan hooks for buddy allocator moved to right places
+
+
+Andrey Ryabinin (12):
+  Add kernel address sanitizer infrastructure.
+  x86_64: load_percpu_segment: read irq_stack_union.gs_base before
+    load_segment
+  x86_64: add KASan support
+  mm: page_alloc: add kasan hooks on alloc and free paths
+  mm: slub: introduce virt_to_obj function.
+  mm: slub: share slab_err and object_err functions
+  mm: slub: introduce metadata_access_enable()/metadata_access_disable()
+  mm: slub: add kernel address sanitizer support for slub allocator
+  fs: dcache: manually unpoison dname after allocation to shut up
+    kasan's reports
+  kmemleak: disable kasan instrumentation for kmemleak
+  lib: add kasan test module
+  x86_64: kasan: add interceptors for memset/memmove/memcpy functions
+
+ Documentation/kasan.txt               | 169 ++++++++++++
+ Makefile                              |  23 +-
+ arch/x86/Kconfig                      |   1 +
+ arch/x86/boot/Makefile                |   2 +
+ arch/x86/boot/compressed/Makefile     |   2 +
+ arch/x86/boot/compressed/eboot.c      |   2 +
+ arch/x86/boot/compressed/misc.h       |   1 +
+ arch/x86/include/asm/kasan.h          |  27 ++
+ arch/x86/include/asm/string_64.h      |  18 +-
+ arch/x86/kernel/Makefile              |   2 +
+ arch/x86/kernel/cpu/common.c          |   4 +-
+ arch/x86/kernel/dumpstack.c           |   5 +-
+ arch/x86/kernel/head64.c              |   9 +-
+ arch/x86/kernel/head_64.S             |  28 ++
+ arch/x86/kernel/setup.c               |   3 +
+ arch/x86/kernel/x8664_ksyms_64.c      |  10 +-
+ arch/x86/lib/memcpy_64.S              |   2 +
+ arch/x86/lib/memmove_64.S             |   4 +
+ arch/x86/lib/memset_64.S              |  10 +-
+ arch/x86/mm/Makefile                  |   3 +
+ arch/x86/mm/kasan_init_64.c           | 107 +++++++
+ arch/x86/realmode/Makefile            |   2 +-
+ arch/x86/realmode/rm/Makefile         |   1 +
+ arch/x86/vdso/Makefile                |   1 +
+ drivers/firmware/efi/libstub/Makefile |   1 +
+ fs/dcache.c                           |   6 +
+ include/linux/kasan.h                 |  69 +++++
+ include/linux/sched.h                 |   3 +
+ include/linux/slab.h                  |  11 +-
+ include/linux/slub_def.h              |  10 +
+ lib/Kconfig.debug                     |   2 +
+ lib/Kconfig.kasan                     |  54 ++++
+ lib/Makefile                          |   1 +
+ lib/test_kasan.c                      | 254 +++++++++++++++++
+ mm/Makefile                           |   4 +
+ mm/compaction.c                       |   2 +
+ mm/kasan/Makefile                     |   7 +
+ mm/kasan/kasan.c                      | 506 ++++++++++++++++++++++++++++++++++
+ mm/kasan/kasan.h                      |  54 ++++
+ mm/kasan/report.c                     | 237 ++++++++++++++++
+ mm/kmemleak.c                         |   6 +
+ mm/page_alloc.c                       |   3 +
+ mm/slab_common.c                      |   5 +-
+ mm/slub.c                             |  55 +++-
+ scripts/Makefile.lib                  |  10 +
+ 45 files changed, 1714 insertions(+), 22 deletions(-)
+ create mode 100644 Documentation/kasan.txt
+ create mode 100644 arch/x86/include/asm/kasan.h
+ create mode 100644 arch/x86/mm/kasan_init_64.c
+ create mode 100644 include/linux/kasan.h
+ create mode 100644 lib/Kconfig.kasan
+ create mode 100644 lib/test_kasan.c
+ create mode 100644 mm/kasan/Makefile
+ create mode 100644 mm/kasan/kasan.c
+ create mode 100644 mm/kasan/kasan.h
+ create mode 100644 mm/kasan/report.c
+
+-- 
+Cc: Dmitry Vyukov <dvyukov@google.com>
+Cc: Konstantin Serebryany <kcc@google.com>
+Cc: Dmitry Chernenkov <dmitryc@google.com>
+Cc: Andrey Konovalov <adech.fo@gmail.com>
+Cc: Yuri Gribov <tetra2005@gmail.com>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Vegard Nossum <vegard.nossum@gmail.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: <x86@kernel.org>
+Cc: <linux-mm@kvack.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Joe Perches <joe@perches.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+-- 
+2.1.3
+
