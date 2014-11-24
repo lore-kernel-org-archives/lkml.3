@@ -1,50 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538AbaKXCoF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 21:44:05 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:39276 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767AbaKXCkv (ORCPT
+	id S1751650AbaKXCrQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 21:47:16 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57271 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbaKXCrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 21:40:51 -0500
-From: Kevin Cernekee <cernekee@gmail.com>
-To: ralf@linux-mips.org
-Cc: f.fainelli@gmail.com, jfraser@broadcom.com, dtor@chromium.org,
-        tglx@linutronix.de, jason@lakedaemon.net, jogo@openwrt.org,
-        arnd@arndb.de, computersforpeace@gmail.com, linux-mips@linux-mips.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V3 01/11] irqchip: Update docs regarding irq_domain_add_tree()
-Date: Sun, 23 Nov 2014 18:40:36 -0800
-Message-Id: <1416796846-28149-2-git-send-email-cernekee@gmail.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1416796846-28149-1-git-send-email-cernekee@gmail.com>
-References: <1416796846-28149-1-git-send-email-cernekee@gmail.com>
+	Sun, 23 Nov 2014 21:47:14 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 24 Nov 2014 11:50:07 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>, Dave Hansen <dave@sr71.net>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/7] mm/page_ext: resurrect struct page extending code
+ for debugging
+Message-ID: <20141124025007.GA10828@js1304-P5Q-DELUXE>
+References: <1416557646-21755-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1416557646-21755-2-git-send-email-iamjoonsoo.kim@lge.com>
+ <20141121153731.b68bd8f0240a2eccb142e864@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141121153731.b68bd8f0240a2eccb142e864@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several drivers now use this API, including the ARM GIC driver, so remove
-the outdated comment.
+On Fri, Nov 21, 2014 at 03:37:31PM -0800, Andrew Morton wrote:
+> On Fri, 21 Nov 2014 17:14:00 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> 
+> > When we debug something, we'd like to insert some information to
+> > every page. For this purpose, we sometimes modify struct page itself.
+> > But, this has drawbacks. First, it requires re-compile. This makes us
+> > hesitate to use the powerful debug feature so development process is
+> > slowed down. And, second, sometimes it is impossible to rebuild the kernel
+> > due to third party module dependency. At third, system behaviour would be
+> > largely different after re-compile, because it changes size of struct
+> > page greatly and this structure is accessed by every part of kernel.
+> > Keeping this as it is would be better to reproduce errornous situation.
+> > 
+> > This feature is intended to overcome above mentioned problems. This feature
+> > allocates memory for extended data per page in certain place rather than
+> > the struct page itself. This memory can be accessed by the accessor
+> > functions provided by this code. During the boot process, it checks whether
+> > allocation of huge chunk of memory is needed or not. If not, it avoids
+> > allocating memory at all. With this advantage, we can include this feature
+> > into the kernel in default and can avoid rebuild and solve related problems.
+> > 
+> > Until now, memcg uses this technique. But, now, memcg decides to embed
+> > their variable to struct page itself and it's code to extend struct page
+> > has been removed. I'd like to use this code to develop debug feature,
+> > so this patch resurrect it.
+> > 
+> > To help these things to work well, this patch introduces two callbacks
+> > for clients. One is the need callback which is mandatory if user wants
+> > to avoid useless memory allocation at boot-time. The other is optional,
+> > init callback, which is used to do proper initialization after memory
+> > is allocated. Detailed explanation about purpose of these functions is
+> > in code comment. Please refer it.
+> > 
+> > Others are completely same with previous extension code in memcg.
+> >
+> > ...
+> >
+> > +static bool __init invoke_need_callbacks(void)
+> > +{
+> > +	int i;
+> > +	int entries = ARRAY_SIZE(page_ext_ops);
+> > +
+> > +	for (i = 0; i < entries; i++) {
+> > +		if (page_ext_ops[i]->need && page_ext_ops[i]->need())
+> > +			return true;
+> > +	}
+> > +
+> > +	return false;
+> > +}
+> > +
+> > +static void __init invoke_init_callbacks(void)
+> > +{
+> > +	int i;
+> > +	int entries = sizeof(page_ext_ops) / sizeof(page_ext_ops[0]);
+> 
+> ARRAY_SIZE()
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
- Documentation/IRQ-domain.txt | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Oops... Sorry. I will fix it.
 
-diff --git a/Documentation/IRQ-domain.txt b/Documentation/IRQ-domain.txt
-index 8a8b82c9ca53..0ccd7b7f6043 100644
---- a/Documentation/IRQ-domain.txt
-+++ b/Documentation/IRQ-domain.txt
-@@ -95,8 +95,7 @@ since it doesn't need to allocate a table as large as the largest
- hwirq number.  The disadvantage is that hwirq to IRQ number lookup is
- dependent on how many entries are in the table.
- 
--Very few drivers should need this mapping.  At the moment, powerpc
--iseries is the only user.
-+Very few drivers should need this mapping.
- 
- ==== No Map ===-
- irq_domain_add_nomap()
--- 
-2.1.1
+> 
+> > +	for (i = 0; i < entries; i++) {
+> > +		if (page_ext_ops[i]->init)
+> > +			page_ext_ops[i]->init();
+> > +	}
+> > +}
+> > +
+> >
+> > ...
+> >
+> > +void __init page_ext_init_flatmem(void)
+> > +{
+> > +
+> > +	int nid, fail;
+> > +
+> > +	if (!invoke_need_callbacks)
+> > +		return;
+> > +
+> > +	for_each_online_node(nid)  {
+> > +		fail = alloc_node_page_ext(nid);
+> > +		if (fail)
+> > +			goto fail;
+> > +	}
+> > +	pr_info("allocated %ld bytes of page_ext\n", total_usage);
+> > +	invoke_init_callbacks();
+> > +	return;
+> > +
+> > +fail:
+> > +	pr_crit("allocation of page_ext failed.\n");
+> > +	panic("Out of memory");
+> 
+> Did we really need to panic the machine?  The situation should be
+> pretty easily recoverable by disabling the clients.  I guess it's OK as
+> long as page_ext is being used for kernel developer debug things.
 
+I think that panic() would be better. If the feature is disabled silently
+or with some printk output, user can't easily notice that situation
+and will try to do real work for debugging. This would waste user's time
+so panic() looks better to me.
+
+> > +}
+> > +
+> 
+> We'll need this to fix the build.  I'll queue it up.
+
+Thank you!
+
+> 
+> 
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: include/linux/kmemleak.h: needs slab.h
+> 
+> include/linux/kmemleak.h: In function 'kmemleak_alloc_recursive':
+> include/linux/kmemleak.h:43: error: 'SLAB_NOLEAKTRACE' undeclared (first use in this function)
+> 
+> --- a/include/linux/kmemleak.h~include-linux-kmemleakh-needs-slabh
+> +++ a/include/linux/kmemleak.h
+> @@ -21,6 +21,8 @@
+>  #ifndef __KMEMLEAK_H
+>  #define __KMEMLEAK_H
+>  
+> +#include <linux/slab.h>
+> +
+>  #ifdef CONFIG_DEBUG_KMEMLEAK
+>  
+>  extern void kmemleak_init(void) __ref;
+> 
+> 
+> 
+> And here are a couple of tweaks for this patch:
+
+Okay. I will include below changes in next spin.
+
+Thanks.
+
+> 
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: mm-page_ext-resurrect-struct-page-extending-code-for-debugging-fix
+> 
+> use ARRAY_SIZE, clean up 80-col tricks
+> 
+> --- a/mm/page_ext.c~mm-page_ext-resurrect-struct-page-extending-code-for-debugging-fix
+> +++ a/mm/page_ext.c
+> @@ -71,7 +71,7 @@ static bool __init invoke_need_callbacks
+>  static void __init invoke_init_callbacks(void)
+>  {
+>  	int i;
+> -	int entries = sizeof(page_ext_ops) / sizeof(page_ext_ops[0]);
+> +	int entries = ARRAY_SIZE(page_ext_ops);
+>  
+>  	for (i = 0; i < entries; i++) {
+>  		if (page_ext_ops[i]->init)
+> @@ -81,7 +81,6 @@ static void __init invoke_init_callbacks
+>  
+>  #if !defined(CONFIG_SPARSEMEM)
+>  
+> -
+>  void __meminit pgdat_page_ext_init(struct pglist_data *pgdat)
+>  {
+>  	pgdat->node_page_ext = NULL;
+> @@ -232,8 +231,9 @@ static void free_page_ext(void *addr)
+>  		vfree(addr);
+>  	} else {
+>  		struct page *page = virt_to_page(addr);
+> -		size_t table_size =
+> -			sizeof(struct page_ext) * PAGES_PER_SECTION;
+> +		size_t table_size;
+> +
+> +		table_size = sizeof(struct page_ext) * PAGES_PER_SECTION;
+>  
+>  		BUG_ON(PageReserved(page));
+>  		free_pages_exact(addr, table_size);
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
