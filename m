@@ -1,68 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657AbaKXHZy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 02:25:54 -0500
-Received: from ozlabs.org ([103.22.144.67]:33299 "EHLO ozlabs.org"
+	id S1752715AbaKXH2W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 02:28:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33548 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919AbaKXHZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 02:25:52 -0500
-Date: Mon, 24 Nov 2014 18:25:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Stephen Warren <swarren@nvidia.com>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Thierry Reding <treding@nvidia.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: linux-next: manual merge of the driver-core tree with the tegra
- tree
-Message-ID: <20141124182538.5d3f7f29@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1752348AbaKXH2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 02:28:21 -0500
+Message-ID: <5472DE06.6000307@redhat.com>
+Date: Mon, 24 Nov 2014 15:28:06 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/PEi4Z3qj0rRLUbcaFtqE4dR"; protocol="application/pgp-signature"
+To: Dexuan Cui <decui@microsoft.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        KY Srinivasan <kys@microsoft.com>
+CC: Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH] hv: hv_balloon: avoid memory leak on alloc_error of 2MB
+ memory block
+References: <1416808575-5383-1-git-send-email-decui@microsoft.com> <5472BF95.2000904@redhat.com> <F792CF86EFE20D4AB8064279AFBA51C613E5FD2B@HKNPRD3002MB017.064d.mgd.msft.net>
+In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C613E5FD2B@HKNPRD3002MB017.064d.mgd.msft.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/PEi4Z3qj0rRLUbcaFtqE4dR
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 11/24/2014 02:08 PM, Dexuan Cui wrote:
+>> -----Original Message-----
+>> > From: Jason Wang [mailto:jasowang@redhat.com]
+>> > Sent: Monday, November 24, 2014 13:18 PM
+>> > To: Dexuan Cui; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+>> > driverdev-devel@linuxdriverproject.org; olaf@aepfle.de;
+>> > apw@canonical.com; KY Srinivasan
+>> > Cc: Haiyang Zhang
+>> > Subject: Re: [PATCH] hv: hv_balloon: avoid memory leak on alloc_error of
+>> > 2MB memory block
+>> > 
+>> > On 11/24/2014 01:56 PM, Dexuan Cui wrote:
+>>> > > If num_ballooned is not 0, we shouldn't neglect the already-allocated
+>> > 2MB
+>>> > > memory block(s).
+>>> > >
+>>> > > Cc: K. Y. Srinivasan <kys@microsoft.com>
+>>> > > Cc: <stable@vger.kernel.org>
+>>> > > Signed-off-by: Dexuan Cui <decui@microsoft.com>
+>>> > > ---
+>>> > >  drivers/hv/hv_balloon.c | 4 +++-
+>>> > >  1 file changed, 3 insertions(+), 1 deletion(-)
+>>> > >
+>>> > > diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
+>>> > > index 5e90c5d..cba2d3b 100644
+>>> > > --- a/drivers/hv/hv_balloon.c
+>>> > > +++ b/drivers/hv/hv_balloon.c
+>>> > > @@ -1091,6 +1091,8 @@ static void balloon_up(struct work_struct
+>> > *dummy)
+>>> > >  	bool done = false;
+>>> > >  	int i;
+>>> > >
+>>> > > +	/* The host does balloon_up in 2MB. */
+>>> > > +	WARN_ON(num_pages % PAGES_IN_2M != 0);
+>>> > >
+>>> > >  	/*
+>>> > >  	 * We will attempt 2M allocations. However, if we fail to
+>>> > > @@ -1111,7 +1113,7 @@ static void balloon_up(struct work_struct
+>> > *dummy)
+>>> > >  						bl_resp, alloc_unit,
+>>> > >  						 &alloc_error);
+>>> > >
+>>> > > -		if ((alloc_error) && (alloc_unit != 1)) {
+>>> > > +		if (alloc_error && (alloc_unit != 1) && num_ballooned == 0)
+>> > {
+>>> > >  			alloc_unit = 1;
+>>> > >  			continue;
+>>> > >  		}
+>> > 
+>> > Before the change, we may retry the 4K allocation when part or all 2M
+>> > allocations were failed. This makes sense when memory is fragmented. But
+> Yes, but all the partially-allocated 2MB memory blocks are lost(mem leak).
+>
+>> > after the change, if part of 2M allocation were failed, we won't retry
+>> > 4K allocation. Is this expected?
+> Hi Jason,
+> The patch doesn't break the "try 2MB first; then try 4K" logic:
+>
+> With the change, we'll retry the 2MB allocation in the next iteration of the
+> same while (!done) loop -- we expect this retry will cause
+> "alloc_error && (alloc_unit != 1) && num_ballooned == 0" to be true,
+> so we'll later try 4K allocation, as we did before.
 
-Hi Greg,
+If I read the code correctly, if part of 2M allocation fails.
+alloc_balloon_pages() will have a non zero return value with alloc_error
+set. Then it will match the following check:
 
-Today's linux-next merge of the driver-core tree got a conflict in
-drivers/iommu/tegra-smmu.c between commit a2257374a4bd ("memory: Add
-NVIDIA Tegra memory controller support") from the tegra tree and commit
-98b773cf7b6b ("iommu: drop owner assignment from platform_drivers")
-from the driver-core tree.
+                if ((alloc_error) || (num_ballooned == num_pages))
+{               
 
-I fixed it up (the former removed the code modified by the latter) and
-can carry the fix as necessary (no action is required).
+which will set done to true. So there's no second iteration of while
+(!done) loop?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Probably you need something like:
 
---Sig_/PEi4Z3qj0rRLUbcaFtqE4dR
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+if ((alloc_unit != 1) && (num_ballooned == 0)) {
+    alloc_unit = 1;
+    continue;
+}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+if ((alloc_unit == 1) || (num_ballooned = num_pages)) {
+    ...
+}
 
-iQIcBAEBCAAGBQJUct18AAoJEMDTa8Ir7ZwVNPwP+gOgEjgsZURI/9tzcLGo6xj/
-0bA0rNDeo+6op4Lw20LkKHvqtr8/Dykrp+7LHvRz+AA/Qy6qlfZ+reYthLmMXykj
-79FfJoiOo3czpJQfuDmRQnN2v9Z9ltZnSLItFg9Nz3c41axbXb40aZPgr7Yg6wqd
-nLIWLF05O/s0dhD4Pb8pNXn1cjgGnP9ZUfovtmQS7vP+qOCmjf86THEQw5sgZapA
-HS8aBJ8f/kqPnNN10RVJvZIPGDH5+FLpw50yMJ3f/6D1ZngA75IwRqNce5/pdrhB
-mByyNYdbzgU2G9xewXyKoWol9/AWODJgN7kaLqnapwoSM+PVS4Ja0XxvI2+HZZHR
-4eZNFj46AGggUT0ER8XVOE7tJO5OFAA/GVzlD+fQL+xR8AstXwgJJNA5WJOWgN+x
-cnDbMx827WX3fNLkSGzhbN0beo195c+cuZjK1cjpgwHfrZmgmsdarIonlSYUOQRL
-XlGxlzMdOF5sJVvC44Tpk5VNMIadFvouKfW96xWq7g8itVPi9OMKm/SOMTjk6lYv
-C/pg8xyTInzWuSq/9tqAEUZGmfhjXDoPy4abHpDzz85+CgPmcxYeHgwJTIekFfsN
-uJgJD+ZXNPjK3yTRgm40Gr3lCHikmQ+3/Ddi1zJzlwVMy493sePrNrAmrX56tFyx
-EKQN23eH4wNCqJjSblAL
-=K4aY
------END PGP SIGNATURE-----
-
---Sig_/PEi4Z3qj0rRLUbcaFtqE4dR--
