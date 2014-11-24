@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790AbaKXTHQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 14:07:16 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:53351 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753AbaKXTHL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 14:07:11 -0500
-Message-ID: <547381D7.2070404@de.ibm.com>
-Date: Mon, 24 Nov 2014 20:07:03 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754841AbaKXTId (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 14:08:33 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:40847 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754821AbaKXTIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 14:08:31 -0500
+Date: Mon, 24 Nov 2014 13:08:40 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Alexander Kochetkov <al.kochet@gmail.com>
+CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: Re: [PATCH 2/4] i2c: omap: implement workaround for handling invalid
+ BB-bit values
+Message-ID: <20141124190840.GE25712@saruman>
+Reply-To: <balbi@ti.com>
+References: <1416518925-20679-1-git-send-email-al.kochet@gmail.com>
+ <1416518925-20679-3-git-send-email-al.kochet@gmail.com>
+ <20141121160808.GM7508@saruman>
+ <20141122132309.GC2679@katana>
+ <B6D9B4D7-25CB-456F-88B4-EB6A53E33A9D@gmail.com>
+ <20141122180222.GA9698@katana>
+ <20141123044306.GA19898@saruman>
+ <1CC68911-DF20-4FF0-A08A-1A6F0B565662@gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexei Starovoitov <alexei.starovoitov@gmail.com>
-CC: David Howells <dhowells@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>, linux-x86_64@vger.kernel.org,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH/RFC 7/7] kernel: Force ACCESS_ONCE to work only on scalar
- types
-References: <1416834210-61738-1-git-send-email-borntraeger@de.ibm.com> <1416834210-61738-8-git-send-email-borntraeger@de.ibm.com> <15567.1416835858@warthog.procyon.org.uk> <CAADnVQJQydX9OU_rem+BObR0eWc-jrrwirUYVKH9rnN=Z8LG6A@mail.gmail.com> <CA+55aFxc72VsGTw4yFdeC1Sq65RUjYLKPD1ORnXB2d18WBMzvg@mail.gmail.com>
-In-Reply-To: <CA+55aFxc72VsGTw4yFdeC1Sq65RUjYLKPD1ORnXB2d18WBMzvg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112419-0005-0000-0000-00000234AEA0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XuV1QlJbYrcVoo+x"
+Content-Disposition: inline
+In-Reply-To: <1CC68911-DF20-4FF0-A08A-1A6F0B565662@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.11.2014 um 19:35 schrieb Linus Torvalds:
-> On Mon, Nov 24, 2014 at 10:02 AM, Alexei Starovoitov
-> <alexei.starovoitov@gmail.com> wrote:
->>
->> If the goal is to catch non-scalar users, the following is shorter:
->> #define ACCESS_ONCE(x) (((typeof(x))0) + *(volatile typeof(x) *)&(x))
-> 
-> Me likey. It probably works well in practice, although I think
-> 
->  - the "(typeof(x))0)" seems unnecessary and wrong. Why not just "0"?
-> The typeof is not just longer, but it is incorrect for pointer types
-> (you can add 0 to a pointer, but you cannot add two pointers together)
-> 
->  - it does mean that the resulting type ends up being upgraded to
-> "int", for the usual C type reasons.
-> 
-> Note that the "upgraded to 'int'" is true with or without the
-> "(typeof(x))0". If you add two 'char' values, the addition is still
-> done in 'int'.
-> 
-> Maybe you *meant* that typeof to fix the second problem, like so:
-> 
->   (typeof(x)) (0 + *(volatile typeof(x) *)&(x))
-> 
-> Hmm? That casts the result of the addition, not the zero.
+--XuV1QlJbYrcVoo+x
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Looks really nice, but does not work with ACCESS_ONCE is on the left-hand side:
+On Sun, Nov 23, 2014 at 04:18:40PM +0300, Alexander Kochetkov wrote:
+>=20
+> 23 =D0=BD=D0=BE=D1=8F=D0=B1. 2014 =D0=B3., =D0=B2 7:43, Felipe Balbi <bal=
+bi@ti.com> =D0=BD=D0=B0=D0=BF=D0=B8=D1=81=D0=B0=D0=BB(=D0=B0):
+>=20
+> > maybe there was a typo? I tested on v3.18-rc3 :-)
+>=20
+> I do my tests on kernel from angstrom with almost all i2c-omap patches
+> backported from linux/master.
+> Then I rebased them to wrong (old) kernel version and posted to the
+> list.
+>=20
+> Angstrom kernel is from meta-ti layer. It's the same kernel as for arago.
+> http://arago-project.org/wiki/index.php/Main_Page
+>=20
+> I would really like to switch to the recent kernel, but I don't know
+> how good codec engine (CE) is supported on it.
+> Initially all ti drivers for codec engine was done for 2.6.x kernels
+> and later some of them was ported for 3.2.x.
+>=20
+> Felipe, do you know how CE is supported on v3.18-rc3?
 
+what's CE ?
 
-include/linux/rculist.h: In function 'hlist_add_before_rcu':
-./arch/x86/include/asm/barrier.h:127:18: error: lvalue required as left operand of assignment
-  ACCESS_ONCE(*p) = (v);      \
+--=20
+balbi
 
-Alexei's variant is also broken:
+--XuV1QlJbYrcVoo+x
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-include/linux/cgroup.h: In function 'task_css':
-include/linux/compiler.h:381:40: error: invalid operands to binary + (have 'struct css_set *' and 'struct css_set * volatile')
- #define ACCESS_ONCE(x) (((typeof(x))0) + *(volatile typeof(x) *)&(x))
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Anyone with a new propopal? ;-)                                        ^
+iQIcBAEBAgAGBQJUc4I3AAoJEIaOsuA1yqREEMEP/Rb3NyFytlPmHaKBocd194hC
+IGNXEF6UnTJDNpnWZH88B5Z72GklsiGMkU2Zu1FyRNM9VF4E+ixhTx/vGcY1MIh7
++SZdpzdop+d7/Mfa3tgMgf7FL4LzaGVfVFNkXLKEwf501tAu5X3wbqmzTU9Iy9we
+TMO61Q4By7TMBLky1IlkfWVstNJVZLMkpIfWnXXL6J49hG3n6ku7LF9jPoSxeN4+
+KyJHtR8iMsLtMs1WBla8ew2xUktZblsXnS3MMegWPVwyKJZirdZVRd3xCRgKPLje
+x+3vpHAO3dk8MtghGncejYHwEnJcNkbWudpHxF3V/uavbxhs+8KqG6FYQr20AfxZ
+JBjyF4CGY4Vj9aWs28UfxHtTO9UuLh2HCpfsXIex1dLHYm9JQOAvO4tocKx5A5n/
+jKL9cgOp8KvoQRWZ8LDUNsM2d7KusM8VwmIXpRIFze948o5anMIVsK0fGQwHl6gJ
+Mg/6XPNHrYHsQt013wjyH2ep3HKhwXSbEBhEf6ZdwOz5j9oDeaUnRhW7rpSyjzQ8
+MaNiCu1oFY419+2BJTq4AfOHxWiecO/tu1eQfwerUZo5R9o+iv89YgtLbZBpMdiV
+Ddu+/PoGGO4/lt280ReU4n64o0tLLfsRSrXvpqFtTNPBkD3tAMOacWCGRE5/vEfb
+XZlSA+svyFbCtJPMA/Cj
+=vgAr
+-----END PGP SIGNATURE-----
 
-Christian
-
+--XuV1QlJbYrcVoo+x--
