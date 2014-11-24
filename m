@@ -1,44 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767AbaKXHwQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 02:52:16 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22570 "EHLO
+	id S1752821AbaKXHwT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 02:52:19 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22590 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176AbaKXHwP (ORCPT
+	with ESMTP id S1752176AbaKXHwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 02:52:15 -0500
+	Mon, 24 Nov 2014 02:52:17 -0500
 From: Ethan Zhao <ethan.zhao@oracle.com>
 To: linda.knippers@hp.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
         corbet@lwn.net, dirk.j.brandewie@intel.com
 Cc: linux-doc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, ethan.kernel@gmail.com,
         Ethan Zhao <ethan.zhao@oracle.com>
-Subject: [PATCH 0/2 v2] intel_pstate: skip this driver if hit Sun X86 servers
-Date: Mon, 24 Nov 2014 16:50:56 +0900
-Message-Id: <1416815458-25312-1-git-send-email-ethan.zhao@oracle.com>
+Subject: [PATCH 1/2 v2] intel_pstate: skip this driver if Sun server has _PPC method
+Date: Mon, 24 Nov 2014 16:50:57 +0900
+Message-Id: <1416815458-25312-2-git-send-email-ethan.zhao@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <1416815458-25312-1-git-send-email-ethan.zhao@oracle.com>
+References: <1416815458-25312-1-git-send-email-ethan.zhao@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oracle Sun servers(X86) have power capping features that work via ACPI _PPC method,
-patch No.1 is used to skip this driver if Oracle Sun server and _PPC detected. 
-Patch No.2 introduces a kernel command line  parameter for those who would like
-to enable intel_pstate on Sun X86 servers and be aware of the risk.
+Oracle Sun X86 servers have dynamic power capping capability that works via
+ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
+enabled.
 
+Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
 
-Compiled and tested with stable-3.18-rc5 on Oracle Sun server X4-2.
---
-Ethan Zhao (2):
-  intel_pstate: skip this driver if Sun server has _PPC method
-  intel_pstate: add kernel parameter to enable loading on Sun X86
-    servers.
+v2: only match ORACLE oem id.
+---
+ drivers/cpufreq/intel_pstate.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
- Documentation/kernel-parameters.txt |  3 +++
- drivers/cpufreq/intel_pstate.c      | 24 ++++++++++++++++++++++++
- 2 files changed, 27 insertions(+)
-
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index 27bb6d3..dacc15a 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -943,6 +943,21 @@ static bool intel_pstate_no_acpi_pss(void)
+ 	return true;
+ }
+ 
++static bool intel_pstate_has_acpi_ppc(void)
++{
++	int i;
++
++	for_each_possible_cpu(i) {
++		struct acpi_processor *pr = per_cpu(processors, i);
++
++		if (!pr)
++			continue;
++		if (acpi_has_method(pr->handle, "_PPC"))
++			return true;
++	}
++	return false;
++}
++
+ struct hw_vendor_info {
+ 	u16  valid;
+ 	char oem_id[ACPI_OEM_ID_SIZE];
+@@ -952,6 +967,7 @@ struct hw_vendor_info {
+ /* Hardware vendor-specific info that has its own power management modes */
+ static struct hw_vendor_info vendor_info[] = {
+ 	{1, "HP    ", "ProLiant"},
++	{1, "ORACLE", ""},
+ 	{0, "", ""},
+ };
+ 
+@@ -970,11 +986,15 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+ 		    intel_pstate_no_acpi_pss())
+ 			return true;
+ 	}
++	if (!strncmp(hdr.oem_id, vendor_info[1].oem_id, ACPI_OEM_ID_SIZE) &&
++		intel_pstate_has_acpi_ppc())
++		return true;
+ 
+ 	return false;
+ }
+ #else /* CONFIG_ACPI not enabled */
+ static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return false; }
++static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
+ #endif /* CONFIG_ACPI */
+ 
+ static int __init intel_pstate_init(void)
 -- 
 1.8.3.1
 
