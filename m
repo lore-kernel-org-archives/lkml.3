@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467AbaKXTmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 14:42:10 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:60101 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaKXTmG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 14:42:06 -0500
-Date: Mon, 24 Nov 2014 11:42:00 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>, linux-x86_64@vger.kernel.org,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH/RFC 7/7] kernel: Force ACCESS_ONCE to work only on scalar
- types
-Message-ID: <20141124194200.GR5050@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1416834210-61738-1-git-send-email-borntraeger@de.ibm.com>
- <1416834210-61738-8-git-send-email-borntraeger@de.ibm.com>
- <15567.1416835858@warthog.procyon.org.uk>
- <CAADnVQJQydX9OU_rem+BObR0eWc-jrrwirUYVKH9rnN=Z8LG6A@mail.gmail.com>
- <CA+55aFxc72VsGTw4yFdeC1Sq65RUjYLKPD1ORnXB2d18WBMzvg@mail.gmail.com>
- <547381D7.2070404@de.ibm.com>
- <CA+55aFy+dunTcdgB4-BXsYiLDk9pf8b_L74ky-dMixpbX3JQQA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFy+dunTcdgB4-BXsYiLDk9pf8b_L74ky-dMixpbX3JQQA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112419-0025-0000-0000-0000065907BF
+	id S1754653AbaKXToY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 14:44:24 -0500
+Received: from mail.kernel.org ([198.145.19.201]:36394 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751083AbaKXToX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 14:44:23 -0500
+From: Jane Zhou <a17711@motorola.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jane Zhou <a17711@motorola.com>, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        stable@vger.kernel.org, Yiwei Zhao <gbjc64@motorola.com>
+Subject: [PATCH] net/ping: handle protocol mismatching scenario
+Date: Mon, 24 Nov 2014 11:44:08 -0800
+Message-Id: <1416858248-29258-1-git-send-email-a17711@motorola.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 11:14:42AM -0800, Linus Torvalds wrote:
-> On Mon, Nov 24, 2014 at 11:07 AM, Christian Borntraeger
-> <borntraeger@de.ibm.com> wrote:
-> >
-> > Looks really nice, but does not work with ACCESS_ONCE is on the left-hand side:
-> 
-> Oh, I forgot about that. And that was indeed why I had done that whole
-> helper macro originally, with ACCESS_ONCE() itself just being the
-> dereference of the pointer.
+ping_lookup() may return a wrong sock if sk_buff's and sock's protocols
+dont' match. For example, sk_buff's protocol is ETH_P_IPV6, but sock's
+sk_family is AF_INET, in that case, if sk->sk_bound_dev_if is zero, a wrong
+sock will be returned.
+the fix is to "continue" the searching, if no matching, return NULL.
 
-OK, how about the following?
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org
+Cc: stable@vger.kernel.org
+Signed-off-by: Jane Zhou <a17711@motorola.com>
+Signed-off-by: Yiwei Zhao <gbjc64@motorola.com>
+---
+ net/ipv4/ping.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-It complains if the variable is too large, for example, long long on
-32-bit systems or large structures.  It is OK loading from and storing
-to small structures as well, which I am having a hard time thinking of
-as a disadvantage.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-#define get_scalar_volatile_pointer(x) ({ \
-	volatile typeof(x) *__vp = &(x); \
-	BUILD_BUG_ON(sizeof(*__vp) != sizeof(char) && \
-		     sizeof(*__vp) != sizeof(short) && \
-		     sizeof(*__vp) != sizeof(int) && \
-		     sizeof(*__vp) != sizeof(long)); \
-	__vp; })
-#define ACCESS_ONCE(x) (*get_scalar_volatile_pointer(x))
+diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+index fc1c4b1..8892913 100644
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -214,6 +214,8 @@ static struct sock *ping_lookup(struct net *net, struct sk_buff *skb, u16 ident)
+ 					     &ipv6_hdr(skb)->daddr))
+ 				continue;
+ #endif
++		} else {
++			continue;
+ 		}
+ 
+ 		if (sk->sk_bound_dev_if && sk->sk_bound_dev_if != dif)
+-- 
+1.8.0
 
