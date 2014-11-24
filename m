@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780AbaKXLzT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 06:55:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53816 "EHLO mx1.redhat.com"
+	id S1754034AbaKXL7i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 06:59:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37655 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752934AbaKXLzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 06:55:15 -0500
-Date: Mon, 24 Nov 2014 13:54:00 +0200
+	id S1752198AbaKXLzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 06:55:18 -0500
+Date: Mon, 24 Nov 2014 13:54:52 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH v3 19/41] virtio_net: pass vi around
-Message-ID: <1416829787-14252-20-git-send-email-mst@redhat.com>
+        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Tom Herbert <therbert@google.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Masatake YAMATO <yamato@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>, Xi Wang <xii@google.com>,
+        netdev@vger.kernel.org, linux-api@vger.kernel.org
+Subject: [PATCH v3 32/41] tun: move internal flag defines out of uapi
+Message-ID: <1416829787-14252-33-git-send-email-mst@redhat.com>
 References: <1416829787-14252-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,163 +29,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Too many places poke at [rs]q->vq->vdev->priv just to get
-the the vi structure.  Let's just pass the pointer around: seems
-cleaner, and might even be faster.
+TUN_ flags are internal and never exposed
+to userspace. Any application using it is almost
+certainly buggy.
+
+Move them out to tun.c, we'll remove them in follow-up patches.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/net/virtio_net.c | 38 ++++++++++++++++++++------------------
- 1 file changed, 20 insertions(+), 18 deletions(-)
+ include/uapi/linux/if_tun.h | 16 ++--------
+ drivers/net/tun.c           | 74 ++++++++++++++-------------------------------
+ 2 files changed, 26 insertions(+), 64 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index c07e030..1630c21 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -241,11 +241,11 @@ static unsigned long mergeable_buf_to_ctx(void *buf, unsigned int truesize)
+diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
+index e9502dd..277a260 100644
+--- a/include/uapi/linux/if_tun.h
++++ b/include/uapi/linux/if_tun.h
+@@ -22,21 +22,11 @@
+ 
+ /* Read queue size */
+ #define TUN_READQ_SIZE	500
+-
+-/* TUN device flags */
+-#define TUN_TUN_DEV 	0x0001	
+-#define TUN_TAP_DEV	0x0002
++/* TUN device type flags: deprecated. Use IFF_TUN/IFF_TAP instead. */
++#define TUN_TUN_DEV 	IFF_TUN
++#define TUN_TAP_DEV	IFF_TAP
+ #define TUN_TYPE_MASK   0x000f
+ 
+-#define TUN_FASYNC	0x0010
+-#define TUN_NOCHECKSUM	0x0020
+-#define TUN_NO_PI	0x0040
+-/* This flag has no real effect */
+-#define TUN_ONE_QUEUE	0x0080
+-#define TUN_PERSIST 	0x0100	
+-#define TUN_VNET_HDR 	0x0200
+-#define TUN_TAP_MQ      0x0400
+-
+ /* Ioctl defines */
+ #define TUNSETNOCSUM  _IOW('T', 200, int) 
+ #define TUNSETDEBUG   _IOW('T', 201, int) 
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 9dd3746..bc89d07 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -103,6 +103,21 @@ do {								\
+ } while (0)
+ #endif
+ 
++/* TUN device flags */
++
++/* IFF_ATTACH_QUEUE is never stored in device flags,
++ * overload it to mean fasync when stored there.
++ */
++#define TUN_FASYNC	IFF_ATTACH_QUEUE
++#define TUN_NO_PI	IFF_NO_PI
++/* This flag has no real effect */
++#define TUN_ONE_QUEUE	IFF_ONE_QUEUE
++#define TUN_PERSIST 	IFF_PERSIST
++#define TUN_VNET_HDR 	IFF_VNET_HDR
++#define TUN_TAP_MQ      IFF_MULTI_QUEUE
++
++#define TUN_FEATURES (IFF_NO_PI | IFF_ONE_QUEUE | IFF_VNET_HDR | \
++		      IFF_MULTI_QUEUE)
+ #define GOODCOPY_LEN 128
+ 
+ #define FLT_EXACT_COUNT 8
+@@ -1521,32 +1536,7 @@ static struct proto tun_proto = {
+ 
+ static int tun_flags(struct tun_struct *tun)
+ {
+-	int flags = 0;
+-
+-	if (tun->flags & TUN_TUN_DEV)
+-		flags |= IFF_TUN;
+-	else
+-		flags |= IFF_TAP;
+-
+-	if (tun->flags & TUN_NO_PI)
+-		flags |= IFF_NO_PI;
+-
+-	/* This flag has no real effect.  We track the value for backwards
+-	 * compatibility.
+-	 */
+-	if (tun->flags & TUN_ONE_QUEUE)
+-		flags |= IFF_ONE_QUEUE;
+-
+-	if (tun->flags & TUN_VNET_HDR)
+-		flags |= IFF_VNET_HDR;
+-
+-	if (tun->flags & TUN_TAP_MQ)
+-		flags |= IFF_MULTI_QUEUE;
+-
+-	if (tun->flags & TUN_PERSIST)
+-		flags |= IFF_PERSIST;
+-
+-	return flags;
++	return tun->flags & (TUN_FEATURES | IFF_PERSIST | IFF_TUN | IFF_TAP);
  }
  
- /* Called from bottom half context */
--static struct sk_buff *page_to_skb(struct receive_queue *rq,
-+static struct sk_buff *page_to_skb(struct virtnet_info *vi,
-+				   struct receive_queue *rq,
- 				   struct page *page, unsigned int offset,
- 				   unsigned int len, unsigned int truesize)
- {
--	struct virtnet_info *vi = rq->vq->vdev->priv;
- 	struct sk_buff *skb;
- 	struct skb_vnet_hdr *hdr;
- 	unsigned int copy, hdr_len, hdr_padded_len;
-@@ -328,12 +328,13 @@ static struct sk_buff *receive_small(void *buf, unsigned int len)
- }
+ static ssize_t tun_show_flags(struct device *dev, struct device_attribute *attr,
+@@ -1706,28 +1696,8 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
  
- static struct sk_buff *receive_big(struct net_device *dev,
-+				   struct virtnet_info *vi,
- 				   struct receive_queue *rq,
- 				   void *buf,
- 				   unsigned int len)
- {
- 	struct page *page = buf;
--	struct sk_buff *skb = page_to_skb(rq, page, 0, len, PAGE_SIZE);
-+	struct sk_buff *skb = page_to_skb(vi, rq, page, 0, len, PAGE_SIZE);
+ 	tun_debug(KERN_INFO, tun, "tun_set_iff\n");
  
- 	if (unlikely(!skb))
- 		goto err;
-@@ -359,7 +360,8 @@ static struct sk_buff *receive_mergeable(struct net_device *dev,
- 	int offset = buf - page_address(page);
- 	unsigned int truesize = max(len, mergeable_ctx_to_buf_truesize(ctx));
+-	if (ifr->ifr_flags & IFF_NO_PI)
+-		tun->flags |= TUN_NO_PI;
+-	else
+-		tun->flags &= ~TUN_NO_PI;
+-
+-	/* This flag has no real effect.  We track the value for backwards
+-	 * compatibility.
+-	 */
+-	if (ifr->ifr_flags & IFF_ONE_QUEUE)
+-		tun->flags |= TUN_ONE_QUEUE;
+-	else
+-		tun->flags &= ~TUN_ONE_QUEUE;
+-
+-	if (ifr->ifr_flags & IFF_VNET_HDR)
+-		tun->flags |= TUN_VNET_HDR;
+-	else
+-		tun->flags &= ~TUN_VNET_HDR;
+-
+-	if (ifr->ifr_flags & IFF_MULTI_QUEUE)
+-		tun->flags |= TUN_TAP_MQ;
+-	else
+-		tun->flags &= ~TUN_TAP_MQ;
++	tun->flags = (tun->flags & ~TUN_FEATURES) |
++		(ifr->ifr_flags & TUN_FEATURES);
  
--	struct sk_buff *head_skb = page_to_skb(rq, page, offset, len, truesize);
-+	struct sk_buff *head_skb = page_to_skb(vi, rq, page, offset, len,
-+					       truesize);
- 	struct sk_buff *curr_skb = head_skb;
- 
- 	if (unlikely(!curr_skb))
-@@ -433,9 +435,9 @@ err_buf:
- 	return NULL;
- }
- 
--static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
-+static void receive_buf(struct virtnet_info *vi, struct receive_queue *rq,
-+			void *buf, unsigned int len)
- {
--	struct virtnet_info *vi = rq->vq->vdev->priv;
- 	struct net_device *dev = vi->dev;
- 	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
- 	struct sk_buff *skb;
-@@ -459,7 +461,7 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
- 	if (vi->mergeable_rx_bufs)
- 		skb = receive_mergeable(dev, vi, rq, (unsigned long)buf, len);
- 	else if (vi->big_packets)
--		skb = receive_big(dev, rq, buf, len);
-+		skb = receive_big(dev, vi, rq, buf, len);
- 	else
- 		skb = receive_small(buf, len);
- 
-@@ -539,9 +541,9 @@ frame_err:
- 	dev_kfree_skb(skb);
- }
- 
--static int add_recvbuf_small(struct receive_queue *rq, gfp_t gfp)
-+static int add_recvbuf_small(struct virtnet_info *vi, struct receive_queue *rq,
-+			     gfp_t gfp)
- {
--	struct virtnet_info *vi = rq->vq->vdev->priv;
- 	struct sk_buff *skb;
- 	struct skb_vnet_hdr *hdr;
- 	int err;
-@@ -664,9 +666,9 @@ static int add_recvbuf_mergeable(struct receive_queue *rq, gfp_t gfp)
-  * before we're receiving packets, or from refill_work which is
-  * careful to disable receiving (using napi_disable).
-  */
--static bool try_fill_recv(struct receive_queue *rq, gfp_t gfp)
-+static bool try_fill_recv(struct virtnet_info *vi, struct receive_queue *rq,
-+			  gfp_t gfp)
- {
--	struct virtnet_info *vi = rq->vq->vdev->priv;
- 	int err;
- 	bool oom;
- 
-@@ -677,7 +679,7 @@ static bool try_fill_recv(struct receive_queue *rq, gfp_t gfp)
- 		else if (vi->big_packets)
- 			err = add_recvbuf_big(rq, gfp);
- 		else
--			err = add_recvbuf_small(rq, gfp);
-+			err = add_recvbuf_small(vi, rq, gfp);
- 
- 		oom = err == -ENOMEM;
- 		if (err)
-@@ -726,7 +728,7 @@ static void refill_work(struct work_struct *work)
- 		struct receive_queue *rq = &vi->rq[i];
- 
- 		napi_disable(&rq->napi);
--		still_empty = !try_fill_recv(rq, GFP_KERNEL);
-+		still_empty = !try_fill_recv(vi, rq, GFP_KERNEL);
- 		virtnet_napi_enable(rq);
- 
- 		/* In theory, this can happen: if we don't get any buffers in
-@@ -745,12 +747,12 @@ static int virtnet_receive(struct receive_queue *rq, int budget)
- 
- 	while (received < budget &&
- 	       (buf = virtqueue_get_buf(rq->vq, &len)) != NULL) {
--		receive_buf(rq, buf, len);
-+		receive_buf(vi, rq, buf, len);
- 		received++;
- 	}
- 
- 	if (rq->vq->num_free > virtqueue_get_vring_size(rq->vq) / 2) {
--		if (!try_fill_recv(rq, GFP_ATOMIC))
-+		if (!try_fill_recv(vi, rq, GFP_ATOMIC))
- 			schedule_delayed_work(&vi->refill, 0);
- 	}
- 
-@@ -826,7 +828,7 @@ static int virtnet_open(struct net_device *dev)
- 	for (i = 0; i < vi->max_queue_pairs; i++) {
- 		if (i < vi->curr_queue_pairs)
- 			/* Make sure we have some buffers: if oom use wq. */
--			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
-+			if (!try_fill_recv(vi, &vi->rq[i], GFP_KERNEL))
- 				schedule_delayed_work(&vi->refill, 0);
- 		virtnet_napi_enable(&vi->rq[i]);
- 	}
-@@ -1851,7 +1853,7 @@ static int virtnet_probe(struct virtio_device *vdev)
- 
- 	/* Last of all, set up some receive buffers. */
- 	for (i = 0; i < vi->curr_queue_pairs; i++) {
--		try_fill_recv(&vi->rq[i], GFP_KERNEL);
-+		try_fill_recv(vi, &vi->rq[i], GFP_KERNEL);
- 
- 		/* If we didn't even get one input buffer, we're useless. */
- 		if (vi->rq[i].vq->num_free ==
-@@ -1971,7 +1973,7 @@ static int virtnet_restore(struct virtio_device *vdev)
- 
- 	if (netif_running(vi->dev)) {
- 		for (i = 0; i < vi->curr_queue_pairs; i++)
--			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
-+			if (!try_fill_recv(vi, &vi->rq[i], GFP_KERNEL))
- 				schedule_delayed_work(&vi->refill, 0);
- 
- 		for (i = 0; i < vi->max_queue_pairs; i++)
+ 	/* Make sure persistent devices do not get stuck in
+ 	 * xoff state.
+@@ -1890,9 +1860,11 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+ 	if (cmd == TUNGETFEATURES) {
+ 		/* Currently this just means: "what IFF flags are valid?".
+ 		 * This is needed because we never checked for invalid flags on
+-		 * TUNSETIFF. */
+-		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
+-				IFF_VNET_HDR | IFF_MULTI_QUEUE,
++		 * TUNSETIFF.  Why do we report IFF_TUN and IFF_TAP which are
++		 * not legal for TUNSETIFF here?  It's probably a bug, but it
++		 * doesn't seem to be worth fixing.
++		 */
++		return put_user(IFF_TUN | IFF_TAP | TUN_FEATURES,
+ 				(unsigned int __user*)argp);
+ 	} else if (cmd == TUNSETQUEUE)
+ 		return tun_set_queue(file, &ifr);
 -- 
 MST
 
