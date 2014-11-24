@@ -1,132 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293AbaKXNAU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 08:00:20 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:40137 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915AbaKXNAQ (ORCPT
+	id S1753329AbaKXNBG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 08:01:06 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:46594 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaKXNBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 08:00:16 -0500
-X-AuditID: cbfee68f-f791c6d000004834-f8-54732bde8903
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org
-Cc: kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
-        s.nawrocki@samsung.com, pankaj.dubey@samsung.com,
-        ulf.hansson@linaro.org, khilman@kernel.org, linux-pm@vger.kernel.org,
-        geert@linux-m68k.org, rjw@rjwysocki.net, devicetree@vger.kernel.org,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: [PATCH RFC v2 00/12] soc: samsung: Modify and enhance power domain
- driver
-Date: Mon, 24 Nov 2014 18:22:40 +0530
-Message-id: <1416833572-6880-1-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsWyRsSkSveednGIweQ2YYuGqyEW84+cY7V4
-	dmsvk0XvgqtsFk83P2ay2PT4GqvF5V1z2Cw+9x5htJhxfh+TxaKtX9gtzpy+xGpx+E07q8Xx
-	teEOvB6bVnWyedy5tofN49DhDkaPzUvqPbZcbWfx6NuyitHj8ya5APYoLpuU1JzMstQifbsE
-	royDL+sKpslU9L19wdTAeFu0i5GTQ0LAROLq2WvsELaYxIV769m6GLk4hASWMkocu97J2MXI
-	AVa0/4E9RHwRo8SiI7sYIZwJTBKr1k5lA+lmEzCW+LlzPztIg4iAt8Tya4ogNcwCq5kktrZ/
-	YAKpERYIkWj/9QWsnkVAVWLdm99gm3kF3CTmf3jOBLFMQWLOJBuQXgmBbewS+86uZYKoF5D4
-	NvkQC0SNrMSmA8wQR0tKHFxxg2UCo+ACRoZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGIHB
-	f/rfs/4djHcPWB9iFOBgVOLhnbG+KESINbGsuDL3EKMp0IaJzFKiyfnAGMsriTc0NjOyMDUx
-	NTYytzRTEuddKPUzWEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANjG5tZK8sq/VqjOneWDMVq
-	JS5TsaUXD988+Dq68ur1ds5n26YxyE77KCuZ6/wzqsltys4Yl9hUvTNFa79EfRWK2+T0+tKT
-	pzmvbbqt7ik3Rdxx215yctKJ1448D3YV2HM2aQfu130g5jhR+2mX/FW1VcePThacsyWnus+G
-	5avse/Xg6euF5gsrsRRnJBpqMRcVJwIAcqBxt3kCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t9jAd172sUhBj+Pclg0XA2xmH/kHKvF
-	s1t7mSx6F1xls3i6+TGTxabH11gtLu+aw2bxufcIo8WM8/uYLBZt/cJuceb0JVaLw2/aWS2O
-	rw134PXYtKqTzePOtT1sHocOdzB6bF5S77HlajuLR9+WVYwenzfJBbBHNTDaZKQmpqQWKaTm
-	JeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gAdq6RQlphTChQKSCwuVtK3
-	wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMOPiyrmCaTEXf2xdMDYy3RbsYOTgkBEwk9j+w72Lk
-	BDLFJC7cW8/WxcjFISSwiFFi0ZFdjBDOBCaJVWunsoFUsQkYS/zcuZ8dpFlEwFti+TVFkBpm
-	gdVMElvbPzCB1AgLhEi0//oCVs8ioCqx7s1vdhCbV8BNYv6H50wQixUk5kyymcDIvYCRYRWj
-	aGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcGw9k9rBuLLB4hCjAAejEg/vh41FIUKsiWXFlbmH
-	GCU4mJVEeMXEikOEeFMSK6tSi/Lji0pzUosPMZoCLZ/ILCWanA+M+7ySeENjE3NTY1NLEwsT
-	M0slcd4bN3NDhATSE0tSs1NTC1KLYPqYODilGhhbJeczGUdsPCNxJ1aeZV+S1/O/bdnHCpjf
-	e+mm391vcMO/K/hf4UurLfYPXM2FxYp3bZh8MEL18tH1LkU12ids53yvL27r+512JcHkNaev
-	byPvHT5lnXBOhwnVx6r3HGVm77KNOjZxv+BnES69MNs8A2nLzJKy1NZdcz9Uz7M7I3s0hFlI
-	VomlOCPRUIu5qDgRAGlmZq3DAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 24 Nov 2014 08:01:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <CABgxDoLA=QL6vzU-v1w4vMZ3qhorjRdYOWFFMrjJE6xvZ7QO3g@mail.gmail.com>
+References: <1415885699-1465-1-git-send-email-user@radxa>
+	<1415885699-1465-2-git-send-email-user@radxa>
+	<20141121105951.GA20679@localhost>
+	<20141124102456.GE4241@x1>
+	<20141124113518.GC6875@localhost>
+	<CABgxDoLA=QL6vzU-v1w4vMZ3qhorjRdYOWFFMrjJE6xvZ7QO3g@mail.gmail.com>
+Date: Mon, 24 Nov 2014 14:01:02 +0100
+Message-ID: <CABgxDo+t1DUMHwWygibR-w=FL458N6k0G68HM2M7R76gJugyVg@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] of: Rename "poweroff-source" property to "system-power-controller"
+From: Romain Perier <romain.perier@gmail.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Grant Likely <grant.likely@linaro.org>, robh <robh@kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Felipe Balbi <balbi@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Posting this series as RFC to get more clarity as lot of power domain related
-discussion is happening in mailing lists.
+2014-11-24 13:58 GMT+01:00 Romain Perier <romain.perier@gmail.com>:
+> 2014-11-24 12:35 GMT+01:00 Johan Hovold <johan@kernel.org>:
+>> On Mon, Nov 24, 2014 at 10:24:56AM +0000, Lee Jones wrote:
+>>> On Fri, 21 Nov 2014, Johan Hovold wrote:
+>>> > On Thu, Nov 13, 2014 at 01:34:58PM +0000, Auto Configured wrote:
+>>> > > From: Romain Perier <romain.perier@gmail.com>
+>>> > >
+>>> > > It reverts commit a4b4e0461ec5 ("of: Add standard property for poweroff capability").
+>>> > > As discussed on the mailing list, it makes more sense to rename back to the
+>>> > > old established property name, without the vendor prefix. Problem being that
+>>> > > the word "source" usually tends to be used for inputs and that is out of control
+>>> > > of the OS. The poweroff capability is an output which simply turns the
+>>> > > system-power off. Also, this property might be used by drivers which power-off
+>>> > > the system and power back on subsequent RTC alarms. This seems to suggest to
+>>> > > remove "poweroff" from the property name and to choose "system-power-controller"
+>>> > > as the more generic name. This patchs adds the required renaming changes and
+>>> > > defines an helper function which is compatible with both properties, the old one
+>>> > > which was only used by tps65910 and the new one without vendor-prefix.
+>>> >
+>>> > Now this is a bit of a mess.
+>>> >
+>>> > There's a commit in the mfd tree, 25f833c1171d ("mfd: tps65910: Convert
+>>> > ti,system-power-controller DT property to poweroff-source"), which
+>>> > breaks all dts using tps65910 since these are never updated to the now
+>>> > retracted property name ("poweroff-source").
+>>>
+>>> My word!
+>>>
+>>> Romain, what conversation on the MLs are you talking about?
+>>
+>> I think Romain is referring to this thread:
+>>
+>>         https://lkml.org/lkml/2014/10/23/161
+>
+> Yes, this is this one.
+>
+>>
+>>> > This one should simply be reverted ASAP.
+>>>
+>>> No need to revert, I can just remove the patch from the MFD tree.
+>>
+>> Ok, good. Then this is limited to the regulator tree, and we could
+>> proceed as I outlined below.
+>>
+>>
+>> Romain, care to resend this patch without the tps65910 chunks?
+>
+> If you can just drop the patch from mfd tree Lee, please do.
+> Yes Johan, np, what I want is that we find a smart solution, nothing more.
+>
+>>
+>> You should also fix the commit message, which claims to define a "helper
+>> function which is compatible with both properties", something which was
+>> no longer the case.
+>>
+>> Thanks,
+>> Johan
+>
+> So I need to resend this patch which would only introduce an helper
+> function which checks for "system-power-controller" property (it would
+> also have a new commit message).
+> As you suggested, this helper might be named
+> "of_device_is_system_power_controller" ?
 
-This patch series[1 - 12] performs several implementations as listed below,
-
-1) Converts power domain driver to platform driver.
-2) Registers this driver as MFD client driver.
-3) Moves them into driver/soc/samsung folder.
-4) Add parent power domain parsing code.
-5) Updates the reparenting feature to make it more generic.
-6) A feature to turn clocks on during pm domain off/on. There can be
-   different set of clocks to be turned on. The patches in Rafael's tree allows
-   a single list only.
-7) Code added to preserve the clocks rates during power domain on/off
-   sequence.
-8) Restructured the exynos PD on/off handlers and added exynos7 support.
-
-The power domain DT node may look something like,
-
-mfc_pd: power-domain@10044060 {
-	compatible = "samsung,exynos4210-pd", "samsung,exynos7-pd-mfc";
-	reg = <0x10044060 0x20>;
-	pd-parent-clock-names = "tclk0", "pclk0", "clk0";
-	pd-parent-clocks = <&clock CLK_FIN_PLL>, <&clock CLK_MOUT_SW_ACLK333>,
-		<&clock CLK_MOUT_USER_ACLK333>;
-	pd-on-en-clock-names = "clk0", "clk1";
-	pd-on-en-clocks = <&clock CLK_IP1>, <&clock CLK_IP2>,
-	pd-off-en-clock-names = "clk0", "clk1", "clk3";
-	pd-off-en-clocks = <&clock CLK_IP1>, <&clock CLK_IP2>, <&clock CLK_IP3>;
-	pd-rate-clock-names = "clk0", "clk1";
-	pd-rate-clocks = <&clock CLK_IP1>, <&clock CLK_IP2>,
-	parents = <&pd_top>;
-	#power-domain-cells = <0>;
-};
-
-Changes from v1:
-* Removed PM domain notifier features.
-* Removed clock save/restore through those notifiers.
-* link for v1 is http://www.spinics.net/lists/linux-samsung-soc/msg38442.html.
-
-This patch series depends on exynos pmu patches posted earlier.
-http://lkml.org/lkml/2014/11/23/221
-
-Amit Daniel Kachhap (12):
-  arm: exynos: Add platform driver support for power domain driver
-  soc: exynos: Move exynos power domain file to driver/soc/samsung
-    folder
-  soc: samsung: exynos-pmu: Register exynos pd driver as a mfd client
-  soc: samsung: Re-structure PMU driver to create pd on/off handlers
-  soc: samsung: pm_domain: Use unique compatible name for power domain
-  driver: soc: exynos-pmu: Add exynos7 power domain on/off ops
-  PM / Domains: export pm_genpd_lookup_name
-  soc: samsung: pm_domain: Add support for parent power domain
-  drivers: soc: pm_domain: Modify the parent clocks bindings
-  drivers: soc: samsung: Add support for clock enabling in power domain
-  drivers: soc: samsung: Add support for clock rate save/restore in
-    power domain
-  arm64: Kconfig: Enable PM_GENERIC_DOMAINS for exynos7
-
- .../bindings/arm/exynos/power_domain.txt           |   45 +-
- arch/arm/mach-exynos/Makefile                      |    1 -
- arch/arm/mach-exynos/pm_domains.c                  |  166 -------
- arch/arm64/Kconfig                                 |    1 +
- drivers/base/power/domain.c                        |    3 +-
- drivers/soc/samsung/Kconfig                        |    9 +
- drivers/soc/samsung/Makefile                       |    3 +-
- drivers/soc/samsung/exynos-pmu.c                   |  185 +++++++
- drivers/soc/samsung/pm_domains.c                   |  510 ++++++++++++++++++++
- include/linux/pm_domain.h                          |    7 +
- include/linux/soc/samsung/exynos-pmu.h             |   15 +
- include/linux/soc/samsung/exynos-regs-pmu.h        |   26 +
- 12 files changed, 794 insertions(+), 177 deletions(-)
- delete mode 100644 arch/arm/mach-exynos/pm_domains.c
- create mode 100644 drivers/soc/samsung/pm_domains.c
-
--- 
-1.7.9.5
-
+I mean, the backward compatibility can be handled directly from the
+device driver which would use the new property, no ?
