@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223AbaKXQpn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 11:45:43 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:61304 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111AbaKXQpl (ORCPT
+	id S1753548AbaKXQxK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 11:53:10 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:53242 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752057AbaKXQxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 11:45:41 -0500
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: akpm@linux-foundation.org, mgorman@suse.de, riel@redhat.com,
-        sasha.levin@oracle.com, n-horiguchi@ah.jp.nec.com,
-        andriy.shevchenko@linux.intel.com, rientjes@google.com,
-        hannes@cmpxchg.org, nasa4836@gmail.com, vdavydov@parallels.com,
-        fabf@skynet.be
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Jianyu Zhan <jianyu.zhan@emc.com>
-Subject: [PATCH] mm, gfp: escalatedly define GFP_HIGHUSER and GFP_HIGHUSER_MOVABLE
-Date: Tue, 25 Nov 2014 00:43:47 +0800
-Message-Id: <1416847427-2550-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0
+	Mon, 24 Nov 2014 11:53:08 -0500
+X-Sasl-enc: 31IIrgyW67XFShkXdxHL03uSCkkSfqrdH+gI9Tlix1/y 1416847987
+Date: Mon, 24 Nov 2014 08:53:06 -0800
+From: Greg KH <greg@kroah.com>
+To: Balavasu kuppusammyprathaban <kp.balavasu@gmail.com>
+Cc: linux-kernel@vger.kernel.org, andreas.dilger@intel.com,
+        oleg.drokin@intel.com
+Subject: Re: [PATCH 1/2] staging: lustre: lnet: lnet: do not initialise
+ statics to 0 or NULL
+Message-ID: <20141124165306.GA4450@kroah.com>
+References: <20141124060318.GA13501@vasu-Inspiron-3542>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141124060318.GA13501@vasu-Inspiron-3542>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GFP_USER, GFP_HIGHUSER and GFP_HIGHUSER_MOVABLE are escalatedly
-confined defined, also implied by their names:
+On Mon, Nov 24, 2014 at 11:33:18AM +0530, Balavasu kuppusammyprathaban wrote:
+> This patch fixes the checkpatch.pl issue
+> Error: do not initialise statics to 0 or NULL 
+> 
+> Signed-off-by: Balavasu kuppusammyprathaban<kp.balavasu@gmail.com>
+> ---
+>  drivers/staging/lustre/lnet/lnet/router.c | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
 
-GFP_USER                                  = GFP_USER
-GFP_USER + __GFP_HIGHMEM                  = GFP_HIGHUSER
-GFP_USER + __GFP_HIGHMEM + __GFP_MOVABLE  = GFP_HIGHUSER_MOVABLE
+Any reason why you aren't using scripts/get_maintainer.pl?
 
-So just make GFP_HIGHUSER and GFP_HIGHUSER_MOVABLE escalatedly defined
-to reflect this fact. It also makes the definition clear and texturally
-warn on any furture break-up of this escalated relastionship.
+Also, you need a ' ' after your name and before the '<' character.
 
-Signed-off-by: Jianyu Zhan <jianyu.zhan@emc.com>
----
- include/linux/gfp.h | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+As well as properly capitalizing your name.
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 41b30fd..f7c74c8 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -110,11 +110,8 @@ struct vm_area_struct;
- #define GFP_TEMPORARY	(__GFP_WAIT | __GFP_IO | __GFP_FS | \
- 			 __GFP_RECLAIMABLE)
- #define GFP_USER	(__GFP_WAIT | __GFP_IO | __GFP_FS | __GFP_HARDWALL)
--#define GFP_HIGHUSER	(__GFP_WAIT | __GFP_IO | __GFP_FS | __GFP_HARDWALL | \
--			 __GFP_HIGHMEM)
--#define GFP_HIGHUSER_MOVABLE	(__GFP_WAIT | __GFP_IO | __GFP_FS | \
--				 __GFP_HARDWALL | __GFP_HIGHMEM | \
--				 __GFP_MOVABLE)
-+#define GFP_HIGHUSER	(GFP_USER | __GFP_HIGHMEM)
-+#define GFP_HIGHUSER_MOVABLE	(GFP_HIGHUSER | __GFP_MOVABLE)
- #define GFP_IOFS	(__GFP_IO | __GFP_FS)
- #define GFP_TRANSHUGE	(GFP_HIGHUSER_MOVABLE | __GFP_COMP | \
- 			 __GFP_NOMEMALLOC | __GFP_NORETRY | __GFP_NOWARN | \
--- 
-2.0.0
-
+Please redo both patches.
