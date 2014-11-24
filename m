@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365AbaKXTGb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 14:06:31 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49578 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653AbaKXTGa (ORCPT
+	id S1754717AbaKXTG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 14:06:59 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:56021 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754530AbaKXTG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 14:06:30 -0500
-Date: Mon, 24 Nov 2014 20:06:27 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: sre@debian.org, sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, freemangordon@abv.bg
-Subject: Re: v3.18-rc1: n900 battery discharged down to 2.97V
-Message-ID: <20141124190627.GA7816@amd>
-References: <20141124183130.GA2927@amd>
- <201411241958.34578@pali>
+	Mon, 24 Nov 2014 14:06:57 -0500
+Date: Mon, 24 Nov 2014 20:06:49 +0100 (CET)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@denkbrett
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 1/1] s390/pci: Deletion of unnecessary checks before the
+ function call "debug_unregister"
+In-Reply-To: <54709827.4050408@users.sourceforge.net>
+Message-ID: <alpine.LFD.2.11.1411242004590.1608@denkbrett>
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net>
+ <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net> <54709827.4050408@users.sourceforge.net>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
+ =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201411241958.34578@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112419-0009-0000-0000-0000021E2C50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-11-24 19:58:34, Pali Rohár wrote:
-> On Monday 24 November 2014 19:31:30 Pavel Machek wrote:
-> > Hi!
-> > 
-> > I left the machine on usb-networking for extended period of
-> > time. Unfortunately, Xfce screensaver kept screen busy, and
-> > kernel failed to kill the machine.
-> > 
-> > At the end, hardware protections worked (I guess), but result
-> > is battery discharged down to 2.97V.
+On Sat, 22 Nov 2014, SF Markus Elfring wrote:
+
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Sat, 22 Nov 2014 15:00:55 +0100
 > 
-> So you need some program which will monitor battery status and 
-> when battery status is empty it should turn of device.
+> The debug_unregister() function performs also input parameter validation.
+> Thus the test around the call is not needed.
+> 
+> This issue was detected by using the Coccinelle software.
+> 
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> ---
+>  arch/s390/pci/pci_debug.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/s390/pci/pci_debug.c b/arch/s390/pci/pci_debug.c
+> index eec598c..18403a7 100644
+> --- a/arch/s390/pci/pci_debug.c
+> +++ b/arch/s390/pci/pci_debug.c
+> @@ -158,10 +158,8 @@ int __init zpci_debug_init(void)
+> 
+>  void zpci_debug_exit(void)
+>  {
+> -	if (pci_debug_msg_id)
+> -		debug_unregister(pci_debug_msg_id);
+> -	if (pci_debug_err_id)
+> -		debug_unregister(pci_debug_err_id);
+> +	debug_unregister(pci_debug_msg_id);
+> +	debug_unregister(pci_debug_err_id);
+> 
+>  	debugfs_remove(debugfs_root);
+>  }
 
-And that program should be part of the kernel, because kernel should
-protect hardware from damage. (And it should be perfectly ok to boot
-into init=/bin/bash...)
+Applied.
 
-Anyway, this was just friendly warning, so that you don't
-unneccessarily damage your battery...
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks,
+Sebastian
+
