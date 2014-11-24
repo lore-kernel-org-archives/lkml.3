@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751972AbaKXWim (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 17:38:42 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:45206 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848AbaKXWeK (ORCPT
+	id S1751993AbaKXWin (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 17:38:43 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55901 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835AbaKXWeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 Nov 2014 17:34:10 -0500
 From: Grant Likely <grant.likely@linaro.org>
@@ -13,9 +13,9 @@ To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
 Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
         Wolfram Sang <wsa@the-dreams.de>,
         Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH v2 04/14] of/reconfig: Add of_reconfig_get_state_change() of notifier helper.
-Date: Mon, 24 Nov 2014 22:33:32 +0000
-Message-Id: <1416868422-22103-5-git-send-email-grant.likely@linaro.org>
+Subject: [PATCH v2 02/14] of: Refactor __of_node_alloc() into __of_node_dup()
+Date: Mon, 24 Nov 2014 22:33:30 +0000
+Message-Id: <1416868422-22103-3-git-send-email-grant.likely@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416868422-22103-1-git-send-email-grant.likely@linaro.org>
 References: <1416868422-22103-1-git-send-email-grant.likely@linaro.org>
@@ -23,150 +23,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Add a node argument to __of_node_alloc() and rename it to
+__of_node_dup() so that it can also be used to duplicate a node with
+its properties. This is important for the overlay code so that it can
+create new nodes without using separate changeset items for every single
+property.
 
-Introduce of_reconfig_get_state_change() which allows an of notifier
-to query about device state changes.
+At the same time rework the overlay code to use the new function and
+drop the extra changeset items.
 
-Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 Signed-off-by: Grant Likely <grant.likely@linaro.org>
 ---
- drivers/of/dynamic.c | 96 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/of.h   |  7 ++++
- 2 files changed, 103 insertions(+)
+ drivers/of/dynamic.c    | 40 +++++++++++++++++++++++++++++-----------
+ drivers/of/of_private.h |  2 +-
+ drivers/of/unittest.c   | 14 ++++++++++----
+ 3 files changed, 40 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/of/dynamic.c b/drivers/of/dynamic.c
-index 661ad2f5c00c..6659c39ab3aa 100644
+index af1b1ecd6a3d..661ad2f5c00c 100644
 --- a/drivers/of/dynamic.c
 +++ b/drivers/of/dynamic.c
-@@ -85,6 +85,102 @@ int of_reconfig_notify(unsigned long action, void *p)
- 	return notifier_to_errno(rc);
+@@ -272,15 +272,16 @@ struct property *__of_prop_dup(const struct property *prop, gfp_t allocflags)
  }
  
-+/*
-+ * of_reconfig_get_state_change()	- Returns new state of device
-+ * @action	- action of the of notifier
-+ * @arg		- argument of the of notifier
-+ *
-+ * Returns the new state of a device based on the notifier used.
-+ * Returns 0 on device going from enabled to disabled, 1 on device
-+ * going from disabled to enabled and -1 on no change.
-+ */
-+int of_reconfig_get_state_change(unsigned long action, void *arg)
-+{
-+	struct device_node *dn;
-+	struct property *prop, *old_prop;
-+	struct of_prop_reconfig *pr;
-+	int is_status, status_state, old_status_state, prev_state, new_state;
-+
-+	/* figure out if a device should be created or destroyed */
-+	dn = NULL;
-+	prop = old_prop = NULL;
-+	switch (action) {
-+	case OF_RECONFIG_ATTACH_NODE:
-+	case OF_RECONFIG_DETACH_NODE:
-+		dn = arg;
-+		prop = of_find_property(dn, "status", NULL);
-+		break;
-+	case OF_RECONFIG_ADD_PROPERTY:
-+	case OF_RECONFIG_REMOVE_PROPERTY:
-+		pr = arg;
-+		dn = pr->dn;
-+		prop = pr->prop;
-+		break;
-+	case OF_RECONFIG_UPDATE_PROPERTY:
-+		pr = arg;
-+		dn = pr->dn;
-+		prop = pr->prop;
-+		old_prop = pr->old_prop;
-+		break;
-+	default:
-+		return OF_RECONFIG_NO_CHANGE;
-+	}
-+
-+	is_status = 0;
-+	status_state = -1;
-+	old_status_state = -1;
-+	prev_state = -1;
-+	new_state = -1;
-+
-+	if (prop && !strcmp(prop->name, "status")) {
-+		is_status = 1;
-+		status_state = !strcmp(prop->value, "okay") ||
-+			       !strcmp(prop->value, "ok");
-+		if (old_prop)
-+			old_status_state = !strcmp(old_prop->value, "okay") ||
-+					   !strcmp(old_prop->value, "ok");
-+	}
-+
-+	switch (action) {
-+	case OF_RECONFIG_ATTACH_NODE:
-+		prev_state = 0;
-+		/* -1 & 0 status either missing or okay */
-+		new_state = status_state != 0;
-+		break;
-+	case OF_RECONFIG_DETACH_NODE:
-+		/* -1 & 0 status either missing or okay */
-+		prev_state = status_state != 0;
-+		new_state = 0;
-+		break;
-+	case OF_RECONFIG_ADD_PROPERTY:
-+		if (is_status) {
-+			/* no status property -> enabled (legacy) */
-+			prev_state = 1;
-+			new_state = status_state;
-+		}
-+		break;
-+	case OF_RECONFIG_REMOVE_PROPERTY:
-+		if (is_status) {
-+			prev_state = status_state;
-+			/* no status property -> enabled (legacy) */
-+			new_state = 1;
-+		}
-+		break;
-+	case OF_RECONFIG_UPDATE_PROPERTY:
-+		if (is_status) {
-+			prev_state = old_status_state != 0;
-+			new_state = status_state != 0;
-+		}
-+		break;
-+	}
-+
-+	if (prev_state == new_state)
-+		return OF_RECONFIG_NO_CHANGE;
-+
-+	return new_state ? OF_RECONFIG_CHANGE_ADD : OF_RECONFIG_CHANGE_REMOVE;
-+}
-+EXPORT_SYMBOL_GPL(of_reconfig_get_state_change);
-+
- int of_property_notify(int action, struct device_node *np,
- 		       struct property *prop, struct property *oldprop)
+ /**
+- * __of_node_alloc() - Create an empty device node dynamically.
+- * @full_name:	Full name of the new device node
++ * __of_node_dup() - Duplicate or create an empty device node dynamically.
++ * @fmt: Format string (plus vargs) for new full name of the device node
+  *
+- * Create an empty device tree node, suitable for further modification.
+- * The node data are dynamically allocated and all the node flags
+- * have the OF_DYNAMIC & OF_DETACHED bits set.
+- * Returns the newly allocated node or NULL on out of memory error.
++ * Create an device tree node, either by duplicating an empty node or by allocating
++ * an empty one suitable for further modification.  The node data are
++ * dynamically allocated and all the node flags have the OF_DYNAMIC &
++ * OF_DETACHED bits set. Returns the newly allocated node or NULL on out of
++ * memory error.
+  */
+-struct device_node *__of_node_alloc(const char *fmt, ...)
++struct device_node *__of_node_dup(const struct device_node *np, const char *fmt, ...)
  {
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 27635c89d8c2..8e3a264c869c 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -327,6 +327,7 @@ struct of_prop_reconfig {
- extern int of_reconfig_notifier_register(struct notifier_block *);
- extern int of_reconfig_notifier_unregister(struct notifier_block *);
- extern int of_reconfig_notify(unsigned long, void *);
-+extern int of_reconfig_get_state_change(unsigned long action, void *arg);
+ 	va_list vargs;
+ 	struct device_node *node;
+@@ -291,17 +292,34 @@ struct device_node *__of_node_alloc(const char *fmt, ...)
+ 	va_start(vargs, fmt);
+ 	node->full_name = kvasprintf(GFP_KERNEL, fmt, vargs);
+ 	va_end(vargs);
+-	if (!node->full_name)
+-		goto err_free;
++	if (!node->full_name) {
++		kfree(node);
++		return NULL;
++	}
  
- extern int of_attach_node(struct device_node *);
- extern int of_detach_node(struct device_node *);
-@@ -887,6 +888,12 @@ struct of_changeset {
- 	struct list_head entries;
- };
+ 	of_node_set_flag(node, OF_DYNAMIC);
+ 	of_node_set_flag(node, OF_DETACHED);
+ 	of_node_init(node);
  
-+enum of_reconfig_change {
-+	OF_RECONFIG_NO_CHANGE = 0,
-+	OF_RECONFIG_CHANGE_ADD,
-+	OF_RECONFIG_CHANGE_REMOVE,
-+};
++	/* Iterate over and duplicate all properties */
++	if (np) {
++		struct property *pp, *new_pp;
++		for_each_property_of_node(np, pp) {
++			new_pp = __of_prop_dup(pp, GFP_KERNEL);
++			if (!new_pp)
++				goto err_prop;
++			if (__of_add_property(node, new_pp)) {
++				kfree(new_pp->name);
++				kfree(new_pp->value);
++				kfree(new_pp);
++				goto err_prop;
++			}
++		}
++	}
+ 	return node;
+ 
+- err_free:
+-	kfree(node);
++ err_prop:
++	of_node_put(node); /* Frees the node and properties */
+ 	return NULL;
+ }
+ 
+diff --git a/drivers/of/of_private.h b/drivers/of/of_private.h
+index 618abcad307e..8e882e706cd8 100644
+--- a/drivers/of/of_private.h
++++ b/drivers/of/of_private.h
+@@ -61,7 +61,7 @@ static inline int of_property_notify(int action, struct device_node *np,
+  * own the devtree lock or work on detached trees only.
+  */
+ struct property *__of_prop_dup(const struct property *prop, gfp_t allocflags);
+-__printf(1, 2) struct device_node *__of_node_alloc(const char *fmt, ...);
++__printf(2, 3) struct device_node *__of_node_dup(const struct device_node *np, const char *fmt, ...);
+ 
+ extern const void *__of_get_property(const struct device_node *np,
+ 				     const char *name, int *lenp);
+diff --git a/drivers/of/unittest.c b/drivers/of/unittest.c
+index 7634a17af1d5..1720b039cac7 100644
+--- a/drivers/of/unittest.c
++++ b/drivers/of/unittest.c
+@@ -445,15 +445,15 @@ static void __init of_selftest_changeset(void)
+ 	struct property *ppadd, padd = { .name = "prop-add", .length = 0, .value = "" };
+ 	struct property *ppupdate, pupdate = { .name = "prop-update", .length = 5, .value = "abcd" };
+ 	struct property *ppremove;
+-	struct device_node *n1, *n2, *n21, *nremove, *parent;
++	struct device_node *n1, *n2, *n21, *nremove, *parent, *np;
+ 	struct of_changeset chgset;
+ 
+ 	of_changeset_init(&chgset);
+-	n1 = __of_node_alloc("/testcase-data/changeset/n1");
++	n1 = __of_node_dup(NULL, "/testcase-data/changeset/n1");
+ 	selftest(n1, "testcase setup failure\n");
+-	n2 = __of_node_alloc("/testcase-data/changeset/n2");
++	n2 = __of_node_dup(NULL, "/testcase-data/changeset/n2");
+ 	selftest(n2, "testcase setup failure\n");
+-	n21 = __of_node_alloc("/testcase-data/changeset/n2/n21");
++	n21 = __of_node_dup(NULL, "%s/%s", "/testcase-data/changeset/n2", "n21");
+ 	selftest(n21, "testcase setup failure %p\n", n21);
+ 	nremove = of_find_node_by_path("/testcase-data/changeset/node-remove");
+ 	selftest(nremove, "testcase setup failure\n");
+@@ -481,6 +481,12 @@ static void __init of_selftest_changeset(void)
+ 	selftest(!of_changeset_apply(&chgset), "apply failed\n");
+ 	mutex_unlock(&of_mutex);
+ 
++	/* Make sure node names are constructed correctly */
++	selftest((np = of_find_node_by_path("/testcase-data/changeset/n2/n21")),
++		 "'%s' not added\n", n21->full_name);
++	if (np)
++		of_node_put(np);
 +
- #ifdef CONFIG_OF_DYNAMIC
- extern void of_changeset_init(struct of_changeset *ocs);
- extern void of_changeset_destroy(struct of_changeset *ocs);
+ 	mutex_lock(&of_mutex);
+ 	selftest(!of_changeset_revert(&chgset), "revert failed\n");
+ 	mutex_unlock(&of_mutex);
 -- 
 1.9.1
 
