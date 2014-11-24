@@ -1,153 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681AbaKXPJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:09:56 -0500
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:37243 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111AbaKXPJy (ORCPT
+	id S1753010AbaKXPNY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 10:13:24 -0500
+Received: from smtp1.tech.numericable.fr ([82.216.111.37]:33530 "EHLO
+	smtp1.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733AbaKXPNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:09:54 -0500
+	Mon, 24 Nov 2014 10:13:22 -0500
+Message-ID: <54734AEA.7010102@laposte.net>
+Date: Mon, 24 Nov 2014 16:12:42 +0100
+From: Barto <mister.freeman@laposte.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1416654127-2433-1-git-send-email-mathieu.magnaudet@enac.fr>
-References: <1416654127-2433-1-git-send-email-mathieu.magnaudet@enac.fr>
-Date: Mon, 24 Nov 2014 10:09:53 -0500
-Message-ID: <CAN+gG=H=Nvis9JN_6ZaENrn3Q1fsHjbDS_w1GRk8WwuesCM7yA@mail.gmail.com>
-Subject: Re: [PATCH v2] hid-multitouch: Add quirk for VTL touch panels
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Mathieu Magnaudet <mathieu.magnaudet@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Christoph Hellwig <hch@infradead.org>
+CC: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: BUG in scsi_lib.c due to a bad commit
+References: <20141120060933.GA21432@infradead.org> <546E2880.5070303@laposte.net> <20141120175316.GA19590@infradead.org> <546E32A5.4040202@laposte.net> <20141124091835.GA21579@infradead.org>
+In-Reply-To: <20141124091835.GA21579@infradead.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrleeigdehkecutefuodetggdotefrucfrrhhofhhilhgvmecupfgfoffgtffkveetuefngfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepkfffhfgfggfvufhfjggtgfesthekrgdttdefheenucfhrhhomhepuegrrhhtohcuoehmihhsthgvrhdrfhhrvggvmhgrnheslhgrphhoshhtvgdrnhgvtheqnecuffhomhgrihhnpehkvghrnhgvlhdrohhrgh
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello Christoph,
 
-On Sat, Nov 22, 2014 at 6:02 AM, Mathieu Magnaudet
-<mathieu.magnaudet@gmail.com> wrote:
-> VTL panels do not switch to the multitouch mode until the input mode
-> feature is read by the host. This should normally be done by
-> usbhid, but it looks like an other bug prevents usbhid to properly
-> retrieve the feature state. As a workaround, we force the reading of
-> the feature in mt_set_input_mode for such devices.
->
-> Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+to be clear :
 
-Indeed, this is still reviewed by me.
+my JMicron pcie card JMB363/368 has 2 sata ports and one IDE port,
+JMicron supports AHCI on these 2 sata ports,
 
-> Signed-off-by: Mathieu Magnaudet <mathieu.magnaudet@enac.fr>
-> ---
-> v1 -> v2
->         use hid_alloc_report_buf instead of kzalloc
->
->  drivers/hid/hid-ids.h        |  3 +++
->  drivers/hid/hid-multitouch.c | 27 +++++++++++++++++++++++++++
->  2 files changed, 30 insertions(+)
->
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 7c86373..d6cc6a9 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -931,6 +931,9 @@
->  #define USB_DEVICE_ID_VERNIER_CYCLOPS  0x0004
->  #define USB_DEVICE_ID_VERNIER_LCSPEC   0x0006
->
-> +#define USB_VENDOR_ID_VTL              0x0306
-> +#define USB_DEVICE_ID_VTL_MULTITOUCH_FF3F      0xff3f
-> +
->  #define USB_VENDOR_ID_WACOM            0x056a
->  #define USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH 0x81
->  #define USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH   0x00BD
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 51e25b9..683cda6 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -67,6 +67,7 @@ MODULE_LICENSE("GPL");
->  #define MT_QUIRK_IGNORE_DUPLICATES     (1 << 10)
->  #define MT_QUIRK_HOVERING              (1 << 11)
->  #define MT_QUIRK_CONTACT_CNT_ACCURATE  (1 << 12)
-> +#define MT_QUIRK_FORCE_GET_FEATURE     (1 << 13)
->
->  #define MT_INPUTMODE_TOUCHSCREEN       0x02
->  #define MT_INPUTMODE_TOUCHPAD          0x03
-> @@ -150,6 +151,7 @@ static void mt_post_parse(struct mt_device *td);
->  #define MT_CLS_FLATFROG                                0x0107
->  #define MT_CLS_GENERALTOUCH_TWOFINGERS         0x0108
->  #define MT_CLS_GENERALTOUCH_PWT_TENFINGERS     0x0109
-> +#define MT_CLS_VTL                             0x0110
->
->  #define MT_DEFAULT_MAXCONTACT  10
->  #define MT_MAX_MAXCONTACT      250
-> @@ -255,6 +257,11 @@ static struct mt_class mt_classes[] = {
->                 .sn_move = 2048,
->                 .maxcontacts = 40,
->         },
-> +       { .name = MT_CLS_VTL,
-> +               .quirks = MT_QUIRK_ALWAYS_VALID |
-> +                       MT_QUIRK_CONTACT_CNT_ACCURATE |
-> +                       MT_QUIRK_FORCE_GET_FEATURE,
-> +       },
->         { }
->  };
->
-> @@ -809,6 +816,9 @@ static void mt_set_input_mode(struct hid_device *hdev)
->         struct mt_device *td = hid_get_drvdata(hdev);
->         struct hid_report *r;
->         struct hid_report_enum *re;
-> +       struct mt_class *cls = &td->mtclass;
-> +       char *buf;
-> +       int report_len;
->
->         if (td->inputmode < 0)
->                 return;
-> @@ -816,6 +826,18 @@ static void mt_set_input_mode(struct hid_device *hdev)
->         re = &(hdev->report_enum[HID_FEATURE_REPORT]);
->         r = re->report_id_hash[td->inputmode];
->         if (r) {
-> +               if (cls->quirks & MT_QUIRK_FORCE_GET_FEATURE) {
-> +                       report_len = ((r->size - 1) >> 3) + 1 + (r->id > 0);
+my gigabyte motherboard has 4 sata ports and one IDE port, my gigabyte
+motherboard doesn't support AHCI on these 4 sata ports ( my bios seems
+to treats sata devices like IDE devices, a kind of "IDE emulation mode" ),
 
-I don't like seeing that a third time in the hid subsystem. Mathieu,
-would you mind sending an other patch on top of this one which would
-export hid_report_len() in hid.h (and replace the calls here and in
-wacom_sys.c)?
-I would say a "static inline" declaration would be good enough.
+the bug doesn't occur if the Sata DVD burner is not mixed with a hard
+disk on the  Sata ports ( motherboard sata ports ),
 
-Cheers,
-Benjamin
+the configuration who triggers the bug is mixing a slow device ( sata
+dvd burner ) with a fast device ( sata harddisk ) on the sata ports of
+the motherboard ( who doesn't support AHCI ),
 
-> +                       buf = hid_alloc_report_buf(r, GFP_KERNEL);
-> +                       if (!buf) {
-> +                               hid_err(hdev, "failed to allocate buffer for report\n");
-> +                               return;
-> +                       }
-> +                       hid_hw_raw_request(hdev, r->id, buf, report_len,
-> +                                          HID_FEATURE_REPORT,
-> +                                          HID_REQ_GET_REPORT);
-> +                       kfree(buf);
-> +               }
->                 r->field[0]->value[td->inputmode_index] = td->inputmode_value;
->                 hid_hw_request(hdev, r, HID_REQ_SET_REPORT);
->         }
-> @@ -1281,6 +1303,11 @@ static const struct hid_device_id mt_devices[] = {
->                 MT_USB_DEVICE(USB_VENDOR_ID_UNITEC,
->                         USB_DEVICE_ID_UNITEC_USB_TOUCH_0A19) },
->
-> +       /* VTL panels */
-> +       { .driver_data = MT_CLS_VTL,
-> +               MT_USB_DEVICE(USB_VENDOR_ID_VTL,
-> +                       USB_DEVICE_ID_VTL_MULTITOUCH_FF3F) },
-> +
->         /* Wistron panels */
->         { .driver_data = MT_CLS_NSMU,
->                 MT_USB_DEVICE(USB_VENDOR_ID_WISTRON,
-> --
-> 1.9.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+the bug doesn't occur if the sata dvd burner is connected on a JMicron
+pcie card because there is no other sata harddisks connected on this
+JMicron, I connect only a IDE hardidsk on this JMicron pcie card and
+also this Sata dvd burner in order to avoid the bug ( it's a workaround ),
+
+2 pata_jmicron = the IDE port in this JMicron pcie card ( master and slave )
+4 ata_piix = 4 sata ports from the gigabyte motherboard, this ports
+doesn't support AHCI
+2 ahci = 2 sata ports in this JMicron pcie card
+
+but another user has the same problem but with an IDE DVD burner ( mixed
+with an IDE hardidsk ) :
+
+https://bugzilla.kernel.org/show_bug.cgi?id=87581#c18
+
+this user has tested your patch and it solves the bug
+
+
+Le 24/11/2014 10:18, Christoph Hellwig a écrit :
+> On Thu, Nov 20, 2014 at 07:27:49PM +0100, Barto wrote:
+>> but the sata DVD burner is now connected on a Jmicron sata PCIe card (
+>> with this configuration the bug doesn't occur ), I don't know if this
+>> change can modify the result of your command,
+>>
+>> here is the result of another command :
+>>
+>> $ for i in /sys/class/scsi_host/*; do cat $i/proc_name; done
+>> pata_jmicron
+>> pata_jmicron
+>> ata_piix
+>> ata_piix
+>> ata_piix
+>> ata_piix
+>> ahci
+>> ahci
+> 
+> Interesting.  So the jmicron card also has a queue depth of just one,
+> but the error still occurs?  I've added the linux-ide list, maybe
+> someone there has an idea how piix vs jmicron could have such different
+> behaviors for queueing or error handling.
+> 
+> 
