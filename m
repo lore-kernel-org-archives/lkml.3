@@ -1,71 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216AbaKXFk6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 00:40:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53200 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887AbaKXFk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 00:40:57 -0500
-Message-ID: <5472BF95.2000904@redhat.com>
-Date: Mon, 24 Nov 2014 13:18:13 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751852AbaKXFoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 00:44:30 -0500
+Received: from mail-bl2on0115.outbound.protection.outlook.com ([65.55.169.115]:63677
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750899AbaKXFo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 00:44:29 -0500
+X-Greylist: delayed 894 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Nov 2014 00:44:28 EST
+From: Zhuoyu Zhang <Zhuoyu.Zhang@freescale.com>
+To: <linux-kernel@vger.kernel.org>, <kernel@pengutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: <leoli@freescale.com>, <Jason.Jin@freescale.com>,
+        <linuxppc-release@linux.freescale.net>, <chenhui.zhao@freescale.com>,
+        <Zhuoyu.Zhang@freescale.com>
+Subject: [PATCH v2 2/2] arm: ls1: provide a workaround for core soft reset
+Date: Mon, 24 Nov 2014 13:28:10 +0800
+Message-ID: <1416806890-26920-2-git-send-email-Zhuoyu.Zhang@freescale.com>
+X-Mailer: git-send-email 2.1.0.27.g96db324
+In-Reply-To: <1416806890-26920-1-git-send-email-Zhuoyu.Zhang@freescale.com>
+References: <1416806890-26920-1-git-send-email-Zhuoyu.Zhang@freescale.com>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(99396003)(106466001)(36756003)(88136002)(89996001)(87936001)(87286001)(64706001)(120916001)(105606002)(107046002)(62966003)(4396001)(50466002)(50226001)(77156002)(95666004)(46102003)(229853001)(50986999)(76176999)(104016003)(102836001)(6806004)(21056001)(104166001)(68736004)(44976005)(47776003)(20776003)(19580405001)(19580395003)(97736003)(31966008)(2201001)(92566001)(92726001)(93916002)(84676001)(86362001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB398;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-To: Dexuan Cui <decui@microsoft.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
-        olaf@aepfle.de, apw@canonical.com, kys@microsoft.com
-CC: haiyangz@microsoft.com
-Subject: Re: [PATCH] hv: hv_balloon: avoid memory leak on alloc_error of 2MB
- memory block
-References: <1416808575-5383-1-git-send-email-decui@microsoft.com>
-In-Reply-To: <1416808575-5383-1-git-send-email-decui@microsoft.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB398;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB398;
+X-Forefront-PRVS: 040513D301
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Zhuoyu.Zhang@freescale.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB398;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2014 01:56 PM, Dexuan Cui wrote:
-> If num_ballooned is not 0, we shouldn't neglect the already-allocated 2MB
-> memory block(s).
->
-> Cc: K. Y. Srinivasan <kys@microsoft.com>
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Dexuan Cui <decui@microsoft.com>
-> ---
->  drivers/hv/hv_balloon.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-> index 5e90c5d..cba2d3b 100644
-> --- a/drivers/hv/hv_balloon.c
-> +++ b/drivers/hv/hv_balloon.c
-> @@ -1091,6 +1091,8 @@ static void balloon_up(struct work_struct *dummy)
->  	bool done = false;
->  	int i;
->  
-> +	/* The host does balloon_up in 2MB. */
-> +	WARN_ON(num_pages % PAGES_IN_2M != 0);
->  
->  	/*
->  	 * We will attempt 2M allocations. However, if we fail to
-> @@ -1111,7 +1113,7 @@ static void balloon_up(struct work_struct *dummy)
->  						bl_resp, alloc_unit,
->  						 &alloc_error);
->  
-> -		if ((alloc_error) && (alloc_unit != 1)) {
-> +		if (alloc_error && (alloc_unit != 1) && num_ballooned == 0) {
->  			alloc_unit = 1;
->  			continue;
->  		}
+From: Zhang Zhuoyu <Zhuoyu.Zhang@freescale.com>
 
-Before the change, we may retry the 4K allocation when part or all 2M
-allocations were failed. This makes sense when memory is fragmented. But
-after the change, if part of 2M allocation were failed, we won't retry
-4K allocation. Is this expected?
+Due to a hardware erratum, after core soft reset, core state machine
+registers need to force release manually.
 
-Btw, can host just require 1M? If yes, should alloc_balloon_pages() set
-alloc_error if num_pages < alloc_unit for caller to catch this and retry
-4K allocation?
+Signed-off-by: Zhang Zhuoyu <Zhuoyu.Zhang@freescale.com>
+---
+ arch/arm/mach-imx/platsmp.c | 29 ++++++++++++++++++++++++++++-
+ 1 file changed, 28 insertions(+), 1 deletion(-)
 
-Thanks
+diff --git a/arch/arm/mach-imx/platsmp.c b/arch/arm/mach-imx/platsmp.c
+index 7735ebb..73c2289 100644
+--- a/arch/arm/mach-imx/platsmp.c
++++ b/arch/arm/mach-imx/platsmp.c
+@@ -41,6 +41,7 @@ u32 g_diag_reg;
+ static void __iomem *scu_base;
+ static void __iomem *dcfg_base;
+ static void __iomem *scfg_base;
++static void __iomem *dcsr_rcpm2_base;
+ static u32 secondary_pre_boot_entry;
+ 
+ static struct map_desc scu_io_desc __initdata = {
+@@ -150,8 +151,25 @@ static int ls1021a_secondary_iomap(void)
+ 		goto scfg_err;
+ 	}
+ 
++	np = of_find_compatible_node(NULL, NULL, "fsl,ls1021a-dcsr-rcpm");
++	if (!np) {
++		pr_err("%s: failed to find dcsr node.\n", __func__);
++		ret = -EINVAL;
++		goto dcsr_err;
++	}
++
++	dcsr_rcpm2_base = of_iomap(np, 1);
++	of_node_put(np);
++	if (!dcsr_rcpm2_base) {
++		pr_err("%s: failed to map dcsr.\n", __func__);
++		ret = -ENOMEM;
++		goto dcsr_err;
++	}
++
+ 	return 0;
+ 
++dcsr_err:
++	iounmap(scfg_base);
+ scfg_err:
+ 	iounmap(dcfg_base);
+ dcfg_err:
+@@ -176,7 +194,7 @@ static int ls1021a_reset_secondary(unsigned int cpu)
+ {
+ 	u32 tmp;
+ 
+-	if (!scfg_base || !dcfg_base)
++	if (!scfg_base || !dcfg_base || !dcsr_rcpm2_base)
+ 		return -ENOMEM;
+ 
+ 	writel_relaxed(secondary_pre_boot_entry,
+@@ -190,6 +208,15 @@ static int ls1021a_reset_secondary(unsigned int cpu)
+ 	iowrite32be(0x80000000, scfg_base + SCFG_CORESRENCR);
+ 	iowrite32be(0x80000000, scfg_base +
+ 				SCFG_CORE0_SFT_RST + STRIDE_4B * cpu);
++	mdelay(10);
++
++	/* LS1021a errata. after reset, core state machine registers
++	 * need to force release manually.
++	 */
++	iowrite32be(0x00000080, dcsr_rcpm2_base + DCSR_RCPM2_DEBUG1);
++	iowrite32be(0x00000080, dcsr_rcpm2_base + DCSR_RCPM2_DEBUG2);
++	iowrite32be(0, dcsr_rcpm2_base + DCSR_RCPM2_DEBUG1);
++	iowrite32be(0, dcsr_rcpm2_base + DCSR_RCPM2_DEBUG2);
+ 
+ 	/* Release secondary core */
+ 	iowrite32be(1 << cpu, dcfg_base + DCFG_CCSR_BRR);
+-- 
+2.1.0.27.g96db324
+
