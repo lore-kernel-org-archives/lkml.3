@@ -1,127 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184AbaKXE7X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 23:59:23 -0500
-Received: from regular1.263xmail.com ([211.150.99.135]:52415 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946AbaKXE7U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 23:59:20 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <11f554fb09de73b10b7382fb24330f3e>
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
-Cc: zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dmitry.torokhov@gmail.com, huangtao@rock-chips.com,
-        fzf@rock-chips.com, caesar.wang@rock-chips.com
-Subject: [PATCH v19 1/5] dt-bindings: document Rockchip thermal
-Date: Mon, 24 Nov 2014 12:58:58 +0800
-Message-Id: <1416805142-27304-2-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416805142-27304-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1416805142-27304-1-git-send-email-caesar.wang@rock-chips.com>
+	id S1750936AbaKXFJM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 00:09:12 -0500
+Received: from gate.crashing.org ([63.228.1.57]:54107 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750736AbaKXFJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 00:09:10 -0500
+Message-ID: <1416805719.4998.15.camel@kernel.crashing.org>
+Subject: linuxppc-dev list <linuxppc-dev@ozlabs.org>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michael Ellerman <mpe@ellerman.id.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        Alex Deucher <alexdeucher@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Date: Mon, 24 Nov 2014 16:08:39 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This add the necessary binding documentation for the thermal
-found on Rockchip SoCs
+Hi Linus !
 
-Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- .../bindings/thermal/rockchip-thermal.txt          | 68 ++++++++++++++++++++++
- 1 file changed, 68 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+This series fix a nasty issue with radeon adapters on powerpc servers,
+it's all CC'ed stable and has the relevant maintainers ack's/reviews.
 
-diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-new file mode 100644
-index 0000000..ef802de
---- /dev/null
-+++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-@@ -0,0 +1,68 @@
-+* Temperature Sensor ADC (TSADC) on rockchip SoCs
-+
-+Required properties:
-+- compatible : "rockchip,rk3288-tsadc"
-+- reg : physical base address of the controller and length of memory mapped
-+	region.
-+- interrupts : The interrupt number to the cpu. The interrupt specifier format
-+	       depends on the interrupt controller.
-+- clocks : Must contain an entry for each entry in clock-names.
-+- clock-names : Shall be "tsadc" for the converter-clock, and "apb_pclk" for
-+		the peripheral clock.
-+- resets : Must contain an entry for each entry in reset-names.
-+	   See ../reset/reset.txt for details.
-+- reset-names : Must include the name "tsadc-apb".
-+- #thermal-sensor-cells : Should be 1. See ./thermal.txt for a description.
-+- rockchip,hw-tshut-temp : The hardware-controlled shutdown temperature value.
-+- rockchip,hw-tshut-mode : The hardware-controlled shutdown mode 0:CRU 1:GPIO.
-+- rockchip,hw-tshut-polarity : The hardware-controlled active polarity 0:LOW
-+			       1:HIGH.
-+
-+Exiample:
-+tsadc: tsadc@ff280000 {
-+	compatible = "rockchip,rk3288-tsadc";
-+	reg = <0xff280000 0x100>;
-+	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-+	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-+	clock-names = "tsadc", "apb_pclk";
-+	resets = <&cru SRST_TSADC>;
-+	reset-names = "tsadc-apb";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&otp_out>;
-+	#thermal-sensor-cells = <1>;
-+	rockchip,hw-tshut-temp = <95000>;
-+	rockchip,hw-tshut-mode = <0>;
-+	rockchip,hw-tshut-polarity = <0>;
-+};
-+
-+Example: referring to thermal sensors:
-+thermal-zones {
-+	cpu_thermal: cpu_thermal {
-+		polling-delay-passive = <1000>; /* milliseconds */
-+		polling-delay = <5000>; /* milliseconds */
-+
-+		/* sensor	ID */
-+		thermal-sensors = <&tsadc	1>;
-+
-+		trips {
-+			cpu_alert0: cpu_alert {
-+				temperature = <70000>; /* millicelsius */
-+				hysteresis = <2000>; /* millicelsius */
-+				type = "passive";
-+			};
-+			cpu_crit: cpu_crit {
-+				temperature = <90000>; /* millicelsius */
-+				hysteresis = <2000>; /* millicelsius */
-+				type = "critical";
-+			};
-+		};
-+
-+		cooling-maps {
-+			map0 {
-+				trip = <&cpu_alert0>;
-+				cooling-device =
-+				    <&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
-+			};
-+		};
-+	};
-+};
--- 
-1.9.1
+Basically, some (radeon) adapters have issues with MSI addresses above
+1T (only support 40-bits). We had powerpc specific quirk but it only
+listed a specific revision of an adapter that we shipped with our
+machines and didn't properly handle the audio function which some distros
+enable nowadays.
+
+So we made the quirk generic and fixed both the graphic and audio drivers
+properly to use it.
+
+Without that, ppc64 server machines will crash at boot with a radeon adapter.
+
+Note: This has been brewing for a while, it just needed a last respin which
+got delayed due to us moving ozlabs to a new location in town and other such
+things taking priority.
+
+Cheers,
+Ben.
+
+The following changes since commit 5d01410fe4d92081f349b013a2e7a95429e4f2c9:
+
+  Linux 3.18-rc6 (2014-11-23 15:25:20 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git 
+
+for you to fetch changes up to 31345e1a071e4e5f2fa8b6be5ca7d1cbce20cfca:
+
+  powerpc/pci: Remove unused force_32bit_msi quirk (2014-11-24 14:36:02 +1100)
+
+----------------------------------------------------------------
+Benjamin Herrenschmidt (6):
+      PCI/MSI: Add device flag indicating that 64-bit MSIs don't work
+      gpu/radeon: Set flag to indicate broken 64-bit MSI
+      sound/radeon: Move 64-bit MSI quirk from arch to driver
+      powerpc/powernv: Honor the generic "no_64bit_msi" flag
+      powerpc/pseries: Honor the generic "no_64bit_msi" flag
+      powerpc/pci: Remove unused force_32bit_msi quirk
+
+Takashi Iwai (1):
+      ALSA: hda - Limit 40bit DMA for AMD HDMI controllers
+
+ arch/powerpc/include/asm/pci-bridge.h     |  2 --
+ arch/powerpc/kernel/pci_64.c              | 10 ----------
+ arch/powerpc/platforms/powernv/pci-ioda.c |  3 +--
+ arch/powerpc/platforms/powernv/pci.c      |  3 +--
+ arch/powerpc/platforms/pseries/msi.c      |  2 +-
+ drivers/gpu/drm/radeon/radeon_irq_kms.c   | 10 ++++++++++
+ drivers/pci/msi.c                         | 26 ++++++++++++++++++++++++++
+ include/linux/pci.h                       |  1 +
+ sound/pci/hda/hda_intel.c                 | 24 +++++++++++++++++++-----
+ sound/pci/hda/hda_priv.h                  |  1 +
+ 10 files changed, 60 insertions(+), 22 deletions(-)
 
 
