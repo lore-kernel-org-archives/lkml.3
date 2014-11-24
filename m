@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112AbaKXOUQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:20:16 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:59266 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754087AbaKXOUO (ORCPT
+	id S1753604AbaKXOXR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:23:17 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:45428 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003AbaKXOXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:20:14 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: akpm@linux-foundation.org, "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [RFC PATCH] mm/thp: Always allocate transparent hugepages on local node
-Date: Mon, 24 Nov 2014 19:49:51 +0530
-Message-Id: <1416838791-30023-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 2.1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112414-0025-0000-0000-0000009211AD
+	Mon, 24 Nov 2014 09:23:15 -0500
+Message-ID: <54733F34.5080405@imgtec.com>
+Date: Mon, 24 Nov 2014 14:22:44 +0000
+From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Andy Yan <andy.yan@rock-chips.com>, <airlied@linux.ie>, <heiko@sntech.de>,
+        <fabio.estevam@freescale.com>, <rmk+kernel@arm.linux.org.uk>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
+        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
+        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Lucas Stach <l.stach@pengutronix.de>, <djkurtz@google.com>,
+        <ykk@rock-chips.com>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>, <devel@driverdev.osuosl.org>,
+        <devicetree@vger.kernel.org>, <linux-rockchip@lists.infradead.org>,
+        <jay.xu@rock-chips.com>, Pawel Moll <pawel.moll@arm.com>,
+        <mark.yao@rock-chips.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v12 0/11] dw-hdmi: convert imx hdmi to bridge/dw_hdmi
+References: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com> <1416221635-12797-1-git-send-email-andy.yan@rock-chips.com> <54733DF3.7020609@rock-chips.com>
+In-Reply-To: <54733DF3.7020609@rock-chips.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [192.168.154.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This make sure that we try to allocate hugepages from local node. If
-we can't we fallback to small page allocation based on
-mempolicy. This is based on the observation that allocating pages
-on local node is more beneficial that allocating hugepages on remote node.
+Hi Andy,
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
-NOTE:
-I am not sure whether we want this to be per system configurable ? If not
-we could possibly remove alloc_hugepage_vma.
+On 24/11/14 14:17, Andy Yan wrote:
+> Hi ZubairLK, Russel King, Greg Kroah-Hartman , Philipp Zabel and Daniel:
+>    Do you have any further opinions or suggestions about the
+> the current patch set?
 
- mm/huge_memory.c | 14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+I have reviewed the patches as much as I could.
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index de984159cf0b..b309705e7e96 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -775,6 +775,12 @@ static inline struct page *alloc_hugepage_vma(int defrag,
- 			       HPAGE_PMD_ORDER, vma, haddr, nd);
- }
- 
-+static inline struct page *alloc_hugepage_exact_node(int node, int defrag)
-+{
-+	return alloc_pages_exact_node(node, alloc_hugepage_gfpmask(defrag, 0),
-+				      HPAGE_PMD_ORDER);
-+}
-+
- /* Caller must hold page table lock. */
- static bool set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
- 		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd,
-@@ -830,8 +836,8 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		}
- 		return 0;
- 	}
--	page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
--			vma, haddr, numa_node_id(), 0);
-+	page = alloc_hugepage_exact_node(numa_node_id(),
-+					 transparent_hugepage_defrag(vma));
- 	if (unlikely(!page)) {
- 		count_vm_event(THP_FAULT_FALLBACK);
- 		return VM_FAULT_FALLBACK;
-@@ -1120,8 +1126,8 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- alloc:
- 	if (transparent_hugepage_enabled(vma) &&
- 	    !transparent_hugepage_debug_cow())
--		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
--					      vma, haddr, numa_node_id(), 0);
-+		new_page = alloc_hugepage_exact_node(numa_node_id(),
-+					     transparent_hugepage_defrag(vma));
- 	else
- 		new_page = NULL;
- 
--- 
-2.1.0
+They look good to me.
 
+But I don't know the inner details of DRM to be able to comment further.
+
+Please do cc me in further patches.
+
+Also, my mail client makes these patches look like the new series gets cascaded in the older patch 8 series.
+
+It could be just my thunderbird. But please start a new thread when you send a new series.
+
+Thank-you
+ZubairLK
+
+> On 2014年11月17日 18:53, Andy Yan wrote:
+>> We found Freescale imx6 and Rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
+>> use the interface compatible Designware HDMI IP, but they also have some
+>> lightly differences, such as phy pll configuration, register width(imx hdmi
+>> register is one byte, but rk3288 is 4 bytes width and can only be accessed
+>> by word), 4K support(imx6 doesn't support 4k, but rk3288 does), and HDMI2.0
+>> support.
