@@ -1,194 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217AbaKXRKK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 12:10:10 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:53089 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367AbaKXRKH (ORCPT
+	id S1753868AbaKXRMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 12:12:36 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:37371 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842AbaKXRMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 12:10:07 -0500
-Message-ID: <54736667.7080402@linaro.org>
-Date: Mon, 24 Nov 2014 17:09:59 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-CC: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>
-Subject: Re: [PATCH 3.18-rc3 v8 0/4] arm: Implement arch_trigger_all_cpu_backtrace
-References: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org> <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
-In-Reply-To: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
-Content-Type: text/plain; charset=windows-1252
+	Mon, 24 Nov 2014 12:12:34 -0500
+Message-ID: <1416849148.4921.0.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [Keyrings] [PATCH 2/5] X.509: Support X.509 lookup by
+ Issuer+Serial form AuthorityKeyIdentifier
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: mmarek@suse.cz, keyrings@linux-nfs.org, d.kasatkin@samsung.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, vgoyal@redhat.com
+Date: Mon, 24 Nov 2014 12:12:28 -0500
+In-Reply-To: <537.1416848115@warthog.procyon.org.uk>
+References: <1416830320.25352.9.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <20141120165351.5264.61930.stgit@warthog.procyon.org.uk>
+	 <20141120165414.5264.95354.stgit@warthog.procyon.org.uk>
+	 <1416787243.9616.4.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <537.1416848115@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112417-0013-0000-0000-0000067CD452
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/11/14 12:35, Daniel Thompson wrote:
-> Hi Thomas, Hi Jason,
+On Mon, 2014-11-24 at 16:55 +0000, David Howells wrote: 
+> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 > 
->   [Today I was *planning* to ask if patches 1 & 2 are OK for the irqchip
->   tree. However just to be on the safe side I ran some build tests and
->   they picked up something I overlooked last time. So instead of a poke
->   I've put out a new patchset instead. Just to be sure I ran some build
->   tests on the just patch 1 & 2 on their own. I couldn't find any
->   mid-series build regressions so taking just the first two patches
->   should present no problems.]
+> > Don't assume that the issuer & serialNumber are specified.
+> 
+> Bah...  I didn't assume, I just did it wrong.
+> 
+> > +#define DEBUG 1
+> 
+> Shouldn't be in the patch.
+> 
+> > +        if (id) {
+> 
+> Tab, not spaces.
+> 
+> I'll fix these up and merge your patch into mine to avoid the issues coming
+> out in bisection.
 
-Are there any comments on patches 1 & 2?
+Thanks!
 
-
-Daniel.
-
-> 
-> This patchset modifies the GIC driver to allow it, on supported
-> platforms, to route IPI interrupts to FIQ and uses this feature to
-> implement arch_trigger_all_cpu_backtrace for arm.
-> 
-> On platforms not capable of supporting FIQ the signal to generate a
-> backtrace we fall back to using IRQ for propagation instead (relying on
-> a timeout to avoid wedging the CPU requesting the backtrace if other
-> CPUs are not responsive).
-> 
-> It has been tested on two systems capable of supporting grouping
-> (Freescale i.MX6 and STiH416) and two that do not (vexpress-a9 and
-> Qualcomm Snapdragon 600).
-> 
-> v8:
-> 
-> * Fixed build on arm64 causes by a spurious include file in irq-gic.c.
-> 
-> v7-2 (accidentally released twice with same number):
-> 
-> * Fixed boot regression on vexpress-a9 (reported by Russell King).
-> 
-> * Rebased on v3.18-rc3; removed one patch from set that is already
->   included in mainline.
-> 
-> * Dropped arm64/fiq.h patch from the set (still useful but not related
->   to issuing backtraces).
-> 
-> v7:
-> 
-> * Re-arranged code within the patch series to fix a regression
->   introduced midway through the series and corrected by a later patch
->   (testing by Olof's autobuilder). Tested offending patch in isolation
->   using defconfig identified by the autobuilder.
-> 
-> v6:
-> 
-> * Renamed svc_entry's call_trace argument to just trace (example code
->   from Russell King).
-> 
-> * Fixed mismatched ENDPROC() in __fiq_abt (example code from Russell
->   King).
-> 
-> * Modified usr_entry to optional avoid calling into the trace code and
->   used this in FIQ entry from usr path. Modified corresponding exit code
->   to avoid calling into trace code and the scheduler (example code from
->   Russell King).
-> 
-> * Ensured the default FIQ register state is restored when the default
->   FIQ handler is reinstalled (example code from Russell King).
-> 
-> * Renamed no_fiq_insn to dfl_fiq_insn to reflect the effect of adopting
->   a default FIQ handler.
-> 
-> * Re-instated fiq_safe_migration_lock and associated logic in
->   gic_raise_softirq(). gic_raise_softirq() is called by wake_up_klogd()
->   in the console unlock logic.
-> 
-> v5:
-> 
-> * Rebased on 3.17-rc4.
-> 
-> * Removed a spurious line from the final "glue it together" patch
->   that broke the build.
-> 
-> v4:
-> 
-> * Replaced push/pop with stmfd/ldmfd respectively (review of Nicolas
->   Pitre).
-> 
-> * Really fix bad pt_regs pointer generation in __fiq_abt.
-> 
-> * Remove fiq_safe_migration_lock and associated logic in
->   gic_raise_softirq() (review of Russell King)
-> 
-> * Restructured to introduce the default FIQ handler first, before the
->   new features (review of Russell King).
-> 
-> v3:
-> 
-> * Removed redundant header guards from arch/arm64/include/asm/fiq.h
->   (review of Catalin Marinas).
-> 
-> * Moved svc_exit_via_fiq macro to entry-header.S (review of Nicolas
->   Pitre).
-> 
-> v2:
-> 
-> * Restructured to sit nicely on a similar FYI patchset from Russell
->   King. It now effectively replaces the work in progress final patch
->   with something much more complete.
-> 
-> * Implemented (and tested) a Thumb-2 implementation of svc_exit_via_fiq
->   (review of Nicolas Pitre)
-> 
-> * Dropped the GIC group 0 workaround patch. The issue of FIQ interrupts
->   being acknowledged by the IRQ handler does still exist but should be
->   harmless because the IRQ handler will still wind up calling
->   ipi_cpu_backtrace().
-> 
-> * Removed any dependency on CONFIG_FIQ; all cpu backtrace effectively
->   becomes a platform feature (although the use of non-maskable
->   interrupts to implement it is best effort rather than guaranteed).
-> 
-> * Better comments highlighting usage of RAZ/WI registers (and parts of
->   registers) in the GIC code.
-> 
-> Changes *before* v1:
-> 
-> * This patchset is a hugely cut-down successor to "[PATCH v11 00/19]
->   arm: KGDB NMI/FIQ support". Thanks to Thomas Gleixner for suggesting
->   the new structure. For historic details see:
->         https://lkml.org/lkml/2014/9/2/227
-> 
-> * Fix bug in __fiq_abt (no longer passes a bad struct pt_regs value).
->   In fixing this we also remove the useless indirection previously
->   found in the fiq_handler macro.
-> 
-> * Make default fiq handler "always on" by migrating from fiq.c to
->   traps.c and replace do_unexp_fiq with the new handler (review
->   of Russell King).
-> 
-> * Add arm64 version of fiq.h (review of Russell King)
-> 
-> * Removed conditional branching and code from irq-gic.c, this is
->   replaced by much simpler code that relies on the GIC specification's
->   heavy use of read-as-zero/write-ignored (review of Russell King)
-> 
-> 
-> Daniel Thompson (4):
->   irqchip: gic: Make gic_raise_softirq() FIQ-safe
->   irqchip: gic: Introduce plumbing for IPI FIQ
->   ARM: add basic support for on-demand backtrace of other CPUs
->   arm: smp: Handle ipi_cpu_backtrace() using FIQ (if available)
-> 
->  arch/arm/include/asm/irq.h      |   5 ++
->  arch/arm/include/asm/smp.h      |   3 +
->  arch/arm/kernel/smp.c           |  64 +++++++++++++++
->  arch/arm/kernel/traps.c         |   8 +-
->  drivers/irqchip/irq-gic.c       | 170 +++++++++++++++++++++++++++++++++++++---
->  include/linux/irqchip/arm-gic.h |   8 ++
->  6 files changed, 245 insertions(+), 13 deletions(-)
-> 
-> --
-> 1.9.3
-> 
+Mimi
 
