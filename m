@@ -1,128 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516AbaKXOlk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:41:40 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38022 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932152AbaKXOfp (ORCPT
+	id S1754338AbaKXOlw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:41:52 -0500
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:50440 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752909AbaKXOlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:35:45 -0500
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Robert Richter <robert.richter@caviumnetworks.com>,
-        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-Subject: [PATCH v3 08/13] irqchip: GICv3: ITS: device allocation and configuration
-Date: Mon, 24 Nov 2014 14:35:15 +0000
-Message-Id: <1416839720-18400-9-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
-References: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
+	Mon, 24 Nov 2014 09:41:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141121123719.GH23177@e105550-lin.cambridge.arm.com>
+References: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org>
+ <1415033687-23294-9-git-send-email-vincent.guittot@linaro.org> <20141121123719.GH23177@e105550-lin.cambridge.arm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Mon, 24 Nov 2014 15:41:28 +0100
+Message-ID: <CAKfTPtBtdnHUYjbrUiqED7Mr2d4HGB1YcyARED6Zx+rskZRsBw@mail.gmail.com>
+Subject: Re: [PATCH v9 08/10] sched: replace capacity_factor by usage
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "kamalesh@linux.vnet.ibm.com" <kamalesh@linux.vnet.ibm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "riel@redhat.com" <riel@redhat.com>, "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ITS has a notion of "device" that can write to it in order to
-generate an interrupt.
+On 21 November 2014 at 13:37, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> On Mon, Nov 03, 2014 at 04:54:45PM +0000, Vincent Guittot wrote:
 
-Conversly, the driver maintains a per-ITS list of devices, together
-with their configuration information, and uses this to configure
-the HW.
+[snip]
 
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
----
- drivers/irqchip/irq-gic-v3-its.c | 74 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 74 insertions(+)
+>>                  */
+>>                 if (prefer_sibling && sds->local &&
+>> -                   sds->local_stat.group_has_free_capacity)
+>> -                       sgs->group_capacity_factor = min(sgs->group_capacity_factor, 1U);
+>> +                   group_has_capacity(env, &sds->local_stat) &&
+>> +                   (sgs->sum_nr_running > 1)) {
+>> +                       sgs->group_no_capacity = 1;
+>> +                       sgs->group_type = group_overloaded;
+>> +               }
+>
+> I'm still a bit confused about SD_PREFER_SIBLING. What is the flag
+> supposed to do and why?
 
-diff --git a/drivers/irqchip/irq-gic-v3-its.c b/drivers/irqchip/irq-gic-v3-its.c
-index 03f9831..d687fd4 100644
---- a/drivers/irqchip/irq-gic-v3-its.c
-+++ b/drivers/irqchip/irq-gic-v3-its.c
-@@ -981,3 +981,77 @@ static void its_cpu_init_collection(void)
- 
- 	spin_unlock(&its_lock);
- }
-+
-+static struct its_device *its_find_device(struct its_node *its, u32 dev_id)
-+{
-+	struct its_device *its_dev = NULL, *tmp;
-+
-+	raw_spin_lock(&its->lock);
-+
-+	list_for_each_entry(tmp, &its->its_device_list, entry) {
-+		if (tmp->device_id == dev_id) {
-+			its_dev = tmp;
-+			break;
-+		}
-+	}
-+
-+	raw_spin_unlock(&its->lock);
-+
-+	return its_dev;
-+}
-+
-+static struct its_device *its_create_device(struct its_node *its, u32 dev_id,
-+					    int nvecs)
-+{
-+	struct its_device *dev;
-+	unsigned long *lpi_map;
-+	void *itt;
-+	int lpi_base;
-+	int nr_lpis;
-+	int cpu;
-+	int sz;
-+
-+	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-+	sz = nvecs * its->ite_size;
-+	sz = max(sz, ITS_ITT_ALIGN) + ITS_ITT_ALIGN - 1;
-+	itt = kmalloc(sz, GFP_KERNEL);
-+	lpi_map = its_lpi_alloc_chunks(nvecs, &lpi_base, &nr_lpis);
-+
-+	if (!dev || !itt || !lpi_map) {
-+		kfree(dev);
-+		kfree(itt);
-+		kfree(lpi_map);
-+		return NULL;
-+	}
-+
-+	dev->its = its;
-+	dev->itt = itt;
-+	dev->nr_ites = nvecs;
-+	dev->lpi_map = lpi_map;
-+	dev->lpi_base = lpi_base;
-+	dev->nr_lpis = nr_lpis;
-+	dev->device_id = dev_id;
-+	INIT_LIST_HEAD(&dev->entry);
-+
-+	raw_spin_lock(&its->lock);
-+	list_add(&dev->entry, &its->its_device_list);
-+	raw_spin_unlock(&its->lock);
-+
-+	/* Bind the device to the first possible CPU */
-+	cpu = cpumask_first(cpu_online_mask);
-+	dev->collection = &its->collections[cpu];
-+
-+	/* Map device to its ITT */
-+	its_send_mapd(dev, 1);
-+
-+	return dev;
-+}
-+
-+static void its_free_device(struct its_device *its_dev)
-+{
-+	raw_spin_lock(&its_dev->its->lock);
-+	list_del(&its_dev->entry);
-+	raw_spin_unlock(&its_dev->its->lock);
-+	kfree(its_dev->itt);
-+	kfree(its_dev);
-+}
--- 
-2.1.3
+The goal is to spread tasks across the group even if the the latter is
+not overloaded. for SMT level, the goal is to have 1 task per core
+before 1 task per HW thread
 
+>
+> It looks like a weak load balancing bias attempting to consolidate tasks
+> on domains with spare capacity. It does so by marking non-local groups
+> as overloaded regardless of their actual load if the local group has
+> spare capacity. Correct?
+>
+> In patch 9 this behaviour is enabled for SMT level domains, which
+> implies that tasks will be consolidated in MC groups, that is we prefer
+> multiple tasks on sibling cpus (hw threads). I must be missing something
+> essential. I was convinced that we wanted to avoid using sibling cpus on
+> SMT systems as much as possible?
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
