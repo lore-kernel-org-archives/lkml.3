@@ -1,111 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234AbaKXQP7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 11:15:59 -0500
-Received: from mail-oi0-f50.google.com ([209.85.218.50]:36120 "EHLO
-	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477AbaKXQP4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 11:15:56 -0500
+	id S1754288AbaKXQQw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 11:16:52 -0500
+Received: from 8bytes.org ([81.169.241.247]:39723 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753943AbaKXQQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 11:16:51 -0500
+Date: Mon, 24 Nov 2014 17:16:48 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Thierry Reding <treding@nvidia.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Stephen Warren <swarren@nvidia.com>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Olav Haugan <ohaugan@codeaurora.org>
+Subject: Re: linux-next: manual merge of the iommu tree with the tegra tree
+Message-ID: <20141124161648.GI3762@8bytes.org>
+References: <20141124153310.61fc2202@canb.auug.org.au>
+ <20141124093237.GC19045@ulmo.nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <20141124155422.GH20705@saruman>
-References: <cover.1416547297.git.kiran.kumar@linaro.org> <7a23b5f0af4463aea85384b6a67678b9c41b9d2d.1416547297.git.kiran.kumar@linaro.org>
- <20141121151105.GC7508@saruman> <CA+RfmHZo4FuH6-Z8+VFY7Ao5QVD-VmfdCm17ZrB6f7J8Xpo-Aw@mail.gmail.com>
- <20141124143819.GB20705@saruman> <CAO_48GFj2moODXtB1W9t6tbuvcyF2WgnakSDrbQRzPi+u=mc=g@mail.gmail.com>
- <20141124155422.GH20705@saruman>
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Mon, 24 Nov 2014 21:45:35 +0530
-Message-ID: <CAO_48GFK_a=d+jUMR8-eqRVy1V_hSt8hKs2uOA00zzxstgV7pA@mail.gmail.com>
-Subject: Re: [PATCH v1 2/3] usb: phy: Handle per-PHY event for connect and
- disconnect events
-To: balbi <balbi@ti.com>
-Cc: Kiran Raparthy <kiran.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        =?UTF-8?B?QXJ2ZSBIau+/vW5uZXbvv71n?= <arve@android.com>,
-        Benoit Goby <benoit@android.com>, Todd Poynor <toddpoynor@google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141124093237.GC19045@ulmo.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 November 2014 at 21:24, Felipe Balbi <balbi@ti.com> wrote:
-> On Mon, Nov 24, 2014 at 09:19:09PM +0530, Sumit Semwal wrote:
->> Hi Felipe,
->>
->> On 24 November 2014 at 20:08, Felipe Balbi <balbi@ti.com> wrote:
->> > Hi,
->> >
->> > On Fri, Nov 21, 2014 at 09:13:00PM +0530, Kiran Raparthy wrote:
->> >> On 21 November 2014 20:41, Felipe Balbi <balbi@ti.com> wrote:
->> >> > On Fri, Nov 21, 2014 at 11:31:21AM +0530, Kiran Raparthy wrote:
->> >> >> usb: phy: Handle per-PHY event for connnect and disconnect events
->> >> >>
->> >> >> When usb is connected and enumerated in device mode or when usb is
->> >> >> disconnected,call usb_phy_set_event from phy drivers to handle per-PHY event.
->> >> >>
->> >> >> Cc: Felipe Balbi <balbi@ti.com>
->> >> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> >> >> Cc: linux-kernel@vger.kernel.org
->> >> >> Cc: linux-usb@vger.kernel.org
->> >> >> Cc: Android Kernel Team <kernel-team@android.com>
->> >> >> Cc: John Stultz <john.stultz@linaro.org>
->> >> >> Cc: Sumit Semwal <sumit.semwal@linaro.org>
->> >> >> Cc: Arve Hj�nnev�g <arve@android.com>
->> >> >> Cc: Benoit Goby <benoit@android.com>
->> >> >> [Original patch in Android from Todd]
->> >> >> Cc: Todd Poynor <toddpoynor@google.com>
->> >> >> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
->> >> >
->> >> > this patch doesn't apply, please rebase entire series on my testing/next.
->> >
->> > your rebased version didn't apply either. Can you make sure you're
->> > rebasing on top of my today's testing/next branch ?
->> >
->> I just verified that I am able to apply both this patch (and the next
->> one - so 2/3 and 3/3) on your testing/next branch - just to make sure,
->> this is the git/branch right?
->>
->> https://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
->> branch:testing/next
->
-> that's the correct branch, but here's what I get:
+Hi Thierry,
 
-That's very odd - I pulled your branch for the first time about 5
-minutes before I sent the mail? perhaps local branch updates?
->
-> checking file drivers/usb/phy/phy-ab8500-usb.c
-> Hunk #1 FAILED at 447.
-> Hunk #2 succeeded at 459 (offset -2 lines).
-> Hunk #3 succeeded at 502 (offset -2 lines).
-> Hunk #4 succeeded at 527 (offset -2 lines).
-> Hunk #5 FAILED at 589.
-> Hunk #6 succeeded at 600 (offset -2 lines).
-> Hunk #7 succeeded at 629 (offset -2 lines).
-> Hunk #8 succeeded at 652 (offset -2 lines).
-> Hunk #9 FAILED at 701.
-> Hunk #10 succeeded at 712 (offset -2 lines).
-> Hunk #11 succeeded at 740 (offset -2 lines).
-> Hunk #12 FAILED at 786.
-> Hunk #13 succeeded at 801 (offset -2 lines).
-> Hunk #14 succeeded at 828 (offset -2 lines).
-> 4 out of 14 hunks FAILED
-> checking file drivers/usb/phy/phy-gpio-vbus-usb.c
-> checking file drivers/usb/phy/phy-mv-usb.c
-> checking file drivers/usb/phy/phy-tahvo.c
-> Hunk #1 FAILED at 87.
-> Hunk #2 FAILED at 105.
-> 2 out of 2 hunks FAILED
->
-> cheers
->
-> --
-> balbi
+On Mon, Nov 24, 2014 at 10:32:38AM +0100, Thierry Reding wrote:
+> This conflict is uglier than I had anticipated. Perhaps it would make
+> sense to pull in a stable IOMMU branch into Tegra so that I can resolve
+> the conflict on top of that?
+> 
+> Joerg, do you have a stable branch containing the above commits that you
+> could provide for me to pull into the Tegra tree?
+
+Yes, you can pull in the core branch from the iommu-tree. It should
+contain the conflicting patch.
 
 
-Best,
-Sumit.
+	Joerg
+
