@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236AbaKXO2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:28:45 -0500
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:56982 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717AbaKXO2m (ORCPT
+	id S1754264AbaKXO3z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:29:55 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:36534 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892AbaKXO3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:28:42 -0500
-Date: Mon, 24 Nov 2014 09:28:25 -0500 (EST)
-From: Pankaj Gupta <pagupta@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, jasowang@redhat.com, dgibson@redhat.com,
-        vfalico@gmail.com, edumazet@google.com, vyasevic@redhat.com,
-        hkchu@google.com, wuzhy@linux.vnet.ibm.com, xemul@parallels.com,
-        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
-        stephen@networkplumber.org, jiri@resnulli.us,
-        sergei shtylyov <sergei.shtylyov@cogentembedded.com>
-Message-ID: <1253769917.3166193.1416839305146.JavaMail.zimbra@redhat.com>
-In-Reply-To: <20141124080243.GD6286@redhat.com>
-References: <20141123104623.GA31915@redhat.com> <20141123.134323.1154795102254868842.davem@davemloft.net> <20141123203032.GA6286@redhat.com> <20141123.202321.1426718936320546377.davem@davemloft.net> <20141124080243.GD6286@redhat.com>
-Subject: Re: [PATCH net-net 0/4] Increase the limit of tuntap queues
+	Mon, 24 Nov 2014 09:29:52 -0500
+Date: Mon, 24 Nov 2014 22:29:46 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v3 4/7] crypto: AF_ALG: add AEAD support
+Message-ID: <20141124142945.GB31469@gondor.apana.org.au>
+References: <4088013.2O8zCP0xXa@tachyon.chronox.de>
+ <2175035.5IWBGpA0Ko@tachyon.chronox.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF23 (Linux)/8.0.6_GA_5922)
-Thread-Topic: Increase the limit of tuntap queues
-Thread-Index: vIYOeM7OP9Cnr8TAAAykzd3bW+uYXw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2175035.5IWBGpA0Ko@tachyon.chronox.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 21, 2014 at 06:32:16AM +0100, Stephan Mueller wrote:
+> This patch adds the AEAD support for AF_ALG.
+> 
+> The AEAD implementation uses the entire memory handling and
+> infrastructure of the existing skcipher implementation.
+> 
+> To use AEAD, the user space consumer has to use the salg_type named
+> "aead". The AEAD extension only uses the bind callback as the key
+> differentiator. The previously added functions that select whether to
+> use AEAD or ablkcipher crypto API functions depend on the TFM type
+> allocated during the bind() call.
+> 
+> The addition of AEAD brings a bit of overhead to calculate the size of
+> the ciphertext, because the AEAD implementation of the kernel crypto API
+> makes implied assumption on the location of the authentication tag. When
+> performing an encryption, the tag will be added to the created
+> ciphertext (note, the tag is placed adjacent to the ciphertext). For
+> decryption, the caller must hand in the ciphertext with the tag appended
+> to the ciphertext. Therefore, the selection of the used memory
+> needs to add/subtract the tag size from the source/destination buffers
+> depending on the encryption type. The code is provided with comments
+> explainint when and how that operation is performed.
+> 
+> Note: The AF_ALG interface does not support zero length input data.
+> Such zero length input data may be used if one wants to access the hash
+> implementation of an AEAD directly (e.g. the GHASH of GCM or CMAC for
+> CCM). However, this is a use case that is not of interest. GHASH or
+> CMAC is directly available via the hash AF_ALG interface and we
+> therefore do not need to take precautions for this use case.
+> 
+> A fully working example using all aspects of AEAD is provided at
+> http://www.chronox.de/libkcapi.html
+> 
+> Signed-off-by: Stephan Mueller <smueller@chronox.de>
 
-> On Sun, Nov 23, 2014 at 08:23:21PM -0500, David Miller wrote:
-> > From: "Michael S. Tsirkin" <mst@redhat.com>
-> > Date: Sun, 23 Nov 2014 22:30:32 +0200
-> > 
-> > > qemu runs in the host, but it's unpriveledged: it gets
-> > > passed tun FDs by a priveledged daemon, and it only
-> > > has the rights to some operations,
-> > > in particular to attach and detach queues.
-> > > 
-> > > The assumption always was that this operation is safe
-> > > and can't make kernel run out of resources.
-> > 
-> > This creates a rather rediculous situation in my opinion.
-> > 
-> > Configuring a network device is a privileged operation, the daemon
-> > should be setting this thing up.
-> > 
-> > In no other context would we have to worry about something like this.
-> 
-> Right.  Jason corrected me.  I got it wrong:
-> what qemu does is TUNSETQUEUE and that needs to get a queue
-> that's already initialized by the daemon.
-> 
-> To create new queues daemon calls TUNSETIFF,
-> and that already can be used to create new devices,
-> so it's a priveledged operation.
-> 
-> This means it's safe to just drop the restriction,
-> exactly as you suggested originally.
+I appreciate the effort to share code, but shoe-horning AEAD into
+algif_skcipher is just too ugly.
 
-I will drop patch2 to add sysctl entry and and will send a v2 with other 
-patches.
+How about let's just start with a separate algif_aead and then
+add helpers to merge common code as applicable?
 
 Thanks,
-Pankaj
-
-> --
-> MST
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
