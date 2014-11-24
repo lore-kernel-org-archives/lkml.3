@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825AbaKXWgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 17:36:24 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:56558 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309AbaKXWeN (ORCPT
+	id S1751917AbaKXWho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 17:37:44 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:50767 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100AbaKXWeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 17:34:13 -0500
+	Mon, 24 Nov 2014 17:34:12 -0500
 From: Grant Likely <grant.likely@linaro.org>
 To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
         Wolfram Sang <wsa@the-dreams.de>,
         Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH v2 06/14] of/reconfig: Add debug output for OF_RECONFIG notifiers
-Date: Mon, 24 Nov 2014 22:33:34 +0000
-Message-Id: <1416868422-22103-7-git-send-email-grant.likely@linaro.org>
+Subject: [PATCH v2 05/14] of/reconfig: Add empty stubs for the of_reconfig methods
+Date: Mon, 24 Nov 2014 22:33:33 +0000
+Message-Id: <1416868422-22103-6-git-send-email-grant.likely@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416868422-22103-1-git-send-email-grant.likely@linaro.org>
 References: <1416868422-22103-1-git-send-email-grant.likely@linaro.org>
@@ -23,90 +23,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add some additional debug output to cover OF_RECONFIG notifier activity.
-At the same time, refactor the changeset debug output to use the same
-strings as the notifier debug output.
+To simplify subsystem setup code, make empty stubs for the
+of_reconfig_*() methods. This is particularly useful for registering and
+unregistering the notifiers so that it doesn't impact the flow of the
+subsystem setup code.
 
 Signed-off-by: Grant Likely <grant.likely@linaro.org>
 ---
- drivers/of/dynamic.c | 48 ++++++++++++++++++++++++++++++++----------------
- 1 file changed, 32 insertions(+), 16 deletions(-)
+ include/linux/of.h | 29 +++++++++++++++++++++++------
+ 1 file changed, 23 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/of/dynamic.c b/drivers/of/dynamic.c
-index 6659c39ab3aa..cc106529dca8 100644
---- a/drivers/of/dynamic.c
-+++ b/drivers/of/dynamic.c
-@@ -77,10 +77,38 @@ int of_reconfig_notifier_unregister(struct notifier_block *nb)
- }
- EXPORT_SYMBOL_GPL(of_reconfig_notifier_unregister);
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 8e3a264c869c..b59ee21933a4 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -324,11 +324,6 @@ struct of_prop_reconfig {
+ 	struct property		*old_prop;
+ };
  
-+#ifdef DEBUG
-+const char *action_names[] = {
-+	[OF_RECONFIG_ATTACH_NODE] = "ATTACH_NODE",
-+	[OF_RECONFIG_DETACH_NODE] = "DETACH_NODE",
-+	[OF_RECONFIG_ADD_PROPERTY] = "ADD_PROPERTY",
-+	[OF_RECONFIG_REMOVE_PROPERTY] = "REMOVE_PROPERTY",
-+	[OF_RECONFIG_UPDATE_PROPERTY] = "UPDATE_PROPERTY",
-+};
-+#endif
-+
- int of_reconfig_notify(unsigned long action, void *p)
- {
- 	int rc;
-+#ifdef DEBUG
-+	struct device_node *dn = p;
-+	struct of_prop_reconfig *pr = p;
-+
-+	switch (action) {
-+	case OF_RECONFIG_ATTACH_NODE:
-+	case OF_RECONFIG_DETACH_NODE:
-+		pr_debug("of/notify %-15s %s\n", action_names[action],
-+			dn->full_name);
-+		break;
-+	case OF_RECONFIG_ADD_PROPERTY:
-+	case OF_RECONFIG_REMOVE_PROPERTY:
-+	case OF_RECONFIG_UPDATE_PROPERTY:
-+		pr_debug("of/notify %-15s %s:%s\n", action_names[action],
-+			pr->dn->full_name, pr->prop->name);
-+		break;
+-extern int of_reconfig_notifier_register(struct notifier_block *);
+-extern int of_reconfig_notifier_unregister(struct notifier_block *);
+-extern int of_reconfig_notify(unsigned long, void *);
+-extern int of_reconfig_get_state_change(unsigned long action, void *arg);
+-
+ extern int of_attach_node(struct device_node *);
+ extern int of_detach_node(struct device_node *);
  
-+	}
-+#endif
- 	rc = blocking_notifier_call_chain(&of_reconfig_chain, action, p);
- 	return notifier_to_errno(rc);
- }
-@@ -431,27 +459,15 @@ static void __of_changeset_entry_dump(struct of_changeset_entry *ce)
+@@ -895,6 +890,11 @@ enum of_reconfig_change {
+ };
+ 
+ #ifdef CONFIG_OF_DYNAMIC
++extern int of_reconfig_notifier_register(struct notifier_block *);
++extern int of_reconfig_notifier_unregister(struct notifier_block *);
++extern int of_reconfig_notify(unsigned long, void *);
++extern int of_reconfig_get_state_change(unsigned long action, void *arg);
++
+ extern void of_changeset_init(struct of_changeset *ocs);
+ extern void of_changeset_destroy(struct of_changeset *ocs);
+ extern int of_changeset_apply(struct of_changeset *ocs);
+@@ -932,7 +932,24 @@ static inline int of_changeset_update_property(struct of_changeset *ocs,
  {
- 	switch (ce->action) {
- 	case OF_RECONFIG_ADD_PROPERTY:
--		pr_debug("%p: %s %s/%s\n",
--			ce, "ADD_PROPERTY   ", ce->np->full_name,
--			ce->prop->name);
--		break;
- 	case OF_RECONFIG_REMOVE_PROPERTY:
--		pr_debug("%p: %s %s/%s\n",
--			ce, "REMOVE_PROPERTY", ce->np->full_name,
--			ce->prop->name);
--		break;
- 	case OF_RECONFIG_UPDATE_PROPERTY:
--		pr_debug("%p: %s %s/%s\n",
--			ce, "UPDATE_PROPERTY", ce->np->full_name,
--			ce->prop->name);
-+		pr_debug("of/cset<%p> %-15s %s/%s\n", ce, action_names[ce->action],
-+			ce->np->full_name, ce->prop->name);
- 		break;
- 	case OF_RECONFIG_ATTACH_NODE:
--		pr_debug("%p: %s %s\n",
--			ce, "ATTACH_NODE    ", ce->np->full_name);
--		break;
- 	case OF_RECONFIG_DETACH_NODE:
--		pr_debug("%p: %s %s\n",
--			ce, "DETACH_NODE    ", ce->np->full_name);
-+		pr_debug("of/cset<%p> %-15s %s\n", ce, action_names[ce->action],
-+			ce->np->full_name);
- 		break;
- 	}
+ 	return of_changeset_action(ocs, OF_RECONFIG_UPDATE_PROPERTY, np, prop);
  }
+-#endif
++#else /* CONFIG_OF_DYNAMIC */
++static inline int of_reconfig_notifier_register(struct notifier_block *nb)
++{
++	return -EINVAL;
++}
++static inline int of_reconfig_notifier_unregister(struct notifier_block *nb)
++{
++	return -EINVAL;
++}
++static inline int of_reconfig_notify(unsigned long action, void *arg)
++{
++	return -EINVAL;
++}
++static inline int of_reconfig_get_state_change(unsigned long action, void *arg)
++{
++	return -EINVAL;
++}
++#endif /* CONFIG_OF_DYNAMIC */
+ 
+ /* CONFIG_OF_RESOLVE api */
+ extern int of_resolve_phandles(struct device_node *tree);
 -- 
 1.9.1
 
