@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293AbaKXVkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 16:40:32 -0500
-Received: from mout.web.de ([212.227.15.4]:59932 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893AbaKXVkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 16:40:31 -0500
-Message-ID: <5473A5C4.6050104@users.sourceforge.net>
-Date: Mon, 24 Nov 2014 22:40:20 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-media@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] [media] Siano: Deletion of an unnecessary check before
- the function call "rc_unregister_device"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
+	id S1751311AbaKXVmK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 16:42:10 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:54018 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaKXVmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 16:42:07 -0500
+Date: Mon, 24 Nov 2014 16:42:04 -0500 (EST)
+Message-Id: <20141124.164204.382324382412456341.davem@davemloft.net>
+To: geert+renesas@glider.be
+Cc: steve.glendinning@shawell.net, netdev@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/smsc911x: Add minimal runtime PM support
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1416855497-6479-1-git-send-email-geert+renesas@glider.be>
+References: <1416855497-6479-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:iIIFsPsNWk/e8+wbotE240lMq8UaIFbp6NG9GQtMy6L/WVDvgGx
- ou+nuVy0ed85JnMdIV/1hkWQ377CijD0nw/UXajDza74XTkyDG4tnaOwwbq+iLbP4lvnd5H
- lHZXooMc5giHMAN/galjzejv/Z6FjA6qzt+hOZ/MrRtjA9P75W6VHRUT9PY6qWjZFvgsm93
- KvT9BbqpuuNKl/7EfrIag==
-X-UI-Out-Filterresults: notjunk:1;
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 24 Nov 2014 13:42:07 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Mon, 24 Nov 2014 22:32:30 +0100
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+Date: Mon, 24 Nov 2014 19:58:17 +0100
 
-The rc_unregister_device() function tests whether its argument is NULL
-and then returns immediately. Thus the test around the call
-is not needed.
+> Add minimal runtime PM support (enable on probe, disable on remove), to
+> ensure proper operation with a parent device that uses runtime PM.
+> 
+> This is needed on systems where the external bus controller module of
+> the SoC is contained in a PM domain and/or has a gateable functional
+> clock. In such cases, before accessing any device connected to the
+> external bus, the PM domain must be powered up, and/or the functional
+> clock must be enabled, which is typically handled through runtime PM by
+> the bus controller driver.
+> 
+> An example of this is the kzm9g development board, where an smsc9220
+> Ethernet controller is connected to the Bus State Controller (BSC) of a
+> Renesas sh73a0 SoC.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/media/common/siano/smsir.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/media/common/siano/smsir.c b/drivers/media/common/siano/smsir.c
-index 273043e..35d0e88 100644
---- a/drivers/media/common/siano/smsir.c
-+++ b/drivers/media/common/siano/smsir.c
-@@ -107,8 +107,7 @@ int sms_ir_init(struct smscore_device_t *coredev)
- 
- void sms_ir_exit(struct smscore_device_t *coredev)
- {
--	if (coredev->ir.dev)
--		rc_unregister_device(coredev->ir.dev);
-+	rc_unregister_device(coredev->ir.dev);
- 
- 	sms_log("");
- }
--- 
-2.1.3
-
+Applied to net-next, thanks!
