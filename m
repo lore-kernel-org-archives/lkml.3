@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397AbaKXLjY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 06:39:24 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:65512 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188AbaKXLjW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 06:39:22 -0500
-Message-ID: <547318E5.8070408@redhat.com>
-Date: Mon, 24 Nov 2014 12:39:17 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752650AbaKXLjo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 06:39:44 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41341 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752576AbaKXLjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 06:39:42 -0500
+Date: Mon, 24 Nov 2014 12:39:40 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: x86@kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v4 4/5] x86: Clean up current_stack_pointer
+Message-ID: <20141124113940.GB20296@pd.tnic>
+References: <cover.1416604491.git.luto@amacapital.net>
+ <e771b0f24aaff5d3ed8d8934e202c7a7f9c54526.1416604491.git.luto@amacapital.net>
 MIME-Version: 1.0
-To: Nadav Amit <nadav.amit@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, Nadav Amit <namit@cs.technion.ac.il>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: Re: [CFT PATCH 0/2] KVM: support XSAVES usage in the host
-References: <1416594678-13011-1-git-send-email-pbonzini@redhat.com> <DE9192FA-6A22-4AEB-88C2-AE17DA503685@gmail.com>
-In-Reply-To: <DE9192FA-6A22-4AEB-88C2-AE17DA503685@gmail.com>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
+In-Reply-To: <e771b0f24aaff5d3ed8d8934e202c7a7f9c54526.1416604491.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 21, 2014 at 01:26:10PM -0800, Andy Lutomirski wrote:
+> There's no good reason for it to be a macro, and x86_64 will want to
+> use it, so it should be in a header.
+> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 
+Acked-by: Borislav Petkov <bp@suse.de>
 
-On 23/11/2014 09:16, Nadav Amit wrote:
-> I’ll try to check it tomorrow (I don’t have access to the failing machine at the moment).
+-- 
+Regards/Gruss,
+    Boris.
 
-Thanks, you'll need to squash this in:
-
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 4c540c4719d8..0de1fae2bdf0 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -738,3 +738,4 @@ void *get_xsave_addr(struct xsave_struct *xsave, int xstate)
- 
- 	return (void *)xsave + xstate_comp_offsets[feature];
- }
-+EXPORT_SYMBOL_GPL(get_xsave_addr);
-
-Paolo
+Sent from a fat crate under my desk. Formatting is fine.
+--
