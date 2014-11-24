@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573AbaKXNDo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 08:03:44 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:58590 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099AbaKXNDk (ORCPT
+	id S1753771AbaKXNEz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 08:04:55 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:46429 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283AbaKXNEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 08:03:40 -0500
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: "linux-arch@vger.kernel.org, linux-mips@linux-mips.org, linux-x86_64@vger.kernel.org, linux-s390"@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>, paulmck@linux.vnet.ibm.com,
-        mingo@kernel.org, torvalds@linux-foundation.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: [PATCH/RFC 2/7] mm: replace page table access via ACCESS_ONCE with barriers
-Date: Mon, 24 Nov 2014 14:03:25 +0100
-Message-Id: <1416834210-61738-3-git-send-email-borntraeger@de.ibm.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1416834210-61738-1-git-send-email-borntraeger@de.ibm.com>
-References: <1416834210-61738-1-git-send-email-borntraeger@de.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112413-0029-0000-0000-000001CF0D68
+	Mon, 24 Nov 2014 08:04:52 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-1f-54732cf19b11
+Message-id: <54732CF0.6040404@samsung.com>
+Date: Mon, 24 Nov 2014 14:04:48 +0100
+From: Karol Wrona <k.wrona@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jonathan Cameron <jic23@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH v2 1/5] misc: sensorhub: Add sensorhub driver
+References: <1416593957-19788-1-git-send-email-k.wrona@samsung.com>
+ <54707ECA.7090800@kernel.org> <547318E0.8070407@samsung.com>
+ <5942877.97OQIAaJx7@wuerfel>
+In-reply-to: <5942877.97OQIAaJx7@wuerfel>
+Content-type: text/plain; charset=windows-1252; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t/xq7ofdYpDDA5NM7H4O+kYu8XGGetZ
+	LR40rWKyONv0ht3i/tejjBbzjrxjsbi8aw6bxeluVgcOj9+/JjF6bFrVyeZx59oeNo95JwM9
+	+rasYvT4vEkugC2KyyYlNSezLLVI3y6BK2Pyk03sBUu4K/a/L2lg/MTRxcjJISFgIjHz+iEW
+	CFtM4sK99WxdjFwcQgJLGSW63y5nhXA+MUocX/qSGaSKV0BLYumfCWAdLAKqEnMmTwWz2QTU
+	JZp3LAarERWIkLiyZg4jRL2gxI/J98BqRAQUJaa+eAZWwywwkUnid68tiC0s4Cgxt3ERI8Sy
+	hYwSO85dAGvgFNCUuDdtGjtEg63EgvfrWCBseYnNa94yT2AUmIVkxywkZbOQlC1gZF7FKJpa
+	mlxQnJSea6RXnJhbXJqXrpecn7uJERL2X3cwLj1mdYhRgINRiYf3R09hiBBrYllxZe4hRgkO
+	ZiURXjGx4hAh3pTEyqrUovz4otKc1OJDjEwcnFINjDu9wxt0ziayeMzpv/XNJ+Spnaq0yT2F
+	nU8bWwKj5kg2rfrNdexjyUG3V39Ue6YYe9bdiueYeZDzVfLcmwp7YhaoL006d7pefO2yqpo5
+	nBv6/pafbC2unGfiX18so28T+PvSJqt1ceF2wgYNp83nOt6JszKY+91G7mXFDMbvDm9P117c
+	VziNV4mlOCPRUIu5qDgRAMqpKe1ZAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACCESS_ONCE does not work reliably on non-scalar types. For
-example gcc 4.6 and 4.7 might remove the volatile tag for such
-accesses during the SRA (scalar replacement of aggregates) step
-(https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
+On 11/24/2014 01:35 PM, Arnd Bergmann wrote:
+> On Monday 24 November 2014 12:39:12 Karol Wrona wrote:
+>> It is possible that it can serve as input device sth else. So you are
+>> right about MFD.
+>>
+>> The structure of mfd directory is flat. I wonder what can be better:
+>> just putting these sources inside mfd dir or to some new category inside mfd.
+>> Generally sensorhub will not differ than others mfd devs but in the near future
+>> it can be that we end up with different (sensor)hubs or in my case with one core
+>> driver with several interfaces, mcu's modes - sth like ssp-i2c.c etc.
+>> These drivers can grow in size as these devices will appear in different boards.
+>
+> You should be able to abstract the interface differences using regmap for the
+> most part, so there would only be a small stub that is i2c or spi specific,
+> and a lot of mfd drivers have that.
+>
+>> Also there is a question where firmware loader (stm32fwu) should be placed as it
+>> is a library?
+>
+> Can you describe what this library does? Is this for loading firmware into
+> device RAM or into flash? Does it always use USB?
+Generally it uploads firmware to STM32F4xx mcu using SPI. Now it writes to 
+flash. Its is a subset of STM32 boot code protocol (I suppose version 1.0 but it 
+is poorly documented, version 1.1 is available on ST site) so it always can be 
+improved to support full protocol or other interfaces.
 
-Let's change the code to access the page table elements with
-a barrier afterwards.
-
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
----
- mm/gup.c    | 4 +++-
- mm/memory.c | 3 ++-
- mm/rmap.c   | 3 ++-
- 3 files changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/mm/gup.c b/mm/gup.c
-index cd62c8c..e44af3c 100644
---- a/mm/gup.c
-+++ b/mm/gup.c
-@@ -917,7 +917,9 @@ static int gup_pud_range(pgd_t *pgdp, unsigned long addr, unsigned long end,
- 
- 	pudp = pud_offset(pgdp, addr);
- 	do {
--		pud_t pud = ACCESS_ONCE(*pudp);
-+		pud_t pud = *pudp;
-+
-+		barrier();
- 
- 		next = pud_addr_end(addr, end);
- 		if (pud_none(pud))
-diff --git a/mm/memory.c b/mm/memory.c
-index 3e50383..d982e35 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3202,7 +3202,8 @@ static int handle_pte_fault(struct mm_struct *mm,
- 	pte_t entry;
- 	spinlock_t *ptl;
- 
--	entry = ACCESS_ONCE(*pte);
-+	entry = *pte;
-+	barrier();
- 	if (!pte_present(entry)) {
- 		if (pte_none(entry)) {
- 			if (vma->vm_ops) {
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 19886fb..1e54274 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -581,7 +581,8 @@ pmd_t *mm_find_pmd(struct mm_struct *mm, unsigned long address)
- 	 * without holding anon_vma lock for write.  So when looking for a
- 	 * genuine pmde (in which to find pte), test present and !THP together.
- 	 */
--	pmde = ACCESS_ONCE(*pmd);
-+	pmde = *pmd;
-+	barrier();
- 	if (!pmd_present(pmde) || pmd_trans_huge(pmde))
- 		pmd = NULL;
- out:
--- 
-1.9.3
+>
+> 	Arnd
+>
 
