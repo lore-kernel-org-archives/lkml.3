@@ -1,114 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349AbaKXXra (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 18:47:30 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:48814 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947AbaKXXr3 (ORCPT
+	id S1751363AbaKXXtF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 18:49:05 -0500
+Received: from us-mx2.synaptics.com ([192.147.44.131]:17141 "EHLO
+	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750774AbaKXXtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 18:47:29 -0500
-Message-ID: <5473C37E.6030505@gmail.com>
-Date: Tue, 25 Nov 2014 07:47:10 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 24 Nov 2014 18:49:03 -0500
+X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Nov 2014 18:49:03 EST
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Mon, 24 Nov 2014 16:01:15 -0800
+From: Andrew Duggan <aduggan@synaptics.com>
+To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: [PATCH v2] HID: rmi: Scan the report descriptor to determine if the device is suitable for the hid-rmi driver
+Date: Mon, 24 Nov 2014 15:37:26 -0800
+Message-ID: <1416872246-9632-1-git-send-email-aduggan@synaptics.com>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>, peterz@infradead.org,
-        mingo@kernel.org, linux-kernel@vger.kernel.org,
-        preeti@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org
-CC: riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
-        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
-        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com
-Subject: Re: [PATCH v4 01/12] sched: fix imbalance flag reset
-References: <1406569906-9763-1-git-send-email-vincent.guittot@linaro.org> <1406569906-9763-2-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1406569906-9763-2-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.4.10.98]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
-On 7/29/14, 1:51 AM, Vincent Guittot wrote:
-> The imbalance flag can stay set whereas there is no imbalance.
->
-> Let assume that we have 3 tasks that run on a dual cores /dual cluster system.
-> We will have some idle load balance which are triggered during tick.
-> Unfortunately, the tick is also used to queue background work so we can reach
-> the situation where short work has been queued on a CPU which already runs a
-> task. The load balance will detect this imbalance (2 tasks on 1 CPU and an idle
-> CPU) and will try to pull the waiting task on the idle CPU. The waiting task is
-> a worker thread that is pinned on a CPU so an imbalance due to pinned task is
-> detected and the imbalance flag is set.
-> Then, we will not be able to clear the flag because we have at most 1 task on
-> each CPU but the imbalance flag will trig to useless active load balance
-> between the idle CPU and the busy CPU.
->
-> We need to reset of the imbalance flag as soon as we have reached a balanced
-> state. If all tasks are pinned, we don't consider that as a balanced state and
-> let the imbalance flag set.
->
-> Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->   kernel/sched/fair.c | 23 +++++++++++++++++++----
->   1 file changed, 19 insertions(+), 4 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 923fe32..7eb9126 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -6672,10 +6672,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
->   		if (sd_parent) {
->   			int *group_imbalance = &sd_parent->groups->sgc->imbalance;
->   
-> -			if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0) {
-> +			if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0)
->   				*group_imbalance = 1;
-> -			} else if (*group_imbalance)
-> -				*group_imbalance = 0;
+On composite HID devices there may be multiple HID devices on separate interfaces, but hid-rmi
+should only bind to the touchpad. The previous version simply checked that the interface protocol
+was set to mouse. Unfortuately, it is not always the case that the touchpad has the mouse interface
+protocol set. This patch takes a different approach and scans the report descriptor looking for
+the Generic Desktop Pointer usage and the Vendor Specific Top Level Collection needed by the
+hid-rmi driver to interface with the device.
 
-As you mentioned above " We need to reset of the imbalance flag as soon 
-as we have reached a balanced state. " I think the codes before your 
-patch have already do this, where I miss? Great thanks for your patient. ;-)
+Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+---
+This is a second attempt at the patch I submitted back in October. Instead of looking for specific
+HID reports this patch looks for the Generic Desktop Pointer usage. Having that usage along with
+the vendor specific collection seems to be a distinctive enough to id the Synaptics touchpad in
+the composite USB device.
 
-Regards,
-Wanpeng Li
+ drivers/hid/hid-core.c | 21 ++++++++++++++++-----
+ include/linux/hid.h    |  4 +++-
+ 2 files changed, 19 insertions(+), 6 deletions(-)
 
->   		}
->   
->   		/* All tasks on this runqueue were pinned by CPU affinity */
-> @@ -6686,7 +6684,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
->   				env.loop_break = sched_nr_migrate_break;
->   				goto redo;
->   			}
-> -			goto out_balanced;
-> +			goto out_all_pinned;
->   		}
->   	}
->   
-> @@ -6760,6 +6758,23 @@ static int load_balance(int this_cpu, struct rq *this_rq,
->   	goto out;
->   
->   out_balanced:
-> +	/*
-> +	 * We reach balance although we may have faced some affinity
-> +	 * constraints. Clear the imbalance flag if it was set.
-> +	 */
-> +	if (sd_parent) {
-> +		int *group_imbalance = &sd_parent->groups->sgc->imbalance;
-> +
-> +		if (*group_imbalance)
-> +			*group_imbalance = 0;
-> +	}
-> +
-> +out_all_pinned:
-> +	/*
-> +	 * We reach balance because all tasks are pinned at this level so
-> +	 * we can't migrate them. Let the imbalance flag set so parent level
-> +	 * can try to migrate them.
-> +	 */
->   	schedstat_inc(sd, lb_balanced[idle]);
->   
->   	sd->nr_balance_failed = 0;
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 12b6e67..ba9dc59 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -698,10 +698,20 @@ static void hid_scan_feature_usage(struct hid_parser *parser, u32 usage)
+ static void hid_scan_collection(struct hid_parser *parser, unsigned type)
+ {
+ 	struct hid_device *hid = parser->device;
++	int i;
+ 
+ 	if (((parser->global.usage_page << 16) == HID_UP_SENSOR) &&
+ 	    type == HID_COLLECTION_PHYSICAL)
+ 		hid->group = HID_GROUP_SENSOR_HUB;
++
++	if ((parser->global.usage_page << 16) == HID_UP_GENDESK)
++		for (i = 0; i < parser->local.usage_index; i++)
++			if (parser->local.usage[i] == HID_GD_POINTER)
++				parser->scan_flags
++					|= HID_SCAN_FLAG_GENDESK_POINTER;
++
++	if ((parser->global.usage_page << 16) == HID_UP_MSVENDOR)
++		parser->scan_flags |= HID_SCAN_FLAG_VENDOR_SPECIFIC;
+ }
+ 
+ static int hid_scan_main(struct hid_parser *parser, struct hid_item *item)
+@@ -783,11 +793,12 @@ static int hid_scan_report(struct hid_device *hid)
+ 	* Vendor specific handlings
+ 	*/
+ 	if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS) &&
+-	    (hid->group == HID_GROUP_GENERIC) &&
+-	    /* only bind to the mouse interface of composite USB devices */
+-	    (hid->bus != BUS_USB || hid->type == HID_TYPE_USBMOUSE))
+-		/* hid-rmi should take care of them, not hid-generic */
+-		hid->group = HID_GROUP_RMI;
++	    (hid->group == HID_GROUP_GENERIC)) {
++		if ((parser->scan_flags & HID_SCAN_FLAG_VENDOR_SPECIFIC)
++		    && (parser->scan_flags & HID_SCAN_FLAG_GENDESK_POINTER))
++			/* hid-rmi should take care of them, not hid-generic */
++			hid->group = HID_GROUP_RMI;
++	}
+ 
+ 	/*
+ 	 * Vendor specific handlings
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index f53c4a9..b019f15 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -547,7 +547,9 @@ static inline void hid_set_drvdata(struct hid_device *hdev, void *data)
+ #define HID_GLOBAL_STACK_SIZE 4
+ #define HID_COLLECTION_STACK_SIZE 4
+ 
+-#define HID_SCAN_FLAG_MT_WIN_8			0x00000001
++#define HID_SCAN_FLAG_MT_WIN_8			BIT(0)
++#define HID_SCAN_FLAG_VENDOR_SPECIFIC		BIT(1)
++#define HID_SCAN_FLAG_GENDESK_POINTER		BIT(2)
+ 
+ struct hid_parser {
+ 	struct hid_global     global;
+-- 
+2.1.0
 
