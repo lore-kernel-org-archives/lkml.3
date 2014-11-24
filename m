@@ -1,177 +1,428 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552AbaKXWeV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 17:34:21 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:64570 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345AbaKXWeP (ORCPT
+	id S1751497AbaKXWeT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 17:34:19 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:42079 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755AbaKXWeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 17:34:15 -0500
-From: Grant Likely <grant.likely@linaro.org>
-To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>, linux-i2c@vger.kernel.org
-Subject: [PATCH v2 11/14] i2c/of: Factor out Devicetree registration code
-Date: Mon, 24 Nov 2014 22:33:39 +0000
-Message-Id: <1416868422-22103-12-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416868422-22103-1-git-send-email-grant.likely@linaro.org>
-References: <1416868422-22103-1-git-send-email-grant.likely@linaro.org>
+	Mon, 24 Nov 2014 17:34:13 -0500
+Date: Mon, 24 Nov 2014 14:34:07 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
+ context
+Message-ID: <20141124223407.GB8512@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CALCETrXgd=5+RFugdi4CdCOzULK8u+ku-EQaJvY6JhXAMEW7rQ@mail.gmail.com>
+ <20141121233834.GW5050@linux.vnet.ibm.com>
+ <CALCETrVNnDEcVu_BteA2gVBeRB7zOsQmrA6JCrE8ez4U=vc0MQ@mail.gmail.com>
+ <20141122042056.GY5050@linux.vnet.ibm.com>
+ <CALCETrXSY9JpW3uE6H8WYk81sg56qasA2aqmjMPsq5dOtzso=g@mail.gmail.com>
+ <20141122234157.GB5050@linux.vnet.ibm.com>
+ <CALCETrVzeK=VWnAhpkPhxj9C012ETgArEPmLMFfhKJ7k1pHsXA@mail.gmail.com>
+ <20141124205441.GW5050@linux.vnet.ibm.com>
+ <CALCETrXBofV3oxDwK4MiSvFQcX3yxX_sL_KY63EZ8DgS8LnJSg@mail.gmail.com>
+ <20141124213501.GX5050@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141124213501.GX5050@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112422-0005-0000-0000-000006992006
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+On Mon, Nov 24, 2014 at 01:35:01PM -0800, Paul E. McKenney wrote:
+> On Mon, Nov 24, 2014 at 01:02:51PM -0800, Andy Lutomirski wrote:
+> > On Mon, Nov 24, 2014 at 12:54 PM, Paul E. McKenney
+> > <paulmck@linux.vnet.ibm.com> wrote:
+> > > On Mon, Nov 24, 2014 at 12:22:13PM -0800, Andy Lutomirski wrote:
+> > >> On Sat, Nov 22, 2014 at 3:41 PM, Paul E. McKenney
+> > >> <paulmck@linux.vnet.ibm.com> wrote:
+> > >> > On Fri, Nov 21, 2014 at 09:53:29PM -0800, Andy Lutomirski wrote:
+> > >> >> On Fri, Nov 21, 2014 at 8:20 PM, Paul E. McKenney
+> > >> >> <paulmck@linux.vnet.ibm.com> wrote:
+> > >> >> > On Fri, Nov 21, 2014 at 06:00:14PM -0800, Andy Lutomirski wrote:
+> > >> >> >> On Fri, Nov 21, 2014 at 3:38 PM, Paul E. McKenney
+> > >> >> >> <paulmck@linux.vnet.ibm.com> wrote:
+> > >>
+> > >> > Returning state sounds like a bad idea, if we can reasonably avoid it.
+> > >>
+> > >> I agree, except that we already do it for exception_enter(), etc.  But
+> > >> yes, changing fewer things is nice.
+> > >>
+> > >> >
+> > >> > And I think I finally see what you are pointing out about my code: If
+> > >> > another NMI comes in between the time I increment ->dynticks_nmi_nesting
+> > >> > and the time I atomically increment ->dynticks, the nested NMI handler
+> > >> > will incorrectly believe that RCU is already paying attention to this CPU.
+> > >> > Which would indeed not be at all good, so good catch!!!
+> > >> >
+> > >> >> Otherwise, I think that there may need to be enough state somewhere so
+> > >> >> that the outermost nested rcu_nmi_enter knows whether to increment
+> > >> >> dynticks.  For example, dynticks_nmi_nesting could store the nesting
+> > >> >> count * 2 - (1 if the outermost nested user needs to increment
+> > >> >> dynticks).  Something like:
+> > >> >>
+> > >> >> void rcu_nmi_enter(void)
+> > >> >> {
+> > >> >>   /* Be very careful -- this function may be called reentrently on the
+> > >> >> same CPU. */
+> > >> >>   atomically: increment dynticks if it's even.
+> > >> >>
+> > >> >>   /* If an rcu_nmi_enter/rcu_nmi_exit pair happens here, then it will not change
+> > >> >>    * the state. */
+> > >> >>
+> > >> >>   local_inc(&dynticks_nmi_nesting, (we incremented dynticks ? 1 : 2));
+> > >> >>
+> > >> >>   WARN_ON(we incremented dynticks and dynticks_nmi_nesting was nonzero);
+> > >> >> }
+> > >> >>
+> > >> >> void rcu_nmi_exit(void)
+> > >> >> {
+> > >> >>   WARN_ON(!(dynticks & 1));
+> > >> >>   locally atomically: dynticks_nmi_nesting -= 2, unless
+> > >> >> dynticks_nmi_nesting == 1, in which case set it to zero
+> > >> >>
+> > >> >>   if (dynticks_nmi_nesting was 1)
+> > >> >>     atomic_inc(&dynticks);
+> > >> >> }
+> > >> >>
+> > >> >> The invariant here is that, for a single unnested enter/exit, if
+> > >> >> dynticks_nmi_nesting != 0, then dynticks is odd.  As a result, an
+> > >> >> rcu_nmi_enter/rcu_nmi_exit pair at any time when dynticks_nmi_nesting
+> > >> >> != 0 *or* dynticks is odd will have no net effect, so the invariant,
+> > >> >> in fact, holds for all invocations, nested or otherwise.
+> > >> >>
+> > >> >> At least one of those conditions is true at all times during the
+> > >> >> execution of outermost pair, starting with the first atomic operation
+> > >> >> and ending with the final atomic_inc.  So they nest properly no matter
+> > >> >> what else happens (unless, of course, someone else pokes dynticks in
+> > >> >> the middle).
+> > >> >>
+> > >> >> Thoughts?
+> > >> >
+> > >> > Let's see...  The evenness of ->dynticks should be preserved by nested NMI
+> > >> > handlers, so the check and increment need not be atomic.  We don't have
+> > >> > any way (other than atomic operations) to do local atomic modifications
+> > >> > on all architectures, because we cannot mask NMIs.  (Yes, it can work
+> > >> > on x86, but this is common code that needs to work everywhere.)  On the
+> > >> > other hand, presumably NMIs are rare, so atomic modification of the NMI
+> > >> > nesting counter should be OK, at least if it proves absolutely necessary.
+> > >> > And I am thinking that a mechanical proof will be needed here.  :-/
+> > >> >
+> > >> > But first, let me try generating the code and informally evaluating it:
+> > >> >
+> > >> >          1   struct rcu_dynticks {
+> > >> >          2     long long dynticks_nesting;
+> > >> >          3     int dynticks_nmi_nesting;
+> > >> >          4     atomic_t dynticks;
+> > >> >          5   };
+> > >> >          6
+> > >> >          7   void rcu_nmi_enter(void)
+> > >> >          8   {
+> > >> >          9     struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
+> > >> >         10     int incby = 2;
+> > >> >         11
+> > >> >         12     if (!(atomic_read(&rdtp->dynticks) & 0x1)) {
+> > >> >         13       smp_mb__before_atomic();
+> > >> >         14       atomic_inc(&rdtp->dynticks);
+> > >> >         15       smp_mb__after_atomic();
+> > >> >         16       WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
+> > >> >         17       incby = 1;
+> > >>
+> > >> WARN_ON_ONCE(rdtp->dynticks_nmi_nesting < 1) here, perhaps?
+> > >
+> > > That would make sense.
+> > >
+> > >> >         18     }
+> > >> >         19     rdtp->dynticks_nmi_nesting += incby;
+> > >>
+> > >> Oh, I see why you don't need local_add -- it's because an nmi in the
+> > >> middle of this increment won't have any effect on the interrupted
+> > >> code, so even a software RMW will be okay.
+> > >
+> > > Yep!  ;-)
+> > >
+> > >> >         20     barrier();
+> > >> >         21   }
+> > >> >         22
+> > >> >         23   void rcu_nmi_exit(void)
+> > >> >         24   {
+> > >> >         25     struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
+> > >> >         26
+> > >> >         27     WARN_ON_ONCE(!rdtp->dynticks_nmi_nesting);
+> > >> >         28     WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
+> > >> >         29     if (rdtp->dynticks_nmi_nesting != 1) {
+> > >>
+> > >> WARN_ON_ONCE(rdtp->dynticks_nmi_nesting < 2), perhaps?
+> > >
+> > > This is already implied by the WARN_ON_ONCE() on line 27 and the check
+> > > on line 29.
+> > 
+> > I was worried about negative numbers.  Maybe change line 27 to
+> > WARN_ON_ONCE(rdtp->dynticks_nmi_nesting <= 0), then?  (Or is it
+> > unsigned?  If so, let's make to signed to catch this type of error.)
+> 
+> Good point, they are signed, so your WARN_ON_ONCE() would work.
+> 
+> > >> >         30       rdtp->dynticks_nmi_nesting -= 2;
+> > >> >         31       return;
+> > >> >         32     }
+> > >> >         33     rdtp->dynticks_nmi_nesting = 0;
+> > >> >         34     smp_mb__before_atomic();
+> > >>
+> > >> This implies barrier(), right?
+> > >
+> > > Yep!
+> > >
+> > >> >         35     atomic_inc(&rdtp->dynticks);
+> > >> >         36     smp_mb__after_atomic();
+> > >> >         37     WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
+> > >> >         38   }
+> > >> >
+> > >> > Line 9 picks up a pointer to this CPU's rcu_dynticks structure and line 10
+> > >> > assumes that we don't need to increment ->dynticks.
+> > >> >
+> > >> > Line 12 checks to see if ->dynticks is even.  Note that this check is
+> > >> > stable: If there are nested NMIs, they will increment ->dynticks twice
+> > >> > or not at all, and either way preserves the evenness (to be proven, of
+> > >> > course, but that is the plan).  If ->dynticks is even, lines 13-15
+> > >> > atomically increment it, line 16 complains if still even, and line 17
+> > >> > says we will increment ->dynticks_nmi_nesting by only 1.
+> > >> >
+> > >> > Either way, line 19 increments ->dynticks_nmi_nesting as needed and
+> > >> > line 20 keeps the compiler from getting too cute.
+> > >> >
+> > >> > For rcu_nmi_exit(), line 25 again picks up this CPUs rcu_dynticks
+> > >> > structure.  Lines 27 and 28 complain bitterly if invariants are violated.
+> > >> > If line 29 finds that the value of ->dynticks_nmi_nesting is not 1,
+> > >> > then line 30 subtracts 2 from ->dynticks_nmi_nesting and line 31 returns.
+> > >> >
+> > >> > Otherwise, line 33 sets ->dynticks_nmi_nesting to zero, lines 34-36
+> > >> > atomically increment ->dynticks with full ordering, and line 37
+> > >> > complains bitterly if ->dynticks is not even.
+> > >> >
+> > >> > So, if an NMI occurs before rcu_nmi_enter's atomic increment, then the
+> > >> > nested NMI's rcu_nmi_enter() and rcu_nmi_exit() will think that they are
+> > >> > not nested, which is the correct thing for them to think in that case.
+> > >> > They will increment ->dynticks twice and restore ->dynticks_nmi_nesting
+> > >> > to zero (adding and then subtracting 1).  If the NMI happens after the
+> > >> > atomic increment, then the nested rcu_nmi_enter() and rcu_nmi_exit()
+> > >> > will leave ->dynticks alone, and will restore ->dynticks_nmi_nesting
+> > >> > to zero (adding and subtracting two again).  If the NMI happens after
+> > >> > the increment of ->dynticks_nmi_nesting, the nested NMI's rcu_nmi_enter()
+> > >> > and rcu_nmi_exit() will again restore ->dynticks_nmi_nesting, but this
+> > >> > time to one (again adding and subtracting two).
+> > >> >
+> > >> > In rcu_nmi_exit(), ->dynticks_nmi_nesting of zero had better not happen,
+> > >> > one means we need to atomically increment ->dynticks, and other values
+> > >> > mean that we are partially or fully nested.  Reasoning proceeds as for
+> > >> > rcu_nmi_enter(), but in the opposite direction.
+> > >> >
+> > >> > Whew!  That might even work.
+> > >>
+> > >> I think I like this, with the warnings above.
+> > >
+> > > OK with dropping the one that I called out as redundant?
+> > 
+> > Sure, but see about.
+> > 
+> > >
+> > >> > But how about taking a different approach.  Assuming that there can
+> > >> > never be more than (say) 14 nesting NMI-like things, use the lower
+> > >> > four bits of ->dynticks to represent the NMI nesting and the upper
+> > >> > 28 bits as the counter.  This of course requires modifying lots of
+> > >> > places in RCU that check the counter, but it is probably time to
+> > >> > abstract the check anyway.
+> > >> >
+> > >> > This would allow my earlier attempted logic to work and (maybe) simplify
+> > >> > the reasoning a bit (and yes, the "magic" constants need macros):
+> > >> >
+> > >> >         void rcu_nmi_enter(void)
+> > >> >         {
+> > >> >                 struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
+> > >> >                 int nesting = atomic_read(&rdtp->dynticks) & 0xf;
+> > >> >                 int incby = 0x01;
+> > >> >
+> > >> >                 WARN_ON_ONCE(nexting == 0xf);
+> > >> >                 if (nesting == 0) {
+> > >> >                         if (atomic_read(&rdtp->dynticks) & 0x10)
+> > >> >                                 return;
+> > >> >                         incby = 0x11;
+> > >> >                 }
+> > >> >                 smp_mb__before_atomic();
+> > >> >                 atomic_add(&rdtp->dynticks, incby);
+> > >> >                 smp_mb__after_atomic();
+> > >> >                 WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
+> > >> >         }
+> > >> >
+> > >> >         void rcu_nmi_exit(void)
+> > >> >         {
+> > >> >                 struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
+> > >> >                 int nesting = atomic_read(&rdtp->dynticks) & 0xf;
+> > >> >                 int incby = 0x0f;
+> > >> >
+> > >> >                 if (nesting == 0)
+> > >> >                         return;
+> > >> >                 if (nesting > 1)
+> > >> >                         incby = -1;
+> > >> >                 smp_mb__before_atomic();
+> > >> >                 atomic_add(&rdtp->dynticks, incby);
+> > >> >                 smp_mb__after_atomic();
+> > >> >                 WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
+> > >> >         }
+> > >> >
+> > >> > Over to you!  ;-)
+> > >>
+> > >> This latter one is all you :)
+> > >
+> > > Well, let's see how I feel about it after trying a Promela model of
+> > > the first code sequence.  ;-)
+> > 
+> > :)
+> > 
+> > Does Promela understand the differences between this type of
+> > reentrancy and real threading?
+> 
+> Not as far as I know.  But it can be tricked into making this distinction.
+> One thread just has the Promela code as is, and the other thread has
+> the same Promela code entirely contained in an atomic block.  This means
+> that the entire second thread must executed at one point in the first
+> thread, just like an NMI would.
 
-Dynamically inserting i2c client device nodes requires the use
-of a single device registration method. Factor out the loop body of
-of_i2c_register_devices() so that it can be called for individual
-device_nodes instead of for all the children of a node.
+And the following Promela model claims that your approach works.
+Should I trust it?  ;-)
 
-Note: The diff of this commit looks far more complicated than it
-actually is due the indentation being changed for a large block of code.
-When viewed using the diff -w flag to ignore whitespace changes it can
-be seen that the change is actually quite simple.
+							Thanx, Paul
 
-Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-[grant.likely: Made new function static and removed changes to header]
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: linux-i2c@vger.kernel.org
----
- drivers/i2c/i2c-core.c | 97 +++++++++++++++++++++++++++-----------------------
- 1 file changed, 52 insertions(+), 45 deletions(-)
+------------------------------------------------------------------------
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index f43b4e11647a..15ba6185dba5 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -49,6 +49,7 @@
- #include <linux/acpi.h>
- #include <linux/jump_label.h>
- #include <asm/uaccess.h>
-+#include <linux/err.h>
- 
- #include "i2c-core.h"
- 
-@@ -1368,63 +1369,69 @@ static void i2c_scan_static_board_info(struct i2c_adapter *adapter)
- /* OF support code */
- 
- #if IS_ENABLED(CONFIG_OF)
--static void of_i2c_register_devices(struct i2c_adapter *adap)
-+static struct i2c_client *of_i2c_register_device(struct i2c_adapter *adap,
-+						 struct device_node *node)
- {
--	void *result;
--	struct device_node *node;
-+	struct i2c_client *result;
-+	struct i2c_board_info info = {};
-+	struct dev_archdata dev_ad = {};
-+	const __be32 *addr;
-+	int len;
- 
--	/* Only register child devices if the adapter has a node pointer set */
--	if (!adap->dev.of_node)
--		return;
-+	dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
- 
--	dev_dbg(&adap->dev, "of_i2c: walking child nodes\n");
-+	if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
-+		dev_err(&adap->dev, "of_i2c: modalias failure on %s\n",
-+			node->full_name);
-+		return ERR_PTR(-EINVAL);
-+	}
- 
--	for_each_available_child_of_node(adap->dev.of_node, node) {
--		struct i2c_board_info info = {};
--		struct dev_archdata dev_ad = {};
--		const __be32 *addr;
--		int len;
-+	addr = of_get_property(node, "reg", &len);
-+	if (!addr || (len < sizeof(int))) {
-+		dev_err(&adap->dev, "of_i2c: invalid reg on %s\n",
-+			node->full_name);
-+		return ERR_PTR(-EINVAL);
-+	}
- 
--		dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
-+	info.addr = be32_to_cpup(addr);
-+	if (info.addr > (1 << 10) - 1) {
-+		dev_err(&adap->dev, "of_i2c: invalid addr=%x on %s\n",
-+			info.addr, node->full_name);
-+		return ERR_PTR(-EINVAL);
-+	}
- 
--		if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
--			dev_err(&adap->dev, "of_i2c: modalias failure on %s\n",
--				node->full_name);
--			continue;
--		}
-+	info.irq = irq_of_parse_and_map(node, 0);
-+	info.of_node = of_node_get(node);
-+	info.archdata = &dev_ad;
- 
--		addr = of_get_property(node, "reg", &len);
--		if (!addr || (len < sizeof(int))) {
--			dev_err(&adap->dev, "of_i2c: invalid reg on %s\n",
--				node->full_name);
--			continue;
--		}
-+	if (of_get_property(node, "wakeup-source", NULL))
-+		info.flags |= I2C_CLIENT_WAKE;
- 
--		info.addr = be32_to_cpup(addr);
--		if (info.addr > (1 << 10) - 1) {
--			dev_err(&adap->dev, "of_i2c: invalid addr=%x on %s\n",
--				info.addr, node->full_name);
--			continue;
--		}
-+	request_module("%s%s", I2C_MODULE_PREFIX, info.type);
- 
--		info.irq = irq_of_parse_and_map(node, 0);
--		info.of_node = of_node_get(node);
--		info.archdata = &dev_ad;
-+	result = i2c_new_device(adap, &info);
-+	if (result == NULL) {
-+		dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
-+			node->full_name);
-+		of_node_put(node);
-+		irq_dispose_mapping(info.irq);
-+		return ERR_PTR(-EINVAL);
-+	}
-+	return result;
-+}
- 
--		if (of_get_property(node, "wakeup-source", NULL))
--			info.flags |= I2C_CLIENT_WAKE;
-+static void of_i2c_register_devices(struct i2c_adapter *adap)
-+{
-+	struct device_node *node;
- 
--		request_module("%s%s", I2C_MODULE_PREFIX, info.type);
-+	/* Only register child devices if the adapter has a node pointer set */
-+	if (!adap->dev.of_node)
-+		return;
- 
--		result = i2c_new_device(adap, &info);
--		if (result == NULL) {
--			dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
--				node->full_name);
--			of_node_put(node);
--			irq_dispose_mapping(info.irq);
--			continue;
--		}
--	}
-+	dev_dbg(&adap->dev, "of_i2c: walking child nodes\n");
-+
-+	for_each_available_child_of_node(adap->dev.of_node, node)
-+		of_i2c_register_device(adap, node);
- }
- 
- static int of_dev_node_match(struct device *dev, void *data)
--- 
-1.9.1
+/*
+ * Promela model for Andy Lutomirski's suggested change to rcu_nmi_enter()
+ * that allows nesting.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, you can access it online at
+ * http://www.gnu.org/licenses/gpl-2.0.html.
+ *
+ * Copyright IBM Corporation, 2014
+ *
+ * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+ */
+
+byte dynticks_nesting;
+byte dynticks_nmi_nesting;
+byte dynticks;
+byte busy;
+
+/*
+ * Promela verision of rcu_nmi_enter().
+ */
+inline rcu_nmi_enter()
+{
+	assert(dynticks_nmi_nesting >= 0);
+	if
+	:: (dynticks & 1) == 0 ->
+		atomic {
+			dynticks = dynticks + 1;
+		}
+		assert((dynticks & 1) == 1);
+		dynticks_nmi_nesting = dynticks_nmi_nesting + 1;
+		assert(dynticks_nmi_nesting >= 1);
+	:: else ->
+		dynticks_nmi_nesting = dynticks_nmi_nesting + 2;
+	fi;
+}
+
+/*
+ * Promela verision of rcu_nmi_exit().
+ */
+inline rcu_nmi_exit()
+{
+	assert(dynticks_nmi_nesting > 0);
+	assert((dynticks & 1) != 0);
+	if
+	:: dynticks_nmi_nesting != 1 ->
+		dynticks_nmi_nesting = dynticks_nmi_nesting - 2;
+	:: else ->
+		dynticks_nmi_nesting = 0;
+		atomic {
+			dynticks = dynticks + 1;
+		}
+		assert((dynticks & 1) == 0);
+	fi;
+}
+
+/*
+ * Base-level NMI runs non-atomically.  Crudely emulates process-level
+ * dynticks-idle entry/exit.
+ */
+proctype base_NMI()
+{
+	do
+	::	if
+		:: 1 ->	atomic {
+				dynticks = dynticks + 1;
+			}
+			busy = 0;
+		:: 1 ->	skip;
+		fi;
+		rcu_nmi_enter();
+		assert((dynticks & 1) == 1);
+		rcu_nmi_exit();
+		if
+		:: busy -> skip;
+		:: !busy ->
+			atomic {
+				dynticks = dynticks + 1;
+			}
+			busy = 1;
+		fi;
+	od;
+}
+
+/*
+ * Nested NMI runs atomically to emulate interrupting base_level().
+ */
+proctype nested_NMI()
+{
+	do
+	::	atomic {
+			rcu_nmi_enter();
+			assert((dynticks & 1) == 1);
+			rcu_nmi_exit();
+		}
+	od;
+}
+
+init {
+	dynticks_nesting = 0;
+	dynticks_nmi_nesting = 0;
+	dynticks = 0;
+	busy = 0;
+	run base_NMI();
+	run nested_NMI();
+}
 
