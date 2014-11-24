@@ -1,152 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaKXLyQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 06:54:16 -0500
-Received: from mail-wi0-f201.google.com ([209.85.212.201]:54053 "EHLO
-	mail-wi0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677AbaKXLyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 06:54:08 -0500
-From: David Drysdale <drysdale@google.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Oleg Nesterov <oleg@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rich Felker <dalias@aerifal.cx>, Christoph Hellwig <hch@infradead.org>,
-        x86@kernel.org, linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
-        sparclinux@vger.kernel.org, David Drysdale <drysdale@google.com>
-Subject: [PATCHv10 0/5] syscalls,x86,sparc: Add execveat() system call
-Date: Mon, 24 Nov 2014 11:53:54 +0000
-Message-Id: <1416830039-21952-1-git-send-email-drysdale@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	id S1753551AbaKXLy3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 06:54:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44916 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753461AbaKXLyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 06:54:20 -0500
+Date: Mon, 24 Nov 2014 13:54:04 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: [PATCH v3 20/41] virtio_net: get rid of virtio_net_hdr/skb_vnet_hdr
+Message-ID: <1416829787-14252-21-git-send-email-mst@redhat.com>
+References: <1416829787-14252-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416829787-14252-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds execveat(2) for x86 and sparc, and is derived from
-Meredydd Luff's patch from Sept 2012 (https://lkml.org/lkml/2012/9/11/528).
+virtio 1.0 doesn't use virtio_net_hdr anymore, and in fact, it's not
+really useful since virtio_net_hdr_mrg_rxbuf includes that as the first
+field anyway.
 
-The primary aim of adding an execveat syscall is to allow an
-implementation of fexecve(3) that does not rely on the /proc
-filesystem, at least for executables (rather than scripts).  The
-current glibc version of fexecve(3) is implemented via /proc, which
-causes problems in sandboxed or otherwise restricted environments.
+Let's drop it, precalculate header len and store within vi instead.
 
-Given the desire for a /proc-free fexecve() implementation, HPA
-suggested (https://lkml.org/lkml/2006/7/11/556) that an execveat(2)
-syscall would be an appropriate generalization.
+This way we can also remove struct skb_vnet_hdr.
 
-Also, having a new syscall means that it can take a flags argument
-without back-compatibility concerns.  The current implementation just
-defines the AT_EMPTY_PATH and AT_SYMLINK_NOFOLLOW flags, but other
-flags could be added in future -- for example, flags for new namespaces
-(as suggested at https://lkml.org/lkml/2006/7/11/474).
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/net/virtio_net.c | 90 ++++++++++++++++++++++--------------------------
+ 1 file changed, 41 insertions(+), 49 deletions(-)
 
-Related history:
- - https://lkml.org/lkml/2006/12/27/123 is an example of someone
-   realizing that fexecve() is likely to fail in a chroot environment.
- - http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=514043 covered
-   documenting the /proc requirement of fexecve(3) in its manpage, to
-   "prevent other people from wasting their time".
- - https://bugzilla.redhat.com/show_bug.cgi?id=241609 described a
-   problem where a process that did setuid() could not fexecve()
-   because it no longer had access to /proc/self/fd; this has since
-   been fixed.
-
-
-Changes since v9:
- - Add sparc syscall wrappers and use correct sparc 32b compatibility
-   function [Stephen Rothwell, David S. Miller]
-
-Changes since v8:
- - Split core/fs changes from x86 changes [Thomas Gleixner]
-
-Changes since v7:
- - Speculatively wire up sparc version of syscall (untested)
- - Fix leak of pathbuf in mainline arm [Oleg Nesterov]
- - Add rcu_dereference_raw() on fdt access [sparse kbuild robot]
- - Realigned comment [Andrew Morton]
- - Merged up to v3.18-rc4
-
-Changes since v6:
- - Remove special case for O_PATH file descriptors [Andy Lutomirski]
- - Use kasprintf rather than error-prone arithmetic [Kees Cook]
- - Add test for long name [Kees Cook]
- - Add test for non-executable O_PATH fd [Andy Lutomirski]
-
-Changes since v5:
- - Set new flag in bprm->interp_flags for O_CLOEXEC fds, so that binfmts
-   that invoke an interpreter fail the exec (as they will not be able
-   to access the invoked file). [Andy Lutomirski]
- - Don't truncate long paths. [Andy Lutomirski]
- - Commonize code to open the executed file. [Eric W. Biederman]
- - Mark O_PATH file descriptors so they cannot be fexecve()ed.
- - Make self-test more helpful, and add additional cases:
-     - file offset non-zero
-     - binary file without execute bit
-     - O_CLOEXEC fds
-
-Changes since v4, suggested by Eric W. Biederman:
- - Use empty filename with AT_EMPTY_PATH flag rather than NULL
-   pathname to request fexecve-like behaviour.
- - Build pathname as "/dev/fd/<fd>/<filename>" (or "/dev/fd/<fd>")
-   rather than using d_path().
- - Patch against v3.17 (bfe01a5ba249)
-
-Changes since Meredydd's v3 patch:
- - Added a selftest.
- - Added a man page.
- - Left open_exec() signature untouched to reduce patch impact
-   elsewhere (as suggested by Al Viro).
- - Filled in bprm->filename with d_path() into a buffer, to avoid use
-   of potentially-ephemeral dentry->d_name.
- - Patch against v3.14 (455c6fdbd21916).
-
-
-David Drysdale (4):
-  syscalls: implement execveat() system call
-  x86: Hook up execveat system call.
-  syscalls: add selftest for execveat(2)
-  sparc: Hook up execveat system call.
-
- arch/sparc/include/uapi/asm/unistd.h    |   3 +-
- arch/sparc/kernel/systbls_32.S          |   1 +
- arch/sparc/kernel/systbls_64.S          |   2 +
- arch/x86/ia32/audit.c                   |   1 +
- arch/x86/ia32/ia32entry.S               |   1 +
- arch/x86/kernel/audit_64.c              |   1 +
- arch/x86/kernel/entry_64.S              |  28 +++
- arch/x86/syscalls/syscall_32.tbl        |   1 +
- arch/x86/syscalls/syscall_64.tbl        |   2 +
- arch/x86/um/sys_call_table_64.c         |   1 +
- fs/binfmt_em86.c                        |   4 +
- fs/binfmt_misc.c                        |   4 +
- fs/binfmt_script.c                      |  10 +
- fs/exec.c                               | 113 +++++++--
- fs/namei.c                              |   2 +-
- include/linux/binfmts.h                 |   4 +
- include/linux/compat.h                  |   3 +
- include/linux/fs.h                      |   1 +
- include/linux/sched.h                   |   4 +
- include/linux/syscalls.h                |   5 +
- include/uapi/asm-generic/unistd.h       |   4 +-
- kernel/sys_ni.c                         |   3 +
- lib/audit.c                             |   3 +
- tools/testing/selftests/Makefile        |   1 +
- tools/testing/selftests/exec/.gitignore |   9 +
- tools/testing/selftests/exec/Makefile   |  25 ++
- tools/testing/selftests/exec/execveat.c | 397 ++++++++++++++++++++++++++++++++
- 27 files changed, 617 insertions(+), 16 deletions(-)
- create mode 100644 tools/testing/selftests/exec/.gitignore
- create mode 100644 tools/testing/selftests/exec/Makefile
- create mode 100644 tools/testing/selftests/exec/execveat.c
-
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 1630c21..516f2cb 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -123,6 +123,9 @@ struct virtnet_info {
+ 	/* Host can handle any s/g split between our header and packet data */
+ 	bool any_header_sg;
+ 
++	/* Packet virtio header size */
++	u8 hdr_len;
++
+ 	/* Active statistics */
+ 	struct virtnet_stats __percpu *stats;
+ 
+@@ -139,21 +142,14 @@ struct virtnet_info {
+ 	struct notifier_block nb;
+ };
+ 
+-struct skb_vnet_hdr {
+-	union {
+-		struct virtio_net_hdr hdr;
+-		struct virtio_net_hdr_mrg_rxbuf mhdr;
+-	};
+-};
+-
+ struct padded_vnet_hdr {
+-	struct virtio_net_hdr hdr;
++	struct virtio_net_hdr_mrg_rxbuf hdr;
+ 	/*
+-	 * virtio_net_hdr should be in a separated sg buffer because of a
+-	 * QEMU bug, and data sg buffer shares same page with this header sg.
+-	 * This padding makes next sg 16 byte aligned after virtio_net_hdr.
++	 * hdr is in a separate sg buffer, and data sg buffer shares same page
++	 * with this header sg. This padding makes next sg 16 byte aligned
++	 * after the header.
+ 	 */
+-	char padding[6];
++	char padding[4];
+ };
+ 
+ /* Converting between virtqueue no. and kernel tx/rx queue no.
+@@ -179,9 +175,9 @@ static int rxq2vq(int rxq)
+ 	return rxq * 2;
+ }
+ 
+-static inline struct skb_vnet_hdr *skb_vnet_hdr(struct sk_buff *skb)
++static inline struct virtio_net_hdr_mrg_rxbuf *skb_vnet_hdr(struct sk_buff *skb)
+ {
+-	return (struct skb_vnet_hdr *)skb->cb;
++	return (struct virtio_net_hdr_mrg_rxbuf *)skb->cb;
+ }
+ 
+ /*
+@@ -247,7 +243,7 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+ 				   unsigned int len, unsigned int truesize)
+ {
+ 	struct sk_buff *skb;
+-	struct skb_vnet_hdr *hdr;
++	struct virtio_net_hdr_mrg_rxbuf *hdr;
+ 	unsigned int copy, hdr_len, hdr_padded_len;
+ 	char *p;
+ 
+@@ -260,13 +256,11 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+ 
+ 	hdr = skb_vnet_hdr(skb);
+ 
+-	if (vi->mergeable_rx_bufs) {
+-		hdr_len = sizeof hdr->mhdr;
+-		hdr_padded_len = sizeof hdr->mhdr;
+-	} else {
+-		hdr_len = sizeof hdr->hdr;
++	hdr_len = vi->hdr_len;
++	if (vi->mergeable_rx_bufs)
++		hdr_padded_len = sizeof *hdr;
++	else
+ 		hdr_padded_len = sizeof(struct padded_vnet_hdr);
+-	}
+ 
+ 	memcpy(hdr, p, hdr_len);
+ 
+@@ -317,11 +311,11 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+ 	return skb;
+ }
+ 
+-static struct sk_buff *receive_small(void *buf, unsigned int len)
++static struct sk_buff *receive_small(struct virtnet_info *vi, void *buf, unsigned int len)
+ {
+ 	struct sk_buff * skb = buf;
+ 
+-	len -= sizeof(struct virtio_net_hdr);
++	len -= vi->hdr_len;
+ 	skb_trim(skb, len);
+ 
+ 	return skb;
+@@ -354,8 +348,8 @@ static struct sk_buff *receive_mergeable(struct net_device *dev,
+ 					 unsigned int len)
+ {
+ 	void *buf = mergeable_ctx_to_buf_address(ctx);
+-	struct skb_vnet_hdr *hdr = buf;
+-	u16 num_buf = virtio16_to_cpu(rq->vq->vdev, hdr->mhdr.num_buffers);
++	struct virtio_net_hdr_mrg_rxbuf *hdr = buf;
++	u16 num_buf = virtio16_to_cpu(vi->vdev, hdr->num_buffers);
+ 	struct page *page = virt_to_head_page(buf);
+ 	int offset = buf - page_address(page);
+ 	unsigned int truesize = max(len, mergeable_ctx_to_buf_truesize(ctx));
+@@ -373,8 +367,8 @@ static struct sk_buff *receive_mergeable(struct net_device *dev,
+ 		if (unlikely(!ctx)) {
+ 			pr_debug("%s: rx error: %d buffers out of %d missing\n",
+ 				 dev->name, num_buf,
+-				 virtio16_to_cpu(rq->vq->vdev,
+-						 hdr->mhdr.num_buffers));
++				 virtio16_to_cpu(vi->vdev,
++						 hdr->num_buffers));
+ 			dev->stats.rx_length_errors++;
+ 			goto err_buf;
+ 		}
+@@ -441,7 +435,7 @@ static void receive_buf(struct virtnet_info *vi, struct receive_queue *rq,
+ 	struct net_device *dev = vi->dev;
+ 	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+ 	struct sk_buff *skb;
+-	struct skb_vnet_hdr *hdr;
++	struct virtio_net_hdr_mrg_rxbuf *hdr;
+ 
+ 	if (unlikely(len < sizeof(struct virtio_net_hdr) + ETH_HLEN)) {
+ 		pr_debug("%s: short packet %i\n", dev->name, len);
+@@ -463,7 +457,7 @@ static void receive_buf(struct virtnet_info *vi, struct receive_queue *rq,
+ 	else if (vi->big_packets)
+ 		skb = receive_big(dev, vi, rq, buf, len);
+ 	else
+-		skb = receive_small(buf, len);
++		skb = receive_small(vi, buf, len);
+ 
+ 	if (unlikely(!skb))
+ 		return;
+@@ -545,7 +539,7 @@ static int add_recvbuf_small(struct virtnet_info *vi, struct receive_queue *rq,
+ 			     gfp_t gfp)
+ {
+ 	struct sk_buff *skb;
+-	struct skb_vnet_hdr *hdr;
++	struct virtio_net_hdr_mrg_rxbuf *hdr;
+ 	int err;
+ 
+ 	skb = __netdev_alloc_skb_ip_align(vi->dev, GOOD_PACKET_LEN, gfp);
+@@ -556,7 +550,7 @@ static int add_recvbuf_small(struct virtnet_info *vi, struct receive_queue *rq,
+ 
+ 	hdr = skb_vnet_hdr(skb);
+ 	sg_init_table(rq->sg, MAX_SKB_FRAGS + 2);
+-	sg_set_buf(rq->sg, &hdr->hdr, sizeof hdr->hdr);
++	sg_set_buf(rq->sg, hdr, vi->hdr_len);
+ 	skb_to_sgvec(skb, rq->sg + 1, 0, skb->len);
+ 
+ 	err = virtqueue_add_inbuf(rq->vq, rq->sg, 2, skb, gfp);
+@@ -566,7 +560,8 @@ static int add_recvbuf_small(struct virtnet_info *vi, struct receive_queue *rq,
+ 	return err;
+ }
+ 
+-static int add_recvbuf_big(struct receive_queue *rq, gfp_t gfp)
++static int add_recvbuf_big(struct virtnet_info *vi, struct receive_queue *rq,
++			   gfp_t gfp)
+ {
+ 	struct page *first, *list = NULL;
+ 	char *p;
+@@ -597,8 +592,8 @@ static int add_recvbuf_big(struct receive_queue *rq, gfp_t gfp)
+ 	p = page_address(first);
+ 
+ 	/* rq->sg[0], rq->sg[1] share the same page */
+-	/* a separated rq->sg[0] for virtio_net_hdr only due to QEMU bug */
+-	sg_set_buf(&rq->sg[0], p, sizeof(struct virtio_net_hdr));
++	/* a separated rq->sg[0] for header - required in case !any_header_sg */
++	sg_set_buf(&rq->sg[0], p, vi->hdr_len);
+ 
+ 	/* rq->sg[1] for data packet, from offset */
+ 	offset = sizeof(struct padded_vnet_hdr);
+@@ -677,7 +672,7 @@ static bool try_fill_recv(struct virtnet_info *vi, struct receive_queue *rq,
+ 		if (vi->mergeable_rx_bufs)
+ 			err = add_recvbuf_mergeable(rq, gfp);
+ 		else if (vi->big_packets)
+-			err = add_recvbuf_big(rq, gfp);
++			err = add_recvbuf_big(vi, rq, gfp);
+ 		else
+ 			err = add_recvbuf_small(vi, rq, gfp);
+ 
+@@ -857,18 +852,14 @@ static void free_old_xmit_skbs(struct send_queue *sq)
+ 
+ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+ {
+-	struct skb_vnet_hdr *hdr;
++	struct virtio_net_hdr_mrg_rxbuf *hdr;
+ 	const unsigned char *dest = ((struct ethhdr *)skb->data)->h_dest;
+ 	struct virtnet_info *vi = sq->vq->vdev->priv;
+ 	unsigned num_sg;
+-	unsigned hdr_len;
++	unsigned hdr_len = vi->hdr_len;
+ 	bool can_push;
+ 
+ 	pr_debug("%s: xmit %p %pM\n", vi->dev->name, skb, dest);
+-	if (vi->mergeable_rx_bufs)
+-		hdr_len = sizeof hdr->mhdr;
+-	else
+-		hdr_len = sizeof hdr->hdr;
+ 
+ 	can_push = vi->any_header_sg &&
+ 		!((unsigned long)skb->data & (__alignof__(*hdr) - 1)) &&
+@@ -876,7 +867,7 @@ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+ 	/* Even if we can, don't push here yet as this would skew
+ 	 * csum_start offset below. */
+ 	if (can_push)
+-		hdr = (struct skb_vnet_hdr *)(skb->data - hdr_len);
++		hdr = (struct virtio_net_hdr_mrg_rxbuf *)(skb->data - hdr_len);
+ 	else
+ 		hdr = skb_vnet_hdr(skb);
+ 
+@@ -909,7 +900,7 @@ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+ 	}
+ 
+ 	if (vi->mergeable_rx_bufs)
+-		hdr->mhdr.num_buffers = 0;
++		hdr->num_buffers = 0;
+ 
+ 	sg_init_table(sq->sg, MAX_SKB_FRAGS + 2);
+ 	if (can_push) {
+@@ -1814,18 +1805,19 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
+ 		vi->mergeable_rx_bufs = true;
+ 
++	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
++		vi->hdr_len = sizeof(struct virtio_net_hdr_mrg_rxbuf);
++	else
++		vi->hdr_len = sizeof(struct virtio_net_hdr);
++
+ 	if (virtio_has_feature(vdev, VIRTIO_F_ANY_LAYOUT))
+ 		vi->any_header_sg = true;
+ 
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+ 		vi->has_cvq = true;
+ 
+-	if (vi->any_header_sg) {
+-		if (vi->mergeable_rx_bufs)
+-			dev->needed_headroom = sizeof(struct virtio_net_hdr_mrg_rxbuf);
+-		else
+-			dev->needed_headroom = sizeof(struct virtio_net_hdr);
+-	}
++	if (vi->any_header_sg)
++		dev->needed_headroom = vi->hdr_len;
+ 
+ 	/* Use single tx/rx queue pair as default */
+ 	vi->curr_queue_pairs = 1;
 -- 
-2.1.0.rc2.206.gedb03e5
+MST
+
