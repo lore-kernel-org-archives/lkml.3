@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194AbaKXJi6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 04:38:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38659 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751127AbaKXJi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 04:38:57 -0500
-Message-ID: <5472FCA7.60104@redhat.com>
-Date: Mon, 24 Nov 2014 10:38:47 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752039AbaKXJjH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 04:39:07 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:60465 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753196AbaKXJjC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 04:39:02 -0500
+X-Listener-Flag: 11101
+From: Xudong Chen <xudong.chen@mediatek.com>
+To: Mark Rutland <mark.rutland@arm.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+CC: <srv_heupstream@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Xudong Chen <xudong.chen@mediatek.com>,
+        Jean Delvare <jdelvare@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-i2c@vger.kernel.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        YH Chen <yh.chen@mediatek.com>
+Subject: [PATCH v3 0/2] ARM: mediatek: Add driver for Mediatek I2C controller
+Date: Mon, 24 Nov 2014 17:38:46 +0800
+Message-ID: <1416821928-11453-1-git-send-email-xudong.chen@mediatek.com>
+X-Mailer: git-send-email 1.8.1.1.dirty
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the kvm tree
-References: <20141124171908.034b2fa1@canb.auug.org.au>
-In-Reply-To: <20141124171908.034b2fa1@canb.auug.org.au>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+This series is the third version of Mediatek SoCs I2C controller common
+bus driver.
+Compared to the second version,
+1. Add comments for clock in dt-bindings file i2c-mt6577.txt.
+2. Remove mt8135.dtsi because of the dependency on pinctrl and clock.
+3. Encode the feature have-dcm in i2c-mt65xx.c by checking the compatible.
 
+This driver is based on 3.18-rc1.
 
+MTK I2C HW has some limitation.
+1. If the i2c_msg number is more than one, STOP will be issued instead of
+RS(Repeat Start) between each message.
+Such as: "START + ADDR + DATA_n + STOP + START + ADDR + DATA_n + STOP ..."
 
-On 24/11/2014 07:19, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the kvm tree, today's linux-next build (x86_64 
-> allmodconfig) failed like this:
-> 
-> ERROR: "get_xsave_addr" [arch/x86/kvm/kvm.ko] undefined!
-> 
-> Caused by commit 1d7fe1d1fb18 ("KVM: x86: support XSAVES usage in 
-> the host").
-> 
-> I have used the kvm tree from next-20141121 for today.
+2. Mediatek I2C controller support WRRD(write then read) mode, in WRRD
+mode the Repeat Start will be issued between 2 messages.
+In this driver if 2 messages is first write then read, the driver will
+combine 2 messages using Write-Read mode so the RS will be issued between
+the 2 messages.
+Ex: W/R/R, driver will combine first W/R and then R.
+The data series will be:
+"START + WriteADDR + DATA + RS + ReadADDR + DATA + STOP + START + ReadADDR +
+DATA + STOP".
 
-Indeed this patch wasn't supposed to be pushed yet.  I will rewind
-kvm/next by two commits.  Sorry.
+3. Due to HW limitation, in this version the max transfer data length is 255
+in one message. If want to transfer more than 255 bytes, HW needs the SW
+driver to split the data. Take 600 bytes for example, the data need to be
+divided into 3 parts 255 + 255 + 90. The data series will be:
+"START + ADDR + DATA_255 + RS + ADDR + DATA_255 + RS + ADDR +  DATA_90 + STOP"
+instead of "START + ADDR + DATA_900 + STOP".
+We haven't implement this yet, we will do this in the separate patch.
 
-Paolo
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+MT8135 and MT6589 can control I2C pins on PMIC(MT6397) by setting the i2c
+registers in MT8135 side. In this case, driver should set OFFSET_PATH_DIR
+bit first, the operation on other registers are still the same.
+For now MT6589/MT8135 support this, MT6577/MT6595/MT8127 do not support.
+For example, If want to use I2C4/5/6 pins on MT8135 just need to enable
+the pinmux, else if want to use I2C pins on PMIC(MT6397) need to add
+"mediatek,have-pmic" property in the .dts file of each platform.
 
-iQEcBAEBAgAGBQJUcvyjAAoJEL/70l94x66DqS0H/2KZIYQ2De2dc0xY4tV6fpPV
-qHWlQADg4rPJ1Y0nx3f4y3Xbqypp+Jrh9kgc2j3QNj66jcNoE8iYvXTmaCBJx4x8
-mex8eurjcP9S+wOHCiWoT/JAnK/jnmkdaxQSWSaGmAaTw+G7Zeui5KUHE/dG9QGK
-MNbNJOF1Uksz6Anqd/wNyXAbZcQJAyIiz0sujnOFeZOMG6EY3N9HTYaaYf7hbmtV
-q3lZJZOASAOj2+SOWsIaFP6LgcPFW5dQSMpiuZ3aH48VrISHdFnZxoFt5REWiDQZ
-ct2HyERItNvjUze/e/b2jjn0KYWswYQgBH7WKUBRvLj291WAepiP8W1dxO2KmaY=
-=o6gf
------END PGP SIGNATURE-----
+Xudong Chen (2):
+  dt-bindings: Add I2C bindings for mt65xx/mt81xx.
+  I2C: mediatek: Add driver for MediaTek I2C controller
+
+ .../devicetree/bindings/i2c/i2c-mt6577.txt         |  40 ++
+ drivers/i2c/busses/Kconfig                         |   9 +
+ drivers/i2c/busses/Makefile                        |   1 +
+ drivers/i2c/busses/i2c-mt65xx.c                    | 742 +++++++++++++++++++++
+ 4 files changed, 792 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/i2c-mt6577.txt
+ create mode 100644 drivers/i2c/busses/i2c-mt65xx.c
+
+--
+1.8.1.1.dirty
+
