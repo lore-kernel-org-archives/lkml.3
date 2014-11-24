@@ -1,48 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750821AbaKXWRr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 17:17:47 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:36048 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaKXWRo (ORCPT
+	id S1751181AbaKXWTU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 17:19:20 -0500
+Received: from smtp02.smtpout.orange.fr ([80.12.242.124]:38027 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaKXWTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 17:17:44 -0500
-Date: Mon, 24 Nov 2014 14:17:42 -0800
-From: Omar Sandoval <osandov@osandov.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>, linux-btrfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH v2 0/5] btrfs: implement swap file support
-Message-ID: <20141124221742.GA15745@mew.dhcp4.washington.edu>
-References: <cover.1416563833.git.osandov@osandov.com>
- <20141121101531.GB21814@mew>
- <20141121101914.GA380@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141121101914.GA380@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 24 Nov 2014 17:19:19 -0500
+X-ME-Helo: beldin.home
+X-ME-Date: Mon, 24 Nov 2014 23:19:18 +0100
+X-ME-IP: 109.222.88.20
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Daniel Mack <daniel@zonque.org>, Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robherring2@gmail.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: pxa: arbitrarily set first interrupt number
+Date: Mon, 24 Nov 2014 23:18:22 +0100
+Message-Id: <1416867502-6877-1-git-send-email-robert.jarzmik@free.fr>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 02:19:14AM -0800, Christoph Hellwig wrote:
-> On Fri, Nov 21, 2014 at 02:15:31AM -0800, Omar Sandoval wrote:
-> > Sorry for the noise, looks like Christoph got back to me on the previous RFC
-> > just before I sent this out -- disregard this for now.
-> 
-> If the NFS people are fine with this version I'd certainly welcome it as
-> a first step.  Additional improvements are of course always welcome.
->
-To follow up with the NFS people, there's some more review going on on the
-BTRFS side, but I'd like to have the infrastructure squared away here.
-Additional improvements should be mostly on the VFS side.
+As IRQ0, the legacy timer interrupt  should not be used as an interrupt
+number, shift the interrupts by a fixed number.
 
-Thanks!
+As we had in a special case a shift of 16 when ISA bus was used on a
+PXA, use that value as the first interrupt number, regardless of ISA or
+not.
+
+Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+---
+ arch/arm/mach-pxa/Kconfig             | 5 -----
+ arch/arm/mach-pxa/include/mach/irqs.h | 9 ++-------
+ 2 files changed, 2 insertions(+), 12 deletions(-)
+
+diff --git a/arch/arm/mach-pxa/Kconfig b/arch/arm/mach-pxa/Kconfig
+index e6690a4..bfca4ead 100644
+--- a/arch/arm/mach-pxa/Kconfig
++++ b/arch/arm/mach-pxa/Kconfig
+@@ -73,14 +73,12 @@ config ARCH_VIPER
+ 	select I2C_GPIO if I2C=y
+ 	select ISA
+ 	select PXA25x
+-	select PXA_HAVE_ISA_IRQS
+ 
+ config MACH_ARCOM_ZEUS
+ 	bool "Arcom/Eurotech ZEUS SBC"
+ 	select ARCOM_PCMCIA
+ 	select ISA
+ 	select PXA27x
+-	select PXA_HAVE_ISA_IRQS
+ 
+ config MACH_BALLOON3
+ 	bool "Balloon 3 board"
+@@ -680,9 +678,6 @@ config SHARPSL_PM_MAX1111
+ 	select SPI
+ 	select SPI_MASTER
+ 
+-config PXA_HAVE_ISA_IRQS
+-	bool
+-
+ config PXA310_ULPI
+ 	bool
+ 
+diff --git a/arch/arm/mach-pxa/include/mach/irqs.h b/arch/arm/mach-pxa/include/mach/irqs.h
+index 48c2fd8..83e04d4 100644
+--- a/arch/arm/mach-pxa/include/mach/irqs.h
++++ b/arch/arm/mach-pxa/include/mach/irqs.h
+@@ -12,14 +12,9 @@
+ #ifndef __ASM_MACH_IRQS_H
+ #define __ASM_MACH_IRQS_H
+ 
+-#ifdef CONFIG_PXA_HAVE_ISA_IRQS
+-#define PXA_ISA_IRQ(x)	(x)
+-#define PXA_ISA_IRQ_NUM	(16)
+-#else
+-#define PXA_ISA_IRQ_NUM	(0)
+-#endif
++#include <asm/irq.h>
+ 
+-#define PXA_IRQ(x)	(PXA_ISA_IRQ_NUM + (x))
++#define PXA_IRQ(x)	(NR_IRQS_LEGACY + (x))
+ 
+ #define IRQ_SSP3	PXA_IRQ(0)	/* SSP3 service request */
+ #define IRQ_MSL		PXA_IRQ(1)	/* MSL Interface interrupt */
 -- 
-Omar
+2.1.0
+
