@@ -1,102 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164AbaKXMIj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 07:08:39 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:30267 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590AbaKXMIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 07:08:37 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-d6-54731fc3e270
-Message-id: <54731FC3.30809@samsung.com>
-Date: Mon, 24 Nov 2014 21:08:35 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        =?UTF-8?B?7J6E6re87Iud?= <geunsik.lim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>
-Subject: [GIT PULL] extcon next for 3.19
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDLMWRmVeSWpSXmKPExsWyRsSkRPewfHGIwd4VohbXvzxntfgzoZXN
-	onnxejaLs01v2C0u75rDZnG7cQWbA5vH/rlr2D36tqxi9Pi8SS6AOYrLJiU1J7MstUjfLoEr
-	o2f3BbaCabwVkz6eYGxg/M/VxcjJISFgInFkeRcjhC0mceHeerYuRi4OIYGljBLLbnUwwxTt
-	X/GHESKxiFGi/fVlZgjnNaPEwvOLwap4BTQkJhx6xwRiswioSvw+cZsFxGYT0JLY/+IGG4gt
-	KhAmsXL6FRaIekGJH5PvgdkiQL0vj95iARnKLPCRUWLnsX1ADRwcwkCJxweVQGqYBdQlJs1b
-	xAxhy0tsXvMW6rpF7BLTJglC7BWQ+Db5EAtIq4SArMSmA1AlkhIHV9xgmcAoMgvJ5llIps5C
-	MnUBI/MqRtHUguSC4qT0IiO94sTc4tK8dL3k/NxNjMBIOf3vWd8OxpsHrA8xCnAwKvHwfthY
-	FCLEmlhWXJl7iNEU6IqJzFKiyfnAeMwriTc0NjOyMDUxNTYytzRTEudNkPoZLCSQnliSmp2a
-	WpBaFF9UmpNafIiRiYNTqoGR2yJoooDHl7btgv2vrhbHrZE4H5ygeOr8vHfCXKGRWd/Eemy0
-	fnT/C/a7Vi4ku++1e/jRE2ce7HOS38SfKZFuL/Cl5pP1R7WrWsvmXOBbwuKUsPgkW8GWB7fa
-	MvtZ9sZWm214eslu92SfPXeKhCd0bF/6v/r9KgarDfMOvQwNYKmtVuzp4JyixFKckWioxVxU
-	nAgA3wvpXY8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t9jAd3D8sUhBvdX8lpc//Kc1eLPhFY2
-	i+bF69kszja9Ybe4vGsOm8XtxhVsDmwe++euYffo27KK0ePzJrkA5qgGRpuM1MSU1CKF1Lzk
-	/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoMVKCmWJOaVAoYDE4mIlfTtM
-	E0JD3HQtYBojdH1DguB6jAzQQMIaxoye3RfYCqbxVkz6eIKxgfE/VxcjJ4eEgInE/hV/GCFs
-	MYkL99azdTFycQgJLGKUaH99mRnCec0osfD8YmaQKl4BDYkJh94xgdgsAqoSv0/cZgGx2QS0
-	JPa/uMEGYosKhEmsnH6FBaJeUOLH5HtgtghQ78ujt1hAhjILfGSU2HlsH1ADB4cwUOLxQSWQ
-	GmYBdYlJ8xYxQ9jyEpvXvGWewMg3C8moWUjKZiEpW8DIvIpRNLUguaA4KT3XUK84Mbe4NC9d
-	Lzk/dxMjOBKfSe1gXNlgcYhRgINRiYf3w8aiECHWxLLiytxDjBIczEoivGJixSFCvCmJlVWp
-	RfnxRaU5qcWHGE2BPp3ILCWanA9MEnkl8YbGJmZGlkbmhhZGxuZK4rw3buaGCAmkJ5akZqem
-	FqQWwfQxcXBKNTAq1Cp9mL36fn3vm8Qg1nka00sK2Rbe/VYS3uzeyhcxJy3GLXdC3IczBX4R
-	/lJ6X4L+R73ic9oyh2Pz9V97H8SmWlzeyHFTbJfGJPu3PSGy2/JqP6/rm5WkWnV08nb9JS5L
-	H8zSmWT//btR9N0rX4Jfb4soVzFJbMnckXjFNmPfbnHjgGK/V/eUWIozEg21mIuKEwEMW4BF
-	2gIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753827AbaKXMJA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 07:09:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56098 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752931AbaKXLx2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 06:53:28 -0500
+Date: Mon, 24 Nov 2014 13:52:55 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
+        Anup Patel <anup.patel@linaro.org>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: [PATCH v3 04/41] virtio: memory access APIs
+Message-ID: <1416829787-14252-5-git-send-email-mst@redhat.com>
+References: <1416829787-14252-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416829787-14252-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Greg,
+virtio 1.0 makes all memory structures LE, so
+we need APIs to conditionally do a byteswap on BE
+architectures.
 
-This is extcon-next full request for v3.19. I add detailed description of this
-pull request on below. Please pull extcon with following updates.
+To make it easier to check code statically,
+add virtio specific types for multi-byte integers
+in memory.
 
-This pull-request is based on Linux 3.18-rc3 (char-misc-next branch).
+Add low level wrappers that do a byteswap conditionally, these will be
+useful e.g. for vhost.  Add high level wrappers that
+query device endian-ness and act accordingly.
 
-Best Regards,
-Chanwoo Choi
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/linux/virtio_byteorder.h  | 59 +++++++++++++++++++++++++++++++++++++++
+ include/linux/virtio_config.h     | 32 +++++++++++++++++++++
+ include/uapi/linux/virtio_ring.h  | 45 ++++++++++++++---------------
+ include/uapi/linux/virtio_types.h | 48 +++++++++++++++++++++++++++++++
+ include/uapi/linux/Kbuild         |  1 +
+ 5 files changed, 163 insertions(+), 22 deletions(-)
+ create mode 100644 include/linux/virtio_byteorder.h
+ create mode 100644 include/uapi/linux/virtio_types.h
 
-The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
+diff --git a/include/linux/virtio_byteorder.h b/include/linux/virtio_byteorder.h
+new file mode 100644
+index 0000000..824ed0b
+--- /dev/null
++++ b/include/linux/virtio_byteorder.h
+@@ -0,0 +1,59 @@
++#ifndef _LINUX_VIRTIO_BYTEORDER_H
++#define _LINUX_VIRTIO_BYTEORDER_H
++#include <linux/types.h>
++#include <uapi/linux/virtio_types.h>
++
++/*
++ * Memory accessors for handling virtio in modern little endian and in
++ * compatibility native endian format.
++ */
++
++static inline u16 __virtio16_to_cpu(bool little_endian, __virtio16 val)
++{
++	if (little_endian)
++		return le16_to_cpu((__force __le16)val);
++	else
++		return (__force u16)val;
++}
++
++static inline __virtio16 __cpu_to_virtio16(bool little_endian, u16 val)
++{
++	if (little_endian)
++		return (__force __virtio16)cpu_to_le16(val);
++	else
++		return (__force __virtio16)val;
++}
++
++static inline u32 __virtio32_to_cpu(bool little_endian, __virtio32 val)
++{
++	if (little_endian)
++		return le32_to_cpu((__force __le32)val);
++	else
++		return (__force u32)val;
++}
++
++static inline __virtio32 __cpu_to_virtio32(bool little_endian, u32 val)
++{
++	if (little_endian)
++		return (__force __virtio32)cpu_to_le32(val);
++	else
++		return (__force __virtio32)val;
++}
++
++static inline u64 __virtio64_to_cpu(bool little_endian, __virtio64 val)
++{
++	if (little_endian)
++		return le64_to_cpu((__force __le64)val);
++	else
++		return (__force u64)val;
++}
++
++static inline __virtio64 __cpu_to_virtio64(bool little_endian, u64 val)
++{
++	if (little_endian)
++		return (__force __virtio64)cpu_to_le64(val);
++	else
++		return (__force __virtio64)val;
++}
++
++#endif /* _LINUX_VIRTIO_BYTEORDER */
+diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
+index 022d904..b9cd689 100644
+--- a/include/linux/virtio_config.h
++++ b/include/linux/virtio_config.h
+@@ -4,6 +4,7 @@
+ #include <linux/err.h>
+ #include <linux/bug.h>
+ #include <linux/virtio.h>
++#include <linux/virtio_byteorder.h>
+ #include <uapi/linux/virtio_config.h>
+ 
+ /**
+@@ -152,6 +153,37 @@ int virtqueue_set_affinity(struct virtqueue *vq, int cpu)
+ 	return 0;
+ }
+ 
++/* Memory accessors */
++static inline u16 virtio16_to_cpu(struct virtio_device *vdev, __virtio16 val)
++{
++	return __virtio16_to_cpu(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio16 cpu_to_virtio16(struct virtio_device *vdev, u16 val)
++{
++	return __cpu_to_virtio16(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline u32 virtio32_to_cpu(struct virtio_device *vdev, __virtio32 val)
++{
++	return __virtio32_to_cpu(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio32 cpu_to_virtio32(struct virtio_device *vdev, u32 val)
++{
++	return __cpu_to_virtio32(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline u64 virtio64_to_cpu(struct virtio_device *vdev, __virtio64 val)
++{
++	return __virtio64_to_cpu(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio64 cpu_to_virtio64(struct virtio_device *vdev, u64 val)
++{
++	return __cpu_to_virtio64(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
+ /* Config space accessors. */
+ #define virtio_cread(vdev, structname, member, ptr)			\
+ 	do {								\
+diff --git a/include/uapi/linux/virtio_ring.h b/include/uapi/linux/virtio_ring.h
+index a99f9b7..61c818a 100644
+--- a/include/uapi/linux/virtio_ring.h
++++ b/include/uapi/linux/virtio_ring.h
+@@ -32,6 +32,7 @@
+  *
+  * Copyright Rusty Russell IBM Corporation 2007. */
+ #include <linux/types.h>
++#include <linux/virtio_types.h>
+ 
+ /* This marks a buffer as continuing via the next field. */
+ #define VRING_DESC_F_NEXT	1
+@@ -61,32 +62,32 @@
+ /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
+ struct vring_desc {
+ 	/* Address (guest-physical). */
+-	__u64 addr;
++	__virtio64 addr;
+ 	/* Length. */
+-	__u32 len;
++	__virtio32 len;
+ 	/* The flags as indicated above. */
+-	__u16 flags;
++	__virtio16 flags;
+ 	/* We chain unused descriptors via this, too */
+-	__u16 next;
++	__virtio16 next;
+ };
+ 
+ struct vring_avail {
+-	__u16 flags;
+-	__u16 idx;
+-	__u16 ring[];
++	__virtio16 flags;
++	__virtio16 idx;
++	__virtio16 ring[];
+ };
+ 
+ /* u32 is used here for ids for padding reasons. */
+ struct vring_used_elem {
+ 	/* Index of start of used descriptor chain. */
+-	__u32 id;
++	__virtio32 id;
+ 	/* Total length of the descriptor chain which was used (written to) */
+-	__u32 len;
++	__virtio32 len;
+ };
+ 
+ struct vring_used {
+-	__u16 flags;
+-	__u16 idx;
++	__virtio16 flags;
++	__virtio16 idx;
+ 	struct vring_used_elem ring[];
+ };
+ 
+@@ -109,25 +110,25 @@ struct vring {
+  *	struct vring_desc desc[num];
+  *
+  *	// A ring of available descriptor heads with free-running index.
+- *	__u16 avail_flags;
+- *	__u16 avail_idx;
+- *	__u16 available[num];
+- *	__u16 used_event_idx;
++ *	__virtio16 avail_flags;
++ *	__virtio16 avail_idx;
++ *	__virtio16 available[num];
++ *	__virtio16 used_event_idx;
+  *
+  *	// Padding to the next align boundary.
+  *	char pad[];
+  *
+  *	// A ring of used descriptor heads with free-running index.
+- *	__u16 used_flags;
+- *	__u16 used_idx;
++ *	__virtio16 used_flags;
++ *	__virtio16 used_idx;
+  *	struct vring_used_elem used[num];
+- *	__u16 avail_event_idx;
++ *	__virtio16 avail_event_idx;
+  * };
+  */
+ /* We publish the used event index at the end of the available ring, and vice
+  * versa. They are at the end for backwards compatibility. */
+ #define vring_used_event(vr) ((vr)->avail->ring[(vr)->num])
+-#define vring_avail_event(vr) (*(__u16 *)&(vr)->used->ring[(vr)->num])
++#define vring_avail_event(vr) (*(__virtio16 *)&(vr)->used->ring[(vr)->num])
+ 
+ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+ 			      unsigned long align)
+@@ -135,15 +136,15 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+ 	vr->num = num;
+ 	vr->desc = p;
+ 	vr->avail = p + num*sizeof(struct vring_desc);
+-	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + sizeof(__u16)
++	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + sizeof(__virtio16)
+ 		+ align-1) & ~(align - 1));
+ }
+ 
+ static inline unsigned vring_size(unsigned int num, unsigned long align)
+ {
+-	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
++	return ((sizeof(struct vring_desc) * num + sizeof(__virtio16) * (3 + num)
+ 		 + align - 1) & ~(align - 1))
+-		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
++		+ sizeof(__virtio16) * 3 + sizeof(struct vring_used_elem) * num;
+ }
+ 
+ /* The following is used with USED_EVENT_IDX and AVAIL_EVENT_IDX */
+diff --git a/include/uapi/linux/virtio_types.h b/include/uapi/linux/virtio_types.h
+new file mode 100644
+index 0000000..b90385f
+--- /dev/null
++++ b/include/uapi/linux/virtio_types.h
+@@ -0,0 +1,48 @@
++#ifndef _UAPI_LINUX_VIRTIO_TYPES_H
++#define _UAPI_LINUX_VIRTIO_TYPES_H
++/* An interface for efficient virtio implementation, currently for use by KVM
++ * and lguest, but hopefully others soon.  Do NOT change this since it will
++ * break existing servers and clients.
++ *
++ * This header is BSD licensed so anyone can use the definitions to implement
++ * compatible drivers/servers.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ * 3. Neither the name of IBM nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS'' AND
++ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED.  IN NO EVENT SHALL IBM OR CONTRIBUTORS BE LIABLE
++ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ *
++ * Copyright (C) 2014 Red Hat, Inc.
++ * Author: Michael S. Tsirkin <mst@redhat.com>
++ */
++#include <linux/types.h>
++
++/*
++ * __virtio{16,32,64} have the following meaning:
++ * - __u{16,32,64} for virtio devices in legacy mode, accessed in native endian
++ * - __le{16,32,64} for standard-compliant virtio devices
++ */
++
++typedef __u16 __bitwise__ __virtio16;
++typedef __u32 __bitwise__ __virtio32;
++typedef __u64 __bitwise__ __virtio64;
++
++#endif /* _UAPI_LINUX_VIRTIO_TYPES_H */
+diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
+index 4c94f31..44a5581 100644
+--- a/include/uapi/linux/Kbuild
++++ b/include/uapi/linux/Kbuild
+@@ -423,6 +423,7 @@ header-y += virtio_blk.h
+ header-y += virtio_config.h
+ header-y += virtio_console.h
+ header-y += virtio_ids.h
++header-y += virtio_types.h
+ header-y += virtio_net.h
+ header-y += virtio_pci.h
+ header-y += virtio_ring.h
+-- 
+MST
 
-  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-next-for-3.19
-
-for you to fetch changes up to 6ab0b1171b068a1be871184fc704074ad7e5b9e7:
-
-  extcon: max14577: Fix obvious typo in company name in copyright (2014-11-24 20:51:15 +0900)
-
-----------------------------------------------------------------
-Update extcon for v3.19
-
-This patchset fix minor issue of extcon driver.
-
-Detailed description for patchset:
-- Fix typo and change jig cable name of extcon-max77693.c
-- Update the extcon_get_edev_by_phandle() because previous extcon_get_edev_by_phandle()
-  considered only the platform device driver. So, this modification supports
-  OF-based extcon lookup method by using the list of extcon devices.
-
-----------------------------------------------------------------
-Krzysztof Kozlowski (2):
-      extcon: max77693: Fix cable name of JIG_UART_ON
-      extcon: max14577: Fix obvious typo in company name in copyright
-
-Tomasz Figa (1):
-      extcon: Implement OF-based extcon lookup properly
-
- drivers/extcon/extcon-class.c    | 14 +++++++++-----
- drivers/extcon/extcon-max14577.c |  2 +-
- drivers/extcon/extcon-max77693.c | 12 +++++++-----
- 3 files changed, 17 insertions(+), 11 deletions(-)
