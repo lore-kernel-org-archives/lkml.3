@@ -1,74 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809AbaKXTeH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 14:34:07 -0500
-Received: from mail-bn1on0065.outbound.protection.outlook.com ([157.56.110.65]:24954
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752643AbaKXTeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 14:34:05 -0500
-Date: Mon, 24 Nov 2014 11:33:57 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>
-CC: Nicholas Krause <xerofoify@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers:block Remove unneeded Fix me message in xsyace.c
-References: <1416857108-2618-1-git-send-email-xerofoify@gmail.com>
- <fd1c5863660447cfb2b959e80d42c27c@BN1AFFO11FD018.protection.gbl>
+	id S1754843AbaKXTeT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 14:34:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54931 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754652AbaKXTeP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 14:34:15 -0500
+Date: Mon, 24 Nov 2014 11:34:12 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Pieter Smith <pieter@boesman.nl>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Bertrand Jacquin <beber@meleeweb.net>, Oleg Nesterov <oleg@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Eric Dumazet <edumazet@google.com>,
+        =?utf-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
+        Jeff Layton <jlayton@poochiereds.net>,
+        Tom Herbert <therbert@google.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, Peter Foley <pefoley2@pefoley.com>,
+        Hugh Dickins <hughd@google.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mel Gorman <mgorman@suse.de>, Matt Turner <mattst88@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Catalina Mocanu <catalina.mocanu@gmail.com>,
+        Fabian Frederick <fabf@skynet.be>, Thomas Graf <tgraf@suug.ch>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jan Beulich <JBeulich@suse.com>, Willem de Bruijn <willemb@google.com>,
+        Iulia Manda <iulia.manda21@gmail.com>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [fuse-devel] [PATCH 4/6] fs/fuse: support compiling out splice
+Message-ID: <20141124193412.GB31618@kroah.com>
+References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
+ <1416752468-1626-5-git-send-email-pieter@boesman.nl>
+ <CAFLxGvxq3Mr9n8xMO_fPZDhrGmBh=WKyU0+RF13JBdjssX6qfw@mail.gmail.com>
+ <20141123232302.GA12456@thin>
+ <20141124094931.GA1055@smipidev>
+ <20141124160510.GA2446@jtriplet-mobl1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <fd1c5863660447cfb2b959e80d42c27c@BN1AFFO11FD018.protection.gbl>
+In-Reply-To: <20141124160510.GA2446@jtriplet-mobl1>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21128.001
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <08ea34761ecd4d5a8bc814d1d42c9b61@BN1AFFO11FD048.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(479174003)(51704005)(377454003)(189002)(24454002)(377424004)(20776003)(76176999)(64706001)(6806004)(44976005)(19580395003)(74316001)(47776003)(110136001)(120916001)(85182001)(46102003)(95666004)(19580405001)(23676002)(104016003)(92566001)(106466001)(102836001)(85202003)(33646002)(54356999)(50466002)(77156002)(87936001)(62966003)(107046002)(108616004)(86362001)(31966008)(53416004)(4396001)(50986999)(83506001)(21056001)(99396003)(77096003)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB034;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB034;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB034;
-X-Forefront-PRVS: 040513D301
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB034;
-X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-24 at 08:31PM +0100, Michal Simek wrote:
-> On 11/24/2014 08:25 PM, Nicholas Krause wrote:
-> > Removes unneeded FIXME message related to using a hard coded value for ACE_BUS_WIDTH
-> > due to it needing to be 8 bits, this is wrong as this function here needs all 16 bits
-> > of the bus width and not just the lower or higher 16 depending on the machine's bit
-> > order.
+On Mon, Nov 24, 2014 at 08:05:10AM -0800, Josh Triplett wrote:
+> On Mon, Nov 24, 2014 at 10:49:31AM +0100, Pieter Smith wrote:
+> > On Sun, Nov 23, 2014 at 03:23:02PM -0800, Josh Triplett wrote:
+> > > On Sun, Nov 23, 2014 at 11:29:08PM +0100, Richard Weinberger wrote:
+> > > > On Sun, Nov 23, 2014 at 3:20 PM, Pieter Smith <pieter@boesman.nl> wrote:
+> > > > > To implement splice support, fs/fuse makes use of nosteal_pipe_buf_ops. This
+> > > > > struct is exported by fs/splice. The goal of the larger patch set is to
+> > > > > completely compile out fs/splice, so uses of the exported struct need to be
+> > > > > compiled out along with fs/splice.
+> > > > >
+> > > > > This patch therefore compiles out splice support in fs/fuse when
+> > > > > CONFIG_SYSCALL_SPLICE is undefined.
+> > > > >
+> > > > > Signed-off-by: Pieter Smith <pieter@boesman.nl>
+> > > > > ---
+> > > > >  fs/fuse/dev.c      | 4 ++--
+> > > > >  include/linux/fs.h | 6 ++++++
+> > > > >  2 files changed, 8 insertions(+), 2 deletions(-)
+> > > > >
+> > > > > diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> > > > > index ca88731..f8f92a4 100644
+> > > > > --- a/fs/fuse/dev.c
+> > > > > +++ b/fs/fuse/dev.c
+> > > > > @@ -1291,7 +1291,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
+> > > > >         return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
+> > > > >  }
+> > > > >
+> > > > > -static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
+> > > > > +static ssize_t __maybe_unused fuse_dev_splice_read(struct file *in, loff_t *ppos,
+> > > > >                                     struct pipe_inode_info *pipe,
+> > > > >                                     size_t len, unsigned int flags)
+> > > > >  {
+> > > > > @@ -2144,7 +2144,7 @@ const struct file_operations fuse_dev_operations = {
+> > > > >         .llseek         = no_llseek,
+> > > > >         .read           = do_sync_read,
+> > > > >         .aio_read       = fuse_dev_read,
+> > > > > -       .splice_read    = fuse_dev_splice_read,
+> > > > > +       .splice_read    = __splice_p(fuse_dev_splice_read),
+> > > > >         .write          = do_sync_write,
+> > > > >         .aio_write      = fuse_dev_write,
+> > > > >         .splice_write   = fuse_dev_splice_write,
+> > > > > diff --git a/include/linux/fs.h b/include/linux/fs.h
+> > > > > index a957d43..04c0975 100644
+> > > > > --- a/include/linux/fs.h
+> > > > > +++ b/include/linux/fs.h
+> > > > > @@ -2443,6 +2443,12 @@ extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
+> > > > >                         int datasync);
+> > > > >  extern void block_sync_page(struct page *page);
+> > > > >
+> > > > > +#ifdef CONFIG_SYSCALL_SPLICE
+> > > > > +#define __splice_p(x) x
+> > > > > +#else
+> > > > > +#define __splice_p(x) NULL
+> > > > > +#endif
+> > > > > +
+> > > > 
+> > > > This needs to go into a different patch.
+> > > > One logical change per patch please. :-)
+> > > 
+> > > Easy enough to merge this one into the patch introducing
+> > > CONFIG_SYSCALL_SPLICE, then.
+> > > 
+> > > - Josh Triplett
 > > 
-> > Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> > ---
-> >  drivers/block/xsysace.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
-> > index c4328d9..1b807ed 100644
-> > --- a/drivers/block/xsysace.c
-> > +++ b/drivers/block/xsysace.c
-> > @@ -1152,7 +1152,7 @@ static void ace_free(struct device *dev)
-> >  static int ace_probe(struct platform_device *dev)
-> >  {
-> >  	resource_size_t physaddr = 0;
-> > -	int bus_width = ACE_BUS_WIDTH_16; /* FIXME: should not be hard coded */
-> > +	int bus_width = ACE_BUS_WIDTH_16;
-> >  	u32 id = dev->id;
-> >  	int irq = 0;
-> >  	int i;
-> > 
+> > The patch introducing CONFIG_SYSCALL_SPLICE (PATCH 3) only compiles out the
+> > syscalls. PATCH 6 on the other hand, compiles out fs/splice.c. This patch
+> > allows fs/fuse to be compiled when fs/splice.c is compiled out. If I am to
+> > squash it, it would be logical to include it in PATCH 6, not 3.
 > 
-> Reviewed-by: Michal Simek <michal.simek@xilinx.com>
+> The suggestion wasn't to move the fs/fuse/dev.c bits; those should
+> definitely stay in this patch.  The suggestion was just to move the bit
+> of the patch defining __splice_p from this patch to patch 3.  (Note that
+> you need to define it before you use it, so it can't go in patch 6.)
 
-I find the commit message rather misleading, but the change is OK.
+I would, again, argue that stuff like __splice_p() not be implemented at
+all please.  It will only cause a huge proliferation of stuff like this
+that will not make any sense, and only cause a trivial, if any, amount
+of code savings.
 
-	Sören
+I thought you were going to not do this type of thing until you got the
+gcc optimizer working for function callbacks.
+
+Again, don't do this please.
+
+thanks,
+
+greg k-h
