@@ -1,39 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750990AbaKXVcI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 16:32:08 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821AbaKXVcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 16:32:06 -0500
-Message-ID: <5473A3D3.4050205@nod.at>
-Date: Mon, 24 Nov 2014 22:32:03 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751083AbaKXVdZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 16:33:25 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:64335 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755AbaKXVdY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 16:33:24 -0500
+Date: Mon, 24 Nov 2014 17:25:08 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Rui Zhang <rui.zhang@intel.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] thermal-soc updates for v3.18-rc7
+Message-ID: <20141124212506.GA1685@developer>
 MIME-Version: 1.0
-To: Andrew Murray <amurray@embedded-bits.co.uk>
-CC: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Subject: Re: [PATCH 1/2] UBI: Implement UBI_METAONLY
-References: <1414594338-14695-1-git-send-email-richard@nod.at>	<CAPcvp5HBnuAHTwFHLJ1Ve6o2MSeQ8Qnn6x7Q0wD2G-yP6p7OLA@mail.gmail.com>	<54514BF6.1010201@nod.at> <CAPcvp5Eugd79bLV7e8kOL_Lhut1KeYYu5eZby9kQUee0j5sJqQ@mail.gmail.com>
-In-Reply-To: <CAPcvp5Eugd79bLV7e8kOL_Lhut1KeYYu5eZby9kQUee0j5sJqQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KsGdsel6WgEHnImy"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 07.11.2014 um 13:42 schrieb Andrew Murray:
->> Please send a patch for that. :)
-> 
-> Apologies for the delay - did you just want junk a hunk so you can
-> include in your next revision - or did you want me to come up with a
-> v2 of your patch?
 
-I have to say sorry, your mail got lost in my inbox. :-(
-The change in ubi.h is trivial, I've added it directly to my patch.
-If you want you can send a patch for gluebi.c.
+--KsGdsel6WgEHnImy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-//richard
+
+Hello Rui,
+
+Please pull from
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.=
+git fixes
+
+to receive thermal-soc updates for v3.18-rc7 with top-most
+
+d3e19567fa85e1a0dab02205b89b2908084ecadd:
+
+  thermal: Exynos: Deletion of unnecessary checks before two function calls=
+ (2014-11-21 15:20:17 -0400)
+
+on top of commit fc14f9c1272f62c3e8d01300f52467c0d9af50f9:
+
+  Linux 3.18-rc5 (2014-11-16 16:36:20 -0800)
+
+Specifics:
+
+In this -rc still very minor changes:
+ - Lee Jones fixes compilation warning in sti thermal driver;
+ - Marjus Elfring removes unnecessary checks in exynos thermal driver
+   (as per coccinelle); and
+ - Now we always update cpufreq policies, and thus get (hopefully) always i=
+n sync with cpufreq,
+   thanks to Yadwinder.=20
+
+BR,
+
+Eduardo Valentin
+
+----------------------------------------------------------------
+Lee Jones (1):
+      thermal: sti: Ignore suspend/resume functions when !PM_SLEEP
+
+Markus Elfring (1):
+      thermal: Exynos: Deletion of unnecessary checks before two function c=
+alls
+
+Yadwinder Singh Brar (1):
+      thermal: cpu_cooling: Update always cpufreq policy with thermal const=
+raints
+
+ drivers/thermal/cpu_cooling.c                   | 37 ++++++++++++++-------=
+----
+ drivers/thermal/samsung/exynos_thermal_common.c |  9 ++----
+ drivers/thermal/st/st_thermal.c                 |  3 ++
+ 3 files changed, 27 insertions(+), 22 deletions(-)
+
+--KsGdsel6WgEHnImy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUc6IqAAoJEMLUO4d9pOJW3v4IAI2MfS9q+drdYAhAnNCoSLOr
+CPdkbQiGuXlju+Cpu798sp6osAwbZQWYwWZNMwjznXO6M6JNAoYgW1hljAto0KZR
+P6pxVnr48LIT5HxhdAChB09YWn+25RAFbRqmbX7PTlNx+LkmZexcDxSprozI35jO
+yBbks46ycFSvM1MfIRT5LAkwiST8j2NYIb7OM39zEjKL5ZIcrbDskPKrEKBiIeye
+98Uf5c+d1RBntIaw242NdaLggY3k8IzzBkzubUoxdExM050IrPvPcHCZJ57R8ltw
+/hrh0vNRVGe43q4VnoiTGtXOXzEyAOzg7k8RpyYc0Cu/2ymtalHjMqFS9qfd6VY=
+=kwn7
+-----END PGP SIGNATURE-----
+
+--KsGdsel6WgEHnImy--
