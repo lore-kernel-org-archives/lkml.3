@@ -1,795 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422AbaKXVAm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 16:00:42 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55430 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751206AbaKXVAj (ORCPT
+	id S1751436AbaKXVBi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 16:01:38 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:50426 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144AbaKXVBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 16:00:39 -0500
-Message-ID: <1416862824.7215.85.camel@decadent.org.uk>
-Subject: [RFC PATCH] vfs: Move security_inode_killpriv() after permission
- checks
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, 770492@bugs.debian.org,
-        Ben Harris <bjh21@cam.ac.uk>
-Date: Mon, 24 Nov 2014 21:00:24 +0000
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-MRiWQfN/WCFqJKn8m6FY"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 24 Nov 2014 16:01:36 -0500
+Message-ID: <54739CA8.2080406@linaro.org>
+Date: Mon, 24 Nov 2014 21:01:28 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: linaro-kernel@lists.linaro.org, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, patches@linaro.org,
+        Marc Zyngier <marc.zyngier@arm.com>, linux-kernel@vger.kernel.org,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3.18-rc3 v8 1/4] irqchip: gic: Make gic_raise_softirq()
+ FIQ-safe
+References: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org> <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <1415968543-29469-2-git-send-email-daniel.thompson@linaro.org> <alpine.DEB.2.11.1411241918090.6439@nanos> <alpine.DEB.2.11.1411241928300.6439@nanos> <alpine.DEB.2.11.1411242101130.6439@nanos>
+In-Reply-To: <alpine.DEB.2.11.1411242101130.6439@nanos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 24/11/14 20:38, Thomas Gleixner wrote:
+> On Mon, 24 Nov 2014, Thomas Gleixner wrote:
+>> On Mon, 24 Nov 2014, Thomas Gleixner wrote:
+>>> On Fri, 14 Nov 2014, Daniel Thompson wrote:
+>>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>>>> index 38493ff28fa5..0db62a6f1ee3 100644
+>>>> --- a/drivers/irqchip/irq-gic.c
+>>>> +++ b/drivers/irqchip/irq-gic.c
+>>>> @@ -73,6 +73,13 @@ struct gic_chip_data {
+>>>>  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+>>>>  
+>>>>  /*
+>>>> + * This lock may be locked for reading by FIQ handlers. Thus although
+>>>> + * read locking may be used liberally, write locking must only take
+>>>> + * place only when local FIQ handling is disabled.
+>>>> + */
+>>>> +static DEFINE_RWLOCK(fiq_safe_cpu_map_lock);
+>>>> +
+>>>> +/*
+>>>>   * The GIC mapping of CPU interfaces does not necessarily match
+>>>>   * the logical CPU numbering.  Let's use a mapping as returned
+>>>>   * by the GIC itself.
+>>>> @@ -624,7 +631,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>>>>  	int cpu;
+>>>>  	unsigned long flags, map = 0;
+>>>>  
+>>>> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
+>>>> +	read_lock_irqsave(&fiq_safe_cpu_map_lock, flags);
+>>>
+>>> Just for the record:
+>>>
+>>> You might have noticed that you replace a raw lock with a non raw
+>>> one. That's not an issue on mainline, but that pretty much renders
+>>> that code broken for RT.
+>>>   
+>>> Surely nothing I worry too much about given the current state of RT.
+>>
+>> And having a second thought here. Looking at the protection scope
+>> independent of the spin vs. rw lock
+>>
+>> gic_raise_softirq()
+>>
+>> 	lock();
+>>
+>> 	/* Does not need any protection */
+>> 	for_each_cpu(cpu, mask)
+>>                 map |= gic_cpu_map[cpu];
+>>
+>> 	/*
+>> 	 * Can be outside the lock region as well as it makes sure
+>> 	 * that previous writes (usually the IPI data) are visible
+>> 	 * before the write to the SOFTINT register.
+>> 	 */
+>> 	 dmb(ishst);
+>>
+>> 	/* Why needs this protection? */
+>> 	write(map, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT));
+>>
+>> 	unlock();
+>>
+>> gic_migrate_target()
+>>
+>> 	....
+>> 	lock();
+>>
+>> 	/* Migrate all peripheral interrupts */
+>>
+>> 	unlock();
+>>
+>> So what's the point of that protection?
+>>
+>> gic_raise_softirq() is used to send IPIs, which are PPIs on the target
+>> CPUs so they are not affected from the migration of the peripheral
+>> interrupts at all.
+>>
+>> The write to the SOFTINT register in gic_migrate_target() is not
+>> inside the lock region. So what's serialized by the lock in
+>> gic_raise_softirq() at all?
+>>
+>> Either I'm missing something really important here or this locking
+>> exercise in gic_raise_softirq() and therefor the rwlock conversion is
+>> completely pointless.
+> 
+> Thanks to Marc I figured it out now what I'm missing. That stuff is
+> part of the bl switcher horror. Well documented as all of that ...
+> 
+> So the lock protects against an IPI being sent to the current cpu
+> while the target map is redirected and the pending state of the
+> current cpu is migrated to another cpu.
+> 
+> It's not your fault, that the initial authors of that just abused
+> irq_controller_lock for that purpose instead of introducing a seperate
+> lock with a clear description of the protection scope in the first
+> place.
+> 
+> Now you came up with the rw lock to handle the following FIQ related
+> case:
+>     	gic_raise_softirq()
+> 	   lock(x);
+> ---> FIQ
+>         handle_fiq()
+> 	   gic_raise_softirq()
+> 	      lock(x);		<-- Live lock
+> 
+> Now the rwlock lets you avoid that, and it only lets you avoid that
+> because rwlocks are not fair.
+> 
+> So while I cannot come up with a brilliant replacement, it would be
+> really helpful documentation wise if you could do the following:
+> 
+> 1) Create a patch which introduces irq_migration_lock as a raw
+>    spinlock and replaces the usage of irq_controller_lock in
+>    gic_raise_softirq() and gic_migrate_target() along with a proper
+>    explanation in the code and the changelog of course.
 
---=-MRiWQfN/WCFqJKn8m6FY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Replace irq_controller_lock or augment it with a new one?
 
-chown() and write() should clear all privilege attributes on
-a file - setuid, setgid, setcap and any other extended
-privilege attributes.
+irq_raise_softirq() can share a single r/w lock with irq_set_affinity()
+because irq_set_affinity() would have to lock it for writing and that
+would bring the deadlock back for a badly timed FIQ.
 
-However, any attributes beyond setuid and setgid are managed by the
-LSM and not directly by the filesystem, so they cannot be set along
-with the other attributes.
+Thus if we want calls to gic_raise_softirq() to be FIQ-safe there there
+must be two locks taken in gic_migrate_target().
 
-Currently we call security_inode_killpriv() in notify_change(),
-but in case of a chown() this is too early - we have not called
-inode_change_ok() or made any filesystem-specific permission/sanity
-checks.
+We can eliminate irq_controller_lock but we cannot replace it with one
+r/w lock.
 
-Add a new function setattr_killpriv() which calls
-security_inode_killpriv() if necessary, and change the setattr()
-implementation to call this in each filesystem that supports xattrs.
-This assumes that extended privilege attributes are always stored in
-xattrs.
 
-Compile-tested only.
+> 2) Make the rwlock conversion on top of that with a proper
+>    documentation in the code of the only relevant reason (See above).
+> 
+>    The protection scope which prevents IPIs being sent while switching
+>    over is still the same and not affected.
+> 
+> That's not the first time that I stumble over this bl switcher mess
+> which got boltet into the kernel mindlessly.
+> 
+> If the scope of the issue would have been clear up front, I wouldn't
+> have complained about the RT relevance for this as it is simple to
+> either disable FIQs for RT or just handle the above case differently.
+> 
+> Thanks,
+> 
+> 	tglx
+> 
 
-XXX This is a silent change to the VFS API, but we should probably
-change something so OOT filesystems fail to compile if they aren't
-updated to call setattr_killpriv().
-
-Reported-by: Ben Harris <bjh21@cam.ac.uk>
-References: https://bugs.debian.org/770492
----
- drivers/staging/lustre/lustre/llite/llite_lib.c |  4 ++++
- fs/9p/vfs_inode.c                               |  4 ++++
- fs/9p/vfs_inode_dotl.c                          |  4 ++++
- fs/attr.c                                       | 32 +++++++++++++++++++++=
-----
- fs/btrfs/inode.c                                |  4 ++++
- fs/ceph/inode.c                                 |  4 ++++
- fs/cifs/inode.c                                 | 11 ++++++++-
- fs/ext2/inode.c                                 |  4 ++++
- fs/ext3/inode.c                                 |  4 ++++
- fs/ext4/inode.c                                 |  4 ++++
- fs/f2fs/file.c                                  |  4 ++++
- fs/fuse/dir.c                                   | 15 +++++++-----
- fs/fuse/file.c                                  |  3 ++-
- fs/fuse/fuse_i.h                                |  2 +-
- fs/gfs2/inode.c                                 |  3 +++
- fs/hfs/inode.c                                  |  4 ++++
- fs/hfsplus/inode.c                              |  4 ++++
- fs/jffs2/fs.c                                   |  4 ++++
- fs/jfs/file.c                                   |  4 ++++
- fs/kernfs/inode.c                               | 17 +++++++++++++
- fs/libfs.c                                      |  3 +++
- fs/nfs/inode.c                                  | 11 +++++++--
- fs/ocfs2/file.c                                 |  6 ++++-
- fs/reiserfs/inode.c                             |  4 ++++
- fs/ubifs/file.c                                 |  4 ++++
- fs/xfs/xfs_acl.c                                |  3 ++-
- fs/xfs/xfs_file.c                               |  2 +-
- fs/xfs/xfs_ioctl.c                              |  2 +-
- fs/xfs/xfs_iops.c                               | 16 ++++++++++---
- fs/xfs/xfs_iops.h                               | 10 ++++++--
- include/linux/fs.h                              |  1 +
- mm/shmem.c                                      |  4 ++++
- 32 files changed, 176 insertions(+), 25 deletions(-)
-
-diff --git a/drivers/staging/lustre/lustre/llite/llite_lib.c b/drivers/stag=
-ing/lustre/lustre/llite/llite_lib.c
-index a8bcc51..2a714b2 100644
---- a/drivers/staging/lustre/lustre/llite/llite_lib.c
-+++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
-@@ -1434,6 +1434,10 @@ int ll_setattr_raw(struct dentry *dentry, struct iat=
-tr *attr, bool hsm_import)
- 		spin_unlock(&lli->lli_lock);
- 	}
-=20
-+	rc =3D setattr_killpriv(dentry, attr);
-+	if (rc)
-+		return rc;
-+
- 	/* We always do an MDS RPC, even if we're only changing the size;
- 	 * only the MDS knows whether truncate() should fail with -ETXTBUSY */
-=20
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index 296482f..735cbf84 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -1130,6 +1130,10 @@ static int v9fs_vfs_setattr(struct dentry *dentry, s=
-truct iattr *iattr)
- 	if (S_ISREG(dentry->d_inode->i_mode))
- 		filemap_write_and_wait(dentry->d_inode->i_mapping);
-=20
-+	retval =3D setattr_killpriv(dentry, iattr);
-+	if (retval)
-+		return retval;
-+
- 	retval =3D p9_client_wstat(fid, &wstat);
- 	if (retval < 0)
- 		return retval;
-diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
-index 02b64f4..f3ca76d 100644
---- a/fs/9p/vfs_inode_dotl.c
-+++ b/fs/9p/vfs_inode_dotl.c
-@@ -583,6 +583,10 @@ int v9fs_vfs_setattr_dotl(struct dentry *dentry, struc=
-t iattr *iattr)
- 	if (S_ISREG(inode->i_mode))
- 		filemap_write_and_wait(inode->i_mapping);
-=20
-+	retval =3D setattr_killpriv(dentry, iattr);
-+	if (retval)
-+		return retval;
-+
- 	retval =3D p9_client_setattr(fid, &p9attr);
- 	if (retval < 0)
- 		return retval;
-diff --git a/fs/attr.c b/fs/attr.c
-index 6530ced..184f3bf 100644
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -168,6 +168,28 @@ void setattr_copy(struct inode *inode, const struct ia=
-ttr *attr)
- EXPORT_SYMBOL(setattr_copy);
-=20
- /**
-+ * setattr_killpriv - remove extended privilege attributes from a file
-+ * @dentry: Directory entry passed to the setattr operation
-+ * @iattr: New attributes pased to the setattr operation
-+ *
-+ * All filesystems that can carry extended privilege attributes
-+ * should call this from their setattr operation *after* validating
-+ * the attribute changes.
-+ *
-+ * It does nothing if !(iattr->ia_valid & ATTR_KILL_PRIV), so
-+ * it is not necessary to call it in that case.
-+ */
-+int setattr_killpriv(struct dentry *dentry, struct iattr *iattr)
-+{
-+	if (!(iattr->ia_valid & ATTR_KILL_PRIV))
-+		return 0;
-+
-+	iattr->ia_valid &=3D ~ATTR_KILL_PRIV;
-+	return security_inode_killpriv(dentry);
-+}
-+EXPORT_SYMBOL(setattr_killpriv);
-+
-+/**
-  * notify_change - modify attributes of a filesytem object
-  * @dentry:	object affected
-  * @iattr:	new attributes
-@@ -217,13 +239,13 @@ int notify_change(struct dentry * dentry, struct iatt=
-r * attr, struct inode **de
- 	if (!(ia_valid & ATTR_MTIME_SET))
- 		attr->ia_mtime =3D now;
- 	if (ia_valid & ATTR_KILL_PRIV) {
--		attr->ia_valid &=3D ~ATTR_KILL_PRIV;
--		ia_valid &=3D ~ATTR_KILL_PRIV;
- 		error =3D security_inode_need_killpriv(dentry);
--		if (error > 0)
--			error =3D security_inode_killpriv(dentry);
--		if (error)
-+		if (error < 0)
- 			return error;
-+		if (error =3D=3D 0) {
-+			attr->ia_valid &=3D ~ATTR_KILL_PRIV;
-+			ia_valid &=3D ~ATTR_KILL_PRIV;
-+		}
- 	}
-=20
- 	/*
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index d23362f..71e3fb8 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -4697,6 +4697,10 @@ static int btrfs_setattr(struct dentry *dentry, stru=
-ct iattr *attr)
- 	if (err)
- 		return err;
-=20
-+	err =3D setattr_killpriv(dentry, attr);
-+	if (err)
-+		return err;
-+
- 	if (S_ISREG(inode->i_mode) && (attr->ia_valid & ATTR_SIZE)) {
- 		err =3D btrfs_setsize(inode, attr);
- 		if (err)
-diff --git a/fs/ceph/inode.c b/fs/ceph/inode.c
-index 7b61390..9ba5556 100644
---- a/fs/ceph/inode.c
-+++ b/fs/ceph/inode.c
-@@ -1712,6 +1712,10 @@ int ceph_setattr(struct dentry *dentry, struct iattr=
- *attr)
- 	if (err !=3D 0)
- 		return err;
-=20
-+	err =3D setattr_killpriv(dentry, attr);
-+	if (err !=3D 0)
-+		return err;
-+
- 	req =3D ceph_mdsc_create_request(mdsc, CEPH_MDS_OP_SETATTR,
- 				       USE_AUTH_MDS);
- 	if (IS_ERR(req))
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index 197cb50..0e971f9 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -2149,7 +2149,10 @@ cifs_setattr_unix(struct dentry *direntry, struct ia=
-ttr *attrs)
- 	 */
- 	rc =3D filemap_write_and_wait(inode->i_mapping);
- 	mapping_set_error(inode->i_mapping, rc);
--	rc =3D 0;
-+
-+	rc =3D setattr_killpriv(direntry, attrs);
-+	if (rc)
-+		goto out;
-=20
- 	if (attrs->ia_valid & ATTR_SIZE) {
- 		rc =3D cifs_set_file_size(inode, attrs, xid, full_path);
-@@ -2273,6 +2276,12 @@ cifs_setattr_nounix(struct dentry *direntry, struct =
-iattr *attrs)
- 		return rc;
- 	}
-=20
-+	rc =3D setattr_killpriv(direntry, attrs);
-+	if (rc) {
-+		free_xid(xid);
-+		return rc;
-+	}
-+
- 	full_path =3D build_path_from_dentry(direntry);
- 	if (full_path =3D=3D NULL) {
- 		rc =3D -ENOMEM;
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 36d35c3..9e245af 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -1551,6 +1551,10 @@ int ext2_setattr(struct dentry *dentry, struct iattr=
- *iattr)
- 	if (error)
- 		return error;
-=20
-+	error =3D setattr_killpriv(dentry, iattr);
-+	if (error)
-+		return error;
-+
- 	if (is_quota_modification(inode, iattr))
- 		dquot_initialize(inode);
- 	if ((iattr->ia_valid & ATTR_UID && !uid_eq(iattr->ia_uid, inode->i_uid)) =
-||
-diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
-index 2c6ccc4..ec4dffa 100644
---- a/fs/ext3/inode.c
-+++ b/fs/ext3/inode.c
-@@ -3248,6 +3248,10 @@ int ext3_setattr(struct dentry *dentry, struct iattr=
- *attr)
- 	if (error)
- 		return error;
-=20
-+	error =3D setattr_killpriv(dentry, attr);
-+	if (error)
-+		return error;
-+
- 	if (is_quota_modification(inode, attr))
- 		dquot_initialize(inode);
- 	if ((ia_valid & ATTR_UID && !uid_eq(attr->ia_uid, inode->i_uid)) ||
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 3356ab5..80877a48 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4455,6 +4455,10 @@ int ext4_setattr(struct dentry *dentry, struct iattr=
- *attr)
- 	if (error)
- 		return error;
-=20
-+	error =3D setattr_killpriv(dentry, attr);
-+	if (error)
-+		return error;
-+
- 	if (is_quota_modification(inode, attr))
- 		dquot_initialize(inode);
- 	if ((ia_valid & ATTR_UID && !uid_eq(attr->ia_uid, inode->i_uid)) ||
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 8e68bb6..c9371d2 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -560,6 +560,10 @@ int f2fs_setattr(struct dentry *dentry, struct iattr *=
-attr)
- 	if (err)
- 		return err;
-=20
-+	err =3D setattr_killpriv(dentry, attr);
-+	if (err)
-+		return err;
-+
- 	if (attr->ia_valid & ATTR_SIZE) {
- 		err =3D f2fs_convert_inline_data(inode, attr->ia_size, NULL);
- 		if (err)
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index dbab798..f750848 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -1693,9 +1693,10 @@ int fuse_flush_times(struct inode *inode, struct fus=
-e_file *ff)
-  * vmtruncate() doesn't allow for this case, so do the rlimit checking
-  * and the actual truncation by hand.
-  */
--int fuse_do_setattr(struct inode *inode, struct iattr *attr,
-+int fuse_do_setattr(struct dentry *entry, struct iattr *attr,
- 		    struct file *file)
- {
-+	struct inode *inode =3D entry->d_inode;
- 	struct fuse_conn *fc =3D get_fuse_conn(inode);
- 	struct fuse_inode *fi =3D get_fuse_inode(inode);
- 	struct fuse_req *req;
-@@ -1714,6 +1715,10 @@ int fuse_do_setattr(struct inode *inode, struct iatt=
-r *attr,
- 	if (err)
- 		return err;
-=20
-+	err =3D setattr_killpriv(entry, attr);
-+	if (err)
-+		return err;
-+
- 	if (attr->ia_valid & ATTR_OPEN) {
- 		if (fc->atomic_o_trunc)
- 			return 0;
-@@ -1809,15 +1814,13 @@ error:
-=20
- static int fuse_setattr(struct dentry *entry, struct iattr *attr)
- {
--	struct inode *inode =3D entry->d_inode;
--
--	if (!fuse_allow_current_process(get_fuse_conn(inode)))
-+	if (!fuse_allow_current_process(get_fuse_conn(entry->d_inode)))
- 		return -EACCES;
-=20
- 	if (attr->ia_valid & ATTR_FILE)
--		return fuse_do_setattr(inode, attr, attr->ia_file);
-+		return fuse_do_setattr(entry, attr, attr->ia_file);
- 	else
--		return fuse_do_setattr(inode, attr, NULL);
-+		return fuse_do_setattr(entry, attr, NULL);
- }
-=20
- static int fuse_getattr(struct vfsmount *mnt, struct dentry *entry,
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index caa8d95..ffdc363 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -2855,7 +2855,8 @@ static void fuse_do_truncate(struct file *file)
- 	attr.ia_file =3D file;
- 	attr.ia_valid |=3D ATTR_FILE;
-=20
--	fuse_do_setattr(inode, &attr, file);
-+	/* XXX Is file->f_dentry->d_inode always the same as inode? */
-+	fuse_do_setattr(file->f_dentry, &attr, file);
- }
-=20
- static inline loff_t fuse_round_up(loff_t off)
-diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
-index e8e47a6..163de1f 100644
---- a/fs/fuse/fuse_i.h
-+++ b/fs/fuse/fuse_i.h
-@@ -894,7 +894,7 @@ bool fuse_write_update_size(struct inode *inode, loff_t=
- pos);
- int fuse_flush_times(struct inode *inode, struct fuse_file *ff);
- int fuse_write_inode(struct inode *inode, struct writeback_control *wbc);
-=20
--int fuse_do_setattr(struct inode *inode, struct iattr *attr,
-+int fuse_do_setattr(struct dentry *entry, struct iattr *attr,
- 		    struct file *file);
-=20
- #endif /* _FS_FUSE_I_H */
-diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
-index c4ed823..b39d81a 100644
---- a/fs/gfs2/inode.c
-+++ b/fs/gfs2/inode.c
-@@ -1786,6 +1786,9 @@ static int gfs2_setattr(struct dentry *dentry, struct=
- iattr *attr)
- 	if (error)
- 		goto out;
-=20
-+	error =3D setattr_killpriv(dentry, attr);
-+	if (error)
-+		goto out;
- 	if (attr->ia_valid & ATTR_SIZE)
- 		error =3D gfs2_setattr_size(inode, attr->ia_size);
- 	else if (attr->ia_valid & (ATTR_UID | ATTR_GID))
-diff --git a/fs/hfs/inode.c b/fs/hfs/inode.c
-index d0929bc..817f7a5 100644
---- a/fs/hfs/inode.c
-+++ b/fs/hfs/inode.c
-@@ -620,6 +620,10 @@ int hfs_inode_setattr(struct dentry *dentry, struct ia=
-ttr * attr)
- 		return hsb->s_quiet ? 0 : error;
- 	}
-=20
-+	error =3D setattr_killpriv(dentry, attr);
-+	if (error)
-+		return error;
-+
- 	if (attr->ia_valid & ATTR_MODE) {
- 		/* Only the 'w' bits can ever change and only all together. */
- 		if (attr->ia_mode & S_IWUSR)
-diff --git a/fs/hfsplus/inode.c b/fs/hfsplus/inode.c
-index 0cf786f..12549bc 100644
---- a/fs/hfsplus/inode.c
-+++ b/fs/hfsplus/inode.c
-@@ -251,6 +251,10 @@ static int hfsplus_setattr(struct dentry *dentry, stru=
-ct iattr *attr)
- 	if (error)
- 		return error;
-=20
-+	error =3D setattr_killpriv(dentry, attr);
-+	if (error)
-+		return error;
-+
- 	if ((attr->ia_valid & ATTR_SIZE) &&
- 	    attr->ia_size !=3D i_size_read(inode)) {
- 		inode_dio_wait(inode);
-diff --git a/fs/jffs2/fs.c b/fs/jffs2/fs.c
-index 601afd1..b260789 100644
---- a/fs/jffs2/fs.c
-+++ b/fs/jffs2/fs.c
-@@ -197,6 +197,10 @@ int jffs2_setattr(struct dentry *dentry, struct iattr =
-*iattr)
- 	if (rc)
- 		return rc;
-=20
-+	rc =3D setattr_killpriv(dentry, iattr);
-+	if (rc)
-+		return rc;
-+
- 	rc =3D jffs2_do_setattr(inode, iattr);
- 	if (!rc && (iattr->ia_valid & ATTR_MODE))
- 		rc =3D posix_acl_chmod(inode, inode->i_mode);
-diff --git a/fs/jfs/file.c b/fs/jfs/file.c
-index 33aa0cc..4008313 100644
---- a/fs/jfs/file.c
-+++ b/fs/jfs/file.c
-@@ -107,6 +107,10 @@ int jfs_setattr(struct dentry *dentry, struct iattr *i=
-attr)
- 	if (rc)
- 		return rc;
-=20
-+	rc =3D setattr_killpriv(dentry, iattr);
-+	if (rc)
-+		return rc;
-+
- 	if (is_quota_modification(inode, iattr))
- 		dquot_initialize(inode);
- 	if ((iattr->ia_valid & ATTR_UID && !uid_eq(iattr->ia_uid, inode->i_uid)) =
-||
-diff --git a/fs/kernfs/inode.c b/fs/kernfs/inode.c
-index 9852176..6a70fc5 100644
---- a/fs/kernfs/inode.c
-+++ b/fs/kernfs/inode.c
-@@ -135,6 +135,23 @@ int kernfs_iop_setattr(struct dentry *dentry, struct i=
-attr *iattr)
- 	if (error)
- 		goto out;
-=20
-+	/*
-+	 * If we need to remove privileges, drop the mutex to do that
-+	 * first and then re-validate the remaining changes.
-+	 */
-+	if (iattr->ia_valid & ATTR_KILL_PRIV) {
-+		mutex_unlock(&kernfs_mutex);
-+
-+		error =3D setattr_killpriv(dentry, iattr);
-+		if (error)
-+			return error;
-+
-+		mutex_lock(&kernfs_mutex);
-+		error =3D inode_change_ok(inode, iattr);
-+		if (error)
-+			goto out;
-+	}
-+
- 	error =3D __kernfs_setattr(kn, iattr);
- 	if (error)
- 		goto out;
-diff --git a/fs/libfs.c b/fs/libfs.c
-index 171d284..9a00049 100644
---- a/fs/libfs.c
-+++ b/fs/libfs.c
-@@ -375,6 +375,9 @@ int simple_setattr(struct dentry *dentry, struct iattr =
-*iattr)
- 	if (error)
- 		return error;
-=20
-+	error =3D setattr_killpriv(dentry, iattr);
-+	if (error)
-+		return error;
- 	if (iattr->ia_valid & ATTR_SIZE)
- 		truncate_setsize(inode, iattr->ia_size);
- 	setattr_copy(inode, iattr);
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index 00689a8..94dd6ac 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -496,7 +496,7 @@ nfs_setattr(struct dentry *dentry, struct iattr *attr)
- {
- 	struct inode *inode =3D dentry->d_inode;
- 	struct nfs_fattr *fattr;
--	int error =3D -ENOMEM;
-+	int error;
-=20
- 	nfs_inc_stats(inode, NFSIOS_VFSSETATTR);
-=20
-@@ -524,9 +524,16 @@ nfs_setattr(struct dentry *dentry, struct iattr *attr)
- 		nfs_wb_all(inode);
- 	}
-=20
-+	/* XXX Can we assume the server's permission checks are sufficient? */
-+	error =3D setattr_killpriv(dentry, attr);
-+	if (error)
-+		goto out;
-+
- 	fattr =3D nfs_alloc_fattr();
--	if (fattr =3D=3D NULL)
-+	if (fattr =3D=3D NULL) {
-+		error =3D -ENOMEM;
- 		goto out;
-+	}
- 	/*
- 	 * Return any delegations if we're going to change ACLs
- 	 */
-diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-index 324dc93..ed93d74 100644
---- a/fs/ocfs2/file.c
-+++ b/fs/ocfs2/file.c
-@@ -1139,7 +1139,7 @@ int ocfs2_setattr(struct dentry *dentry, struct iattr=
- *attr)
- 		attr->ia_valid &=3D ~ATTR_SIZE;
-=20
- #define OCFS2_VALID_ATTRS (ATTR_ATIME | ATTR_MTIME | ATTR_CTIME | ATTR_SIZ=
-E \
--			   | ATTR_GID | ATTR_UID | ATTR_MODE)
-+			   | ATTR_GID | ATTR_UID | ATTR_MODE | ATTR_KILL_PRIV)
- 	if (!(attr->ia_valid & OCFS2_VALID_ATTRS))
- 		return 0;
-=20
-@@ -1147,6 +1147,10 @@ int ocfs2_setattr(struct dentry *dentry, struct iatt=
-r *attr)
- 	if (status)
- 		return status;
-=20
-+	status =3D setattr_killpriv(dentry, attr);
-+	if (status)
-+		return status;
-+
- 	if (is_quota_modification(inode, attr))
- 		dquot_initialize(inode);
- 	size_change =3D S_ISREG(inode->i_mode) && attr->ia_valid & ATTR_SIZE;
-diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
-index a7eec98..a458c12 100644
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -3316,6 +3316,10 @@ int reiserfs_setattr(struct dentry *dentry, struct i=
-attr *attr)
- 	if (error)
- 		return error;
-=20
-+	error =3D setattr_killpriv(dentry, attr);
-+	if (error)
-+		return error;
-+
- 	/* must be turned off for recursive notify_change calls */
- 	ia_valid =3D attr->ia_valid &=3D ~(ATTR_KILL_SUID|ATTR_KILL_SGID);
-=20
-diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
-index b5b593c..73d2e87 100644
---- a/fs/ubifs/file.c
-+++ b/fs/ubifs/file.c
-@@ -1269,6 +1269,10 @@ int ubifs_setattr(struct dentry *dentry, struct iatt=
-r *attr)
- 	if (err)
- 		return err;
-=20
-+	err =3D setattr_killpriv(dentry, attr);
-+	if (err)
-+		return err;
-+
- 	if ((attr->ia_valid & ATTR_SIZE) && attr->ia_size < inode->i_size)
- 		/* Truncation to a smaller size */
- 		err =3D do_truncation(c, inode, attr);
-diff --git a/fs/xfs/xfs_acl.c b/fs/xfs/xfs_acl.c
-index a65fa5d..22b7482 100644
---- a/fs/xfs/xfs_acl.c
-+++ b/fs/xfs/xfs_acl.c
-@@ -244,7 +244,8 @@ xfs_set_mode(struct inode *inode, umode_t mode)
- 		iattr.ia_mode =3D mode;
- 		iattr.ia_ctime =3D current_fs_time(inode->i_sb);
-=20
--		error =3D xfs_setattr_nonsize(XFS_I(inode), &iattr, XFS_ATTR_NOACL);
-+		error =3D xfs_setattr_nonsize(NULL, XFS_I(inode), &iattr,
-+					    XFS_ATTR_NOACL);
- 	}
-=20
- 	return error;
-diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-index eb596b4..c9b9019 100644
---- a/fs/xfs/xfs_file.c
-+++ b/fs/xfs/xfs_file.c
-@@ -873,7 +873,7 @@ xfs_file_fallocate(
-=20
- 		iattr.ia_valid =3D ATTR_SIZE;
- 		iattr.ia_size =3D new_size;
--		error =3D xfs_setattr_size(ip, &iattr);
-+		error =3D xfs_setattr_size(NULL, ip, &iattr);
- 	}
-=20
- out_unlock:
-diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
-index 24c926b6..3e0dc56 100644
---- a/fs/xfs/xfs_ioctl.c
-+++ b/fs/xfs/xfs_ioctl.c
-@@ -714,7 +714,7 @@ xfs_ioc_space(
- 		iattr.ia_valid =3D ATTR_SIZE;
- 		iattr.ia_size =3D bf->l_start;
-=20
--		error =3D xfs_setattr_size(ip, &iattr);
-+		error =3D xfs_setattr_size(NULL, ip, &iattr);
- 		if (!error)
- 			clrprealloc =3D true;
- 		break;
-diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
-index ec6dcdc..669150b 100644
---- a/fs/xfs/xfs_iops.c
-+++ b/fs/xfs/xfs_iops.c
-@@ -527,6 +527,7 @@ xfs_setattr_time(
-=20
- int
- xfs_setattr_nonsize(
-+	struct dentry		*dentry,
- 	struct xfs_inode	*ip,
- 	struct iattr		*iattr,
- 	int			flags)
-@@ -554,6 +555,10 @@ xfs_setattr_nonsize(
- 		error =3D inode_change_ok(inode, iattr);
- 		if (error)
- 			return error;
-+
-+		error =3D setattr_killpriv(dentry, iattr);
-+		if (error)
-+			return error;
- 	}
-=20
- 	ASSERT((mask & ATTR_SIZE) =3D=3D 0);
-@@ -734,6 +739,7 @@ out_dqrele:
-  */
- int
- xfs_setattr_size(
-+	struct dentry		*dentry,
- 	struct xfs_inode	*ip,
- 	struct iattr		*iattr)
- {
-@@ -776,9 +782,13 @@ xfs_setattr_size(
- 		 * Use the regular setattr path to update the timestamps.
- 		 */
- 		iattr->ia_valid &=3D ~ATTR_SIZE;
--		return xfs_setattr_nonsize(ip, iattr, 0);
-+		return xfs_setattr_nonsize(dentry, ip, iattr, 0);
- 	}
-=20
-+	error =3D setattr_killpriv(dentry, iattr);
-+	if (error)
-+		return error;
-+
- 	/*
- 	 * Make sure that the dquots are attached to the inode.
- 	 */
-@@ -974,10 +984,10 @@ xfs_vn_setattr(
-=20
- 	if (iattr->ia_valid & ATTR_SIZE) {
- 		xfs_ilock(ip, XFS_IOLOCK_EXCL);
--		error =3D xfs_setattr_size(ip, iattr);
-+		error =3D xfs_setattr_size(dentry, ip, iattr);
- 		xfs_iunlock(ip, XFS_IOLOCK_EXCL);
- 	} else {
--		error =3D xfs_setattr_nonsize(ip, iattr, 0);
-+		error =3D xfs_setattr_nonsize(dentry, ip, iattr, 0);
- 	}
-=20
- 	return error;
-diff --git a/fs/xfs/xfs_iops.h b/fs/xfs/xfs_iops.h
-index 1c34e43..6994d3e 100644
---- a/fs/xfs/xfs_iops.h
-+++ b/fs/xfs/xfs_iops.h
-@@ -32,8 +32,14 @@ extern void xfs_setup_inode(struct xfs_inode *);
-  */
- #define XFS_ATTR_NOACL		0x01	/* Don't call posix_acl_chmod */
-=20
--extern int xfs_setattr_nonsize(struct xfs_inode *ip, struct iattr *vap,
-+/*
-+ * XXX Several callers have to pass dentry =3D NULL and this should
-+ * work but it's really ugly.
-+ */
-+extern int xfs_setattr_nonsize(struct dentry *dentry,
-+			       struct xfs_inode *ip, struct iattr *vap,
- 			       int flags);
--extern int xfs_setattr_size(struct xfs_inode *ip, struct iattr *vap);
-+extern int xfs_setattr_size(struct dentry *dentry,
-+			    struct xfs_inode *ip, struct iattr *vap);
-=20
- #endif /* __XFS_IOPS_H__ */
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 9ab779e..7cad5d1 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2663,6 +2663,7 @@ extern int buffer_migrate_page(struct address_space *=
-,
- extern int inode_change_ok(const struct inode *, struct iattr *);
- extern int inode_newsize_ok(const struct inode *, loff_t offset);
- extern void setattr_copy(struct inode *inode, const struct iattr *attr);
-+extern int setattr_killpriv(struct dentry *dentry, struct iattr *attr);
-=20
- extern int file_update_time(struct file *file);
-=20
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 185836b..d1d4b9b 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -557,6 +557,10 @@ static int shmem_setattr(struct dentry *dentry, struct=
- iattr *attr)
- 	if (error)
- 		return error;
-=20
-+	error =3D setattr_killpriv(dentry, attr);
-+	if (error)
-+		return error;
-+
- 	if (S_ISREG(inode->i_mode) && (attr->ia_valid & ATTR_SIZE)) {
- 		loff_t oldsize =3D inode->i_size;
- 		loff_t newsize =3D attr->ia_size;
-
---=20
-Ben Hutchings
-Absolutum obsoletum. (If it works, it's out of date.) - Stafford Beer
-
---=-MRiWQfN/WCFqJKn8m6FY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUAVHOcbue/yOyVhhEJAQrn6RAAxhsWF0eeEn1oM/LeSiUbREIsDROpVn4y
-CHYlJhv4sEasbs2q2N8AbVKmUvAuxdDMr5tDqpxUL1SZVWzLOLwhXRpGFlIFGLUv
-hIOQ1TdSn4Z3/3G9+Z0XFETCCyGyDq8AfW6SELaBix1VkfVPbXCZrg5AzB4nFeO6
-EXC2I14bk5MZAmcON5qvunvP2BasLhDcBd1/gkH6mktZk92CRgk6i/XPdBOEbzPq
-pCmArSkaAEvlhOddvmTCpsEtc9y0SADTSMX17jySDgTq7fM0BG+iyX5A9np9pHaV
-A03OhW/TrqYRlqtY7zY2+L/TO+8mJ66KqrgpJ3uli22Wqs52CegZjbQKiWgi/cpf
-tSnaXHv+gBXuEw5bToLuLHNxNOHl5Ir/xw5ohnlosUrtfUwnjNs88zx+dUb7ZMRX
-7ctiXBVRNI8CXmuE7F2eCjI7uJdEqJsu8aMlIsut6HNzSaYY1Aim3/L54YKw05wC
-FvXfpTKtJzDS4M9mTds5B8qh9zAzavrx+NYKD5V8K7opY2f611ZEz2+O2BhI1/3c
-y2jSPYElE8KOwUWGsETWMPoEVq/fmKLknDrcKtK34q06hgK8XAMIVqpNlKjQqtD5
-LX5iBjqsSjMwWz/a9Tht5k60/lvGFcmZw4PvQAD3eAFWv/KLW50+0p8AobJALKzZ
-8GlPveVwfo0=
-=Ozl9
------END PGP SIGNATURE-----
-
---=-MRiWQfN/WCFqJKn8m6FY--
