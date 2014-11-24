@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955AbaKXOS3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:18:29 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54154 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753449AbaKXOS1 (ORCPT
+	id S1754055AbaKXOTq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:19:46 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:58754 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666AbaKXOTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:18:27 -0500
-Date: Mon, 24 Nov 2014 14:18:18 +0000
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lee.jones@linaro.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH 3/6] regulator: arizona-micsupp: Add
-	support for WM8280/WM8281
-Message-ID: <20141124141807.GA17985@opensource.wolfsonmicro.com>
-References: <1415901046-3391-1-git-send-email-rf@opensource.wolfsonmicro.com> <1415901046-3391-4-git-send-email-rf@opensource.wolfsonmicro.com>
+	Mon, 24 Nov 2014 09:19:45 -0500
+Message-ID: <54733E7B.7090602@linaro.org>
+Date: Mon, 24 Nov 2014 15:19:39 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415901046-3391-4-git-send-email-rf@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Sonny Rao <sonnyrao@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Olof Johansson <olof@lixom.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v5] clocksource: arch_timer: Fix code to use physical
+ timers when requested
+References: <1416812564-26465-1-git-send-email-sonnyrao@chromium.org> <5472F3F0.8060701@linaro.org> <20141124141649.GD15872@e104818-lin.cambridge.arm.com>
+In-Reply-To: <20141124141649.GD15872@e104818-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 05:50:43PM +0000, Richard Fitzgerald wrote:
-> Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-> ---
->  drivers/regulator/arizona-micsupp.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/regulator/arizona-micsupp.c b/drivers/regulator/arizona-micsupp.c
-> index ce9aca5..4ff55e1 100644
-> --- a/drivers/regulator/arizona-micsupp.c
-> +++ b/drivers/regulator/arizona-micsupp.c
-> @@ -245,6 +245,7 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
->  	 */
->  	switch (arizona->type) {
->  	case WM5110:
-> +	case WM8280:
->  		desc = &arizona_micsupp_ext;
->  		micsupp->init_data = arizona_micsupp_ext_default;
->  		break;
-> -- 
-> 1.7.2.5
-> 
+On 11/24/2014 03:16 PM, Catalin Marinas wrote:
+> Acked-by: Catalin Marinas<catalin.marinas@arm.com>
+
+Thanks !
+
+   -- Daniel
 
 
-Mark - if this patch is ok with you could you ack it so Lee can merge in
-this series? Thanks.
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-> _______________________________________________
-> Alsa-devel mailing list
-> Alsa-devel@alsa-project.org
-> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
