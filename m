@@ -1,79 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230AbaKXRlT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 12:41:19 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:59411 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322AbaKXRlS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 12:41:18 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.18-rc7
-Date: Mon, 24 Nov 2014 09:40:59 -0800
-Message-Id: <1416850859-30145-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.54736DAE.026D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1753929AbaKXRpe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 12:45:34 -0500
+Received: from tex.lwn.net ([70.33.254.29]:60361 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752037AbaKXRpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 12:45:32 -0500
+Date: Mon, 24 Nov 2014 10:45:30 -0700
+From: Jonathan Corbet <corbet@lwn.net>
+To: SeongJae Park <sj38.park@gmail.com>
+Cc: tj@kernel.org, lizefan@huawei.com, cgroups@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroups: Documentation: fix wrong cgroupfs paths
+Message-ID: <20141124104530.78a0050e@lwn.net>
+In-Reply-To: <1416847159-3895-1-git-send-email-sj38.park@gmail.com>
+References: <1416847159-3895-1-git-send-email-sj38.park@gmail.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, 25 Nov 2014 01:39:19 +0900
+SeongJae Park <sj38.park@gmail.com> wrote:
 
-Please pull hwmon fixes for Linux 3.18-rc7 from signed tag:
+>   6) Attach that task to the new cgroup by writing its PID to the
+> -    /sys/fs/cgroup/cpuset/tasks file for that cgroup.
+> +    /sys/fs/cgroup/cpuset tasks file for that cgroup.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus-v3.18-rc7
+That one looks like it was correct before the change...?  What am I
+missing here?
 
 Thanks,
-Guenter
-------
 
-The following changes since commit fc14f9c1272f62c3e8d01300f52467c0d9af50f9:
-
-  Linux 3.18-rc5 (2014-11-16 16:36:20 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus-v3.18-rc7
-
-for you to fetch changes up to 6b19b66013cfe608d63f0dab38834bbaceb0217a:
-
-  hwmon: (g762) fix call to devm_hwmon_device_register_with_groups() (2014-11-19 14:06:47 -0800)
-
-----------------------------------------------------------------
-Fix hwmon registration problem in g762 driver
-
-----------------------------------------------------------------
-Arnaud Ebalard (1):
-      hwmon: (g762) fix call to devm_hwmon_device_register_with_groups()
-
- drivers/hwmon/g762.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+jon
