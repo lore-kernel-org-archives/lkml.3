@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919AbaKXMB0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 07:01:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56421 "EHLO mx1.redhat.com"
+	id S1754071AbaKXMC3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 07:02:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37505 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753641AbaKXLyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 06:54:45 -0500
-Date: Mon, 24 Nov 2014 13:54:32 +0200
+	id S1753556AbaKXLyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 06:54:33 -0500
+Date: Mon, 24 Nov 2014 13:54:20 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
         kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
         netdev@vger.kernel.org
-Subject: [PATCH v3 27/41] vhost: make features 64 bit
-Message-ID: <1416829787-14252-28-git-send-email-mst@redhat.com>
+Subject: [PATCH v3 24/41] vhost: add memory access wrappers
+Message-ID: <1416829787-14252-25-git-send-email-mst@redhat.com>
 References: <1416829787-14252-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,26 +25,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to use bit 32 for virtio 1.0
-
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/vhost/vhost.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/vhost/vhost.h | 33 ++++++++++++++++++++++++++++++++-
+ 1 file changed, 32 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index b9032e8..1f321fd 100644
+index 3eda654..b9032e8 100644
 --- a/drivers/vhost/vhost.h
 +++ b/drivers/vhost/vhost.h
-@@ -106,7 +106,7 @@ struct vhost_virtqueue {
- 	/* Protected by virtqueue mutex. */
- 	struct vhost_memory *memory;
- 	void *private_data;
--	unsigned acked_features;
-+	u64 acked_features;
- 	/* Log write descriptors */
- 	void __user *log_base;
- 	struct vhost_log *log;
+@@ -174,6 +174,37 @@ enum {
+ 
+ static inline int vhost_has_feature(struct vhost_virtqueue *vq, int bit)
+ {
+-	return vq->acked_features & (1 << bit);
++	return vq->acked_features & (1ULL << bit);
++}
++
++/* Memory accessors */
++static inline u16 vhost16_to_cpu(struct vhost_virtqueue *vq, __virtio16 val)
++{
++	return __virtio16_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio16 cpu_to_vhost16(struct vhost_virtqueue *vq, u16 val)
++{
++	return __cpu_to_virtio16(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline u32 vhost32_to_cpu(struct vhost_virtqueue *vq, __virtio32 val)
++{
++	return __virtio32_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio32 cpu_to_vhost32(struct vhost_virtqueue *vq, u32 val)
++{
++	return __cpu_to_virtio32(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline u64 vhost64_to_cpu(struct vhost_virtqueue *vq, __virtio64 val)
++{
++	return __virtio64_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio64 cpu_to_vhost64(struct vhost_virtqueue *vq, u64 val)
++{
++	return __cpu_to_virtio64(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
+ }
+ #endif
 -- 
 MST
 
