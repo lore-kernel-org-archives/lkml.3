@@ -1,228 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaKXU1A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:27:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50302 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412AbaKXU06 (ORCPT
+	id S1751857AbaKXU1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:27:13 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:59654 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215AbaKXU1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:26:58 -0500
-Date: Sun, 23 Nov 2014 10:11:28 -0800
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-36d727310cb9f85efb5ac089ffb1797e7c3538e1@git.kernel.org>
-Cc: bhelgaas@google.com, tglx@linutronix.de, grant.likely@linaro.org,
-        matthias.bgg@gmail.com, marc.zyngier@arm.com, hpa@zytor.com,
-        wangyijing@huawei.com, yingjoe.chen@mediatek.com, tony.luck@intel.com,
-        linux-kernel@vger.kernel.org, bp@alien8.de, benh@kernel.crashing.org,
-        jiang.liu@linux.intel.com, mingo@kernel.org
-Reply-To: tglx@linutronix.de, bhelgaas@google.com, grant.likely@linaro.org,
-        matthias.bgg@gmail.com, bp@alien8.de, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, benh@kernel.crashing.org, jiang.liu@linux.intel.com,
-        hpa@zytor.com, marc.zyngier@arm.com, tony.luck@intel.com,
-        yingjoe.chen@mediatek.com, wangyijing@huawei.com
-In-Reply-To: <1416061447-9472-4-git-send-email-jiang.liu@linux.intel.com>
-References: <1416061447-9472-4-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/irqdomain] irqdomain:
-  Implement a method to automatically call parent domains alloc/free
-Git-Commit-ID: 36d727310cb9f85efb5ac089ffb1797e7c3538e1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 24 Nov 2014 15:27:08 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <6261300.I132f1jLqB@wuerfel>
+References: <1416859808-18503-1-git-send-email-geert+renesas@glider.be>
+	<6261300.I132f1jLqB@wuerfel>
+Date: Mon, 24 Nov 2014 21:27:06 +0100
+X-Google-Sender-Auth: WsxBNznXs_gsfkEVqCREtOX37SM
+Message-ID: <CAMuHMdVjpL-QgS0aAdMo4EHXibhpKCJC73yY+HDY=+Ae=LMigA@mail.gmail.com>
+Subject: Re: [PATCH RFC 0/3] Add "Simple" / Renesas Bus State Controller Driver
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Ulrich Hecht <ulrich.hecht+renesas@gmail.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  36d727310cb9f85efb5ac089ffb1797e7c3538e1
-Gitweb:     http://git.kernel.org/tip/36d727310cb9f85efb5ac089ffb1797e7c3538e1
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Sat, 15 Nov 2014 22:24:01 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sun, 23 Nov 2014 13:01:46 +0100
+Hi Arnd,
 
-irqdomain: Implement a method to automatically call parent domains alloc/free
+On Mon, Nov 24, 2014 at 9:15 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 24 November 2014 21:10:05 Geert Uytterhoeven wrote:
+>> As this minimal BSC driver isn't hardware-specific at all, I'm wondering
+>> if there's a simpler way to do this?
+>>   - Should the driver be renamed to "simple-bus", and match "simple-bus"?
+>>   - Should this be moved to core code, without an explicit driver for
+>>     "simple-bus"? I.e. should the driver core just enable runtime PM for
+>>     all devices not bound to a driver, as they may represent buses with
+>>     child devices that do rely on runtime PM?
+>>
+>> Thanks for your comments and suggestions!
+>
+> My understanding of simple-bus is that it's something that does
+> not have any power-management capabilities, and I'd rather not
+> add clocks or interrupts to it.
 
-Add a flags to irq_domain.flags to control whether the irqdomain core
-should automatically call parent irqdomain's alloc/free callbacks. It
-help to reduce hierarchy irqdomains users' code size.
+OK.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Yijing Wang <wangyijing@huawei.com>
-Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>
-Link: http://lkml.kernel.org/r/1416061447-9472-4-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/irqdomain.h | 24 ++++++--------
- kernel/irq/irqdomain.c    | 82 +++++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 89 insertions(+), 17 deletions(-)
+> What I think makes more sense is to have a bus driver for it
+> in drivers/bus, remove the "simple-bus" compatibility value
+> and have the driver take care of registering the power domain
+> and probing the child devices using of_platform_populate on
+> itself.
 
-diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index 7aca1ad..dd2709b 100644
---- a/include/linux/irqdomain.h
-+++ b/include/linux/irqdomain.h
-@@ -134,6 +134,9 @@ enum {
- 	/* Irq domain is hierarchical */
- 	IRQ_DOMAIN_FLAG_HIERARCHY	= (1 << 0),
- 
-+	/* Core calls alloc/free recursive through the domain hierarchy. */
-+	IRQ_DOMAIN_FLAG_AUTO_RECURSIVE	= (1 << 1),
-+
- 	/*
- 	 * Flags starting from IRQ_DOMAIN_FLAG_NONCORE are reserved
- 	 * for implementation specific purposes and ignored by the
-@@ -285,22 +288,13 @@ extern void irq_domain_free_irqs_common(struct irq_domain *domain,
- extern void irq_domain_free_irqs_top(struct irq_domain *domain,
- 				     unsigned int virq, unsigned int nr_irqs);
- 
--static inline int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
--					       unsigned int irq_base,
--					       unsigned int nr_irqs, void *arg)
--{
--	if (domain->parent && domain->parent->ops->alloc)
--		return domain->parent->ops->alloc(domain->parent, irq_base,
--						  nr_irqs, arg);
--	return -ENOSYS;
--}
-+extern int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
-+					unsigned int irq_base,
-+					unsigned int nr_irqs, void *arg);
- 
--static inline void irq_domain_free_irqs_parent(struct irq_domain *domain,
--				unsigned int irq_base, unsigned int nr_irqs)
--{
--	if (domain->parent && domain->parent->ops->free)
--		domain->parent->ops->free(domain->parent, irq_base, nr_irqs);
--}
-+extern void irq_domain_free_irqs_parent(struct irq_domain *domain,
-+					unsigned int irq_base,
-+					unsigned int nr_irqs);
- 
- static inline bool irq_domain_is_hierarchy(struct irq_domain *domain)
- {
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 4e62832..9c88db7 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -960,6 +960,43 @@ void irq_domain_free_irqs_top(struct irq_domain *domain, unsigned int virq,
- 	irq_domain_free_irqs_common(domain, virq, nr_irqs);
- }
- 
-+static bool irq_domain_is_auto_recursive(struct irq_domain *domain)
-+{
-+	return domain->flags & IRQ_DOMAIN_FLAG_AUTO_RECURSIVE;
-+}
-+
-+static void irq_domain_free_irqs_recursive(struct irq_domain *domain,
-+					   unsigned int irq_base,
-+					   unsigned int nr_irqs)
-+{
-+	domain->ops->free(domain, irq_base, nr_irqs);
-+	if (irq_domain_is_auto_recursive(domain)) {
-+		BUG_ON(!domain->parent);
-+		irq_domain_free_irqs_recursive(domain->parent, irq_base,
-+					       nr_irqs);
-+	}
-+}
-+
-+static int irq_domain_alloc_irqs_recursive(struct irq_domain *domain,
-+					   unsigned int irq_base,
-+					   unsigned int nr_irqs, void *arg)
-+{
-+	int ret = 0;
-+	struct irq_domain *parent = domain->parent;
-+	bool recursive = irq_domain_is_auto_recursive(domain);
-+
-+	BUG_ON(recursive && !parent);
-+	if (recursive)
-+		ret = irq_domain_alloc_irqs_recursive(parent, irq_base,
-+						      nr_irqs, arg);
-+	if (ret >= 0)
-+		ret = domain->ops->alloc(domain, irq_base, nr_irqs, arg);
-+	if (ret < 0 && recursive)
-+		irq_domain_free_irqs_recursive(parent, irq_base, nr_irqs);
-+
-+	return ret;
-+}
-+
- /**
-  * __irq_domain_alloc_irqs - Allocate IRQs from domain
-  * @domain:	domain to allocate from
-@@ -1016,7 +1053,7 @@ int __irq_domain_alloc_irqs(struct irq_domain *domain, int irq_base,
- 	}
- 
- 	mutex_lock(&irq_domain_mutex);
--	ret = domain->ops->alloc(domain, virq, nr_irqs, arg);
-+	ret = irq_domain_alloc_irqs_recursive(domain, virq, nr_irqs, arg);
- 	if (ret < 0) {
- 		mutex_unlock(&irq_domain_mutex);
- 		goto out_free_irq_data;
-@@ -1051,7 +1088,7 @@ void irq_domain_free_irqs(unsigned int virq, unsigned int nr_irqs)
- 	mutex_lock(&irq_domain_mutex);
- 	for (i = 0; i < nr_irqs; i++)
- 		irq_domain_remove_irq(virq + i);
--	data->domain->ops->free(data->domain, virq, nr_irqs);
-+	irq_domain_free_irqs_recursive(data->domain, virq, nr_irqs);
- 	mutex_unlock(&irq_domain_mutex);
- 
- 	irq_domain_free_irq_data(virq, nr_irqs);
-@@ -1059,6 +1096,47 @@ void irq_domain_free_irqs(unsigned int virq, unsigned int nr_irqs)
- }
- 
- /**
-+ * irq_domain_alloc_irqs_parent - Allocate interrupts from parent domain
-+ * @irq_base:	Base IRQ number
-+ * @nr_irqs:	Number of IRQs to allocate
-+ * @arg:	Allocation data (arch/domain specific)
-+ *
-+ * Check whether the domain has been setup recursive. If not allocate
-+ * through the parent domain.
-+ */
-+int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
-+				 unsigned int irq_base, unsigned int nr_irqs,
-+				 void *arg)
-+{
-+	/* irq_domain_alloc_irqs_recursive() has called parent's alloc() */
-+	if (irq_domain_is_auto_recursive(domain))
-+		return 0;
-+
-+	domain = domain->parent;
-+	if (domain)
-+		return irq_domain_alloc_irqs_recursive(domain, irq_base,
-+						       nr_irqs, arg);
-+	return -ENOSYS;
-+}
-+
-+/**
-+ * irq_domain_free_irqs_parent - Free interrupts from parent domain
-+ * @irq_base:	Base IRQ number
-+ * @nr_irqs:	Number of IRQs to free
-+ *
-+ * Check whether the domain has been setup recursive. If not free
-+ * through the parent domain.
-+ */
-+void irq_domain_free_irqs_parent(struct irq_domain *domain,
-+				 unsigned int irq_base, unsigned int nr_irqs)
-+{
-+	/* irq_domain_free_irqs_recursive() will call parent's free */
-+	if (!irq_domain_is_auto_recursive(domain) && domain->parent)
-+		irq_domain_free_irqs_recursive(domain->parent, irq_base,
-+					       nr_irqs);
-+}
-+
-+/**
-  * irq_domain_activate_irq - Call domain_ops->activate recursively to activate
-  *			     interrupt
-  * @irq_data:	outermost irq_data associated with interrupt
+Registering power domains is already handled by the core code.
+
+So compared to my RFC code, I only have to
+  1. Drop "simple-bus" from the compatible property in the .dtsi,
+  2. Call of_platform_populate() from renesas_bsc_probe(), to
+     register the child devices, now the core code no longer does that.
+
+I find it a bit strange having to add _more_ code, as the core code handles
+registering child devices fine. Doing it from my bus driver only protects
+against people trying to run a kernel without my bus driver included
+(which currently works fine, as long as no PM domain or clock is involved,
+ e.g. if the clock is forgotten in the SoC's .dtsi :-).
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
