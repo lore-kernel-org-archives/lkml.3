@@ -1,89 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852AbaKXHw0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 02:52:26 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22624 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176AbaKXHwY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 02:52:24 -0500
-From: Ethan Zhao <ethan.zhao@oracle.com>
-To: linda.knippers@hp.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
-        corbet@lwn.net, dirk.j.brandewie@intel.com
-Cc: linux-doc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ethan.kernel@gmail.com,
-        Ethan Zhao <ethan.zhao@oracle.com>
-Subject: [PATCH 2/2 v2] intel_pstate: add kernel parameter to enable loading on Sun X86 servers.
-Date: Mon, 24 Nov 2014 16:50:58 +0900
-Message-Id: <1416815458-25312-3-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1416815458-25312-1-git-send-email-ethan.zhao@oracle.com>
-References: <1416815458-25312-1-git-send-email-ethan.zhao@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1752882AbaKXHwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 02:52:41 -0500
+Received: from mga01.intel.com ([192.55.52.88]:43619 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752176AbaKXHwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 02:52:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,447,1413270000"; 
+   d="scan'208";a="637038486"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next] mei: bus: use ssize_t as the return type for send and receive
+Date: Mon, 24 Nov 2014 09:51:06 +0200
+Message-Id: <1416815466-22419-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To force loading on Oracle Sun X86 servers, provide one kernel command line
-parameter
+Mei bus receive and send function may return either number
+of transmitted bytes or errno.  It is better to use ssize_t
+type for that purpose that mixing size_t with int.
 
-  intel_pstate = onora
-
-For those who be aware of the risk doing so.
-
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-
-v2: change the command line parameter naming to specific to Oracle Sun servers.
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- Documentation/kernel-parameters.txt | 3 +++
- drivers/cpufreq/intel_pstate.c      | 6 +++++-
- 2 files changed, 8 insertions(+), 1 deletion(-)
+ drivers/misc/mei/bus.c     | 30 ++++++++++++++----------------
+ drivers/misc/mei/mei_dev.h |  6 +++---
+ include/linux/mei_cl_bus.h |  4 ++--
+ 3 files changed, 19 insertions(+), 21 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 479f332..e4b1b81 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1446,6 +1446,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 		       disable
- 		         Do not enable intel_pstate as the default
- 		         scaling driver for the supported processors
-+		       onora
-+		         Enable loading intel_pstate on Oracle Sun Servers(X86).
-+			 only for those who be aware of the risk.
- 
- 	intremap=	[X86-64, Intel-IOMMU]
- 			on	enable Interrupt Remapping (default)
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index dacc15a..f28c725 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -866,6 +866,7 @@ static struct cpufreq_driver intel_pstate_driver = {
- };
- 
- static int __initdata no_load;
-+static unsigned int  load_on_sun;
- 
- static int intel_pstate_msrs_not_valid(void)
- {
-@@ -987,7 +988,8 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
- 			return true;
- 	}
- 	if (!strncmp(hdr.oem_id, vendor_info[1].oem_id, ACPI_OEM_ID_SIZE) &&
--		intel_pstate_has_acpi_ppc())
-+		intel_pstate_has_acpi_ppc() &&
-+		!load_on_sun)
- 		return true;
- 
- 	return false;
-@@ -1061,6 +1063,8 @@ static int __init intel_pstate_setup(char *str)
- 
- 	if (!strcmp(str, "disable"))
- 		no_load = 1;
-+	if (!strcmp(str, "onora"))
-+		load_on_sun = 1;
- 	return 0;
+diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
+index b2de93724f5b..be767f4db26a 100644
+--- a/drivers/misc/mei/bus.c
++++ b/drivers/misc/mei/bus.c
+@@ -224,13 +224,13 @@ void mei_cl_driver_unregister(struct mei_cl_driver *driver)
  }
- early_param("intel_pstate", intel_pstate_setup);
+ EXPORT_SYMBOL_GPL(mei_cl_driver_unregister);
+ 
+-static int ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
++static ssize_t ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
+ 			bool blocking)
+ {
+ 	struct mei_device *dev;
+ 	struct mei_me_client *me_cl = NULL;
+ 	struct mei_cl_cb *cb = NULL;
+-	int rets;
++	ssize_t rets;
+ 
+ 	if (WARN_ON(!cl || !cl->dev))
+ 		return -ENODEV;
+@@ -278,12 +278,12 @@ out:
+ 	return rets;
+ }
+ 
+-int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length)
++ssize_t __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length)
+ {
+ 	struct mei_device *dev;
+ 	struct mei_cl_cb *cb;
+ 	size_t r_length;
+-	int err;
++	ssize_t rets;
+ 
+ 	if (WARN_ON(!cl || !cl->dev))
+ 		return -ENODEV;
+@@ -293,11 +293,9 @@ int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length)
+ 	mutex_lock(&dev->device_lock);
+ 
+ 	if (!cl->read_cb) {
+-		err = mei_cl_read_start(cl, length);
+-		if (err < 0) {
+-			mutex_unlock(&dev->device_lock);
+-			return err;
+-		}
++		rets = mei_cl_read_start(cl, length);
++		if (rets < 0)
++			goto out;
+ 	}
+ 
+ 	if (cl->reading_state != MEI_READ_COMPLETE &&
+@@ -320,13 +318,13 @@ int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length)
+ 	cb = cl->read_cb;
+ 
+ 	if (cl->reading_state != MEI_READ_COMPLETE) {
+-		r_length = 0;
++		rets = 0;
+ 		goto out;
+ 	}
+ 
+ 	r_length = min_t(size_t, length, cb->buf_idx);
+-
+ 	memcpy(buf, cb->response_buffer.data, r_length);
++	rets = r_length;
+ 
+ 	mei_io_cb_free(cb);
+ 	cl->reading_state = MEI_IDLE;
+@@ -335,20 +333,20 @@ int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length)
+ out:
+ 	mutex_unlock(&dev->device_lock);
+ 
+-	return r_length;
++	return rets;
+ }
+ 
+-inline int __mei_cl_async_send(struct mei_cl *cl, u8 *buf, size_t length)
++inline ssize_t __mei_cl_async_send(struct mei_cl *cl, u8 *buf, size_t length)
+ {
+ 	return ___mei_cl_send(cl, buf, length, 0);
+ }
+ 
+-inline int __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length)
++inline ssize_t __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length)
+ {
+ 	return ___mei_cl_send(cl, buf, length, 1);
+ }
+ 
+-int mei_cl_send(struct mei_cl_device *device, u8 *buf, size_t length)
++ssize_t mei_cl_send(struct mei_cl_device *device, u8 *buf, size_t length)
+ {
+ 	struct mei_cl *cl = device->cl;
+ 
+@@ -362,7 +360,7 @@ int mei_cl_send(struct mei_cl_device *device, u8 *buf, size_t length)
+ }
+ EXPORT_SYMBOL_GPL(mei_cl_send);
+ 
+-int mei_cl_recv(struct mei_cl_device *device, u8 *buf, size_t length)
++ssize_t mei_cl_recv(struct mei_cl_device *device, u8 *buf, size_t length)
+ {
+ 	struct mei_cl *cl =  device->cl;
+ 
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 49c033158d43..363c093a7772 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -347,9 +347,9 @@ struct mei_cl_device *mei_cl_add_device(struct mei_device *dev,
+ 					struct mei_cl_ops *ops);
+ void mei_cl_remove_device(struct mei_cl_device *device);
+ 
+-int __mei_cl_async_send(struct mei_cl *cl, u8 *buf, size_t length);
+-int __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length);
+-int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length);
++ssize_t __mei_cl_async_send(struct mei_cl *cl, u8 *buf, size_t length);
++ssize_t __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length);
++ssize_t __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length);
+ void mei_cl_bus_rx_event(struct mei_cl *cl);
+ void mei_cl_bus_remove_devices(struct mei_device *dev);
+ int mei_cl_bus_init(void);
+diff --git a/include/linux/mei_cl_bus.h b/include/linux/mei_cl_bus.h
+index 164aad1f9f12..0819d36a3a74 100644
+--- a/include/linux/mei_cl_bus.h
++++ b/include/linux/mei_cl_bus.h
+@@ -25,8 +25,8 @@ int __mei_cl_driver_register(struct mei_cl_driver *driver,
+ 
+ void mei_cl_driver_unregister(struct mei_cl_driver *driver);
+ 
+-int mei_cl_send(struct mei_cl_device *device, u8 *buf, size_t length);
+-int mei_cl_recv(struct mei_cl_device *device, u8 *buf, size_t length);
++ssize_t mei_cl_send(struct mei_cl_device *device, u8 *buf, size_t length);
++ssize_t  mei_cl_recv(struct mei_cl_device *device, u8 *buf, size_t length);
+ 
+ typedef void (*mei_cl_event_cb_t)(struct mei_cl_device *device,
+ 			       u32 events, void *context);
 -- 
-1.8.3.1
+1.9.3
 
