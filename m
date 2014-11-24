@@ -1,332 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508AbaKXP7s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:59:48 -0500
-Received: from hosting.pavoucek.net ([46.28.107.168]:60869 "EHLO
-	hosting.pavoucek.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625AbaKXP6o (ORCPT
+	id S1754520AbaKXQA2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 11:00:28 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:33347 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368AbaKXQA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:58:44 -0500
-From: Tomas Novotny <tomas@novotny.cz>
-To: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tomas Novotny <tomas@novotny.cz>
-Subject: [PATCH 1/4] rtc: ds1307: add support for mcp7940x chips
-Date: Mon, 24 Nov 2014 16:49:21 +0100
-Message-Id: <1416844164-16782-2-git-send-email-tomas@novotny.cz>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1416844164-16782-1-git-send-email-tomas@novotny.cz>
-References: <1416844164-16782-1-git-send-email-tomas@novotny.cz>
+	Mon, 24 Nov 2014 11:00:26 -0500
+Message-ID: <54735615.9070309@gmail.com>
+Date: Mon, 24 Nov 2014 11:00:21 -0500
+From: Austin S Hemmelgarn <ahferroin7@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kernelnewbies <kernelnewbies@kernelnewbies.org>
+Subject: Re: Your editor/IDE settings for autocompletion and other easiness
+References: <CANZNk81YTNVfY0U3LsugmGEmgooVKYqGtWZHCCmJ0whF_g+uyQ@mail.gmail.com>
+In-Reply-To: <CANZNk81YTNVfY0U3LsugmGEmgooVKYqGtWZHCCmJ0whF_g+uyQ@mail.gmail.com>
+x-hashcash: 1:21:141124:andrey.krieger.utkin@gmail.com::c8576d49c4a06bd381674d524fc174cb:d129ea293c0a4183
+x-hashcash: 1:21:141124:linux-kernel@vger.kernel.org::682249995853847f7b17b58012dc6c24:a44700f51794943f
+x-hashcash: 1:21:141124:kernelnewbies@kernelnewbies.org::a8140706a403597c3435d0d0750ee94c:6c53139bb7b72a64
+x-stampprotocols: hashcash:1:17;mbound:0:10:3000:5000
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms020002080902080804020809"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MCP7940x is same RTC as MCP7941x. The difference is that MCP7941x chips
-contain additional EEPROM on a different i2c address.
+This is a cryptographically signed message in MIME format.
 
-DS1307 driver already supports MCP7941x, so just add a new i2c device id
-and rename functions and defines accordingly.
+--------------ms020002080902080804020809
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Tomas Novotny <tomas@novotny.cz>
----
- drivers/rtc/rtc-ds1307.c | 127 ++++++++++++++++++++++++-----------------------
- 1 file changed, 64 insertions(+), 63 deletions(-)
+On 2014-11-21 22:58, Andrey Utkin wrote:
+> (I was asked to research this topic to help students. So please ignore
+> this topic if all you want to say is that it is OK to code in editor
+> without autocompletion and any other integration, and that there's LXR
+> website. We all know that.)
+>
+> Dear kernel developers,
+> if you have a minute, please share
+> - what's your configuration for editor integration with sources tree?
+> (the opposite is "just using any editor")
+> - which IDE/editor handiness options except autocompletion are
+> possible to obtain while developing kernel code, and which options do
+> you use?
+>
+> If you don't use any special configuration, feel free not to reply.
+>
+> Thanks!
+>
+Personally, I use vi/vim with ctags most of the time, and occasionally=20
+just use grep and find directly.  I generally don't use any=20
+auto-completion other than automatic indentation (I have a tendency to=20
+spend more time fighting with auto-completion than writing code when I=20
+actually try to use it).  In general, I would highly recommend not using =
 
-diff --git a/drivers/rtc/rtc-ds1307.c b/drivers/rtc/rtc-ds1307.c
-index bb43cf7..4ffabb3 100644
---- a/drivers/rtc/rtc-ds1307.c
-+++ b/drivers/rtc/rtc-ds1307.c
-@@ -35,7 +35,7 @@ enum ds_type {
- 	ds_1388,
- 	ds_3231,
- 	m41t00,
--	mcp7941x,
-+	mcp794xx,
- 	rx_8025,
- 	last_ds_type /* always last */
- 	/* rs5c372 too?  different address... */
-@@ -46,7 +46,7 @@ enum ds_type {
- #define DS1307_REG_SECS		0x00	/* 00-59 */
- #	define DS1307_BIT_CH		0x80
- #	define DS1340_BIT_nEOSC		0x80
--#	define MCP7941X_BIT_ST		0x80
-+#	define MCP794XX_BIT_ST		0x80
- #define DS1307_REG_MIN		0x01	/* 00-59 */
- #define DS1307_REG_HOUR		0x02	/* 00-23, or 1-12{am,pm} */
- #	define DS1307_BIT_12HR		0x40	/* in REG_HOUR */
-@@ -54,7 +54,7 @@ enum ds_type {
- #	define DS1340_BIT_CENTURY_EN	0x80	/* in REG_HOUR */
- #	define DS1340_BIT_CENTURY	0x40	/* in REG_HOUR */
- #define DS1307_REG_WDAY		0x03	/* 01-07 */
--#	define MCP7941X_BIT_VBATEN	0x08
-+#	define MCP794XX_BIT_VBATEN	0x08
- #define DS1307_REG_MDAY		0x04	/* 01-31 */
- #define DS1307_REG_MONTH	0x05	/* 01-12 */
- #	define DS1337_BIT_CENTURY	0x80	/* in REG_MONTH */
-@@ -159,7 +159,7 @@ static struct chip_desc chips[last_ds_type] = {
- 	[ds_3231] = {
- 		.alarm		= 1,
- 	},
--	[mcp7941x] = {
-+	[mcp794xx] = {
- 		.alarm		= 1,
- 		/* this is battery backed SRAM */
- 		.nvram_offset	= 0x20,
-@@ -176,7 +176,8 @@ static const struct i2c_device_id ds1307_id[] = {
- 	{ "ds1340", ds_1340 },
- 	{ "ds3231", ds_3231 },
- 	{ "m41t00", m41t00 },
--	{ "mcp7941x", mcp7941x },
-+	{ "mcp7940x", mcp794xx },
-+	{ "mcp7941x", mcp794xx },
- 	{ "pt7c4338", ds_1307 },
- 	{ "rx8025", rx_8025 },
- 	{ }
-@@ -439,14 +440,14 @@ static int ds1307_set_time(struct device *dev, struct rtc_time *t)
- 		buf[DS1307_REG_HOUR] |= DS1340_BIT_CENTURY_EN
- 				| DS1340_BIT_CENTURY;
- 		break;
--	case mcp7941x:
-+	case mcp794xx:
- 		/*
- 		 * these bits were cleared when preparing the date/time
- 		 * values and need to be set again before writing the
- 		 * buffer out to the device.
- 		 */
--		buf[DS1307_REG_SECS] |= MCP7941X_BIT_ST;
--		buf[DS1307_REG_WDAY] |= MCP7941X_BIT_VBATEN;
-+		buf[DS1307_REG_SECS] |= MCP794XX_BIT_ST;
-+		buf[DS1307_REG_WDAY] |= MCP794XX_BIT_VBATEN;
- 		break;
- 	default:
- 		break;
-@@ -614,26 +615,26 @@ static const struct rtc_class_ops ds13xx_rtc_ops = {
- /*----------------------------------------------------------------------*/
- 
- /*
-- * Alarm support for mcp7941x devices.
-+ * Alarm support for mcp794xx devices.
-  */
- 
--#define MCP7941X_REG_CONTROL		0x07
--#	define MCP7941X_BIT_ALM0_EN	0x10
--#	define MCP7941X_BIT_ALM1_EN	0x20
--#define MCP7941X_REG_ALARM0_BASE	0x0a
--#define MCP7941X_REG_ALARM0_CTRL	0x0d
--#define MCP7941X_REG_ALARM1_BASE	0x11
--#define MCP7941X_REG_ALARM1_CTRL	0x14
--#	define MCP7941X_BIT_ALMX_IF	(1 << 3)
--#	define MCP7941X_BIT_ALMX_C0	(1 << 4)
--#	define MCP7941X_BIT_ALMX_C1	(1 << 5)
--#	define MCP7941X_BIT_ALMX_C2	(1 << 6)
--#	define MCP7941X_BIT_ALMX_POL	(1 << 7)
--#	define MCP7941X_MSK_ALMX_MATCH	(MCP7941X_BIT_ALMX_C0 | \
--					 MCP7941X_BIT_ALMX_C1 | \
--					 MCP7941X_BIT_ALMX_C2)
--
--static void mcp7941x_work(struct work_struct *work)
-+#define MCP794XX_REG_CONTROL		0x07
-+#	define MCP794XX_BIT_ALM0_EN	0x10
-+#	define MCP794XX_BIT_ALM1_EN	0x20
-+#define MCP794XX_REG_ALARM0_BASE	0x0a
-+#define MCP794XX_REG_ALARM0_CTRL	0x0d
-+#define MCP794XX_REG_ALARM1_BASE	0x11
-+#define MCP794XX_REG_ALARM1_CTRL	0x14
-+#	define MCP794XX_BIT_ALMX_IF	(1 << 3)
-+#	define MCP794XX_BIT_ALMX_C0	(1 << 4)
-+#	define MCP794XX_BIT_ALMX_C1	(1 << 5)
-+#	define MCP794XX_BIT_ALMX_C2	(1 << 6)
-+#	define MCP794XX_BIT_ALMX_POL	(1 << 7)
-+#	define MCP794XX_MSK_ALMX_MATCH	(MCP794XX_BIT_ALMX_C0 | \
-+					 MCP794XX_BIT_ALMX_C1 | \
-+					 MCP794XX_BIT_ALMX_C2)
-+
-+static void mcp794xx_work(struct work_struct *work)
- {
- 	struct ds1307 *ds1307 = container_of(work, struct ds1307, work);
- 	struct i2c_client *client = ds1307->client;
-@@ -642,22 +643,22 @@ static void mcp7941x_work(struct work_struct *work)
- 	mutex_lock(&ds1307->rtc->ops_lock);
- 
- 	/* Check and clear alarm 0 interrupt flag. */
--	reg = i2c_smbus_read_byte_data(client, MCP7941X_REG_ALARM0_CTRL);
-+	reg = i2c_smbus_read_byte_data(client, MCP794XX_REG_ALARM0_CTRL);
- 	if (reg < 0)
- 		goto out;
--	if (!(reg & MCP7941X_BIT_ALMX_IF))
-+	if (!(reg & MCP794XX_BIT_ALMX_IF))
- 		goto out;
--	reg &= ~MCP7941X_BIT_ALMX_IF;
--	ret = i2c_smbus_write_byte_data(client, MCP7941X_REG_ALARM0_CTRL, reg);
-+	reg &= ~MCP794XX_BIT_ALMX_IF;
-+	ret = i2c_smbus_write_byte_data(client, MCP794XX_REG_ALARM0_CTRL, reg);
- 	if (ret < 0)
- 		goto out;
- 
- 	/* Disable alarm 0. */
--	reg = i2c_smbus_read_byte_data(client, MCP7941X_REG_CONTROL);
-+	reg = i2c_smbus_read_byte_data(client, MCP794XX_REG_CONTROL);
- 	if (reg < 0)
- 		goto out;
--	reg &= ~MCP7941X_BIT_ALM0_EN;
--	ret = i2c_smbus_write_byte_data(client, MCP7941X_REG_CONTROL, reg);
-+	reg &= ~MCP794XX_BIT_ALM0_EN;
-+	ret = i2c_smbus_write_byte_data(client, MCP794XX_REG_CONTROL, reg);
- 	if (ret < 0)
- 		goto out;
- 
-@@ -669,7 +670,7 @@ out:
- 	mutex_unlock(&ds1307->rtc->ops_lock);
- }
- 
--static int mcp7941x_read_alarm(struct device *dev, struct rtc_wkalrm *t)
-+static int mcp794xx_read_alarm(struct device *dev, struct rtc_wkalrm *t)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct ds1307 *ds1307 = i2c_get_clientdata(client);
-@@ -680,11 +681,11 @@ static int mcp7941x_read_alarm(struct device *dev, struct rtc_wkalrm *t)
- 		return -EINVAL;
- 
- 	/* Read control and alarm 0 registers. */
--	ret = ds1307->read_block_data(client, MCP7941X_REG_CONTROL, 10, regs);
-+	ret = ds1307->read_block_data(client, MCP794XX_REG_CONTROL, 10, regs);
- 	if (ret < 0)
- 		return ret;
- 
--	t->enabled = !!(regs[0] & MCP7941X_BIT_ALM0_EN);
-+	t->enabled = !!(regs[0] & MCP794XX_BIT_ALM0_EN);
- 
- 	/* Report alarm 0 time assuming 24-hour and day-of-month modes. */
- 	t->time.tm_sec = bcd2bin(ds1307->regs[3] & 0x7f);
-@@ -701,14 +702,14 @@ static int mcp7941x_read_alarm(struct device *dev, struct rtc_wkalrm *t)
- 		"enabled=%d polarity=%d irq=%d match=%d\n", __func__,
- 		t->time.tm_sec, t->time.tm_min, t->time.tm_hour,
- 		t->time.tm_wday, t->time.tm_mday, t->time.tm_mon, t->enabled,
--		!!(ds1307->regs[6] & MCP7941X_BIT_ALMX_POL),
--		!!(ds1307->regs[6] & MCP7941X_BIT_ALMX_IF),
--		(ds1307->regs[6] & MCP7941X_MSK_ALMX_MATCH) >> 4);
-+		!!(ds1307->regs[6] & MCP794XX_BIT_ALMX_POL),
-+		!!(ds1307->regs[6] & MCP794XX_BIT_ALMX_IF),
-+		(ds1307->regs[6] & MCP794XX_MSK_ALMX_MATCH) >> 4);
- 
- 	return 0;
- }
- 
--static int mcp7941x_set_alarm(struct device *dev, struct rtc_wkalrm *t)
-+static int mcp794xx_set_alarm(struct device *dev, struct rtc_wkalrm *t)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct ds1307 *ds1307 = i2c_get_clientdata(client);
-@@ -725,7 +726,7 @@ static int mcp7941x_set_alarm(struct device *dev, struct rtc_wkalrm *t)
- 		t->enabled, t->pending);
- 
- 	/* Read control and alarm 0 registers. */
--	ret = ds1307->read_block_data(client, MCP7941X_REG_CONTROL, 10, regs);
-+	ret = ds1307->read_block_data(client, MCP794XX_REG_CONTROL, 10, regs);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -738,23 +739,23 @@ static int mcp7941x_set_alarm(struct device *dev, struct rtc_wkalrm *t)
- 	regs[8] = bin2bcd(t->time.tm_mon) + 1;
- 
- 	/* Clear the alarm 0 interrupt flag. */
--	regs[6] &= ~MCP7941X_BIT_ALMX_IF;
-+	regs[6] &= ~MCP794XX_BIT_ALMX_IF;
- 	/* Set alarm match: second, minute, hour, day, date, month. */
--	regs[6] |= MCP7941X_MSK_ALMX_MATCH;
-+	regs[6] |= MCP794XX_MSK_ALMX_MATCH;
- 
- 	if (t->enabled)
--		regs[0] |= MCP7941X_BIT_ALM0_EN;
-+		regs[0] |= MCP794XX_BIT_ALM0_EN;
- 	else
--		regs[0] &= ~MCP7941X_BIT_ALM0_EN;
-+		regs[0] &= ~MCP794XX_BIT_ALM0_EN;
- 
--	ret = ds1307->write_block_data(client, MCP7941X_REG_CONTROL, 10, regs);
-+	ret = ds1307->write_block_data(client, MCP794XX_REG_CONTROL, 10, regs);
- 	if (ret < 0)
- 		return ret;
- 
- 	return 0;
- }
- 
--static int mcp7941x_alarm_irq_enable(struct device *dev, unsigned int enabled)
-+static int mcp794xx_alarm_irq_enable(struct device *dev, unsigned int enabled)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct ds1307 *ds1307 = i2c_get_clientdata(client);
-@@ -763,24 +764,24 @@ static int mcp7941x_alarm_irq_enable(struct device *dev, unsigned int enabled)
- 	if (!test_bit(HAS_ALARM, &ds1307->flags))
- 		return -EINVAL;
- 
--	reg = i2c_smbus_read_byte_data(client, MCP7941X_REG_CONTROL);
-+	reg = i2c_smbus_read_byte_data(client, MCP794XX_REG_CONTROL);
- 	if (reg < 0)
- 		return reg;
- 
- 	if (enabled)
--		reg |= MCP7941X_BIT_ALM0_EN;
-+		reg |= MCP794XX_BIT_ALM0_EN;
- 	else
--		reg &= ~MCP7941X_BIT_ALM0_EN;
-+		reg &= ~MCP794XX_BIT_ALM0_EN;
- 
--	return i2c_smbus_write_byte_data(client, MCP7941X_REG_CONTROL, reg);
-+	return i2c_smbus_write_byte_data(client, MCP794XX_REG_CONTROL, reg);
- }
- 
--static const struct rtc_class_ops mcp7941x_rtc_ops = {
-+static const struct rtc_class_ops mcp794xx_rtc_ops = {
- 	.read_time	= ds1307_get_time,
- 	.set_time	= ds1307_set_time,
--	.read_alarm	= mcp7941x_read_alarm,
--	.set_alarm	= mcp7941x_set_alarm,
--	.alarm_irq_enable = mcp7941x_alarm_irq_enable,
-+	.read_alarm	= mcp794xx_read_alarm,
-+	.set_alarm	= mcp794xx_set_alarm,
-+	.alarm_irq_enable = mcp794xx_alarm_irq_enable,
- };
- 
- /*----------------------------------------------------------------------*/
-@@ -1049,10 +1050,10 @@ static int ds1307_probe(struct i2c_client *client,
- 	case ds_1388:
- 		ds1307->offset = 1; /* Seconds starts at 1 */
- 		break;
--	case mcp7941x:
--		rtc_ops = &mcp7941x_rtc_ops;
-+	case mcp794xx:
-+		rtc_ops = &mcp794xx_rtc_ops;
- 		if (ds1307->client->irq > 0 && chip->alarm) {
--			INIT_WORK(&ds1307->work, mcp7941x_work);
-+			INIT_WORK(&ds1307->work, mcp794xx_work);
- 			want_irq = true;
- 		}
- 		break;
-@@ -1117,18 +1118,18 @@ read_rtc:
- 			dev_warn(&client->dev, "SET TIME!\n");
- 		}
- 		break;
--	case mcp7941x:
-+	case mcp794xx:
- 		/* make sure that the backup battery is enabled */
--		if (!(ds1307->regs[DS1307_REG_WDAY] & MCP7941X_BIT_VBATEN)) {
-+		if (!(ds1307->regs[DS1307_REG_WDAY] & MCP794XX_BIT_VBATEN)) {
- 			i2c_smbus_write_byte_data(client, DS1307_REG_WDAY,
- 					ds1307->regs[DS1307_REG_WDAY]
--					| MCP7941X_BIT_VBATEN);
-+					| MCP794XX_BIT_VBATEN);
- 		}
- 
- 		/* clock halted?  turn it on, so clock can tick. */
--		if (!(tmp & MCP7941X_BIT_ST)) {
-+		if (!(tmp & MCP794XX_BIT_ST)) {
- 			i2c_smbus_write_byte_data(client, DS1307_REG_SECS,
--					MCP7941X_BIT_ST);
-+					MCP794XX_BIT_ST);
- 			dev_warn(&client->dev, "SET TIME!\n");
- 			goto read_rtc;
- 		}
--- 
-2.1.2
+an IDE for working on kernel code unless you can setup the=20
+auto-formatting to be compliant with the coding standards.
 
+
+--------------ms020002080902080804020809
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIFuDCC
+BbQwggOcoAMCAQICAw9gVDANBgkqhkiG9w0BAQ0FADB5MRAwDgYDVQQKEwdSb290IENBMR4w
+HAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5vcmcxIjAgBgNVBAMTGUNBIENlcnQgU2lnbmlu
+ZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEWEnN1cHBvcnRAY2FjZXJ0Lm9yZzAeFw0xNDA4
+MDgxMTMwNDRaFw0xNTAyMDQxMTMwNDRaMGMxGDAWBgNVBAMTD0NBY2VydCBXb1QgVXNlcjEj
+MCEGCSqGSIb3DQEJARYUYWhmZXJyb2luN0BnbWFpbC5jb20xIjAgBgkqhkiG9w0BCQEWE2Fo
+ZW1tZWxnQG9oaW9ndC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDdmm8R
+BM5D6fGiB6rpogPZbLYu6CkU6834rcJepfmxKnLarYUYM593/VGygfaaHAyuc8qLaRA3u1M0
+Qp29flqmhv1VDTBZ+zFu6JgHjTDniBii1KOZRo0qV3jC5NvaS8KUM67+eQBjm29LhBWVi3+e
+a8jLxmogFXV0NGej+GHIr5zA9qKz2WJOEoGh0EfqZ2MQTmozcGI43/oqIYhRj8fRMkWXLUAF
+WsLzPQMpK19hD8fqwlxQWhBV8gsGRG54K5pyaQsjne7m89SF5M8JkNJPH39tHEvfv2Vhf7EM
+Y4WGyhLAULSlym1AI1uUHR1FfJaj3AChaEJZli/AdajYsqc7AgMBAAGjggFZMIIBVTAMBgNV
+HRMBAf8EAjAAMFYGCWCGSAGG+EIBDQRJFkdUbyBnZXQgeW91ciBvd24gY2VydGlmaWNhdGUg
+Zm9yIEZSRUUgaGVhZCBvdmVyIHRvIGh0dHA6Ly93d3cuQ0FjZXJ0Lm9yZzAOBgNVHQ8BAf8E
+BAMCA6gwQAYDVR0lBDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgorBgEEAYI3CgMEBgorBgEE
+AYI3CgMDBglghkgBhvhCBAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUFBzABhhZodHRwOi8v
+b2NzcC5jYWNlcnQub3JnMDEGA1UdHwQqMCgwJqAkoCKGIGh0dHA6Ly9jcmwuY2FjZXJ0Lm9y
+Zy9yZXZva2UuY3JsMDQGA1UdEQQtMCuBFGFoZmVycm9pbjdAZ21haWwuY29tgRNhaGVtbWVs
+Z0BvaGlvZ3QuY29tMA0GCSqGSIb3DQEBDQUAA4ICAQCr4klxcZU/PDRBpUtlb+d6JXl2dfto
+OUP/6g19dpx6Ekt2pV1eujpIj5whh5KlCSPUgtHZI7BcksLSczQbxNDvRu6LNKqGJGvcp99k
+cWL1Z6BsgtvxWKkOmy1vB+2aPfDiQQiMCCLAqXwHiNDZhSkwmGsJ7KHMWgF/dRVDnsl6aOQZ
+jAcBMpUZxzA/bv4nY2PylVdqJWp9N7x86TF9sda1zRZiyUwy83eFTDNzefYPtc4MLppcaD4g
+Wt8U6T2ffQfCWVzDirhg4WmDH3MybDItjkSB2/+pgGOS4lgtEBMHzAGQqQ+5PojTHRyqu9Jc
+O59oIGrTaOtKV9nDeDtzNaQZgygJItJi9GoAl68AmIHxpS1rZUNV6X8ydFrEweFdRTVWhUEL
+70Cnx84YBojXv01LYBSZaq18K8cERPLaIrUD2go+2ffjdE9ejvYDhNBllY+ufvRizIjQA1uC
+OdktVAN6auQob94kOOsWpoMSrzHHvOvVW/kbokmKzaLtcs9+nJoL+vPi2AyzbaoQASVZYOGW
+pE3daA0F5FJfcPZKCwd5wdnmT3dU1IRUxa5vMmgjP20lkfP8tCPtvZv2mmI2Nw5SaXNY4gVu
+WQrvkV2in+TnGqgEIwUrLVbx9G6PSYZZs07czhO+Q1iVuKdAwjL/AYK0Us9v50acIzbl5CWw
+ZGj3wjGCA6EwggOdAgEBMIGAMHkxEDAOBgNVBAoTB1Jvb3QgQ0ExHjAcBgNVBAsTFWh0dHA6
+Ly93d3cuY2FjZXJ0Lm9yZzEiMCAGA1UEAxMZQ0EgQ2VydCBTaWduaW5nIEF1dGhvcml0eTEh
+MB8GCSqGSIb3DQEJARYSc3VwcG9ydEBjYWNlcnQub3JnAgMPYFQwCQYFKw4DAhoFAKCCAfUw
+GAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQxMTI0MTYwMDIx
+WjAjBgkqhkiG9w0BCQQxFgQUepdIkKM72JDUGIhC7+/WronQeCUwbAYJKoZIhvcNAQkPMV8w
+XTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIA
+gDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBkQYJKwYBBAGCNxAE
+MYGDMIGAMHkxEDAOBgNVBAoTB1Jvb3QgQ0ExHjAcBgNVBAsTFWh0dHA6Ly93d3cuY2FjZXJ0
+Lm9yZzEiMCAGA1UEAxMZQ0EgQ2VydCBTaWduaW5nIEF1dGhvcml0eTEhMB8GCSqGSIb3DQEJ
+ARYSc3VwcG9ydEBjYWNlcnQub3JnAgMPYFQwgZMGCyqGSIb3DQEJEAILMYGDoIGAMHkxEDAO
+BgNVBAoTB1Jvb3QgQ0ExHjAcBgNVBAsTFWh0dHA6Ly93d3cuY2FjZXJ0Lm9yZzEiMCAGA1UE
+AxMZQ0EgQ2VydCBTaWduaW5nIEF1dGhvcml0eTEhMB8GCSqGSIb3DQEJARYSc3VwcG9ydEBj
+YWNlcnQub3JnAgMPYFQwDQYJKoZIhvcNAQEBBQAEggEAPwT5yRNXMm73zJn82pgK1V9gi/zr
+3GrEwdVGl0g6KlrdoaW59GxnvtafcpYzOA/+Ho1ZecdSHb//rErW7u7aZxJCZgPUsxtwLiR2
+SvleOhgw5FUwSLxE8f35MmgeppC3jMmERiw/99Os37fOOZ2ChwMOqTwhKXI/pf40we/Y8BVa
+uXliW7w+Hjlt7/p2jzp10ublpGaApAGFd5vOGxmUi+h5Ukmv9XCe5mJQKChSxSXN8u6gU/Eb
+WJnIKK8mcPRpt6etTHY7KD41rqehUp4PHleIN1IBKdjKog/4a3ULf6A6jY5gR6pfSJg9rP1q
+5F4Ctdgw9CSilyXpDlOLvjb60wAAAAAAAA==
+--------------ms020002080902080804020809--
