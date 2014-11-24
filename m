@@ -1,167 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438AbaKXNKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 08:10:49 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:47990 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966AbaKXNKr (ORCPT
+	id S1753483AbaKXNLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 08:11:47 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:27553 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154AbaKXNLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 08:10:47 -0500
-Date: Mon, 24 Nov 2014 14:10:41 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arjun Sreedharan <arjun024@gmail.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, kernel-build-reports@lists.linaro.org
-Subject: Re: [PATCH] usb:phy: propagate __of_usb_find_phy()'s error on failure
-Message-ID: <20141124131034.GB4061@ulmo.nvidia.com>
-References: <1416498816-3292-1-git-send-email-arjun024@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UFHRwCdBEJvubb2X"
-Content-Disposition: inline
-In-Reply-To: <1416498816-3292-1-git-send-email-arjun024@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 24 Nov 2014 08:11:44 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-8a-54732e8e615e
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org
+Cc: kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
+        s.nawrocki@samsung.com, pankaj.dubey@samsung.com,
+        ulf.hansson@linaro.org, khilman@kernel.org, linux-pm@vger.kernel.org,
+        geert@linux-m68k.org, rjw@rjwysocki.net, devicetree@vger.kernel.org,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Subject: [PATCH RFC v2 01/12] arm: exynos: Add platform driver support for
+ power domain driver
+Date: Mon, 24 Nov 2014 18:34:05 +0530
+Message-id: <1416834256-11225-1-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1416833572-6880-1-git-send-email-amit.daniel@samsung.com>
+References: <1416833572-6880-1-git-send-email-amit.daniel@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkWrdPrzjE4HefhkXD1RCL+UfOsVo8
+	u7WXyaJ3wVU2i6ebHzNZbHp8jdXi8q45bBafe48wWsw4v4/JYtHWL+wWZ05fYrU4/Kad1eL4
+	2nAHXo9NqzrZPO5c28PmcehwB6PH5iX1HluutrN49G1ZxejxeZNcAHsUl01Kak5mWWqRvl0C
+	V8bbXetYCrZKVFw4K9TA+E+4i5GDQ0LARKLpXkIXIyeQKSZx4d56ti5GLg4hgaWMEvevrmSH
+	SJhI7D85ASoxnVHi4+LJUM4EJonbd48wglSxCRhL/Ny5nx1kqoiAt8Tya4ogNcwCq5kktrZ/
+	YAKpERZIkJh8rwFsKouAqkTrk4dgvbwC7hIvzrczQ1ykIDFnkg1ImBMofObVEhaQsJCAm8Ti
+	JjWQkRIC59glJvVfZoYYIyDxbfIhFohWWYlNB5ghbpaUOLjiBssERuEFjAyrGEVTC5ILipPS
+	i0z1ihNzi0vz0vWS83M3MQJj5fS/ZxN3MN4/YH2IUYCDUYmHd8b6ohAh1sSy4srcQ4ymQBsm
+	MkuJJucDIzKvJN7Q2MzIwtTE1NjI3NJMSZxXR/pnsJBAemJJanZqakFqUXxRaU5q8SFGJg5O
+	qQbG9rcvK8xOSbu7inh2XFAXcfihG/FjnVir6JqIvZZN20p2tGr4MEjfKW3SvX+j3POp6Zv/
+	PvtLN7VfCnf47Xxu3Uy/ck1lnUMts1pCgp0ev/JmC1YuP55/fVXxon2rA+pStz5/J3OrwLNm
+	p5ibvHiYwLu1ETyBaxdITJw9m8Phn7RQ598HCWZKLMUZiYZazEXFiQAicJsjkAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsVy+t9jQd0+veIQg/7Z8hYNV0Ms5h85x2rx
+	7NZeJoveBVfZLJ5ufsxksenxNVaLy7vmsFl87j3CaDHj/D4mi0Vbv7BbnDl9idXi8Jt2Vovj
+	a8MdeD02repk87hzbQ+bx6HDHYwem5fUe2y52s7i0bdlFaPH501yAexRDYw2GamJKalFCql5
+	yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUDHKimUJeaUAoUCEouLlfTt
+	ME0IDXHTtYBpjND1DQmC6zEyQAMJaxgz3u5ax1KwVaLiwlmhBsZ/wl2MnBwSAiYS+09OYIOw
+	xSQu3FsPZHNxCAlMZ5T4uHgylDOBSeL23SOMIFVsAsYSP3fuZ+9i5OAQEfCWWH5NEaSGWWA1
+	k8TW9g9MIDXCAgkSk+81sIPYLAKqEq1PHoL18gq4S7w4384M0ishoCAxZ5INSJgTKHzm1RIW
+	kLCQgJvE4ia1CYy8CxgZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEx+Iz6R2MqxosDjEK
+	cDAq8fDOWF8UIsSaWFZcmXuIUYKDWUmEV0ysOESINyWxsiq1KD++qDQntfgQoynQTROZpUST
+	84FpIq8k3tDYxNzU2NTSxMLEzFJJnPfGzdwQIYH0xJLU7NTUgtQimD4mDk6pBkYnV+0zKyZv
+	Onatx2P/tr2W1ruS74mqlhq2yb6yEF7clKFo/d/w7wz1y8VX4vLtbpd2Wh3fVO9U6i15dX/b
+	59zeDYFaiXmztd41PT2e+tF00s2N0Y6aprOMT7gK+FUnCaxLSi692cd3oidYpo6lLval/rHH
+	ra2abKt/GVo1ZHt7SRgtmfXiohJLcUaioRZzUXEiAILoyr3bAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch modifies Exynos Power Domain driver initialization
+implementation in following way:
 
---UFHRwCdBEJvubb2X
-Content-Type: multipart/mixed; boundary="cmJC7u66zC7hs+87"
-Content-Disposition: inline
+   - Added platform driver support and probe function where Exynos PM
+     Domain driver will finally register itself as MFD PMU client driver.
+     In this way,all the Exynos power domains are probed once and registered
+     with the power domain subsystem.
+   - Existing DT bindings are used.
 
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+ arch/arm/mach-exynos/pm_domains.c |   40 +++++++++++++++++++++++--------------
+ 1 file changed, 25 insertions(+), 15 deletions(-)
 
---cmJC7u66zC7hs+87
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Nov 20, 2014 at 09:23:36PM +0530, Arjun Sreedharan wrote:
-> When __of_usb_find_phy() fails, it returns -ENODEV - its
-> error code has to be returned by devm_usb_get_phy_by_phandle().
-> Only when the former function succeeds and try_module_get()
-> fails should -EPROBE_DEFER be returned.
->=20
-> Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
-> ---
->  drivers/usb/phy/phy.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-
-This causes a boot regression on at least NVIDIA Dalmore (I boot over
-NFS using a USB network adapter).
-
-The commit message is somewhat insufficient because while it explains
-what the code does and asserts that it is the right thing to do, it
-fails to explain why.
-
-> diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
-> index 045cd30..0310112 100644
-> --- a/drivers/usb/phy/phy.c
-> +++ b/drivers/usb/phy/phy.c
-> @@ -191,7 +191,9 @@ struct usb_phy *devm_usb_get_phy_by_phandle(struct de=
-vice *dev,
-> =20
->  	phy =3D __of_usb_find_phy(node);
->  	if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
-> -		phy =3D ERR_PTR(-EPROBE_DEFER);
-> +		if (!IS_ERR(phy))
-> +			phy =3D ERR_PTR(-EPROBE_DEFER);
-
-If we look at this closer, __of_usb_find_phy() return a valid pointer if
-a PHY was found or ERR_PTR(-ENODEV) otherwise. But since the phandle has
-already been validated, the only reason why __of_usb_find_phy() fails is
-because the PHY that the phandle refers to hasn't been registered yet.
-
-Returning -EPROBE_DEFER is the correct thing to do in this situation
-because it gives the PHY driver an opportunity to register and the USB
-host controller to try probing again. I suppose one could argue that
-__of_usb_find_phy() should return ERR_PTR(-EPROBE_DEFER) on failure
-instead of ERR_PTR(-ENODEV), since evidently the device does exist, it
-just hasn't been registered yet. On the other hand it could happen that
-the phandle refers to a device tree node that's status =3D "disabled", in
-which case ERR_PTR(-ENODEV) might be appropriate.
-
-Also, -EPROBE_DEFER isn't really the proper error for try_module_get()
-failure. Other functions (usb_get_phy() and usb_get_phy_dev()) return
--ENODEV instead, so it'd be more consistent to stick with that. Hence I
-propose something like the below instead.
-
-Adding linux-next and kernel-build-reports in case anyone's running into
-the same issue.
-
-Thierry
-
---cmJC7u66zC7hs+87
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline; filename=patch
-Content-Transfer-Encoding: quoted-printable
-
-diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
-index 2b1039e0f1ac..2f9735b35338 100644
---- a/drivers/usb/phy/phy.c
-+++ b/drivers/usb/phy/phy.c
-@@ -59,6 +59,9 @@ static struct usb_phy *__of_usb_find_phy(struct device_no=
-de *node)
- {
- 	struct usb_phy  *phy;
-=20
-+	if (!of_device_is_available(node))
-+		return ERR_PTR(-ENODEV);
-+
- 	list_for_each_entry(phy, &phy_list, head) {
- 		if (node !=3D phy->dev->of_node)
- 			continue;
-@@ -66,7 +69,7 @@ static struct usb_phy *__of_usb_find_phy(struct device_no=
-de *node)
- 		return phy;
- 	}
-=20
--	return ERR_PTR(-ENODEV);
-+	return ERR_PTR(-EPROBE_DEFER);
+diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
+index 20f2671..5cb5440 100644
+--- a/arch/arm/mach-exynos/pm_domains.c
++++ b/arch/arm/mach-exynos/pm_domains.c
+@@ -105,25 +105,17 @@ static int exynos_pd_power_off(struct generic_pm_domain *domain)
+ 	return exynos_pd_power(domain, false);
  }
-=20
- static void devm_usb_phy_release(struct device *dev, void *res)
-@@ -190,8 +193,13 @@ struct usb_phy *devm_usb_get_phy_by_phandle(struct dev=
-ice *dev,
- 	spin_lock_irqsave(&phy_lock, flags);
-=20
- 	phy =3D __of_usb_find_phy(node);
--	if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
--		phy =3D ERR_PTR(-EPROBE_DEFER);
-+	if (IS_ERR(phy)) {
-+		devres_free(ptr);
-+		goto err1;
-+	}
+ 
+-static __init int exynos4_pm_init_power_domain(void)
++static int exynos_power_domain_probe(struct platform_device *pdev)
+ {
+-	struct platform_device *pdev;
+ 	struct device_node *np;
+ 
+ 	for_each_compatible_node(np, NULL, "samsung,exynos4210-pd") {
+ 		struct exynos_pm_domain *pd;
+ 		int on, i;
+-		struct device *dev;
+ 
+-		pdev = of_find_device_by_node(np);
+-		dev = &pdev->dev;
+-
+-		pd = kzalloc(sizeof(*pd), GFP_KERNEL);
+-		if (!pd) {
+-			pr_err("%s: failed to allocate memory for domain\n",
+-					__func__);
++		pd = devm_kzalloc(&pdev->dev, sizeof(*pd), GFP_KERNEL);
++		if (!pd)
+ 			return -ENOMEM;
+-		}
+ 
+ 		pd->pd.name = kstrdup(np->name, GFP_KERNEL);
+ 		pd->name = pd->pd.name;
+@@ -131,7 +123,7 @@ static __init int exynos4_pm_init_power_domain(void)
+ 		pd->pd.power_off = exynos_pd_power_off;
+ 		pd->pd.power_on = exynos_pd_power_on;
+ 
+-		pd->oscclk = clk_get(dev, "oscclk");
++		pd->oscclk = of_clk_get_by_name(np, "oscclk");
+ 		if (IS_ERR(pd->oscclk))
+ 			goto no_clk;
+ 
+@@ -139,11 +131,11 @@ static __init int exynos4_pm_init_power_domain(void)
+ 			char clk_name[8];
+ 
+ 			snprintf(clk_name, sizeof(clk_name), "clk%d", i);
+-			pd->clk[i] = clk_get(dev, clk_name);
++			pd->clk[i] = of_clk_get_by_name(np, clk_name);
+ 			if (IS_ERR(pd->clk[i]))
+ 				break;
+ 			snprintf(clk_name, sizeof(clk_name), "pclk%d", i);
+-			pd->pclk[i] = clk_get(dev, clk_name);
++			pd->pclk[i] = of_clk_get_by_name(np, clk_name);
+ 			if (IS_ERR(pd->pclk[i])) {
+ 				clk_put(pd->clk[i]);
+ 				pd->clk[i] = ERR_PTR(-EINVAL);
+@@ -163,4 +155,22 @@ no_clk:
+ 
+ 	return 0;
+ }
+-arch_initcall(exynos4_pm_init_power_domain);
 +
-+	if (!try_module_get(phy->dev->driver->owner)) {
-+		phy =3D ERR_PTR(-ENODEV);
- 		devres_free(ptr);
- 		goto err1;
- 	}
++static const struct platform_device_id exynos_power_domain_id[] = {
++	{ "exynos-pmu-pd"},
++	{ },
++};
++
++static struct platform_driver exynos_power_domain_driver = {
++	.driver  = {
++		.name   = "exynos-pd",
++	},
++	.probe = exynos_power_domain_probe,
++	.id_table = exynos_power_domain_id,
++};
++
++static int __init exynos_power_domain_init(void)
++{
++	return platform_driver_register(&exynos_power_domain_driver);
++}
++postcore_initcall(exynos_power_domain_init);
+-- 
+1.7.9.5
 
---cmJC7u66zC7hs+87--
-
---UFHRwCdBEJvubb2X
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUcy5KAAoJEN0jrNd/PrOh/5AP/2sRna31LH4VCT6ZotXICssI
-1/Sv7IR0eKCqWUsBrEnACMd091vICdp4Y7zQEkACBsK7HSSzA/5F8HzAceXAMTsf
-ocjcax8HiE1bw5BpUlhLKy88/2hR1S8iek8hQQQYOdSopp6ojLp4iKKlk2OU20n2
-7LZAnlHEl5/9JHjQ4qV6qsCI6YF1nGX9C9v3bULF7q8wfANGb2KGX+dKsTa7E/eD
-tTfSoljanxMgIs9Las0OQgUXq90euoDHj2cXA8+8VoQbZJDHD7GiAzz7blrg5Lug
-SdwUdfZgTfjU5QkGUA7mKDYsbGOUtFZzk+uYzFfonMzStXWjQ5IqY/EOnYBT7QK4
-3m5nVbmFH/9Jew3nu3eSimwmSXBiDOA4Y0w9j1fK80BA17r0O3q83PvWkad593Cu
-0pyEDpNkJIwGHe4YWTlXfPPWIsXU9igoHQpzNmyUURG1F4eSs/XztqXtnQ8mnrfw
-sRlK4h1roptV2hhtP2/espI6qVjot2WjlDMUBq1+oJ96nONTxdNQ9WeNxYIVPAJG
-UbYQybWs60101NYyYFrgVpbizqkl0QwA45vFpvpHkHOkErjczctDL79Ol2dGhuuV
-Q+SohhAqU+wzK+439MoiM3SYXnJJQqhjw3uabIBmd4HV5wz7TQ0JkO7fcTvI1Ko+
-5p+zoANbhHPqQt7rpsC3
-=aBfP
------END PGP SIGNATURE-----
-
---UFHRwCdBEJvubb2X--
