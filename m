@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917AbaKXWho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 17:37:44 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:50767 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100AbaKXWeM (ORCPT
+	id S1751932AbaKXWhy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 17:37:54 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:43482 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113AbaKXWhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 17:34:12 -0500
-From: Grant Likely <grant.likely@linaro.org>
-To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH v2 05/14] of/reconfig: Add empty stubs for the of_reconfig methods
-Date: Mon, 24 Nov 2014 22:33:33 +0000
-Message-Id: <1416868422-22103-6-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416868422-22103-1-git-send-email-grant.likely@linaro.org>
-References: <1416868422-22103-1-git-send-email-grant.likely@linaro.org>
+	Mon, 24 Nov 2014 17:37:52 -0500
+Date: Mon, 24 Nov 2014 14:37:36 -0800
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        acme@kernel.org, mingo@kernel.org, peterz@infradead.organton,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <michaele@au1.ibm.com>
+Subject: Re: perf: Add support for full Intel event lists v8
+Message-ID: <20141124223736.GA13184@us.ibm.com>
+References: <1406762570-16694-1-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406762570-16694-1-git-send-email-andi@firstfloor.org>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112422-0005-0000-0000-00000699281C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To simplify subsystem setup code, make empty stubs for the
-of_reconfig_*() methods. This is particularly useful for registering and
-unregistering the notifiers so that it doesn't impact the flow of the
-subsystem setup code.
+Andi Kleen [andi@firstfloor.org] wrote:
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
----
- include/linux/of.h | 29 +++++++++++++++++++++++------
- 1 file changed, 23 insertions(+), 6 deletions(-)
+| Since it seems the download mechanism is controversal, 
+| I removed the downloader for now until a suitable distribution
+| method with kernel.org can be established. This is just
+| the rest of the perf JSON event code that should hopefully
+| not be controversal.
 
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 8e3a264c869c..b59ee21933a4 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -324,11 +324,6 @@ struct of_prop_reconfig {
- 	struct property		*old_prop;
- };
- 
--extern int of_reconfig_notifier_register(struct notifier_block *);
--extern int of_reconfig_notifier_unregister(struct notifier_block *);
--extern int of_reconfig_notify(unsigned long, void *);
--extern int of_reconfig_get_state_change(unsigned long action, void *arg);
--
- extern int of_attach_node(struct device_node *);
- extern int of_detach_node(struct device_node *);
- 
-@@ -895,6 +890,11 @@ enum of_reconfig_change {
- };
- 
- #ifdef CONFIG_OF_DYNAMIC
-+extern int of_reconfig_notifier_register(struct notifier_block *);
-+extern int of_reconfig_notifier_unregister(struct notifier_block *);
-+extern int of_reconfig_notify(unsigned long, void *);
-+extern int of_reconfig_get_state_change(unsigned long action, void *arg);
-+
- extern void of_changeset_init(struct of_changeset *ocs);
- extern void of_changeset_destroy(struct of_changeset *ocs);
- extern int of_changeset_apply(struct of_changeset *ocs);
-@@ -932,7 +932,24 @@ static inline int of_changeset_update_property(struct of_changeset *ocs,
- {
- 	return of_changeset_action(ocs, OF_RECONFIG_UPDATE_PROPERTY, np, prop);
- }
--#endif
-+#else /* CONFIG_OF_DYNAMIC */
-+static inline int of_reconfig_notifier_register(struct notifier_block *nb)
-+{
-+	return -EINVAL;
-+}
-+static inline int of_reconfig_notifier_unregister(struct notifier_block *nb)
-+{
-+	return -EINVAL;
-+}
-+static inline int of_reconfig_notify(unsigned long action, void *arg)
-+{
-+	return -EINVAL;
-+}
-+static inline int of_reconfig_get_state_change(unsigned long action, void *arg)
-+{
-+	return -EINVAL;
-+}
-+#endif /* CONFIG_OF_DYNAMIC */
- 
- /* CONFIG_OF_RESOLVE api */
- extern int of_resolve_phandles(struct device_node *tree);
--- 
-1.9.1
+Ingo, Jiri, Andi,
+
+Can we get this patchset merged please ? It is a step forward
+in eliminating raw event codes right ?
+
+We added hundreds of events to sysfs for Power7. We don't
+want to do the same for Power8 because this JSON file solution
+is clearly better.
+
+But we currently have a regression in functionality from Power7
+to Power8 :-(
+
+Even if 'perf download' is left out this patchset is still
+useful IMHO. Users (specially those who currently struggle
+with raw codes, are highly qualified and) could wget the
+JSON files as and when needed. 
+
+Being able to install the JSON files and download updates is
+a big plus, but is something thse users can live without for
+now.
+
+Sukadev
 
