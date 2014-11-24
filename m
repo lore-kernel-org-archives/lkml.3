@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515AbaKXJhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 04:37:16 -0500
-Received: from mga01.intel.com ([192.55.52.88]:18633 "EHLO mga01.intel.com"
+	id S1753194AbaKXJi6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 04:38:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38659 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750813AbaKXJhO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 04:37:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,447,1413270000"; 
-   d="scan'208";a="627288821"
-From: "Shivappa, Vikas" <vikas.shivappa@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Vikas Shivappa <vikas.shivappa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>, "mingo@kernel.org" <mingo@kernel.org>,
-        "tj@kernel.org" <tj@kernel.org>, "Auld, Will" <will.auld@intel.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "Fleming, Matt" <matt.fleming@intel.com>
-Subject: RE: [PATCH] x86: Intel Cache Allocation Technology support
-Thread-Topic: [PATCH] x86: Intel Cache Allocation Technology support
-Thread-Index: AQHQBF4nifFQ9ahEB0ySBAUEEzvqKZxrqc4A///ZDICAA6v/AIAAWf2Q
-Date: Mon, 24 Nov 2014 09:36:20 +0000
-Message-ID: <AE6A669FE32F67438CA1EEE4C5D6E3E092E2B31D@ORSMSX108.amr.corp.intel.com>
-References: <1416445539-24856-1-git-send-email-vikas.shivappa@linux.intel.com>
- <alpine.DEB.2.11.1411211224070.6439@nanos>
- <alpine.DEB.2.10.1411211123150.30781@vshiva-Udesk>
- <alpine.DEB.2.11.1411232057470.6439@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411232057470.6439@nanos>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751127AbaKXJi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 04:38:57 -0500
+Message-ID: <5472FCA7.60104@redhat.com>
+Date: Mon, 24 Nov 2014 10:38:47 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the kvm tree
+References: <20141124171908.034b2fa1@canb.auug.org.au>
+In-Reply-To: <20141124171908.034b2fa1@canb.auug.org.au>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
 
------Original Message-----
-From: Thomas Gleixner [mailto:tglx@linutronix.de] 
-Sent: Sunday, November 23, 2014 12:05 PM
-To: Shivappa, Vikas
-Cc: Vikas Shivappa; linux-kernel@vger.kernel.org; hpa@zytor.com; mingo@kernel.org; tj@kernel.org; matt.flemming@intel.com; Auld, Will; peterz@infradead.org
-Subject: Re: [PATCH] x86: Intel Cache Allocation Technology support
 
-On Fri, 21 Nov 2014, Vikas Shivappa wrote:
-> On Fri, 21 Nov 2014, Thomas Gleixner wrote:
-> > On Wed, 19 Nov 2014, Vikas Shivappa wrote:
-> > > +	rdmsr(IA32_PQR_ASSOC, l, h);
-> > 
-> > Why on earth do we want to read an MSR on every context switch? 
-> > What's wrong with having
-> > 
-> > DEFINE_PER_CPU(u64, cacheqe_pqr);
-> > 
-> > 	u64 next_pqr, cur_pqr = this_cpu_read(cacheqe_pqr);
-> > 
-> > 	cq = task_cacheqe(task);
-> > 	next_pqr = cq ? cq->pqr : 0;
-> > 
-> > 	if (next_pqr != cur_pqr) {
-> > 	   	wrmsrl(IA32_PQR_ASSOC, next_pqr);
+On 24/11/2014 07:19, Stephen Rothwell wrote:
+> Hi all,
 > 
-> when cqm(cache monitoring) and cqe are both running together , cant 
-> corrupt the low 32 bits, the rdmsr was a fix for that.
-> If there are better alternatives at low cost , certainly acceptable
-
-Sure there are. If cache monitoring and this runs together then they should better synchronize the cached PQR bits for the current cpu instead of enforcing useless MSR reads into the hot path.
-
-What you provided is certainly unacceptable.
- 
-> > > +/* Create a new cacheqe cgroup.*/ static struct 
-> > > +cgroup_subsys_state * cqe_css_alloc(struct cgroup_subsys_state 
-> > > +*parent_css) {
-> > > +	struct cacheqe *parent = css_cacheqe(parent_css);
-> > > +	struct cacheqe *cq;
-> > > +
-> > > +	/* This is the call before the feature is detected */
-> > 
-> > Huch? We know at early boot that this is available. So why do you 
-> > need this? The first call to this should never happen before the 
-> > whole thing is initialized. If it happens, it's a design failure.
-> > 
-> > > +	if (!parent) {
-> > > +		root_cqe_group.clos = 0;
-> > > +		return &root_cqe_group.css;
-> > > +	}
-> > > +
-> > > +	/* To check if cqe is enabled.*/
-> > > +	if (!cqe_genable)
-> > > +		return ERR_PTR(-ENODEV);
-> > 
-> > So we first check for !parent and return &root_cqe_group.css and 
-> > later we return an error pointer? Really consistent behaviour.
+> After merging the kvm tree, today's linux-next build (x86_64 
+> allmodconfig) failed like this:
 > 
-> this is due to how the cgroup init works.
+> ERROR: "get_xsave_addr" [arch/x86/kvm/kvm.ko] undefined!
+> 
+> Caused by commit 1d7fe1d1fb18 ("KVM: x86: support XSAVES usage in 
+> the host").
+> 
+> I have used the kvm tree from next-20141121 for today.
 
-Sorry, I can't follow that argument. Why enforces the cgroup init this inconsistency? Why is cgroup init BEFORE we detect the feature?
+Indeed this patch wasn't supposed to be pushed yet.  I will rewind
+kvm/next by two commits.  Sorry.
 
-Actually this can be fixed by disabling the earlyinit for the subsystem.. so the above order will be reversed meaning we first return error ptr
+Paolo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Thanks,
-Vikas
- 
-Thanks,
-
-	tglx
+iQEcBAEBAgAGBQJUcvyjAAoJEL/70l94x66DqS0H/2KZIYQ2De2dc0xY4tV6fpPV
+qHWlQADg4rPJ1Y0nx3f4y3Xbqypp+Jrh9kgc2j3QNj66jcNoE8iYvXTmaCBJx4x8
+mex8eurjcP9S+wOHCiWoT/JAnK/jnmkdaxQSWSaGmAaTw+G7Zeui5KUHE/dG9QGK
+MNbNJOF1Uksz6Anqd/wNyXAbZcQJAyIiz0sujnOFeZOMG6EY3N9HTYaaYf7hbmtV
+q3lZJZOASAOj2+SOWsIaFP6LgcPFW5dQSMpiuZ3aH48VrISHdFnZxoFt5REWiDQZ
+ct2HyERItNvjUze/e/b2jjn0KYWswYQgBH7WKUBRvLj291WAepiP8W1dxO2KmaY=
+=o6gf
+-----END PGP SIGNATURE-----
