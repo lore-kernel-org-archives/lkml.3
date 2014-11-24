@@ -1,60 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbaKXIqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 03:46:09 -0500
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.112]:13366 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752532AbaKXIqH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 03:46:07 -0500
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-9.tower-194.messagelabs.com!1416818756!21781495!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.4; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-To: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
-CC: Support Opensource <Support.Opensource@diasemi.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>
-Subject: RE: [PATCH v2 2/2] regulator: da9063: Do not transform local IRQ to
- virtual
-Thread-Topic: [PATCH v2 2/2] regulator: da9063: Do not transform local IRQ
- to virtual
-Thread-Index: AQHQBZ/xfEH3KKlXlk+aqcYvlUyTB5xrYq4AgAQXXcA=
-Date: Mon, 24 Nov 2014 08:45:55 +0000
-Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7D0B4A26E@SW-EX-MBX02.diasemi.com>
-References: <1416583748-6622-1-git-send-email-d.lavnikevich@sam-solutions.com>
- <1416583748-6622-3-git-send-email-d.lavnikevich@sam-solutions.com>
- <20141121181418.GZ3815@sirena.org.uk>
-In-Reply-To: <20141121181418.GZ3815@sirena.org.uk>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.77]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751912AbaKXIrt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 03:47:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55467 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750901AbaKXIrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 03:47:48 -0500
+Message-ID: <5472F0A3.1010702@redhat.com>
+Date: Mon, 24 Nov 2014 16:47:31 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Dexuan Cui <decui@microsoft.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        KY Srinivasan <kys@microsoft.com>
+CC: Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH] hv: hv_balloon: avoid memory leak on alloc_error of 2MB
+ memory block
+References: <1416808575-5383-1-git-send-email-decui@microsoft.com> <5472BF95.2000904@redhat.com> <F792CF86EFE20D4AB8064279AFBA51C613E5FD2B@HKNPRD3002MB017.064d.mgd.msft.net> <5472DE06.6000307@redhat.com> <F792CF86EFE20D4AB8064279AFBA51C613E5FE48@HKNPRD3002MB017.064d.mgd.msft.net>
+In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C613E5FE48@HKNPRD3002MB017.064d.mgd.msft.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/24/2014 03:54 PM, Dexuan Cui wrote:
+>> -----Original Message-----
+>> From: Jason Wang [mailto:jasowang@redhat.com]
+>> Sent: Monday, November 24, 2014 15:28 PM
+>> To: Dexuan Cui; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+>> driverdev-devel@linuxdriverproject.org; olaf@aepfle.de;
+>> apw@canonical.com; KY Srinivasan
+>> Cc: Haiyang Zhang
+>> Subject: Re: [PATCH] hv: hv_balloon: avoid memory leak on alloc_error of
+>> 2MB memory block
+>>
+>> On 11/24/2014 02:08 PM, Dexuan Cui wrote:
+>>>> -----Original Message-----
+>>>>> From: Jason Wang [mailto:jasowang@redhat.com]
+>>>>> Sent: Monday, November 24, 2014 13:18 PM
+>>>>> To: Dexuan Cui; gregkh@linuxfoundation.org; linux-
+>> kernel@vger.kernel.org;
+>>>>> driverdev-devel@linuxdriverproject.org; olaf@aepfle.de;
+>>>>> apw@canonical.com; KY Srinivasan
+>>>>> Cc: Haiyang Zhang
+>>>>> Subject: Re: [PATCH] hv: hv_balloon: avoid memory leak on
+>> alloc_error of
+>>>>> 2MB memory block
+>>>>>
+>>>>> On 11/24/2014 01:56 PM, Dexuan Cui wrote:
+>>>>>>> If num_ballooned is not 0, we shouldn't neglect the already-
+>> allocated
+>>>>> 2MB
+>>>>>>> memory block(s).
+>>>>>>>
+>>>>>>> Cc: K. Y. Srinivasan <kys@microsoft.com>
+>>>>>>> Cc: <stable@vger.kernel.org>
+>>>>>>> Signed-off-by: Dexuan Cui <decui@microsoft.com>
+>>>>>>> ---
+>>>>>>>  drivers/hv/hv_balloon.c | 4 +++-
+>>>>>>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>>>>>>
+>>>>>>> diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
+>>>>>>> index 5e90c5d..cba2d3b 100644
+>>>>>>> --- a/drivers/hv/hv_balloon.c
+>>>>>>> +++ b/drivers/hv/hv_balloon.c
+>>>>>>> @@ -1091,6 +1091,8 @@ static void balloon_up(struct
+>> work_struct
+>>>>> *dummy)
+>>>>>>>  	bool done = false;
+>>>>>>>  	int i;
+>>>>>>>
+>>>>>>> +	/* The host does balloon_up in 2MB. */
+>>>>>>> +	WARN_ON(num_pages % PAGES_IN_2M != 0);
+>>>>>>>
+>>>>>>>  	/*
+>>>>>>>  	 * We will attempt 2M allocations. However, if we fail to
+>>>>>>> @@ -1111,7 +1113,7 @@ static void balloon_up(struct
+>> work_struct
+>>>>> *dummy)
+>>>>>>>  						bl_resp, alloc_unit,
+>>>>>>>  						 &alloc_error);
+>>>>>>>
+>>>>>>> -		if ((alloc_error) && (alloc_unit != 1)) {
+>>>>>>> +		if (alloc_error && (alloc_unit != 1) &&
+>> num_ballooned == 0)
+>>>>> {
+>>>>>>>  			alloc_unit = 1;
+>>>>>>>  			continue;
+>>>>>>>  		}
+>>>>> Before the change, we may retry the 4K allocation when part or all 2M
+>>>>> allocations were failed. This makes sense when memory is fragmented.
+>> But
+>>> Yes, but all the partially-allocated 2MB memory blocks are lost(mem leak).
+>>>
+>>>>> after the change, if part of 2M allocation were failed, we won't retry
+>>>>> 4K allocation. Is this expected?
+>>> Hi Jason,
+>>> The patch doesn't break the "try 2MB first; then try 4K" logic:
+>>>
+>>> With the change, we'll retry the 2MB allocation in the next iteration of the
+>>> same while (!done) loop -- we expect this retry will cause
+>>> "alloc_error && (alloc_unit != 1) && num_ballooned == 0" to be true,
+>>> so we'll later try 4K allocation, as we did before.
+>> If I read the code correctly, if part of 2M allocation fails.
+>> alloc_balloon_pages() will have a non zero return value with alloc_error
+>> set. Then it will match the following check:
+>>
+>>                 if ((alloc_error) || (num_ballooned == num_pages))
+>> {
+>>
+>> which will set done to true. So there's no second iteration of while
+>> (!done) loop?
+> Oh... I see the issue in my patch.
+> Thanks for pointing this out, Jason!
+>
+>> Probably you need something like:
+>>
+>> if ((alloc_unit != 1) && (num_ballooned == 0)) {
+>>     alloc_unit = 1;
+>>     continue;
+>> }
+>>
+>> if ((alloc_unit == 1) || (num_ballooned == num_pages)) {
+>>     ...
+>> }
+> Your code is good, except for one thing:
+> alloc_balloon_pages() can return due to:
+>
+> if (bl_resp->hdr.size + sizeof(union dm_mem_page_range) >
+>                          PAGE_SIZE)
+>                         return i * alloc_unit;
+>
+> In this case, "alloc_unit == 1" is true, but we shouldn't run "done = true". 
+>
+> How do you like this? I made a few changes based on your code.
+>
+> @@ -1086,16 +1088,18 @@ static void balloon_up(struct work_struct *dummy)
+>                 num_pages -= num_ballooned;
+> +               alloc_error = false;
+>                 num_ballooned = alloc_balloon_pages(&dm_device, num_pages,
+>                                                 bl_resp, alloc_unit,
+>                                                  &alloc_error);
+>
+> -               if ((alloc_error) && (alloc_unit != 1)) {
+> +               if (alloc_unit != 1 && num_ballooned == 0) {
+>                         alloc_unit = 1;
+>                         continue;
+>                 }
+>
+> -               if ((alloc_error) || (num_ballooned == num_pages)) {
+> +               if ((alloc_unit == 1 && alloc_error) ||
+> +                       (num_ballooned == num_pages)) {
+>                         bl_resp->more_pages = 0;
+>                         done = true;
+>                         dm_device.state = DM_INITIALIZED;
+>
+>
+> If you're Ok with this, I'll send out a v2 patch.
+>
+> Thanks,
+> -- Dexuan
 
-On 21 November 2014 18:14 Mark Brown wrote
+Looks good.
 
-> To: Dmitry Lavnikevich
-> Subject: Re: [PATCH v2 2/2] regulator: da9063: Do not transform local IRQ to virtual
-> 
-> On Fri, Nov 21, 2014 at 06:29:08PM +0300, Dmitry Lavnikevich wrote:
-> > Call platform_get_irq_byname() already returns VIRQ instead of local
-> > IRQ. Passing this value to regmap_irq_get_virq() causes error which
-> > results in IRQ registration failure. This patch fixes such behaviour.
-> 
-> Applied, thanks.
-
-Tested-by: Steve Twiss <stwiss.opensource@diasemi.com>
+Thanks
