@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729AbaKXSqa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:46:30 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:21583 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754115AbaKXSq3 (ORCPT
+	id S1754752AbaKXSrH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:47:07 -0500
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:43222 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754303AbaKXSrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:46:29 -0500
-Message-ID: <54737CD7.7080908@oracle.com>
-Date: Mon, 24 Nov 2014 13:45:43 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 24 Nov 2014 13:47:05 -0500
+Date: Mon, 24 Nov 2014 13:46:50 -0500 (EST)
+From: Pankaj Gupta <pagupta@redhat.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: davem@davemloft.net, jasowang@redhat.com, dgibson@redhat.com,
+        vfalico@gmail.com, edumazet@google.com, vyasevic@redhat.com,
+        hkchu@google.com, xemul@parallels.com, therbert@google.com,
+        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org,
+        jiri@resnulli.us, sergei shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Message-ID: <820095131.3326406.1416854810207.JavaMail.zimbra@redhat.com>
+In-Reply-To: <1416854050-10165-1-git-send-email-pagupta@redhat.com>
+References: <1416854050-10165-1-git-send-email-pagupta@redhat.com>
+Subject: Re: [PATCH v2 net-next 3/3] tuntap: Increase the number of queues
+ in tun.
 MIME-Version: 1.0
-To: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v7 03/12] x86_64: add KASan support
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com> <1416852146-9781-4-git-send-email-a.ryabinin@samsung.com>
-In-Reply-To: <1416852146-9781-4-git-send-email-a.ryabinin@samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.11]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF23 (Linux)/8.0.6_GA_5922)
+Thread-Topic: tuntap: Increase the number of queues in tun.
+Thread-Index: yU5Nt/FTXhjvMHii0Ns14oG8zMHaeQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2014 01:02 PM, Andrey Ryabinin wrote:
-> +static int kasan_die_handler(struct notifier_block *self,
-> +			     unsigned long val,
-> +			     void *data)
-> +{
-> +	if (val == DIE_GPF) {
-> +		pr_emerg("CONFIG_KASAN_INLINE enabled\n");
-> +		pr_emerg("GPF could be caused by NULL-ptr deref or user memory access\n");
-> +	}
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block kasan_die_notifier = {
-> +	.notifier_call = kasan_die_handler,
-> +};
 
-This part fails to compile:
+Adding Michael to CC.
 
-  CC      arch/x86/mm/kasan_init_64.o
-arch/x86/mm/kasan_init_64.c: In function ‘kasan_die_handler’:
-arch/x86/mm/kasan_init_64.c:72:13: error: ‘DIE_GPF’ undeclared (first use in this function)
-  if (val == DIE_GPF) {
-             ^
-arch/x86/mm/kasan_init_64.c:72:13: note: each undeclared identifier is reported only once for each function it appears in
-arch/x86/mm/kasan_init_64.c: In function ‘kasan_init’:
-arch/x86/mm/kasan_init_64.c:89:2: error: implicit declaration of function ‘register_die_notifier’ [-Werror=implicit-function-declaration]
-  register_die_notifier(&kasan_die_notifier);
-  ^
-cc1: some warnings being treated as errors
-make[1]: *** [arch/x86/mm/kasan_init_64.o] Error 1
-
-
-Simple fix:
-
-diff --git a/arch/x86/mm/kasan_init_64.c b/arch/x86/mm/kasan_init_64.c
-index 70041fd..c8f7f3e 100644
---- a/arch/x86/mm/kasan_init_64.c
-+++ b/arch/x86/mm/kasan_init_64.c
-@@ -5,6 +5,7 @@
- #include <linux/vmalloc.h>
-
- #include <asm/tlbflush.h>
-+#include <linux/kdebug.h>
-
- extern pgd_t early_level4_pgt[PTRS_PER_PGD];
- extern struct range pfn_mapped[E820_X_MAX];
-
-
-Thanks,
-Sasha
+> 
+> Networking under kvm works best if we allocate a per-vCPU RX and TX
+> queue in a virtual NIC. This requires a per-vCPU queue on the host side.
+> 
+> It is now safe to increase the maximum number of queues.
+> Preceding patches:
+>         net: allow large number of rx queues
+>         tuntap: Reduce the size of tun_struct by using flex array
+> 
+>         made sure this won't cause failures due to high order memory
+> allocations. Increase it to 256: this is the max number of vCPUs
+> KVM supports.
+> 
+> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+> Reviewed-by: David Gibson <dgibson@redhat.com>
+> ---
+>  drivers/net/tun.c | 9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index e3fa65a..a19dc5f8 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -113,10 +113,11 @@ struct tap_filter {
+>  	unsigned char	addr[FLT_EXACT_COUNT][ETH_ALEN];
+>  };
+>  
+> -/* DEFAULT_MAX_NUM_RSS_QUEUES were chosen to let the rx/tx queues allocated
+> for
+> - * the netdevice to be fit in one page. So we can make sure the success of
+> - * memory allocation. TODO: increase the limit. */
+> -#define MAX_TAP_QUEUES DEFAULT_MAX_NUM_RSS_QUEUES
+> +/* MAX_TAP_QUEUES 256 is chosen to allow rx/tx queues to be equal
+> + * to max number of vCPUS in guest. Also, we are making sure here
+> + * queue memory allocation do not fail.
+> + */
+> +#define MAX_TAP_QUEUES 256
+>  #define MAX_TAP_FLOWS  4096
+>  
+>  #define TUN_FLOW_EXPIRE (3 * HZ)
+> --
+> 1.8.3.1
+> 
+> 
