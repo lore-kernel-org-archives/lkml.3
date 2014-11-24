@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902AbaKXPsr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:48:47 -0500
-Received: from mail.kernel.org ([198.145.19.201]:51118 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752915AbaKXPsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:48:45 -0500
-Date: Mon, 24 Nov 2014 12:48:41 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>
-Subject: perf/branch-history branch build broken with NO_DEMANGLE=1 perf
- hists browser: Print overhead percent value for first-level callchain
-Message-ID: <20141124154841.GD13167@kernel.org>
-References: <20141124145227.GE18625@kernel.org>
- <20141124152312.GA13167@kernel.org>
- <20141124152541.GB13167@kernel.org>
- <20141124153204.GC13167@kernel.org>
+	id S1754110AbaKXPtc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 10:49:32 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:45079 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892AbaKXPta convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 10:49:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141124153204.GC13167@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141124143819.GB20705@saruman>
+References: <cover.1416547297.git.kiran.kumar@linaro.org> <7a23b5f0af4463aea85384b6a67678b9c41b9d2d.1416547297.git.kiran.kumar@linaro.org>
+ <20141121151105.GC7508@saruman> <CA+RfmHZo4FuH6-Z8+VFY7Ao5QVD-VmfdCm17ZrB6f7J8Xpo-Aw@mail.gmail.com>
+ <20141124143819.GB20705@saruman>
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Mon, 24 Nov 2014 21:19:09 +0530
+Message-ID: <CAO_48GFj2moODXtB1W9t6tbuvcyF2WgnakSDrbQRzPi+u=mc=g@mail.gmail.com>
+Subject: Re: [PATCH v1 2/3] usb: phy: Handle per-PHY event for connect and
+ disconnect events
+To: balbi@ti.com
+Cc: Kiran Raparthy <kiran.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        =?UTF-8?B?QXJ2ZSBIau+/vW5uZXbvv71n?= <arve@android.com>,
+        Benoit Goby <benoit@android.com>, Todd Poynor <toddpoynor@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Nov 24, 2014 at 12:32:04PM -0300, Arnaldo Carvalho de Melo escreveu:
-> >        ^
-> > In file included from util/srcline.c:11:0:
-> > util/symbol.h:35:21: note: previous definition of ‘bfd_demangle’ was
-> > here
-> >  static inline char *bfd_demangle(void __maybe_unused *v,
-> >                      ^
-> > make[1]: *** [util/srcline.o] Error 1
-> > make: *** [util/srcline.o] Error 2
-> > make: Leaving directory `/home/git/linux/tools/perf'
-> > [acme@zoo linux]$ 
-> 
-> bisected it down to:
+Hi Felipe,
 
-What I have is on the perf/branch-history branch, we can't both include
-bfd.h and symbol.h when NO_DEMANGLE=1, probably we should just move the
-stub inline to symbol-elf.c, its only user, but I have to check further,
-lunch time tho.
+On 24 November 2014 at 20:08, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Fri, Nov 21, 2014 at 09:13:00PM +0530, Kiran Raparthy wrote:
+>> On 21 November 2014 20:41, Felipe Balbi <balbi@ti.com> wrote:
+>> > On Fri, Nov 21, 2014 at 11:31:21AM +0530, Kiran Raparthy wrote:
+>> >> usb: phy: Handle per-PHY event for connnect and disconnect events
+>> >>
+>> >> When usb is connected and enumerated in device mode or when usb is
+>> >> disconnected,call usb_phy_set_event from phy drivers to handle per-PHY event.
+>> >>
+>> >> Cc: Felipe Balbi <balbi@ti.com>
+>> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> >> Cc: linux-kernel@vger.kernel.org
+>> >> Cc: linux-usb@vger.kernel.org
+>> >> Cc: Android Kernel Team <kernel-team@android.com>
+>> >> Cc: John Stultz <john.stultz@linaro.org>
+>> >> Cc: Sumit Semwal <sumit.semwal@linaro.org>
+>> >> Cc: Arve Hj�nnev�g <arve@android.com>
+>> >> Cc: Benoit Goby <benoit@android.com>
+>> >> [Original patch in Android from Todd]
+>> >> Cc: Todd Poynor <toddpoynor@google.com>
+>> >> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+>> >
+>> > this patch doesn't apply, please rebase entire series on my testing/next.
+>
+> your rebased version didn't apply either. Can you make sure you're
+> rebasing on top of my today's testing/next branch ?
+>
+I just verified that I am able to apply both this patch (and the next
+one - so 2/3 and 3/3) on your testing/next branch - just to make sure,
+this is the git/branch right?
 
-- Arnaldo
- 
-> 43e3229ef07a2dda81bda86a5b81ef8c2890ab63 is the first bad commit
-> commit 43e3229ef07a2dda81bda86a5b81ef8c2890ab63
-> Author: Andi Kleen <ak@linux.intel.com>
-> Date:   Wed Nov 12 18:05:27 2014 -0800
-> 
->     perf callchain: Make get_srcline fall back to sym+offset
->     
->     When the source line is not found fall back to sym + offset.  This is
->     generally much more useful than a raw address.
->     
->     For this we need to pass in the symbol from the caller.
->     
->     For some callers it's awkward to compute, so we stay at the old
->     behaviour.
->     
->     Signed-off-by: Andi Kleen <ak@linux.intel.com>
->     Cc: Jiri Olsa <jolsa@redhat.com>
->     Cc: Namhyung Kim <namhyung@kernel.org>
->     Link: http://lkml.kernel.org/r/1415844328-4884-10-git-send-email-andi@firstfloor.org
->     Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> :040000 040000 ae5e95c8dbfd9ab8e836707fcb2904e263f872c6
-> 5979ba316f1d317c59866b0c3bf92c39fbdcde6b M	tools
-> [acme@zoo linux]$
+https://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
+branch:testing/next
+
+> cheers
+>
+> --
+> balbi
+
+
+
+-- 
+Thanks and regards,
+
+Sumit Semwal
+Kernel Team Lead - Linaro Mobile Group
+Linaro.org │ Open source software for ARM SoCs
