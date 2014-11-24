@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084AbaKXSUY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:20:24 -0500
-Received: from www.linutronix.de ([62.245.132.108]:40517 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754345AbaKXSUK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:20:10 -0500
-Date: Mon, 24 Nov 2014 19:20:07 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-cc: Jason Cooper <jason@lakedaemon.net>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Subject: Re: [PATCH 3.18-rc3 v8 1/4] irqchip: gic: Make gic_raise_softirq()
- FIQ-safe
-In-Reply-To: <1415968543-29469-2-git-send-email-daniel.thompson@linaro.org>
-Message-ID: <alpine.DEB.2.11.1411241918090.6439@nanos>
-References: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org> <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <1415968543-29469-2-git-send-email-daniel.thompson@linaro.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S932137AbaKXSUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:20:49 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:38790 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932103AbaKXSUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 13:20:46 -0500
+Date: Mon, 24 Nov 2014 12:20:53 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: <balbi@ti.com>, George Cherian <george.cherian@ti.com>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: musb: core: Disable the Interrupts till BABBLE is
+ fully handled
+Message-ID: <20141124182053.GD25712@saruman>
+Reply-To: <balbi@ti.com>
+References: <1415953486-6000-1-git-send-email-george.cherian@ti.com>
+ <20141118211734.GA19146@saruman>
+ <54736FBE.6060505@linutronix.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IDYEmSnFhs3mNXr+"
+Content-Disposition: inline
+In-Reply-To: <54736FBE.6060505@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Nov 2014, Daniel Thompson wrote:
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 38493ff28fa5..0db62a6f1ee3 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -73,6 +73,13 @@ struct gic_chip_data {
->  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
->  
->  /*
-> + * This lock may be locked for reading by FIQ handlers. Thus although
-> + * read locking may be used liberally, write locking must only take
-> + * place only when local FIQ handling is disabled.
-> + */
-> +static DEFINE_RWLOCK(fiq_safe_cpu_map_lock);
-> +
-> +/*
->   * The GIC mapping of CPU interfaces does not necessarily match
->   * the logical CPU numbering.  Let's use a mapping as returned
->   * by the GIC itself.
-> @@ -624,7 +631,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  	int cpu;
->  	unsigned long flags, map = 0;
->  
-> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-> +	read_lock_irqsave(&fiq_safe_cpu_map_lock, flags);
+--IDYEmSnFhs3mNXr+
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Just for the record:
+On Mon, Nov 24, 2014 at 06:49:50PM +0100, Sebastian Andrzej Siewior wrote:
+> On 11/18/2014 10:17 PM, Felipe Balbi wrote:
+> > I think the driver is mis-detecting Babble. A babble only occurs when
+> > the device side tries to move data without the host asking for anything.
+>=20
+> It also occurs if the device moves more than packet_size bytes. Not
+> really helping, I know=E2=80=A6
 
-You might have noticed that you replace a raw lock with a non raw
-one. That's not an issue on mainline, but that pretty much renders
-that code broken for RT.
-  
-Surely nothing I worry too much about given the current state of RT.
+hmm, why would the device move more than wMaxPacketSize at a time ?
+That's certainly babble :-) We *must* move data in the wire in
+<=3DwMaxPacketSize chunks.
 
-Thanks,
+--=20
+balbi
 
-	tglx
+--IDYEmSnFhs3mNXr+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUc3cFAAoJEIaOsuA1yqREUUAP/3R/XAmacfhzpklsapmLsU2C
+TZxE+IHX7c/FG6m+b3PA2izUMnIIi1FRcVf0sgXInN0oys3xFeT0O0JERCjO9xR8
+JuprCtBDLxzrmlPpqnIi+wwdJMaxyXyTiGQGks9eHSAJhKgorUnknb/btcpn4GdM
+GFvv0EFCbwUo+7Elhm6SLeX6ltlLcRd50qBtQS7gi3Ro6yvRLkQ2JQiEoNMZwnhw
+SJf5gbMbK1cQELMIqh/c3+UGcHu4dGevqyHv5msTGokWKMReLbfuHVWvZtgo97jT
+xFLS0QQGWIYwh2HXQaU+bxI1jBD+DUnu1it30PnHwmaTH8x2UktpwHkW0+PinZzH
+kvjj6yBmCCx+ErBKS2WHe57VYx3RcHbsIX6c1KzsYNeRnu3dry7XZUc4iG09uzil
+b9ES3JShnLPlVnm1Ok/RUn/NtGwKOo/ORiYi3qitgon7ee7sURyqqPJUnwrg088v
+u9Xs8c2kB5Ms7uX7+XLmy5WSQHdxQqaKH1iUjppNCeQgmuvzEtEfImx6fB3RT0yD
+rO5FsoE6IS/1vAhEB0c+lJP2HtAEomnossFtA5vBhmt443hLZ2u8Sr1IqhqYQrVx
+WmiskjevcHlQj89GvGfQKVFKwj4k54DJwHzvJUI1mCpV1e7kBHPqxZVLBrliXYvp
+iR/8GqEFjnWh4oWoPAF3
+=7NhG
+-----END PGP SIGNATURE-----
+
+--IDYEmSnFhs3mNXr+--
