@@ -1,253 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868AbaKXPxf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:53:35 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:53742 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758AbaKXPxe (ORCPT
+	id S1754071AbaKXPyR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 10:54:17 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:40523 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117AbaKXPyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:53:34 -0500
+	Mon, 24 Nov 2014 10:54:16 -0500
+Date: Mon, 24 Nov 2014 09:54:22 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Sumit Semwal <sumit.semwal@linaro.org>
+CC: <balbi@ti.com>, Kiran Raparthy <kiran.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Arve =?utf-8?B?SGrvv71ubmV277+9Zw==?= <arve@android.com>,
+        Benoit Goby <benoit@android.com>, Todd Poynor <toddpoynor@google.com>
+Subject: Re: [PATCH v1 2/3] usb: phy: Handle per-PHY event for connect and
+ disconnect events
+Message-ID: <20141124155422.GH20705@saruman>
+Reply-To: <balbi@ti.com>
+References: <cover.1416547297.git.kiran.kumar@linaro.org>
+ <7a23b5f0af4463aea85384b6a67678b9c41b9d2d.1416547297.git.kiran.kumar@linaro.org>
+ <20141121151105.GC7508@saruman>
+ <CA+RfmHZo4FuH6-Z8+VFY7Ao5QVD-VmfdCm17ZrB6f7J8Xpo-Aw@mail.gmail.com>
+ <20141124143819.GB20705@saruman>
+ <CAO_48GFj2moODXtB1W9t6tbuvcyF2WgnakSDrbQRzPi+u=mc=g@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [2a01:e35:2434:4600:224:8cff:fe66:7f7e]
-In-Reply-To: <CAG8rG2wngS7+8yVQFydQzQkzzMKc8i9hcs2eH3+fKh+KZqmReQ@mail.gmail.com>
-References: <1414433284-31719-1-git-send-email-a.motakis@virtualopensystems.com>
- <1414433284-31719-8-git-send-email-a.motakis@virtualopensystems.com>
- <54633D5B.4040204@linaro.org> <CAG8rG2wngS7+8yVQFydQzQkzzMKc8i9hcs2eH3+fKh+KZqmReQ@mail.gmail.com>
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-Date: Mon, 24 Nov 2014 16:53:13 +0100
-Message-ID: <CAG8rG2yAAQ62wyO6fyTo71+0VmS_PvP_BWWg=srvmtiJsvrg2Q@mail.gmail.com>
-Subject: Re: [PATCH v9 07/19] vfio/platform: return info for device memory
- mapped IO regions
-To: Eric Auger <eric.auger@linaro.org>
-Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Will Deacon <will.deacon@arm.com>,
-        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        "open list:VFIO DRIVER <kvm@vger.kernel.org>, open list" 
-	<linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4LwthZj+AV2mq5CX"
+Content-Disposition: inline
+In-Reply-To: <CAO_48GFj2moODXtB1W9t6tbuvcyF2WgnakSDrbQRzPi+u=mc=g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 3:11 PM, Antonios Motakis
-<a.motakis@virtualopensystems.com> wrote:
-> On Wed, Nov 12, 2014 at 11:58 AM, Eric Auger <eric.auger@linaro.org> wrote:
->> On 10/27/2014 07:07 PM, Antonios Motakis wrote:
->>> This patch enables the IOCTLs VFIO_DEVICE_GET_REGION_INFO ioctl call,
->>> which allows the user to learn about the available MMIO resources of
->>> a device.
->>>
->>> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
->>> ---
->>>  drivers/vfio/platform/vfio_platform_common.c  | 110 +++++++++++++++++++++++++-
->>>  drivers/vfio/platform/vfio_platform_private.h |  22 ++++++
->>>  2 files changed, 128 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/drivers/vfio/platform/vfio_platform_common.c b/drivers/vfio/platform/vfio_platform_common.c
->>> index cb20526..82de752 100644
->>> --- a/drivers/vfio/platform/vfio_platform_common.c
->>> +++ b/drivers/vfio/platform/vfio_platform_common.c
->>> @@ -27,17 +27,97 @@
->>>
->>>  #include "vfio_platform_private.h"
->>>
->>> +static DEFINE_MUTEX(driver_lock);
->>> +
->>> +static int vfio_platform_regions_init(struct vfio_platform_device *vdev)
->>> +{
->>> +     int cnt = 0, i;
->>> +
->>> +     while (vdev->get_resource(vdev, cnt))
->>> +             cnt++;
->>> +
->>> +     vdev->regions = kcalloc(cnt, sizeof(struct vfio_platform_region),
->>> +                             GFP_KERNEL);
->>> +     if (!vdev->regions)
->>> +             return -ENOMEM;
->>> +
->>> +     for (i = 0; i < cnt;  i++) {
->>> +             struct resource *res =
->>> +                     vdev->get_resource(vdev, i);
->>> +
->>> +             if (!res)
->>> +                     goto err;
->>> +
->>> +             vdev->regions[i].addr = res->start;
->>> +             vdev->regions[i].size = resource_size(res);
->>> +             vdev->regions[i].flags = 0;
->>> +
->>> +             switch (resource_type(res)) {
->>> +             case IORESOURCE_MEM:
->>> +                     vdev->regions[i].type = VFIO_PLATFORM_REGION_TYPE_MMIO;
->>> +                     break;
->>> +             case IORESOURCE_IO:
->>> +                     vdev->regions[i].type = VFIO_PLATFORM_REGION_TYPE_PIO;
->>> +                     break;
->>> +             default:
->>> +                     goto err;
->>> +             }
->>> +     }
->>> +
->>> +     vdev->num_regions = cnt;
->>> +
->>> +     return 0;
->>> +err:
->> Isn't it safer to reset vdev->num_regions here?
->> I think in a next patch you will iounmap the num_regions in
->> vfio_platform_regions_cleanup.
+--4LwthZj+AV2mq5CX
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Actually, num_regions is only set just before the successful return,
-so it seems there is no need to reset it.
+On Mon, Nov 24, 2014 at 09:19:09PM +0530, Sumit Semwal wrote:
+> Hi Felipe,
+>=20
+> On 24 November 2014 at 20:08, Felipe Balbi <balbi@ti.com> wrote:
+> > Hi,
+> >
+> > On Fri, Nov 21, 2014 at 09:13:00PM +0530, Kiran Raparthy wrote:
+> >> On 21 November 2014 20:41, Felipe Balbi <balbi@ti.com> wrote:
+> >> > On Fri, Nov 21, 2014 at 11:31:21AM +0530, Kiran Raparthy wrote:
+> >> >> usb: phy: Handle per-PHY event for connnect and disconnect events
+> >> >>
+> >> >> When usb is connected and enumerated in device mode or when usb is
+> >> >> disconnected,call usb_phy_set_event from phy drivers to handle per-=
+PHY event.
+> >> >>
+> >> >> Cc: Felipe Balbi <balbi@ti.com>
+> >> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> >> Cc: linux-kernel@vger.kernel.org
+> >> >> Cc: linux-usb@vger.kernel.org
+> >> >> Cc: Android Kernel Team <kernel-team@android.com>
+> >> >> Cc: John Stultz <john.stultz@linaro.org>
+> >> >> Cc: Sumit Semwal <sumit.semwal@linaro.org>
+> >> >> Cc: Arve Hj=EF=BF=BDnnev=EF=BF=BDg <arve@android.com>
+> >> >> Cc: Benoit Goby <benoit@android.com>
+> >> >> [Original patch in Android from Todd]
+> >> >> Cc: Todd Poynor <toddpoynor@google.com>
+> >> >> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+> >> >
+> >> > this patch doesn't apply, please rebase entire series on my testing/=
+next.
+> >
+> > your rebased version didn't apply either. Can you make sure you're
+> > rebasing on top of my today's testing/next branch ?
+> >
+> I just verified that I am able to apply both this patch (and the next
+> one - so 2/3 and 3/3) on your testing/next branch - just to make sure,
+> this is the git/branch right?
+>=20
+> https://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
+> branch:testing/next
 
+that's the correct branch, but here's what I get:
 
->
-> Agreed!
->
->> -- Eric
->>> +     kfree(vdev->regions);
->>> +     return -EINVAL;
->>> +}
->>> +
->>> +static void vfio_platform_regions_cleanup(struct vfio_platform_device *vdev)
->>> +{
->>> +     vdev->num_regions = 0;
->>> +     kfree(vdev->regions);
->>> +}
->>> +
->>>  static void vfio_platform_release(void *device_data)
->>>  {
->>> +     struct vfio_platform_device *vdev = device_data;
->>> +
->>> +     mutex_lock(&driver_lock);
->>> +
->>> +     if (!(--vdev->refcnt)) {
->>> +             vfio_platform_regions_cleanup(vdev);
->>> +     }
->>> +
->>> +     mutex_unlock(&driver_lock);
->>> +
->>>       module_put(THIS_MODULE);
->>>  }
->>>
->>>  static int vfio_platform_open(void *device_data)
->>>  {
->>> +     struct vfio_platform_device *vdev = device_data;
->>> +     int ret;
->>> +
->>>       if (!try_module_get(THIS_MODULE))
->>>               return -ENODEV;
->>>
->>> +     mutex_lock(&driver_lock);
->>> +
->>> +     if (!vdev->refcnt) {
->>> +             ret = vfio_platform_regions_init(vdev);
->>> +             if (ret)
->>> +                     goto err_reg;
->>> +     }
->>> +
->>> +     vdev->refcnt++;
->>> +
->>> +     mutex_unlock(&driver_lock);
->>>       return 0;
->>> +
->>> +err_reg:
->>> +     mutex_unlock(&driver_lock);
->>> +     module_put(THIS_MODULE);
->>> +     return ret;
->>>  }
->>>
->>>  static long vfio_platform_ioctl(void *device_data,
->>> @@ -58,15 +138,33 @@ static long vfio_platform_ioctl(void *device_data,
->>>                       return -EINVAL;
->>>
->>>               info.flags = vdev->flags;
->>> -             info.num_regions = 0;
->>> +             info.num_regions = vdev->num_regions;
->>>               info.num_irqs = 0;
->>>
->>>               return copy_to_user((void __user *)arg, &info, minsz);
->>>
->>> -     } else if (cmd == VFIO_DEVICE_GET_REGION_INFO)
->>> -             return -EINVAL;
->>> +     } else if (cmd == VFIO_DEVICE_GET_REGION_INFO) {
->>> +             struct vfio_region_info info;
->>> +
->>> +             minsz = offsetofend(struct vfio_region_info, offset);
->>> +
->>> +             if (copy_from_user(&info, (void __user *)arg, minsz))
->>> +                     return -EFAULT;
->>>
->>> -     else if (cmd == VFIO_DEVICE_GET_IRQ_INFO)
->>> +             if (info.argsz < minsz)
->>> +                     return -EINVAL;
->>> +
->>> +             if (info.index >= vdev->num_regions)
->>> +                     return -EINVAL;
->>> +
->>> +             /* map offset to the physical address  */
->>> +             info.offset = VFIO_PLATFORM_INDEX_TO_OFFSET(info.index);
->>> +             info.size = vdev->regions[info.index].size;
->>> +             info.flags = vdev->regions[info.index].flags;
->>> +
->>> +             return copy_to_user((void __user *)arg, &info, minsz);
->>> +
->>> +     } else if (cmd == VFIO_DEVICE_GET_IRQ_INFO)
->>>               return -EINVAL;
->>>
->>>       else if (cmd == VFIO_DEVICE_SET_IRQS)
->>> @@ -134,10 +232,14 @@ struct vfio_platform_device *vfio_platform_remove_common(struct device *dev)
->>>  {
->>>       struct vfio_platform_device *vdev;
->>>
->>> +     mutex_lock(&driver_lock);
->>> +
->>>       vdev = vfio_del_group_dev(dev);
->>>       if (vdev)
->>>               iommu_group_put(dev->iommu_group);
->>>
->>> +     mutex_unlock(&driver_lock);
->>> +
->>>       return vdev;
->>>  }
->>>  EXPORT_SYMBOL_GPL(vfio_platform_remove_common);
->>> diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
->>> index 062b92d..b24729f 100644
->>> --- a/drivers/vfio/platform/vfio_platform_private.h
->>> +++ b/drivers/vfio/platform/vfio_platform_private.h
->>> @@ -15,7 +15,29 @@
->>>  #ifndef VFIO_PLATFORM_PRIVATE_H
->>>  #define VFIO_PLATFORM_PRIVATE_H
->>>
->>> +#define VFIO_PLATFORM_OFFSET_SHIFT   40
->>> +#define VFIO_PLATFORM_OFFSET_MASK (((u64)(1) << VFIO_PLATFORM_OFFSET_SHIFT) - 1)
->>> +
->>> +#define VFIO_PLATFORM_OFFSET_TO_INDEX(off)   \
->>> +     (off >> VFIO_PLATFORM_OFFSET_SHIFT)
->>> +
->>> +#define VFIO_PLATFORM_INDEX_TO_OFFSET(index) \
->>> +     ((u64)(index) << VFIO_PLATFORM_OFFSET_SHIFT)
->>> +
->>> +struct vfio_platform_region {
->>> +     u64                     addr;
->>> +     resource_size_t         size;
->>> +     u32                     flags;
->>> +     u32                     type;
->>> +#define VFIO_PLATFORM_REGION_TYPE_MMIO       1
->>> +#define VFIO_PLATFORM_REGION_TYPE_PIO        2
->>> +};
->>> +
->>>  struct vfio_platform_device {
->>> +     struct vfio_platform_region     *regions;
->>> +     u32                             num_regions;
->>> +     int                             refcnt;
->>> +
->>>       /*
->>>        * These fields should be filled by the bus specific binder
->>>        */
->>>
->>
+checking file drivers/usb/phy/phy-ab8500-usb.c
+Hunk #1 FAILED at 447.
+Hunk #2 succeeded at 459 (offset -2 lines).
+Hunk #3 succeeded at 502 (offset -2 lines).
+Hunk #4 succeeded at 527 (offset -2 lines).
+Hunk #5 FAILED at 589.
+Hunk #6 succeeded at 600 (offset -2 lines).
+Hunk #7 succeeded at 629 (offset -2 lines).
+Hunk #8 succeeded at 652 (offset -2 lines).
+Hunk #9 FAILED at 701.
+Hunk #10 succeeded at 712 (offset -2 lines).
+Hunk #11 succeeded at 740 (offset -2 lines).
+Hunk #12 FAILED at 786.
+Hunk #13 succeeded at 801 (offset -2 lines).
+Hunk #14 succeeded at 828 (offset -2 lines).
+4 out of 14 hunks FAILED
+checking file drivers/usb/phy/phy-gpio-vbus-usb.c
+checking file drivers/usb/phy/phy-mv-usb.c
+checking file drivers/usb/phy/phy-tahvo.c
+Hunk #1 FAILED at 87.
+Hunk #2 FAILED at 105.
+2 out of 2 hunks FAILED
+
+cheers
+
+--=20
+balbi
+
+--4LwthZj+AV2mq5CX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUc1SuAAoJEIaOsuA1yqRE9SIQAIPwmYs7v0Nuz5pbDS4aIAcf
+Z/Jr9ggCTNS1urZobqNFDD4zz1jqQQjpV8IYuC3O75V+ZYHZ6wXa+Q+Uzw8cxQSJ
+S7w0on1C+aTAT7Ud5PPBwdI81lM4al5UO+K6yoFn6tFH3KVvlj3TUtkhCALfD+QY
+vIBGDKD23CVL+csTVC3wiSjo+Ofc/Iy0ju2k7TFYysmRIKhqP8SUCvaSok7DvQEk
+gtQuW4OYnonCDiZJxHmxIjyQpTwx5N+oTwrdT9oBbD6vYXnsRRPfeTJRQOmEYl/7
+YIvsgonn3kIR7QGIv5Ap+rP3BaKmTVvOfpTOCBz5bxE9wbtcAbBvBk7bvU2kHBX8
+Yk9xMDQjgaraFtDwpPTgfCyg3IOk63DRhUmQZpZvosCGWdMggRIANt2cFGJhyq9D
+cwa3wNSc+UN7PwASBtTmnbJovt/1jL5u5+UnYRw1Vd4WsPe06s4XSOZIoOREShSJ
+bh+m1+hV0IbvOusX11LjxdP8ufy0mcOJM6hoKqkMXjuPC1Q+By2JNpYMat8gmQ+5
+eR5b0bO9E8C7CnygZjXA3+x2+9SCjUsANY+mZ43kQyOfJWLwtto15ZyiCYqpyGAo
+mEgpnYPFpA1vvN2gTkiyAL8Vuq4159qsnzA3P03HkipCkiNCt/Ua5cypFFwpg1JK
+w8rCoofGuS2oAn31BMHV
+=tG73
+-----END PGP SIGNATURE-----
+
+--4LwthZj+AV2mq5CX--
