@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972AbaKXUNu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:13:50 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54808 "EHLO mail.eperm.de"
+	id S1754920AbaKXUOt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:14:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34866 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754354AbaKXUNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:13:49 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
-        linux-kernel@vger.kernel.org,
-        linux-crypto <linux-crypto@vger.kernel.org>
-Subject: [PATCH] crypto: user - add MODULE_ALIAS
-Date: Mon, 24 Nov 2014 17:12:45 +0100
-Message-ID: <2012632.fnfABE5hEY@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.3-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+	id S1753772AbaKXUOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 15:14:48 -0500
+Date: Mon, 24 Nov 2014 21:14:41 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Aaron Tomlin <atomlin@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] exit: reparent: fix/update the comments in
+	zap_pid_ns_processes()
+Message-ID: <20141124201441.GA21311@redhat.com>
+References: <20141124200602.GA20575@redhat.com> <20141124200626.GA21006@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141124200626.GA21006@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To allow automatic loading of the crypto_user kernel module, the netlink
-MODULE_ALIAS is added.
+On 11/24, Oleg Nesterov wrote:
+>
+> +	 * sys_wait4() above can't reap the TASK_DEAD children but we do not
+> +	 * really care, we could reparent them to the global init. We could
+> +	 * exit and reap ->child_reaper even if it is not the last thread in
+> +	 * this pid_ns, free_pid(nr_hashed == 0) calls proc_cleanup_work(),
+> +	 * pid_ns can not go away until proc_kill_sb() drops the reference.
+> +	 *
+> +	 * But this namespace can also have other tasks injected by setns().
+                                                                    ^^^^^
+I meant setns() + fork(), but I hope this is clear.
 
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- crypto/crypto_user.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/crypto/crypto_user.c b/crypto/crypto_user.c
-index e2a34fe..255df95 100644
---- a/crypto/crypto_user.c
-+++ b/crypto/crypto_user.c
-@@ -537,3 +537,4 @@ module_exit(crypto_user_exit);
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Steffen Klassert <steffen.klassert@secunet.com>");
- MODULE_DESCRIPTION("Crypto userspace configuration API");
-+MODULE_ALIAS("net-pf-16-proto-21");
--- 
-2.1.0
+Oleg.
 
