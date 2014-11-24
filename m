@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbaKXHW6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 02:22:58 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:54998 "EHLO a.mx.secunet.com"
+	id S1752657AbaKXHZy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 02:25:54 -0500
+Received: from ozlabs.org ([103.22.144.67]:33299 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919AbaKXHW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 02:22:56 -0500
-Date: Mon, 24 Nov 2014 08:22:46 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Stephan Mueller <smueller@chronox.de>
-CC: Herbert Xu <herbert@gondor.apana.org.au>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: crypto: user - crypto_alg_match removal
-Message-ID: <20141124072246.GX6390@secunet.com>
-References: <3095384.PkgHxCg8eG@tauon>
+	id S1751919AbaKXHZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 02:25:52 -0500
+Date: Mon, 24 Nov 2014 18:25:38 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, Stephen Warren <swarren@nvidia.com>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Thierry Reding <treding@nvidia.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: linux-next: manual merge of the driver-core tree with the tegra
+ tree
+Message-ID: <20141124182538.5d3f7f29@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <3095384.PkgHxCg8eG@tauon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.182.7.102]
-X-EXCLAIMER-MD-CONFIG: 2c86f778-e09b-4440-8b15-867914633a10
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/PEi4Z3qj0rRLUbcaFtqE4dR"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephan.
+--Sig_/PEi4Z3qj0rRLUbcaFtqE4dR
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Sat, Nov 22, 2014 at 11:25:05PM +0100, Stephan Mueller wrote:
-> Hi Steffen, Herbert,
-> 
-> may I ask for the reasons why crypto_alg_match exists? Doesn't it 
-> implement crypto_alg_lookup -- and that not even complete? Is there a 
-> particular reason why this exact flag of crypto_alg_match is really 
-> needed in the context of crypto_user?
-> 
-> Unless there is such valid reason, may I ask whether we can remove 
-> crypto_alg_match and simply use crypto_alg_lookup in all instances where 
-> crypto_alg_match is invoked using the following replacement:
-> 
-> alg = crypto_alg_lookup(p->cru_name, p->cru_type, p->cru_mask)
-> 
-> The only problem with this replacement is that p->cru_driver_name is not 
-> considered with that. 
+Hi Greg,
 
-With crypto_alg_lookup() we don't know whether the match is based on
-the driver or the algorithm name. That's why we have crypto_alg_match(),
-here we can ask for a driver or an algorithm match. In some situations it
-is important to have an exact match on the crypto driver name. For example
-if a user wants to instantiate or delete a certain inplementation of an
-algorithm. In this case we need to know whether this exact algorithm
-driver is registered in the system.
+Today's linux-next merge of the driver-core tree got a conflict in
+drivers/iommu/tegra-smmu.c between commit a2257374a4bd ("memory: Add
+NVIDIA Tegra memory controller support") from the tegra tree and commit
+98b773cf7b6b ("iommu: drop owner assignment from platform_drivers")
+from the driver-core tree.
 
-> Do you think a double invocation of 
-> crypto_alg_lookup should be done or that even the user space interface 
-> should be changed such that cru_driver_name is removed from it?
+I fixed it up (the former removed the code modified by the latter) and
+can carry the fix as necessary (no action is required).
 
-Whatever we do, we can't remove cru_driver_name as this is exported
-to userspace and tools already use it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_/PEi4Z3qj0rRLUbcaFtqE4dR
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUct18AAoJEMDTa8Ir7ZwVNPwP+gOgEjgsZURI/9tzcLGo6xj/
+0bA0rNDeo+6op4Lw20LkKHvqtr8/Dykrp+7LHvRz+AA/Qy6qlfZ+reYthLmMXykj
+79FfJoiOo3czpJQfuDmRQnN2v9Z9ltZnSLItFg9Nz3c41axbXb40aZPgr7Yg6wqd
+nLIWLF05O/s0dhD4Pb8pNXn1cjgGnP9ZUfovtmQS7vP+qOCmjf86THEQw5sgZapA
+HS8aBJ8f/kqPnNN10RVJvZIPGDH5+FLpw50yMJ3f/6D1ZngA75IwRqNce5/pdrhB
+mByyNYdbzgU2G9xewXyKoWol9/AWODJgN7kaLqnapwoSM+PVS4Ja0XxvI2+HZZHR
+4eZNFj46AGggUT0ER8XVOE7tJO5OFAA/GVzlD+fQL+xR8AstXwgJJNA5WJOWgN+x
+cnDbMx827WX3fNLkSGzhbN0beo195c+cuZjK1cjpgwHfrZmgmsdarIonlSYUOQRL
+XlGxlzMdOF5sJVvC44Tpk5VNMIadFvouKfW96xWq7g8itVPi9OMKm/SOMTjk6lYv
+C/pg8xyTInzWuSq/9tqAEUZGmfhjXDoPy4abHpDzz85+CgPmcxYeHgwJTIekFfsN
+uJgJD+ZXNPjK3yTRgm40Gr3lCHikmQ+3/Ddi1zJzlwVMy493sePrNrAmrX56tFyx
+EKQN23eH4wNCqJjSblAL
+=K4aY
+-----END PGP SIGNATURE-----
+
+--Sig_/PEi4Z3qj0rRLUbcaFtqE4dR--
