@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833AbaKXNFy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 08:05:54 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:59927 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527AbaKXNDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 08:03:42 -0500
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: "linux-arch@vger.kernel.org, linux-mips@linux-mips.org, linux-x86_64@vger.kernel.org, linux-s390"@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>, paulmck@linux.vnet.ibm.com,
-        mingo@kernel.org, torvalds@linux-foundation.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: [PATCH/RFC 5/7] mips: Replace ACCESS_ONCE in gup with a barrier
-Date: Mon, 24 Nov 2014 14:03:28 +0100
-Message-Id: <1416834210-61738-6-git-send-email-borntraeger@de.ibm.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1416834210-61738-1-git-send-email-borntraeger@de.ibm.com>
-References: <1416834210-61738-1-git-send-email-borntraeger@de.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112413-0009-0000-0000-0000021CB6D6
+	id S1752874AbaKXNIj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 08:08:39 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:53949 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751269AbaKXNIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 08:08:38 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Romain Perier <romain.perier@gmail.com>
+Cc: Johan Hovold <johan@kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, robh <robh@kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH v4 1/2] of: Rename "poweroff-source" property to "system-power-controller"
+Date: Mon, 24 Nov 2014 14:12:19 +0100
+Message-ID: <1651776.uhbV5BHLKC@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <CABgxDo+t1DUMHwWygibR-w=FL458N6k0G68HM2M7R76gJugyVg@mail.gmail.com>
+References: <1415885699-1465-1-git-send-email-user@radxa> <CABgxDoLA=QL6vzU-v1w4vMZ3qhorjRdYOWFFMrjJE6xvZ7QO3g@mail.gmail.com> <CABgxDo+t1DUMHwWygibR-w=FL458N6k0G68HM2M7R76gJugyVg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACCESS_ONCE does not work reliably on non-scalar types. For
-example gcc 4.6 and 4.7 might remove the volatile tag for such
-accesses during the SRA (scalar replacement of aggregates) step
-https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
+Am Montag, 24. November 2014, 14:01:02 schrieb Romain Perier:
+> 2014-11-24 13:58 GMT+01:00 Romain Perier <romain.perier@gmail.com>:
+> > So I need to resend this patch which would only introduce an helper
+> > function which checks for "system-power-controller" property (it would
+> > also have a new commit message).
+> > As you suggested, this helper might be named
+> > "of_device_is_system_power_controller" ?
+> 
+> I mean, the backward compatibility can be handled directly from the
+> device driver which would use the new property, no ?
 
-Let's use a barrier instead of ACCESS_ONCE to avoid that issue.
+yep, that is what Grant asked for ... to have drivers that need backward-
+compatibility (like with the "ti,"-prefix) to do this themselfs.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
----
- arch/mips/mm/gup.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/mm/gup.c b/arch/mips/mm/gup.c
-index 06ce17c..cb2ca51 100644
---- a/arch/mips/mm/gup.c
-+++ b/arch/mips/mm/gup.c
-@@ -17,8 +17,8 @@
- 
- static inline pte_t gup_get_pte(pte_t *ptep)
- {
--#if defined(CONFIG_64BIT_PHYS_ADDR) && defined(CONFIG_CPU_MIPS32)
- 	pte_t pte;
-+#if defined(CONFIG_64BIT_PHYS_ADDR) && defined(CONFIG_CPU_MIPS32)
- 
- retry:
- 	pte.pte_low = ptep->pte_low;
-@@ -30,7 +30,9 @@ retry:
- 
- 	return pte;
- #else
--	return ACCESS_ONCE(*ptep);
-+	pte = *ptep;
-+	barrier();
-+	return pte;
- #endif
- }
- 
--- 
-1.9.3
-
+Heiko
