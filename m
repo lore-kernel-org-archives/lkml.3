@@ -1,149 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaKXCNx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 21:13:53 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:16495 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754AbaKXCMq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 21:12:46 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-84-5472941be1b4
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org
-Cc: kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v4 2/5] drivers: soc: Add support for Exynos PMU driver
-Date: Mon, 24 Nov 2014 07:36:12 +0530
-Message-id: <1416794775-1605-3-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1416794775-1605-1-git-send-email-amit.daniel@samsung.com>
-References: <1416794775-1605-1-git-send-email-amit.daniel@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsWyRsSkRld6SlGIwdINBhYNV0MsehdcZbPY
-	9Pgaq8XlXXPYLGac38dkcfsyr8WirV/YHdg9Wpp72Dw2L6n36NuyitHj8ya5AJYoLpuU1JzM
-	stQifbsErozj7/+xFlyTqdh34gFbA+N+8S5GTg4JAROJfd8bWSFsMYkL99azgdhCAksZJaac
-	t4SpOXyhF6iGCyg+nVHi37tDLBDOBCaJXYvusoBUsQkYS/zcuZ+9i5GDQ0TAW2L5NUWQGmaB
-	1YwSfy5sZQKpERZwl5jY+YQZxGYRUJV4de4UI4jNK+AmsfnrJLBeCQEFiTmTbEDCnEDlzUfn
-	M0Ic5Cax53sHE8hMCYHJ7BLPLu1igpgjIPFtMshBIL2yEpsOMEMcLSlxcMUNlgmMwgsYGVYx
-	iqYWJBcUJ6UXmegVJ+YWl+al6yXn525iBAb16X/PJuxgvHfA+hCjAAejEg/vh9bCECHWxLLi
-	ytxDjKZAGyYyS4km5wNjJ68k3tDYzMjC1MTU2Mjc0kxJnPe11M9gIYH0xJLU7NTUgtSi+KLS
-	nNTiQ4xMHJxSDYxeLAJ8ljN29bx1krbxLXw7v7h+3s6NS+8fvT6ZQ3ex7ufTCy9pT737aKcW
-	43E/rlteLw0suS8klK5PVzF6fNax7mfEermNtX7KMgpemsc6xMLes7drasw/eu98od7HHEnd
-	qKdNUSEluT9LvhlPdvzw8F+TsUjBefaMrc8jO+N2M1n4q/o+sFViKc5INNRiLipOBAC9zOQl
-	ZQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLIsWRmVeSWpSXmKPExsVy+t9jQV3pKUUhBjdnq1s0XA2x6F1wlc1i
-	0+NrrBaXd81hs5hxfh+Txe3LvBaLtn5hd2D3aGnuYfPYvKTeo2/LKkaPz5vkAliiGhhtMlIT
-	U1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4D2KymUJeaUAoUC
-	EouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgzjr//x1pwTaZi34kHbA2M+8W7GDk5JARM
-	JA5f6GWFsMUkLtxbz9bFyMUhJDCdUeLfu0MsEM4EJoldi+6ygFSxCRhL/Ny5n72LkYNDRMBb
-	Yvk1RZAaZoHVjBJ/LmxlAqkRFnCXmNj5hBnEZhFQlXh17hQjiM0r4Cax+esksF4JAQWJOZNs
-	QMKcQOXNR+eDlQgBlez53sE0gZF3ASPDKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgqHkm
-	vYNxVYPFIUYBDkYlHt6PrYUhQqyJZcWVuYcYJTiYlUR4z/4DCvGmJFZWpRblxxeV5qQWH2I0
-	BTpqIrOUaHI+MKLzSuINjU3MTY1NLU0sTMwslcR5b9zMDRESSE8sSc1OTS1ILYLpY+LglGpg
-	TNvq/+lx3Bue/6dNTBIO7u/oXf190lQGXd2q/at9t/vdfvr4qvK93xNUpnwQeR/0NW+m8AZf
-	v09Zagr22ete1L1fJL7MgumFS+Hk5DSWB9qFR7iX+PxxfyV99KyeW8oa1uPyKreebYwR2byw
-	+d+Zmff6zlzdUNppweV/+2HIzq/5HxwuW33Y0qvEUpyRaKjFXFScCABF5VlssAIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751528AbaKXCWZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 21:22:25 -0500
+Received: from ozlabs.org ([103.22.144.67]:53469 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751204AbaKXCWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Nov 2014 21:22:23 -0500
+Date: Mon, 24 Nov 2014 13:22:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: linux-next: manual merge of the v4l-dvb tree with the arm-soc tree
+Message-ID: <20141124132214.2f756b6a@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/_jI5wNmozWyuNvJNcMUodgz"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves Exynos PMU driver implementation from "arm/mach-exynos"
-to "drivers/soc/samsung". This driver is mainly used for setting misc
-bits of register from PMU IP of Exynos SoC which will be required to
-configure before Suspend/Resume. Currently all these settings are done
-in "arch/arm/mach-exynos/pmu.c" but moving ahead for ARM64 based SoC
-support, there is a need of this PMU driver in driver/* folder.
+--Sig_/_jI5wNmozWyuNvJNcMUodgz
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-This driver uses existing DT binding information and there should
-be no functionality change in the supported platforms.
+Hi Mauro,
 
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
----
- arch/arm/mach-exynos/Makefile                      |    2 +-
- drivers/soc/Kconfig                                |    1 +
- drivers/soc/Makefile                               |    1 +
- drivers/soc/samsung/Kconfig                        |   20 ++++++++++++++++++++
- drivers/soc/samsung/Makefile                       |    1 +
- .../pmu.c => drivers/soc/samsung/exynos-pmu.c      |    0
- 6 files changed, 24 insertions(+), 1 deletion(-)
- create mode 100644 drivers/soc/samsung/Kconfig
- create mode 100644 drivers/soc/samsung/Makefile
- rename arch/arm/mach-exynos/pmu.c => drivers/soc/samsung/exynos-pmu.c (100%)
+Today's linux-next merge of the v4l-dvb tree got a conflict in
+arch/arm/mach-omap2/devices.c between commit e7e42b9d2a7f ("ARM:
+OMAP4+: Remove unused omap_l3_noc platform init") from the arm-soc tree
+and commit 1b65729a186b ("[media] mach-omap2: remove deprecated
+VIDEO_OMAP2 support") from the v4l-dvb tree.
 
-diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
-index bcefb54..b91b382 100644
---- a/arch/arm/mach-exynos/Makefile
-+++ b/arch/arm/mach-exynos/Makefile
-@@ -9,7 +9,7 @@ ccflags-$(CONFIG_ARCH_MULTIPLATFORM) += -I$(srctree)/$(src)/include -I$(srctree)
- 
- # Core
- 
--obj-$(CONFIG_ARCH_EXYNOS)	+= exynos.o pmu.o exynos-smc.o firmware.o
-+obj-$(CONFIG_ARCH_EXYNOS)	+= exynos.o exynos-smc.o firmware.o
- 
- obj-$(CONFIG_EXYNOS_CPU_SUSPEND) += pm.o sleep.o
- obj-$(CONFIG_PM_SLEEP)		+= suspend.o
-diff --git a/drivers/soc/Kconfig b/drivers/soc/Kconfig
-index 76d6bd4..90f33b9 100644
---- a/drivers/soc/Kconfig
-+++ b/drivers/soc/Kconfig
-@@ -3,5 +3,6 @@ menu "SOC (System On Chip) specific Drivers"
- source "drivers/soc/qcom/Kconfig"
- source "drivers/soc/ti/Kconfig"
- source "drivers/soc/versatile/Kconfig"
-+source "drivers/soc/samsung/Kconfig"
- 
- endmenu
-diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile
-index 063113d..fcd7e37 100644
---- a/drivers/soc/Makefile
-+++ b/drivers/soc/Makefile
-@@ -6,3 +6,4 @@ obj-$(CONFIG_ARCH_QCOM)		+= qcom/
- obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
- obj-$(CONFIG_SOC_TI)		+= ti/
- obj-$(CONFIG_PLAT_VERSATILE)	+= versatile/
-+obj-$(CONFIG_SOC_SAMSUNG)	+= samsung/
-diff --git a/drivers/soc/samsung/Kconfig b/drivers/soc/samsung/Kconfig
-new file mode 100644
-index 0000000..6855cc4
---- /dev/null
-+++ b/drivers/soc/samsung/Kconfig
-@@ -0,0 +1,20 @@
-+#
-+# SAMSUNG SOC drivers
-+#
-+menu "Samsung SOC drivers support"
-+
-+config SOC_SAMSUNG
-+	bool
-+
-+config EXYNOS_PMU
-+	bool "Support Exynos Power Management Unit"
-+	depends on ARCH_EXYNOS
-+	default y
-+	help
-+	  Exynos SoC have Power Management Unit (PMU) which controls power and
-+	  operation state of various components in Exynos SoC. This driver
-+	  provides implementation of PMU driver and provides various
-+	  functionality like initialisation and transition to various low power
-+	  states.
-+
-+endmenu
-diff --git a/drivers/soc/samsung/Makefile b/drivers/soc/samsung/Makefile
-new file mode 100644
-index 0000000..5a879c6
---- /dev/null
-+++ b/drivers/soc/samsung/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_EXYNOS_PMU)	+= exynos-pmu.o
-diff --git a/arch/arm/mach-exynos/pmu.c b/drivers/soc/samsung/exynos-pmu.c
-similarity index 100%
-rename from arch/arm/mach-exynos/pmu.c
-rename to drivers/soc/samsung/exynos-pmu.c
--- 
-1.7.9.5
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-omap2/devices.c
+index 492ef1607115,1b623a06cdcd..000000000000
+--- a/arch/arm/mach-omap2/devices.c
++++ b/arch/arm/mach-omap2/devices.c
+@@@ -67,28 -67,40 +67,6 @@@ static int __init omap3_l3_init(void
+  }
+  omap_postcore_initcall(omap3_l3_init);
+ =20
+- #if defined(CONFIG_VIDEO_OMAP2) || defined(CONFIG_VIDEO_OMAP2_MODULE)
+ -static int __init omap4_l3_init(void)
+ -{
+ -	int i;
+ -	struct omap_hwmod *oh[3];
+ -	struct platform_device *pdev;
+ -	char oh_name[L3_MODULES_MAX_LEN];
+--
+- static struct resource omap2cam_resources[] =3D {
+- 	{
+- 		.start		=3D OMAP24XX_CAMERA_BASE,
+- 		.end		=3D OMAP24XX_CAMERA_BASE + 0xfff,
+- 		.flags		=3D IORESOURCE_MEM,
+- 	},
+- 	{
+- 		.start		=3D 24 + OMAP_INTC_START,
+- 		.flags		=3D IORESOURCE_IRQ,
+ -	/* If dtb is there, the devices will be created dynamically */
+ -	if (of_have_populated_dt())
+ -		return -ENODEV;
+ -
+ -	/*
+ -	 * To avoid code running on other OMAPs in
+ -	 * multi-omap builds
+ -	 */
+ -	if (!cpu_is_omap44xx() && !soc_is_omap54xx())
+ -		return -ENODEV;
+ -
+ -	for (i =3D 0; i < L3_MODULES; i++) {
+ -		snprintf(oh_name, L3_MODULES_MAX_LEN, "l3_main_%d", i+1);
+ -
+ -		oh[i] =3D omap_hwmod_lookup(oh_name);
+ -		if (!(oh[i]))
+ -			pr_err("could not look up %s\n", oh_name);
+--	}
+- };
+--
+- static struct platform_device omap2cam_device =3D {
+- 	.name		=3D "omap24xxcam",
+- 	.id		=3D -1,
+- 	.num_resources	=3D ARRAY_SIZE(omap2cam_resources),
+- 	.resource	=3D omap2cam_resources,
+- };
+- #endif
+ -	pdev =3D omap_device_build_ss("omap_l3_noc", 0, oh, 3, NULL, 0);
+ -
+ -	WARN(IS_ERR(pdev), "could not build omap_device for %s\n", oh_name);
+ -
+ -	return PTR_RET(pdev);
+ -}
+ -omap_postcore_initcall(omap4_l3_init);
+--
+  #if defined(CONFIG_IOMMU_API)
+ =20
+  #include <linux/platform_data/iommu-omap.h>
+
+--Sig_/_jI5wNmozWyuNvJNcMUodgz
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUcpZcAAoJEMDTa8Ir7ZwVxD4P/ikaYQmAQgsfskd6IZ4Ei1rC
+ovYAB90Ayv2s2d4Zmxc7Hr1uZ/y8gt1rQKo6VR+Nia9J/xYzTKG7XgKQJdcvjcRV
+9HG+xxCVg4HTnFhh1mO6euXyB5+IBhBBvMN7sGg0APETHYfGIcBH41qjL4lKeZin
+5fIybs7M+jRx+jy4WQEMuWo6JVqcNUEK7GlVmIqneOrk5aYn7SUZ93J8i/+sJRI9
+XUMPyvqDw+DKdjR3hWogsWmwz13EcQinDXTkVEzHvHpN9ymrRhYNGqa54elA7L4d
+TYPDScN0nPl64HaLbfxU50OblfRSxWw/csEszdZmt3nRedyI9ZFL9XvAvE50DdTU
+YOCKQsH0Ehuu9E6EWabfQVWVfh6iPkGJn7by2XhOssxbw3GWuKZR3Y5Tko95Pt6g
+BML+h6Sz2bMPciMIe7i53VNCBU5iNOb5Rd70stZ6mmM5EN/cHJpXFr60WpFMUbCn
+lYnWGpfKNnM91rFTo10uGytCTYU7NIgUPVD9jWfwSE74FSe1ACNqz4TdrIfGr5Cd
+4EdfGWZGlGFnrmRov8bYLRWKKSMqZtNi8lNpwlBgtaLEjnNbz8bIXV5wDeNvQPAK
+cUohpjffnsoj81K5UwAeF8xJw6oLnyjVIEfdV4Y9IrSTxTQkSk5Uuvdl8zp+rLTL
+wnbsQTKFkEIisSPqL3qN
+=+429
+-----END PGP SIGNATURE-----
+
+--Sig_/_jI5wNmozWyuNvJNcMUodgz--
