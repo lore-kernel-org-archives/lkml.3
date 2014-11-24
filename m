@@ -1,215 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750983AbaKXBF5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 20:05:57 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60689 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750783AbaKXBFy (ORCPT
+	id S1751329AbaKXBGe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 20:06:34 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50393 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751139AbaKXBGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 20:05:54 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        Kangkang.Shen@huawei.com, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [PATCH v5 02/18] ACPI / table: Add new function to get table entries
-Date: Mon, 24 Nov 2014 02:27:04 +0100
-Message-ID: <2764417.DLFalXXngC@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1413553034-20956-3-git-send-email-hanjun.guo@linaro.org>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1413553034-20956-3-git-send-email-hanjun.guo@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Sun, 23 Nov 2014 20:06:32 -0500
+Message-ID: <1416791172.7215.68.camel@decadent.org.uk>
+Subject: Re: [PATCH 08/17] {macvtap,tun}_get_user(): switch to iov_iter
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        target-devel@vger.kernel.org, nab@linux-iscsi.org, hch@infradead.org
+Date: Mon, 24 Nov 2014 01:06:12 +0000
+In-Reply-To: <1416788862.7215.65.camel@decadent.org.uk>
+References: <20141119.165340.2162829993279387495.davem@davemloft.net>
+	 <20141120214753.GR7996@ZenIV.linux.org.uk>
+	 <20141120.182339.972861702759954603.davem@davemloft.net>
+	 <20141121.122615.1091044030302005883.davem@davemloft.net>
+	 <20141122042856.GZ7996@ZenIV.linux.org.uk>
+	 <20141122043352.GH30478@ZenIV.linux.org.uk>
+	 <1416788862.7215.65.camel@decadent.org.uk>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-8ijQbJOlxHcm4zrxawa/"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 17, 2014 09:36:58 PM Hanjun Guo wrote:
-> From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-> 
-> The acpi_table_parse() function has a callback that
-> passes a pointer to a table_header. Add a new function
-> which takes this pointer and parses its entries. This
-> eliminates the need to re-traverse all the tables for
-> each call. e.g. as in acpi_table_parse_madt() which is
-> normally called after acpi_table_parse().
-> 
-> Acked-by: Grant Likely <grant.likely@linaro.org>
-> Signed-off-by: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  drivers/acpi/tables.c |   67 ++++++++++++++++++++++++++++++++++---------------
->  include/linux/acpi.h  |    4 +++
->  2 files changed, 51 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-> index 6d5a6cd..21ae521 100644
-> --- a/drivers/acpi/tables.c
-> +++ b/drivers/acpi/tables.c
-> @@ -192,17 +192,14 @@ void acpi_table_print_madt_entry(struct acpi_subtable_header *header)
->  
->  
->  int __init
-> -acpi_table_parse_entries(char *id,
-> -			     unsigned long table_size,
-> -			     int entry_id,
-> -			     acpi_tbl_entry_handler handler,
-> -			     unsigned int max_entries)
-> +acpi_parse_entries(unsigned long table_size,
-> +		acpi_tbl_entry_handler handler,
-> +		struct acpi_table_header *table_header,
-> +		int entry_id, unsigned int max_entries)
->  {
-> -	struct acpi_table_header *table_header = NULL;
->  	struct acpi_subtable_header *entry;
-> -	unsigned int count = 0;
-> +	int count = 0;
->  	unsigned long table_end;
-> -	acpi_size tbl_size;
->  
->  	if (acpi_disabled)
->  		return -ENODEV;
-> @@ -210,13 +207,11 @@ acpi_table_parse_entries(char *id,
->  	if (!handler)
->  		return -EINVAL;
->  
-> -	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
-> -		acpi_get_table_with_size(id, acpi_apic_instance, &table_header, &tbl_size);
-> -	else
-> -		acpi_get_table_with_size(id, 0, &table_header, &tbl_size);
-> +	if (!table_size)
-> +		return -EINVAL;
->  
->  	if (!table_header) {
-> -		pr_warn("%4.4s not present\n", id);
-> +		pr_warn("Table header not present\n");
 
-The message doesn't make sense any more if the table signature is not printed.
+--=-8ijQbJOlxHcm4zrxawa/
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->  		return -ENODEV;
->  	}
->  
-> @@ -232,30 +227,62 @@ acpi_table_parse_entries(char *id,
->  		if (entry->type == entry_id
->  		    && (!max_entries || count++ < max_entries))
->  			if (handler(entry, table_end))
-> -				goto err;
-> +				return -EINVAL;
->  
->  		/*
->  		 * If entry->length is 0, break from this loop to avoid
->  		 * infinite loop.
->  		 */
->  		if (entry->length == 0) {
-> -			pr_err("[%4.4s:0x%02x] Invalid zero length\n", id, entry_id);
-> -			goto err;
-> +			pr_err("[0x%02x] Invalid zero length\n", entry_id);
+On Mon, 2014-11-24 at 00:27 +0000, Ben Hutchings wrote:
+> On Sat, 2014-11-22 at 04:33 +0000, Al Viro wrote:
+[...]
+> Does skb_copy_datagram_from_iter() really need a len parameter?  Here it
+> is equal to iov_iter_count(from).
+[...]
+> Again len is equal to iov_iter_count(from), so I think that parameter is
+> redundant.
 
-Same here.
+Having read further patches, I see that unix_stream_sendmsg() is the one
+exception where the length parameter is different.  But maybe the common
+case (len =3D iter_iov_count(iov)) deserves a wrapper function?
 
-> +			return -EINVAL;
->  		}
->  
->  		entry = (struct acpi_subtable_header *)
->  		    ((unsigned long)entry + entry->length);
->  	}
-> +
->  	if (max_entries && count > max_entries) {
->  		pr_warn("[%4.4s:0x%02x] ignored %i entries of %i found\n",
-> -			id, entry_id, count - max_entries, count);
-> +			table_header->signature, entry_id, count - max_entries,
-> +			count);
->  	}
->  
-> -	early_acpi_os_unmap_memory((char *)table_header, tbl_size);
->  	return count;
-> -err:
-> +}
-> +
-> +int __init
-> +acpi_table_parse_entries(char *id,
-> +			 unsigned long table_size,
-> +			 int entry_id,
-> +			 acpi_tbl_entry_handler handler,
-> +			 unsigned int max_entries)
-> +{
-> +	struct acpi_table_header *table_header = NULL;
-> +	acpi_size tbl_size;
-> +	int count;
-> +
-> +	if (acpi_disabled)
-> +		return -ENODEV;
-> +
-> +	if (!handler)
-> +		return -EINVAL;
-> +
-> +	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
-> +		acpi_get_table_with_size(id, acpi_apic_instance, &table_header, &tbl_size);
-> +	else
-> +		acpi_get_table_with_size(id, 0, &table_header, &tbl_size);
+Ben.
 
+--=20
+Ben Hutchings
+Absolutum obsoletum. (If it works, it's out of date.) - Stafford Beer
 
-	u32 instance = 0;
+--=-8ijQbJOlxHcm4zrxawa/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-	if (!strncmp(id, ACPI_SIG_MADT, 4))
-		instance = acpi_apic_instance;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-	acpi_get_table_with_size(id, instance, &table_header, &tbl_size);
+iQIVAwUAVHKEiee/yOyVhhEJAQrEAxAAomC2D+xQAWyKPQ1OIYArzl0jZHojasQv
++8QMrZCHbjmVlzRkG/4dO7RNY8iB9L0VyjsEDXfI45KGT+++teht8hcV26UumJ9s
+n6bUwQSHZuXscKJDkvvKzN1ck5vSpXLWB01z1qtbiOS2cacR6Yy1VYUCfYt1pCe6
+YPOF7bdi7ZZ/10uyPfv25eIICxgXBqKa2xzlu8bndYv4Bul229vJzPV7GrbyBxQh
+Leu8p2ysZyyRcizfarfHDkhM41wTUFMa41G3u8NT/9RQOaKS6mr+sDp31Sf5SQU3
+A8DgVnrwrYk8O7z/9CGE/Ba/iJ+0Mjl5JcLZs18aeUQi5kxWH3TR8ZpHmezwTs3J
+q2dUIXrVTWNgmeQeHrd0CSVECFy/fWvS4onn+NRIy8wXkMHXbgiydbvN2V2qjazN
+5YTHcUxq0WMS6m1C+PhE1VS0iU9DCaYIe6fiVYhUmPX5nPE+0HJMIewHSkOls+CP
+kXI33rzAV64I0DgdQjqFhfpX+K6QeC4RQtT3exl/9qYFlUz2nNwdsmbqE1oE1ddT
+9TKgMS2VsAOQFP6xzmG5kRkzNa5owpdWdGc3UbXVe8wy2A75m3xcBbW2OH9gLGyH
+ocdGZacZBIhvEca0+fh2LSdk0iMg38iieagm5eNvgtcLUIuoiveJzj1GmurmnYpm
+aKfGD7SJdXA=
+=P/WF
+-----END PGP SIGNATURE-----
 
-Pretty please.
-
-> +
-> +	if (!table_header) {
-> +		pr_warn("%4.4s not present\n", id);
-> +		return -ENODEV;
-> +	}
-> +
-> +	count = acpi_parse_entries(table_size, handler, table_header,
-> +			entry_id, max_entries);
-> +
->  	early_acpi_os_unmap_memory((char *)table_header, tbl_size);
-> -	return -EINVAL;
-> +	return count;
->  }
->  
->  int __init
-> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> index 807cbc4..36d5012 100644
-> --- a/include/linux/acpi.h
-> +++ b/include/linux/acpi.h
-> @@ -123,6 +123,10 @@ int acpi_numa_init (void);
->  
->  int acpi_table_init (void);
->  int acpi_table_parse(char *id, acpi_tbl_table_handler handler);
-> +int __init acpi_parse_entries(unsigned long table_size,
-> +			      acpi_tbl_entry_handler handler,
-> +			      struct acpi_table_header *table_header,
-> +			      int entry_id, unsigned int max_entries);
->  int __init acpi_table_parse_entries(char *id, unsigned long table_size,
->  				    int entry_id,
->  				    acpi_tbl_entry_handler handler,
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--=-8ijQbJOlxHcm4zrxawa/--
