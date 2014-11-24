@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbaKXJdE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 04:33:04 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:11904 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104AbaKXJdD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 04:33:03 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 24 Nov 2014 01:31:14 -0800
-Date: Mon, 24 Nov 2014 10:32:38 +0100
-From: Thierry Reding <treding@nvidia.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Joerg Roedel <joro@8bytes.org>, Stephen Warren <swarren@nvidia.com>,
-        "Colin Cross" <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Olav Haugan <ohaugan@codeaurora.org>
-Subject: Re: linux-next: manual merge of the iommu tree with the tegra tree
-Message-ID: <20141124093237.GC19045@ulmo.nvidia.com>
-References: <20141124153310.61fc2202@canb.auug.org.au>
+	id S1753003AbaKXJdZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 04:33:25 -0500
+Received: from mail-by2on0134.outbound.protection.outlook.com ([207.46.100.134]:52672
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751033AbaKXJdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 04:33:23 -0500
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <shawn.guo@linaro.org>, <jingchang.lu@freescale.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] ARM: ls1021a: dtsi: add 'big-endian' property for scfg node
+Date: Mon, 24 Nov 2014 17:17:24 +0800
+Message-ID: <1416820644-10968-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 2.1.0.27.g96db324
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(48376002)(31966008)(84676001)(99396003)(120916001)(87936001)(85426001)(104166001)(88136002)(104016003)(19580405001)(4396001)(19580395003)(6806004)(50226001)(44976005)(68736004)(97736003)(50466002)(50986999)(92566001)(107046002)(86362001)(87286001)(92726001)(93916002)(229853001)(106466001)(95666004)(62966003)(102836001)(36756003)(89996001)(47776003)(20776003)(105606002)(21056001)(64706001)(46102003)(77156002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1235;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-In-Reply-To: <20141124153310.61fc2202@canb.auug.org.au>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [10.2.69.209]
-X-ClientProxiedBy: UKMAIL102.nvidia.com (10.26.138.15) To
- UKMAIL101.nvidia.com (10.26.138.13)
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Fig2xvG2VGoz8o/s"
-Content-Disposition: inline
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1235;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1235;
+X-Forefront-PRVS: 040513D301
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1235;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB0833;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Fig2xvG2VGoz8o/s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On LS1021A SoC, the scfg device is in BE mode.
 
-On Mon, Nov 24, 2014 at 03:33:10PM +1100, Stephen Rothwell wrote:
-> * PGP Signed by an unknown key
->=20
-> Hi Joerg,
->=20
-> Today's linux-next merge of the iommu tree got a conflict in
-> drivers/iommu/tegra-smmu.c between commit a2257374a4bd ("memory: Add
-> NVIDIA Tegra memory controller support") from the tegra tree and commit
-> 315786ebbf4a ("iommu: Add iommu_map_sg() function") from the iommu tree.
->=20
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ arch/arm/boot/dts/ls1021a.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
 
-This conflict is uglier than I had anticipated. Perhaps it would make
-sense to pull in a stable IOMMU branch into Tegra so that I can resolve
-the conflict on top of that?
+diff --git a/arch/arm/boot/dts/ls1021a.dtsi b/arch/arm/boot/dts/ls1021a.dtsi
+index 53c652a..28c37f1 100644
+--- a/arch/arm/boot/dts/ls1021a.dtsi
++++ b/arch/arm/boot/dts/ls1021a.dtsi
+@@ -142,6 +142,7 @@
+ 		scfg: scfg@1570000 {
+ 			compatible = "fsl,ls1021a-scfg", "syscon";
+ 			reg = <0x0 0x1570000 0x0 0x10000>;
++			big-endian;
+ 		};
+ 
+ 		clockgen: clocking@1ee1000 {
+-- 
+2.1.0.27.g96db324
 
-Joerg, do you have a stable branch containing the above commits that you
-could provide for me to pull into the Tegra tree?
-
-Thierry
-
---Fig2xvG2VGoz8o/s
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUcvs1AAoJEN0jrNd/PrOhvwwQAJ8mFfBZtDxh55KIfE4c3dwX
-SsrsZ69BXDg97Q33bGbxM1ZajdSpjulQvKyC/Cfn7+bVEuhN136YV5w8yUCtW81v
-yKfzZVhk0mv6khf6whijTbfyTy5ei1uP8Vhq47tbsviZqvS+eo/k+U6egbS+7PCr
-bu1C5KXbdMc0nfw52IIhbz+YOXpFaGYmRNPw47xoFTMCvjQMvulemo2GsWlWzB7i
-QRduEgHk/W/peLoPaO+/2KJJc3HF3EE/a+7u7Zg4q2LHV1jKj0Hn9CX1JwxaAF68
-vrKxBTHC/SEGVlOuZwbt3loN2Upr4PIp6C8TQ9ERX666MOB4FdCV8ozKUPcE8Rsi
-AFT66YA9pP5P0vY6cgC8Pe21QxA/nKipxnPhRruXno+j1SSyFWRW9IJe8Jl5Wxdd
-UvcRXaoNaGbTU6DDWZ0FOSlNJlLuEB1wY0zKGQ2RqXk8RKlK3fjeFI5CQLKjTDAI
-V9kwo89wH1xcwnyz+V7M0yCrwko3uduZRKpoYHHNuNv56jdOZCYMh49Lx64bKyil
-kEMxX1Uz7djTtT7Ft4ImabC+i5Ar27LuEqtdyzQm8nNJgHEfN7f9LYnzbPgQWAY9
-seWYE4VSDhxWAeYbJKMIdW6i3eCUuvWj7xg2ugk63PhpPGERri6volX3DB7N2gfV
-10qOAo7pPjrXpPIT6qqm
-=0g0C
------END PGP SIGNATURE-----
-
---Fig2xvG2VGoz8o/s--
