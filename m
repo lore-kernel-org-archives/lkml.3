@@ -1,165 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154AbaKXNna (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 08:43:30 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:51538 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875AbaKXNn2 (ORCPT
+	id S1753425AbaKXNpy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 08:45:54 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:46509 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaKXNpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 08:43:28 -0500
-Message-ID: <547335FB.4020002@mvista.com>
-Date: Mon, 24 Nov 2014 07:43:23 -0600
-From: Corey Minyard <cminyard@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Mon, 24 Nov 2014 08:45:51 -0500
+Message-ID: <5473368C.5040409@6wind.com>
+Date: Mon, 24 Nov 2014 14:45:48 +0100
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: minyard@acm.org, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: Add parameters to sysfs-added i2c devices
-References: <1415976117-27755-1-git-send-email-minyard@acm.org>
-In-Reply-To: <1415976117-27755-1-git-send-email-minyard@acm.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        davem@davemloft.net, stephen@networkplumber.org,
+        akpm@linux-foundation.org, luto@amacapital.net, cwang@twopensource.com
+Subject: Re: [PATCH net-next v4 0/4] netns: allow to identify peer netns
+References: <1412257690-31253-1-git-send-email-nicolas.dichtel@6wind.com>	<1414682728-4532-1-git-send-email-nicolas.dichtel@6wind.com> <871tpph03k.fsf@x220.int.ebiederm.org>
+In-Reply-To: <871tpph03k.fsf@x220.int.ebiederm.org>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping, I haven't heard anything on this.
+Le 30/10/2014 19:41, Eric W. Biederman a écrit :
+> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
+>
+>> The goal of this serie is to be able to multicast netlink messages with an
+>> attribute that identify a peer netns.
+>> This is needed by the userland to interpret some informations contained in
+>> netlink messages (like IFLA_LINK value, but also some other attributes in case
+>> of x-netns netdevice (see also
+>> http://thread.gmane.org/gmane.linux.network/315933/focus=316064 and
+>> http://thread.gmane.org/gmane.linux.kernel.containers/28301/focus=4239)).
+>>
+>> Ids of peer netns are set by userland via a new genl messages. These ids are
+>> stored per netns and are local (ie only valid in the netns where they are set).
+>> To avoid allocating an int for each peer netns, I use idr_for_each() to retrieve
+>> the id of a peer netns. Note that it will be possible to add a table (struct net
+>> -> id) later to optimize this lookup if needed.
+>>
+>> Patch 1/4 introduces the netlink API mechanism to set and get these ids.
+>> Patch 2/4 and 3/4 implements an example of how to use these ids in rtnetlink
+>> messages. And patch 4/4 shows that the netlink messages can be symetric between
+>> a GET and a SET.
+>>
+>> iproute2 patches are available, I can send them on demand.
+>
+> A quick reply.  I think this patchset is in the right general direction.
+> There are some oddball details that seem odd/awkward to me such as using
+> genetlink instead of rtnetlink to get and set the ids, and not having
+> ids if they are not set (that feels like a maintenance/usability challenge).
+>
+> I would like to give your patches a deep review, but I won't be able to
+> do that for a couple of weeks.  I am deep in the process of moving,
+> and will be mostly offline until about the Nov 11th.
+Eric, did you have a chance to look at this?
 
--corey
 
-On 11/14/2014 08:41 AM, minyard@acm.org wrote:
-> From: Corey Minyard <cminyard@mvista.com>
->
-> Some devices might need parameters to control their operation,
-> add the ability to pass these parameters to the client.
->
-> This also makes the parsing of sysfs-added I2C devices a little
-> more flexible, allowing tabs and arbitrary numbers of spaces.
->
-> Signed-off-by: Corey Minyard <cminyard@mvista.com>
-> ---
->  drivers/i2c/i2c-core.c | 46 ++++++++++++++++++++++++++++++++++------------
->  include/linux/i2c.h    |  3 +++
->  2 files changed, 37 insertions(+), 12 deletions(-)
->
-> I'm adding an SMBus IPMI driver, and it needs to be able to have
-> the IPMI bus address specified in case it's not the default.
->
-> Also, this seems like it would be useful for other devices that
-> need some sort of configuration.
->
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index f43b4e1..9a2ab13 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -781,7 +781,10 @@ static int i2c_device_pm_restore(struct device *dev)
->  
->  static void i2c_client_dev_release(struct device *dev)
->  {
-> -	kfree(to_i2c_client(dev));
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +
-> +	kfree(client->parms);
-> +	kfree(client);
->  }
->  
->  static ssize_t
-> @@ -1059,6 +1062,13 @@ i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
->  	client->flags = info->flags;
->  	client->addr = info->addr;
->  	client->irq = info->irq;
-> +	if (info->parms) {
-> +		client->parms = kstrdup(info->parms, GFP_KERNEL);
-> +		if (!client->parms) {
-> +			dev_err(&adap->dev, "Out of memory allocating parms\n");
-> +			goto out_err_silent;
-> +		}
-> +	}
->  
->  	strlcpy(client->name, info->type, sizeof(client->name));
->  
-> @@ -1207,31 +1217,43 @@ i2c_sysfs_new_device(struct device *dev, struct device_attribute *attr,
->  	struct i2c_adapter *adap = to_i2c_adapter(dev);
->  	struct i2c_board_info info;
->  	struct i2c_client *client;
-> -	char *blank, end;
-> +	char *pos, end;
->  	int res;
->  
->  	memset(&info, 0, sizeof(struct i2c_board_info));
->  
-> -	blank = strchr(buf, ' ');
-> -	if (!blank) {
-> +	pos = strpbrk(buf, " \t");
-> +	if (!pos) {
->  		dev_err(dev, "%s: Missing parameters\n", "new_device");
->  		return -EINVAL;
->  	}
-> -	if (blank - buf > I2C_NAME_SIZE - 1) {
-> +	if (pos - buf > I2C_NAME_SIZE - 1) {
->  		dev_err(dev, "%s: Invalid device name\n", "new_device");
->  		return -EINVAL;
->  	}
-> -	memcpy(info.type, buf, blank - buf);
-> +	memcpy(info.type, buf, pos - buf);
->  
-> -	/* Parse remaining parameters, reject extra parameters */
-> -	res = sscanf(++blank, "%hi%c", &info.addr, &end);
-> -	if (res < 1) {
-> +	while (isspace(*pos))
-> +		pos++;
-> +
-> +	/* Parse address, saving remaining parameters. */
-> +	res = sscanf(pos, "%hi%c", &info.addr, &end);
-> +	if (res < 1 || !isspace(end)) {
->  		dev_err(dev, "%s: Can't parse I2C address\n", "new_device");
->  		return -EINVAL;
->  	}
-> -	if (res > 1  && end != '\n') {
-> -		dev_err(dev, "%s: Extra parameters\n", "new_device");
-> -		return -EINVAL;
-> +	if (res > 1 && end != '\n') {
-> +		if (isspace(end)) {
-> +			/* Extra parms, skip the address and space. */
-> +			while (!isspace(*pos))
-> +				pos++;
-> +			while (isspace(*pos))
-> +				pos++;
-> +			info.parms = pos;
-> +		} else {
-> +			dev_err(dev, "%s: Extra parameters\n", "new_device");
-> +			return -EINVAL;
-> +		}
->  	}
->  
->  	client = i2c_new_device(adap, &info);
-> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-> index b556e0a..e40fc56 100644
-> --- a/include/linux/i2c.h
-> +++ b/include/linux/i2c.h
-> @@ -222,6 +222,7 @@ struct i2c_client {
->  	char name[I2C_NAME_SIZE];
->  	struct i2c_adapter *adapter;	/* the adapter we sit on	*/
->  	struct device dev;		/* the device structure		*/
-> +	char *parms;			/* sysfs extra parms		*/
->  	int irq;			/* irq issued by device		*/
->  	struct list_head detected;
->  };
-> @@ -255,6 +256,7 @@ static inline void i2c_set_clientdata(struct i2c_client *dev, void *data)
->   * @archdata: copied into i2c_client.dev.archdata
->   * @of_node: pointer to OpenFirmware device node
->   * @acpi_node: ACPI device node
-> + * @parms: Parameters supplied on the sysfs command line
->   * @irq: stored in i2c_client.irq
->   *
->   * I2C doesn't actually support hardware probing, although controllers and
-> @@ -276,6 +278,7 @@ struct i2c_board_info {
->  	struct dev_archdata	*archdata;
->  	struct device_node *of_node;
->  	struct acpi_dev_node acpi_node;
-> +	char            *parms;
->  	int		irq;
->  };
->  
-
+Regards,
+Nicolas
