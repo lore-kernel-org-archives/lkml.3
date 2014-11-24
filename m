@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653AbaKXToY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 14:44:24 -0500
-Received: from mail.kernel.org ([198.145.19.201]:36394 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751083AbaKXToX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 14:44:23 -0500
-From: Jane Zhou <a17711@motorola.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jane Zhou <a17711@motorola.com>, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        stable@vger.kernel.org, Yiwei Zhao <gbjc64@motorola.com>
-Subject: [PATCH] net/ping: handle protocol mismatching scenario
-Date: Mon, 24 Nov 2014 11:44:08 -0800
-Message-Id: <1416858248-29258-1-git-send-email-a17711@motorola.com>
-X-Mailer: git-send-email 2.1.1
+	id S1754681AbaKXTpi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 14:45:38 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48203 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144AbaKXTph (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 14:45:37 -0500
+Date: Mon, 24 Nov 2014 20:45:33 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Ben Gardiner <bengardiner@nanometrics.ca>,
+        Mike Looijmans <milo-software@users.sourceforge.net>
+Subject: Re: [5/5] i2c: davinci: use ICPFUNC to toggle I2C as gpio for bus
+ recovery
+Message-ID: <20141124194533.GU4431@pengutronix.de>
+References: <1416477788-5544-6-git-send-email-grygorii.strashko@ti.com>
+ <20141123170400.GC4431@pengutronix.de>
+ <54732F8E.4080105@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54732F8E.4080105@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping_lookup() may return a wrong sock if sk_buff's and sock's protocols
-dont' match. For example, sk_buff's protocol is ETH_P_IPV6, but sock's
-sk_family is AF_INET, in that case, if sk->sk_bound_dev_if is zero, a wrong
-sock will be returned.
-the fix is to "continue" the searching, if no matching, return NULL.
+Hi Grygorii,
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org
-Cc: stable@vger.kernel.org
-Signed-off-by: Jane Zhou <a17711@motorola.com>
-Signed-off-by: Yiwei Zhao <gbjc64@motorola.com>
----
- net/ipv4/ping.c | 2 ++
- 1 file changed, 2 insertions(+)
+On Mon, Nov 24, 2014 at 03:15:58PM +0200, Grygorii Strashko wrote:
+> On 11/23/2014 07:04 PM, Uwe Kleine-König wrote:
+> > On Thu, Nov 20, 2014 at 12:03:08PM +0200, Grygorii Strashko wrote:
+> >> @@ -664,6 +759,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+> >>   		if (!of_property_read_u32(pdev->dev.of_node, "clock-frequency",
+> >>   			&prop))
+> >>   			dev->pdata->bus_freq = prop / 1000;
+> >> +		dev->pdata->has_pfunc = true;
+> > I don't understand this. Why does this ICPFUNC recovery work if the bus
+> > is probed by oftree, but doesn't if not?
+> 
+> I've mentioned this in commit message:
+>  Allow platforms to indicate the presence of the ICPFUNC registers with a has_pfunc
+>  platform data flag and enable this mode for platforms which supports DT (da850 and
+>  Keystone 2 are two SoCs which support DT now and they also support ICPFUNC registers).
+Ah, so you assume that in the dt case the pfunc functionality is
+available. I didn't understand if it's bad or not if this assumption is
+wrong, but I suggest to only use the pfunc stuff if the device node has
+a given property (e.g. ti,has_pfunc).
 
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index fc1c4b1..8892913 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -214,6 +214,8 @@ static struct sock *ping_lookup(struct net *net, struct sk_buff *skb, u16 ident)
- 					     &ipv6_hdr(skb)->daddr))
- 				continue;
- #endif
-+		} else {
-+			continue;
- 		}
- 
- 		if (sk->sk_bound_dev_if && sk->sk_bound_dev_if != dif)
+Best regards
+Uwe
+
 -- 
-1.8.0
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
