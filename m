@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786AbaKXSGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:06:52 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:50052 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754439AbaKXSCg (ORCPT
+	id S1754607AbaKXSI5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:08:57 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8530 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753598AbaKXSIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:02:36 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-88-547372bbe859
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH v7 02/12] x86_64: load_percpu_segment: read
- irq_stack_union.gs_base before load_segment
-Date: Mon, 24 Nov 2014 21:02:15 +0300
-Message-id: <1416852146-9781-3-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 2.1.3
-In-reply-to: <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t/xK7q7i4pDDG5dkbTY9usRm8XvvTNZ
-	LeasX8NmceTad3aL69/eMFp8evmA0WLL9SYmi+cPH7JbTHjYxm4xbaO4xcruZjaL7c/eMlms
-	7HzAanF51xw2i3tr/rNaXDqwgMli8ZHbzBbvnk1mtti8aSqzxdVVB9ktfmx4zOog6jF/50dG
-	j52z7rJ7LNhU6rF4z0smj02rOtk8Nn2axO7R9fYKk8e7c+fYPU7M+M3i8eTKdCaPj09vsXi8
-	33eVzaNvyypGj8+b5DxOtHxhDeCP4rJJSc3JLEst0rdL4Mpom3KavWAjd8XuTztYGxhvcXYx
-	cnJICJhI9JyawAhhi0lcuLeerYuRi0NIYCmjxJLGtWAJIYE+JomJbX4gNpuAnsS/WdvZQGwR
-	AV2JVc93MYM0MAucZZX482cXWEJYIFNi1cG9rCA2i4CqxOU/vewgNq+Aq0Tv2rtANRxA2+Qk
-	tq7zBjE5Bdwkfjwtg9jbyCjRM2sz2wRG3gWMDKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcx
-	QiLoyw7GxcesDjEKcDAq8fD+6CkMEWJNLCuuzD3EKMHBrCTCm5ZfHCLEm5JYWZValB9fVJqT
-	WnyIkYmDU6qB0fLstvK36xXnrTQ0m94k/fOif8XRXIYzp/fYZ2lIx6/prcpiL9wuUuv3wujZ
-	R2NfZ3aRrorZC7krL0Ry256dUbz6j5U+5/wZM851Tb68tnG7hZpBfN9bq660i6JM0ckhfH+2
-	hrxm6O/0akqTuLlZs/xmAW/snSr7OXJ7v657PI3X9aGox6ZbSizFGYmGWsxFxYkAgN2gW34C	AAA=
+	Mon, 24 Nov 2014 13:08:55 -0500
+Message-ID: <54737431.4070407@sonymobile.com>
+Date: Mon, 24 Nov 2014 10:08:49 -0800
+From: Tim Bird <tim.bird@sonymobile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Shuah Khan <shuahkh@osg.samsung.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH v2] selftest: size: Add size test for Linux kernel
+References: <546D084D.20002@sonymobile.com> <546D321F.2080405@sonymobile.com> <546E640F.1090006@osg.samsung.com>
+In-Reply-To: <546E640F.1090006@osg.samsung.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reading irq_stack_union.gs_base after load_segment creates troubles for kasan.
-Compiler inserts __asan_load in between load_segment and wrmsrl. If kernel
-built with stackprotector this will result in boot failure because __asan_load
-has stackprotector.
+On 11/20/2014 01:58 PM, Shuah Khan wrote:
+> On 11/19/2014 05:13 PM, Tim Bird wrote:
+>>
+>> This test shows the amount of memory used by the system.
+>> Note that this is dependent on the user-space that is loaded
+>> when this program runs.  Optimally, this program would be
+>> run as the init program itself.
+>>
+>> The program is optimized for size itself, to avoid conflating
+>> its own execution with that of the system software.
+>> The code is compiled statically, with no stdlibs. On my x86_64 system,
+>> this results in a statically linked binary of less than 5K.
+>>
+>> Changes from v1:
+>>   - use more correct Copyright string in get_size.c
+>>
+>> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+>> ---
+>>  tools/testing/selftests/Makefile        |   1 +
+>>  tools/testing/selftests/size/Makefile   |  21 +++++++
+>>  tools/testing/selftests/size/get_size.c | 105 ++++++++++++++++++++++++++++++++
+>>  3 files changed, 127 insertions(+)
+>>  create mode 100644 tools/testing/selftests/size/Makefile
+>>  create mode 100644 tools/testing/selftests/size/get_size.c
+> 
+> Tim,
+> 
+> The test looks good, but you are missing .gitignore file.
+> Please add a .gitignore for the binary that gets generated to
+> avoid git status including the binary it in its output.
+Will do.
 
-To avoid this irq_stack_union.gs_base stored to temporary variable before
-load_segment, so __asan_load will be called before load_segment().
+I'll send v3 today.
 
-There are two alternative ways to fix this:
- a) Add __attribute__((no_sanitize_address)) to load_percpu_segment(),
-    which tells compiler to not instrument this function. However this
-    will result in build failure with CONFIG_KASAN=y and CONFIG_OPTIMIZE_INLINING=y.
-
- b) Add -fno-stack-protector for mm/kasan/kasan.c
-
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
----
- arch/x86/kernel/cpu/common.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 8779d63..97f56f6 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -389,8 +389,10 @@ void load_percpu_segment(int cpu)
- #ifdef CONFIG_X86_32
- 	loadsegment(fs, __KERNEL_PERCPU);
- #else
-+	void *gs_base = per_cpu(irq_stack_union.gs_base, cpu);
-+
- 	loadsegment(gs, 0);
--	wrmsrl(MSR_GS_BASE, (unsigned long)per_cpu(irq_stack_union.gs_base, cpu));
-+	wrmsrl(MSR_GS_BASE, (unsigned long)gs_base);
- #endif
- 	load_stack_canary_segment();
- }
--- 
-2.1.3
-
+Thanks,
+ -- Tim
