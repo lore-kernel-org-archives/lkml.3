@@ -1,177 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740AbaKXOLW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:11:22 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:33891 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223AbaKXOLU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:11:20 -0500
-Message-ID: <54733C80.6060509@hitachi.com>
-Date: Mon, 24 Nov 2014 23:11:12 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753915AbaKXOLf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:11:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46170 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753794AbaKXOLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 09:11:31 -0500
+Date: Mon, 24 Nov 2014 15:11:26 +0100
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: KVM list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH] kvm: x86: move assigned-dev.c and iommu.c to arch/x86/
+Message-ID: <20141124141126.GA6795@potion.brq.redhat.com>
+References: <1416604910-13978-1-git-send-email-rkrcmar@redhat.com>
+ <5470B859.3000104@redhat.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
-        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
-        Ingo Molnar <mingo@kernel.org>, Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH ftrace/core v6 5/5] kselftest, ftrace: Add ftrace IPMODIFY
- flag test
-References: <20141121102502.11844.82696.stgit@localhost.localdomain> <20141121102537.11844.9781.stgit@localhost.localdomain> <20141121160329.575fd043@gandalf.local.home> <54729CDE.5030700@hitachi.com> <20141123232932.1ed70d18@gandalf.local.home>
-In-Reply-To: <20141123232932.1ed70d18@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5470B859.3000104@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(CC'ed Shuah, since this is related to kselftest)
-
-(2014/11/24 13:29), Steven Rostedt wrote:
-> On Mon, 24 Nov 2014 11:50:06 +0900
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+2014-11-22 17:22+0100, Paolo Bonzini:
+> On 21/11/2014 22:21, Radim Krčmář wrote:
+> >  - struct kvm_assigned_dev_kernel depends on struct kvm_irq_ack_notifier
 > 
->> (2014/11/22 6:03), Steven Rostedt wrote:
->>> On Fri, 21 Nov 2014 05:25:37 -0500
->>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>>
->>>> Add ftrace IPMODIFY flag test to selftest/ftrace. The
->>>> test checks simple ftrace handler insertion and
->>>> combinations of ftrace, kprobe, and jprobe.
->>>> This test requires kernel build tree to build a test
->>>> kernel module and root privilege to run.
->>>>
->>>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->>>>
->>>> ---
->>>
->>> Can you make it so that make O=/path/to/build works?
->>
->> Hmm, I always use "O=builddir" option in my build script...
-> 
-> But do you use O=builddir where builddir is where the kernel was built?
-> I don't.
+> kvm_assign_device and kvm_deassign_device can also be moved to arch/x86,
+> in a new assigned-dev.h header.  The header could include struct
+> kvm_assigned_dev_kernel too but, if you change the argument of
+> kvm_assign_device and kvm_deassign_device to struct pci_dev, the struct
+> can move directly to assigned-dev.c and remain hidden there.
 
-Hmm, yes, I always use kbin/linux-3.<arch>/ for the builddir of
-ksrc/linux-3/ source tree.
+Thanks!
 
-> 
-> Remember, I build on a server and install on a test box. The server
-> directory is read only. I can not have O= be the path to where the
-> kernel was built. I have to use a different directory.
+> It's fine to do this as a follow up.
 
-Oh, I see. So your kernel is built on a directory which mounted as
-readonly, and installed on the testbox.
+With assigned-dev.h, we could remove everything from x86/kvm_host.h too,
+which would be better as a replacement to the original
 
->>> I tried running this on my test box, which has /home/rostedt mounted
->>> read only from my build box, and I get this:
+---8<---
+kvm: x86: move assigned-dev.c and iommu.c to arch/x86/
 
-Hmm, btw, would you mount it without "noexec" option?
-I think only "ro" option doesn't prohibit executing scripts on it.
+Now that ia64 is gone, we can hide deprecated device assignment in x86.
 
->>
->> My case is just to keep the source tree clean, so source tree is
->> still writable and builddir is under another directory in /home/<user>/.
->>
->>
->>> [root@bxtest ftrace]# make O=/tmp
->>> for TARGET in ipmodify; do \
->>> 	make -C $TARGET; \
->>> done;
->>> make[1]: Entering directory `/work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify'
->>> make -C /lib/modules/3.18.0-rc1-test+/build M=/work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify ipmodify.ko
->>> make[2]: Entering directory `/home/rostedt/work/git/nobackup/bxtest/trace'
->>>   CC [M]  /work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify/ipmodify.o
->>> /bin/sh: ./scripts/recordmcount: Permission denied
->>
->> Hmm, this error looks odd, not ENOENT but EPERM??
->> Could you run it again with V=1 ?
-> 
-> Sure, here's the output:
-> 
-> [root@bxtest ftrace]# make V=1 O=/tmp
-> for TARGET in ipmodify; do \
-> 	make -C $TARGET; \
-> done;
-> make[1]: Entering directory `/work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify'
-> make -C /lib/modules/3.18.0-rc1-test+/build M=/work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify ipmodify.ko
-> make[2]: Entering directory `/home/rostedt/work/git/nobackup/bxtest/trace'
-> make -C /home/rostedt/work/git/linux-trace.git O=/home/rostedt/work/git/nobackup/bxtest/trace/. ipmodify.ko
-> make -C /home/rostedt/work/git/nobackup/bxtest/trace KBUILD_SRC=/home/rostedt/work/git/linux-trace.git \
-> -f /home/rostedt/work/git/linux-trace.git/Makefile ipmodify.ko
-> test -e include/generated/autoconf.h -a -e include/config/auto.conf || (		\
-> echo >&2;							\
-> echo >&2 "  ERROR: Kernel configuration is invalid.";		\
-> echo >&2 "         include/generated/autoconf.h or include/config/auto.conf are missing.";\
-> echo >&2 "         Run 'make oldconfig && make prepare' on kernel src to fix it.";	\
-> echo >&2 ;							\
-> /bin/false)
-> mkdir -p /work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify/.tmp_versions ; rm -f /work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify/.tmp_versions/*
-> make KBUILD_MODULES=1   \
-> -f /home/rostedt/work/git/linux-trace.git/scripts/Makefile.build obj=/work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify ipmodify.o
->   gcc -Wp,-MD,/work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify/.ipmodify.o.d  -nostdinc -isystem /usr/lib/gcc/x86_64-redhat-linux/4.7.2/include -I/home/rostedt/work/git/linux-trace.git/arch/x86/include -Iarch/x86/include/generated  -I/home/rostedt/work/git/linux-trace.git/include -Iinclude -I/home/rostedt/work/git/linux-trace.git/arch/x86/include/uapi -Iarch/x86/include/generated/uapi -I/home/rostedt/work/git/linux-trace.git/include/uapi -Iinclude/generated/uapi -include /home/rostedt/work/git/linux-trace.git/include/linux/kconfig.h   -I/work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -m64 -mno-80387 -mno-fp-ret-in-387 -mtune=generic -mno-red-zone -mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-
-> args -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1 -DCONFIG_A
->  S_FXSAVEQ=1 -DCONFIG_AS_CRC32=1 -DCONFIG_AS_AVX=1 -DCONFIG_AS_AVX2=1 -pipe -Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -fno-delete-null-pointer-checks -Os -Wno-maybe-uninitialized --param=allow-store-data-races=0 -Wframe-larger-than=2048 -fno-stack-protector -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-var-tracking-assignments -g -pg -mfentry -DCC_USING_FENTRY -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -DCC_HAVE_ASM_GOTO  -DMODULE  -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(ipmodify)"  -D"KBUILD_MODNAME=KBUILD_STR(ipmodify)" -c -o /work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify/ipmodify.o /work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify/ipmodify.c
->   if [ "-pg" = "-pg" ]; then if [ /work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify/ipmodify.o != "scripts/mod/empty.o" ]; then ./scripts/recordmcount  "/work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify/ipmodify.o"; fi; fi;
-> /bin/sh: ./scripts/recordmcount: Permission denied
-> make[5]: *** [/work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify/ipmodify.o] Error 1
+kvm_vm_ioctl_assigned_device() is newly called from kvm_arch_vm_ioctl().
+Definitions and declarations have been consolidated into assigned-dev.h.
 
-thanks. In my case, I didn't have same error.
+Remaining kvm_iommu_(un)map_pages() would require new code to be moved.
+
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 ---
-  if [ "-pg" = "-pg" ]; then if [ /home/mhiramat/ksrc/linux-3/tools/testing/selftests/ftrace/ipmodify/ipmodify.o != "scripts/mod/empty.o" ]; then ./scripts/recordmcount
-"/home/mhiramat/ksrc/linux-3/tools/testing/selftests/ftrace/ipmodify/ipmodify.o"; fi; fi;
-make -f /home/mhiramat/ksrc/linux-3/scripts/Makefile.modpost
----
+ arch/x86/kvm/Makefile                 |  2 +-
+ {virt => arch/x86}/kvm/assigned-dev.c |  1 +
+ arch/x86/kvm/assigned-dev.h           | 59 +++++++++++++++++++++++++++++++++++
+ {virt => arch/x86}/kvm/iommu.c        |  1 +
+ arch/x86/kvm/x86.c                    |  3 +-
+ include/linux/kvm_host.h              | 55 --------------------------------
+ virt/kvm/kvm_main.c                   |  2 --
+ 7 files changed, 64 insertions(+), 59 deletions(-)
+ rename {virt => arch/x86}/kvm/assigned-dev.c (99%)
+ create mode 100644 arch/x86/kvm/assigned-dev.h
+ rename {virt => arch/x86}/kvm/iommu.c (99%)
 
-However, when I dropped exec bit from recordmcount, I got the same error.
----
-$ chmod a-x ~/kbin/linux-3.x86_64/scripts/recordmcount
-$ make V=1 O=/tmp
-[...]
-  if [ "-pg" = "-pg" ]; then if [ /home/mhiramat/ksrc/linux-3/tools/testing/selftests/ftrace/ipmodify/ipmodify.o != "scripts/mod/empty.o" ]; then ./scripts/recordmcount
-"/home/mhiramat/ksrc/linux-3/tools/testing/selftests/ftrace/ipmodify/ipmodify.o"; fi; fi;
-/bin/sh: ./scripts/recordmcount: Permission denied
-make[5]: *** [/home/mhiramat/ksrc/linux-3/tools/testing/selftests/ftrace/ipmodify/ipmodify.o] Error 1
----
-
-So, if your server directory is mounted with noexec, it's an environmental
-problem. I guess you can not build any kernel drivers on that testbox, can you?
-
-Anyway, this gives us a good question, "should test binaries be made by
-server or client(testbox) environment?" This ipmodify driver is a binary
-and it should be built with the kernel binary (by server) I think.
-But yes, I missed the Makefile didn't allow that (this always referred
-installed running kernel builddir).
-
-I hope to have CONFIG_KSELFTEST_BINARIES for Kconfig, or make prep_kselftest
-target to build these binaries with kernel...
-
-Shuah, what would you think about this?
-
-> make[4]: *** [ipmodify.ko] Error 2
-> make[3]: *** [sub-make] Error 2
-> make[2]: *** [__sub-make] Error 2
-> make[2]: Leaving directory `/home/rostedt/work/git/nobackup/bxtest/trace'
-> make[1]: *** [ipmodify.ko] Error 2
-> make[1]: Leaving directory `/work/git/linux-trace.git/tools/testing/selftests/ftrace/ipmodify'
-> make: *** [all] Error 2
-> 
-> 
-> Thanks (on my way to bed),
-
-Thank you :),
-
-
+diff --git a/arch/x86/kvm/Makefile b/arch/x86/kvm/Makefile
+index ee1cd92..08f790d 100644
+--- a/arch/x86/kvm/Makefile
++++ b/arch/x86/kvm/Makefile
+@@ -9,11 +9,11 @@ KVM := ../../../virt/kvm
+ 
+ kvm-y			+= $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o \
+ 				$(KVM)/eventfd.o $(KVM)/irqchip.o $(KVM)/vfio.o
+-kvm-$(CONFIG_KVM_DEVICE_ASSIGNMENT)	+= $(KVM)/assigned-dev.o $(KVM)/iommu.o
+ kvm-$(CONFIG_KVM_ASYNC_PF)	+= $(KVM)/async_pf.o
+ 
+ kvm-y			+= x86.o mmu.o emulate.o i8259.o irq.o lapic.o \
+ 			   i8254.o ioapic.o irq_comm.o cpuid.o pmu.o
++kvm-$(CONFIG_KVM_DEVICE_ASSIGNMENT)	+= assigned-dev.o iommu.o
+ kvm-intel-y		+= vmx.o
+ kvm-amd-y		+= svm.o
+ 
+diff --git a/virt/kvm/assigned-dev.c b/arch/x86/kvm/assigned-dev.c
+similarity index 99%
+rename from virt/kvm/assigned-dev.c
+rename to arch/x86/kvm/assigned-dev.c
+index e05000e..0cfd54f5f 100644
+--- a/virt/kvm/assigned-dev.c
++++ b/arch/x86/kvm/assigned-dev.c
+@@ -20,6 +20,7 @@
+ #include <linux/namei.h>
+ #include <linux/fs.h>
+ #include "irq.h"
++#include "assigned-dev.h"
+ 
+ static struct kvm_assigned_dev_kernel *kvm_find_assigned_dev(struct list_head *head,
+ 						      int assigned_dev_id)
+diff --git a/arch/x86/kvm/assigned-dev.h b/arch/x86/kvm/assigned-dev.h
+new file mode 100644
+index 0000000..4caabc5
+--- /dev/null
++++ b/arch/x86/kvm/assigned-dev.h
+@@ -0,0 +1,59 @@
++#ifndef ARCH_X86_KVM_ASSIGNED_DEV_H
++#define ARCH_X86_KVM_ASSIGNED_DEV_H
++
++#include <linux/kvm_host.h>
++
++#ifdef CONFIG_KVM_DEVICE_ASSIGNMENT
++struct kvm_assigned_dev_kernel {
++	struct kvm_irq_ack_notifier ack_notifier;
++	struct list_head list;
++	int assigned_dev_id;
++	int host_segnr;
++	int host_busnr;
++	int host_devfn;
++	unsigned int entries_nr;
++	int host_irq;
++	bool host_irq_disabled;
++	bool pci_2_3;
++	struct msix_entry *host_msix_entries;
++	int guest_irq;
++	struct msix_entry *guest_msix_entries;
++	unsigned long irq_requested_type;
++	int irq_source_id;
++	int flags;
++	struct pci_dev *dev;
++	struct kvm *kvm;
++	spinlock_t intx_lock;
++	spinlock_t intx_mask_lock;
++	char irq_name[32];
++	struct pci_saved_state *pci_saved_state;
++};
++
++int kvm_assign_device(struct kvm *kvm,
++		      struct kvm_assigned_dev_kernel *assigned_dev);
++int kvm_deassign_device(struct kvm *kvm,
++			struct kvm_assigned_dev_kernel *assigned_dev);
++
++int kvm_iommu_map_guest(struct kvm *kvm);
++int kvm_iommu_unmap_guest(struct kvm *kvm);
++
++long kvm_vm_ioctl_assigned_device(struct kvm *kvm, unsigned ioctl,
++				  unsigned long arg);
++
++void kvm_free_all_assigned_devices(struct kvm *kvm);
++#else
++static inline int kvm_iommu_unmap_guest(struct kvm *kvm)
++{
++	return 0;
++}
++
++static inline long kvm_vm_ioctl_assigned_device(struct kvm *kvm, unsigned ioctl,
++						unsigned long arg)
++{
++	return -ENOTTY;
++}
++
++static inline void kvm_free_all_assigned_devices(struct kvm *kvm) {}
++#endif /* CONFIG_KVM_DEVICE_ASSIGNMENT */
++
++#endif /* ARCH_X86_KVM_ASSIGNED_DEV_H */
+diff --git a/virt/kvm/iommu.c b/arch/x86/kvm/iommu.c
+similarity index 99%
+rename from virt/kvm/iommu.c
+rename to arch/x86/kvm/iommu.c
+index c1e6ae9..91b0f48 100644
+--- a/virt/kvm/iommu.c
++++ b/arch/x86/kvm/iommu.c
+@@ -31,6 +31,7 @@
+ #include <linux/dmar.h>
+ #include <linux/iommu.h>
+ #include <linux/intel-iommu.h>
++#include "assigned-dev.h"
+ 
+ static bool allow_unsafe_assigned_interrupts;
+ module_param_named(allow_unsafe_assigned_interrupts,
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 5337039..c42bca4 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -27,6 +27,7 @@
+ #include "kvm_cache_regs.h"
+ #include "x86.h"
+ #include "cpuid.h"
++#include "assigned-dev.h"
+ 
+ #include <linux/clocksource.h>
+ #include <linux/interrupt.h>
+@@ -4007,7 +4008,7 @@ long kvm_arch_vm_ioctl(struct file *filp,
+ 	}
+ 
+ 	default:
+-		;
++		r = kvm_vm_ioctl_assigned_device(kvm, ioctl, arg);
+ 	}
+ out:
+ 	return r;
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index d2d4270..6dcd820 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -718,31 +718,6 @@ struct kvm_irq_ack_notifier {
+ 	void (*irq_acked)(struct kvm_irq_ack_notifier *kian);
+ };
+ 
+-struct kvm_assigned_dev_kernel {
+-	struct kvm_irq_ack_notifier ack_notifier;
+-	struct list_head list;
+-	int assigned_dev_id;
+-	int host_segnr;
+-	int host_busnr;
+-	int host_devfn;
+-	unsigned int entries_nr;
+-	int host_irq;
+-	bool host_irq_disabled;
+-	bool pci_2_3;
+-	struct msix_entry *host_msix_entries;
+-	int guest_irq;
+-	struct msix_entry *guest_msix_entries;
+-	unsigned long irq_requested_type;
+-	int irq_source_id;
+-	int flags;
+-	struct pci_dev *dev;
+-	struct kvm *kvm;
+-	spinlock_t intx_lock;
+-	spinlock_t intx_mask_lock;
+-	char irq_name[32];
+-	struct pci_saved_state *pci_saved_state;
+-};
+-
+ int kvm_irq_map_gsi(struct kvm *kvm,
+ 		    struct kvm_kernel_irq_routing_entry *entries, int gsi);
+ int kvm_irq_map_chip_pin(struct kvm *kvm, unsigned irqchip, unsigned pin);
+@@ -764,12 +739,6 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id);
+ #ifdef CONFIG_KVM_DEVICE_ASSIGNMENT
+ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot);
+ void kvm_iommu_unmap_pages(struct kvm *kvm, struct kvm_memory_slot *slot);
+-int kvm_iommu_map_guest(struct kvm *kvm);
+-int kvm_iommu_unmap_guest(struct kvm *kvm);
+-int kvm_assign_device(struct kvm *kvm,
+-		      struct kvm_assigned_dev_kernel *assigned_dev);
+-int kvm_deassign_device(struct kvm *kvm,
+-			struct kvm_assigned_dev_kernel *assigned_dev);
+ #else
+ static inline int kvm_iommu_map_pages(struct kvm *kvm,
+ 				      struct kvm_memory_slot *slot)
+@@ -781,11 +750,6 @@ static inline void kvm_iommu_unmap_pages(struct kvm *kvm,
+ 					 struct kvm_memory_slot *slot)
+ {
+ }
+-
+-static inline int kvm_iommu_unmap_guest(struct kvm *kvm)
+-{
+-	return 0;
+-}
+ #endif
+ 
+ static inline void kvm_guest_enter(void)
+@@ -1005,25 +969,6 @@ static inline bool kvm_vcpu_compatible(struct kvm_vcpu *vcpu) { return true; }
+ 
+ #endif
+ 
+-#ifdef CONFIG_KVM_DEVICE_ASSIGNMENT
+-
+-long kvm_vm_ioctl_assigned_device(struct kvm *kvm, unsigned ioctl,
+-				  unsigned long arg);
+-
+-void kvm_free_all_assigned_devices(struct kvm *kvm);
+-
+-#else
+-
+-static inline long kvm_vm_ioctl_assigned_device(struct kvm *kvm, unsigned ioctl,
+-						unsigned long arg)
+-{
+-	return -ENOTTY;
+-}
+-
+-static inline void kvm_free_all_assigned_devices(struct kvm *kvm) {}
+-
+-#endif
+-
+ static inline void kvm_make_request(int req, struct kvm_vcpu *vcpu)
+ {
+ 	set_bit(req, &vcpu->requests);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 3be4342..5b45330 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -2582,8 +2582,6 @@ static long kvm_vm_ioctl(struct file *filp,
+ 		break;
+ 	default:
+ 		r = kvm_arch_vm_ioctl(filp, ioctl, arg);
+-		if (r == -ENOTTY)
+-			r = kvm_vm_ioctl_assigned_device(kvm, ioctl, arg);
+ 	}
+ out:
+ 	return r;
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+2.1.0
 
