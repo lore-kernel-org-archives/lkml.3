@@ -1,175 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751276AbaKXB4t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 20:56:49 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:48407 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884AbaKXB4r (ORCPT
+	id S1751541AbaKXCAg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 21:00:36 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50612 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750804AbaKXCAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 20:56:47 -0500
-Message-ID: <5472904F.8090009@oracle.com>
-Date: Mon, 24 Nov 2014 09:56:31 +0800
-From: ethan zhao <ethan.zhao@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Linda Knippers <ljklists@gmail.com>
-CC: Ethan Zhao <ethan.kernel@gmail.com>,
-        Kristen Carlson Accardi <kristen@linux.intel.com>,
-        "<dirk.j.brandewie@intel.com>" <dirk.j.brandewie@intel.com>,
-        "<viresh.kumar@linaro.org>" <viresh.kumar@linaro.org>,
-        "<rjw@rjwysocki.net>" <rjw@rjwysocki.net>,
-        "<corbet@lwn.net>" <corbet@lwn.net>,
-        "<linux-doc@vger.kernel.org>" <linux-doc@vger.kernel.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<linux-pm@vger.kernel.org>" <linux-pm@vger.kernel.org>,
-        "<joe.jin@oracle.com>" <joe.jin@oracle.com>,
-        "<brian.maly@oracle.com>" <brian.maly@oracle.com>
-Subject: Re: [PATCH 3/3] intel_pstate: add module and kernel command line
- parameter to ignore ACPI _PPC
-References: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com>	<1416299826-15813-8-git-send-email-ethan.zhao@oracle.com>	<20141119110548.24a0a808@kcaccard-desk.amr.corp.intel.com>	<41ADCDB8-C204-4661-833B-F68E7D687B61@gmail.com>	<20141120132317.00ad7210@kcaccard-desk.amr.corp.intel.com> <CABawtvO57bTEs2qCd1SRaOX-R24_VJYmHFLAoUatTRnmuenrdg@mail.gmail.com> <546EC6FE.1030807@gmail.com>
-In-Reply-To: <546EC6FE.1030807@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Sun, 23 Nov 2014 21:00:35 -0500
+Message-ID: <1416794418.7215.74.camel@decadent.org.uk>
+Subject: Re: [PATCH 17/17] rds: switch rds_message_copy_from_user() to
+ iov_iter
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        target-devel@vger.kernel.org, nab@linux-iscsi.org, hch@infradead.org
+Date: Mon, 24 Nov 2014 02:00:18 +0000
+In-Reply-To: <20141122043920.GQ30478@ZenIV.linux.org.uk>
+References: <20141119.165340.2162829993279387495.davem@davemloft.net>
+	 <20141120214753.GR7996@ZenIV.linux.org.uk>
+	 <20141120.182339.972861702759954603.davem@davemloft.net>
+	 <20141121.122615.1091044030302005883.davem@davemloft.net>
+	 <20141122042856.GZ7996@ZenIV.linux.org.uk>
+	 <20141122043920.GQ30478@ZenIV.linux.org.uk>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-ClvvWzAJDmUPsrm32NzH"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linda,
 
-On 2014/11/21 13:00, Linda Knippers wrote:
->
-> On 11/20/2014 10:07 PM, Ethan Zhao wrote:
->> Kristen,
->>     Whatever I would like there is a way to load intel_pstate and give
->> it a try even it does not support all the PM features.
->>     I think 'force' is OK.
->> Linda,
->>    Do you like it ? if the 'intel_pstate=force' would force the driver
->> to be loaded on to HP too ?
-> I'd prefer that it didn't.  If you force the intel_pstate driver when
-> the platform thinks it's doing power management, then the OS and the
-> firmware are trying to manage the power at the same time.  That's a
-> mess.  If you want that for testing or debugging, what are you actually
-> testing or debugging?  On an Oracle box, the firmware wouldn't stop
-> doing whatever it's doing just because the intel_pstate driver is
-> loaded, would it?
-  Yes, the platform wouldn't stop doing PM and the SCI even the intel_pstate
-  was loaded.
-  That option just give someone a chance who said "whatever I like 
-intel_pstate
-  On Oracle Servers"
->
-> I also wonder what it means to "force" the intel_pstate driver
-> on systems with processors that aren't supported by the intel_pstate
-> driver.  It wouldn't really be forced, would it?
-  Yes, wouldn't, such as AMD cpu-id and some old intel CPUs released 
-before SandyBridge.
-  So the best way to to do the 'force' should be specific enough for 
-"Oracle Sun server"
+--=-ClvvWzAJDmUPsrm32NzH
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-  Thanks,
-  Ethan
->
-> -- ljk
->
->> Thanks,
->> Ethan
->>
->> On Fri, Nov 21, 2014 at 5:23 AM, Kristen Carlson Accardi
->> <kristen@linux.intel.com> wrote:
->>> On Thu, 20 Nov 2014 08:57:34 +0800
->>> ethan <ethan.kernel@gmail.com> wrote:
->>>
->>>>
->>>>> 在 2014年11月20日，03:05，Kristen Carlson Accardi <kristen@linux.intel.com> 写道：
->>>>>
->>>>> On Tue, 18 Nov 2014 17:37:06 +0900
->>>>> Ethan Zhao <ethan.zhao@oracle.com> wrote:
->>>>>
->>>>>> Add kernel command line parameter
->>>>>> intel_pstate = ignore_acpi_ppc
->>>>>> and module parameter
->>>>>> ignore_acpi_ppc = 1
->>>>>> to allow driver to ignore the ACPI _PPC existence even for Sun x86 servers.
->>>>>> These parameter could be used for debug\test\workaround etc purpose.
->>>>>>
->>>>>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
->>>>> What if we used a more generic parameter like "force" that would bypass
->>>>> any vendor specific checks and just load anyway?  This way we don't have
->>>>> to add new parameters everything some new thing shows up that we want to
->>>>> ignore.
->>>>>
->>>> To be honest, I prefer more generic parameter. But to avoid the possible negative affect
->>>> To another vendors. I back to this way.
->>> Well, your parameter can still impact other vendors as it is.  it
->>> is pretty typical to assume that using a parameter like "force" means
->>> you know what you are doing and accept the risks.  Especially if its
->>> documented as such.
->>>
->>>> Thanks,
->>>> Ethan
->>>>>> ---
->>>>>> Documentation/kernel-parameters.txt | 3 +++
->>>>>> drivers/cpufreq/intel_pstate.c      | 8 +++++++-
->>>>>> 2 files changed, 10 insertions(+), 1 deletion(-)
->>>>>>
->>>>>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->>>>>> index 4c81a86..f502b85 100644
->>>>>> --- a/Documentation/kernel-parameters.txt
->>>>>> +++ b/Documentation/kernel-parameters.txt
->>>>>> @@ -1446,6 +1446,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>>>>>                disable
->>>>>>                  Do not enable intel_pstate as the default
->>>>>>                  scaling driver for the supported processors
->>>>>> +               ignore_acpi_ppc
->>>>>> +             Ignore the existence of ACPI method _PPC for Sun x86 servers
->>>>>> +             and load the driver.
->>>>>>
->>>>>>     intremap=    [X86-64, Intel-IOMMU]
->>>>>>             on    enable Interrupt Remapping (default)
->>>>>> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
->>>>>> index 7c5faea..388387b 100644
->>>>>> --- a/drivers/cpufreq/intel_pstate.c
->>>>>> +++ b/drivers/cpufreq/intel_pstate.c
->>>>>> @@ -870,6 +870,7 @@ static struct cpufreq_driver intel_pstate_driver = {
->>>>>> };
->>>>>>
->>>>>> static int __initdata no_load;
->>>>>> +static unsigned int  ignore_acpi_ppc;
->>>>>>
->>>>>> static int intel_pstate_msrs_not_valid(void)
->>>>>> {
->>>>>> @@ -990,7 +991,7 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
->>>>>>             intel_pstate_no_acpi_pss())
->>>>>>             return true;
->>>>>>         if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
->>>>>> -            intel_pstate_has_acpi_ppc())
->>>>>> +            intel_pstate_has_acpi_ppc() && !ignore_acpi_ppc)
->>>>>>             return true;
->>>>>>     }
->>>>>>
->>>>>> @@ -1066,11 +1067,16 @@ static int __init intel_pstate_setup(char *str)
->>>>>>
->>>>>>     if (!strcmp(str, "disable"))
->>>>>>         no_load = 1;
->>>>>> +    if (!strcmp(str, "ignore_acpi_ppc"))
->>>>>> +        ignore_acpi_ppc = 1;
->>>>>>     return 0;
->>>>>> }
->>>>>> early_param("intel_pstate", intel_pstate_setup);
->>>>>> #endif
->>>>>>
->>>>>> +module_param(ignore_acpi_ppc, uint, 0644);
->>>>>> +MODULE_PARM_DESC(ignore_acpi_ppc,
->>>>>> +    "value 0 or non-zero. non-zero -> ignore ACPI _PPC and load this driver");
->>>>>> MODULE_AUTHOR("Dirk Brandewie <dirk.j.brandewie@intel.com>");
->>>>>> MODULE_DESCRIPTION("'intel_pstate' - P state driver Intel Core processors");
->>>>>> MODULE_LICENSE("GPL");
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
+On Sat, 2014-11-22 at 04:39 +0000, Al Viro wrote:
+[...]
+> -		ret =3D rds_page_copy_from_user(sg_page(sg), sg->offset + sg_off,
+> -					      iov->iov_base + iov_off,
+> -					      to_copy);
+[...]
 
+It looks like rds_page_copy{,_from,_to}_user() are all unused after this
+change, so you could delete them.
+
+Ben.
+
+--=20
+Ben Hutchings
+Absolutum obsoletum. (If it works, it's out of date.) - Stafford Beer
+
+--=-ClvvWzAJDmUPsrm32NzH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAVHKROOe/yOyVhhEJAQrXNw/+JiKJ0QljIeeYF88W2Kpos+5VttSH2dy7
+800FKXth2Wqhh2kjHFyPspsGbTt+acPxL/SpPu1SVbyC93jFEFQg7/49zoKUTgV7
+CtrX981NHQFD9aXPJi/zspegYsDkdX83R7RcKd33Zu2M7GLAovVeV1smyqBAsmQ3
+EDDf5L8eQRvIwvRI/dhqaqr4Oxb/sZUt4+PbBbapfShbnFz4dY8VGNSKV192mOqv
+Rid0kVu7Tos7lMl1QodVfFO48acvSWjcWBslDtue+pNOFXJfw2ODAL4/JBptDjb9
+rx4Lpxdo5dysc4YmHTsX45lMBfdosnzStdJkImh1gBn1S15zmQMY6Q23+2m0SIdD
+STBwFX7Tk+nGnUeC2X5oHt7FRsRTBa4cytHVfe0lKoSRWy9Sl1ZsO8LU81CpS3Y+
+ahC2hMdUaY6/MOvkWYNY/MT7SdInhx/UqZcefjMRVZOSBHGsc6UFW5Z34xLvGXK2
+wGgOxDKrOGqnTpgqBBLF3G4YoplPAXglbLTo53H7ZRvAjUuZsdVOFrx5ydDFyk0N
+CtdgloPR51o5FYx++NLQSzb3BpO1uilYUdFxbmhzqunlK3TM+G+F710157xgdRSo
+8WLf5Q9zyGaSE1pj9AKeQvp/Hzen5DzTptxdoXsiSz4/T7AleelUN1b0/Rn7hv4Q
+V3j863D8Jss=
+=kgT5
+-----END PGP SIGNATURE-----
+
+--=-ClvvWzAJDmUPsrm32NzH--
