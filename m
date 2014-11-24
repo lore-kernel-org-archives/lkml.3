@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751564AbaKYOSA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:18:00 -0500
-Received: from sauhun.de ([89.238.76.85]:32869 "EHLO pokefinder.org"
+	id S1751563AbaKYOUa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:20:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41919 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470AbaKYOR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:17:57 -0500
-Date: Tue, 25 Nov 2014 15:19:24 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Alexander Kochetkov <al.kochet@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Kevin Hilman <khilman@kernel.org>
-Subject: Re: [PATCH v2] omap: i2c: don't check bus state IP rev3.3 and earlier
-Message-ID: <20141125141924.GD1843@katana>
-References: <20141124210809.GG2817@atomide.com>
- <1416867655-22232-1-git-send-email-al.kochet@gmail.com>
+	id S1750830AbaKYOU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 09:20:27 -0500
+Date: Mon, 24 Nov 2014 12:30:08 +0100
+From: Jan Kara <jack@suse.cz>
+To: David Drysdale <drysdale@google.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCHv2 1/1] vfs: renumber FMODE_NONOTIFY and add to uniqueness
+ check
+Message-ID: <20141124113008.GF1888@quack.suse.cz>
+References: <1416828199-3414-1-git-send-email-drysdale@google.com>
+ <1416828199-3414-2-git-send-email-drysdale@google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Hf61M2y+wYpnELGG"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416867655-22232-1-git-send-email-al.kochet@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1416828199-3414-2-git-send-email-drysdale@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon 24-11-14 11:23:19, David Drysdale wrote:
+> Fix clashing values for O_PATH and FMODE_NONOTIFY on sparc.
+> The clashing O_PATH value was added in 5229645bdc35f1cc43eb ("vfs: add
+> nonconflicting values for O_PATH") but this can't be changed as it
+> is user-visible.
+> 
+> FMODE_NONOTIFY is only used internally in the kernel, but it is in
+> the same numbering space as the other O_* flags, as indicated by the
+> comment at the top of include/uapi/asm-generic/fcntl.h (and its use
+> in fs/notify/fanotify/fanotify_user.c).  So renumber it to avoid
+> the clash.
+> 
+> All of this has happened before (12ed2e36c98aec6c4155, "fanotify:
+> FMODE_NONOTIFY and __O_SYNC in sparc conflict"), and all of this
+> will happen again -- so update the uniqueness check in fcntl_init()
+> to include __FMODE_NONOTIFY.
+> 
+> Signed-off-by: David Drysdale <drysdale@google.com>
+> Acked-by: David S. Miller <davem@davemloft.net>
+  Looks good. You can add:
+Acked-by: Jan Kara <jack@suse.cz>
 
---Hf61M2y+wYpnELGG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+								Honza
 
-On Tue, Nov 25, 2014 at 02:20:55AM +0400, Alexander Kochetkov wrote:
-> Commit 903c3859f77f9b0aace551da03267ef7a211dbc4 ("i2c: omap: implement
-> workaround for handling invalid BB-bit values") introduce the error result
-> in boot test fault on OMAP3530 boards
->=20
-> The patch fix the error (disable i2c bus test for OMAP3530).
->=20
-> Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-> Fixes: 903c3859f77f9b0aace551da03267ef7a211dbc4
-> Reported-by: Kevin Hilman <khilman@kernel.org>
-> Tested-by: Tony Lindgren <tony@atomide.com>
->=20
-
-Applied to for-next, thanks!
-
-I'll push out this evening to make the boot tests work again. If there
-is more to be investigated, either hurry up and post v3 ;) or let me
-know that you need more time.
-
-
---Hf61M2y+wYpnELGG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUdI/rAAoJEBQN5MwUoCm27vwP/26YUQ12x4vab6NKhQEEca2v
-YvdWWNl9E2SrI3DiaBbjY44stVpkg6OEl6lsyxUs/AqQQRfjutWyDyexyELWpPkj
-NMQ2H5tPuIg6WIuo8UawRheoFumy8LnXUXCHz84J53cd8HsNyDy9+8SjNqolqMAM
-t3tPeoR/atBk6JzlCuyvLZajUkfPB8VwZ1mmDfvHHwYFSzbM01D72opWJORvowPn
-WwCKzgEEqa1ym0mjoIukI/NGe+4Sj3LVzZz9hUMFhdNHfcMSUdJ0I0vEEGb0nbnJ
-/knCHluL7SsNtilnBathDTMYAW6YTKvnimEBxhOj+MmemVkCzCrqG2J7M4wPHwBg
-qI2kfd4jezwXJeJGHJX4hMu1kDQiM6N5P9kZMOUKT+yFYaZmJPUaN3ozpjBJkzeN
-H1Nos8B+ovFVP5tgBtJp1e3AePTga7BFNq2HWF4m2oUXVuITDAeReZxDV2YJYL7q
-OrhCBDFrrrhAA0Ldh7l0KWb225Q2ZZKRM3NOrrWFKfuYXV7O3FtoACWS6H8K5zJ8
-DGrfKO7jzTntNdacv6yWpqkEtyETnNHuE1BUF9bT14Br6FJHXuONXR11Ne83aZ3I
-CHBVxa3xgYPvnmmZMSvi2IQ7Qprln5XdP1QKGlVYzSqpiFWrWOk7OjHhbSHBK/HO
-4GjuVWmrBkqnWA003sCL
-=zl1p
------END PGP SIGNATURE-----
-
---Hf61M2y+wYpnELGG--
+> ---
+>  fs/fcntl.c                       | 5 +++--
+>  include/linux/fs.h               | 2 +-
+>  include/uapi/asm-generic/fcntl.h | 2 +-
+>  3 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/fcntl.c b/fs/fcntl.c
+> index 99d440a4a6ba..ee85cd4e136a 100644
+> --- a/fs/fcntl.c
+> +++ b/fs/fcntl.c
+> @@ -740,14 +740,15 @@ static int __init fcntl_init(void)
+>  	 * Exceptions: O_NONBLOCK is a two bit define on parisc; O_NDELAY
+>  	 * is defined as O_NONBLOCK on some platforms and not on others.
+>  	 */
+> -	BUILD_BUG_ON(20 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
+> +	BUILD_BUG_ON(21 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
+>  		O_RDONLY	| O_WRONLY	| O_RDWR	|
+>  		O_CREAT		| O_EXCL	| O_NOCTTY	|
+>  		O_TRUNC		| O_APPEND	| /* O_NONBLOCK	| */
+>  		__O_SYNC	| O_DSYNC	| FASYNC	|
+>  		O_DIRECT	| O_LARGEFILE	| O_DIRECTORY	|
+>  		O_NOFOLLOW	| O_NOATIME	| O_CLOEXEC	|
+> -		__FMODE_EXEC	| O_PATH	| __O_TMPFILE
+> +		__FMODE_EXEC	| O_PATH	| __O_TMPFILE	|
+> +		__FMODE_NONOTIFY
+>  		));
+>  
+>  	fasync_cache = kmem_cache_create("fasync_cache",
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 9ab779e8a63c..fc1c2488adbc 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -134,7 +134,7 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
+>  #define FMODE_CAN_WRITE         ((__force fmode_t)0x40000)
+>  
+>  /* File was opened by fanotify and shouldn't generate fanotify events */
+> -#define FMODE_NONOTIFY		((__force fmode_t)0x1000000)
+> +#define FMODE_NONOTIFY		((__force fmode_t)0x4000000)
+>  
+>  /*
+>   * Flag for rw_copy_check_uvector and compat_rw_copy_check_uvector
+> diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
+> index 7543b3e51331..e063effe0cc1 100644
+> --- a/include/uapi/asm-generic/fcntl.h
+> +++ b/include/uapi/asm-generic/fcntl.h
+> @@ -5,7 +5,7 @@
+>  
+>  /*
+>   * FMODE_EXEC is 0x20
+> - * FMODE_NONOTIFY is 0x1000000
+> + * FMODE_NONOTIFY is 0x4000000
+>   * These cannot be used by userspace O_* until internal and external open
+>   * flags are split.
+>   * -Eric Paris
+> -- 
+> 2.1.0.rc2.206.gedb03e5
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
