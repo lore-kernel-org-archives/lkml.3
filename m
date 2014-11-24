@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751110AbaKXUzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:55:22 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54812 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751057AbaKXUzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:55:18 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v3 4/7] crypto: AF_ALG: add AEAD support
-Date: Mon, 24 Nov 2014 21:55:13 +0100
-Message-ID: <3501347.TT3bRn0iCO@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.3-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20141124142945.GB31469@gondor.apana.org.au>
-References: <4088013.2O8zCP0xXa@tachyon.chronox.de> <2175035.5IWBGpA0Ko@tachyon.chronox.de> <20141124142945.GB31469@gondor.apana.org.au>
+	id S1751172AbaKXUzx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:55:53 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:33067 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802AbaKXUzw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 15:55:52 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH 1/3] platform: x86: dell-rbtn: Dell Airplane Mode Switch driver
+Date: Mon, 24 Nov 2014 21:55:47 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: Darren Hart <dvhart@infradead.org>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Alex Hung <alex.hung@canonical.com>
+References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com> <1416755361-17357-2-git-send-email-pali.rohar@gmail.com> <20141124200905.GB3459@srcf.ucam.org>
+In-Reply-To: <20141124200905.GB3459@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed;
+  boundary="nextPart6385597.ULYujmgbmj";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411242155.48087@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 24. November 2014, 22:29:46 schrieb Herbert Xu:
+--nextPart6385597.ULYujmgbmj
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Hi Herbert,
+On Monday 24 November 2014 21:09:05 Matthew Garrett wrote:
+> On Sun, Nov 23, 2014 at 04:09:19PM +0100, Pali Roh=C3=A1r wrote:
+> > +	/* NOTE: rbtn controls all radio devices, not only WLAN
+> > +	         but rfkill interface does not support "ANY" type
+> > +	         so "WLAN" type is used
+> > +	 */
+>=20
+> If it controls multiple radio types then you should register
+> multiple rfkill devices.
 
-> On Fri, Nov 21, 2014 at 06:32:16AM +0100, Stephan Mueller wrote:
-> > This patch adds the AEAD support for AF_ALG.
-> > 
-> > The AEAD implementation uses the entire memory handling and
-> > infrastructure of the existing skcipher implementation.
-> > 
-> > To use AEAD, the user space consumer has to use the salg_type named
-> > "aead". The AEAD extension only uses the bind callback as the key
-> > differentiator. The previously added functions that select whether to
-> > use AEAD or ablkcipher crypto API functions depend on the TFM type
-> > allocated during the bind() call.
-> > 
-> > The addition of AEAD brings a bit of overhead to calculate the size of
-> > the ciphertext, because the AEAD implementation of the kernel crypto API
-> > makes implied assumption on the location of the authentication tag. When
-> > performing an encryption, the tag will be added to the created
-> > ciphertext (note, the tag is placed adjacent to the ciphertext). For
-> > decryption, the caller must hand in the ciphertext with the tag appended
-> > to the ciphertext. Therefore, the selection of the used memory
-> > needs to add/subtract the tag size from the source/destination buffers
-> > depending on the encryption type. The code is provided with comments
-> > explainint when and how that operation is performed.
-> > 
-> > Note: The AF_ALG interface does not support zero length input data.
-> > Such zero length input data may be used if one wants to access the hash
-> > implementation of an AEAD directly (e.g. the GHASH of GCM or CMAC for
-> > CCM). However, this is a use case that is not of interest. GHASH or
-> > CMAC is directly available via the hash AF_ALG interface and we
-> > therefore do not need to take precautions for this use case.
-> > 
-> > A fully working example using all aspects of AEAD is provided at
-> > http://www.chronox.de/libkcapi.html
-> > 
-> > Signed-off-by: Stephan Mueller <smueller@chronox.de>
-> 
-> I appreciate the effort to share code, but shoe-horning AEAD into
-> algif_skcipher is just too ugly.
-> 
-> How about let's just start with a separate algif_aead and then
-> add helpers to merge common code as applicable?
+This is complicated. HW switch controls all radio devices and you=20
+do not know which are present in specified running machine. Also=20
+list of devices which HW switch controls can be edited in BIOS=20
+(on some machines). So what to do? We only know that it controls=20
+some devices...
 
-Instead of creating a separate algif_aead file, may I propose that the inline 
-functions wrapping the kernel crypto API calls to keep them in a separate 
-header file. That should remove code that distracts from the real 
-functionality.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-The only AEAD code that is left is the memory handling in the recvmsg and 
-setting the AD in sendmsg.
+--nextPart6385597.ULYujmgbmj
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Thanks
-> 
-> Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iEYEABECAAYFAlRzm1MACgkQi/DJPQPkQ1IOwwCeNx9P36I6wXEzJe0N3BTfEvlm
+fkoAoMx/SEFrVR9NSCo1AWydVwaVWu0h
+=rsm7
+-----END PGP SIGNATURE-----
 
--- 
-Ciao
-Stephan
+--nextPart6385597.ULYujmgbmj--
