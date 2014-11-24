@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011AbaKXCk5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 21:40:57 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:47332 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804AbaKXCkx (ORCPT
+	id S1752092AbaKXClF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 21:41:05 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:36378 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981AbaKXCk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 21:40:53 -0500
+	Sun, 23 Nov 2014 21:40:56 -0500
 From: Kevin Cernekee <cernekee@gmail.com>
 To: ralf@linux-mips.org
 Cc: f.fainelli@gmail.com, jfraser@broadcom.com, dtor@chromium.org,
         tglx@linutronix.de, jason@lakedaemon.net, jogo@openwrt.org,
         arnd@arndb.de, computersforpeace@gmail.com, linux-mips@linux-mips.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V3 02/11] irqchip: brcmstb-l2: don't clear wakeable interrupts at init time
-Date: Sun, 23 Nov 2014 18:40:37 -0800
-Message-Id: <1416796846-28149-3-git-send-email-cernekee@gmail.com>
+Subject: [PATCH V3 04/11] irqchip: bcm7120-l2: fix error handling of irq_of_parse_and_map
+Date: Sun, 23 Nov 2014 18:40:39 -0800
+Message-Id: <1416796846-28149-5-git-send-email-cernekee@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416796846-28149-1-git-send-email-cernekee@gmail.com>
 References: <1416796846-28149-1-git-send-email-cernekee@gmail.com>
@@ -23,51 +23,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Brian Norris <computersforpeace@gmail.com>
+From: Dmitry Torokhov <dtor@chromium.org>
 
-Wakeable interrupts might be pending at boot/init time, because wakeup
-interrupts might have triggered a resume from S5. So don't clear such
-wakeups.
+Return value of irq_of_parse_and_map() is unsigned int, with 0
+indicating failure, so testing for negative result never works.
 
-This means that any driver which requests a wakeable interrupt bit
-should be prepared to handle an interrupt as soon as they call
-request_irq(). (This is technically already the correct development
-practice, but some drivers probably expect not to receive interrupts
-until they have performed some I/O.)
-
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+Tested-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- drivers/irqchip/irq-brcmstb-l2.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/irqchip/irq-bcm7120-l2.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/irqchip/irq-brcmstb-l2.c b/drivers/irqchip/irq-brcmstb-l2.c
-index 4aa653a0ac72..4edd27c486c4 100644
---- a/drivers/irqchip/irq-brcmstb-l2.c
-+++ b/drivers/irqchip/irq-brcmstb-l2.c
-@@ -136,7 +136,11 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
+diff --git a/drivers/irqchip/irq-bcm7120-l2.c b/drivers/irqchip/irq-bcm7120-l2.c
+index e7c6155b23b8..8eec8e1201d9 100644
+--- a/drivers/irqchip/irq-bcm7120-l2.c
++++ b/drivers/irqchip/irq-bcm7120-l2.c
+@@ -102,9 +102,9 @@ static int bcm7120_l2_intc_init_one(struct device_node *dn,
+ 	unsigned int idx;
  
- 	/* Disable all interrupts by default */
- 	writel(0xffffffff, data->base + CPU_MASK_SET);
--	writel(0xffffffff, data->base + CPU_CLEAR);
-+
-+	/* Wakeup interrupts may be retained from S5 (cold boot) */
-+	data->can_wake = of_property_read_bool(np, "brcm,irq-can-wake");
-+	if (!data->can_wake)
-+		writel(0xffffffff, data->base + CPU_CLEAR);
+ 	parent_irq = irq_of_parse_and_map(dn, irq);
+-	if (parent_irq < 0) {
++	if (!parent_irq) {
+ 		pr_err("failed to map interrupt %d\n", irq);
+-		return parent_irq;
++		return -EINVAL;
+ 	}
  
- 	data->parent_irq = irq_of_parse_and_map(np, 0);
- 	if (data->parent_irq < 0) {
-@@ -188,8 +192,7 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
- 	ct->chip.irq_suspend = brcmstb_l2_intc_suspend;
- 	ct->chip.irq_resume = brcmstb_l2_intc_resume;
- 
--	if (of_property_read_bool(np, "brcm,irq-can-wake")) {
--		data->can_wake = true;
-+	if (data->can_wake) {
- 		/* This IRQ chip can wake the system, set all child interrupts
- 		 * in wake_enabled mask
- 		 */
+ 	/* For multiple parent IRQs with multiple words, this looks like:
 -- 
 2.1.1
 
