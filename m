@@ -1,76 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717AbaKXTG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 14:06:59 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:56021 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530AbaKXTG5 (ORCPT
+	id S1754764AbaKXTHL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 14:07:11 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:36256 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351AbaKXTHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 14:06:57 -0500
-Date: Mon, 24 Nov 2014 20:06:49 +0100 (CET)
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
-X-X-Sender: sebott@denkbrett
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH 1/1] s390/pci: Deletion of unnecessary checks before the
- function call "debug_unregister"
-In-Reply-To: <54709827.4050408@users.sourceforge.net>
-Message-ID: <alpine.LFD.2.11.1411242004590.1608@denkbrett>
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net>
- <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <54709827.4050408@users.sourceforge.net>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
- =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
+	Mon, 24 Nov 2014 14:07:05 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112419-0009-0000-0000-0000021E2C50
+In-Reply-To: <20141124184856.GA9349@laptop.dumpdata.com>
+References: <CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
+	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
+	<CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
+	<20141121142301.564f7eb7@gandalf.local.home>
+	<CA+55aFw6w+pkG7fs7tBVm7jV_TjsnEyG5XDdk+Ghf5Af+ELUeA@mail.gmail.com>
+	<CA+55aFwOL8thHWWLtuzXkriEH1mJDCQO=NUsMRPptDXc6HC4sg@mail.gmail.com>
+	<CALCETrX9CNx+Zs3timzxoccrqia1RiaOe5dj7crENnt2W6PGjg@mail.gmail.com>
+	<CA+5PVA4mgpAg53bQKnXXgY3N0mkEZrUYf4rgOTHCV-pbK9UF3g@mail.gmail.com>
+	<CALCETrUT3Pn0ZCMsgp9dyDvoaiszCrQRc4159Tyggo5wA6Mp7w@mail.gmail.com>
+	<CA+5PVA5L1Vcs+nrJWZ+jXgnhQMZ_L22rksopPnO7Wt04jD3kUQ@mail.gmail.com>
+	<20141124184856.GA9349@laptop.dumpdata.com>
+Date: Mon, 24 Nov 2014 14:07:04 -0500
+X-Google-Sender-Auth: cqMGhNndotkAxBhm678MzyR4c6Q
+Message-ID: <CA+5PVA5pzWbvfLeu41CxFDGrwRruhx6_fQyR0=+kcbr9C1wuyw@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 Nov 2014, SF Markus Elfring wrote:
+On Mon, Nov 24, 2014 at 1:48 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Fri, Nov 21, 2014 at 03:23:13PM -0500, Josh Boyer wrote:
+>> On Fri, Nov 21, 2014 at 3:16 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> > On Fri, Nov 21, 2014 at 12:14 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+>> >> On Fri, Nov 21, 2014 at 2:52 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> >>> On Fri, Nov 21, 2014 at 11:46 AM, Linus Torvalds
+>> >>> <torvalds@linux-foundation.org> wrote:
+>> >>>> On Fri, Nov 21, 2014 at 11:34 AM, Linus Torvalds
+>> >>>> <torvalds@linux-foundation.org> wrote:
+>> >>>>>
+>> >>>>> So I kind of agree, but it wouldn't be my primary worry. My primary
+>> >>>>> worry is actually paravirt doing something insane.
+>> >>>>
+>> >>>> Btw, on that tangent, does anybody actually care about paravirt any more?
+>> >>>>
+>> >>>
+>> >>> Amazon, for better or for worse.
+>
+> And distros: Oracle and Novell.
+>
+>> >>>
+>> >>>> I'd love to start moving away from it. It makes a lot of the low-level
+>> >>>> code completely impossible to follow due to the random indirection
+>> >>>> through "native" vs "paravirt op table". Not just the page table
+>> >>>> handling, it's all over.
+>> >>>>
+>> >>>> Anybody who seriously does virtualization uses hw virtualization that
+>> >>>> is much better than it used to be. And the non-serious users aren't
+>> >>>> that performance-sensitive by definition.
+>
+> I would point out that the PV paravirt spinlock gives an huge boost
+> for virtualization guests (this is for both KVM and Xen).
+>> >>>>
+>> >>>> I note that the Fedora kernel config seems to include paravirt by
+>> >>>> default, so you get a lot of the crazy overheads..
+>
+> Not that much. We ran benchmarks and it was in i-cache overhead - and
+> the numbers came out to be sub-1% percent.
+>> >>>
+>> >>> I think that there is a move toward deprecating Xen PV in favor of
+>> >>> PVH, but we're not there yet.
+>> >>
+>> >> A move where?  The Xen stuff in Fedora is ... not paid attention to
+>> >> very much.  If there's something we should be looking at turning off
+>> >> (or on), we're happy to take suggestions.
+>> >
+>> > A move in the Xen project.  As I understand it, Xen wants to deprecate
+>> > PV in favor of PVH, but PVH is still experimental.
+>>
+>> OK.
+>>
+>> > I think that dropping PARAVIRT in Fedora might be a bad idea for
+>> > several more releases, since that's likely to break the EC2 images.
+>>
+>> Yes, that's essentially the only reason we haven't looked at disabling
+>> Xen completely for a while now, so <sad trombone>.
+>
+> Heh. Didn't know you could play on a trombone!
 
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Sat, 22 Nov 2014 15:00:55 +0100
-> 
-> The debug_unregister() function performs also input parameter validation.
-> Thus the test around the call is not needed.
-> 
-> This issue was detected by using the Coccinelle software.
-> 
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
-> ---
->  arch/s390/pci/pci_debug.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/s390/pci/pci_debug.c b/arch/s390/pci/pci_debug.c
-> index eec598c..18403a7 100644
-> --- a/arch/s390/pci/pci_debug.c
-> +++ b/arch/s390/pci/pci_debug.c
-> @@ -158,10 +158,8 @@ int __init zpci_debug_init(void)
-> 
->  void zpci_debug_exit(void)
->  {
-> -	if (pci_debug_msg_id)
-> -		debug_unregister(pci_debug_msg_id);
-> -	if (pci_debug_err_id)
-> -		debug_unregister(pci_debug_err_id);
-> +	debug_unregister(pci_debug_msg_id);
-> +	debug_unregister(pci_debug_err_id);
-> 
->  	debugfs_remove(debugfs_root);
->  }
+It's sad because I can't really play the trombone and it sounds horrible.
 
-Applied.
+> As I had mentioned in the past - if there are Xen related bugs on
+> Fedora please CC me on them. Or perhaps CC xen-devel@lists.xenproject.org
+> if that is possible.
 
-Thanks,
-Sebastian
+Indeed, you have been massively helpful.  My comment on it being not
+well paid attention to was a reflection on the distro maintainers, not
+you.  You've been great once we notice the Xen issue, but that takes a
+while on our part and it isn't the best of user experiences :\.
 
+> And as Andy has mentioned - we are moving towards using PVH as a way
+> to not use the PV MMU ops. But that is still off (<sad trombone played
+> from YouTube>).
+
+OK.  I'll try and do better at keeping up with things.
+
+josh
