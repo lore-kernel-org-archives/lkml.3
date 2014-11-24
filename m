@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751055AbaKXAiU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 19:38:20 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:58683 "HELO
+	id S1750966AbaKXAnJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 19:43:09 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57713 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750758AbaKXAiS (ORCPT
+	with SMTP id S1750758AbaKXAnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 19:38:18 -0500
+	Sun, 23 Nov 2014 19:43:07 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Aaron Lu <aaron.lu@intel.com>
 Cc: Lee Jones <lee.jones@linaro.org>,
         Jacob Pan <jacob.jun.pan@linux.intel.com>,
         Yegnesh Iyer <yegnesh.s.iyer@intel.com>, linux-acpi@vger.kernel.org,
         linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] ACPI / PMIC: support PMIC operation region for CrystalCove
-Date: Mon, 24 Nov 2014 01:59:28 +0100
-Message-ID: <1648486.v4se7VimfK@vostro.rjw.lan>
+Subject: Re: [PATCH v3 2/3] ACPI / PMIC: support PMIC operation region for XPower AXP288
+Date: Mon, 24 Nov 2014 02:04:18 +0100
+Message-ID: <4442976.gicsivIv0q@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1416553911-22990-2-git-send-email-aaron.lu@intel.com>
-References: <1416553911-22990-1-git-send-email-aaron.lu@intel.com> <1416553911-22990-2-git-send-email-aaron.lu@intel.com>
+In-Reply-To: <1416553911-22990-3-git-send-email-aaron.lu@intel.com>
+References: <1416553911-22990-1-git-send-email-aaron.lu@intel.com> <1416553911-22990-3-git-send-email-aaron.lu@intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,88 +26,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 21, 2014 03:11:49 PM Aaron Lu wrote:
-> The Baytrail-T platform firmware has defined two customized operation
-> regions for PMIC chip Crystal Cove - one is for power resource handling
-> and one is for thermal: sensor temperature reporting, trip point setting,
-> etc. This patch adds support for them on top of the existing Crystal Cove
-> PMIC driver.
-> 
-> The reason to split code into a separate file intel_pmic.c is that there
-> are more PMIC drivers with ACPI operation region support coming and we can
-> re-use those code. The intel_pmic_opregion_data structure is created also
-> for this purpose: when we need to support a new PMIC's operation region,
-> we just need to fill those callbacks and the two register mapping tables.
+On Friday, November 21, 2014 03:11:50 PM Aaron Lu wrote:
+> The Baytrail-T-CR platform firmware has defined two customized operation
+> regions for PMIC chip Dollar Cove XPower - one is for power resource
+> handling and one is for thermal just like the CrystalCove one. This patch
+> adds support for them on top of the common PMIC opregion region code.
 > 
 > Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 > Acked-by: Lee Jones <lee.jones@linaro.org> for the MFD part
-
-Thanks for resending, looks better to me.
-
-Some nitpicking below.
-
 > ---
->  drivers/acpi/Kconfig               |  17 ++
->  drivers/acpi/Makefile              |   3 +
->  drivers/acpi/pmic/intel_pmic.c     | 339 +++++++++++++++++++++++++++++++++++++
->  drivers/acpi/pmic/intel_pmic.h     |  34 ++++
->  drivers/acpi/pmic/intel_pmic_crc.c | 216 +++++++++++++++++++++++
->  drivers/mfd/intel_soc_pmic_crc.c   |   3 +
->  6 files changed, 612 insertions(+)
->  create mode 100644 drivers/acpi/pmic/intel_pmic.c
->  create mode 100644 drivers/acpi/pmic/intel_pmic.h
->  create mode 100644 drivers/acpi/pmic/intel_pmic_crc.c
+>  drivers/acpi/Kconfig                  |   6 +
+>  drivers/acpi/Makefile                 |   1 +
+>  drivers/acpi/pmic/intel_pmic_xpower.c | 277 ++++++++++++++++++++++++++++++++++
+>  drivers/mfd/axp20x.c                  |   3 +
+>  4 files changed, 287 insertions(+)
+>  create mode 100644 drivers/acpi/pmic/intel_pmic_xpower.c
 > 
 > diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> index 79078b8f5697..3e5f2056f946 100644
+> index 3e5f2056f946..227f0692cbff 100644
 > --- a/drivers/acpi/Kconfig
 > +++ b/drivers/acpi/Kconfig
-> @@ -393,4 +393,21 @@ config ACPI_EXTLOG
->  	  driver adds support for that functionality with corresponding
->  	  tracepoint which carries that information to userspace.
+> @@ -408,6 +408,12 @@ config CRC_PMIC_OPREGION
+>  	help
+>  	  This config adds ACPI operation region support for CrystalCove PMIC.
 >  
-> +menuconfig PMIC_OPREGION
-> +	bool "PMIC (Power Management Integrated Circuit) operation region support"
+> +config XPOWER_PMIC_OPREGION
+> +	bool "ACPI operation region support for XPower AXP288 PMIC"
+> +	depends on AXP288_ADC
 > +	help
-> +	  Select this option to enable support for ACPI operation
-> +	  region of the PMIC chip. The operation region can be used
-> +	  to control power rails and sensor reading/writing on the
-> +	  PMIC chip.
+> +	  This config adds ACPI operation region support for XPower AXP288 PMIC.
 > +
-> +if PMIC_OPREGION
-> +config CRC_PMIC_OPREGION
-
-If that is the only possible choice for PMIC_OPREGION, it should be selected
-automatically.  Alternatively, PMIC_OPREGION should be selected automatically
-if CRC_PMIC_OPREGION is set.
-
-> +	bool "ACPI operation region support for CrystalCove PMIC"
-> +	depends on INTEL_SOC_PMIC
-> +	help
-> +	  This config adds ACPI operation region support for CrystalCove PMIC.
-> +
-> +endif
-> +
+>  endif
+>  
 >  endif	# ACPI
 > diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-> index 6d11522f0e48..f5938399ac14 100644
+> index f5938399ac14..f74317cc1ca9 100644
 > --- a/drivers/acpi/Makefile
 > +++ b/drivers/acpi/Makefile
-> @@ -88,3 +88,6 @@ obj-$(CONFIG_ACPI_PROCESSOR_AGGREGATOR) += acpi_pad.o
->  obj-$(CONFIG_ACPI_APEI)		+= apei/
+> @@ -91,3 +91,4 @@ obj-$(CONFIG_ACPI_EXTLOG)	+= acpi_extlog.o
 >  
->  obj-$(CONFIG_ACPI_EXTLOG)	+= acpi_extlog.o
-> +
-> +obj-$(CONFIG_PMIC_OPREGION)	+= pmic/intel_pmic.o
-> +obj-$(CONFIG_CRC_PMIC_OPREGION) += pmic/intel_pmic_crc.o
-> diff --git a/drivers/acpi/pmic/intel_pmic.c b/drivers/acpi/pmic/intel_pmic.c
+>  obj-$(CONFIG_PMIC_OPREGION)	+= pmic/intel_pmic.o
+>  obj-$(CONFIG_CRC_PMIC_OPREGION) += pmic/intel_pmic_crc.o
+> +obj-$(CONFIG_XPOWER_PMIC_OPREGION) += pmic/intel_pmic_xpower.o
+> diff --git a/drivers/acpi/pmic/intel_pmic_xpower.c b/drivers/acpi/pmic/intel_pmic_xpower.c
 > new file mode 100644
-> index 000000000000..5dbc0fb4d536
+> index 000000000000..6c4d6ce0cff1
 > --- /dev/null
-> +++ b/drivers/acpi/pmic/intel_pmic.c
-> @@ -0,0 +1,339 @@
+> +++ b/drivers/acpi/pmic/intel_pmic_xpower.c
+> @@ -0,0 +1,277 @@
 > +/*
-> + * intel_pmic.c - Intel PMIC operation region driver
+> + * intel_pmic_xpower.c - XPower AXP288 PMIC operation region driver
 > + *
 > + * Copyright (C) 2014 Intel Corporation. All rights reserved.
 > + *
@@ -123,692 +91,286 @@ if CRC_PMIC_OPREGION is set.
 > +
 > +#include <linux/module.h>
 > +#include <linux/acpi.h>
-> +#include <linux/regmap.h>
-> +#include "intel_pmic.h"
-> +
-> +#define PMIC_PMOP_OPREGION_ID		0x8d
-> +#define PMIC_THERMAL_OPREGION_ID	0x8c
-> +
-> +struct acpi_lpat {
-> +	int temp;
-> +	int raw;
-> +};
-> +
-> +struct intel_pmic_opregion {
-> +	struct mutex lock;
-> +	struct acpi_lpat *lpat;
-> +	int lpat_count;
-> +	struct regmap *regmap;
-> +	struct intel_pmic_opregion_data *data;
-> +};
-> +
-> +static struct pmic_pwr_reg *
-> +pmic_get_pwr_reg(int address, struct pmic_pwr_table *table, int count)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < count; i++) {
-> +		if (table[i].address == address)
-> +			return &table[i].pwr_reg;
-> +	}
-> +	return NULL;
-> +}
-> +
-> +static int
-> +pmic_get_thermal_reg(int address, struct pmic_thermal_table *table, int count)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < count; i++) {
-> +		if (table[i].address == address)
-> +			return table[i].reg;
-> +	}
-> +	return -ENOENT;
-> +}
-
-This is slightly inconsistent.  While pmic_get_pwr_reg() returns a pointer
-to struct pmic_pwr_reg, this one returns an int.
-
-I see that this is because the definitions of struct pmic_thermal_table
-and struct pmic_pwr_table are inconsistent, but is that really necessary?
-
-You could define
-
-struct pmic_table {
-	int address;	/* operation region address */
-	int reg;	/* corresponding PMIC register */
-	int bit;	/* control bit for power */
-};
-
-and use it for both power and thermal.  [The latter will not use the bit field,
-but is that really a problem?]
-
-It looks like some code duplication might be reduced this way.
-
-Besides, "power" looks better than "pwr", especially that you use "thermal"
-instead of "thrm" (for example).
-
-> +
-> +/* Return temperature from raw value through LPAT table */
-> +static int raw_to_temp(struct acpi_lpat *lpat, int count, int raw)
-> +{
-> +	int i, delta_temp, delta_raw, temp;
-> +
-> +	for (i = 0; i < count - 1; i++) {
-> +		if ((raw >= lpat[i].raw && raw <= lpat[i+1].raw) ||
-> +		    (raw <= lpat[i].raw && raw >= lpat[i+1].raw))
-> +			break;
-> +	}
-> +
-> +	if (i == count - 1)
-> +		return -ENOENT;
-> +
-> +	delta_temp = lpat[i+1].temp - lpat[i].temp;
-> +	delta_raw = lpat[i+1].raw - lpat[i].raw;
-> +	temp = lpat[i].temp + (raw - lpat[i].raw) * delta_temp / delta_raw;
-> +
-> +	return temp;
-> +}
-> +
-> +/* Return raw value from temperature through LPAT table */
-> +static int temp_to_raw(struct acpi_lpat *lpat, int count, int temp)
-> +{
-> +	int i, delta_temp, delta_raw, raw;
-> +
-> +	for (i = 0; i < count - 1; i++) {
-> +		if (temp >= lpat[i].temp && temp <= lpat[i+1].temp)
-> +			break;
-> +	}
-> +
-> +	if (i == count - 1)
-> +		return -ENOENT;
-> +
-> +	delta_temp = lpat[i+1].temp - lpat[i].temp;
-> +	delta_raw = lpat[i+1].raw - lpat[i].raw;
-> +	raw = lpat[i].raw + (temp - lpat[i].temp) * delta_raw / delta_temp;
-> +
-> +	return raw;
-> +}
-> +
-> +static void
-> +pmic_thermal_lpat(struct intel_pmic_opregion *opregion, acpi_handle handle,
-> +		  struct device *dev)
-> +{
-> +	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
-> +	union acpi_object *obj_p, *obj_e;
-> +	int *lpat, i;
-> +	acpi_status status;
-> +
-> +	status = acpi_evaluate_object(handle, "LPAT", NULL, &buffer);
-> +	if (ACPI_FAILURE(status))
-> +		return;
-> +
-> +	obj_p = (union acpi_object *)buffer.pointer;
-> +	if (!obj_p || (obj_p->type != ACPI_TYPE_PACKAGE) ||
-> +	    (obj_p->package.count % 2) || (obj_p->package.count < 4))
-> +		goto out;
-> +
-> +	lpat = devm_kmalloc(dev, sizeof(*lpat) * obj_p->package.count,
-> +			    GFP_KERNEL);
-
-This looks fishy.
-
-Of course, sizeof(*lpat) is the same as sizeof(int), but is more obfuscated
-and you're allocating memory for an array of integers.
-
-> +	if (!lpat)
-> +		goto out;
-> +
-> +	for (i = 0; i < obj_p->package.count; i++) {
-> +		obj_e = &obj_p->package.elements[i];
-> +		if (obj_e->type != ACPI_TYPE_INTEGER)
-
-lpat[] has to be freed here.
-
-> +			goto out;
-> +		lpat[i] = obj_e->integer.value;
-
-Here, integer.value is generally u64, so I'd use an explicit cast to s64 before
-casting that to int.  Otherwise it looks like you've forgotten about possible
-overflows, which I assume is not the case.
-
-> +	}
-> +
-> +	opregion->lpat = (struct acpi_lpat *)lpat;
-> +	opregion->lpat_count = obj_p->package.count / 2;
-> +
-> +out:
-> +	kfree(buffer.pointer);
-> +}
-> +
-> +static acpi_status
-> +intel_pmic_pmop_handler(u32 function, acpi_physical_address address,
-> +			u32 bits, u64 *value64, void *handler_context,
-> +			void *region_context)
-> +{
-> +	struct intel_pmic_opregion *opregion = region_context;
-> +	struct regmap *regmap = opregion->regmap;
-> +	struct intel_pmic_opregion_data *d = opregion->data;
-> +	struct pmic_pwr_reg *preg;
-> +	int result;
-> +
-> +	if (bits != 32 || !value64)
-> +		return AE_BAD_PARAMETER;
-> +
-> +	if (function == ACPI_WRITE && !(*value64 == 0 || *value64 == 1))
-> +		return AE_BAD_PARAMETER;
-> +
-> +	preg = pmic_get_pwr_reg(address, d->pwr_table, d->pwr_table_count);
-> +	if (!preg)
-> +		return AE_BAD_PARAMETER;
-> +
-> +	mutex_lock(&opregion->lock);
-> +
-> +	if (function == ACPI_READ)
-> +		result = d->get_power(regmap, preg, value64);
-> +	else
-> +		result = d->update_power(regmap, preg, *value64 == 1);
-
-I'd write that as
-
-	retult = function == ACPI_READ ?
-		d->get_power(regmap, preg, value64) :
-		d->update_power(regmap, preg, *value64 == 1);
-
-which will be consistent with the "return" statement below.
-
-> +
-> +	mutex_unlock(&opregion->lock);
-> +
-> +	return result ? AE_ERROR : AE_OK;
-> +}
-> +
-> +static acpi_status pmic_read_temp(struct intel_pmic_opregion *opregion,
-> +				  int reg, u64 *value)
-> +{
-> +	int raw_temp, temp;
-> +
-> +	if (!opregion->data->get_raw_temp)
-> +		return AE_BAD_PARAMETER;
-> +
-> +	raw_temp = opregion->data->get_raw_temp(opregion->regmap, reg);
-> +	if (raw_temp < 0)
-> +		return AE_ERROR;
-> +
-> +	if (!opregion->lpat) {
-> +		*value = raw_temp;
-> +		return AE_OK;
-> +	}
-> +
-> +	temp = raw_to_temp(opregion->lpat, opregion->lpat_count, raw_temp);
-> +	if (temp < 0)
-> +		return AE_ERROR;
-> +
-> +	*value = temp;
-> +	return AE_OK;
-> +}
-> +
-> +static acpi_status pmic_thermal_temp(struct intel_pmic_opregion *opregion,
-> +				     int reg, u32 function, u64 *value)
-> +{
-> +	if (function != ACPI_READ)
-> +		return AE_BAD_PARAMETER;
-> +
-> +	return pmic_read_temp(opregion, reg, value);
-
-What about
-
-	return function == ACPI_READ ?
-		pmic_read_temp(opregion, reg, value) : AE_BAD_PARAMETER;
-
-?
-
-> +}
-> +
-> +static acpi_status pmic_thermal_aux(struct intel_pmic_opregion *opregion,
-> +				    int reg, u32 function, u64 *value)
-> +{
-> +	int raw_temp;
-> +
-> +	if (function == ACPI_READ)
-> +		return pmic_read_temp(opregion, reg, value);
-> +
-> +	if (!opregion->data->update_aux)
-> +		return AE_BAD_PARAMETER;
-> +
-> +	if (opregion->lpat) {
-> +		raw_temp = temp_to_raw(opregion->lpat, opregion->lpat_count,
-> +					 *value);
-> +		if (raw_temp < 0)
-> +			return AE_ERROR;
-> +	} else {
-> +		raw_temp = *value;
-> +	}
-> +
-> +	return opregion->data->update_aux(opregion->regmap, reg, raw_temp) ?
-> +		AE_ERROR : AE_OK;
-
-You seem to be casting all error codes into AE_ERROR here.  Should the function
-simply return int and pass the original error code to the caller instead?
-
-> +}
-> +
-> +static acpi_status pmic_thermal_pen(struct intel_pmic_opregion *opregion,
-> +				    int reg, u32 function, u64 *value)
-> +{
-> +	struct intel_pmic_opregion_data *d = opregion->data;
-> +	struct regmap *regmap = opregion->regmap;
-> +
-> +	if (!d->get_policy || !d->update_policy)
-> +		return AE_BAD_PARAMETER;
-> +
-> +	if (function == ACPI_READ)
-> +		return d->get_policy(regmap, reg, value) ? AE_ERROR : AE_OK;
-> +
-> +	if (*value != 0 || *value != 1)
-> +		return AE_BAD_PARAMETER;
-> +
-> +	return d->update_policy(regmap, reg, *value) ? AE_ERROR : AE_OK;
-
-Well, same here.
-
-> +}
-> +
-> +static bool pmic_thermal_is_temp(int address)
-> +{
-> +	return (address <= 0x3c) && !(address % 12);
-> +}
-> +
-> +static bool pmic_thermal_is_aux(int address)
-> +{
-> +	return (address >= 4 && address <= 0x40 && !((address - 4) % 12)) ||
-> +	       (address >= 8 && address <= 0x44 && !((address - 8) % 12));
-> +}
-> +
-> +static bool pmic_thermal_is_pen(int address)
-> +{
-> +	return address >= 0x48 && address <= 0x5c;
-> +}
-> +
-> +static acpi_status
-> +intel_pmic_thermal_handler(u32 function, acpi_physical_address address,
-> +			   u32 bits, u64 *value64, void *handler_context,
-> +			   void *region_context)
-> +{
-> +	struct intel_pmic_opregion *opregion = region_context;
-> +	int reg;
-> +	int result;
-> +
-> +	if (bits != 32 || !value64)
-> +		return AE_BAD_PARAMETER;
-> +
-> +	reg = pmic_get_thermal_reg(address, opregion->data->thermal_table,
-> +				   opregion->data->thermal_table_count);
-> +	if (!reg)
-> +		return AE_BAD_PARAMETER;
-> +
-> +	mutex_lock(&opregion->lock);
-> +
-> +	result = AE_BAD_PARAMETER;
-> +	if (pmic_thermal_is_temp(address))
-> +		result = pmic_thermal_temp(opregion, reg, function, value64);
-> +	else if (pmic_thermal_is_aux(address))
-> +		result = pmic_thermal_aux(opregion, reg, function, value64);
-> +	else if (pmic_thermal_is_pen(address))
-> +		result = pmic_thermal_pen(opregion, reg, function, value64);
-> +
-> +	mutex_unlock(&opregion->lock);
-> +
-> +	return result;
-> +}
-> +
-> +int intel_pmic_install_opregion_handler(struct device *dev, acpi_handle handle,
-> +					struct regmap *regmap,
-> +					struct intel_pmic_opregion_data *d)
-> +{
-> +	acpi_status status;
-> +	struct intel_pmic_opregion *opregion;
-> +
-> +	if (!dev || !regmap || !d)
-> +		return -EINVAL;
-> +
-> +	if (!handle)
-> +		return -ENODEV;
-> +
-> +	opregion = devm_kzalloc(dev, sizeof(*opregion), GFP_KERNEL);
-> +	if (!opregion)
-> +		return -ENOMEM;
-> +
-> +	mutex_init(&opregion->lock);
-> +	opregion->regmap = regmap;
-> +	pmic_thermal_lpat(opregion, handle, dev);
-> +
-> +	status = acpi_install_address_space_handler(handle,
-> +						    PMIC_PMOP_OPREGION_ID,
-> +						    intel_pmic_pmop_handler,
-> +						    NULL, opregion);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENODEV;
-
-And you return a int from here.
-
-Would it make sense for the majority of functions in this file to return ints
-rather than acpi_status values?
-
-> +
-> +	status = acpi_install_address_space_handler(handle,
-> +						    PMIC_THERMAL_OPREGION_ID,
-> +						    intel_pmic_thermal_handler,
-> +						    NULL, opregion);
-> +	if (ACPI_FAILURE(status)) {
-> +		acpi_remove_address_space_handler(handle, PMIC_PMOP_OPREGION_ID,
-> +						  intel_pmic_pmop_handler);
-> +		return -ENODEV;
-> +	}
-> +
-> +	opregion->data = d;
-
-I guess the opregion will never be removed, right?
-
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(intel_pmic_install_opregion_handler);
-> +
-> +MODULE_LICENSE("GPL");
-> diff --git a/drivers/acpi/pmic/intel_pmic.h b/drivers/acpi/pmic/intel_pmic.h
-> new file mode 100644
-> index 000000000000..18b9bb80f8b6
-> --- /dev/null
-> +++ b/drivers/acpi/pmic/intel_pmic.h
-> @@ -0,0 +1,34 @@
-> +#ifndef __INTEL_PMIC_H
-> +#define __INTEL_PMIC_H
-> +
-> +struct pmic_pwr_reg {
-> +	int reg;	/* corresponding PMIC register */
-> +	int bit;	/* control bit for power */
-> +};
-> +
-> +struct pmic_pwr_table {
-> +	int address;	/* operation region address */
-> +	struct pmic_pwr_reg pwr_reg;
-> +};
-> +
-> +struct pmic_thermal_table {
-> +	int address;	/* operation region address */
-> +	int reg;	/* corresponding thermal register */
-> +};
-> +
-> +struct intel_pmic_opregion_data {
-> +	int (*get_power)(struct regmap *r, struct pmic_pwr_reg *preg, u64 *value);
-> +	int (*update_power)(struct regmap *r, struct pmic_pwr_reg *preg, bool on);
-> +	int (*get_raw_temp)(struct regmap *r, int reg);
-> +	int (*update_aux)(struct regmap *r, int reg, int raw_temp);
-> +	int (*get_policy)(struct regmap *r, int reg, u64 *value);
-> +	int (*update_policy)(struct regmap *r, int reg, int enable);
-> +	struct pmic_pwr_table *pwr_table;
-> +	int pwr_table_count;
-> +	struct pmic_thermal_table *thermal_table;
-> +	int thermal_table_count;
-> +};
-> +
-> +int intel_pmic_install_opregion_handler(struct device *dev, acpi_handle handle, struct regmap *regmap, struct intel_pmic_opregion_data *d);
-> +
-> +#endif
-> diff --git a/drivers/acpi/pmic/intel_pmic_crc.c b/drivers/acpi/pmic/intel_pmic_crc.c
-> new file mode 100644
-> index 000000000000..7629f16d1526
-> --- /dev/null
-> +++ b/drivers/acpi/pmic/intel_pmic_crc.c
-> @@ -0,0 +1,216 @@
-> +/*
-> + * intel_pmic_crc.c - Intel CrystalCove PMIC operation region driver
-> + *
-> + * Copyright (C) 2014 Intel Corporation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License version
-> + * 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/acpi.h>
-> +#include <linux/mfd/intel_soc_pmic.h>
+> +#include <linux/mfd/axp20x.h>
 > +#include <linux/regmap.h>
 > +#include <linux/platform_device.h>
+> +#include <linux/iio/consumer.h>
 > +#include "intel_pmic.h"
 > +
-> +#define PWR_SOURCE_SELECT	BIT(1)
-> +
-> +#define PMIC_A0LOCK_REG		0xc5
+> +#define XPOWER_GPADC_LOW	0x5b
 > +
 > +static struct pmic_pwr_table pwr_table[] = {
 > +	{
+> +		.address = 0x00,
+> +		.pwr_reg = {
+> +			.reg = 0x13,
+> +			.bit = 0x05,
+> +		}
+> +	}, /* ALD1, 0x13, bit5 */
+
+It is not necessary to repeat the reg numbers and bits in the comments.
+
+> +	{
+> +		.address = 0x04,
+> +		.pwr_reg = {
+> +			.reg = 0x13,
+> +			.bit = 0x06,
+> +		}
+> +	}, /* ALD2, 0x13, bit6 */
+> +	{
+> +		.address = 0x08,
+> +		.pwr_reg = {
+> +			.reg = 0x13,
+> +			.bit = 0x07,
+> +		}
+> +	}, /* ALD3, 0x13, bit7 */
+> +	{
+> +		.address = 0x0c,
+> +		.pwr_reg = {
+> +			.reg = 0x12,
+> +			.bit = 0x03,
+> +		}
+> +	}, /* DLD1, 0x12, bit3 */
+> +	{
+> +		.address = 0x10,
+> +		.pwr_reg = {
+> +			.reg = 0x12,
+> +			.bit = 0x04,
+> +		}
+> +	}, /* DLD2, 0x12, bit4 */
+> +	{
+> +		.address = 0x14,
+> +		.pwr_reg = {
+> +			.reg = 0x12,
+> +			.bit = 0x05,
+> +		}
+> +	}, /* DLD3, 0x12, bit5 */
+> +	{
+> +		.address = 0x18,
+> +		.pwr_reg = {
+> +			.reg = 0x12,
+> +			.bit = 0x06,
+> +		}
+> +	}, /* DLD4, 0x12, bit6 */
+> +	{
+> +		.address = 0x1c,
+> +		.pwr_reg = {
+> +			.reg = 0x12,
+> +			.bit = 0x00,
+> +		}
+> +	}, /* ELD1, 0x12, bit0 */
+> +	{
+> +		.address = 0x20,
+> +		.pwr_reg = {
+> +			.reg = 0x12,
+> +			.bit = 0x01,
+> +		}
+> +	}, /* ELD2, 0x12, bit1 */
+> +	{
 > +		.address = 0x24,
 > +		.pwr_reg = {
-> +			.reg = 0x66,
-> +			.bit = 0x00,
-> +		},
-> +	},	/* X285 -> V2P85SX, camara */
+> +			.reg = 0x12,
+> +			.bit = 0x02,
+> +		}
+> +	}, /* ELD3, 0x12, bit2 */
+> +	{
+> +		.address = 0x28,
+> +		.pwr_reg = {
+> +			.reg = 0x13,
+> +			.bit = 0x02,
+> +		}
+> +	}, /* FLD1, 0x13, bit2 */
+> +	{
+> +		.address = 0x2c,
+> +		.pwr_reg = {
+> +			.reg = 0x13,
+> +			.bit = 0x03,
+> +		}
+> +	}, /* FLD2, 0x13, bit3 */
+> +	{
+> +		.address = 0x30,
+> +		.pwr_reg = {
+> +			.reg = 0x13,
+> +			.bit = 0x04,
+> +		}
+> +	}, /* FLD3, 0x13, bit4 */
+> +	{
+> +		.address = 0x38,
+> +		.pwr_reg = {
+> +			.reg = 0x10,
+> +			.bit = 0x03,
+> +		}
+> +	}, /* BUC1, 0x10, bit3 */
+> +	{
+> +		.address = 0x3c,
+> +		.pwr_reg = {
+> +			.reg = 0x10,
+> +			.bit = 0x06,
+> +		}
+> +	}, /* BUC2, 0x10, bit6 */
+> +	{
+> +		.address = 0x40,
+> +		.pwr_reg = {
+> +			.reg = 0x10,
+> +			.bit = 0x05,
+> +		}
+> +	}, /* BUC3, 0x10, bit5 */
+> +	{
+> +		.address = 0x44,
+> +		.pwr_reg = {
+> +			.reg = 0x10,
+> +			.bit = 0x04,
+> +		}
+> +	}, /* BUC4, 0x10, bit4 */
 > +	{
 > +		.address = 0x48,
 > +		.pwr_reg = {
-> +			.reg = 0x5d,
-> +			.bit = 0x00,
-> +		},
-> +	},	/* V18X -> V1P8SX, eMMC/camara/audio */
+> +			.reg = 0x10,
+> +			.bit = 0x01,
+> +		}
+> +	}, /* BUC5, 0x10, bit1 */
+> +	{
+> +		.address = 0x4c,
+> +		.pwr_reg = {
+> +			.reg = 0x10,
+> +			.bit = 0x00
+> +		}
+> +	}, /* BUC6, 0x10, bit0 */
 > +};
 > +
+> +/* TMP0 - TMP5 are the same, all from GPADC */
 > +static struct pmic_thermal_table thermal_table[] = {
 > +	{
 > +		.address = 0x00,
-> +		.reg = 0x75
-> +	},	/* TMP0 -> SYS0_THRM_RSLT_L */
-> +	{
-> +		.address = 0x04,
-> +		.reg = 0x95
-> +	},	/* AX00 -> SYS0_THRMALRT0_L */
-> +	{
-> +		.address = 0x08,
-> +		.reg = 0x97
-> +	},	/* AX01 -> SYS0_THRMALRT1_L */
+> +		.reg = XPOWER_GPADC_LOW
+> +	},
 > +	{
 > +		.address = 0x0c,
-> +		.reg = 0x77
-> +	},	/* TMP1 -> SYS1_THRM_RSLT_L */
-> +	{
-> +		.address = 0x10,
-> +		.reg = 0x9a
-> +	},	/* AX10 -> SYS1_THRMALRT0_L */
-> +	{
-> +		.address = 0x14,
-> +		.reg = 0x9c
-> +	},	/* AX11 -> SYS1_THRMALRT1_L */
+> +		.reg = XPOWER_GPADC_LOW
+> +	},
 > +	{
 > +		.address = 0x18,
-> +		.reg = 0x79
-> +	},	/* TMP2 -> SYS2_THRM_RSLT_L */
+> +		.reg = XPOWER_GPADC_LOW
+> +	},
 > +	{
-> +		.address = 0x1c,
-> +		.reg = 0x9f
-> +	},	/* AX20 -> SYS2_THRMALRT0_L */
+> +		.address = 0x24,
+> +		.reg = XPOWER_GPADC_LOW
+> +	},
 > +	{
-> +		.address = 0x20,
-> +		.reg = 0xa1
-> +	},	/* AX21 -> SYS2_THRMALRT1_L */
+> +		.address = 0x30,
+> +		.reg = XPOWER_GPADC_LOW
+> +	},
 > +	{
-> +		.address = 0x48,
-> +		.reg = 0x94
-> +	},	/* PEN0 -> SYS0_THRMALRT0_H */
-> +	{
-> +		.address = 0x4c,
-> +		.reg = 0x99
-> +	},	/* PEN1 -> SYS1_THRMALRT1_H */
-> +	{
-> +		.address = 0x50,
-> +		.reg = 0x9e
-> +	},	/* PEN2 -> SYS2_THRMALRT2_H */
+> +		.address = 0x3c,
+> +		.reg = XPOWER_GPADC_LOW
+> +	},
 > +};
 > +
-> +static int intel_crc_pmic_get_power(struct regmap *regmap,
-> +				    struct pmic_pwr_reg *preg, u64 *value)
+> +static int intel_xpower_pmic_get_power(struct regmap *regmap,
+> +				       struct pmic_pwr_reg *preg, u64 *value)
 > +{
 > +	int data;
 > +
 > +	if (regmap_read(regmap, preg->reg, &data))
 > +		return -EIO;
 > +
-> +	*value = (data & PWR_SOURCE_SELECT) && (data & BIT(preg->bit)) ? 1 : 0;
+> +	*value = (data & BIT(preg->bit)) ? 1 : 0;
 > +	return 0;
 > +}
 > +
-> +static int intel_crc_pmic_update_power(struct regmap *regmap,
-> +				       struct pmic_pwr_reg *preg, bool on)
+> +static int intel_xpower_pmic_update_power(struct regmap *regmap,
+> +					  struct pmic_pwr_reg *preg, bool on)
 > +{
 > +	int data;
 > +
 > +	if (regmap_read(regmap, preg->reg, &data))
 > +		return -EIO;
 > +
-> +	if (on) {
-> +		data |= PWR_SOURCE_SELECT | BIT(preg->bit);
-> +	} else {
+> +	if (on)
+> +		data |= BIT(preg->bit);
+> +	else
 > +		data &= ~BIT(preg->bit);
-> +		data |= PWR_SOURCE_SELECT;
-> +	}
 > +
 > +	if (regmap_write(regmap, preg->reg, data))
 > +		return -EIO;
-> +	return 0;
-> +}
-> +
-> +/* Raw temperature value is 10bits: 8bits in reg and 2bits in reg-1 bit0,1 */
-
-Proper kerneldoc, please.  Here and elsewhere where it makes sense.
-
-All functions that aren't static need to have kerneldoc comments.
-
-> +static int intel_crc_pmic_get_raw_temp(struct regmap *regmap, int reg)
-> +{
-> +	int temp_l, temp_h;
-> +
-> +	if (regmap_read(regmap, reg, &temp_l) ||
-> +	    regmap_read(regmap, reg - 1, &temp_h))
-> +		return -EIO;
-> +
-> +	return (temp_l | ((temp_h & 0x3) << 8));
-
-At least one paren is not necessary here.
-
-> +}
-> +
-> +static int
-> +intel_crc_pmic_update_aux(struct regmap *regmap, int reg, int raw)
-> +{
-> +	if (regmap_write(regmap, reg, raw) ||
-> +	    regmap_update_bits(regmap, reg - 1, 0x3, raw >> 8))
-> +		return -EIO;
-> +
-> +	return 0;
-
-What about
-
-	return regmap_write(regmap, reg, raw) ||
-		regmap_update_bits(regmap, reg - 1, 0x3, raw >> 8) ? -EIO : 0;
-
-> +}
-> +
-> +static int
-> +intel_crc_pmic_get_policy(struct regmap *regmap, int reg, u64 *value)
-> +{
-> +	int pen;
-> +
-> +	if (regmap_read(regmap, reg, &pen))
-> +		return -EIO;
-> +	*value = pen >> 7;
-> +	return 0;
-> +}
-> +
-> +static int intel_crc_pmic_update_policy(struct regmap *regmap,
-> +					int reg, int enable)
-> +{
-> +	int alert0;
-> +
-> +	/* Update to policy enable bit requires unlocking a0lock */
-> +	if (regmap_read(regmap, PMIC_A0LOCK_REG, &alert0))
-> +		return -EIO;
-
-Empty line here?
-
-> +	if (regmap_update_bits(regmap, PMIC_A0LOCK_REG, 0x01, 0))
-> +		return -EIO;
-> +
-> +	if (regmap_update_bits(regmap, reg, 0x80, enable << 7))
-> +		return -EIO;
-> +
-> +	/* restore alert0 */
-> +	if (regmap_write(regmap, PMIC_A0LOCK_REG, alert0))
-> +		return -EIO;
 > +
 > +	return 0;
 > +}
 > +
-> +static struct intel_pmic_opregion_data intel_crc_pmic_opregion_data = {
-> +	.get_power	= intel_crc_pmic_get_power,
-> +	.update_power	= intel_crc_pmic_update_power,
-> +	.get_raw_temp	= intel_crc_pmic_get_raw_temp,
-> +	.update_aux	= intel_crc_pmic_update_aux,
-> +	.get_policy	= intel_crc_pmic_get_policy,
-> +	.update_policy	= intel_crc_pmic_update_policy,
-> +	.pwr_table	= pwr_table,
-> +	.pwr_table_count= ARRAY_SIZE(pwr_table),
-> +	.thermal_table	= thermal_table,
+> +/*
+> + * We could get the sensor value by manipulating the HW regs here, but since
+> + * the axp288 IIO driver may also access the same regs at the same time, the
+> + * APIs provided by IIO subsystem are used here instead to avoid problems. As
+> + * a result, the two passed in params are of no actual use.
+> + */
+> +static int intel_xpower_pmic_get_raw_temp(struct regmap *regmap, int reg)
+> +{
+> +	struct iio_channel *gpadc_chan;
+> +	int ret, val;
+> +
+> +	gpadc_chan = iio_channel_get(NULL, "axp288-system-temp");
+> +	if (IS_ERR_OR_NULL(gpadc_chan))
+> +		return -EACCES;
+> +
+> +	ret = iio_read_channel_raw(gpadc_chan, &val);
+> +	if (ret < 0)
+> +		val = ret;
+> +
+> +	iio_channel_release(gpadc_chan);
+> +	return val;
+> +}
+> +
+> +static struct intel_pmic_opregion_data intel_xpower_pmic_opregion_data = {
+> +	.get_power = intel_xpower_pmic_get_power,
+> +	.update_power = intel_xpower_pmic_update_power,
+> +	.get_raw_temp = intel_xpower_pmic_get_raw_temp,
+> +	.pwr_table = pwr_table,
+> +	.pwr_table_count = ARRAY_SIZE(pwr_table),
+> +	.thermal_table = thermal_table,
 > +	.thermal_table_count = ARRAY_SIZE(thermal_table),
 > +};
 > +
-> +static int intel_crc_pmic_opregion_probe(struct platform_device *pdev)
+> +
+> +static int intel_xpower_pmic_opregion_probe(struct platform_device *pdev)
 > +{
-> +	struct intel_soc_pmic *pmic = dev_get_drvdata(pdev->dev.parent);
+> +	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
 > +	return intel_pmic_install_opregion_handler(&pdev->dev,
-> +			ACPI_HANDLE(pdev->dev.parent), pmic->regmap,
-> +			&intel_crc_pmic_opregion_data);
+> +			ACPI_HANDLE(pdev->dev.parent), axp20x->regmap,
+> +			&intel_xpower_pmic_opregion_data);
 > +}
 > +
-> +static struct platform_driver intel_crc_pmic_opregion_driver = {
-> +	.probe = intel_crc_pmic_opregion_probe,
+> +static struct platform_driver intel_xpower_pmic_opregion_driver = {
+> +	.probe = intel_xpower_pmic_opregion_probe,
 > +	.driver = {
-> +		.name = "crystal_cove_region",
+> +		.name = "axp288_opregion",
 > +	},
 > +};
 > +
-> +static int __init intel_crc_pmic_opregion_driver_init(void)
+> +static int __init intel_xpower_pmic_opregion_driver_init(void)
 > +{
-> +	return platform_driver_register(&intel_crc_pmic_opregion_driver);
+> +	return platform_driver_register(&intel_xpower_pmic_opregion_driver);
 > +}
-> +module_init(intel_crc_pmic_opregion_driver_init);
+> +module_init(intel_xpower_pmic_opregion_driver_init);
 > +
-> +MODULE_DESCRIPTION("CrystalCove ACPI opration region driver");
+> +MODULE_DESCRIPTION("XPower AXP288 ACPI operation region driver");
 > +MODULE_LICENSE("GPL");
-> diff --git a/drivers/mfd/intel_soc_pmic_crc.c b/drivers/mfd/intel_soc_pmic_crc.c
-> index 7107cab832e6..48845d636bba 100644
-> --- a/drivers/mfd/intel_soc_pmic_crc.c
-> +++ b/drivers/mfd/intel_soc_pmic_crc.c
-> @@ -106,6 +106,9 @@ static struct mfd_cell crystal_cove_dev[] = {
->  		.num_resources = ARRAY_SIZE(gpio_resources),
->  		.resources = gpio_resources,
+> diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp20x.c
+> index acbb4c3bf98c..daf3c8d33b4d 100644
+> --- a/drivers/mfd/axp20x.c
+> +++ b/drivers/mfd/axp20x.c
+> @@ -354,6 +354,9 @@ static struct mfd_cell axp288_cells[] = {
+>  		.num_resources = ARRAY_SIZE(axp288_battery_resources),
+>  		.resources = axp288_battery_resources,
 >  	},
 > +	{
-> +		.name = "crystal_cove_region",
+> +		.name = "axp288_opregion",
 > +	},
 >  };
 >  
->  static struct regmap_config crystal_cove_regmap_config = {
+>  static struct axp20x_dev *axp20x_pm_power_off;
 > 
+
+The rest looks OK to me.
 
 -- 
 I speak only for myself.
