@@ -1,46 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaKXKbg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 05:31:36 -0500
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:52809 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751033AbaKXKbf (ORCPT
+	id S1753389AbaKXKb4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 05:31:56 -0500
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:60344 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaKXKby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 05:31:35 -0500
-Message-ID: <1416825092.10073.6.camel@x220>
-Subject: MIPS: 64BIT_PHYS_ADDR
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 24 Nov 2014 11:31:32 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Nov 2014 10:31:32.0550 (UTC) FILETIME=[D0BF4660:01D007D1]
-X-RcptDomain: vger.kernel.org
+	Mon, 24 Nov 2014 05:31:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <5471B635.3050006@gmail.com>
+References: <1406569906-9763-1-git-send-email-vincent.guittot@linaro.org>
+ <1406569906-9763-2-git-send-email-vincent.guittot@linaro.org> <5471B635.3050006@gmail.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Mon, 24 Nov 2014 11:31:33 +0100
+Message-ID: <CAKfTPtB_xsb0LpYu6ye0x5SK3+TcPhZ1uNioo_OtX+bjP15DsA@mail.gmail.com>
+Subject: Re: [PATCH v4 01/12] sched: fix imbalance flag reset
+To: Wanpeng Li <kernellwp@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ralf,
+On 23 November 2014 at 11:25, Wanpeng Li <kernellwp@gmail.com> wrote:
+> Hi Vincent,
+> On 7/29/14, 1:51 AM, Vincent Guittot wrote:
+>>
+>> The imbalance flag can stay set whereas there is no imbalance.
+>>
+>> Let assume that we have 3 tasks that run on a dual cores /dual cluster
+>> system.
+>> We will have some idle load balance which are triggered during tick.
+>> Unfortunately, the tick is also used to queue background work so we can
+>> reach
+>> the situation where short work has been queued on a CPU which already runs
+>> a
+>> task. The load balance will detect this imbalance (2 tasks on 1 CPU and an
+>> idle
+>> CPU) and will try to pull the waiting task on the idle CPU. The waiting
+>> task is
+>> a worker thread that is pinned on a CPU so an imbalance due to pinned task
+>> is
+>> detected and the imbalance flag is set.
+>
+>
+> The waiting task is the third task or one the '2 tasks on 1 CPU' ?
 
-Your commit 5bd35e65f101 ("MIPS: Replace MIPS-specific 64BIT_PHYS_ADDR
-with generic PHYS_ADDR_T_64BIT") is included in today's linux-next (ie,
-next-20141124). That commit does what it promises to do. There are a few
-references to 64BIT_PHYS_ADDR in linux-next:
-    $ git grep -n 64BIT_PHYS_ADDR 
-    arch/mips/include/asm/pgtable-32.h:225:#endif /* defined(CONFIG_64BIT_PHYS_ADDR) && defined(CONFIG_CPU_MIPS32) */
-    drivers/dma/txx9dmac.c:79:#if defined(CONFIG_32BIT) && !defined(CONFIG_64BIT_PHYS_ADDR)
-    drivers/dma/txx9dmac.h:70:#if defined(CONFIG_32BIT) && !defined(CONFIG_64BIT_PHYS_ADDR)
-    drivers/dma/txx9dmac.h:204:#if defined(CONFIG_32BIT) && !defined(CONFIG_64BIT_PHYS_ADDR)
-    drivers/pcmcia/Kconfig:150:     select 64BIT_PHYS_ADDR
-    drivers/pcmcia/Kconfig:161:     select 64BIT_PHYS_ADDR
+The waiting task is one of the 2 tasks on 1 CPU (the worker)
 
-I assume that patches to replace these references too are queued
-somewhere. Is that correct?
+Regards,
+Vincent
 
-
-Paul Bolle
-
+>
+> Regards,
+> Wanpeng Li
+>
+>
+>> Then, we will not be able to clear the flag because we have at most 1 task
+>> on
+>> each CPU but the imbalance flag will trig to useless active load balance
+>> between the idle CPU and the busy CPU.
+>>
+>> We need to reset of the imbalance flag as soon as we have reached a
+>> balanced
+>> state. If all tasks are pinned, we don't consider that as a balanced state
+>> and
+>> let the imbalance flag set.
+>>
+>> Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>>   kernel/sched/fair.c | 23 +++++++++++++++++++----
+>>   1 file changed, 19 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 923fe32..7eb9126 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -6672,10 +6672,8 @@ static int load_balance(int this_cpu, struct rq
+>> *this_rq,
+>>                 if (sd_parent) {
+>>                         int *group_imbalance =
+>> &sd_parent->groups->sgc->imbalance;
+>>   -                     if ((env.flags & LBF_SOME_PINNED) && env.imbalance
+>> > 0) {
+>> +                       if ((env.flags & LBF_SOME_PINNED) && env.imbalance
+>> > 0)
+>>                                 *group_imbalance = 1;
+>> -                       } else if (*group_imbalance)
+>> -                               *group_imbalance = 0;
+>>                 }
+>>                 /* All tasks on this runqueue were pinned by CPU affinity
+>> */
+>> @@ -6686,7 +6684,7 @@ static int load_balance(int this_cpu, struct rq
+>> *this_rq,
+>>                                 env.loop_break = sched_nr_migrate_break;
+>>                                 goto redo;
+>>                         }
+>> -                       goto out_balanced;
+>> +                       goto out_all_pinned;
+>>                 }
+>>         }
+>>   @@ -6760,6 +6758,23 @@ static int load_balance(int this_cpu, struct rq
+>> *this_rq,
+>>         goto out;
+>>     out_balanced:
+>> +       /*
+>> +        * We reach balance although we may have faced some affinity
+>> +        * constraints. Clear the imbalance flag if it was set.
+>> +        */
+>> +       if (sd_parent) {
+>> +               int *group_imbalance = &sd_parent->groups->sgc->imbalance;
+>> +
+>> +               if (*group_imbalance)
+>> +                       *group_imbalance = 0;
+>> +       }
+>> +
+>> +out_all_pinned:
+>> +       /*
+>> +        * We reach balance because all tasks are pinned at this level so
+>> +        * we can't migrate them. Let the imbalance flag set so parent
+>> level
+>> +        * can try to migrate them.
+>> +        */
+>>         schedstat_inc(sd, lb_balanced[idle]);
+>>         sd->nr_balance_failed = 0;
+>
+>
