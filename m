@@ -1,115 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234AbaKXRUN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 12:20:13 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:50508 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477AbaKXRUI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 12:20:08 -0500
+	id S1754443AbaKXRUV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 12:20:21 -0500
+Received: from mout.web.de ([212.227.17.12]:63434 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754274AbaKXRUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 12:20:15 -0500
+Message-ID: <547368BB.2050401@users.sourceforge.net>
+Date: Mon, 24 Nov 2014 18:19:55 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAJe_ZhdTvZZqERttAM_o6U6MZCOjk=oXpWFPf8W=DdW1j=Nx=g@mail.gmail.com>
-References: <1416264102-1323-1-git-send-email-abrestic@chromium.org>
-	<1416264102-1323-6-git-send-email-abrestic@chromium.org>
-	<CAJe_ZhdTvZZqERttAM_o6U6MZCOjk=oXpWFPf8W=DdW1j=Nx=g@mail.gmail.com>
-Date: Mon, 24 Nov 2014 09:20:07 -0800
-X-Google-Sender-Auth: XZjo_STaJHfAa3AHrWZ6kmdv46g
-Message-ID: <CAL1qeaFpYC8C5M_eJ8N8bjDvXVu0KBuxgTcrt12az374TnZ8rw@mail.gmail.com>
-Subject: Re: [PATCH V5 05/12] mailbox: Add NVIDIA Tegra XUSB mailbox driver
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
+CC: kernel-janitors@vger.kernel.org, trivial@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/6] video: fbdev-MMP: Fix typos for the word "destroy"
+References: <54736422.90409@users.sourceforge.net>
+In-Reply-To: <54736422.90409@users.sourceforge.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:Mk8s0u2xy3th85Zlo/ofd/ClCBSivyDtS/cJSZTRAo4ClJtpPS2
+ hzCYtO45Ypp/cmy5B5lNRaE6skIp3q04gu5aYYMGS8X6Lvk7B1T/deZXTBveAumiYvzjQPd
+ QU51gYZ9pHkMxfXgplulb6RvG1kAjEAvkWZdGL4G8gGCmOCTO/Q7KjeEW3K2Z4B6LZRVCCk
+ wx6cOy+42t9sN1WXXJIrw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 12:34 AM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
-> On 18 November 2014 at 04:11, Andrew Bresticker <abrestic@chromium.org> wrote:
->
->> +
->> +static int tegra_xusb_mbox_send_data(struct mbox_chan *chan, void *data)
->> +{
->> +       struct tegra_xusb_mbox *mbox = to_tegra_mbox(chan->mbox);
->> +       struct tegra_xusb_mbox_msg *msg = data;
->> +       unsigned long flags;
->> +       u32 reg, owner;
->> +
->> +       dev_dbg(mbox->mbox.dev, "TX message %#x:%#x\n", msg->cmd, msg->data);
->> +
->> +       /* ACK/NAK must be sent with the controller as the mailbox owner */
->> +       if (msg->cmd == MBOX_CMD_ACK || msg->cmd == MBOX_CMD_NAK)
->> +               owner = MBOX_OWNER_FW;
->> +       else
->> +               owner = MBOX_OWNER_SW;
->> +
->> +       spin_lock_irqsave(&mbox->lock, flags);
->> +
->> +       /* Acquire mailbox */
->> +       if (mbox_readl(mbox, XUSB_CFG_ARU_MBOX_OWNER) != MBOX_OWNER_NONE) {
->> +               dev_err(mbox->mbox.dev, "Mailbox not idle\n");
->> +               goto busy;
->> +       }
->> +       mbox_writel(mbox, owner, XUSB_CFG_ARU_MBOX_OWNER);
->> +       if (mbox_readl(mbox, XUSB_CFG_ARU_MBOX_OWNER) != owner) {
->> +               dev_err(mbox->mbox.dev, "Failed to acquire mailbox");
->> +               goto busy;
->> +       }
->> +
->> +       mbox_writel(mbox, mbox_pack_msg(msg), XUSB_CFG_ARU_MBOX_DATA_IN);
->> +       reg = mbox_readl(mbox, XUSB_CFG_ARU_MBOX_CMD);
->> +       reg |= MBOX_INT_EN | MBOX_DEST_FALC;
->> +       mbox_writel(mbox, reg, XUSB_CFG_ARU_MBOX_CMD);
->> +
->> +       spin_unlock_irqrestore(&mbox->lock, flags);
->> +
->> +       return 0;
->> +busy:
->> +       spin_unlock_irqrestore(&mbox->lock, flags);
->> +       return -EBUSY;
->> +}
->> +
->> +static int tegra_xusb_mbox_startup(struct mbox_chan *chan)
->> +{
->> +       return 0;
->> +}
->> +
->> +static void tegra_xusb_mbox_shutdown(struct mbox_chan *chan)
->> +{
->> +}
->> +
->> +static bool tegra_xusb_mbox_last_tx_done(struct mbox_chan *chan)
->> +{
->> +       /*
->> +        * Transmissions are assumed to be completed as soon as they are
->> +        * written to the mailbox.
->> +        */
->> +       return true;
->>
-> In .send_data() you you mark the channel busy by setting the
-> XUSB_CFG_ARU_MBOX_OWNER to !MBOX_OWNER_NONE, which remains so until
-> you get an IRQ. So maybe you should check for the OWNER_NONE flag in
-> .last_tx_done()?
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 24 Nov 2014 15:50:15 +0100
 
-Ah, you're right.  It does look like the controller firmware clears MBOX_OWNER.
+Two mistyped words were corrected in the description for
+the mmp_unregister_path() function.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/video/fbdev/mmp/core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/video/fbdev/mmp/core.c b/drivers/video/fbdev/mmp/core.c
+index b563b92..43ed576 100644
+--- a/drivers/video/fbdev/mmp/core.c
++++ b/drivers/video/fbdev/mmp/core.c
+@@ -223,10 +223,10 @@ struct mmp_path *mmp_register_path(struct mmp_path_info *info)
+ EXPORT_SYMBOL_GPL(mmp_register_path);
+ 
+ /*
+- * mmp_unregister_path - unregister and destory path
++ * mmp_unregister_path - unregister and destroy path
+  * @p: path to be destoried.
+  *
+- * this function registers path and destorys it.
++ * this function registers path and destroys it.
+  */
+ void mmp_unregister_path(struct mmp_path *path)
+ {
+-- 
+2.1.3
+
