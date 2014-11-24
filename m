@@ -1,140 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389AbaKXKb4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 05:31:56 -0500
-Received: from mail-oi0-f54.google.com ([209.85.218.54]:60344 "EHLO
-	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaKXKby (ORCPT
+	id S1753392AbaKXKdA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 05:33:00 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:35150 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaKXKc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 05:31:54 -0500
+	Mon, 24 Nov 2014 05:32:59 -0500
+Date: Mon, 24 Nov 2014 11:32:52 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        devicetree@vger.kernel.org, kgene.kim@samsung.com,
+        dri-devel@lists.freedesktop.org, javier.martinez@collabora.co.uk,
+        jg1.han@samsung.com, ajaykumar.rs@samsung.com,
+        Kukjin Kim <kgene@kernel.org>
+Subject: Re: [PATCH V2 RESEND] arm: dts: Exynos5: Use pmu_system_controller
+ phandle for dp phy
+Message-ID: <20141124103249.GA26217@ulmo.nvidia.com>
+References: <1416807683-2257-1-git-send-email-gautam.vivek@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <5471B635.3050006@gmail.com>
-References: <1406569906-9763-1-git-send-email-vincent.guittot@linaro.org>
- <1406569906-9763-2-git-send-email-vincent.guittot@linaro.org> <5471B635.3050006@gmail.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Mon, 24 Nov 2014 11:31:33 +0100
-Message-ID: <CAKfTPtB_xsb0LpYu6ye0x5SK3+TcPhZ1uNioo_OtX+bjP15DsA@mail.gmail.com>
-Subject: Re: [PATCH v4 01/12] sched: fix imbalance flag reset
-To: Wanpeng Li <kernellwp@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
+Content-Disposition: inline
+In-Reply-To: <1416807683-2257-1-git-send-email-gautam.vivek@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 November 2014 at 11:25, Wanpeng Li <kernellwp@gmail.com> wrote:
-> Hi Vincent,
-> On 7/29/14, 1:51 AM, Vincent Guittot wrote:
->>
->> The imbalance flag can stay set whereas there is no imbalance.
->>
->> Let assume that we have 3 tasks that run on a dual cores /dual cluster
->> system.
->> We will have some idle load balance which are triggered during tick.
->> Unfortunately, the tick is also used to queue background work so we can
->> reach
->> the situation where short work has been queued on a CPU which already runs
->> a
->> task. The load balance will detect this imbalance (2 tasks on 1 CPU and an
->> idle
->> CPU) and will try to pull the waiting task on the idle CPU. The waiting
->> task is
->> a worker thread that is pinned on a CPU so an imbalance due to pinned task
->> is
->> detected and the imbalance flag is set.
->
->
-> The waiting task is the third task or one the '2 tasks on 1 CPU' ?
 
-The waiting task is one of the 2 tasks on 1 CPU (the worker)
+--ew6BAiZeqk4r7MaW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards,
-Vincent
+On Mon, Nov 24, 2014 at 11:11:23AM +0530, Vivek Gautam wrote:
+> DP PHY now require pmu-system-controller to handle PMU register
+> to control PHY's power isolation. Adding the same to dp-phy
+> node.
+>=20
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+> Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Cc: Kukjin Kim <kgene@kernel.org>
+> ---
+>  arch/arm/boot/dts/exynos5250.dtsi |    2 +-
+>  arch/arm/boot/dts/exynos5420.dtsi |    4 ++--
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos=
+5250.dtsi
+> index 0a588b4..bebd099 100644
+> --- a/arch/arm/boot/dts/exynos5250.dtsi
+> +++ b/arch/arm/boot/dts/exynos5250.dtsi
+> @@ -732,7 +732,7 @@
+> =20
+>  	dp_phy: video-phy@10040720 {
+>  		compatible =3D "samsung,exynos5250-dp-video-phy";
+> -		reg =3D <0x10040720 4>;
+> +		samsung,pmu-syscon =3D <&pmu_system_controller>;
+>  		#phy-cells =3D <0>;
+>  	};
+> =20
+> diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos=
+5420.dtsi
+> index 8617a03..1353a09 100644
+> --- a/arch/arm/boot/dts/exynos5420.dtsi
+> +++ b/arch/arm/boot/dts/exynos5420.dtsi
+> @@ -503,8 +503,8 @@
+>  	};
+> =20
+>  	dp_phy: video-phy@10040728 {
+> -		compatible =3D "samsung,exynos5250-dp-video-phy";
+> -		reg =3D <0x10040728 4>;
+> +		compatible =3D "samsung,exynos5420-dp-video-phy";
+> +		samsung,pmu-syscon =3D <&pmu_system_controller>;
+>  		#phy-cells =3D <0>;
+>  	};
+> =20
 
->
-> Regards,
-> Wanpeng Li
->
->
->> Then, we will not be able to clear the flag because we have at most 1 task
->> on
->> each CPU but the imbalance flag will trig to useless active load balance
->> between the idle CPU and the busy CPU.
->>
->> We need to reset of the imbalance flag as soon as we have reached a
->> balanced
->> state. If all tasks are pinned, we don't consider that as a balanced state
->> and
->> let the imbalance flag set.
->>
->> Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> ---
->>   kernel/sched/fair.c | 23 +++++++++++++++++++----
->>   1 file changed, 19 insertions(+), 4 deletions(-)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 923fe32..7eb9126 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -6672,10 +6672,8 @@ static int load_balance(int this_cpu, struct rq
->> *this_rq,
->>                 if (sd_parent) {
->>                         int *group_imbalance =
->> &sd_parent->groups->sgc->imbalance;
->>   -                     if ((env.flags & LBF_SOME_PINNED) && env.imbalance
->> > 0) {
->> +                       if ((env.flags & LBF_SOME_PINNED) && env.imbalance
->> > 0)
->>                                 *group_imbalance = 1;
->> -                       } else if (*group_imbalance)
->> -                               *group_imbalance = 0;
->>                 }
->>                 /* All tasks on this runqueue were pinned by CPU affinity
->> */
->> @@ -6686,7 +6684,7 @@ static int load_balance(int this_cpu, struct rq
->> *this_rq,
->>                                 env.loop_break = sched_nr_migrate_break;
->>                                 goto redo;
->>                         }
->> -                       goto out_balanced;
->> +                       goto out_all_pinned;
->>                 }
->>         }
->>   @@ -6760,6 +6758,23 @@ static int load_balance(int this_cpu, struct rq
->> *this_rq,
->>         goto out;
->>     out_balanced:
->> +       /*
->> +        * We reach balance although we may have faced some affinity
->> +        * constraints. Clear the imbalance flag if it was set.
->> +        */
->> +       if (sd_parent) {
->> +               int *group_imbalance = &sd_parent->groups->sgc->imbalance;
->> +
->> +               if (*group_imbalance)
->> +                       *group_imbalance = 0;
->> +       }
->> +
->> +out_all_pinned:
->> +       /*
->> +        * We reach balance because all tasks are pinned at this level so
->> +        * we can't migrate them. Let the imbalance flag set so parent
->> level
->> +        * can try to migrate them.
->> +        */
->>         schedstat_inc(sd, lb_balanced[idle]);
->>         sd->nr_balance_failed = 0;
->
->
+It seems like these nodes have been in the Linux tree since 3.12 and
+3.17, respectively and these changes break backwards-compatibility. Has
+anyone thought about the possible consequences?
+
+Although, looking more closely it seems like this isn't the first time
+that backwards-compatibility was broken in these files, so perhaps
+nobody cares...
+
+Thierry
+
+--ew6BAiZeqk4r7MaW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUcwlRAAoJEN0jrNd/PrOhrXkQAJfG+54ckAxuZgIx2hUuIvVk
+xGz7wC26FeexLtVt27p/Q+KPxqutwW0YKf8mNUKSpogmbQ5CFdojrpv/V268dWpP
+wTEDPXu1EftLNT/NvSsimu5kOsZC/6447DQfmI39m/V3+dubodKOG76iRLbicGXY
+l6xzTseCJUd47iM87aiSfUA0R3Gtr/GWpyn7/Q7Jx6PKOq3z2cucERxCK84CaQ37
+60qbY5eKhkIfFs8c5Zrvo7gYD/GZn5wcV6l9RjBfIOrHvM+fVWQxps4UGQonPvNr
+hG+8mRwxJrq13Jx5feeu1pE+Byxa9S43yJwo6nXkxJO/ddHE3rzQqXfQHc2jRFNx
+7eD26kpLoOPSnKA5tPKExU5/P16YUPigmN1XWTuqs4bs5vcs6MGK6y2n4sDWukPu
+6jzRJB8DmBwm9wAwk6LsL//ccHg1OJ5sLQx4ASo2uYmZHDIBjvQlpp/mkU0zqkJD
+yhGiWsV3fEznPyZTtwAeOPWN/Kbmr4RQQEwl/OyXjeyd1iWpgfnybJSpKFqcQi8U
+IVpz4EWy1CFzimVb2sawHtHlw/zaUxfzqHlMln0Qn0xJcghTYev1jwjSfwLxZGNI
+0HzadBNOIyj0re7DcxXWF4dD4JkwUehqNZpppbiA3W/bKULwvdIIJVOIal4j4U4f
+1xCFAuUr7ZPIuA9KyiFz
+=rAYB
+-----END PGP SIGNATURE-----
+
+--ew6BAiZeqk4r7MaW--
