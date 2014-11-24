@@ -1,129 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424AbaKXQHq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 11:07:46 -0500
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:64406 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951AbaKXQHn (ORCPT
+	id S1753961AbaKXQO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 11:14:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35281 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753368AbaKXQOY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 11:07:43 -0500
+	Mon, 24 Nov 2014 11:14:24 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <14276.1416833541@warthog.procyon.org.uk>
+References: <14276.1416833541@warthog.procyon.org.uk> <5472F806.8000403@samsung.com> <20141120165351.5264.61930.stgit@warthog.procyon.org.uk> <546F3742.9010702@samsung.com>
+Cc: dhowells@redhat.com, Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        mmarek@suse.cz, rusty@rustcorp.com.au, vgoyal@redhat.com,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        zohar@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] MODSIGN: Use PKCS#7 for module signatures
 MIME-Version: 1.0
-In-Reply-To: <1416415597-21235-1-git-send-email-borneo.antonio@gmail.com>
-References: <1416149064-25655-1-git-send-email-borneo.antonio@gmail.com>
-	<1416415597-21235-1-git-send-email-borneo.antonio@gmail.com>
-Date: Mon, 24 Nov 2014 11:07:42 -0500
-Message-ID: <CAN+gG=HttchOAYcumPkZHKqfGb5FN83P3P8c3aKod25NXxZX1Q@mail.gmail.com>
-Subject: Re: [PATCH V2] HID: i2c-hid: fix race condition reading reports
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Antonio Borneo <borneo.antonio@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <31430.1416845619.1@warthog.procyon.org.uk>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 24 Nov 2014 16:13:39 +0000
+Message-ID: <31431.1416845619@warthog.procyon.org.uk>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 11:46 AM, Antonio Borneo
-<borneo.antonio@gmail.com> wrote:
-> From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
->
-> Current driver uses a common buffer for reading reports either
-> synchronously in i2c_hid_get_raw_report() and asynchronously in
-> the interrupt handler.
-> There is race condition if an interrupt arrives immediately after
-> the report is received in i2c_hid_get_raw_report(); the common
-> buffer is modified by the interrupt handler with the new report
-> and then i2c_hid_get_raw_report() proceed using wrong data.
->
-> Fix it by using a separate buffers for synchronous reports.
->
-> Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-> [Antonio Borneo: cleanup, rebase to v3.17, submit mainline]
-> Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
-> Cc: stable@vger.kernel.org
-> ---
-> V1 -> V2
->         rename the synchronous buffer as rawbuf (instead of the
->         asynchronous one)
+David Howells <dhowells@redhat.com> wrote:
 
-Sorry for the lag and thanks for resubmitting.
+> > Actually after cleaning the tree and re-signing the modules, I get following
+> > 
+> > Unrecognized character \x7F; marked by <-- HERE after <-- HERE near
+> > column 1 at ./scripts/sign-file line 1.
+> > make[1]: *** [arch/x86/crypto/aes-x86_64.ko] Error 255
+> 
+> warthog>grep -r sign-file Makefile 
+> mod_sign_cmd = perl $(srctree)/scripts/sign-file $(CONFIG_MODULE_SIG_HASH) $(MODSECKEY) $(MODPUBKEY)
+> 
+> Because of that.  I need to remove the 'perl' bit.
 
-This one is reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+It's a little more involved than that.  The X.509 cert being passed to the
+program is binary, whereas the one I've been testing with is PEM encoded - and
+libssl has separate routines that don't work out for themselves which encoding
+is in force.  Proposed changes below.
 
-Cheers,
-Benjamin
-
->
->  drivers/hid/i2c-hid/i2c-hid.c | 12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> index 933bf10..c66e6ac 100644
-> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> @@ -137,6 +137,7 @@ struct i2c_hid {
->                                                    * descriptor. */
->         unsigned int            bufsize;        /* i2c buffer size */
->         char                    *inbuf;         /* Input buffer */
-> +       char                    *rawbuf;        /* Raw Input buffer */
->         char                    *cmdbuf;        /* Command buffer */
->         char                    *argsbuf;       /* Command arguments buffer */
->
-> @@ -504,9 +505,11 @@ static void i2c_hid_find_max_report(struct hid_device *hid, unsigned int type,
->  static void i2c_hid_free_buffers(struct i2c_hid *ihid)
->  {
->         kfree(ihid->inbuf);
-> +       kfree(ihid->rawbuf);
->         kfree(ihid->argsbuf);
->         kfree(ihid->cmdbuf);
->         ihid->inbuf = NULL;
-> +       ihid->rawbuf = NULL;
->         ihid->cmdbuf = NULL;
->         ihid->argsbuf = NULL;
->         ihid->bufsize = 0;
-> @@ -522,10 +525,11 @@ static int i2c_hid_alloc_buffers(struct i2c_hid *ihid, size_t report_size)
->                        report_size; /* report */
->
->         ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
-> +       ihid->rawbuf = kzalloc(report_size, GFP_KERNEL);
->         ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
->         ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
->
-> -       if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
-> +       if (!ihid->inbuf || !ihid->rawbuf || !ihid->argsbuf || !ihid->cmdbuf) {
->                 i2c_hid_free_buffers(ihid);
->                 return -ENOMEM;
->         }
-> @@ -552,12 +556,12 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
->
->         ret = i2c_hid_get_report(client,
->                         report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
-> -                       report_number, ihid->inbuf, ask_count);
-> +                       report_number, ihid->rawbuf, ask_count);
->
->         if (ret < 0)
->                 return ret;
->
-> -       ret_count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
-> +       ret_count = ihid->rawbuf[0] | (ihid->rawbuf[1] << 8);
->
->         if (ret_count <= 2)
->                 return 0;
-> @@ -566,7 +570,7 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
->
->         /* The query buffer contains the size, dropping it in the reply */
->         count = min(count, ret_count - 2);
-> -       memcpy(buf, ihid->inbuf + 2, count);
-> +       memcpy(buf, ihid->rawbuf + 2, count);
->
->         return count;
->  }
-> --
-> 2.1.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+David
+---
+diff --git a/Makefile b/Makefile
+index b77de27e58fc..8d5624bf96db 100644
+--- a/Makefile
++++ b/Makefile
+@@ -859,7 +859,7 @@ ifdef CONFIG_MODULE_SIG_ALL
+ MODSECKEY = ./signing_key.priv
+ MODPUBKEY = ./signing_key.x509
+ export MODPUBKEY
+-mod_sign_cmd = perl $(srctree)/scripts/sign-file $(CONFIG_MODULE_SIG_HASH) $(MODSECKEY) $(MODPUBKEY)
++mod_sign_cmd = scripts/sign-file $(CONFIG_MODULE_SIG_HASH) $(MODSECKEY) $(MODPUBKEY)
+ else
+ mod_sign_cmd = true
+ endif
+diff --git a/scripts/sign-file.c b/scripts/sign-file.c
+index 3f9bedbd185f..ff5e78348de0 100755
+--- a/scripts/sign-file.c
++++ b/scripts/sign-file.c
+@@ -61,14 +61,24 @@ static void display_openssl_errors(int l)
+ 	}
+ }
+ 
++static void drain_openssl_errors(void)
++{
++	const char *file;
++	int line;
++
++	if (ERR_peek_error() == 0)
++		return;
++	while (ERR_get_error_line(&file, &line)) {}
++}
+ 
+-#define ERR(cond, ...)				  \
+-	do {					  \
+-		bool __cond = (cond);		  \
+-		display_openssl_errors(__LINE__); \
+-		if (__cond) {			  \
+-			err(1, ## __VA_ARGS__);	  \
+-		}				  \
++
++#define ERR(cond, ...)					\
++	do {						\
++		bool __cond = (cond);			\
++		display_openssl_errors(__LINE__);	\
++		if (__cond) {				\
++			err(1, ## __VA_ARGS__);		\
++		}					\
+ 	} while(0)
+ 
+ int main(int argc, char **argv)
+@@ -126,8 +136,15 @@ int main(int argc, char **argv)
+ 
+ 	b = BIO_new_file(x509_name, "rb");
+ 	ERR(!b, "%s", x509_name);
+-        x509 = PEM_read_bio_X509(b, NULL, NULL, NULL);
++	x509 = d2i_X509_bio(b, NULL); /* Binary encoded X.509 */
++	if (!x509) {
++		BIO_reset(b);
++		x509 = PEM_read_bio_X509(b, NULL, NULL, NULL); /* PEM encoded X.509 */
++		if (x509)
++			drain_openssl_errors();
++	}
+ 	BIO_free(b);
++	ERR(!x509, "%s", x509_name);
+ 
+ 	/* Open the destination file now so that we can shovel the module data
+ 	 * across as we read it.
