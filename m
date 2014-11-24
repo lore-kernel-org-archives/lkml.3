@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751113AbaKXWnb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 17:43:31 -0500
-Received: from mga11.intel.com ([192.55.52.93]:28653 "EHLO mga11.intel.com"
+	id S1751072AbaKXWq0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 17:46:26 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:57988 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759AbaKXWn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 17:43:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,451,1413270000"; 
-   d="scan'208";a="627654368"
-Date: Mon, 24 Nov 2014 14:43:02 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: tglx@linutronix.de, corbet@lwn.net, mingo@redhat.com, hpa@zytor.com,
-        peterz@infradead.org, riel@redhat.com, akpm@linux-foundation.org,
-        rientjes@google.com, mgorman@suse.de, liwanp@linux.vnet.ibm.com,
-        raistlin@linux.it, kirill.shutemov@linux.intel.com, atomlin@redhat.com,
-        avagin@openvz.org, gorcunov@openvz.org, serge.hallyn@canonical.com,
-        athorlton@sgi.com, oleg@redhat.com, vdavydov@parallels.com,
-        daeseok.youn@gmail.com, keescook@chromium.org,
-        yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu, vishnu.ps@samsung.com,
-        axboe@fb.com, paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v3] sched/fair: Add advisory flag for borrowing a
- timeslice (was: Pre-emption control for userspace)
-Message-ID: <20141124224302.GL10824@tassilo.jf.intel.com>
-References: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com>
+	id S1750747AbaKXWqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 17:46:25 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: dianders@chromium.org, mturquette@linaro.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>, khilman@kernel.org,
+        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        Tony Xie <xxx@rock-chips.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v8 0/4] This is the 1st version of suspend for RK3288.
+Date: Mon, 24 Nov 2014 23:50 +0100
+Message-ID: <2829328.asIzdRTr9b@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <1416051910-16730-1-git-send-email-zyw@rock-chips.com>
+References: <1416051910-16730-1-git-send-email-zyw@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +1. Location of shared flag can be set using prctl() only once. To
-> +   write a new memory address, the previous memory address must be
-> +   cleared first by writing NULL. Each new memory address requires
-> +   validation in the kernel and update of pointers. Changing this
-> +   address too many times creates too much overhead.
+Hi Chris,
 
-Can you explain this more? Doesn't make any sense to me.
-The validation is just access_ok() which is only a few instructions?
+Am Samstag, 15. November 2014, 19:45:06 schrieb Chris Zhong:
+> This suspend patch is only support cut off the power of cpu and some
+> external devices, since we still lack power_domain driver, so the other
+> power rail of rk3288 need keep power on.
+> I have tested it on rk3288-evb board, atop next-20141112. goto suspend by
+> type "echo mem > /sys/power/state", vdd_cpu is about 0mv by measuring, so
+> it can be determined in sleep mode, then press power button to wakeup it.
 
-Also I would drop the config symbol. Linux normally doesn't
-do CONFIG for things like that.
+with this version my board can finally wake up again. Although it wakes 
+immediatly again. But as it wakes at all, I'm quite happy :-) .
 
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 9b7d746..7f0d843 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -1671,6 +1671,11 @@ long do_fork(unsigned long clone_flags,
->  			init_completion(&vfork);
->  			get_task_struct(p);
->  		}
-> +#ifdef CONFIG_SCHED_PREEMPT_DELAY
-> +		p->sched_preempt_delay.delay_req = NULL;
-> +		p->sched_preempt_delay.delay_granted = 0;
-> +		p->sched_preempt_delay.yield_penalty = 0;
-> +#endif
+I remember this being mentioned before, but I don't remember what was 
+responsible for that. Was it because we only enter the light suspend mode 
+instead of the deep one or some interrupt somewhere?
 
-FWIW this would lead to every new thread having to reexecute
-this. No good way around it, but it may eventually make
-thread spawns more expensive if it was widely used.
 
->  
-> +#ifdef CONFIG_SCHED_PREEMPT_DELAY
-> +	/*
-> +	 * Clear the penalty flag for current task to reward it for
-> +	 * palying by the rules
-> +	 */
-> +	current->sched_preempt_delay.yield_penalty = 0;
-> +#endif
+I've been running on top of linux-next from 20141124 with the following 
+patches applied on top of your v8 series:
 
-Doesn't that need to be quantified? After all they may yield
-only near the end of their time slice.
+pinctrl: rockchip: Fix enable/disable/mask/unmask
+pinctrl: rockchip: Handle wakeup pins
+serial: 8250_dw: Handle no_console_suspend when uart loses state
 
-> +	}
-> +
-> +	/*
-> +	 * Get the value of preemption delay request flag from userspace.
-> +	 * Task had already passed us the address where the flag is stored
-> +	 * in userspace earlier. This flag is just like the PROCESS_PRIVATE
-> +	 * futex, leverage the futex code here to read the flag. If there
 
-I don't think any of the calls below are futex code.
+Heiko
 
-> +	case PR_GET_PREEMPT_DELAY:
-> +		error = put_user(
-> +			(unsigned long)current->sched_preempt_delay.delay_req,
-> +					(unsigned long __user *)arg2);
-> +		break;
-> +#endif
-
-Unnecessary cast.
-
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -1104,6 +1104,15 @@ static struct ctl_table kern_table[] = {
->  		.proc_handler	= proc_dointvec,
->  	},
->  #endif
-> +#ifdef CONFIG_SCHED_PREEMPT_DELAY
-> +	{
-> +		.procname	= "preempt_delay_available",
-> +		.data		= &sysctl_preempt_delay_available,
-> +		.maxlen		= sizeof(int),
-> +		.mode		= 0600,
-
-Better 0644, so users can know if they can use it.
-
-Rest looks reasonable to me.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
