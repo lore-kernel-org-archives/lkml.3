@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301AbaKXKKP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 05:10:15 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:46924 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998AbaKXKKN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 05:10:13 -0500
-Date: Mon, 24 Nov 2014 10:10:06 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Bryan Wu <cooloney@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH 1/1] backlight: lp8788: Deletion of an unnecessary check
- before the function call "backlight_device_unregister"
-Message-ID: <20141124101006.GD4241@x1>
-References: <530C5E18.1020800@users.sourceforge.net>
- <alpine.DEB.2.10.1402251014170.2080@hadrien>
- <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net>
- <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net>
- <54720DEB.4060109@users.sourceforge.net>
+	id S1753327AbaKXKKy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 05:10:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55213 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751062AbaKXKKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 05:10:52 -0500
+Message-ID: <5473041E.3070802@redhat.com>
+Date: Mon, 24 Nov 2014 11:10:38 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54720DEB.4060109@users.sourceforge.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nicholas Krause <xerofoify@gmail.com>, gleb@kernel.org
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: Remove FIXMEs in emulate.c
+References: <1416803131-3190-1-git-send-email-xerofoify@gmail.com>
+In-Reply-To: <1416803131-3190-1-git-send-email-xerofoify@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 23 Nov 2014, SF Markus Elfring wrote:
 
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Sun, 23 Nov 2014 17:33:08 +0100
+
+On 24/11/2014 05:25, Nicholas Krause wrote:
+> Remove fixme comments about needing fault addresses to be returned.  These
+> are propaagated from walk_addr_generic to gva_to_gpa and from there to
+> ops->read_std and ops->write_std.
 > 
-> The backlight_device_unregister() function tests whether its argument is NULL
-> and then returns immediately. Thus the test around the call is not needed.
-
-Also the $SUBJECT should be less than 75 chars.
-
-> This issue was detected by using the Coccinelle software.
-> 
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
 > ---
->  drivers/video/backlight/lp8788_bl.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+>  arch/x86/kvm/emulate.c | 4 ----
+>  1 file changed, 4 deletions(-)
 > 
-> diff --git a/drivers/video/backlight/lp8788_bl.c b/drivers/video/backlight/lp8788_bl.c
-> index d6c4f6a..24a055c 100644
-> --- a/drivers/video/backlight/lp8788_bl.c
-> +++ b/drivers/video/backlight/lp8788_bl.c
-> @@ -221,8 +221,7 @@ static void lp8788_backlight_unregister(struct lp8788_bl *bl)
->  {
->  	struct backlight_device *bl_dev = bl->bl_dev;
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index 9f8a2fa..16b5d52 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -2751,7 +2751,6 @@ static int task_switch_32(struct x86_emulate_ctxt *ctxt,
+>  	ret = ops->read_std(ctxt, old_tss_base, &tss_seg, sizeof tss_seg,
+>  			    &ctxt->exception);
+>  	if (ret != X86EMUL_CONTINUE)
+> -		/* FIXME: need to provide precise fault address */
+>  		return ret;
 >  
-> -	if (bl_dev)
-> -		backlight_device_unregister(bl_dev);
-> +	backlight_device_unregister(bl_dev);
->  }
+>  	save_state_to_tss32(ctxt, &tss_seg);
+> @@ -2760,13 +2759,11 @@ static int task_switch_32(struct x86_emulate_ctxt *ctxt,
+>  	ret = ops->write_std(ctxt, old_tss_base + eip_offset, &tss_seg.eip,
+>  			     ldt_sel_offset - eip_offset, &ctxt->exception);
+>  	if (ret != X86EMUL_CONTINUE)
+> -		/* FIXME: need to provide precise fault address */
+>  		return ret;
 >  
->  static ssize_t lp8788_get_bl_ctl_mode(struct device *dev,
+>  	ret = ops->read_std(ctxt, new_tss_base, &tss_seg, sizeof tss_seg,
+>  			    &ctxt->exception);
+>  	if (ret != X86EMUL_CONTINUE)
+> -		/* FIXME: need to provide precise fault address */
+>  		return ret;
+>  
+>  	if (old_tss_sel != 0xffff) {
+> @@ -2777,7 +2774,6 @@ static int task_switch_32(struct x86_emulate_ctxt *ctxt,
+>  				     sizeof tss_seg.prev_task_link,
+>  				     &ctxt->exception);
+>  		if (ret != X86EMUL_CONTINUE)
+> -			/* FIXME: need to provide precise fault address */
+>  			return ret;
+>  	}
+>  
+> 
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks, this patch has been applied already.
+
+Paolo
