@@ -1,48 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424AbaKXVss (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 16:48:48 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:54078 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbaKXVsq (ORCPT
+	id S1751480AbaKXVtf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 16:49:35 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:35753 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaKXVtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 16:48:46 -0500
-Date: Mon, 24 Nov 2014 16:48:42 -0500 (EST)
-Message-Id: <20141124.164842.1289257824447246212.davem@davemloft.net>
-To: a17711@motorola.com
-Cc: linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        stable@vger.kernel.org, gbjc64@motorola.com
-Subject: Re: [PATCH] net/ping: handle protocol mismatching scenario
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1416858248-29258-1-git-send-email-a17711@motorola.com>
-References: <1416858248-29258-1-git-send-email-a17711@motorola.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 24 Nov 2014 13:48:45 -0800 (PST)
+	Mon, 24 Nov 2014 16:49:32 -0500
+Date: Mon, 24 Nov 2014 22:49:26 +0100
+From: Pieter Smith <pieter@boesman.nl>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: josh@joshtriplett.org, Richard Weinberger <richard.weinberger@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Bertrand Jacquin <beber@meleeweb.net>, Oleg Nesterov <oleg@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Eric Dumazet <edumazet@google.com>,
+        =?utf-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
+        Jeff Layton <jlayton@poochiereds.net>,
+        Tom Herbert <therbert@google.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, Peter Foley <pefoley2@pefoley.com>,
+        Hugh Dickins <hughd@google.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mel Gorman <mgorman@suse.de>, Matt Turner <mattst88@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Catalina Mocanu <catalina.mocanu@gmail.com>,
+        Fabian Frederick <fabf@skynet.be>, Thomas Graf <tgraf@suug.ch>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jan Beulich <JBeulich@suse.com>, Willem de Bruijn <willemb@google.com>,
+        Iulia Manda <iulia.manda21@gmail.com>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [fuse-devel] [PATCH 4/6] fs/fuse: support compiling out splice
+Message-ID: <20141124214926.GA9371@smipidev>
+References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
+ <1416752468-1626-5-git-send-email-pieter@boesman.nl>
+ <CAFLxGvxq3Mr9n8xMO_fPZDhrGmBh=WKyU0+RF13JBdjssX6qfw@mail.gmail.com>
+ <20141123232302.GA12456@thin>
+ <20141124094931.GA1055@smipidev>
+ <20141124160510.GA2446@jtriplet-mobl1>
+ <20141124193412.GB31618@kroah.com>
+ <20141124201450.GA18776@cloud>
+ <20141124202214.GA11362@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141124202214.GA11362@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jane Zhou <a17711@motorola.com>
-Date: Mon, 24 Nov 2014 11:44:08 -0800
-
-> ping_lookup() may return a wrong sock if sk_buff's and sock's protocols
-> dont' match. For example, sk_buff's protocol is ETH_P_IPV6, but sock's
-> sk_family is AF_INET, in that case, if sk->sk_bound_dev_if is zero, a wrong
-> sock will be returned.
-> the fix is to "continue" the searching, if no matching, return NULL.
+On Mon, Nov 24, 2014 at 12:22:14PM -0800, Greg KH wrote:
+> On Mon, Nov 24, 2014 at 12:14:50PM -0800, josh@joshtriplett.org wrote:
+> > > I would, again, argue that stuff like __splice_p() not be implemented at
+> > > all please.  It will only cause a huge proliferation of stuff like this
+> > > that will not make any sense, and only cause a trivial, if any, amount
+> > > of code savings.
+> > > 
+> > > I thought you were going to not do this type of thing until you got the
+> > > gcc optimizer working for function callbacks.
+> > 
+> > Compared to the previous patchset, there are now only two instances of
+> > ifdefs outside of the splice code for this, and this is one of them.  In
+> > this case, the issue is no longer about making the code for this
+> > splice_read function disappear, but rather to eliminate a reference to a
+> > bit of splice functionality (used *inside* the FUSE splice code) that
+> > will not work without SPLICE_SYSCALL.
+> > 
+> > Would you prefer to see this specific case handled via an #ifdef in
+> > fs/fuse/dev.c rather than introducing a __splice_p that people might be
+> > inclined to propagate?  That'd be fine; the code could simply wrap
+> > fuse_dev_splice_read in an #ifdef and have the #else define a NULL
+> > fuse_dev_splice_read.
 > 
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Cc: netdev@vger.kernel.org
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Jane Zhou <a17711@motorola.com>
-> Signed-off-by: Yiwei Zhao <gbjc64@motorola.com>
+> Yes, I would prefer that, but I'm not the fuse maintainer.
+> 
+> thanks,
+> 
+> greg k-h
 
-Applied, thank you.
+Okay. I'll do my part to prevent the type of proliferation guaranteed to rate
+high on the respected K-H icky-scale. __splice_p() goes the way of the dodo
+in favor of the solution presented by Josh.
+
+I pray that the Gods of fuse maintenance will look favorable upon the result.
