@@ -1,260 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182AbaKXO2Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:28:16 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:40688 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753662AbaKXO2M (ORCPT
+	id S1754155AbaKXO2O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:28:14 -0500
+Received: from lucky1.263xmail.com ([211.157.147.133]:38594 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439AbaKXO2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:28:12 -0500
-Message-ID: <5473402E.80905@linaro.org>
-Date: Mon, 24 Nov 2014 15:26:54 +0100
-From: Eric Auger <eric.auger@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 24 Nov 2014 09:28:11 -0500
+X-Greylist: delayed 636 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Nov 2014 09:28:10 EST
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: galak@codeaurora.org
+X-SENDER-IP: 121.15.173.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <41acc8039b8000f49ef7e32a4dc46c0d>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <54733DF3.7020609@rock-chips.com>
+Date: Mon, 24 Nov 2014 22:17:23 +0800
+From: Andy Yan <andy.yan@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-CC: rkrcmar@redhat.com
-Subject: Re: [PATCH] kvm: x86: move ioapic.c and irq_comm.c back to arch/x86/
-References: <1416490931-21724-1-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1416490931-21724-1-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
+        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
+        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Lucas Stach <l.stach@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
+        djkurtz@google.com, ykk@rock-chips.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, devel@driverdev.osuosl.org,
+        devicetree@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        jay.xu@rock-chips.com, Pawel Moll <pawel.moll@arm.com>,
+        mark.yao@rock-chips.com, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v12 0/11] dw-hdmi: convert imx hdmi to bridge/dw_hdmi
+References: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com> <1416221635-12797-1-git-send-email-andy.yan@rock-chips.com>
+In-Reply-To: <1416221635-12797-1-git-send-email-andy.yan@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2014 02:42 PM, Paolo Bonzini wrote:
-> ia64 does not need them anymore.
-> 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  arch/x86/include/asm/kvm_host.h   | 16 ++++++++++++++++
->  arch/x86/kvm/Makefile             |  5 ++---
->  {virt => arch/x86}/kvm/ioapic.c   |  0
->  {virt => arch/x86}/kvm/ioapic.h   |  1 -
->  {virt => arch/x86}/kvm/irq_comm.c |  4 ++--
->  arch/x86/kvm/x86.c                |  1 +
->  include/linux/kvm_host.h          | 22 ++++++++--------------
->  virt/kvm/eventfd.c                |  7 -------
->  virt/kvm/kvm_main.c               |  3 ---
->  9 files changed, 29 insertions(+), 30 deletions(-)
->  rename {virt => arch/x86}/kvm/ioapic.c (100%)
->  rename {virt => arch/x86}/kvm/ioapic.h (98%)
->  rename {virt => arch/x86}/kvm/irq_comm.c (98%)
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 769db36a3001..76ff3e2d8fd2 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -603,6 +603,9 @@ struct kvm_arch {
->  
->  	struct kvm_xen_hvm_config xen_hvm_config;
->  
-> +	/* reads protected by irq_srcu, writes by irq_lock */
-> +	struct hlist_head mask_notifier_list;
-> +
->  	/* fields used by HYPER-V emulation */
->  	u64 hv_guest_os_id;
->  	u64 hv_hypercall;
-> @@ -819,6 +822,19 @@ int emulator_write_phys(struct kvm_vcpu *vcpu, gpa_t gpa,
->  			  const void *val, int bytes);
->  u8 kvm_get_guest_memory_type(struct kvm_vcpu *vcpu, gfn_t gfn);
->  
-> +struct kvm_irq_mask_notifier {
-> +	void (*func)(struct kvm_irq_mask_notifier *kimn, bool masked);
-> +	int irq;
-> +	struct hlist_node link;
-> +};
-> +
-> +void kvm_register_irq_mask_notifier(struct kvm *kvm, int irq,
-> +				    struct kvm_irq_mask_notifier *kimn);
-> +void kvm_unregister_irq_mask_notifier(struct kvm *kvm, int irq,
-> +				      struct kvm_irq_mask_notifier *kimn);
-> +void kvm_fire_mask_notifiers(struct kvm *kvm, unsigned irqchip, unsigned pin,
-> +			     bool mask);
-> +
->  extern bool tdp_enabled;
->  
->  u64 vcpu_tsc_khz(struct kvm_vcpu *vcpu);
-> diff --git a/arch/x86/kvm/Makefile b/arch/x86/kvm/Makefile
-> index 25d22b2d6509..ee1cd92b03be 100644
-> --- a/arch/x86/kvm/Makefile
-> +++ b/arch/x86/kvm/Makefile
-> @@ -7,14 +7,13 @@ CFLAGS_vmx.o := -I.
->  
->  KVM := ../../../virt/kvm
->  
-> -kvm-y			+= $(KVM)/kvm_main.o $(KVM)/ioapic.o \
-> -				$(KVM)/coalesced_mmio.o $(KVM)/irq_comm.o \
-> +kvm-y			+= $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o \
->  				$(KVM)/eventfd.o $(KVM)/irqchip.o $(KVM)/vfio.o
->  kvm-$(CONFIG_KVM_DEVICE_ASSIGNMENT)	+= $(KVM)/assigned-dev.o $(KVM)/iommu.o
->  kvm-$(CONFIG_KVM_ASYNC_PF)	+= $(KVM)/async_pf.o
->  
->  kvm-y			+= x86.o mmu.o emulate.o i8259.o irq.o lapic.o \
-> -			   i8254.o cpuid.o pmu.o
-> +			   i8254.o ioapic.o irq_comm.o cpuid.o pmu.o
->  kvm-intel-y		+= vmx.o
->  kvm-amd-y		+= svm.o
->  
-> diff --git a/virt/kvm/ioapic.c b/arch/x86/kvm/ioapic.c
-> similarity index 100%
-> rename from virt/kvm/ioapic.c
-> rename to arch/x86/kvm/ioapic.c
-> diff --git a/virt/kvm/ioapic.h b/arch/x86/kvm/ioapic.h
-> similarity index 98%
-> rename from virt/kvm/ioapic.h
-> rename to arch/x86/kvm/ioapic.h
-> index dc3baa3a538f..deac8d509f2a 100644
-> --- a/virt/kvm/ioapic.h
-> +++ b/arch/x86/kvm/ioapic.h
-> @@ -96,7 +96,6 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
->  		struct kvm_lapic_irq *irq, unsigned long *dest_map);
->  int kvm_get_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state);
->  int kvm_set_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state);
-> -void kvm_vcpu_request_scan_ioapic(struct kvm *kvm);
->  void kvm_ioapic_scan_entry(struct kvm_vcpu *vcpu, u64 *eoi_exit_bitmap,
->  			u32 *tmr);
->  
-> diff --git a/virt/kvm/irq_comm.c b/arch/x86/kvm/irq_comm.c
-> similarity index 98%
-> rename from virt/kvm/irq_comm.c
-> rename to arch/x86/kvm/irq_comm.c
-> index 1345bde064f5..e9c135b639aa 100644
-> --- a/virt/kvm/irq_comm.c
-> +++ b/arch/x86/kvm/irq_comm.c
-> @@ -234,7 +234,7 @@ void kvm_register_irq_mask_notifier(struct kvm *kvm, int irq,
->  {
->  	mutex_lock(&kvm->irq_lock);
->  	kimn->irq = irq;
-> -	hlist_add_head_rcu(&kimn->link, &kvm->mask_notifier_list);
-> +	hlist_add_head_rcu(&kimn->link, &kvm->arch.mask_notifier_list);
->  	mutex_unlock(&kvm->irq_lock);
->  }
->  
-> @@ -256,7 +256,7 @@ void kvm_fire_mask_notifiers(struct kvm *kvm, unsigned irqchip, unsigned pin,
->  	idx = srcu_read_lock(&kvm->irq_srcu);
->  	gsi = kvm_irq_map_chip_pin(kvm, irqchip, pin);
->  	if (gsi != -1)
-> -		hlist_for_each_entry_rcu(kimn, &kvm->mask_notifier_list, link)
-> +		hlist_for_each_entry_rcu(kimn, &kvm->arch.mask_notifier_list, link)
->  			if (kimn->irq == gsi)
->  				kimn->func(kimn, mask);
->  	srcu_read_unlock(&kvm->irq_srcu, idx);
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index a8f53a6960fd..5337039427c8 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -7264,6 +7264,7 @@ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
->  	if (type)
->  		return -EINVAL;
->  
-> +	INIT_HLIST_HEAD(&kvm->arch.mask_notifier_list);
->  	INIT_LIST_HEAD(&kvm->arch.active_mmu_pages);
->  	INIT_LIST_HEAD(&kvm->arch.zapped_obsolete_pages);
->  	INIT_LIST_HEAD(&kvm->arch.assigned_dev_head);
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index ea53b04993f2..d2d42709d6f4 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -395,7 +395,6 @@ struct kvm {
->  	 * Update side is protected by irq_lock.
->  	 */
->  	struct kvm_irq_routing_table __rcu *irq_routing;
-> -	struct hlist_head mask_notifier_list;
->  #endif
->  #ifdef CONFIG_HAVE_KVM_IRQFD
->  	struct hlist_head irq_ack_notifier_list;
-> @@ -447,6 +446,14 @@ void kvm_vcpu_uninit(struct kvm_vcpu *vcpu);
->  int __must_check vcpu_load(struct kvm_vcpu *vcpu);
->  void vcpu_put(struct kvm_vcpu *vcpu);
->  
-> +#ifdef __KVM_HAVE_IOAPIC
-> +void kvm_vcpu_request_scan_ioapic(struct kvm *kvm);
-> +#else
-> +static inline void kvm_vcpu_request-scan_ioapic(struct kvm *kvm)
-Hi Paolo,
+Hi ZubairLK, Russel King, Greg Kroah-Hartman , Philipp Zabel and Daniel:
+    Do you have any further opinions or suggestions about the
+the current patch set?
+On 2014年11月17日 18:53, Andy Yan wrote:
+> We found Freescale imx6 and Rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
+> use the interface compatible Designware HDMI IP, but they also have some
+> lightly differences, such as phy pll configuration, register width(imx hdmi
+> register is one byte, but rk3288 is 4 bytes width and can only be accessed
+> by word), 4K support(imx6 doesn't support 4k, but rk3288 does), and HDMI2.0
+> support.
+>
+> To reuse the imx-hdmi driver, we make this patch set:
+> (1): fix some CodingStyle warning to make checkpatch happy
+> (2): convert imx-hdmi to drm_bridge
+> (3): move imx-hdmi to bridge/dw_hdmi, and split platform specific code
+> (4): extend dw_hdmi.c to support rk3288 hdmi
+> (5): add rockchip rk3288 platform specific code dw_hdmi-rockchip.c
+>
+> Changes in v12:
+> - refactor of_node_put(ddc_node)
+> - squash patch <convert dw_hdmi to drm_bridge> & <split imx soc specific code from imx-hdmi>
+> - add comment for the depend on patch
+>
+> Changes in v11:
+> - squash patch  <split some phy configuration to platform driver>
+> - split form patch <dw_hdmi: add rk3288 support>
+> - split from patch <dw_hdmi: add rk3288 support>
+>
+> Changes in v10:
+> - split generic dw_hdmi.c improvements from patch#11 (add rk3288 support)
+> - add more display mode support mpll configuration for rk3288
+>
+> Changes in v9:
+> - move some phy configuration to platform driver
+>
+> Changes in v8:
+> - correct some spelling mistake
+> - modify ddc-i2c-bus and interrupt description
+> - Add documentation for rockchip dw hdmi
+>
+> Changes in v7:
+> - remove unused variables from structure dw_hdmi
+> - remove a wrong modification
+> - add copyrights for dw_hdmi-imx.c
+>
+> Changes in v6:
+> - rearrange the patch order
+> - move some modification to  patch#6
+> - refactor register access without reg_shift
+>
+> Changes in v5:
+> - refactor reg-io-width
+>
+> Changes in v4:
+> - fix checkpatch CHECK
+> - defer probe ddc i2c adapter
+>
+> Changes in v3:
+> - split multi-register access to one indepent patch
+>
+> Changes in v2:
+> - use git format -M to generate these patch
+>
+> Andy Yan (11):
+>    staging: imx-drm: imx-hdmi: make checkpatch happy
+>    staging: imx-drm: imx-hdmi: return defer if can't get ddc i2c adapter
+>    staging: imx-drm: imx-hdmi: convert imx-hdmi to drm_bridge mode
+>    staging: imx-drm: imx-hdmi: move imx-hdmi to bridge/dw_hdmi
+>    dt-bindings: add document for dw_hdmi
+>    drm: bridge/dw_hdmi: add support for multi-byte register width access
+>    drm: bridge/dw_hdmi: add mode_valid support
+>    drm: bridge/dw_hdmi: clear i2cmphy_stat0 reg in hdmi_phy_wait_i2c_done
+>    drm: bridge/dw_hdmi: add function dw_hdmi_phy_enable_spare
+>    dt-bindings: Add documentation for rockchip dw hdmi
+>    drm: bridge/dw_hdmi: add rockchip rk3288 support
+>
+>   .../devicetree/bindings/drm/bridge/dw_hdmi.txt     |  40 ++
+>   .../devicetree/bindings/video/dw_hdmi-rockchip.txt |  43 ++
+>   drivers/gpu/drm/bridge/Kconfig                     |   5 +
+>   drivers/gpu/drm/bridge/Makefile                    |   1 +
+>   .../imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c}        | 767 +++++++++------------
+>   .../imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h}        |   7 +-
+>   drivers/gpu/drm/rockchip/Kconfig                   |  10 +
+>   drivers/gpu/drm/rockchip/Makefile                  |   2 +-
+>   drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c        | 355 ++++++++++
+>   drivers/staging/imx-drm/Kconfig                    |   1 +
+>   drivers/staging/imx-drm/Makefile                   |   2 +-
+>   drivers/staging/imx-drm/dw_hdmi-imx.c              | 274 ++++++++
+>   include/drm/bridge/dw_hdmi.h                       |  60 ++
+>   13 files changed, 1139 insertions(+), 428 deletions(-)
+>   create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+>   create mode 100644 Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
+>   rename drivers/{staging/imx-drm/imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c} (70%)
+>   rename drivers/{staging/imx-drm/imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h} (99%)
+>   create mode 100644 drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+>   create mode 100644 drivers/staging/imx-drm/dw_hdmi-imx.c
+>   create mode 100644 include/drm/bridge/dw_hdmi.h
+>
 
-you have a typo above: "-" instead of "_".
-
-Best Regards
-
-Eric
-> +{
-> +}
-> +#endif
-> +
->  #ifdef CONFIG_HAVE_KVM_IRQFD
->  int kvm_irqfd_init(void);
->  void kvm_irqfd_exit(void);
-> @@ -736,19 +743,6 @@ struct kvm_assigned_dev_kernel {
->  	struct pci_saved_state *pci_saved_state;
->  };
->  
-> -struct kvm_irq_mask_notifier {
-> -	void (*func)(struct kvm_irq_mask_notifier *kimn, bool masked);
-> -	int irq;
-> -	struct hlist_node link;
-> -};
-> -
-> -void kvm_register_irq_mask_notifier(struct kvm *kvm, int irq,
-> -				    struct kvm_irq_mask_notifier *kimn);
-> -void kvm_unregister_irq_mask_notifier(struct kvm *kvm, int irq,
-> -				      struct kvm_irq_mask_notifier *kimn);
-> -void kvm_fire_mask_notifiers(struct kvm *kvm, unsigned irqchip, unsigned pin,
-> -			     bool mask);
-> -
->  int kvm_irq_map_gsi(struct kvm *kvm,
->  		    struct kvm_kernel_irq_routing_entry *entries, int gsi);
->  int kvm_irq_map_chip_pin(struct kvm *kvm, unsigned irqchip, unsigned pin);
-> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> index b0fb390943c6..148b2392c762 100644
-> --- a/virt/kvm/eventfd.c
-> +++ b/virt/kvm/eventfd.c
-> @@ -36,9 +36,6 @@
->  #include <linux/seqlock.h>
->  #include <trace/events/kvm.h>
->  
-> -#ifdef __KVM_HAVE_IOAPIC
-> -#include "ioapic.h"
-> -#endif
->  #include "iodev.h"
->  
->  #ifdef CONFIG_HAVE_KVM_IRQFD
-> @@ -492,9 +489,7 @@ void kvm_register_irq_ack_notifier(struct kvm *kvm,
->  	mutex_lock(&kvm->irq_lock);
->  	hlist_add_head_rcu(&kian->link, &kvm->irq_ack_notifier_list);
->  	mutex_unlock(&kvm->irq_lock);
-> -#ifdef __KVM_HAVE_IOAPIC
->  	kvm_vcpu_request_scan_ioapic(kvm);
-> -#endif
->  }
->  
->  void kvm_unregister_irq_ack_notifier(struct kvm *kvm,
-> @@ -504,9 +499,7 @@ void kvm_unregister_irq_ack_notifier(struct kvm *kvm,
->  	hlist_del_init_rcu(&kian->link);
->  	mutex_unlock(&kvm->irq_lock);
->  	synchronize_srcu(&kvm->irq_srcu);
-> -#ifdef __KVM_HAVE_IOAPIC
->  	kvm_vcpu_request_scan_ioapic(kvm);
-> -#endif
->  }
->  #endif
->  
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index 751ece6a595c..3be43424818b 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -468,9 +468,6 @@ static struct kvm *kvm_create_vm(unsigned long type)
->  	if (r)
->  		goto out_err_no_disable;
->  
-> -#ifdef CONFIG_HAVE_KVM_IRQCHIP
-> -	INIT_HLIST_HEAD(&kvm->mask_notifier_list);
-> -#endif
->  #ifdef CONFIG_HAVE_KVM_IRQFD
->  	INIT_HLIST_HEAD(&kvm->irq_ack_notifier_list);
->  #endif
-> 
 
