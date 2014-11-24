@@ -1,147 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664AbaKXTb5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 14:31:57 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38396 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293AbaKXTby (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 14:31:54 -0500
-Message-ID: <547387A0.4000808@arm.com>
-Date: Mon, 24 Nov 2014 19:31:44 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1754732AbaKXTcS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 14:32:18 -0500
+Received: from mail-bn1bon0089.outbound.protection.outlook.com ([157.56.111.89]:13344
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751033AbaKXTcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 14:32:16 -0500
+Date: Mon, 24 Nov 2014 20:31:56 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: Mark Rutland <Mark.Rutland@arm.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <Pawel.Moll@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "hc.yen@mediatek.com" <hc.yen@mediatek.com>,
-        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
-        "yh.chen@mediatek.com" <yh.chen@mediatek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh+dt@kernel.org>,
-        "nathan.chung@mediatek.com" <nathan.chung@mediatek.com>,
-        "yingjoe.chen@gmail.com" <yingjoe.chen@gmail.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        "eddie.huang@mediatek.com" <eddie.huang@mediatek.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        "lin ux- arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 1/4] irqchip: gic: Support hierarchy irq domain.
-References: <1416406451-4578-1-git-send-email-yingjoe.chen@mediatek.com>	 <1416406451-4578-2-git-send-email-yingjoe.chen@mediatek.com>	 <87h9xvaz2p.fsf@approximate.cambridge.arm.com>	 <546D6D62.4030005@linux.intel.com>	 <87wq6q9odi.fsf@approximate.cambridge.arm.com> <1416585081.24971.15.camel@mtksdaap41>
-In-Reply-To: <1416585081.24971.15.camel@mtksdaap41>
-Content-Type: text/plain; charset=utf-8
+To: Nicholas Krause <xerofoify@gmail.com>, <michal.simek@xilinx.com>
+CC: <soren.brinkmann@xilinx.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers:block Remove unneeded Fix me message in xsyace.c
+References: <1416857108-2618-1-git-send-email-xerofoify@gmail.com>
+In-Reply-To: <1416857108-2618-1-git-send-email-xerofoify@gmail.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21128.001
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <fd1c5863660447cfb2b959e80d42c27c@BN1AFFO11FD018.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(51704005)(164054003)(199003)(24454002)(377454003)(479174003)(74316001)(62966003)(120916001)(6806004)(31966008)(87936001)(92566001)(33646002)(50986999)(104016003)(95666004)(64126003)(20776003)(46102003)(107046002)(108616004)(99396003)(44976005)(65956001)(21056001)(47776003)(19580405001)(65806001)(54356999)(86362001)(106466001)(4396001)(83506001)(23746002)(77156002)(102836001)(19580395003)(76176999)(50466002)(64706001)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB029;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB029;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB029;
+X-Forefront-PRVS: 040513D301
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB029;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/11/14 15:51, Yingjoe Chen wrote:
+On 11/24/2014 08:25 PM, Nicholas Krause wrote:
+> Removes unneeded FIXME message related to using a hard coded value for ACE_BUS_WIDTH
+> due to it needing to be 8 bits, this is wrong as this function here needs all 16 bits
+> of the bus width and not just the lower or higher 16 depending on the machine's bit
+> order.
 > 
-> Hi,
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>  drivers/block/xsysace.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> On Thu, 2014-11-20 at 10:07 +0000, Marc Zyngier wrote:
->> On Thu, Nov 20 2014 at  4:26:10 am GMT, Jiang Liu <jiang.liu@linux.intel.com> wrote:
->>
->> Hi Jiang,
->>
->>> On 2014/11/20 1:18, Marc Zyngier wrote:
->>>> Hi Yingjoe,
->>>>
->>>> On Wed, Nov 19 2014 at 2:14:08 pm GMT, Yingjoe Chen
->>>> <yingjoe.chen@mediatek.com> wrote:
->>>>> +
->>>>> +static const struct irq_domain_ops gic_irq_domain_hierarchy_ops = {
->>>>> +	.xlate = gic_irq_domain_xlate,
->>>>> +	.alloc = gic_irq_domain_alloc,
->>>>> +	.free = irq_domain_free_irqs_top,
->>>>
->>>> I'm convinced that irq_domain_free_irqs_top is the wrong function to
->>>> call here, because you're calling it from the bottom, not the top-level
->>>> (it has no parent).
->>>>
->>>> I cannot verify this with your code as I don't a working platform with
->>>> GICv2m, but if I enable something similar on GICv3, it dies a very
->>>> painful way:
->>>>
->>>> Unable to handle kernel NULL pointer dereference at virtual address 00000018
->>>> pgd = ffffffc03d059000
->>>> [00000018] *pgd=0000000081356003, *pud=0000000081356003, *pmd=0000000000000000
->>>> Internal error: Oops: 96000006 [#1] SMP
->>>> Modules linked in:
->>>> CPU: 4 PID: 1052 Comm: sh Not tainted 3.18.0-rc4+ #3311
->>>> task: ffffffc03e320000 ti: ffffffc001390000 task.ti: ffffffc001390000
->>>> PC is at irq_domain_free_irqs_recursive+0x1c/0x80
->>>> LR is at irq_domain_free_irqs_common+0x88/0x9c
->>>> pc : [<ffffffc0000ed790>] lr : [<ffffffc0000ede20>] pstate: 60000145
->>>> [...]
->>>> [<ffffffc0000ed790>] irq_domain_free_irqs_recursive+0x1c/0x80
->>>> [<ffffffc0000ede1c>] irq_domain_free_irqs_common+0x84/0x9c
->>>> [<ffffffc0000ede98>] irq_domain_free_irqs_top+0x64/0x7c  <-- gic_domain.free()
->>>> [<ffffffc0000ed798>] irq_domain_free_irqs_recursive+0x24/0x80
->>>> [<ffffffc0000ee468>] irq_domain_free_irqs_parent+0x14/0x20
->>>> [<ffffffc0003500b8>] its_irq_domain_free+0xc8/0x250
->>>> [<ffffffc0000ed798>] irq_domain_free_irqs_recursive+0x24/0x80
->>>> [<ffffffc0000ede1c>] irq_domain_free_irqs_common+0x84/0x9c
->>>> [<ffffffc0000ede98>] irq_domain_free_irqs_top+0x64/0x7c
->>>> [<ffffffc0000ef518>] msi_domain_free+0x70/0x88
->>>> [<ffffffc0000ed798>] irq_domain_free_irqs_recursive+0x24/0x80
->>>> [<ffffffc0000ee3ac>] irq_domain_free_irqs+0x108/0x17c
->>>> [<ffffffc0000efb68>] msi_domain_free_irqs+0x28/0x4c
->>>> [<ffffffc000369cac>] free_msi_irqs+0xb4/0x1c0
->>>> [<ffffffc00036adec>] pci_disable_msix+0x3c/0x4c
->>>> [...]
->>>>
->>>> and I cannot see how this could work on the standard GIC either.
->>>>
->>>> Thomas, Jiang: could you please confirm or infirm my suspicions? My
->>>> understanding is that irq_domain_free_irqs_top can only be called from
->>>> the top-level domain.
->>> Hi Marc,
->>> 	It indicates that irq_domain_free_irqs_top() is not a good name.
->>> We have:
->>> 1) irq_domain_set_hwirq_and_chip() to set irq_chip and chip_data
->>> 2) irq_domain_set_info() to set irq_chip, chip_data, flow_handler and
->>>    handler_data;
->>> 3) irq_domain_reset_irq_data() resets irq_chip and chip_data.
->>> 4) irq_domain_free_irqs_common() resets irq_chip, chip_data and calls
->>>    parent domain's domain_ops.free() callback.
->>> 5) irq_domain_free_irqs_top() resets irq_chip, chip_data, flow handler,
->>>    handler_data and call parent domain's domain_ops.free() callback.
->>
->> Yes, and this "call parent domain's free callback" is where the problem
->> lies. Here, it is called from the innermost domain, with no parent.
->>
->>> So there two possible improvements here:
->>> 1) Rename irq_domain_free_irqs_top() with better name, any suggestions?
->>>    It's named as is because it's always called by the outer-most
->>>    irqdomains on x86.
->>> 2) Change irq_domain_free_irqs_common() and irq_domain_free_irqs_top()
->>>    to call parent domain's domain_ops.free() callback only if parent
->>>    exists. By this way, they could be used for inner-most irqdomains.
->>> If OK, I will respin a version 4 patch set based on tip/irq/irqdomain.
->>> Thoughts?
->>
->> Checking the parent is probably a safe solution (this is not a hot path
->> anyway). I don't care much about the name though, and I the only thing I
->> can think of is irq_domain_free_irqs_reset_flow, which looks so bad it's
->> not even funny. I'll let the matter rest in your capable hands! ;-)
+> diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
+> index c4328d9..1b807ed 100644
+> --- a/drivers/block/xsysace.c
+> +++ b/drivers/block/xsysace.c
+> @@ -1152,7 +1152,7 @@ static void ace_free(struct device *dev)
+>  static int ace_probe(struct platform_device *dev)
+>  {
+>  	resource_size_t physaddr = 0;
+> -	int bus_width = ACE_BUS_WIDTH_16; /* FIXME: should not be hard coded */
+> +	int bus_width = ACE_BUS_WIDTH_16;
+>  	u32 id = dev->id;
+>  	int irq = 0;
+>  	int i;
 > 
-> I've applied Jiang's "irqdomain: Enhance irq_domain_free_irqs_common()
-> to support parentless irqdomain" patch and it did fix the crash.
 
-Excellent.  I think this is pretty much getting there now. Any chance
-you could repost this series with the various fixes?
+Reviewed-by: Michal Simek <michal.simek@xilinx.com>
 
 Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Michal
