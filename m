@@ -1,49 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132AbaKXJNU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 04:13:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36031 "EHLO mx2.suse.de"
+	id S1752963AbaKXJQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 04:16:14 -0500
+Received: from ozlabs.org ([103.22.144.67]:41387 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751196AbaKXJNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 04:13:18 -0500
-Message-ID: <1416820395.19925.4.camel@linux-0dmf.site>
-Subject: Re: [PATCH] HID: usbhid: get/put around clearing needs_remote_wakeup
-From: Oliver Neukum <oneukum@suse.de>
-To: Benson Leung <bleung@chromium.org>
-Cc: johan@kernel.org, Jiri Kosina <jkosina@suse.cz>, linux-usb@vger.kernel.org,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sameer Nanda <snanda@chromium.org>
-Date: Mon, 24 Nov 2014 10:13:15 +0100
-In-Reply-To: <CANLzEkvcm5g_T+FsEQF2UFzS5A2u7CWgdTiEJAxidfxgAE5bHw@mail.gmail.com>
-References: <1415909806-23848-1-git-send-email-bleung@chromium.org>
-	 <1415956110.2640.5.camel@linux-0dmf.site>
-	 <CANLzEkvcm5g_T+FsEQF2UFzS5A2u7CWgdTiEJAxidfxgAE5bHw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751978AbaKXJQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 04:16:13 -0500
+Date: Mon, 24 Nov 2014 20:16:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Max Schwarz <max.schwarz@online.de>,
+        Doug Anderson <dianders@chromium.org>
+Subject: linux-next: build failure after merge of the i2c tree
+Message-ID: <20141124201604.51aa3a82@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/th++vzCiZZ_OTMfNARewbS1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-21 at 17:00 -0800, Benson Leung wrote:
+--Sig_/th++vzCiZZ_OTMfNARewbS1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> If devices are already asleep with this flag enabled, that means that
-> they are presently configured for remote wake.
+Hi Wolfram,
 
-Yes, but that doesn't matter. The drivers must be ready for a device
-being resumed at any time. Remote wakeup just adds one more reason.
+After merging the i2c tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-> Waking the device in the case of a close() is appropriate because it
-> also has the effect of re-suspending the device with the capability
-> disabled, as it is no longer necessary.
+drivers/i2c/busses/i2c-rk3x.c: In function 'rk3x_i2c_clk_notifier_cb':
+drivers/i2c/busses/i2c-rk3x.c:634:7: error: 'PRE_RATE_CHANGE' undeclared (f=
+irst use in this function)
+  case PRE_RATE_CHANGE:
+       ^
+drivers/i2c/busses/i2c-rk3x.c:634:7: note: each undeclared identifier is re=
+ported only once for each function it appears in
+drivers/i2c/busses/i2c-rk3x.c:635:31: error: dereferencing pointer to incom=
+plete type
+   if (rk3x_i2c_calc_divs(ndata->new_rate, i2c->scl_frequency,
+                               ^
+drivers/i2c/busses/i2c-rk3x.c:641:12: error: dereferencing pointer to incom=
+plete type
+   if (ndata->new_rate > ndata->old_rate)
+            ^
+drivers/i2c/busses/i2c-rk3x.c:641:30: error: dereferencing pointer to incom=
+plete type
+   if (ndata->new_rate > ndata->old_rate)
+                              ^
+drivers/i2c/busses/i2c-rk3x.c:642:33: error: dereferencing pointer to incom=
+plete type
+    rk3x_i2c_adapt_div(i2c, ndata->new_rate);
+                                 ^
+drivers/i2c/busses/i2c-rk3x.c:645:7: error: 'POST_RATE_CHANGE' undeclared (=
+first use in this function)
+  case POST_RATE_CHANGE:
+       ^
+drivers/i2c/busses/i2c-rk3x.c:647:12: error: dereferencing pointer to incom=
+plete type
+   if (ndata->new_rate < ndata->old_rate)
+            ^
+drivers/i2c/busses/i2c-rk3x.c:647:30: error: dereferencing pointer to incom=
+plete type
+   if (ndata->new_rate < ndata->old_rate)
+                              ^
+drivers/i2c/busses/i2c-rk3x.c:648:33: error: dereferencing pointer to incom=
+plete type
+    rk3x_i2c_adapt_div(i2c, ndata->new_rate);
+                                 ^
+drivers/i2c/busses/i2c-rk3x.c:650:7: error: 'ABORT_RATE_CHANGE' undeclared =
+(first use in this function)
+  case ABORT_RATE_CHANGE:
+       ^
+drivers/i2c/busses/i2c-rk3x.c:652:12: error: dereferencing pointer to incom=
+plete type
+   if (ndata->new_rate > ndata->old_rate)
+            ^
+drivers/i2c/busses/i2c-rk3x.c:652:30: error: dereferencing pointer to incom=
+plete type
+   if (ndata->new_rate > ndata->old_rate)
+                              ^
+drivers/i2c/busses/i2c-rk3x.c:653:33: error: dereferencing pointer to incom=
+plete type
+    rk3x_i2c_adapt_div(i2c, ndata->old_rate);
+                                 ^
+drivers/i2c/busses/i2c-rk3x.c: In function 'rk3x_i2c_probe':
+drivers/i2c/busses/i2c-rk3x.c:941:2: error: implicit declaration of functio=
+n 'clk_notifier_register' [-Werror=3Dimplicit-function-declaration]
+  ret =3D clk_notifier_register(i2c->clk, &i2c->clk_rate_nb);
+  ^
+drivers/i2c/busses/i2c-rk3x.c:961:2: error: implicit declaration of functio=
+n 'clk_notifier_unregister' [-Werror=3Dimplicit-function-declaration]
+  clk_notifier_unregister(i2c->clk, &i2c->clk_rate_nb);
+  ^
 
-But there is very little to be gained by switching off remote wakeup.
-The additional energy consumption devices with remote wakeup enabled
-will be dwarfed by the energy needed for an additional wakeup.
+Caused by commit 5a6f1566f6a0 ("i2c: rk3x: handle dynamic clock rate
+changes correctly").
 
-	Regards
-		Oliver
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_/th++vzCiZZ_OTMfNARewbS1
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUcvdaAAoJEMDTa8Ir7ZwVHEkP/3qrooqbHvfBvkSjFmE28tvW
+RFNnn73FGJamTdXV3G1MM36F3OE0RsWxxiIPQ+0xZk/hg8ySUJabzy+FoKAmqFR8
+8ZFBkUP22Hh3yOo4L7+E825ndlzvMa6SJYWkxrtP6tULDfK+rRv6Y2yCJ58vNAYT
+UciaskoZF7rw78y+vMUqAjhwSa9Mbe27LA2MCaHkULyscnar4k1vMnsNodzkCToy
+373IgHFqjPS+Ud/PwCereWcTU10rHgiucsvCZQLBIrdbgdDydzWIFcbzm/6sbphJ
+oT7D0riPsktCkF2m3WW+/ps/Ao1K01Wc+nX5AZJhohxr1V/DThx0b2zuntMXdMB+
+0rqN8C5Van+oOlLjZflux8LjwnJUd9kjB4U26Vtbwc8YVEyGY+HMioXfz5CXv4IE
+WVT7fomv2e38N/lWJsyNUTqGClz3u+5/jPCpd6VehF7mlZgd6MJrWGZhhls2ZTk6
+KdZr1L1/XrhjyZDumWneSv3br6ki8Ph7APzhx/a2THa0T4ibLCFd5qwHJEU8lvRN
+QFa+md7k25XhJtWnsAVoEJhR28m2YWdgdBEaPEtuUYdTJ3scwUk7k5RWk/+n32jk
+4VErvR2Rzf5YpI00tWfGPyA8wK1/yL3as9pgB1yNfAcHZiFfrhxvK1RN6lb1EM2N
+/WO4pXRfc6CBNGSysLqC
+=0Gqo
+-----END PGP SIGNATURE-----
+
+--Sig_/th++vzCiZZ_OTMfNARewbS1--
