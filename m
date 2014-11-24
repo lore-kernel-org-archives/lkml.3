@@ -1,228 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751269AbaKXW5i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 17:57:38 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:62171 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759AbaKXW5f (ORCPT
+	id S1751330AbaKXW6D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 17:58:03 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:46748 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaKXW6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 17:57:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141124222415.GA21010@www.outflux.net>
-References: <20141124222415.GA21010@www.outflux.net>
-Date: Mon, 24 Nov 2014 23:57:34 +0100
-Message-ID: <CA+rthh_nFgranq50214W=yyCAtr1NQHQ1aaqg+Ux19eG5ub9WQ@mail.gmail.com>
-Subject: Re: [PATCH v2] crypto: include crypto- module prefix in template
-From: Mathias Krause <minipli@googlemail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+	Mon, 24 Nov 2014 17:58:01 -0500
+Date: Mon, 24 Nov 2014 14:57:54 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
+ context
+Message-ID: <20141124225754.GY5050@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CALCETrVNnDEcVu_BteA2gVBeRB7zOsQmrA6JCrE8ez4U=vc0MQ@mail.gmail.com>
+ <20141122042056.GY5050@linux.vnet.ibm.com>
+ <CALCETrXSY9JpW3uE6H8WYk81sg56qasA2aqmjMPsq5dOtzso=g@mail.gmail.com>
+ <20141122234157.GB5050@linux.vnet.ibm.com>
+ <CALCETrVzeK=VWnAhpkPhxj9C012ETgArEPmLMFfhKJ7k1pHsXA@mail.gmail.com>
+ <20141124205441.GW5050@linux.vnet.ibm.com>
+ <CALCETrXBofV3oxDwK4MiSvFQcX3yxX_sL_KY63EZ8DgS8LnJSg@mail.gmail.com>
+ <20141124213501.GX5050@linux.vnet.ibm.com>
+ <20141124223407.GB8512@linux.vnet.ibm.com>
+ <CALCETrUA+z5z6bnOw63-EUiFD4WQtBXm1TE2DSRj3uG+d_k-bQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUA+z5z6bnOw63-EUiFD4WQtBXm1TE2DSRj3uG+d_k-bQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112422-0009-0000-0000-000006946866
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 November 2014 at 23:24, Kees Cook <keescook@chromium.org> wrote:
-> This adds the module loading prefix "crypto-" to the template lookup
-> as well.
->
-> For example, attempting to load 'vfat(blowfish)' via AF_ALG now correctly
-> includes the "crypto-" prefix at every level, correctly rejecting "vfat":
->
->         net-pf-38
->         algif-hash
->         crypto-vfat(blowfish)
->         crypto-vfat(blowfish)-all
->         crypto-vfat
->
-> Reported-by: Mathias Krause <minipli@googlemail.com>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  crypto/algapi.c     | 4 ++--
->  crypto/authenc.c    | 1 +
->  crypto/authencesn.c | 1 +
->  crypto/cbc.c        | 1 +
->  crypto/chainiv.c    | 1 +
->  crypto/cmac.c       | 1 +
->  crypto/cts.c        | 1 +
->  crypto/ecb.c        | 1 +
->  crypto/eseqiv.c     | 1 +
->  crypto/hmac.c       | 1 +
->  crypto/lrw.c        | 1 +
->  crypto/pcbc.c       | 1 +
->  crypto/seqiv.c      | 1 +
->  crypto/vmac.c       | 1 +
->  crypto/xcbc.c       | 1 +
->  crypto/xts.c        | 1 +
->  16 files changed, 17 insertions(+), 2 deletions(-)
+On Mon, Nov 24, 2014 at 02:36:18PM -0800, Andy Lutomirski wrote:
+> On Mon, Nov 24, 2014 at 2:34 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Mon, Nov 24, 2014 at 01:35:01PM -0800, Paul E. McKenney wrote:
 
-The following ones are still missing:
+[ . . . ]
 
-  arch/x86/crypto/fpu.c: needs MODULE_ALIAS_CRYPTO("fpu")
-  crypto/ccm.c: needs MODULE_ALIAS_CRYPTO("ccm")
-  crypto/cryptd.c: needs MODULE_ALIAS_CRYPTO("cryptd")
-  crypto/ctr.c: needs MODULE_ALIAS_CRYPTO("ctr")
-  crypto/gcm.c: needs MODULE_ALIAS_CRYPTO("gcm")
-  crypto/mcryptd.c: needs MODULE_ALIAS_CRYPTO("mcryptd")
-  crypto/pcrypt.c: needs MODULE_ALIAS_CRYPTO("pcrypt")
+> > And the following Promela model claims that your approach works.
+> > Should I trust it?  ;-)
+> >
+> 
+> I think so.
+> 
+> Want to write a patch?  If so, whose tree should it go in?  I can add
+> it to my IST series, but that seems a bit odd.
 
-With that fixed,
+Working on it.  ;-)
 
-Acked-by: Mathias Krause <minipli@googlemail.com>
+							Thanx, Paul
 
->
-> diff --git a/crypto/algapi.c b/crypto/algapi.c
-> index e8d3a7dca8c4..71a8143e23b1 100644
-> --- a/crypto/algapi.c
-> +++ b/crypto/algapi.c
-> @@ -509,8 +509,8 @@ static struct crypto_template *__crypto_lookup_template(const char *name)
->
->  struct crypto_template *crypto_lookup_template(const char *name)
->  {
-> -       return try_then_request_module(__crypto_lookup_template(name), "%s",
-> -                                      name);
-> +       return try_then_request_module(__crypto_lookup_template(name),
-> +                                      "crypto-%s", name);
->  }
->  EXPORT_SYMBOL_GPL(crypto_lookup_template);
->
-> diff --git a/crypto/authenc.c b/crypto/authenc.c
-> index e1223559d5df..78fb16cab13f 100644
-> --- a/crypto/authenc.c
-> +++ b/crypto/authenc.c
-> @@ -721,3 +721,4 @@ module_exit(crypto_authenc_module_exit);
->
->  MODULE_LICENSE("GPL");
->  MODULE_DESCRIPTION("Simple AEAD wrapper for IPsec");
-> +MODULE_ALIAS_CRYPTO("authenc");
-> diff --git a/crypto/authencesn.c b/crypto/authencesn.c
-> index 4be0dd4373a9..024bff2344fc 100644
-> --- a/crypto/authencesn.c
-> +++ b/crypto/authencesn.c
-> @@ -814,3 +814,4 @@ module_exit(crypto_authenc_esn_module_exit);
->  MODULE_LICENSE("GPL");
->  MODULE_AUTHOR("Steffen Klassert <steffen.klassert@secunet.com>");
->  MODULE_DESCRIPTION("AEAD wrapper for IPsec with extended sequence numbers");
-> +MODULE_ALIAS_CRYPTO("authencesn");
-> diff --git a/crypto/cbc.c b/crypto/cbc.c
-> index 61ac42e1e32b..780ee27b2d43 100644
-> --- a/crypto/cbc.c
-> +++ b/crypto/cbc.c
-> @@ -289,3 +289,4 @@ module_exit(crypto_cbc_module_exit);
->
->  MODULE_LICENSE("GPL");
->  MODULE_DESCRIPTION("CBC block cipher algorithm");
-> +MODULE_ALIAS_CRYPTO("cbc");
-> diff --git a/crypto/chainiv.c b/crypto/chainiv.c
-> index 9c294c8f9a07..63c17d5992f7 100644
-> --- a/crypto/chainiv.c
-> +++ b/crypto/chainiv.c
-> @@ -359,3 +359,4 @@ module_exit(chainiv_module_exit);
->
->  MODULE_LICENSE("GPL");
->  MODULE_DESCRIPTION("Chain IV Generator");
-> +MODULE_ALIAS_CRYPTO("chainiv");
-> diff --git a/crypto/cmac.c b/crypto/cmac.c
-> index 50880cf17fad..7a8bfbd548f6 100644
-> --- a/crypto/cmac.c
-> +++ b/crypto/cmac.c
-> @@ -313,3 +313,4 @@ module_exit(crypto_cmac_module_exit);
->
->  MODULE_LICENSE("GPL");
->  MODULE_DESCRIPTION("CMAC keyed hash algorithm");
-> +MODULE_ALIAS_CRYPTO("cmac");
-> diff --git a/crypto/cts.c b/crypto/cts.c
-> index 133f0874c95e..bd9405820e8a 100644
-> --- a/crypto/cts.c
-> +++ b/crypto/cts.c
-> @@ -351,3 +351,4 @@ module_exit(crypto_cts_module_exit);
->
->  MODULE_LICENSE("Dual BSD/GPL");
->  MODULE_DESCRIPTION("CTS-CBC CipherText Stealing for CBC");
-> +MODULE_ALIAS_CRYPTO("cts");
-> diff --git a/crypto/ecb.c b/crypto/ecb.c
-> index 935cfef4aa84..12011aff0971 100644
-> --- a/crypto/ecb.c
-> +++ b/crypto/ecb.c
-> @@ -185,3 +185,4 @@ module_exit(crypto_ecb_module_exit);
->
->  MODULE_LICENSE("GPL");
->  MODULE_DESCRIPTION("ECB block cipher algorithm");
-> +MODULE_ALIAS_CRYPTO("ecb");
-> diff --git a/crypto/eseqiv.c b/crypto/eseqiv.c
-> index bf7ab4a89493..f116fae766f8 100644
-> --- a/crypto/eseqiv.c
-> +++ b/crypto/eseqiv.c
-> @@ -267,3 +267,4 @@ module_exit(eseqiv_module_exit);
->
->  MODULE_LICENSE("GPL");
->  MODULE_DESCRIPTION("Encrypted Sequence Number IV Generator");
-> +MODULE_ALIAS_CRYPTO("eseqiv");
-> diff --git a/crypto/hmac.c b/crypto/hmac.c
-> index e392219ddc61..72e38c098bb3 100644
-> --- a/crypto/hmac.c
-> +++ b/crypto/hmac.c
-> @@ -268,3 +268,4 @@ module_exit(hmac_module_exit);
->
->  MODULE_LICENSE("GPL");
->  MODULE_DESCRIPTION("HMAC hash algorithm");
-> +MODULE_ALIAS_CRYPTO("hmac");
-> diff --git a/crypto/lrw.c b/crypto/lrw.c
-> index ba42acc4deba..6f9908a7ebcb 100644
-> --- a/crypto/lrw.c
-> +++ b/crypto/lrw.c
-> @@ -400,3 +400,4 @@ module_exit(crypto_module_exit);
->
->  MODULE_LICENSE("GPL");
->  MODULE_DESCRIPTION("LRW block cipher mode");
-> +MODULE_ALIAS_CRYPTO("lrw");
-> diff --git a/crypto/pcbc.c b/crypto/pcbc.c
-> index d1b8bdfb5855..f654965f0933 100644
-> --- a/crypto/pcbc.c
-> +++ b/crypto/pcbc.c
-> @@ -295,3 +295,4 @@ module_exit(crypto_pcbc_module_exit);
->
->  MODULE_LICENSE("GPL");
->  MODULE_DESCRIPTION("PCBC block cipher algorithm");
-> +MODULE_ALIAS_CRYPTO("pcbc");
-> diff --git a/crypto/seqiv.c b/crypto/seqiv.c
-> index ee190fcedcd2..9daa854cc485 100644
-> --- a/crypto/seqiv.c
-> +++ b/crypto/seqiv.c
-> @@ -362,3 +362,4 @@ module_exit(seqiv_module_exit);
->
->  MODULE_LICENSE("GPL");
->  MODULE_DESCRIPTION("Sequence Number IV Generator");
-> +MODULE_ALIAS_CRYPTO("seqiv");
-> diff --git a/crypto/vmac.c b/crypto/vmac.c
-> index d84c24bd7ff7..df76a816cfb2 100644
-> --- a/crypto/vmac.c
-> +++ b/crypto/vmac.c
-> @@ -713,3 +713,4 @@ module_exit(vmac_module_exit);
->
->  MODULE_LICENSE("GPL");
->  MODULE_DESCRIPTION("VMAC hash algorithm");
-> +MODULE_ALIAS_CRYPTO("vmac");
-> diff --git a/crypto/xcbc.c b/crypto/xcbc.c
-> index a5fbdf3738cf..df90b332554c 100644
-> --- a/crypto/xcbc.c
-> +++ b/crypto/xcbc.c
-> @@ -286,3 +286,4 @@ module_exit(crypto_xcbc_module_exit);
->
->  MODULE_LICENSE("GPL");
->  MODULE_DESCRIPTION("XCBC keyed hash algorithm");
-> +MODULE_ALIAS_CRYPTO("xcbc");
-> diff --git a/crypto/xts.c b/crypto/xts.c
-> index ca1608f44cb5..f6fd43f100c8 100644
-> --- a/crypto/xts.c
-> +++ b/crypto/xts.c
-> @@ -362,3 +362,4 @@ module_exit(crypto_module_exit);
->
->  MODULE_LICENSE("GPL");
->  MODULE_DESCRIPTION("XTS block cipher mode");
-> +MODULE_ALIAS_CRYPTO("xts");
-> --
+> --Andy
+> 
+> >                                                         Thanx, Paul
+> >
+> > ------------------------------------------------------------------------
+> >
+> > /*
+> >  * Promela model for Andy Lutomirski's suggested change to rcu_nmi_enter()
+> >  * that allows nesting.
+> >  *
+> >  * This program is free software; you can redistribute it and/or modify
+> >  * it under the terms of the GNU General Public License as published by
+> >  * the Free Software Foundation; either version 2 of the License, or
+> >  * (at your option) any later version.
+> >  *
+> >  * This program is distributed in the hope that it will be useful,
+> >  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> >  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> >  * GNU General Public License for more details.
+> >  *
+> >  * You should have received a copy of the GNU General Public License
+> >  * along with this program; if not, you can access it online at
+> >  * http://www.gnu.org/licenses/gpl-2.0.html.
+> >  *
+> >  * Copyright IBM Corporation, 2014
+> >  *
+> >  * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >  */
+> >
+> > byte dynticks_nesting;
+> > byte dynticks_nmi_nesting;
+> > byte dynticks;
+> > byte busy;
+> >
+> > /*
+> >  * Promela verision of rcu_nmi_enter().
+> >  */
+> > inline rcu_nmi_enter()
+> > {
+> >         assert(dynticks_nmi_nesting >= 0);
+> >         if
+> >         :: (dynticks & 1) == 0 ->
+> >                 atomic {
+> >                         dynticks = dynticks + 1;
+> >                 }
+> >                 assert((dynticks & 1) == 1);
+> >                 dynticks_nmi_nesting = dynticks_nmi_nesting + 1;
+> >                 assert(dynticks_nmi_nesting >= 1);
+> >         :: else ->
+> >                 dynticks_nmi_nesting = dynticks_nmi_nesting + 2;
+> >         fi;
+> > }
+> >
+> > /*
+> >  * Promela verision of rcu_nmi_exit().
+> >  */
+> > inline rcu_nmi_exit()
+> > {
+> >         assert(dynticks_nmi_nesting > 0);
+> >         assert((dynticks & 1) != 0);
+> >         if
+> >         :: dynticks_nmi_nesting != 1 ->
+> >                 dynticks_nmi_nesting = dynticks_nmi_nesting - 2;
+> >         :: else ->
+> >                 dynticks_nmi_nesting = 0;
+> >                 atomic {
+> >                         dynticks = dynticks + 1;
+> >                 }
+> >                 assert((dynticks & 1) == 0);
+> >         fi;
+> > }
+> >
+> > /*
+> >  * Base-level NMI runs non-atomically.  Crudely emulates process-level
+> >  * dynticks-idle entry/exit.
+> >  */
+> > proctype base_NMI()
+> > {
+> >         do
+> >         ::      if
+> >                 :: 1 -> atomic {
+> >                                 dynticks = dynticks + 1;
+> >                         }
+> >                         busy = 0;
+> >                 :: 1 -> skip;
+> >                 fi;
+> >                 rcu_nmi_enter();
+> >                 assert((dynticks & 1) == 1);
+> >                 rcu_nmi_exit();
+> >                 if
+> >                 :: busy -> skip;
+> >                 :: !busy ->
+> >                         atomic {
+> >                                 dynticks = dynticks + 1;
+> >                         }
+> >                         busy = 1;
+> >                 fi;
+> >         od;
+> > }
+> >
+> > /*
+> >  * Nested NMI runs atomically to emulate interrupting base_level().
+> >  */
+> > proctype nested_NMI()
+> > {
+> >         do
+> >         ::      atomic {
+> >                         rcu_nmi_enter();
+> >                         assert((dynticks & 1) == 1);
+> >                         rcu_nmi_exit();
+> >                 }
+> >         od;
+> > }
+> >
+> > init {
+> >         dynticks_nesting = 0;
+> >         dynticks_nmi_nesting = 0;
+> >         dynticks = 0;
+> >         busy = 0;
+> >         run base_NMI();
+> >         run nested_NMI();
+> > }
+> >
+> 
+> 
+> 
+> -- 
+> Andy Lutomirski
+> AMA Capital Management, LLC
+> 
 
-Thanks,
-Mathias
