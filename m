@@ -1,137 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942AbaKXElw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Nov 2014 23:41:52 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38621 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300AbaKXElv (ORCPT
+	id S1752069AbaKXEpy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Nov 2014 23:45:54 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:39803 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414AbaKXEpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Nov 2014 23:41:51 -0500
-Date: Mon, 24 Nov 2014 04:41:49 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC][PATCH 1/2] reduce the amount of boilerplate in iov_iter.c
-Message-ID: <20141124044149.GC7996@ZenIV.linux.org.uk>
-References: <20141124010953.GB7996@ZenIV.linux.org.uk>
+	Sun, 23 Nov 2014 23:45:53 -0500
+Date: Sun, 23 Nov 2014 20:48:06 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: axboe@kernel.dk, akpm@linux-foundation.org, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org,
+        drbd-user@lists.linbit.com
+Subject: Re: [PATCH 3/6] md/bcache: use generic io stats accounting functions
+ to simplify io stat accounting
+Message-ID: <20141124044806.GA22025@kmo-pixel>
+References: <1416798327-12817-1-git-send-email-guz.fnst@cn.fujitsu.com>
+ <1416798327-12817-4-git-send-email-guz.fnst@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141124010953.GB7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1416798327-12817-4-git-send-email-guz.fnst@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 01:09:54AM +0000, Al Viro wrote:
-> Specifically, it allows to add a new kind of iovecs (ITER_KVEC using
-> straight memcpy instead of going through copy_..._user) at the cost of
-> mere 74 extra lines (see the next patch) and allows to add the things
-> like csum_and_copy_{from,to}_iter() without arseloads of extra code (also
-> written, but I'd prefer to clean it up a bit more first).
+On Mon, Nov 24, 2014 at 11:05:24AM +0800, Gu Zheng wrote:
+> Use generic io stats accounting help functions (generic_{start,end}_io_acct)
+> to simplify io stat accounting.
+> 
+> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 
-FWIW, the current variant of csum_and_copy_..._iter (completely untested,
-without any code in net/* that would use it, etc.) is this:
+Cool!
 
-diff --git a/include/linux/uio.h b/include/linux/uio.h
-index 6e16945..28ed2d9 100644
---- a/include/linux/uio.h
-+++ b/include/linux/uio.h
-@@ -124,6 +124,8 @@ static inline void iov_iter_reexpand(struct iov_iter *i, size_t count)
- {
- 	i->count = count;
- }
-+size_t csum_and_copy_to_iter(void *addr, size_t bytes, __wsum *csum, struct iov_iter *i);
-+size_t csum_and_copy_from_iter(void *addr, size_t bytes, __wsum *csum, struct iov_iter *i);
- 
- int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
- int memcpy_toiovec(struct iovec *iov, unsigned char *kdata, int len);
-diff --git a/mm/iov_iter.c b/mm/iov_iter.c
-index 89ed7cd..fa03b8d 100644
---- a/mm/iov_iter.c
-+++ b/mm/iov_iter.c
-@@ -3,6 +3,7 @@
- #include <linux/pagemap.h>
- #include <linux/slab.h>
- #include <linux/vmalloc.h>
-+#include <net/checksum.h>
- 
- #define iterate_iovec(i, n, __v, __p, skip, STEP) {	\
- 	size_t left;					\
-@@ -577,6 +578,76 @@ ssize_t iov_iter_get_pages_alloc(struct iov_iter *i,
- }
- EXPORT_SYMBOL(iov_iter_get_pages_alloc);
- 
-+size_t copy_and_csum_from_iter(void *addr, size_t bytes, __wsum *csum,
-+			       struct iov_iter *i)
-+{
-+	char *to = addr;
-+	__wsum sum;
-+	if (unlikely(bytes > i->count))
-+		bytes = i->count;
-+
-+	if (unlikely(!bytes))
-+		return 0;
-+
-+	sum = *csum;
-+	iterate_all_kinds_shift(i, bytes, v, ({
-+		int err = 0;
-+		__wsum next;
-+		next = csum_and_copy_from_user(v.iov_base, 
-+					       (to += v.iov_len) - v.iov_len,
-+					       v.iov_len, sum, &err);
-+		err ? v.iov_len : (sum = next, 0);
-+	}), ({
-+		char *p = kmap_atomic(v.bv_page);
-+		sum = csum_partial_copy_nocheck(p + v.bv_offset,
-+						(to += v.bv_len) - v.bv_len,
-+						v.bv_len, sum);
-+		kunmap_atomic(p);
-+	}),
-+		sum = csum_partial_copy_nocheck(v.iov_base,
-+						(to += v.iov_len) - v.iov_len,
-+						v.iov_len, sum)
-+	)
-+	*csum = sum;
-+	return bytes;
-+}
-+EXPORT_SYMBOL(csum_and_copy_from_iter);
-+
-+size_t copy_and_csum_to_iter(void *addr, size_t bytes, __wsum *csum,
-+			     struct iov_iter *i)
-+{
-+	char *from = addr;
-+	__wsum sum;
-+	if (unlikely(bytes > i->count))
-+		bytes = i->count;
-+
-+	if (unlikely(!bytes))
-+		return 0;
-+
-+	sum = *csum;
-+	iterate_all_kinds_shift(i, bytes, v, ({
-+		int err = 0;
-+		__wsum next;
-+		next = csum_and_copy_to_user((from += v.iov_len) - v.iov_len,
-+					     v.iov_base, 
-+					     v.iov_len, sum, &err);
-+		err ? v.iov_len : (sum = next, 0);
-+	}), ({
-+		char *p = kmap_atomic(v.bv_page);
-+		sum = csum_partial_copy_nocheck((from += v.bv_len) - v.bv_len,
-+						p + v.bv_offset,
-+						v.bv_len, sum);
-+		kunmap_atomic(p);
-+	}),
-+		sum = csum_partial_copy_nocheck((from += v.iov_len) - v.iov_len,
-+						v.iov_base,
-+						v.iov_len, sum)
-+	)
-+	*csum = sum;
-+	return bytes;
-+}
-+EXPORT_SYMBOL(csum_and_copy_to_iter);
-+
- int iov_iter_npages(const struct iov_iter *i, int maxpages)
- {
- 	size_t size = i->count;
+Acked-by: Kent Overstreet <kmo@datera.io>
+
+> ---
+>  drivers/md/bcache/request.c |   23 ++++++-----------------
+>  1 files changed, 6 insertions(+), 17 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+> index 62e6e98..ab43fad 100644
+> --- a/drivers/md/bcache/request.c
+> +++ b/drivers/md/bcache/request.c
+> @@ -601,13 +601,8 @@ static void request_endio(struct bio *bio, int error)
+>  static void bio_complete(struct search *s)
+>  {
+>  	if (s->orig_bio) {
+> -		int cpu, rw = bio_data_dir(s->orig_bio);
+> -		unsigned long duration = jiffies - s->start_time;
+> -
+> -		cpu = part_stat_lock();
+> -		part_round_stats(cpu, &s->d->disk->part0);
+> -		part_stat_add(cpu, &s->d->disk->part0, ticks[rw], duration);
+> -		part_stat_unlock();
+> +		generic_end_io_acct(bio_data_dir(s->orig_bio),
+> +				    &s->d->disk->part0, s->start_time);
+>  
+>  		trace_bcache_request_end(s->d, s->orig_bio);
+>  		bio_endio(s->orig_bio, s->iop.error);
+> @@ -959,12 +954,9 @@ static void cached_dev_make_request(struct request_queue *q, struct bio *bio)
+>  	struct search *s;
+>  	struct bcache_device *d = bio->bi_bdev->bd_disk->private_data;
+>  	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
+> -	int cpu, rw = bio_data_dir(bio);
+> +	int rw = bio_data_dir(bio);
+>  
+> -	cpu = part_stat_lock();
+> -	part_stat_inc(cpu, &d->disk->part0, ios[rw]);
+> -	part_stat_add(cpu, &d->disk->part0, sectors[rw], bio_sectors(bio));
+> -	part_stat_unlock();
+> +	generic_start_io_acct(rw, bio_sectors(bio), &d->disk->part0);
+>  
+>  	bio->bi_bdev = dc->bdev;
+>  	bio->bi_iter.bi_sector += dc->sb.data_offset;
+> @@ -1074,12 +1066,9 @@ static void flash_dev_make_request(struct request_queue *q, struct bio *bio)
+>  	struct search *s;
+>  	struct closure *cl;
+>  	struct bcache_device *d = bio->bi_bdev->bd_disk->private_data;
+> -	int cpu, rw = bio_data_dir(bio);
+> +	int rw = bio_data_dir(bio);
+>  
+> -	cpu = part_stat_lock();
+> -	part_stat_inc(cpu, &d->disk->part0, ios[rw]);
+> -	part_stat_add(cpu, &d->disk->part0, sectors[rw], bio_sectors(bio));
+> -	part_stat_unlock();
+> +	generic_start_io_acct(rw, bio_sectors(bio), &d->disk->part0);
+>  
+>  	s = search_alloc(bio, d);
+>  	cl = &s->cl;
+> -- 
+> 1.7.7
+> 
