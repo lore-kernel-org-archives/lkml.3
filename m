@@ -1,129 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295AbaKXGYV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 01:24:21 -0500
-Received: from mail-bn1bon0148.outbound.protection.outlook.com ([157.56.111.148]:52039
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751919AbaKXGYT convert rfc822-to-8bit (ORCPT
+	id S1752560AbaKXGY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 01:24:28 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:36778 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752338AbaKXGY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 01:24:19 -0500
-X-Greylist: delayed 930 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Nov 2014 01:24:19 EST
-From: Dexuan Cui <decui@microsoft.com>
-To: Jason Wang <jasowang@redhat.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        KY Srinivasan <kys@microsoft.com>
-CC: Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH] hv: hv_balloon: avoid memory leak on alloc_error of 2MB
- memory block
-Thread-Topic: [PATCH] hv: hv_balloon: avoid memory leak on alloc_error of
- 2MB memory block
-Thread-Index: AQHQB6k84XUNZum87EGSQXE5iVJZTZxvRrkA
-Date: Mon, 24 Nov 2014 06:08:06 +0000
-Message-ID: <F792CF86EFE20D4AB8064279AFBA51C613E5FD2B@HKNPRD3002MB017.064d.mgd.msft.net>
-References: <1416808575-5383-1-git-send-email-decui@microsoft.com>
- <5472BF95.2000904@redhat.com>
-In-Reply-To: <5472BF95.2000904@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [141.251.55.133]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 24 Nov 2014 01:24:26 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="43872010"
+Message-ID: <5472CB74.7050503@cn.fujitsu.com>
+Date: Mon, 24 Nov 2014 14:08:52 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(24454002)(13464003)(51704005)(199003)(377454003)(479174003)(189002)(50986999)(50466002)(76176999)(1511001)(62966003)(77096003)(77156002)(20776003)(47776003)(2561002)(97756001)(23726002)(64706001)(69596002)(99396003)(87936001)(68736004)(44976005)(95666004)(19580405001)(6806004)(54356999)(19580395003)(2421001)(31966008)(66066001)(16796002)(97736003)(2656002)(120916001)(86146001)(26826002)(84676001)(86362001)(46406003)(81156004)(33656002)(21056001)(86612001)(2501002)(106466001)(4396001)(46102003)(92726001)(106116001)(107046002)(2201001)(55846006)(92566001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB602;H:mail.microsoft.com;FPR:;SPF:Pass;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB602;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB602;
-X-Forefront-PRVS: 040513D301
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=decui@microsoft.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB602;
-X-OriginatorOrg: microsoft.onmicrosoft.com
+To: David Miller <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: introduce helper macra CMSG_FOREACH_HDR
+References: <1416799125-13972-1-git-send-email-guz.fnst@cn.fujitsu.com> <20141124.005557.1508040983837292154.davem@davemloft.net>
+In-Reply-To: <20141124.005557.1508040983837292154.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jason Wang [mailto:jasowang@redhat.com]
-> Sent: Monday, November 24, 2014 13:18 PM
-> To: Dexuan Cui; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> driverdev-devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; KY Srinivasan
-> Cc: Haiyang Zhang
-> Subject: Re: [PATCH] hv: hv_balloon: avoid memory leak on alloc_error of
-> 2MB memory block
+Hi David,
+On 11/24/2014 01:55 PM, David Miller wrote:
+
 > 
-> On 11/24/2014 01:56 PM, Dexuan Cui wrote:
-> > If num_ballooned is not 0, we shouldn't neglect the already-allocated
-> 2MB
-> > memory block(s).
-> >
-> > Cc: K. Y. Srinivasan <kys@microsoft.com>
-> > Cc: <stable@vger.kernel.org>
-> > Signed-off-by: Dexuan Cui <decui@microsoft.com>
-> > ---
-> >  drivers/hv/hv_balloon.c | 4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-> > index 5e90c5d..cba2d3b 100644
-> > --- a/drivers/hv/hv_balloon.c
-> > +++ b/drivers/hv/hv_balloon.c
-> > @@ -1091,6 +1091,8 @@ static void balloon_up(struct work_struct
-> *dummy)
-> >  	bool done = false;
-> >  	int i;
-> >
-> > +	/* The host does balloon_up in 2MB. */
-> > +	WARN_ON(num_pages % PAGES_IN_2M != 0);
-> >
-> >  	/*
-> >  	 * We will attempt 2M allocations. However, if we fail to
-> > @@ -1111,7 +1113,7 @@ static void balloon_up(struct work_struct
-> *dummy)
-> >  						bl_resp, alloc_unit,
-> >  						 &alloc_error);
-> >
-> > -		if ((alloc_error) && (alloc_unit != 1)) {
-> > +		if (alloc_error && (alloc_unit != 1) && num_ballooned == 0)
-> {
-> >  			alloc_unit = 1;
-> >  			continue;
-> >  		}
+> Your postings do not make it to the mailing list, in fact they don't
+> even make it to the list server itself.
+
+Thanks for your reminder.
+
 > 
-> Before the change, we may retry the 4K allocation when part or all 2M
-> allocations were failed. This makes sense when memory is fragmented. But
-Yes, but all the partially-allocated 2MB memory blocks are lost(mem leak).
+> Generally speaking, sites in China have this problem off and on, and
+> in unpredictable ways.
 
-> after the change, if part of 2M allocation were failed, we won't retry
-> 4K allocation. Is this expected?
-Hi Jason,
-The patch doesn't break the "try 2MB first; then try 4K" logic:
+Seems we should say thanks to GFW... 
 
-With the change, we'll retry the 2MB allocation in the next iteration of the
-same while (!done) loop -- we expect this retry will cause
-"alloc_error && (alloc_unit != 1) && num_ballooned == 0" to be true,
-so we'll later try 4K allocation, as we did before.
+> 
+> You need to sort this out because I will not apply patches that don't
+> hit the mailing list for review.
 
+I'll confirm it first, and resent the patches once the problem is gone.
 
-> Btw, can host just require 1M? If yes, should alloc_balloon_pages() set
-Hi KY,
-Can you please clarify this?
-You know the host much more than me. :-)
+Regards,
+Gu
 
-> alloc_error if num_pages < alloc_unit for caller to catch this and retry
-> 4K allocation?
- 
--- Dexuan
+> 
+
 
