@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035AbaKXNU5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 08:20:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43563 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753990AbaKXNUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 08:20:53 -0500
-Date: Mon, 24 Nov 2014 14:21:01 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
-In-Reply-To: <alpine.DEB.2.11.1411241209050.6439@nanos>
-Message-ID: <alpine.LNX.2.00.1411241414280.23174@pobox.suse.cz>
-References: <1416522580-5593-1-git-send-email-sjenning@redhat.com> <1416522580-5593-3-git-send-email-sjenning@redhat.com> <alpine.DEB.2.11.1411241209050.6439@nanos>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754052AbaKXNVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 08:21:09 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:41288 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175AbaKXNVD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 08:21:03 -0500
+Date: Mon, 24 Nov 2014 14:21:00 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Romain Perier <romain.perier@gmail.com>
+Cc: Johan Hovold <johan@kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@kernel.org>,
+        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Grant Likely <grant.likely@linaro.org>, robh <robh@kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH v4 1/2] of: Rename "poweroff-source" property to
+ "system-power-controller"
+Message-ID: <20141124132100.GD6875@localhost>
+References: <1415885699-1465-1-git-send-email-user@radxa>
+ <1415885699-1465-2-git-send-email-user@radxa>
+ <20141121105951.GA20679@localhost>
+ <20141124102456.GE4241@x1>
+ <20141124113518.GC6875@localhost>
+ <CABgxDoLA=QL6vzU-v1w4vMZ3qhorjRdYOWFFMrjJE6xvZ7QO3g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABgxDoLA=QL6vzU-v1w4vMZ3qhorjRdYOWFFMrjJE6xvZ7QO3g@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014, Thomas Gleixner wrote:
+On Mon, Nov 24, 2014 at 01:58:50PM +0100, Romain Perier wrote:
+> 2014-11-24 12:35 GMT+01:00 Johan Hovold <johan@kernel.org>:
 
-> > This commit introduces code for the live patching core.  It implements
-> > an ftrace-based mechanism and kernel interface for doing live patching
-> > of kernel and kernel module functions.
-> > 
-> > It represents the greatest common functionality set between kpatch and
-> > kgraft and can accept patches built using either method.
-> > 
-> > This first version does not implement any consistency mechanism that
-> > ensures that old and new code do not run together.  In practice, ~90% of
-> > CVEs are safe to apply in this way, since they simply add a conditional
-> > check.  However, any function change that can not execute safely with
-> > the old version of the function can _not_ be safely applied in this
-> > version.
-> 
-> To be honest this sounds frightening.
-> 
-> How is determined whether a change can be applied w/o a consistency
-> mechanism or not?
+> > You should also fix the commit message, which claims to define a "helper
+> > function which is compatible with both properties", something which was
+> > no longer the case.
+> >
+> So I need to resend this patch which would only introduce an helper
+> function which checks for "system-power-controller" property (it would
+> also have a new commit message).
+> As you suggested, this helper might be named
+> "of_device_is_system_power_controller" ?
 
-By a human being producing the "live patch" code.
+Correct. Rename the helper and property name you introduced to
+"of_device_is_system_power_controller" and "system-power-controller" and
+update the act8865 driver to use the new names (all in one patch).
 
-If the semantics of the patch requires consistency mechanism to be applied 
-(such as "old and new function must not run in parallel, because locking 
-rules would be violated", or "return value from a function that is being 
-called in a loop is changing its meaning", etc.), then this first naive 
-implementation simply can't be used.
+Send the patch to Mark (and keep everyone else one CC) so he can apply
+it to the regulator tree.
 
-For simple things though, such as "add a missing bounds check to sys_foo() 
-prologue and return -EINVAL if out-of-bounds", this is sufficient.
-
-It's being designed in a way that more advanced consistency models (such 
-as the ones kgraft and kpatch are currently implementing) can be built on 
-top of it.
-
-The person writing the patch would always need to understand what he is 
-doing to be able to pick correct consistency model to be used. I 
-personally think this is a good thing -- this is nothing where we should 
-be relying on any kinds of tools.
+Other drivers that are currently using "ti,system-power-controller" can
+continue to do so (for backward compatibility), while we later also add
+a call to your helper function (and update binding documentation) and
+also update the device trees for boards that use this functionality.
 
 Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+Johan
