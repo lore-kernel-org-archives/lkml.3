@@ -1,160 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049AbaKXUPH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 15:15:07 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:50312 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754596AbaKXUPE (ORCPT
+	id S932115AbaKXUPQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 15:15:16 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:43093 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754960AbaKXUPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 15:15:04 -0500
-Date: Mon, 24 Nov 2014 12:14:50 -0800
-From: josh@joshtriplett.org
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Pieter Smith <pieter@boesman.nl>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Bertrand Jacquin <beber@meleeweb.net>, Oleg Nesterov <oleg@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Eric Dumazet <edumazet@google.com>,
-        =?utf-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
-        Jeff Layton <jlayton@poochiereds.net>,
-        Tom Herbert <therbert@google.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, Peter Foley <pefoley2@pefoley.com>,
-        Hugh Dickins <hughd@google.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mel Gorman <mgorman@suse.de>, Matt Turner <mattst88@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Catalina Mocanu <catalina.mocanu@gmail.com>,
-        Fabian Frederick <fabf@skynet.be>, Thomas Graf <tgraf@suug.ch>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jan Beulich <JBeulich@suse.com>, Willem de Bruijn <willemb@google.com>,
-        Iulia Manda <iulia.manda21@gmail.com>,
-        "open list:ABI/API" <linux-api@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [fuse-devel] [PATCH 4/6] fs/fuse: support compiling out splice
-Message-ID: <20141124201450.GA18776@cloud>
-References: <1416752468-1626-1-git-send-email-pieter@boesman.nl>
- <1416752468-1626-5-git-send-email-pieter@boesman.nl>
- <CAFLxGvxq3Mr9n8xMO_fPZDhrGmBh=WKyU0+RF13JBdjssX6qfw@mail.gmail.com>
- <20141123232302.GA12456@thin>
- <20141124094931.GA1055@smipidev>
- <20141124160510.GA2446@jtriplet-mobl1>
- <20141124193412.GB31618@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141124193412.GB31618@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 24 Nov 2014 15:15:12 -0500
+From: Mitchel Humpherys <mitchelh@codeaurora.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        iommu@lists.linux-foundation.org,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Matt Wagantall <mattw@codeaurora.org>,
+        Mitchel Humpherys <mitchelh@codeaurora.org>
+Subject: [PATCH RESEND v8] iopoll: Introduce memory-mapped IO polling macros
+Date: Mon, 24 Nov 2014 12:14:52 -0800
+Message-Id: <1416860092-11620-1-git-send-email-mitchelh@codeaurora.org>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 11:34:12AM -0800, Greg KH wrote:
-> On Mon, Nov 24, 2014 at 08:05:10AM -0800, Josh Triplett wrote:
-> > On Mon, Nov 24, 2014 at 10:49:31AM +0100, Pieter Smith wrote:
-> > > On Sun, Nov 23, 2014 at 03:23:02PM -0800, Josh Triplett wrote:
-> > > > On Sun, Nov 23, 2014 at 11:29:08PM +0100, Richard Weinberger wrote:
-> > > > > On Sun, Nov 23, 2014 at 3:20 PM, Pieter Smith <pieter@boesman.nl> wrote:
-> > > > > > To implement splice support, fs/fuse makes use of nosteal_pipe_buf_ops. This
-> > > > > > struct is exported by fs/splice. The goal of the larger patch set is to
-> > > > > > completely compile out fs/splice, so uses of the exported struct need to be
-> > > > > > compiled out along with fs/splice.
-> > > > > >
-> > > > > > This patch therefore compiles out splice support in fs/fuse when
-> > > > > > CONFIG_SYSCALL_SPLICE is undefined.
-> > > > > >
-> > > > > > Signed-off-by: Pieter Smith <pieter@boesman.nl>
-> > > > > > ---
-> > > > > >  fs/fuse/dev.c      | 4 ++--
-> > > > > >  include/linux/fs.h | 6 ++++++
-> > > > > >  2 files changed, 8 insertions(+), 2 deletions(-)
-> > > > > >
-> > > > > > diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-> > > > > > index ca88731..f8f92a4 100644
-> > > > > > --- a/fs/fuse/dev.c
-> > > > > > +++ b/fs/fuse/dev.c
-> > > > > > @@ -1291,7 +1291,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
-> > > > > >         return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
-> > > > > >  }
-> > > > > >
-> > > > > > -static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
-> > > > > > +static ssize_t __maybe_unused fuse_dev_splice_read(struct file *in, loff_t *ppos,
-> > > > > >                                     struct pipe_inode_info *pipe,
-> > > > > >                                     size_t len, unsigned int flags)
-> > > > > >  {
-> > > > > > @@ -2144,7 +2144,7 @@ const struct file_operations fuse_dev_operations = {
-> > > > > >         .llseek         = no_llseek,
-> > > > > >         .read           = do_sync_read,
-> > > > > >         .aio_read       = fuse_dev_read,
-> > > > > > -       .splice_read    = fuse_dev_splice_read,
-> > > > > > +       .splice_read    = __splice_p(fuse_dev_splice_read),
-> > > > > >         .write          = do_sync_write,
-> > > > > >         .aio_write      = fuse_dev_write,
-> > > > > >         .splice_write   = fuse_dev_splice_write,
-> > > > > > diff --git a/include/linux/fs.h b/include/linux/fs.h
-> > > > > > index a957d43..04c0975 100644
-> > > > > > --- a/include/linux/fs.h
-> > > > > > +++ b/include/linux/fs.h
-> > > > > > @@ -2443,6 +2443,12 @@ extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
-> > > > > >                         int datasync);
-> > > > > >  extern void block_sync_page(struct page *page);
-> > > > > >
-> > > > > > +#ifdef CONFIG_SYSCALL_SPLICE
-> > > > > > +#define __splice_p(x) x
-> > > > > > +#else
-> > > > > > +#define __splice_p(x) NULL
-> > > > > > +#endif
-> > > > > > +
-> > > > > 
-> > > > > This needs to go into a different patch.
-> > > > > One logical change per patch please. :-)
-> > > > 
-> > > > Easy enough to merge this one into the patch introducing
-> > > > CONFIG_SYSCALL_SPLICE, then.
-> > > > 
-> > > > - Josh Triplett
-> > > 
-> > > The patch introducing CONFIG_SYSCALL_SPLICE (PATCH 3) only compiles out the
-> > > syscalls. PATCH 6 on the other hand, compiles out fs/splice.c. This patch
-> > > allows fs/fuse to be compiled when fs/splice.c is compiled out. If I am to
-> > > squash it, it would be logical to include it in PATCH 6, not 3.
-> > 
-> > The suggestion wasn't to move the fs/fuse/dev.c bits; those should
-> > definitely stay in this patch.  The suggestion was just to move the bit
-> > of the patch defining __splice_p from this patch to patch 3.  (Note that
-> > you need to define it before you use it, so it can't go in patch 6.)
-> 
-> I would, again, argue that stuff like __splice_p() not be implemented at
-> all please.  It will only cause a huge proliferation of stuff like this
-> that will not make any sense, and only cause a trivial, if any, amount
-> of code savings.
-> 
-> I thought you were going to not do this type of thing until you got the
-> gcc optimizer working for function callbacks.
+From: Matt Wagantall <mattw@codeaurora.org>
 
-Compared to the previous patchset, there are now only two instances of
-ifdefs outside of the splice code for this, and this is one of them.  In
-this case, the issue is no longer about making the code for this
-splice_read function disappear, but rather to eliminate a reference to a
-bit of splice functionality (used *inside* the FUSE splice code) that
-will not work without SPLICE_SYSCALL.
+It is sometimes necessary to poll a memory-mapped register until its value
+satisfies some condition. Introduce a family of convenience macros that do
+this. Tight-looping, sleeping, and timing out can all be accomplished using
+these macros.
 
-Would you prefer to see this specific case handled via an #ifdef in
-fs/fuse/dev.c rather than introducing a __splice_p that people might be
-inclined to propagate?  That'd be fine; the code could simply wrap
-fuse_dev_splice_read in an #ifdef and have the #else define a NULL
-fuse_dev_splice_read.
+Cc: Thierry Reding <thierry.reding@gmail.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Matt Wagantall <mattw@codeaurora.org>
+Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
+---
+This patch was originally part of a series [1] for adding support for IOMMU
+address translations through an ARM SMMU hardware register.  The other
+patch in the series (the one that actually uses these macros and implements
+said hardware address translations) was Ack'd by the driver maintainer
+there (Will Deacon) so I've pulled this patch out to avoid resending an
+already Ack'd patch over and over again.
 
-- Josh Triplett
+In short, please see [1] for previous discussion and the first user of
+these macros.
+
+This patch has been resent previously here [2], here [3], and here [4] on
+2014-10-30, 2014-11-06, and 2014-11-17, respectively.  It has not changed
+since [2] and has not received any comments since [1] on 2014-10-19.
+Thanks to everyone who has taken a look at this.
+
+[1] http://thread.gmane.org/gmane.linux.kernel.iommu/7140
+[2] http://thread.gmane.org/gmane.linux.kernel/1818213
+[3] http://thread.gmane.org/gmane.linux.kernel/1823422
+[4] http://thread.gmane.org/gmane.linux.kernel.iommu/7394
+
+
+Changes since v7:
+  - sorted helper macros by size (b, w, l, q)
+  - removed some of the more esoteric (or flat-out bogus) helper macros
+---
+ include/linux/iopoll.h | 140 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 140 insertions(+)
+ create mode 100644 include/linux/iopoll.h
+
+diff --git a/include/linux/iopoll.h b/include/linux/iopoll.h
+new file mode 100644
+index 0000000000..bd161dae2d
+--- /dev/null
++++ b/include/linux/iopoll.h
+@@ -0,0 +1,140 @@
++/*
++ * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef _LINUX_IOPOLL_H
++#define _LINUX_IOPOLL_H
++
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/hrtimer.h>
++#include <linux/delay.h>
++#include <linux/errno.h>
++#include <linux/io.h>
++
++/**
++ * readx_poll_timeout - Periodically poll an address until a condition is met or a timeout occurs
++ * @op: accessor function (takes @addr as its only argument)
++ * @addr: Address to poll
++ * @val: Variable to read the value into
++ * @cond: Break condition (usually involving @val)
++ * @sleep_us: Maximum time to sleep between reads in us (0 tight-loops)
++ * @timeout_us: Timeout in us, 0 means never timeout
++ *
++ * Returns 0 on success and -ETIMEDOUT upon a timeout. In either
++ * case, the last read value at @addr is stored in @val. Must not
++ * be called from atomic context if sleep_us or timeout_us are used.
++ *
++ * When available, you'll probably want to use one of the specialized
++ * macros defined below rather than this macro directly.
++ */
++#define readx_poll_timeout(op, addr, val, cond, sleep_us, timeout_us)	\
++({ \
++	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
++	might_sleep_if(sleep_us); \
++	for (;;) { \
++		(val) = op(addr); \
++		if (cond) \
++			break; \
++		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) { \
++			(val) = op(addr); \
++			break; \
++		} \
++		if (sleep_us) \
++			usleep_range((sleep_us >> 2) + 1, sleep_us); \
++	} \
++	(cond) ? 0 : -ETIMEDOUT; \
++})
++
++/**
++ * readx_poll_timeout_atomic - Periodically poll an address until a condition is met or a timeout occurs
++ * @op: accessor function (takes @addr as its only argument)
++ * @addr: Address to poll
++ * @val: Variable to read the value into
++ * @cond: Break condition (usually involving @val)
++ * @delay_us: Time to udelay between reads in us (0 tight-loops)
++ * @timeout_us: Timeout in us, 0 means never timeout
++ *
++ * Returns 0 on success and -ETIMEDOUT upon a timeout. In either
++ * case, the last read value at @addr is stored in @val.
++ *
++ * When available, you'll probably want to use one of the specialized
++ * macros defined below rather than this macro directly.
++ */
++#define readx_poll_timeout_atomic(op, addr, val, cond, delay_us, timeout_us) \
++({ \
++	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
++	for (;;) { \
++		(val) = op(addr); \
++		if (cond) \
++			break; \
++		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) { \
++			(val) = op(addr); \
++			break; \
++		} \
++		if (delay_us) \
++			udelay(delay_us);	\
++	} \
++	(cond) ? 0 : -ETIMEDOUT; \
++})
++
++
++#define readb_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readb, addr, val, cond, delay_us, timeout_us)
++
++#define readb_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readb, addr, val, cond, delay_us, timeout_us)
++
++#define readw_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readw, addr, val, cond, delay_us, timeout_us)
++
++#define readw_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readw, addr, val, cond, delay_us, timeout_us)
++
++#define readl_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readl, addr, val, cond, delay_us, timeout_us)
++
++#define readl_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readl, addr, val, cond, delay_us, timeout_us)
++
++#define readq_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readq, addr, val, cond, delay_us, timeout_us)
++
++#define readq_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readq, addr, val, cond, delay_us, timeout_us)
++
++#define readb_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readb_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readb_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readb_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readw_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readw_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readw_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readw_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readl_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readl_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readl_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readl_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readq_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readq_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readq_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readq_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#endif /* _LINUX_IOPOLL_H */
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
+
