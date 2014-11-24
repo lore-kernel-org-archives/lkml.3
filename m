@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665AbaKXNZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 08:25:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45096 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752622AbaKXNZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 08:25:25 -0500
-Date: Mon, 24 Nov 2014 07:24:37 -0600
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
-Message-ID: <20141124132437.GA6235@treble.redhat.com>
-References: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
- <1416522580-5593-3-git-send-email-sjenning@redhat.com>
- <alpine.DEB.2.11.1411241209050.6439@nanos>
+	id S932080AbaKXNZi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 08:25:38 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:51253 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753762AbaKXNZg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 08:25:36 -0500
+Date: Mon, 24 Nov 2014 14:25:44 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH resend] init: fix read-write root mount
+Message-ID: <20141124132544.GD3596@tucsk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1411241209050.6439@nanos>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 12:13:20PM +0100, Thomas Gleixner wrote:
-> On Thu, 20 Nov 2014, Seth Jennings wrote:
-> > This commit introduces code for the live patching core.  It implements
-> > an ftrace-based mechanism and kernel interface for doing live patching
-> > of kernel and kernel module functions.
-> > 
-> > It represents the greatest common functionality set between kpatch and
-> > kgraft and can accept patches built using either method.
-> > 
-> > This first version does not implement any consistency mechanism that
-> > ensures that old and new code do not run together.  In practice, ~90% of
-> > CVEs are safe to apply in this way, since they simply add a conditional
-> > check.  However, any function change that can not execute safely with
-> > the old version of the function can _not_ be safely applied in this
-> > version.
-> 
-> To be honest this sounds frightening.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-The risky part of live patching is patch analysis and creation.  If the
-user isn't careful with their analysis, they're playing with fire.
+If mount flags don't have MS_RDONLY, iso9660 returns EACCES without actually
+checking if it's an iso image.
 
-We'll be documenting the patch analysis steps, so that if you carefully
-follow the steps, it's safe.  But that should generally be the role of
-the distribution.
+This tricks mount_block_root() into retrying with MS_RDONLY.  This results
+in a read-only root despite the "rw" boot parameter if the actual
+filesystem was checked after iso9660.
 
-> How is determined whether a change can be applied w/o a consistency
-> mechanism or not?
+I believe the behavior of iso9660 is okay, while that of mount_block_root()
+is not.  It should rather try all types without MS_RDONLY and only then
+retry with MS_RDONLY.
 
-The following are not safe without consistency mechanisms:
+This change also makes the code more robust against the case when EACCES is
+returned despite MS_RDONLY, which would've resulted in a lockup.
 
-- function prototype changes
-- data structure changes
-- data semantic changes: changes to how functions interact with a data
-  structure, e.g. locking order
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ init/do_mounts.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-We'll be adding the consistency mechanisms later to enable function and
-data consistency.  But even then you have to be very careful.
-
--- 
-Josh
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -395,8 +395,6 @@ void __init mount_block_root(char *name,
+ 			case 0:
+ 				goto out;
+ 			case -EACCES:
+-				flags |= MS_RDONLY;
+-				goto retry;
+ 			case -EINVAL:
+ 				continue;
+ 		}
+@@ -419,6 +417,10 @@ void __init mount_block_root(char *name,
+ #endif
+ 		panic("VFS: Unable to mount root fs on %s", b);
+ 	}
++	if (!(flags & MS_RDONLY)) {
++		flags |= MS_RDONLY;
++		goto retry;
++	}
+ 
+ 	printk("List of all partitions:\n");
+ 	printk_all_partitions();
