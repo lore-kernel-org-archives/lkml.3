@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713AbaKXSEj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:04:39 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:47677 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506AbaKXSCt (ORCPT
+	id S1754561AbaKXSCr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:02:47 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:28052 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754506AbaKXSCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:02:49 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-99-547372c7ca2d
+	Mon, 24 Nov 2014 13:02:43 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-93-547372bfc02c
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
@@ -22,74 +22,179 @@ Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
         Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
         Vegard Nossum <vegard.nossum@gmail.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH v7 09/12] fs: dcache: manually unpoison dname after allocation
- to shut up kasan's reports
-Date: Mon, 24 Nov 2014 21:02:22 +0300
-Message-id: <1416852146-9781-10-git-send-email-a.ryabinin@samsung.com>
+        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v7 04/12] mm: page_alloc: add kasan hooks on alloc and free
+ paths
+Date: Mon, 24 Nov 2014 21:02:17 +0300
+Message-id: <1416852146-9781-5-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 2.1.3
 In-reply-to: <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
  <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t/xK7rHi4pDDLZNELLY9usRm8XvvTNZ
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t/xK7r7i4pDDO4fZLXY9usRm8XvvTNZ
 	LeasX8NmceTad3aL69/eMFp8evmA0WLL9SYmi+cPH7JbTHjYxm4xbaO4xcruZjaL7c/eMlms
-	7HzAanF51xw2i3tr/rNaLD5ym9ni3bPJzBZXVx1ktzj/9zirxY8Nj1kdRDzm7/zI6LFz1l12
-	jwWbSj0W73nJ5LFpVSebx6ZPk9g9ut5eYfI4MeM3i8eTK9OZPD4+vcXi8X7fVTaPvi2rGD0+
-	b5Lz2PTkLVBFyxfWAP4oLpuU1JzMstQifbsEroyl7zYyFuzjqvh4/CV7A+NZji5GTg4JAROJ
-	LZsOM0PYYhIX7q1n62Lk4hASWMoocezdE1YIp49J4ueB/WwgVWwCehL/Zm0Hs0UEdCVWPd/F
-	DFLELLCRVeLGh/NACQ4OYYFsiRP9BiAmi4CqxL/TUiDlvAJuEnsuTWQGCUsIyElsXecNYnIC
-	hX88LYPY1Mgo0TNrM9sERt4FjAyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MUKi5usOxqXH
-	rA4xCnAwKvHwVmgWhwixJpYVV+YeYpTgYFYS4U3LBwrxpiRWVqUW5ccXleakFh9iZOLglGpg
-	zGp51tU1P/JIuLvwW+0TSmfZOawXTVy5YumCH0zZzdNKz/JYrH/ddj/l3mINk1uc++b1zd18
-	eaaYrevZVYf384nuX8t/bQVvQ42zHOehhJexM/7H77vayBI2u23G8tYtDf9WrFNgDlmZMUFx
-	+7XUNv3/duols7K0v4pNqH506tetFUm2ZSFGbkosxRmJhlrMRcWJANOEncN4AgAA
+	7HzAanF51xw2i3tr/rNaLD5ym9ni3bPJzBZXVx1kt/ix4TGrg7DH/J0fGT12zrrL7rFgU6nH
+	4j0vmTw2repk89j0aRK7R9fbK0weJ2b8ZvF4cmU6k8fHp7dYPN7vu8rm0bdlFaPH501yHida
+	vrAG8EVx2aSk5mSWpRbp2yVwZZxtfs9S8EC1omvhGfYGxgnyXYycHBICJhJ7Fl1ghLDFJC7c
+	W8/WxcjFISSwlFHi/q9+Zginj0lixfs7TCBVbAJ6Ev9mbWcDsUUEdCVWPd/FDGIzC7SySpza
+	mgRiCwsESyyduosdxGYRUJWYs7yRFcTmFXCV2LXyCJDNAbRNTmLrOm8Qk1PATeLH0zKIVY2M
+	Ej2zNrNNYORdwMiwilE0tTS5oDgpPddQrzgxt7g0L10vOT93EyMkRr7sYFx8zOoQowAHoxIP
+	74+ewhAh1sSy4srcQ4wSHMxKIrxp+cUhQrwpiZVVqUX58UWlOanFhxiZODilGhiLP8yoTtHz
+	OvNiyaQ/sRYK22+dFojzl0r+tLREt0qjZ7JUk4HCUd33Yj/+2/Nd8vonGGi1z9bi9Aume0xX
+	eu9kb9N6eYi/fu0xbaaDFguzH77jf3udyfiX+Hrzz292N8oczlHyL9jlcnvjFPunFlcWvWT7
+	HfzI6hj/UbbzZ37tDz7pLxAraL1HiaU4I9FQi7moOBEAaqwig28CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to manually unpoison rounded up allocation size for dname
-to avoid kasan's reports in dentry_string_cmp().
-When CONFIG_DCACHE_WORD_ACCESS=y dentry_string_cmp may access
-few bytes beyound requested in kmalloc() size.
+Add kernel address sanitizer hooks to mark allocated page's addresses
+as accessible in corresponding shadow region.
+Mark freed pages as inaccessible.
 
-dentry_string_cmp() relates on that fact that dentry allocated
-using kmalloc and kmalloc internally round up allocation size.
-So this is not a bug, but this makes kasan to complain about
-such accesses.
-To avoid such reports we mark rounded up allocation size in
-shadow as accessible.
-
-Reported-by: Dmitry Vyukov <dvyukov@google.com>
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- fs/dcache.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ include/linux/kasan.h |  6 ++++++
+ mm/compaction.c       |  2 ++
+ mm/kasan/kasan.c      | 14 ++++++++++++++
+ mm/kasan/kasan.h      |  1 +
+ mm/kasan/report.c     |  7 +++++++
+ mm/page_alloc.c       |  3 +++
+ 6 files changed, 33 insertions(+)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index a6c5d7e..3914e56 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -38,6 +38,8 @@
- #include <linux/prefetch.h>
- #include <linux/ratelimit.h>
- #include <linux/list_lru.h>
-+#include <linux/kasan.h>
-+
- #include "internal.h"
- #include "mount.h"
+diff --git a/include/linux/kasan.h b/include/linux/kasan.h
+index 01c99fe..9714fba 100644
+--- a/include/linux/kasan.h
++++ b/include/linux/kasan.h
+@@ -30,6 +30,9 @@ static inline void kasan_disable_local(void)
  
-@@ -1429,6 +1431,10 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
- 		}
- 		atomic_set(&p->u.count, 1);
- 		dname = p->name;
-+#ifdef CONFIG_DCACHE_WORD_ACCESS
-+		kasan_unpoison_shadow(dname,
-+				round_up(name->len + 1,	sizeof(unsigned long)));
-+#endif
- 	} else  {
- 		dname = dentry->d_iname;
- 	}	
+ void kasan_unpoison_shadow(const void *address, size_t size);
+ 
++void kasan_alloc_pages(struct page *page, unsigned int order);
++void kasan_free_pages(struct page *page, unsigned int order);
++
+ #else /* CONFIG_KASAN */
+ 
+ static inline void kasan_unpoison_shadow(const void *address, size_t size) {}
+@@ -37,6 +40,9 @@ static inline void kasan_unpoison_shadow(const void *address, size_t size) {}
+ static inline void kasan_enable_local(void) {}
+ static inline void kasan_disable_local(void) {}
+ 
++static inline void kasan_alloc_pages(struct page *page, unsigned int order) {}
++static inline void kasan_free_pages(struct page *page, unsigned int order) {}
++
+ #endif /* CONFIG_KASAN */
+ 
+ #endif /* LINUX_KASAN_H */
+diff --git a/mm/compaction.c b/mm/compaction.c
+index a857225..a5c8e84 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -16,6 +16,7 @@
+ #include <linux/sysfs.h>
+ #include <linux/balloon_compaction.h>
+ #include <linux/page-isolation.h>
++#include <linux/kasan.h>
+ #include "internal.h"
+ 
+ #ifdef CONFIG_COMPACTION
+@@ -61,6 +62,7 @@ static void map_pages(struct list_head *list)
+ 	list_for_each_entry(page, list, lru) {
+ 		arch_alloc_page(page, 0);
+ 		kernel_map_pages(page, 1, 1);
++		kasan_alloc_pages(page, 0);
+ 	}
+ }
+ 
+diff --git a/mm/kasan/kasan.c b/mm/kasan/kasan.c
+index f77be01..b336073 100644
+--- a/mm/kasan/kasan.c
++++ b/mm/kasan/kasan.c
+@@ -247,6 +247,20 @@ static __always_inline void check_memory_region(unsigned long addr,
+ 	kasan_report(addr, size, write);
+ }
+ 
++void kasan_alloc_pages(struct page *page, unsigned int order)
++{
++	if (likely(!PageHighMem(page)))
++		kasan_unpoison_shadow(page_address(page), PAGE_SIZE << order);
++}
++
++void kasan_free_pages(struct page *page, unsigned int order)
++{
++	if (likely(!PageHighMem(page)))
++		kasan_poison_shadow(page_address(page),
++				PAGE_SIZE << order,
++				KASAN_FREE_PAGE);
++}
++
+ void __asan_load1(unsigned long addr)
+ {
+ 	check_memory_region(addr, 1, false);
+diff --git a/mm/kasan/kasan.h b/mm/kasan/kasan.h
+index 6da1d78..2a6a961 100644
+--- a/mm/kasan/kasan.h
++++ b/mm/kasan/kasan.h
+@@ -6,6 +6,7 @@
+ #define KASAN_SHADOW_SCALE_SIZE (1UL << KASAN_SHADOW_SCALE_SHIFT)
+ #define KASAN_SHADOW_MASK       (KASAN_SHADOW_SCALE_SIZE - 1)
+ 
++#define KASAN_FREE_PAGE         0xFF  /* page was freed */
+ #define KASAN_SHADOW_GAP        0xF9  /* address belongs to shadow memory */
+ 
+ struct access_info {
+diff --git a/mm/kasan/report.c b/mm/kasan/report.c
+index 56a2089..8ac3b6b 100644
+--- a/mm/kasan/report.c
++++ b/mm/kasan/report.c
+@@ -57,6 +57,9 @@ static void print_error_description(struct access_info *info)
+ 	case 0 ... KASAN_SHADOW_SCALE_SIZE - 1:
+ 		bug_type = "out of bounds access";
+ 		break;
++	case KASAN_FREE_PAGE:
++		bug_type = "use after free";
++		break;
+ 	case KASAN_SHADOW_GAP:
+ 		bug_type = "wild memory access";
+ 		break;
+@@ -78,6 +81,10 @@ static void print_address_description(struct access_info *info)
+ 	page = virt_to_head_page((void *)info->access_addr);
+ 
+ 	switch (shadow_val) {
++	case KASAN_FREE_PAGE:
++		dump_page(page, "kasan error");
++		dump_stack();
++		break;
+ 	case KASAN_SHADOW_GAP:
+ 		pr_err("No metainfo is available for this access.\n");
+ 		dump_stack();
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index b0e6eab..3829589 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -58,6 +58,7 @@
+ #include <linux/page-debug-flags.h>
+ #include <linux/hugetlb.h>
+ #include <linux/sched/rt.h>
++#include <linux/kasan.h>
+ 
+ #include <asm/sections.h>
+ #include <asm/tlbflush.h>
+@@ -758,6 +759,7 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
+ 
+ 	trace_mm_page_free(page, order);
+ 	kmemcheck_free_shadow(page, order);
++	kasan_free_pages(page, order);
+ 
+ 	if (PageAnon(page))
+ 		page->mapping = NULL;
+@@ -940,6 +942,7 @@ static int prep_new_page(struct page *page, unsigned int order, gfp_t gfp_flags)
+ 
+ 	arch_alloc_page(page, order);
+ 	kernel_map_pages(page, 1 << order, 1);
++	kasan_alloc_pages(page, order);
+ 
+ 	if (gfp_flags & __GFP_ZERO)
+ 		prep_zero_page(page, order, gfp_flags);
 -- 
 2.1.3
 
