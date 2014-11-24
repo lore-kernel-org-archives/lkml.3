@@ -1,76 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077AbaKXOdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 09:33:12 -0500
-Received: from mail-bn1on0095.outbound.protection.outlook.com ([157.56.110.95]:25474
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753696AbaKXOdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 09:33:10 -0500
-Date: Mon, 24 Nov 2014 15:32:52 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932103AbaKXOdc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 09:33:32 -0500
+Received: from mga03.intel.com ([134.134.136.65]:51514 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753356AbaKXOdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 09:33:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,449,1413270000"; 
+   d="scan'208";a="642588583"
+Message-ID: <547341AA.9070506@linux.intel.com>
+Date: Mon, 24 Nov 2014 22:33:14 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: nick <xerofoify@gmail.com>, Michal Simek <michal.simek@xilinx.com>
-CC: <soren.brinkmann@xilinx.com>, <grant.likely@linaro.org>,
-        <robh+dt@kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: FIX ME in xsysace.c
-References: <5472B1D6.7080805@gmail.com>
- <5a8be93a4204429daf16bc8f62cdd0cd@BY2FFO11FD005.protection.gbl>
- <54731648.8010006@gmail.com>
-In-Reply-To: <54731648.8010006@gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21124.007
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <5e95919de4e349a6a7c5261cb1e9fda5@BN1BFFO11FD012.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(51704005)(24454002)(164054003)(479174003)(377454003)(199003)(377424004)(65806001)(108616004)(50986999)(54356999)(104016003)(23676002)(31966008)(65956001)(50466002)(106466001)(44976005)(74316001)(4396001)(6806004)(76176999)(21056001)(95666004)(92566001)(77156002)(20776003)(83506001)(62966003)(47776003)(33646002)(99396003)(87936001)(107046002)(64126003)(64706001)(86362001)(46102003)(120916001)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB017;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB017;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB017;
-X-Forefront-PRVS: 040513D301
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB017;
-X-OriginatorOrg: xilinx.com
+To: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [patch 01/16] irqdomain: Introduce new interfaces to support
+ hierarchy irqdomains
+References: <20141112133941.647950773@linutronix.de> <20141112134119.881823615@linutronix.de> <547325A9.3000109@huawei.com> <alpine.DEB.2.11.1411241405560.6439@nanos> <54733A4E.8020304@huawei.com> <54733C7D.2010405@linux.intel.com> <54733E7C.60005@huawei.com>
+In-Reply-To: <54733E7C.60005@huawei.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 11/24/2014 12:28 PM, nick wrote:
+On 2014/11/24 22:19, Yun Wu (Abel) wrote:
+> On 2014/11/24 22:11, Jiang Liu wrote:
 > 
+>> On 2014/11/24 22:01, Yun Wu (Abel) wrote:
+>>> On 2014/11/24 21:13, Thomas Gleixner wrote:
+>>>
+>>>> On Mon, 24 Nov 2014, Yun Wu (Abel) wrote:
+>>>>> Hi Thomas, Jiang,
+>>>>> On 2014/11/12 21:42, Thomas Gleixner wrote:
+>>>>>
+>>>>>> From: Jiang Liu <jiang.liu@linux.intel.com>
+>>>>>>
+>>>>> [...]
+>>>>>>  /* Number of irqs reserved for a legacy isa controller */
+>>>>>>  #define NUM_ISA_INTERRUPTS	16
+>>>>>> @@ -64,6 +66,16 @@ struct irq_domain_ops {
+>>>>>>  	int (*xlate)(struct irq_domain *d, struct device_node *node,
+>>>>>>  		     const u32 *intspec, unsigned int intsize,
+>>>>>>  		     unsigned long *out_hwirq, unsigned int *out_type);
+>>>>>> +
+>>>>>> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
+>>>>>> +	/* extended V2 interfaces to support hierarchy irq_domains */
+>>>>>> +	int (*alloc)(struct irq_domain *d, unsigned int virq,
+>>>>>> +		     unsigned int nr_irqs, void *arg);
+>>>>>> +	void (*free)(struct irq_domain *d, unsigned int virq,
+>>>>>> +		     unsigned int nr_irqs);
+>>>>>> +	void (*activate)(struct irq_domain *d, struct irq_data *irq_data);
+>>>>>> +	void (*deactivate)(struct irq_domain *d, struct irq_data *irq_data);
+>>>>>
+>>>>> What's the usage of the parameter domain reference in activate/deactivate?
+>>>>> I think the purpose of the two callbacks is to activate/deactivate the
+>>>>> irq_data->hwirq in irq_data->domain. If so, the first parameter @domain is
+>>>>> required to be equal to irq_data->domain (which makes @domain useless).
+>>>>> Besides, the main responsibility of interrupt domains is to manage mappings
+>>>>> between hardware and linux interrupt numbers, so would it be better if move
+>>>>> the two callbacks into struct irq_chip?
+>>>>
+>>>> No. It's not a function of the irq_chip to activate/deactivate a
+>>>> hierarchy. As I explained you before:
+>>>>
+>>>> The existing irqdomain code maps between hardware and virtual
+>>>> interrupts and thereby activates the interrupt in hardware.
+>>>>
+>>>> In the hierarchical case we do not touch the hardware in the
+>>>> allocation step, so we need to activate the allocated interrupt in the
+>>>> hardware before we can use it. And that's clearly a domain interface
+>>>> not a irq chip issue.
+>>>>
+>>>
+>>> Makes sense, now the interrupt domain seems to be the best place.
+>>> And when the @domain parameter can be really useful? I haven't see
+>>> anyone using it so far.
+>> We will use it for IOAPIC on x86, as below:
+>> void mp_irqdomain_deactivate(struct irq_domain *domain,
+>>                              struct irq_data *irq_data)
+>> {
+>>         ioapic_mask_entry(mp_irqdomain_ioapic_idx(domain),
+>>                           (int)irq_data->hwirq);
+>> }
+>>
+>> >From an object oriented point of view, we pass the object as the
+>> first parameter. It's true that we could retrieve domain from
+>> irq_data->domain instead of explicitly passing it in, but that
+>> will cause irqdomain interfaces depends on irq_data, not sounds
+>> a good situation:)
 > 
-> On 14-11-24 02:47 AM, Michal Simek wrote:
->> Hi,
->>
->> On 11/24/2014 05:19 AM, nick wrote:
->>> Greetings Michal and others,
->>> I am wondering about the FIX ME in xsysace.c as it seems not correct due to my knowledge of most hardware protocols using a predetermined bit wide and therefore this could be hard coded. If someone can respond on if I am correct in removing this fix me it would be greatly appreciated.
->>
->> I think that will be the best to c&p that fixme which you are talking about.
->> Definitely feel free to fix whatever fixme is there and send the patch
->> for fixing it.
->>
->> Thanks,
->> Michal
->>
-> Here is the fix me.
-> int bus_width = ACE_BUS_WIDTH_16; /* FIXME: should not be hard coded */
+> Hi Gerry,
+> 
+> Is there any possibility that domain doesn't equal to irq_data->domain?
+> I'm a little confused..
+Hi Yun,
+	Currently they are always the same, but we don't want irqdomain
+interfaces make assumption of struct irq_data. If it will bring big
+performance improvement, we will try to kill the first parameter,
+otherwise we may prefer keeping irqdomain interfaces clear.
+Thanks!
+Gerry
 
-FIXME is totally bogus and should be removed.
-
-I expect you want to use 8bit bus mode which driver itself supports.
-This line is just default setup to 16bit mode.
-
-If you add 8-bit property to dts you are there.
-	if (of_find_property(dev->dev.of_node, "8-bit", NULL))
-		bus_width = ACE_BUS_WIDTH_8;
-
-Thanks,
-Michal
