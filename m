@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276AbaKXRPZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 12:15:25 -0500
-Received: from mout.web.de ([212.227.15.14]:53529 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753808AbaKXRPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 12:15:23 -0500
-Message-ID: <5473679F.1000909@users.sourceforge.net>
-Date: Mon, 24 Nov 2014 18:15:11 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754310AbaKXRPo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 12:15:44 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38291 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753607AbaKXRPn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 12:15:43 -0500
+Date: Mon, 24 Nov 2014 17:16:35 +0000
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "kamalesh@linux.vnet.ibm.com" <kamalesh@linux.vnet.ibm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "riel@redhat.com" <riel@redhat.com>, "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH v9 08/10] sched: replace capacity_factor by usage
+Message-ID: <20141124171635.GL23177@e105550-lin.cambridge.arm.com>
+References: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org>
+ <1415033687-23294-9-git-send-email-vincent.guittot@linaro.org>
+ <20141121123719.GH23177@e105550-lin.cambridge.arm.com>
+ <CAKfTPtBtdnHUYjbrUiqED7Mr2d4HGB1YcyARED6Zx+rskZRsBw@mail.gmail.com>
 MIME-Version: 1.0
-To: "James E. J. Bottomley" <JBottomley@parallels.com>,
-        Robert Love <robert.w.love@intel.com>, linux-scsi@vger.kernel.org,
-        fcoe-devel@open-fcoe.org
-CC: kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/6] SCSI-libfc: Fix typos for the word "destroy"
-References: <54736422.90409@users.sourceforge.net>
-In-Reply-To: <54736422.90409@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:c7Y+U86vzZlDPjm99+r5ZZU4xTa/+xLreIesQGKM9xPzn3UqoNq
- GGigmJMj+Oi5u2UFR6CMNS+CIS6KxdNlrEPSBmpSwJbQ2XQiHucB4mInkna7qAZc8/uVVCO
- Fj5u5K2csi7+mzXcGltVswPQj7VJfJcJswl3pbcqtxDOhLd7Ol/qMFwSbdWYj/6+DAiYsxT
- qBNHu98/kShiZ3T7wJo5w==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKfTPtBtdnHUYjbrUiqED7Mr2d4HGB1YcyARED6Zx+rskZRsBw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Mon, 24 Nov 2014 15:40:41 +0100
+On Mon, Nov 24, 2014 at 02:41:28PM +0000, Vincent Guittot wrote:
+> On 21 November 2014 at 13:37, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> > On Mon, Nov 03, 2014 at 04:54:45PM +0000, Vincent Guittot wrote:
+> 
+> [snip]
+> 
+> >>                  */
+> >>                 if (prefer_sibling && sds->local &&
+> >> -                   sds->local_stat.group_has_free_capacity)
+> >> -                       sgs->group_capacity_factor = min(sgs->group_capacity_factor, 1U);
+> >> +                   group_has_capacity(env, &sds->local_stat) &&
+> >> +                   (sgs->sum_nr_running > 1)) {
+> >> +                       sgs->group_no_capacity = 1;
+> >> +                       sgs->group_type = group_overloaded;
+> >> +               }
+> >
+> > I'm still a bit confused about SD_PREFER_SIBLING. What is the flag
+> > supposed to do and why?
+> 
+> The goal is to spread tasks across the group even if the the latter is
+> not overloaded. for SMT level, the goal is to have 1 task per core
+> before 1 task per HW thread
 
-Identifiers were corrected in descriptions for the functions
-fc_fcp_pkt_destroy() and fc_fcp_destroy().
+That makes more sense and is in line with how I understand SMT
+scheduling. So we try to have at least one task per group. Where each
+group is a domain with SD_PREFER_SIBLING.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/scsi/libfc/fc_fcp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Anyway, you don't change the prefer-sibling behaviour in this patch set.
+I was just wondering how it would work for SMT balancing.
 
-diff --git a/drivers/scsi/libfc/fc_fcp.c b/drivers/scsi/libfc/fc_fcp.c
-index 1d7e76e..5649fc9 100644
---- a/drivers/scsi/libfc/fc_fcp.c
-+++ b/drivers/scsi/libfc/fc_fcp.c
-@@ -191,7 +191,7 @@ static void fc_fcp_pkt_hold(struct fc_fcp_pkt *fsp)
- }
- 
- /**
-- * fc_fcp_pkt_destory() - Release hold on a fcp_pkt
-+ * fc_fcp_pkt_destroy() - Release hold on a fcp_pkt
-  * @seq: The sequence that the FCP packet is on (required by destructor API)
-  * @fsp: The FCP packet to be released
-  *
-@@ -2216,7 +2216,7 @@ int fc_change_queue_type(struct scsi_device *sdev, int tag_type)
- EXPORT_SYMBOL(fc_change_queue_type);
- 
- /**
-- * fc_fcp_destory() - Tear down the FCP layer for a given local port
-+ * fc_fcp_destroy() - Tear down the FCP layer for a given local port
-  * @lport: The local port that no longer needs the FCP layer
-  */
- void fc_fcp_destroy(struct fc_lport *lport)
--- 
-2.1.3
-
+Thanks,
+Morten
