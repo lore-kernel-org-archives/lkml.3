@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939AbaKXPSZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 10:18:25 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:60911 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198AbaKXPSX (ORCPT
+	id S1753991AbaKXPSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 10:18:42 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:46336 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753772AbaKXPSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 10:18:23 -0500
-Message-ID: <54734C37.1060208@linaro.org>
-Date: Mon, 24 Nov 2014 16:18:15 +0100
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 24 Nov 2014 10:18:39 -0500
+Date: Mon, 24 Nov 2014 10:18:31 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
+        Ingo Molnar <mingo@kernel.org>, Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: [PATCH ftrace/core v6 5/5] kselftest, ftrace: Add ftrace
+ IPMODIFY flag test
+Message-ID: <20141124101831.69f6db23@gandalf.local.home>
+In-Reply-To: <20141124100727.19531a3b@gandalf.local.home>
+References: <20141121102502.11844.82696.stgit@localhost.localdomain>
+	<20141121102537.11844.9781.stgit@localhost.localdomain>
+	<20141121160329.575fd043@gandalf.local.home>
+	<54729CDE.5030700@hitachi.com>
+	<20141123232932.1ed70d18@gandalf.local.home>
+	<54733C80.6060509@hitachi.com>
+	<20141124100727.19531a3b@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        Kangkang.Shen@huawei.com, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH v5 03/18] ACPI / table: Count matched and successfully
- parsed entries without specifying max entries
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <2301926.MWJ5MneAen@vostro.rjw.lan> <54734844.1070505@linaro.org> <1943415.qgIc2QypIM@vostro.rjw.lan>
-In-Reply-To: <1943415.qgIc2QypIM@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.11.2014 16:37, Rafael J. Wysocki wrote:
-> On Monday, November 24, 2014 04:01:24 PM Tomasz Nowicki wrote:
->> On 24.11.2014 16:16, Rafael J. Wysocki wrote:
->>> On Monday, November 24, 2014 09:34:24 AM Tomasz Nowicki wrote:
->>>> On 24.11.2014 02:45, Rafael J. Wysocki wrote:
->>>>> On Friday, October 17, 2014 09:36:59 PM Hanjun Guo wrote:
->>>>>> From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
->>>>>>
->>>>>> It is very useful to traverse all available table entries without max
->>>>>> number of expected entries type. Current acpi_parse_entries()
->>>>>> implementation gives that feature but it does not count those entries,
->>>>>> it returns 0 instead, so fix it to count matched and successfully
->>>>>> entries and return it.
->>>>>
->>>>> Hmm.  I guess that the goal is for count to only be incremented when the
->>>>> condition is satisfied entirely, while without the patch it may be incremented
->>>>> even if that isn't the case.
->>>>
->>>> That would be our goal if patch would look like:
->>>> -		    && (!max_entries || count++ < max_entries))
->>>> +		    && (!max_entries && count++ < max_entries)) {
->>>> but then we can not walk through all available entries (with max_entries==0)
->>>
->>> No, that's not what I was trying to say. :-)
->>>
->>>>>
->>>>> I'm not sure how that is related to the above paragraph, however.
->>>>>
->>>>
->>>> Previous changelog is not clear, let me rewrite it:
->>>>
->>>> acpi_parse_entries() allows to traverse all available table entries (aka
->>>> subtables) by passing max_entries parameter equal to 0. But for that use
->>>> case acpi_parse_entries() does not inform caller how many entries were
->>>> matched and for how many entries handler was run against. That patch is
->>>> going to fix it.
->>>
->>> Do I understand correctly that count is only ever incremented by current code
->>> if max_entries is different from 0?
->>
->> Right. Currently "count" is incremented only if max_entries > 0.
->
-> So can you say that in the changelog, please?
->
-> Something like:
->
-> "acpi_parse_entries() allows to traverse all available table entries (aka
->   subtables) by passing max_entries parameter equal to 0, but since its count
->   variable is only incremented if max_entries is not 0, the function always
->   returns 0 for max_entries equal to 0.  It would be more useful if it returned
->   the number of entries matched instead, so make it increment count in that
->   case too".
->
+On Mon, 24 Nov 2014 10:07:27 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Sure, thanks.
+> On Mon, 24 Nov 2014 23:11:12 +0900
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+>  
+> > So, if your server directory is mounted with noexec, it's an environmental
+> > problem. I guess you can not build any kernel drivers on that testbox, can you?
+> > 
+> 
+> You're right about the noexec, even though my fstab has "exec" in it ??
 
-Tomasz
+Ha! I hit this bug!
+
+  https://bugzilla.redhat.com/show_bug.cgi?id=769636
+
+If I remove "user" from the flags, it mounts exec.
+
+This test box runs Fedora 18.
+
+-- Steve
+
