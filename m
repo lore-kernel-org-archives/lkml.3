@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583AbaKXLyf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 06:54:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37499 "EHLO mx1.redhat.com"
+	id S1753612AbaKXLyl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 06:54:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37516 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751786AbaKXLyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 06:54:31 -0500
-Date: Mon, 24 Nov 2014 13:54:16 +0200
+	id S1752152AbaKXLyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 06:54:36 -0500
+Date: Mon, 24 Nov 2014 13:54:24 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH v3 23/41] virtio_net: enable v1.0 support
-Message-ID: <1416829787-14252-24-git-send-email-mst@redhat.com>
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org
+Subject: [PATCH v3 25/41] vhost/net: force len for TX to host endian
+Message-ID: <1416829787-14252-26-git-send-email-mst@redhat.com>
 References: <1416829787-14252-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,25 +25,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have completed 1.0 support, enable it in our driver.
+We use native endian-ness internally but never
+expose it to guest.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/net/virtio_net.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/vhost/net.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index a0e64cf..c6a72d3 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -2003,6 +2003,7 @@ static unsigned int features[] = {
- 	VIRTIO_NET_F_GUEST_ANNOUNCE, VIRTIO_NET_F_MQ,
- 	VIRTIO_NET_F_CTRL_MAC_ADDR,
- 	VIRTIO_F_ANY_LAYOUT,
-+	VIRTIO_F_VERSION_1,
- };
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 8dae2f7..dce5c58 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -48,15 +48,15 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
+  * status internally; used for zerocopy tx only.
+  */
+ /* Lower device DMA failed */
+-#define VHOST_DMA_FAILED_LEN	3
++#define VHOST_DMA_FAILED_LEN	((__force __virtio32)3)
+ /* Lower device DMA done */
+-#define VHOST_DMA_DONE_LEN	2
++#define VHOST_DMA_DONE_LEN	((__force __virtio32)2)
+ /* Lower device DMA in progress */
+-#define VHOST_DMA_IN_PROGRESS	1
++#define VHOST_DMA_IN_PROGRESS	((__force __virtio32)1)
+ /* Buffer unused */
+-#define VHOST_DMA_CLEAR_LEN	0
++#define VHOST_DMA_CLEAR_LEN	((__force __virtio32)0)
  
- static struct virtio_driver virtio_net_driver = {
+-#define VHOST_DMA_IS_DONE(len) ((len) >= VHOST_DMA_DONE_LEN)
++#define VHOST_DMA_IS_DONE(len) ((__force u32)(len) >= (__force u32)VHOST_DMA_DONE_LEN)
+ 
+ enum {
+ 	VHOST_NET_FEATURES = VHOST_FEATURES |
 -- 
 MST
 
