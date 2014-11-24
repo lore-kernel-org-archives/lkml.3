@@ -1,92 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750AbaKXSgW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:36:22 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:46450 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599AbaKXSe4 (ORCPT
+	id S1754771AbaKXSgd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:36:33 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:51145 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754516AbaKXSgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:34:56 -0500
-From: Andreas Ruprecht <rupran@einserver.de>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andreas Ruprecht <rupran@einserver.de>
-Subject: [PATCH 1/2] net: wireless: rtlwifi: Do not always include drivers in obj-m
-Date: Mon, 24 Nov 2014 19:34:31 +0100
-Message-Id: <1416854072-14794-2-git-send-email-rupran@einserver.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416854072-14794-1-git-send-email-rupran@einserver.de>
-References: <1416854072-14794-1-git-send-email-rupran@einserver.de>
+	Mon, 24 Nov 2014 13:36:31 -0500
+Date: Mon, 24 Nov 2014 13:36:26 -0500 (EST)
+Message-Id: <20141124.133626.1699726793112808350.davem@davemloft.net>
+To: drysdale@google.com
+Cc: ebiederm@xmission.com, luto@amacapital.net, viro@zeniv.linux.org.uk,
+        meredydd@senatehouse.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, sfr@canb.auug.org.au,
+        oleg@redhat.com, mtk.manpages@gmail.com, mingo@redhat.com,
+        hpa@zytor.com, keescook@chromium.org, arnd@arndb.de, dalias@aerifal.cx,
+        hch@infradead.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-api@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [PATCHv10 4/5] sparc: Hook up execveat system call.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1416830039-21952-5-git-send-email-drysdale@google.com>
+References: <1416830039-21952-1-git-send-email-drysdale@google.com>
+	<1416830039-21952-5-git-send-email-drysdale@google.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 24 Nov 2014 10:36:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In four of the rtlwifi drivers, the Makefile contains superfluous
-statements indicating the compilation of the driver as an LKM
-regardless of the corresponding Kconfig option.
+From: David Drysdale <drysdale@google.com>
+Date: Mon, 24 Nov 2014 11:53:58 +0000
 
-If the corresponding option is set to 'y', the build system will then
-see the object file in obj-m and obj-y, which leads to a compilation
-as a built-in only. Even though this leads to the desired behavior,
-the unconditional appearance in obj-m is confusing for someone reading
-the Makefile.
+> Signed-off-by: David Drysdale <drysdale@google.com>
 
-This patch removes the superfluous Makefile statements.
-
-Signed-off-by: Andreas Ruprecht <rupran@einserver.de>
----
- drivers/net/wireless/rtlwifi/rtl8192ee/Makefile | 3 ---
- drivers/net/wireless/rtlwifi/rtl8723ae/Makefile | 3 ---
- drivers/net/wireless/rtlwifi/rtl8723be/Makefile | 3 ---
- drivers/net/wireless/rtlwifi/rtl8821ae/Makefile | 3 ---
- 4 files changed, 12 deletions(-)
-
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192ee/Makefile b/drivers/net/wireless/rtlwifi/rtl8192ee/Makefile
-index 11952b9..6bd46a9 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192ee/Makefile
-+++ b/drivers/net/wireless/rtlwifi/rtl8192ee/Makefile
-@@ -1,6 +1,3 @@
--obj-m := rtl8192ee.o
--
--
- rtl8192ee-objs :=		\
- 		dm.o		\
- 		fw.o		\
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/Makefile b/drivers/net/wireless/rtlwifi/rtl8723ae/Makefile
-index 9c34a85..6220672 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/Makefile
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/Makefile
-@@ -1,6 +1,3 @@
--obj-m := rtl8723ae.o
--
--
- rtl8723ae-objs :=		\
- 		dm.o		\
- 		fw.o		\
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723be/Makefile b/drivers/net/wireless/rtlwifi/rtl8723be/Makefile
-index 59e416a..a77c341 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723be/Makefile
-+++ b/drivers/net/wireless/rtlwifi/rtl8723be/Makefile
-@@ -1,6 +1,3 @@
--obj-m := rtl8723be.o
--
--
- rtl8723be-objs :=		\
- 		dm.o		\
- 		fw.o		\
-diff --git a/drivers/net/wireless/rtlwifi/rtl8821ae/Makefile b/drivers/net/wireless/rtlwifi/rtl8821ae/Makefile
-index 87ad604..f7a26f7 100644
---- a/drivers/net/wireless/rtlwifi/rtl8821ae/Makefile
-+++ b/drivers/net/wireless/rtlwifi/rtl8821ae/Makefile
-@@ -1,6 +1,3 @@
--obj-m := rtl8821ae.o
--
--
- rtl8821ae-objs :=		\
- 		dm.o		\
- 		fw.o		\
--- 
-1.9.1
-
+Acked-by: David S. Miller <davem@davemloft.net>> 
