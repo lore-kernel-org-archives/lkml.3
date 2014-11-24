@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaKXNDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 08:03:11 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:57667 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760AbaKXNCe (ORCPT
+	id S1753634AbaKXNDt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 08:03:49 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:38721 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504AbaKXNDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 08:02:34 -0500
-From: Alban Bedel <alban.bedel@avionic-design.de>
+	Mon, 24 Nov 2014 08:03:41 -0500
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 To: linux-kernel@vger.kernel.org
-Cc: devicetree@vger.kernel.org, Alban Bedel <alban.bedel@avionic-design.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: [PATCH 3/4] devicetree: add a binding for a group of regulator
-Date: Mon, 24 Nov 2014 14:02:02 +0100
-Message-Id: <1416834123-23139-3-git-send-email-alban.bedel@avionic-design.de>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1416834123-23139-1-git-send-email-alban.bedel@avionic-design.de>
-References: <1416834123-23139-1-git-send-email-alban.bedel@avionic-design.de>
-X-Provags-ID: V02:K0:gYFXx/ugjoqLJwJQUDBI8vH+XP0JPTTZ872FywIiGPE
- IVuide8gGYs1fG4ohCOK2MXVML1fCKdNO+qXqi6nTs0IA58XhN
- +d//GvZ8CBNE5xUax61/+1FRfpz8AdWRF7vICZ5WY8afCesnWF
- upGz/k+uDpeO4M5hlykxvY51iwP02nLLIxW8iBd/XWZZck10UO
- sbjAjglyuTIE4P7tP5hMwkr/ymqQd33AD6pQPjerEQoWzD0VPI
- CMZ9RaVv4issur0JjNzwpsAZnGMu9a+CruJN74yXxU9Ckk9EE3
- 5X9xv3YURj8+/CgnfozABby5/F3Y5Y7z7VVRXrcv6GhDMryyFC
- FxqwJ5SYMjMdHn9dYkynhiZ02W1wDcILRmZz4EpvX5feb7d3MC
- peIFrxeoO2KlTHIqWnKpT2J3x7NHa8Xtdl1hzS2aiA8N4O4oNO
- SsSg2LqhxQobca4wxnJZYvRkX4w==
-X-UI-Out-Filterresults: notjunk:1;
+Cc: "linux-arch@vger.kernel.org, linux-mips@linux-mips.org, linux-x86_64@vger.kernel.org, linux-s390"@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>, paulmck@linux.vnet.ibm.com,
+        mingo@kernel.org, torvalds@linux-foundation.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Subject: [PATCH/RFC 4/7] x86: Replace ACCESS_ONCE in gup with a barrier
+Date: Mon, 24 Nov 2014 14:03:27 +0100
+Message-Id: <1416834210-61738-5-git-send-email-borntraeger@de.ibm.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1416834210-61738-1-git-send-email-borntraeger@de.ibm.com>
+References: <1416834210-61738-1-git-send-email-borntraeger@de.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112413-0017-0000-0000-000001F464B7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
----
- .../devicetree/bindings/regulator/group.txt        | 26 ++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/regulator/group.txt
+ACCESS_ONCE does not work reliably on non-scalar types. For
+example gcc 4.6 and 4.7 might remove the volatile tag for such
+accesses during the SRA (scalar replacement of aggregates) step
+(https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
 
-diff --git a/Documentation/devicetree/bindings/regulator/group.txt b/Documentation/devicetree/bindings/regulator/group.txt
-new file mode 100644
-index 0000000..5f811cf
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/group.txt
-@@ -0,0 +1,26 @@
-+Regulator Group
+Let's use a barrier instead of ACCESS_ONCE to avoid that issue.
+
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+---
+ arch/x86/mm/gup.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
+index 207d9aef..35991f6 100644
+--- a/arch/x86/mm/gup.c
++++ b/arch/x86/mm/gup.c
+@@ -14,8 +14,12 @@
+ 
+ static inline pte_t gup_get_pte(pte_t *ptep)
+ {
++	pte_t pte;
 +
-+This binding allow creating a group of regulators for use with simple
-+drivers that only expect a single power supply. Additionally it is
-+possible to enforce the enable ordering to create simple power up
-+sequences.
-+
-+Required properties:
-+- compatible : Must be "regulator-group".
-+- regulator-supplies : List of the supplies names.
-+- <name>-supply : One entry for each supply defined in regulator-supplies.
-+
-+Optional properties:
-+- ordered-supplies : set if the supplies should be enabled in order,
-+   otherwise they are all enable or disabled in parallel.
-+- any property defined in regulator.txt
-+
-+Example:
-+
-+  regulator {
-+	compatible = "regulator-group";
-+	regulator-supplies = "vcc_a", "vcc_b";
-+	vcc_a-supply = <&vcc_a>;
-+	vcc_b-supply = <&vcc_b>;
-+	ordered-supplies;
-+  };
+ #ifndef CONFIG_X86_PAE
+-	return ACCESS_ONCE(*ptep);
++	pte = *ptep;
++	barrier();
++	return pte;
+ #else
+ 	/*
+ 	 * With get_user_pages_fast, we walk down the pagetables without taking
+@@ -49,7 +53,6 @@ static inline pte_t gup_get_pte(pte_t *ptep)
+ 	 * very careful -- it does not atomically load the pte or anything that
+ 	 * is likely to be useful for you.
+ 	 */
+-	pte_t pte;
+ 
+ retry:
+ 	pte.pte_low = ptep->pte_low;
 -- 
-2.1.3
+1.9.3
 
