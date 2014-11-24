@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573AbaKXS6e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 13:58:34 -0500
-Received: from laurent.telenet-ops.be ([195.130.137.89]:43222 "EHLO
-	laurent.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449AbaKXS6c (ORCPT
+	id S1754777AbaKXS6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 13:58:42 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:50219 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754365AbaKXS6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 13:58:32 -0500
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Steve Glendinning <steve.glendinning@shawell.net>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-pm@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH] net/smsc911x: Add minimal runtime PM support
-Date: Mon, 24 Nov 2014 19:58:17 +0100
-Message-Id: <1416855497-6479-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
+	Mon, 24 Nov 2014 13:58:39 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: v3.18-rc1: n900 battery discharged down to 2.97V
+Date: Mon, 24 Nov 2014 19:58:34 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: sre@debian.org, sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg
+References: <20141124183130.GA2927@amd>
+In-Reply-To: <20141124183130.GA2927@amd>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart24860448.4cI6gHVUIl";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411241958.34578@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add minimal runtime PM support (enable on probe, disable on remove), to
-ensure proper operation with a parent device that uses runtime PM.
+--nextPart24860448.4cI6gHVUIl
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-This is needed on systems where the external bus controller module of
-the SoC is contained in a PM domain and/or has a gateable functional
-clock. In such cases, before accessing any device connected to the
-external bus, the PM domain must be powered up, and/or the functional
-clock must be enabled, which is typically handled through runtime PM by
-the bus controller driver.
+On Monday 24 November 2014 19:31:30 Pavel Machek wrote:
+> Hi!
+>=20
+> I left the machine on usb-networking for extended period of
+> time. Unfortunately, Xfce screensaver kept screen busy, and
+> kernel failed to kill the machine.
+>=20
+> At the end, hardware protections worked (I guess), but result
+> is battery discharged down to 2.97V.
+>=20
+> Best regards,
+> 									Pavel
 
-An example of this is the kzm9g development board, where an smsc9220
-Ethernet controller is connected to the Bus State Controller (BSC) of a
-Renesas sh73a0 SoC.
+So you need some program which will monitor battery status and=20
+when battery status is empty it should turn of device.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
- drivers/net/ethernet/smsc/smsc911x.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-diff --git a/drivers/net/ethernet/smsc/smsc911x.c b/drivers/net/ethernet/smsc/smsc911x.c
-index 77ed74561e5fe815..f9c87624a0afb08b 100644
---- a/drivers/net/ethernet/smsc/smsc911x.c
-+++ b/drivers/net/ethernet/smsc/smsc911x.c
-@@ -59,6 +59,8 @@
- #include <linux/of_device.h>
- #include <linux/of_gpio.h>
- #include <linux/of_net.h>
-+#include <linux/pm_runtime.h>
-+
- #include "smsc911x.h"
- 
- #define SMSC_CHIPNAME		"smsc911x"
-@@ -2338,6 +2340,9 @@ static int smsc911x_drv_remove(struct platform_device *pdev)
- 
- 	free_netdev(dev);
- 
-+	pm_runtime_put(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
-+
- 	return 0;
- }
- 
-@@ -2491,6 +2496,9 @@ static int smsc911x_drv_probe(struct platform_device *pdev)
- 	if (pdata->config.shift)
- 		pdata->ops = &shifted_smsc911x_ops;
- 
-+	pm_runtime_enable(&pdev->dev);
-+	pm_runtime_get_sync(&pdev->dev);
-+
- 	retval = smsc911x_init(dev);
- 	if (retval < 0)
- 		goto out_disable_resources;
-@@ -2572,6 +2580,8 @@ out_unregister_netdev_5:
- out_free_irq:
- 	free_irq(dev->irq, dev);
- out_disable_resources:
-+	pm_runtime_put(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
- 	(void)smsc911x_disable_resources(pdev);
- out_enable_resources_fail:
- 	smsc911x_free_resources(pdev);
--- 
-1.9.1
+--nextPart24860448.4cI6gHVUIl
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlRzf9oACgkQi/DJPQPkQ1JlVACeORqh+refDqK0v1R/2K1DtpJp
+Vc8AnjO0jGEMnMaQK5/brlIolL7TOF1i
+=Notd
+-----END PGP SIGNATURE-----
+
+--nextPart24860448.4cI6gHVUIl--
