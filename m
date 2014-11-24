@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528AbaKXVuG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 16:50:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850AbaKXVuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 16:50:00 -0500
-Date: Mon, 24 Nov 2014 22:49:40 +0100
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        nick <xerofoify@gmail.com>, gleb@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Another Obsolete Fix me in trace.h?
-Message-ID: <20141124214939.GA6671@potion.brq.redhat.com>
-References: <5472B5B5.5090201@gmail.com>
- <54730475.9040000@redhat.com>
- <54730B33.1080101@siemens.com>
- <20141124210000.GB6795@potion.brq.redhat.com>
- <20141124161901.6266925c@gandalf.local.home>
+	id S1751557AbaKXVuf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 16:50:35 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:37309 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821AbaKXVud (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 16:50:33 -0500
+Date: Mon, 24 Nov 2014 21:50:26 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Darren Hart <dvhart@infradead.org>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Alex Hung <alex.hung@canonical.com>
+Subject: Re: [PATCH 1/3] platform: x86: dell-rbtn: Dell Airplane Mode Switch
+ driver
+Message-ID: <20141124215026.GA14361@srcf.ucam.org>
+References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com>
+ <1416755361-17357-2-git-send-email-pali.rohar@gmail.com>
+ <20141124200905.GB3459@srcf.ucam.org>
+ <201411242155.48087@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141124161901.6266925c@gandalf.local.home>
+In-Reply-To: <201411242155.48087@pali>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-24 16:19-0500, Steven Rostedt:
-> On Mon, 24 Nov 2014 22:00:01 +0100
-> Radim Krčmář <rkrcmar@redhat.com> wrote:
-> 
-> > 2014-11-24 11:40+0100, Jan Kiszka:
-> > The format string has to be a string literal[1]; we could change it to
-> > allow expressions[2], but what we want is almost possible through a
-> > direct call to trace_seq_printf()[3].
-> > 
-> > The raw result would look like
-> > 
-> >   #define __print(fmt, args...) ({ \
-> >   	const char *buf_start = trace_seq_buffer_ptr(p); \
-> >   	trace_seq_printf(p, fmt, args); \
-> >   	trace_seq_putc(p, '\0'); \
-> >   	buf_start; \
-> >   	})
-> > 
-> >   TP_printk("%s%s", [...],
-> >             __entry->has_error ? __print("(0x%x)", __entry->error_code) : "")
-> > 
-> > and would be acceptable if something __print-like made it into a ftrace
-> > helper[4].  (Userspace won't be able to nicely print it otherwise.)
-> 
-> You mean if we add something like a __print_conditional(cond, fmt, ...);
+On Mon, Nov 24, 2014 at 09:55:47PM +0100, Pali Roh�r wrote:
 
-The benefit of _conditional is cleaner code?
+> This is complicated. HW switch controls all radio devices and you 
+> do not know which are present in specified running machine. Also 
+> list of devices which HW switch controls can be edited in BIOS 
+> (on some machines). So what to do? We only know that it controls 
+> some devices...
 
-(_conditional would be possible as a #define on top of generic print,
- the ternary seems to be parsed correctly.)
+Typically there'll be a firmware method that provides a mask of the 
+controlled devices. Do you have the ACPI tables for a device that 
+implements this? Registering an rfkill interface that claims to only 
+control wifi but which also kills other devices is likely to confuse 
+userspace - it would probably be better to avoid registering the rfkill 
+interface at all in that case.
 
-> For this case you would have:
-> 
->   TP_printk("%s%s", [...],
-> 	__print_conditional(__entry->has_error, " (0x%x)", __entry->error_code));
-> 
-> Where __print_conditional() will return "" when "cond" is false, and
-> will return the formatted string otherwise.
-
-(This might introduce 'const char empty[] = ""'.)
-
-> That wouldn't be too hard to implement.
-
-I'll look at the patch tommorrow.
-
-Thanks.
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
