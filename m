@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbaKXRdz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 12:33:55 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38328 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211AbaKXRdy (ORCPT
+	id S1754564AbaKXReH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 12:34:07 -0500
+Received: from relaygw2-5.mclink.it ([213.21.178.152]:52921 "EHLO
+	relaygw2-5.mclink.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754107AbaKXReF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 12:33:54 -0500
-Date: Mon, 24 Nov 2014 17:34:46 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "kamalesh@linux.vnet.ibm.com" <kamalesh@linux.vnet.ibm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "riel@redhat.com" <riel@redhat.com>, "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Paul Turner <pjt@google.com>, Ben Segall <bsegall@google.com>
-Subject: Re: [PATCH v9 01/10] sched: add utilization_avg_contrib
-Message-ID: <20141124173446.GN23177@e105550-lin.cambridge.arm.com>
-References: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org>
- <1415033687-23294-2-git-send-email-vincent.guittot@linaro.org>
- <20141121123453.GB23177@e105550-lin.cambridge.arm.com>
- <CAKfTPtBDd6JXuK4THkqs4eoEHG+-VYfhFR6nUe2vrqvGWG08Yw@mail.gmail.com>
+	Mon, 24 Nov 2014 12:34:05 -0500
+X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Nov 2014 12:34:05 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApoBANxnc1TZhTfk/2dsb2JhbAANTodCy1yDJwKBNAEBAQEBhQABAQQjBBFBEAsSBgICBRYLAgIJAwIBAgE3DgYNAQcBAYhCuSx4lggBAQEBAQEBAwEBAQEBAQEbgS2PXgeCeYFVAQSgNYcRhGCFa4gIg0IBAQE
+Message-ID: <54736884.5040600@3dautomazione.it>
+Date: Mon, 24 Nov 2014 18:19:00 +0100
+From: Angelo Rizzi <angelo.rizzi@3dautomazione.it>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKfTPtBDd6JXuK4THkqs4eoEHG+-VYfhFR6nUe2vrqvGWG08Yw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: net_tx_action race condition?
+References: <547332D7.7050104@3dautomazione.it> <1416843200.17888.53.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1416843200.17888.53.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 02:04:15PM +0000, Vincent Guittot wrote:
-> On 21 November 2014 at 13:34, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
-> > Should the subject mention that the patch adds utilization tracking?
-> > Maybe: 'sched: Add utilization tracking' ?
-> >
-> >
-> > On Mon, Nov 03, 2014 at 04:54:38PM +0000, Vincent Guittot wrote:
-> >> Add new statistics which reflect the average time a task is running on the CPU
-> >> and the sum of these running time of the tasks on a runqueue. The latter is
-> >> named utilization_load_avg.
-> >>
-> >> This patch is based on the usage metric that was proposed in the 1st
-> >> versions of the per-entity load tracking patchset by Paul Turner
-> >
-> > Should we do ourselves and anybody else who feels like going through the
-> > pain of understanding the load-tracking code a favor and drop the use of
-> > the term 'usage' and use 'utilization' everywhere instead? 'usage' isn't
-> > clearly defined anywhere.
-> >
-> > Referring to 'usage' here in the reference to original patch is fine,
-> > but I suggest that we remove it from the code and comment on subsequent
-> > patches unless there is a very good reason to keep it.
-> 
-> As discussed with Peter, we use usage when the task's utilization has
-> been scaled by the capacity.
-> 
-> IIRC from one of our discussion, dietmar should prepare a patchset to
-> rename and aligned variables and field.
+Hi Eric,
+Thanks for your reply
+You are right, it seems a bug in the NIOS2 architecture port.
+I will check how local_irq_disable()/local_irq_enable() is implemented 
+on this kind of architecture.
 
-I read this as we stick with usage while utilization is scaled by
-capacity and potentially drop it again when adding uarch invariance so
-the scaling goes away. Or rename it before if we find a better name for
-it.
+Regards,
+Angelo
+
+Il 24/11/2014 16:33, Eric Dumazet ha scritto:
+> On Mon, 2014-11-24 at 14:29 +0100, Angelo Rizzi wrote:
+>> Hi Daniel,
+>> Here attached the patch file you required.
+>> The problem i've found is on the declaration of 'struct softnet_data
+>> *sd' in function 'net_tx_action'
+>> What happens to me (i have an embedded system based on FPGA and a NIOS2
+>> cpu) is that, due to compiler optimization, the content of
+>> 'sd->completion_queue' is saved in a CPU register before interrupt
+>> disabling (when the instruction 'if (sd->completion_queue) {' is
+>> executed) and then the register contents is used for interrupt-disabled
+>> assignment ('clist = sd->completion_queue') instead of re-read the
+>> variable contents.
+>> This seems to lead to a race condition when an interrupt modifies the
+>> content of 'sd->completion_queue' between these two instructions.
+>> What i have done to avoid this situation is to change the declaration of
+>> 'struct softnet_data *sd' to 'volatile struct softnet_data *sd' and now
+>> everything seems to be ok.
+>> I hope this will help.
+>>
+>> Regards,
+>> Angelo
+>>
+> Do not add volatile in the kernel, this is not how we solve this kind of
+> problems.  Documentation/memory-barriers.txt and
+>
+> Documentation/00-INDEX:476:volatile-considered-harmful.txt
+> Documentation/00-INDEX:477:     - Why the "volatile" type class should not be used
+>
+>
+> I am surprised this patch is needed. Many other 'bugs' would need
+> similar fixes.
+>
+> local_irq_disable() MUST have a memory barrier. This looks like a bug in
+> one particular arch implementation.
+>
+>
+> On x86 for example, native_irq_disable() is really :
+>
+> 	asm volatile("cli": : :"memory");
+>
+>
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index ac4836241a965a71952469ba054f87d8dfca2d32..fa73072e515aa07fa8ae1bc39174b7d59c7a31a5 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -3406,7 +3406,7 @@ static void net_tx_action(struct softirq_action *h)
+>   		struct sk_buff *clist;
+>   
+>   		local_irq_disable();
+> -		clist = sd->completion_queue;
+> +		clist = ACCESS_ONCE(sd->completion_queue);
+>   		sd->completion_queue = NULL;
+>   		local_irq_enable();
+>   
+>
+>
+>
+
