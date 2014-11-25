@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902AbaKYXL4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 18:11:56 -0500
-Received: from gate.crashing.org ([63.228.1.57]:46301 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486AbaKYXLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 18:11:55 -0500
-Message-ID: <1416957018.5089.16.camel@kernel.crashing.org>
-Subject: Re: [RFC PATCH v3 1/2] drivers: pci: fix pci_mmap_fits()
- implementation for procfs mmap
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Simek <monstr@monstr.eu>,
-        Martin Wilck <martin.wilck@ts.fujitsu.com>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Date: Wed, 26 Nov 2014 10:10:18 +1100
-In-Reply-To: <20141121175114.GC6578@google.com>
-References: <1415877558-8906-1-git-send-email-lorenzo.pieralisi@arm.com>
-	 <1415877558-8906-2-git-send-email-lorenzo.pieralisi@arm.com>
-	 <20141121175114.GC6578@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751942AbaKYXNB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 18:13:01 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:44573 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515AbaKYXM6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 18:12:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <23617908.6oA5uRuO3l@diego>
+References: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com>
+	<23617908.6oA5uRuO3l@diego>
+Date: Wed, 26 Nov 2014 09:12:56 +1000
+Message-ID: <CAPM=9tzvvb5U+8KaCO+K6CJi=rwWOkoW+4ZSFW_Oo9gTncvkWA@mail.gmail.com>
+Subject: Re: [PATCH v14 0/3] Add drm driver for Rockchip Socs
+From: Dave Airlie <airlied@gmail.com>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: Mark Yao <mark.yao@rock-chips.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
+        linux-rockchip@lists.infradead.org,
+        Douglas Anderson <dianders@chromium.org>,
+        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>,
+        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
+        Daniel Kurtz <djkurtz@chromium.org>, Eddie Cai <cf@rock-chips.com>,
+        simon xue <xxm@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>, yxj@rock-chips.com,
+        xw@rock-chips.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-21 at 10:51 -0700, Bjorn Helgaas wrote:
-> I think this patch is the right thing to do.  I'm going to try to write
-> patches for microblaze, mips, powerpc, and sparc that implement their
-> pci_resource_to_user() in terms of pcibios_resource_to_bus() (the patches
-> are easy; it's the arguments for correctness that take time).  Then I'll
-> try to convince myself that those arches are currently broken and will be
-> fixed by your patch below.
-> 
-> But I'll be on vacation all next week, so this will take me some time and
-> it may not make the next merge window.
+On 26 November 2014 at 02:38, Heiko Stübner <heiko@sntech.de> wrote:
+> Mark,
+>
+> Am Donnerstag, 20. November 2014, 09:46:34 schrieb Mark Yao:
+>> This a series of patches is a DRM Driver for Rockchip Socs, add support
+>> for vop devices. Future patches will add additional encoders/connectors,
+>> such as eDP, HDMI.
+>>
+>> The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+>> the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+>> Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+>> ARM_DMA_USE_IOMMU.
+>
+> it looks like everybody is more or less happy with this version - in past
+> versions responses voicing concerns where quite swift.
+>
+> As David requested a pull request the last time, it might be time to do so, so
+> that we maybe still reach 3.19.
+>
 
-I do remember all sort of funky breakage in that area a long time ago
-but I can't quite remember the details and how I ended up with the
-current code :-(
+I need the iommu changes the drm driver depends on in a stable
+maintainer git tree,
+I'm not pulling in code I can't build.
 
-The one thing to keep in mind is that there was always confusion in
-the userspace users of the /proc interface as to what offset they
-had to use... the BAR value or something translated via /proc/.../resources
+I'm happy if the rockchip drm pull stays static and I can pull it in
+once the iommu bits
+are done.
 
-(Normally the latter but a lot of stuff got it wrong ...)
-
-Cheers,
-Ben.
-
-
+Dave.
