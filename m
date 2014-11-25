@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185AbaKYMFU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:05:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58038 "EHLO
+	id S1752532AbaKYKkV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:40:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57965 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562AbaKYKkZ (ORCPT
+	with ESMTP id S1751297AbaKYKkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:25 -0500
+	Tue, 25 Nov 2014 05:40:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Hans de Goede <hdegoede@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 017/254] usb-storage: handle a skipped data phase
-Date: Tue, 25 Nov 2014 10:36:07 +0000
-Message-Id: <1416912004-5928-18-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 002/254] acer-wmi: Add acpi_backlight=video quirk for the Acer KAV80
+Date: Tue, 25 Nov 2014 10:35:52 +0000
+Message-Id: <1416912004-5928-3-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -29,84 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 93c9bf4d1838d5851a18ca398b0ad66397f05056 upstream.
+commit 183fd8fcd7f8afb7ac5ec68f83194872f9fecc84 upstream.
 
-Sometimes mass-storage devices using the Bulk-only transport will
-mistakenly skip the data phase of a command.  Rather than sending the
-data expected by the host or sending a zero-length packet, they go
-directly to the status phase and send the CSW.
+The acpi-video backlight interface on the Acer KAV80 is broken, and worse
+it causes the entire machine to slow down significantly after a suspend/resume.
 
-This causes problems for usb-storage, for obvious reasons.  The driver
-will interpret the CSW as a short data transfer and will wait to
-receive a CSW.  The device won't have anything left to send, so the
-command eventually times out.
+Blacklist it, and use the acer-wmi backlight interface instead. Note that
+the KAV80 is somewhat unique in that it is the only Acer model where we
+fall back to acer-wmi after blacklisting, rather then using the native
+(e.g. intel) backlight driver. This is done because there is no native
+backlight interface on this model.
 
-The SCSI layer doesn't retry commands after they time out (this is a
-relatively recent change).  Therefore we should do our best to detect
-a skipped data phase and handle it promptly.
-
-This patch adds code to do that.  If usb-storage receives a short
-13-byte data transfer from the device, and if the first four bytes of
-the data match the CSW signature, the driver will set the residue to
-the full transfer length and interpret the data as a CSW.
-
-This fixes Bugzilla #86611.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Tested-by: Paul Osmialowski <newchief@king.net.pl>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1128309
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/storage/transport.c | 26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ drivers/platform/x86/acer-wmi.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/usb/storage/transport.c b/drivers/usb/storage/transport.c
-index 22c7d4360fa2..b1d815eb6d0b 100644
---- a/drivers/usb/storage/transport.c
-+++ b/drivers/usb/storage/transport.c
-@@ -1118,6 +1118,31 @@ int usb_stor_Bulk_transport(struct scsi_cmnd *srb, struct us_data *us)
- 		 */
- 		if (result == USB_STOR_XFER_LONG)
- 			fake_sense = 1;
-+
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index bbf78b2d6d93..5eeddc00f210 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -578,6 +578,17 @@ static const struct dmi_system_id video_vendor_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5741"),
+ 		},
+ 	},
++	{
 +		/*
-+		 * Sometimes a device will mistakenly skip the data phase
-+		 * and go directly to the status phase without sending a
-+		 * zero-length packet.  If we get a 13-byte response here,
-+		 * check whether it really is a CSW.
++		 * Note no video_set_backlight_video_vendor, we must use the
++		 * acer interface, as there is no native backlight interface.
 +		 */
-+		if (result == USB_STOR_XFER_SHORT &&
-+				srb->sc_data_direction == DMA_FROM_DEVICE &&
-+				transfer_length - scsi_get_resid(srb) ==
-+					US_BULK_CS_WRAP_LEN) {
-+			struct scatterlist *sg = NULL;
-+			unsigned int offset = 0;
-+
-+			if (usb_stor_access_xfer_buf((unsigned char *) bcs,
-+					US_BULK_CS_WRAP_LEN, srb, &sg,
-+					&offset, FROM_XFER_BUF) ==
-+						US_BULK_CS_WRAP_LEN &&
-+					bcs->Signature ==
-+						cpu_to_le32(US_BULK_CS_SIGN)) {
-+				usb_stor_dbg(us, "Device skipped data phase\n");
-+				scsi_set_resid(srb, transfer_length);
-+				goto skipped_data_phase;
-+			}
-+		}
- 	}
++		.ident = "Acer KAV80",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "KAV80"),
++		},
++	},
+ 	{}
+ };
  
- 	/* See flow chart on pg 15 of the Bulk Only Transport spec for
-@@ -1153,6 +1178,7 @@ int usb_stor_Bulk_transport(struct scsi_cmnd *srb, struct us_data *us)
- 	if (result != USB_STOR_XFER_GOOD)
- 		return USB_STOR_TRANSPORT_ERROR;
- 
-+ skipped_data_phase:
- 	/* check bulk status */
- 	residue = le32_to_cpu(bcs->Residue);
- 	usb_stor_dbg(us, "Bulk Status S 0x%x T 0x%x R %u Stat 0x%x\n",
 -- 
 2.1.0
 
