@@ -1,121 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685AbaKYC2H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 21:28:07 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:50700 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbaKYC2F (ORCPT
+	id S1751819AbaKYC3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 21:29:47 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:43319 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830AbaKYC3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 21:28:05 -0500
-MIME-Version: 1.0
-Date: Mon, 24 Nov 2014 18:28:03 -0800
-Message-ID: <CAADnVQJc-RO9EdBY2-Q0mONSLYxsryD3cP8+LPXTaKbjbqtvtg@mail.gmail.com>
-Subject: Re: [PATCH/RFC 7/7] kernel: Force ACCESS_ONCE to work only on scalar types
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>, linux-x86_64@vger.kernel.org,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 24 Nov 2014 21:29:45 -0500
+From: Azael Avalos <coproscefalo@gmail.com>
+To: Darren Hart <dvhart@infradead.org>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Azael Avalos <coproscefalo@gmail.com>
+Subject: [PATCH v2] toshiba_acpi: Fix regression caused by backlight extra check code
+Date: Mon, 24 Nov 2014 19:29:36 -0700
+Message-Id: <1416882576-3203-1-git-send-email-coproscefalo@gmail.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 4:00 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Nov 24, 2014 at 2:58 PM, Alexei Starovoitov
-> <alexei.starovoitov@gmail.com> wrote:
->>
->> I've changed gcc pr58145-1.c reproducer to use
->> __read_once_size() approach above
->
-> I don't think you did.
->
->> modified reproducer:
->> struct S { unsigned int data; };
->> void bar(int val)
->> {
->>   struct S _s = { .data = val };
->>   *(volatile struct S *) 0x880000UL = ACCESS_ONCE(&_s);
->> }
->
-> My approach never had "volatile struct S *". The only volatile
-> pointers were the actual byte/word/etc pointers, and those generated
+Bug 86521 uncovered that some TOS6208 devices also return
+non zero values on a write call to the backlight method,
+thus getting caught and bailed out by the extra check code.
 
-you're right. In my invalid snippet above the ACCESS_ONCE
-to struct on stack gets optimized away and only 'volatile struct *'
-in left hand side is triggering the bug.
+This patch changes the set_lcd_brightness function to its
+"original" state by just adapting it to the new function
+format.
 
-Have tried the following which blends your proposal
-with original code from Christian:
-/* bad
-#define ACCESS_ONCE(x) *((volatile typeof(x) *)&(x))
-*/
+Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
+---
+Changes since v1:
+- Simply revert the commit to its original state by just
+  adapting the code to the new function format
 
-/* good */
-#define ACCESS_ONCE(p) \
-      ({ typeof(*p) __val; __read_once_size(p, &__val, sizeof(__val)); __val; })
+Darren,
 
-static __always_inline void __read_once_size(volatile void *p, void
-*res, int size)
-{
-     switch (size) {
-     case 1: *(u8 *)res = *(volatile u8 *)p; break;
-     case 2: *(u16 *)res = *(volatile u16 *)p; break;
-     case 4: *(u32 *)res = *(volatile u32 *)p; break;
-     case 8: *(u64 *)res = *(volatile u64 *)p; break;
-     }
-}
+This patch simply reverts the commit so the bug can be closed,
+I'll send a few patches later which will include the change
+needed to block the backlight on TOS1900 devices for review.
 
-union ipte_control {
-        unsigned long val;
-        struct {
-                unsigned long k  : 1;
-                unsigned long kh : 31;
-                unsigned long kg : 32;
-        };
-};
+ drivers/platform/x86/toshiba_acpi.c | 21 ++++-----------------
+ 1 file changed, 4 insertions(+), 17 deletions(-)
 
-struct kvm_vcpu {
-        union ipte_control ic;
-};
+diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+index 96076d9..06362b7 100644
+--- a/drivers/platform/x86/toshiba_acpi.c
++++ b/drivers/platform/x86/toshiba_acpi.c
+@@ -928,9 +928,7 @@ static int lcd_proc_open(struct inode *inode, struct file *file)
+ 
+ static int set_lcd_brightness(struct toshiba_acpi_dev *dev, int value)
+ {
+-	u32 in[TCI_WORDS] = { HCI_SET, HCI_LCD_BRIGHTNESS, 0, 0, 0, 0 };
+-	u32 out[TCI_WORDS];
+-	acpi_status status;
++	u32 hci_result;
+ 
+ 	if (dev->tr_backlight_supported) {
+ 		bool enable = !value;
+@@ -941,20 +939,9 @@ static int set_lcd_brightness(struct toshiba_acpi_dev *dev, int value)
+ 			value--;
+ 	}
+ 
+-	in[2] = value << HCI_LCD_BRIGHTNESS_SHIFT;
+-	status = tci_raw(dev, in, out);
+-	if (ACPI_FAILURE(status) || out[0] == TOS_FAILURE) {
+-		pr_err("ACPI call to set brightness failed");
+-		return -EIO;
+-	}
+-	/* Extra check for "incomplete" backlight method, where the AML code
+-	 * doesn't check for HCI_SET or HCI_GET and returns TOS_SUCCESS,
+-	 * the actual brightness, and in some cases the max brightness.
+-	 */
+-	if (out[2] > 0  || out[3] == 0xE000)
+-		return -ENODEV;
+-
+-	return out[0] == TOS_SUCCESS ? 0 : -EIO;
++	value = value << HCI_LCD_BRIGHTNESS_SHIFT;
++	hci_result = hci_write1(dev, HCI_LCD_BRIGHTNESS, value);
++	return hci_result == TOS_SUCCESS ? 0 : -EIO;
+ }
+ 
+ static int set_lcd_status(struct backlight_device *bd)
+-- 
+2.1.2
 
-void ipte_unlock_siif(struct kvm_vcpu *vcpu)
-{
-        union ipte_control old, new, *ic;
-
-        ic = &vcpu->ic;
-        do {
-                new = old = ACCESS_ONCE(ic);
-                new.kh--;
-                if (!new.kh)
-                        new.k = 0;
-        } while (cmpxchg(&ic->val, old.val, new.val) != old.val);
-}
-
-generated code looks correct with and without strict-aliasing
-and volatile marking is preserved properly.
-(to check for volatile marks add -fdump-tree-optimized
- and look for {v} in *.optimized)
-
-> Pretty? No. But then, the standard C aliasing rules are so broken that
-> "pretty" doesn't really come into play..
-
-Agree. I don't see any warnings or code generation issues with and
-without strict-aliasing with your original __read_once_size(), so no need
-to play union tricks. Initially I was worried that extra always_inline
-function will make generated code worse in critical paths where
-ACCESS_ONCE is used, but after looking close enough, it seems
-all should be fine.
-
-Note, with unmodified ACCESS_ONCE all architectures (even x64)
-are missing volatile markings with gcc 4.6.3, 4.7.2 for Christian's
-use case.
