@@ -1,109 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917AbaKYVUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 16:20:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44434 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751169AbaKYVUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 16:20:51 -0500
-Date: Tue, 25 Nov 2014 23:20:11 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>, lguest@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v4 04/42] virtio: disable virtio 1.0 in transports
-Message-ID: <20141125212011.GA22343@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
- <1416933600-21398-5-git-send-email-mst@redhat.com>
- <20141125182942.3890fe7b.cornelia.huck@de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141125182942.3890fe7b.cornelia.huck@de.ibm.com>
+	id S1751500AbaKYVXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 16:23:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49912 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaKYVXF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 16:23:05 -0500
+Date: Tue, 25 Nov 2014 13:23:04 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: James Custer <jcuster@sgi.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] x86: Allow 1GB pages to be SPECIAL similar to 2MB
+Message-Id: <20141125132304.ee475f4ea432a2e52ed4f8b5@linux-foundation.org>
+In-Reply-To: <1411656024-33114-1-git-send-email-jcuster@sgi.com>
+References: <1411656024-33114-1-git-send-email-jcuster@sgi.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 06:29:42PM +0100, Cornelia Huck wrote:
-> On Tue, 25 Nov 2014 18:41:35 +0200
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+On Thu, 25 Sep 2014 09:40:24 -0500 James Custer <jcuster@sgi.com> wrote:
+
+> Superpages allocated by SGI's superpages module can be backed by 1GB pages,
+> but direct i/o cannot be used. The superpages module uses _PAGE_BIT_SPECIAL
+> to disable direct i/o because some code depends on the memory being backed
+> by page structures. But, because superpages have no backing page structures
+> this causes a panic.
 > 
-> > disable virtio 1.0 in transports that don't
-> > support it yet.
+> This is the way direct i/o on 1GB pages fails:
 > 
-> I'd prefer if you disabled it for _every_ transport in this patch,
-> until the needed infrastructure is in place. Else this is a bit
-> confusing.
-
-Well the only transports left are pci and rpoc, and these only
-read the low 32 bit of the features from the device -
-so there's nothing to clear.
-
-E.g. the following would be even more confusing, would it not:
-
-	u32 features;
-	....
-	features &= ~BIT_ULL(VIRTIO_F_VERSION_1);
-
-Agree?
-
-> > We will gradually re-enable as support is added.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  drivers/lguest/lguest_device.c     | 3 ++-
-> >  drivers/misc/mic/card/mic_virtio.c | 2 ++
-> >  drivers/s390/kvm/virtio_ccw.c      | 3 ++-
-> >  drivers/virtio/virtio_mmio.c       | 2 ++
-> >  4 files changed, 8 insertions(+), 2 deletions(-)
+>                BUG: unable to handle kernel paging request at ffffea0038000000
+> [60463.203795] IP: [<ffffffff8103c93a>] gup_huge_pud+0x9a/0xe0
+> [60463.210058] PGD 83ffd3067 PUD 83ffd2067 PMD 0
+> [60463.215052] Oops: 0000 [#1] SMP
 > 
-> Why do you disable ccw but not pci? (Doesn't pci need any changes
-> transport-side?)
-
-No because the register is 32 bit wide there.
-
-> And you missed the old s390 virtio transport in
-> drivers/s390/kvm/kvm_virtio.c :)
-
-Good catch. I can fix that for v5, but see below.
-
-> > diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-> > index abba04d..08536f0 100644
-> > --- a/drivers/s390/kvm/virtio_ccw.c
-> > +++ b/drivers/s390/kvm/virtio_ccw.c
-> > @@ -704,7 +704,8 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
-> >  out_free:
-> >  	kfree(features);
-> >  	kfree(ccw);
-> > -	return rc;
-> > +	/* TODO: enable virtio 1.0 */
-> > +	return rc & ~BIT_ULL(VIRTIO_F_VERSION_1);;
+> Stack traceback for pid 77136
+> 0xffff8867a88ae300    77136    74825  1   56   R  0xffff8867a88ae970 *readdirectsp
+>  [<ffffffff8103c93a>] gup_huge_pud+0x9a/0xe0
+>  [<ffffffff8103cc33>] gup_pud_range+0x173/0x1b0
+>  [<ffffffff8103cd57>] get_user_pages_fast+0xe7/0x1b0
+>  [<ffffffff8118eac3>] dio_get_page+0x83/0x150
+>  [<ffffffff8118f641>] do_direct_IO+0x81/0x420
+>  [<ffffffff8118fb89>] direct_io_worker+0x1a9/0x340
+>  [<ffffffffa00c5de8>] ext3_direct_IO+0xe8/0x2c0 [ext3]
+>  [<ffffffff810fa527>] generic_file_aio_read+0x237/0x260
+>  [<ffffffff81159878>] do_sync_read+0xc8/0x110
+>  [<ffffffff8115a027>] vfs_read+0xc7/0x130
+>  [<ffffffff8115a193>] sys_read+0x53/0xa0
+>  [<ffffffff81466192>] system_call_fastpath+0x16/0x1b
 > 
-> double ';'
+> gup_huge_pud() is trying to find the page structure, and with superpages there
+> is none.
 > 
-> FWIW, as negotiating a revision >= 1 is a pre-req for virtio 1.0
-> support on ccw, virtio 1.0 is already implicitly disabled.
+> With direct i/o on 2MB pages:
+> 
+> static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
+>                 int write, struct page **pages, int *nr)
+> {
+>  ...
+>                 if (pmd_none(pmd) || pmd_trans_splitting(pmd))
+>                         return 0;
+> 
+> and pmd_trans_splitting() is testing _PAGE_SPLITTING, which is an alias
+> for _PAGE_SPECIAL which we set on the 2MB or 1GB pages mapped in by superpages.
+> 
+> But gup_pud_range() has no such check:
+> 
+> static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
+>                         int write, struct page **pages, int *nr)
+> {
+>   ...
+>                 if (pud_none(pud))
+>                         return 0;
+> 
+> Therefore direct i/o on 1GB pages attempts to get a page structure and panics.
+> 
+> ...
+>
+> @@ -223,7 +221,7 @@ static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
+>  		pud_t pud = *pudp;
+>  
+>  		next = pud_addr_end(addr, end);
+> -		if (pud_none(pud))
+> +		if (pud_none(pud) || (pud_val(pud) & _PAGE_SPECIAL))
+>  			return 0;
+>  		if (unlikely(pud_large(pud))) {
+>  			if (!gup_huge_pud(pud, addr, next, write, pages, nr))
 
-Ah, you mean device guarantees that VIRTIO_F_VERSION_1 isn't set
-if guest sets revision to 0?
-In that case it's probably best to drop this from both ccw
-devices.
+If I'm understanding it correctly, this patch is only needed by SGI's
+superpages module, yes?
 
-It is here temporarily anyway, only in order to avoid
-using transitional devices incorrectly when bisecting.
+That being said, it looks like a reasonable precaution and we could
+easily carry it.
 
+But please, this check needs a very good code comment explaining to
+readers why it is here and what it is doing.  Probably that comment
+should also mention that the mainline kernel doesn't strictly need the
+check.
 
-> >  }
-> > 
-> >  static void virtio_ccw_finalize_features(struct virtio_device *vdev)
+Also, open-coding the flag test looks rather inconsistent.  Should we
+have some (documented, please) helper macro to perform this test?
