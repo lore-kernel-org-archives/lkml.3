@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751257AbaKYQWC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:22:02 -0500
-Received: from vps0.lunn.ch ([178.209.37.122]:39188 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751045AbaKYQWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:22:00 -0500
-Date: Tue, 25 Nov 2014 17:21:21 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Andrew Lunn <andrew@lunn.ch>, Leif Lindholm <leif.lindholm@linaro.org>,
-        mark.rutland@arm.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robh+dt@kernel.org, ijc@debian.org,
-        plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] of: support passing console options with stdout-path
-Message-ID: <20141125162121.GC3443@lunn.ch>
-References: <1416867838-18652-1-git-send-email-leif.lindholm@linaro.org>
- <20141124230016.GP20238@lunn.ch>
- <20141125144439.07212C44343@trevor.secretlab.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141125144439.07212C44343@trevor.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750888AbaKYQZW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:25:22 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:57935 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784AbaKYQZU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 11:25:20 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, tglx@linutronix.de,
+        jason@lakedaemon.net, devicetree@vger.kernel.org
+Subject: [PATCH v2 0/8] irqchip: New driver for ST's SysCfg controlled IRQs
+Date: Tue, 25 Nov 2014 16:24:57 +0000
+Message-Id: <1416932705-16880-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > More worrying, barebox does not support the : either. So there is a
-> > danger your bootloader suddenly goes silent after a dt blob update.
-> 
-> Is barebox parsing the property? Or updating it? Or both? I've got no
-> problem with this patch, but we can also support things like the
-> 'current-speed' property in the UART to set a default when the stdout
-> path doesn't have any arguments.
+This driver enables IRQs which are controlled using System Configuration
+registers.  Without it Performance Monitoring, Core Sight Tracing and some
+L2 Caches will fail to function.
 
-Hi Grant
+v1 => v2:
+ - Fixed up Jason's review comments
 
-I'm no export with barebox. So i just grep'ed the code.
+Lee Jones (8):
+  dt: bindings: Supply shared ST IRQ defines
+  irqchip: Supply new driver for STi based devices
+  irqchip: irq-st: Add documentation for STi based syscfg IRQs
+  ARM: STi: STiH416: Enable Cortex-A9 PMU support
+  ARM: STi: STiH416: Enable PMU IRQs
+  ARM: STi: STiH407: Enable Cortex-A9 PMU support
+  ARM: STi: STiH407: Enable PMU IRQs
+  ARM: STI: Ensure requested STi's SysCfg Controlled IRQs are enabled at
+    boot
 
-It parses the property. Also as with linux, of_find_node_by_path()
-does not stop at : as you say it should.
+ .../interrupt-controller/st,sti-irq-syscfg.txt     |  35 ++++
+ arch/arm/boot/dts/stih407.dtsi                     |  16 ++
+ arch/arm/boot/dts/stih416.dtsi                     |  16 ++
+ arch/arm/mach-sti/Kconfig                          |   1 +
+ drivers/irqchip/Kconfig                            |   7 +
+ drivers/irqchip/Makefile                           |   1 +
+ drivers/irqchip/irq-st.c                           | 208 +++++++++++++++++++++
+ include/dt-bindings/interrupt-controller/irq-st.h  |  30 +++
+ 8 files changed, 314 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/st,sti-irq-syscfg.txt
+ create mode 100644 drivers/irqchip/irq-st.c
+ create mode 100644 include/dt-bindings/interrupt-controller/irq-st.h
 
-There is one case of the property being updated, but that is only for
-the PPC mpc85xx.
+-- 
+1.9.1
 
-Barebox does not appear to use 'current-speed' at all.
-
-	Andrew
