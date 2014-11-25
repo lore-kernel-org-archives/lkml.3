@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751092AbaKYQLE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:11:04 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:46301 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaKYQLB (ORCPT
+	id S1750942AbaKYQN4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:13:56 -0500
+Received: from regular1.263xmail.com ([211.150.99.134]:33105 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726AbaKYQNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:11:01 -0500
-Date: Tue, 25 Nov 2014 16:10:58 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Kweh Hock Leong <hock.leong.kweh@intel.com>
-Cc: Ming Lei <ming.lei@canonical.com>, Matt Fleming <matt.fleming@intel.com>,
-        Sam Protsenko <semen.protsenko@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-efi@vger.kernel.org,
-        Ong Boon Leong <boon.leong.ong@intel.com>
-Subject: Re: [PATCH v3] firmware loader: fix hung task warning dump
-Message-ID: <20141125161058.GC3331@console-pimps.org>
-References: <1416279419-26590-1-git-send-email-hock.leong.kweh@intel.com>
+	Tue, 25 Nov 2014 11:13:55 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: kever.yang@rock-chips.com
+X-FST-TO: linux-arm-kernel@lists.infradead.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: kever.yang@rock-chips.com
+X-UNIQUE-TAG: <26c162ab3ddf7536854164d8fd38f2a4>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <5474AAB4.2060301@rock-chips.com>
+Date: Wed, 26 Nov 2014 00:13:40 +0800
+From: Kever Yang <kever.yang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416279419-26590-1-git-send-email-hock.leong.kweh@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chris Zhong <zyw@rock-chips.com>, heiko@sntech.de, dianders@chromium.org
+CC: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/2] Increase the maximum cpu frequency of rk3288
+References: <1416908253-31721-1-git-send-email-zyw@rock-chips.com>
+In-Reply-To: <1416908253-31721-1-git-send-email-zyw@rock-chips.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov, at 10:56:59AM, Kweh Hock Leong wrote:
-> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
-> 
-> When using request_firmware_nowait() with FW_ACTION_NOHOTPLUG param to
-> expose user helper interface, if the user do not react immediately, after
-> 120 seconds there will be a hung task warning message dumped as below:
-> 
-> [ 3000.784235] INFO: task kworker/0:0:8259 blocked for more than 120 seconds.
-> [ 3000.791281]       Tainted: G            E 3.16.0-rc1-yocto-standard #41
-> [ 3000.798082] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [ 3000.806072] kworker/0:0     D cd0075c8     0  8259      2 0x00000000
-> [ 3000.812765] Workqueue: events request_firmware_work_func
-> [ 3000.818253]  cd375e18 00000046 0000000e cd0075c8 000000f0 cd40ea00 cd375fec 1b883e89
-> [ 3000.826374]  0000026b cd40ea00 80000000 00000001 cd0075c8 00000000 cd375de4 c119917f
-> [ 3000.834492]  cd563360 cd375df4 c119a0ab cd563360 00000000 cd375e24 c119a1d6 00000000
-> [ 3000.842616] Call Trace:
-> [ 3000.845252]  [<c119917f>] ? kernfs_next_descendant_post+0x3f/0x50
-> [ 3000.851543]  [<c119a0ab>] ? kernfs_activate+0x6b/0xc0
-> [ 3000.856790]  [<c119a1d6>] ? kernfs_add_one+0xd6/0x130
-> [ 3000.862047]  [<c15fdb02>] schedule+0x22/0x60
-> [ 3000.866548]  [<c15fd195>] schedule_timeout+0x175/0x1d0
-> [ 3000.871887]  [<c119b391>] ? __kernfs_create_file+0x71/0xa0
-> [ 3000.877574]  [<c119bb9a>] ? sysfs_add_file_mode_ns+0xaa/0x180
-> [ 3000.883533]  [<c15fe84f>] wait_for_completion+0x6f/0xb0
-> [ 3000.888961]  [<c1065200>] ? wake_up_process+0x40/0x40
-> [ 3000.894219]  [<c13cb600>] _request_firmware+0x750/0x9f0
-> [ 3000.899666]  [<c1382a7f>] ? n_tty_receive_buf2+0x1f/0x30
-> [ 3000.905200]  [<c13cba02>] request_firmware_work_func+0x22/0x50
-> [ 3000.911235]  [<c10550d2>] process_one_work+0x122/0x380
-> [ 3000.916571]  [<c1055859>] worker_thread+0xf9/0x470
-> [ 3000.921555]  [<c1055760>] ? create_and_start_worker+0x50/0x50
-> [ 3000.927497]  [<c1055760>] ? create_and_start_worker+0x50/0x50
-> [ 3000.933448]  [<c105a5ff>] kthread+0x9f/0xc0
-> [ 3000.937850]  [<c15ffd40>] ret_from_kernel_thread+0x20/0x30
-> [ 3000.943548]  [<c105a560>] ? kthread_worker_fn+0x100/0x100
-> 
-> This patch change the wait_for_completion() function call to
-> wait_for_completion_interruptible() function call for solving the issue.
-> 
-> Cc: Matt Fleming <matt.fleming@intel.com>
-> Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
-> Acked-by: Ming Lei <ming.lei@canonical.com>
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Hi Chris,
 
-Looks good to me. Who's going to pick this up? Ming, Greg, am I OK to
-take this through the EFI tree or would you prefer to take it through
-some other tree?
+On 11/25/2014 05:37 PM, Chris Zhong wrote:
+> The maximum cpu frequency of rk3288 can up to 1.8Ghz, but the vdd_cpu need set
+> to 1.4v. I've tested these patches on rk3288 evb board.
+I'm not sure why you need this patch, I think we have a discuss
+for the cpu operating point before.
+In this case:
+1. rk3288.dtsi is for all the rk3288 Soc based system, you may need
+a separate opp table in rk3288-evb-rk808.dts;
+2. 1.4V may beyond the supported voltage range too much,
+     and it's not a good idea to add it to rk3288.dtsi as a safe voltage.
+3. Do you have a stress/heavy load test on evb with 1.4v at 1.8GHz?
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+- Kever
+>
+>
+> Chris Zhong (2):
+>    ARM: dts: rockchip: change the max voltage of cpu to 1.4v
+>    ARM: dts: rk3288: change the max clk of cpu to 1.8Ghz
+>
+>   arch/arm/boot/dts/rk3288-evb-rk808.dts | 2 +-
+>   arch/arm/boot/dts/rk3288.dtsi          | 6 ++++--
+>   2 files changed, 5 insertions(+), 3 deletions(-)
+>
+
+
