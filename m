@@ -1,167 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461AbaKYLZD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:25:03 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:61008 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844AbaKYLY7 (ORCPT
+	id S1755420AbaKYLZA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:25:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58650 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753476AbaKYKmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 06:24:59 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-ae-547467087cc4
-From: Kamil Debski <k.debski@samsung.com>
-To: "'Lad, Prabhakar'" <prabhakar.csengg@gmail.com>,
-        "'Hans Verkuil'" <hans.verkuil@cisco.com>,
-        "'Mauro Carvalho Chehab'" <m.chehab@samsung.com>,
-        "'LMML'" <linux-media@vger.kernel.org>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Jeongtae Park'" <jtp.park@samsung.com>
-References: <1416309821-5426-1-git-send-email-prabhakar.csengg@gmail.com>
- <1416309821-5426-10-git-send-email-prabhakar.csengg@gmail.com>
-In-reply-to: <1416309821-5426-10-git-send-email-prabhakar.csengg@gmail.com>
-Subject: RE: [PATCH 09/12] media: s5p-mfc: use vb2_ops_wait_prepare/finish
- helper
-Date: Tue, 25 Nov 2014 12:24:55 +0100
-Message-id: <088f01d008a2$70d0f150$5272d3f0$%debski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AdADIi/UiyY54uTkSyqv/si9WtoZEAFe+60w
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t/xy7oc6SUhBg/btCyW/NzFZHFk7VUm
-	i7NNb9gtLu+aw2bRs2Erq8XFdfIWL++vYHZg95jyeyOrx85Zd9k9+rasYvT4vEkugCWKyyYl
-	NSezLLVI3y6BK+Nb7w/mghMKFVOmbWRpYOyT7mLk4JAQMJFYclOji5ETyBSTuHBvPVsXIxeH
-	kMBSRol5266xgSSEBBqYJKa1aYDUswloSqy65wFSIyKwA6jm9X9mEIdZoIlRovFqCyNEdxej
-	xKMNJ9lBOjgFvCUanpiBDBIWCJb4c24hM4jNIqAqcfnnIzCbV8BBYvK8JWwQtqDEj8n3WEBs
-	ZgEtifU7jzNB2PISm9e8ZYY4Wl3i0V9dkLCIgJHE486VUCUiEncbnrNOYBSahWTSLCSTZiGZ
-	NAtJywJGllWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIfHxdQfj0mNWhxgFOBiVeHhvxJWE
-	CLEmlhVX5h5ilOBgVhLhfZIMFOJNSaysSi3Kjy8qzUktPsTIxMEp1cCY3GKz6NOd9ZIlpvJJ
-	aWcXuS/aK58zdd+6LKFjG+Ljw6+6cvZfWX+ouOios//EC2tjNrm739p+yMB2c6Nw3vNLbAf6
-	ztvJLZ1WYCskcfNp7Tebs0tCIrXZ3nJ+2ThPQdDpdNah5z/jLn55wVDC9+tg6N4gu95M9YOO
-	D+QXq1c8FahdzMAaqFWmxFKckWioxVxUnAgAOzzFsW0CAAA=
+	Tue, 25 Nov 2014 05:42:07 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 129/254] serial: msm_serial: Fix kgdb continue
+Date: Tue, 25 Nov 2014 10:37:59 +0000
+Message-Id: <1416912004-5928-130-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
 
-Please provide a commit description. No matter how obvious the commit
-seems.
+------------------
 
-Best wishes,
+From: Stephen Boyd <sboyd@codeaurora.org>
+
+commit 8b374399468da1c25db5b5d436b167aafc10fbdc upstream.
+
+Frank reports that after continuing in kgdb the RX stale event
+doesn't occur until after the RX fifo is filled up with exactly
+the amount of characters programmed for the RX watermark (in this
+case it's 48). To read a single character from the uartdm
+hardware we force a stale event so that any characters in the RX
+packing buffer are flushed into the RX fifo immediately instead
+of waiting for a stale timeout or for the fifo to fill. Forcing
+that stale event asserts the stale interrupt but we never clear
+that interrupt via UART_CR_CMD_RESET_STALE_INT in the polling
+functions. So when kgdb continues the stale interrupt is left
+pending in the hardware and we don't timeout with a stale event,
+like we usually would if a user typed one character on the
+console, until the reset stale interrupt and stale event commands
+are sent. Frank could get things working again by running
+handle_rx_dm(). By putting enough characters into the fifo he
+could trigger a watermark interrupt, and thus cause
+handle_rx_dm() to run finally resetting the stale interrupt
+and enabling the stale event so that single characters would
+cause timeouts again.
+
+The fix is to just do what the interrupt routine was doing all
+along and clear the stale interrupt and enable the event again.
+Doing this also smooths over any differences in the fifo behavior
+between v1.3 and v1.4 hardware allowing us to skip forcing the
+uart into single character mode.
+
+Reviewed-by: Frank Rowand <frank.rowand@sonymobile.com>
+Tested-by: Frank Rowand <frank.rowand@sonymobile.com>
+Fixes: f7e54d7ad743 "msm_serial: Add support for poll_{get,put}_char()"
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/tty/serial/msm_serial.c | 22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
+index 72000a6d5af0..5a82ca2f4bad 100644
+--- a/drivers/tty/serial/msm_serial.c
++++ b/drivers/tty/serial/msm_serial.c
+@@ -680,17 +680,6 @@ static void msm_power(struct uart_port *port, unsigned int state,
+ }
+ 
+ #ifdef CONFIG_CONSOLE_POLL
+-static int msm_poll_init(struct uart_port *port)
+-{
+-	struct msm_port *msm_port = UART_TO_MSM(port);
+-
+-	/* Enable single character mode on RX FIFO */
+-	if (msm_port->is_uartdm >= UARTDM_1P4)
+-		msm_write(port, UARTDM_DMEN_RX_SC_ENABLE, UARTDM_DMEN);
+-
+-	return 0;
+-}
+-
+ static int msm_poll_get_char_single(struct uart_port *port)
+ {
+ 	struct msm_port *msm_port = UART_TO_MSM(port);
+@@ -702,7 +691,7 @@ static int msm_poll_get_char_single(struct uart_port *port)
+ 		return msm_read(port, rf_reg) & 0xff;
+ }
+ 
+-static int msm_poll_get_char_dm_1p3(struct uart_port *port)
++static int msm_poll_get_char_dm(struct uart_port *port)
+ {
+ 	int c;
+ 	static u32 slop;
+@@ -726,6 +715,10 @@ static int msm_poll_get_char_dm_1p3(struct uart_port *port)
+ 			slop = msm_read(port, UARTDM_RF);
+ 			c = sp[0];
+ 			count--;
++			msm_write(port, UART_CR_CMD_RESET_STALE_INT, UART_CR);
++			msm_write(port, 0xFFFFFF, UARTDM_DMRX);
++			msm_write(port, UART_CR_CMD_STALE_EVENT_ENABLE,
++				  UART_CR);
+ 		} else {
+ 			c = NO_POLL_CHAR;
+ 		}
+@@ -749,8 +742,8 @@ static int msm_poll_get_char(struct uart_port *port)
+ 	imr = msm_read(port, UART_IMR);
+ 	msm_write(port, 0, UART_IMR);
+ 
+-	if (msm_port->is_uartdm == UARTDM_1P3)
+-		c = msm_poll_get_char_dm_1p3(port);
++	if (msm_port->is_uartdm)
++		c = msm_poll_get_char_dm(port);
+ 	else
+ 		c = msm_poll_get_char_single(port);
+ 
+@@ -809,7 +802,6 @@ static struct uart_ops msm_uart_pops = {
+ 	.verify_port = msm_verify_port,
+ 	.pm = msm_power,
+ #ifdef CONFIG_CONSOLE_POLL
+-	.poll_init = msm_poll_init,
+ 	.poll_get_char	= msm_poll_get_char,
+ 	.poll_put_char	= msm_poll_put_char,
+ #endif
 -- 
-Kamil Debski
-Samsung R&D Institute Poland
-
-
-> -----Original Message-----
-> From: Lad, Prabhakar [mailto:prabhakar.csengg@gmail.com]
-> Sent: Tuesday, November 18, 2014 12:24 PM
-> To: Hans Verkuil; Mauro Carvalho Chehab; LMML
-> Cc: LKML; Lad, Prabhakar; Kyungmin Park; Kamil Debski; Jeongtae Park
-> Subject: [PATCH 09/12] media: s5p-mfc: use vb2_ops_wait_prepare/finish
-> helper
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Kamil Debski <k.debski@samsung.com>
-> Cc: Jeongtae Park <jtp.park@samsung.com>
-> ---
->  drivers/media/platform/s5p-mfc/s5p_mfc.c     |  1 +
->  drivers/media/platform/s5p-mfc/s5p_mfc_dec.c | 20 ++------------------
-> drivers/media/platform/s5p-mfc/s5p_mfc_enc.c | 20 ++------------------
->  3 files changed, 5 insertions(+), 36 deletions(-)
-> 
-> diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc.c
-> b/drivers/media/platform/s5p-mfc/s5p_mfc.c
-> index 03204fd..52f65e9 100644
-> --- a/drivers/media/platform/s5p-mfc/s5p_mfc.c
-> +++ b/drivers/media/platform/s5p-mfc/s5p_mfc.c
-> @@ -810,6 +810,7 @@ static int s5p_mfc_open(struct file *file)
->  	q = &ctx->vq_dst;
->  	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
->  	q->drv_priv = &ctx->fh;
-> +	q->lock = &dev->mfc_mutex;
->  	if (vdev == dev->vfd_dec) {
->  		q->io_modes = VB2_MMAP;
->  		q->ops = get_dec_queue_ops();
-> diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc_dec.c
-> b/drivers/media/platform/s5p-mfc/s5p_mfc_dec.c
-> index 74bcec8..78b3e0e 100644
-> --- a/drivers/media/platform/s5p-mfc/s5p_mfc_dec.c
-> +++ b/drivers/media/platform/s5p-mfc/s5p_mfc_dec.c
-> @@ -946,22 +946,6 @@ static int s5p_mfc_queue_setup(struct vb2_queue
-> *vq,
->  	return 0;
->  }
-> 
-> -static void s5p_mfc_unlock(struct vb2_queue *q) -{
-> -	struct s5p_mfc_ctx *ctx = fh_to_ctx(q->drv_priv);
-> -	struct s5p_mfc_dev *dev = ctx->dev;
-> -
-> -	mutex_unlock(&dev->mfc_mutex);
-> -}
-> -
-> -static void s5p_mfc_lock(struct vb2_queue *q) -{
-> -	struct s5p_mfc_ctx *ctx = fh_to_ctx(q->drv_priv);
-> -	struct s5p_mfc_dev *dev = ctx->dev;
-> -
-> -	mutex_lock(&dev->mfc_mutex);
-> -}
-> -
->  static int s5p_mfc_buf_init(struct vb2_buffer *vb)  {
->  	struct vb2_queue *vq = vb->vb2_queue;
-> @@ -1109,8 +1093,8 @@ static void s5p_mfc_buf_queue(struct vb2_buffer
-> *vb)
-> 
->  static struct vb2_ops s5p_mfc_dec_qops = {
->  	.queue_setup		= s5p_mfc_queue_setup,
-> -	.wait_prepare		= s5p_mfc_unlock,
-> -	.wait_finish		= s5p_mfc_lock,
-> +	.wait_prepare		= vb2_ops_wait_prepare,
-> +	.wait_finish		= vb2_ops_wait_finish,
->  	.buf_init		= s5p_mfc_buf_init,
->  	.start_streaming	= s5p_mfc_start_streaming,
->  	.stop_streaming		= s5p_mfc_stop_streaming,
-> diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc_enc.c
-> b/drivers/media/platform/s5p-mfc/s5p_mfc_enc.c
-> index e7240cb..ffa9c1d 100644
-> --- a/drivers/media/platform/s5p-mfc/s5p_mfc_enc.c
-> +++ b/drivers/media/platform/s5p-mfc/s5p_mfc_enc.c
-> @@ -1869,22 +1869,6 @@ static int s5p_mfc_queue_setup(struct vb2_queue
-> *vq,
->  	return 0;
->  }
-> 
-> -static void s5p_mfc_unlock(struct vb2_queue *q) -{
-> -	struct s5p_mfc_ctx *ctx = fh_to_ctx(q->drv_priv);
-> -	struct s5p_mfc_dev *dev = ctx->dev;
-> -
-> -	mutex_unlock(&dev->mfc_mutex);
-> -}
-> -
-> -static void s5p_mfc_lock(struct vb2_queue *q) -{
-> -	struct s5p_mfc_ctx *ctx = fh_to_ctx(q->drv_priv);
-> -	struct s5p_mfc_dev *dev = ctx->dev;
-> -
-> -	mutex_lock(&dev->mfc_mutex);
-> -}
-> -
->  static int s5p_mfc_buf_init(struct vb2_buffer *vb)  {
->  	struct vb2_queue *vq = vb->vb2_queue;
-> @@ -2054,8 +2038,8 @@ static void s5p_mfc_buf_queue(struct vb2_buffer
-> *vb)
-> 
->  static struct vb2_ops s5p_mfc_enc_qops = {
->  	.queue_setup		= s5p_mfc_queue_setup,
-> -	.wait_prepare		= s5p_mfc_unlock,
-> -	.wait_finish		= s5p_mfc_lock,
-> +	.wait_prepare		= vb2_ops_wait_prepare,
-> +	.wait_finish		= vb2_ops_wait_finish,
->  	.buf_init		= s5p_mfc_buf_init,
->  	.buf_prepare		= s5p_mfc_buf_prepare,
->  	.start_streaming	= s5p_mfc_start_streaming,
-> --
-> 1.9.1
+2.1.0
 
