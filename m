@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573AbaKYLBg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:01:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58993 "EHLO
+	id S932097AbaKYLBx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:01:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58989 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938AbaKYKnH (ORCPT
+	with ESMTP id S1753929AbaKYKnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:07 -0500
+	Tue, 25 Nov 2014 05:43:06 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 199/254] NFSv4: Ensure that we call FREE_STATEID when NFSv4.x stateids are revoked
-Date: Tue, 25 Nov 2014 10:39:09 +0000
-Message-Id: <1416912004-5928-200-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 198/254] NFSv4: Fix races between nfs_remove_bad_delegation() and delegation return
+Date: Tue, 25 Nov 2014 10:39:08 +0000
+Message-Id: <1416912004-5928-199-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -29,59 +29,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit c606bb8857921d3ecf4d353942d6cc7e116cc75a upstream.
+commit 869f9dfa4d6d57b79e0afc3af14772c2a023eeb1 upstream.
 
-NFSv4.x (x>0) requires us to call TEST_STATEID+FREE_STATEID if a stateid is
-revoked. We will currently fail to do this if the stateid is a delegation.
+Any attempt to call nfs_remove_bad_delegation() while a delegation is being
+returned is currently a no-op. This means that we can end up looping
+forever in nfs_end_delegation_return() if something causes the delegation
+to be revoked.
+This patch adds a mechanism whereby the state recovery code can communicate
+to the delegation return code that the delegation is no longer valid and
+that it should not be used when reclaiming state.
+It also changes the return value for nfs4_handle_delegation_recall_error()
+to ensure that nfs_end_delegation_return() does not reattempt the lock
+reclaim before state recovery is done.
 
 http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
 Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/filelayout/filelayout.c | 3 ---
- fs/nfs/nfs4proc.c              | 8 --------
- 2 files changed, 11 deletions(-)
+ fs/nfs/delegation.c | 23 +++++++++++++++++++++--
+ fs/nfs/delegation.h |  1 +
+ fs/nfs/nfs4proc.c   |  2 +-
+ 3 files changed, 23 insertions(+), 3 deletions(-)
 
-diff --git a/fs/nfs/filelayout/filelayout.c b/fs/nfs/filelayout/filelayout.c
-index a596a1938b52..b2f8f17dcc3b 100644
---- a/fs/nfs/filelayout/filelayout.c
-+++ b/fs/nfs/filelayout/filelayout.c
-@@ -151,9 +151,6 @@ static int filelayout_async_handle_error(struct rpc_task *task,
- 	case -NFS4ERR_DELEG_REVOKED:
- 	case -NFS4ERR_ADMIN_REVOKED:
- 	case -NFS4ERR_BAD_STATEID:
--		if (state == NULL)
--			break;
--		nfs_remove_bad_delegation(state->inode);
- 	case -NFS4ERR_OPENMODE:
- 		if (state == NULL)
+diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
+index 5d8ccecf5f5c..289753433f50 100644
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -177,7 +177,11 @@ static int nfs_do_return_delegation(struct inode *inode, struct nfs_delegation *
+ {
+ 	int res = 0;
+ 
+-	res = nfs4_proc_delegreturn(inode, delegation->cred, &delegation->stateid, issync);
++	if (!test_bit(NFS_DELEGATION_REVOKED, &delegation->flags))
++		res = nfs4_proc_delegreturn(inode,
++				delegation->cred,
++				&delegation->stateid,
++				issync);
+ 	nfs_free_delegation(delegation);
+ 	return res;
+ }
+@@ -364,11 +368,13 @@ static int nfs_end_delegation_return(struct inode *inode, struct nfs_delegation
+ {
+ 	struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
+ 	struct nfs_inode *nfsi = NFS_I(inode);
+-	int err;
++	int err = 0;
+ 
+ 	if (delegation == NULL)
+ 		return 0;
+ 	do {
++		if (test_bit(NFS_DELEGATION_REVOKED, &delegation->flags))
++			break;
+ 		err = nfs_delegation_claim_opens(inode, &delegation->stateid);
+ 		if (!issync || err != -EAGAIN)
  			break;
+@@ -589,10 +595,23 @@ static void nfs_client_mark_return_unused_delegation_types(struct nfs_client *cl
+ 	rcu_read_unlock();
+ }
+ 
++static void nfs_revoke_delegation(struct inode *inode)
++{
++	struct nfs_delegation *delegation;
++	rcu_read_lock();
++	delegation = rcu_dereference(NFS_I(inode)->delegation);
++	if (delegation != NULL) {
++		set_bit(NFS_DELEGATION_REVOKED, &delegation->flags);
++		nfs_mark_return_delegation(NFS_SERVER(inode), delegation);
++	}
++	rcu_read_unlock();
++}
++
+ void nfs_remove_bad_delegation(struct inode *inode)
+ {
+ 	struct nfs_delegation *delegation;
+ 
++	nfs_revoke_delegation(inode);
+ 	delegation = nfs_inode_detach_delegation(inode);
+ 	if (delegation) {
+ 		nfs_inode_find_state_and_recover(inode, &delegation->stateid);
+diff --git a/fs/nfs/delegation.h b/fs/nfs/delegation.h
+index 9a79c7a99d6d..e02b090ab9da 100644
+--- a/fs/nfs/delegation.h
++++ b/fs/nfs/delegation.h
+@@ -31,6 +31,7 @@ enum {
+ 	NFS_DELEGATION_RETURN_IF_CLOSED,
+ 	NFS_DELEGATION_REFERENCED,
+ 	NFS_DELEGATION_RETURNING,
++	NFS_DELEGATION_REVOKED,
+ };
+ 
+ int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct nfs_openres *res);
 diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 23d982183aac..2768d382a4d1 100644
+index fe949828bf47..23d982183aac 100644
 --- a/fs/nfs/nfs4proc.c
 +++ b/fs/nfs/nfs4proc.c
-@@ -360,11 +360,6 @@ static int nfs4_handle_exception(struct nfs_server *server, int errorcode, struc
- 		case -NFS4ERR_DELEG_REVOKED:
- 		case -NFS4ERR_ADMIN_REVOKED:
- 		case -NFS4ERR_BAD_STATEID:
--			if (inode != NULL && nfs4_have_delegation(inode, FMODE_READ)) {
--				nfs_remove_bad_delegation(inode);
--				exception->retry = 1;
--				break;
--			}
- 			if (state == NULL)
- 				break;
- 			ret = nfs4_schedule_stateid_recovery(server, state);
-@@ -4780,9 +4775,6 @@ nfs4_async_handle_error(struct rpc_task *task, const struct nfs_server *server,
- 		case -NFS4ERR_DELEG_REVOKED:
- 		case -NFS4ERR_ADMIN_REVOKED:
- 		case -NFS4ERR_BAD_STATEID:
--			if (state == NULL)
--				break;
--			nfs_remove_bad_delegation(state->inode);
- 		case -NFS4ERR_OPENMODE:
- 			if (state == NULL)
- 				break;
+@@ -1647,7 +1647,7 @@ static int nfs4_handle_delegation_recall_error(struct nfs_server *server, struct
+ 			nfs_inode_find_state_and_recover(state->inode,
+ 					stateid);
+ 			nfs4_schedule_stateid_recovery(server, state);
+-			return 0;
++			return -EAGAIN;
+ 		case -NFS4ERR_DELAY:
+ 		case -NFS4ERR_GRACE:
+ 			set_bit(NFS_DELEGATED_STATE, &state->flags);
 -- 
 2.1.0
 
