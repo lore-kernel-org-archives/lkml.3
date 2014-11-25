@@ -1,119 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646AbaKYMXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:23:22 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38821 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205AbaKYMXS (ORCPT
+	id S1754681AbaKYMXe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:23:34 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:56104 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753201AbaKYMXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 07:23:18 -0500
-Date: Tue, 25 Nov 2014 12:23:02 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ding Tianhong <dingtianhong@huawei.com>
-Subject: Re: For the problem when using swiotlb
-Message-ID: <20141125122302.GC18858@e104818-lin.cambridge.arm.com>
-References: <5469E26B.2010905@huawei.com>
- <20141121175118.GA10451@localhost>
- <20141121180925.GG19783@e104818-lin.cambridge.arm.com>
- <2166613.l2i4mdmtLA@wuerfel>
- <20141125105815.GB18858@e104818-lin.cambridge.arm.com>
- <20141125112905.GC3836@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141125112905.GC3836@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 25 Nov 2014 07:23:32 -0500
+From: Lin Yongting <linyongting@gmail.com>
+To: linux@arm.linux.org.uk, victor.kamensky@linaro.org, nico@linaro.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linyongting@gmail.com,
+        linyongting@huawei.com
+Subject: [PATCH] ARM: Add unwinding support for memory copy functions
+Date: Tue, 25 Nov 2014 20:23:07 +0800
+Message-Id: <1416918187-26016-1-git-send-email-linyongting@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 11:29:05AM +0000, Russell King - ARM Linux wrote:
-> On Tue, Nov 25, 2014 at 10:58:15AM +0000, Catalin Marinas wrote:
-> > Since we don't have a coherent_dma_supported() function, we defer the
-> > validity check of coherent_dma_mask to dma_alloc_coherent() (and here we
-> > can remove bouncing since swiotlb has relatively small buffers).
-> 
-> Bouncing of coherent DMA buffers is insane; if you have to bounce them,
-> they're by definition not coherent.
+The memory copy functions(memcpy, __copy_from_user, __copy_to_user)
+never had unwinding annotations added. Currently, when accessing
+invalid pointer by these functions occurs the backtrace shown will
+stop at these functions or some completely unrelated function.
+Add unwinding annotations in hopes of getting a more useful backtrace
+in following cases:
+1. die on accessing invalid pointer by these functions
+2. kprobe trapped at any instruction within these functions
+3. interrupted at any instruction within these functions
 
-"Bouncing" is not a proper term here. What I meant is not using the
-swiotlb bounce buffers for the dma_alloc_coherent(). The
-swiotlb_alloc_coherent() allows this but it doesn't do any
-copying/bouncing in such scenario (it would not make sense, as you said
-below).
+Signed-off-by: Lin Yongting <linyongting@gmail.com>
+---
+ arch/arm/lib/copy_from_user.S |    5 +++++
+ arch/arm/lib/copy_template.S  |   30 ++++++++++++++++++++++++++++++
+ arch/arm/lib/copy_to_user.S   |    5 +++++
+ arch/arm/lib/memcpy.S         |    5 +++++
+ 4 files changed, 45 insertions(+)
 
-> Think about one of the common uses of coherent DMA buffers: ring buffers,
-> where both the CPU and the DMA agent write to the ring:
-> 
-> - CPU writes to ring, loading address and length, then writing to the
->   status word for the ring entry.
-> - DMA reads the ring status word, sees it owns the entry, processes it,
->   DMA writes to the ring status word to give it back.
-> 
-> What this means is that if you are bouncing the buffer, you are copying
-> it whole-sale between the CPU visible version and the DMA visible
-> version, which means that you can miss DMA updates to it.  So, bouncing
-> a coherent DMA buffer is simply not an acceptable implementation for
-> dma_alloc_coherent().
-
-I agree, not arguing against this.
-
-> As for validity of masks, it is defined in the DMA API documentation that
-> if a DMA mask is suitable for the streaming APIs, then it is also suitable
-> for the coherent APIs.  The reverse is left open, and so may not
-> necessarily be true.
-> 
-> In other words:
-> 
-> 	err = dma_set_mask(dev, mask);
-> 	if (err == 0)
-> 		assert(dma_set_coherent_mask(dev, mask) == 0);
-> 
-> must always succeed, but reversing the two calls has no guarantee.
-
-That would succeed on arm64 currently.
-
-The problem is that swiotlb bounce buffers allow for smaller than 32-bit
-dma_mask for streaming DMA since it can do bouncing. With coherent
-allocations, we could allow the same smaller than 32-bit
-coherent_dma_mask, however allocations may fail since they fall back to
-the swiotlb reserved buffer which is relatively small.
-
-What I want to avoid is threads like this where people ask for bigger
-swiotlb buffers for coherent allocations most likely because they do the
-wrong thing with their dma masks (or dma-ranges property). If the arm64
-dma_alloc_coherent() code avoids calling swiotlb_alloc_coherent() and
-just limits itself to ZONE_DMA, we make it clear that the swiotlb
-buffers are only used for streaming DMA (bouncing).
-
-Once we avoid swiotlb buffers for coherent DMA, the problem is that even
-though your assertion above would pass, dma_alloc_coherent() may fail if
-coherent_dma_mask is smaller than the end of ZONE_DMA (and pfn offsets
-considered). Basically breaking the assumption that you mentioned above
-with regards to coherent_dma_mask suitability.
-
-I think the best we can get is for dma_supported() to ignore
-swiotlb_dma_supported() and simply check for ZONE_DMA (similar to the
-arm32 one). We guarantee that swiotlb bounce buffers are within ZONE_DMA
-already, so no need for calling swiotlb_dma_supported(). If we ever have
-devices with smaller than 32-bit mask on arm64, we will have to reduce
-ZONE_DMA.
-
-> Note that there seems to be only one driver which has different coherent
-> and streaming DMA masks today:
-> 
-> drivers/media/pci/sta2x11/sta2x11_vip.c:
->         if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(26))) {
->         err = dma_set_coherent_mask(&vip->pdev->dev, DMA_BIT_MASK(29));
-
-This would work if we have a ZONE_DMA of 29-bit while the swiotlb bounce
-buffer within 26-bit. If we go with the above ZONE_DMA only check, we
-would need ZONE_DMA of 26-bit.
-
+diff --git a/arch/arm/lib/copy_from_user.S b/arch/arm/lib/copy_from_user.S
+index 66a477a..7a235b9 100644
+--- a/arch/arm/lib/copy_from_user.S
++++ b/arch/arm/lib/copy_from_user.S
+@@ -12,6 +12,7 @@
+ 
+ #include <linux/linkage.h>
+ #include <asm/assembler.h>
++#include <asm/unwind.h>
+ 
+ /*
+  * Prototype:
+@@ -77,6 +78,10 @@
+ 	stmdb	sp!, {r0, r2, r3, \reg1, \reg2}
+ 	.endm
+ 
++	.macro usave reg1 reg2
++	UNWIND(	.save {r0, r2, r3, \reg1, \reg2}	)
++	.endm
++
+ 	.macro exit reg1 reg2
+ 	add	sp, sp, #8
+ 	ldmfd	sp!, {r0, \reg1, \reg2}
+diff --git a/arch/arm/lib/copy_template.S b/arch/arm/lib/copy_template.S
+index 3bc8eb8..652e4d9 100644
+--- a/arch/arm/lib/copy_template.S
++++ b/arch/arm/lib/copy_template.S
+@@ -53,6 +53,12 @@
+  *	data as needed by the implementation including this code. Called
+  *	upon code entry.
+  *
++ * usave reg1 reg2
++ *
++ *	Unwind annotation macro is corresponding for 'enter' macro.
++ *	It tell unwinder that preserved some provided registers on the stack
++ *	and additional data by a prior 'enter' macro.
++ *
+  * exit reg1 reg2
+  *
+  *	Restore registers with the values previously saved with the
+@@ -67,7 +73,12 @@
+  */
+ 
+ 
++	UNWIND(	.fnstart			)
+ 		enter	r4, lr
++	UNWIND(	.fnend				)
++
++	UNWIND(	.fnstart			)
++		usave	r4, lr			  @ in first stmdb block
+ 
+ 		subs	r2, r2, #4
+ 		blt	8f
+@@ -79,6 +90,11 @@
+ 
+ 1:		subs	r2, r2, #(28)
+ 		stmfd	sp!, {r5 - r8}
++	UNWIND(	.fnend				)
++
++	UNWIND(	.fnstart			)
++		usave	r4, lr
++	UNWIND(	.save	{r5 - r8}		) @ in second stmfd block
+ 		blt	5f
+ 
+ 	CALGN(	ands	ip, r0, #31		)
+@@ -144,7 +160,10 @@
+ 	CALGN(	bcs	2b			)
+ 
+ 7:		ldmfd	sp!, {r5 - r8}
++	UNWIND(	.fnend				) @ end of second stmfd block
+ 
++	UNWIND(	.fnstart			)
++		usave	r4, lr			  @ still in first stmdb block
+ 8:		movs	r2, r2, lsl #31
+ 		ldr1b	r1, r3, ne, abort=21f
+ 		ldr1b	r1, r4, cs, abort=21f
+@@ -173,10 +192,13 @@
+ 		ldr1w	r1, lr, abort=21f
+ 		beq	17f
+ 		bgt	18f
++	UNWIND(	.fnend				)
+ 
+ 
+ 		.macro	forward_copy_shift pull push
+ 
++	UNWIND(	.fnstart			)
++		usave	r4, lr			  @ still in first stmdb block
+ 		subs	r2, r2, #28
+ 		blt	14f
+ 
+@@ -187,7 +209,11 @@
+ 	CALGN(	bcc	15f			)
+ 
+ 11:		stmfd	sp!, {r5 - r9}
++	UNWIND(	.fnend				)
+ 
++	UNWIND(	.fnstart			)
++		usave	r4, lr
++	UNWIND(	.save	{r5 - r9}		) @ in new second stmfd block
+ 	PLD(	pld	[r1, #0]		)
+ 	PLD(	subs	r2, r2, #96		)
+ 	PLD(	pld	[r1, #28]		)
+@@ -221,7 +247,10 @@
+ 	PLD(	bge	13b			)
+ 
+ 		ldmfd	sp!, {r5 - r9}
++	UNWIND(	.fnend				) @ end of the second stmfd block
+ 
++	UNWIND(	.fnstart			)
++		usave	r4, lr			  @ still in first stmdb block
+ 14:		ands	ip, r2, #28
+ 		beq	16f
+ 
+@@ -236,6 +265,7 @@
+ 
+ 16:		sub	r1, r1, #(\push / 8)
+ 		b	8b
++	UNWIND(	.fnend				)
+ 
+ 		.endm
+ 
+diff --git a/arch/arm/lib/copy_to_user.S b/arch/arm/lib/copy_to_user.S
+index d066df6..a9d3db1 100644
+--- a/arch/arm/lib/copy_to_user.S
++++ b/arch/arm/lib/copy_to_user.S
+@@ -12,6 +12,7 @@
+ 
+ #include <linux/linkage.h>
+ #include <asm/assembler.h>
++#include <asm/unwind.h>
+ 
+ /*
+  * Prototype:
+@@ -80,6 +81,10 @@
+ 	stmdb	sp!, {r0, r2, r3, \reg1, \reg2}
+ 	.endm
+ 
++	.macro usave reg1 reg2
++	UNWIND(	.save {r0, r2, r3, \reg1, \reg2}	)
++	.endm
++
+ 	.macro exit reg1 reg2
+ 	add	sp, sp, #8
+ 	ldmfd	sp!, {r0, \reg1, \reg2}
+diff --git a/arch/arm/lib/memcpy.S b/arch/arm/lib/memcpy.S
+index a9b9e22..7797e81 100644
+--- a/arch/arm/lib/memcpy.S
++++ b/arch/arm/lib/memcpy.S
+@@ -12,6 +12,7 @@
+ 
+ #include <linux/linkage.h>
+ #include <asm/assembler.h>
++#include <asm/unwind.h>
+ 
+ #define LDR1W_SHIFT	0
+ #define STR1W_SHIFT	0
+@@ -48,6 +49,10 @@
+ 	stmdb sp!, {r0, \reg1, \reg2}
+ 	.endm
+ 
++	.macro usave reg1 reg2
++	UNWIND(	.save	{r0, \reg1, \reg2}	)
++	.endm
++
+ 	.macro exit reg1 reg2
+ 	ldmfd sp!, {r0, \reg1, \reg2}
+ 	.endm
 -- 
-Catalin
+1.7.9.5
+
