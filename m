@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751407AbaKYO66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:58:58 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:34133 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012AbaKYO64 (ORCPT
+	id S1751516AbaKYO7E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:59:04 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:19867 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016AbaKYO7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:58:56 -0500
-Date: Tue, 25 Nov 2014 22:58:50 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v3 4/7] crypto: AF_ALG: add AEAD support
-Message-ID: <20141125145850.GD8541@gondor.apana.org.au>
-References: <4088013.2O8zCP0xXa@tachyon.chronox.de>
- <2175035.5IWBGpA0Ko@tachyon.chronox.de>
- <20141124142945.GB31469@gondor.apana.org.au>
- <5492722.Cc6uZ9OM2L@tauon>
+	Tue, 25 Nov 2014 09:59:00 -0500
+Message-ID: <547498B6.1040108@oracle.com>
+Date: Tue, 25 Nov 2014 07:56:54 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5492722.Cc6uZ9OM2L@tauon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+CC: tglx@linutronix.de, corbet@lwn.net, mingo@redhat.com, hpa@zytor.com,
+        peterz@infradead.org, riel@redhat.com, akpm@linux-foundation.org,
+        rientjes@google.com, ak@linux.intel.com, mgorman@suse.de,
+        raistlin@linux.it, kirill.shutemov@linux.intel.com, atomlin@redhat.com,
+        avagin@openvz.org, gorcunov@openvz.org, serge.hallyn@canonical.com,
+        athorlton@sgi.com, oleg@redhat.com, vdavydov@parallels.com,
+        daeseok.youn@gmail.com, keescook@chromium.org,
+        yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu, vishnu.ps@samsung.com,
+        axboe@fb.com, paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v3] sched/fair: Add advisory flag for borrowing a timeslice
+References: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com> <20141125101238.GA19795@linux.vnet.ibm.com>
+In-Reply-To: <20141125101238.GA19795@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 03:58:34PM +0100, Stephan Mueller wrote:
-> Ok. But in the code you see that skcipher is a 100% subset of AEAD. For 
-> AEAD, all we need to do in addition to normal symmetric ciphers is to 
-> select the AEAD kernel crypto API calls, to locate and use the AD and to 
-> ensure we have the right memory size to process the tag.
+On 11/25/2014 03:12 AM, Srikar Dronamraju wrote:
+>>
+>> - Request to borrow timeslice is not guranteed to be honored.
+>> - If the task is allowed to borrow, kernel will inform the task
+>>    of this. When this happens, task must yield the processor as soon
+>>    as it completes its critical section.
+>> - If the task fails to yield processor after being allowed to
+>>    borrow, it is penalized by forcing it to skip its next time slot
+>>    by the scheduler.
+>> - Task is charged additional time for the borrowed timeslice as
+>>    accumulated run time. This pushes it further down in consideration
+>>    for the next task to run.
+>>
+>
+> Is there a way for us to identify if the lock is contended?
+> Because it may not be prudent to allow a task to borrow timeslice for a
+> lock which isnt contended.
+>
 
-There is still one fundamental difference between AEAD and ciphers.
-Namely that ciphers can operate as you go while AEAD requests must
-be done in one lot.  So that should make the AEAD code simpler vs.
-ciphers.
+Userspace knows that. It is hard to determine this from kernel. Darren 
+Hart had worked on a solution to solving similar issue and I spent fair 
+amount of time looking through that code. Darren's solution comes into 
+play after contention has already happened and does reduce the cost of 
+contention. Database folks think the cost is already too high once 
+contention has happened because of the resulting context switches and 
+post-contention solutions do not help. This solution helps reduce 
+contention on locks and userspace code designer is in best position to 
+determine which locks are subject to such contention.
 
-I think the best course of action for now is to start with sharing
-no code and then chop bits off as we see fit.
-
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+--
+Khalid
