@@ -1,191 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489AbaKYHGZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 02:06:25 -0500
-Received: from mail-bn1bbn0101.outbound.protection.outlook.com ([157.56.111.101]:29952
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752466AbaKYHGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 02:06:22 -0500
-From: Peter Chen <Peter.Chen@freescale.com>
-To: Kiran Raparthy <kiran.kumar@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        =?utf-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Benoit Goby <benoit@android.com>, Todd Poynor <toddpoynor@google.com>
-Subject: RE: [PATCH v3 3/3] usb: phy: hold wakeupsource when USB is enumerated
- in peripheral mode
-Thread-Topic: [PATCH v3 3/3] usb: phy: hold wakeupsource when USB is
- enumerated in peripheral mode
-Thread-Index: AQHQCAv+GnQF09jqJEOVTmAISz+anpxw6mlQ
-Date: Tue, 25 Nov 2014 07:06:18 +0000
-Message-ID: <15cad5ef7627483cbba96e05fe180813@BN1PR0301MB0772.namprd03.prod.outlook.com>
-References: <1416849900-29959-1-git-send-email-kiran.kumar@linaro.org>
- <1416849900-29959-3-git-send-email-kiran.kumar@linaro.org>
-In-Reply-To: <1416849900-29959-3-git-send-email-kiran.kumar@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.158.211]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0771;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0771;
-x-forefront-prvs: 040655413E
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(189002)(199003)(107046002)(21056001)(95666004)(99286002)(120916001)(99396003)(2656002)(87936001)(76576001)(31966008)(105586002)(66066001)(46102003)(106356001)(20776003)(64706001)(106116001)(33646002)(74316001)(4396001)(101416001)(97736003)(62966003)(77096003)(15202345003)(77156002)(19580405001)(40100003)(19580395003)(122556002)(108616004)(15975445006)(50986999)(92566001)(54356999)(76176999)(86362001)(24736002)(422495003);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0771;H:BN1PR0301MB0772.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+	id S1752320AbaKYHH1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 02:07:27 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:63259 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876AbaKYHHZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 02:07:25 -0500
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Transfer-Encoding: 8BIT
+To: Philipp Zabel <p.zabel@pengutronix.de>,
+        "Thierry Reding" <thierry.reding@gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1415007078-7947-1-git-send-email-p.zabel@pengutronix.de>
+Cc: =?utf-8?q?Janusz_U=C5=BCycki?= <j.uzycki@elproma.com.pl>,
+        "Rob Herring" <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
+        "Philipp Zabel" <p.zabel@pengutronix.de>
+References: <1415007078-7947-1-git-send-email-p.zabel@pengutronix.de>
+Message-ID: <20141125070720.12298.46343@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v2] clk: Add PWM clock driver
+Date: Mon, 24 Nov 2014 23:07:20 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAP76UqM003817
 
- 
+Quoting Philipp Zabel (2014-11-03 01:31:18)
+> Some board designers, when running out of clock output pads, decide to
+> (mis)use PWM output pads to provide a clock to external components.
+> This driver supports this practice by providing an adapter between the
+> PWM and clock bindings in the device tree. As the PWM bindings specify
+> the period in the device tree, this is a fixed clock.
 > 
-> usb: phy: hold wakeupsource when USB is enumerated in peripheral mode
-> 
-> Some systems require a mechanism to prevent system to enter into suspend
-> state when USB is connected and enumerated in peripheral mode.
-> 
-> This patch provides an interface to hold a wakeupsource to prevent suspend.
-> PHY drivers can use this interface when USB is connected and enumerated in
-> peripheral mode.
-> 
-> A timed wakeupsource is temporarily held on USB disconnect events, to allow
-> the rest of the system to react to the USB disconnection (dropping host
-> sessions, updating charger status, etc.) prior to re-allowing suspend.
-> 
-
-Hi Kiran & Felipe,
-
-Just two questions for this series
-
-- Will it be the default behavior for all peripheral drivers?
-- If the peripheral driver's PHY driver does not vbus event, how to support it?
-For example, chipidea udc driver has its vbus interface at its controller register.
-
-Peter
-
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-usb@vger.kernel.org
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Sumit Semwal <sumit.semwal@linaro.org>
-> Cc: Arve Hj√∏nnev√•g <arve@android.com>
-> Cc: Benoit Goby <benoit@android.com>
-> [Original patch in Android from Todd]
-> Cc: Todd Poynor <toddpoynor@google.com>
-> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 > ---
->  drivers/usb/phy/phy.c   | 29 +++++++++++++++++++++++++++--
->  include/linux/usb/phy.h |  5 +++++
->  2 files changed, 32 insertions(+), 2 deletions(-)
+> I'm resending this because last time the linux-pwm list was not in Cc:
+> So far I have not received any comments on the patch itself. I have used
+> it on a BoundaryDevices Nitrogen6X board to produce a master clock for
+> the OV5640 MIPI CSI-2 camera module.
 > 
-> diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c index
-> b4066a0..8c87bc3 100644
-> --- a/drivers/usb/phy/phy.c
-> +++ b/drivers/usb/phy/phy.c
-> @@ -331,6 +331,7 @@ int usb_add_phy(struct usb_phy *x, enum
-> usb_phy_type type)
->  	int		ret = 0;
->  	unsigned long	flags;
->  	struct usb_phy	*phy;
-> +	char wsource_name[40];
+> Changes since v1:
+>  - none (rebased onto v3.18-rc3)
+
+Hi Philipp,
+
+Thanks for testing this. Is the Nitrogen6X board merged upstream? I'm OK
+with the patch but prefer to merge things when a consumer is ready to
+use it. I guess you are missing a patch to add the pwm-clock bits to the
+Nitrogen6X dts?
+
+Regards,
+Mike
+
+> ---
+>  .../devicetree/bindings/clock/pwm-clock.txt        |  23 +++++
+>  drivers/clk/Kconfig                                |   7 ++
+>  drivers/clk/Makefile                               |   1 +
+>  drivers/clk/clk-pwm.c                              | 110 +++++++++++++++++++++
+>  4 files changed, 141 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/clock/pwm-clock.txt
+>  create mode 100644 drivers/clk/clk-pwm.c
 > 
->  	if (x->type != USB_PHY_TYPE_UNDEFINED) {
->  		dev_err(x->dev, "not accepting initialized PHY %s\n", x->label);
-> @@ -353,6 +354,10 @@ int usb_add_phy(struct usb_phy *x, enum
-> usb_phy_type type)
->  	x->type = type;
->  	list_add_tail(&x->head, &phy_list);
-> 
-> +	snprintf(wsource_name, sizeof(wsource_name), "vbus-%s",
-> +		dev_name(x->dev));
-> +	wakeup_source_init(&x->wsource, wsource_name);
+> diff --git a/Documentation/devicetree/bindings/clock/pwm-clock.txt b/Documentation/devicetree/bindings/clock/pwm-clock.txt
+> new file mode 100644
+> index 0000000..d127d17
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/pwm-clock.txt
+> @@ -0,0 +1,23 @@
+> +Binding for an external clock signal driven by a PWM pin.
 > +
->  out:
->  	spin_unlock_irqrestore(&phy_lock, flags);
->  	return ret;
-> @@ -404,6 +409,7 @@ void usb_remove_phy(struct usb_phy *x)
+> +This binding uses the common clock binding[1] and the common PWM binding[2].
+> +
+> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +[2] Documentation/devicetree/bindings/pwm/pwm.txt
+> +
+> +Required properties:
+> +- compatible : shall be "pwm-clock".
+> +- #clock-cells : from common clock binding; shall be set to 0.
+> +- pwms : from common PWM binding; this determines the clock frequency
+> +  via the PWM period given in the pwm-specifier.
+> +
+> +Optional properties:
+> +- clock-output-names : From common clock binding.
+> +
+> +Example:
+> +       clock {
+> +               compatible = "pwm-clock";
+> +               #clock-cells = <0>;
+> +               clock-output-names = "mipi_mclk";
+> +               pwms = <&pwm2 0 40>; /* 1 / 40 ns = 25 MHz */
+> +       };
+> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+> index 455fd17..36a6918a 100644
+> --- a/drivers/clk/Kconfig
+> +++ b/drivers/clk/Kconfig
+> @@ -129,6 +129,13 @@ config COMMON_CLK_PALMAS
+>           This driver supports TI Palmas devices 32KHz output KG and KG_AUDIO
+>           using common clock framework.
+>  
+> +config COMMON_CLK_PWM
+> +       bool "Clock driver for PWMs used as clock outputs"
+> +       depends on PWM
+> +       ---help---
+> +         Adapter driver so that any PWM output can be (mis)used as clock signal
+> +         at 50% duty cycle.
+> +
+>  config COMMON_CLK_PXA
+>         def_bool COMMON_CLK && ARCH_PXA
+>         ---help---
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index d5fba5b..6a0c5cf 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -40,6 +40,7 @@ obj-$(CONFIG_ARCH_U300)                       += clk-u300.o
+>  obj-$(CONFIG_ARCH_VT8500)              += clk-vt8500.o
+>  obj-$(CONFIG_COMMON_CLK_WM831X)                += clk-wm831x.o
+>  obj-$(CONFIG_COMMON_CLK_XGENE)         += clk-xgene.o
+> +obj-$(CONFIG_COMMON_CLK_PWM)           += clk-pwm.o
+>  obj-$(CONFIG_COMMON_CLK_AT91)          += at91/
+>  obj-$(CONFIG_ARCH_BCM_MOBILE)          += bcm/
+>  obj-$(CONFIG_ARCH_BERLIN)              += berlin/
+> diff --git a/drivers/clk/clk-pwm.c b/drivers/clk/clk-pwm.c
+> new file mode 100644
+> index 0000000..8f747b3
+> --- /dev/null
+> +++ b/drivers/clk/clk-pwm.c
+> @@ -0,0 +1,110 @@
+> +/*
+> + * Copyright (C) 2014 Philipp Zabel, Pengutronix
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * PWM (mis)used as clock output
+> + */
+> +#include <linux/clk-provider.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/pwm.h>
+> +
+> +struct clk_pwm {
+> +       struct clk_hw hw;
+> +       struct pwm_device *pwm;
+> +};
+> +
+> +#define to_clk_pwm(_hw) container_of(_hw, struct clk_pwm, hw)
+> +
+> +static int clk_pwm_enable(struct clk_hw *hw)
+> +{
+> +       struct clk_pwm *clk_pwm = to_clk_pwm(hw);
+> +
+> +       return pwm_enable(clk_pwm->pwm);
+> +}
+> +
+> +static void clk_pwm_disable(struct clk_hw *hw)
+> +{
+> +       struct clk_pwm *clk_pwm = to_clk_pwm(hw);
+> +
+> +       pwm_disable(clk_pwm->pwm);
+> +}
+> +
+> +static unsigned long clk_pwm_recalc_rate(struct clk_hw *hw,
+> +                                        unsigned long parent_rate)
+> +{
+> +       struct clk_pwm *clk_pwm = to_clk_pwm(hw);
+> +       unsigned int period_ns = pwm_get_period(clk_pwm->pwm);
+> +
+> +       return period_ns ? (1000000000 / period_ns) : 0;
+> +}
+> +
+> +const struct clk_ops clk_pwm_ops = {
+> +       .enable = clk_pwm_enable,
+> +       .disable = clk_pwm_disable,
+> +       .recalc_rate = clk_pwm_recalc_rate,
+> +};
+> +
+> +int clk_pwm_probe(struct platform_device *pdev)
+> +{
+> +       struct clk_init_data init;
+> +       struct clk_pwm *clk_pwm;
+> +       struct pwm_device *pwm;
+> +       struct clk *clk;
+> +       int ret;
+> +
+> +       clk_pwm = devm_kzalloc(&pdev->dev, sizeof(*clk_pwm), GFP_KERNEL);
+> +       if (!clk_pwm)
+> +               return -ENOMEM;
+> +
+> +       pwm = devm_pwm_get(&pdev->dev, NULL);
+> +       if (IS_ERR(pwm))
+> +               return PTR_ERR(pwm);
+> +
+> +       ret = pwm_config(pwm, (pwm->period + 1) >> 1, pwm->period);
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       init.name = "pwm-clock";
+> +       init.ops = &clk_pwm_ops;
+> +       init.flags = CLK_IS_ROOT;
+> +       init.num_parents = 0;
+> +
+> +       clk_pwm->pwm = pwm;
+> +       clk_pwm->hw.init = &init;
+> +       clk = devm_clk_register(&pdev->dev, &clk_pwm->hw);
+> +       if (IS_ERR(clk))
+> +               return PTR_ERR(clk);
+> +
+> +       return of_clk_add_provider(pdev->dev.of_node,
+> +                                  of_clk_src_simple_get, clk);
+> +}
+> +
+> +int clk_pwm_remove(struct platform_device *pdev)
+> +{
+> +       of_clk_del_provider(pdev->dev.of_node);
+> +
+> +       return 0;
+> +}
+> +
+> +static const struct of_device_id clk_pwm_dt_ids[] = {
+> +       { .compatible = "pwm-clock" },
+> +       { }
+> +};
+> +MODULE_DEVICE_TABLE(of, clk_pwm_dt_ids);
+> +
+> +static struct platform_driver clk_pwm_driver = {
+> +       .probe = clk_pwm_probe,
+> +       .driver = {
+> +               .name = "pwm-clock",
+> +               .owner = THIS_MODULE,
+> +               .of_match_table = of_match_ptr(clk_pwm_dt_ids),
+> +       },
+> +};
+> +
+> +module_platform_driver(clk_pwm_driver);
+> -- 
+> 2.1.1
 > 
->  	spin_lock_irqsave(&phy_lock, flags);
->  	if (x) {
-> +		wakeup_source_trash(&x->wsource);
->  		list_for_each_entry(phy_bind, &phy_bind_list, list)
->  			if (phy_bind->phy == x)
->  				phy_bind->phy = NULL;
-> @@ -448,13 +454,32 @@ int usb_bind_phy(const char *dev_name, u8 index,
-> EXPORT_SYMBOL_GPL(usb_bind_phy);
-> 
->  /**
-> - * usb_phy_set_event - set event to phy event
-> + * usb_phy_set_event - set event to phy event and
-> + * hold/temporarily hold wakeupsource
->   * @x: the phy returned by usb_get_phy();
->   *
-> - * This sets event to phy event
-> + * This holds per-PHY wakeupsource/timed wakeupsource
->   */
->  void usb_phy_set_event(struct usb_phy *x, unsigned long event)  {
-> +
->  	x->last_event = event;
-> +
-> +	switch (event) {
-> +	case USB_EVENT_ENUMERATED:
-> +		__pm_stay_awake(&x->wsource);
-> +		break;
-> +
-> +	case USB_EVENT_NONE:
-> +	case USB_EVENT_ID:
-> +	case USB_EVENT_VBUS:
-> +	case USB_EVENT_CHARGER:
-> +		__pm_wakeup_event(&x->wsource,
-> +				  USB_PHY_DEFAULT_WAKEUP_SRC_TIMEOUT);
-> +		break;
-> +
-> +	default:
-> +		break;
-> +	}
->  }
->  EXPORT_SYMBOL_GPL(usb_phy_set_event);
-> diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h index
-> f499c23..63a56bf 100644
-> --- a/include/linux/usb/phy.h
-> +++ b/include/linux/usb/phy.h
-> @@ -12,6 +12,8 @@
->  #include <linux/notifier.h>
->  #include <linux/usb.h>
-> 
-> +#define USB_PHY_DEFAULT_WAKEUP_SRC_TIMEOUT
-> 	msecs_to_jiffies(2000)
-> +
->  enum usb_phy_interface {
->  	USBPHY_INTERFACE_MODE_UNKNOWN,
->  	USBPHY_INTERFACE_MODE_UTMI,
-> @@ -88,6 +90,9 @@ struct usb_phy {
->  	/* for notification of usb_phy_events */
->  	struct atomic_notifier_head	notifier;
-> 
-> +	/* wakeup source */
-> +	struct wakeup_source    wsource;
-> +
->  	/* to pass extra port status to the root hub */
->  	u16			port_status;
->  	u16			port_change;
-> --
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in the body
-> of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
