@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353AbaKYKlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:41:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58506 "EHLO
+	id S1755526AbaKYLbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:31:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58538 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753304AbaKYKln (ORCPT
+	with ESMTP id S1753334AbaKYKls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:43 -0500
+	Tue, 25 Nov 2014 05:41:48 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Peter Zijlstra (Intel)" <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Cong Wang <cwang@twopensource.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Sebastian Reichel <sre@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 092/254] perf: Fix unclone_ctx() vs. locking
-Date: Tue, 25 Nov 2014 10:37:22 +0000
-Message-Id: <1416912004-5928-93-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 105/254] power: charger-manager: Fix NULL pointer exception with missing cm-fuel-gauge
+Date: Tue, 25 Nov 2014 10:37:35 +0000
+Message-Id: <1416912004-5928-106-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -33,166 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 211de6eba8960521e2be450a7d07db85fba4604c upstream.
+commit 661a88860274e059fdb744dfaa98c045db7b5d1d upstream.
 
-The idiot who did 4a1c0f262f88 ("perf: Fix lockdep warning on process exit")
-forgot to pay attention and fix all similar cases. Do so now.
+NULL pointer exception happens during charger-manager probe if
+'cm-fuel-gauge' property is not present.
 
-In particular, unclone_ctx() must be called while holding ctx->lock,
-therefore all such sites are broken for the same reason. Pull the
-put_ctx() call out from under ctx->lock.
+[    2.448536] Unable to handle kernel NULL pointer dereference at virtual address 00000000
+[    2.456572] pgd = c0004000
+[    2.459217] [00000000] *pgd=00000000
+[    2.462759] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+[    2.468047] Modules linked in:
+[    2.471089] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc6-00251-ge44cf96cd525-dirty #969
+[    2.479765] task: ea890000 ti: ea87a000 task.ti: ea87a000
+[    2.485161] PC is at strcmp+0x4/0x30
+[    2.488719] LR is at power_supply_match_device_by_name+0x10/0x1c
+[    2.494695] pc : [<c01f4220>]    lr : [<c030fe38>]    psr: a0000113
+[    2.494695] sp : ea87bde0  ip : 00000000  fp : eaa97010
+[    2.506150] r10: 00000004  r9 : ea97269c  r8 : ea3bbfd0
+[    2.511360] r7 : eaa97000  r6 : c030fe28  r5 : 00000000  r4 : ea3b0000
+[    2.517869] r3 : 0000006d  r2 : 00000000  r1 : 00000000  r0 : c057c195
+[    2.524381] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[    2.531671] Control: 10c5387d  Table: 4000404a  DAC: 00000015
+[    2.537399] Process swapper/0 (pid: 1, stack limit = 0xea87a240)
+[    2.543388] Stack: (0xea87bde0 to 0xea87c000)
+[    2.547733] bde0: ea3b0210 c026b1c8 eaa97010 eaa97000 eaa97010 eabb60a8 ea3b0210 00000000
+[    2.555891] be00: 00000008 ea2db210 ea1a3410 c030fee0 ea3bbf90 c03138fc c068969c c013526c
+[    2.564050] be20: eaa040c0 00000000 c068969c 00000000 eaa040c0 ea2da300 00000002 00000000
+[    2.572208] be40: 00000001 ea2da3c0 00000000 00000001 00000000 eaa97010 c068969c 00000000
+[    2.580367] be60: 00000000 c068969c 00000000 00000002 00000000 c026b71c c026b6f0 eaa97010
+[    2.588527] be80: c0e82530 c026a330 00000000 eaa97010 c068969c eaa97044 00000000 c061df50
+[    2.596686] bea0: ea87a000 c026a4dc 00000000 c068969c c026a448 c0268b5c ea8054a8 eaa8fd50
+[    2.604845] bec0: c068969c ea2db180 c06801f8 c0269b18 c0590f68 c068969c c0656c98 c068969c
+[    2.613004] bee0: c0656c98 ea3bbe40 c06988c0 c026aaf0 00000000 c0656c98 c0656c98 c00088a4
+[    2.621163] bf00: 00000000 c0055f48 00000000 00000004 00000000 ea890000 c05dbc54 c062c178
+[    2.629323] bf20: c0603518 c005f674 00000001 ea87a000 eb7ff83b c0476440 00000091 c003d41c
+[    2.637482] bf40: c05db344 00000007 eb7ff858 00000007 c065a76c c0647d24 00000007 c062c170
+[    2.645642] bf60: c06988c0 00000091 c062c178 c0603518 00000000 c0603cc4 00000007 00000007
+[    2.653801] bf80: c0603518 c0c0c0c0 00000000 c0453948 00000000 00000000 00000000 00000000
+[    2.661959] bfa0: 00000000 c0453950 00000000 c000e728 00000000 00000000 00000000 00000000
+[    2.670118] bfc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+[    2.678277] bfe0: 00000000 00000000 00000000 00000000 00000013 00000000 c0c0c0c0 c0c0c0c0
+[    2.686454] [<c01f4220>] (strcmp) from [<c030fe38>] (power_supply_match_device_by_name+0x10/0x1c)
+[    2.695303] [<c030fe38>] (power_supply_match_device_by_name) from [<c026b1c8>] (class_find_device+0x54/0xac)
+[    2.705106] [<c026b1c8>] (class_find_device) from [<c030fee0>] (power_supply_get_by_name+0x1c/0x30)
+[    2.714137] [<c030fee0>] (power_supply_get_by_name) from [<c03138fc>] (charger_manager_probe+0x3d8/0xe58)
+[    2.723683] [<c03138fc>] (charger_manager_probe) from [<c026b71c>] (platform_drv_probe+0x2c/0x5c)
+[    2.732532] [<c026b71c>] (platform_drv_probe) from [<c026a330>] (driver_probe_device+0x10c/0x224)
+[    2.741384] [<c026a330>] (driver_probe_device) from [<c026a4dc>] (__driver_attach+0x94/0x98)
+[    2.749813] [<c026a4dc>] (__driver_attach) from [<c0268b5c>] (bus_for_each_dev+0x54/0x88)
+[    2.757969] [<c0268b5c>] (bus_for_each_dev) from [<c0269b18>] (bus_add_driver+0xd4/0x1d0)
+[    2.766123] [<c0269b18>] (bus_add_driver) from [<c026aaf0>] (driver_register+0x78/0xf4)
+[    2.774110] [<c026aaf0>] (driver_register) from [<c00088a4>] (do_one_initcall+0x80/0x1bc)
+[    2.782276] [<c00088a4>] (do_one_initcall) from [<c0603cc4>] (kernel_init_freeable+0x100/0x1cc)
+[    2.790952] [<c0603cc4>] (kernel_init_freeable) from [<c0453950>] (kernel_init+0x8/0xec)
+[    2.799029] [<c0453950>] (kernel_init) from [<c000e728>] (ret_from_fork+0x14/0x2c)
+[    2.806572] Code: e12fff1e e1a03000 eafffff7 e4d03001 (e4d12001)
+[    2.812832] ---[ end trace 7f12556111b9e7ef ]---
 
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Probably-also-reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Fixes: 4a1c0f262f88 ("perf: Fix lockdep warning on process exit")
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Cong Wang <cwang@twopensource.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140930172308.GI4241@worktop.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: 856ee6115e2d ("charger-manager: Support deivce tree in charger manager driver")
+Signed-off-by: Sebastian Reichel <sre@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/events/core.c | 54 ++++++++++++++++++++++++++++++----------------------
- 1 file changed, 31 insertions(+), 23 deletions(-)
+ drivers/power/charger-manager.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 2065959042ea..5dfa199971d2 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -901,13 +901,23 @@ static void put_ctx(struct perf_event_context *ctx)
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index 9e4dab46eefd..ef1f4c928431 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -1720,6 +1720,11 @@ static int charger_manager_probe(struct platform_device *pdev)
+ 		return -EINVAL;
  	}
- }
  
--static void unclone_ctx(struct perf_event_context *ctx)
-+/*
-+ * This must be done under the ctx->lock, such as to serialize against
-+ * context_equiv(), therefore we cannot call put_ctx() since that might end up
-+ * calling scheduler related locks and ctx->lock nests inside those.
-+ */
-+static __must_check struct perf_event_context *
-+unclone_ctx(struct perf_event_context *ctx)
- {
--	if (ctx->parent_ctx) {
--		put_ctx(ctx->parent_ctx);
-+	struct perf_event_context *parent_ctx = ctx->parent_ctx;
++	if (!desc->psy_fuel_gauge) {
++		dev_err(&pdev->dev, "No fuel gauge power supply defined\n");
++		return -EINVAL;
++	}
 +
-+	lockdep_assert_held(&ctx->lock);
-+
-+	if (parent_ctx)
- 		ctx->parent_ctx = NULL;
--	}
- 	ctx->generation++;
-+
-+	return parent_ctx;
- }
- 
- static u32 perf_event_pid(struct perf_event *event, struct task_struct *p)
-@@ -2209,6 +2219,9 @@ static void ctx_sched_out(struct perf_event_context *ctx,
- static int context_equiv(struct perf_event_context *ctx1,
- 			 struct perf_event_context *ctx2)
- {
-+	lockdep_assert_held(&ctx1->lock);
-+	lockdep_assert_held(&ctx2->lock);
-+
- 	/* Pinning disables the swap optimization */
- 	if (ctx1->pin_count || ctx2->pin_count)
- 		return 0;
-@@ -2942,6 +2955,7 @@ static int event_enable_on_exec(struct perf_event *event,
-  */
- static void perf_event_enable_on_exec(struct perf_event_context *ctx)
- {
-+	struct perf_event_context *clone_ctx = NULL;
- 	struct perf_event *event;
- 	unsigned long flags;
- 	int enabled = 0;
-@@ -2973,7 +2987,7 @@ static void perf_event_enable_on_exec(struct perf_event_context *ctx)
- 	 * Unclone this context if we enabled any event.
- 	 */
- 	if (enabled)
--		unclone_ctx(ctx);
-+		clone_ctx = unclone_ctx(ctx);
- 
- 	raw_spin_unlock(&ctx->lock);
- 
-@@ -2983,6 +2997,9 @@ static void perf_event_enable_on_exec(struct perf_event_context *ctx)
- 	perf_event_context_sched_in(ctx, ctx->task);
- out:
- 	local_irq_restore(flags);
-+
-+	if (clone_ctx)
-+		put_ctx(clone_ctx);
- }
- 
- void perf_event_exec(void)
-@@ -3134,7 +3151,7 @@ errout:
- static struct perf_event_context *
- find_get_context(struct pmu *pmu, struct task_struct *task, int cpu)
- {
--	struct perf_event_context *ctx;
-+	struct perf_event_context *ctx, *clone_ctx = NULL;
- 	struct perf_cpu_context *cpuctx;
- 	unsigned long flags;
- 	int ctxn, err;
-@@ -3168,9 +3185,12 @@ find_get_context(struct pmu *pmu, struct task_struct *task, int cpu)
- retry:
- 	ctx = perf_lock_task_context(task, ctxn, &flags);
- 	if (ctx) {
--		unclone_ctx(ctx);
-+		clone_ctx = unclone_ctx(ctx);
- 		++ctx->pin_count;
- 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
-+
-+		if (clone_ctx)
-+			put_ctx(clone_ctx);
- 	} else {
- 		ctx = alloc_perf_context(pmu, task);
- 		err = -ENOMEM;
-@@ -7496,7 +7516,7 @@ __perf_event_exit_task(struct perf_event *child_event,
- static void perf_event_exit_task_context(struct task_struct *child, int ctxn)
- {
- 	struct perf_event *child_event, *next;
--	struct perf_event_context *child_ctx, *parent_ctx;
-+	struct perf_event_context *child_ctx, *clone_ctx = NULL;
- 	unsigned long flags;
- 
- 	if (likely(!child->perf_event_ctxp[ctxn])) {
-@@ -7523,28 +7543,16 @@ static void perf_event_exit_task_context(struct task_struct *child, int ctxn)
- 	child->perf_event_ctxp[ctxn] = NULL;
- 
- 	/*
--	 * In order to avoid freeing: child_ctx->parent_ctx->task
--	 * under perf_event_context::lock, grab another reference.
--	 */
--	parent_ctx = child_ctx->parent_ctx;
--	if (parent_ctx)
--		get_ctx(parent_ctx);
--
--	/*
- 	 * If this context is a clone; unclone it so it can't get
- 	 * swapped to another process while we're removing all
- 	 * the events from it.
- 	 */
--	unclone_ctx(child_ctx);
-+	clone_ctx = unclone_ctx(child_ctx);
- 	update_context_time(child_ctx);
- 	raw_spin_unlock_irqrestore(&child_ctx->lock, flags);
- 
--	/*
--	 * Now that we no longer hold perf_event_context::lock, drop
--	 * our extra child_ctx->parent_ctx reference.
--	 */
--	if (parent_ctx)
--		put_ctx(parent_ctx);
-+	if (clone_ctx)
-+		put_ctx(clone_ctx);
- 
- 	/*
- 	 * Report the task dead after unscheduling the events so that we
+ 	/* Counting index only */
+ 	while (desc->psy_charger_stat[i])
+ 		i++;
 -- 
 2.1.0
 
