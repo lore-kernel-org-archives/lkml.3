@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978AbaKYLuP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:50:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58234 "EHLO
+	id S1752921AbaKYKk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:40:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58190 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926AbaKYKk5 (ORCPT
+	with ESMTP id S1752836AbaKYKku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:57 -0500
+	Tue, 25 Nov 2014 05:40:50 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Skeggs <bskeggs@redhat.com>, Dave Airlie <airlied@redhat.com>,
-        Sven Joachim <svenjoac@gmx.de>,
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 054/254] drm/nouveau: ltc/gf100-: fix cbc issues on certain boards
-Date: Tue, 25 Nov 2014 10:36:44 +0000
-Message-Id: <1416912004-5928-55-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 046/254] i2c: core: Dispose OF IRQ mapping at client removal time
+Date: Tue, 25 Nov 2014 10:36:36 +0000
+Message-Id: <1416912004-5928-47-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,92 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-commit fe3d9c4b87bb98222a502cc585844a0b950786fb upstream.
+commit e4df3a0b62285130ac0a35cf07678c154ffb649d upstream.
 
-A mismatch between FB and LTC's idea of how big a large page is causes
-issues such as black "holes" in rendering to occur on some boards
-(those where LTC is configured for 64KiB large pages) when compression
-is used.
+Clients instantiated from OF get an IRQ mapping created at device
+registration time. Dispose the mapping when the client is removed.
 
-Confirmed to fix at least the GK107 MBP.
-
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Cc: Sven Joachim <svenjoac@gmx.de>
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+[ luis: backported to 3.16: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c   | 1 -
- drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c    | 1 +
- drivers/gpu/drm/nouveau/core/subdev/ltcg/gf100.c | 2 ++
- drivers/gpu/drm/nouveau/core/subdev/ltcg/gm107.c | 2 ++
- 4 files changed, 5 insertions(+), 1 deletion(-)
+ drivers/i2c/i2c-core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c b/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
-index ca8139b9ab27..016ac9ae36a4 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
-@@ -200,7 +200,6 @@ nvc0_bar_init(struct nouveau_object *object)
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 7c7f4b856bad..4716eb0bddcd 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -297,6 +297,9 @@ static int i2c_device_remove(struct device *dev)
+ 		status = driver->remove(client);
+ 	}
  
- 	nv_mask(priv, 0x000200, 0x00000100, 0x00000000);
- 	nv_mask(priv, 0x000200, 0x00000100, 0x00000100);
--	nv_mask(priv, 0x100c80, 0x00000001, 0x00000000);
- 
- 	nv_wr32(priv, 0x001704, 0x80000000 | priv->bar[1].mem->addr >> 12);
- 	if (priv->bar[0].mem)
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c b/drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c
-index 0670ae33ee45..0a6ca9fc337f 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c
-@@ -60,6 +60,7 @@ nvc0_fb_init(struct nouveau_object *object)
- 
- 	if (priv->r100c10_page)
- 		nv_wr32(priv, 0x100c10, priv->r100c10 >> 8);
-+	nv_mask(priv, 0x100c80, 0x00000001, 0x00000000); /* 128KiB lpg */
- 	return 0;
++	if (dev->of_node)
++		irq_dispose_mapping(client->irq);
++
+ 	acpi_dev_pm_detach(&client->dev, true);
+ 	return status;
  }
- 
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/ltcg/gf100.c b/drivers/gpu/drm/nouveau/core/subdev/ltcg/gf100.c
-index effe88888bf9..945464749e04 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/ltcg/gf100.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/ltcg/gf100.c
-@@ -200,6 +200,7 @@ gf100_ltcg_init(struct nouveau_object *object)
- {
- 	struct nouveau_ltcg *ltcg = (struct nouveau_ltcg *)object;
- 	struct gf100_ltcg_priv *priv = (struct gf100_ltcg_priv *)ltcg;
-+	u32 lpg128 = !(nv_rd32(priv, 0x100c80) & 0x00000001);
- 	int ret;
- 
- 	ret = nouveau_ltcg_init(ltcg);
-@@ -211,6 +212,7 @@ gf100_ltcg_init(struct nouveau_object *object)
- 	if (nv_device(ltcg)->card_type >= NV_E0)
- 		nv_wr32(priv, 0x17e000, priv->ltc_nr);
- 	nv_wr32(priv, 0x17e8d4, priv->tag_base);
-+	nv_mask(priv, 0x17e8c0, 0x00000002, lpg128 ? 0x00000002 : 0x00000000);
- 	return 0;
- }
- 
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/ltcg/gm107.c b/drivers/gpu/drm/nouveau/core/subdev/ltcg/gm107.c
-index e79d0e81de40..48ca7a460263 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/ltcg/gm107.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/ltcg/gm107.c
-@@ -119,6 +119,7 @@ gm107_ltcg_init(struct nouveau_object *object)
- {
- 	struct nouveau_ltcg *ltcg = (struct nouveau_ltcg *)object;
- 	struct gf100_ltcg_priv *priv = (struct gf100_ltcg_priv *)ltcg;
-+	u32 lpg128 = !(nv_rd32(priv, 0x100c80) & 0x00000001);
- 	int ret;
- 
- 	ret = nouveau_ltcg_init(ltcg);
-@@ -127,6 +128,7 @@ gm107_ltcg_init(struct nouveau_object *object)
- 
- 	nv_wr32(priv, 0x17e27c, priv->ltc_nr);
- 	nv_wr32(priv, 0x17e278, priv->tag_base);
-+	nv_mask(priv, 0x17e264, 0x00000002, lpg128 ? 0x00000002 : 0x00000000);
- 	return 0;
- }
- 
 -- 
 2.1.0
 
