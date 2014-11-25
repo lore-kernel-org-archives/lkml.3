@@ -1,207 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556AbaKYIKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 03:10:52 -0500
-Received: from regular1.263xmail.com ([211.150.99.134]:35747 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823AbaKYIKu (ORCPT
+	id S1752621AbaKYIK7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 03:10:59 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:24729 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823AbaKYIK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 03:10:50 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <b22acc555e22da269048e3cb226bfee1>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Addy Ke <addy.ke@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
-        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
-        heiko@sntech.de, olof@lixom.net, dianders@chromium.org,
-        sonnyrao@chromium.org, amstan@chromium.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+	Tue, 25 Nov 2014 03:10:56 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-a9-5474398c373d
+Message-id: <1416903050.5023.28.camel@AMDC1943>
+Subject: Re: [RFC 1/2] clk: Allow overriding generic ops for clocks
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, zhenfu.fang@rock-chips.com,
-        cf@rock-chips.com, lintao@rock-chips.com, chenfen@rock-chips.com,
-        zyf@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
-        zyw@rock-chips.com, yzq@rock-chips.com, hj@rock-chips.com,
-        kever.yang@rock-chips.com, zhangqing@rock-chips.com, hl@rock-chips.com,
-        Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH v2] mmc: dw_mmc: add quirk for broken data transfer over scheme
-Date: Tue, 25 Nov 2014 16:10:08 +0800
-Message-Id: <1416903008-4160-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1415970338-2637-1-git-send-email-addy.ke@rock-chips.com>
-References: <1415970338-2637-1-git-send-email-addy.ke@rock-chips.com>
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Kevin Hilman <khilman@kernel.org>
+Date: Tue, 25 Nov 2014 09:10:50 +0100
+In-reply-to: <20141125013450.12298.96117@quantum>
+References: <1416842312-4405-1-git-send-email-k.kozlowski@samsung.com>
+ <1416842312-4405-2-git-send-email-k.kozlowski@samsung.com>
+ <20141125013450.12298.96117@quantum>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t/xq7o9liUhBhPn6Fu0XTnIbnH0d4FF
+	/+PXzBZPNz9mstj0+BqrxeVdc9gsZpzfx2TxdMJFNovDb9pZLVbt+sPowOXx9/l1Fo+ds+6y
+	e2xa1cnmcefaHjaPzUvqPfq2rGL0+LxJLoA9issmJTUnsyy1SN8ugStj1/t7TAUNyhV/z1k3
+	MH6W7GLk5JAQMJHo+rSVEcIWk7hwbz1bFyMXh5DAUkaJ20dns0A4nxklvux7BVbFK6Avsen8
+	AiYQW1jAWaJ13WZWEJtNwFhi8/IlbCC2iICWxLYDrWCTmAXeMEmcuPGfBSTBIqAqsb9jPpjN
+	KWAoMW32S6gNqxglJlz9BpZgFlCXmDRvEXMXIwfQTcoSjf1uEIsFJX5MvgdVIi+xec1b5gmM
+	ArOQdMxCUjYLSdkCRuZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCFR8XUH49JjVocYBTgY
+	lXh4KzSLQ4RYE8uKK3MPMUpwMCuJ8EbNAwrxpiRWVqUW5ccXleakFh9iZOLglGpgvLpAernb
+	TRHj2ljjEun1IgHlspYXWJ8s3LjMPjvL/pmVTcGrk9OV50vZnNHNuHM19JOJZHzd1+kZvrdr
+	t3sIzuadoF554PJF1VcSB+7VxEwJ6nf42z9p8kK3J3mcv61Xvdx8b8eHsJZNq+WZVzs+uTFz
+	x51rbN1qjyfwmhZL9D26Ul2cpLf8phJLcUaioRZzUXEiAAo0ZsVoAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add a new quirk to add a s/w timer to notify the driver
-to terminate current transfer and report a data timeout to the core,
-if DTO interrupt does NOT come within the given time.
+On pon, 2014-11-24 at 17:34 -0800, Mike Turquette wrote:
+> Quoting Krzysztof Kozlowski (2014-11-24 07:18:31)
+> > For clocks depending on some other clock domain one may want to perform
+> > specific ops before actual enable/disable of gate clock. Allow such case
+> > by accepting supplied ops in new exported function:
+> > clk_register_gate_ops().
+> 
+> If you are not going to use the gate_ops, why use the gate clock at all?
+> You can create a platform-specific clock type which uses the ops you
+> specify.
 
-dw_mmc call mmc_request_done func to finish transfer depends on
-DTO interrupt. If DTO interrupt does not come in sending data state,
-the current transfer will be blocked.
-
-But this case really exists, when driver reads tuning data from
-card on RK3288-pink2 board. I measured waveforms by oscilloscope
-and found that card clock was always on and data lines were always
-holded high level in sending data state.
-
-We got the reply from synopsys:
-There are two counters but both use the same value of [31:8] bits.
-Data timeout counter doesn't wait for stop clock and you should get
-DRTO even when the clock is not stopped.
-Host Starvation timeout counter is triggered with stop clock condition.
-
-This means that host should get DRTO and DTO interrupt.
-
-But we really don't get any data-related interrupt in RK3X SoCs.
-And driver can't get data transfer state, it can do nothing but wait for.
-
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
----
-- fix some typo.
-- remove extra timeout value (250ms).
-- remove dw_mci_dto_start_monitor func.
-- use "broken-dto" for new quirk and change Subject for it.
-
- drivers/mmc/host/dw_mmc.c  | 44 +++++++++++++++++++++++++++++++++++++++++++-
- include/linux/mmc/dw_mmc.h |  5 +++++
- 2 files changed, 48 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index b4c3044..bc09f50 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -1457,6 +1457,8 @@ static void dw_mci_tasklet_func(unsigned long priv)
- 	enum dw_mci_state state;
- 	enum dw_mci_state prev_state;
- 	unsigned int err;
-+	unsigned int drto_clks;
-+	unsigned int drto_ms;
+Actually I want to use gate_ops (and as much as possible from current
+code) but I need to encapsulate gate_ops calls in other enable/disable
+of other clock. In 2nd patch:
  
- 	spin_lock(&host->lock);
- 
-@@ -1522,8 +1524,17 @@ static void dw_mci_tasklet_func(unsigned long priv)
- 			}
- 
- 			if (!test_and_clear_bit(EVENT_XFER_COMPLETE,
--						&host->pending_events))
-+						&host->pending_events)) {
-+				if (host->quirks & DW_MCI_QUIRK_BROKEN_DTO) {
-+					drto_clks = mci_readl(host, TMOUT) >> 8;
-+					drto_ms = DIV_ROUND_UP(drto_clks * 1000,
-+							       host->bus_hz);
-+
-+					mod_timer(&host->dto_timer, jiffies +
-+						msecs_to_jiffies(drto_ms));
-+				}
- 				break;
-+			}
- 
- 			set_bit(EVENT_XFER_COMPLETE, &host->completed_events);
- 
-@@ -2115,6 +2126,9 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
- 		}
- 
- 		if (pending & SDMMC_INT_DATA_OVER) {
-+			if (host->quirks & DW_MCI_QUIRK_BROKEN_DTO)
-+				del_timer(&host->dto_timer);
-+
- 			mci_writel(host, RINTSTS, SDMMC_INT_DATA_OVER);
- 			if (!host->data_status)
- 				host->data_status = pending;
-@@ -2502,6 +2516,28 @@ ciu_out:
- 	return ret;
- }
- 
-+static void dw_mci_dto_timer(unsigned long arg)
++static int audss_clk_gate_enable(struct clk_hw *hw)
 +{
-+	struct dw_mci *host = (struct dw_mci *)arg;
++       int ret;
 +
-+	switch (host->state) {
-+	case STATE_SENDING_DATA:
-+	case STATE_DATA_BUSY:
-+		/*
-+		* If DTO interrupt does NOT come in sending data state,
-+		* we should notify the driver to terminate current transfer
-+		* and report a data timeout to the core.
-+		*/
-+		host->data_status = SDMMC_INT_DRTO;
-+		set_bit(EVENT_DATA_ERROR, &host->pending_events);
-+		set_bit(EVENT_DATA_COMPLETE, &host->pending_events);
-+		tasklet_schedule(&host->tasklet);
-+		break;
-+	default:
-+		break;
-+	}
++       if (!IS_ERR(pll_in))
++               clk_prepare_enable(pll_in);
++       ret = clk_gate_ops.enable(hw);
++       if (!IS_ERR(pll_in))
++               clk_disable_unprepare(pll_in);
++
++       return ret;
 +}
-+
- #ifdef CONFIG_OF
- static struct dw_mci_of_quirks {
- 	char *quirk;
-@@ -2513,6 +2549,9 @@ static struct dw_mci_of_quirks {
- 	}, {
- 		.quirk	= "disable-wp",
- 		.id	= DW_MCI_QUIRK_NO_WRITE_PROTECT,
-+	}, {
-+		.quirk	= "broken-dto",
-+		.id	= DW_MCI_QUIRK_BROKEN_DTO,
- 	},
- };
- 
-@@ -2654,6 +2693,9 @@ int dw_mci_probe(struct dw_mci *host)
- 
- 	spin_lock_init(&host->lock);
- 	INIT_LIST_HEAD(&host->queue);
-+	if (host->quirks & DW_MCI_QUIRK_BROKEN_DTO)
-+		setup_timer(&host->dto_timer,
-+			    dw_mci_dto_timer, (unsigned long)host);
- 
- 	/*
- 	 * Get the host data width - this assumes that HCON has been set with
-diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index 42b724e..ff9bd1e 100644
---- a/include/linux/mmc/dw_mmc.h
-+++ b/include/linux/mmc/dw_mmc.h
-@@ -98,6 +98,7 @@ struct mmc_data;
-  * @irq_flags: The flags to be passed to request_irq.
-  * @irq: The irq value to be passed to request_irq.
-  * @sdio_id0: Number of slot0 in the SDIO interrupt registers.
-+ * @dto_timer: Timer for broken data transfer over scheme.
-  *
-  * Locking
-  * =======
-@@ -196,6 +197,8 @@ struct dw_mci {
- 	int			irq;
- 
- 	int			sdio_id0;
-+
-+	struct timer_list	dto_timer;
- };
- 
- /* DMA ops for Internal/External DMAC interface */
-@@ -220,6 +223,8 @@ struct dw_mci_dma_ops {
- #define DW_MCI_QUIRK_BROKEN_CARD_DETECTION	BIT(3)
- /* No write protect */
- #define DW_MCI_QUIRK_NO_WRITE_PROTECT		BIT(4)
-+/* Timer for broken data transfer over scheme */
-+#define DW_MCI_QUIRK_BROKEN_DTO			BIT(5)
- 
- /* Slot level quirks */
- /* This slot has no write protect */
--- 
-1.8.3.2
 
+Other idea is to add some kind of dependency between clocks... but
+wait... there is already parent-child dependency. However these audss
+clocks need two parents :) 
+
+Best regards,
+Krzysztof
+
+> 
+> Regards,
+> Mike
+> 
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > ---
+> >  drivers/clk/clk-gate.c       | 16 +++++++++++++---
+> >  include/linux/clk-provider.h |  5 +++++
+> >  2 files changed, 18 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
+> > index 51fd87fb7ba6..51802af2d9e7 100644
+> > --- a/drivers/clk/clk-gate.c
+> > +++ b/drivers/clk/clk-gate.c
+> > @@ -117,11 +117,12 @@ EXPORT_SYMBOL_GPL(clk_gate_ops);
+> >   * @bit_idx: which bit in the register controls gating of this clock
+> >   * @clk_gate_flags: gate-specific flags for this clock
+> >   * @lock: shared register lock for this clock
+> > + * @ops: clk_ops to use for this clock
+> >   */
+> > -struct clk *clk_register_gate(struct device *dev, const char *name,
+> > +struct clk *clk_register_gate_ops(struct device *dev, const char *name,
+> >                 const char *parent_name, unsigned long flags,
+> >                 void __iomem *reg, u8 bit_idx,
+> > -               u8 clk_gate_flags, spinlock_t *lock)
+> > +               u8 clk_gate_flags, spinlock_t *lock, const struct clk_ops *ops)
+> >  {
+> >         struct clk_gate *gate;
+> >         struct clk *clk;
+> > @@ -142,7 +143,7 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
+> >         }
+> >  
+> >         init.name = name;
+> > -       init.ops = &clk_gate_ops;
+> > +       init.ops = ops;
+> >         init.flags = flags | CLK_IS_BASIC;
+> >         init.parent_names = (parent_name ? &parent_name: NULL);
+> >         init.num_parents = (parent_name ? 1 : 0);
+> > @@ -161,4 +162,13 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
+> >  
+> >         return clk;
+> >  }
+> > +EXPORT_SYMBOL_GPL(clk_register_gate_ops);
+> > +
+> > +struct clk *clk_register_gate(struct device *dev, const char *name,
+> > +               const char *parent_name, unsigned long flags,
+> > +               void __iomem *reg, u8 bit_idx,
+> > +               u8 clk_gate_flags, spinlock_t *lock)
+> > +{
+> > +       return clk_register_gate_ops(dev, name, parent_name, flags, reg, bit_idx, clk_gate_flags, lock, &clk_gate_ops);
+> > +}
+> >  EXPORT_SYMBOL_GPL(clk_register_gate);
+> > diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> > index be21af149f11..6cfc77a9f339 100644
+> > --- a/include/linux/clk-provider.h
+> > +++ b/include/linux/clk-provider.h
+> > @@ -290,11 +290,16 @@ struct clk_gate {
+> >  #define CLK_GATE_HIWORD_MASK           BIT(1)
+> >  
+> >  extern const struct clk_ops clk_gate_ops;
+> > +struct clk *clk_register_gate_ops(struct device *dev, const char *name,
+> > +               const char *parent_name, unsigned long flags,
+> > +               void __iomem *reg, u8 bit_idx,
+> > +               u8 clk_gate_flags, spinlock_t *lock, const struct clk_ops *ops);
+> >  struct clk *clk_register_gate(struct device *dev, const char *name,
+> >                 const char *parent_name, unsigned long flags,
+> >                 void __iomem *reg, u8 bit_idx,
+> >                 u8 clk_gate_flags, spinlock_t *lock);
+> >  
+> > +
+> >  struct clk_div_table {
+> >         unsigned int    val;
+> >         unsigned int    div;
+> > -- 
+> > 1.9.1
+> > 
 
