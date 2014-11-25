@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206AbaKYLPm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:15:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58798 "EHLO
+	id S1754151AbaKYLQO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:16:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58777 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671AbaKYKmc (ORCPT
+	with ESMTP id S1753651AbaKYKm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:32 -0500
+	Tue, 25 Nov 2014 05:42:28 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Luciano Coelho <luciano.coelho@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Simon Horman <horms+renesas@verge.net.au>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 159/254] mac80211: schedule the actual switch of the station before CSA count 0
-Date: Tue, 25 Nov 2014 10:38:29 +0000
-Message-Id: <1416912004-5928-160-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 151/254] ata: sata_rcar: Disable DIPM mode for r8a7790 ES1
+Date: Tue, 25 Nov 2014 10:38:21 +0000
+Message-Id: <1416912004-5928-152-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,36 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luciano Coelho <luciano.coelho@intel.com>
+From: Simon Horman <horms+renesas@verge.net.au>
 
-commit ff1e417c7c239b7abfe70aa90460a77eaafc7f83 upstream.
+commit aa1cf25887099bba68f1f3879c0d394e08b8779f upstream.
 
-Due to the time it takes to process the beacon that started the CSA
-process, we may be late for the switch if we try to reach exactly
-beacon 0.  To avoid that, use count - 1 when calculating the switch time.
+Unlike other SATA R-Car r8a7790 controllers the r8a7790 ES1 SATA R-Car
+controller needs to be run with DIPM disabled.
 
-Reported-by: Jouni Malinen <j@w1.fi>
-Signed-off-by: Luciano Coelho <luciano.coelho@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/mac80211/mlme.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ Documentation/devicetree/bindings/ata/sata_rcar.txt |  3 ++-
+ drivers/ata/sata_rcar.c                             | 10 ++++++++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
-index a374bcc32706..a59a78b6923d 100644
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -1136,7 +1136,8 @@ ieee80211_sta_process_chanswitch(struct ieee80211_sub_if_data *sdata,
- 		ieee80211_queue_work(&local->hw, &ifmgd->chswitch_work);
- 	else
- 		mod_timer(&ifmgd->chswitch_timer,
--			  TU_TO_EXP_TIME(csa_ie.count * cbss->beacon_interval));
-+			  TU_TO_EXP_TIME((csa_ie.count - 1) *
-+					 cbss->beacon_interval));
- }
+diff --git a/Documentation/devicetree/bindings/ata/sata_rcar.txt b/Documentation/devicetree/bindings/ata/sata_rcar.txt
+index 1e6111333fa8..7dd32d321a34 100644
+--- a/Documentation/devicetree/bindings/ata/sata_rcar.txt
++++ b/Documentation/devicetree/bindings/ata/sata_rcar.txt
+@@ -3,7 +3,8 @@
+ Required properties:
+ - compatible		: should contain one of the following:
+ 			  - "renesas,sata-r8a7779" for R-Car H1
+-			  - "renesas,sata-r8a7790" for R-Car H2
++			  - "renesas,sata-r8a7790-es1" for R-Car H2 ES1
++			  - "renesas,sata-r8a7790" for R-Car H2 other than ES1
+ 			  - "renesas,sata-r8a7791" for R-Car M2
+ - reg			: address and length of the SATA registers;
+ - interrupts		: must consist of one interrupt specifier.
+diff --git a/drivers/ata/sata_rcar.c b/drivers/ata/sata_rcar.c
+index 61eb6d77dac7..8732e42db3a9 100644
+--- a/drivers/ata/sata_rcar.c
++++ b/drivers/ata/sata_rcar.c
+@@ -146,6 +146,7 @@
+ enum sata_rcar_type {
+ 	RCAR_GEN1_SATA,
+ 	RCAR_GEN2_SATA,
++	RCAR_R8A7790_ES1_SATA,
+ };
  
- static u32 ieee80211_handle_pwr_constr(struct ieee80211_sub_if_data *sdata,
+ struct sata_rcar_priv {
+@@ -763,6 +764,9 @@ static void sata_rcar_setup_port(struct ata_host *host)
+ 	ap->udma_mask	= ATA_UDMA6;
+ 	ap->flags	|= ATA_FLAG_SATA;
+ 
++	if (priv->type == RCAR_R8A7790_ES1_SATA)
++		ap->flags	|= ATA_FLAG_NO_DIPM;
++
+ 	ioaddr->cmd_addr = base + SDATA_REG;
+ 	ioaddr->ctl_addr = base + SSDEVCON_REG;
+ 	ioaddr->scr_addr = base + SCRSSTS_REG;
+@@ -792,6 +796,7 @@ static void sata_rcar_init_controller(struct ata_host *host)
+ 		sata_rcar_gen1_phy_init(priv);
+ 		break;
+ 	case RCAR_GEN2_SATA:
++	case RCAR_R8A7790_ES1_SATA:
+ 		sata_rcar_gen2_phy_init(priv);
+ 		break;
+ 	default:
+@@ -838,6 +843,10 @@ static struct of_device_id sata_rcar_match[] = {
+ 		.data = (void *)RCAR_GEN2_SATA
+ 	},
+ 	{
++		.compatible = "renesas,sata-r8a7790-es1",
++		.data = (void *)RCAR_R8A7790_ES1_SATA
++	},
++	{
+ 		.compatible = "renesas,sata-r8a7791",
+ 		.data = (void *)RCAR_GEN2_SATA
+ 	},
+@@ -849,6 +858,7 @@ static const struct platform_device_id sata_rcar_id_table[] = {
+ 	{ "sata_rcar", RCAR_GEN1_SATA }, /* Deprecated by "sata-r8a7779" */
+ 	{ "sata-r8a7779", RCAR_GEN1_SATA },
+ 	{ "sata-r8a7790", RCAR_GEN2_SATA },
++	{ "sata-r8a7790-es1", RCAR_R8A7790_ES1_SATA },
+ 	{ "sata-r8a7791", RCAR_GEN2_SATA },
+ 	{ },
+ };
 -- 
 2.1.0
 
