@@ -1,48 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbaKYRZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:25:56 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:52138 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802AbaKYRZz (ORCPT
+	id S1750726AbaKYR1i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:27:38 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:37750 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaKYR1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:25:55 -0500
-Date: Tue, 25 Nov 2014 17:25:50 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        David Airlie <airlied@linux.ie>
-Subject: Re: [PATCH] radeon: acquire BIOS via firmware subsystem if
- everything else failed
-Message-ID: <20141125172550.GA19688@srcf.ucam.org>
-References: <20141122193025.GA5782@kaos.lebenslange-mailadresse.de>
- <CADnq5_OCeJ2M6qJXLXVow-RN6nZjBjmhQwu-FLSjLwwLWpsE5w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADnq5_OCeJ2M6qJXLXVow-RN6nZjBjmhQwu-FLSjLwwLWpsE5w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 25 Nov 2014 12:27:36 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Tim Sander <tim@krieglstein.org>
+Subject: [PATCH 3.18-rc3 v9 0/5] arm: Implement arch_trigger_all_cpu_backtrace
+Date: Tue, 25 Nov 2014 17:26:36 +0000
+Message-Id: <1416936401-5147-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
+References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 12:14:21PM -0500, Alex Deucher wrote:
-> The vbios image is available via ACPI prior to the OS taking over.
-> IIRC, Matthew Garret fixed up the bootloader to fetch the vbios image
-> prior to loading Linux so that it could be accessed after the OS
-> loaded.
+Hi Thomas, Hi Jason,
 
-EFI rather than ACPI, but yeah. In theory this should work fine if 
-you're using the EFI entry point. I don't know whether the patches for 
-linuxefi were ever accepted by grub upstream - if not, pushing those 
-would make more sense.
+This patchset modifies the GIC driver to allow it, on supported
+platforms, to route IPI interrupts to FIQ and uses this feature to
+implement arch_trigger_all_cpu_backtrace for arm.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+On platforms not capable of supporting FIQ the signal to generate a
+backtrace we fall back to using IRQ for propagation instead (relying on
+a timeout to avoid wedging the CPU requesting the backtrace if other
+CPUs are not responsive).
+
+It has been tested on two systems capable of supporting grouping
+(Freescale i.MX6 and STiH416) and two that do not (vexpress-a9 and
+Qualcomm Snapdragon 600).
+
+v9:
+
+* Improved documentation and structure of initial patch (now initial
+  two patches) to make gic_raise_softirq() safe to call from FIQ
+  (Thomas Gleixner).
+
+* Avoid masking interrupts during gic_raise_softirq(). The use of the
+  read lock makes this redundant (because we can safely re-enter the
+  function).
+
+v8:
+
+* Fixed build on arm64 causes by a spurious include file in irq-gic.c.
+
+v7-2 (accidentally released twice with same number):
+
+* Fixed boot regression on vexpress-a9 (reported by Russell King).
+
+* Rebased on v3.18-rc3; removed one patch from set that is already
+  included in mainline.
+
+* Dropped arm64/fiq.h patch from the set (still useful but not related
+  to issuing backtraces).
+
+v7:
+
+* Re-arranged code within the patch series to fix a regression
+  introduced midway through the series and corrected by a later patch
+  (testing by Olof's autobuilder). Tested offending patch in isolation
+  using defconfig identified by the autobuilder.
+
+v6:
+
+* Renamed svc_entry's call_trace argument to just trace (example code
+  from Russell King).
+
+* Fixed mismatched ENDPROC() in __fiq_abt (example code from Russell
+  King).
+
+* Modified usr_entry to optional avoid calling into the trace code and
+  used this in FIQ entry from usr path. Modified corresponding exit code
+  to avoid calling into trace code and the scheduler (example code from
+  Russell King).
+
+* Ensured the default FIQ register state is restored when the default
+  FIQ handler is reinstalled (example code from Russell King).
+
+* Renamed no_fiq_insn to dfl_fiq_insn to reflect the effect of adopting
+  a default FIQ handler.
+
+* Re-instated fiq_safe_migration_lock and associated logic in
+  gic_raise_softirq(). gic_raise_softirq() is called by wake_up_klogd()
+  in the console unlock logic.
+
+v5:
+
+* Rebased on 3.17-rc4.
+
+* Removed a spurious line from the final "glue it together" patch
+  that broke the build.
+
+v4:
+
+* Replaced push/pop with stmfd/ldmfd respectively (review of Nicolas
+  Pitre).
+
+* Really fix bad pt_regs pointer generation in __fiq_abt.
+
+* Remove fiq_safe_migration_lock and associated logic in
+  gic_raise_softirq() (review of Russell King)
+
+* Restructured to introduce the default FIQ handler first, before the
+  new features (review of Russell King).
+
+v3:
+
+* Removed redundant header guards from arch/arm64/include/asm/fiq.h
+  (review of Catalin Marinas).
+
+* Moved svc_exit_via_fiq macro to entry-header.S (review of Nicolas
+  Pitre).
+
+v2:
+
+* Restructured to sit nicely on a similar FYI patchset from Russell
+  King. It now effectively replaces the work in progress final patch
+  with something much more complete.
+
+* Implemented (and tested) a Thumb-2 implementation of svc_exit_via_fiq
+  (review of Nicolas Pitre)
+
+* Dropped the GIC group 0 workaround patch. The issue of FIQ interrupts
+  being acknowledged by the IRQ handler does still exist but should be
+  harmless because the IRQ handler will still wind up calling
+  ipi_cpu_backtrace().
+
+* Removed any dependency on CONFIG_FIQ; all cpu backtrace effectively
+  becomes a platform feature (although the use of non-maskable
+  interrupts to implement it is best effort rather than guaranteed).
+
+* Better comments highlighting usage of RAZ/WI registers (and parts of
+  registers) in the GIC code.
+
+Changes *before* v1:
+
+* This patchset is a hugely cut-down successor to "[PATCH v11 00/19]
+  arm: KGDB NMI/FIQ support". Thanks to Thomas Gleixner for suggesting
+  the new structure. For historic details see:
+        https://lkml.org/lkml/2014/9/2/227
+
+* Fix bug in __fiq_abt (no longer passes a bad struct pt_regs value).
+  In fixing this we also remove the useless indirection previously
+  found in the fiq_handler macro.
+
+* Make default fiq handler "always on" by migrating from fiq.c to
+  traps.c and replace do_unexp_fiq with the new handler (review
+  of Russell King).
+
+* Add arm64 version of fiq.h (review of Russell King)
+
+* Removed conditional branching and code from irq-gic.c, this is
+  replaced by much simpler code that relies on the GIC specification's
+  heavy use of read-as-zero/write-ignored (review of Russell King)
+
+
+Daniel Thompson (5):
+  irqchip: gic: Finer grain locking for gic_raise_softirq
+  irqchip: gic: Make gic_raise_softirq() FIQ-safe
+  irqchip: gic: Introduce plumbing for IPI FIQ
+  ARM: add basic support for on-demand backtrace of other CPUs
+  arm: smp: Handle ipi_cpu_backtrace() using FIQ (if available)
+
+ arch/arm/include/asm/irq.h      |   5 ++
+ arch/arm/include/asm/smp.h      |   3 +
+ arch/arm/kernel/smp.c           |  64 ++++++++++++++
+ arch/arm/kernel/traps.c         |   8 +-
+ drivers/irqchip/irq-gic.c       | 192 +++++++++++++++++++++++++++++++++++++---
+ include/linux/irqchip/arm-gic.h |   8 ++
+ 6 files changed, 265 insertions(+), 15 deletions(-)
+
+--
+1.9.3
+
