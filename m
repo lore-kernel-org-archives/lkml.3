@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748AbaKYKkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:40:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58101 "EHLO
+	id S1756139AbaKYL7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:59:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58135 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719AbaKYKkf (ORCPT
+	with ESMTP id S1752751AbaKYKkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:35 -0500
+	Tue, 25 Nov 2014 05:40:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Mason <clm@fb.com>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 029/254] Btrfs: fix kfree on list_head in btrfs_lookup_csums_range error cleanup
-Date: Tue, 25 Nov 2014 10:36:19 +0000
-Message-Id: <1416912004-5928-30-git-send-email-luis.henriques@canonical.com>
+Cc: Johan Hovold <johan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 035/254] USB: cdc-acm: only raise DTR on transitions from B0
+Date: Tue, 25 Nov 2014 10:36:25 +0000
+Message-Id: <1416912004-5928-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -26,38 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 6e5aafb27419f32575b27ef9d6a31e5d54661aca upstream.
+commit 4473d054ceb572557954f9536731d39b20937b0c upstream.
 
-If we hit any errors in btrfs_lookup_csums_range, we'll loop through all
-the csums we allocate and free them.  But the code was using list_entry
-incorrectly, and ended up trying to free the on-stack list_head instead.
+Make sure to only raise DTR on transitions from B0 in set_termios.
 
-This bug came from commit 0678b6185
+Also allow set_termios to be called from open with a termios_old of
+NULL. Note that DTR will not be raised prematurely in this case.
 
-btrfs: Don't BUG_ON kzalloc error in btrfs_lookup_csums_range()
-
-Signed-off-by: Chris Mason <clm@fb.com>
-Reported-by: Erik Berg <btrfs@slipsprogrammoer.no>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/btrfs/file-item.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/fs/btrfs/file-item.c b/fs/btrfs/file-item.c
-index 54c84daec9b5..74097722ad9f 100644
---- a/fs/btrfs/file-item.c
-+++ b/fs/btrfs/file-item.c
-@@ -423,7 +423,7 @@ int btrfs_lookup_csums_range(struct btrfs_root *root, u64 start, u64 end,
- 	ret = 0;
- fail:
- 	while (ret < 0 && !list_empty(&tmplist)) {
--		sums = list_entry(&tmplist, struct btrfs_ordered_sum, list);
-+		sums = list_entry(tmplist.next, struct btrfs_ordered_sum, list);
- 		list_del(&sums->list);
- 		kfree(sums);
- 	}
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 959343b891c7..c14814fb1e75 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -980,11 +980,12 @@ static void acm_tty_set_termios(struct tty_struct *tty,
+ 	/* FIXME: Needs to clear unsupported bits in the termios */
+ 	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
+ 
+-	if (!newline.dwDTERate) {
++	if (C_BAUD(tty) == B0) {
+ 		newline.dwDTERate = acm->line.dwDTERate;
+ 		newctrl &= ~ACM_CTRL_DTR;
+-	} else
++	} else if (termios_old && (termios_old->c_cflag & CBAUD) == B0) {
+ 		newctrl |=  ACM_CTRL_DTR;
++	}
+ 
+ 	if (newctrl != acm->ctrlout)
+ 		acm_set_control(acm, acm->ctrlout = newctrl);
 -- 
 2.1.0
 
