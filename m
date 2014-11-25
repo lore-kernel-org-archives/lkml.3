@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787AbaKYHvW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 02:51:22 -0500
+	id S1752804AbaKYHvY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 02:51:24 -0500
 Received: from mga14.intel.com ([192.55.52.115]:42685 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752769AbaKYHvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 02:51:17 -0500
+	id S1752785AbaKYHvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 02:51:22 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,454,1413270000"; 
-   d="scan'208";a="627835528"
+   d="scan'208";a="627835556"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -24,9 +24,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [Patch Part3 v4 19/38] iommu/vt-d: Clean up unsued code
-Date: Tue, 25 Nov 2014 15:49:43 +0800
-Message-Id: <1416901802-24211-20-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part3 v4 20/38] iommu/amd: Clean up unsued code
+Date: Tue, 25 Nov 2014 15:49:44 +0800
+Message-Id: <1416901802-24211-21-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com>
@@ -39,156 +39,97 @@ Now we have converted to hierarchy irqdomain, so clean up unused code.
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Tested-by: Joerg Roedel <jroedel@suse.de>
 ---
- drivers/iommu/intel_irq_remapping.c |  187 +----------------------------------
- 1 file changed, 1 insertion(+), 186 deletions(-)
+ drivers/iommu/amd_iommu.c |  144 ---------------------------------------------
+ 1 file changed, 144 deletions(-)
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index 95c44820c851..9a887ba87dc3 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -62,35 +62,6 @@ static struct irq_domain_ops intel_ir_domain_ops;
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 38fb944d935b..e2b56b440ec2 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -3996,22 +3996,6 @@ out:
+ 	return index;
+ }
  
- static int __init parse_ioapics_under_ir(void);
- 
--static struct irq_2_iommu *irq_2_iommu(unsigned int irq)
+-static int get_irte(u16 devid, int index, union irte *irte)
 -{
--	struct irq_cfg *cfg = irq_cfg(irq);
--	return cfg ? &cfg->irq_2_iommu : NULL;
--}
--
--static int get_irte(int irq, struct irte *entry)
--{
--	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
+-	struct irq_remap_table *table;
 -	unsigned long flags;
--	int index;
 -
--	if (!entry || !irq_iommu)
--		return -1;
+-	table = get_irq_table(devid, false);
+-	if (!table)
+-		return -ENOMEM;
 -
--	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
+-	spin_lock_irqsave(&table->lock, flags);
+-	irte->val = table->table[index];
+-	spin_unlock_irqrestore(&table->lock, flags);
 -
--	if (unlikely(!irq_iommu->iommu)) {
--		raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
--		return -1;
--	}
--
--	index = irq_iommu->irte_index + irq_iommu->sub_handle;
--	*entry = *(irq_iommu->iommu->ir_table->base + index);
--
--	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
 -	return 0;
 -}
 -
- static int alloc_irte(struct intel_iommu *iommu, int irq,
- 		      struct irq_2_iommu *irq_iommu, u16 count)
+ static int modify_irte(u16 devid, int index, union irte irte)
  {
-@@ -228,29 +199,6 @@ static int clear_entries(struct irq_2_iommu *irq_iommu)
- 	return qi_flush_iec(iommu, index, irq_iommu->irte_mask);
+ 	struct irq_remap_table *table;
+@@ -4058,131 +4042,6 @@ static void free_irte(u16 devid, int index)
+ 	iommu_completion_wait(iommu);
  }
  
--static int free_irte(int irq)
+-static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
+-			      unsigned int destination, int vector,
+-			      struct io_apic_irq_attr *attr)
 -{
--	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	unsigned long flags;
--	int rc;
--
--	if (!irq_iommu || irq_iommu->iommu == NULL)
--		return -1;
--
--	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
--
--	rc = clear_entries(irq_iommu);
--
--	irq_iommu->iommu = NULL;
--	irq_iommu->irte_index = 0;
--	irq_iommu->sub_handle = 0;
--	irq_iommu->irte_mask = 0;
--
--	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
--
--	return rc;
--}
--
- /*
-  * source validation type
-  */
-@@ -925,8 +873,7 @@ error:
- 	return -1;
- }
- 
--static void prepare_irte(struct irte *irte, int vector,
--			 unsigned int dest)
-+static void prepare_irte(struct irte *irte, int vector, unsigned int dest)
- {
- 	memset(irte, 0, sizeof(*irte));
- 
-@@ -946,135 +893,6 @@ static void prepare_irte(struct irte *irte, int vector,
- 	irte->redir_hint = 1;
- }
- 
--static int intel_setup_ioapic_entry(int irq,
--				    struct IO_APIC_route_entry *route_entry,
--				    unsigned int destination, int vector,
--				    struct io_apic_irq_attr *attr)
--{
--	int ioapic_id = mpc_ioapic_id(attr->ioapic);
--	struct intel_iommu *iommu;
--	struct IR_IO_APIC_route_entry *entry;
--	struct irte irte;
+-	struct irq_remap_table *table;
+-	struct irq_2_irte *irte_info;
+-	struct irq_cfg *cfg;
+-	union irte irte;
+-	int ioapic_id;
 -	int index;
+-	int devid;
+-	int ret;
 -
--	down_read(&dmar_global_lock);
--	iommu = map_ioapic_to_ir(ioapic_id);
--	if (!iommu) {
--		pr_warn("No mapping iommu for ioapic %d\n", ioapic_id);
--		index = -ENODEV;
--	} else {
--		index = alloc_irte(iommu, irq, irq_2_iommu(irq), 1);
--		if (index < 0) {
--			pr_warn("Failed to allocate IRTE for ioapic %d\n",
--				ioapic_id);
--			index = -ENOMEM;
--		}
--	}
--	up_read(&dmar_global_lock);
--	if (index < 0)
--		return index;
+-	cfg = irq_cfg(irq);
+-	if (!cfg)
+-		return -EINVAL;
 -
--	prepare_irte(&irte, vector, destination);
+-	irte_info = &cfg->irq_2_irte;
+-	ioapic_id = mpc_ioapic_id(attr->ioapic);
+-	devid     = get_ioapic_devid(ioapic_id);
 -
--	/* Set source-id of interrupt request */
--	set_ioapic_sid(&irte, ioapic_id);
+-	if (devid < 0)
+-		return devid;
 -
--	modify_irte(irq_2_iommu(irq), &irte);
+-	table = get_irq_table(devid, true);
+-	if (table == NULL)
+-		return -ENOMEM;
 -
--	apic_printk(APIC_VERBOSE, KERN_DEBUG "IOAPIC[%d]: "
--		"Set IRTE entry (P:%d FPD:%d Dst_Mode:%d "
--		"Redir_hint:%d Trig_Mode:%d Dlvry_Mode:%X "
--		"Avail:%X Vector:%02X Dest:%08X "
--		"SID:%04X SQ:%X SVT:%X)\n",
--		attr->ioapic, irte.present, irte.fpd, irte.dst_mode,
--		irte.redir_hint, irte.trigger_mode, irte.dlvry_mode,
--		irte.avail, irte.vector, irte.dest_id,
--		irte.sid, irte.sq, irte.svt);
+-	index = attr->ioapic_pin;
 -
--	entry = (struct IR_IO_APIC_route_entry *)route_entry;
+-	/* Setup IRQ remapping info */
+-	cfg->remapped	      = 1;
+-	irte_info->devid      = devid;
+-	irte_info->index      = index;
+-
+-	/* Setup IRTE for IOMMU */
+-	irte.val		= 0;
+-	irte.fields.vector      = vector;
+-	irte.fields.int_type    = apic->irq_delivery_mode;
+-	irte.fields.destination = destination;
+-	irte.fields.dm          = apic->irq_dest_mode;
+-	irte.fields.valid       = 1;
+-
+-	ret = modify_irte(devid, index, irte);
+-	if (ret)
+-		return ret;
+-
+-	/* Setup IOAPIC entry */
 -	memset(entry, 0, sizeof(*entry));
 -
--	entry->index2	= (index >> 15) & 0x1;
--	entry->zero	= 0;
--	entry->format	= 1;
--	entry->index	= (index & 0x7fff);
--	/*
--	 * IO-APIC RTE will be configured with virtual vector.
--	 * irq handler will do the explicit EOI to the io-apic.
--	 */
--	entry->vector	= attr->ioapic_pin;
--	entry->mask	= 0;			/* enable IRQ */
--	entry->trigger	= attr->trigger;
--	entry->polarity	= attr->polarity;
+-	entry->vector        = index;
+-	entry->mask          = 0;
+-	entry->trigger       = attr->trigger;
+-	entry->polarity      = attr->polarity;
 -
--	/* Mask level triggered irqs.
--	 * Use IRQ_DELAYED_DISABLE for edge triggered irqs.
+-	/*
+-	 * Mask level triggered irqs.
 -	 */
 -	if (attr->trigger)
 -		entry->mask = 1;
@@ -196,57 +137,43 @@ index 95c44820c851..9a887ba87dc3 100644
 -	return 0;
 -}
 -
--/*
-- * Migrate the IO-APIC irq in the presence of intr-remapping.
-- *
-- * For both level and edge triggered, irq migration is a simple atomic
-- * update(of vector and cpu destination) of IRTE and flush the hardware cache.
-- *
-- * For level triggered, we eliminate the io-apic RTE modification (with the
-- * updated vector information), by using a virtual vector (io-apic pin number).
-- * Real vector that is used for interrupting cpu will be coming from
-- * the interrupt-remapping table entry.
-- *
-- * As the migration is a simple atomic update of IRTE, the same mechanism
-- * is used to migrate MSI irq's in the presence of interrupt-remapping.
-- */
--static int
--intel_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
--			  bool force)
+-static int set_affinity(struct irq_data *data, const struct cpumask *mask,
+-			bool force)
 -{
--	struct irq_cfg *cfg = irqd_cfg(data);
--	unsigned int dest, irq = data->irq;
--	struct irte irte;
+-	struct irq_2_irte *irte_info;
+-	unsigned int dest, irq;
+-	struct irq_cfg *cfg;
+-	union irte irte;
 -	int err;
 -
--	if (get_irte(irq, &irte))
+-	if (!config_enabled(CONFIG_SMP))
+-		return -1;
+-
+-	cfg       = irqd_cfg(data);
+-	irq       = data->irq;
+-	irte_info = &cfg->irq_2_irte;
+-
+-	if (!cpumask_intersects(mask, cpu_online_mask))
+-		return -EINVAL;
+-
+-	if (get_irte(irte_info->devid, irte_info->index, &irte))
 -		return -EBUSY;
 -
--	err = assign_irq_vector(irq, cfg, mask);
--	if (err)
--		return err;
+-	if (assign_irq_vector(irq, cfg, mask))
+-		return -EBUSY;
 -
 -	err = apic->cpu_mask_to_apicid_and(cfg->domain, mask, &dest);
 -	if (err) {
 -		if (assign_irq_vector(irq, cfg, data->affinity))
--			pr_err("Failed to recover vector for irq %d\n", irq);
+-			pr_err("AMD-Vi: Failed to recover vector for irq %d\n", irq);
 -		return err;
 -	}
 -
--	irte.vector = cfg->vector;
--	irte.dest_id = IRTE_DEST(dest);
+-	irte.fields.vector      = cfg->vector;
+-	irte.fields.destination = dest;
 -
--	/*
--	 * Atomically updates the IRTE with the new destination, vector
--	 * and flushes the interrupt entry cache.
--	 */
--	modify_irte(irq_2_iommu(irq), &irte);
+-	modify_irte(irte_info->devid, irte_info->index, irte);
 -
--	/*
--	 * After this point, all the interrupts will start arriving
--	 * at the new destination. So, time to cleanup the previous
--	 * vector allocation.
--	 */
 -	if (cfg->move_in_progress)
 -		send_cleanup_vector(cfg);
 -
@@ -255,18 +182,34 @@ index 95c44820c851..9a887ba87dc3 100644
 -	return 0;
 -}
 -
- static struct irq_domain *intel_get_ir_irq_domain(struct irq_alloc_info *info)
+-static int free_irq(int irq)
+-{
+-	struct irq_2_irte *irte_info;
+-	struct irq_cfg *cfg;
+-
+-	cfg = irq_cfg(irq);
+-	if (!cfg)
+-		return -EINVAL;
+-
+-	irte_info = &cfg->irq_2_irte;
+-
+-	free_irte(irte_info->devid, irte_info->index);
+-
+-	return 0;
+-}
+-
+ static int get_devid(struct irq_alloc_info *info)
  {
- 	struct intel_iommu *iommu = NULL;
-@@ -1129,9 +947,6 @@ struct irq_remap_ops intel_irq_remap_ops = {
- 	.disable		= disable_irq_remapping,
- 	.reenable		= reenable_irq_remapping,
- 	.enable_faulting	= enable_drhd_fault_handling,
--	.setup_ioapic_entry	= intel_setup_ioapic_entry,
--	.set_affinity		= intel_ioapic_set_affinity,
--	.free_irq		= free_irte,
- 	.get_ir_irq_domain	= intel_get_ir_irq_domain,
- 	.get_irq_domain		= intel_get_irq_domain,
+ 	int devid = -1;
+@@ -4256,9 +4115,6 @@ struct irq_remap_ops amd_iommu_irq_ops = {
+ 	.disable		= amd_iommu_disable,
+ 	.reenable		= amd_iommu_reenable,
+ 	.enable_faulting	= amd_iommu_enable_faulting,
+-	.setup_ioapic_entry	= setup_ioapic_entry,
+-	.set_affinity		= set_affinity,
+-	.free_irq		= free_irq,
+ 	.get_ir_irq_domain	= get_ir_irq_domain,
+ 	.get_irq_domain		= get_irq_domain,
  };
 -- 
 1.7.10.4
