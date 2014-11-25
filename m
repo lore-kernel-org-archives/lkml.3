@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751457AbaKYVxD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 16:53:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58746 "EHLO mx1.redhat.com"
+	id S1751529AbaKYVz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 16:55:57 -0500
+Received: from mout.web.de ([212.227.17.12]:52582 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910AbaKYVxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 16:53:01 -0500
-Date: Tue, 25 Nov 2014 22:52:48 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ian Kent <ikent@redhat.com>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        David Howells <dhowells@redhat.com>,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [RFC PATCH 3/4] kmod - add call_usermodehelper_ns() helper
-Message-ID: <20141125215248.GA7958@redhat.com>
-References: <20141125005255.4974.54193.stgit@pluto.fritz.box> <20141125010734.4974.85347.stgit@pluto.fritz.box>
+	id S1751196AbaKYVzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 16:55:55 -0500
+Message-ID: <5474FAD6.4060704@users.sourceforge.net>
+Date: Tue, 25 Nov 2014 22:55:34 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141125010734.4974.85347.stgit@pluto.fritz.box>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: David Miller <davem@davemloft.net>, devel@linuxdriverproject.org,
+        netdev@vger.kernel.org
+CC: Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH v2] net: Hyper-V: Deletion of an unnecessary check before
+ the function call "vfree"
+References: <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>	<5317A59D.4@users.sourceforge.net>	<546DF9D7.6080801@users.sourceforge.net> <20141121.151503.1986113223309494197.davem@davemloft.net>
+In-Reply-To: <20141121.151503.1986113223309494197.davem@davemloft.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:7zBNneMfQpNB66WeLKRmbmsBo5W4QfH1uN1md97Ram0E1WSfVwO
+ ayDn51YQJIyDLTOSIyFok63sykNL7DmLpPlnmoXs1jEamZpWNzo1ELg/dPgHgwhnKQwrPkJ
+ cXubMsK1PeAb8CGyJ5a45AC1iY9imesO4IOw35XFzv/GgkKGAv/uLIV0+GrBGVf0+RLDpSZ
+ PI39PYPbIAud6rDkbK8/w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let me first apologize, I didn't actually read this series yet.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Tue, 25 Nov 2014 22:33:45 +0100
 
-But I have to admit that so far I do not like this approach...
-probably I am biased.
+The vfree() function performs also input parameter validation.
+Thus the test around the call is not needed.
 
-On 11/25, Ian Kent wrote:
->
-> The call_usermodehelper() function executes all binaries in the
-> global "init" root context. This doesn't allow a binary to be run
-> within the callers namespace (aka. a container).
+This issue was detected by using the Coccinelle software.
 
-Please see below.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/net/hyperv/netvsc.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-> Both containerized NFS client and NFS server need the ability to
-> execute a binary within their container. To do this create a new
-> nsproxy within the callers' context so it can be used for setup
-> prior to calling do_execve() from the user mode helper thread
-> runner.
-
-and probably we also need this for coredump helpers, we want them
-to be per-namespace.
-
-> +static int umh_set_ns(struct subprocess_info *info, struct cred *new)
-> +{
-> +	struct nsproxy *ns = info->data;
-> +
-> +	mntns_setfs(ns->mnt_ns);
-
-Firstly, it is not clear to me if we should use the caller's ->mnt_ns.
-Let me remind about the coredump. The dumping task can cloned with
-CLONE_NEWNS or it cam do unshare(NEWNS)... but OK, I do not understand
-this enough.
-
-
-> +	switch_task_namespaces(current, ns);
-
-This doesn't look sane because this won't switch task_active_pid_ns().
-
-And this reminds me another discussion, please look at
-http://marc.info/?l=linux-kernel&m=138479570926192
-
-Once again, this is just an idea to provoke more discussion. I am starting
-to think that perhaps we need pid_ns->umh_helper (init by default). And
-PR_SET_NS_UMH_HELPER.
-
-Not sure.
-
-Oleg.
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index 6b46311..6fc834e 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -561,9 +561,7 @@ int netvsc_device_remove(struct hv_device *device)
+ 	vmbus_close(device->channel);
+ 
+ 	/* Release all resources */
+-	if (net_device->sub_cb_buf)
+-		vfree(net_device->sub_cb_buf);
+-
++	vfree(net_device->sub_cb_buf);
+ 	free_netvsc_device(net_device);
+ 	return 0;
+ }
+-- 
+2.1.3
 
