@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751338AbaKYRuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:50:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58002 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951AbaKYRuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:50:11 -0500
-Message-ID: <5474C055.8070409@redhat.com>
-Date: Tue, 25 Nov 2014 12:45:57 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751219AbaKYRuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:50:44 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:35424 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922AbaKYRum (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 12:50:42 -0500
+Date: Tue, 25 Nov 2014 09:50:36 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        David Howells <dhowells@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCHv2 02/10] kernel: Provide READ_ONCE and ASSIGN_ONCE
+Message-ID: <20141125175036.GH5050@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1416919117-50652-1-git-send-email-borntraeger@de.ibm.com>
+ <1416919117-50652-3-git-send-email-borntraeger@de.ibm.com>
+ <20141125155943.GB5050@linux.vnet.ibm.com>
+ <CA+55aFzY_LSLM8R2cbt=sZe8UeDtUZdX8zO6Bzf52EBg3H30qw@mail.gmail.com>
 MIME-Version: 1.0
-To: Khalid Aziz <khalid.aziz@oracle.com>, tglx@linutronix.de, corbet@lwn.net,
-        mingo@redhat.com, hpa@zytor.com, peterz@infradead.org,
-        akpm@linux-foundation.org, rientjes@google.com, ak@linux.intel.com,
-        mgorman@suse.de, raistlin@linux.it, kirill.shutemov@linux.intel.com,
-        atomlin@redhat.com, avagin@openvz.org, gorcunov@openvz.org,
-        serge.hallyn@canonical.com, athorlton@sgi.com, oleg@redhat.com,
-        vdavydov@parallels.com, daeseok.youn@gmail.com, keescook@chromium.org,
-        yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu, vishnu.ps@samsung.com,
-        axboe@fb.com, paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v3] sched/fair: Add advisory flag for borrowing a timeslice
-References: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com> <5473E388.6000605@redhat.com> <547497A9.1080800@oracle.com> <54749F77.50905@redhat.com> <5474BADC.5030808@oracle.com>
-In-Reply-To: <5474BADC.5030808@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzY_LSLM8R2cbt=sZe8UeDtUZdX8zO6Bzf52EBg3H30qw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112517-0009-0000-0000-0000069A6DDD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2014 12:22 PM, Khalid Aziz wrote:
-> On 11/25/2014 08:25 AM, Rik van Riel wrote:
->> On 11/25/2014 09:52 AM, Khalid Aziz wrote:
->>> On 11/24/2014 07:03 PM, Rik van Riel wrote:
->>>> -----BEGIN PGP SIGNED MESSAGE-----
->>>> Hash: SHA1
->>>>
->>>> On 11/24/2014 03:56 PM, Khalid Aziz wrote:
->>>>> sched/fair: Add advisory flag for borrowing a timeslice
->>>>>
->>>>> This patch adds a way for a task to request to borrow one
->>>>> timeslice from future if it is about to be preempted, so it could
->>>>> delay preemption and complete any critical task it is in the middle
->>>>> of.
->>>>>
->>>>> This feature helps with performance on databases and has been used
->>>>> for many years on other OSs by the databases. This feature helps in
->>>>> situation where a task acquires a lock before performing a critical
->>>>> operation on the database and happens to get preempted
->>>>
->>>> Why don't the other tasks that want the lock sleep on the
->>>> lock?
->>>>
->>>> I can see this "solution" help mostly with userspace spinlocks,
->>>> which are relics of a past era that need to die. There is no
->>>> way userspace spinlocks will not fail miserably on virtual
->>>> machines, and it is time to get rid of them.
->>>
->>> This solution indeed is for userspace spinlocks. Database code has been
->>> written with all critical locking implemented in userspace (as I have
->>> been told by database folks. I am not a database guy).
->>
->> They should fix that.
+On Tue, Nov 25, 2014 at 09:28:33AM -0800, Linus Torvalds wrote:
+> On Tue, Nov 25, 2014 at 7:59 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> >
+> > We really need something like this to catch invalid sizes:
+> >
+> >         default: invoke_nonexistent_function();
 > 
-> Agreed, but that is a very large task for databases for sure and
-> potentially for java as well (think exhaustive testing as well besides
-> code re-write). I do not see this happening except as part of major
-> re-architecture. In the mean time, if we can give them help without
-> impacting kernel significantly for other users, it only makes Linux a
-> more usable platform for them.
+> Actually, I wonder if we should make the default: case actually just
+> do something like
+> 
+>    barrier();
+>    memcpy(res, p, size);
+>    barrier();
+> 
+> which in no way guarantees that it's an _atomic_ access, but it does
+> guarantee the semantics that you get one particular value and it won't
+> get reloaded later..
+> 
+> That would solve the crazy sparc pte issue too.
 
-I am not convinced that permanently adding overhead to the
-Linux scheduler in order to deal with a temporary problem in
-database and Java software (probably not every JVM, either!)
-is a worthwhile trade-off..
+I would be really worried about confusion due to load/store tearing,
+where a READ_ONCE() reads part of its value from one ASSIGN_ONCE()
+and the other part from some other ASSIGN_ONCE().  Don't get me wrong,
+there are cases where the load/store tearing is harmless, it is just
+that in my experience that these cases are anything but the common case.
+
+That said, I do not claim to be familiar with more than a microscopic
+fraction of the Linux kernel.
+
+Of course, one way to resolve this would be to have one variant that did
+the memcpy() and another that threw a build error, maybe READ_ONCE_FORCE()
+and ASSIGN_ONCE_FORC() or some such.  I would -really- like to be informed
+if I do READ_ONCE() of a long long on a 32-bit system.  ;-)
+
+/me goes off to see if there are any ACCESS_ONCE() of long longs in RCU...
+
+							Thanx, Paul
 
