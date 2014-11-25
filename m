@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678AbaKYKkc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:40:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58015 "EHLO
+	id S1752653AbaKYKkb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:40:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58032 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466AbaKYKkV (ORCPT
+	with ESMTP id S1752560AbaKYKkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:21 -0500
+	Tue, 25 Nov 2014 05:40:24 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>, Michael Ellerman <mpe@ellerman.id.au>,
+Cc: Johan Hovold <johan@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 008/254] powerpc: do_notify_resume can be called with bad thread_info flags argument
-Date: Tue, 25 Nov 2014 10:35:58 +0000
-Message-Id: <1416912004-5928-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 012/254] USB: kobil_sct: fix non-atomic allocation in write path
+Date: Tue, 25 Nov 2014 10:36:02 +0000
+Message-Id: <1416912004-5928-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,55 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Johan Hovold <johan@kernel.org>
 
-commit 808be31426af57af22268ef0fcb42617beb3d15b upstream.
+commit 191252837626fca0de694c18bb2aa64c118eda89 upstream.
 
-Back in 7230c5644188 ("powerpc: Rework lazy-interrupt handling") we
-added a call out to restore_interrupts() (written in c) before calling
-do_notify_resume:
+Write may be called from interrupt context so make sure to use
+GFP_ATOMIC for all allocations in write.
 
-        bl      restore_interrupts
-        addi    r3,r1,STACK_FRAME_OVERHEAD
-        bl      do_notify_resume
-
-Unfortunately do_notify_resume takes two arguments, the second one
-being the thread_info flags:
-
-void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
-
-We do populate r4 (the second argument) earlier, but
-restore_interrupts() is free to muck it up all it wants. My guess is
-the gcc compiler gods shone down on us and its register allocator
-never used r4. Sometimes, rarely, luck is on our side.
-
-LLVM on the other hand did trample r4.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/entry_64.S | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/serial/kobil_sct.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
-index 6528c5e2cc44..42c8e2d635e8 100644
---- a/arch/powerpc/kernel/entry_64.S
-+++ b/arch/powerpc/kernel/entry_64.S
-@@ -663,7 +663,13 @@ _GLOBAL(ret_from_except_lite)
- 3:
- #endif
- 	bl	save_nvgprs
-+	/*
-+	 * Use a non volatile GPR to save and restore our thread_info flags
-+	 * across the call to restore_interrupts.
-+	 */
-+	mr	r30,r4
- 	bl	restore_interrupts
-+	mr	r4,r30
- 	addi	r3,r1,STACK_FRAME_OVERHEAD
- 	bl	do_notify_resume
- 	b	ret_from_except
+diff --git a/drivers/usb/serial/kobil_sct.c b/drivers/usb/serial/kobil_sct.c
+index 078f9ed419c8..a31ff1503a99 100644
+--- a/drivers/usb/serial/kobil_sct.c
++++ b/drivers/usb/serial/kobil_sct.c
+@@ -335,7 +335,8 @@ static int kobil_write(struct tty_struct *tty, struct usb_serial_port *port,
+ 			port->interrupt_out_urb->transfer_buffer_length = length;
+ 
+ 			priv->cur_pos = priv->cur_pos + length;
+-			result = usb_submit_urb(port->interrupt_out_urb, GFP_NOIO);
++			result = usb_submit_urb(port->interrupt_out_urb,
++					GFP_ATOMIC);
+ 			dev_dbg(&port->dev, "%s - Send write URB returns: %i\n", __func__, result);
+ 			todo = priv->filled - priv->cur_pos;
+ 
+@@ -350,7 +351,7 @@ static int kobil_write(struct tty_struct *tty, struct usb_serial_port *port,
+ 		if (priv->device_type == KOBIL_ADAPTER_B_PRODUCT_ID ||
+ 			priv->device_type == KOBIL_ADAPTER_K_PRODUCT_ID) {
+ 			result = usb_submit_urb(port->interrupt_in_urb,
+-								GFP_NOIO);
++					GFP_ATOMIC);
+ 			dev_dbg(&port->dev, "%s - Send read URB returns: %i\n", __func__, result);
+ 		}
+ 	}
 -- 
 2.1.0
 
