@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529AbaKYKon (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:44:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59293 "EHLO
+	id S932113AbaKYKnz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:43:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59265 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932093AbaKYKn4 (ORCPT
+	with ESMTP id S932093AbaKYKnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:56 -0500
+	Tue, 25 Nov 2014 05:43:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 254/254] dell-wmi: Fix access out of memory
-Date: Tue, 25 Nov 2014 10:40:04 +0000
-Message-Id: <1416912004-5928-255-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 249/254] netfilter: xt_bpf: add mising opaque struct sk_filter definition
+Date: Tue, 25 Nov 2014 10:39:59 +0000
+Message-Id: <1416912004-5928-250-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,54 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+From: Pablo Neira <pablo@netfilter.org>
 
-commit a666b6ffbc9b6705a3ced704f52c3fe9ea8bf959 upstream.
+commit e10038a8ec06ac819b7552bb67aaa6d2d6f850c1 upstream.
 
-Without this patch, dell-wmi is trying to access elements of dynamically
-allocated array without checking the array size. This can lead to memory
-corruption or a kernel panic. This patch adds the missing checks for
-array size.
+This structure is not exposed to userspace, so fix this by defining
+struct sk_filter; so we skip the casting in kernelspace. This is safe
+since userspace has no way to lurk with that internal pointer.
 
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Fixes: e6f30c7 ("netfilter: x_tables: add xt_bpf match")
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Acked-by: Willem de Bruijn <willemb@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/platform/x86/dell-wmi.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ include/uapi/linux/netfilter/xt_bpf.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/platform/x86/dell-wmi.c b/drivers/platform/x86/dell-wmi.c
-index 390e8e33d5e3..25721bf20092 100644
---- a/drivers/platform/x86/dell-wmi.c
-+++ b/drivers/platform/x86/dell-wmi.c
-@@ -163,18 +163,24 @@ static void dell_wmi_notify(u32 value, void *context)
- 		const struct key_entry *key;
- 		int reported_key;
- 		u16 *buffer_entry = (u16 *)obj->buffer.pointer;
-+		int buffer_size = obj->buffer.length/2;
+diff --git a/include/uapi/linux/netfilter/xt_bpf.h b/include/uapi/linux/netfilter/xt_bpf.h
+index 5dda450eb55b..2ec9fbcd06f9 100644
+--- a/include/uapi/linux/netfilter/xt_bpf.h
++++ b/include/uapi/linux/netfilter/xt_bpf.h
+@@ -6,6 +6,8 @@
  
--		if (dell_new_hk_type && (buffer_entry[1] != 0x10)) {
-+		if (buffer_size >= 2 && dell_new_hk_type && buffer_entry[1] != 0x10) {
- 			pr_info("Received unknown WMI event (0x%x)\n",
- 				buffer_entry[1]);
- 			kfree(obj);
- 			return;
- 		}
+ #define XT_BPF_MAX_NUM_INSTR	64
  
--		if (dell_new_hk_type || buffer_entry[1] == 0x0)
-+		if (buffer_size >= 3 && (dell_new_hk_type || buffer_entry[1] == 0x0))
- 			reported_key = (int)buffer_entry[2];
--		else
-+		else if (buffer_size >= 2)
- 			reported_key = (int)buffer_entry[1] & 0xffff;
-+		else {
-+			pr_info("Received unknown WMI event\n");
-+			kfree(obj);
-+			return;
-+		}
- 
- 		key = sparse_keymap_entry_from_scancode(dell_wmi_input_dev,
- 							reported_key);
++struct sk_filter;
++
+ struct xt_bpf_info {
+ 	__u16 bpf_program_num_elem;
+ 	struct sock_filter bpf_program[XT_BPF_MAX_NUM_INSTR];
 -- 
 2.1.0
 
