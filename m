@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaKYKse (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:48:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59217 "EHLO
+	id S1754161AbaKYKno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:43:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59162 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753354AbaKYKnp (ORCPT
+	with ESMTP id S1753354AbaKYKnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:45 -0500
+	Tue, 25 Nov 2014 05:43:35 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Richard Guy Briggs <rgb@redhat.com>,
+Cc: Dwight Engen <dwight.engen@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 241/254] audit: correct AUDIT_GET_FEATURE return message type
-Date: Tue, 25 Nov 2014 10:39:51 +0000
-Message-Id: <1416912004-5928-242-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 228/254] sunvdc: limit each sg segment to a page
+Date: Tue, 25 Nov 2014 10:39:38 +0000
+Message-Id: <1416912004-5928-229-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,37 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rgb@redhat.com>
+From: Dwight Engen <dwight.engen@oracle.com>
 
-commit 9ef91514774a140e468f99d73d7593521e6d25dc upstream.
+commit 5eed69ffd248c9f68f56c710caf07db134aef28b upstream.
 
-When an AUDIT_GET_FEATURE message is sent from userspace to the kernel, it
-should reply with a message tagged as an AUDIT_GET_FEATURE type with a struct
-audit_feature.  The current reply is a message tagged as an AUDIT_GET
-type with a struct audit_feature.
+ldc_map_sg() could fail its check that the number of pages referred to
+by the sg scatterlist was <= the number of cookies.
 
-This appears to have been a cut-and-paste-eo in commit b0fed40.
+This fixes the issue by doing a similar thing to the xen-blkfront driver,
+ensuring that the scatterlist will only ever contain a segment count <=
+port->ring_cookies, and each segment will be page aligned, and <= page
+size. This ensures that the scatterlist is always mappable.
 
-Reported-by: Steve Grubb <sgrubb@redhat.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Orabug: 19347817
+OraBZ: 15945
+
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/audit.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/sunvdc.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 855aaa0803d9..6726aa6f82be 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -724,7 +724,7 @@ static int audit_get_feature(struct sk_buff *skb)
+diff --git a/drivers/block/sunvdc.c b/drivers/block/sunvdc.c
+index 1616ad091a5e..1a9360da1f54 100644
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -747,6 +747,10 @@ static int probe_disk(struct vdc_port *port)
  
- 	seq = nlmsg_hdr(skb)->nlmsg_seq;
+ 	port->disk = g;
  
--	audit_send_reply(skb, seq, AUDIT_GET, 0, 0, &af, sizeof(af));
-+	audit_send_reply(skb, seq, AUDIT_GET_FEATURE, 0, 0, &af, sizeof(af));
- 
- 	return 0;
- }
++	/* Each segment in a request is up to an aligned page in size. */
++	blk_queue_segment_boundary(q, PAGE_SIZE - 1);
++	blk_queue_max_segment_size(q, PAGE_SIZE);
++
+ 	blk_queue_max_segments(q, port->ring_cookies);
+ 	blk_queue_max_hw_sectors(q, port->max_xfer_size);
+ 	g->major = vdc_major;
 -- 
 2.1.0
 
