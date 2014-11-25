@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261AbaKYPVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:21:54 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:60472 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbaKYPVx (ORCPT
+	id S1751033AbaKYPY2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:24:28 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:45176 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750863AbaKYPY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:21:53 -0500
+	Tue, 25 Nov 2014 10:24:26 -0500
+Date: Tue, 25 Nov 2014 10:24:25 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Benson Leung <bleung@chromium.org>
+cc: johan@kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        <linux-usb@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sameer Nanda <snanda@chromium.org>
+Subject: Re: [PATCH] HID: usbhid: get/put around clearing needs_remote_wakeup
+In-Reply-To: <CANLzEkuZYrF_tLq5k3xBBkSmtszL851ZK7VW8Jav3vKdw9JLMA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1411251022141.976-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <CA+V-a8sgWarzFQvoHhe2uxQDJ1bZ5PM4x03wss1k5vuuuvfT0Q@mail.gmail.com>
-References: <1416308268-22957-1-git-send-email-prabhakar.csengg@gmail.com>
- <20141125130416.457e48b0@recife.lan> <CA+V-a8sgWarzFQvoHhe2uxQDJ1bZ5PM4x03wss1k5vuuuvfT0Q@mail.gmail.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 25 Nov 2014 15:21:21 +0000
-Message-ID: <CA+V-a8vz2dPwotm24GOX+Ut6uyp81dFrqsZJeBBkL1Ykfd+9kA@mail.gmail.com>
-Subject: Re: [PATCH] media: exynos-gsc: fix build warning
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, LMML <linux-media@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 24 Nov 2014, Benson Leung wrote:
 
-On Tue, Nov 25, 2014 at 3:18 PM, Prabhakar Lad
-<prabhakar.csengg@gmail.com> wrote:
-> Hi Mauro,
->
-> On Tue, Nov 25, 2014 at 3:04 PM, Mauro Carvalho Chehab
-> <mchehab@osg.samsung.com> wrote:
->> Em Tue, 18 Nov 2014 10:57:48 +0000
-> [Snip]
->>
->> -static u32 get_plane_info(struct gsc_frame *frm, u32 addr, u32 *index)
->> +static int get_plane_info(struct gsc_frame *frm, u32 addr, u32 *index, u32 *ret_addr)
->>  {
->>         if (frm->addr.y == addr) {
->>                 *index = 0;
->> -               return frm->addr.y;
->> +               *ret_addr = frm->addr.y;
->>         } else if (frm->addr.cb == addr) {
->>                 *index = 1;
->> -               return frm->addr.cb;
->> +               *ret_addr = frm->addr.cb;
->>         } else if (frm->addr.cr == addr) {
->>                 *index = 2;
->> -               return frm->addr.cr;
->> +               *ret_addr = frm->addr.cr;
->>         } else {
->>                 pr_err("Plane address is wrong");
->>                 return -EINVAL;
->>         }
->> +       return 0;
-> the control wont reach here! may be you can remove the complete else
-> part outside ?
->
-Ah my bad :(, I missread 'ret_addr' to return.
+> Hi Alan,
+> 
+> 
+> On Sat, Nov 22, 2014 at 7:55 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > There is no USB wrapper for pm_runtime_idle calls, but one could be
+> > added.  Still, in the meantime can you check to see what happens if you
+> > add
+> >
+> >         pm_runtime_idle(&usbhid->intf->dev);
+> >
+> > in usbhid_close() just after needs_remote_wakeup is set to 0?  You can
+> > do the same thing in usbhid_stop() if you want.
+> 
+> I tried using this in lieu of usb_autopm_get/put_interface:
+> 
+>     usbhid->intf->needs_remote_wakeup = 0;
+>     pm_runtime_idle(&usbhid->intf->dev);
+>     pm_runtime_idle(usbhid->intf->dev.parent);
+> 
+> It did not work. I see the autosuspend_check() that was kicked off as
+> a result of hid_hw_power, which falls into the "remote wakeup needed
+> for autosuspend" branch, but I don't see another autosuspend_check()
+> that picks up the updated value of  needs_remote_wakeup.
 
-Thanks,
---Prabhakar Lad
+Well, why not?
 
-> with that change,
->
-> Reported-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->
-> Thanks,
-> --Prabhakar Lad
->
->>  }
->>
->>  void gsc_set_prefbuf(struct gsc_dev *gsc, struct gsc_frame *frm)
->> @@ -352,9 +353,11 @@ void gsc_set_prefbuf(struct gsc_dev *gsc, struct gsc_frame *frm)
->>                 u32 t_min, t_max;
->>
->>                 t_min = min3(frm->addr.y, frm->addr.cb, frm->addr.cr);
->> -               low_addr = get_plane_info(frm, t_min, &low_plane);
->> +               if (get_plane_info(frm, t_min, &low_plane, &low_addr))
->> +                       return;
->>                 t_max = max3(frm->addr.y, frm->addr.cb, frm->addr.cr);
->> -               high_addr = get_plane_info(frm, t_max, &high_plane);
->> +               if (get_plane_info(frm, t_max, &high_plane, &high_addr))
->> +                       return;
->>
->>                 mid_plane = 3 - (low_plane + high_plane);
->>                 if (mid_plane == 0)
+In order to work on the kernel effectively, you need the right 
+mind-set.  Don't just tell people when something goes wrong -- figure 
+out why the problem occurred and propose a way to fix it.
+
+Alan Stern
+
