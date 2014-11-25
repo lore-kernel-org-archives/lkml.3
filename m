@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515AbaKYOKR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:10:17 -0500
-Received: from sauhun.de ([89.238.76.85]:32818 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752490AbaKYOKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:10:15 -0500
-Date: Tue, 25 Nov 2014 15:11:43 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v2 12/14] i2c/of: Add OF_RECONFIG notifier handler
-Message-ID: <20141125141143.GC1843@katana>
-References: <1416868422-22103-1-git-send-email-grant.likely@linaro.org>
- <1416868422-22103-13-git-send-email-grant.likely@linaro.org>
+	id S1751019AbaKYOOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:14:14 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:33917 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaKYOOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 09:14:12 -0500
+Date: Tue, 25 Nov 2014 14:14:00 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 2/6] arm64: ptrace: allow tracer to skip a system call
+Message-ID: <20141125141400.GG3836@n2100.arm.linux.org.uk>
+References: <1416273038-15590-1-git-send-email-takahiro.akashi@linaro.org>
+ <1416273038-15590-3-git-send-email-takahiro.akashi@linaro.org>
+ <20141118140425.GM18842@arm.com>
+ <546C58DB.5080204@linaro.org>
+ <20141119190601.GM15985@arm.com>
+ <546D7860.2010300@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ncSAzJYg3Aa9+CRW"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416868422-22103-13-git-send-email-grant.likely@linaro.org>
+In-Reply-To: <546D7860.2010300@linaro.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 20, 2014 at 02:13:04PM +0900, AKASHI Takahiro wrote:
+> On 11/20/2014 04:06 AM, Will Deacon wrote:
+> >What does x86 do?
+> 
+> On x86, syscall(-1) returns -ENOSYS if not traced, and we can change a return
+> value if traced.
 
---ncSAzJYg3Aa9+CRW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+... which is used for UML (user mode Linux).  UML works by spawning
+processes under the host kernel, which run with syscall tracing enabled,
+with the UML kernel as the tracer.  The UML kernel tracer receives the
+syscall trace event when the child tries to execute a syscall, decodes
+the syscall, executes syscall in the UML kernel, and then cancels the
+syscall in the host kernel, setting the return code appropriately.
 
-On Mon, Nov 24, 2014 at 10:33:40PM +0000, Grant Likely wrote:
-> From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
->=20
-> CONFIG_OF_DYNAMIC enables runtime changes to the device tree which in
-> turn may trigger addition or removal of devices from Linux. Add an
-> OF_RECONFIG notifier handler to receive tree change events and to
-> creating or destroy i2c devices as required.
->=20
-> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-> [grant.likely: clean up #ifdefs and drop unneeded error handling]
-> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> Cc: Wolfram Sang <wsa@the-dreams.de>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: linux-i2c@vger.kernel.org
-
-Reviewed-by: Wolfram Sang <wsa@the-dreams.de>
-
-
---ncSAzJYg3Aa9+CRW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUdI4fAAoJEBQN5MwUoCm2W4EP/3qb5u0igOYGh/2FevV4t+b4
-DJFLtEVwjwqQwIgZMpUwu0WT1CIsoI6s+q/lgiG4Fl9y2P2ZleoRECGx0dkxMZmG
-wL+Bg2S6MnUbJOp1+I6xoLO5LChOYIuj6k5bm41YF+7sABIlmdiBJUP1QMnv6VQH
-XHCxOjBwqlhzd19cbCTsrztGEO/QnbCJyu2oIk6pS5E3a6IWa7n8fEJI0bUVairm
-tqfCv5wZnYo9h+xYP9qoxJoy5wYSR1fHbflK/LCBh7Di5i69qc+ED/OJt8t/iK4a
-nhjGVguPE/zdJZKIITe6ekuwPxgy9LGDhwEbFymbOMGml/pak9v17osUqvaUSWmF
-XjSU+ojxALYk6NwJ7FXOPoTrY7EiOJc4v4BL3xa5waRkhLoWrCVs6B0SPGpykf+d
-g7jk9JNrPDTryxkiN+yMI9DOfElOxw7ebbRkBigVi//58qkTM8aWXWVlwEI/xUxK
-QXX8IUOemRJZPbt+YIQQdrerIyUXHPPuicI0eWC+SldYB7HmjO6EcvuQY6EvCY/B
-TcXE5tYsveAOTC6aYwf4bfd4f+GgzfV5SQanH1IGBSnyCSQNAFE+YR9tFY9745n+
-mQXlJ7GSIv2KyA9YSnx0D7NVd5jUQolJ2rjWYz+D3w7TIxUfqRZAAj9wSi6HgmhL
-6PvubW5n5gHEhs1DWFx2
-=1DXP
------END PGP SIGNATURE-----
-
---ncSAzJYg3Aa9+CRW--
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
