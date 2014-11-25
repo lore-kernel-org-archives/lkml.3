@@ -1,119 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750991AbaKYSCI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 13:02:08 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:40544 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaKYSCF (ORCPT
+	id S1750925AbaKYSGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 13:06:37 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:39276 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784AbaKYSGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 13:02:05 -0500
-Date: Tue, 25 Nov 2014 10:01:59 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Jiri Kosina <jkosina@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: (bisected) Lock up on sh73a0/kzm9g on cpuidle initialization
-Message-ID: <20141125180159.GI5050@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAMuHMdXaaa2t6+sH2egGacVxkAPeTUkAgwdYsOnMnEPnuLdB5Q@mail.gmail.com>
- <545BE1DE.6060900@linaro.org>
- <CAMuHMdXQr65g4He0D0ZRN923OJ2A7WNgwbiTru_1dGWnvbvCJA@mail.gmail.com>
- <CAMuHMdUjYMC8i2F9n6fWdPBOQVSohKA3ZxJJyq8h808Z9tEypw@mail.gmail.com>
+	Tue, 25 Nov 2014 13:06:35 -0500
+Date: Tue, 25 Nov 2014 02:04:24 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Linux PM list <linux-pm@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: Re: [PATCH v2 1/4] thermal: of: Extend of-thermal.c to provide
+ number of trip points
+Message-ID: <20141125060421.GA13591@developer>
+References: <1412872737-624-1-git-send-email-l.majewski@samsung.com>
+ <1416500488-7232-1-git-send-email-l.majewski@samsung.com>
+ <1416500488-7232-2-git-send-email-l.majewski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="x+6KMIRAuhnl3hBn"
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdUjYMC8i2F9n6fWdPBOQVSohKA3ZxJJyq8h808Z9tEypw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112518-0009-0000-0000-0000069A82E4
+In-Reply-To: <1416500488-7232-2-git-send-email-l.majewski@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 06:49:16PM +0100, Geert Uytterhoeven wrote:
-> On Fri, Nov 7, 2014 at 8:59 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> > On Thu, Nov 6, 2014 at 10:02 PM, Daniel Lezcano
-> > <daniel.lezcano@linaro.org> wrote:
-> >> On 11/06/2014 09:38 PM, Geert Uytterhoeven wrote:
-> >>> When CONFIG_CPU_IDLE=y, the kernel locks up during cpuidle initialization
-> >>> on Renesas sh73a0/kzm9g-reference, which has a dual-core Cortex-A9.
-> >>>
-> >>> Last message is:
-> >>>
-> >>>      DMA: preallocated 256 KiB pool for atomic coherent allocations
-> >>>
-> >>> After this it's supposed to print:
-> >>>
-> >>>      cpuidle: using governor ladder
-> >>>      cpuidle: using governor menu
-> >>>
-> >>> I've bisected this to commit 442bf3aaf55a91ebfec71da46a4ee10a3c905bcc
-> >>> ("sched: Let the scheduler see CPU idle states").
-> >>>
-> >>> Reverting that commit, and commit 83a0a96a5f26d974580fd7251043ff70c8f1823d
-> >>> ("sched/fair: Leverage the idle state info when choosing the "idlest"
-> >>> cpu") which
-> >>> depends on it, fixes the problem.
-> >>>
-> >>> I saw the discussion "lockdep splat in CPU hotplug", so I enabled lockdep
-> >>> debugging, but didn't see a lockdep splat.
-> >>
-> >> Did you try the fix attached ?
-> >>
-> >> https://lkml.org/lkml/2014/10/22/722
-> >
-> > Thanks, I didn't try that.
-> >
-> > However, this patch seems to be in v3.18-rc3, so I'm already using it.
-> > Hence it doesn't fix the problem for me.
-> >
-> > On another board, with a dual Cortex-A15, the problem doesn't show up.
-> 
-> This problem (regression introduced in v3.18-rc1) is still present in v3.18-rc6.
-> 
-> I did some more investigations, and it's hanging in the call to
-> synchronize_rcu() in cpuidle_uninstall_idle_handler(), which was added in
-> commit 442bf3aaf55a91ebfec71da46a4ee10a3c905bcc.
-> More specificailly, it's blocked on the wait_for_completion(&rcu.completion)
-> in kernel/rcu/update.c:void wait_rcu_gp(call_rcu_func_t crf).
 
-You didn't disable RCU CPU stall warnings, did you?  If you did, please
-re-enable them, as the stall warning messages will likely help to debug
-this.  The soft-lockup checks can also be quite valuable.
+--x+6KMIRAuhnl3hBn
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If you haven't run with CONFIG_PROVE_RCU=y, please try that.  For example,
-if you have CONFIG_PREEMPT=y and you do synchronize_rcu() from within
-an RCU read-side critical section (don't do that, it will hang!!!),
-then you will get a lockdep splat.
 
-Does any sort of system activity (keyboard, network, etc.) unstick the
-system?
+Lukasz,
 
-If you have tried all those things without good effect, could you please
-send along your .config and an alt-sysrq-t dump of all tasks' stacks?
+On Thu, Nov 20, 2014 at 05:21:25PM +0100, Lukasz Majewski wrote:
+> This patch extends the of-thermal.c to provide information about number of
+> available trip points.
+>=20
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> ---
+> Changes for v2:
+> - Provide detailed (doxygen like) description of the of_thermal_get_ntrip=
+s()
+>   method
+> - Check for data pointer not being NULL
+> ---
+>  drivers/thermal/of-thermal.c   | 20 ++++++++++++++++++++
+>  drivers/thermal/thermal_core.h |  5 +++++
+>  2 files changed, 25 insertions(+)
+>=20
+> diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
+> index b7982f0..7170822 100644
+> --- a/drivers/thermal/of-thermal.c
+> +++ b/drivers/thermal/of-thermal.c
+> @@ -112,6 +112,26 @@ static int of_thermal_get_temp(struct thermal_zone_d=
+evice *tz,
+>  	return data->ops->get_temp(data->sensor_data, temp);
+>  }
+> =20
+> +/**
+> + * of_thermal_get_ntrips - function to export number of available trip
+> + *			   points.
+> + * @tz: pointer to a thermal zone
+> + *
+> + * This function is a globally visible wrapper to get number of trip poi=
+nts
+> + * stored in the local struct __thermal_zone
+> + *
+> + * Return: number of available trip points, -ENODEV when data not availa=
+ble
+> + */
+> +int of_thermal_get_ntrips(struct thermal_zone_device *tz)
+> +{
+> +	struct __thermal_zone *data =3D tz->devdata;
+> +
+> +	if (!data || IS_ERR(data))
+> +		return -ENODEV;
+> +
+> +	return data->ntrips;
+> +}
+> +
 
-							Thanx, Paul
+Missing
+EXPORT_SYMBOL_GPL(of_thermal_get_ntrips);
 
-> Anyone with a clue?
-> 
-> Thanks again!
-> 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-> 
+>  static int of_thermal_get_trend(struct thermal_zone_device *tz, int trip,
+>  				enum thermal_trend *trend)
+>  {
+> diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_cor=
+e.h
+> index d15d243..c3c7b82 100644
+> --- a/drivers/thermal/thermal_core.h
+> +++ b/drivers/thermal/thermal_core.h
+> @@ -89,9 +89,14 @@ static inline void thermal_gov_user_space_unregister(v=
+oid) {}
+>  #ifdef CONFIG_THERMAL_OF
+>  int of_parse_thermal_zones(void);
+>  void of_thermal_destroy_zones(void);
+> +int of_thermal_get_ntrips(struct thermal_zone_device *);
+>  #else
+>  static inline int of_parse_thermal_zones(void) { return 0; }
+>  static inline void of_thermal_destroy_zones(void) { }
+> +static inline int of_thermal_get_ntrips(struct thermal_zone_device *)
 
+You need to declare the parameter name with a name     ---------------^ .
+
+> +{
+
+This produces a compilation error if CONFIG_THERMAL_OF is not set:
+In file included from drivers/thermal/step_wise.c:28:0:
+drivers/thermal/thermal_core.h: In function =E2=80=98of_thermal_get_ntrips=
+=E2=80=99:
+drivers/thermal/thermal_core.h:96:48: error: parameter name omitted
+ static inline int of_thermal_get_ntrips(struct thermal_zone_device *)
+
+
+
+> +	return 0;
+> +}
+>  #endif
+> =20
+>  #endif /* __THERMAL_CORE_H__ */
+> --=20
+> 2.0.0.rc2
+>=20
+
+--x+6KMIRAuhnl3hBn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdBvcAAoJEMLUO4d9pOJW9BIH/2NrYX38n81OyIAzAlQNsSvD
+U2kR7/NqI0LqL/NdMRPSxeeFo2IzvYLas3SQA8mgKKzmI8YS+sCudbx2cfCqcjws
+l2jg4yM++q7Cl9OLXC2x7Fps6hGnrE/yCCfZiX3mpBNdTlAwPPO7CB3PunxaS95c
+T3/B/8PZ5uOtONteXg9KFGU95C1I4ZIUoo0RiXjdqh34RwDj5Ek0zkFvHJvGa6LJ
+OAEKGnkIrZepWr9bZdTBwsocSbbFQdrBYOLmmTUTPVygZj88KsHOZngs80h8eGMw
+7GxwGjjlBpbIhhBg0uDRoMUTRj/heZjg6y7VasukU2v1CIfUytXZ5RSfJSYaa3c=
+=IbSP
+-----END PGP SIGNATURE-----
+
+--x+6KMIRAuhnl3hBn--
