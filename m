@@ -1,90 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424AbaKYQ3r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:29:47 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:19169 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaKYQ3p (ORCPT
+	id S1751197AbaKYQd7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:33:59 -0500
+Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:48198
+	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837AbaKYQd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:29:45 -0500
-Message-ID: <5474AE31.8080901@oracle.com>
-Date: Tue, 25 Nov 2014 08:28:33 -0800
-From: santosh shilimkar <santosh.shilimkar@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Tue, 25 Nov 2014 11:33:58 -0500
+X-Greylist: delayed 1358 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Nov 2014 11:33:57 EST
+From: =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>
+To: kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, peter.maydell@linaro.org, agraf@suse.de
+Cc: jan.kiszka@siemens.com, dahi@linux.vnet.ibm.com, r65777@freescale.com,
+        bp@suse.de, pbonzini@redhat.com,
+        =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>,
+        Gleb Natapov <gleb@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 4/7] KVM: arm64: guest debug, add SW break point support
+Date: Tue, 25 Nov 2014 16:10:02 +0000
+Message-Id: <1416931805-23223-5-git-send-email-alex.bennee@linaro.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org>
+References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org>
 MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Kevin Hilman <khilman@kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robh+dt@kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, ssantosh@kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com> <15074721.IbfeeI3ajE@wuerfel> <54746349.3000306@ti.com> <2301239.aDOlWg3gEs@wuerfel> <5474846C.2000308@ti.com> <20141125140440.GF3836@n2100.arm.linux.org.uk> <54749804.8070400@ti.com>
-In-Reply-To: <54749804.8070400@ti.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 127.0.0.1
+X-SA-Exim-Mail-From: alex.bennee@linaro.org
+X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grygorii,
+This adds support for SW breakpoints inserted by userspace.
 
-On 11/25/2014 6:53 AM, Grygorii Strashko wrote:
-> Hi Russell,
->
-> On 11/25/2014 04:04 PM, Russell King - ARM Linux wrote:
->> On Tue, Nov 25, 2014 at 03:30:20PM +0200, Grygorii Strashko wrote:
->>> On 11/25/2014 02:09 PM, Arnd Bergmann wrote:
->>>> It might be possible to do this implicitly if the driver calls clk_get(),
->>>> basically doing clk_get() (or another call if necessary) would prevent the
->>>> simple pmdomain from turning it off during suspend.
->>>
->>> Unfortunately, clk_get() will not work, because drivers still need to use it
->>> to get functional clocks even if they are not going to control them explicitly.
->>> For example, if it need to know clock's rate.
->>
->> If you don't want a clock to be turned off, then clk_get() it, then
->> clk_prepare() it, and finally clk_enable() it.
->>
->> Even if someone else gets it, the only time that a clock is turned off
->> is when _all_ users of it mutually agree that it can be turned off - by
->> every user disabling (and possibly unpreparing) it.
->>
->> So, if the PM domain code gets a clock, prepares and enables it, then
->> a driver gets the same clock, prepares and enables it also, it won't
->> be disabled until _both_ the PM domain code _and_ the driver disable
->> and unprepare the clock.
->>
->
-> All 100% true :)
->
-> But the question here is how prevent pm_clk domain (clock_ops.c) from
-> getting the control on clock if this particular clock is optional from driver's
-> perspective. So, only driver should control it. As opposite, all other clocks
-> should be controlled by pm-domain (in case of GPD from .start/stop callbacks).
->
-I know there has been lot of back and forth, we have done on getting
-multiple clock handling and from the thread looks like we are converging
-with simple power domain approach. Since we have already made several
-different attempt to solve the problem and some how stumbled, I suggest
-you to do a new RFC with new $subject so that we can get rest of the
-folks eyes on it.
+First we need to trap all BKPT exceptions in the hypervisor (ELS). This
+in controlled through the MDCR_EL2 register. I've added a new field to
+the vcpu structure to hold this value. There should be scope to
+rationlise this with the VCPU_DEBUG_FLAGS/KVM_ARM64_DEBUG_DIRTY_SHIFT
+manipulation in later patches.
 
-The reason I say that because may be just because of $subject, some
-folks might ignore the thread ;-) and later raise objections.
+Once the exception arrives we triggers an exit from the main hypervisor
+loop to the hypervisor controller. The kvm_debug_exit_arch carries the
+address of the exception. If the controller doesn't know of breakpoint
+then we have a guest inserted breakpoint and the hypervisor needs to
+start again and deliver the exception to guest.
 
-Thanks for persisting with it.
+Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
 
-Regards,
-Santosh
+diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+index 2c6386e..9383359 100644
+--- a/Documentation/virtual/kvm/api.txt
++++ b/Documentation/virtual/kvm/api.txt
+@@ -2592,7 +2592,7 @@ when running. Common control bits are:
+ The top 16 bits of the control field are architecture specific control
+ flags which can include the following:
+ 
+-  - KVM_GUESTDBG_USE_SW_BP:     using software breakpoints [x86]
++  - KVM_GUESTDBG_USE_SW_BP:     using software breakpoints [x86, arm64]
+   - KVM_GUESTDBG_USE_HW_BP:     using hardware breakpoints [x86, s390]
+   - KVM_GUESTDBG_INJECT_DB:     inject DB type exception [x86]
+   - KVM_GUESTDBG_INJECT_BP:     inject BP type exception [x86]
+diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
+index a0ff410..48d26bb 100644
+--- a/arch/arm/kvm/arm.c
++++ b/arch/arm/kvm/arm.c
+@@ -303,6 +303,9 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
+ int kvm_arch_vcpu_ioctl_set_guest_debug(struct kvm_vcpu *vcpu,
+ 					struct kvm_guest_debug *dbg)
+ {
++	/* Route debug traps to el2? */
++	bool route_el2 = false;
++
+ 	/* If it's not enabled clear all flags */
+ 	if (!(dbg->control & KVM_GUESTDBG_ENABLE)) {
+ 		vcpu->guest_debug = 0;
+@@ -320,8 +323,8 @@ int kvm_arch_vcpu_ioctl_set_guest_debug(struct kvm_vcpu *vcpu,
+ 
+ 	/* Software Break Points */
+ 	if (vcpu->guest_debug & KVM_GUESTDBG_USE_SW_BP) {
+-		kvm_info("SW BP support requested, not yet implemented\n");
+-		return -EINVAL;
++		kvm_info("SW BP support requested\n");
++		route_el2 = true;
+ 	}
+ 
+ 	/* Hardware assisted Break and Watch points */
+@@ -330,6 +333,20 @@ int kvm_arch_vcpu_ioctl_set_guest_debug(struct kvm_vcpu *vcpu,
+ 		return -EINVAL;
+ 	}
+ 
++	/* If we are going to handle any debug exceptions we need to
++	 * set MDCE_EL2.TDE to ensure they are routed to the
++	 * hypervisor. If userspace determines the exception was
++	 * actually internal to the guest it needs to handle
++	 * re-injecting the exception.
++	 */
++	if (route_el2) {
++		kvm_info("routing debug exceptions");
++		vcpu->arch.mdcr_el2 = MDCR_EL2_TDE;
++	} else {
++		kvm_info("not routing debug exceptions");
++		vcpu->arch.mdcr_el2 = 0;
++	}
++
+ 	return 0;
+ }
+ 
+diff --git a/arch/arm64/include/asm/kvm_host.h b/arch/arm64/include/asm/kvm_host.h
+index 2012c4b..38b0f07 100644
+--- a/arch/arm64/include/asm/kvm_host.h
++++ b/arch/arm64/include/asm/kvm_host.h
+@@ -98,6 +98,7 @@ struct kvm_vcpu_arch {
+ 
+ 	/* HYP configuration */
+ 	u64 hcr_el2;
++	u32 mdcr_el2;
+ 
+ 	/* Exception Information */
+ 	struct kvm_vcpu_fault_info fault;
+diff --git a/arch/arm64/kernel/asm-offsets.c b/arch/arm64/kernel/asm-offsets.c
+index 9a9fce0..8da1043 100644
+--- a/arch/arm64/kernel/asm-offsets.c
++++ b/arch/arm64/kernel/asm-offsets.c
+@@ -122,6 +122,7 @@ int main(void)
+   DEFINE(VCPU_HPFAR_EL2,	offsetof(struct kvm_vcpu, arch.fault.hpfar_el2));
+   DEFINE(VCPU_DEBUG_FLAGS,	offsetof(struct kvm_vcpu, arch.debug_flags));
+   DEFINE(VCPU_HCR_EL2,		offsetof(struct kvm_vcpu, arch.hcr_el2));
++  DEFINE(VCPU_MDCR_EL2,	offsetof(struct kvm_vcpu, arch.mdcr_el2));
+   DEFINE(VCPU_IRQ_LINES,	offsetof(struct kvm_vcpu, arch.irq_lines));
+   DEFINE(VCPU_HOST_CONTEXT,	offsetof(struct kvm_vcpu, arch.host_cpu_context));
+   DEFINE(VCPU_TIMER_CNTV_CTL,	offsetof(struct kvm_vcpu, arch.timer_cpu.cntv_ctl));
+diff --git a/arch/arm64/kvm/handle_exit.c b/arch/arm64/kvm/handle_exit.c
+index 34b8bd0..28dc92b 100644
+--- a/arch/arm64/kvm/handle_exit.c
++++ b/arch/arm64/kvm/handle_exit.c
+@@ -71,6 +71,26 @@ static int kvm_handle_wfx(struct kvm_vcpu *vcpu, struct kvm_run *run)
+ 	return 1;
+ }
+ 
++/**
++ * kvm_handle_bkpt - handle a break-point instruction
++ *
++ * @vcpu:	the vcpu pointer
++ *
++ * By definition if we arrive here it's because we are routing
++ * all SW breakpoints to the hyper-visor as some may be a result of
++ * guest debugging. If user-space decides this particular break-point
++ * isn't for the host to handle it can re-feed the exception to the
++ * guest.
++ */
++static int kvm_handle_bkpt(struct kvm_vcpu *vcpu, struct kvm_run *run)
++{
++	run->exit_reason = KVM_EXIT_DEBUG;
++	run->debug.arch.exit_type = KVM_DEBUG_EXIT_SW_BKPT;
++	run->debug.arch.address = *vcpu_pc(vcpu);
++	kvm_info("exiting from %llx\n", run->debug.arch.address);
++	return 0;
++}
++
+ static exit_handle_fn arm_exit_handlers[] = {
+ 	[ESR_EL2_EC_WFI]	= kvm_handle_wfx,
+ 	[ESR_EL2_EC_CP15_32]	= kvm_handle_cp15_32,
+@@ -85,6 +105,8 @@ static exit_handle_fn arm_exit_handlers[] = {
+ 	[ESR_EL2_EC_SYS64]	= kvm_handle_sys_reg,
+ 	[ESR_EL2_EC_IABT]	= kvm_handle_guest_abort,
+ 	[ESR_EL2_EC_DABT]	= kvm_handle_guest_abort,
++	[ESR_EL2_EC_BKPT32]	= kvm_handle_bkpt,
++	[ESR_EL2_EC_BRK64]	= kvm_handle_bkpt,
+ };
+ 
+ static exit_handle_fn kvm_get_exit_handler(struct kvm_vcpu *vcpu)
+diff --git a/arch/arm64/kvm/hyp.S b/arch/arm64/kvm/hyp.S
+index b72aa9f..3c733ea 100644
+--- a/arch/arm64/kvm/hyp.S
++++ b/arch/arm64/kvm/hyp.S
+@@ -772,6 +772,10 @@
+ 	orr	x2, x2, #(MDCR_EL2_TPM | MDCR_EL2_TPMCR)
+ 	orr	x2, x2, #(MDCR_EL2_TDRA | MDCR_EL2_TDOSA)
+ 
++	// Any other bits (currently TDE)
++	ldr	x3, [x0, #VCPU_MDCR_EL2]
++	orr	x2, x2, x3
++
+ 	// Check for KVM_ARM64_DEBUG_DIRTY, and set debug to trap
+ 	// if not dirty.
+ 	ldr	x3, [x0, #VCPU_DEBUG_FLAGS]
+-- 
+2.1.3
+
