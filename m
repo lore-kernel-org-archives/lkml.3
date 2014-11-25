@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaKYAnf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 19:43:35 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:8353 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750907AbaKYAm6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751012AbaKYAm6 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 24 Nov 2014 19:42:58 -0500
-Message-Id: <20141125004256.522025989@goodmis.org>
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:14694 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750772AbaKYAm5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 19:42:57 -0500
+Message-Id: <20141125004255.715907540@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Mon, 24 Nov 2014 19:42:27 -0500
+Date: Mon, 24 Nov 2014 19:42:22 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -17,13 +17,12 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [RFC][PATCH 6/7] ftrace/x86: Add macro MCOUNT_REG_SIZE for amount of stack used to
- save mcount regs
+Subject: [RFC][PATCH 1/7] ftrace/x86: Have static tracing also use ftrace_caller_setup
 References: <20141125004221.803122027@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0006-ftrace-x86-Add-macro-MCOUNT_REG_SIZE-for-amount-of-s.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0001-ftrace-x86-Have-static-tracing-also-use-ftrace_calle.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,121 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The macro save_mcount_regs saves regs onto the stack. But to uncouple the
-amount of stack used in that macro from the users of the macro, we need
-to have a define that tells all the users how much stack is used by that
-macro. This way we can change the amount of stack the macro uses without
-breaking its users.
+Linus pointed out that there were locations that did the hard coded
+update of the parent and rip parameters. One of them was the static tracer
+which could also use the ftrace_caller_setup to do that work. In fact,
+because it did not use it, it is prone to bugs, and since the static
+tracer is hardly ever used (who wants function tracing code always being
+called?) it doesn't get tested very often. I only run a few "does it still
+work" tests on it. But I do not run stress tests on that code. Although,
+since it is never turned off, just having it on should be stressful enough.
+(especially for the performance folks)
 
-Also remove some dead code that was left over from commit fdc841b58cf5
-"ftrace: x86: Remove check of obsolete variable function_trace_stop".
+There's no reason that the static tracer can't also use ftrace_caller_setup.
+Have it do so.
+
+Link: http://lkml.kernel.org/r/CA+55aFwF+qCGSKdGaEgW4p6N65GZ5_XTV=1NbtWDvxnd5yYLiw@mail.gmail.com
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kernel/mcount_64.S | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ arch/x86/kernel/mcount_64.S | 22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
 
 diff --git a/arch/x86/kernel/mcount_64.S b/arch/x86/kernel/mcount_64.S
-index 596ac330c1db..a0f6f942183a 100644
+index 6dc134b8dc70..24842c701660 100644
 --- a/arch/x86/kernel/mcount_64.S
 +++ b/arch/x86/kernel/mcount_64.S
-@@ -21,6 +21,9 @@
+@@ -21,12 +21,6 @@
  # define function_hook	mcount
  #endif
  
-+/* Size of stack used to save mcount regs in save_mcount_regs */
-+#define MCOUNT_REG_SIZE		(SS+8)
-+
- /*
-  * gcc -pg option adds a call to 'mcount' in most functions.
-  * When -mfentry is used, the call is to 'fentry' and not 'mcount'
-@@ -42,7 +45,7 @@
- 	 /*
- 	  * We add enough stack to save all regs.
- 	  */
--	subq $(SS+8), %rsp
-+	subq $MCOUNT_REG_SIZE, %rsp
- 	movq %rax, RAX(%rsp)
- 	movq %rcx, RCX(%rsp)
- 	movq %rdx, RDX(%rsp)
-@@ -51,7 +54,7 @@
- 	movq %r8, R8(%rsp)
- 	movq %r9, R9(%rsp)
- 	 /* Move RIP to its proper location */
--	movq SS+8+\added(%rsp), %rdi
-+	movq MCOUNT_REG_SIZE+\added(%rsp), %rdi
- 	movq %rdi, RIP(%rsp)
- 	.endm
- 
-@@ -63,7 +66,7 @@
- 	movq RDX(%rsp), %rdx
- 	movq RCX(%rsp), %rcx
- 	movq RAX(%rsp), %rax
--	addq $(SS+8), %rsp
-+	addq $MCOUNT_REG_SIZE, %rsp
- 	.endm
- 
- /* skip is set if stack has been adjusted */
-@@ -79,7 +82,7 @@ GLOBAL(\trace_label)
- 	subq $MCOUNT_INSN_SIZE, %rdi
- 	/* Load the parent_ip into the second parameter */
- #ifdef CC_USING_FENTRY
--	movq SS+16+\added(%rsp), %rsi
-+	movq MCOUNT_REG_SIZE+8+\added(%rsp), %rsi
- #else
- 	movq 8+\added(%rbp), %rsi
- #endif
-@@ -172,7 +175,7 @@ ENTRY(ftrace_regs_caller)
- 	movq %rbp, RBP(%rsp)
- 	movq %rbx, RBX(%rsp)
- 	/* Copy saved flags */
--	movq SS+8(%rsp), %rcx
-+	movq MCOUNT_REG_SIZE(%rsp), %rcx
- 	movq %rcx, EFLAGS(%rsp)
- 	/* Kernel segments */
- 	movq $__KERNEL_DS, %rcx
-@@ -180,7 +183,7 @@ ENTRY(ftrace_regs_caller)
- 	movq $__KERNEL_CS, %rcx
- 	movq %rcx, CS(%rsp)
- 	/* Stack - skipping return address and flags */
--	leaq SS+8*3(%rsp), %rcx
-+	leaq MCOUNT_REG_SIZE+8*2(%rsp), %rcx
- 	movq %rcx, RSP(%rsp)
- 
- 	/* regs go into 4th parameter */
-@@ -195,11 +198,11 @@ GLOBAL(ftrace_regs_call)
- 
- 	/* Copy flags back to SS, to restore them */
- 	movq EFLAGS(%rsp), %rax
--	movq %rax, SS+8(%rsp)
-+	movq %rax, MCOUNT_REG_SIZE(%rsp)
- 
- 	/* Handlers can change the RIP */
- 	movq RIP(%rsp), %rax
--	movq %rax, SS+8*2(%rsp)
-+	movq %rax, MCOUNT_REG_SIZE+8(%rsp)
- 
- 	/* restore the rest of pt_regs */
- 	movq R15(%rsp), %r15
-@@ -225,9 +228,6 @@ GLOBAL(ftrace_regs_caller_end)
- 
- 	jmp ftrace_return
- 
--	popfq
--	jmp  ftrace_stub
+-#ifdef CONFIG_DYNAMIC_FTRACE
 -
- END(ftrace_regs_caller)
+-ENTRY(function_hook)
+-	retq
+-END(function_hook)
+-
+ /* skip is set if stack has been adjusted */
+ .macro ftrace_caller_setup trace_label skip=0
+ 	MCOUNT_SAVE_FRAME \skip
+@@ -47,6 +41,12 @@ GLOBAL(\trace_label)
+ #endif
+ .endm
  
++#ifdef CONFIG_DYNAMIC_FTRACE
++
++ENTRY(function_hook)
++	retq
++END(function_hook)
++
+ #ifdef CONFIG_FRAME_POINTER
+ /*
+  * Stack traces will stop at the ftrace trampoline if the frame pointer
+@@ -207,15 +207,7 @@ GLOBAL(ftrace_stub)
+ 	retq
  
-@@ -266,7 +266,7 @@ ENTRY(ftrace_graph_caller)
- 	save_mcount_regs
+ trace:
+-	MCOUNT_SAVE_FRAME
+-
+-	movq RIP(%rsp), %rdi
+-#ifdef CC_USING_FENTRY
+-	movq SS+16(%rsp), %rsi
+-#else
+-	movq 8(%rbp), %rsi
+-#endif
+-	subq $MCOUNT_INSN_SIZE, %rdi
++	ftrace_caller_setup ftrace_caller_op_ptr
  
- #ifdef CC_USING_FENTRY
--	leaq SS+16(%rsp), %rdi
-+	leaq MCOUNT_REG_SIZE+8(%rsp), %rdi
- 	movq $0, %rdx	/* No framepointers needed */
- #else
- 	leaq 8(%rbp), %rdi
+ 	call   *ftrace_trace_function
+ 
 -- 
 2.1.1
 
