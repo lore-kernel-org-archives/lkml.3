@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390AbaKYQzS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:55:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57388 "EHLO mx1.redhat.com"
+	id S1751484AbaKYQ5k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:57:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60730 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061AbaKYQmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:42:07 -0500
-Date: Tue, 25 Nov 2014 18:41:35 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>, lguest@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: [PATCH v4 04/42] virtio: disable virtio 1.0 in transports
-Message-ID: <1416933600-21398-5-git-send-email-mst@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
+	id S1751028AbaKYQ5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 11:57:38 -0500
+Date: Tue, 25 Nov 2014 17:57:26 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Aaron Tomlin <atomlin@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] exit/pid_ns: comments + simple fix
+Message-ID: <20141125165726.GA28913@redhat.com>
+References: <20141107201424.GA22209@redhat.com> <20141124200602.GA20575@redhat.com> <87ioi4fex5.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416933600-21398-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+In-Reply-To: <87ioi4fex5.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-disable virtio 1.0 in transports that don't
-support it yet.
-We will gradually re-enable as support is added.
+On 11/24, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > Eric, Pavel, could you review 1/2 ? (documentation only). It is based on the
+> > code inspection, I didn't bother to verify that my understanding matches the
+> > reality ;)
+> >
+> > On 11/20, Oleg Nesterov wrote:
+> >>
+> >>
+> >> Probably this is not the last series... in particular it seems that we
+> >> have some problems with sys_setns() in this area, but I need to recheck.
+> >
+> > So far only the documentation fix. I'll write another email (hopefully with the
+> > patch), afaics at least setns() doesn't play well with PR_SET_CHILD_SUBREAPER.
+> >
+> > Contrary to what I thought zap_pid_ns_processes() looks fine, but it seems only
+> > by accident. Unless I am totally confused, wait for "nr_hashed == init_pids"
+> > could be removed after 0a01f2cc390e10633a "pidns: Make the pidns proc mount/
+> > umount logic obvious". However, now that setns() + fork() can inject a task
+> > into a child namespace, we need this code again for another reason.
+> >
+> > I _think_ we can actually remove it and simplify free_pid() as well, but lets
+> > discuss this later and fix the wrong/confusing documentation first.
+>
+> At the very least there is the issue of rusage being wrong if we allow
+> the init process to be reaped before all of it's children are reaped.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/lguest/lguest_device.c     | 3 ++-
- drivers/misc/mic/card/mic_virtio.c | 2 ++
- drivers/s390/kvm/virtio_ccw.c      | 3 ++-
- drivers/virtio/virtio_mmio.c       | 2 ++
- 4 files changed, 8 insertions(+), 2 deletions(-)
+Do you mean cstime/cutime/c* accounting?
 
-diff --git a/drivers/lguest/lguest_device.c b/drivers/lguest/lguest_device.c
-index 4d29bcd..4deaf88 100644
---- a/drivers/lguest/lguest_device.c
-+++ b/drivers/lguest/lguest_device.c
-@@ -106,7 +106,8 @@ static u64 lg_get_features(struct virtio_device *vdev)
- 		if (in_features[i / 8] & (1 << (i % 8)))
- 			features |= (1ULL << i);
- 
--	return features;
-+	/* lguest is not in virtio 1.0 */
-+	return features & ~BIT_ULL(VIRTIO_F_VERSION_1);
- }
- 
- /*
-diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
-index 6d94f04..edc77f1 100644
---- a/drivers/misc/mic/card/mic_virtio.c
-+++ b/drivers/misc/mic/card/mic_virtio.c
-@@ -82,6 +82,8 @@ static u64 mic_get_features(struct virtio_device *vdev)
- 		if (ioread8(&in_features[i / 8]) & (BIT_ULL(i % 8)))
- 			features |= BIT_ULL(i);
- 
-+	/* MIC is not in virtio 1.0, disable it for now. */
-+	features &= ~BIT_ULL(VIRTIO_F_VERSION_1);
- 	return features;
- }
- 
-diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-index abba04d..08536f0 100644
---- a/drivers/s390/kvm/virtio_ccw.c
-+++ b/drivers/s390/kvm/virtio_ccw.c
-@@ -704,7 +704,8 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
- out_free:
- 	kfree(features);
- 	kfree(ccw);
--	return rc;
-+	/* TODO: enable virtio 1.0 */
-+	return rc & ~BIT_ULL(VIRTIO_F_VERSION_1);;
- }
- 
- static void virtio_ccw_finalize_features(struct virtio_device *vdev)
-diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-index fd01c6d..e1d38a9 100644
---- a/drivers/virtio/virtio_mmio.c
-+++ b/drivers/virtio/virtio_mmio.c
-@@ -151,6 +151,8 @@ static u64 vm_get_features(struct virtio_device *vdev)
- 	features = readl(vm_dev->base + VIRTIO_MMIO_HOST_FEATURES);
- 	writel(1, vm_dev->base + VIRTIO_MMIO_HOST_FEATURES_SEL);
- 	features |= ((u64)readl(vm_dev->base + VIRTIO_MMIO_HOST_FEATURES) << 32);
-+	/* TODO: enable virtio 1.0 support */
-+	features &= ~BIT_ULL(VIRTIO_F_VERSION_1);
- 	return features;
- }
- 
--- 
-MST
+Firstly it is not clear what makes child_reaper special in _this_ sense, but
+this doesn't matter at all.
+
+The auotoreaping/EXIT_DEAD children are not accounted, only wait_task_zombie()
+accumulates these counters. (just in case, accounting in __exit_signal() is
+another thing).
+
+> There is also a huge level of weird non-intuitive behavior that would
+> require some substantial benefits to justify an optimization of letting
+> a child exist longer than init.
+
+Sure. That is why I said "lets discuss this later". This patch doesn't try
+to change the rules. It only tries to document the current code.
+
+Oleg.
 
