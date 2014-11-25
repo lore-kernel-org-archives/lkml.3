@@ -1,64 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434AbaKYAes (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 19:34:48 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:37876 "EHLO
+	id S1751265AbaKYAm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 19:42:59 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:8353 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750891AbaKYAer (ORCPT
+	by vger.kernel.org with ESMTP id S1750774AbaKYAm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 19:34:47 -0500
-Message-ID: <5473CE5C.7010300@ubuntu.com>
-Date: Mon, 24 Nov 2014 19:33:32 -0500
-From: Phillip Susi <psusi@ubuntu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 24 Nov 2014 19:42:57 -0500
+Message-Id: <20141125004255.870772059@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Mon, 24 Nov 2014 19:42:23 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [RFC][PATCH 2/7] ftrace/x86: Move MCOUNT_SAVE_FRAME out of header file
+References: <20141125004221.803122027@goodmis.org>
 MIME-Version: 1.0
-To: "Jason B. Akers" <jason.b.akers@intel.com>, linux-ide@vger.kernel.org
-CC: kapil.karkra@intel.com, dan.j.williams@intel.com,
-        linux-kernel@vger.kernel.org, dgilbert@interlog.com
-Subject: Re: [RFC PATCH] sg3_utils: Added hybrid information log utility
-References: <20141029195400.5225.96984.stgit@stg-AndroidDev-VirtualBox> <20141029195720.5225.51331.stgit@stg-AndroidDev-VirtualBox>
-In-Reply-To: <20141029195720.5225.51331.stgit@stg-AndroidDev-VirtualBox>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0002-ftrace-x86-Move-MCOUNT_SAVE_FRAME-out-of-header-file.patch
 X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA512
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-On 10/29/2014 03:57 PM, Jason B. Akers wrote:
-> From: Kapil Karkra <kapil.karkra@intel.com>
-> 
-> A solid state hybrid drive (SSHD) is a hard drive with a small
-> embedded NAND. Host drivers can manage this NAND using the commands
-> defined by SATA 3.2 standard. One SATA command that provides
-> visibility into the SSHD's cache behavior is get hybrid log
-> command. This augmentation allows users to issue the command as
-> follows:
-> 
-> sg_sat_get_hybrid_log /dev/sdc assuming /dev/sdc is an SSHD.
-> 
-> patch applies to the following sourcebase from where to clone: 
-> https://github.com/hreinecke/sg3_utils.git
+Linus pointed out that MCOUNT_SAVE_FRAME is used in only a single file
+and that there's no reason that it should be in a header file.
+Move the macro to the code that uses it.
 
-I cloned that repo and the patch does not apply cleanly.  git am -3
-says the referenced blobs are not found and it has conflicts in
-src/Makefile.am.  I manually fixed that up and then it fails to link
-due to unresolved externals.
+Link: http://lkml.kernel.org/r/CA+55aFwF+qCGSKdGaEgW4p6N65GZ5_XTV=1NbtWDvxnd5yYLiw@mail.gmail.com
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/include/asm/ftrace.h | 33 ---------------------------------
+ arch/x86/kernel/mcount_64.S   | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 29 insertions(+), 33 deletions(-)
+
+diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+index e1f7fecaa7d6..f45acad3c4b6 100644
+--- a/arch/x86/include/asm/ftrace.h
++++ b/arch/x86/include/asm/ftrace.h
+@@ -1,39 +1,6 @@
+ #ifndef _ASM_X86_FTRACE_H
+ #define _ASM_X86_FTRACE_H
+ 
+-#ifdef __ASSEMBLY__
+-
+-	/* skip is set if the stack was already partially adjusted */
+-	.macro MCOUNT_SAVE_FRAME skip=0
+-	 /*
+-	  * We add enough stack to save all regs.
+-	  */
+-	subq $(SS+8-\skip), %rsp
+-	movq %rax, RAX(%rsp)
+-	movq %rcx, RCX(%rsp)
+-	movq %rdx, RDX(%rsp)
+-	movq %rsi, RSI(%rsp)
+-	movq %rdi, RDI(%rsp)
+-	movq %r8, R8(%rsp)
+-	movq %r9, R9(%rsp)
+-	 /* Move RIP to its proper location */
+-	movq SS+8(%rsp), %rdx
+-	movq %rdx, RIP(%rsp)
+-	.endm
+-
+-	.macro MCOUNT_RESTORE_FRAME skip=0
+-	movq R9(%rsp), %r9
+-	movq R8(%rsp), %r8
+-	movq RDI(%rsp), %rdi
+-	movq RSI(%rsp), %rsi
+-	movq RDX(%rsp), %rdx
+-	movq RCX(%rsp), %rcx
+-	movq RAX(%rsp), %rax
+-	addq $(SS+8-\skip), %rsp
+-	.endm
+-
+-#endif
+-
+ #ifdef CONFIG_FUNCTION_TRACER
+ #ifdef CC_USING_FENTRY
+ # define MCOUNT_ADDR		((long)(__fentry__))
+diff --git a/arch/x86/kernel/mcount_64.S b/arch/x86/kernel/mcount_64.S
+index 24842c701660..94fe46725fe0 100644
+--- a/arch/x86/kernel/mcount_64.S
++++ b/arch/x86/kernel/mcount_64.S
+@@ -21,6 +21,35 @@
+ # define function_hook	mcount
+ #endif
+ 
++/* skip is set if the stack was already partially adjusted */
++.macro MCOUNT_SAVE_FRAME skip=0
++	 /*
++	  * We add enough stack to save all regs.
++	  */
++	subq $(SS+8-\skip), %rsp
++	movq %rax, RAX(%rsp)
++	movq %rcx, RCX(%rsp)
++	movq %rdx, RDX(%rsp)
++	movq %rsi, RSI(%rsp)
++	movq %rdi, RDI(%rsp)
++	movq %r8, R8(%rsp)
++	movq %r9, R9(%rsp)
++	 /* Move RIP to its proper location */
++	movq SS+8(%rsp), %rdx
++	movq %rdx, RIP(%rsp)
++	.endm
++
++.macro MCOUNT_RESTORE_FRAME skip=0
++	movq R9(%rsp), %r9
++	movq R8(%rsp), %r8
++	movq RDI(%rsp), %rdi
++	movq RSI(%rsp), %rsi
++	movq RDX(%rsp), %rdx
++	movq RCX(%rsp), %rcx
++	movq RAX(%rsp), %rax
++	addq $(SS+8-\skip), %rsp
++	.endm
++
+ /* skip is set if stack has been adjusted */
+ .macro ftrace_caller_setup trace_label skip=0
+ 	MCOUNT_SAVE_FRAME \skip
+-- 
+2.1.1
 
 
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBCgAGBQJUc85UAAoJENRVrw2cjl5RR3YIAJOF0fcTkF5pM0OIA87hK8k8
-ujwflBTy66ZbPzXMD97cTGYQ6gPp3UCeT/ZcElBfrGGAuD5u/ETXMJY7lqAZgYtK
-bELPv6oLhz3ya2IO442sUlRYO4dVfwhsnak+2rLiQkXCy4WKSJ1EYiMIP/VHj8ne
-5e8VYkuc0KamKjvT4v6EwJ7tM0blfJbYgmFGruIxOSgCAo94Zp9thAcctb9PbRex
-HnPTcnw5cI1sCoLf5fJafhc9w/1H45WjJTnGF7zs4hq/GGsYCwryvI0ovwAzU9ST
-R3jRvE+70oiyQDsj9EBak63hRYIAd8QzQ3TkCjaM5E1XHSU7vTnxvxAjKb4ZyF4=
-=a8Vh
------END PGP SIGNATURE-----
