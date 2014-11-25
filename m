@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702AbaKYNUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 08:20:31 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38101 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372AbaKYNQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 08:16:07 -0500
-Date: Tue, 25 Nov 2014 13:13:51 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20141125131351.GC7712@sirena.org.uk>
+	id S1752708AbaKYNUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 08:20:52 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:44794 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753284AbaKYNPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 08:15:55 -0500
+From: George Cherian <george.cherian@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+CC: <peter.chen@freescale.com>, <sojka@merica.cz>, <mathias.nyman@intel.com>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <bcousson@baylibre.com>, <kgene.kim@samsung.com>,
+        <ben-linux@fluff.org>, <linux@arm.linux.org.uk>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
+        George Cherian <george.cherian@ti.com>
+Subject: [PATCH 07/19] usb: host: xhci: Adapt xhci to use usb drd library
+Date: Tue, 25 Nov 2014 18:41:43 +0530
+Message-ID: <1416921115-10467-8-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1416921115-10467-1-git-send-email-george.cherian@ti.com>
+References: <1416921115-10467-1-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cmojth4sdaU3VRJa"
-Content-Disposition: inline
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] ASoC: Remove 'const' from the device_node pointers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Adapt the xhci-plat driver  to use drd library functions.
+In prepration to support DRD on dwc3.
 
---cmojth4sdaU3VRJa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ drivers/usb/host/xhci-plat.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-On Tue, Nov 25, 2014 at 12:14:48PM +0100, Jean-Francois Moine wrote:
-> As Russell King's explained it, there should not be pointers to
-> struct device_node:
->=20
-> "struct device_node is a ref-counted structure.  That means if you
->  store a reference to it, you should "get" it, and you should "put"
->  it once you've done.  The act of "put"ing the pointed-to structure
->  involves writing to that structure, so it is totally unappropriate
->  to store a device_node structure as a const pointer.  It forces you
->  to have to cast it back to a non-const pointer at various points
->  in time to use various OF function calls."
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index d8d024d..fbbbd59 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -17,6 +17,8 @@
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
++#include <linux/usb/otg.h>
++#include <linux/usb/drd.h>
+ #include <linux/usb/xhci_pdriver.h>
+ 
+ #include "xhci.h"
+@@ -78,6 +80,7 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	struct resource         *res;
+ 	struct usb_hcd		*hcd;
+ 	struct clk              *clk;
++	struct usb_drd_host	*drd_host;
+ 	int			ret;
+ 	int			irq;
+ 
+@@ -169,6 +172,17 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto put_usb3_hcd;
+ 
++	drd_host = kzalloc(sizeof(*drd_host), GFP_KERNEL);
++	if (!drd_host)
++		return -ENOMEM;
++
++	drd_host->main_hcd = xhci->main_hcd;
++	drd_host->shared_hcd = xhci->shared_hcd;
++	drd_host->hcd_irq = irq;
++	drd_host->host_setup = NULL;
++
++	usb_drd_register_hcd(pdev->dev.parent, drd_host);
++
+ 	return 0;
+ 
+ put_usb3_hcd:
+@@ -200,6 +214,7 @@ static int xhci_plat_remove(struct platform_device *dev)
+ 	if (!IS_ERR(clk))
+ 		clk_disable_unprepare(clk);
+ 	usb_put_hcd(hcd);
++	usb_drd_unregister_hcd(dev->dev.parent);
+ 	kfree(xhci);
+ 
+ 	return 0;
+-- 
+1.8.3.1
 
-So, we're not holding references here (we're just doing comparisons, the
-references need to be owned before we get into the core) and I'm not
-seeing anything here removing casts?
-
---cmojth4sdaU3VRJa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUdICOAAoJECTWi3JdVIfQcggH/jVqi1O/AWH3tQmTsDEkFXT4
-et8yGx03au/zpgWbEr+UFD5jFLTep1StgnZD5kgAmpzierEAkxbYf0/GJ68QKSzl
-8zZgniyrhHsZosYwfId9d8hk0OuXLEAtX2U9F4LjPrTKOjebd/vzzaTmloaBVfXI
-DlZmVYv2U3qaxDhD5tnG0qClG3ae86cSkZLKu99F4ktSmKPex5PCVn3bR/y1vwgP
-2uc+n1q27Va9NF2fS3E3IJxdtJbvv1itlpTcNE7F6Z+8ydtUX3pbbSCYQbEA5Uud
-V1vlEzZZvrkINEQArmho90MZPzs5ba13o/t2Bd96Rvss5vURvQSQQ10pB6BZjgQ=
-=Hdvy
------END PGP SIGNATURE-----
-
---cmojth4sdaU3VRJa--
