@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029AbaKYXQK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 18:16:10 -0500
-Received: from mga01.intel.com ([192.55.52.88]:30413 "EHLO mga01.intel.com"
+	id S1752039AbaKYXRd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 18:17:33 -0500
+Received: from gate.crashing.org ([63.228.1.57]:55823 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751994AbaKYXQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 18:16:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,458,1413270000"; 
-   d="scan'208";a="628263075"
-Date: Wed, 26 Nov 2014 06:55:23 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Juri Lelli <juri.lelli@arm.com>
-Cc: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Kirill Tkhai <ktkhai@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] sched/deadline: fix pull if dl task who's prio
- changed is not on queue
-Message-ID: <20141125225523.GA5058@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1416386103-90800-1-git-send-email-wanpeng.li@linux.intel.com>
- <1416386103-90800-2-git-send-email-wanpeng.li@linux.intel.com>
- <5474C255.6020703@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5474C255.6020703@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751293AbaKYXRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 18:17:30 -0500
+Message-ID: <1416957328.5089.17.camel@kernel.crashing.org>
+Subject: Re: [PATCH v5 2/4] arch: Add lightweight memory barriers dma_rmb()
+ and dma_wmb()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alexander Duyck <alexander.h.duyck@redhat.com>
+Cc: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mathieu.desnoyers@polymtl.ca,
+        peterz@infradead.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
+        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
+        matthew.vick@intel.com, geert@linux-m68k.org,
+        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
+        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, will.deacon@arm.com,
+        michael@ellerman.id.au, tony.luck@intel.com,
+        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
+        fweisbec@gmail.com, davem@davemloft.net
+Date: Wed, 26 Nov 2014 10:15:28 +1100
+In-Reply-To: <20141119012400.9563.21117.stgit@ahduyck-server>
+References: <20141119012205.9563.95544.stgit@ahduyck-server>
+	 <20141119012400.9563.21117.stgit@ahduyck-server>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Juri,
-On Tue, Nov 25, 2014 at 05:54:29PM +0000, Juri Lelli wrote:
->Hi,
->
->On 19/11/14 08:35, Wanpeng Li wrote:
->> Dl task who is not on queue and it is also the curr task simultaneously 
->> can not happen. In addition, pull since the priority of a not on queue 
->> dl task doesn't make any sense.
->> 
->> This patch fix it by don't pull if dl task who's prio changed is not on 
->> queue.
->> 
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> ---
->>  kernel/sched/deadline.c | 5 ++++-
->>  1 file changed, 4 insertions(+), 1 deletion(-)
->> 
->> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->> index b9e44ae..4eaf55c 100644
->> --- a/kernel/sched/deadline.c
->> +++ b/kernel/sched/deadline.c
->> @@ -1678,7 +1678,10 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
->>  static void prio_changed_dl(struct rq *rq, struct task_struct *p,
->>  			    int oldprio)
->>  {
->> -	if (task_on_rq_queued(p) || rq->curr == p) {
->> +	if (!task_on_rq_queued(p))
->> +		return;
->> +
->> +	if (rq->curr == p) {
->
->Yeah. I already posted a patches for this, that I forgot to properly
->post again :/. I'll do it soon.
+On Tue, 2014-11-18 at 17:24 -0800, Alexander Duyck wrote:
+> There are a number of situations where the mandatory barriers rmb() and
+> wmb() are used to order memory/memory operations in the device drivers
+> and those barriers are much heavier than they actually need to be.  For
+> example in the case of PowerPC wmb() calls the heavy-weight sync
+> instruction when for coherent memory operations all that is really needed
+> is an lsync or eieio instruction.
+>  .../...
 
-Cool, so we can ignore this patch from me, and you can move forward. ;-)
-I will resend the recent posted patches in one patchset so you can
-review them easily.
+For powerpc:
 
-Regards,
-Wanpeng Li 
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
->
->Thanks,
->
->- Juri
->
->>  #ifdef CONFIG_SMP
->>  		/*
->>  		 * This might be too much, but unfortunately
->> 
+
+
