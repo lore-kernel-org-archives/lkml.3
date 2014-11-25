@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224AbaKYLDB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:03:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58974 "EHLO
+	id S1754496AbaKYLD1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:03:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58969 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905AbaKYKnE (ORCPT
+	with ESMTP id S1753897AbaKYKnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:04 -0500
+	Tue, 25 Nov 2014 05:43:03 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 195/254] nfs: Fix use of uninitialized variable in nfs_getattr()
-Date: Tue, 25 Nov 2014 10:39:05 +0000
-Message-Id: <1416912004-5928-196-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 194/254] nfs: fix pnfs direct write memory leak
+Date: Tue, 25 Nov 2014 10:39:04 +0000
+Message-Id: <1416912004-5928-195-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Peng Tao <tao.peng@primarydata.com>
 
-commit 16caf5b6101d03335b386e77e9e14136f989be87 upstream.
+commit 8c393f9a721c30a030049a680e1bf896669bb279 upstream.
 
-Variable 'err' needn't be initialized when nfs_getattr() uses it to
-check whether it should call generic_fillattr() or not. That can result
-in spurious error returns. Initialize 'err' properly.
+For pNFS direct writes, layout driver may dynamically allocate ds_cinfo.buckets.
+So we need to take care to free them when freeing dreq.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+Ideally this needs to be done inside layout driver where ds_cinfo.buckets
+are allocated. But buckets are attached to dreq and reused across LD IO iterations.
+So I feel it's OK to free them in the generic layer.
+
+Signed-off-by: Peng Tao <tao.peng@primarydata.com>
 Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/inode.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/direct.c         |  1 +
+ include/linux/nfs_xdr.h | 11 +++++++++++
+ 2 files changed, 12 insertions(+)
 
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index a732cbbd4e80..aa6daf535dec 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -624,7 +624,7 @@ int nfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
+index 1b34eeb0d8de..73a3023e2702 100644
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@ -270,6 +270,7 @@ static void nfs_direct_req_free(struct kref *kref)
  {
- 	struct inode *inode = dentry->d_inode;
- 	int need_atime = NFS_I(inode)->cache_validity & NFS_INO_INVALID_ATIME;
--	int err;
-+	int err = 0;
+ 	struct nfs_direct_req *dreq = container_of(kref, struct nfs_direct_req, kref);
  
- 	trace_nfs_getattr_enter(inode);
- 	/* Flush out writes to the server in order to update c/mtime.  */
++	nfs_free_pnfs_ds_cinfo(&dreq->ds_cinfo);
+ 	if (dreq->l_ctx != NULL)
+ 		nfs_put_lock_context(dreq->l_ctx);
+ 	if (dreq->ctx != NULL)
+diff --git a/include/linux/nfs_xdr.h b/include/linux/nfs_xdr.h
+index 2c35d524ffc6..a8f111be79a0 100644
+--- a/include/linux/nfs_xdr.h
++++ b/include/linux/nfs_xdr.h
+@@ -1231,11 +1231,22 @@ struct nfs41_free_stateid_res {
+ 	unsigned int			status;
+ };
+ 
++static inline void
++nfs_free_pnfs_ds_cinfo(struct pnfs_ds_commit_info *cinfo)
++{
++	kfree(cinfo->buckets);
++}
++
+ #else
+ 
+ struct pnfs_ds_commit_info {
+ };
+ 
++static inline void
++nfs_free_pnfs_ds_cinfo(struct pnfs_ds_commit_info *cinfo)
++{
++}
++
+ #endif /* CONFIG_NFS_V4_1 */
+ 
+ struct nfs_page;
 -- 
 2.1.0
 
