@@ -1,121 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658AbaKYCYw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 21:24:52 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:40870 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaKYCYv (ORCPT
+	id S1751685AbaKYC2H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 21:28:07 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:50700 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaKYC2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 21:24:51 -0500
-Message-ID: <5473E867.6030607@gmail.com>
-Date: Tue, 25 Nov 2014 10:24:39 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 24 Nov 2014 21:28:05 -0500
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>, peterz@infradead.org,
-        mingo@kernel.org, linux-kernel@vger.kernel.org,
-        preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com,
-        kamalesh@linux.vnet.ibm.com, linux-arm-kernel@lists.infradead.org
-CC: riel@redhat.com, efault@gmx.de, nicolas.pitre@linaro.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v9 05/10] sched: make scale_rt invariant with frequency
-References: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org> <1415033687-23294-6-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1415033687-23294-6-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Mon, 24 Nov 2014 18:28:03 -0800
+Message-ID: <CAADnVQJc-RO9EdBY2-Q0mONSLYxsryD3cP8+LPXTaKbjbqtvtg@mail.gmail.com>
+Subject: Re: [PATCH/RFC 7/7] kernel: Force ACCESS_ONCE to work only on scalar types
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        linux-mips <linux-mips@linux-mips.org>, linux-x86_64@vger.kernel.org,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
-On 11/4/14, 12:54 AM, Vincent Guittot wrote:
-> The average running time of RT tasks is used to estimate the remaining compute
-> capacity for CFS tasks. This remaining capacity is the original capacity scaled
-> down by a factor (aka scale_rt_capacity). This estimation of available capacity
-> must also be invariant with frequency scaling.
+On Mon, Nov 24, 2014 at 4:00 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Nov 24, 2014 at 2:58 PM, Alexei Starovoitov
+> <alexei.starovoitov@gmail.com> wrote:
+>>
+>> I've changed gcc pr58145-1.c reproducer to use
+>> __read_once_size() approach above
 >
-> A frequency scaling factor is applied on the running time of the RT tasks for
-> computing scale_rt_capacity.
+> I don't think you did.
 >
-> In sched_rt_avg_update, we scale the RT execution time like below:
-> rq->rt_avg += rt_delta * arch_scale_freq_capacity() >> SCHED_CAPACITY_SHIFT
+>> modified reproducer:
+>> struct S { unsigned int data; };
+>> void bar(int val)
+>> {
+>>   struct S _s = { .data = val };
+>>   *(volatile struct S *) 0x880000UL = ACCESS_ONCE(&_s);
+>> }
 >
-> Then, scale_rt_capacity can be summarized by:
-> scale_rt_capacity = SCHED_CAPACITY_SCALE -
-> 		((rq->rt_avg << SCHED_CAPACITY_SHIFT) / period)
+> My approach never had "volatile struct S *". The only volatile
+> pointers were the actual byte/word/etc pointers, and those generated
 
-The 'period' aka 'total' in the scale_rt_capacity(), why it is 
-sched_avg_period() + delta instead of sched_avg_period()?
+you're right. In my invalid snippet above the ACCESS_ONCE
+to struct on stack gets optimized away and only 'volatile struct *'
+in left hand side is triggering the bug.
 
-Regards,
-Wanpeng Li
+Have tried the following which blends your proposal
+with original code from Christian:
+/* bad
+#define ACCESS_ONCE(x) *((volatile typeof(x) *)&(x))
+*/
 
->
-> We can optimize by removing right and left shift in the computation of rq->rt_avg
-> and scale_rt_capacity
->
-> The call to arch_scale_frequency_capacity in the rt scheduling path might be
-> a concern for RT folks because I'm not sure whether we can rely on
-> arch_scale_freq_capacity to be short and efficient ?
->
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->   kernel/sched/fair.c  | 17 +++++------------
->   kernel/sched/sched.h |  4 +++-
->   2 files changed, 8 insertions(+), 13 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index a5039da..b37c27b 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -5785,7 +5785,7 @@ unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
->   static unsigned long scale_rt_capacity(int cpu)
->   {
->   	struct rq *rq = cpu_rq(cpu);
-> -	u64 total, available, age_stamp, avg;
-> +	u64 total, used, age_stamp, avg;
->   	s64 delta;
->   
->   	/*
-> @@ -5801,19 +5801,12 @@ static unsigned long scale_rt_capacity(int cpu)
->   
->   	total = sched_avg_period() + delta;
->   
-> -	if (unlikely(total < avg)) {
-> -		/* Ensures that capacity won't end up being negative */
-> -		available = 0;
-> -	} else {
-> -		available = total - avg;
-> -	}
-> +	used = div_u64(avg, total);
->   
-> -	if (unlikely((s64)total < SCHED_CAPACITY_SCALE))
-> -		total = SCHED_CAPACITY_SCALE;
-> +	if (likely(used < SCHED_CAPACITY_SCALE))
-> +		return SCHED_CAPACITY_SCALE - used;
->   
-> -	total >>= SCHED_CAPACITY_SHIFT;
-> -
-> -	return div_u64(available, total);
-> +	return 1;
->   }
->   
->   static void update_cpu_capacity(struct sched_domain *sd, int cpu)
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index c34bd11..fc5b152 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -1312,9 +1312,11 @@ static inline int hrtick_enabled(struct rq *rq)
->   
->   #ifdef CONFIG_SMP
->   extern void sched_avg_update(struct rq *rq);
-> +extern unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu);
-> +
->   static inline void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
->   {
-> -	rq->rt_avg += rt_delta;
-> +	rq->rt_avg += rt_delta * arch_scale_freq_capacity(NULL, cpu_of(rq));
->   	sched_avg_update(rq);
->   }
->   #else
+/* good */
+#define ACCESS_ONCE(p) \
+      ({ typeof(*p) __val; __read_once_size(p, &__val, sizeof(__val)); __val; })
 
+static __always_inline void __read_once_size(volatile void *p, void
+*res, int size)
+{
+     switch (size) {
+     case 1: *(u8 *)res = *(volatile u8 *)p; break;
+     case 2: *(u16 *)res = *(volatile u16 *)p; break;
+     case 4: *(u32 *)res = *(volatile u32 *)p; break;
+     case 8: *(u64 *)res = *(volatile u64 *)p; break;
+     }
+}
+
+union ipte_control {
+        unsigned long val;
+        struct {
+                unsigned long k  : 1;
+                unsigned long kh : 31;
+                unsigned long kg : 32;
+        };
+};
+
+struct kvm_vcpu {
+        union ipte_control ic;
+};
+
+void ipte_unlock_siif(struct kvm_vcpu *vcpu)
+{
+        union ipte_control old, new, *ic;
+
+        ic = &vcpu->ic;
+        do {
+                new = old = ACCESS_ONCE(ic);
+                new.kh--;
+                if (!new.kh)
+                        new.k = 0;
+        } while (cmpxchg(&ic->val, old.val, new.val) != old.val);
+}
+
+generated code looks correct with and without strict-aliasing
+and volatile marking is preserved properly.
+(to check for volatile marks add -fdump-tree-optimized
+ and look for {v} in *.optimized)
+
+> Pretty? No. But then, the standard C aliasing rules are so broken that
+> "pretty" doesn't really come into play..
+
+Agree. I don't see any warnings or code generation issues with and
+without strict-aliasing with your original __read_once_size(), so no need
+to play union tricks. Initially I was worried that extra always_inline
+function will make generated code worse in critical paths where
+ACCESS_ONCE is used, but after looking close enough, it seems
+all should be fine.
+
+Note, with unmodified ACCESS_ONCE all architectures (even x64)
+are missing volatile markings with gcc 4.6.3, 4.7.2 for Christian's
+use case.
