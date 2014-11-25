@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316AbaKYVLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 16:11:06 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:52942 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812AbaKYVLE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 16:11:04 -0500
-Message-ID: <5474F05E.90401@linaro.org>
-Date: Tue, 25 Nov 2014 21:10:54 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751348AbaKYVOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 16:14:39 -0500
+Received: from imap.thunk.org ([74.207.234.97]:51589 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751118AbaKYVOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 16:14:38 -0500
+Date: Tue, 25 Nov 2014 16:14:33 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] ext4: fix suboptimal seek_{data,hole} extents traversial
+Message-ID: <20141125211433.GB28449@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dmitry Monakhov <dmonakhov@openvz.org>,
+	linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+References: <87egu7k6ym.fsf@openvz.org>
+ <1413552334-32240-1-git-send-email-dmonakhov@openvz.org>
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>
-Subject: Re: [PATCH 3.18-rc3 v9 1/5] irqchip: gic: Finer grain locking for
- gic_raise_softirq
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <1416936401-5147-1-git-send-email-daniel.thompson@linaro.org> <1416936401-5147-2-git-send-email-daniel.thompson@linaro.org> <5474BF19.3040707@arm.com> <alpine.LFD.2.11.1411251510231.11690@knanqh.ubzr>
-In-Reply-To: <alpine.LFD.2.11.1411251510231.11690@knanqh.ubzr>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413552334-32240-1-git-send-email-dmonakhov@openvz.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/11/14 20:17, Nicolas Pitre wrote:
-> On Tue, 25 Nov 2014, Marc Zyngier wrote:
+On Fri, Oct 17, 2014 at 05:25:34PM +0400, Dmitry Monakhov wrote:
+> It is rediculus practice to scan inode block by block, this technique
+> applicable only for old indirect files. This takes signifficant amount
+> of time for really large files. Let's reuse ext4_fiemap which already
+> traverse inode-tree in most optimal meaner.
 > 
->> Hi Daniel,
->>
->> On 25/11/14 17:26, Daniel Thompson wrote:
->>> irq_controller_lock is used for multiple purposes within the gic driver.
->>> Primarily it is used to make register read-modify-write sequences atomic.
->>> It is also used by gic_raise_softirq() in order that the big.LITTLE
->>> migration logic can figure out when it is safe to migrate interrupts
->>> between physical cores.
->>>
->>> The second usage of irq_controller_lock is difficult to discern when
->>> reviewing the code because the migration itself takes place outside
->>> the lock.
->>>
->>> This patch makes the second usage more explicit by splitting it out into
->>> a separate lock and providing better comments.
->>
->> While we're at it, how about an additional patch that would make this
->> lock disappear entirely when the big-little stuff is not compiled in,
->> which is likely to be the case on a lot of (dare I say most?) systems?
->> That will save expensive barriers that we definitely could do without.
+> TESTCASE:
+> ftruncate64(fd, 0);
+> ftruncate64(fd, 1ULL << 40);
+> /* lseek will spin very long time */
+> lseek64(fd, 0, SEEK_DATA);
+> lseek64(fd, 0, SEEK_HOLE);
 > 
-> For the record, I reviewed and ACKed a patch doing exactly that a while 
-> ago:
 > 
-> http://lkml.org/lkml/2014/8/13/486
+> Original report: https://lkml.org/lkml/2014/10/16/620
+> 
+> ##################################
+> BTW: Why do we need i_mutex here?
+> 
+> Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
 
-Well remembered! That patch had a different motivation but is very
-similar to mine... so much so I might steal bit of it.
+Note: this patch causes generic/285 to loop forever in inline-data
+mode.  My guess is in the special case handling of inline data in
+ext4_fiemap not playing well with this change, but I haven't had a
+chance to look deeply into this yet.
 
-I'll make sure I put Stephen on Cc: when I respin with the changes Marc
-requested.
-
+					- Ted
