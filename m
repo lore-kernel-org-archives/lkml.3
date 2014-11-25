@@ -1,101 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057AbaKYNmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 08:42:46 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38125 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189AbaKYNmo (ORCPT
+	id S1750780AbaKYNsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 08:48:25 -0500
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:40861 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781AbaKYNsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 08:42:44 -0500
-Date: Tue, 25 Nov 2014 13:40:48 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Andrey Smirnov <andrew.smirnov@gmail.com>
-Cc: linux-spi@vger.kernel.org, Andrey Yurovsky <yurovsky@gmail.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20141125134048.GE7712@sirena.org.uk>
-References: <1416853893-1993-1-git-send-email-andrew.smirnov@gmail.com>
- <20141125124229.GY7712@sirena.org.uk>
- <CAHQ1cqGvDft1t5MkaqT-xsfBygdghA3mK_a7x+Z3L6HtvqrwhA@mail.gmail.com>
+	Tue, 25 Nov 2014 08:48:23 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="InMamxIZU0LonZYu"
-Content-Disposition: inline
-In-Reply-To: <CAHQ1cqGvDft1t5MkaqT-xsfBygdghA3mK_a7x+Z3L6HtvqrwhA@mail.gmail.com>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC, PATCH, RESEND] spi, spidev: Add support for long SPI
- transfers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20141124170502.GK23177@e105550-lin.cambridge.arm.com>
+References: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org>
+ <1415033687-23294-6-git-send-email-vincent.guittot@linaro.org>
+ <20141121123559.GF23177@e105550-lin.cambridge.arm.com> <CAKfTPtAo3PzZ=-KtH-YS2nf9R9srMGAUJ2A2qkHrsPZmj18-Jw@mail.gmail.com>
+ <20141124170502.GK23177@e105550-lin.cambridge.arm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 25 Nov 2014 14:48:02 +0100
+Message-ID: <CAKfTPtAG1qtqSgG3Ek7CeKcvm2=KXbMdb7TgrVcEFivwGeDOGg@mail.gmail.com>
+Subject: Re: [PATCH v9 05/10] sched: make scale_rt invariant with frequency
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "kamalesh@linux.vnet.ibm.com" <kamalesh@linux.vnet.ibm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "riel@redhat.com" <riel@redhat.com>, "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 24 November 2014 at 18:05, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> On Mon, Nov 24, 2014 at 02:24:00PM +0000, Vincent Guittot wrote:
+>> On 21 November 2014 at 13:35, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+>> > On Mon, Nov 03, 2014 at 04:54:42PM +0000, Vincent Guittot wrote:
+>>
+>> [snip]
+>>
+>> >> The average running time of RT tasks is used to estimate the remaining compute
+>> >> @@ -5801,19 +5801,12 @@ static unsigned long scale_rt_capacity(int cpu)
+>> >>
+>> >>       total = sched_avg_period() + delta;
+>> >>
+>> >> -     if (unlikely(total < avg)) {
+>> >> -             /* Ensures that capacity won't end up being negative */
+>> >> -             available = 0;
+>> >> -     } else {
+>> >> -             available = total - avg;
+>> >> -     }
+>> >> +     used = div_u64(avg, total);
+>> >
+>> > I haven't looked through all the details of the rt avg tracking, but if
+>> > 'used' is in the range [0..SCHED_CAPACITY_SCALE], I believe it should
+>> > work. Is it guaranteed that total > 0 so we don't get division by zero?
+>>
+>> static inline u64 sched_avg_period(void)
+>> {
+>> return (u64)sysctl_sched_time_avg * NSEC_PER_MSEC / 2;
+>> }
+>>
+>
+> I see.
+>
+>> >
+>> > It does get a slightly more complicated if we want to figure out the
+>> > available capacity at the current frequency (current < max) later. Say,
+>> > rt eats 25% of the compute capacity, but the current frequency is only
+>> > 50%. In that case get:
+>> >
+>> > curr_avail_capacity = (arch_scale_cpu_capacity() *
+>> >   (arch_scale_freq_capacity() - (SCHED_SCALE_CAPACITY - scale_rt_capacity())))
+>> >   >> SCHED_CAPACITY_SHIFT
+>>
+>> You don't have to be so complicated but simply need to do:
+>> curr_avail_capacity for CFS = (capacity_of(CPU) *
+>> arch_scale_freq_capacity())  >> SCHED_CAPACITY_SHIFT
+>>
+>> capacity_of(CPU) = 600 is the max available capacity for CFS tasks
+>> once we have removed the 25% of capacity that is used by RT tasks
+>> arch_scale_freq_capacity = 512 because we currently run at 50% of max freq
+>>
+>> so curr_avail_capacity for CFS = 300
+>
+> I don't think that is correct. It is at least not what I had in mind.
+>
+> capacity_orig_of(cpu) = 800, we run at 50% frequency which means:
+>
+> curr_capacity = capacity_orig_of(cpu) * arch_scale_freq_capacity()
+>                   >> SCHED_CAPACITY_SHIFT
+>               = 400
+>
+> So the total capacity at the current frequency (50%) is 400, without
+> considering RT. scale_rt_capacity() is frequency invariant, so it takes
+> away capacity_orig_of(cpu) - capacity_of(cpu) = 200 worth of capacity
+> for RT.  We need to subtract that from the current capacity to get the
+> available capacity at the current frequency.
+>
+> curr_available_capacity = curr_capacity - (capacity_orig_of(cpu) -
+> capacity_of(cpu)) = 200
 
---InMamxIZU0LonZYu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+you're right, this one looks good to me too
 
-On Tue, Nov 25, 2014 at 05:30:04AM -0800, Andrey Smirnov wrote:
-
-> > No, that's not the case at all.  A spi_transfer can have a length that's
-> > an unsigned integer number of bytes which is much larger than 255 bits.
-> > What is the actual problem you're trying to solve here?  I suspect the
-> > driver you are using is just badly implemented...
-
-> Yes, and you're absolutely right about spi_transfer, however I wasn't
-> talking about spi_transfer at all. My point was about SPI transaction
-> which is all the bits shifted out on the bus(and shifted in as well)
-> during the duration of the CS/SS signal assertion.
-
-A spi_message (which is the thing that covers the entire /CS assert
-modulo non-standard fiddling) is composed of multiple spi_transfers
-so the above still applies...
-
-> >> +             if (!u_tmp->bits_per_word && u_tmp->bits_per_burst)
-> >> +                     k_tmp->bits_per_word = u_tmp->bits_per_burst;
-> >> +             else
-> >> +                     k_tmp->bits_per_word = u_tmp->bits_per_word;
-
-> > This is setting the number of bits per word which is nothing to do with
-> > FIFOs or the lengths of transfers but instead concerns the formatting of
-> > data onto the bus.
-
-> I don't believe I said that this commit had anything to do with FIFO.
-> I did acknowledge that fact that modern SoC have large FIFO and this
-> is relevant because often times the size of that FIFO is what
-> determines the size of a single SPI transaction. I tried to be careful
-
-No it doesn't, chip select can frequently be manipulated independently of
-data transfers and almost all controllers can support transfers much
-longer than their FIFOs either by doing that or by keeping the FIFO
-topped up during transfer.
-
-> in my wording of the summary and not use the word "transfer" anywhere,
-> but it looks like I slipped twice and that might have contributed to
-> this confusion. I apologize for this and hope that my comments
-> clarified my meaning/intent
-
-Sorry it's still not at all clear, please re-read what I wrote about
-what bits_per_word means since I really don't think you've understood
-what it's for.
-
---InMamxIZU0LonZYu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUdIbgAAoJECTWi3JdVIfQqmAH/1pRpFRknqahs8isXDPPnTII
-zIcDlkQH4GyFqxDoYDWWOOv4MWkmEjYFWRjsEkO4+4M5l6mzDuoYj9fvK4TmCec1
-2hjbh/iJxqAAOGPGAzW8sOZVC1WBFEBSEEXZ3AmVGQCBwx4kH7kljYakOCvCIFZ4
-xiNEhlTHiNGVVA0tLht5sYkrcQT8OTnI8c6cTXSzHFoavh2XPMnBy5qUJkB1844J
-e47C1XHEqEfNhfPW5YX160NPufjJpYkbDZxW1gBQNWMdsI2D3HbCuEUYtgoY2nml
-qQozkMUDJwlX6r8PVjrAj4ahapEZQu9D8Q6V7nMkrkbGubo+ZV1SsjZPvy7EanQ=
-=TAT4
------END PGP SIGNATURE-----
-
---InMamxIZU0LonZYu--
+>
+> In other words, 800 is the max capacity, we are currently running at 50%
+> frequency, which gives us 400. RT takes away 25% of 800
+> (frequency-invariant) from the 400, which leaves us with 200 left for
+> CFS tasks at the current frequency.
+>
+> In your calculations you subtract the RT load before computing the
+> current capacity using arch_scale_freq_capacity(), where I think it
+> should be done after. You find the amount spare capacity you would have
+> at the maximum frequency when RT has been subtracted and then scale the
+> result by frequency which means indirectly scaling the RT load
+> contribution again (the rt avg has already been scaled). So instead of
+> taking away 200 of the 400 (current capacity @ 50% frequency), it only
+> takes away 100 which isn't right.
+>
+> scale_rt_capacity() is frequency-invariant, so if the RT load is 50% and
+> the frequency is 50%, there are no spare cycles left.
+> curr_avail_capacity should be 0. But using your expression above you
+> would get capacity_of(cpu) = 400 after removing RT,
+> arch_scale_freq_capacity = 512 and you get 200. I don't think that is
+> right.
+>
+> Morten
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
