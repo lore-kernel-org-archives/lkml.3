@@ -1,143 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751076AbaKYOgD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:36:03 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:35898 "EHLO gloria.sntech.de"
+	id S1750983AbaKYOiX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:38:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42373 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750816AbaKYOgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:36:01 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Roger Chen <roger.chen@rock-chips.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        peppe.cavallaro@st.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        kever.yang@rock-chips.com, mark.yao@rock-chips.com,
-        eddie.cai@rock-chips.com
-Subject: Re: [PATCH 3/4] GMAC: dts: add gmac info for rk3288
-Date: Tue, 25 Nov 2014 15:39:37 +0100
-Message-ID: <1773507.kOcjDCLbcs@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <547486EB.5080702@cogentembedded.com>
-References: <1416906536-26158-1-git-send-email-roger.chen@rock-chips.com> <547486EB.5080702@cogentembedded.com>
+	id S1750726AbaKYOiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 09:38:21 -0500
+Date: Tue, 25 Nov 2014 15:38:31 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-2022-JP?Q?=1B$B2+GH=1B=28J?= <huangbobupt@163.com>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] HID: add BETOP game controller force feedback
+ support
+In-Reply-To: <3e9f782f.a7fa.149df95fef7.Coremail.huangbobupt@163.com>
+Message-ID: <alpine.LNX.2.00.1411251534010.23174@pobox.suse.cz>
+References: <3e9f782f.a7fa.149df95fef7.Coremail.huangbobupt@163.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 25. November 2014, 16:40:59 schrieb Sergei Shtylyov:
-> Hello.
+On Mon, 24 Nov 2014, 黄波 wrote:
+
+> From: Huang Bo <huangbobupt@163.com>
 > 
-> On 11/25/2014 12:08 PM, Roger Chen wrote:
-> > add gmac info in rk3288.dtsi for GMAC driver
-> > 
-> > Signed-off-by: Roger Chen <roger.chen@rock-chips.com>
-> > ---
-> > 
-> >   arch/arm/boot/dts/rk3288.dtsi |   59
-> >   +++++++++++++++++++++++++++++++++++++++++ 1 file changed, 59
-> >   insertions(+)
-> > 
-> > diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-> > index 0f50d5d..949675d 100644
-> > --- a/arch/arm/boot/dts/rk3288.dtsi
-> > +++ b/arch/arm/boot/dts/rk3288.dtsi
-> 
-> [...]
-> 
-> > @@ -490,6 +497,25 @@
-> > 
-> >   		reg = <0xff740000 0x1000>;
-> >   	
-> >   	};
-> > 
-> > +	gmac: eth@ff290000 {
-> 
->     Please name the node "ethernet@ff290000" to comply with the ePAPR
-> standard.
-> > +		compatible = "rockchip,rk3288-gmac";
-> > +		reg = <0xff290000 0x10000>;
-> > +		interrupts = <GIC_SPI 27 IRQ_TYPE_LEVEL_HIGH>;  /*irq=59*/
-> > +		interrupt-names = "macirq";
-> > +		rockchip,grf = <&grf>;
-> > +		clocks = <&cru SCLK_MAC>, <&cru SCLK_MAC_PLL>,
-> > +			<&cru SCLK_MAC_RX>, <&cru SCLK_MAC_TX>,
-> > +			<&cru SCLK_MACREF>, <&cru SCLK_MACREF_OUT>,
-> > +			<&cru ACLK_GMAC>, <&cru PCLK_GMAC>;
-> > +		clock-names = "stmmaceth", "clk_mac_pll",
-> > +			"mac_clk_rx", "mac_clk_tx",
-> > +			"clk_mac_ref", "clk_mac_refout",
-> > +			"aclk_mac", "pclk_mac";
-> > +		phy-mode = "rgmii";
-> > +		pinctrl-names = "default";
-> > +		pinctrl-0 = <&rgmii_pin /*&rmii_pin*/>;
-> 
->     Hm, pinctrl props in a .dtsi file? Those are usually board dependent.
+> Adds force feedback support for BETOP USB game controllers.
+> These devices are mass produced in China.
 
-yep, especially as there is a board-dependent selection needed of what to use 
-[rgmii or rmii] depending on the phy on the board.
+Thanks a lot for the patch. A few minor things below.
 
+First, the whole driver formatting doesn't comply with our coding style 
+(it has 4 spaces instead of tab). Please reformat that for v2.
 
-> 
-> [...]
-> 
-> > @@ -1040,5 +1066,38 @@
-> > 
-> >   				rockchip,pins = <7 23 3 &pcfg_pull_none>;
-> >   			
-> >   			};
-> >   		
-> >   		};
-> > 
-> > +
-> > +		gmac {
-> > +			rgmii_pin: rgmii-pins {
+[ ... snip ... ]
+> diff --git a/drivers/hid/hid-betopff.c b/drivers/hid/hid-betopff.c
+> new file mode 100644
+> index 0000000..d97301a
+> --- /dev/null
+> +++ b/drivers/hid/hid-betopff.c
+> @@ -0,0 +1,170 @@
+> +/*
+> + *  Force feedback support for Betop based devices
+> + *
+> + *  The devices are distributed under various names and the same USB device ID
+> + *  can be used in both adapters and actual game controllers.
+> + *
+> + *  0x11C0:0x5506 "BTP2185 PC mode Joystick"
+> + *   - tested with BTP2185 V2 PC Mode.
+> + *
+> + *  0x8380:0x1850 "BTP2185 V2 PC mode USB Gamepad"
+> + *   - tested with BTP2185 PC Mode with another version.
+> + *
+> + *  0x20bc:0x5500 "BTP2185 V2 BFM mode Joystick"
+> + *   - tested with BTP2185 BFM Mode.
+> + *   - tested with BTP2171s.
+> + *
+> + *  Copyright (c) 2014 Huang Bo <huangbobupt@163.com>
+> + */
+> +
+> +/*
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the Free
+> + * Software Foundation; either version 2 of the License, or (at your option)
+> + * any later version.
+> + */
+> +
+> +/* #define DEBUG */
+> +
+> +#define debug(format, arg...) pr_debug("hid-betopff: " format "\n" , ## arg)
+> +
+> +#include <linux/input.h>
+> +#include <linux/slab.h>
+> +#include <linux/module.h>
+> +#include <linux/hid.h>
+> +
+> +#include "hid-ids.h"
+> +
+> +struct betopff_device {
+> +    struct hid_report *report;
+> +};
+> +
+> +static int hid_betopff_play(struct input_dev *dev, void *data,
+> +             struct ff_effect *effect)
+> +{
+> +    struct hid_device *hid = input_get_drvdata(dev);
+> +    struct betopff_device *betopff = data;
+> +    __u16 left, right;
+> +
+> +    left = effect->u.rumble.strong_magnitude;
+> +    right = effect->u.rumble.weak_magnitude;
+> +
+> +    betopff->report->field[2]->value[0] = left / 256;
+> +    betopff->report->field[3]->value[0] = right / 256;
+> +    debug("running with 0x%02x 0x%02x", left, right);
 
-please add the "s" to the label - "rgmii_pins"
+Is there really a need for keeping this debug() in the "production" 
+version?
 
+[ ... snip ... ]
+> +static const struct hid_device_id betop_devices[] = {
+> +    { HID_USB_DEVICE(0x11C0, 0x5506), }, /* BTP2185 PC mode */
+> +    { HID_USB_DEVICE(0x8380, 0x1850), }, /* BTP2185 V2 PC mode */
+> +    { HID_USB_DEVICE(0x20bc, 0x5500), }, /* BTP2185 V2 BFM mode */
+> +    { }
 
-> > +				rockchip,pins = <3 30 3 &pcfg_pull_none>,
-> > +						<3 31 3 &pcfg_pull_none>,
-> > +						<3 26 3 &pcfg_pull_none>,
-> > +						<3 27 3 &pcfg_pull_none>,
-> > +						<3 28 3 &pcfg_pull_none>,
-> > +						<3 29 3 &pcfg_pull_none>,
-> > +						<3 24 3 &pcfg_pull_none>,
-> > +						<3 25 3 &pcfg_pull_none>,
-> > +						<4 0 3 &pcfg_pull_none>,
-> > +						<4 5 3 &pcfg_pull_none>,
-> > +						<4 6 3 &pcfg_pull_none>,
-> > +						<4 9 3 &pcfg_pull_none>,
-> > +						<4 4 3 &pcfg_pull_none>,
-> > +						<4 1 3 &pcfg_pull_none>,
-> > +						<4 3 3 &pcfg_pull_none>;
-> > +			};
-> > +
-> > +			rmii_pin: rmii-pins {
+You also need an entry for these devices in hid_have_special_driver[] 
+array in drivers/hid/hid-core.c, otherwise correct device <-> driver 
+binding can't be guaranteed.
 
-same here
-
-
-> > +				rockchip,pins = <3 30 3 &pcfg_pull_none>,
-> > +						<3 31 3 &pcfg_pull_none>,
-> > +						<3 28 3 &pcfg_pull_none>,
-> > +						<3 29 3 &pcfg_pull_none>,
-> > +						<4 0 3 &pcfg_pull_none>,
-> > +						<4 5 3 &pcfg_pull_none>,
-> > +						<4 4 3 &pcfg_pull_none>,
-> > +						<4 1 3 &pcfg_pull_none>,
-> > +						<4 2 3 &pcfg_pull_none>,
-> > +						<4 3 3 &pcfg_pull_none>;
-> > +			};
-> > +		};
-> 
->     These are usually define in the board .dts file...
-
-The pinctrl settings itself are soc-specific, i.e. the pins and their settings 
-to use to enable r{g}mii functionality are the same for all boards using this 
-soc, so the pinctrl definitions should stay here and not be redefined in each 
-and every board file.
-
-
-Heiko
+-- 
+Jiri Kosina
+SUSE Labs
