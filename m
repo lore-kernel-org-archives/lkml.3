@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883AbaKYLqh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:46:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58282 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004AbaKYKlG (ORCPT
+	id S1755894AbaKYLqr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:46:47 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:40495 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004AbaKYLqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:06 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 062/254] netfilter: ipset: off by one in ip_set_nfnl_get_byindex()
-Date: Tue, 25 Nov 2014 10:36:52 +0000
-Message-Id: <1416912004-5928-63-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 25 Nov 2014 06:46:44 -0500
+From: Athira Lekshmi C V <andnlnbn18@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: matt@ninezulu.com, raghav3276@gmail.com, josh@joshtriplett.org,
+        tapaswenipathak@gmail.com, vitaly.osipov@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Athira Lekshmi C V <andnlnbn18@gmail.com>
+Subject: [PATCH] Drivers:staging:wlan-ng: Fixed checkpatch warning
+Date: Tue, 25 Nov 2014 17:16:40 +0530
+Message-Id: <1416916000-4243-1-git-send-email-andnlnbn18@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
+The following checkpatch warning was fixed
+WARNING: line over 80 characters
 
-------------------
-
-From: Dan Carpenter <dan.carpenter@oracle.com>
-
-commit 0f9f5e1b83abd2b37c67658e02a6fc9001831fa5 upstream.
-
-The ->ip_set_list[] array is initialized in ip_set_net_init() and it
-has ->ip_set_max elements so this check should be >= instead of >
-otherwise we are off by one.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Athira Lekshmi C V <andnlnbn18@gmail.com>
 ---
- net/netfilter/ipset/ip_set_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/wlan-ng/prism2fw.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/net/netfilter/ipset/ip_set_core.c b/net/netfilter/ipset/ip_set_core.c
-index ec8114fae50b..6582dce828b5 100644
---- a/net/netfilter/ipset/ip_set_core.c
-+++ b/net/netfilter/ipset/ip_set_core.c
-@@ -635,7 +635,7 @@ ip_set_nfnl_get_byindex(struct net *net, ip_set_id_t index)
- 	struct ip_set *set;
- 	struct ip_set_net *inst = ip_set_pernet(net);
+diff --git a/drivers/staging/wlan-ng/prism2fw.c b/drivers/staging/wlan-ng/prism2fw.c
+index e907380..8e1da3c 100644
+--- a/drivers/staging/wlan-ng/prism2fw.c
++++ b/drivers/staging/wlan-ng/prism2fw.c
+@@ -238,7 +238,8 @@ static int prism2_fwtry(struct usb_device *udev, wlandevice_t *wlandev)
+ *	0	- success
+ *	~0	- failure
+ ----------------------------------------------------------------*/
+-static int prism2_fwapply(const struct ihex_binrec *rfptr, wlandevice_t *wlandev)
++static int prism2_fwapply(const struct ihex_binrec *rfptr,
++	      wlandevice_t *wlandev)
+ {
+ 	signed int result = 0;
+ 	struct p80211msg_dot11req_mibget getmsg;
+@@ -707,7 +708,9 @@ static int plugimage(struct imgchunk *fchunk, unsigned int nfchunks,
+ 			continue;
+ 		}
  
--	if (index > inst->ip_set_max)
-+	if (index >= inst->ip_set_max)
- 		return IPSET_INVALID_ID;
- 
- 	nfnl_lock(NFNL_SUBSYS_IPSET);
+-		/* Validate plug address against chunk data and identify chunk */
++		/* Validate plug address against chunk data and
++		 * identify chunk
++		 */
+ 		for (c = 0; c < nfchunks; c++) {
+ 			cstart = fchunk[c].addr;
+ 			cend = fchunk[c].addr + fchunk[c].len;
+@@ -922,7 +925,8 @@ static int read_fwfile(const struct ihex_binrec *record)
+ 				      rcnt,
+ 				      s3info[ns3info].len,
+ 				      s3info[ns3info].type);
+-			if (((s3info[ns3info].len - 1) * sizeof(u16)) > sizeof(s3info[ns3info].info)) {
++			if (((s3info[ns3info].len - 1) * sizeof(u16)) >
++			      sizeof(s3info[ns3info].info)) {
+ 				pr_err("S3 inforec length too long - aborting\n");
+ 				return 1;
+ 			}
 -- 
-2.1.0
+1.7.9.5
 
