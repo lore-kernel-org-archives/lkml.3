@@ -1,87 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811AbaKYLj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:39:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34363 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755032AbaKYLjz (ORCPT
+	id S1755841AbaKYLk0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:40:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58406 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177AbaKYKl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 06:39:55 -0500
-Date: Tue, 25 Nov 2014 03:40:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Chanho Min" <chanho.min@lge.com>
-Cc: "'Kirill A. Shutemov'" <kirill.shutemov@linux.intel.com>,
-        "'Hugh Dickins'" <hughd@google.com>, "'Michal Hocko'" <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        "'HyoJun Im'" <hyojun.im@lge.com>, "'Gunho Lee'" <gunho.lee@lge.com>,
-        "'Wonhong Kwon'" <wonhong.kwon@lge.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH] mm: add parameter to disable faultaround
-Message-Id: <20141125034016.5638d5e4.akpm@linux-foundation.org>
-In-Reply-To: <547465d2.6561420a.04ed.0514SMTPIN_ADDED_BROKEN@mx.google.com>
-References: <1416898318-17409-1-git-send-email-chanho.min@lge.com>
-	<20141124230502.30f9b6f0.akpm@linux-foundation.org>
-	<547465d2.6561420a.04ed.0514SMTPIN_ADDED_BROKEN@mx.google.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Nov 2014 05:41:27 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 086/254] UBIFS: remove mst_mutex
+Date: Tue, 25 Nov 2014 10:37:16 +0000
+Message-Id: <1416912004-5928-87-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014 20:19:40 +0900 "Chanho Min" <chanho.min@lge.com> wrote:
+3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
 
-> > > The faultaround improves the file read performance, whereas pages which
-> > > can be dropped by drop_caches are reduced. On some systems, The amount of
-> > > freeable pages under memory pressure is more important than read
-> > > performance.
-> > 
-> > The faultaround pages *are* freeable.  Perhaps you meant "free" here.
-> > 
-> > Please tell us a great deal about the problem which you are trying to
-> > solve.  What sort of system, what sort of workload, what is bad about
-> > the behaviour which you are observing, etc.
-> 
-> We are trying to solve two issues.
-> 
-> We drop page caches by writing to /proc/sys/vm/drop_caches at specific point
-> and make suspend-to-disk image. The size of this image is increased if faultaround
-> is worked.
+------------------
 
-OK.
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-These pages are clean (mostly) and are mapped into process pagetables. 
-Obviously mm/vmscan.c:shrink_all_memory() is not freeing these pages
-prior to hibernating.
+commit 07e19dff63e3d5d6500d831e36554ac9b1b0560e upstream.
 
-I forget what the policy/tuning is in this area.  IIRC, the intent of
-shrink_all_memory() is to free up enough memory so that hibernation can
-perform its function, rather than to explicitly reduce the size of the
-image.
+The 'mst_mutex' is not needed since because 'ubifs_write_master()' is only
+called on the mount path and commit path. The mount path is sequential and
+there is no parallelism, and the commit path is also serialized - there is only
+one commit going on at a time.
 
-What I suggest you do is to take a look at how hibernation is calling
-shrink_all_memory() and retune it so it shrinks a lot harder.  You may
-want to disable swapping, or perhaps reduce it by performing one
-shrink_all_memory() in the same way as at present, then perform a
-second shrink_all_memory() more aggressively, but with
-scan_control.may_swap=0.  The overall effect will be to make
-hibernation tear down the process pagetable mappings and free these
-pagecache pages before preparing the disk image.
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/ubifs/commit.c | 2 --
+ fs/ubifs/master.c | 7 +++----
+ fs/ubifs/super.c  | 1 -
+ fs/ubifs/ubifs.h  | 2 --
+ 4 files changed, 3 insertions(+), 9 deletions(-)
 
-If we can get this working then your hibernation image will be
-significantly smaller than it is with this patch, because more pages
-will be unmapped and freed.  There will of course be a lot of major
-pagefaults after resume.  If that's a problem then perhaps we can tune
-the second shrink_all_memory() pass to only unmap ptes for unreferenced
-pages.
-
-> Under memory pressure, we want to drop many page caches as possible.
-> But, The number of dropped pages are reduced compared to non-faultaround kernel.
-
-Again, why do you want to do this?  What problem is it solving?  I
-assume you're using drop_caches for this as well?
-
-Generally, any use of drop_caches is wrong, and indicates there's some
-shortcoming in MM.
+diff --git a/fs/ubifs/commit.c b/fs/ubifs/commit.c
+index ff8229340cd5..aa13ad053b14 100644
+--- a/fs/ubifs/commit.c
++++ b/fs/ubifs/commit.c
+@@ -174,7 +174,6 @@ static int do_commit(struct ubifs_info *c)
+ 	if (err)
+ 		goto out;
+ 
+-	mutex_lock(&c->mst_mutex);
+ 	c->mst_node->cmt_no      = cpu_to_le64(c->cmt_no);
+ 	c->mst_node->log_lnum    = cpu_to_le32(new_ltail_lnum);
+ 	c->mst_node->root_lnum   = cpu_to_le32(zroot.lnum);
+@@ -204,7 +203,6 @@ static int do_commit(struct ubifs_info *c)
+ 	else
+ 		c->mst_node->flags &= ~cpu_to_le32(UBIFS_MST_NO_ORPHS);
+ 	err = ubifs_write_master(c);
+-	mutex_unlock(&c->mst_mutex);
+ 	if (err)
+ 		goto out;
+ 
+diff --git a/fs/ubifs/master.c b/fs/ubifs/master.c
+index ab83ace9910a..1a4bb9e8b3b8 100644
+--- a/fs/ubifs/master.c
++++ b/fs/ubifs/master.c
+@@ -352,10 +352,9 @@ int ubifs_read_master(struct ubifs_info *c)
+  * ubifs_write_master - write master node.
+  * @c: UBIFS file-system description object
+  *
+- * This function writes the master node. The caller has to take the
+- * @c->mst_mutex lock before calling this function. Returns zero in case of
+- * success and a negative error code in case of failure. The master node is
+- * written twice to enable recovery.
++ * This function writes the master node. Returns zero in case of success and a
++ * negative error code in case of failure. The master node is written twice to
++ * enable recovery.
+  */
+ int ubifs_write_master(struct ubifs_info *c)
+ {
+diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+index 3904c8574ef9..eb25aa9d7710 100644
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -1963,7 +1963,6 @@ static struct ubifs_info *alloc_ubifs_info(struct ubi_volume_desc *ubi)
+ 		mutex_init(&c->lp_mutex);
+ 		mutex_init(&c->tnc_mutex);
+ 		mutex_init(&c->log_mutex);
+-		mutex_init(&c->mst_mutex);
+ 		mutex_init(&c->umount_mutex);
+ 		mutex_init(&c->bu_mutex);
+ 		mutex_init(&c->write_reserve_mutex);
+diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
+index c1f71fe17cc0..2a18270b02c0 100644
+--- a/fs/ubifs/ubifs.h
++++ b/fs/ubifs/ubifs.h
+@@ -1051,7 +1051,6 @@ struct ubifs_debug_info;
+  *
+  * @mst_node: master node
+  * @mst_offs: offset of valid master node
+- * @mst_mutex: protects the master node area, @mst_node, and @mst_offs
+  *
+  * @max_bu_buf_len: maximum bulk-read buffer length
+  * @bu_mutex: protects the pre-allocated bulk-read buffer and @c->bu
+@@ -1292,7 +1291,6 @@ struct ubifs_info {
+ 
+ 	struct ubifs_mst_node *mst_node;
+ 	int mst_offs;
+-	struct mutex mst_mutex;
+ 
+ 	int max_bu_buf_len;
+ 	struct mutex bu_mutex;
+-- 
+2.1.0
 
