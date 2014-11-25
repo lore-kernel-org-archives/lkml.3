@@ -1,113 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751257AbaKYVwO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 16:52:14 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55294 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750984AbaKYVwM (ORCPT
+	id S1751355AbaKYVwR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 16:52:17 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45609 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270AbaKYVwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 16:52:12 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] cpufreq: Ref the policy object sooner
-Date: Tue, 25 Nov 2014 23:13:26 +0100
-Message-ID: <1971756.fuSemXHy0C@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohponYcoFkbezPjjUbedzZRgbyROJVgKhecALPH+O2yKQfow@mail.gmail.com>
-References: <CAKohponxpSoUXHc9S-y_zgo=T44-6Ayk4vRbW=jRHqQRsdbrGQ@mail.gmail.com> <1416820083-20902-1-git-send-email-tomeu.vizoso@collabora.com> <CAKohponYcoFkbezPjjUbedzZRgbyROJVgKhecALPH+O2yKQfow@mail.gmail.com>
+	Tue, 25 Nov 2014 16:52:14 -0500
+Message-ID: <5474FA07.6060204@linux.vnet.ibm.com>
+Date: Tue, 25 Nov 2014 16:52:07 -0500
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
+        Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>
+CC: christophe.ricard@gmail.com, josh.triplett@intel.com,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Will Arthur <will.c.arthur@intel.com>,
+        tpmdd-devel@lists.sourceforge.net,
+        jason.gunthorpe@obsidianresearch.com,
+        trousers-tech@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH v7 09/10] tpm: TPM 2.0 FIFO Interface
+References: <1415713513-16524-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1415713513-16524-10-git-send-email-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <1415713513-16524-10-git-send-email-jarkko.sakkinen@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112521-0033-0000-0000-000002CF522C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 25, 2014 04:40:23 PM Viresh Kumar wrote:
-> On 24 November 2014 at 14:38, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
-> > Do it before it's assigned to cpufreq_cpu_data, otherwise when a driver
-> > tries to get the cpu frequency during initialization the policy kobj is
-> > referenced and we get this warning:
-> >
-> > ------------[ cut here ]------------
-> > WARNING: CPU: 1 PID: 64 at include/linux/kref.h:47 kobject_get+0x64/0x70()
-> > Modules linked in:
-> > CPU: 1 PID: 64 Comm: irq/77-tegra-ac Not tainted 3.18.0-rc4-next-20141114ccu-00050-g3eff942 #326
-> > [<c0016fac>] (unwind_backtrace) from [<c001272c>] (show_stack+0x10/0x14)
-> > [<c001272c>] (show_stack) from [<c06085d8>] (dump_stack+0x98/0xd8)
-> > [<c06085d8>] (dump_stack) from [<c002892c>] (warn_slowpath_common+0x84/0xb4)
-> > [<c002892c>] (warn_slowpath_common) from [<c00289f8>] (warn_slowpath_null+0x1c/0x24)
-> > [<c00289f8>] (warn_slowpath_null) from [<c0220290>] (kobject_get+0x64/0x70)
-> > [<c0220290>] (kobject_get) from [<c03e944c>] (cpufreq_cpu_get+0x88/0xc8)
-> > [<c03e944c>] (cpufreq_cpu_get) from [<c03e9500>] (cpufreq_get+0xc/0x64)
-> > [<c03e9500>] (cpufreq_get) from [<c0285288>] (actmon_thread_isr+0x134/0x198)
-> > [<c0285288>] (actmon_thread_isr) from [<c0069008>] (irq_thread_fn+0x1c/0x40)
-> > [<c0069008>] (irq_thread_fn) from [<c0069324>] (irq_thread+0x134/0x174)
-> > [<c0069324>] (irq_thread) from [<c0040290>] (kthread+0xdc/0xf4)
-> > [<c0040290>] (kthread) from [<c000f4b8>] (ret_from_fork+0x14/0x3c)
-> > ---[ end trace b7bd64a81b340c59 ]---
-> >
-> > Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-> >
-> > ---
-> >
-> > v2:     * Properly unwind when erroring out.
-> > ---
-> >  drivers/cpufreq/cpufreq.c | 42 +++++++++++++++++++++---------------------
-> >  1 file changed, 21 insertions(+), 21 deletions(-)
-> >
-> > diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> > index 4473eba..ae27ea6 100644
-> > --- a/drivers/cpufreq/cpufreq.c
-> > +++ b/drivers/cpufreq/cpufreq.c
-> > @@ -898,46 +898,31 @@ static int cpufreq_add_dev_interface(struct cpufreq_policy *policy,
-> >         struct freq_attr **drv_attr;
-> >         int ret = 0;
-> >
-> > -       /* prepare interface data */
-> > -       ret = kobject_init_and_add(&policy->kobj, &ktype_cpufreq,
-> > -                                  &dev->kobj, "cpufreq");
-> > -       if (ret)
-> > -               return ret;
-> > -
-> >         /* set up files for this cpu device */
-> >         drv_attr = cpufreq_driver->attr;
-> >         while ((drv_attr) && (*drv_attr)) {
-> >                 ret = sysfs_create_file(&policy->kobj, &((*drv_attr)->attr));
-> >                 if (ret)
-> > -                       goto err_out_kobj_put;
-> > +                       return ret;
-> >                 drv_attr++;
-> >         }
-> >         if (cpufreq_driver->get) {
-> >                 ret = sysfs_create_file(&policy->kobj, &cpuinfo_cur_freq.attr);
-> >                 if (ret)
-> > -                       goto err_out_kobj_put;
-> > +                       return ret;
-> >         }
-> >
-> >         ret = sysfs_create_file(&policy->kobj, &scaling_cur_freq.attr);
-> >         if (ret)
-> > -               goto err_out_kobj_put;
-> > +               return ret;
-> >
-> >         if (cpufreq_driver->bios_limit) {
-> >                 ret = sysfs_create_file(&policy->kobj, &bios_limit.attr);
-> >                 if (ret)
-> > -                       goto err_out_kobj_put;
-> > +                       return ret;
-> >         }
-> 
-> We should add proper handling for error returned from sysfs_create_file()
-> someday, but its obviously not what you are trying to fix.
-> 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+On 11/11/2014 08:45 AM, Jarkko Sakkinen wrote:
+> From: Will Arthur <will.c.arthur@intel.com>
+>
+> Detect TPM 2.0 by using the extended STS (STS3) register. For TPM 2.0,
+> instead of calling tpm_get_timeouts(), assign duration and timeout
+> values defined in the TPM 2.0 PTP specification.
+>
+> Signed-off-by: Will Arthur <will.c.arthur@intel.com>
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> ---
+>   drivers/char/tpm/tpm_tis.c | 71 ++++++++++++++++++++++++++++++++++++----------
+>   1 file changed, 56 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+> index 7a2c59b..0b3c089 100644
+> --- a/drivers/char/tpm/tpm_tis.c
+> +++ b/drivers/char/tpm/tpm_tis.c
+> @@ -1,5 +1,6 @@
+>   /*
+>    * Copyright (C) 2005, 2006 IBM Corporation
+> + * Copyright (C) 2014 Intel Corporation
+>    *
+>    * Authors:
+>    * Leendert van Doorn <leendert@watson.ibm.com>
+> @@ -44,6 +45,10 @@ enum tis_status {
+>   	TPM_STS_DATA_EXPECT = 0x08,
+>   };
+>
+> +enum tis_status3 {
+> +	TPM_STS3_TPM2_FAM = 0x04,
+> +};
+> +
+>   enum tis_int_flags {
+>   	TPM_GLOBAL_INT_ENABLE = 0x80000000,
+>   	TPM_INTF_BURST_COUNT_STATIC = 0x100,
+> @@ -70,6 +75,7 @@ enum tis_defaults {
+>   #define	TPM_INT_STATUS(l)		(0x0010 | ((l) << 12))
+>   #define	TPM_INTF_CAPS(l)		(0x0014 | ((l) << 12))
+>   #define	TPM_STS(l)			(0x0018 | ((l) << 12))
+> +#define	TPM_STS3(l)			(0x001b | ((l) << 12))
+>   #define	TPM_DATA_FIFO(l)		(0x0024 | ((l) << 12))
+>
+>   #define	TPM_DID_VID(l)			(0x0F00 | ((l) << 12))
+> @@ -344,6 +350,7 @@ static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
+>   {
+>   	int rc;
+>   	u32 ordinal;
+> +	unsigned long dur;
+>
+>   	rc = tpm_tis_send_data(chip, buf, len);
+>   	if (rc < 0)
+> @@ -355,9 +362,14 @@ static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
+>
+>   	if (chip->vendor.irq) {
+>   		ordinal = be32_to_cpu(*((__be32 *) (buf + 6)));
+> +
+> +		if (chip->flags & TPM_CHIP_FLAG_TPM2)
+> +			dur = tpm_calc_ordinal_duration(chip, ordinal);
+> +		else
+> +			dur = tpm_calc_ordinal_duration(chip, ordinal);
+> +
 
-Patch queued up for 3.19-rc1, thanks!
+Is this right? Shouldn't you call tpm2_calc_ordinal_duration for TPM2? 
+If not don't check the flag but leave comment for why the same function 
+can be called for both TPM versions.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
+>   		if (wait_for_tpm_stat
+> -		    (chip, TPM_STS_DATA_AVAIL | TPM_STS_VALID,
+> -		     tpm_calc_ordinal_duration(chip, ordinal),
+> +		    (chip, TPM_STS_DATA_AVAIL | TPM_STS_VALID, dur,
+>   		     &chip->vendor.read_queue, false) < 0) {
+>   			rc = -ETIME;
+>   			goto out_err;
+> @@ -543,6 +555,7 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
+>   	u32 vendor, intfcaps, intmask;
+>   	int rc, i, irq_s, irq_e, probe;
+>   	struct tpm_chip *chip;
+> +	u8 sts3;
+>
+>   	chip = tpmm_chip_alloc(dev, &tpm_tis);
+>   	if (IS_ERR(chip))
+> @@ -554,11 +567,28 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
+>   	if (!chip->vendor.iobase)
+>   		return -EIO;
+>
+> +	sts3 = ioread8(chip->vendor.iobase + TPM_STS3(1));
+> +	if (sts3 & TPM_STS3_TPM2_FAM)
+> +		chip->flags = TPM_CHIP_FLAG_TPM2;
+> +
+>   	/* Default timeouts */
+> -	chip->vendor.timeout_a = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> -	chip->vendor.timeout_b = msecs_to_jiffies(TIS_LONG_TIMEOUT);
+> -	chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> -	chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> +	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
+> +		chip->vendor.timeout_a = usecs_to_jiffies(TPM2_TIMEOUT_A);
+> +		chip->vendor.timeout_b = usecs_to_jiffies(TPM2_TIMEOUT_B);
+> +		chip->vendor.timeout_c = usecs_to_jiffies(TPM2_TIMEOUT_C);
+> +		chip->vendor.timeout_d = usecs_to_jiffies(TPM2_TIMEOUT_D);
+> +		chip->vendor.duration[TPM_SHORT] =
+> +			usecs_to_jiffies(TPM2_DURATION_SHORT);
+> +		chip->vendor.duration[TPM_MEDIUM] =
+> +			usecs_to_jiffies(TPM2_DURATION_MEDIUM);
+> +		chip->vendor.duration[TPM_LONG] =
+> +			usecs_to_jiffies(TPM2_DURATION_LONG);
+> +	} else {
+> +		chip->vendor.timeout_a = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> +		chip->vendor.timeout_b = msecs_to_jiffies(TIS_LONG_TIMEOUT);
+> +		chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> +		chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> +	}
+>
+>   	if (wait_startup(chip, 0) != 0) {
+>   		rc = -ENODEV;
+> @@ -573,8 +603,8 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
+>   	vendor = ioread32(chip->vendor.iobase + TPM_DID_VID(0));
+>   	chip->vendor.manufacturer_id = vendor;
+>
+> -	dev_info(dev,
+> -		 "1.2 TPM (device-id 0x%X, rev-id %d)\n",
+> +	dev_info(dev, "%s TPM (device-id 0x%X, rev-id %d)\n",
+> +		 (chip->flags & TPM_CHIP_FLAG_TPM2) ? "2.0" : "1.2",
+>   		 vendor >> 16, ioread8(chip->vendor.iobase + TPM_RID(0)));
+>
+>   	if (!itpm) {
+> @@ -616,13 +646,17 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
+>   		dev_dbg(dev, "\tData Avail Int Support\n");
+>
+>   	/* get the timeouts before testing for irqs */
+> -	if (tpm_get_timeouts(chip)) {
+> +	if (!(chip->flags & TPM_CHIP_FLAG_TPM2) && tpm_get_timeouts(chip)) {
+>   		dev_err(dev, "Could not get TPM timeouts and durations\n");
+>   		rc = -ENODEV;
+>   		goto out_err;
+>   	}
+>
+> -	if (tpm_do_selftest(chip)) {
+> +	if (chip->flags & TPM_CHIP_FLAG_TPM2)
+> +		rc = tpm2_do_selftest(chip);
+> +	else
+> +		rc = tpm_do_selftest(chip);
+> +	if (rc) {
+>   		dev_err(dev, "TPM self test failed\n");
+>   		rc = -ENODEV;
+>   		goto out_err;
+> @@ -683,7 +717,10 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
+>   			chip->vendor.probed_irq = 0;
+>
+>   			/* Generate Interrupts */
+> -			tpm_gen_interrupt(chip);
+> +			if (chip->flags & TPM_CHIP_FLAG_TPM2)
+> +				tpm2_gen_interrupt(chip);
+> +			else
+> +				tpm_gen_interrupt(chip);
+>
+>   			chip->vendor.irq = chip->vendor.probed_irq;
+>
+> @@ -759,14 +796,18 @@ static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
+>   static int tpm_tis_resume(struct device *dev)
+>   {
+>   	struct tpm_chip *chip = dev_get_drvdata(dev);
+> -	int ret;
+> +	int ret = 0;
+>
+>   	if (chip->vendor.irq)
+>   		tpm_tis_reenable_interrupts(chip);
+>
+> -	ret = tpm_pm_resume(dev);
+> -	if (!ret)
+> -		tpm_do_selftest(chip);
+> +	if (chip->flags & TPM_CHIP_FLAG_TPM2)
+> +		tpm2_do_selftest(chip);
+> +	else {
+> +		ret = tpm_pm_resume(dev);
+> +		if (!ret)
+> +			tpm_do_selftest(chip);
+> +	}
+
+Only a self test necessary for TPM2 if resuming from ACPI sleep?
+
+Other parts look good to me.
+    Stefan
+
