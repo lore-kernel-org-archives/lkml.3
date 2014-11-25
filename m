@@ -1,73 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751355AbaKYP72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:59:28 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:39446 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786AbaKYP70 (ORCPT
+	id S1751374AbaKYP7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:59:50 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:35567 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856AbaKYP7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:59:26 -0500
-Date: Tue, 25 Nov 2014 15:59:18 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: broonie@kernel.org, mturquette@linaro.org, a.zummo@towertech.it,
-        lgirdwood@gmail.com, sbkim73@samsung.com, sameo@linux.intel.com,
-        geunsik.lim@samsung.com, inki.dae@samsung.com,
-        kyungmin.park@samsung.com, k.kozlowski@samsung.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [GIT PULL] Immutable branch between MFD, Regulator and Clk, due for
- v3.19
-Message-ID: <20141125155918.GO4241@x1>
-References: <1416301183-10478-1-git-send-email-cw00.choi@samsung.com>
+	Tue, 25 Nov 2014 10:59:48 -0500
+Date: Tue, 25 Nov 2014 07:59:43 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>, mingo@kernel.org,
+        torvalds@linux-foundation.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        David Howells <dhowells@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCHv2 02/10] kernel: Provide READ_ONCE and ASSIGN_ONCE
+Message-ID: <20141125155943.GB5050@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1416919117-50652-1-git-send-email-borntraeger@de.ibm.com>
+ <1416919117-50652-3-git-send-email-borntraeger@de.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416301183-10478-1-git-send-email-cw00.choi@samsung.com>
+In-Reply-To: <1416919117-50652-3-git-send-email-borntraeger@de.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112515-0005-0000-0000-0000069E217F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark, Mike,
+On Tue, Nov 25, 2014 at 01:38:29PM +0100, Christian Borntraeger wrote:
+> ACCESS_ONCE does not work reliably on non-scalar types. For
+> example gcc 4.6 and 4.7 might remove the volatile tag for such
+> accesses during the SRA (scalar replacement of aggregates) step
+> https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
+> 
+> Let's provide READ_ONCE/ASSIGN_ONCE that will do all accesses via
+> scalar types.
+> 
+> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> ---
+>  include/linux/compiler.h | 34 ++++++++++++++++++++++++++++++++++
+>  1 file changed, 34 insertions(+)
+> 
+> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+> index d5ad7b1..0ff01f2 100644
+> --- a/include/linux/compiler.h
+> +++ b/include/linux/compiler.h
+> @@ -186,6 +186,40 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+>  # define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
+>  #endif
+> 
+> +#include <linux/types.h>
+> +
+> +static __always_inline void __assign_once_size(volatile void *p, void *res, int size)
+> +{
+> +	switch (size) {
+> +	case 1: *(volatile u8 *)p = *(u8 *)res; break;
+> +	case 2: *(volatile u16 *)p = *(u16 *)res; break;
+> +	case 4: *(volatile u32 *)p = *(u32 *)res; break;
+> +#ifdef CONFIG_64BIT
+> +	case 8: *(volatile u64 *)p = *(u64 *)res; break;
 
-Please merge this into your trees for v3.19.
+We really need something like this to catch invalid sizes:
 
-The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
+	default: invoke_nonexistent_function();
 
-  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+Of course, a BUILD_BUG_ON() would give a nicer error message.
 
-are available in the git repository at:
+Without this, in my testing, the following compiles without error, generating
+no code:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-regulator-clk-v3.19
+	struct foo {
+		int field[10];
+	} f, f1;
 
-for you to fetch changes up to 159a5e920446aed12fe373ecc3c7b3dc667091ae:
+	f1 = READ_ONCE(f);
 
-  mfd: s2mps11: Add binding documentation for Samsung S2MPS13 PMIC (2014-11-25 15:55:12 +0000)
+There is probably some better way to do this.
 
-----------------------------------------------------------------
-Immutable branch between MFD, Regulator and Clk, due for v3.19
+> +#endif
+> +       }
+> +}
+> +
+> +#define ASSIGN_ONCE(val, p) \
+> +      ({ typeof(p) __val; __val = val; __assign_once_size(&p, &__val, sizeof(__val)); __val; })
+> +
+> +
+> +static __always_inline void __read_once_size(volatile void *p, void *res, int size)
+> +{
+> +	switch (size) {
+> +	case 1: *(u8 *)res = *(volatile u8 *)p; break;
+> +	case 2: *(u16 *)res = *(volatile u16 *)p; break;
+> +	case 4: *(u32 *)res = *(volatile u32 *)p; break;
+> +#ifdef CONFIG_64BIT
+> +	case 8: *(u64 *)res = *(volatile u64 *)p; break;
+> +#endif
 
-----------------------------------------------------------------
-Chanwoo Choi (4):
-      mfd: sec-core: Add support for S2MPS13 device
-      regulator: s2mps11: Add support S2MPS13 regulator device
-      clk: s2mps11: Add the support for S2MPS13 PMIC clock
-      mfd: s2mps11: Add binding documentation for Samsung S2MPS13 PMIC
+Ditto here.
 
- Documentation/devicetree/bindings/mfd/s2mps11.txt |  22 +--
- drivers/clk/clk-s2mps11.c                         |  24 +++
- drivers/mfd/sec-core.c                            |  29 ++++
- drivers/mfd/sec-irq.c                             |  23 ++-
- drivers/regulator/Kconfig                         |  10 +-
- drivers/regulator/s2mps11.c                       | 102 +++++++++++-
- include/linux/mfd/samsung/core.h                  |   2 +
- include/linux/mfd/samsung/s2mps13.h               | 186 ++++++++++++++++++++++
- 8 files changed, 374 insertions(+), 24 deletions(-)
- create mode 100644 include/linux/mfd/samsung/s2mps13.h
+							Thanx, Paul
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> +       }
+> +}
+> +
+> +#define READ_ONCE(p) \
+> +      ({ typeof(p) __val; __read_once_size(&p, &__val, sizeof(__val)); __val; })
+> +
+> +
+>  #endif /* __KERNEL__ */
+> 
+>  #endif /* __ASSEMBLY__ */
+> -- 
+> 1.9.3
+> 
+
