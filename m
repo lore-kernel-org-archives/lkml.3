@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751275AbaKYSYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 13:24:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49740 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751174AbaKYSYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 13:24:16 -0500
-Date: Tue, 25 Nov 2014 19:24:10 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Richard Hendershot <rshendershot@mchsi.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [PATCH 3.17 100/141] x86, microcode: Fix accessing dis_ucode_ldr
- on 32-bit
-Message-ID: <20141125182410.GB4128@pd.tnic>
-References: <20141119205150.700188369@linuxfoundation.org>
- <20141119205153.916605840@linuxfoundation.org>
- <5474C67A.7040200@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5474C67A.7040200@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751345AbaKYSY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 13:24:58 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:36522 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301AbaKYSY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 13:24:56 -0500
+Date: Tue, 25 Nov 2014 13:24:45 -0500 (EST)
+Message-Id: <20141125.132445.152609149279137368.davem@davemloft.net>
+To: paulmck@linux.vnet.ibm.com
+Cc: rdunlap@infradead.org, pieter@boesman.nl, josh@joshtriplett.org,
+        alexander.h.duyck@intel.com, viro@zeniv.linux.org.uk, ast@plumgrid.com,
+        akpm@linux-foundation.org, beber@meleeweb.net,
+        catalina.mocanu@gmail.com, dborkman@redhat.com, edumazet@google.com,
+        ebiederm@xmission.com, fabf@skynet.be,
+        fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
+        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
+        bfields@fieldses.org, jlayton@poochiereds.net,
+        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        mcgrof@suse.com, mattst88@gmail.com, mgorman@suse.de, mst@redhat.com,
+        miklos@szeredi.hu, netdev@vger.kernel.org, oleg@redhat.com,
+        Paul.Durrant@citrix.com, pefoley2@pefoley.com, tgraf@suug.ch,
+        therbert@google.com, trond.myklebust@primarydata.com,
+        willemb@google.com, xiaoguangrong@linux.vnet.ibm.com,
+        zhenglong.cai@cs2c.com.cn
+Subject: Re: [PATCH v4 0/7] kernel tinification: optionally compile out
+ splice family of syscalls (splice, vmsplice, tee and sendfile)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141125181032.GJ5050@linux.vnet.ibm.com>
+References: <5474ABB6.3030400@infradead.org>
+	<20141125.121305.2094097848188324942.davem@davemloft.net>
+	<20141125181032.GJ5050@linux.vnet.ibm.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 25 Nov 2014 10:24:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 01:12:10PM -0500, Boris Ostrovsky wrote:
-> On 11/19/2014 03:52 PM, Greg Kroah-Hartman wrote:
-> >3.17-stable review patch.  If anyone has any objections, please let me know.
-> 
-> 
-> This breaks PV on Xen.
-> 
-> -boris
-> 
-> >
-> >------------------
-> >
-> >From: Borislav Petkov <bp@suse.de>
-> >
-> >commit 85be07c32496dc264661308e4d9d4e9ccaff8072 upstream.
-> >
-> >We should be accessing it through a pointer, like on the BSP.
-> >
-> >Tested-by: Richard Hendershot <rshendershot@mchsi.com>
-> >Fixes: 65cef1311d5d ("x86, microcode: Add a disable chicken bit")
-> >Signed-off-by: Borislav Petkov <bp@suse.de>
-> >Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >
-> >---
-> >  arch/x86/kernel/cpu/microcode/core_early.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> >--- a/arch/x86/kernel/cpu/microcode/core_early.c
-> >+++ b/arch/x86/kernel/cpu/microcode/core_early.c
-> >@@ -124,7 +124,7 @@ void __init load_ucode_bsp(void)
-> >  static bool check_loader_disabled_ap(void)
-> >  {
-> >  #ifdef CONFIG_X86_32
-> >-	return __pa_nodebug(dis_ucode_ldr);
-> >+	return *((bool *)__pa_nodebug(&dis_ucode_ldr));
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Tue, 25 Nov 2014 10:10:32 -0800
 
-And practically the same line in check_loader_disabled_bsp() doesn't?
+> I certainly sympathize with this concern, given the importance of software
+> portability.  However, the tiny-hardware alternative appears ot some sort
+> of special-purpose embedded OS, which most definitely will suffer from
+> software compatibility issues.  I guess that the good news is that much
+> of the tiny hardware that used to be 8 or 16 bits is now 32 bits, which
+> means that it has at least some chance of running some form of Linux.  ;-)
 
--- 
-Regards/Gruss,
-    Boris.
+And then if some fundamental part of userland (glibc, klibc, etc.) finds
+a useful way to use splice for a fundamental operation, we're back to
+square one.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+I simply do not agree with modifying the user facing interface, especially
+one with decades of precedence.
