@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688AbaKYLlo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:41:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58383 "EHLO
+	id S1755198AbaKYLmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:42:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58378 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753149AbaKYKlY (ORCPT
+	with ESMTP id S1753109AbaKYKlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:24 -0500
+	Tue, 25 Nov 2014 05:41:23 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Roger Tseng <rogerable@realtek.com>, Ulf Hansson <ulf.hansson@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 082/254] mmc: rtsx_pci_sdmmc: fix incorrect last byte in R2 response
-Date: Tue, 25 Nov 2014 10:37:12 +0000
-Message-Id: <1416912004-5928-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 080/254] mmc: rtsx_usb_sdmmc: fix incorrect last byte in R2 response
+Date: Tue, 25 Nov 2014 10:37:10 +0000
+Message-Id: <1416912004-5928-81-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -29,7 +29,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Roger Tseng <rogerable@realtek.com>
 
-commit d1419d50c1bf711e9fd27b516a739c86b23f7cf9 upstream.
+commit 6f67cc6fd1cf339a0f19b9d4a998ec3c0123b1b6 upstream.
 
 Current code erroneously fill the last byte of R2 response with an undefined
 value. In addition, the controller actually 'offloads' the last byte
@@ -39,19 +39,19 @@ same card after resume and misidentify it as a different card.
 
 Fix by assigning dummy CRC and end bit: {7'b0, 1} = 0x1 to the last byte of R2.
 
-Fixes: ff984e57d36e ("mmc: Add realtek pcie sdmmc host driver")
+Fixes: c7f6558d84af ("mmc: Add realtek USB sdmmc host driver")
 Signed-off-by: Roger Tseng <rogerable@realtek.com>
 Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mmc/host/rtsx_pci_sdmmc.c | 7 +++++++
+ drivers/mmc/host/rtsx_usb_sdmmc.c | 7 +++++++
  1 file changed, 7 insertions(+)
 
-diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-index 0d519649b575..a92a0daddaaa 100644
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -332,6 +332,13 @@ static void sd_send_cmd_get_rsp(struct realtek_pci_sdmmc *host,
+diff --git a/drivers/mmc/host/rtsx_usb_sdmmc.c b/drivers/mmc/host/rtsx_usb_sdmmc.c
+index 5d3766e792f0..d9153a7d160d 100644
+--- a/drivers/mmc/host/rtsx_usb_sdmmc.c
++++ b/drivers/mmc/host/rtsx_usb_sdmmc.c
+@@ -435,6 +435,13 @@ static void sd_send_cmd_get_rsp(struct rtsx_usb_sdmmc *host,
  	}
  
  	if (rsp_type == SD_RSP_TYPE_R2) {
