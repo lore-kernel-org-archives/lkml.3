@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998AbaKYLvD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:51:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58219 "EHLO
+	id S1752898AbaKYKky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:40:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58173 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897AbaKYKkz (ORCPT
+	with ESMTP id S1752719AbaKYKkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:55 -0500
+	Tue, 25 Nov 2014 05:40:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Skeggs <bskeggs@redhat.com>, Sven Joachim <svenjoac@gmx.de>,
+Cc: Johan Hovold <johan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 051/254] drm/nouveau/bar: behave better if ioremap failed
-Date: Tue, 25 Nov 2014 10:36:41 +0000
-Message-Id: <1416912004-5928-52-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 043/254] USB: cdc-acm: add quirk for control-line state requests
+Date: Tue, 25 Nov 2014 10:36:33 +0000
+Message-Id: <1416912004-5928-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,51 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit e7d96929a7cd93e146af0d1fd251fa1ec2e3ebf8 upstream.
+commit 2a8cdfde9237c4e1bd7c2e68c415b006491d23cc upstream.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Cc: Sven Joachim <svenjoac@gmx.de>
+Add new quirk for devices that cannot handle control-line state
+requests.
+
+Note that we currently send these requests to all devices, regardless of
+whether they claim to support it, but that errors are only logged if
+support is claimed.
+
+Since commit 0943d8ead30e ("USB: cdc-acm: use tty-port dtr_rts"), which
+only changed the timings for these requests slightly, this has been
+reported to cause occasional firmware crashes on Simtec Electronics
+Entropy Key devices after re-enumeration. Enable the quirk for this
+device.
+
+Reported-by: Nix <nix@esperi.org.uk>
+Tested-by: Nix <nix@esperi.org.uk>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/nouveau/core/subdev/bar/base.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ drivers/usb/class/cdc-acm.c | 14 ++++++++++++--
+ drivers/usb/class/cdc-acm.h |  2 ++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/base.c b/drivers/gpu/drm/nouveau/core/subdev/bar/base.c
-index 73b1ed20c8d5..8bcbdf39cfb2 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/bar/base.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/bar/base.c
-@@ -99,8 +99,13 @@ nouveau_bar_alloc(struct nouveau_bar *bar, struct nouveau_object *parent,
- 		  struct nouveau_mem *mem, struct nouveau_object **pobject)
- {
- 	struct nouveau_object *engine = nv_object(bar);
--	return nouveau_object_ctor(parent, engine, &nouveau_barobj_oclass,
--				   mem, 0, pobject);
-+	int ret = -ENOMEM;
-+	if (bar->iomem) {
-+		ret = nouveau_object_ctor(parent, engine,
-+					  &nouveau_barobj_oclass,
-+					  mem, 0, pobject);
-+	}
-+	return ret;
- }
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index c14814fb1e75..7daaef192c28 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -145,8 +145,15 @@ static int acm_ctrl_msg(struct acm *acm, int request, int value,
+ /* devices aren't required to support these requests.
+  * the cdc acm descriptor tells whether they do...
+  */
+-#define acm_set_control(acm, control) \
+-	acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE, control, NULL, 0)
++static inline int acm_set_control(struct acm *acm, int control)
++{
++	if (acm->quirks & QUIRK_CONTROL_LINE_STATE)
++		return -EOPNOTSUPP;
++
++	return acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE,
++			control, NULL, 0);
++}
++
+ #define acm_set_line(acm, line) \
+ 	acm_ctrl_msg(acm, USB_CDC_REQ_SET_LINE_CODING, 0, line, sizeof *(line))
+ #define acm_send_break(acm, ms) \
+@@ -1315,6 +1322,7 @@ made_compressed_probe:
+ 	tty_port_init(&acm->port);
+ 	acm->port.ops = &acm_port_ops;
+ 	init_usb_anchor(&acm->delayed);
++	acm->quirks = quirks;
  
- int
-@@ -118,9 +123,12 @@ nouveau_bar_create_(struct nouveau_object *parent,
- 	if (ret)
- 		return ret;
+ 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
+ 	if (!buf) {
+@@ -1682,6 +1690,8 @@ static const struct usb_device_id acm_ids[] = {
+ 	{ USB_DEVICE(0x0572, 0x1328), /* Shiro / Aztech USB MODEM UM-3100 */
+ 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
+ 	},
++	{ USB_DEVICE(0x20df, 0x0001), /* Simtec Electronics Entropy Key */
++	.driver_info = QUIRK_CONTROL_LINE_STATE, },
+ 	{ USB_DEVICE(0x2184, 0x001c) },	/* GW Instek AFG-2225 */
+ 	{ USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
+ 	},
+diff --git a/drivers/usb/class/cdc-acm.h b/drivers/usb/class/cdc-acm.h
+index fc75651afe1c..d3251ebd09e2 100644
+--- a/drivers/usb/class/cdc-acm.h
++++ b/drivers/usb/class/cdc-acm.h
+@@ -121,6 +121,7 @@ struct acm {
+ 	unsigned int throttle_req:1;			/* throttle requested */
+ 	u8 bInterval;
+ 	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
++	unsigned long quirks;
+ };
  
--	if (nv_device_resource_len(device, 3) != 0)
-+	if (nv_device_resource_len(device, 3) != 0) {
- 		bar->iomem = ioremap(nv_device_resource_start(device, 3),
- 				     nv_device_resource_len(device, 3));
-+		if (!bar->iomem)
-+			nv_warn(bar, "PRAMIN ioremap failed\n");
-+	}
- 
- 	return 0;
- }
+ #define CDC_DATA_INTERFACE_TYPE	0x0a
+@@ -132,3 +133,4 @@ struct acm {
+ #define NOT_A_MODEM			BIT(3)
+ #define NO_DATA_INTERFACE		BIT(4)
+ #define IGNORE_DEVICE			BIT(5)
++#define QUIRK_CONTROL_LINE_STATE	BIT(6)
 -- 
 2.1.0
 
