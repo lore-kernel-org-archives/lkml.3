@@ -1,115 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400AbaKYUD6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 15:03:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49373 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaKYUDz (ORCPT
+	id S1751211AbaKYUGp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 15:06:45 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:32796 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893AbaKYUGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 15:03:55 -0500
-Date: Tue, 25 Nov 2014 12:03:53 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-Cc: grant.likely@linaro.org, robh+dt@kernel.org, catalin.marinas@arm.com,
-        ijc+devicetree@hellion.org.uk, jslaby@suse.cz, galak@codeaurora.org,
-        broonie@linaro.org, mark.rutland@arm.com, m-karicheri2@ti.com,
-        pawel.moll@arm.com, artagnon@gmail.com, rrichter@cavium.com,
-        will.deacon@arm.com, arnd@arndb.de, gnomes@lxorguk.ukuu.org.uk,
-        corbet@lwn.net, jason@lakedaemon.net, broonie@kernel.org,
-        heiko@sntech.de, shawn.guo@freescale.com, florian.vaussard@epfl.ch,
-        andrew@lunn.ch, hytszk@gmail.com, orsonzhai@gmail.com,
-        geng.ren@spreadtrum.com, zhizhou.zhang@spreadtrum.com,
-        lanqing.liu@spreadtrum.com, zhang.lyra@gmail.com,
-        wei.qiao@spreadtrum.com, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        sprdlinux@freelists.org, linux-doc@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v3 5/5] tty/serial: Add Spreadtrum sc9836-uart driver
- support
-Message-ID: <20141125200353.GA7653@kroah.com>
-References: <Sharkl64-v3>
- <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
- <1416917818-10506-6-git-send-email-chunyan.zhang@spreadtrum.com>
+	Tue, 25 Nov 2014 15:06:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416917818-10506-6-git-send-email-chunyan.zhang@spreadtrum.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [2620:0:1000:157d:545b:3079:f9fb:e5f4]
+In-Reply-To: <1412000548-9908-3-git-send-email-alvin.chen@intel.com>
+References: <1412000548-9908-1-git-send-email-alvin.chen@intel.com>
+	<1412000548-9908-3-git-send-email-alvin.chen@intel.com>
+Date: Tue, 25 Nov 2014 12:06:41 -0800
+Message-ID: <CAOesGMi5f_Kc1xA_JqiZYsbVYxaJgBXMZCe5TAxDkPQj7=o8sg@mail.gmail.com>
+Subject: Re: [PATCH 2/2 v2] SPI: spi-pxa2xx: SPI support for Intel Quark X1000
+From: Olof Johansson <olof@lixom.net>
+To: Weike Chen <alvin.chen@intel.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Hock Leong Kweh <hock.leong.kweh@intel.com>,
+        Boon Leong Ong <boon.leong.ong@intel.com>,
+        Raymond Tan <raymond.tan@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 08:16:58PM +0800, Chunyan Zhang wrote:
-> Add a full sc9836-uart driver for SC9836 SoC which is based on the
-> spreadtrum sharkl64 platform.
-> This driver also support earlycon.
-> 
-> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-> Signed-off-by: Orson Zhai <orson.zhai@spreadtrum.com>
-> Originally-by: Lanqing Liu <lanqing.liu@spreadtrum.com>
+Hi,
 
-Some objections:
+On Mon, Sep 29, 2014 at 7:22 AM, Weike Chen <alvin.chen@intel.com> wrote:
+> There are two SPI controllers exported by PCI subsystem for Intel Quark X1000.
+> The SPI memory mapped I/O registers supported by Quark are different from
+> the current implementation, and Quark only supports the registers of 'SSCR0',
+> 'SSCR1', 'SSSR', 'SSDR', and 'DDS_RATE'. This patch is to enable the SPI for
+> Intel Quark X1000.
+>
+> This piece of work is derived from Dan O'Donovan's initial work for Intel Quark
+> X1000 SPI enabling.
+>
+> Signed-off-by: Weike Chen <alvin.chen@intel.com>
 
-> +static struct platform_driver sprd_platform_driver = {
-> +	.probe = sprd_probe,
-> +	.remove = sprd_remove,
-> +	.suspend = sprd_suspend,
-> +	.resume = sprd_resume,
-> +	.driver = {
-> +		   .name = "sprd_serial",
-> +		   .owner = THIS_MODULE,
+How about build testing for other platforms that share this driver
+when you make changes to it? This is obviously completely broken.
 
-platform drivers don't need .owner in them anymore, it's handled by the
-driver core automatically.
+Doing these constants under ifdef seems fragile at best, braindead at
+worst. Please don't proliferate that coding style.
+
+Mark, can you revert until Intel learns how to play well with others?
 
 
-> +		   .of_match_table = of_match_ptr(serial_ids),
-> +		   },
-> +};
-> +
-> +static int __init sprd_serial_init(void)
-> +{
-> +	int ret = 0;
-> +
-> +	ret = uart_register_driver(&sprd_uart_driver);
-> +	if (unlikely(ret != 0))
-> +		return ret;
 
-NEVER use unlikely unless you can measure the difference without it.
-And even then, you better be able to justify it.  For something as dumb
-as this type of check, youare working against the complier and cpu which
-already knows that 0 is the usual response.
+This is from a pxa3xx-defconfig build:
 
-So please remove all usages of likely/unlikely in this patch series.
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c: In function
+'pxa2xx_spi_get_ssrc1_change_mask':
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:66:40: error:
+'QUARK_X1000_SSCR1_STRF' undeclared (first use in this function)
+ #define QUARK_X1000_SSCR1_CHANGE_MASK (QUARK_X1000_SSCR1_STRF \
+                                        ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:146:10: note: in
+expansion of macro 'QUARK_X1000_SSCR1_CHANGE_MASK'
+   return QUARK_X1000_SSCR1_CHANGE_MASK;
+          ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:66:40: note: each
+undeclared identifier is reported only once for each function it
+appears in
+ #define QUARK_X1000_SSCR1_CHANGE_MASK (QUARK_X1000_SSCR1_STRF \
+                                        ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:146:10: note: in
+expansion of macro 'QUARK_X1000_SSCR1_CHANGE_MASK'
+   return QUARK_X1000_SSCR1_CHANGE_MASK;
+          ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:67:7: error:
+'QUARK_X1000_SSCR1_EFWR' undeclared (first use in this function)
+     | QUARK_X1000_SSCR1_EFWR \
+       ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:146:10: note: in
+expansion of macro 'QUARK_X1000_SSCR1_CHANGE_MASK'
+   return QUARK_X1000_SSCR1_CHANGE_MASK;
+          ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:68:7: error:
+'QUARK_X1000_SSCR1_RFT' undeclared (first use in this function)
+     | QUARK_X1000_SSCR1_RFT  \
+       ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:146:10: note: in
+expansion of macro 'QUARK_X1000_SSCR1_CHANGE_MASK'
+   return QUARK_X1000_SSCR1_CHANGE_MASK;
+          ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:69:7: error:
+'QUARK_X1000_SSCR1_TFT' undeclared (first use in this function)
+     | QUARK_X1000_SSCR1_TFT  \
+       ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:146:10: note: in
+expansion of macro 'QUARK_X1000_SSCR1_CHANGE_MASK'
+   return QUARK_X1000_SSCR1_CHANGE_MASK;
+          ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c: In function
+'pxa2xx_spi_get_rx_default_thre':
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:157:10: error:
+'RX_THRESH_QUARK_X1000_DFLT' undeclared (first use in this function)
+   return RX_THRESH_QUARK_X1000_DFLT;
+          ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c: In function
+'pxa2xx_spi_txfifo_full':
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:170:10: error:
+'QUARK_X1000_SSSR_TFL_MASK' undeclared (first use in this function)
+   mask = QUARK_X1000_SSSR_TFL_MASK;
+          ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c: In function
+'pxa2xx_spi_clear_rx_thre':
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:187:10: error:
+'QUARK_X1000_SSCR1_RFT' undeclared (first use in this function)
+   mask = QUARK_X1000_SSCR1_RFT;
+          ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c: In function
+'pxa2xx_spi_set_rx_thre':
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:201:3: error: implicit
+declaration of function 'QUARK_X1000_SSCR1_RxTresh'
+[-Werror=implicit-function-declaration]
+   *sccr1_reg |= QUARK_X1000_SSCR1_RxTresh(threshold);
+   ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c: In function
+'pxa2xx_configure_sscr0':
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:215:6: error:
+'QUARK_X1000_SSCR0_Motorola' undeclared (first use in this function)
+    | QUARK_X1000_SSCR0_Motorola
+      ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:216:4: error: implicit
+declaration of function 'QUARK_X1000_SSCR0_DataSize'
+[-Werror=implicit-function-declaration]
+    | QUARK_X1000_SSCR0_DataSize(bits > 32 ? 8 : bits)
+    ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c: In function 'setup':
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:1062:14: error:
+'TX_THRESH_QUARK_X1000_DFLT' undeclared (first use in this function)
+   tx_thres = TX_THRESH_QUARK_X1000_DFLT;
+              ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:1064:14: error:
+'RX_THRESH_QUARK_X1000_DFLT' undeclared (first use in this function)
+   rx_thres = RX_THRESH_QUARK_X1000_DFLT;
+              ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:1154:10: error:
+'QUARK_X1000_SSCR1_RFT' undeclared (first use in this function)
+        & QUARK_X1000_SSCR1_RFT)
+          ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:1155:8: error:
+implicit declaration of function 'QUARK_X1000_SSCR1_TxTresh'
+[-Werror=implicit-function-declaration]
+        | (QUARK_X1000_SSCR1_TxTresh(tx_thres)
+        ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:1156:10: error:
+'QUARK_X1000_SSCR1_TFT' undeclared (first use in this function)
+        & QUARK_X1000_SSCR1_TFT);
+          ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c: In function 'pxa2xx_spi_probe':
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:1393:6: error:
+'RX_THRESH_QUARK_X1000_DFLT' undeclared (first use in this function)
+      RX_THRESH_QUARK_X1000_DFLT) |
+      ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:1395:6: error:
+'TX_THRESH_QUARK_X1000_DFLT' undeclared (first use in this function)
+      TX_THRESH_QUARK_X1000_DFLT),
+      ^
+/home/build/work/batch/drivers/spi/spi-pxa2xx.c:1399:15: error:
+'QUARK_X1000_SSCR0_Motorola' undeclared (first use in this function)
+   write_SSCR0(QUARK_X1000_SSCR0_Motorola
 
-> +
-> +	ret = platform_driver_register(&sprd_platform_driver);
-> +	if (unlikely(ret != 0))
-> +		uart_unregister_driver(&sprd_uart_driver);
-> +
-> +	return ret;
-> +}
-> +
-> +static void __exit sprd_serial_exit(void)
-> +{
-> +	platform_driver_unregister(&sprd_platform_driver);
-> +	uart_unregister_driver(&sprd_uart_driver);
-> +}
-> +
-> +module_init(sprd_serial_init);
-> +module_exit(sprd_serial_exit);
-> +
-> +MODULE_LICENSE("GPL");
-> +MODULE_DESCRIPTION("Spreadtrum SoC serial driver series");
-> diff --git a/include/uapi/linux/serial_core.h b/include/uapi/linux/serial_core.h
-> index 16ad852..d9a8c88 100644
-> --- a/include/uapi/linux/serial_core.h
-> +++ b/include/uapi/linux/serial_core.h
-> @@ -247,4 +247,7 @@
->  /* MESON */
->  #define PORT_MESON	109
->  
-> +/* SPRD SERIAL  */
-> +#define PORT_SPRD   110
 
-Please use a tab character here.
+
+-Olof
