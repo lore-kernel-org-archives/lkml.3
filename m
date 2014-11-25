@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669AbaKYLg6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:36:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58436 "EHLO
+	id S1753233AbaKYKlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:41:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58343 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231AbaKYKlc (ORCPT
+	with ESMTP id S1753036AbaKYKlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:32 -0500
+	Tue, 25 Nov 2014 05:41:18 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Tejun Heo <tj@kernel.org>, Honggang Li <enjoymindful@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 090/254] x86, fpu: __restore_xstate_sig()->math_state_restore() needs preempt_disable()
-Date: Tue, 25 Nov 2014 10:37:20 +0000
-Message-Id: <1416912004-5928-91-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 073/254] Revert "percpu: free percpu allocation info for uniprocessor system"
+Date: Tue, 25 Nov 2014 10:37:03 +0000
+Message-Id: <1416912004-5928-74-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,40 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit df24fb859a4e200d9324e2974229fbb7adf00aef upstream.
+commit bb2e226b3bef596dd56be97df655d857b4603923 upstream.
 
-Add preempt_disable() + preempt_enable() around math_state_restore() in
-__restore_xstate_sig(). Otherwise __switch_to() after __thread_fpu_begin()
-can overwrite fpu->state we are going to restore.
+This reverts commit 3189eddbcafc ("percpu: free percpu allocation info for
+uniprocessor system").
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Link: http://lkml.kernel.org/r/20140902175717.GA21649@redhat.com
-Reviewed-by: Suresh Siddha <sbsiddha@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+The commit causes a hang with a crisv32 image. This may be an architecture
+problem, but at least for now the revert is necessary to be able to boot a
+crisv32 image.
+
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Honggang Li <enjoymindful@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: 3189eddbcafc ("percpu: free percpu allocation info for uniprocessor system")
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/xsave.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ mm/percpu.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index a4b451c6addf..4679ef4005da 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -399,8 +399,11 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
- 			set_used_math();
- 		}
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 492f601df473..2ddf9a990dbd 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1933,8 +1933,6 @@ void __init setup_per_cpu_areas(void)
  
--		if (use_eager_fpu())
-+		if (use_eager_fpu()) {
-+			preempt_disable();
- 			math_state_restore();
-+			preempt_enable();
-+		}
+ 	if (pcpu_setup_first_chunk(ai, fc) < 0)
+ 		panic("Failed to initialize percpu areas.");
+-
+-	pcpu_free_alloc_info(ai);
+ }
  
- 		return err;
- 	} else {
+ #endif	/* CONFIG_SMP */
 -- 
 2.1.0
 
