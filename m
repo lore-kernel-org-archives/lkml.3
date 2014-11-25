@@ -1,63 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780AbaKYRWJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:22:09 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:52629 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaKYRWH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:22:07 -0500
+	id S1751414AbaKYRXa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:23:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48904 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750954AbaKYRX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 12:23:28 -0500
+Date: Tue, 25 Nov 2014 18:43:43 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Tom Herbert <therbert@google.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Masatake YAMATO <yamato@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>, Xi Wang <xii@google.com>,
+        netdev@vger.kernel.org, linux-api@vger.kernel.org
+Subject: [PATCH v4 33/42] tun: move internal flag defines out of uapi
+Message-ID: <1416933600-21398-34-git-send-email-mst@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <54741540.3010607@suse.com>
-References: <CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
-	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
-	<CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
-	<20141121142301.564f7eb7@gandalf.local.home>
-	<CA+55aFw6w+pkG7fs7tBVm7jV_TjsnEyG5XDdk+Ghf5Af+ELUeA@mail.gmail.com>
-	<CA+55aFwOL8thHWWLtuzXkriEH1mJDCQO=NUsMRPptDXc6HC4sg@mail.gmail.com>
-	<CALCETrX9CNx+Zs3timzxoccrqia1RiaOe5dj7crENnt2W6PGjg@mail.gmail.com>
-	<CA+5PVA4mgpAg53bQKnXXgY3N0mkEZrUYf4rgOTHCV-pbK9UF3g@mail.gmail.com>
-	<CALCETrUT3Pn0ZCMsgp9dyDvoaiszCrQRc4159Tyggo5wA6Mp7w@mail.gmail.com>
-	<CA+5PVA5L1Vcs+nrJWZ+jXgnhQMZ_L22rksopPnO7Wt04jD3kUQ@mail.gmail.com>
-	<20141124184856.GA9349@laptop.dumpdata.com>
-	<54741540.3010607@suse.com>
-Date: Tue, 25 Nov 2014 09:22:04 -0800
-X-Google-Sender-Auth: EctTo7rD9xU8-uCN1GfzwtoE3AY
-Message-ID: <CA+55aFxSRujj=cM1NkXYvxmo=Y1hb1e3tgLhdh1JDphzV6WKRw@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: =?UTF-8?B?SsO8cmdlbiBHcm/Dnw==?= <jgross@suse.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416933600-21398-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 9:36 PM, Jürgen Groß <jgross@suse.com> wrote:
->
-> Funny, during testing some patches related to Xen I hit the lockup
-> issue. It looked a little bit different, but a variation of your patch
-> solved my problem.
->
-> I could reproduce the issue within a few minutes reliably without the
-> patch below. With it the machine survived 12 hours and is still running.
+TUN_ flags are internal and never exposed
+to userspace. Any application using it is almost
+certainly buggy.
 
-Do you have a backtrace for the failure case? I have no problem
-applying this part of the patch (I really don't understand why x86-64
-hadn't gotten the proper code from 32-bit), but I'd like to see (and
-document) where the fault happens for this.
+Move them out to tun.c, we'll remove them in follow-up patches.
 
-Since you can apparently reproduce this fairly easily with a broken
-kernel, getting a backtrace shouldn't be too hard?
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/uapi/linux/if_tun.h | 16 ++--------
+ drivers/net/tun.c           | 74 ++++++++++++++-------------------------------
+ 2 files changed, 26 insertions(+), 64 deletions(-)
 
-                     Linus
+diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
+index e9502dd..277a260 100644
+--- a/include/uapi/linux/if_tun.h
++++ b/include/uapi/linux/if_tun.h
+@@ -22,21 +22,11 @@
+ 
+ /* Read queue size */
+ #define TUN_READQ_SIZE	500
+-
+-/* TUN device flags */
+-#define TUN_TUN_DEV 	0x0001	
+-#define TUN_TAP_DEV	0x0002
++/* TUN device type flags: deprecated. Use IFF_TUN/IFF_TAP instead. */
++#define TUN_TUN_DEV 	IFF_TUN
++#define TUN_TAP_DEV	IFF_TAP
+ #define TUN_TYPE_MASK   0x000f
+ 
+-#define TUN_FASYNC	0x0010
+-#define TUN_NOCHECKSUM	0x0020
+-#define TUN_NO_PI	0x0040
+-/* This flag has no real effect */
+-#define TUN_ONE_QUEUE	0x0080
+-#define TUN_PERSIST 	0x0100	
+-#define TUN_VNET_HDR 	0x0200
+-#define TUN_TAP_MQ      0x0400
+-
+ /* Ioctl defines */
+ #define TUNSETNOCSUM  _IOW('T', 200, int) 
+ #define TUNSETDEBUG   _IOW('T', 201, int) 
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 9dd3746..bc89d07 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -103,6 +103,21 @@ do {								\
+ } while (0)
+ #endif
+ 
++/* TUN device flags */
++
++/* IFF_ATTACH_QUEUE is never stored in device flags,
++ * overload it to mean fasync when stored there.
++ */
++#define TUN_FASYNC	IFF_ATTACH_QUEUE
++#define TUN_NO_PI	IFF_NO_PI
++/* This flag has no real effect */
++#define TUN_ONE_QUEUE	IFF_ONE_QUEUE
++#define TUN_PERSIST 	IFF_PERSIST
++#define TUN_VNET_HDR 	IFF_VNET_HDR
++#define TUN_TAP_MQ      IFF_MULTI_QUEUE
++
++#define TUN_FEATURES (IFF_NO_PI | IFF_ONE_QUEUE | IFF_VNET_HDR | \
++		      IFF_MULTI_QUEUE)
+ #define GOODCOPY_LEN 128
+ 
+ #define FLT_EXACT_COUNT 8
+@@ -1521,32 +1536,7 @@ static struct proto tun_proto = {
+ 
+ static int tun_flags(struct tun_struct *tun)
+ {
+-	int flags = 0;
+-
+-	if (tun->flags & TUN_TUN_DEV)
+-		flags |= IFF_TUN;
+-	else
+-		flags |= IFF_TAP;
+-
+-	if (tun->flags & TUN_NO_PI)
+-		flags |= IFF_NO_PI;
+-
+-	/* This flag has no real effect.  We track the value for backwards
+-	 * compatibility.
+-	 */
+-	if (tun->flags & TUN_ONE_QUEUE)
+-		flags |= IFF_ONE_QUEUE;
+-
+-	if (tun->flags & TUN_VNET_HDR)
+-		flags |= IFF_VNET_HDR;
+-
+-	if (tun->flags & TUN_TAP_MQ)
+-		flags |= IFF_MULTI_QUEUE;
+-
+-	if (tun->flags & TUN_PERSIST)
+-		flags |= IFF_PERSIST;
+-
+-	return flags;
++	return tun->flags & (TUN_FEATURES | IFF_PERSIST | IFF_TUN | IFF_TAP);
+ }
+ 
+ static ssize_t tun_show_flags(struct device *dev, struct device_attribute *attr,
+@@ -1706,28 +1696,8 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 
+ 	tun_debug(KERN_INFO, tun, "tun_set_iff\n");
+ 
+-	if (ifr->ifr_flags & IFF_NO_PI)
+-		tun->flags |= TUN_NO_PI;
+-	else
+-		tun->flags &= ~TUN_NO_PI;
+-
+-	/* This flag has no real effect.  We track the value for backwards
+-	 * compatibility.
+-	 */
+-	if (ifr->ifr_flags & IFF_ONE_QUEUE)
+-		tun->flags |= TUN_ONE_QUEUE;
+-	else
+-		tun->flags &= ~TUN_ONE_QUEUE;
+-
+-	if (ifr->ifr_flags & IFF_VNET_HDR)
+-		tun->flags |= TUN_VNET_HDR;
+-	else
+-		tun->flags &= ~TUN_VNET_HDR;
+-
+-	if (ifr->ifr_flags & IFF_MULTI_QUEUE)
+-		tun->flags |= TUN_TAP_MQ;
+-	else
+-		tun->flags &= ~TUN_TAP_MQ;
++	tun->flags = (tun->flags & ~TUN_FEATURES) |
++		(ifr->ifr_flags & TUN_FEATURES);
+ 
+ 	/* Make sure persistent devices do not get stuck in
+ 	 * xoff state.
+@@ -1890,9 +1860,11 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+ 	if (cmd == TUNGETFEATURES) {
+ 		/* Currently this just means: "what IFF flags are valid?".
+ 		 * This is needed because we never checked for invalid flags on
+-		 * TUNSETIFF. */
+-		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
+-				IFF_VNET_HDR | IFF_MULTI_QUEUE,
++		 * TUNSETIFF.  Why do we report IFF_TUN and IFF_TAP which are
++		 * not legal for TUNSETIFF here?  It's probably a bug, but it
++		 * doesn't seem to be worth fixing.
++		 */
++		return put_user(IFF_TUN | IFF_TAP | TUN_FEATURES,
+ 				(unsigned int __user*)argp);
+ 	} else if (cmd == TUNSETQUEUE)
+ 		return tun_set_queue(file, &ifr);
+-- 
+MST
+
