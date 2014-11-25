@@ -1,51 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751201AbaKYQwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:52:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37723 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990AbaKYQm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:42:59 -0500
-Date: Tue, 25 Nov 2014 18:42:42 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH v4 18/42] virtio_blk: make serial attribute static
-Message-ID: <1416933600-21398-19-git-send-email-mst@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
+	id S1751561AbaKYQwR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:52:17 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:19809 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751199AbaKYQwN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 11:52:13 -0500
+Date: Tue, 25 Nov 2014 11:52:10 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Seth Jennings <sjenning@redhat.com>,
+        Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
+        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
+Message-ID: <20141125115210.4d7cfca3@gandalf.local.home>
+In-Reply-To: <20141125163942.GD22487@pathway.suse.cz>
+References: <1416522580-5593-1-git-send-email-sjenning@redhat.com>
+	<1416522580-5593-3-git-send-email-sjenning@redhat.com>
+	<546EA5DC.6000207@hitachi.com>
+	<20141125163942.GD22487@pathway.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416933600-21398-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's never declared so no need to make it extern.
+On Tue, 25 Nov 2014 17:39:43 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/block/virtio_blk.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+> On Fri 2014-11-21 11:39:24, Masami Hiramatsu wrote:
+> > (2014/11/21 7:29), Seth Jennings wrote:
+> > > This commit introduces code for the live patching core.  It implements
+> > > an ftrace-based mechanism and kernel interface for doing live patching
+> > > of kernel and kernel module functions.
+> > > 
+> > > It represents the greatest common functionality set between kpatch and
+> > > kgraft and can accept patches built using either method.
+> > > 
+> > > This first version does not implement any consistency mechanism that
+> > > ensures that old and new code do not run together.  In practice, ~90% of
+> > > CVEs are safe to apply in this way, since they simply add a conditional
+> > > check.  However, any function change that can not execute safely with
+> > > the old version of the function can _not_ be safely applied in this
+> > > version.
+> > 
+> > Thanks for updating :)
+> > 
+> > BTW, this still have some LPC_XXX macros, those should be KLP_XXX.
+> > 
+> > Also, as I sent a series of IPMODIFY patches (just now), could you consider
+> > to use the flag? :)
+> 
+> Hmm, it would cause problems with the current LivePatch, kGraft
+> implementation, and probably also with kPatch. They register more
+> than one ftrace handler with IPMODIFY at the same time.
 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index f601f16..055f3df 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -332,7 +332,8 @@ static ssize_t virtblk_serial_show(struct device *dev,
- 
- 	return err;
- }
--DEVICE_ATTR(serial, S_IRUGO, virtblk_serial_show, NULL);
-+
-+static DEVICE_ATTR(serial, S_IRUGO, virtblk_serial_show, NULL);
- 
- static void virtblk_config_changed_work(struct work_struct *work)
- {
--- 
-MST
+But are they hooked to the same functions? That would be a big problem,
+and should be avoided. Why would you want too ftrace_ops returning two
+different IPs for one function? That causes a paradox. Why would you
+want that?
 
+> 
+> They pass pointer to the func-related structure via the "private" field
+> in struct ftrace_ops. The structure provides information where the old
+> and new code is.
+> 
+> They need to update the structure when new patch for the same functions
+> appears. It is done by registering a new ftrace function related to the
+> new patch and unregistering an old ftrace function from the old patch.
+> 
+> We would need to maintain some patch-independent list of ftrace_ops
+> and the related private fields to avoid the double registration.
+
+Yes, that would make sense.
+
+You could create one ftrace_ops per function. That would be ideal
+because then you get to take advantage of having your own trampoline
+per function and no need to worry about what function needs to go with
+another function.
+
+-- Steve
