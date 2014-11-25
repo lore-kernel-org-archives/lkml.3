@@ -1,118 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534AbaKYWHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 17:07:48 -0500
-Received: from ozlabs.org ([103.22.144.67]:48425 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983AbaKYWHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 17:07:45 -0500
-Date: Wed, 26 Nov 2014 09:07:37 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Luc Verhaegen <libv@skynet.be>,
+	id S1751646AbaKYWI5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 17:08:57 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:36301 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726AbaKYWIy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 17:08:54 -0500
+Date: Tue, 25 Nov 2014 14:08:41 -0800
+From: josh@joshtriplett.org
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Pieter Smith <pieter@boesman.nl>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bertrand Jacquin <beber@meleeweb.net>,
+        Catalina Mocanu <catalina.mocanu@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: linux-next: build failure after merge of the omap_dss2 tree
-Message-ID: <20141126090737.2860d33c@canb.auug.org.au>
-In-Reply-To: <5474720F.5030106@ti.com>
-References: <20141117190905.4e96294a@canb.auug.org.au>
-	<546B5D5A.8020304@ti.com>
-	<CANq1E4SMLHmezfXSENSQ8xUaXptwA8YKQ9Nne=sDCB0gPkPLmA@mail.gmail.com>
-	<5474615F.20407@ti.com>
-	<5474660B.8070507@redhat.com>
-	<5474720F.5030106@ti.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+        Hugh Dickins <hughd@google.com>, Iulia Manda <iulia.manda21@gmail.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Jeff Layton <jlayton@poochiereds.net>, linux-api@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:KERNEL NFSD, SUNR..." <linux-nfs@vger.kernel.org>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Matt Turner <mattst88@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Foley <pefoley2@pefoley.com>, Thomas Graf <tgraf@suug.ch>,
+        Tom Herbert <therbert@google.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 0/7] kernel tinification: optionally compile out
+ splice family of syscalls (splice, vmsplice, tee and sendfile)
+Message-ID: <20141125220841.GB25683@cloud>
+References: <1416870079-15254-1-git-send-email-pieter@boesman.nl>
+ <5474ABB6.3030400@infradead.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/dO09hQl4gnYBg1=fYuZCnCa"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5474ABB6.3030400@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/dO09hQl4gnYBg1=fYuZCnCa
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+[Resending this mail due to some email encoding brokenness that
+prevented it from reaching LKML the first time; sorry to anyone who
+receives two copies.]
 
-Hi Tomi,
+On Tue, Nov 25, 2014 at 08:17:58AM -0800, Randy Dunlap wrote:
+> On 11/24/2014 03:00 PM, Pieter Smith wrote:
+> >REPO: https://github.com/smipi1/linux-tinification.git
+> >
+> >BRANCH: tiny/config-syscall-splice
+> >
+> >BACKGROUND: This patch-set forms part of the Linux Kernel Tinification effort (
+> >   https://tiny.wiki.kernel.org/).
+> >
+> >GOAL: Support compiling out the splice family of syscalls (splice, vmsplice,
+> >   tee and sendfile) along with all supporting infrastructure if not needed.
+> >   Many embedded systems will not need the splice-family syscalls. Omitting them
+> >   saves space.
+> 
+> Hi,
+> 
+> Is the splice family of syscalls the only one that tiny has identified
+> for optional building or can we expect similar treatment for other
+> syscalls?
 
-On Tue, 25 Nov 2014 14:11:59 +0200 Tomi Valkeinen <tomi.valkeinen@ti.com> w=
-rote:
->
-> On 25/11/14 13:20, Hans de Goede wrote:
-> >=20
-> > On 11/25/2014 12:00 PM, Tomi Valkeinen wrote:
-> >> On 18/11/14 17:07, David Herrmann wrote:
-> >>>
-> >>> On Tue, Nov 18, 2014 at 3:53 PM, Tomi Valkeinen
-> >>> <tomi.valkeinen@ti.com> wrote:
-> >>>>
-> >>>> Thanks Stephen!
-> >>>>
-> >>>> Hans, have you had a look at this? kbuild test bot also reported thi=
-s.
-> >>>
-> >>> The fix from Stephen should not go to main-line. It breaks simplefb on
-> >>> x86 without OF. Imo, linux/clk.h should provide a fallback if OF is
-> >>> not defined (like it already does for of_clk_get() and friends).
-> >>>
-> >>> Hans, any comments?
-> >>
-> >> Hans, ping.
-> >=20
-> > Sorry I somehow missed this thread so far, I did see the kbuild mail, b=
-ut
-> > it looked like a false positive to me, for the compile error case I
-> > already fixed
-> > in the last revision of the patch, adding #ifdef CONFIG_OF around the
-> > offending code.
-> >=20
-> > But on closer inspection I see that the entirety of linux/clk-provider.h
-> > is wrapped
-> > in one huge #ifdef CONFIG_COMMON_CLK and then later on also has:
-> >=20
-> > #ifdef CONFIG_OF
-> > ...
-> > int of_clk_get_parent_count(struct device_node *np);
-> > ...
-> > #endif
-> >=20
-> > So we need both CONFIG_OF and CONFIG_COMMON_CLK, the attached patch
-> > should fix this.
->=20
-> Thanks, applied.
+Pretty much any system call that you could conceive of writing a
+userspace without.
 
-But not pushed out, yet?  Just checking that you haven't pushed on
-purpose.
+There's a partial project list at https://tiny.wiki.kernel.org/projects.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> Why will many embedded systems not need these syscalls?  You know
+> exactly what apps they run and you are positive that those apps do
+> not use splice?
 
---Sig_/dO09hQl4gnYBg1=fYuZCnCa
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+Yes, precisely.  We're talking about embedded systems small enough that
+you're booting with init=/your/app and don't even call fork(), where you
+know exactly what code you're putting in and what libraries you use.
+And they're almost certainly not running glibc.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> >RESULTS: A tinyconfig bloat-o-meter score for the entire patch-set:
+> >
+> >add/remove: 0/41 grow/shrink: 5/7 up/down: 23/-8422 (-8399)
+> 
+> The summary is that this patch saves around 8 KB of code space --
+> is that correct?
 
-iQIcBAEBCAAGBQJUdP2vAAoJEMDTa8Ir7ZwVANcP/jroBargaJVzQ5TronBT2vQ9
-unkJhSXtRTJQaQllboKNSTcs5UzmBh6pxGVVO0uTXVOUqjgdM57ZQ/QahPHnIaaj
-YCahpnd2yezGX6njuFkNroNlZJfvESNjnUpqrfQ1aJl7dYhb7f86V8iSiyJHAHIq
-aGrP5yspRkmrHAhO6yMPYR6brJ/9tn/utTZRibWcUINJNzUSg4bBNXktf9YP26lC
-EGgDi7nYwppoYY2DT/TnZQKwaSCh9Ddcn7C2aD36nnYIYUPa6tXyX0vt2qd9J2Wd
-2Aye72NbCrrCT+fTvIMQ7NEX2Fwhp7MgD79p7/76yHrVuUVyllxqODwqb4orPBn9
-dhAvfW2NMedqo6vH7AEVJaEPnYC8o04klbn4ySbVUY1tBuS1VGqfaRK77avwI4iD
-WYzYSXJjlnT7Iy81pfs9sC8+fQmtsgl4m+ftSQFruEHDegtR5kL8csbvBe4cpb+h
-BbHnfO5LoCQKieD2E6oQJ9LfOZcwueIMC+h/jfbSl7ik5aBAYi5/gQkMpyGI4x1G
-s82clU051HDFYvF8ya49dCp5evUL5XEjYkGVxmodx6GK2rov2Tempq4325QPqETr
-p7snYlZI74pz+4lG1frU/ey7zAnScR/qQ+lXcLvXEF7lWOe4ByKE9MsGC417X5Gn
-lZfJBxLl9ceiq5B5ivsE
-=XpL+
------END PGP SIGNATURE-----
+Right.  For reference, we're talking about kernels where the *total*
+size is a few hundred kB.
 
---Sig_/dO09hQl4gnYBg1=fYuZCnCa--
+> How much storage space do embedded systems have nowadays?
+
+For the embedded systems we're targeting for the tinification effort, in
+a first pass: 512k-2M of storage (often for an *uncompressed* kernel, to
+support execute-in-place), and 128k-512k of memory.  We've successfully
+built useful kernels and userspaces for such environments, and we'd like
+to go even smaller.
+
+- Josh Triplett
