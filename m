@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814AbaKYLXD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:23:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58707 "EHLO
+	id S1755419AbaKYLXX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:23:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58679 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244AbaKYKmP (ORCPT
+	with ESMTP id S1753504AbaKYKmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:15 -0500
+	Tue, 25 Nov 2014 05:42:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oliver Neukum <oneukum@suse.de>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 140/254] HID: usbhid: add another mouse that needs QUIRK_ALWAYS_POLL
-Date: Tue, 25 Nov 2014 10:38:10 +0000
-Message-Id: <1416912004-5928-141-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 135/254] net: skb_fclone_busy() needs to detect orphaned skb
+Date: Tue, 25 Nov 2014 10:38:05 +0000
+Message-Id: <1416912004-5928-136-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 5235166fbc332c8b5dcf49e3a498a8b510a77449 upstream.
+commit 39bb5e62867de82b269b07df900165029b928359 upstream.
 
-There is a second mouse sharing the same vendor strings but different IDs.
+Some drivers are unable to perform TX completions in a bound time.
+They instead call skb_orphan()
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Problem is skb_fclone_busy() has to detect this case, otherwise
+we block TCP retransmits and can freeze unlucky tcp sessions on
+mostly idle hosts.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: 1f3279ae0c13 ("tcp: avoid retransmits of TCP packets hanging in host queues")
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backport to 3.16 provided by Eric Dumzet ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-ids.h           | 1 +
- drivers/hid/usbhid/hid-quirks.c | 1 +
- 2 files changed, 2 insertions(+)
+ net/ipv4/tcp_output.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 889f9115dc4d..cb1f83fe6818 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -732,6 +732,7 @@
- #define USB_DEVICE_ID_PI_ENGINEERING_VEC_USB_FOOTPEDAL	0xff
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 4e4932b5079b..a8794367cd20 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2082,7 +2082,8 @@ static bool skb_still_in_host_queue(const struct sock *sk,
+ 	const struct sk_buff *fclone = skb + 1;
  
- #define USB_VENDOR_ID_PIXART				0x093a
-+#define USB_DEVICE_ID_PIXART_USB_OPTICAL_MOUSE_ID2	0x0137
- #define USB_DEVICE_ID_PIXART_USB_OPTICAL_MOUSE		0x2510
- #define USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN	0x8001
- #define USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1	0x8002
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 01377f3b9dd0..b02b4591dab3 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -81,6 +81,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_PENMOUNT, USB_DEVICE_ID_PENMOUNT_1610, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_PENMOUNT, USB_DEVICE_ID_PENMOUNT_1640, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_USB_OPTICAL_MOUSE, HID_QUIRK_ALWAYS_POLL },
-+	{ USB_VENDOR_ID_KYE, USB_DEVICE_ID_PIXART_USB_OPTICAL_MOUSE_ID2, HID_QUIRK_ALWAYS_POLL },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2, HID_QUIRK_NO_INIT_REPORTS },
+ 	if (unlikely(skb->fclone == SKB_FCLONE_ORIG &&
+-		     fclone->fclone == SKB_FCLONE_CLONE)) {
++		     fclone->fclone == SKB_FCLONE_CLONE &&
++		     fclone->sk == sk)) {
+ 		NET_INC_STATS_BH(sock_net(sk),
+ 				 LINUX_MIB_TCPSPURIOUS_RTX_HOSTQUEUES);
+ 		return true;
 -- 
 2.1.0
 
