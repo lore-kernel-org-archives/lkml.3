@@ -1,127 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751407AbaKYWSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 17:18:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55206 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951AbaKYWSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 17:18:06 -0500
-Date: Tue, 25 Nov 2014 23:18:00 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Richard Hendershot <rshendershot@mchsi.com>,
-        David Vrabel <david.vrabel@citrix.com>, x86-ml <x86@kernel.org>
-Subject: Re: [PATCH 3.17 100/141] x86, microcode: Fix accessing dis_ucode_ldr
- on 32-bit
-Message-ID: <20141125221800.GI4128@pd.tnic>
-References: <20141125182410.GB4128@pd.tnic>
- <5474CDCE.6040000@oracle.com>
- <20141125184351.GC4128@pd.tnic>
- <5474D0A1.2020600@oracle.com>
- <20141125190849.GF4128@pd.tnic>
- <5474D86E.6020608@oracle.com>
- <20141125202628.GG4128@pd.tnic>
- <20141125203634.GA6433@laptop.dumpdata.com>
- <20141125211708.GH4128@pd.tnic>
- <5474FBC6.7090603@oracle.com>
+	id S1751516AbaKYWSY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 17:18:24 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38725 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951AbaKYWSU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 17:18:20 -0500
+Date: Tue, 25 Nov 2014 22:15:59 +0000
+From: Mark Brown <broonie@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ben Zhang <benzh@chromium.org>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        flove@realtek.com, Al Stone <al.stone@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <20141125221559.GZ7712@sirena.org.uk>
+References: <1416034608-24238-1-git-send-email-benzh@chromium.org>
+ <2580837.YI0IvfXqRR@vostro.rjw.lan>
+ <20141125202722.GA25261@sirena.org.uk>
+ <1926483.B4ieFnCBlM@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Vz0bOunXd3DTcUF1"
 Content-Disposition: inline
-In-Reply-To: <5474FBC6.7090603@oracle.com>
+In-Reply-To: <1926483.B4ieFnCBlM@vostro.rjw.lan>
+X-Cookie: Celebrity voices impersonated.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding x86 people.
 
-On Tue, Nov 25, 2014 at 04:59:34PM -0500, Boris Ostrovsky wrote:
-> This should be cpuid(0x1, &eax, &ebx, &ecx, &edx). Otherwise we are not
-> getting bits that the hypervisor wants the guest to see (on Xen cpuid()
-> turns into hypercall, on baremetal it's native).
-> 
-> With that change it works and
-> 
-> Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+--Vz0bOunXd3DTcUF1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks for testing.
+On Tue, Nov 25, 2014 at 10:40:53PM +0100, Rafael J. Wysocki wrote:
+> On Tuesday, November 25, 2014 08:27:22 PM Mark Brown wrote:
 
-> (May be worth adding a comment as to what is_guest() is checking for since
-> 31 is a magic number).
+> > My initial thought would be to require that we send any DT properties
+> > defined for devices with ACPI identifiers registered there and hope the
+> > volume doesn't DoS them.
 
-See below.
+> We absolutely need to start registering the existing bindings in there, but
+> that needs to be rate limited somehow, because the process may not be very
+> efficient to start with.
 
-> BTW, the crash had nothing to do with accessing dis_ucode_ldr, we are
-> crashing much later, in load_ucode_intel_ap(), trying to access
-> *initrd_start_p. And the reason we didn't crash before was because compiler
-> optimized out whole load_ucode_ap() since check_loader_disabled_ap() was
-> always true.
+Well, my upstream connection is 20Mbit or something, that's a limit :P
 
-Right, and my fix actually uncovered the original issue :-\
+More seriously there's not that many devices and not much use of the
+properties API yet so no concrete users; it's three audio CODECs that
+I'm aware of which should use it and are in tree now so probably
+actually a reasonable thing to throw out there for people to have a look
+at.  Liam, do you think some of the Intel audio people could look into
+the code side?  I'm tempted to send at least one document myself for
+pipe cleaning purposes.
 
-Ok, here's a v2 which adds the check to the late loader too, for
-completeness. I'll write a proper commit message tomorrow.
+> > A more defined format for DT documentation that we can script into the
+> > ASWG format (or vice versa) might be helpful here, and we should add
+> > notes to the DT documentation if this is how we want to proceed.
 
----
-diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
-index 64dc362506b7..654907db5f09 100644
---- a/arch/x86/include/asm/microcode.h
-+++ b/arch/x86/include/asm/microcode.h
-@@ -87,4 +87,9 @@ static inline int __init save_microcode_in_initrd(void)
- }
- #endif
- 
-+/* Check whether we're running as a guest on a hypervisor. */
-+static inline bool x86_guest(void)
-+{
-+	return !!(cpuid_ecx(1) & BIT(31));
-+}
- #endif /* _ASM_X86_MICROCODE_H */
-diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
-index 2ce9051174e6..0b6db2a97f61 100644
---- a/arch/x86/kernel/cpu/microcode/core.c
-+++ b/arch/x86/kernel/cpu/microcode/core.c
-@@ -557,6 +557,9 @@ static int __init microcode_init(void)
- 	struct cpuinfo_x86 *c = &cpu_data(0);
- 	int error;
- 
-+	if (x86_guest())
-+		return 0;
-+
- 	if (dis_ucode_ldr)
- 		return 0;
- 
-diff --git a/arch/x86/kernel/cpu/microcode/core_early.c b/arch/x86/kernel/cpu/microcode/core_early.c
-index 2c017f242a78..dfa93e74c370 100644
---- a/arch/x86/kernel/cpu/microcode/core_early.c
-+++ b/arch/x86/kernel/cpu/microcode/core_early.c
-@@ -98,6 +98,9 @@ void __init load_ucode_bsp(void)
- {
- 	int vendor, x86;
- 
-+	if (x86_guest())
-+		return;
-+
- 	if (check_loader_disabled_bsp())
- 		return;
- 
-@@ -134,6 +137,9 @@ void load_ucode_ap(void)
- {
- 	int vendor, x86;
- 
-+	if (x86_guest())
-+		return;
-+
- 	if (check_loader_disabled_ap())
- 		return;
- 
+> That's a good point.
 
--- 
-Regards/Gruss,
-    Boris.
+> Unfortunately, the timing is pretty bad (Thanksgiving) and the closest
+> ASWG meeting is next Thursday, but that one's likely to be busy for other
+> reasons.  I presume, then, that the earliest we can seriously get back to
+> that in the ASWG is mid-December.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+OK, not the most pressing matter I guess.
+
+--Vz0bOunXd3DTcUF1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdP+eAAoJECTWi3JdVIfQUDUH/AhBd7aYiWR217dtr0jYMqEL
+5qNaFVArcjD/iG1j7NC2uYQEjc1sprtIcNXEPBMCs3uWfNCqGvvDhBHUKFOLfWXv
+87/0aEGbi42S4YjnFn3+7Wl1iXFol+94fzIzdwiCdRa2NzIzaYusvZphxpxxuZ4B
+HGiyU7LgzuHrexWAWLmz97iVMR5tJbrLTBhYCalI6/V0ufVZrhsLwwWo2DY2s12E
+PCAe87sfLVvXrVbexJ/U/fsF5fJunrYVY5eK6At5KKgFxzZDEtKWvQv6lOPBJa0i
+k9PqaX0OzWHc+YZE7u4pmRud1fOvN0xgg9Vr/1SDYEe8H7m0xEWTVb25CjGm/kw=
+=f0nf
+-----END PGP SIGNATURE-----
+
+--Vz0bOunXd3DTcUF1--
