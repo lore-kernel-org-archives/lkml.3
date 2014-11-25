@@ -1,131 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415AbaKYNWa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 08:22:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:35554 "EHLO mail.kernel.org"
+	id S1752421AbaKYNPt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 08:15:49 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37143 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527AbaKYNW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 08:22:26 -0500
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/12] perf hists browser: Print overhead percent value for first-level callchain
-Date: Tue, 25 Nov 2014 10:21:59 -0300
-Message-Id: <1416921730-5063-2-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1416921730-5063-1-git-send-email-acme@kernel.org>
-References: <1416921730-5063-1-git-send-email-acme@kernel.org>
+	id S1751355AbaKYNPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 08:15:46 -0500
+From: George Cherian <george.cherian@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+CC: <peter.chen@freescale.com>, <sojka@merica.cz>, <mathias.nyman@intel.com>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <bcousson@baylibre.com>, <kgene.kim@samsung.com>,
+        <ben-linux@fluff.org>, <linux@arm.linux.org.uk>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
+        George Cherian <george.cherian@ti.com>
+Subject: [PATCH 02/19] usb: host xhci: fix up deallocation code
+Date: Tue, 25 Nov 2014 18:41:38 +0530
+Message-ID: <1416921115-10467-3-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1416921115-10467-1-git-send-email-george.cherian@ti.com>
+References: <1416921115-10467-1-git-send-email-george.cherian@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+This fixes up the deallocation code in the xhci driver, so that
+usb_add_hcd()/usb_remove_hcd() can be called repeatedly without
+crashing.
 
-Currently perf report on TUI doesn't print percent for first-level
-callchain entry.
+In case of DRD mode, the DRD library calls /usb_remove_hcd() while
+switching from HOST mode to Device mode, but it doesnot call usb_put_hcd().
+We need to preserve the already allocated xhci struct for the subsequent
+call of usb_add_hcd() from the DRD library.
 
-I guess it (wrongly) assumes that there's only a single callchain in the
-first level.
+A new quirk flag XHCI_DRD_SUPPORT is added to differentiate between
+normal usb_remove_hcd and drd specific call.
 
-This patch fixes it by handling the first level callchains same as
-others - if it's not 100% it should print the percent value.
-
-Also it'll affect other callchains in the other way around - if it's
-100% (single callchain) it should not print the percentage.
-
-Before:
-  -   30.95%     6.84%  abc2     abc2              [.] a
-     - a
-        - 70.00% c
-           - 100.00% apic_timer_interrupt
-                smp_apic_timer_interrupt
-                local_apic_timer_interrupt
-                hrtimer_interrupt
-                ...
-        + 30.00% b
-     + __libc_start_main
-
-After:
-  -   30.95%     6.84%  abc2     abc2              [.] a
-     - 77.90% a
-        - 70.00% c
-           - apic_timer_interrupt
-             smp_apic_timer_interrupt
-             local_apic_timer_interrupt
-             hrtimer_interrupt
-             ...
-        + 30.00% b
-     + 22.10% __libc_start_main
-
-Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1416816807-6495-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
- tools/perf/ui/browsers/hists.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci.c | 22 ++++++++++++++++------
+ drivers/usb/host/xhci.h |  1 +
+ 2 files changed, 17 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 12c17c5a3d68..8d22905a4687 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -542,8 +542,11 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
- 	struct rb_node *node;
- 	int first_row = row, offset = level * LEVEL_OFFSET_STEP;
- 	u64 new_total;
-+	bool need_percent;
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 2a5d45b..d4196f8 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -666,7 +666,8 @@ static void xhci_only_stop_hcd(struct usb_hcd *hcd)
+ 	 * calls this function when allocation fails in usb_add_hcd(), or
+ 	 * usb_remove_hcd() is called).  So we need to unset xHCI's pointer.
+ 	 */
+-	xhci->shared_hcd = NULL;
++	if (!(xhci->quirks & XHCI_DRD_SUPPORT))
++		xhci->shared_hcd = NULL;
+ 	spin_unlock_irq(&xhci->lock);
+ }
  
- 	node = rb_first(root);
-+	need_percent = !!rb_next(node);
-+
- 	while (node) {
- 		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
- 		struct rb_node *next = rb_next(node);
-@@ -560,7 +563,7 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
+@@ -4815,6 +4816,7 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
+ 	struct xhci_hcd		*xhci;
+ 	struct device		*dev = hcd->self.controller;
+ 	int			retval;
++	bool			allocated = false;
  
- 			if (first)
- 				first = false;
--			else if (level > 1)
-+			else if (need_percent)
- 				extra_offset = LEVEL_OFFSET_STEP;
+ 	/* Accept arbitrarily long scatter-gather lists */
+ 	hcd->self.sg_tablesize = ~0;
+@@ -4826,10 +4828,15 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
+ 	hcd->self.no_stop_on_short = 1;
  
- 			folded_sign = callchain_list__folded(chain);
-@@ -573,7 +576,7 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
- 			str = callchain_list__sym_name(chain, bf, sizeof(bf),
- 						       browser->show_dso);
- 
--			if (was_first && level > 1) {
-+			if (was_first && need_percent) {
- 				double percent = cumul * 100.0 / total;
- 
- 				if (asprintf(&alloc_str, "%2.2f%% %s", percent, str) < 0)
-@@ -790,6 +793,13 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 			.is_current_entry = current_entry,
- 		};
- 
-+		if (callchain_param.mode == CHAIN_GRAPH_REL) {
-+			if (symbol_conf.cumulate_callchain)
-+				total = entry->stat_acc->period;
-+			else
-+				total = entry->stat.period;
+ 	if (usb_hcd_is_primary_hcd(hcd)) {
+-		xhci = kzalloc(sizeof(struct xhci_hcd), GFP_KERNEL);
+-		if (!xhci)
+-			return -ENOMEM;
+-		*((struct xhci_hcd **) hcd->hcd_priv) = xhci;
++		if (*((struct xhci_hcd **)hcd->hcd_priv) == NULL) {
++			xhci = kzalloc(sizeof(struct xhci_hcd), GFP_KERNEL);
++			if (!xhci)
++				return -ENOMEM;
++			*((struct xhci_hcd **)hcd->hcd_priv) = xhci;
++			allocated = true;
++		} else {
++			xhci = *((struct xhci_hcd **)hcd->hcd_priv);
 +		}
-+
- 		printed += hist_browser__show_callchain(browser,
- 					&entry->sorted_chain, 1, row, total,
- 					hist_browser__show_callchain_entry, &arg,
+ 		xhci->main_hcd = hcd;
+ 		/* Mark the first roothub as being USB 2.0.
+ 		 * The xHCI driver will register the USB 3.0 roothub.
+@@ -4902,7 +4909,10 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
+ 	xhci_dbg(xhci, "Called HCD init\n");
+ 	return 0;
+ error:
+-	kfree(xhci);
++	if (allocated) {
++		*((struct xhci_hcd **)hcd->hcd_priv) = NULL;
++		kfree(xhci);
++	}
+ 	return retval;
+ }
+ EXPORT_SYMBOL_GPL(xhci_gen_setup);
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index df76d64..2248058 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1560,6 +1560,7 @@ struct xhci_hcd {
+ #define XHCI_SPURIOUS_WAKEUP	(1 << 18)
+ /* For controllers with a broken beyond repair streams implementation */
+ #define XHCI_BROKEN_STREAMS	(1 << 19)
++#define XHCI_DRD_SUPPORT	(1 << 20)
+ 	unsigned int		num_active_eps;
+ 	unsigned int		limit_active_eps;
+ 	/* There are two roothubs to keep track of bus suspend info for */
 -- 
-1.9.3
+1.8.3.1
 
