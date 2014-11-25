@@ -1,157 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992AbaKYGHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 01:07:08 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:58936 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaKYGHG convert rfc822-to-8bit (ORCPT
+	id S1751681AbaKYGQw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 01:16:52 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:54964 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaKYGQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 01:07:06 -0500
-Content-Type: text/plain; charset="utf-8"
+	Tue, 25 Nov 2014 01:16:50 -0500
+Date: Tue, 25 Nov 2014 07:16:45 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Catalina Mocanu <catalina.mocanu@gmail.com>
+Subject: Re: linux-next: manual merge of the tiny tree with the tip tree
+Message-ID: <20141125061645.GA15512@gmail.com>
+References: <20141125170315.13157c60@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "Jason Cooper" <jason@lakedaemon.net>, "Andrew Lunn" <andrew@lunn.ch>,
-        "Sebastian Hesselbarth" <sebastian.hesselbarth@gmail.com>,
-        "Gregory Clement" <gregory.clement@free-electrons.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1416585613-2113-9-git-send-email-thomas.petazzoni@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org, "Tawfik Bayouk" <tawfik@marvell.com>,
-        "Nadav Haklai" <nadavh@marvell.com>,
-        "Lior Amsalem" <alior@marvell.com>,
-        "Ezequiel Garcia" <ezequiel.garcia@free-electrons.com>,
-        devicetree@vger.kernel.org,
-        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
-        linux-kernel@vger.kernel.org
-References: <1416585613-2113-1-git-send-email-thomas.petazzoni@free-electrons.com>
- <1416585613-2113-9-git-send-email-thomas.petazzoni@free-electrons.com>
-Message-ID: <20141125060700.12298.14532@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCHv3 08/16] clk: mvebu: add suspend/resume for gatable clocks
-Date: Mon, 24 Nov 2014 22:07:00 -0800
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141125170315.13157c60@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Thomas Petazzoni (2014-11-21 08:00:05)
-> This commit adds suspend/resume support for the gatable clock driver
-> used on Marvell EBU platforms. When getting out of suspend, the
-> Marvell EBU platforms go through the bootloader, which re-enables all
-> gatable clocks. However, upon resume, the clock framework will not
-> disable again all gatable clocks that are not used.
-> 
-> Therefore, if the clock driver does not save/restore the state of the
-> gatable clocks, all gatable clocks that are not claimed by any device
-> driver will remain enabled after a resume. This is why this driver
-> saves and restores the state of those clocks.
-> 
-> Since clocks aren't real devices, we don't have the normal ->suspend()
-> and ->resume() of the device model, and have to use the ->suspend()
-> and ->resume() hooks of the syscore_ops mechanism. This mechanism has
-> the unfortunate idea of not providing a way of passing private data,
-> which requires us to change the driver to make the assumption that
-> there is only once instance of the gatable clock control structure.
-> 
-> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: linux-kernel@vger.kernel.org
-> Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-Looks good to me. Which tree do you plan to take this through?
+* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Regards,
-Mike
+> Hi Josh,
+> 
+> Today's linux-next merge of the tiny tree got a conflict in
+> kernel/time/Makefile between commit fd866e2b116b ("time: Rename
+> udelay_test.c to test_udelay.c") from the tip tree and commit
+> d1f6d68d03ea ("kernel: time: Compile out NTP support") from the tiny
+> tree.
 
-> ---
->  drivers/clk/mvebu/common.c | 32 ++++++++++++++++++++++++++++++--
->  1 file changed, 30 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
-> index b7fcb46..0d4d121 100644
-> --- a/drivers/clk/mvebu/common.c
-> +++ b/drivers/clk/mvebu/common.c
-> @@ -19,6 +19,7 @@
->  #include <linux/io.h>
->  #include <linux/of.h>
->  #include <linux/of_address.h>
-> +#include <linux/syscore_ops.h>
->  
->  #include "common.h"
->  
-> @@ -177,14 +178,17 @@ struct clk_gating_ctrl {
->         spinlock_t *lock;
->         struct clk **gates;
->         int num_gates;
-> +       void __iomem *base;
-> +       u32 saved_reg;
->  };
->  
->  #define to_clk_gate(_hw) container_of(_hw, struct clk_gate, hw)
->  
-> +static struct clk_gating_ctrl *ctrl;
-> +
->  static struct clk *clk_gating_get_src(
->         struct of_phandle_args *clkspec, void *data)
->  {
-> -       struct clk_gating_ctrl *ctrl = (struct clk_gating_ctrl *)data;
->         int n;
->  
->         if (clkspec->args_count < 1)
-> @@ -199,15 +203,35 @@ static struct clk *clk_gating_get_src(
->         return ERR_PTR(-ENODEV);
->  }
->  
-> +static int mvebu_clk_gating_suspend(void)
-> +{
-> +       ctrl->saved_reg = readl(ctrl->base);
-> +       return 0;
-> +}
-> +
-> +static void mvebu_clk_gating_resume(void)
-> +{
-> +       writel(ctrl->saved_reg, ctrl->base);
-> +}
-> +
-> +static struct syscore_ops clk_gate_syscore_ops = {
-> +       .suspend = mvebu_clk_gating_suspend,
-> +       .resume = mvebu_clk_gating_resume,
-> +};
-> +
->  void __init mvebu_clk_gating_setup(struct device_node *np,
->                                    const struct clk_gating_soc_desc *desc)
->  {
-> -       struct clk_gating_ctrl *ctrl;
->         struct clk *clk;
->         void __iomem *base;
->         const char *default_parent = NULL;
->         int n;
->  
-> +       if (ctrl) {
-> +               pr_err("mvebu-clk-gating: cannot instantiate more than one gatable clock device\n");
-> +               return;
-> +       }
-> +
->         base = of_iomap(np, 0);
->         if (WARN_ON(!base))
->                 return;
-> @@ -225,6 +249,8 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
->         /* lock must already be initialized */
->         ctrl->lock = &ctrl_gating_lock;
->  
-> +       ctrl->base = base;
-> +
->         /* Count, allocate, and register clock gates */
->         for (n = 0; desc[n].name;)
->                 n++;
-> @@ -246,6 +272,8 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
->  
->         of_clk_add_provider(np, clk_gating_get_src, ctrl);
->  
-> +       register_syscore_ops(&clk_gate_syscore_ops);
-> +
->         return;
->  gates_out:
->         kfree(ctrl);
-> -- 
-> 2.1.0
-> 
+So I think a timer subsystem commit d1f6d68d03ea with this 
+magnitude of linecount increase:
+
+ Signed-off-by: Catalina Mocanu <catalina.mocanu@gmail.com>
+ [josh: Handle CONFIG_COMPAT=y.]
+ Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+ Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+ ---
+  drivers/pps/Kconfig        |  2 +-
+  include/linux/timex.h      | 15 +++++++++++++--
+  init/Kconfig               | 10 ++++++++++
+  kernel/compat.c            |  8 ++++++--
+  kernel/sys_ni.c            |  4 ++++
+  kernel/time/Makefile       |  3 ++-
+  kernel/time/ntp_internal.h | 28 ++++++++++++++++++++++++++++
+  kernel/time/posix-timers.c |  2 ++
+  kernel/time/time.c         |  2 ++
+  kernel/time/timekeeping.c  |  2 ++
+  10 files changed, 70 insertions(+), 6 deletions(-)
+
+at minimum needs the ack of timer folks, before it can be 
+committed to Git. Or is the tiny tree plan to submit all
+patches to the appropriate subsystem or gather acks, before 
+sending it upstream?
+
+Thanks,
+
+	Ingo
+
