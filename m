@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331AbaKYKq1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:46:27 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:64381 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002AbaKYKqY (ORCPT
+	id S932091AbaKYKnv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:43:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59231 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984AbaKYKnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:46:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141124152449.595d5d34@amdc2363>
-References: <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
-	<1416305790-27746-1-git-send-email-l.majewski@samsung.com>
-	<20141121180826.GA3331@developer>
-	<20141124113854.36975fb2@amdc2363>
-	<CAKohpok3pTEk05L7t+o6BYoODnBboAegg1o9dAj8=VOk8G7odQ@mail.gmail.com>
-	<20141124152449.595d5d34@amdc2363>
-Date: Tue, 25 Nov 2014 16:16:24 +0530
-Message-ID: <CAKohpomfdVdpnrg9zS-9a8M9pK7c3P=VTckSQ8v8wjqayO-HMQ@mail.gmail.com>
-Subject: Re: [PATCH v2] thermal:core:fix: Check return code of the
- ->get_max_state() callback
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincenzo Frascino <vincenzo.frascino@st.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 25 Nov 2014 05:43:47 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 243/254] pinctrl: dra: dt-bindings: Fix output pull up/down
+Date: Tue, 25 Nov 2014 10:39:53 +0000
+Message-Id: <1416912004-5928-244-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 November 2014 at 19:54, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> Reviewed-by: Lukasz Majewski <l.majewski@samsung.com>
+3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
 
-Would be better if you send it as reply to that one.
+------------------
+
+From: Roger Quadros <rogerq@ti.com>
+
+commit 73b3a6657a88ef5348a0d69c9a8107d6f01ae862 upstream.
+
+For PIN_OUTPUT_PULLUP and PIN_OUTPUT_PULLDOWN we must not set the
+PULL_DIS bit which disables the PULLs.
+
+PULL_ENA is a 0 and using it in an OR operation is a NOP, so don't
+use it in the PIN_OUTPUT_PULLUP/DOWN macros.
+
+Fixes: 23d9cec07c58 ("pinctrl: dra: dt-bindings: Fix pull enable/disable")
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Acked-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ include/dt-bindings/pinctrl/dra.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/dt-bindings/pinctrl/dra.h b/include/dt-bindings/pinctrl/dra.h
+index 3d33794e4f3e..7448edff4723 100644
+--- a/include/dt-bindings/pinctrl/dra.h
++++ b/include/dt-bindings/pinctrl/dra.h
+@@ -40,8 +40,8 @@
+ 
+ /* Active pin states */
+ #define PIN_OUTPUT		(0 | PULL_DIS)
+-#define PIN_OUTPUT_PULLUP	(PIN_OUTPUT | PULL_ENA | PULL_UP)
+-#define PIN_OUTPUT_PULLDOWN	(PIN_OUTPUT | PULL_ENA)
++#define PIN_OUTPUT_PULLUP	(PULL_UP)
++#define PIN_OUTPUT_PULLDOWN	(0)
+ #define PIN_INPUT		(INPUT_EN | PULL_DIS)
+ #define PIN_INPUT_SLEW		(INPUT_EN | SLEWCONTROL)
+ #define PIN_INPUT_PULLUP	(PULL_ENA | INPUT_EN | PULL_UP)
+-- 
+2.1.0
+
