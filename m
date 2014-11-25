@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691AbaKYLht (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:37:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58428 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113AbaKYKlb (ORCPT
+	id S1754954AbaKYLh4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:37:56 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40711 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754370AbaKYLhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:31 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 085/254] fs: Fix theoretical division by 0 in super_cache_scan().
-Date: Tue, 25 Nov 2014 10:37:15 +0000
-Message-Id: <1416912004-5928-86-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 25 Nov 2014 06:37:53 -0500
+From: Juergen Borleis <jbe@pengutronix.de>
+To: rtc-linux@googlegroups.com
+Cc: Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: [PATCH 1/2] RTC/i.MX/DryIce: trivial clean up code
+Date: Tue, 25 Nov 2014 12:37:47 +0100
+Message-Id: <1416915468-20552-1-git-send-email-jbe@pengutronix.de>
+X-Mailer: git-send-email 2.1.3
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
+X-SA-Exim-Mail-From: jbe@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-
-commit 475d0db742e3755c6b267f48577ff7cbb7dfda0d upstream.
-
-total_objects could be 0 and is used as a denom.
-
-While total_objects is a "long", total_objects == 0 unlikely happens for
-3.12 and later kernels because 32-bit architectures would not be able to
-hold (1 << 32) objects. However, total_objects == 0 may happen for kernels
-between 3.1 and 3.11 because total_objects in prune_super() was an "int"
-and (e.g.) x86_64 architecture might be able to hold (1 << 32) objects.
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Juergen Borleis <jbe@pengutronix.de>
 ---
- fs/super.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/rtc/rtc-imxdi.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index d20d5b11dedf..abb8c7f9599b 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -81,6 +81,8 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
- 	inodes = list_lru_count_node(&sb->s_inode_lru, sc->nid);
- 	dentries = list_lru_count_node(&sb->s_dentry_lru, sc->nid);
- 	total_objects = dentries + inodes + fs_objects + 1;
-+	if (!total_objects)
-+		total_objects = 1;
+diff --git a/drivers/rtc/rtc-imxdi.c b/drivers/rtc/rtc-imxdi.c
+index cd741c7..a2544f0 100644
+--- a/drivers/rtc/rtc-imxdi.c
++++ b/drivers/rtc/rtc-imxdi.c
+@@ -313,7 +313,7 @@ static irqreturn_t dryice_norm_irq(int irq, void *dev_id)
+ 	dier = __raw_readl(imxdi->ioaddr + DIER);
  
- 	/* proportion the scan between the caches */
- 	dentries = mult_frac(sc->nr_to_scan, dentries, total_objects);
+ 	/* handle write complete and write error cases */
+-	if ((dier & DIER_WCIE)) {
++	if (dier & DIER_WCIE) {
+ 		/*If the write wait queue is empty then there is no pending
+ 		  operations. It means the interrupt is for DryIce -Security.
+ 		  IRQ must be returned as none.*/
+@@ -322,7 +322,7 @@ static irqreturn_t dryice_norm_irq(int irq, void *dev_id)
+ 
+ 		/* DSR_WCF clears itself on DSR read */
+ 		dsr = __raw_readl(imxdi->ioaddr + DSR);
+-		if ((dsr & (DSR_WCF | DSR_WEF))) {
++		if (dsr & (DSR_WCF | DSR_WEF)) {
+ 			/* mask the interrupt */
+ 			di_int_disable(imxdi, DIER_WCIE);
+ 
+@@ -335,7 +335,7 @@ static irqreturn_t dryice_norm_irq(int irq, void *dev_id)
+ 	}
+ 
+ 	/* handle the alarm case */
+-	if ((dier & DIER_CAIE)) {
++	if (dier & DIER_CAIE) {
+ 		/* DSR_WCF clears itself on DSR read */
+ 		dsr = __raw_readl(imxdi->ioaddr + DSR);
+ 		if (dsr & DSR_CAF) {
 -- 
-2.1.0
+2.1.3
 
