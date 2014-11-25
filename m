@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751033AbaKYPY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:24:28 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:45176 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750863AbaKYPY0 (ORCPT
+	id S1751208AbaKYPYk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:24:40 -0500
+Received: from benson.vm.bytemark.co.uk ([212.110.190.137]:56746 "EHLO
+	benson.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077AbaKYPYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:24:26 -0500
-Date: Tue, 25 Nov 2014 10:24:25 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Benson Leung <bleung@chromium.org>
-cc: johan@kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        <linux-usb@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sameer Nanda <snanda@chromium.org>
-Subject: Re: [PATCH] HID: usbhid: get/put around clearing needs_remote_wakeup
-In-Reply-To: <CANLzEkuZYrF_tLq5k3xBBkSmtszL851ZK7VW8Jav3vKdw9JLMA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1411251022141.976-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 25 Nov 2014 10:24:38 -0500
+Message-ID: <1416929071.16769.1.camel@debian.org>
+Subject: Re: [PATCH] of: support passing console options with stdout-path
+From: Ian Campbell <ijc@debian.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Date: Tue, 25 Nov 2014 15:24:31 +0000
+In-Reply-To: <CACxGe6v2i3iJGjK9s6HSBxV6bUwVrAtGYj=FAOb0AFEx3KVYEg@mail.gmail.com>
+References: <1416867838-18652-1-git-send-email-leif.lindholm@linaro.org>
+	 <20141125145854.A46EDC44343@trevor.secretlab.ca>
+	 <20141125151515.GG2361@bivouac.eciton.net>
+	 <CACxGe6v2i3iJGjK9s6HSBxV6bUwVrAtGYj=FAOb0AFEx3KVYEg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014, Benson Leung wrote:
-
-> Hi Alan,
-> 
-> 
-> On Sat, Nov 22, 2014 at 7:55 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > There is no USB wrapper for pm_runtime_idle calls, but one could be
-> > added.  Still, in the meantime can you check to see what happens if you
-> > add
+On Tue, 2014-11-25 at 15:20 +0000, Grant Likely wrote:
+> On Tue, Nov 25, 2014 at 3:15 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
+> > On Tue, Nov 25, 2014 at 02:58:54PM +0000, Grant Likely wrote:
+> >> > +           len = strchrnul(path, ':') - path;
+> >> > +
+> >> >             for_each_property_of_node(of_aliases, pp) {
+> >> >                     if (strlen(pp->name) == len && !strncmp(pp->name, path, len)) {
+> >> >                             np = of_find_node_by_path(pp->value);
+> >>
+> >> Can you add a testcase to drivers/of/unittests.c for this new path
+> >> parsing? Then we know it's correct!
 > >
-> >         pm_runtime_idle(&usbhid->intf->dev);
+> > Will do.
 > >
-> > in usbhid_close() just after needs_remote_wakeup is set to 0?  You can
-> > do the same thing in usbhid_stop() if you want.
+> >> > @@ -1830,8 +1835,12 @@ void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
+> >> >                     name = of_get_property(of_chosen, "linux,stdout-path", NULL);
+> >> >             if (IS_ENABLED(CONFIG_PPC) && !name)
+> >> >                     name = of_get_property(of_aliases, "stdout", NULL);
+> >> > -           if (name)
+> >> > +           if (name) {
+> >> >                     of_stdout = of_find_node_by_path(name);
+> >> > +                   of_stdout_options = strchr(name, ':');
+> >> > +                   if (of_stdout_options != NULL)
+> >> > +                           of_stdout_options++;
+> >> > +           }
+> >>
+> >> Not so good. The ':' should actually be a generic part of
+> >> of_find_node_by_path(), it doesn't have to be limited to stdout parsing.
+> >> There are other places that would use it. I would add a second,
+> >> optional, argument to of_find_node_by_path() that will update a pointer
+> >> to the arguments after the ':'.
+> >
+> > So, I agree this would be nicer...
+> >
+> > However, I'm counting 157 callers of this function outside of
+> > drivers/of and 43 inside. Any chance you'd let me get away with a
+> > separate of_find_extra_options_by_path()?
 > 
-> I tried using this in lieu of usb_autopm_get/put_interface:
+> I'd rather not. It is a trivial change and can be pretty much done
+> mechanically. Something like (I think; I always have to look up the
+> sed syntax):
 > 
->     usbhid->intf->needs_remote_wakeup = 0;
->     pm_runtime_idle(&usbhid->intf->dev);
->     pm_runtime_idle(usbhid->intf->dev.parent);
-> 
-> It did not work. I see the autosuspend_check() that was kicked off as
-> a result of hid_hw_power, which falls into the "remote wakeup needed
-> for autosuspend" branch, but I don't see another autosuspend_check()
-> that picks up the updated value of  needs_remote_wakeup.
+> sed s/of_find_node_by_path\((.*)\)/of_find_node_by_path\(\1, NULL\)
 
-Well, why not?
+Coccinelle rules for this sort of transformation...
 
-In order to work on the kernel effectively, you need the right 
-mind-set.  Don't just tell people when something goes wrong -- figure 
-out why the problem occurred and propose a way to fix it.
-
-Alan Stern
+Ian.
 
