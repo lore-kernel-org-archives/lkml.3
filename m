@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751113AbaKYS6J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 13:58:09 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:35987 "EHLO mail.skyhub.de"
+	id S1751488AbaKYS7F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 13:59:05 -0500
+Received: from imap.thunk.org ([74.207.234.97]:51252 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809AbaKYS6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 13:58:07 -0500
-Date: Tue, 25 Nov 2014 19:58:03 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>, X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
- context
-Message-ID: <20141125185803.GC3938@pd.tnic>
-References: <20141124205441.GW5050@linux.vnet.ibm.com>
- <CALCETrXBofV3oxDwK4MiSvFQcX3yxX_sL_KY63EZ8DgS8LnJSg@mail.gmail.com>
- <20141124213501.GX5050@linux.vnet.ibm.com>
- <20141124223407.GB8512@linux.vnet.ibm.com>
- <CALCETrUA+z5z6bnOw63-EUiFD4WQtBXm1TE2DSRj3uG+d_k-bQ@mail.gmail.com>
- <20141124225754.GY5050@linux.vnet.ibm.com>
- <20141124233101.GA2819@linux.vnet.ibm.com>
- <CALCETrV37kqC658AzBHZ5z_vH2b_1T821q5EfbMcS9Ecpj8EEw@mail.gmail.com>
- <20141124235058.GZ5050@linux.vnet.ibm.com>
- <CALCETrUFwyBYFWZi4JC1-HftmUumLr+bB1kh8EW6LViN+G+j+g@mail.gmail.com>
+	id S1750951AbaKYS7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 13:59:01 -0500
+Date: Tue, 25 Nov 2014 13:58:06 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: David Miller <davem@davemloft.net>
+Cc: paulmck@linux.vnet.ibm.com, rdunlap@infradead.org, pieter@boesman.nl,
+        josh@joshtriplett.org, alexander.h.duyck@intel.com,
+        viro@zeniv.linux.org.uk, ast@plumgrid.com, akpm@linux-foundation.org,
+        beber@meleeweb.net, catalina.mocanu@gmail.com, dborkman@redhat.com,
+        edumazet@google.com, ebiederm@xmission.com, fabf@skynet.be,
+        fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
+        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
+        bfields@fieldses.org, jlayton@poochiereds.net,
+        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        mcgrof@suse.com, mattst88@gmail.com, mgorman@suse.de, mst@redhat.com,
+        miklos@szeredi.hu, netdev@vger.kernel.org, oleg@redhat.com,
+        Paul.Durrant@citrix.com, pefoley2@pefoley.com, tgraf@suug.ch,
+        therbert@google.com, trond.myklebust@primarydata.com,
+        willemb@google.com, xiaoguangrong@linux.vnet.ibm.com,
+        zhenglong.cai@cs2c.com.cn
+Subject: Re: [PATCH v4 0/7] kernel tinification: optionally compile out
+ splice family of syscalls (splice, vmsplice, tee and sendfile)
+Message-ID: <20141125185806.GA28116@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	David Miller <davem@davemloft.net>, paulmck@linux.vnet.ibm.com,
+	rdunlap@infradead.org, pieter@boesman.nl, josh@joshtriplett.org,
+	alexander.h.duyck@intel.com, viro@zeniv.linux.org.uk,
+	ast@plumgrid.com, akpm@linux-foundation.org, beber@meleeweb.net,
+	catalina.mocanu@gmail.com, dborkman@redhat.com, edumazet@google.com,
+	ebiederm@xmission.com, fabf@skynet.be,
+	fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
+	hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
+	bfields@fieldses.org, jlayton@poochiereds.net,
+	linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+	mcgrof@suse.com, mattst88@gmail.com, mgorman@suse.de,
+	mst@redhat.com, miklos@szeredi.hu, netdev@vger.kernel.org,
+	oleg@redhat.com, Paul.Durrant@citrix.com, pefoley2@pefoley.com,
+	tgraf@suug.ch, therbert@google.com, trond.myklebust@primarydata.com,
+	willemb@google.com, xiaoguangrong@linux.vnet.ibm.com,
+	zhenglong.cai@cs2c.com.cn
+References: <5474ABB6.3030400@infradead.org>
+ <20141125.121305.2094097848188324942.davem@davemloft.net>
+ <20141125181032.GJ5050@linux.vnet.ibm.com>
+ <20141125.132445.152609149279137368.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrUFwyBYFWZi4JC1-HftmUumLr+bB1kh8EW6LViN+G+j+g@mail.gmail.com>
+In-Reply-To: <20141125.132445.152609149279137368.davem@davemloft.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 03:52:10PM -0800, Andy Lutomirski wrote:
-> Dunno. Tony and Borislav -- when do you want the IST stack switching
-> stuff?
+On Tue, Nov 25, 2014 at 01:24:45PM -0500, David Miller wrote:
+> 
+> And then if some fundamental part of userland (glibc, klibc, etc.) finds
+> a useful way to use splice for a fundamental operation, we're back to
+> square one.
 
-I'd leave that up to Tony and his testbench. I mean, we can hammer on
-it as much as we can and it can pass all testing locally but the real
-fun starts once it hits upstream and for that it doesn't matter which
-release... IMHO.
+I'll note that the applications for these super-tiny kernels are
+places where it's not likely they would be using glibc at all; think
+very tiny embedded systems.  The userspace tends to be highly
+restricted for the same space reasons why there is an effort to make
+the kernel as small as possible.
 
--- 
-Regards/Gruss,
-    Boris.
+In these places, they are using Linux already, but they're using a 2.2
+or 2.4 kernel because 3.0 is just too damned big.  So the goal is to
+try to provide them an alternative which allows them to use a modern,
+but stripped down kernel.  If glibc or klibc isn't going to work
+without splice, then it's not going to work on a pre 2.6 kernel
+anyway, so things are no worse with these systems anyway.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+After all, if we can get these systems to using a 3.x kernel w/o
+splice, that's surely better than their using a 2.2 or 2.4 kernel w/o
+the splice system, isn't it?
+
+Cheers,
+
+					- Ted
