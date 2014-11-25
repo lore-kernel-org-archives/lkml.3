@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaKYKlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:41:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58353 "EHLO
+	id S1755155AbaKYLlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:41:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58382 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108AbaKYKlT (ORCPT
+	with ESMTP id S1753147AbaKYKlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:19 -0500
+	Tue, 25 Nov 2014 05:41:24 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Mack <daniel@zonque.org>, Mark Brown <broonie@kernel.org>,
+Cc: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Fu Zhonghui <zhonghui.fu@linux.intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 076/254] ASoC: soc-dapm: fix use after free
-Date: Tue, 25 Nov 2014 10:37:06 +0000
-Message-Id: <1416912004-5928-77-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 078/254] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
+Date: Tue, 25 Nov 2014 10:37:08 +0000
+Message-Id: <1416912004-5928-79-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,90 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <daniel@zonque.org>
+From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
 
-commit e5092c96c9c28f4d12811edcd02ca8eec16e748e upstream.
+commit dea67c4ec8218b301d7cac7ee6e63dac0bc566cb upstream.
 
-Coverity spotted the following possible use-after-free condition in
-dapm_create_or_share_mixmux_kcontrol():
+781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
+bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
+the use of our own custom threaded IRQ handler, but left in an
+unconditional wake_up_process() on that handler at resume-time.
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
 
-If kcontrol is NULL, and (wname_in_long_name && kcname_in_long_name)
-validates to true, 'name' will be set to an allocated string, and be
-freed a few lines later via the 'long_name' alias. 'name', however,
-is used by dev_err() in case snd_ctl_add() fails.
+In addition, the check for MMC_CAP_SDIO_IRQ capability is added
+before enable sdio IRQ.
 
-Fix this by adding a jump label that frees 'long_name' at the end of
-the function.
-
-Signed-off-by: Daniel Mack <daniel@zonque.org>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
+Signed-off-by: Chris Ball <chris@printf.net>
+Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/soc-dapm.c | 25 ++++++++++++++-----------
- 1 file changed, 14 insertions(+), 11 deletions(-)
+ drivers/mmc/core/sdio.c     | 12 ++++++++++--
+ drivers/mmc/core/sdio_irq.c |  4 ++--
+ 2 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-index cdc837ed144d..8065fd81b40c 100644
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -566,9 +566,9 @@ static int dapm_create_or_share_mixmux_kcontrol(struct snd_soc_dapm_widget *w,
- 	int shared;
- 	struct snd_kcontrol *kcontrol;
- 	bool wname_in_long_name, kcname_in_long_name;
--	char *long_name;
-+	char *long_name = NULL;
- 	const char *name;
--	int ret;
-+	int ret = 0;
- 
- 	if (dapm->codec)
- 		prefix = dapm->codec->name_prefix;
-@@ -631,15 +631,17 @@ static int dapm_create_or_share_mixmux_kcontrol(struct snd_soc_dapm_widget *w,
- 
- 		kcontrol = snd_soc_cnew(&w->kcontrol_news[kci], NULL, name,
- 					prefix);
--		kfree(long_name);
--		if (!kcontrol)
--			return -ENOMEM;
-+		if (!kcontrol) {
-+			ret = -ENOMEM;
-+			goto exit_free;
-+		}
-+
- 		kcontrol->private_free = dapm_kcontrol_free;
- 
- 		ret = dapm_kcontrol_data_alloc(w, kcontrol);
- 		if (ret) {
- 			snd_ctl_free_one(kcontrol);
--			return ret;
-+			goto exit_free;
- 		}
- 
- 		ret = snd_ctl_add(card, kcontrol);
-@@ -647,17 +649,18 @@ static int dapm_create_or_share_mixmux_kcontrol(struct snd_soc_dapm_widget *w,
- 			dev_err(dapm->dev,
- 				"ASoC: failed to add widget %s dapm kcontrol %s: %d\n",
- 				w->name, name, ret);
--			return ret;
-+			goto exit_free;
+diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+index e636d9e99e4a..3fc40a7140a8 100644
+--- a/drivers/mmc/core/sdio.c
++++ b/drivers/mmc/core/sdio.c
+@@ -992,8 +992,16 @@ static int mmc_sdio_resume(struct mmc_host *host)
  		}
  	}
  
- 	ret = dapm_kcontrol_add_widget(kcontrol, w);
--	if (ret)
--		return ret;
-+	if (ret == 0)
-+		w->kcontrols[kci] = kcontrol;
+-	if (!err && host->sdio_irqs)
+-		wake_up_process(host->sdio_irq_thread);
++	if (!err && host->sdio_irqs) {
++		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
++			wake_up_process(host->sdio_irq_thread);
++		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
++			mmc_host_clk_hold(host);
++			host->ops->enable_sdio_irq(host, 1);
++			mmc_host_clk_release(host);
++		}
++	}
++
+ 	mmc_release_host(host);
  
--	w->kcontrols[kci] = kcontrol;
-+exit_free:
-+	kfree(long_name);
- 
--	return 0;
-+	return ret;
- }
- 
- /* create new dapm mixer control */
+ 	host->pm_flags &= ~MMC_PM_KEEP_POWER;
+diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
+index 5cc13c8d35bb..696eca493844 100644
+--- a/drivers/mmc/core/sdio_irq.c
++++ b/drivers/mmc/core/sdio_irq.c
+@@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
+ 				host->sdio_irqs--;
+ 				return err;
+ 			}
+-		} else {
++		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
+ 			mmc_host_clk_hold(host);
+ 			host->ops->enable_sdio_irq(host, 1);
+ 			mmc_host_clk_release(host);
+@@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
+ 		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
+ 			atomic_set(&host->sdio_irq_thread_abort, 1);
+ 			kthread_stop(host->sdio_irq_thread);
+-		} else {
++		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
+ 			mmc_host_clk_hold(host);
+ 			host->ops->enable_sdio_irq(host, 0);
+ 			mmc_host_clk_release(host);
 -- 
 2.1.0
 
