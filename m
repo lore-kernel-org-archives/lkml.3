@@ -1,102 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaKYRTp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:19:45 -0500
-Received: from mga09.intel.com ([134.134.136.24]:25656 "EHLO mga09.intel.com"
+	id S1752278AbaKYRTx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:19:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47481 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905AbaKYRTn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:19:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,456,1413270000"; 
-   d="scan'208";a="613861169"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: Jiri Olsa <jolsa@redhat.com>
-CC: "acme@kernel.org" <acme@kernel.org>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: RE: [PATCH V5 3/3] perf tool: check buildid for symoff
-Thread-Topic: [PATCH V5 3/3] perf tool: check buildid for symoff
-Thread-Index: AQHQCAJK8ZnshsuiH02FNfwCATHuw5xwvrCAgADMslA=
-Date: Tue, 25 Nov 2014 17:19:23 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F07701676387@SHSMSX103.ccr.corp.intel.com>
-References: <1416844829-26945-1-git-send-email-kan.liang@intel.com>
- <1416844829-26945-3-git-send-email-kan.liang@intel.com>
- <20141125122159.GF30861@krava.brq.redhat.com>
-In-Reply-To: <20141125122159.GF30861@krava.brq.redhat.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752245AbaKYRTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 12:19:51 -0500
+Date: Tue, 25 Nov 2014 18:42:01 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: [PATCH v4 09/42] virtio: set FEATURES_OK
+Message-ID: <1416933600-21398-10-git-send-email-mst@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416933600-21398-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+set FEATURES_OK as per virtio 1.0 spec
 
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/uapi/linux/virtio_config.h |  2 ++
+ drivers/virtio/virtio.c            | 29 ++++++++++++++++++++++-------
+ 2 files changed, 24 insertions(+), 7 deletions(-)
 
-> > +	data__for_each_file_new(i, d) {
-> > +		k_dsos_tmp = &d->session->machines.host.kernel_dsos;
-> > +		u_dsos_tmp = &d->session->machines.host.user_dsos;
-> > +
-> > +		if (!dsos__build_ids_equal(base_k_dsos, k_dsos_tmp))
-> > +			pr_warning("The perf.data come from different
-> kernel. "
-> > +				   "The kernel symbol offset may vary for
-> different kernel.\n");
-> > +
-> > +		if (!dsos__build_ids_equal(base_u_dsos, u_dsos_tmp))
-> 
-> looks like at this time not all dsos on the list have the buildids read..
-> 
+diff --git a/include/uapi/linux/virtio_config.h b/include/uapi/linux/virtio_config.h
+index 80e7381..4d05671 100644
+--- a/include/uapi/linux/virtio_config.h
++++ b/include/uapi/linux/virtio_config.h
+@@ -38,6 +38,8 @@
+ #define VIRTIO_CONFIG_S_DRIVER		2
+ /* Driver has used its parts of the config, and is happy */
+ #define VIRTIO_CONFIG_S_DRIVER_OK	4
++/* Driver has finished configuring features */
++#define VIRTIO_CONFIG_S_FEATURES_OK	8
+ /* We've given up on this device. */
+ #define VIRTIO_CONFIG_S_FAILED		0x80
+ 
+diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+index d213567..a3df817 100644
+--- a/drivers/virtio/virtio.c
++++ b/drivers/virtio/virtio.c
+@@ -160,6 +160,7 @@ static int virtio_dev_probe(struct device *_d)
+ 	struct virtio_device *dev = dev_to_virtio(_d);
+ 	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
+ 	u64 device_features;
++	unsigned status;
+ 
+ 	/* We have a driver! */
+ 	add_status(dev, VIRTIO_CONFIG_S_DRIVER);
+@@ -183,18 +184,32 @@ static int virtio_dev_probe(struct device *_d)
+ 
+ 	dev->config->finalize_features(dev);
+ 
++	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
++		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
++		status = dev->config->get_status(dev);
++		if (!(status & VIRTIO_CONFIG_S_FEATURES_OK)) {
++			printk(KERN_ERR "virtio: device refuses features: %x\n",
++			       status);
++			err = -ENODEV;
++			goto err;
++		}
++	}
++
+ 	err = drv->probe(dev);
+ 	if (err)
+-		add_status(dev, VIRTIO_CONFIG_S_FAILED);
+-	else {
+-		add_status(dev, VIRTIO_CONFIG_S_DRIVER_OK);
+-		if (drv->scan)
+-			drv->scan(dev);
++		goto err;
+ 
+-		virtio_config_enable(dev);
+-	}
++	add_status(dev, VIRTIO_CONFIG_S_DRIVER_OK);
++	if (drv->scan)
++		drv->scan(dev);
++
++	virtio_config_enable(dev);
+ 
++	return 0;
++err:
++	add_status(dev, VIRTIO_CONFIG_S_FAILED);
+ 	return err;
++
+ }
+ 
+ static int virtio_dev_remove(struct device *_d)
+-- 
+MST
 
-Right, I shouldn't assume all dsos have biuldids. I will modify the
-dsos__build_ids_equal to check has_build_id.
-If neither dsos have build_id, it will print
-pr_debug ("Cannot get build_id for all dsos\n") once, and continue to do
-next dso compare.
-
-All the buildid compare related warnings will also be printed once.
-
-> I tried to put in here the perf_session__read_build_ids call but it keeps
-> showing me warning below:
-> 
-> > +			pr_warning("The perf.data come from different
-> user binary. "
-> > +				   "The user space symbol offset may vary
-> for different
-> > +binaries.\n");
-> 
-> for following workload:
-> 
-> [jolsa@krava perf]$ ./perf record ls
-> ...
-> [ perf record: Woken up 1 times to write data ] [ perf record: Captured and
-> wrote 0.012 MB perf.data (~540 samples) ] [jolsa@krava perf]$ ./perf
-> record ls ...
-> [ perf record: Woken up 1 times to write data ] [ perf record: Captured and
-> wrote 0.012 MB perf.data (~540 samples) ] [jolsa@krava perf]$ ./perf diff -
-> s symoff The perf.data come from different user binary. The user space
-> symbol offset may vary for different binaries.
-> # Event 'cycles'
-> ...
-
-Another reason for the false warning is that we use long_name to find the dso_b.
-However, the long_name is not unique.
-The vmlinux dso is added when processing header. Its long name and short name
-are same. (E.g. /lib/modules/3.18.0-rc3-01635-g05066a2-dirty/build/vmlinux)
-When processing sample, vmlinux is loaded. Two new dsos are added for section
-"init.text" and "exit.text".  They also have the long name
-/lib/modules/3.18.0-rc3-01635-g05066a2-dirty/build/vmlinux. But their short
-name are different, [kernel.vmlinux].init.text and [kernel.vmlinux].exit.text.
-
-So I will change the dsos__build_ids_equal to find the dso by short_name.
-
-Kan
-> 
-> 
-> jirka
