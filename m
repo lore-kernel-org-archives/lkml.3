@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302AbaKYLJM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:09:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58886 "EHLO
+	id S1754887AbaKYLJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:09:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58866 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753778AbaKYKmr (ORCPT
+	with ESMTP id S1753717AbaKYKmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:47 -0500
+	Tue, 25 Nov 2014 05:42:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Junjie Mao <eternal.n08@gmail.com>, Kees Cook <keescook@chromium.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Vivek Goyal <vgoyal@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 176/254] Input: synaptics - add min/max quirk for Lenovo T440s
-Date: Tue, 25 Nov 2014 10:38:46 +0000
-Message-Id: <1416912004-5928-177-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 164/254] x86, kaslr: Prevent .bss from overlaping initrd
+Date: Tue, 25 Nov 2014 10:38:34 +0000
+Message-Id: <1416912004-5928-165-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,45 +32,232 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Junjie Mao <eternal.n08@gmail.com>
 
-commit e4742b1e786ca386e88e6cfb2801e14e15e365cd upstream.
+commit e6023367d779060fddc9a52d1f474085b2b36298 upstream.
 
-The new Lenovo T440s laptop has a different PnP ID "LEN0039", and it
-needs the similar min/max quirk to make its clickpad working.
+When choosing a random address, the current implementation does not take into
+account the reversed space for .bss and .brk sections. Thus the relocated kernel
+may overlap other components in memory. Here is an example of the overlap from a
+x86_64 kernel in qemu (the ranges of physical addresses are presented):
 
-BugLink: https://bugzilla.opensuse.org/show_bug.cgi?id=903748
-Reported-and-tested-by: Joschi Brauchle <joschibrauchle@gmx.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+ Physical Address
+
+    0x0fe00000                  --+--------------------+  <-- randomized base
+                               /  |  relocated kernel  |
+                   vmlinux.bin    | (from vmlinux.bin) |
+    0x1336d000    (an ELF file)   +--------------------+--
+                               \  |                    |  \
+    0x1376d870                  --+--------------------+   |
+                                  |    relocs table    |   |
+    0x13c1c2a8                    +--------------------+   .bss and .brk
+                                  |                    |   |
+    0x13ce6000                    +--------------------+   |
+                                  |                    |  /
+    0x13f77000                    |       initrd       |--
+                                  |                    |
+    0x13fef374                    +--------------------+
+
+The initrd image will then be overwritten by the memset during early
+initialization:
+
+[    1.655204] Unpacking initramfs...
+[    1.662831] Initramfs unpacking failed: junk in compressed archive
+
+This patch prevents the above situation by requiring a larger space when looking
+for a random kernel base, so that existing logic can effectively avoids the
+overlap.
+
+[kees: switched to perl to avoid hex translation pain in mawk vs gawk]
+[kees: calculated overlap without relocs table]
+
+Fixes: 82fa9637a2 ("x86, kaslr: Select random position from e820 maps")
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Junjie Mao <eternal.n08@gmail.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Link: http://lkml.kernel.org/r/1414762838-13067-1-git-send-email-eternal.n08@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/input/mouse/synaptics.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/boot/compressed/Makefile  |  4 +++-
+ arch/x86/boot/compressed/head_32.S |  5 +++--
+ arch/x86/boot/compressed/head_64.S |  5 ++++-
+ arch/x86/boot/compressed/misc.c    | 13 ++++++++++---
+ arch/x86/boot/compressed/mkpiggy.c |  9 +++++++--
+ arch/x86/tools/calc_run_size.pl    | 30 ++++++++++++++++++++++++++++++
+ 6 files changed, 57 insertions(+), 9 deletions(-)
+ create mode 100644 arch/x86/tools/calc_run_size.pl
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 58902332cf33..3dcdeb785649 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -132,8 +132,8 @@ static const struct min_max_quirk min_max_pnpid_table[] = {
- 		1232, 5710, 1156, 4696
- 	},
- 	{
--		(const char * const []){"LEN0034", "LEN0036", "LEN2002",
--					"LEN2004", NULL},
-+		(const char * const []){"LEN0034", "LEN0036", "LEN0039",
-+					"LEN2002", "LEN2004", NULL},
- 		1024, 5112, 2024, 4832
- 	},
- 	{
-@@ -160,6 +160,7 @@ static const char * const topbuttonpad_pnp_ids[] = {
- 	"LEN0036", /* T440 */
- 	"LEN0037",
- 	"LEN0038",
-+	"LEN0039", /* T440s */
- 	"LEN0041",
- 	"LEN0042", /* Yoga */
- 	"LEN0045",
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 0fcd9133790c..14fe7cba21d1 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -75,8 +75,10 @@ suffix-$(CONFIG_KERNEL_XZ)	:= xz
+ suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
+ suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
+ 
++RUN_SIZE = $(shell objdump -h vmlinux | \
++	     perl $(srctree)/arch/x86/tools/calc_run_size.pl)
+ quiet_cmd_mkpiggy = MKPIGGY $@
+-      cmd_mkpiggy = $(obj)/mkpiggy $< > $@ || ( rm -f $@ ; false )
++      cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
+ 
+ targets += piggy.S
+ $(obj)/piggy.S: $(obj)/vmlinux.bin.$(suffix-y) $(obj)/mkpiggy FORCE
+diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+index cbed1407a5cd..1d7fbbcc196d 100644
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -207,7 +207,8 @@ relocated:
+  * Do the decompression, and jump to the new kernel..
+  */
+ 				/* push arguments for decompress_kernel: */
+-	pushl	$z_output_len	/* decompressed length */
++	pushl	$z_run_size	/* size of kernel with .bss and .brk */
++	pushl	$z_output_len	/* decompressed length, end of relocs */
+ 	leal	z_extract_offset_negative(%ebx), %ebp
+ 	pushl	%ebp		/* output address */
+ 	pushl	$z_input_len	/* input_len */
+@@ -217,7 +218,7 @@ relocated:
+ 	pushl	%eax		/* heap area */
+ 	pushl	%esi		/* real mode pointer */
+ 	call	decompress_kernel /* returns kernel location in %eax */
+-	addl	$24, %esp
++	addl	$28, %esp
+ 
+ /*
+  * Jump to the decompressed kernel.
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 2884e0c3e8a5..6b1766c6c082 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -402,13 +402,16 @@ relocated:
+  * Do the decompression, and jump to the new kernel..
+  */
+ 	pushq	%rsi			/* Save the real mode argument */
++	movq	$z_run_size, %r9	/* size of kernel with .bss and .brk */
++	pushq	%r9
+ 	movq	%rsi, %rdi		/* real mode address */
+ 	leaq	boot_heap(%rip), %rsi	/* malloc area for uncompression */
+ 	leaq	input_data(%rip), %rdx  /* input_data */
+ 	movl	$z_input_len, %ecx	/* input_len */
+ 	movq	%rbp, %r8		/* output target address */
+-	movq	$z_output_len, %r9	/* decompressed length */
++	movq	$z_output_len, %r9	/* decompressed length, end of relocs */
+ 	call	decompress_kernel	/* returns kernel location in %rax */
++	popq	%r9
+ 	popq	%rsi
+ 
+ /*
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 57ab74df7eea..30dd59a9f0b4 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -358,7 +358,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+ 				  unsigned char *input_data,
+ 				  unsigned long input_len,
+ 				  unsigned char *output,
+-				  unsigned long output_len)
++				  unsigned long output_len,
++				  unsigned long run_size)
+ {
+ 	real_mode = rmode;
+ 
+@@ -381,8 +382,14 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+ 	free_mem_ptr     = heap;	/* Heap */
+ 	free_mem_end_ptr = heap + BOOT_HEAP_SIZE;
+ 
+-	output = choose_kernel_location(input_data, input_len,
+-					output, output_len);
++	/*
++	 * The memory hole needed for the kernel is the larger of either
++	 * the entire decompressed kernel plus relocation table, or the
++	 * entire decompressed kernel plus .bss and .brk sections.
++	 */
++	output = choose_kernel_location(input_data, input_len, output,
++					output_len > run_size ? output_len
++							      : run_size);
+ 
+ 	/* Validate memory location choices. */
+ 	if ((unsigned long)output & (MIN_KERNEL_ALIGN - 1))
+diff --git a/arch/x86/boot/compressed/mkpiggy.c b/arch/x86/boot/compressed/mkpiggy.c
+index b669ab65bf6c..d8222f213182 100644
+--- a/arch/x86/boot/compressed/mkpiggy.c
++++ b/arch/x86/boot/compressed/mkpiggy.c
+@@ -36,11 +36,13 @@ int main(int argc, char *argv[])
+ 	uint32_t olen;
+ 	long ilen;
+ 	unsigned long offs;
++	unsigned long run_size;
+ 	FILE *f = NULL;
+ 	int retval = 1;
+ 
+-	if (argc < 2) {
+-		fprintf(stderr, "Usage: %s compressed_file\n", argv[0]);
++	if (argc < 3) {
++		fprintf(stderr, "Usage: %s compressed_file run_size\n",
++				argv[0]);
+ 		goto bail;
+ 	}
+ 
+@@ -74,6 +76,7 @@ int main(int argc, char *argv[])
+ 	offs += olen >> 12;	/* Add 8 bytes for each 32K block */
+ 	offs += 64*1024 + 128;	/* Add 64K + 128 bytes slack */
+ 	offs = (offs+4095) & ~4095; /* Round to a 4K boundary */
++	run_size = atoi(argv[2]);
+ 
+ 	printf(".section \".rodata..compressed\",\"a\",@progbits\n");
+ 	printf(".globl z_input_len\n");
+@@ -85,6 +88,8 @@ int main(int argc, char *argv[])
+ 	/* z_extract_offset_negative allows simplification of head_32.S */
+ 	printf(".globl z_extract_offset_negative\n");
+ 	printf("z_extract_offset_negative = -0x%lx\n", offs);
++	printf(".globl z_run_size\n");
++	printf("z_run_size = %lu\n", run_size);
+ 
+ 	printf(".globl input_data, input_data_end\n");
+ 	printf("input_data:\n");
+diff --git a/arch/x86/tools/calc_run_size.pl b/arch/x86/tools/calc_run_size.pl
+new file mode 100644
+index 000000000000..0b0b124d3ece
+--- /dev/null
++++ b/arch/x86/tools/calc_run_size.pl
+@@ -0,0 +1,30 @@
++#!/usr/bin/perl
++#
++# Calculate the amount of space needed to run the kernel, including room for
++# the .bss and .brk sections.
++#
++# Usage:
++# objdump -h a.out | perl calc_run_size.pl
++use strict;
++
++my $mem_size = 0;
++my $file_offset = 0;
++
++my $sections=" *[0-9]+ \.(?:bss|brk) +";
++while (<>) {
++	if (/^$sections([0-9a-f]+) +(?:[0-9a-f]+ +){2}([0-9a-f]+)/) {
++		my $size = hex($1);
++		my $offset = hex($2);
++		$mem_size += $size;
++		if ($file_offset == 0) {
++			$file_offset = $offset;
++		} elsif ($file_offset != $offset) {
++			die ".bss and .brk lack common file offset\n";
++		}
++	}
++}
++
++if ($file_offset == 0) {
++	die "Never found .bss or .brk file offset\n";
++}
++printf("%d\n", $mem_size + $file_offset);
 -- 
 2.1.0
 
