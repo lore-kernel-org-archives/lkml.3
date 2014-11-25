@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649AbaKYVSD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 16:18:03 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:34796 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaKYVSB convert rfc822-to-8bit (ORCPT
+	id S1751774AbaKYVSt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 16:18:49 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:33443 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaKYVSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 16:18:01 -0500
+	Tue, 25 Nov 2014 16:18:46 -0500
 MIME-Version: 1.0
-In-Reply-To: <6F1FC669-B4AE-4593-A1EE-6F72C38D117B@me.com>
-References: <6F1FC669-B4AE-4593-A1EE-6F72C38D117B@me.com>
-Date: Tue, 25 Nov 2014 13:18:00 -0800
-X-Google-Sender-Auth: E411t5ok0-sAgpSeWBsFrhACItg
-Message-ID: <CAE9FiQXe2YMN6bL8jdk7fB1ksKCSEFCbL3PF9386vG+NET_0sQ@mail.gmail.com>
-Subject: Re: PATCH: avoid possible integer overflow with cmp_range() in kernel/range.c
-From: Yinghai Lu <yinghai@kernel.org>
-To: Louis Langholtz <lou_langholtz@me.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
+In-Reply-To: <20141125134048.GE7712@sirena.org.uk>
+References: <1416853893-1993-1-git-send-email-andrew.smirnov@gmail.com>
+	<20141125124229.GY7712@sirena.org.uk>
+	<CAHQ1cqGvDft1t5MkaqT-xsfBygdghA3mK_a7x+Z3L6HtvqrwhA@mail.gmail.com>
+	<20141125134048.GE7712@sirena.org.uk>
+Date: Tue, 25 Nov 2014 13:18:45 -0800
+Message-ID: <CAHQ1cqHSdV4XTxwnPYfdBK8mVYQk9O3akynSM_hUGmVDMRU3FA@mail.gmail.com>
+Subject: Re: [RFC, PATCH, RESEND] spi, spidev: Add support for long SPI transfers
+From: Andrey Smirnov <andrew.smirnov@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, Andrey Yurovsky <yurovsky@gmail.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tile should be:
-
-[PATCH] x86: ....
-
-On Tue, Nov 25, 2014 at 11:14 AM, Louis Langholtz <lou_langholtz@me.com> wrote:
-> The cmp_range function (in kernel/range.c) is returning the difference between two s64 values (actually coming from u64 typed variables) in an int which can overflow (depending on the size of int). This function is used as a compare function for linux's sort function (in lib/sort.c). Linux's sort function however only cares if the compare function returns a value less than, equal to, or greater than zero.
 >
-> As sort doesn't need the actual difference, this overflow potential is avoided with the following patch (against linux kernel 3.18 code from Linus's git repo and commit 0541881502a1276149889fe468662ff6a8fc8f6d):
+> A spi_message (which is the thing that covers the entire /CS assert
+> modulo non-standard fiddling) is composed of multiple spi_transfers
+> so the above still applies...
 >
-> commit 641362d32fef0cfd7b12e1821c1139d75dd23330
-> Author: Lou Langholtz <lou_langholtz@me.com>
-> Date:   Mon Nov 24 09:31:01 2014 -0700
 
-do not need 6 lines.
+You are correct, I think I was confused because the driver I was
+working with didn't seem to implement it this way for hardware CS
+case.
 
 >
->     Avoid overflow possibility
+> No it doesn't, chip select can frequently be manipulated independently of
+> data transfers and almost all controllers can support transfers much
+> longer than their FIFOs either by doing that or by keeping the FIFO
+> topped up during transfer.
 
-You need
-Signed-off-by: ....
-
-Please check Documentation/SubmittingPatches for more info.
+You are correct, I reread the datasheet and even from my niche use
+case FIFO depth is irrelevant. I apologize.
 
 >
-> diff --git a/kernel/range.c b/kernel/range.c
-> index 322ea8e..86337e2 100644
-> --- a/kernel/range.c
-> +++ b/kernel/range.c
-> @@ -113,12 +113,17 @@ static int cmp_range(const void *x1, const void *x2)
->  {
->         const struct range *r1 = x1;
->         const struct range *r2 = x2;
-> -       s64 start1, start2;
-> +       u64 start1, start2;
+>> in my wording of the summary and not use the word "transfer" anywhere,
+>> but it looks like I slipped twice and that might have contributed to
+>> this confusion. I apologize for this and hope that my comments
+>> clarified my meaning/intent
 >
->         start1 = r1->start;
->         start2 = r2->start;
->
-> -       return start1 - start2;
-> +       /* avoid any overflow possibilities and don't just return start1 - start2 */
-> +       if (start1 > start2)
-> +               return 1;
-> +       if (start2 > start1)
-> +               return -1;
-> +       return 0;
->  }
->
->  int clean_sort_range(struct range *range, int az)
->
+> Sorry it's still not at all clear, please re-read what I wrote about
+> what bits_per_word means since I really don't think you've understood
+> what it's for.
+
+OK, I think I use too generic terms and descriptions and maybe that's
+why it is not very clear what I mean. Just to give more context I am
+working with i.MX6 SPI peripheral, and AFAIK I have two options of
+using it:
+
+- Use a generic GPIO as SS/CS. This way everything works exactly as
+you describe, but unfortunately using GPIO leads to a significant
+overhead for SS/CS assertion/deassertion.
+
+- Use hardware controlled SS/CS in which case peripheral toggles the
+line every "burst" it transmits, "burst" is n bits where n can be from
+1 to 2^12
+ For 1 <= n <= 32, and software SS/CS the concept of a "burst" matches
+the meaning of "bits_per_word" field and this is exactly how it is
+setup in the driver.
+
+So with all of this in mind what I am trying to achive is to have
+longest transaction with minimal CS/SS switching overhead. The change
+in my patch allows me to set the length of a burst to its limit.
+
+Andrey
