@@ -1,134 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434AbaKYWHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 17:07:42 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:49964 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaKYWHk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 17:07:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141122181229.GB9698@katana>
-References: <1416326695-13083-1-git-send-email-wsa@the-dreams.de>
-	<1416326695-13083-3-git-send-email-wsa@the-dreams.de>
-	<CAOY=C6FSXWn2AKn9gp0oU69U8VkkyJAE7MMUTZsToy0P_Tf6AA@mail.gmail.com>
-	<20141122181229.GB9698@katana>
-Date: Tue, 25 Nov 2014 23:07:38 +0100
-Message-ID: <CAOY=C6F6TMyeDvNneBV6K5hVjoG+qk-1Y_R3oJkEiGxhLOoQ0A@mail.gmail.com>
-Subject: Re: [PATCH 2/3] i2c: slave-eeprom: add eeprom simulator driver
-From: Stijn Devriendt <highguy@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, linux-sh@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+	id S1751534AbaKYWHs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 17:07:48 -0500
+Received: from ozlabs.org ([103.22.144.67]:48425 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750983AbaKYWHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 17:07:45 -0500
+Date: Wed, 26 Nov 2014 09:07:37 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Luc Verhaegen <libv@skynet.be>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, Jean Delvare <jdelvare@suse.de>
-Content-Type: text/plain; charset=UTF-8
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: linux-next: build failure after merge of the omap_dss2 tree
+Message-ID: <20141126090737.2860d33c@canb.auug.org.au>
+In-Reply-To: <5474720F.5030106@ti.com>
+References: <20141117190905.4e96294a@canb.auug.org.au>
+	<546B5D5A.8020304@ti.com>
+	<CANq1E4SMLHmezfXSENSQ8xUaXptwA8YKQ9Nne=sDCB0gPkPLmA@mail.gmail.com>
+	<5474615F.20407@ti.com>
+	<5474660B.8070507@redhat.com>
+	<5474720F.5030106@ti.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/dO09hQl4gnYBg1=fYuZCnCa"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 22, 2014 at 7:12 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> Hi,
->
-> Please quote only relevant parts of the message (like I did). This
-> improves readability a lot.
->
+--Sig_/dO09hQl4gnYBg1=fYuZCnCa
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-My bad, will minimize the overhead in the future.
+Hi Tomi,
 
->>
->> Would it make sense to have:
->> WRITE_START
->> WRITE_NEXT
->> WRITE_STOP
->> WRITE_REPEAT_START
->> READ_START
->> READ_NEXT
->> READ_STOP
->> READ_REPEAT_START
->>
->> Some devices may want different behavior for subsequent
->> reads when they are separate transactions, compared to
->> a single larger transaction.
+On Tue, 25 Nov 2014 14:11:59 +0200 Tomi Valkeinen <tomi.valkeinen@ti.com> w=
+rote:
 >
-> This can all be handled with I2C_SLAVE_STOP.
->
+> On 25/11/14 13:20, Hans de Goede wrote:
+> >=20
+> > On 11/25/2014 12:00 PM, Tomi Valkeinen wrote:
+> >> On 18/11/14 17:07, David Herrmann wrote:
+> >>>
+> >>> On Tue, Nov 18, 2014 at 3:53 PM, Tomi Valkeinen
+> >>> <tomi.valkeinen@ti.com> wrote:
+> >>>>
+> >>>> Thanks Stephen!
+> >>>>
+> >>>> Hans, have you had a look at this? kbuild test bot also reported thi=
+s.
+> >>>
+> >>> The fix from Stephen should not go to main-line. It breaks simplefb on
+> >>> x86 without OF. Imo, linux/clk.h should provide a fallback if OF is
+> >>> not defined (like it already does for of_clk_get() and friends).
+> >>>
+> >>> Hans, any comments?
+> >>
+> >> Hans, ping.
+> >=20
+> > Sorry I somehow missed this thread so far, I did see the kbuild mail, b=
+ut
+> > it looked like a false positive to me, for the compile error case I
+> > already fixed
+> > in the last revision of the patch, adding #ifdef CONFIG_OF around the
+> > offending code.
+> >=20
+> > But on closer inspection I see that the entirety of linux/clk-provider.h
+> > is wrapped
+> > in one huge #ifdef CONFIG_COMMON_CLK and then later on also has:
+> >=20
+> > #ifdef CONFIG_OF
+> > ...
+> > int of_clk_get_parent_count(struct device_node *np);
+> > ...
+> > #endif
+> >=20
+> > So we need both CONFIG_OF and CONFIG_COMMON_CLK, the attached patch
+> > should fix this.
+>=20
+> Thanks, applied.
 
-I think the goal is probably better covered by Uwe's idea for
-returning a buffer. See below...
+But not pushed out, yet?  Just checking that you haven't pushed on
+purpose.
 
->> e.g. a single transaction may wraparound inside a >8bit
->> register (e.g. for 16bit: msb, lsb, msb, lsb, ...), but step
->> to the next register when a separate read/write is issued.
->> Alternatively, a WRITE/READ_NEXT may be implemented
->> more efficiently. This may not matter for current systems
->> compared to the low-frequency bus, but who knows what
->> IoT devices may bring to the table.
->
-> Let's start simple until we have more use cases. WRITE_NEXT may be
-> useful when you have an internal u8 pointer to be set before actually
-> sending data, but already less useful if this is u16. Also, slaves may
-> decide to handle stops at unexpected places differently. Furthermore, my
-> feeling is that slave drivers will be more robust if they handle those
-> simple primitives properly.
->
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I think usable semantics could be that a slave driver can indicate at any
-point during an I2C read transaction that the next X bytes should be
-returned from a buffer and for a write transaction, that the next X bytes
-should be buffered before passed on to the driver. When the transaction
-ends or the adapter reaches the end of the buffer, it indicates this to
-the driver which can then either cleanup or otherwise act accordingly.
-For the EEPROM driver, this could mean that after the address is received,
-the driver can pass the pointer + remaining size and have the adapter
-driver take care of transmit. Upon end-of-buffer, it could just handle the
-wraparound and let the adapter take care of the rest.
+--Sig_/dO09hQl4gnYBg1=fYuZCnCa
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-But as you say, this can be added later on when the need arises.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-> What I could imagine, though, is that somewhen the eeprom simulator will
-> be able to get data via other means than the shared memory, maybe via
-> some callback. Then, the callback really only has to deal with "read
-> this byte" or "write that byte" while for the outer world we have a
-> proper well-known EEPROM like I2C interface.
->
-> That being said, the list of I2C_SLAVE_* events is extensible, of
-> course. Though, I rather see low-level stuff there like "General Call
-> Adress received".
->
->>
->> Also, behavior may be different for repeat start versus
->> stop/start, although a repeat start could be a start
->> without a previous stop as well...
->
-> IMO a repeated start is to ensure that two messages arrive at the slave
-> without interruption from another master. I can't think why a slave
-> should know which type of start that was. In fact, if it does that would
-> raise an eyebrow for me. Do you have an example?
->
+iQIcBAEBCAAGBQJUdP2vAAoJEMDTa8Ir7ZwVANcP/jroBargaJVzQ5TronBT2vQ9
+unkJhSXtRTJQaQllboKNSTcs5UzmBh6pxGVVO0uTXVOUqjgdM57ZQ/QahPHnIaaj
+YCahpnd2yezGX6njuFkNroNlZJfvESNjnUpqrfQ1aJl7dYhb7f86V8iSiyJHAHIq
+aGrP5yspRkmrHAhO6yMPYR6brJ/9tn/utTZRibWcUINJNzUSg4bBNXktf9YP26lC
+EGgDi7nYwppoYY2DT/TnZQKwaSCh9Ddcn7C2aD36nnYIYUPa6tXyX0vt2qd9J2Wd
+2Aye72NbCrrCT+fTvIMQ7NEX2Fwhp7MgD79p7/76yHrVuUVyllxqODwqb4orPBn9
+dhAvfW2NMedqo6vH7AEVJaEPnYC8o04klbn4ySbVUY1tBuS1VGqfaRK77avwI4iD
+WYzYSXJjlnT7Iy81pfs9sC8+fQmtsgl4m+ftSQFruEHDegtR5kL8csbvBe4cpb+h
+BbHnfO5LoCQKieD2E6oQJ9LfOZcwueIMC+h/jfbSl7ik5aBAYi5/gQkMpyGI4x1G
+s82clU051HDFYvF8ya49dCp5evUL5XEjYkGVxmodx6GK2rov2Tempq4325QPqETr
+p7snYlZI74pz+4lG1frU/ey7zAnScR/qQ+lXcLvXEF7lWOe4ByKE9MsGC417X5Gn
+lZfJBxLl9ceiq5B5ivsE
+=XpL+
+-----END PGP SIGNATURE-----
 
-No, I'll have to pass on that one. Plenty of odd I2C behavior, but that's
-not one of them. You're right on repeat start, so it would be quite
-erratic behavior. But even if, it can probably be added later on.
-
->> Of course, if an I2C adapter cannot distinguish these
->> events, this is probably a futile attempt at adding
->> semantics that will silently break depending on the
->> actual hardware/driver used.
->
-> That as well. I have not seen an I2C adapter which could provide this
-> information so far.
->
-
-Just checked components we're using and stop/repeated-start both
-transition into the same state.
-
-Regards,
-Stijn
-
-> Thanks,
->
->    Wolfram
->
+--Sig_/dO09hQl4gnYBg1=fYuZCnCa--
