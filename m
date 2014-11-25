@@ -1,367 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189AbaKYLPB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:15:01 -0500
-Received: from mail-oi0-f50.google.com ([209.85.218.50]:52073 "EHLO
-	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191AbaKYLO6 (ORCPT
+	id S1755226AbaKYLPn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:15:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58792 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753669AbaKYKmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 06:14:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <1416852146-9781-12-git-send-email-a.ryabinin@samsung.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com> <1416852146-9781-12-git-send-email-a.ryabinin@samsung.com>
-From: Dmitry Chernenkov <dmitryc@google.com>
-Date: Tue, 25 Nov 2014 15:14:37 +0400
-Message-ID: <CAA6XgkEZD=+TvqXmO814nYi_oqp_3F7_NvkjEW0-X262xTiRDw@mail.gmail.com>
-Subject: Re: [PATCH v7 11/12] lib: add kasan test module
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 25 Nov 2014 05:42:31 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Luciano Coelho <luciano.coelho@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 158/254] mac80211: use secondary channel offset IE also beacons during CSA
+Date: Tue, 25 Nov 2014 10:38:28 +0000
+Message-Id: <1416912004-5928-159-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a bit of concern about tests.
-A) they are not fully automated, there is no checking whether they
-pass or not. This is implemented in our repository using special tags
-in the log (https://github.com/google/kasan/commit/33b267553e7ffe66d5207152a3294112361b75fe;
-don't mmind the TODOs, they weren't broken to begin with), and a
-parser script (https://code.google.com/p/address-sanitizer/source/browse/trunk/tools/kernel_test_parse.py)
-to feed the kernel log to.
+3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
 
-B) They are not thorough enough - they don't check false negatives,
-accesses more than 1 byte away etc.
+------------------
 
-C) (more of general concern for current Kasan realiability) - when
-running multiple times, some tests are flaky, specificially oob_right
-and uaf2. The latter needs quarantine to work reliably (I know
-Konstantin is working on it). oob_right needs redzones in the
-beginning of the slabs.
+From: Luciano Coelho <luciano.coelho@intel.com>
 
-I know all of these may seem like long shots, but if we want a
-reliable solution (also a backportable solution), we need to at least
-consider them.
+commit 84469a45a1bedec9918e94ab2f78c5dc0739e4a7 upstream.
 
-Otherwise, LGTM
+If we are switching from an HT40+ to an HT40- channel (or vice-versa),
+we need the secondary channel offset IE to specify what is the
+post-CSA offset to be used.  This applies both to beacons and to probe
+responses.
 
-On Mon, Nov 24, 2014 at 9:02 PM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
-> This is a test module doing various nasty things like
-> out of bounds accesses, use after free. It is useful for testing
-> kernel debugging features like kernel address sanitizer.
->
-> It mostly concentrates on testing of slab allocator, but we
-> might want to add more different stuff here in future (like
-> stack/global variables out of bounds accesses and so on).
->
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> ---
->  lib/Kconfig.kasan |   8 ++
->  lib/Makefile      |   1 +
->  lib/test_kasan.c  | 254 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 263 insertions(+)
->  create mode 100644 lib/test_kasan.c
->
-> diff --git a/lib/Kconfig.kasan b/lib/Kconfig.kasan
-> index 1fa4fe8..8548646 100644
-> --- a/lib/Kconfig.kasan
-> +++ b/lib/Kconfig.kasan
-> @@ -43,4 +43,12 @@ config KASAN_INLINE
->
->  endchoice
->
-> +config TEST_KASAN
-> +       tristate "Module for testing kasan for bug detection"
-> +       depends on m && KASAN
-> +       help
-> +         This is a test module doing various nasty things like
-> +         out of bounds accesses, use after free. It is useful for testing
-> +         kernel debugging features like kernel address sanitizer.
-> +
->  endif
-> diff --git a/lib/Makefile b/lib/Makefile
-> index 750617c..1d8211a 100644
-> --- a/lib/Makefile
-> +++ b/lib/Makefile
-> @@ -38,6 +38,7 @@ obj-$(CONFIG_TEST_LKM) += test_module.o
->  obj-$(CONFIG_TEST_USER_COPY) += test_user_copy.o
->  obj-$(CONFIG_TEST_BPF) += test_bpf.o
->  obj-$(CONFIG_TEST_FIRMWARE) += test_firmware.o
-> +obj-$(CONFIG_TEST_KASAN) += test_kasan.o
->
->  ifeq ($(CONFIG_DEBUG_KOBJECT),y)
->  CFLAGS_kobject.o += -DDEBUG
-> diff --git a/lib/test_kasan.c b/lib/test_kasan.c
-> new file mode 100644
-> index 0000000..896dee5
-> --- /dev/null
-> +++ b/lib/test_kasan.c
-> @@ -0,0 +1,254 @@
-> +/*
-> + *
-> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-> + * Author: Andrey Ryabinin <a.ryabinin@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#define pr_fmt(fmt) "kasan test: %s " fmt, __func__
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/printk.h>
-> +#include <linux/slab.h>
-> +#include <linux/string.h>
-> +#include <linux/module.h>
-> +
-> +static noinline void __init kmalloc_oob_right(void)
-> +{
-> +       char *ptr;
-> +       size_t size = 123;
-> +
-> +       pr_info("out-of-bounds to right\n");
-> +       ptr = kmalloc(size, GFP_KERNEL);
-> +       if (!ptr) {
-> +               pr_err("Allocation failed\n");
-> +               return;
-> +       }
-> +
-> +       ptr[size] = 'x';
-> +       kfree(ptr);
-> +}
-> +
-> +static noinline void __init kmalloc_oob_left(void)
-> +{
-> +       char *ptr;
-> +       size_t size = 15;
-> +
-> +       pr_info("out-of-bounds to left\n");
-> +       ptr = kmalloc(size, GFP_KERNEL);
-> +       if (!ptr) {
-> +               pr_err("Allocation failed\n");
-> +               return;
-> +       }
-> +
-> +       *ptr = *(ptr - 1);
-> +       kfree(ptr);
-> +}
-> +
-> +static noinline void __init kmalloc_node_oob_right(void)
-> +{
-> +       char *ptr;
-> +       size_t size = 4096;
-> +
-> +       pr_info("kmalloc_node(): out-of-bounds to right\n");
-> +       ptr = kmalloc_node(size, GFP_KERNEL, 0);
-> +       if (!ptr) {
-> +               pr_err("Allocation failed\n");
-> +               return;
-> +       }
-> +
-> +       ptr[size] = 0;
-> +       kfree(ptr);
-> +}
-> +
-> +static noinline void __init kmalloc_large_oob_rigth(void)
-> +{
-> +       char *ptr;
-> +       size_t size = KMALLOC_MAX_CACHE_SIZE + 10;
-> +
-> +       pr_info("kmalloc large allocation: out-of-bounds to right\n");
-> +       ptr = kmalloc(size, GFP_KERNEL);
-> +       if (!ptr) {
-> +               pr_err("Allocation failed\n");
-> +               return;
-> +       }
-> +
-> +       ptr[size] = 0;
-> +       kfree(ptr);
-> +}
-> +
-> +static noinline void __init kmalloc_oob_krealloc_more(void)
-> +{
-> +       char *ptr1, *ptr2;
-> +       size_t size1 = 17;
-> +       size_t size2 = 19;
-> +
-> +       pr_info("out-of-bounds after krealloc more\n");
-> +       ptr1 = kmalloc(size1, GFP_KERNEL);
-> +       ptr2 = krealloc(ptr1, size2, GFP_KERNEL);
-> +       if (!ptr1 || !ptr2) {
-> +               pr_err("Allocation failed\n");
-> +               kfree(ptr1);
-> +               return;
-> +       }
-> +
-> +       ptr2[size2] = 'x';
-> +       kfree(ptr2);
-> +}
-> +
-> +static noinline void __init kmalloc_oob_krealloc_less(void)
-> +{
-> +       char *ptr1, *ptr2;
-> +       size_t size1 = 17;
-> +       size_t size2 = 15;
-> +
-> +       pr_info("out-of-bounds after krealloc less\n");
-> +       ptr1 = kmalloc(size1, GFP_KERNEL);
-> +       ptr2 = krealloc(ptr1, size2, GFP_KERNEL);
-> +       if (!ptr1 || !ptr2) {
-> +               pr_err("Allocation failed\n");
-> +               kfree(ptr1);
-> +               return;
-> +       }
-> +       ptr2[size1] = 'x';
-> +       kfree(ptr2);
-> +}
-> +
-> +static noinline void __init kmalloc_oob_16(void)
-> +{
-> +       struct {
-> +               u64 words[2];
-> +       } *ptr1, *ptr2;
-> +
-> +       pr_info("kmalloc out-of-bounds for 16-bytes access\n");
-> +       ptr1 = kmalloc(sizeof(*ptr1) - 3, GFP_KERNEL);
-> +       ptr2 = kmalloc(sizeof(*ptr2), GFP_KERNEL);
-> +       if (!ptr1 || !ptr2) {
-> +               pr_err("Allocation failed\n");
-> +               kfree(ptr1);
-> +               kfree(ptr2);
-> +               return;
-> +       }
-> +       *ptr1 = *ptr2;
-> +       kfree(ptr1);
-> +       kfree(ptr2);
-> +}
-> +
-> +static noinline void __init kmalloc_oob_in_memset(void)
-> +{
-> +       char *ptr;
-> +       size_t size = 666;
-> +
-> +       pr_info("out-of-bounds in memset\n");
-> +       ptr = kmalloc(size, GFP_KERNEL);
-> +       if (!ptr) {
-> +               pr_err("Allocation failed\n");
-> +               return;
-> +       }
-> +
-> +       memset(ptr, 0, size+5);
-> +       kfree(ptr);
-> +}
-> +
-> +static noinline void __init kmalloc_uaf(void)
-> +{
-> +       char *ptr;
-> +       size_t size = 10;
-> +
-> +       pr_info("use-after-free\n");
-> +       ptr = kmalloc(size, GFP_KERNEL);
-> +       if (!ptr) {
-> +               pr_err("Allocation failed\n");
-> +               return;
-> +       }
-> +
-> +       kfree(ptr);
-> +       *(ptr + 8) = 'x';
-> +}
-> +
-> +static noinline void __init kmalloc_uaf_memset(void)
-> +{
-> +       char *ptr;
-> +       size_t size = 33;
-> +
-> +       pr_info("use-after-free in memset\n");
-> +       ptr = kmalloc(size, GFP_KERNEL);
-> +       if (!ptr) {
-> +               pr_err("Allocation failed\n");
-> +               return;
-> +       }
-> +
-> +       kfree(ptr);
-> +       memset(ptr, 0, size);
-> +}
-> +
-> +static noinline void __init kmalloc_uaf2(void)
-> +{
-> +       char *ptr1, *ptr2;
-> +       size_t size = 43;
-> +
-> +       pr_info("use-after-free after another kmalloc\n");
-> +       ptr1 = kmalloc(size, GFP_KERNEL);
-> +       if (!ptr1) {
-> +               pr_err("Allocation failed\n");
-> +               return;
-> +       }
-> +
-> +       kfree(ptr1);
-> +       ptr2 = kmalloc(size, GFP_KERNEL);
-> +       if (!ptr2) {
-> +               pr_err("Allocation failed\n");
-> +               return;
-> +       }
-> +
-> +       ptr1[40] = 'x';
-> +       kfree(ptr2);
-> +}
-> +
-> +static noinline void __init kmem_cache_oob(void)
-> +{
-> +       char *p;
-> +       size_t size = 200;
-> +       struct kmem_cache *cache = kmem_cache_create("test_cache",
-> +                                               size, 0,
-> +                                               0, NULL);
-> +       if (!cache) {
-> +               pr_err("Cache allocation failed\n");
-> +               return;
-> +       }
-> +       pr_info("out-of-bounds in kmem_cache_alloc\n");
-> +       p = kmem_cache_alloc(cache, GFP_KERNEL);
-> +       if (!p) {
-> +               pr_err("Allocation failed\n");
-> +               kmem_cache_destroy(cache);
-> +               return;
-> +       }
-> +
-> +       *p = p[size];
-> +       kmem_cache_free(cache, p);
-> +       kmem_cache_destroy(cache);
-> +}
-> +
-> +int __init kmalloc_tests_init(void)
-> +{
-> +       kmalloc_oob_right();
-> +       kmalloc_oob_left();
-> +       kmalloc_node_oob_right();
-> +       kmalloc_large_oob_rigth();
-> +       kmalloc_oob_krealloc_more();
-> +       kmalloc_oob_krealloc_less();
-> +       kmalloc_oob_16();
-> +       kmalloc_oob_in_memset();
-> +       kmalloc_uaf();
-> +       kmalloc_uaf_memset();
-> +       kmalloc_uaf2();
-> +       kmem_cache_oob();
-> +       return -EAGAIN;
-> +}
-> +
-> +module_init(kmalloc_tests_init);
-> +MODULE_LICENSE("GPL");
-> --
-> 2.1.3
->
+In ieee80211_parse_ch_switch_ie() we were ignoring this IE from
+beacons and using the *current* HT information IE instead.  This was
+causing us to use the same offset as before the switch.
+
+Fix that by using the secondary channel offset IE also for beacons and
+don't ever use the pre-switch offset.  Additionally, remove the
+"beacon" argument from ieee80211_parse_ch_switch_ie(), since it's not
+needed anymore.
+
+Reported-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Luciano Coelho <luciano.coelho@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/mac80211/ibss.c        |  2 +-
+ net/mac80211/ieee80211_i.h |  3 +--
+ net/mac80211/mesh.c        |  2 +-
+ net/mac80211/mlme.c        |  2 +-
+ net/mac80211/spectmgmt.c   | 18 ++++++------------
+ 5 files changed, 10 insertions(+), 17 deletions(-)
+
+diff --git a/net/mac80211/ibss.c b/net/mac80211/ibss.c
+index 18ee0a256b1e..851bbf156a8f 100644
+--- a/net/mac80211/ibss.c
++++ b/net/mac80211/ibss.c
+@@ -813,7 +813,7 @@ ieee80211_ibss_process_chanswitch(struct ieee80211_sub_if_data *sdata,
+ 
+ 	memset(&params, 0, sizeof(params));
+ 	memset(&csa_ie, 0, sizeof(csa_ie));
+-	err = ieee80211_parse_ch_switch_ie(sdata, elems, beacon,
++	err = ieee80211_parse_ch_switch_ie(sdata, elems,
+ 					   ifibss->chandef.chan->band,
+ 					   sta_flags, ifibss->bssid, &csa_ie);
+ 	/* can't switch to destination channel, fail */
+diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
+index ac9836e0aab3..5ed8c78d6f68 100644
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -1591,7 +1591,6 @@ void ieee80211_process_measurement_req(struct ieee80211_sub_if_data *sdata,
+  * ieee80211_parse_ch_switch_ie - parses channel switch IEs
+  * @sdata: the sdata of the interface which has received the frame
+  * @elems: parsed 802.11 elements received with the frame
+- * @beacon: indicates if the frame was a beacon or probe response
+  * @current_band: indicates the current band
+  * @sta_flags: contains information about own capabilities and restrictions
+  *	to decide which channel switch announcements can be accepted. Only the
+@@ -1605,7 +1604,7 @@ void ieee80211_process_measurement_req(struct ieee80211_sub_if_data *sdata,
+  * Return: 0 on success, <0 on error and >0 if there is nothing to parse.
+  */
+ int ieee80211_parse_ch_switch_ie(struct ieee80211_sub_if_data *sdata,
+-				 struct ieee802_11_elems *elems, bool beacon,
++				 struct ieee802_11_elems *elems,
+ 				 enum ieee80211_band current_band,
+ 				 u32 sta_flags, u8 *bssid,
+ 				 struct ieee80211_csa_ie *csa_ie);
+diff --git a/net/mac80211/mesh.c b/net/mac80211/mesh.c
+index 6495a3f0428d..e64982ce0f8f 100644
+--- a/net/mac80211/mesh.c
++++ b/net/mac80211/mesh.c
+@@ -874,7 +874,7 @@ ieee80211_mesh_process_chnswitch(struct ieee80211_sub_if_data *sdata,
+ 
+ 	memset(&params, 0, sizeof(params));
+ 	memset(&csa_ie, 0, sizeof(csa_ie));
+-	err = ieee80211_parse_ch_switch_ie(sdata, elems, beacon, band,
++	err = ieee80211_parse_ch_switch_ie(sdata, elems, band,
+ 					   sta_flags, sdata->vif.addr,
+ 					   &csa_ie);
+ 	if (err < 0)
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index c8779f316d30..a374bcc32706 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -1047,7 +1047,7 @@ ieee80211_sta_process_chanswitch(struct ieee80211_sub_if_data *sdata,
+ 
+ 	current_band = cbss->channel->band;
+ 	memset(&csa_ie, 0, sizeof(csa_ie));
+-	res = ieee80211_parse_ch_switch_ie(sdata, elems, beacon, current_band,
++	res = ieee80211_parse_ch_switch_ie(sdata, elems, current_band,
+ 					   ifmgd->flags,
+ 					   ifmgd->associated->bssid, &csa_ie);
+ 	if (res	< 0)
+diff --git a/net/mac80211/spectmgmt.c b/net/mac80211/spectmgmt.c
+index 6ab009070084..efeba56c913b 100644
+--- a/net/mac80211/spectmgmt.c
++++ b/net/mac80211/spectmgmt.c
+@@ -22,7 +22,7 @@
+ #include "wme.h"
+ 
+ int ieee80211_parse_ch_switch_ie(struct ieee80211_sub_if_data *sdata,
+-				 struct ieee802_11_elems *elems, bool beacon,
++				 struct ieee802_11_elems *elems,
+ 				 enum ieee80211_band current_band,
+ 				 u32 sta_flags, u8 *bssid,
+ 				 struct ieee80211_csa_ie *csa_ie)
+@@ -91,19 +91,13 @@ int ieee80211_parse_ch_switch_ie(struct ieee80211_sub_if_data *sdata,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (!beacon && sec_chan_offs) {
++	if (sec_chan_offs) {
+ 		secondary_channel_offset = sec_chan_offs->sec_chan_offs;
+-	} else if (beacon && ht_oper) {
+-		secondary_channel_offset =
+-			ht_oper->ht_param & IEEE80211_HT_PARAM_CHA_SEC_OFFSET;
+ 	} else if (!(sta_flags & IEEE80211_STA_DISABLE_HT)) {
+-		/* If it's not a beacon, HT is enabled and the IE not present,
+-		 * it's 20 MHz, 802.11-2012 8.5.2.6:
+-		 *	This element [the Secondary Channel Offset Element] is
+-		 *	present when switching to a 40 MHz channel. It may be
+-		 *	present when switching to a 20 MHz channel (in which
+-		 *	case the secondary channel offset is set to SCN).
+-		 */
++		/* If the secondary channel offset IE is not present,
++		 * we can't know what's the post-CSA offset, so the
++		 * best we can do is use 20MHz.
++		*/
+ 		secondary_channel_offset = IEEE80211_HT_PARAM_CHA_SEC_NONE;
+ 	}
+ 
+-- 
+2.1.0
+
