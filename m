@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917AbaKYMll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:41:41 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:43380 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264AbaKYMis (ORCPT
+	id S1754982AbaKYMmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:42:19 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:50549 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754198AbaKYMir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 07:38:48 -0500
+	Tue, 25 Nov 2014 07:38:47 -0500
 From: Christian Borntraeger <borntraeger@de.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: "linux-arch@vger.kernel.org, linux-mips@linux-mips.org, linux-x86_64@vger.kernel.org, linux-s390"@vger.kernel.org,
@@ -18,15 +18,15 @@ Cc: "linux-arch@vger.kernel.org, linux-mips@linux-mips.org, linux-x86_64@vger.ke
         David Howells <dhowells@redhat.com>,
         Russell King <linux@arm.linux.org.uk>,
         Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: [PATCHv2 02/10] kernel: Provide READ_ONCE and ASSIGN_ONCE
-Date: Tue, 25 Nov 2014 13:38:29 +0100
-Message-Id: <1416919117-50652-3-git-send-email-borntraeger@de.ibm.com>
+Subject: [PATCHv2 04/10] x86/spinlock: Replace ACCESS_ONCE with READ_ONCE/ASSIGN_ONCE
+Date: Tue, 25 Nov 2014 13:38:31 +0100
+Message-Id: <1416919117-50652-5-git-send-email-borntraeger@de.ibm.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416919117-50652-1-git-send-email-borntraeger@de.ibm.com>
 References: <1416919117-50652-1-git-send-email-borntraeger@de.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112512-0017-0000-0000-000001F84C81
+x-cbid: 14112512-0021-0000-0000-000001E7A922
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,61 +34,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ACCESS_ONCE does not work reliably on non-scalar types. For
 example gcc 4.6 and 4.7 might remove the volatile tag for such
 accesses during the SRA (scalar replacement of aggregates) step
-https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
+(https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
 
-Let's provide READ_ONCE/ASSIGN_ONCE that will do all accesses via
-scalar types.
+Change the spinlock code to replace ACCESS_ONCE with READ_ONCE
+and ASSIGN_ONCE.
 
 Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
 ---
- include/linux/compiler.h | 34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+ arch/x86/include/asm/spinlock.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index d5ad7b1..0ff01f2 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -186,6 +186,40 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
- # define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
- #endif
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 9295016..af6e673 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -92,7 +92,7 @@ static __always_inline void arch_spin_lock(arch_spinlock_t *lock)
+ 		unsigned count = SPIN_THRESHOLD;
  
-+#include <linux/types.h>
-+
-+static __always_inline void __assign_once_size(volatile void *p, void *res, int size)
-+{
-+	switch (size) {
-+	case 1: *(volatile u8 *)p = *(u8 *)res; break;
-+	case 2: *(volatile u16 *)p = *(u16 *)res; break;
-+	case 4: *(volatile u32 *)p = *(u32 *)res; break;
-+#ifdef CONFIG_64BIT
-+	case 8: *(volatile u64 *)p = *(u64 *)res; break;
-+#endif
-+       }
-+}
-+
-+#define ASSIGN_ONCE(val, p) \
-+      ({ typeof(p) __val; __val = val; __assign_once_size(&p, &__val, sizeof(__val)); __val; })
-+
-+
-+static __always_inline void __read_once_size(volatile void *p, void *res, int size)
-+{
-+	switch (size) {
-+	case 1: *(u8 *)res = *(volatile u8 *)p; break;
-+	case 2: *(u16 *)res = *(volatile u16 *)p; break;
-+	case 4: *(u32 *)res = *(volatile u32 *)p; break;
-+#ifdef CONFIG_64BIT
-+	case 8: *(u64 *)res = *(volatile u64 *)p; break;
-+#endif
-+       }
-+}
-+
-+#define READ_ONCE(p) \
-+      ({ typeof(p) __val; __read_once_size(&p, &__val, sizeof(__val)); __val; })
-+
-+
- #endif /* __KERNEL__ */
+ 		do {
+-			if (ACCESS_ONCE(lock->tickets.head) == inc.tail)
++			if (ASSIGN_ONCE(inc.tail, lock->tickets.head))
+ 				goto out;
+ 			cpu_relax();
+ 		} while (--count);
+@@ -105,7 +105,7 @@ static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
+ {
+ 	arch_spinlock_t old, new;
  
- #endif /* __ASSEMBLY__ */
+-	old.tickets = ACCESS_ONCE(lock->tickets);
++	old.tickets = READ_ONCE(lock->tickets);
+ 	if (old.tickets.head != (old.tickets.tail & ~TICKET_SLOWPATH_FLAG))
+ 		return 0;
+ 
+@@ -162,14 +162,14 @@ static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
+ 
+ static inline int arch_spin_is_locked(arch_spinlock_t *lock)
+ {
+-	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
++	struct __raw_tickets tmp = READ_ONCE(lock->tickets);
+ 
+ 	return tmp.tail != tmp.head;
+ }
+ 
+ static inline int arch_spin_is_contended(arch_spinlock_t *lock)
+ {
+-	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
++	struct __raw_tickets tmp = READ_ONCE(lock->tickets);
+ 
+ 	return (__ticket_t)(tmp.tail - tmp.head) > TICKET_LOCK_INC;
+ }
 -- 
 1.9.3
 
