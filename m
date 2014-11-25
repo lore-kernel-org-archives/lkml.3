@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaKYKgq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:36:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33860 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132AbaKYKgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:36:45 -0500
-Message-ID: <54745BB0.8080304@redhat.com>
-Date: Tue, 25 Nov 2014 11:36:32 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752725AbaKYKkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:40:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58061 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608AbaKYKk2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 05:40:28 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johan Hovold <johan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 021/254] USB: core: add device-qualifier quirk
+Date: Tue, 25 Nov 2014 10:36:11 +0000
+Message-Id: <1416912004-5928-22-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, namit@cs.technion.ac.il,
-        hpa@linux.intel.com
-Subject: Re: [CFT PATCH v2 0/2] KVM: support XSAVES usage in the host
-References: <1416847414-22253-1-git-send-email-pbonzini@redhat.com> <20141125101331.GA28985@kernel>
-In-Reply-To: <20141125101331.GA28985@kernel>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
-On 25/11/2014 11:13, Wanpeng Li wrote:
-> Hi Paolo,
-> On Mon, Nov 24, 2014 at 05:43:32PM +0100, Paolo Bonzini wrote:
->> The first patch ensures that XSAVES is not exposed in the guest until
->> we emulate MSR_IA32_XSS.  The second exports XSAVE data in the correct
->> format.
->>
->> I tested these on a non-XSAVES system so they should not be completely
->> broken, but I need some help.  I am not even sure which XSAVE states
->> are _not_ enabled, and thus compacted, in Linux.
->>
->> Note that these patches do not add support for XSAVES in the guest yet,
->> since MSR_IA32_XSS is not emulated.
->>
->> If they fix the bug Nadav reported, I'll add Reported-by and commit.
-> 
-> I test this patchset w/ your "KVM: x86: export get_xsave_addr" patch on 
-> Skylake and guest hang during boot. The guest screen show "Probing EDD 
-> (edd=off to disable)... ok", and no more dump.
+From: Johan Hovold <johan@kernel.org>
 
-Anything in dmesg?  Can you try this patch on top?
+commit 2a159389bf5d962359349a76827b2f683276a1c7 upstream.
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 373b0ab9a32e..ca26681455c2 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6955,6 +6955,9 @@ int fx_init(struct kvm_vcpu *vcpu)
- 		return err;
+Add new quirk for devices that cannot handle requests for the
+device_qualifier descriptor.
 
- 	fpu_finit(&vcpu->arch.guest_fpu);
-+	if (cpu_has_xsaves)
-+		vcpu->arch.guest_fpu.state->xsave.xsave_hdr.xcomp_bv =
-+			host_xcr0 | XSTATE_COMPACTION_ENABLED;
+A USB-2.0 compliant device must respond to requests for the
+device_qualifier descriptor (even if it's with a request error), but at
+least one device is known to misbehave after such a request.
 
- 	/*
- 	 * Ensure guest xcr0 is valid for loading
+Suggested-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: prereq for the following Elan touchscreen patches ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/core/hub.c     | 3 +++
+ include/linux/usb/quirks.h | 3 +++
+ 2 files changed, 6 insertions(+)
 
-Paolo
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index ba2a8f3b8059..0e0e0354c523 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -4524,6 +4524,9 @@ check_highspeed (struct usb_hub *hub, struct usb_device *udev, int port1)
+ 	struct usb_qualifier_descriptor	*qual;
+ 	int				status;
+ 
++	if (udev->quirks & USB_QUIRK_DEVICE_QUALIFIER)
++		return;
++
+ 	qual = kmalloc (sizeof *qual, GFP_KERNEL);
+ 	if (qual == NULL)
+ 		return;
+diff --git a/include/linux/usb/quirks.h b/include/linux/usb/quirks.h
+index 49587dc22f5d..8b96ae2a38fe 100644
+--- a/include/linux/usb/quirks.h
++++ b/include/linux/usb/quirks.h
+@@ -33,4 +33,7 @@
+ /* device generates spurious wakeup, ignore remote wakeup capability */
+ #define USB_QUIRK_IGNORE_REMOTE_WAKEUP	0x00000200
+ 
++/* device can't handle device_qualifier descriptor requests */
++#define USB_QUIRK_DEVICE_QUALIFIER	0x00000100
++
+ #endif /* __LINUX_USB_QUIRKS_H */
+-- 
+2.1.0
+
