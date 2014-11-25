@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751192AbaKYPrg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:47:36 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:60863 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077AbaKYPrR (ORCPT
+	id S1751156AbaKYPrW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:47:22 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:42011 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979AbaKYPrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:47:17 -0500
+	Tue, 25 Nov 2014 10:47:19 -0500
 From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
 To: Guenter Roeck <linux@roeck-us.net>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Benoit Cousson <bcousson@baylibre.com>,
         Patrick Titiano <ptitiano@baylibre.com>,
         Bartosz Golaszewski <bgolaszewski@baylibre.com>
-Subject: [PATCH 4/5] hwmon: ina2xx: change hex constants to lower-case
-Date: Tue, 25 Nov 2014 16:47:02 +0100
-Message-Id: <1416930423-12179-5-git-send-email-bgolaszewski@baylibre.com>
+Subject: [PATCH 5/5] hwmon: ina2xx: documentation update for new sysfs attributes
+Date: Tue, 25 Nov 2014 16:47:03 +0100
+Message-Id: <1416930423-12179-6-git-send-email-bgolaszewski@baylibre.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1416930423-12179-1-git-send-email-bgolaszewski@baylibre.com>
 References: <1416930423-12179-1-git-send-email-bgolaszewski@baylibre.com>
@@ -23,46 +23,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make ina2xx uniform with the majority of the kernel code.
+Include the rshunt and avg sysfs attributes for ina2xx in the documentation.
 
 Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
 ---
- drivers/hwmon/ina2xx.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ Documentation/hwmon/ina2xx | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
-index 0914a72..41a5ad3 100644
---- a/drivers/hwmon/ina2xx.c
-+++ b/drivers/hwmon/ina2xx.c
-@@ -49,7 +49,7 @@
- /* INA226 register definitions */
- #define INA226_MASK_ENABLE		0x06
- #define INA226_ALERT_LIMIT		0x07
--#define INA226_DIE_ID			0xFF
-+#define INA226_DIE_ID			0xff
+diff --git a/Documentation/hwmon/ina2xx b/Documentation/hwmon/ina2xx
+index 4223c2d..621cf98 100644
+--- a/Documentation/hwmon/ina2xx
++++ b/Documentation/hwmon/ina2xx
+@@ -44,6 +44,10 @@ The INA226 monitors both a shunt voltage drop and bus supply voltage.
+ The INA230 is a high or low side current shunt and power monitor with an I2C
+ interface. The INA230 monitors both a shunt voltage drop and bus supply voltage.
  
- /* shunt resistor sysfs attribute index */
- #define INA2XX_RSHUNT			0x8
-@@ -64,7 +64,7 @@
- #define INA2XX_MAX_REGISTERS		8
- 
- /* settings - depend on use case */
--#define INA219_CONFIG_DEFAULT		0x399F	/* PGA=8 */
-+#define INA219_CONFIG_DEFAULT		0x399f	/* PGA=8 */
- #define INA226_CONFIG_DEFAULT		0x4527	/* averages=16 */
- 
- /* worst case is 68.10 ms (~14.6Hz, ina219) */
-@@ -74,8 +74,8 @@
- #define INA2XX_RSHUNT_DEFAULT		10000
- 
- /* bit masks for the averaging setting in the configuration register */
--#define INA226_AVG_RD_MASK		0x0E00
--#define INA226_AVG_WR_MASK		0xF1FF
-+#define INA226_AVG_RD_MASK		0x0e00
-+#define INA226_AVG_WR_MASK		0xf1ff
- 
- #define INA226_READ_AVG(reg) ((reg & INA226_AVG_RD_MASK) >> 9)
- 
+-The shunt value in micro-ohms can be set via platform data or device tree.
+-Please refer to the Documentation/devicetree/bindings/i2c/ina2xx.txt for bindings
+-if the device tree is used.
++The shunt value in micro-ohms can be set via platform data or device tree in
++compile-time or via the rshunt attribute in sysfs in run-time. Please refer to
++the Documentation/devicetree/bindings/i2c/ina2xx.txt for bindings if the
++device tree is used.
++
++The averaging rate of INA226 and INA230 can be changed via the avg sysfs
++attribute. The available rates are: 1, 4, 16, 64, 128, 256, 512 and 1024.
 -- 
 2.1.3
 
