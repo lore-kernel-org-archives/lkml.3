@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645AbaKYKmZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:42:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58703 "EHLO
+	id S1752558AbaKYKm3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:42:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58763 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532AbaKYKmO (ORCPT
+	with ESMTP id S1753636AbaKYKmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:14 -0500
+	Tue, 25 Nov 2014 05:42:25 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oliver Neukum <oneukum@suse.de>, Jiri Kosina <jkosina@suse.cz>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 139/254] HID: usbhid: fix PIXART optical mouse
-Date: Tue, 25 Nov 2014 10:38:09 +0000
-Message-Id: <1416912004-5928-140-git-send-email-luis.henriques@canonical.com>
+Cc: Tejun Heo <tj@kernel.org>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 152/254] ahci: disable MSI instead of NCQ on Samsung pci-e SSDs on macbooks
+Date: Tue, 25 Nov 2014 10:38:22 +0000
+Message-Id: <1416912004-5928-153-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Tejun Heo <tj@kernel.org>
 
-commit 4980f95755e2966b30ac70d1841f4db66d1a8a22 upstream.
+commit 66a7cbc303f4d28f201529b06061944d51ab530c upstream.
 
-This mouse keeps disconnecting in runlevel 3. It needs the ALWAYS_POLL quirk.
+Samsung pci-e SSDs on macbooks failed miserably on NCQ commands, so
+67809f85d31e ("ahci: disable NCQ on Samsung pci-e SSDs on macbooks")
+disabled NCQ on them.  It turns out that NCQ is fine as long as MSI is
+not used, so let's turn off MSI and leave NCQ on.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=60731
+Tested-by: <dorin@i51.org>
+Tested-by: Imre Kaloz <kaloz@openwrt.org>
+Fixes: 67809f85d31e ("ahci: disable NCQ on Samsung pci-e SSDs on macbooks")
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-ids.h           | 1 +
- drivers/hid/usbhid/hid-quirks.c | 1 +
- 2 files changed, 2 insertions(+)
+ drivers/ata/ahci.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 79b966d15a3d..889f9115dc4d 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -732,6 +732,7 @@
- #define USB_DEVICE_ID_PI_ENGINEERING_VEC_USB_FOOTPEDAL	0xff
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index f0f8ae1197e2..d5fc45ae867b 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -60,6 +60,7 @@ enum board_ids {
+ 	/* board IDs by feature in alphabetical order */
+ 	board_ahci,
+ 	board_ahci_ign_iferr,
++	board_ahci_nomsi,
+ 	board_ahci_noncq,
+ 	board_ahci_nosntf,
+ 	board_ahci_yes_fbs,
+@@ -121,6 +122,13 @@ static const struct ata_port_info ahci_port_info[] = {
+ 		.udma_mask	= ATA_UDMA6,
+ 		.port_ops	= &ahci_ops,
+ 	},
++	[board_ahci_nomsi] = {
++		AHCI_HFLAGS	(AHCI_HFLAG_NO_MSI),
++		.flags		= AHCI_FLAG_COMMON,
++		.pio_mask	= ATA_PIO4,
++		.udma_mask	= ATA_UDMA6,
++		.port_ops	= &ahci_ops,
++	},
+ 	[board_ahci_noncq] = {
+ 		AHCI_HFLAGS	(AHCI_HFLAG_NO_NCQ),
+ 		.flags		= AHCI_FLAG_COMMON,
+@@ -475,10 +483,10 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
  
- #define USB_VENDOR_ID_PIXART				0x093a
-+#define USB_DEVICE_ID_PIXART_USB_OPTICAL_MOUSE		0x2510
- #define USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN	0x8001
- #define USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1	0x8002
- #define USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2	0x8003
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 72da08367bdc..01377f3b9dd0 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -80,6 +80,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PENMOUNT, USB_DEVICE_ID_PENMOUNT_1610, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_PENMOUNT, USB_DEVICE_ID_PENMOUNT_1640, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_USB_OPTICAL_MOUSE, HID_QUIRK_ALWAYS_POLL },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2, HID_QUIRK_NO_INIT_REPORTS },
+ 	/*
+-	 * Samsung SSDs found on some macbooks.  NCQ times out.
+-	 * https://bugzilla.kernel.org/show_bug.cgi?id=60731
++	 * Samsung SSDs found on some macbooks.  NCQ times out if MSI is
++	 * enabled.  https://bugzilla.kernel.org/show_bug.cgi?id=60731
+ 	 */
+-	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_noncq },
++	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_nomsi },
+ 
+ 	/* Enmotus */
+ 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
 -- 
 2.1.0
 
