@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751100AbaKYABA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 19:01:00 -0500
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:34041 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791AbaKYAA4 (ORCPT
+	id S1750927AbaKYAJT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 19:09:19 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:43247 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaKYAJR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 19:00:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAADnVQ+8d0GC5OwQTdJKkmG8=vshUVqK1pPou1GCGa_iuU2v-g@mail.gmail.com>
-References: <CAADnVQ+8d0GC5OwQTdJKkmG8=vshUVqK1pPou1GCGa_iuU2v-g@mail.gmail.com>
-Date: Mon, 24 Nov 2014 16:00:55 -0800
-X-Google-Sender-Auth: cuY7Gag83mM6hOzeo1qXLwUmmC0
-Message-ID: <CA+55aFyktcMZnQHqoaCePgJVXmbi=9pTS_jz7j+j=QDuSoSFoA@mail.gmail.com>
-Subject: Re: [PATCH/RFC 7/7] kernel: Force ACCESS_ONCE to work only on scalar types
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-Cc: David Howells <dhowells@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>, linux-x86_64@vger.kernel.org,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 24 Nov 2014 19:09:17 -0500
+Content-Type: text/plain; charset=koi8-r
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v3 2/4] i2c: omap: implement workaround for handling invalid BB-bit values
+From: Alexander Kochetkov <al.kochet@gmail.com>
+In-Reply-To: <47749B61-5924-4E56-9931-77B0CFC0AAA0@gmail.com>
+Date: Tue, 25 Nov 2014 03:09:13 +0300
+Cc: Kevin Hilman <khilman@kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        linux-omap <linux-omap@vger.kernel.org>, linux-i2c@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <06376010-5DED-49AA-9494-A9546567E7CA@gmail.com>
+References: <1416518925-20679-1-git-send-email-al.kochet@gmail.com> <1416685634-5864-1-git-send-email-al.kochet@gmail.com> <1416685634-5864-3-git-send-email-al.kochet@gmail.com> <CAMAWPa8whctBR6fBFaSzPvm3qn+QK06CimRrxFxxH=0kNkF4UA@mail.gmail.com> <47A1A441-952C-4AC3-859C-5A8E405767E0@gmail.com> <20141124194759.GG2757@atomide.com> <47749B61-5924-4E56-9931-77B0CFC0AAA0@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 2:58 PM, Alexei Starovoitov
-<alexei.starovoitov@gmail.com> wrote:
->
-> I've changed gcc pr58145-1.c reproducer to use
-> __read_once_size() approach above
 
-I don't think you did.
+24 нояб. 2014 г., в 23:05, Alexander Kochetkov <al.kochet@gmail.com> написал(а):
 
-> modified reproducer:
-> struct S { unsigned int data; };
-> void bar(int val)
-> {
->   struct S _s = { .data = val };
->   *(volatile struct S *) 0x880000UL = ACCESS_ONCE(&_s);
-> }
+> Something (u-boot, may be) leave the bus in the wrong state.
+> Really strange.
 
-My approach never had "volatile struct S *". The only volatile
-pointers were the actual byte/word/etc pointers, and those generated
-temporary values that were then assigned to the final type through a
-cast.
+Actually something wrong with i2c-pullups on i2c.1 bus on fault boards.
+May be these are boards without pull-ups?
+All beagles doesn't have internal pull-ups on i2c.1 since u-boot 2011.x.
 
-Also, note that the kernel is compiled without strict aliasing, so the
-casting to 'void *' and various smaller types is "safe" - even if the
-C standard doesn't like it.
+Here is the bug in the u-boot related to beagle:
+http://git.denx.de/?p=u-boot.git;a=commit;h=04e2a13336f0e507ef416bbede3be92b79c46594
 
-With strict aliasing, you'd need to make the read_once() macro not
-just pass in the size, there would have to be some kind of union of
-the type, and that would effectively mean that you can't use an inline
-function, you'd have to do it in a big macro (because the type would
-be per-site).
+Yes, I made fix, but keep that in mind.
 
-So with strict aliasing, you'd have to make it something like
+For example one of the boards (omap3-beagle):
+http://status.armcloud.us/boot/omap3-beagle/job/next/kernel/next-20141124/defconfig/arm-omap2plus_defconfig/
+http://status.armcloud.us/boot/omap3-beagle,legacy/job/next/kernel/next-20141124/defconfig/arm-omap2plus_defconfig/
+http://status.armcloud.us/boot/omap3-beagle/job/next/kernel/next-20141124/defconfig/arm-multi_v7_defconfig/
 
-        #define ACCESS_ONCE(p) \
-      ({ union { typeof(*p) __val; char __array[sizeof(*p)]} __u;
-__read_once_size(p, __u.__array, sizeof(__u)); __u.__val; })
+has following warning message in the u-boot log:
+> U-Boot 2014.07 (Aug 21 2014 - 11:03:05)
+> 
+> OMAP3530-GP ES3.0, CPU-OPP2, L3-165MHz, Max CPU Clock 600 MHz
+> OMAP3 Beagle board + LPDDR/NAND
+> ....
+> Beagle Rev C1/C2/C3
+> Timed out in wait_for_event: status=1000
+> Check if pads/pull-ups of bus 1 are properly configured
 
-Pretty? No. But then, the standard C aliasing rules are so broken that
-"pretty" doesn't really come into play..
+Also beagle schematic has following log entry for A3:
+4. Added optional pullup resistors on I2C2_SCL and I2C_SDA into the layout.
 
-                  Linus
+Is the fault beagle is pre A3 revision?
+
+I can't tell anything about second one board (omap3-overo-tobi), because I could not get it schematic.
+
+And how you have i2c.1 working without pull-ups I don't know.
+
+Alexander.
+
