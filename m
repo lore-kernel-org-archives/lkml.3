@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751194AbaKYQU0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:20:26 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:36864 "EHLO gloria.sntech.de"
+	id S1751257AbaKYQWC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:22:02 -0500
+Received: from vps0.lunn.ch ([178.209.37.122]:39188 "EHLO vps0.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751117AbaKYQUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:20:23 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Chris Zhong <zyw@rock-chips.com>, dianders@chromium.org,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/2] Increase the maximum cpu frequency of rk3288
-Date: Tue, 25 Nov 2014 17:23:59 +0100
-Message-ID: <3297542.UgVU3NH89O@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <5474AAB4.2060301@rock-chips.com>
-References: <1416908253-31721-1-git-send-email-zyw@rock-chips.com> <5474AAB4.2060301@rock-chips.com>
+	id S1751045AbaKYQWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 11:22:00 -0500
+Date: Tue, 25 Nov 2014 17:21:21 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Andrew Lunn <andrew@lunn.ch>, Leif Lindholm <leif.lindholm@linaro.org>,
+        mark.rutland@arm.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robh+dt@kernel.org, ijc@debian.org,
+        plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] of: support passing console options with stdout-path
+Message-ID: <20141125162121.GC3443@lunn.ch>
+References: <1416867838-18652-1-git-send-email-leif.lindholm@linaro.org>
+ <20141124230016.GP20238@lunn.ch>
+ <20141125144439.07212C44343@trevor.secretlab.ca>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141125144439.07212C44343@trevor.secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris, Kever,
-
-Am Mittwoch, 26. November 2014, 00:13:40 schrieb Kever Yang:
-> On 11/25/2014 05:37 PM, Chris Zhong wrote:
-> > The maximum cpu frequency of rk3288 can up to 1.8Ghz, but the vdd_cpu need
-> > set to 1.4v. I've tested these patches on rk3288 evb board.
+> > More worrying, barebox does not support the : either. So there is a
+> > danger your bootloader suddenly goes silent after a dt blob update.
 > 
-> I'm not sure why you need this patch, I think we have a discuss
-> for the cpu operating point before.
-> In this case:
-> 1. rk3288.dtsi is for all the rk3288 Soc based system, you may need
-> a separate opp table in rk3288-evb-rk808.dts;
-> 2. 1.4V may beyond the supported voltage range too much,
->      and it's not a good idea to add it to rk3288.dtsi as a safe voltage.
-> 3. Do you have a stress/heavy load test on evb with 1.4v at 1.8GHz?
+> Is barebox parsing the property? Or updating it? Or both? I've got no
+> problem with this patch, but we can also support things like the
+> 'current-speed' property in the UART to set a default when the stdout
+> path doesn't have any arguments.
 
-That is how I remember it as well ... the default opp table is supposed to 
-contain only the safest of values, while individual boards can then increase 
-those in conjunction with their thermal design.
+Hi Grant
 
-As the evb itself does only have the naked soc without any heat-sink or 
-similar, I'm not even sure if these additional frequencies should be enabled 
-there at all.
+I'm no export with barebox. So i just grep'ed the code.
 
+It parses the property. Also as with linux, of_find_node_by_path()
+does not stop at : as you say it should.
 
-Heiko
+There is one case of the property being updated, but that is only for
+the PPC mpc85xx.
+
+Barebox does not appear to use 'current-speed' at all.
+
+	Andrew
