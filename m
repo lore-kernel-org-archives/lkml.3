@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488AbaKYS7F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 13:59:05 -0500
-Received: from imap.thunk.org ([74.207.234.97]:51252 "EHLO imap.thunk.org"
+	id S1751572AbaKYS7a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 13:59:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45200 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951AbaKYS7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 13:59:01 -0500
-Date: Tue, 25 Nov 2014 13:58:06 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: David Miller <davem@davemloft.net>
-Cc: paulmck@linux.vnet.ibm.com, rdunlap@infradead.org, pieter@boesman.nl,
-        josh@joshtriplett.org, alexander.h.duyck@intel.com,
-        viro@zeniv.linux.org.uk, ast@plumgrid.com, akpm@linux-foundation.org,
-        beber@meleeweb.net, catalina.mocanu@gmail.com, dborkman@redhat.com,
-        edumazet@google.com, ebiederm@xmission.com, fabf@skynet.be,
-        fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
-        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
-        bfields@fieldses.org, jlayton@poochiereds.net,
-        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        mcgrof@suse.com, mattst88@gmail.com, mgorman@suse.de, mst@redhat.com,
-        miklos@szeredi.hu, netdev@vger.kernel.org, oleg@redhat.com,
-        Paul.Durrant@citrix.com, pefoley2@pefoley.com, tgraf@suug.ch,
-        therbert@google.com, trond.myklebust@primarydata.com,
-        willemb@google.com, xiaoguangrong@linux.vnet.ibm.com,
-        zhenglong.cai@cs2c.com.cn
-Subject: Re: [PATCH v4 0/7] kernel tinification: optionally compile out
- splice family of syscalls (splice, vmsplice, tee and sendfile)
-Message-ID: <20141125185806.GA28116@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	David Miller <davem@davemloft.net>, paulmck@linux.vnet.ibm.com,
-	rdunlap@infradead.org, pieter@boesman.nl, josh@joshtriplett.org,
-	alexander.h.duyck@intel.com, viro@zeniv.linux.org.uk,
-	ast@plumgrid.com, akpm@linux-foundation.org, beber@meleeweb.net,
-	catalina.mocanu@gmail.com, dborkman@redhat.com, edumazet@google.com,
-	ebiederm@xmission.com, fabf@skynet.be,
-	fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
-	hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
-	bfields@fieldses.org, jlayton@poochiereds.net,
-	linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-	mcgrof@suse.com, mattst88@gmail.com, mgorman@suse.de,
-	mst@redhat.com, miklos@szeredi.hu, netdev@vger.kernel.org,
-	oleg@redhat.com, Paul.Durrant@citrix.com, pefoley2@pefoley.com,
-	tgraf@suug.ch, therbert@google.com, trond.myklebust@primarydata.com,
-	willemb@google.com, xiaoguangrong@linux.vnet.ibm.com,
-	zhenglong.cai@cs2c.com.cn
-References: <5474ABB6.3030400@infradead.org>
- <20141125.121305.2094097848188324942.davem@davemloft.net>
- <20141125181032.GJ5050@linux.vnet.ibm.com>
- <20141125.132445.152609149279137368.davem@davemloft.net>
+	id S1751120AbaKYS71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 13:59:27 -0500
+Date: Tue, 25 Nov 2014 19:59:19 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Aaron Tomlin <atomlin@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] exit: pidns: alloc_pid() leaks pid_namespace if
+	child_reaper is exiting
+Message-ID: <20141125185919.GA1779@redhat.com>
+References: <20141124200629.GA21009@redhat.com> <87vbm4ff0r.fsf@x220.int.ebiederm.org> <20141125170718.GA29360@redhat.com> <87lhmzb24c.fsf@x220.int.ebiederm.org> <20141125181521.GA31963@redhat.com> <87wq6j9l4s.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141125.132445.152609149279137368.davem@davemloft.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <87wq6j9l4s.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 01:24:45PM -0500, David Miller wrote:
-> 
-> And then if some fundamental part of userland (glibc, klibc, etc.) finds
-> a useful way to use splice for a fundamental operation, we're back to
-> square one.
+On 11/25, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > On 11/25, Eric W. Biederman wrote:
+> >>
+> >> My concern is exposing a half initialized struct pid to the world via an
+> >> rcu data structure.  In particular could one of the rcu users get into
+> >> trouble because we haven't called get_pid_ns yet?  That is unclear to me.
+> >
+> > They can't. This pid was fully initialized, in particular
+> > pid->numbers[pid->level].ns == ns has a reference.
+> >
+> > Just it is not ready for put_pid() which will be called by the "owner" of
+> > this pid, the caller or the new child. So in this sense it doesn't matter
+> > when we call get_pid_ns(), just we need to do this before return.
+>
+> Or by someone calling find_get_pid() ... put_pid().
+>
+> Now the reference count should not hit zero in that case
 
-I'll note that the applications for these super-tiny kernels are
-places where it's not likely they would be using glibc at all; think
-very tiny embedded systems.  The userspace tends to be highly
-restricted for the same space reasons why there is an effort to make
-the kernel as small as possible.
+Yes. this get_pid_ns() connects to atomic_set(&pid->count, 1) set by us.
 
-In these places, they are using Linux already, but they're using a 2.2
-or 2.4 kernel because 3.0 is just too damned big.  So the goal is to
-try to provide them an alternative which allows them to use a modern,
-but stripped down kernel.  If glibc or klibc isn't going to work
-without splice, then it's not going to work on a pre 2.6 kernel
-anyway, so things are no worse with these systems anyway.
+> but I hate to
+> think of that case separately.
 
-After all, if we can get these systems to using a 3.x kernel w/o
-splice, that's surely better than their using a 2.2 or 2.4 kernel w/o
-the splice system, isn't it?
+OK.
 
-Cheers,
+> At this point, and especially since we need to Cc stable and get this
+> fix backported to who knows how many kernel releases having something
+> that is trivial to validate is correct is important.
 
-					- Ted
+OK. I'll send V2 with -stable cc'ed.
+
+Oleg.
+
