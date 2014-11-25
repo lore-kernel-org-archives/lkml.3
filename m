@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246AbaKYK7U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:59:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59035 "EHLO
+	id S1754756AbaKYK7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:59:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59020 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441AbaKYKnP (ORCPT
+	with ESMTP id S1753913AbaKYKnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:15 -0500
+	Tue, 25 Nov 2014 05:43:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Ian Campbell <ijc@hellion.org.uk>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Mark Salter <msalter@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 207/254] ARM: 8191/1: decompressor: ensure I-side picks up relocated code
-Date: Tue, 25 Nov 2014 10:39:17 +0000
-Message-Id: <1416912004-5928-208-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 202/254] arm64: efi: Fix stub cache maintenance
+Date: Tue, 25 Nov 2014 10:39:12 +0000
+Message-Id: <1416912004-5928-203-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,112 +32,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Mark Rutland <mark.rutland@arm.com>
 
-commit 238962ac71910d6c20162ea5230685fead1836a4 upstream.
+commit 9b0b26580a753d4d6bdd2b8b4ca9a8f3f2d39065 upstream.
 
-To speed up decompression, the decompressor sets up a flat, cacheable
-mapping of memory. However, when there is insufficient space to hold
-the page tables for this mapping, we don't bother to enable the caches
-and subsequently skip all the cache maintenance hooks.
+While efi-entry.S mentions that efi_entry() will have relocated the
+kernel image, it actually means that efi_entry will have placed a copy
+of the kernel in the appropriate location, and until this is branched to
+at the end of efi_entry.S, all instructions are executed from the
+original image.
 
-Skipping the cache maintenance before jumping to the relocated code
-allows the processor to predict the branch and populate the I-cache
-with stale data before the relocation loop has completed (since a
-bootloader may have SCTLR.I set, which permits normal, cacheable
-instruction fetches regardless of SCTLR.M).
+Thus while the flush in efi_entry.S does ensure that the copy is visible
+to noncacheable accesses, it does not guarantee that this is true for
+the image instructions are being executed from. This could have
+disasterous effects when the MMU and caches are disabled if the image
+has not been naturally evicted to the PoC.
 
-This patch moves the cache maintenance check into the maintenance
-routines themselves, allowing the v6/v7 versions to invalidate the
-I-cache regardless of the MMU state.
+Additionally, due to a missing dsb following the ic ialluis, the new
+kernel image is not necessarily clean in the I-cache when it is branched
+to, with similar potentially disasterous effects.
 
-Reported-by: Marc Carino <marc.ceeeee@gmail.com>
-Tested-by: Julien Grall <julien.grall@linaro.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+This patch adds additional flushing to ensure that the currently
+executing stub text is flushed to the PoC and is thus visible to
+noncacheable accesses. As it is placed after the instructions cache
+maintenance for the new image and __flush_dcache_area already contains a
+dsb, we do not need to add a separate barrier to ensure completion of
+the icache maintenance.
+
+Comments are updated to clarify the situation with regard to the two
+images and the maintenance required for both.
+
+Fixes: 3c7f255039a2ad6ee1e3890505caf0d029b22e29
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Acked-by: Joel Schopp <joel.schopp@amd.com>
+Reviewed-by: Roy Franz <roy.franz@linaro.org>
+Tested-by: Tom Lendacky <thomas.lendacky@amd.com>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: Ian Campbell <ijc@hellion.org.uk>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: Mark Salter <msalter@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/boot/compressed/head.S | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ arch/arm64/kernel/efi-entry.S | 27 +++++++++++++++++++++------
+ 1 file changed, 21 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
-index 3a8b32df6b31..d35692b63cfd 100644
---- a/arch/arm/boot/compressed/head.S
-+++ b/arch/arm/boot/compressed/head.S
-@@ -395,8 +395,7 @@ dtb_check_done:
- 		add	sp, sp, r6
- #endif
+diff --git a/arch/arm64/kernel/efi-entry.S b/arch/arm64/kernel/efi-entry.S
+index 619b1dd7bcde..d18a44940968 100644
+--- a/arch/arm64/kernel/efi-entry.S
++++ b/arch/arm64/kernel/efi-entry.S
+@@ -54,18 +54,17 @@ ENTRY(efi_stub_entry)
+ 	b.eq	efi_load_fail
  
--		tst	r4, #1
--		bleq	cache_clean_flush
-+		bl	cache_clean_flush
+ 	/*
+-	 * efi_entry() will have relocated the kernel image if necessary
+-	 * and we return here with device tree address in x0 and the kernel
+-	 * entry point stored at *image_addr. Save those values in registers
+-	 * which are callee preserved.
++	 * efi_entry() will have copied the kernel image if necessary and we
++	 * return here with device tree address in x0 and the kernel entry
++	 * point stored at *image_addr. Save those values in registers which
++	 * are callee preserved.
+ 	 */
+ 	mov	x20, x0		// DTB address
+ 	ldr	x0, [sp, #16]	// relocated _text address
+ 	mov	x21, x0
  
- 		adr	r0, BSYM(restart)
- 		add	r0, r0, r6
-@@ -1045,6 +1044,8 @@ cache_clean_flush:
- 		b	call_cache_fn
+ 	/*
+-	 * Flush dcache covering current runtime addresses
+-	 * of kernel text/data. Then flush all of icache.
++	 * Calculate size of the kernel Image (same for original and copy).
+ 	 */
+ 	adrp	x1, _text
+ 	add	x1, x1, #:lo12:_text
+@@ -73,9 +72,24 @@ ENTRY(efi_stub_entry)
+ 	add	x2, x2, #:lo12:_edata
+ 	sub	x1, x2, x1
  
- __armv4_mpu_cache_flush:
-+		tst	r4, #1
-+		movne	pc, lr
- 		mov	r2, #1
- 		mov	r3, #0
- 		mcr	p15, 0, ip, c7, c6, 0	@ invalidate D cache
-@@ -1062,6 +1063,8 @@ __armv4_mpu_cache_flush:
- 		mov	pc, lr
- 		
- __fa526_cache_flush:
-+		tst	r4, #1
-+		movne	pc, lr
- 		mov	r1, #0
- 		mcr	p15, 0, r1, c7, c14, 0	@ clean and invalidate D cache
- 		mcr	p15, 0, r1, c7, c5, 0	@ flush I cache
-@@ -1070,13 +1073,16 @@ __fa526_cache_flush:
++	/*
++	 * Flush the copied Image to the PoC, and ensure it is not shadowed by
++	 * stale icache entries from before relocation.
++	 */
+ 	bl	__flush_dcache_area
+ 	ic	ialluis
  
- __armv6_mmu_cache_flush:
- 		mov	r1, #0
--		mcr	p15, 0, r1, c7, c14, 0	@ clean+invalidate D
-+		tst	r4, #1
-+		mcreq	p15, 0, r1, c7, c14, 0	@ clean+invalidate D
- 		mcr	p15, 0, r1, c7, c5, 0	@ invalidate I+BTB
--		mcr	p15, 0, r1, c7, c15, 0	@ clean+invalidate unified
-+		mcreq	p15, 0, r1, c7, c15, 0	@ clean+invalidate unified
- 		mcr	p15, 0, r1, c7, c10, 4	@ drain WB
- 		mov	pc, lr
++	/*
++	 * Ensure that the rest of this function (in the original Image) is
++	 * visible when the caches are disabled. The I-cache can't have stale
++	 * entries for the VA range of the current image, so no maintenance is
++	 * necessary.
++	 */
++	adr	x0, efi_stub_entry
++	adr	x1, efi_stub_entry_end
++	sub	x1, x1, x0
++	bl	__flush_dcache_area
++
+ 	/* Turn off Dcache and MMU */
+ 	mrs	x0, CurrentEL
+ 	cmp	x0, #CurrentEL_EL2
+@@ -105,4 +119,5 @@ efi_load_fail:
+ 	ldp	x29, x30, [sp], #32
+ 	ret
  
- __armv7_mmu_cache_flush:
-+		tst	r4, #1
-+		bne	iflush
- 		mrc	p15, 0, r10, c0, c1, 5	@ read ID_MMFR1
- 		tst	r10, #0xf << 16		@ hierarchical cache (ARMv7)
- 		mov	r10, #0
-@@ -1137,6 +1143,8 @@ iflush:
- 		mov	pc, lr
- 
- __armv5tej_mmu_cache_flush:
-+		tst	r4, #1
-+		movne	pc, lr
- 1:		mrc	p15, 0, r15, c7, c14, 3	@ test,clean,invalidate D cache
- 		bne	1b
- 		mcr	p15, 0, r0, c7, c5, 0	@ flush I cache
-@@ -1144,6 +1152,8 @@ __armv5tej_mmu_cache_flush:
- 		mov	pc, lr
- 
- __armv4_mmu_cache_flush:
-+		tst	r4, #1
-+		movne	pc, lr
- 		mov	r2, #64*1024		@ default: 32K dcache size (*2)
- 		mov	r11, #32		@ default: 32 byte line size
- 		mrc	p15, 0, r3, c0, c0, 1	@ read cache type
-@@ -1177,6 +1187,8 @@ no_cache_id:
- 
- __armv3_mmu_cache_flush:
- __armv3_mpu_cache_flush:
-+		tst	r4, #1
-+		movne	pc, lr
- 		mov	r1, #0
- 		mcr	p15, 0, r1, c7, c0, 0	@ invalidate whole cache v3
- 		mov	pc, lr
++efi_stub_entry_end:
+ ENDPROC(efi_stub_entry)
 -- 
 2.1.0
 
