@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390AbaKYOJE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:09:04 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44191 "EHLO
+	id S1752367AbaKYOJD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:09:03 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44195 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415AbaKYOCd (ORCPT
+	with ESMTP id S1751429AbaKYOCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Nov 2014 09:02:33 -0500
 From: Al Viro <viro@ZenIV.linux.org.uk>
 To: David Miller <davem@davemloft.net>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 01/17] new helper: skb_copy_and_csum_datagram_msg()
-Date: Tue, 25 Nov 2014 14:02:15 +0000
-Message-Id: <1416924151-28698-1-git-send-email-viro@ZenIV.linux.org.uk>
+Subject: [PATCH v2 07/17] new helpers: skb_copy_datagram_from_iter() and zerocopy_sg_from_iter()
+Date: Tue, 25 Nov 2014 14:02:21 +0000
+Message-Id: <1416924151-28698-7-git-send-email-viro@ZenIV.linux.org.uk>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <20141125024018.GH7996@ZenIV.linux.org.uk>
 References: <20141125024018.GH7996@ZenIV.linux.org.uk>
@@ -24,70 +24,162 @@ From: Al Viro <viro@zeniv.linux.org.uk>
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- include/linux/skbuff.h |    5 +++++
- net/ipv4/udp.c         |    5 ++---
- net/ipv6/raw.c         |    2 +-
- net/ipv6/udp.c         |    2 +-
- 4 files changed, 9 insertions(+), 5 deletions(-)
+ include/linux/skbuff.h |    3 ++
+ net/core/datagram.c    |  116 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 119 insertions(+)
 
 diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 78c299f..cbe4b20 100644
+index d048347..a01cd9a 100644
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
-@@ -2651,6 +2651,11 @@ static inline int skb_copy_datagram_msg(const struct sk_buff *from, int offset,
- }
- int skb_copy_and_csum_datagram_iovec(struct sk_buff *skb, int hlen,
- 				     struct iovec *iov);
-+static inline int skb_copy_and_csum_datagram_msg(struct sk_buff *skb, int hlen,
-+			    struct msghdr *msg)
-+{
-+	return skb_copy_and_csum_datagram_iovec(skb, hlen, msg->msg_iov);
-+}
+@@ -2659,10 +2659,13 @@ static inline int skb_copy_and_csum_datagram_msg(struct sk_buff *skb, int hlen,
  int skb_copy_datagram_from_iovec(struct sk_buff *skb, int offset,
  				 const struct iovec *from, int from_offset,
  				 int len);
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 4a16b91..b2d6068 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1284,9 +1284,8 @@ try_again:
- 		err = skb_copy_datagram_msg(skb, sizeof(struct udphdr),
- 					    msg, copied);
- 	else {
--		err = skb_copy_and_csum_datagram_iovec(skb,
--						       sizeof(struct udphdr),
--						       msg->msg_iov);
-+		err = skb_copy_and_csum_datagram_msg(skb, sizeof(struct udphdr),
-+						     msg);
++int skb_copy_datagram_from_iter(struct sk_buff *skb, int offset,
++				 struct iov_iter *from, int len);
+ int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *frm,
+ 			   int offset, size_t count);
+ int skb_copy_datagram_iter(const struct sk_buff *from, int offset,
+ 			   struct iov_iter *to, int size);
++int zerocopy_sg_from_iter(struct sk_buff *skb, struct iov_iter *frm);
+ void skb_free_datagram(struct sock *sk, struct sk_buff *skb);
+ void skb_free_datagram_locked(struct sock *sk, struct sk_buff *skb);
+ int skb_kill_datagram(struct sock *sk, struct sk_buff *skb, unsigned int flags);
+diff --git a/net/core/datagram.c b/net/core/datagram.c
+index 26391a3..3ea0384 100644
+--- a/net/core/datagram.c
++++ b/net/core/datagram.c
+@@ -572,6 +572,78 @@ fault:
+ }
+ EXPORT_SYMBOL(skb_copy_datagram_from_iovec);
  
- 		if (err == -EINVAL)
- 			goto csum_copy_err;
-diff --git a/net/ipv6/raw.c b/net/ipv6/raw.c
-index 0cbcf98..8baa53e 100644
---- a/net/ipv6/raw.c
-+++ b/net/ipv6/raw.c
-@@ -492,7 +492,7 @@ static int rawv6_recvmsg(struct kiocb *iocb, struct sock *sk,
- 			goto csum_copy_err;
- 		err = skb_copy_datagram_msg(skb, 0, msg, copied);
- 	} else {
--		err = skb_copy_and_csum_datagram_iovec(skb, 0, msg->msg_iov);
-+		err = skb_copy_and_csum_datagram_msg(skb, 0, msg);
- 		if (err == -EINVAL)
- 			goto csum_copy_err;
- 	}
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index dbc0b04..7cfb5d74 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -428,7 +428,7 @@ try_again:
- 		err = skb_copy_datagram_msg(skb, sizeof(struct udphdr),
- 					    msg, copied);
- 	else {
--		err = skb_copy_and_csum_datagram_iovec(skb, sizeof(struct udphdr), msg->msg_iov);
-+		err = skb_copy_and_csum_datagram_msg(skb, sizeof(struct udphdr), msg);
- 		if (err == -EINVAL)
- 			goto csum_copy_err;
- 	}
++int skb_copy_datagram_from_iter(struct sk_buff *skb, int offset,
++				 struct iov_iter *from,
++				 int len)
++{
++	int start = skb_headlen(skb);
++	int i, copy = start - offset;
++	struct sk_buff *frag_iter;
++
++	/* Copy header. */
++	if (copy > 0) {
++		if (copy > len)
++			copy = len;
++		if (copy_from_iter(skb->data + offset, copy, from) != copy)
++			goto fault;
++		if ((len -= copy) == 0)
++			return 0;
++		offset += copy;
++	}
++
++	/* Copy paged appendix. Hmm... why does this look so complicated? */
++	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
++		int end;
++		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
++
++		WARN_ON(start > offset + len);
++
++		end = start + skb_frag_size(frag);
++		if ((copy = end - offset) > 0) {
++			size_t copied;
++
++			if (copy > len)
++				copy = len;
++			copied = copy_page_from_iter(skb_frag_page(frag),
++					  frag->page_offset + offset - start,
++					  copy, from);
++			if (copied != copy)
++				goto fault;
++
++			if (!(len -= copy))
++				return 0;
++			offset += copy;
++		}
++		start = end;
++	}
++
++	skb_walk_frags(skb, frag_iter) {
++		int end;
++
++		WARN_ON(start > offset + len);
++
++		end = start + frag_iter->len;
++		if ((copy = end - offset) > 0) {
++			if (copy > len)
++				copy = len;
++			if (skb_copy_datagram_from_iter(frag_iter,
++							offset - start,
++							from, copy))
++				goto fault;
++			if ((len -= copy) == 0)
++				return 0;
++			offset += copy;
++		}
++		start = end;
++	}
++	if (!len)
++		return 0;
++
++fault:
++	return -EFAULT;
++}
++EXPORT_SYMBOL(skb_copy_datagram_from_iter);
++
+ /**
+  *	zerocopy_sg_from_iovec - Build a zerocopy datagram from an iovec
+  *	@skb: buffer to copy
+@@ -643,6 +715,50 @@ int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+ }
+ EXPORT_SYMBOL(zerocopy_sg_from_iovec);
+ 
++int zerocopy_sg_from_iter(struct sk_buff *skb, struct iov_iter *from)
++{
++	int len = iov_iter_count(from);
++	int copy = min_t(int, skb_headlen(skb), len);
++	int frag = 0;
++
++	/* copy up to skb headlen */
++	if (skb_copy_datagram_from_iter(skb, 0, from, copy))
++		return -EFAULT;
++
++	while (iov_iter_count(from)) {
++		struct page *pages[MAX_SKB_FRAGS];
++		size_t start;
++		ssize_t copied;
++		unsigned long truesize;
++		int n = 0;
++
++		if (frag == MAX_SKB_FRAGS)
++			return -EMSGSIZE;
++
++		copied = iov_iter_get_pages(from, pages, ~0U,
++					    MAX_SKB_FRAGS - frag, &start);
++		if (copied < 0)
++			return -EFAULT;
++
++		iov_iter_advance(from, copied);
++
++		truesize = PAGE_ALIGN(copied + start);
++		skb->data_len += copied;
++		skb->len += copied;
++		skb->truesize += truesize;
++		atomic_add(truesize, &skb->sk->sk_wmem_alloc);
++		while (copied) {
++			int size = min_t(int, copied, PAGE_SIZE - start);
++			skb_fill_page_desc(skb, frag++, pages[n], start, size);
++			start = 0;
++			copied -= size;
++			n++;
++		}
++	}
++	return 0;
++}
++EXPORT_SYMBOL(zerocopy_sg_from_iter);
++
+ static int skb_copy_and_csum_datagram(const struct sk_buff *skb, int offset,
+ 				      u8 __user *to, int len,
+ 				      __wsum *csump)
 -- 
 1.7.10.4
 
