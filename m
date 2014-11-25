@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534AbaKYScj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 13:32:39 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.142]:25840 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751457AbaKYScf (ORCPT
+	id S1751586AbaKYScp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 13:32:45 -0500
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.113]:50661 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751181AbaKYSci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 13:32:35 -0500
+	Tue, 25 Nov 2014 13:32:38 -0500
 X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-4.tower-179.messagelabs.com!1416939941!37248304!1
+X-Msg-Ref: server-14.tower-193.messagelabs.com!1416939939!21866657!1
 X-Originating-IP: [82.210.246.133]
 X-StarScan-Received: 
 X-StarScan-Version: 6.12.4; banners=-,-,-
 X-VirusChecked: Checked
-Message-ID: <9d3c3451c2cac6035277fb36ffead1a1f8af453e.1416938054.git.Adam.Thomson.Opensource@diasemi.com>
+Message-ID: <4b02cb8422fee25f5bc7c456778b00c9cfd2158f.1416938054.git.Adam.Thomson.Opensource@diasemi.com>
 In-Reply-To: <cover.1416938054.git.Adam.Thomson.Opensource@diasemi.com>
 References: <cover.1416938054.git.Adam.Thomson.Opensource@diasemi.com>
 From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Date: Tue, 25 Nov 2014 18:25:39 +0000
-Subject: [PATCH v4 8/8] iio: Add ABI documentation for input current readings
+Date: Tue, 25 Nov 2014 18:25:37 +0000
+Subject: [PATCH v4 7/8] MAINTAINERS: Include DA9150 files in Dialog Semiconductor
+ support list.
 To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
         Jonathan Cameron <jic23@kernel.org>, <linux-iio@vger.kernel.org>,
         Sebastian Reichel <sre@kernel.org>,
@@ -38,57 +39,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add information on in_current related readings.
-
 Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- Documentation/ABI/testing/sysfs-bus-iio | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ MAINTAINERS | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-index d760b02..37cd4d4 100644
---- a/Documentation/ABI/testing/sysfs-bus-iio
-+++ b/Documentation/ABI/testing/sysfs-bus-iio
-@@ -92,6 +92,18 @@ Description:
- 		is required is a consistent labeling.  Units after application
- 		of scale and offset are millivolts.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 0ff630d..4d2c39a 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2990,12 +2990,15 @@ S:	Supported
+ F:	Documentation/hwmon/da90??
+ F:	drivers/gpio/gpio-da90??.c
+ F:	drivers/hwmon/da90??-hwmon.c
++F:	drivers/iio/adc/da91??-*.c
+ F:	drivers/input/misc/da90??_onkey.c
+ F:	drivers/input/touchscreen/da9052_tsi.c
+ F:	drivers/leds/leds-da90??.c
+ F:	drivers/mfd/da903x.c
+ F:	drivers/mfd/da90??-*.c
++F:	drivers/mfd/da91??-*.c
+ F:	drivers/power/da9052-battery.c
++F:	drivers/power/da91??-*.c
+ F:	drivers/regulator/da903x.c
+ F:	drivers/regulator/da9???-regulator.[ch]
+ F:	drivers/rtc/rtc-da90??.c
+@@ -3005,6 +3008,7 @@ F:	include/linux/mfd/da903x.h
+ F:	include/linux/mfd/da9052/
+ F:	include/linux/mfd/da9055/
+ F:	include/linux/mfd/da9063/
++F:	include/linux/mfd/da9150/
+ F:	include/sound/da[79]*.h
+ F:	sound/soc/codecs/da[79]*.[ch]
 
-+What:		/sys/bus/iio/devices/iio:deviceX/in_currentY_raw
-+What:		/sys/bus/iio/devices/iio:deviceX/in_currentY_supply_raw
-+KernelVersion:	3.17
-+Contact:	linux-iio@vger.kernel.org
-+Description:
-+		Raw (unscaled no bias removal etc.) current measurement from
-+		channel Y. In special cases where the channel does not
-+		correspond to externally available input one of the named
-+		versions may be used. The number must always be specified and
-+		unique to allow association with event codes. Units after
-+		application of scale and offset are milliamps.
-+
- What:		/sys/bus/iio/devices/iio:deviceX/in_capacitanceY_raw
- KernelVersion:	3.2
- Contact:	linux-iio@vger.kernel.org
-@@ -227,6 +239,8 @@ What:		/sys/bus/iio/devices/iio:deviceX/in_accel_y_offset
- What:		/sys/bus/iio/devices/iio:deviceX/in_accel_z_offset
- What:		/sys/bus/iio/devices/iio:deviceX/in_voltageY_offset
- What:		/sys/bus/iio/devices/iio:deviceX/in_voltage_offset
-+What:		/sys/bus/iio/devices/iio:deviceX/in_currentY_offset
-+What:		/sys/bus/iio/devices/iio:deviceX/in_current_offset
- What:		/sys/bus/iio/devices/iio:deviceX/in_tempY_offset
- What:		/sys/bus/iio/devices/iio:deviceX/in_temp_offset
- What:		/sys/bus/iio/devices/iio:deviceX/in_pressureY_offset
-@@ -249,8 +263,11 @@ Description:
- 		to the _raw output.
-
- What:		/sys/bus/iio/devices/iio:deviceX/in_voltageY_scale
-+What:		/sys/bus/iio/devices/iio:deviceX/in_currentY_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_voltageY_supply_scale
-+What:		/sys/bus/iio/devices/iio:deviceX/in_currentY_supply_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_voltage_scale
-+What:		/sys/bus/iio/devices/iio:deviceX/in_current_scale
- What:		/sys/bus/iio/devices/iio:deviceX/out_voltageY_scale
- What:		/sys/bus/iio/devices/iio:deviceX/out_altvoltageY_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_accel_scale
 --
 1.9.3
 
