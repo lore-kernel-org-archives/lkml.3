@@ -1,107 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaKYFg1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 00:36:27 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41051 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995AbaKYFgG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 00:36:06 -0500
+	id S1751194AbaKYFqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 00:46:51 -0500
+Received: from ozlabs.org ([103.22.144.67]:48571 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750770AbaKYFqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 00:46:50 -0500
+Date: Tue, 25 Nov 2014 16:46:40 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hanjun Guo <hanjun.guo@linaro.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: linux-next: manual merge of the tip tree with the pm tree
+Message-ID: <20141125164640.05d99ea5@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <5473EB8B.3000803@rock-chips.com>
-References: <1415109789-7046-1-git-send-email-addy.ke@rock-chips.com>
-	<1415678573-6093-1-git-send-email-addy.ke@rock-chips.com>
-	<CAPDyKFqUoBjhsbz8rkLa9PY_dpgMxnimz3k7OoA5WVhi7MacPQ@mail.gmail.com>
-	<CAD=FV=VQHZ6YmcoeAb1OEVLYRrYBnc_dM5Kjt1TZX_CQJC=EfA@mail.gmail.com>
-	<5464152E.7040209@rock-chips.com>
-	<CAPDyKFrzGfDew0eLLEcA+_iS_mo-O2bFU58fjirfXXA8AJ9UYQ@mail.gmail.com>
-	<CAD=FV=Ve1TY4+8quq1=18A1YOFvOWuFGrBmHLwMCwdWBSqzxOw@mail.gmail.com>
-	<CAD=FV=UJT5zBkcj2a03Y_RWxad9+Pu83G_z79Xzzn74V=eRqww@mail.gmail.com>
-	<CAPDyKFqt4rrwi940KAPyPONpjixK1730QmHEsN27V97jyHH+Qw@mail.gmail.com>
-	<5473EB8B.3000803@rock-chips.com>
-Date: Mon, 24 Nov 2014 21:36:04 -0800
-X-Google-Sender-Auth: 4_XtvK2dWCi3rZcrnKllgsru5jc
-Message-ID: <CAD=FV=U9Hh-OR2aGh6Q9YAwnP8AuAbQtogD=7wQxgg9XvoWTMw@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: try pick the exact same voltage as vmmc for vqmmc
-From: Doug Anderson <dianders@chromium.org>
-To: Addy <addy.ke@rock-chips.com>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Alexandru Stan <amstan@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
-        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Chris Zhong <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/T.+7iMvUwEH92u+UTGF86Po"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addy,
+--Sig_/T.+7iMvUwEH92u+UTGF86Po
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Nov 24, 2014 at 6:38 PM, Addy <addy.ke@rock-chips.com> wrote:
->> In worst case scenario, VDD = 3.6V and VIO = 2.7V. That gives as the
->> factor of 0.75, thus we are inside spec but without margins.
->
-> * From eMMC4.5 spec:
->   1. (VDDF)vcc: Supply voltage for flash memory,  which is  2.7v -- 3.3v
->   2. (VDD)vccq: Supply voltage for memory controller, which is  1.7v --
-> 1.95v  and 2,7v -- 3.6v
->
-> * And from RK3288 datasheet:
->   Digtial GPIO Power(SDMMC0_VDD --> vccq) is 3.0v -- 3.6v and 1.62v - 1.98v
->
-> So I think:
-> 3.3v:  (2.7v < vccq < 3.6v)   &&  (3.0v < vccq < 3.6v)  ==> (3.0v < vccq <
-> 3.6v)
-> 1.8v:  (1.7v < vccq < 1.95v)  && (1.62v < vccq < 1.98v) ==> (1.7v < vccq <
-> 1.95v)
->
-> and (2.7v < vcc < 3.3v)
->
-> * And according to our hardware engineer:
->   All of supply voltage must have +/- 10% cushion.
->
-> * And we have found in some worse card that there is 200mv voltage collapse
-> when these card is insert.
->
-> So I think the best resolution is that vcc and vccq is configurable int dt
-> table.
+Hi all,
 
-Ah, interesting.  ...so what we really need to be able to do is to say
-that the regulator we for vqmmc have supports the ranges 3.0V - 3.3V
-and 1.7V - 1.95V but not anything in between 1.95V ad 3.0V.  I have no
-idea how to express that in the regulator framework.
+Today's linux-next merge of the tip tree got a conflict in
+drivers/acpi/processor_core.c between commit 9d48ea9f967b ("ACPI /
+processor: Convert apic_id to phys_id to make it arch agnostic") from
+the pm tree and commits 5922b6f497ed ("ACPI: Fix minor syntax issues in
+processor_core.c") and 717ed6192d16 ("ACPI: Add interfaces to parse
+IOAPIC ID for IOAPIC hotplug") from the tip tree.
 
-Technically you could take the IO Voltage Domains code (responsible
-for choosing the 1.8V range or the 3.3V range) and have it communicate
-the requirements to the regulator framework if you could figure out
-how to communicate them.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-...of course if you implemented my suggestion of keeping vqmmc as the
-highest voltage <= vmmc then maybe the whole point is moot and we
-don't have to figure it out.  Just make sure that vmmc never goes
-below 3.0V.
+diff --cc drivers/acpi/processor_core.c
+index 0f6f73ed41f2,f124cbb491d9..000000000000
+--- a/drivers/acpi/processor_core.c
++++ b/drivers/acpi/processor_core.c
+@@@ -67,19 -86,12 +86,12 @@@ static int map_lsapic_id(struct acpi_su
+  static int map_madt_entry(int type, u32 acpi_id)
+  {
+  	unsigned long madt_end, entry;
+- 	static struct acpi_table_madt *madt;
+- 	static int read_madt;
+ -	int apic_id =3D -1;
+ +	int phys_id =3D -1;	/* CPU hardware ID */
++ 	struct acpi_table_madt *madt;
+ =20
+- 	if (!read_madt) {
+- 		if (ACPI_FAILURE(acpi_get_table(ACPI_SIG_MADT, 0,
+- 					(struct acpi_table_header **)&madt)))
+- 			madt =3D NULL;
+- 		read_madt++;
+- 	}
+-=20
++ 	madt =3D get_madt_table();
+  	if (!madt)
+ -		return apic_id;
+ +		return phys_id;
+ =20
+  	entry =3D (unsigned long)madt;
+  	madt_end =3D entry + madt->header.length;
+@@@ -125,13 -137,12 +137,12 @@@ static int map_mat_entry(acpi_handle ha
+  	}
+ =20
+  	header =3D (struct acpi_subtable_header *)obj->buffer.pointer;
+- 	if (header->type =3D=3D ACPI_MADT_TYPE_LOCAL_APIC) {
++ 	if (header->type =3D=3D ACPI_MADT_TYPE_LOCAL_APIC)
+ -		map_lapic_id(header, acpi_id, &apic_id);
+ +		map_lapic_id(header, acpi_id, &phys_id);
+- 	} else if (header->type =3D=3D ACPI_MADT_TYPE_LOCAL_SAPIC) {
++ 	else if (header->type =3D=3D ACPI_MADT_TYPE_LOCAL_SAPIC)
+ -		map_lsapic_id(header, type, acpi_id, &apic_id);
+ +		map_lsapic_id(header, type, acpi_id, &phys_id);
+- 	} else if (header->type =3D=3D ACPI_MADT_TYPE_LOCAL_X2APIC) {
++ 	else if (header->type =3D=3D ACPI_MADT_TYPE_LOCAL_X2APIC)
+ -		map_x2apic_id(header, type, acpi_id, &apic_id);
+ +		map_x2apic_id(header, type, acpi_id, &phys_id);
+- 	}
+ =20
+  exit:
+  	kfree(buffer.pointer);
+@@@ -197,10 -208,103 +208,103 @@@ int acpi_map_cpuid(int phys_id, u32 acp
+ =20
+  int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
+  {
+ -	int apic_id;
+ +	int phys_id;
+ =20
+ -	apic_id =3D acpi_get_apicid(handle, type, acpi_id);
+ +	phys_id =3D acpi_get_phys_id(handle, type, acpi_id);
+ =20
+ -	return acpi_map_cpuid(apic_id, acpi_id);
+ +	return acpi_map_cpuid(phys_id, acpi_id);
+  }
+  EXPORT_SYMBOL_GPL(acpi_get_cpuid);
++=20
++ #ifdef CONFIG_ACPI_HOTPLUG_IOAPIC
++ static int get_ioapic_id(struct acpi_subtable_header *entry, u32 gsi_base,
++ 			 u64 *phys_addr, int *ioapic_id)
++ {
++ 	struct acpi_madt_io_apic *ioapic =3D (struct acpi_madt_io_apic *)entry;
++=20
++ 	if (ioapic->global_irq_base !=3D gsi_base)
++ 		return 0;
++=20
++ 	*phys_addr =3D ioapic->address;
++ 	*ioapic_id =3D ioapic->id;
++ 	return 1;
++ }
++=20
++ static int parse_madt_ioapic_entry(u32 gsi_base, u64 *phys_addr)
++ {
++ 	struct acpi_subtable_header *hdr;
++ 	unsigned long madt_end, entry;
++ 	struct acpi_table_madt *madt;
++ 	int apic_id =3D -1;
++=20
++ 	madt =3D get_madt_table();
++ 	if (!madt)
++ 		return apic_id;
++=20
++ 	entry =3D (unsigned long)madt;
++ 	madt_end =3D entry + madt->header.length;
++=20
++ 	/* Parse all entries looking for a match. */
++ 	entry +=3D sizeof(struct acpi_table_madt);
++ 	while (entry + sizeof(struct acpi_subtable_header) < madt_end) {
++ 		hdr =3D (struct acpi_subtable_header *)entry;
++ 		if (hdr->type =3D=3D ACPI_MADT_TYPE_IO_APIC &&
++ 		    get_ioapic_id(hdr, gsi_base, phys_addr, &apic_id))
++ 			break;
++ 		else
++ 			entry +=3D hdr->length;
++ 	}
++=20
++ 	return apic_id;
++ }
++=20
++ static int parse_mat_ioapic_entry(acpi_handle handle, u32 gsi_base,
++ 				  u64 *phys_addr)
++ {
++ 	struct acpi_buffer buffer =3D { ACPI_ALLOCATE_BUFFER, NULL };
++ 	struct acpi_subtable_header *header;
++ 	union acpi_object *obj;
++ 	int apic_id =3D -1;
++=20
++ 	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_MAT", NULL, &buffer)))
++ 		goto exit;
++=20
++ 	if (!buffer.length || !buffer.pointer)
++ 		goto exit;
++=20
++ 	obj =3D buffer.pointer;
++ 	if (obj->type !=3D ACPI_TYPE_BUFFER ||
++ 	    obj->buffer.length < sizeof(struct acpi_subtable_header))
++ 		goto exit;
++=20
++ 	header =3D (struct acpi_subtable_header *)obj->buffer.pointer;
++ 	if (header->type =3D=3D ACPI_MADT_TYPE_IO_APIC)
++ 		get_ioapic_id(header, gsi_base, phys_addr, &apic_id);
++=20
++ exit:
++ 	kfree(buffer.pointer);
++ 	return apic_id;
++ }
++=20
++ /**
++  * acpi_get_ioapic_id - Get IOAPIC ID and physical address matching @gsi_=
+base
++  * @handle:	ACPI object for IOAPIC device
++  * @gsi_base:	GSI base to match with
++  * @phys_addr:	Pointer to store physical address of matching IOAPIC record
++  *
++  * Walk resources returned by ACPI_MAT method, then ACPI MADT table, to s=
+earch
++  * for an ACPI IOAPIC record matching @gsi_base.
++  * Return IOAPIC id and store physical address in @phys_addr if found a m=
+atch,
++  * otherwise return <0.
++  */
++ int acpi_get_ioapic_id(acpi_handle handle, u32 gsi_base, u64 *phys_addr)
++ {
++ 	int apic_id;
++=20
++ 	apic_id =3D parse_mat_ioapic_entry(handle, gsi_base, phys_addr);
++ 	if (apic_id =3D=3D -1)
++ 		apic_id =3D parse_madt_ioapic_entry(gsi_base, phys_addr);
++=20
++ 	return apic_id;
++ }
++ #endif /* CONFIG_ACPI_HOTPLUG_IOAPIC */
 
+--Sig_/T.+7iMvUwEH92u+UTGF86Po
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
--Doug
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUdBfGAAoJEMDTa8Ir7ZwVeAMP/jT/rc43RxXIRBIBOb9oWDuE
+NTEMECD6ziGKOS2fqz+BqdAEDLi+wdYn3ba52U8SHTXBFN63lQc5ISQ+EUpeR7Pb
+jp5i9BiiL2RPPNSjQNZ8x1EZSnnGkIo9DwfH3uq75SwTDT+a8kMH618QGb0oDasY
+duafSmDbvVSxPZevxWtCsdLjU52ssB64PKUiugCBJyhup4JQW8wWdZ30w7AkUbUQ
+sBFtR01BXtLZ/wNX971821APvs/c/rZHE6a6cZoasN98E4p38k0pGcLrcUGiqdIO
+ORckMzsQghFj1gAMxzyHRg1c09ORuE19AZlAHF4W2nKJ18tW66/QG8+HCk+Z3R8z
+zkfOm5QFuQbYLoMyhyZ2HTZrxK2hkBVo6GNCmCpYBL0QpK/N2QU02A9lcNfFkYqm
+LX+IERxyEd1z1oNust3svRr5NKU3BEbdfXblAYtUIORTws+YDkZrc7SyksdCSIOa
+az7mmTxDcR/uQ8K/7SVO/D3nlutZm8MkYb5gFCbBaI7O5rmRACDMgYGlh0vCZ2dL
+tes0YBlsTBPWcHxb+/y6IsFs6HEZrPKPAQUu4wPJmcRb8PuJ95gxwUODSmf2duxL
+HJOWkci/j/ViNmJ/paVuI5MpJyHUMBf6oo/ze1IkL/4PKK2b4+drvyCY9KwV7Mjn
+dLsMDuJV/i959NkJa4EE
+=+Uu8
+-----END PGP SIGNATURE-----
+
+--Sig_/T.+7iMvUwEH92u+UTGF86Po--
