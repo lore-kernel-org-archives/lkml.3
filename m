@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751146AbaKYOwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:52:47 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:39800 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbaKYOwq (ORCPT
+	id S1751519AbaKYOyS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:54:18 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:37259 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117AbaKYOyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:52:46 -0500
-Message-ID: <547497B2.3010907@collabora.co.uk>
-Date: Tue, 25 Nov 2014 15:52:34 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Tue, 25 Nov 2014 09:54:16 -0500
+Message-ID: <547497A9.1080800@oracle.com>
+Date: Tue, 25 Nov 2014 07:52:25 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Kevin Hilman <khilman@kernel.org>
-Subject: Re: [RFC 0/2] Fix Arndale Octa/Peach Pi boot on Audio subsystem clocks
-References: <1416842312-4405-1-git-send-email-k.kozlowski@samsung.com> <54736AD0.4070909@collabora.co.uk> <1416907375.5023.54.camel@AMDC1943> <547485F5.50600@collabora.co.uk> <1416925325.26128.6.camel@AMDC1943>
-In-Reply-To: <1416925325.26128.6.camel@AMDC1943>
-Content-Type: text/plain; charset=utf-8
+To: Rik van Riel <riel@redhat.com>, tglx@linutronix.de, corbet@lwn.net,
+        mingo@redhat.com, hpa@zytor.com, peterz@infradead.org,
+        akpm@linux-foundation.org, rientjes@google.com, ak@linux.intel.com,
+        mgorman@suse.de, liwanp@linux.vnet.ibm.com, raistlin@linux.it,
+        kirill.shutemov@linux.intel.com, atomlin@redhat.com, avagin@openvz.org,
+        gorcunov@openvz.org, serge.hallyn@canonical.com, athorlton@sgi.com,
+        oleg@redhat.com, vdavydov@parallels.com, daeseok.youn@gmail.com,
+        keescook@chromium.org, yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu,
+        vishnu.ps@samsung.com, axboe@fb.com, paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v3] sched/fair: Add advisory flag for borrowing a timeslice
+References: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com> <5473E388.6000605@redhat.com>
+In-Reply-To: <5473E388.6000605@redhat.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
+On 11/24/2014 07:03 PM, Rik van Riel wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+>
+> On 11/24/2014 03:56 PM, Khalid Aziz wrote:
+>> sched/fair: Add advisory flag for borrowing a timeslice
+>>
+>> This patch adds a way for a task to request to borrow one
+>> timeslice from future if it is about to be preempted, so it could
+>> delay preemption and complete any critical task it is in the middle
+>> of.
+>>
+>> This feature helps with performance on databases and has been used
+>> for many years on other OSs by the databases. This feature helps in
+>> situation where a task acquires a lock before performing a critical
+>> operation on the database and happens to get preempted
+>
+> Why don't the other tasks that want the lock sleep on the
+> lock?
+>
+> I can see this "solution" help mostly with userspace spinlocks,
+> which are relics of a past era that need to die. There is no
+> way userspace spinlocks will not fail miserably on virtual
+> machines, and it is time to get rid of them.
 
-On 11/25/2014 03:22 PM, Krzysztof Kozlowski wrote:
->> Any ideas?
-> 
-> Yes, I got. On Peach board the i2s0 is enabled in DTS. Probing it could
-> fail because it relies on enabling audss clocks (which cannot be
-> accessed).
-> 
-> I reproduced another hang on Arndale Octa after enabling i2s0 in DTS.
-> Maybe that is the cause also on Peach.
-> 
+This solution indeed is for userspace spinlocks. Database code has been 
+written with all critical locking implemented in userspace (as I have 
+been told by database folks. I am not a database guy).
 
-You are correct, if I disable i2s0 then I see the logs from
-clk_disable_unused_subtree() and boot hangs when accessing the adma clock:
+--
+Khalid
 
-clk: checking dout_fimd1
-clk: checking mout_fimd1_final
-clk: checking mout_fimd1
-clk: checking mout_sclk_rpll
-clk: checking fout_rpll
-clk: checking adma
-
-With i2s0 disabled, your series are indeed enough to make it boot again but
-as you said enabling i2s0 in the DTS makes it hang even with your patches.
-
-Thanks a lot for digging into this!
-
-Best regards,
-Javier
