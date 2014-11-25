@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaKYLEg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:04:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58942 "EHLO
+	id S1754817AbaKYLEz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:04:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58937 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866AbaKYKm6 (ORCPT
+	with ESMTP id S1753802AbaKYKm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:58 -0500
+	Tue, 25 Nov 2014 05:42:57 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
+Cc: Tony Lindgren <tony@atomide.com>, Lee Jones <lee.jones@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 188/254] parisc: Use compat layer for msgctl, shmat, shmctl and semtimedop syscalls
-Date: Tue, 25 Nov 2014 10:38:58 +0000
-Message-Id: <1416912004-5928-189-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 186/254] mfd: twl4030-power: Fix poweroff with PM configuration enabled
+Date: Tue, 25 Nov 2014 10:38:56 +0000
+Message-Id: <1416912004-5928-187-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,94 +27,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Tony Lindgren <tony@atomide.com>
 
-commit 2fe749f50b0bec07650ef135b29b1f55bf543869 upstream.
+commit 481c7f868c6d855f31a29c69b445ac4aee9625a6 upstream.
 
-Switch over the msgctl, shmat, shmctl and semtimedop syscalls to use the compat
-layer. The problem was found with the debian procenv package, which called
-	shmctl(0, SHM_INFO, &info);
-in which the shmctl syscall then overwrote parts of the surrounding areas on
-the stack on which the info variable was stored and thus lead to a segfault
-later on.
+Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
+configuration") enabled configuring the PM features for twl4030.
 
-Additionally fix the definition of struct shminfo64 to use unsigned longs like
-the other architectures. This has no impact on userspace since we only have a
-32bit userspace up to now.
+This caused poweroff command to fail on devices that have the
+BCI charger on twl4030 wired, or have power wired for VBUS.
+Instead of powering off, the device reboots. This is because
+voltage is detected on charger or VBUS with the default bits
+enabled for the power transition registers.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
-Cc: John David Anglin <dave.anglin@bell.net>
+To fix the issue, let's just clear VBUS and CHG bits as we want
+poweroff command to keep the system powered off.
+
+Fixes: e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset configuration")
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/parisc/include/uapi/asm/shmbuf.h | 25 +++++++++----------------
- arch/parisc/kernel/syscall_table.S    |  8 ++++----
- 2 files changed, 13 insertions(+), 20 deletions(-)
+ drivers/mfd/twl4030-power.c | 52 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 52 insertions(+)
 
-diff --git a/arch/parisc/include/uapi/asm/shmbuf.h b/arch/parisc/include/uapi/asm/shmbuf.h
-index 0a3eada1863b..f395cde7b593 100644
---- a/arch/parisc/include/uapi/asm/shmbuf.h
-+++ b/arch/parisc/include/uapi/asm/shmbuf.h
-@@ -36,23 +36,16 @@ struct shmid64_ds {
- 	unsigned int		__unused2;
- };
+diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
+index 4d3ff3771491..542f1a8247f5 100644
+--- a/drivers/mfd/twl4030-power.c
++++ b/drivers/mfd/twl4030-power.c
+@@ -44,6 +44,15 @@ static u8 twl4030_start_script_address = 0x2b;
+ #define PWR_DEVSLP		BIT(1)
+ #define PWR_DEVOFF		BIT(0)
  
--#ifdef CONFIG_64BIT
--/* The 'unsigned int' (formerly 'unsigned long') data types below will
-- * ensure that a 32-bit app calling shmctl(*,IPC_INFO,*) will work on
-- * a wide kernel, but if some of these values are meant to contain pointers
-- * they may need to be 'long long' instead. -PB XXX FIXME
-- */
--#endif
- struct shminfo64 {
--	unsigned int	shmmax;
--	unsigned int	shmmin;
--	unsigned int	shmmni;
--	unsigned int	shmseg;
--	unsigned int	shmall;
--	unsigned int	__unused1;
--	unsigned int	__unused2;
--	unsigned int	__unused3;
--	unsigned int	__unused4;
-+	unsigned long	shmmax;
-+	unsigned long	shmmin;
-+	unsigned long	shmmni;
-+	unsigned long	shmseg;
-+	unsigned long	shmall;
-+	unsigned long	__unused1;
-+	unsigned long	__unused2;
-+	unsigned long	__unused3;
-+	unsigned long	__unused4;
- };
++/* Register bits for CFG_P1_TRANSITION (also for P2 and P3) */
++#define STARTON_SWBUG		BIT(7)	/* Start on watchdog */
++#define STARTON_VBUS		BIT(5)	/* Start on VBUS */
++#define STARTON_VBAT		BIT(4)	/* Start on battery insert */
++#define STARTON_RTC		BIT(3)	/* Start on RTC */
++#define STARTON_USB		BIT(2)	/* Start on USB host */
++#define STARTON_CHG		BIT(1)	/* Start on charger */
++#define STARTON_PWON		BIT(0)	/* Start on PWRON button */
++
+ #define SEQ_OFFSYNC		(1 << 0)
  
- #endif /* _PARISC_SHMBUF_H */
-diff --git a/arch/parisc/kernel/syscall_table.S b/arch/parisc/kernel/syscall_table.S
-index 84c5d3a58fa1..3cd1c435c306 100644
---- a/arch/parisc/kernel/syscall_table.S
-+++ b/arch/parisc/kernel/syscall_table.S
-@@ -286,11 +286,11 @@
- 	ENTRY_COMP(msgsnd)
- 	ENTRY_COMP(msgrcv)
- 	ENTRY_SAME(msgget)		/* 190 */
--	ENTRY_SAME(msgctl)
--	ENTRY_SAME(shmat)
-+	ENTRY_COMP(msgctl)
-+	ENTRY_COMP(shmat)
- 	ENTRY_SAME(shmdt)
- 	ENTRY_SAME(shmget)
--	ENTRY_SAME(shmctl)		/* 195 */
-+	ENTRY_COMP(shmctl)		/* 195 */
- 	ENTRY_SAME(ni_syscall)		/* streams1 */
- 	ENTRY_SAME(ni_syscall)		/* streams2 */
- 	ENTRY_SAME(lstat64)
-@@ -323,7 +323,7 @@
- 	ENTRY_SAME(epoll_ctl)		/* 225 */
- 	ENTRY_SAME(epoll_wait)
-  	ENTRY_SAME(remap_file_pages)
--	ENTRY_SAME(semtimedop)
-+	ENTRY_COMP(semtimedop)
- 	ENTRY_COMP(mq_open)
- 	ENTRY_SAME(mq_unlink)		/* 230 */
- 	ENTRY_COMP(mq_timedsend)
+ #define PHY_TO_OFF_PM_MASTER(p)		(p - 0x36)
+@@ -606,6 +615,44 @@ twl4030_power_configure_resources(const struct twl4030_power_data *pdata)
+ 	return 0;
+ }
+ 
++static int twl4030_starton_mask_and_set(u8 bitmask, u8 bitvalues)
++{
++	u8 regs[3] = { TWL4030_PM_MASTER_CFG_P1_TRANSITION,
++		       TWL4030_PM_MASTER_CFG_P2_TRANSITION,
++		       TWL4030_PM_MASTER_CFG_P3_TRANSITION, };
++	u8 val;
++	int i, err;
++
++	err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER, TWL4030_PM_MASTER_KEY_CFG1,
++			       TWL4030_PM_MASTER_PROTECT_KEY);
++	if (err)
++		goto relock;
++	err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER,
++			       TWL4030_PM_MASTER_KEY_CFG2,
++			       TWL4030_PM_MASTER_PROTECT_KEY);
++	if (err)
++		goto relock;
++
++	for (i = 0; i < sizeof(regs); i++) {
++		err = twl_i2c_read_u8(TWL_MODULE_PM_MASTER,
++				      &val, regs[i]);
++		if (err)
++			break;
++		val = (~bitmask & val) | (bitmask & bitvalues);
++		err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER,
++				       val, regs[i]);
++		if (err)
++			break;
++	}
++
++	if (err)
++		pr_err("TWL4030 Register access failed: %i\n", err);
++
++relock:
++	return twl_i2c_write_u8(TWL_MODULE_PM_MASTER, 0,
++				TWL4030_PM_MASTER_PROTECT_KEY);
++}
++
+ /*
+  * In master mode, start the power off sequence.
+  * After a successful execution, TWL shuts down the power to the SoC
+@@ -615,6 +662,11 @@ void twl4030_power_off(void)
+ {
+ 	int err;
+ 
++	/* Disable start on charger or VBUS as it can break poweroff */
++	err = twl4030_starton_mask_and_set(STARTON_VBUS | STARTON_CHG, 0);
++	if (err)
++		pr_err("TWL4030 Unable to configure start-up\n");
++
+ 	err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER, PWR_DEVOFF,
+ 			       TWL4030_PM_MASTER_P1_SW_EVENTS);
+ 	if (err)
 -- 
 2.1.0
 
