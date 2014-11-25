@@ -1,158 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621AbaKYIK7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 03:10:59 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:24729 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823AbaKYIK4 (ORCPT
+	id S1751960AbaKYIQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 03:16:40 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:6621 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019AbaKYIQi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 03:10:56 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-a9-5474398c373d
-Message-id: <1416903050.5023.28.camel@AMDC1943>
-Subject: Re: [RFC 1/2] clk: Allow overriding generic ops for clocks
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Kevin Hilman <khilman@kernel.org>
-Date: Tue, 25 Nov 2014 09:10:50 +0100
-In-reply-to: <20141125013450.12298.96117@quantum>
-References: <1416842312-4405-1-git-send-email-k.kozlowski@samsung.com>
- <1416842312-4405-2-git-send-email-k.kozlowski@samsung.com>
- <20141125013450.12298.96117@quantum>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t/xq7o9liUhBhPn6Fu0XTnIbnH0d4FF
-	/+PXzBZPNz9mstj0+BqrxeVdc9gsZpzfx2TxdMJFNovDb9pZLVbt+sPowOXx9/l1Fo+ds+6y
-	e2xa1cnmcefaHjaPzUvqPfq2rGL0+LxJLoA9issmJTUnsyy1SN8ugStj1/t7TAUNyhV/z1k3
-	MH6W7GLk5JAQMJHo+rSVEcIWk7hwbz1bFyMXh5DAUkaJ20dns0A4nxklvux7BVbFK6Avsen8
-	AiYQW1jAWaJ13WZWEJtNwFhi8/IlbCC2iICWxLYDrWCTmAXeMEmcuPGfBSTBIqAqsb9jPpjN
-	KWAoMW32S6gNqxglJlz9BpZgFlCXmDRvEXMXIwfQTcoSjf1uEIsFJX5MvgdVIi+xec1b5gmM
-	ArOQdMxCUjYLSdkCRuZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCFR8XUH49JjVocYBTgY
-	lXh4KzSLQ4RYE8uKK3MPMUpwMCuJ8EbNAwrxpiRWVqUW5ccXleakFh9iZOLglGpgvLpAernb
-	TRHj2ljjEun1IgHlspYXWJ8s3LjMPjvL/pmVTcGrk9OV50vZnNHNuHM19JOJZHzd1+kZvrdr
-	t3sIzuadoF554PJF1VcSB+7VxEwJ6nf42z9p8kK3J3mcv61Xvdx8b8eHsJZNq+WZVzs+uTFz
-	x51rbN1qjyfwmhZL9D26Ul2cpLf8phJLcUaioRZzUXEiAAo0ZsVoAgAA
+	Tue, 25 Nov 2014 03:16:38 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 25 Nov 2014 00:15:27 -0800
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v2] gpio: remove const modifier from gpiod_get_direction()
+Date: Tue, 25 Nov 2014 17:16:31 +0900
+Message-ID: <1416903391-12693-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <5474391F.6030908@nvidia.com>
+References: <5474391F.6030908@nvidia.com>
+MIME-Version: 1.0
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pon, 2014-11-24 at 17:34 -0800, Mike Turquette wrote:
-> Quoting Krzysztof Kozlowski (2014-11-24 07:18:31)
-> > For clocks depending on some other clock domain one may want to perform
-> > specific ops before actual enable/disable of gate clock. Allow such case
-> > by accepting supplied ops in new exported function:
-> > clk_register_gate_ops().
-> 
-> If you are not going to use the gate_ops, why use the gate clock at all?
-> You can create a platform-specific clock type which uses the ops you
-> specify.
+Although gpiod_get_direction() can be considered side-effect free for
+consumers, its internals involve setting or clearing bits in the
+affected GPIO descriptor, for which we need to force-cast the const
+descriptor variable to non-const. This could lead to incorrect behavior
+if the compiler decides to optimize here, so remove this const
+attribute. The intent is to make gpiod_get_direction() private anyway,
+so it does not really matter.
 
-Actually I want to use gate_ops (and as much as possible from current
-code) but I need to encapsulate gate_ops calls in other enable/disable
-of other clock. In 2nd patch:
+Reported-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+Changes since v1:
+- Fixed poor grammar in commit log
+- Added Uwe's Ack
+
+ drivers/gpio/gpiolib-sysfs.c  | 2 +-
+ drivers/gpio/gpiolib.c        | 8 +++-----
+ include/linux/gpio/consumer.h | 2 +-
+ 3 files changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
+index 781fbed00fc3..2ac1800b58bb 100644
+--- a/drivers/gpio/gpiolib-sysfs.c
++++ b/drivers/gpio/gpiolib-sysfs.c
+@@ -41,7 +41,7 @@ static DEFINE_MUTEX(sysfs_lock);
+ static ssize_t gpio_direction_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+-	const struct gpio_desc	*desc = dev_get_drvdata(dev);
++	struct gpio_desc	*desc = dev_get_drvdata(dev);
+ 	ssize_t			status;
  
-+static int audss_clk_gate_enable(struct clk_hw *hw)
-+{
-+       int ret;
-+
-+       if (!IS_ERR(pll_in))
-+               clk_prepare_enable(pll_in);
-+       ret = clk_gate_ops.enable(hw);
-+       if (!IS_ERR(pll_in))
-+               clk_disable_unprepare(pll_in);
-+
-+       return ret;
-+}
-
-Other idea is to add some kind of dependency between clocks... but
-wait... there is already parent-child dependency. However these audss
-clocks need two parents :) 
-
-Best regards,
-Krzysztof
-
-> 
-> Regards,
-> Mike
-> 
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > ---
-> >  drivers/clk/clk-gate.c       | 16 +++++++++++++---
-> >  include/linux/clk-provider.h |  5 +++++
-> >  2 files changed, 18 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
-> > index 51fd87fb7ba6..51802af2d9e7 100644
-> > --- a/drivers/clk/clk-gate.c
-> > +++ b/drivers/clk/clk-gate.c
-> > @@ -117,11 +117,12 @@ EXPORT_SYMBOL_GPL(clk_gate_ops);
-> >   * @bit_idx: which bit in the register controls gating of this clock
-> >   * @clk_gate_flags: gate-specific flags for this clock
-> >   * @lock: shared register lock for this clock
-> > + * @ops: clk_ops to use for this clock
-> >   */
-> > -struct clk *clk_register_gate(struct device *dev, const char *name,
-> > +struct clk *clk_register_gate_ops(struct device *dev, const char *name,
-> >                 const char *parent_name, unsigned long flags,
-> >                 void __iomem *reg, u8 bit_idx,
-> > -               u8 clk_gate_flags, spinlock_t *lock)
-> > +               u8 clk_gate_flags, spinlock_t *lock, const struct clk_ops *ops)
-> >  {
-> >         struct clk_gate *gate;
-> >         struct clk *clk;
-> > @@ -142,7 +143,7 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
-> >         }
-> >  
-> >         init.name = name;
-> > -       init.ops = &clk_gate_ops;
-> > +       init.ops = ops;
-> >         init.flags = flags | CLK_IS_BASIC;
-> >         init.parent_names = (parent_name ? &parent_name: NULL);
-> >         init.num_parents = (parent_name ? 1 : 0);
-> > @@ -161,4 +162,13 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
-> >  
-> >         return clk;
-> >  }
-> > +EXPORT_SYMBOL_GPL(clk_register_gate_ops);
-> > +
-> > +struct clk *clk_register_gate(struct device *dev, const char *name,
-> > +               const char *parent_name, unsigned long flags,
-> > +               void __iomem *reg, u8 bit_idx,
-> > +               u8 clk_gate_flags, spinlock_t *lock)
-> > +{
-> > +       return clk_register_gate_ops(dev, name, parent_name, flags, reg, bit_idx, clk_gate_flags, lock, &clk_gate_ops);
-> > +}
-> >  EXPORT_SYMBOL_GPL(clk_register_gate);
-> > diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-> > index be21af149f11..6cfc77a9f339 100644
-> > --- a/include/linux/clk-provider.h
-> > +++ b/include/linux/clk-provider.h
-> > @@ -290,11 +290,16 @@ struct clk_gate {
-> >  #define CLK_GATE_HIWORD_MASK           BIT(1)
-> >  
-> >  extern const struct clk_ops clk_gate_ops;
-> > +struct clk *clk_register_gate_ops(struct device *dev, const char *name,
-> > +               const char *parent_name, unsigned long flags,
-> > +               void __iomem *reg, u8 bit_idx,
-> > +               u8 clk_gate_flags, spinlock_t *lock, const struct clk_ops *ops);
-> >  struct clk *clk_register_gate(struct device *dev, const char *name,
-> >                 const char *parent_name, unsigned long flags,
-> >                 void __iomem *reg, u8 bit_idx,
-> >                 u8 clk_gate_flags, spinlock_t *lock);
-> >  
-> > +
-> >  struct clk_div_table {
-> >         unsigned int    val;
-> >         unsigned int    div;
-> > -- 
-> > 1.9.1
-> > 
+ 	mutex_lock(&sysfs_lock);
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 5619922ebf44..0b271ef87c09 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -148,7 +148,7 @@ static int gpiochip_find_base(int ngpio)
+  *
+  * This function may sleep if gpiod_cansleep() is true.
+  */
+-int gpiod_get_direction(const struct gpio_desc *desc)
++int gpiod_get_direction(struct gpio_desc *desc)
+ {
+ 	struct gpio_chip	*chip;
+ 	unsigned		offset;
+@@ -164,13 +164,11 @@ int gpiod_get_direction(const struct gpio_desc *desc)
+ 	if (status > 0) {
+ 		/* GPIOF_DIR_IN, or other positive */
+ 		status = 1;
+-		/* FLAG_IS_OUT is just a cache of the result of get_direction(),
+-		 * so it does not affect constness per se */
+-		clear_bit(FLAG_IS_OUT, &((struct gpio_desc *)desc)->flags);
++		clear_bit(FLAG_IS_OUT, &desc->flags);
+ 	}
+ 	if (status == 0) {
+ 		/* GPIOF_DIR_OUT */
+-		set_bit(FLAG_IS_OUT, &((struct gpio_desc *)desc)->flags);
++		set_bit(FLAG_IS_OUT, &desc->flags);
+ 	}
+ 	return status;
+ }
+diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
+index 83c0a61c605d..d54d158ca327 100644
+--- a/include/linux/gpio/consumer.h
++++ b/include/linux/gpio/consumer.h
+@@ -66,7 +66,7 @@ __devm_gpiod_get_index_optional(struct device *dev, const char *con_id,
+ 			      unsigned int index, enum gpiod_flags flags);
+ void devm_gpiod_put(struct device *dev, struct gpio_desc *desc);
+ 
+-int gpiod_get_direction(const struct gpio_desc *desc);
++int gpiod_get_direction(struct gpio_desc *desc);
+ int gpiod_direction_input(struct gpio_desc *desc);
+ int gpiod_direction_output(struct gpio_desc *desc, int value);
+ int gpiod_direction_output_raw(struct gpio_desc *desc, int value);
+-- 
+2.1.3
 
