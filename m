@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751269AbaKYTL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 14:11:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59502 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809AbaKYTL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 14:11:28 -0500
-Message-ID: <5474D39F.4010206@redhat.com>
-Date: Tue, 25 Nov 2014 14:08:15 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751514AbaKYTMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 14:12:09 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:55324 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032AbaKYTMG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 14:12:06 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Alexander Kochetkov <al.kochet@gmail.com>
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Wolfram Sang <wsa@the-dreams.de>
+Subject: Re: [PATCH v2] omap: i2c: don't check bus state IP rev3.3 and earlier
+References: <20141124210809.GG2817@atomide.com>
+	<1416867655-22232-1-git-send-email-al.kochet@gmail.com>
+Date: Tue, 25 Nov 2014 11:12:02 -0800
+In-Reply-To: <1416867655-22232-1-git-send-email-al.kochet@gmail.com>
+	(Alexander Kochetkov's message of "Tue, 25 Nov 2014 02:20:55 +0400")
+Message-ID: <7hzjbfjdrx.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org
-CC: Luiz Capitulino <lcapitulino@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org
-Subject: Re: [patch -rt 1/2] KVM: use simple waitqueue for vcpu->wq
-References: <20141125172108.992070524@redhat.com> <20141125172329.435080075@redhat.com> <5474D121.4070905@redhat.com>
-In-Reply-To: <5474D121.4070905@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2014 01:57 PM, Rik van Riel wrote:
-> On 11/25/2014 12:21 PM, Marcelo Tosatti wrote:
->> The problem:
->>
->> On -RT, an emulated LAPIC timer instances has the following path:
->>
->> 1) hard interrupt
->> 2) ksoftirqd is scheduled
->> 3) ksoftirqd wakes up vcpu thread
->> 4) vcpu thread is scheduled
->>
->> This extra context switch introduces unnecessary latency in the 
->> LAPIC path for a KVM guest.
->>
->> The solution:
->>
->> Allow waking up vcpu thread from hardirq context,
->> thus avoiding the need for ksoftirqd to be scheduled.
->>
->> Normal waitqueues make use of spinlocks, which on -RT 
->> are sleepable locks. Therefore, waking up a waitqueue 
->> waiter involves locking a sleeping lock, which 
->> is not allowed from hard interrupt context.
->>
-> 
-> What are the consequences for the realtime kernel of
-> making waitqueue traversal non-preemptible?
-> 
-> Is waitqueue traversal something that ever takes so
-> long we need to care about it being non-preemptible?
+Alexander Kochetkov <al.kochet@gmail.com> writes:
 
-I answered my own question.
+> Commit 903c3859f77f9b0aace551da03267ef7a211dbc4 ("i2c: omap: implement
+> workaround for handling invalid BB-bit values") introduce the error result
+> in boot test fault on OMAP3530 boards
+>
+> The patch fix the error (disable i2c bus test for OMAP3530).
+>
+> Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
+> Fixes: 903c3859f77f9b0aace551da03267ef7a211dbc4
+> Reported-by: Kevin Hilman <khilman@kernel.org>
+> Tested-by: Tony Lindgren <tony@atomide.com>
 
-This patch only changes the kvm vcpu waitqueue,
-which should only ever have the vcpu thread itself
-waiting on it. In other words, it is a wait "queue"
-of just one entry long, and the latency of traversing
-it will be absolutely minimal.
+Tested-by: Kevin Hilman <khilman@linaro.org>
 
-Unless someone can think of a better way to implement
-this patch, it gets my:
+I tested DT and legacy boot on 3430/n900, 3530/beagle and
+3530/overo-tobi.  All boot fine.
 
-Acked-by: Rik van Riel <riel@redhat.com>
-
+Kevin
