@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829AbaKYLIT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:08:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58890 "EHLO
+	id S1754302AbaKYLJM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:09:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58886 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791AbaKYKmr (ORCPT
+	with ESMTP id S1753778AbaKYKmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Nov 2014 05:42:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        James Ausmus <james.ausmus@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Rodrigo Vivi <rodrigo.vivi@intel.com>,
+Cc: Takashi Iwai <tiwai@suse.de>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 175/254] drm/i915: Disable caches for Global GTT.
-Date: Tue, 25 Nov 2014 10:38:45 +0000
-Message-Id: <1416912004-5928-176-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 176/254] Input: synaptics - add min/max quirk for Lenovo T440s
+Date: Tue, 25 Nov 2014 10:38:46 +0000
+Message-Id: <1416912004-5928-177-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -31,70 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rodrigo Vivi <rodrigo.vivi@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit d6a8b72edc92471283925ceb4ba12799b67c3ff8 upstream.
+commit e4742b1e786ca386e88e6cfb2801e14e15e365cd upstream.
 
-Global GTT doesn't have pat_sel[2:0] so it always point to pat_sel = 000;
-So the only way to avoid screen corruptions is setting PAT 0 to Uncached.
+The new Lenovo T440s laptop has a different PnP ID "LEN0039", and it
+needs the similar min/max quirk to make its clickpad working.
 
-MOCS can still be used though. But if userspace is trusting PTE for
-cache selection the safest thing to do is to let caches disabled.
-
-BSpec: "For GGTT, there is NO pat_sel[2:0] from the entry,
-so RTL will always use the value corresponding to pat_sel = 000"
-
-- System agent ggtt writes (i.e. cpu gtt mmaps) already work before
-this patch, i.e. the same uncached + snooping access like on gen6/7
-seems to be in effect.
-- So this just fixes blitter/render access. Again it looks like it's
-not just uncached access, but uncached + snooping. So we can still
-hold onto all our assumptions wrt cpu clflushing on LLC machines.
-
-v2: Cleaner patch as suggested by Chris.
-v3: Add Daniel's comment
-
-Reference: https://bugs.freedesktop.org/show_bug.cgi?id=85576
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: James Ausmus <james.ausmus@intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@intel.com>
-Tested-by: James Ausmus <james.ausmus@intel.com>
-Reviewed-by: James Ausmus <james.ausmus@intel.com>
-Signed-off-by: Rodrigo Vivi <rodrigo.vivi@intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+BugLink: https://bugzilla.opensuse.org/show_bug.cgi?id=903748
+Reported-and-tested-by: Joschi Brauchle <joschibrauchle@gmx.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_gem_gtt.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/input/mouse/synaptics.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_gtt.c b/drivers/gpu/drm/i915/i915_gem_gtt.c
-index 8faabb95cd65..aa20a2a9996c 100644
---- a/drivers/gpu/drm/i915/i915_gem_gtt.c
-+++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
-@@ -1883,6 +1883,22 @@ static void bdw_setup_private_ppat(struct drm_i915_private *dev_priv)
- 	      GEN8_PPAT(6, GEN8_PPAT_WB | GEN8_PPAT_LLCELLC | GEN8_PPAT_AGE(2)) |
- 	      GEN8_PPAT(7, GEN8_PPAT_WB | GEN8_PPAT_LLCELLC | GEN8_PPAT_AGE(3));
- 
-+	if (!USES_PPGTT(dev_priv->dev))
-+		/* Spec: "For GGTT, there is NO pat_sel[2:0] from the entry,
-+		 * so RTL will always use the value corresponding to
-+		 * pat_sel = 000".
-+		 * So let's disable cache for GGTT to avoid screen corruptions.
-+		 * MOCS still can be used though.
-+		 * - System agent ggtt writes (i.e. cpu gtt mmaps) already work
-+		 * before this patch, i.e. the same uncached + snooping access
-+		 * like on gen6/7 seems to be in effect.
-+		 * - So this just fixes blitter/render access. Again it looks
-+		 * like it's not just uncached access, but uncached + snooping.
-+		 * So we can still hold onto all our assumptions wrt cpu
-+		 * clflushing on LLC machines.
-+		 */
-+		pat = GEN8_PPAT(0, GEN8_PPAT_UC);
-+
- 	/* XXX: spec defines this as 2 distinct registers. It's unclear if a 64b
- 	 * write would work. */
- 	I915_WRITE(GEN8_PRIVATE_PAT, pat);
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 58902332cf33..3dcdeb785649 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -132,8 +132,8 @@ static const struct min_max_quirk min_max_pnpid_table[] = {
+ 		1232, 5710, 1156, 4696
+ 	},
+ 	{
+-		(const char * const []){"LEN0034", "LEN0036", "LEN2002",
+-					"LEN2004", NULL},
++		(const char * const []){"LEN0034", "LEN0036", "LEN0039",
++					"LEN2002", "LEN2004", NULL},
+ 		1024, 5112, 2024, 4832
+ 	},
+ 	{
+@@ -160,6 +160,7 @@ static const char * const topbuttonpad_pnp_ids[] = {
+ 	"LEN0036", /* T440 */
+ 	"LEN0037",
+ 	"LEN0038",
++	"LEN0039", /* T440s */
+ 	"LEN0041",
+ 	"LEN0042", /* Yoga */
+ 	"LEN0045",
 -- 
 2.1.0
 
