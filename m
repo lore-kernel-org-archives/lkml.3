@@ -1,110 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960AbaKYIQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 03:16:40 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:6621 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019AbaKYIQi convert rfc822-to-8bit (ORCPT
+	id S1752068AbaKYIQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 03:16:57 -0500
+Received: from mail-yk0-f174.google.com ([209.85.160.174]:42311 "EHLO
+	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028AbaKYIQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 03:16:38 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 25 Nov 2014 00:15:27 -0800
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v2] gpio: remove const modifier from gpiod_get_direction()
-Date: Tue, 25 Nov 2014 17:16:31 +0900
-Message-ID: <1416903391-12693-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <5474391F.6030908@nvidia.com>
-References: <5474391F.6030908@nvidia.com>
+	Tue, 25 Nov 2014 03:16:55 -0500
 MIME-Version: 1.0
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <36336460.BrNftCFaUT@amdc1032>
+References: <1416794775-1605-1-git-send-email-amit.daniel@samsung.com>
+	<36336460.BrNftCFaUT@amdc1032>
+Date: Tue, 25 Nov 2014 13:46:54 +0530
+X-Google-Sender-Auth: vwjJ6Qe7UCtTWA4TZbhToQUd3DQ
+Message-ID: <CADGdYn4itcB-PHqZZUoR9Xdf17MXgo0LzbPXj0fuU_GL5bqDEw@mail.gmail.com>
+Subject: Re: [PATCH v4 0/5] exynos: Move pmu driver to driver/soc folder and
+ add exynos7 support
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: LAK <linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although gpiod_get_direction() can be considered side-effect free for
-consumers, its internals involve setting or clearing bits in the
-affected GPIO descriptor, for which we need to force-cast the const
-descriptor variable to non-const. This could lead to incorrect behavior
-if the compiler decides to optimize here, so remove this const
-attribute. The intent is to make gpiod_get_direction() private anyway,
-so it does not really matter.
+On Mon, Nov 24, 2014 at 6:50 PM, Bartlomiej Zolnierkiewicz
+<b.zolnierkie@samsung.com> wrote:
+>
+> Hi,
+>
+> On Monday, November 24, 2014 07:36:10 AM Amit Daniel Kachhap wrote:
+>> This patch series [1 - 5] performs,
+>>
+>> 1) Moves pmu driver to driver/soc/samsung folder. This is needed as exynos7 is
+>>    an arm64 based platform and hence PMU driver should be in driver folder.
+>>    Some discussion happened about this in the v1 version. Finally adding it in
+>>    driver/soc folder as it too SoC specific and not a general driver.
+>>    Entire discussion can be found here (A).
+>> 2) Add exynos7 PMU support.
+>
+> Some months ago (when the work on moving PMU driver out of mach-exynos
+> started) I asked how much code would be shared between arm32 and arm64
+> SoCs.  Now it seems that the code in question is minimal so I still
+> wonder whether it is really worth to have a common driver (please note
+> that in case of arm32 kernel all arm64 PMU code is just a dead code,
+> similarly for arm64 kernel and arm32 PMU code).  Would it be possible
+> to do the analysis of the additional source code needed vs saved code
+> in the resulting binary for the case of having separate drivers?
+yes your suggestion is good. It may done by keeping the data pmu_config[]
+arrays in .h file under CONFIG_ARM(or CONFIG_ARM64) and NULL for non required
+platforms. Keep them in 2 separate files may be confusing.
 
-Reported-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
-Changes since v1:
-- Fixed poor grammar in commit log
-- Added Uwe's Ack
+>
+> Could you also please take a look into fixing patch #4 to be compatible
+> with http://lkml.iu.edu/hypermail/linux/kernel/1407.1/00298.html ?
+This patch makes sense. Thanks for pointing out.
+> (It seems that just adding separate struct exynos_pmu_conf_extra for
+> ->pmu_config_extra shold be okay.)
+Yes right struct exynos_pmu_conf_extra should work for exynos7.
 
- drivers/gpio/gpiolib-sysfs.c  | 2 +-
- drivers/gpio/gpiolib.c        | 8 +++-----
- include/linux/gpio/consumer.h | 2 +-
- 3 files changed, 5 insertions(+), 7 deletions(-)
+I think both of the above optimizations may go as a separate patch.
 
-diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
-index 781fbed00fc3..2ac1800b58bb 100644
---- a/drivers/gpio/gpiolib-sysfs.c
-+++ b/drivers/gpio/gpiolib-sysfs.c
-@@ -41,7 +41,7 @@ static DEFINE_MUTEX(sysfs_lock);
- static ssize_t gpio_direction_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
--	const struct gpio_desc	*desc = dev_get_drvdata(dev);
-+	struct gpio_desc	*desc = dev_get_drvdata(dev);
- 	ssize_t			status;
- 
- 	mutex_lock(&sysfs_lock);
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 5619922ebf44..0b271ef87c09 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -148,7 +148,7 @@ static int gpiochip_find_base(int ngpio)
-  *
-  * This function may sleep if gpiod_cansleep() is true.
-  */
--int gpiod_get_direction(const struct gpio_desc *desc)
-+int gpiod_get_direction(struct gpio_desc *desc)
- {
- 	struct gpio_chip	*chip;
- 	unsigned		offset;
-@@ -164,13 +164,11 @@ int gpiod_get_direction(const struct gpio_desc *desc)
- 	if (status > 0) {
- 		/* GPIOF_DIR_IN, or other positive */
- 		status = 1;
--		/* FLAG_IS_OUT is just a cache of the result of get_direction(),
--		 * so it does not affect constness per se */
--		clear_bit(FLAG_IS_OUT, &((struct gpio_desc *)desc)->flags);
-+		clear_bit(FLAG_IS_OUT, &desc->flags);
- 	}
- 	if (status == 0) {
- 		/* GPIOF_DIR_OUT */
--		set_bit(FLAG_IS_OUT, &((struct gpio_desc *)desc)->flags);
-+		set_bit(FLAG_IS_OUT, &desc->flags);
- 	}
- 	return status;
- }
-diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
-index 83c0a61c605d..d54d158ca327 100644
---- a/include/linux/gpio/consumer.h
-+++ b/include/linux/gpio/consumer.h
-@@ -66,7 +66,7 @@ __devm_gpiod_get_index_optional(struct device *dev, const char *con_id,
- 			      unsigned int index, enum gpiod_flags flags);
- void devm_gpiod_put(struct device *dev, struct gpio_desc *desc);
- 
--int gpiod_get_direction(const struct gpio_desc *desc);
-+int gpiod_get_direction(struct gpio_desc *desc);
- int gpiod_direction_input(struct gpio_desc *desc);
- int gpiod_direction_output(struct gpio_desc *desc, int value);
- int gpiod_direction_output_raw(struct gpio_desc *desc, int value);
--- 
-2.1.3
-
+Regards,
+Amit D
+>
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+>
+>> 3) Enables the driver for 32bit arm exynos platforms.
+>>
+>> Changes from V3:
+>> * Fixed Kconfig as per Russell feedback
+>> * Rebased the series against Pankaj SoC restart consolidation patches (D) as per
+>>   Kukjin request.
+>> * Link to V3 can be found here (C)
+>>
+>> Changes from V2:
+>> * Added review comment changes suggested by Pankaj.
+>> * Removed mfd client support in this patch series. This will be added later in
+>>   the power domain patch series.
+>> * Link to V2 can be found here (B)
+>>
+>> Changes from V1:
+>> * Move pmu driver in driver/soc/samsung folder
+>> * Removed the power domain features. They will posted as a separate series.
+>> * Added exynos7 PMU support.
+>> * Link to v1 can be found here (A)
+>>
+>> This complete patch series is rebased on Kukjin for-next tree.
+>>
+>> (A) - http://www.spinics.net/lists/linux-samsung-soc/msg38442.html
+>> (B) - http://www.spinics.net/lists/arm-kernel/msg375910.html
+>> (C) - http://www.spinics.net/lists/linux-samsung-soc/msg39237.html
+>> (D) - http://www.spinics.net/lists/linux-samsung-soc/msg39095.html
+>>
+>> Amit Daniel Kachhap (5):
+>>   ARM: EXYNOS: Move pmu specific header files under "linux/soc/samsung"
+>>   drivers: soc: Add support for Exynos PMU driver
+>>   driver: soc: exynos-pmu: Add an API to be called after wakeup
+>>   drivers: soc: exynos-pmu: Add support for Exynos7
+>>   arm: exynos: Select SOC_SAMSUNG config option
+>>
+>>  .../devicetree/bindings/arm/samsung/pmu.txt        |    1 +
+>>  arch/arm/mach-exynos/Kconfig                       |    1 +
+>>  arch/arm/mach-exynos/Makefile                      |    2 +-
+>>  arch/arm/mach-exynos/exynos.c                      |    2 +-
+>>  arch/arm/mach-exynos/mcpm-exynos.c                 |    2 +-
+>>  arch/arm/mach-exynos/platsmp.c                     |    2 +-
+>>  arch/arm/mach-exynos/pm.c                          |    4 +-
+>>  arch/arm/mach-exynos/suspend.c                     |    4 +-
+>>  drivers/soc/Kconfig                                |    1 +
+>>  drivers/soc/Makefile                               |    1 +
+>>  drivers/soc/samsung/Kconfig                        |   20 +
+>>  drivers/soc/samsung/Makefile                       |    1 +
+>>  .../pmu.c => drivers/soc/samsung/exynos-pmu.c      |  442 +++++++++++++++++++-
+>>  .../linux/soc/samsung}/exynos-pmu.h                |    1 +
+>>  .../linux/soc/samsung/exynos-regs-pmu.h            |  273 ++++++++++++
+>>  15 files changed, 744 insertions(+), 13 deletions(-)
+>>  create mode 100644 drivers/soc/samsung/Kconfig
+>>  create mode 100644 drivers/soc/samsung/Makefile
+>>  rename arch/arm/mach-exynos/pmu.c => drivers/soc/samsung/exynos-pmu.c (64%)
+>>  rename {arch/arm/mach-exynos => include/linux/soc/samsung}/exynos-pmu.h (89%)
+>>  rename arch/arm/mach-exynos/regs-pmu.h => include/linux/soc/samsung/exynos-regs-pmu.h (63%)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
