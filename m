@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751209AbaKYPIm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:08:42 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54827 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044AbaKYPIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:08:40 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v3 4/7] crypto: AF_ALG: add AEAD support
-Date: Tue, 25 Nov 2014 16:08:35 +0100
-Message-ID: <3914952.bO8PzptSEc@tauon>
-User-Agent: KMail/4.14.2 (Linux/3.17.2-200.fc20.x86_64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <20141125145850.GD8541@gondor.apana.org.au>
-References: <4088013.2O8zCP0xXa@tachyon.chronox.de> <5492722.Cc6uZ9OM2L@tauon> <20141125145850.GD8541@gondor.apana.org.au>
+	id S1751238AbaKYPI7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:08:59 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48107 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964AbaKYPI6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 10:08:58 -0500
+Message-ID: <54749C2B.4090303@oracle.com>
+Date: Tue, 25 Nov 2014 10:11:39 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: david.vrabel@citrix.com, konrad.wilk@oracle.com, jun.nakajima@intel.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
+Subject: Re: [PATCH v3 1/2] xen/pci: Defer initialization of MSI ops on HVM
+ guests until after x2APIC has been set up
+References: <1416870378-32481-1-git-send-email-boris.ostrovsky@oracle.com> <1416870378-32481-2-git-send-email-boris.ostrovsky@oracle.com> <alpine.DEB.2.02.1411251205220.2675@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1411251205220.2675@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 25. November 2014, 22:58:50 schrieb Herbert Xu:
-
-Hi Herbert,
-
->On Mon, Nov 24, 2014 at 03:58:34PM +0100, Stephan Mueller wrote:
->> Ok. But in the code you see that skcipher is a 100% subset of AEAD.
->> For AEAD, all we need to do in addition to normal symmetric ciphers
->> is to select the AEAD kernel crypto API calls, to locate and use the
->> AD and to ensure we have the right memory size to process the tag.
->
->There is still one fundamental difference between AEAD and ciphers.
->Namely that ciphers can operate as you go while AEAD requests must
->be done in one lot.  So that should make the AEAD code simpler vs.
->ciphers.
-
-Yes, that is a key difference.
->
->I think the best course of action for now is to start with sharing
->no code and then chop bits off as we see fit.
-
-Ok, I will create a new patch set with a separate algif_aead.c. I guess 
-the entire sgl handling logic will be gone in AEAD.
->
->Cheers,
+On 11/25/2014 07:06 AM, Stefano Stabellini wrote:
+> On Mon, 24 Nov 2014, Boris Ostrovsky wrote:
+>> If the hardware supports APIC virtualization we may decide not to use pirqs
+>> and instead use APIC/x2APIC directly, meaning that we don't want to set
+>> x86_msi.setup_msi_irqs and x86_msi.teardown_msi_irq to Xen-specific routines.
+>> However, x2APIC is not set up by the time pci_xen_hvm_init() is called so we
+>> need to postpone setting these ops until later, when we know which APIC mode
+>> is used.
+>>
+>> (Note that currently x2APIC is never initialized on HVM guests. This may
+>> change in the future)
+> I take that this is safe because no MSIs can be received at this point
+> (apic_post_init), right?
 
 
-Ciao
-Stephan
+Yes. At the time apic_post_init() is called PCI has not been probed yet.
+
+-boris
+
+
