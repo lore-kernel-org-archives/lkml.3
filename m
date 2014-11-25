@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762AbaKYL5k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:57:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58153 "EHLO
+	id S1755448AbaKYL54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:57:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58152 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774AbaKYKko (ORCPT
+	with ESMTP id S1752772AbaKYKko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Nov 2014 05:40:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oussama Ghorbel <ghorbel@pivasoftware.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
+Cc: Peter Hurley <peter@hurleysoftware.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 037/254] phy: omap-usb2: Enable runtime PM of omap-usb2 phy properly
-Date: Tue, 25 Nov 2014 10:36:27 +0000
-Message-Id: <1416912004-5928-38-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 039/254] tty: Fix high cpu load if tty is unreleaseable
+Date: Tue, 25 Nov 2014 10:36:29 +0000
+Message-Id: <1416912004-5928-40-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -29,53 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oussama Ghorbel <ghorbel@pivasoftware.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit f20531a9aae0c7378d9fa75b4b5d99b7eecab066 upstream.
+commit 37b164578826406a173ca7c20d9ba7430134d23e upstream.
 
-The USB OTG port does not work since v3.16 on omap platform.
-This is a regression introduced by the commit
-eb82a3d846fa (phy: omap-usb2: Balance pm_runtime_enable() on probe failure
- and remove).
-This because the call to pm_runtime_enable() function is moved after the
-call to devm_phy_create() function, which has side effect since later in
-the subsequent calls of devm_phy_create() there is a check with
-pm_runtime_enabled() to configure few things.
+Kernel oops can cause the tty to be unreleaseable (for example, if
+n_tty_read() crashes while on the read_wait queue). This will cause
+tty_release() to endlessly loop without sleeping.
 
-Fixes: eb82a3d846fa
-Signed-off-by: Oussama Ghorbel <ghorbel@pivasoftware.com>
-Tested-by: Rabin Vincent <rabin@rab.in>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Use a killable sleep timeout which grows by 2n+1 jiffies over the interval
+[0, 120 secs.) and then jumps to forever (but still killable).
+
+NB: killable just allows for the task to be rewoken manually, not
+to be terminated.
+
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.16: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/phy/phy-omap-usb2.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/tty/tty_io.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-index 34b396146c8a..3fb92937f29b 100644
---- a/drivers/phy/phy-omap-usb2.c
-+++ b/drivers/phy/phy-omap-usb2.c
-@@ -262,14 +262,16 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	otg->phy		= &phy->phy;
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 34110719fe03..fd682252bbac 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1701,6 +1701,7 @@ int tty_release(struct inode *inode, struct file *filp)
+ 	int	pty_master, tty_closing, o_tty_closing, do_sleep;
+ 	int	idx;
+ 	char	buf[64];
++	long	timeout = 0;
  
- 	platform_set_drvdata(pdev, phy);
-+	pm_runtime_enable(phy->dev);
+ 	if (tty_paranoia_check(tty, inode, __func__))
+ 		return 0;
+@@ -1785,7 +1786,11 @@ int tty_release(struct inode *inode, struct file *filp)
+ 				__func__, tty_name(tty, buf));
+ 		tty_unlock_pair(tty, o_tty);
+ 		mutex_unlock(&tty_mutex);
+-		schedule();
++		schedule_timeout_killable(timeout);
++		if (timeout < 120 * HZ)
++			timeout = 2 * timeout + 1;
++		else
++			timeout = MAX_SCHEDULE_TIMEOUT;
+ 	}
  
- 	generic_phy = devm_phy_create(phy->dev, &ops, NULL);
--	if (IS_ERR(generic_phy))
-+	if (IS_ERR(generic_phy)) {
-+		pm_runtime_disable(phy->dev);
- 		return PTR_ERR(generic_phy);
-+	}
- 
- 	phy_set_drvdata(generic_phy, phy);
- 
--	pm_runtime_enable(phy->dev);
- 	phy_provider = devm_of_phy_provider_register(phy->dev,
- 			of_phy_simple_xlate);
- 	if (IS_ERR(phy_provider)) {
+ 	/*
 -- 
 2.1.0
 
