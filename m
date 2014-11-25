@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751467AbaKYULi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 15:11:38 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:44511 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077AbaKYULf (ORCPT
+	id S1751517AbaKYULp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 15:11:45 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51764 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750925AbaKYULn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 15:11:35 -0500
-Date: Tue, 25 Nov 2014 21:11:29 +0100
-From: Pieter Smith <pieter@boesman.nl>
-To: David Miller <davem@davemloft.net>
-Cc: josh@joshtriplett.org, rdunlap@infradead.org, alexander.h.duyck@intel.com,
-        viro@zeniv.linux.org.uk, ast@plumgrid.com, akpm@linux-foundation.org,
-        beber@meleeweb.net, catalina.mocanu@gmail.com, dborkman@redhat.com,
-        edumazet@google.com, ebiederm@xmission.com, fabf@skynet.be,
-        fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
-        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
-        bfields@fieldses.org, jlayton@poochiereds.net,
-        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        mcgrof@suse.com, mattst88@gmail.com, mgorman@suse.de, mst@redhat.com,
-        miklos@szeredi.hu, netdev@vger.kernel.org, oleg@redhat.com,
-        Paul.Durrant@citrix.com, paulmck@linux.vnet.ibm.com,
-        pefoley2@pefoley.com, tgraf@suug.ch, therbert@google.com,
-        trond.myklebust@primarydata.com, willemb@google.com,
-        xiaoguangrong@linux.vnet.ibm.com, zhenglong.cai@cs2c.com.cn
-Subject: Re: [PATCH v4 0/7] kernel tinification: optionally compile out
- splice family of syscalls (splice, vmsplice, tee and sendfile)
-Message-ID: <20141125201129.GA27167@smipidev>
-References: <5474ABB6.3030400@infradead.org>
- <20141125.121305.2094097848188324942.davem@davemloft.net>
- <20141125185310.GA24891@cloud>
- <20141125.140441.401150380839514113.davem@davemloft.net>
+	Tue, 25 Nov 2014 15:11:43 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ben Zhang <benzh@chromium.org>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        flove@realtek.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
+Date: Tue, 25 Nov 2014 21:32:58 +0100
+Message-ID: <2374046.oRBoy0cD3d@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141125193623.GL7712@sirena.org.uk>
+References: <1416034608-24238-1-git-send-email-benzh@chromium.org> <5474D35A.3000601@linux.intel.com> <20141125193623.GL7712@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141125.140441.401150380839514113.davem@davemloft.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 02:04:41PM -0500, David Miller wrote:
-> From: josh@joshtriplett.org
-> Date: Tue, 25 Nov 2014 10:53:10 -0800
+On Tuesday, November 25, 2014 07:36:23 PM Mark Brown wrote:
 > 
-> > It's not a "slippery slope"; it's been our standard practice for ages.
+> --njUEgrJvs9ryr/H/
+> Content-Type: text/plain; charset=us-ascii
+> Content-Disposition: inline
+> Content-Transfer-Encoding: quoted-printable
 > 
-> We've never put an entire class of generic system calls behind
-> a config option.
+> On Tue, Nov 25, 2014 at 11:07:06AM -0800, Darren Hart wrote:
+> > On 11/25/14 10:43, Mark Brown wrote:
+> 
+> > > Link from where - do we want to talk to the ACPI/UEFI forum and=20
+> > > figure out some kind of fast track process for them to add an
+> > > "it's already covered by DT, see here" entry to their database for=20
+> > > example?  We also ought to work out how to make sure ACPI IDs are=20
+> > > registered there as well, should be possible to have something=20
+> > > simple as part of that.
+> 
+> > This is a current topic with the ACPI working group. We have the
+> > following document:
+> 
+> > http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-=
+> UUID.pdf
+> 
+> > I don't know if we want to have a list of them here, or if a separate
+> > document is needed. The important point is that it is independent from
+> 
+> Seems to me like some indirection is going to be better rather than
+> having one big document if there's widespread adoption, avoids lots of
+> document churn.
+> 
+> > the ACPI specification itself so that it can be updated out of band
+> > with the specification, and not be subject to rather plodding pace
+> > that would imply.
+> 
+> > Rafael, I've missed several of these meetings unfortunately, and I'm
+> > not sure if we've closed on this point. Do you know?
+> 
+> OK, I'll see if any of the people at work have been following as well.
+> For now continuing to just document everything as DT bindings in the way
+> we are already seems like a sensible interim approach.
 
-I would have loved to make them optional individually, but they all are
-semantic variations of the same thing: Moving data between fd's without that
-data passing through userspace. It therefore isn't surprising that these
-syscalls share an underlying entanglement of code (which is where the bulk of
-the space saving is to be had).
+Yes, that currently is the case in my view too.
 
-What a tiny product developer should be asking himself, is: "Do I really need
-to efficiently move data between file descriptors?". If the answer no, he can
-disable CONFIG_SYSCALL_SPLICE to squeeze an extra 8KB out of his kernel.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
