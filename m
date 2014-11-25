@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017AbaKYLMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:12:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58840 "EHLO
+	id S1755047AbaKYLMm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:12:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58819 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667AbaKYKmj (ORCPT
+	with ESMTP id S1753668AbaKYKmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:39 -0500
+	Tue, 25 Nov 2014 05:42:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+Cc: Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 167/254] iwlwifi: fix RFkill while calibrating
-Date: Tue, 25 Nov 2014 10:38:37 +0000
-Message-Id: <1416912004-5928-168-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 163/254] x86, microcode, AMD: Fix early ucode loading on 32-bit
+Date: Tue, 25 Nov 2014 10:38:33 +0000
+Message-Id: <1416912004-5928-164-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,151 +27,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Borislav Petkov <bp@suse.de>
 
-commit 31b8b343e019e0a0c57ca9c13520a87f9cab884b upstream.
+commit 4750a0d112cbfcc744929f1530ffe3193436766c upstream.
 
-If the RFkill interrupt fires while we calibrate, it would
-make the firmware fail and the driver wasn't able to recover.
-Change the flow so that the driver will kill the firmware
-in that case.
+Konrad triggered the following splat below in a 32-bit guest on an AMD
+box. As it turns out, in save_microcode_in_initrd_amd() we're using the
+*physical* address of the container *after* we have enabled paging and
+thus we #PF in load_microcode_amd() when trying to access the microcode
+container in the ramdisk range.
 
-Since we have now two flows that are calling
-trans_stop_device (the RFkill interrupt and the
-op_mode_mvm_start function) - we need to better sync this.
-Use the STATUS_DEVICE_ENABLED in the pcie transport in an
-atomic way to achieve this.
+Because the ramdisk is exactly there:
 
-This fixes: https://bugzilla.kernel.org/show_bug.cgi?id=86231
+[    0.000000] RAMDISK: [mem 0x35e04000-0x36ef9fff]
 
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Reviewed-by: Luciano Coelho <luciano.coelho@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-[ luis: used Emmanuel's backport to 3.17 ]
+and we fault at 0x35e04304.
+
+And since this guest doesn't relocate the ramdisk, we don't do the
+computation which will give us the correct virtual address and we end up
+with the PA.
+
+So, we should actually be using virtual addresses on 32-bit too by the
+time we're freeing the initrd. Do that then!
+
+Unpacking initramfs...
+BUG: unable to handle kernel paging request at 35d4e304
+IP: [<c042e905>] load_microcode_amd+0x25/0x4a0
+*pde = 00000000
+Oops: 0000 [#1] SMP
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.1-302.fc21.i686 #1
+Hardware name: Xen HVM domU, BIOS 4.4.1 10/01/2014
+task: f5098000 ti: f50d0000 task.ti: f50d0000
+EIP: 0060:[<c042e905>] EFLAGS: 00010246 CPU: 0
+EIP is at load_microcode_amd+0x25/0x4a0
+EAX: 00000000 EBX: f6e9ec4c ECX: 00001ec4 EDX: 00000000
+ESI: f5d4e000 EDI: 35d4e2fc EBP: f50d1ed0 ESP: f50d1e94
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+CR0: 8005003b CR2: 35d4e304 CR3: 00e33000 CR4: 000406d0
+Stack:
+ 00000000 00000000 f50d1ebc f50d1ec4 f5d4e000 c0d7735a f50d1ed0 15a3d17f
+ f50d1ec4 00600f20 00001ec4 bfb83203 f6e9ec4c f5d4e000 c0d7735a f50d1ed8
+ c0d80861 f50d1ee0 c0d80429 f50d1ef0 c0d889a9 f5d4e000 c0000000 f50d1f04
+Call Trace:
+? unpack_to_rootfs
+? unpack_to_rootfs
+save_microcode_in_initrd_amd
+save_microcode_in_initrd
+free_initrd_mem
+populate_rootfs
+? unpack_to_rootfs
+do_one_initcall
+? unpack_to_rootfs
+? repair_env_string
+? proc_mkdir
+kernel_init_freeable
+kernel_init
+ret_from_kernel_thread
+? rest_init
+
+Reported-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+References: https://bugzilla.redhat.com/show_bug.cgi?id=1158204
+Fixes: 75a1ba5b2c52 ("x86, microcode, AMD: Unify valid container checks")
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/20141101100100.GA4462@pd.tnic
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/mvm/fw.c       | 10 +++++++++-
- drivers/net/wireless/iwlwifi/mvm/mac80211.c |  1 +
- drivers/net/wireless/iwlwifi/mvm/mvm.h      |  1 +
- drivers/net/wireless/iwlwifi/mvm/ops.c      | 11 ++++++++++-
- drivers/net/wireless/iwlwifi/pcie/trans.c   |  4 ++--
- 5 files changed, 23 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/microcode/amd_early.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/mvm/fw.c b/drivers/net/wireless/iwlwifi/mvm/fw.c
-index bf720a875e6b..c77e6bcc63d5 100644
---- a/drivers/net/wireless/iwlwifi/mvm/fw.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw.c
-@@ -282,7 +282,7 @@ int iwl_run_init_mvm_ucode(struct iwl_mvm *mvm, bool read_nvm)
- 
- 	lockdep_assert_held(&mvm->mutex);
- 
--	if (WARN_ON_ONCE(mvm->init_ucode_complete))
-+	if (WARN_ON_ONCE(mvm->init_ucode_complete || mvm->calibrating))
- 		return 0;
- 
- 	iwl_init_notification_wait(&mvm->notif_wait,
-@@ -332,6 +332,8 @@ int iwl_run_init_mvm_ucode(struct iwl_mvm *mvm, bool read_nvm)
- 		goto out;
- 	}
- 
-+	mvm->calibrating = true;
-+
- 	/* Send TX valid antennas before triggering calibrations */
- 	ret = iwl_send_tx_ant_cfg(mvm, mvm->fw->valid_tx_ant);
- 	if (ret)
-@@ -356,11 +358,17 @@ int iwl_run_init_mvm_ucode(struct iwl_mvm *mvm, bool read_nvm)
- 			MVM_UCODE_CALIB_TIMEOUT);
- 	if (!ret)
- 		mvm->init_ucode_complete = true;
-+
-+	if (ret && iwl_mvm_is_radio_killed(mvm)) {
-+		IWL_DEBUG_RF_KILL(mvm, "RFKILL while calibrating.\n");
-+		ret = 1;
-+	}
- 	goto out;
- 
- error:
- 	iwl_remove_notification(&mvm->notif_wait, &calib_wait);
- out:
-+	mvm->calibrating = false;
- 	if (iwlmvm_mod_params.init_dbg && !mvm->nvm_data) {
- 		/* we want to debug INIT and we have no NVM - fake */
- 		mvm->nvm_data = kzalloc(sizeof(struct iwl_nvm_data) +
-diff --git a/drivers/net/wireless/iwlwifi/mvm/mac80211.c b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-index 98556d03c1ed..08572e212d8f 100644
---- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-@@ -651,6 +651,7 @@ static void iwl_mvm_restart_cleanup(struct iwl_mvm *mvm)
- 	iwl_trans_stop_device(mvm->trans);
- 
- 	mvm->scan_status = IWL_MVM_SCAN_NONE;
-+	mvm->calibrating = false;
- 
- 	/* just in case one was running */
- 	ieee80211_remain_on_channel_expired(mvm->hw);
-diff --git a/drivers/net/wireless/iwlwifi/mvm/mvm.h b/drivers/net/wireless/iwlwifi/mvm/mvm.h
-index fcc6c29482d0..a20f882af758 100644
---- a/drivers/net/wireless/iwlwifi/mvm/mvm.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/mvm.h
-@@ -486,6 +486,7 @@ struct iwl_mvm {
- 	enum iwl_ucode_type cur_ucode;
- 	bool ucode_loaded;
- 	bool init_ucode_complete;
-+	bool calibrating;
- 	u32 error_event_table;
- 	u32 log_event_table;
- 	u32 umac_error_event_table;
-diff --git a/drivers/net/wireless/iwlwifi/mvm/ops.c b/drivers/net/wireless/iwlwifi/mvm/ops.c
-index 6b4f3525fdca..1cacf0f55d9a 100644
---- a/drivers/net/wireless/iwlwifi/mvm/ops.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/ops.c
-@@ -718,6 +718,7 @@ void iwl_mvm_set_hw_ctkill_state(struct iwl_mvm *mvm, bool state)
- static bool iwl_mvm_set_hw_rfkill_state(struct iwl_op_mode *op_mode, bool state)
+diff --git a/arch/x86/kernel/cpu/microcode/amd_early.c b/arch/x86/kernel/cpu/microcode/amd_early.c
+index 617a9e284245..65bdfb598880 100644
+--- a/arch/x86/kernel/cpu/microcode/amd_early.c
++++ b/arch/x86/kernel/cpu/microcode/amd_early.c
+@@ -348,6 +348,7 @@ int __init save_microcode_in_initrd_amd(void)
  {
- 	struct iwl_mvm *mvm = IWL_OP_MODE_GET_MVM(op_mode);
-+	bool calibrating = ACCESS_ONCE(mvm->calibrating);
+ 	unsigned long cont;
+ 	enum ucode_state ret;
++	u8 *cont_va;
+ 	u32 eax;
  
- 	if (state)
- 		set_bit(IWL_MVM_STATUS_HW_RFKILL, &mvm->status);
-@@ -726,7 +727,15 @@ static bool iwl_mvm_set_hw_rfkill_state(struct iwl_op_mode *op_mode, bool state)
+ 	if (!container)
+@@ -355,13 +356,15 @@ int __init save_microcode_in_initrd_amd(void)
  
- 	wiphy_rfkill_set_hw_state(mvm->hw->wiphy, iwl_mvm_is_radio_killed(mvm));
- 
--	return state && mvm->cur_ucode != IWL_UCODE_INIT;
-+	/* iwl_run_init_mvm_ucode is waiting for results, abort it */
-+	if (calibrating)
-+		iwl_abort_notification_waits(&mvm->notif_wait);
-+
-+	/*
-+	 * Stop the device if we run OPERATIONAL firmware or if we are in the
-+	 * middle of the calibrations.
-+	 */
-+	return state && (mvm->cur_ucode != IWL_UCODE_INIT || calibrating);
- }
- 
- static void iwl_mvm_free_skb(struct iwl_op_mode *op_mode, struct sk_buff *skb)
-diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c b/drivers/net/wireless/iwlwifi/pcie/trans.c
-index 3aefff039df0..9788fc59c13b 100644
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -835,7 +835,8 @@ static void iwl_trans_pcie_stop_device(struct iwl_trans *trans)
- 	 * restart. So don't process again if the device is
- 	 * already dead.
+ #ifdef CONFIG_X86_32
+ 	get_bsp_sig();
+-	cont = (unsigned long)container;
++	cont	= (unsigned long)container;
++	cont_va = __va(container);
+ #else
+ 	/*
+ 	 * We need the physical address of the container for both bitness since
+ 	 * boot_params.hdr.ramdisk_image is a physical address.
  	 */
--	if (test_bit(STATUS_DEVICE_ENABLED, &trans->status)) {
-+	if (test_and_clear_bit(STATUS_DEVICE_ENABLED, &trans->status)) {
-+		IWL_DEBUG_INFO(trans, "DEVICE_ENABLED bit was set and is now cleared\n");
- 		iwl_pcie_tx_stop(trans);
- 		iwl_pcie_rx_stop(trans);
+-	cont = __pa(container);
++	cont    = __pa(container);
++	cont_va = container;
+ #endif
  
-@@ -865,7 +866,6 @@ static void iwl_trans_pcie_stop_device(struct iwl_trans *trans)
- 	/* clear all status bits */
- 	clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
- 	clear_bit(STATUS_INT_ENABLED, &trans->status);
--	clear_bit(STATUS_DEVICE_ENABLED, &trans->status);
- 	clear_bit(STATUS_TPOWER_PMI, &trans->status);
- 	clear_bit(STATUS_RFKILL, &trans->status);
+ 	/*
+@@ -372,6 +375,8 @@ int __init save_microcode_in_initrd_amd(void)
+ 	if (relocated_ramdisk)
+ 		container = (u8 *)(__va(relocated_ramdisk) +
+ 			     (cont - boot_params.hdr.ramdisk_image));
++	else
++		container = cont_va;
  
+ 	if (ucode_new_rev)
+ 		pr_info("microcode: updated early to new patch_level=0x%08x\n",
 -- 
 2.1.0
 
