@@ -1,61 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131AbaKYKNF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:13:05 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49551 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaKYKNB (ORCPT
+	id S1752333AbaKYKOE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:14:04 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:55008 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760AbaKYKOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:13:01 -0500
-Date: Tue, 25 Nov 2014 15:42:38 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: tglx@linutronix.de, corbet@lwn.net, mingo@redhat.com, hpa@zytor.com,
-        peterz@infradead.org, riel@redhat.com, akpm@linux-foundation.org,
-        rientjes@google.com, ak@linux.intel.com, mgorman@suse.de,
-        liwanp@linux.vnet.ibm.com, raistlin@linux.it,
-        kirill.shutemov@linux.intel.com, atomlin@redhat.com, avagin@openvz.org,
-        gorcunov@openvz.org, serge.hallyn@canonical.com, athorlton@sgi.com,
-        oleg@redhat.com, vdavydov@parallels.com, daeseok.youn@gmail.com,
-        keescook@chromium.org, yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu,
-        vishnu.ps@samsung.com, axboe@fb.com, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v3] sched/fair: Add advisory flag for borrowing a
- timeslice (was: Pre-emption control for userspace)
-Message-ID: <20141125101238.GA19795@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com>
+	Tue, 25 Nov 2014 05:14:01 -0500
+Message-ID: <54745656.40707@gmail.com>
+Date: Tue, 25 Nov 2014 18:13:42 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112510-0021-0000-0000-0000026EBB14
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Subject: Re: [PATCH v4 01/12] sched: fix imbalance flag reset
+References: <1406569906-9763-1-git-send-email-vincent.guittot@linaro.org> <1406569906-9763-2-git-send-email-vincent.guittot@linaro.org> <5473C37E.6030505@gmail.com> <CAKfTPtBS6Ri-hNf+M_BGDxhpXEwWP=n0zmTi5-pdxGi0dMF6eQ@mail.gmail.com>
+In-Reply-To: <CAKfTPtBS6Ri-hNf+M_BGDxhpXEwWP=n0zmTi5-pdxGi0dMF6eQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> - Request to borrow timeslice is not guranteed to be honored.
-> - If the task is allowed to borrow, kernel will inform the task
->   of this. When this happens, task must yield the processor as soon
->   as it completes its critical section.
-> - If the task fails to yield processor after being allowed to
->   borrow, it is penalized by forcing it to skip its next time slot
->   by the scheduler.
-> - Task is charged additional time for the borrowed timeslice as
->   accumulated run time. This pushes it further down in consideration
->   for the next task to run.
-> 
+Hi Vincent,
+On 11/25/14, 5:04 PM, Vincent Guittot wrote:
+> On 25 November 2014 at 00:47, Wanpeng Li <kernellwp@gmail.com> wrote:
+>> Hi Vincent,
+>> On 7/29/14, 1:51 AM, Vincent Guittot wrote:
+>>> The imbalance flag can stay set whereas there is no imbalance.
+>>>
+>>> Let assume that we have 3 tasks that run on a dual cores /dual cluster
+>>> system.
+>>> We will have some idle load balance which are triggered during tick.
+>>> Unfortunately, the tick is also used to queue background work so we can
+>>> reach
+>>> the situation where short work has been queued on a CPU which already runs
+>>> a
+>>> task. The load balance will detect this imbalance (2 tasks on 1 CPU and an
+>>> idle
+>>> CPU) and will try to pull the waiting task on the idle CPU. The waiting
+>>> task is
+>>> a worker thread that is pinned on a CPU so an imbalance due to pinned task
+>>> is
+>>> detected and the imbalance flag is set.
+>>> Then, we will not be able to clear the flag because we have at most 1 task
+>>> on
+>>> each CPU but the imbalance flag will trig to useless active load balance
+>>> between the idle CPU and the busy CPU.
+>>>
+>>> We need to reset of the imbalance flag as soon as we have reached a
+>>> balanced
+>>> state. If all tasks are pinned, we don't consider that as a balanced state
+>>> and
+>>> let the imbalance flag set.
+>>>
+>>> Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+>>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>>> ---
+>>>    kernel/sched/fair.c | 23 +++++++++++++++++++----
+>>>    1 file changed, 19 insertions(+), 4 deletions(-)
+>>>
+>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>>> index 923fe32..7eb9126 100644
+>>> --- a/kernel/sched/fair.c
+>>> +++ b/kernel/sched/fair.c
+>>> @@ -6672,10 +6672,8 @@ static int load_balance(int this_cpu, struct rq
+>>> *this_rq,
+>>>                  if (sd_parent) {
+>>>                          int *group_imbalance =
+>>> &sd_parent->groups->sgc->imbalance;
+>>>    -                     if ((env.flags & LBF_SOME_PINNED) && env.imbalance
+>>>> 0) {
+>>> +                       if ((env.flags & LBF_SOME_PINNED) && env.imbalance
+>>>> 0)
+>>>                                  *group_imbalance = 1;
+>>> -                       } else if (*group_imbalance)
+>>> -                               *group_imbalance = 0;
+>>
+>> As you mentioned above " We need to reset of the imbalance flag as soon as
+>> we have reached a balanced state. " I think the codes before your patch have
+>> already do this, where I miss? Great thanks for your patient. ;-)
+> The previous code was called only when busiest->nr_running > 1.  The
+> background activity will be on the rq only 1 tick per few seconds and
+> we will set qroup_imbalance when the background activity is on the rq.
+> Then, during the next load balances, the qroup_imbalance is still set
+> but we can't clear qroup_imbalance  because we have only 1 task per rq
 
-Is there a way for us to identify if the lock is contended?
-Because it may not be prudent to allow a task to borrow timeslice for a
-lock which isnt contended.
+There is no load balance I think since busiest->nr_running > 1 is not 
+true even if the patch is not applied.
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+Regards,
+Wanpeng Li
+
+>
+> Regards,
+> Vincent
+>
+>> Regards,
+>> Wanpeng Li
+>>
+>>
+>>>                  }
+>>>                  /* All tasks on this runqueue were pinned by CPU affinity
+>>> */
+>>> @@ -6686,7 +6684,7 @@ static int load_balance(int this_cpu, struct rq
+>>> *this_rq,
+>>>                                  env.loop_break = sched_nr_migrate_break;
+>>>                                  goto redo;
+>>>                          }
+>>> -                       goto out_balanced;
+>>> +                       goto out_all_pinned;
+>>>                  }
+>>>          }
+>>>    @@ -6760,6 +6758,23 @@ static int load_balance(int this_cpu, struct rq
+>>> *this_rq,
+>>>          goto out;
+>>>      out_balanced:
+>>> +       /*
+>>> +        * We reach balance although we may have faced some affinity
+>>> +        * constraints. Clear the imbalance flag if it was set.
+>>> +        */
+>>> +       if (sd_parent) {
+>>> +               int *group_imbalance = &sd_parent->groups->sgc->imbalance;
+>>> +
+>>> +               if (*group_imbalance)
+>>> +                       *group_imbalance = 0;
+>>> +       }
+>>> +
+>>> +out_all_pinned:
+>>> +       /*
+>>> +        * We reach balance because all tasks are pinned at this level so
+>>> +        * we can't migrate them. Let the imbalance flag set so parent
+>>> level
+>>> +        * can try to migrate them.
+>>> +        */
+>>>          schedstat_inc(sd, lb_balanced[idle]);
+>>>          sd->nr_balance_failed = 0;
+>>
 
