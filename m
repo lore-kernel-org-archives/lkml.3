@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370AbaKYKeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:34:11 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:55267 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaKYKeH (ORCPT
+	id S1752513AbaKYKee (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:34:34 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:19762 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752262AbaKYKec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:34:07 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Kevin Hilman <khilman@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robh+dt@kernel.org>, ssantosh@kernel.org
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-Date: Tue, 25 Nov 2014 11:33:57 +0100
-Message-ID: <15074721.IbfeeI3ajE@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141125064406.12298.57929@quantum>
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com> <2997659.fTX2lvxXfH@wuerfel> <20141125064406.12298.57929@quantum>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:TqYkmSUpr+YqNjliMFyq1NZlgppnprSycrAcuXyu8hM
- F7zYmvXLG8auvsliYq54AswlDuoC99IsVGYTwb77FOxEtJJ7P1
- Wz2PXFP3AeuUTycQHQ1GS0dYYwYVDPrquLiUC7lg2XDEpvQacH
- yJiyYKbltFiH3cn64xvfPeGIEDN23li09Hp+5RPPjMyjMDZd06
- LNPW+I1UUC4GinyrhBkQKT18Z5llWyl+FdNSfrlqwrpzo0TD2F
- 4BDzboMJ7MIx74qGf7a9npk1qBsbCWWKvHi7hjC137rExhONDg
- XI8pj9nR7umXozc/wJNftP9h2evGYTRLUSLNKp6AgstNYmR+O3
- ua16b58xrTkK1R2rB8AI=
-X-UI-Out-Filterresults: notjunk:1;
+	Tue, 25 Nov 2014 05:34:32 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-f2-54745b355805
+Message-id: <54745B2F.70003@samsung.com>
+Date: Tue, 25 Nov 2014 11:34:23 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: Josh Wu <josh.wu@atmel.com>
+Cc: linux-media@vger.kernel.org, m.chehab@samsung.com,
+        linux-kernel@vger.kernel.org, g.liakhovetski@gmx.de
+Subject: Re: [PATCH 1/2] media: v4l2-image-sizes.h: add SVGA,
+ XGA and UXGA size definitions
+References: <1416905668-23029-1-git-send-email-josh.wu@atmel.com>
+In-reply-to: <1416905668-23029-1-git-send-email-josh.wu@atmel.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t/xK7qm0SUhBoc7VSzeb5zHZLGr8Ter
+	xeVdc9gsejZsZbW4uE7egdVjwa+tLB4fPsZ59G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8bu
+	8xPZCjZxVCxc28newPiArYuRk0NCwETi3cqfULaYxIV764FsLg4hgaWMEr3Nt5ghnE+MEusu
+	tDCCVPEKaEhc7JjPCmKzCKhKnOl4wgJiswkYSvQe7QOrERWIkDh5dw87RL2gxI/J98BqRATk
+	JWZfOAVmMwvkSNx9tARss7BArMTh30eA4hxAyxwltl/iBwlzCjhJTO14zAQSZhbQk7h/UQui
+	U15i85q3zBMYBWYhWTALoWoWkqoFjMyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MULC9+sO
+	xqXHrA4xCnAwKvHwVmgWhwixJpYVV+YeYpTgYFYS4X3vWRIixJuSWFmVWpQfX1Sak1p8iJGJ
+	g1OqgfHIKXsOluwQyfj+Pbf9paTn/uLhi6y2uM18sTua69X3yMIN1efa508z2fP5W0P14akr
+	Db1+lbf/eu267jOrvnHd9l0ZSuKpe5y47G4L3I6sOnSzdunt1k3ezsqXHVweHVK6uJjhca0O
+	g2SJ9sn1D3WYsgN28DYH5P8t6Q6u1ZHZcy7tv/yuFCWW4oxEQy3mouJEAKT7J3I9AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 24 November 2014 22:44:06 Mike Turquette wrote:
-> Quoting Arnd Bergmann (2014-11-24 02:50:28)
-> > 
-> > Could the driver maybe identify the clocks that it wants to manage itself
-> > to the pm-domain code? If it's safe for a device to have the clock turned
-> > on at the default rate before loading the driver, any device that is connected
-> > to the simple clk-pm-domain code could have all its clocks start out as
-> > owned by the pm-domain, but then claim the clocks it needs to reprogram for
-> > itself and take them out of the pmdomain.
-> 
-> I was thinking along similar lines. The functional versus optional stuff
-> is really a property of the consuming device, not the clock signal
-> itself.
-> 
-> Instead of adding a new property to the clock binding (e.g. fck-clocks
-> or optional-clocks), could we simply wrap those lists of clocks in
-> another node? E.g:
-> 
-> mandatory-clocks {
->        clocks = <&papllclk>, <&clkcpgmac>;
->        clock-names = "clk_pa", "clk_cpgmac";
-> }
-> 
-> clocks = <&papllclk>, <&clkcpgmac>, <&chipclk12>;
->        clocks = <&clkcpgmac>;
->        clock-names = "cpsw_cpts_rft_clk";
-> }
-> 
-> I'm showing my DT ignorance on this one. I haven't really thought
-> through how these sub-nodes would work with of_clk_* handlers in
-> drivers/clk/clkdev.c.
+Hi Josh,
 
-I'm not sure I even understand what you intended the example to look
-like, it does't parse ;-)
+On 25/11/14 09:54, Josh Wu wrote:
+> Add SVGA, UXGA and XGA size definitions to v4l2-image-sizes.h.
+> The definitions are sorted by alphabet order.
+> 
+> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+> ---
+>  include/media/v4l2-image-sizes.h | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/include/media/v4l2-image-sizes.h b/include/media/v4l2-image-sizes.h
+> index 10daf92..c70c917 100644
+> --- a/include/media/v4l2-image-sizes.h
+> +++ b/include/media/v4l2-image-sizes.h
+> @@ -25,10 +25,19 @@
+>  #define QVGA_WIDTH	320
+>  #define QVGA_HEIGHT	240
+>  
+> +#define SVGA_WIDTH	800
+> +#define SVGA_HEIGHT	680
 
-My point above was completely different, the suggestion I made was
-to not classify the clocks in DT at all, but to leave it all in
-the client driver.
+I think this should be 600. With that fixed, for both patches:
 
-	Arnd
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+
+>  #define SXGA_WIDTH	1280
+>  #define SXGA_HEIGHT	1024
+>  
+>  #define VGA_WIDTH	640
+>  #define VGA_HEIGHT	480
+>  
+> +#define UXGA_WIDTH	1600
+> +#define UXGA_HEIGHT	1200
+> +
+> +#define XGA_WIDTH	1024
+> +#define XGA_HEIGHT	768
+> +
+>  #endif /* _IMAGE_SIZES_H */
+
+--
+Regards,
+Sylwester
