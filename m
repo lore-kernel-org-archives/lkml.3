@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104AbaKYMCz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:02:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58074 "EHLO
+	id S1756170AbaKYMDS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:03:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58067 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635AbaKYKka (ORCPT
+	with ESMTP id S1752631AbaKYKk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:30 -0500
+	Tue, 25 Nov 2014 05:40:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Adel Gadllah <adel.gadllah@gmail.com>,
+Cc: Johan Hovold <johan@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 024/254] USB: quirks: enable device-qualifier quirk for yet another Elan touchscreen
-Date: Tue, 25 Nov 2014 10:36:14 +0000
-Message-Id: <1416912004-5928-25-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 022/254] USB: quirks: enable device-qualifier quirk for Elan Touchscreen
+Date: Tue, 25 Nov 2014 10:36:12 +0000
+Message-Id: <1416912004-5928-23-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,29 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adel Gadllah <adel.gadllah@gmail.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit d749947561af5996ccc076b2ffcc5f48b1be5d74 upstream.
+commit c68929f75dfcb6354918862b91b5778585de1fa5 upstream.
 
-Yet another device affected by this.
+Enable device-qualifier quirk for Elan Touchscreen, which often fails to
+handle requests for the device_descriptor.
 
-Tested-by: Kevin Fenzi <kevin@scrye.com>
-Signed-off-by: Adel Gadllah <adel.gadllah@gmail.com>
+Note that the device sometimes do respond properly with a Request Error
+(three times as USB core retries), but usually fails to respond at all.
+When this happens any further descriptor requests also fails, for
+example:
+
+[ 1528.688934] usb 2-7: new full-speed USB device number 4 using xhci_hcd
+[ 1530.945588] usb 2-7: unable to read config index 0 descriptor/start: -71
+[ 1530.945592] usb 2-7: can't read configurations, error -71
+
+This has been observed repeating for over a minute before eventual
+successful enumeration.
+
+Reported-by: Drew Von Spreecken <drewvs@gmail.com>
+Reported-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/core/quirks.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/core/quirks.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
-index 16b8e285ce75..c85459338991 100644
+index 5144d11d032c..41c934ffba0a 100644
 --- a/drivers/usb/core/quirks.c
 +++ b/drivers/usb/core/quirks.c
-@@ -100,6 +100,9 @@ static const struct usb_device_id usb_quirk_list[] = {
- 	{ USB_DEVICE(0x04f3, 0x009b), .driver_info =
- 			USB_QUIRK_DEVICE_QUALIFIER },
+@@ -93,6 +93,10 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	{ USB_DEVICE(0x04e8, 0x6601), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
  
-+	{ USB_DEVICE(0x04f3, 0x016f), .driver_info =
++	/* Elan Touchscreen */
++	{ USB_DEVICE(0x04f3, 0x0089), .driver_info =
 +			USB_QUIRK_DEVICE_QUALIFIER },
 +
  	/* Roland SC-8820 */
