@@ -1,101 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672AbaKYTih (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 14:38:37 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38391 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaKYTif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 14:38:35 -0500
-Date: Tue, 25 Nov 2014 19:36:23 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Ben Zhang <benzh@chromium.org>,
-        alsa-devel <alsa-devel@alsa-project.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
-        Oder Chiou <oder_chiou@realtek.com>,
-        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
-        flove@realtek.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Message-ID: <20141125193623.GL7712@sirena.org.uk>
-References: <1416034608-24238-1-git-send-email-benzh@chromium.org>
- <CACxGe6stjCvaQZkh=hFcF-56v5qJVar11jRZz0PRSd2wz6EUyA@mail.gmail.com>
- <5474A78C.7030805@linux.intel.com>
- <20141125172120.GI7712@sirena.org.uk>
- <5474CB5D.9050807@linux.intel.com>
- <20141125184304.GK7712@sirena.org.uk>
- <5474D35A.3000601@linux.intel.com>
+	id S1751876AbaKYTim (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 14:38:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35034 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751403AbaKYTij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 14:38:39 -0500
+Date: Tue, 25 Nov 2014 16:38:21 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, acme@kernel.org,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 04/11] perf stat: Use perf_evsel__read_cb in read_counter
+Message-ID: <20141125183821.GD2442@redhat.com>
+References: <1416562275-12404-1-git-send-email-jolsa@kernel.org>
+ <1416562275-12404-5-git-send-email-jolsa@kernel.org>
+ <20141124203533.GB12236@redhat.com>
+ <20141125093633.GC30861@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="njUEgrJvs9ryr/H/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5474D35A.3000601@linux.intel.com>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20141125093633.GC30861@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Tue, Nov 25, 2014 at 10:36:33AM +0100, Jiri Olsa escreveu:
+> On Mon, Nov 24, 2014 at 06:35:33PM -0200, Arnaldo Carvalho de Melo wrote:
+> > Em Fri, Nov 21, 2014 at 10:31:08AM +0100, Jiri Olsa escreveu:
+> > > Replacing __perf_evsel__read_on_cpu function with perf_evsel__read_cb
+> > > function. The read_cb callback will be used later for global aggregation
+> > > counter values as well.
+> > 
+> > But the changeset makes it look like there are no changes made... Can
+> > you elaborate here?
+> 
+> well the patch change the 'read_counter' function to use the
+> perf_evsel__read_cb instead of __perf_evsel__read_on_cpu
 
---njUEgrJvs9ryr/H/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That part is ok with me, matches what the subject states it does. The
+part I thought was out of place is the SNIP part ;-)
+ 
+> SNIP
 
-On Tue, Nov 25, 2014 at 11:07:06AM -0800, Darren Hart wrote:
-> On 11/25/14 10:43, Mark Brown wrote:
+This one:
 
-> > Link from where - do we want to talk to the ACPI/UEFI forum and=20
-> > figure out some kind of fast track process for them to add an
-> > "it's already covered by DT, see here" entry to their database for=20
-> > example?  We also ought to work out how to make sure ACPI IDs are=20
-> > registered there as well, should be possible to have something=20
-> > simple as part of that.
 
-> This is a current topic with the ACPI working group. We have the
-> following document:
+> +static int read_cb(struct perf_evsel *evsel, int cpu, int thread __maybe_unused,
+> +                struct perf_counts_values *count)
+> +{
+> +     switch (aggr_mode) {
+> +     case AGGR_CORE:
+> +     case AGGR_SOCKET:
+> +     case AGGR_NONE:
+> +             perf_evsel__compute_deltas(evsel, cpu, count);
+> +             perf_counts_values__scale(count, scale, NULL);
+> +             evsel->counts->cpu[cpu] = *count;
+> +             update_shadow_stats(evsel, count->values);
+> +             break;
+> +     case AGGR_GLOBAL:
+> +     default:
+> +             break;
+> +     }
+> +
+> +     return 0;
 
-> http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-=
-UUID.pdf
+While the original code did a update_shadow_stats(...), the code that replaces
+it calls perf_evsel__compute_deltas(), etc in addition to updating the shadow
+stats.
 
-> I don't know if we want to have a list of them here, or if a separate
-> document is needed. The important point is that it is independent from
+Ok, I see, __perf_evsel__read_on_cpu() does that... my bad, will re-read it
+with this in mind, but even then, now we have to make sure
+perf_evsel__alloc_counts() was called before this, and also the original code
+did it for all AGGR_ modes, will check.
 
-Seems to me like some indirection is going to be better rather than
-having one big document if there's widespread adoption, avoids lots of
-document churn.
-
-> the ACPI specification itself so that it can be updated out of band
-> with the specification, and not be subject to rather plodding pace
-> that would imply.
-
-> Rafael, I've missed several of these meetings unfortunately, and I'm
-> not sure if we've closed on this point. Do you know?
-
-OK, I'll see if any of the people at work have been following as well.
-For now continuing to just document everything as DT bindings in the way
-we are already seems like a sensible interim approach.
-
---njUEgrJvs9ryr/H/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUdNo2AAoJECTWi3JdVIfQuOQH/RuH5sr6dm5AAM46nLbtIvMo
-f284D1KELcNyQqxn+LFv5+vqwad2QUf02jFyhQKKSzBO5y+aaRwTPsR/HflkGPIT
-OR9qQAAsRqPuUhzn3f3s+bHH+jT+xpEASYDDSOTg07ywTFkxX0Zzn5FrR8j88vMq
-75le5PaLkmtuHemzhAe5EhF00LWHbByeB7zRlMSa9B4MZ1fEStIZWZHv2Z3oiuNg
-kwTMaJgh6Y+TTuXtuNRgBJUSYKHnaUVm8QFdEH3tApM7NjPZNacQ3uZ/UFPIpGvS
-9nZhsSKj/6zxprbL6TXsBefFeNaNz+dPnKhAv01m1j4/gohqL8AZUxCH33og0zQ=
-=XVsz
------END PGP SIGNATURE-----
-
---njUEgrJvs9ryr/H/--
+- Arnaldo
+ 
+> > > +
+> > >  /*
+> > >   * Read out the results of a single counter:
+> > >   * aggregate counts across CPUs in system-wide mode
+> > > @@ -424,16 +444,11 @@ static int read_counter_aggr(struct perf_evsel *counter)
+> > >   */
+> > >  static int read_counter(struct perf_evsel *counter)
+> > >  {
+> > > -	u64 *count;
+> > >  	int cpu;
+> > >  
+> > >  	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
+> > > -		if (__perf_evsel__read_on_cpu(counter, cpu, 0, scale) < 0)
+> > > +		if (perf_evsel__read_cb(counter, cpu, 0, read_cb))
+> 
+> right here ^^^
+> 
+> > >  			return -1;
+> > > -
+> > > -		count = counter->counts->cpu[cpu].values;
+> > > -
+> > > -		update_shadow_stats(counter, count);
+> > >  	}
+> > >  
+> > >  	return 0;
+> > > -- 
+> > > 1.9.3
