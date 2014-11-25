@@ -1,123 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751051AbaKYPEY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:04:24 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:60558 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750782AbaKYPEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:04:23 -0500
-Date: Tue, 25 Nov 2014 13:04:16 -0200
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, LMML <linux-media@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH] media: exynos-gsc: fix build warning
-Message-ID: <20141125130416.457e48b0@recife.lan>
-In-Reply-To: <1416308268-22957-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1416308268-22957-1-git-send-email-prabhakar.csengg@gmail.com>
-Organization: Samsung
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1750947AbaKYPGl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:06:41 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:47452 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812AbaKYPGj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 10:06:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Reply-To: cw00.choi@samsung.com
+In-Reply-To: <20141124100435.GA4241@x1>
+References: <1416301183-10478-1-git-send-email-cw00.choi@samsung.com>
+	<1416301183-10478-4-git-send-email-cw00.choi@samsung.com>
+	<20141118215926.25314.90810@quantum>
+	<20141119164310.GH1875@x1>
+	<5472F3C2.4030907@samsung.com>
+	<20141124100435.GA4241@x1>
+Date: Wed, 26 Nov 2014 00:06:38 +0900
+Message-ID: <CAGTfZH0GFV5m3Cu3dgpxzv-e6kZiBBpSteSffgaZUVQn9HEJXg@mail.gmail.com>
+Subject: Re: [PATCHv2 3/5] clk: s2mps11: Add the support for S2MPS13 PMIC clock
+From: Chanwoo Choi <cwchoi00@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mike Turquette <mturquette@linaro.org>, Mark Brown <broonie@kernel.org>,
+        a.zummo@towertech.it, Liam Girdwood <lgirdwood@gmail.com>,
+        sbkim73@samsung.com, Samuel Ortiz <sameo@linux.intel.com>,
+        geunsik.lim@samsung.com, inki.dae@samsung.com,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        =?UTF-8?Q?Krzysztof_Koz=C5=82owski?= <k.kozlowski@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        devicetree <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 18 Nov 2014 10:57:48 +0000
-"Lad, Prabhakar" <prabhakar.csengg@gmail.com> escreveu:
+Dear Lee,
 
-> this patch fixes following build warning:
-> 
-> gsc-core.c:350:17: warning: 'low_plane' may be used uninitialized
-> gsc-core.c:371:31: warning: 'high_plane' may be used uninitialized
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->  drivers/media/platform/exynos-gsc/gsc-core.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/media/platform/exynos-gsc/gsc-core.c b/drivers/media/platform/exynos-gsc/gsc-core.c
-> index 91d226b..6c71b17 100644
-> --- a/drivers/media/platform/exynos-gsc/gsc-core.c
-> +++ b/drivers/media/platform/exynos-gsc/gsc-core.c
-> @@ -347,8 +347,8 @@ void gsc_set_prefbuf(struct gsc_dev *gsc, struct gsc_frame *frm)
->  		s_chk_addr = frm->addr.cb;
->  		s_chk_len = frm->payload[1];
->  	} else if (frm->fmt->num_planes == 3) {
-> -		u32 low_addr, low_plane, mid_addr, mid_plane;
-> -		u32 high_addr, high_plane;
-> +		u32 low_addr, low_plane = 0, mid_addr, mid_plane;
-> +		u32 high_addr, high_plane = 0;
->  		u32 t_min, t_max;
->  
->  		t_min = min3(frm->addr.y, frm->addr.cb, frm->addr.cr);
+Could you pick these patchset without RTC patch?
+I'll re-send etc patch separately.
 
-Actually, this just hides the error, without fixing.
+Best Regards,
+Chanwoo Choi
 
-If the address is not found, a real error occurs, and the address
-is also invalid.
-
-So, I think that the enclosed patch will be doing a better job fixing it.
-
-Still, the entire code seems mostly useless on my eyes, as this function
-seems to be used only for debugging purposes, and errors there aren't
-actually handled properly.
-
-
-[PATCH] [media] exynos-gsc: fix build warning
-
-Fixes following build warnings:
-
-gsc-core.c:350:17: warning: 'low_plane' may be used uninitialized
-gsc-core.c:371:31: warning: 'high_plane' may be used uninitialized
-
-Reported-by: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-
-diff --git a/drivers/media/platform/exynos-gsc/gsc-core.c b/drivers/media/platform/exynos-gsc/gsc-core.c
-index 91d226b8fe5c..3062e9fac6da 100644
---- a/drivers/media/platform/exynos-gsc/gsc-core.c
-+++ b/drivers/media/platform/exynos-gsc/gsc-core.c
-@@ -319,21 +319,22 @@ int gsc_enum_fmt_mplane(struct v4l2_fmtdesc *f)
- 	return 0;
- }
- 
--static u32 get_plane_info(struct gsc_frame *frm, u32 addr, u32 *index)
-+static int get_plane_info(struct gsc_frame *frm, u32 addr, u32 *index, u32 *ret_addr)
- {
- 	if (frm->addr.y == addr) {
- 		*index = 0;
--		return frm->addr.y;
-+		*ret_addr = frm->addr.y;
- 	} else if (frm->addr.cb == addr) {
- 		*index = 1;
--		return frm->addr.cb;
-+		*ret_addr = frm->addr.cb;
- 	} else if (frm->addr.cr == addr) {
- 		*index = 2;
--		return frm->addr.cr;
-+		*ret_addr = frm->addr.cr;
- 	} else {
- 		pr_err("Plane address is wrong");
- 		return -EINVAL;
- 	}
-+	return 0;
- }
- 
- void gsc_set_prefbuf(struct gsc_dev *gsc, struct gsc_frame *frm)
-@@ -352,9 +353,11 @@ void gsc_set_prefbuf(struct gsc_dev *gsc, struct gsc_frame *frm)
- 		u32 t_min, t_max;
- 
- 		t_min = min3(frm->addr.y, frm->addr.cb, frm->addr.cr);
--		low_addr = get_plane_info(frm, t_min, &low_plane);
-+		if (get_plane_info(frm, t_min, &low_plane, &low_addr))
-+			return;
- 		t_max = max3(frm->addr.y, frm->addr.cb, frm->addr.cr);
--		high_addr = get_plane_info(frm, t_max, &high_plane);
-+		if (get_plane_info(frm, t_max, &high_plane, &high_addr))
-+			return;
- 
- 		mid_plane = 3 - (low_plane + high_plane);
- 		if (mid_plane == 0)
+On Mon, Nov 24, 2014 at 7:04 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>> Could you please apply this patchset on your tree
+>> or Do we wait the Ack from RTC mainatiner for patch 4?
+>
+> We still need an Ack from Alessandro.
+>
+>> On 11/20/2014 01:43 AM, Lee Jones wrote:
+>> > On Tue, 18 Nov 2014, Mike Turquette wrote:
+>> >
+>> >> Quoting Chanwoo Choi (2014-11-18 00:59:41)
+>> >>> This patch adds the support for S2MPS13 PMIC clock which is same with existing
+>> >>> S2MPS14 RTC IP. But, S2MPS13 uses all of clocks (32khz_{ap|bt|cp}).
+>> >>>
+>> >>> Cc: Mike Turquette <mturquette@linaro.org>
+>> >>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> >>> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>> >>
+>> >> Applied to clk-next.
+>> >
+>> > I'm pretty sure you can't do that.  You have a dependency on
+>> > linux/mfd/samsung/s2mps13.h, which is satisfied in one of the earlier
+>> > patches in the set.  If you'd care to just provide an Ack for this
+>> > patch, I can send you a pull-request with the decencies met.
+>> >
+>> >>> ---
+>> >>>  drivers/clk/clk-s2mps11.c | 24 ++++++++++++++++++++++++
+>> >>>  1 file changed, 24 insertions(+)
+>> >>>
+>> >>> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
+>> >>> index b7797fb..7bb13af 100644
+>> >>> --- a/drivers/clk/clk-s2mps11.c
+>> >>> +++ b/drivers/clk/clk-s2mps11.c
+>> >>> @@ -23,6 +23,7 @@
+>> >>>  #include <linux/clk-provider.h>
+>> >>>  #include <linux/platform_device.h>
+>> >>>  #include <linux/mfd/samsung/s2mps11.h>
+>> >>> +#include <linux/mfd/samsung/s2mps13.h>
+>> >>>  #include <linux/mfd/samsung/s2mps14.h>
+>> >>>  #include <linux/mfd/samsung/s5m8767.h>
+>> >>>  #include <linux/mfd/samsung/core.h>
+>> >>> @@ -120,6 +121,24 @@ static struct clk_init_data s2mps11_clks_init[S2MPS11_CLKS_NUM] = {
+>> >>>         },
+>> >>>  };
+>> >>>
+>> >>> +static struct clk_init_data s2mps13_clks_init[S2MPS11_CLKS_NUM] = {
+>> >>> +       [S2MPS11_CLK_AP] = {
+>> >>> +               .name = "s2mps13_ap",
+>> >>> +               .ops = &s2mps11_clk_ops,
+>> >>> +               .flags = CLK_IS_ROOT,
+>> >>> +       },
+>> >>> +       [S2MPS11_CLK_CP] = {
+>> >>> +               .name = "s2mps13_cp",
+>> >>> +               .ops = &s2mps11_clk_ops,
+>> >>> +               .flags = CLK_IS_ROOT,
+>> >>> +       },
+>> >>> +       [S2MPS11_CLK_BT] = {
+>> >>> +               .name = "s2mps13_bt",
+>> >>> +               .ops = &s2mps11_clk_ops,
+>> >>> +               .flags = CLK_IS_ROOT,
+>> >>> +       },
+>> >>> +};
+>> >>> +
+>> >>>  static struct clk_init_data s2mps14_clks_init[S2MPS11_CLKS_NUM] = {
+>> >>>         [S2MPS11_CLK_AP] = {
+>> >>>                 .name = "s2mps14_ap",
+>> >>> @@ -184,6 +203,10 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+>> >>>                 s2mps11_reg = S2MPS11_REG_RTC_CTRL;
+>> >>>                 clks_init = s2mps11_clks_init;
+>> >>>                 break;
+>> >>> +       case S2MPS13X:
+>> >>> +               s2mps11_reg = S2MPS13_REG_RTCCTRL;
+>> >>> +               clks_init = s2mps13_clks_init;
+>> >>> +               break;
+>> >>>         case S2MPS14X:
+>> >>>                 s2mps11_reg = S2MPS14_REG_RTCCTRL;
+>> >>>                 clks_init = s2mps14_clks_init;
+>> >>> @@ -279,6 +302,7 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
+>> >>>
+>> >>>  static const struct platform_device_id s2mps11_clk_id[] = {
+>> >>>         { "s2mps11-clk", S2MPS11X},
+>> >>> +       { "s2mps13-clk", S2MPS13X},
+>> >>>         { "s2mps14-clk", S2MPS14X},
+>> >>>         { "s5m8767-clk", S5M8767X},
+>> >>>         { },
+>> >
+>>
+>
+> --
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
