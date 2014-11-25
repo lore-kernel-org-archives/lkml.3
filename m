@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898AbaKYKky (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:40:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58173 "EHLO
+	id S1756009AbaKYLv3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:51:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58214 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719AbaKYKkr (ORCPT
+	with ESMTP id S1752809AbaKYKky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:47 -0500
+	Tue, 25 Nov 2014 05:40:54 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <johan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Ben Skeggs <bskeggs@redhat.com>, Sven Joachim <svenjoac@gmx.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 043/254] USB: cdc-acm: add quirk for control-line state requests
-Date: Tue, 25 Nov 2014 10:36:33 +0000
-Message-Id: <1416912004-5928-44-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 050/254] drm/nouveau: make sure display hardware is reinitialised on runtime resume
+Date: Tue, 25 Nov 2014 10:36:40 +0000
+Message-Id: <1416912004-5928-51-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,89 +27,227 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit 2a8cdfde9237c4e1bd7c2e68c415b006491d23cc upstream.
+commit 6fbb702e27d78ad2458df048b58cca3454bc0965 upstream.
 
-Add new quirk for devices that cannot handle control-line state
-requests.
+Linus commit 05c63c2ff23a80b654d6c088ac3ba21628db0173 modified the
+runtime suspend/resume paths to skip over display-related tasks to
+avoid locking issues on resume.
 
-Note that we currently send these requests to all devices, regardless of
-whether they claim to support it, but that errors are only logged if
-support is claimed.
+Unfortunately, this resulted in the display hardware being left in
+a partially initialised state, preventing subsequent modesets from
+completing.
 
-Since commit 0943d8ead30e ("USB: cdc-acm: use tty-port dtr_rts"), which
-only changed the timings for these requests slightly, this has been
-reported to cause occasional firmware crashes on Simtec Electronics
-Entropy Key devices after re-enumeration. Enable the quirk for this
-device.
+This commit unifies the (many) suspend/resume paths, bringing back
+display (and fbcon) handling in the runtime paths.
 
-Reported-by: Nix <nix@esperi.org.uk>
-Tested-by: Nix <nix@esperi.org.uk>
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Cc: Sven Joachim <svenjoac@gmx.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/class/cdc-acm.c | 14 ++++++++++++--
- drivers/usb/class/cdc-acm.h |  2 ++
- 2 files changed, 14 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_display.c | 23 +++++++-------
+ drivers/gpu/drm/nouveau/nouveau_display.h |  5 ++-
+ drivers/gpu/drm/nouveau/nouveau_drm.c     | 51 ++++++++-----------------------
+ 3 files changed, 26 insertions(+), 53 deletions(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index c14814fb1e75..7daaef192c28 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -145,8 +145,15 @@ static int acm_ctrl_msg(struct acm *acm, int request, int value,
- /* devices aren't required to support these requests.
-  * the cdc acm descriptor tells whether they do...
-  */
--#define acm_set_control(acm, control) \
--	acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE, control, NULL, 0)
-+static inline int acm_set_control(struct acm *acm, int control)
-+{
-+	if (acm->quirks & QUIRK_CONTROL_LINE_STATE)
-+		return -EOPNOTSUPP;
-+
-+	return acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE,
-+			control, NULL, 0);
-+}
-+
- #define acm_set_line(acm, line) \
- 	acm_ctrl_msg(acm, USB_CDC_REQ_SET_LINE_CODING, 0, line, sizeof *(line))
- #define acm_send_break(acm, ms) \
-@@ -1315,6 +1322,7 @@ made_compressed_probe:
- 	tty_port_init(&acm->port);
- 	acm->port.ops = &acm_port_ops;
- 	init_usb_anchor(&acm->delayed);
-+	acm->quirks = quirks;
+diff --git a/drivers/gpu/drm/nouveau/nouveau_display.c b/drivers/gpu/drm/nouveau/nouveau_display.c
+index dd469dbeaae1..9d44068e7061 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_display.c
++++ b/drivers/gpu/drm/nouveau/nouveau_display.c
+@@ -565,14 +565,12 @@ nouveau_display_destroy(struct drm_device *dev)
+ }
  
- 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
- 	if (!buf) {
-@@ -1682,6 +1690,8 @@ static const struct usb_device_id acm_ids[] = {
- 	{ USB_DEVICE(0x0572, 0x1328), /* Shiro / Aztech USB MODEM UM-3100 */
- 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
- 	},
-+	{ USB_DEVICE(0x20df, 0x0001), /* Simtec Electronics Entropy Key */
-+	.driver_info = QUIRK_CONTROL_LINE_STATE, },
- 	{ USB_DEVICE(0x2184, 0x001c) },	/* GW Instek AFG-2225 */
- 	{ USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
- 	},
-diff --git a/drivers/usb/class/cdc-acm.h b/drivers/usb/class/cdc-acm.h
-index fc75651afe1c..d3251ebd09e2 100644
---- a/drivers/usb/class/cdc-acm.h
-+++ b/drivers/usb/class/cdc-acm.h
-@@ -121,6 +121,7 @@ struct acm {
- 	unsigned int throttle_req:1;			/* throttle requested */
- 	u8 bInterval;
- 	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
-+	unsigned long quirks;
- };
+ int
+-nouveau_display_suspend(struct drm_device *dev)
++nouveau_display_suspend(struct drm_device *dev, bool runtime)
+ {
+-	struct nouveau_drm *drm = nouveau_drm(dev);
+ 	struct drm_crtc *crtc;
  
- #define CDC_DATA_INTERFACE_TYPE	0x0a
-@@ -132,3 +133,4 @@ struct acm {
- #define NOT_A_MODEM			BIT(3)
- #define NO_DATA_INTERFACE		BIT(4)
- #define IGNORE_DEVICE			BIT(5)
-+#define QUIRK_CONTROL_LINE_STATE	BIT(6)
+ 	nouveau_display_fini(dev);
+ 
+-	NV_INFO(drm, "unpinning framebuffer(s)...\n");
+ 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
+ 		struct nouveau_framebuffer *nouveau_fb;
+ 
+@@ -594,12 +592,13 @@ nouveau_display_suspend(struct drm_device *dev)
+ }
+ 
+ void
+-nouveau_display_repin(struct drm_device *dev)
++nouveau_display_resume(struct drm_device *dev, bool runtime)
+ {
+ 	struct nouveau_drm *drm = nouveau_drm(dev);
+ 	struct drm_crtc *crtc;
+-	int ret;
++	int ret, head;
+ 
++	/* re-pin fb/cursors */
+ 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
+ 		struct nouveau_framebuffer *nouveau_fb;
+ 
+@@ -619,13 +618,6 @@ nouveau_display_repin(struct drm_device *dev)
+ 		if (ret)
+ 			NV_ERROR(drm, "Could not pin/map cursor.\n");
+ 	}
+-}
+-
+-void
+-nouveau_display_resume(struct drm_device *dev)
+-{
+-	struct drm_crtc *crtc;
+-	int head;
+ 
+ 	nouveau_display_init(dev);
+ 
+@@ -640,6 +632,13 @@ nouveau_display_resume(struct drm_device *dev)
+ 	for (head = 0; head < dev->mode_config.num_crtc; head++)
+ 		drm_vblank_on(dev, head);
+ 
++	/* This should ensure we don't hit a locking problem when someone
++	 * wakes us up via a connector.  We should never go into suspend
++	 * while the display is on anyways.
++	 */
++	if (runtime)
++		return;
++
+ 	drm_helper_resume_force_mode(dev);
+ 
+ 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
+diff --git a/drivers/gpu/drm/nouveau/nouveau_display.h b/drivers/gpu/drm/nouveau/nouveau_display.h
+index a71cf77e55b2..a5195a668f1d 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_display.h
++++ b/drivers/gpu/drm/nouveau/nouveau_display.h
+@@ -59,9 +59,8 @@ int  nouveau_display_create(struct drm_device *dev);
+ void nouveau_display_destroy(struct drm_device *dev);
+ int  nouveau_display_init(struct drm_device *dev);
+ void nouveau_display_fini(struct drm_device *dev);
+-int  nouveau_display_suspend(struct drm_device *dev);
+-void nouveau_display_repin(struct drm_device *dev);
+-void nouveau_display_resume(struct drm_device *dev);
++int  nouveau_display_suspend(struct drm_device *dev, bool runtime);
++void nouveau_display_resume(struct drm_device *dev, bool runtime);
+ int  nouveau_display_vblank_enable(struct drm_device *, int);
+ void nouveau_display_vblank_disable(struct drm_device *, int);
+ int  nouveau_display_scanoutpos(struct drm_device *, int, unsigned int,
+diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
+index 594c3f54102e..0f7addae60d7 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_drm.c
++++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
+@@ -516,9 +516,11 @@ nouveau_do_suspend(struct drm_device *dev, bool runtime)
+ 	struct nouveau_cli *cli;
+ 	int ret;
+ 
+-	if (dev->mode_config.num_crtc && !runtime) {
++	if (dev->mode_config.num_crtc) {
++		NV_INFO(drm, "suspending console...\n");
++		nouveau_fbcon_set_suspend(dev, 1);
+ 		NV_INFO(drm, "suspending display...\n");
+-		ret = nouveau_display_suspend(dev);
++		ret = nouveau_display_suspend(dev, runtime);
+ 		if (ret)
+ 			return ret;
+ 	}
+@@ -572,7 +574,7 @@ fail_client:
+ fail_display:
+ 	if (dev->mode_config.num_crtc) {
+ 		NV_INFO(drm, "resuming display...\n");
+-		nouveau_display_resume(dev);
++		nouveau_display_resume(dev, runtime);
+ 	}
+ 	return ret;
+ }
+@@ -587,9 +589,6 @@ int nouveau_pmops_suspend(struct device *dev)
+ 	    drm_dev->switch_power_state == DRM_SWITCH_POWER_DYNAMIC_OFF)
+ 		return 0;
+ 
+-	if (drm_dev->mode_config.num_crtc)
+-		nouveau_fbcon_set_suspend(drm_dev, 1);
+-
+ 	ret = nouveau_do_suspend(drm_dev, false);
+ 	if (ret)
+ 		return ret;
+@@ -602,7 +601,7 @@ int nouveau_pmops_suspend(struct device *dev)
+ }
+ 
+ static int
+-nouveau_do_resume(struct drm_device *dev)
++nouveau_do_resume(struct drm_device *dev, bool runtime)
+ {
+ 	struct nouveau_drm *drm = nouveau_drm(dev);
+ 	struct nouveau_cli *cli;
+@@ -627,7 +626,9 @@ nouveau_do_resume(struct drm_device *dev)
+ 
+ 	if (dev->mode_config.num_crtc) {
+ 		NV_INFO(drm, "resuming display...\n");
+-		nouveau_display_repin(dev);
++		nouveau_display_resume(dev, runtime);
++		NV_INFO(drm, "resuming console...\n");
++		nouveau_fbcon_set_suspend(dev, 0);
+ 	}
+ 
+ 	return 0;
+@@ -650,47 +651,21 @@ int nouveau_pmops_resume(struct device *dev)
+ 		return ret;
+ 	pci_set_master(pdev);
+ 
+-	ret = nouveau_do_resume(drm_dev);
+-	if (ret)
+-		return ret;
+-
+-	if (drm_dev->mode_config.num_crtc) {
+-		nouveau_display_resume(drm_dev);
+-		nouveau_fbcon_set_suspend(drm_dev, 0);
+-	}
+-
+-	return 0;
++	return nouveau_do_resume(drm_dev, false);
+ }
+ 
+ static int nouveau_pmops_freeze(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+ 	struct drm_device *drm_dev = pci_get_drvdata(pdev);
+-	int ret;
+-
+-	if (drm_dev->mode_config.num_crtc)
+-		nouveau_fbcon_set_suspend(drm_dev, 1);
+-
+-	ret = nouveau_do_suspend(drm_dev, false);
+-	return ret;
++	return nouveau_do_suspend(drm_dev, false);
+ }
+ 
+ static int nouveau_pmops_thaw(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+ 	struct drm_device *drm_dev = pci_get_drvdata(pdev);
+-	int ret;
+-
+-	ret = nouveau_do_resume(drm_dev);
+-	if (ret)
+-		return ret;
+-
+-	if (drm_dev->mode_config.num_crtc) {
+-		nouveau_display_resume(drm_dev);
+-		nouveau_fbcon_set_suspend(drm_dev, 0);
+-	}
+-
+-	return 0;
++	return nouveau_do_resume(drm_dev, false);
+ }
+ 
+ 
+@@ -934,7 +909,7 @@ static int nouveau_pmops_runtime_resume(struct device *dev)
+ 		return ret;
+ 	pci_set_master(pdev);
+ 
+-	ret = nouveau_do_resume(drm_dev);
++	ret = nouveau_do_resume(drm_dev, true);
+ 	drm_kms_helper_poll_enable(drm_dev);
+ 	/* do magic */
+ 	nv_mask(device, 0x88488, (1 << 25), (1 << 25));
 -- 
 2.1.0
 
