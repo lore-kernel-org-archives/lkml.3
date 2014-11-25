@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751113AbaKYP5Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:57:16 -0500
-Received: from mout.web.de ([212.227.15.3]:55240 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821AbaKYP5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:57:15 -0500
-Message-ID: <5474A6CF.1040000@users.sourceforge.net>
-Date: Tue, 25 Nov 2014 16:57:03 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751348AbaKYP57 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:57:59 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:42882 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726AbaKYP55 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 10:57:57 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Shigekatsu Tateno <shigekatsu.tateno@atmel.com>,
-        devel@driverdev.osuosl.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] staging: ozwpan: Deletion of unnecessary checks before
- the function call "oz_free_urb_link"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:SKiE8NVV0wDpSvJSD9cJ4yhr7Wy7epRj4SuDwxfaWiWefCVohY3
- rSXungew8Eq4+D3+FaBilT94zVT23jhlYlncWqtl0A2QmA2Y/X/2NcHPdWzRoFV4pZB7A6C
- S9wJ6kB5flH/nDYj4+JGywRnf52nDGWXbuaiMGY07ZjRbY4UiP0VvDTO0xgqUACnPIBQq7Q
- ytcbTnpZ3JiNsmvBFc5MA==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20141125145410.GD19910@localhost>
+References: <1416918506-9366-1-git-send-email-romain.perier@gmail.com>
+	<1416918506-9366-2-git-send-email-romain.perier@gmail.com>
+	<20141125144007.9904BC44343@trevor.secretlab.ca>
+	<20141125145410.GD19910@localhost>
+Date: Tue, 25 Nov 2014 16:57:56 +0100
+Message-ID: <CABgxDoKUecAd00X0znkGiQncF4MwnLAM4BFV2AV_oMPF=4G7UA@mail.gmail.com>
+Subject: Re: [PATCH v5 1/2] of: Rename "poweroff-source" property to "system-power-controller"
+From: Romain Perier <romain.perier@gmail.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
+        robh <robh@kernel.org>, devicetree <devicetree@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Felipe Balbi <balbi@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Tue, 25 Nov 2014 16:51:08 +0100
+Thanks for your feedbacks.  I think that Mark will probably wait until
+there are more reviews on this serie. (this is exactly what he asked
+for the previous one)
 
-The oz_free_urb_link() function tests whether its argument is NULL
-and then returns immediately. Thus the test around the call is not needed.
-
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/staging/ozwpan/ozhcd.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
-index 30bd928..c9b6d98 100644
---- a/drivers/staging/ozwpan/ozhcd.c
-+++ b/drivers/staging/ozwpan/ozhcd.c
-@@ -411,8 +411,7 @@ static void oz_complete_urb(struct usb_hcd *hcd, struct urb *urb,
- 	}
- 	spin_lock(&g_tasklet_lock);
- 	spin_unlock_irqrestore(&g_tasklet_lock, irq_state);
--	if (cancel_urbl)
--		oz_free_urb_link(cancel_urbl);
-+	oz_free_urb_link(cancel_urbl);
- }
- 
- /*
-@@ -581,8 +580,7 @@ static int oz_dequeue_ep_urb(struct oz_port *port, u8 ep_addr, int in_dir,
- 		}
- 	}
- 	spin_unlock_bh(&port->ozhcd->hcd_lock);
--	if (urbl)
--		oz_free_urb_link(urbl);
-+	oz_free_urb_link(urbl);
- 	return urbl ? 0 : -EIDRM;
- }
- 
--- 
-2.1.3
-
+2014-11-25 15:54 GMT+01:00 Johan Hovold <johan@kernel.org>:
+> On Tue, Nov 25, 2014 at 02:40:07PM +0000, Grant Likely wrote:
+>> On Tue, 25 Nov 2014 12:28:25 +0000
+>> , Romain Perier <romain.perier@gmail.com>
+>>  wrote:
+>> > It reverts commit a4b4e0461ec5 ("of: Add standard property for poweroff capability").
+>> > As discussed on the mailing list, it makes more sense to rename back to the
+>> > old established property name, without the vendor prefix. Problem being that
+>> > the word "source" usually tends to be used for inputs and that is out of control
+>> > of the OS. The poweroff capability is an output which simply turns the
+>> > system-power off. Also, this property might be used by drivers which power-off
+>> > the system and power back on subsequent RTC alarms. This seems to suggest to
+>> > remove "poweroff" from the property name and to choose "system-power-controller"
+>> > as the more generic name. This patchs adds the required renaming changes and
+>> > defines an helper function which checks if this property is set.
+>> >
+>> > Signed-off-by: Romain Perier <romain.perier@gmail.com>
+>>
+>> For both patches:
+>> Acked-by: Grant Likely <grant.likely@linaro.org>
+>>
+>> Let me know if I need to take this series through my tree. Also, does it
+>> need to go into v3.18 and be backported to stable? Or just v3.19.
+>
+> It's only needed in the regulator tree for 3.19, and does not need to be
+> backported.
+>
+> We could convert the drivers (and dts) that currently use
+> "<vendor>,system-power-controller" to use the new helper (while
+> maintaining backward compatibility) after 3.19-rc1 is out.
+>
+> Johan
