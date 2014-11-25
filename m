@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636AbaKYOzD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:55:03 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:55455 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751571AbaKYOy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:54:58 -0500
-Message-ID: <54749804.8070400@ti.com>
-Date: Tue, 25 Nov 2014 16:53:56 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751673AbaKYOzR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:55:17 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:42389 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561AbaKYOzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 09:55:12 -0500
+Date: Tue, 25 Nov 2014 14:55:09 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Kanaka Juvva <kanaka.d.juvva@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v4 00/11] perf: Intel Cache QoS Monitoring support
+Message-ID: <20141125145509.GB3331@console-pimps.org>
+References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Kevin Hilman <khilman@kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robh+dt@kernel.org>,
-        "Geert Uytterhoeven" <geert@linux-m68k.org>, <ssantosh@kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com> <15074721.IbfeeI3ajE@wuerfel> <54746349.3000306@ti.com> <2301239.aDOlWg3gEs@wuerfel> <5474846C.2000308@ti.com> <20141125140440.GF3836@n2100.arm.linux.org.uk>
-In-Reply-To: <20141125140440.GF3836@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
-
-On 11/25/2014 04:04 PM, Russell King - ARM Linux wrote:
-> On Tue, Nov 25, 2014 at 03:30:20PM +0200, Grygorii Strashko wrote:
->> On 11/25/2014 02:09 PM, Arnd Bergmann wrote:
->>> It might be possible to do this implicitly if the driver calls clk_get(),
->>> basically doing clk_get() (or another call if necessary) would prevent the
->>> simple pmdomain from turning it off during suspend.
->>
->> Unfortunately, clk_get() will not work, because drivers still need to use it
->> to get functional clocks even if they are not going to control them explicitly.
->> For example, if it need to know clock's rate.
+On Fri, 14 Nov, at 09:15:01PM, Matt Fleming wrote:
+> From: Matt Fleming <matt.fleming@intel.com>
 > 
-> If you don't want a clock to be turned off, then clk_get() it, then
-> clk_prepare() it, and finally clk_enable() it.
+> This patch series adds a new PMU driver for the Intel Cache Monitoring
+> hardware feature available in Intel Xeon processors, which allows
+> monitoring of LLC occupancy on a task, group or system-wide basis.
 > 
-> Even if someone else gets it, the only time that a clock is turned off
-> is when _all_ users of it mutually agree that it can be turned off - by
-> every user disabling (and possibly unpreparing) it.
+> The first few patches modify tools/perf to handle per-package counters,
+> which necessitates discarding some values when doing per-cpu reads to
+> avoid getting duplicate data. The rest add support for the new PMU code.
 > 
-> So, if the PM domain code gets a clock, prepares and enables it, then
-> a driver gets the same clock, prepares and enables it also, it won't
-> be disabled until _both_ the PM domain code _and_ the driver disable
-> and unprepare the clock.
+> I've left a notoriously funky bit of code near the end of the series,
+> the RMID rotation code, in an attempt to simplify things. Doing the
+> rotation provides the ability to multiplex the RMIDs and basically
+> overcome the hardware limitation, but the rest of the patches work fine
+> without it. But there are a number of scenarios where being able to
+> monitor more tasks than RMIDs is extremely useful.
 > 
+> The series is based on tip/perf/core.
 
-All 100% true :)
+Any feedback on this series?
 
-But the question here is how prevent pm_clk domain (clock_ops.c) from
-getting the control on clock if this particular clock is optional from driver's
-perspective. So, only driver should control it. As opposite, all other clocks
-should be controlled by pm-domain (in case of GPD from .start/stop callbacks).
+Stephane, the original thread is here, 
 
-You can find more detailed description of problem which this patch was
-created to solve here:
-https://lkml.org/lkml/2014/11/19/225
+  https://lkml.kernel.org/r/1415999712-5850-1-git-send-email-matt@console-pimps.org
 
-Thanks for your time.
-
-regards,
--grygorii
+-- 
+Matt Fleming, Intel Open Source Technology Center
