@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbaKYJeU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 04:34:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46190 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750901AbaKYJeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 04:34:18 -0500
-Date: Tue, 25 Nov 2014 10:33:52 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, acme@kernel.org, mingo@kernel.org,
-        peterz@infradead.organton, Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <michaele@au1.ibm.com>
-Subject: Re: perf: Add support for full Intel event lists v8
-Message-ID: <20141125093352.GB30861@krava.brq.redhat.com>
-References: <1406762570-16694-1-git-send-email-andi@firstfloor.org>
- <20141124223736.GA13184@us.ibm.com>
+	id S1751973AbaKYJgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 04:36:49 -0500
+Received: from v032797.home.net.pl ([89.161.177.31]:52416 "HELO
+	v032797.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750828AbaKYJgr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 04:36:47 -0500
+Message-ID: <54744DAB.1010603@elproma.com.pl>
+Date: Tue, 25 Nov 2014 10:36:43 +0100
+From: =?UTF-8?B?SmFudXN6IFXFvHlja2k=?= <j.uzycki@elproma.com.pl>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141124223736.GA13184@us.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Alexandre Courbot <gnurou@gmail.com>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaQ==?= =?UTF-8?B?Zw==?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Subject: Re: [PATCH 2/4] gpiolib: use const parameters when possible
+References: <1360738983-22436-1-git-send-email-gnurou@gmail.com> <1360738983-22436-3-git-send-email-gnurou@gmail.com> <20141117090915.GE27002@pengutronix.de> <CAAVeFuKzP0ADix8TxC31ohb3ZmnEVmNcO5kgzhZ3DcwAhTq=-Q@mail.gmail.com> <20141119084432.GT27002@pengutronix.de> <CAAVeFuLtQoxt_D_TaRQc49Sh0FZTg=q4y5QorZ7OUK+qPE0CbQ@mail.gmail.com> <20141119090222.GU27002@pengutronix.de> <CAAVeFu+zc6tiM-SvwQ3mQmkMNdY+1+Ysi0F2eThyCjziKVwpOQ@mail.gmail.com> <20141119100954.GV27002@pengutronix.de> <CAAVeFuJ8=PdV8oiazVVcyrO3Kx4mV6GphxHCGEGX9ooMuoBWtA@mail.gmail.com>
+In-Reply-To: <CAAVeFuJ8=PdV8oiazVVcyrO3Kx4mV6GphxHCGEGX9ooMuoBWtA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 02:37:36PM -0800, Sukadev Bhattiprolu wrote:
-> Andi Kleen [andi@firstfloor.org] wrote:
-> 
-> | Since it seems the download mechanism is controversal, 
-> | I removed the downloader for now until a suitable distribution
-> | method with kernel.org can be established. This is just
-> | the rest of the perf JSON event code that should hopefully
-> | not be controversal.
-> 
-> Ingo, Jiri, Andi,
-> 
-> Can we get this patchset merged please ? It is a step forward
-> in eliminating raw event codes right ?
-> 
-> We added hundreds of events to sysfs for Power7. We don't
-> want to do the same for Power8 because this JSON file solution
-> is clearly better.
-> 
-> But we currently have a regression in functionality from Power7
-> to Power8 :-(
-> 
-> Even if 'perf download' is left out this patchset is still
-> useful IMHO. Users (specially those who currently struggle
-> with raw codes, are highly qualified and) could wget the
-> JSON files as and when needed. 
-> 
-> Being able to install the JSON files and download updates is
-> a big plus, but is something thse users can live without for
-> now.
+Hello,
 
-hi,
-I talked to Andi about this on LinuxCon and he said he works
-on that.. his current struggle was to get the ftp space IIRC
+W dniu 2014-11-25 o 08:37, Alexandre Courbot pisze:
+> On Wed, Nov 19, 2014 at 7:09 PM, Uwe Kleine-König
+> <u.kleine-koenig@pengutronix.de> wrote:
+>> Hello Alexandre,
+>>
+>> On Wed, Nov 19, 2014 at 06:07:50PM +0900, Alexandre Courbot wrote:
+>>>   On Wed, Nov 19, 2014 at 6:02 PM, Uwe Kleine-König
+>>> <u.kleine-koenig@pengutronix.de> wrote:
+>>>> I'd make gpiod_get_direction static and only use it to fill in
+>>>> /sys/kernel/debug/gpio.
+>>> That's very tempting. I see only atmel_serial.c using this function,
+>>> and there is no gpio_get_direction() declared anywhere so no user of
+>>> this either. I'm not sure what I was thinking when I decided to export
+>>> it?
+>> In next there is also drivers/tty/serial/mxs-auart.c.
+> Ok. I think we can get rid of gpiod_get_direction() if
+> serial_mctrl_gpio implements its own way to query the direction (maybe
+> using a bitmap in the mctrl_gpios and a mctrl_gpio_get_direction()
+> function that queries that map). Using gpiod_get_direction() is just
+> too unreliable.
 
-not sure whats the current status now, but I had the feeling
-it wont take long..
+good idea
 
-jirka
+>
+> Janusz, since your change for mxs-auart is in -next, would you mind
+> amending it to do this? Then we could do the same for atmel_serial and
+> remove gpiod_get_direction() from the public GPIO interface. This
+> function would do more harm than good anyway.
+
+After a discussion I prepared RFC patch set to avoid the function.
+You will find it here [1]:
+("[RFC PATCH 1/2] serial: mctrl-gpio: Add irqs helpers for input lines")
+("[RFC PATCH 2/2] serial: mxs-auart: use helpers for gpio irqs")
+and the function was moved for debug only:
+("[PATCH v3] gpio: mxs: implement get_direction callback")
+
+Affected drivers by the patch set in the next are:
+- atmel_serial
+- mxs-auart
+- clps711x (very basic usage)
+The RFC patch set removes the inconvenient function from mxs-auart as 
+example.
+I didn't prepared a patch for atmel_serial because I wait for comments about
+mctrl_gpio_is_gpio() function to differentiate if line is GPIO or native in
+enable/disable_ms() callbacks.
+I also can't test it for other devices than mxs (mx28).
+
+[1] http://www.spinics.net/lists/arm-kernel/msg378444.html
+
+best regards
+Janusz
+
