@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954AbaKYLst (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:48:49 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:34186 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251AbaKYLso (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 06:48:44 -0500
+	id S1755294AbaKYLtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:49:07 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:35656 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753581AbaKYLtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 06:49:04 -0500
+Date: Tue, 25 Nov 2014 13:48:46 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Chanho Min <chanho.min@lge.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Kirill A. Shutemov'" <kirill.shutemov@linux.intel.com>,
+        "'Hugh Dickins'" <hughd@google.com>, "'Michal Hocko'" <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        "'HyoJun Im'" <hyojun.im@lge.com>, "'Gunho Lee'" <gunho.lee@lge.com>,
+        "'Wonhong Kwon'" <wonhong.kwon@lge.com>
+Subject: Re: [PATCH] mm: add parameter to disable faultaround
+Message-ID: <20141125114846.GA10150@node.dhcp.inet.fi>
+References: <1416898318-17409-1-git-send-email-chanho.min@lge.com>
+ <20141124230502.30f9b6f0.akpm@linux-foundation.org>
+ <547465d2.0937460a.7739.fffff2baSMTPIN_ADDED_BROKEN@mx.google.com>
 MIME-Version: 1.0
-In-Reply-To: <5470A7C5.1070302@kernel.org>
-References: <1416576954-11997-1-git-send-email-gautam.vivek@samsung.com>
-	<20141121151130.GD7508@saruman>
-	<54704BF0.1000903@ti.com>
-	<5470A7C5.1070302@kernel.org>
-Date: Tue, 25 Nov 2014 17:18:43 +0530
-Message-ID: <CAFp+6iE5XJ+TGu+8TvRFd3Up-kzki3VPD4k6gPXaYbscfwnz4w@mail.gmail.com>
-Subject: Re: [PATCH 00/11] Exynos7: Adding USB 3.0 support
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Kukjin Kim <kgene@kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>, "robh+dt" <robh+dt@kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547465d2.0937460a.7739.fffff2baSMTPIN_ADDED_BROKEN@mx.google.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sylwester,
+On Tue, Nov 25, 2014 at 08:19:40PM +0900, Chanho Min wrote:
+> > > The faultaround improves the file read performance, whereas pages which
+> > > can be dropped by drop_caches are reduced. On some systems, The amount of
+> > > freeable pages under memory pressure is more important than read
+> > > performance.
+> > 
+> > The faultaround pages *are* freeable.  Perhaps you meant "free" here.
+> > 
+> > Please tell us a great deal about the problem which you are trying to
+> > solve.  What sort of system, what sort of workload, what is bad about
+> > the behaviour which you are observing, etc.
+> 
+> We are trying to solve two issues.
+> 
+> We drop page caches by writing to /proc/sys/vm/drop_caches at specific point
+> and make suspend-to-disk image. The size of this image is increased if faultaround
+> is worked.
 
+drop_caches should never be used outside debugging process. If you use it
+as part of usual workflow you're doing something wrong.
 
-On Sat, Nov 22, 2014 at 8:42 PM, Kukjin Kim <kgene@kernel.org> wrote:
-> On 11/22/14 17:40, Kishon Vijay Abraham I wrote:
->>
->> On Friday 21 November 2014 08:41 PM, Felipe Balbi wrote:
->>> On Fri, Nov 21, 2014 at 07:05:43PM +0530, Vivek Gautam wrote:
->>>> The series has dependency on
->>>> a) "[PATCH v7 0/7] Enable support for Samsung Exynos7 SoC"
->>>>    http://www.spinics.net/lists/linux-samsung-soc/msg38734.html
->>>> b) "[GIT PULL] Samsung clock changes for 3.19" - specifically the clock dt
->>>>    bindings header.
->>>>    http://comments.gmane.org/gmane.linux.kernel.samsung-soc/39142
->>>> c) "tty: serial: samsung: Clean-up selection of number of available UARTs"
->>>>    http://www.spinics.net/lists/linux-samsung-soc/msg37418.html
->>>> d) "dts, kbuild: Implement support for dtb vendor subdirs"(merged in linux-next)
->>>>    https://lkml.org/lkml/2014/10/21/654
->>>> e) "Samsung pinctrl patches for v3.19"
->>>>    http://www.spinics.net/lists/linux-samsung-soc/msg38744.html
->>>>
->>>> Tested on Exynos7-espresso board with 3.18-rc5 and above dependencies.
->>>>
->>>> Clubbing the pinctrl, clk, and usb driver changes alongwith the dt changes
->>>> together in this series only so as to avoid having 'n' number of dependencies.
->>>>
->>>> The USB driver patches in this series were part of [1] sent earlier.
->>>> [1] [PATCH v2 0/4] usb: dwc3/phy-exynos5-usbdrd: Extend support to Exynos7
->>>>     https://lkml.org/lkml/2014/10/7/191
->>>
->>> I took dwc3 driver patches.
->>
->> I took the phy patches.
->>
-> I'll take DT changes once exynos7 is landing into samsung tree :)
->
+I'm not aware about details on how suspend-to-disk works, but I don't see
+much point in saving page cache pages into suspend-to-disk image. Dirty
+pages should be write out and we can read them back after resume on first
+use. Possible exception is mlocked pages.
 
-You too may want to pick the sole clock driver patch in this series
-for 3.19 ? :-)
-"clk: exynos7: Add required clock tree for USB"
+> Under memory pressure, we want to drop many page caches as possible.
+> But, The number of dropped pages are reduced compared to non-faultaround kernel.
 
-Please let me know if the merge window is still open on your side so
-that you can
-pick this patch.
+The reason why you see more pages in page cache after drop_pages with
+faultaround enabled is that drop_pages doesn't touch mapped pages. And
+with faultaround we obviously have more pages mapped.
 
+It's not a reason to have faultaround disable. You should take a closer
+look on suspend process.
 
 -- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+ Kirill A. Shutemov
