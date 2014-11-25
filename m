@@ -1,90 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaKYKza (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:55:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59086 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037AbaKYKnX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:23 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 215/254] ip6_tunnel: Use ip6_tnl_dev_init as the ndo_init function.
-Date: Tue, 25 Nov 2014 10:39:25 +0000
-Message-Id: <1416912004-5928-216-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	id S1754241AbaKYKzw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:55:52 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59841 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750760AbaKYKz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 05:55:29 -0500
+Message-ID: <54746012.3050505@ti.com>
+Date: Tue, 25 Nov 2014 12:55:14 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
+        <trivial@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] video: fbdev-MMP: Fix typos for the word "destroy"
+References: <54736422.90409@users.sourceforge.net> <547368BB.2050401@users.sourceforge.net>
+In-Reply-To: <547368BB.2050401@users.sourceforge.net>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="iNfvWhrwnEhIOmgsVxmQUaC48RJdl7ub3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
+--iNfvWhrwnEhIOmgsVxmQUaC48RJdl7ub3
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On 24/11/14 19:19, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Mon, 24 Nov 2014 15:50:15 +0100
+>=20
+> Two mistyped words were corrected in the description for
+> the mmp_unregister_path() function.
+>=20
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> ---
+>  drivers/video/fbdev/mmp/core.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/video/fbdev/mmp/core.c b/drivers/video/fbdev/mmp/c=
+ore.c
+> index b563b92..43ed576 100644
+> --- a/drivers/video/fbdev/mmp/core.c
+> +++ b/drivers/video/fbdev/mmp/core.c
+> @@ -223,10 +223,10 @@ struct mmp_path *mmp_register_path(struct mmp_pat=
+h_info *info)
+>  EXPORT_SYMBOL_GPL(mmp_register_path);
+> =20
+>  /*
+> - * mmp_unregister_path - unregister and destory path
+> + * mmp_unregister_path - unregister and destroy path
+>   * @p: path to be destoried.
+>   *
+> - * this function registers path and destorys it.
+> + * this function registers path and destroys it.
+>   */
+>  void mmp_unregister_path(struct mmp_path *path)
+>  {
+>=20
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+Thanks, applied this and the patch 5/6 to fbdev tree.
 
-commit 6c6151daaf2d8dc2046d9926539feed5f66bf74e upstream.
+ Tomi
 
-ip6_tnl_dev_init() sets the dev->iflink via a call to
-ip6_tnl_link_config(). After that, register_netdevice()
-sets dev->iflink = -1. So we loose the iflink configuration
-for ipv6 tunnels. Fix this by using ip6_tnl_dev_init() as the
-ndo_init function. Then ip6_tnl_dev_init() is called after
-dev->iflink is set to -1 from register_netdevice().
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/ipv6/ip6_tunnel.c | 10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
 
-diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-index afa082458360..9fd04fff7fea 100644
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -272,9 +272,6 @@ static int ip6_tnl_create2(struct net_device *dev)
- 	int err;
- 
- 	t = netdev_priv(dev);
--	err = ip6_tnl_dev_init(dev);
--	if (err < 0)
--		goto out;
- 
- 	err = register_netdevice(dev);
- 	if (err < 0)
-@@ -1456,6 +1453,7 @@ ip6_tnl_change_mtu(struct net_device *dev, int new_mtu)
- 
- 
- static const struct net_device_ops ip6_tnl_netdev_ops = {
-+	.ndo_init	= ip6_tnl_dev_init,
- 	.ndo_uninit	= ip6_tnl_dev_uninit,
- 	.ndo_start_xmit = ip6_tnl_xmit,
- 	.ndo_do_ioctl	= ip6_tnl_ioctl,
-@@ -1540,16 +1538,10 @@ static int __net_init ip6_fb_tnl_dev_init(struct net_device *dev)
- 	struct ip6_tnl *t = netdev_priv(dev);
- 	struct net *net = dev_net(dev);
- 	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
--	int err = ip6_tnl_dev_init_gen(dev);
--
--	if (err)
--		return err;
- 
- 	t->parms.proto = IPPROTO_IPV6;
- 	dev_hold(dev);
- 
--	ip6_tnl_link_config(t);
--
- 	rcu_assign_pointer(ip6n->tnls_wc[0], t);
- 	return 0;
- }
--- 
-2.1.0
+--iNfvWhrwnEhIOmgsVxmQUaC48RJdl7ub3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUdGASAAoJEPo9qoy8lh71oQ4QAJW03l7JJL5NGV6nY3nMrAlX
+FrxP+x0V85vdyp4BYvYAZ+jiU1KIu8ObpgHcvbvmyU6lPjhhIcm9VTKt6/lWAA7a
+9Yr8aS0r+Xowh8z6LEBkSblMAL2VfnjsBiG/Ti6IPZgec+uD0aFGcgmi9EP597iB
+/GDyZZTn1Eb0i/Z359/kAYcrIfj6DcLNCniNbxWvk8Q9Q1Ij+UwV5CsbehgDw0pz
+4ERkEjhAQI0z2fMro1n4JEikutUuNCJb2B/J/5sfKM/l/jpTovfAETXyJqnoxZ5e
+52mz5N7yAo+Nrem/2bGGLrwuU+O/DSwYTyA+rxBUSIDLz0ZJViLjBYpP2BpA9IyA
+S794k2C92EjoybC4zFXjyLXqa2fGmQoCCqu3olwpUSoCLzh18BaqTAp48Zt1MytZ
+E12rqnGUosZREAIEJsd19Poq0JxHxrY44JkGkxa/DpCCT4SGqE5sjfH+LaT6NkOY
+mdL8W9JxcG4g5imCDLAaif+OSiCroKoriB9B8pIARdqRKTm1LFOIsVhY4PdPauxj
+3unM5DLoxN1+xfiAmc5p3FNM9ennU3OcKLVIjH2ssIKlmo8hcevg/TjglUTqVFnY
+v5wrWigjzSJEr9tb1FFoWDVNNrJREs9hyL/nG3gWh9i3sI6BEbnO4XeKMMeGlNmj
+eUq2/7QtIKmW6a1L8ibu
+=xW4g
+-----END PGP SIGNATURE-----
+
+--iNfvWhrwnEhIOmgsVxmQUaC48RJdl7ub3--
