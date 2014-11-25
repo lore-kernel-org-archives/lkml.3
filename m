@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454AbaKYIHc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 03:07:32 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:53467 "EHLO
+	id S1752482AbaKYIGB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 03:06:01 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:53447 "EHLO
 	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406AbaKYIGD (ORCPT
+	with ESMTP id S1752406AbaKYIF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 03:06:03 -0500
+	Tue, 25 Nov 2014 03:05:58 -0500
 From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
 Cc: peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
@@ -16,181 +16,80 @@ Cc: peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
         benh@kernel.crashing.org, sukadev@linux.vnet.ibm.com,
         mpe@ellerman.id.au, sam.bobroff@au1.ibm.com, kirjanov@gmail.com,
         shuahkh@osg.samsung.com
-Subject: [V5 3/7] powerpc, ptrace: Enable fpr_(get/set) for transactional memory
-Date: Tue, 25 Nov 2014 13:35:27 +0530
-Message-Id: <1416902731-22446-4-git-send-email-khandual@linux.vnet.ibm.com>
+Subject: [V5 2/7] powerpc, process: Add the function flush_tmregs_to_thread
+Date: Tue, 25 Nov 2014 13:35:26 +0530
+Message-Id: <1416902731-22446-3-git-send-email-khandual@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416902731-22446-1-git-send-email-khandual@linux.vnet.ibm.com>
 References: <1416902731-22446-1-git-send-email-khandual@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112508-0025-0000-0000-00000093E235
+x-cbid: 14112508-0025-0000-0000-00000093E21F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables the fpr_get which gets the running value of all
-the FPR registers and the fpr_set which sets the running value of
-of all the FPR registers to accommodate in transaction ptrace
-interface based requests.
+This patch creates a function flush_tmregs_to_thread which
+will then be used by subsequent patches in this series. The
+function checks for self tracing ptrace interface attempts
+while in the TM context and logs appropriate warning message.
 
 Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 ---
- arch/powerpc/kernel/ptrace.c | 103 ++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 97 insertions(+), 6 deletions(-)
+ arch/powerpc/include/asm/switch_to.h |  8 ++++++++
+ arch/powerpc/kernel/process.c        | 20 ++++++++++++++++++++
+ 2 files changed, 28 insertions(+)
 
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index f21897b..fd36b32 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -357,6 +357,33 @@ static int gpr_set(struct task_struct *target, const struct user_regset *regset,
- 	return ret;
+diff --git a/arch/powerpc/include/asm/switch_to.h b/arch/powerpc/include/asm/switch_to.h
+index 58abeda..23752a9 100644
+--- a/arch/powerpc/include/asm/switch_to.h
++++ b/arch/powerpc/include/asm/switch_to.h
+@@ -82,6 +82,14 @@ static inline void flush_spe_to_thread(struct task_struct *t)
  }
- 
-+
-+/*
-+ * fpr_get
-+ *
-+ * When the transaction is active, 'transact_fp' holds the current running
-+ * value of all FPR registers and 'fp_state' holds the last checkpointed
-+ * value of all FPR registers for the current transaction. When transaction
-+ * is not active 'fp_state' holds the current running state of all the FPR
-+ * registers. So this function which returns the current running values of
-+ * all the FPR registers, needs to know whether any transaction is active
-+ * or not.
-+ *
-+ * Userspace interface buffer layout:
-+ *
-+ * struct data {
-+ *	u64	fpr[32];
-+ *	u64	fpscr;
-+ * };
-+ *
-+ * There are two config options CONFIG_VSX and CONFIG_PPC_TRANSACTIONAL_MEM
-+ * which determines the final code in this function. All the combinations of
-+ * these two config options are possible except the one below as transactional
-+ * memory config pulls in CONFIG_VSX automatically.
-+ *
-+ *	!defined(CONFIG_VSX) && defined(CONFIG_PPC_TRANSACTIONAL_MEM)
-+ *
-+ */
- static int fpr_get(struct task_struct *target, const struct user_regset *regset,
- 		   unsigned int pos, unsigned int count,
- 		   void *kbuf, void __user *ubuf)
-@@ -367,22 +394,64 @@ static int fpr_get(struct task_struct *target, const struct user_regset *regset,
  #endif
- 	flush_fp_to_thread(target);
  
--#ifdef CONFIG_VSX
-+#if defined(CONFIG_VSX) && defined(CONFIG_PPC_TRANSACTIONAL_MEM)
-+	/* copy to local buffer then write that out */
-+	if (MSR_TM_ACTIVE(target->thread.regs->msr)) {
-+		flush_altivec_to_thread(target);
-+		flush_tmregs_to_thread(target);
-+		for (i = 0; i < 32 ; i++)
-+			buf[i] = target->thread.TS_TRANS_FPR(i);
-+		buf[32] = target->thread.transact_fp.fpscr;
-+	} else {
-+		for (i = 0; i < 32 ; i++)
-+			buf[i] = target->thread.TS_FPR(i);
-+		buf[32] = target->thread.fp_state.fpscr;
-+	}
-+	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, buf, 0, -1);
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++extern void flush_tmregs_to_thread(struct task_struct *);
++#else
++static inline void flush_tmregs_to_thread(struct task_struct *t)
++{
++}
 +#endif
 +
-+#if defined(CONFIG_VSX) && !defined(CONFIG_PPC_TRANSACTIONAL_MEM)
- 	/* copy to local buffer then write that out */
- 	for (i = 0; i < 32 ; i++)
- 		buf[i] = target->thread.TS_FPR(i);
- 	buf[32] = target->thread.fp_state.fpscr;
- 	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, buf, 0, -1);
-+#endif
+ static inline void clear_task_ebb(struct task_struct *t)
+ {
+ #ifdef CONFIG_PPC_BOOK3S_64
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index 923cd2d..0013f24 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -745,6 +745,26 @@ void restore_tm_state(struct pt_regs *regs)
+ #define __switch_to_tm(prev)
+ #endif /* CONFIG_PPC_TRANSACTIONAL_MEM */
  
--#else
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++void flush_tmregs_to_thread(struct task_struct *tsk)
++{
++	/*
++	 * Process self tracing is not yet supported through
++	 * ptrace interface. Ptrace generic code should have
++	 * prevented this from happening in the first place.
++	 * Warn once here with the message, if some how it
++	 * is attempted.
++	 */
++	WARN_ONCE(tsk == current,
++		"Not expecting ptrace on self: TM regs may be incorrect\n");
 +
-+#if !defined(CONFIG_VSX) && !defined(CONFIG_PPC_TRANSACTIONAL_MEM)
- 	BUILD_BUG_ON(offsetof(struct thread_fp_state, fpscr) !=
- 		     offsetof(struct thread_fp_state, fpr[32][0]));
--
- 	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
- 				   &target->thread.fp_state, 0, -1);
- #endif
- }
- 
-+/*
-+ * fpr_set
-+ *
-+ * When the transaction is active, 'transact_fp' holds the current running
-+ * value of all FPR registers and 'fp_state' holds the last checkpointed
-+ * value of all FPR registers for the current transaction. When transaction
-+ * is not active 'fp_state' holds the current running state of all the FPR
-+ * registers. So this function which setss the current running values of
-+ * all the FPR registers, needs to know whether any transaction is active
-+ * or not.
-+ *
-+ * Userspace interface buffer layout:
-+ *
-+ * struct data {
-+ *	u64	fpr[32];
-+ *	u64	fpscr;
-+ * };
-+ *
-+ * There are two config options CONFIG_VSX and CONFIG_PPC_TRANSACTIONAL_MEM
-+ * which determines the final code in this function. All the combinations of
-+ * these two config options are possible except the one below as transactional
-+ * memory config pulls in CONFIG_VSX automatically.
-+ *
-+ *	!defined(CONFIG_VSX) && defined(CONFIG_PPC_TRANSACTIONAL_MEM)
-+ */
- static int fpr_set(struct task_struct *target, const struct user_regset *regset,
- 		   unsigned int pos, unsigned int count,
- 		   const void *kbuf, const void __user *ubuf)
-@@ -393,7 +462,27 @@ static int fpr_set(struct task_struct *target, const struct user_regset *regset,
- #endif
- 	flush_fp_to_thread(target);
- 
--#ifdef CONFIG_VSX
-+#if defined(CONFIG_VSX) && defined(CONFIG_PPC_TRANSACTIONAL_MEM)
-+	/* copy to local buffer then write that out */
-+	i = user_regset_copyin(&pos, &count, &kbuf, &ubuf, buf, 0, -1);
-+	if (i)
-+		return i;
-+
-+	if (MSR_TM_ACTIVE(target->thread.regs->msr)) {
-+		flush_altivec_to_thread(target);
-+		flush_tmregs_to_thread(target);
-+		for (i = 0; i < 32 ; i++)
-+			target->thread.TS_TRANS_FPR(i) = buf[i];
-+		target->thread.transact_fp.fpscr = buf[32];
-+	} else {
-+		for (i = 0; i < 32 ; i++)
-+			target->thread.TS_FPR(i) = buf[i];
-+		target->thread.fp_state.fpscr = buf[32];
-+	}
-+	return 0;
++	/*
++	 * If task is not current, it should have been flushed
++	 * already to it's thread_struct during __switch_to().
++	 */
++}
 +#endif
 +
-+#if defined(CONFIG_VSX) && !defined(CONFIG_PPC_TRANSACTIONAL_MEM)
- 	/* copy to local buffer then write that out */
- 	i = user_regset_copyin(&pos, &count, &kbuf, &ubuf, buf, 0, -1);
- 	if (i)
-@@ -402,12 +491,14 @@ static int fpr_set(struct task_struct *target, const struct user_regset *regset,
- 		target->thread.TS_FPR(i) = buf[i];
- 	target->thread.fp_state.fpscr = buf[32];
- 	return 0;
--#else
-+#endif
-+
-+#if !defined(CONFIG_VSX) && !defined(CONFIG_PPC_TRANSACTIONAL_MEM)
- 	BUILD_BUG_ON(offsetof(struct thread_fp_state, fpscr) !=
- 		     offsetof(struct thread_fp_state, fpr[32][0]));
--
- 	return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
- 				  &target->thread.fp_state, 0, -1);
-+
- #endif
- }
- 
+ struct task_struct *__switch_to(struct task_struct *prev,
+ 	struct task_struct *new)
+ {
 -- 
 1.9.3
 
