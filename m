@@ -1,293 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaKYQen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:34:43 -0500
-Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:48213
-	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850AbaKYQeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:34:13 -0500
-From: =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>
-To: kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvmarm@lists.cs.columbia.edu, christoffer.dall@linaro.org,
-        marc.zyngier@arm.com, peter.maydell@linaro.org, agraf@suse.de
-Cc: jan.kiszka@siemens.com, dahi@linux.vnet.ibm.com, r65777@freescale.com,
-        bp@suse.de, pbonzini@redhat.com,
-        =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>,
-        Gleb Natapov <gleb@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 6/7] KVM: arm64: re-factor hyp.S debug register code
-Date: Tue, 25 Nov 2014 16:10:04 +0000
-Message-Id: <1416931805-23223-7-git-send-email-alex.bennee@linaro.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org>
-References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org>
+	id S1751488AbaKYQfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:35:05 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:37058 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750973AbaKYQfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 11:35:00 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Mark Yao <mark.yao@rock-chips.com>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, dianders@chromium.org,
+        marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
+        djkurtz@chromium.org, cf@rock-chips.com, xxm@rock-chips.com,
+        huangtao@rock-chips.com, kever.yang@rock-chips.com, yxj@rock-chips.com,
+        xw@rock-chips.com
+Subject: Re: [PATCH v14 0/3] Add drm driver for Rockchip Socs
+Date: Tue, 25 Nov 2014 17:38:27 +0100
+Message-ID: <23617908.6oA5uRuO3l@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com>
+References: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 127.0.0.1
-X-SA-Exim-Mail-From: alex.bennee@linaro.org
-X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a pre-cursor to sharing the code with the guest debug support.
-This replaces the big macro that fishes data out of a fixed location
-with a more general helper macro to restore a set of debug registers. It
-uses macro substitution so it can be re-used for debug control and value
-registers. It does however rely on the debug registers being 64 bit
-aligned (as they happen to be in the hyp ABI).
+Mark,
 
-Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
+Am Donnerstag, 20. November 2014, 09:46:34 schrieb Mark Yao:
+> This a series of patches is a DRM Driver for Rockchip Socs, add support
+> for vop devices. Future patches will add additional encoders/connectors,
+> such as eDP, HDMI.
+> 
+> The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+> the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+> Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+> ARM_DMA_USE_IOMMU.
 
-diff --git a/arch/arm64/kvm/hyp.S b/arch/arm64/kvm/hyp.S
-index c0bc218..b38ce3d 100644
---- a/arch/arm64/kvm/hyp.S
-+++ b/arch/arm64/kvm/hyp.S
-@@ -490,65 +490,12 @@
- 	msr	mdscr_el1,	x25
- .endm
- 
--.macro restore_debug
--	// x2: base address for cpu context
--	// x3: tmp register
--
--	mrs	x26, id_aa64dfr0_el1
--	ubfx	x24, x26, #12, #4	// Extract BRPs
--	ubfx	x25, x26, #20, #4	// Extract WRPs
--	mov	w26, #15
--	sub	w24, w26, w24		// How many BPs to skip
--	sub	w25, w26, w25		// How many WPs to skip
--
--	add	x3, x2, #CPU_SYSREG_OFFSET(DBGBCR0_EL1)
--
--	adr	x26, 1f
--	add	x26, x26, x24, lsl #2
--	br	x26
--1:
--	ldr	x20, [x3, #(15 * 8)]
--	ldr	x19, [x3, #(14 * 8)]
--	ldr	x18, [x3, #(13 * 8)]
--	ldr	x17, [x3, #(12 * 8)]
--	ldr	x16, [x3, #(11 * 8)]
--	ldr	x15, [x3, #(10 * 8)]
--	ldr	x14, [x3, #(9 * 8)]
--	ldr	x13, [x3, #(8 * 8)]
--	ldr	x12, [x3, #(7 * 8)]
--	ldr	x11, [x3, #(6 * 8)]
--	ldr	x10, [x3, #(5 * 8)]
--	ldr	x9, [x3, #(4 * 8)]
--	ldr	x8, [x3, #(3 * 8)]
--	ldr	x7, [x3, #(2 * 8)]
--	ldr	x6, [x3, #(1 * 8)]
--	ldr	x5, [x3, #(0 * 8)]
--
-+.macro setup_debug_registers type
-+        // x3: pointer to register set
-+        // x4: number of registers to copy
-+        // x5..x20/x26 trashed
- 	adr	x26, 1f
--	add	x26, x26, x24, lsl #2
--	br	x26
--1:
--	msr	dbgbcr15_el1, x20
--	msr	dbgbcr14_el1, x19
--	msr	dbgbcr13_el1, x18
--	msr	dbgbcr12_el1, x17
--	msr	dbgbcr11_el1, x16
--	msr	dbgbcr10_el1, x15
--	msr	dbgbcr9_el1, x14
--	msr	dbgbcr8_el1, x13
--	msr	dbgbcr7_el1, x12
--	msr	dbgbcr6_el1, x11
--	msr	dbgbcr5_el1, x10
--	msr	dbgbcr4_el1, x9
--	msr	dbgbcr3_el1, x8
--	msr	dbgbcr2_el1, x7
--	msr	dbgbcr1_el1, x6
--	msr	dbgbcr0_el1, x5
--
--	add	x3, x2, #CPU_SYSREG_OFFSET(DBGBVR0_EL1)
--
--	adr	x26, 1f
--	add	x26, x26, x24, lsl #2
-+	add	x26, x26, x4, lsl #2
- 	br	x26
- 1:
- 	ldr	x20, [x3, #(15 * 8)]
-@@ -569,116 +516,25 @@
- 	ldr	x5, [x3, #(0 * 8)]
- 
- 	adr	x26, 1f
--	add	x26, x26, x24, lsl #2
--	br	x26
--1:
--	msr	dbgbvr15_el1, x20
--	msr	dbgbvr14_el1, x19
--	msr	dbgbvr13_el1, x18
--	msr	dbgbvr12_el1, x17
--	msr	dbgbvr11_el1, x16
--	msr	dbgbvr10_el1, x15
--	msr	dbgbvr9_el1, x14
--	msr	dbgbvr8_el1, x13
--	msr	dbgbvr7_el1, x12
--	msr	dbgbvr6_el1, x11
--	msr	dbgbvr5_el1, x10
--	msr	dbgbvr4_el1, x9
--	msr	dbgbvr3_el1, x8
--	msr	dbgbvr2_el1, x7
--	msr	dbgbvr1_el1, x6
--	msr	dbgbvr0_el1, x5
--
--	add	x3, x2, #CPU_SYSREG_OFFSET(DBGWCR0_EL1)
--
--	adr	x26, 1f
--	add	x26, x26, x25, lsl #2
-+	add	x26, x26, x4, lsl #2
- 	br	x26
- 1:
--	ldr	x20, [x3, #(15 * 8)]
--	ldr	x19, [x3, #(14 * 8)]
--	ldr	x18, [x3, #(13 * 8)]
--	ldr	x17, [x3, #(12 * 8)]
--	ldr	x16, [x3, #(11 * 8)]
--	ldr	x15, [x3, #(10 * 8)]
--	ldr	x14, [x3, #(9 * 8)]
--	ldr	x13, [x3, #(8 * 8)]
--	ldr	x12, [x3, #(7 * 8)]
--	ldr	x11, [x3, #(6 * 8)]
--	ldr	x10, [x3, #(5 * 8)]
--	ldr	x9, [x3, #(4 * 8)]
--	ldr	x8, [x3, #(3 * 8)]
--	ldr	x7, [x3, #(2 * 8)]
--	ldr	x6, [x3, #(1 * 8)]
--	ldr	x5, [x3, #(0 * 8)]
--
--	adr	x26, 1f
--	add	x26, x26, x25, lsl #2
--	br	x26
--1:
--	msr	dbgwcr15_el1, x20
--	msr	dbgwcr14_el1, x19
--	msr	dbgwcr13_el1, x18
--	msr	dbgwcr12_el1, x17
--	msr	dbgwcr11_el1, x16
--	msr	dbgwcr10_el1, x15
--	msr	dbgwcr9_el1, x14
--	msr	dbgwcr8_el1, x13
--	msr	dbgwcr7_el1, x12
--	msr	dbgwcr6_el1, x11
--	msr	dbgwcr5_el1, x10
--	msr	dbgwcr4_el1, x9
--	msr	dbgwcr3_el1, x8
--	msr	dbgwcr2_el1, x7
--	msr	dbgwcr1_el1, x6
--	msr	dbgwcr0_el1, x5
--
--	add	x3, x2, #CPU_SYSREG_OFFSET(DBGWVR0_EL1)
--
--	adr	x26, 1f
--	add	x26, x26, x25, lsl #2
--	br	x26
--1:
--	ldr	x20, [x3, #(15 * 8)]
--	ldr	x19, [x3, #(14 * 8)]
--	ldr	x18, [x3, #(13 * 8)]
--	ldr	x17, [x3, #(12 * 8)]
--	ldr	x16, [x3, #(11 * 8)]
--	ldr	x15, [x3, #(10 * 8)]
--	ldr	x14, [x3, #(9 * 8)]
--	ldr	x13, [x3, #(8 * 8)]
--	ldr	x12, [x3, #(7 * 8)]
--	ldr	x11, [x3, #(6 * 8)]
--	ldr	x10, [x3, #(5 * 8)]
--	ldr	x9, [x3, #(4 * 8)]
--	ldr	x8, [x3, #(3 * 8)]
--	ldr	x7, [x3, #(2 * 8)]
--	ldr	x6, [x3, #(1 * 8)]
--	ldr	x5, [x3, #(0 * 8)]
--
--	adr	x26, 1f
--	add	x26, x26, x25, lsl #2
--	br	x26
--1:
--	msr	dbgwvr15_el1, x20
--	msr	dbgwvr14_el1, x19
--	msr	dbgwvr13_el1, x18
--	msr	dbgwvr12_el1, x17
--	msr	dbgwvr11_el1, x16
--	msr	dbgwvr10_el1, x15
--	msr	dbgwvr9_el1, x14
--	msr	dbgwvr8_el1, x13
--	msr	dbgwvr7_el1, x12
--	msr	dbgwvr6_el1, x11
--	msr	dbgwvr5_el1, x10
--	msr	dbgwvr4_el1, x9
--	msr	dbgwvr3_el1, x8
--	msr	dbgwvr2_el1, x7
--	msr	dbgwvr1_el1, x6
--	msr	dbgwvr0_el1, x5
--
--	ldr	x21, [x2, #CPU_SYSREG_OFFSET(MDCCINT_EL1)]
--	msr	mdccint_el1, x21
-+	msr	\type\()15_el1, x20
-+	msr	\type\()14_el1, x19
-+	msr	\type\()13_el1, x18
-+	msr	\type\()12_el1, x17
-+	msr	\type\()11_el1, x16
-+	msr	\type\()10_el1, x15
-+	msr	\type\()9_el1, x14
-+	msr	\type\()8_el1, x13
-+	msr	\type\()7_el1, x12
-+	msr	\type\()6_el1, x11
-+	msr	\type\()5_el1, x10
-+	msr	\type\()4_el1, x9
-+	msr	\type\()3_el1, x8
-+	msr	\type\()2_el1, x7
-+	msr	\type\()1_el1, x6
-+	msr	\type\()0_el1, x5
- .endm
- 
- .macro skip_32bit_state tmp, target
-@@ -929,8 +785,34 @@ __save_debug:
- 	save_debug
- 	ret
- 
-+/* Restore saved guest debug state */
- __restore_debug:
--	restore_debug
-+	// x2: base address for cpu context
-+	// x3: ptr to guest registers passed to setup_debug_registers
-+	// x5..x20/x26: trashed
-+
-+	mrs	x26, id_aa64dfr0_el1
-+	ubfx	x24, x26, #12, #4	// Extract BRPs
-+	ubfx	x25, x26, #20, #4	// Extract WRPs
-+	mov	w26, #15
-+	sub	w24, w26, w24		// How many BPs to skip
-+	sub	w25, w26, w25		// How many WPs to skip
-+
-+	mov     x4, x24
-+	add	x3, x2, #CPU_SYSREG_OFFSET(DBGBCR0_EL1)
-+	setup_debug_registers dbgbcr
-+	add	x3, x2, #CPU_SYSREG_OFFSET(DBGBVR0_EL1)
-+	setup_debug_registers dbgbvr
-+
-+	mov     x4, x25
-+	add	x3, x2, #CPU_SYSREG_OFFSET(DBGWCR0_EL1)
-+	setup_debug_registers dbgwcr
-+	add	x3, x2, #CPU_SYSREG_OFFSET(DBGWVR0_EL1)
-+	setup_debug_registers dbgwvr
-+
-+	ldr	x21, [x2, #CPU_SYSREG_OFFSET(MDCCINT_EL1)]
-+	msr	mdccint_el1, x21
-+
- 	ret
- 
- __save_fpsimd:
--- 
-2.1.3
+it looks like everybody is more or less happy with this version - in past 
+versions responses voicing concerns where quite swift.
 
+As David requested a pull request the last time, it might be time to do so, so 
+that we maybe still reach 3.19. 
+
+
+Heiko
