@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895AbaKYMPs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:15:48 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:44818 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753813AbaKYMPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 07:15:45 -0500
-X-IronPort-AV: E=Sophos;i="5.07,455,1413244800"; 
-   d="scan'208";a="196103401"
-Date: Tue, 25 Nov 2014 12:06:35 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: <david.vrabel@citrix.com>, <konrad.wilk@oracle.com>,
-        <stefano.stabellini@eu.citrix.com>, <jun.nakajima@intel.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xen.org>
-Subject: Re: [PATCH v3 1/2] xen/pci: Defer initialization of MSI ops on HVM
- guests until after x2APIC has been set up
-In-Reply-To: <1416870378-32481-2-git-send-email-boris.ostrovsky@oracle.com>
-Message-ID: <alpine.DEB.2.02.1411251205220.2675@kaball.uk.xensource.com>
-References: <1416870378-32481-1-git-send-email-boris.ostrovsky@oracle.com> <1416870378-32481-2-git-send-email-boris.ostrovsky@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754110AbaKYMQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:16:29 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:12389 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752918AbaKYMO2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 07:14:28 -0500
+Message-Id: <20141125121426.255215256@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Tue, 25 Nov 2014 07:13:56 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [for-next][PATCH 1/5] tracing/trivial: Fix typos and make an int into a bool
+References: <20141125121355.225538266@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0001-tracing-trivial-Fix-typos-and-make-an-int-into-a-boo.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014, Boris Ostrovsky wrote:
-> If the hardware supports APIC virtualization we may decide not to use pirqs
-> and instead use APIC/x2APIC directly, meaning that we don't want to set
-> x86_msi.setup_msi_irqs and x86_msi.teardown_msi_irq to Xen-specific routines.
-> However, x2APIC is not set up by the time pci_xen_hvm_init() is called so we
-> need to postpone setting these ops until later, when we know which APIC mode
-> is used.
-> 
-> (Note that currently x2APIC is never initialized on HVM guests. This may
-> change in the future)
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-I take that this is safe because no MSIs can be received at this point
-(apic_post_init), right?
+Fix up a few typos in comments and convert an int into a bool in
+update_traceon_count().
+
+Link: http://lkml.kernel.org/r/546DD445.5080108@hitachi.com
+
+Suggested-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ftrace.c          | 2 +-
+ kernel/trace/trace_functions.c | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index fa0f36bb32e9..588af40d33db 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1119,7 +1119,7 @@ static struct ftrace_ops global_ops = {
+ 
+ /*
+  * This is used by __kernel_text_address() to return true if the
+- * the address is on a dynamically allocated trampoline that would
++ * address is on a dynamically allocated trampoline that would
+  * not return true for either core_kernel_text() or
+  * is_module_text_address().
+  */
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index 973db52eb070..fcd41a166405 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -261,14 +261,14 @@ static struct tracer function_trace __tracer_data =
+ };
+ 
+ #ifdef CONFIG_DYNAMIC_FTRACE
+-static void update_traceon_count(void **data, int on)
++static void update_traceon_count(void **data, bool on)
+ {
+ 	long *count = (long *)data;
+ 	long old_count = *count;
+ 
+ 	/*
+ 	 * Tracing gets disabled (or enabled) once per count.
+-	 * This function can be called at the same time on mulitple CPUs.
++	 * This function can be called at the same time on multiple CPUs.
+ 	 * It is fine if both disable (or enable) tracing, as disabling
+ 	 * (or enabling) the second time doesn't do anything as the
+ 	 * state of the tracer is already disabled (or enabled).
+@@ -288,7 +288,7 @@ static void update_traceon_count(void **data, int on)
+ 	 * the new state is visible before changing the counter by
+ 	 * one minus the old counter. This guarantees that another CPU
+ 	 * executing this code will see the new state before seeing
+-	 * the new counter value, and would not do anthing if the new
++	 * the new counter value, and would not do anything if the new
+ 	 * counter is seen.
+ 	 *
+ 	 * Note, there is no synchronization between this and a user
+-- 
+2.1.1
 
 
-> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> ---
->  arch/x86/pci/xen.c | 15 +++++++++++++--
->  1 file changed, 13 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-> index 093f5f4..1370716 100644
-> --- a/arch/x86/pci/xen.c
-> +++ b/arch/x86/pci/xen.c
-> @@ -431,6 +431,14 @@ int __init pci_xen_init(void)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_PCI_MSI
-> +void __init xen_msi_init(void)
-> +{
-> +	x86_msi.setup_msi_irqs = xen_hvm_setup_msi_irqs;
-> +	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
-> +}
-> +#endif
-> +
->  int __init pci_xen_hvm_init(void)
->  {
->  	if (!xen_have_vector_callback || !xen_feature(XENFEAT_hvm_pirqs))
-> @@ -445,8 +453,11 @@ int __init pci_xen_hvm_init(void)
->  #endif
->  
->  #ifdef CONFIG_PCI_MSI
-> -	x86_msi.setup_msi_irqs = xen_hvm_setup_msi_irqs;
-> -	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
-> +	/*
-> +	 * We need to wait until after x2apic is initialized
-> +	 * before we can set MSI IRQ ops.
-> +	 */
-> +	x86_platform.apic_post_init = xen_msi_init;
->  #endif
->  	return 0;
->  }
-> -- 
-> 1.9.3
-> 
