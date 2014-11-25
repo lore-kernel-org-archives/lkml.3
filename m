@@ -1,125 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaKYQ22 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:28:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52532 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821AbaKYQ20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:28:26 -0500
-Message-ID: <5474ADB4.5070200@redhat.com>
-Date: Tue, 25 Nov 2014 08:26:28 -0800
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751424AbaKYQ3r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:29:47 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:19169 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816AbaKYQ3p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 11:29:45 -0500
+Message-ID: <5474AE31.8080901@oracle.com>
+Date: Tue, 25 Nov 2014 08:28:33 -0800
+From: santosh shilimkar <santosh.shilimkar@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kevin Hilman <khilman@kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mathieu.desnoyers@polymtl.ca" <mathieu.desnoyers@polymtl.ca>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "mikey@neuling.org" <mikey@neuling.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
-        "matthew.vick@intel.com" <matthew.vick@intel.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
-        "romieu@fr.zoreil.com" <romieu@fr.zoreil.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
-        "michael@ellerman.id.au" <michael@ellerman.id.au>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v5 2/4] arch: Add lightweight memory barriers dma_rmb()
- and dma_wmb()
-References: <20141119012205.9563.95544.stgit@ahduyck-server> <20141119012400.9563.21117.stgit@ahduyck-server> <20141125140130.GC8541@arm.com>
-In-Reply-To: <20141125140130.GC8541@arm.com>
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robh+dt@kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, ssantosh@kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
+References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com> <15074721.IbfeeI3ajE@wuerfel> <54746349.3000306@ti.com> <2301239.aDOlWg3gEs@wuerfel> <5474846C.2000308@ti.com> <20141125140440.GF3836@n2100.arm.linux.org.uk> <54749804.8070400@ti.com>
+In-Reply-To: <54749804.8070400@ti.com>
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Grygorii,
 
-On 11/25/2014 06:01 AM, Will Deacon wrote:
-> On Wed, Nov 19, 2014 at 01:24:02AM +0000, Alexander Duyck wrote:
->> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
->> index 22a969c..a1c589b 100644
->> --- a/Documentation/memory-barriers.txt
->> +++ b/Documentation/memory-barriers.txt
->> @@ -1615,6 +1615,47 @@ There are some more advanced barrier functions:
->>        operations" subsection for information on where to use these.
->>
->>
->> + (*) dma_wmb();
->> + (*) dma_rmb();
->> +
->> +     These are for use with memory based device I/O to guarantee the ordering
->> +     of cache coherent writes or reads with respect to other writes or reads
->> +     to cache coherent DMA memory.
-> Can you please make it crystal clear that "memory based device I/O" != MMIO?
-> If people get these barriers wrong, then debugging will be a nightmare.
-
-I think I'll update that to the following to avoid any confusion:
-      These are for use with consistent memory to guarantee the ordering
-      of writes or reads of shared memory accessible to both the CPU and a
-      DMA capable device.
-
-I will also add a reference to DMA-API.txt at the end for more info on 
-what consistent memory is.
-
->> diff --git a/arch/arm/include/asm/barrier.h b/arch/arm/include/asm/barrier.h
->> index c6a3e73..d2f81e6 100644
->> --- a/arch/arm/include/asm/barrier.h
->> +++ b/arch/arm/include/asm/barrier.h
->> @@ -43,10 +43,14 @@
->>   #define mb()           do { dsb(); outer_sync(); } while (0)
->>   #define rmb()          dsb()
->>   #define wmb()          do { dsb(st); outer_sync(); } while (0)
->> +#define dma_rmb()      dmb(osh)
->> +#define dma_wmb()      dmb(oshst)
->>   #else
->>   #define mb()           barrier()
->>   #define rmb()          barrier()
->>   #define wmb()          barrier()
->> +#define dma_rmb()      barrier()
->> +#define dma_wmb()      barrier()
->>   #endif
->>
->>   #ifndef CONFIG_SMP
->> diff --git a/arch/arm64/include/asm/barrier.h b/arch/arm64/include/asm/barrier.h
->> index 6389d60..a5abb00 100644
->> --- a/arch/arm64/include/asm/barrier.h
->> +++ b/arch/arm64/include/asm/barrier.h
->> @@ -32,6 +32,9 @@
->>   #define rmb()          dsb(ld)
->>   #define wmb()          dsb(st)
->>
->> +#define dma_rmb()      dmb(oshld)
->> +#define dma_wmb()      dmb(oshst)
->> +
->>   #ifndef CONFIG_SMP
->>   #define smp_mb()       barrier()
->>   #define smp_rmb()      barrier()
-> The arm/arm64 bits look fine to me.
+On 11/25/2014 6:53 AM, Grygorii Strashko wrote:
+> Hi Russell,
 >
->    Acked-by: Will Deacon <will.deacon@arm.com>
+> On 11/25/2014 04:04 PM, Russell King - ARM Linux wrote:
+>> On Tue, Nov 25, 2014 at 03:30:20PM +0200, Grygorii Strashko wrote:
+>>> On 11/25/2014 02:09 PM, Arnd Bergmann wrote:
+>>>> It might be possible to do this implicitly if the driver calls clk_get(),
+>>>> basically doing clk_get() (or another call if necessary) would prevent the
+>>>> simple pmdomain from turning it off during suspend.
+>>>
+>>> Unfortunately, clk_get() will not work, because drivers still need to use it
+>>> to get functional clocks even if they are not going to control them explicitly.
+>>> For example, if it need to know clock's rate.
+>>
+>> If you don't want a clock to be turned off, then clk_get() it, then
+>> clk_prepare() it, and finally clk_enable() it.
+>>
+>> Even if someone else gets it, the only time that a clock is turned off
+>> is when _all_ users of it mutually agree that it can be turned off - by
+>> every user disabling (and possibly unpreparing) it.
+>>
+>> So, if the PM domain code gets a clock, prepares and enables it, then
+>> a driver gets the same clock, prepares and enables it also, it won't
+>> be disabled until _both_ the PM domain code _and_ the driver disable
+>> and unprepare the clock.
+>>
+>
+> All 100% true :)
+>
+> But the question here is how prevent pm_clk domain (clock_ops.c) from
+> getting the control on clock if this particular clock is optional from driver's
+> perspective. So, only driver should control it. As opposite, all other clocks
+> should be controlled by pm-domain (in case of GPD from .start/stop callbacks).
+>
+I know there has been lot of back and forth, we have done on getting
+multiple clock handling and from the thread looks like we are converging
+with simple power domain approach. Since we have already made several
+different attempt to solve the problem and some how stumbled, I suggest
+you to do a new RFC with new $subject so that we can get rest of the
+folks eyes on it.
 
-Thanks for the review.
+The reason I say that because may be just because of $subject, some
+folks might ignore the thread ;-) and later raise objections.
 
-> If we ever see platforms using Linux/dma_alloc_coherent with devices
-> mastering from a different outer-shareable domain that the one containing
-> the CPUs, then we'll need to revisit this.
+Thanks for persisting with it.
 
-Would we just need a system wide memory barrier in that case instead of 
-an outer shareable memory barrier, or would we need to look as something 
-like a sync barrier?
-
-- Alex
-
+Regards,
+Santosh
