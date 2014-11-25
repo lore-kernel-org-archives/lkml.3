@@ -1,115 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448AbaKYMXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:23:15 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:37950 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278AbaKYMXN (ORCPT
+	id S1754646AbaKYMXW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:23:22 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38821 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205AbaKYMXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 07:23:13 -0500
+	Tue, 25 Nov 2014 07:23:18 -0500
+Date: Tue, 25 Nov 2014 12:23:02 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ding Tianhong <dingtianhong@huawei.com>
+Subject: Re: For the problem when using swiotlb
+Message-ID: <20141125122302.GC18858@e104818-lin.cambridge.arm.com>
+References: <5469E26B.2010905@huawei.com>
+ <20141121175118.GA10451@localhost>
+ <20141121180925.GG19783@e104818-lin.cambridge.arm.com>
+ <2166613.l2i4mdmtLA@wuerfel>
+ <20141125105815.GB18858@e104818-lin.cambridge.arm.com>
+ <20141125112905.GC3836@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1416852146-9781-8-git-send-email-a.ryabinin@samsung.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com> <1416852146-9781-8-git-send-email-a.ryabinin@samsung.com>
-From: Dmitry Chernenkov <dmitryc@google.com>
-Date: Tue, 25 Nov 2014 16:22:53 +0400
-Message-ID: <CAA6XgkFPvHQE7LpZ=Q19e8sGAwOtWiVBXzjZA+7HXmNWL_genA@mail.gmail.com>
-Subject: Re: [PATCH v7 07/12] mm: slub: introduce metadata_access_enable()/metadata_access_disable()
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141125112905.GC3836@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LGTM
+On Tue, Nov 25, 2014 at 11:29:05AM +0000, Russell King - ARM Linux wrote:
+> On Tue, Nov 25, 2014 at 10:58:15AM +0000, Catalin Marinas wrote:
+> > Since we don't have a coherent_dma_supported() function, we defer the
+> > validity check of coherent_dma_mask to dma_alloc_coherent() (and here we
+> > can remove bouncing since swiotlb has relatively small buffers).
+> 
+> Bouncing of coherent DMA buffers is insane; if you have to bounce them,
+> they're by definition not coherent.
 
-Does this mean we're going to sanitize the slub code itself?)
+"Bouncing" is not a proper term here. What I meant is not using the
+swiotlb bounce buffers for the dma_alloc_coherent(). The
+swiotlb_alloc_coherent() allows this but it doesn't do any
+copying/bouncing in such scenario (it would not make sense, as you said
+below).
 
-On Mon, Nov 24, 2014 at 9:02 PM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
-> Wrap access to object's metadata in external functions with
-> metadata_access_enable()/metadata_access_disable() function calls.
->
-> This hooks separates payload accesses from metadata accesses
-> which might be useful for different checkers (e.g. KASan).
->
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> ---
->  mm/slub.c | 16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
->
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 0c01584..88ad8b8 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -467,13 +467,23 @@ static int slub_debug;
->  static char *slub_debug_slabs;
->  static int disable_higher_order_debug;
->
-> +static inline void metadata_access_enable(void)
-> +{
-> +}
-> +
-> +static inline void metadata_access_disable(void)
-> +{
-> +}
-> +
->  /*
->   * Object debugging
->   */
->  static void print_section(char *text, u8 *addr, unsigned int length)
->  {
-> +       metadata_access_enable();
->         print_hex_dump(KERN_ERR, text, DUMP_PREFIX_ADDRESS, 16, 1, addr,
->                         length, 1);
-> +       metadata_access_disable();
->  }
->
->  static struct track *get_track(struct kmem_cache *s, void *object,
-> @@ -503,7 +513,9 @@ static void set_track(struct kmem_cache *s, void *object,
->                 trace.max_entries = TRACK_ADDRS_COUNT;
->                 trace.entries = p->addrs;
->                 trace.skip = 3;
-> +               metadata_access_enable();
->                 save_stack_trace(&trace);
-> +               metadata_access_disable();
->
->                 /* See rant in lockdep.c */
->                 if (trace.nr_entries != 0 &&
-> @@ -677,7 +689,9 @@ static int check_bytes_and_report(struct kmem_cache *s, struct page *page,
->         u8 *fault;
->         u8 *end;
->
-> +       metadata_access_enable();
->         fault = memchr_inv(start, value, bytes);
-> +       metadata_access_disable();
->         if (!fault)
->                 return 1;
->
-> @@ -770,7 +784,9 @@ static int slab_pad_check(struct kmem_cache *s, struct page *page)
->         if (!remainder)
->                 return 1;
->
-> +       metadata_access_enable();
->         fault = memchr_inv(end - remainder, POISON_INUSE, remainder);
-> +       metadata_access_disable();
->         if (!fault)
->                 return 1;
->         while (end > fault && end[-1] == POISON_INUSE)
-> --
-> 2.1.3
->
+> Think about one of the common uses of coherent DMA buffers: ring buffers,
+> where both the CPU and the DMA agent write to the ring:
+> 
+> - CPU writes to ring, loading address and length, then writing to the
+>   status word for the ring entry.
+> - DMA reads the ring status word, sees it owns the entry, processes it,
+>   DMA writes to the ring status word to give it back.
+> 
+> What this means is that if you are bouncing the buffer, you are copying
+> it whole-sale between the CPU visible version and the DMA visible
+> version, which means that you can miss DMA updates to it.  So, bouncing
+> a coherent DMA buffer is simply not an acceptable implementation for
+> dma_alloc_coherent().
+
+I agree, not arguing against this.
+
+> As for validity of masks, it is defined in the DMA API documentation that
+> if a DMA mask is suitable for the streaming APIs, then it is also suitable
+> for the coherent APIs.  The reverse is left open, and so may not
+> necessarily be true.
+> 
+> In other words:
+> 
+> 	err = dma_set_mask(dev, mask);
+> 	if (err == 0)
+> 		assert(dma_set_coherent_mask(dev, mask) == 0);
+> 
+> must always succeed, but reversing the two calls has no guarantee.
+
+That would succeed on arm64 currently.
+
+The problem is that swiotlb bounce buffers allow for smaller than 32-bit
+dma_mask for streaming DMA since it can do bouncing. With coherent
+allocations, we could allow the same smaller than 32-bit
+coherent_dma_mask, however allocations may fail since they fall back to
+the swiotlb reserved buffer which is relatively small.
+
+What I want to avoid is threads like this where people ask for bigger
+swiotlb buffers for coherent allocations most likely because they do the
+wrong thing with their dma masks (or dma-ranges property). If the arm64
+dma_alloc_coherent() code avoids calling swiotlb_alloc_coherent() and
+just limits itself to ZONE_DMA, we make it clear that the swiotlb
+buffers are only used for streaming DMA (bouncing).
+
+Once we avoid swiotlb buffers for coherent DMA, the problem is that even
+though your assertion above would pass, dma_alloc_coherent() may fail if
+coherent_dma_mask is smaller than the end of ZONE_DMA (and pfn offsets
+considered). Basically breaking the assumption that you mentioned above
+with regards to coherent_dma_mask suitability.
+
+I think the best we can get is for dma_supported() to ignore
+swiotlb_dma_supported() and simply check for ZONE_DMA (similar to the
+arm32 one). We guarantee that swiotlb bounce buffers are within ZONE_DMA
+already, so no need for calling swiotlb_dma_supported(). If we ever have
+devices with smaller than 32-bit mask on arm64, we will have to reduce
+ZONE_DMA.
+
+> Note that there seems to be only one driver which has different coherent
+> and streaming DMA masks today:
+> 
+> drivers/media/pci/sta2x11/sta2x11_vip.c:
+>         if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(26))) {
+>         err = dma_set_coherent_mask(&vip->pdev->dev, DMA_BIT_MASK(29));
+
+This would work if we have a ZONE_DMA of 29-bit while the swiotlb bounce
+buffer within 26-bit. If we go with the above ZONE_DMA only check, we
+would need ZONE_DMA of 26-bit.
+
+-- 
+Catalin
