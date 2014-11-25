@@ -1,115 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750983AbaKYOiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:38:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42373 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750726AbaKYOiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:38:21 -0500
-Date: Tue, 25 Nov 2014 15:38:31 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-2022-JP?Q?=1B$B2+GH=1B=28J?= <huangbobupt@163.com>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] HID: add BETOP game controller force feedback
- support
-In-Reply-To: <3e9f782f.a7fa.149df95fef7.Coremail.huangbobupt@163.com>
-Message-ID: <alpine.LNX.2.00.1411251534010.23174@pobox.suse.cz>
-References: <3e9f782f.a7fa.149df95fef7.Coremail.huangbobupt@163.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-2022-JP
+	id S1751183AbaKYOid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:38:33 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:61804 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041AbaKYOia convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 09:38:30 -0500
+Content-Type: text/plain; charset=koi8-r
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v2] omap: i2c: don't check bus state IP rev3.3 and earlier
+From: Alexander Kochetkov <al.kochet@gmail.com>
+In-Reply-To: <20141125141924.GD1843@katana>
+Date: Tue, 25 Nov 2014 17:38:23 +0300
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Kevin Hilman <khilman@kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7E0A0B24-91D5-41A4-B007-004C5965D0D7@gmail.com>
+References: <20141124210809.GG2817@atomide.com> <1416867655-22232-1-git-send-email-al.kochet@gmail.com> <20141125141924.GD1843@katana>
+To: Wolfram Sang <wsa@the-dreams.de>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014, $B2+GH(J wrote:
 
-> From: Huang Bo <huangbobupt@163.com>
-> 
-> Adds force feedback support for BETOP USB game controllers.
-> These devices are mass produced in China.
+25 нояб. 2014 г., в 17:19, Wolfram Sang <wsa@the-dreams.de> написал(а):
 
-Thanks a lot for the patch. A few minor things below.
+> I'll push out this evening to make the boot tests work again. If there
+> is more to be investigated, either hurry up and post v3 ;) or let me
+> know that you need more time.
 
-First, the whole driver formatting doesn't comply with our coding style 
-(it has 4 spaces instead of tab). Please reformat that for v2.
+Ok, thank you. Let the fix go to the kernel-next.
+Maybe small fix to subject "omap: i2c:" to "i2c: omap:"
 
-[ ... snip ... ]
-> diff --git a/drivers/hid/hid-betopff.c b/drivers/hid/hid-betopff.c
-> new file mode 100644
-> index 0000000..d97301a
-> --- /dev/null
-> +++ b/drivers/hid/hid-betopff.c
-> @@ -0,0 +1,170 @@
-> +/*
-> + *  Force feedback support for Betop based devices
-> + *
-> + *  The devices are distributed under various names and the same USB device ID
-> + *  can be used in both adapters and actual game controllers.
-> + *
-> + *  0x11C0:0x5506 "BTP2185 PC mode Joystick"
-> + *   - tested with BTP2185 V2 PC Mode.
-> + *
-> + *  0x8380:0x1850 "BTP2185 V2 PC mode USB Gamepad"
-> + *   - tested with BTP2185 PC Mode with another version.
-> + *
-> + *  0x20bc:0x5500 "BTP2185 V2 BFM mode Joystick"
-> + *   - tested with BTP2185 BFM Mode.
-> + *   - tested with BTP2171s.
-> + *
-> + *  Copyright (c) 2014 Huang Bo <huangbobupt@163.com>
-> + */
-> +
-> +/*
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the Free
-> + * Software Foundation; either version 2 of the License, or (at your option)
-> + * any later version.
-> + */
-> +
-> +/* #define DEBUG */
-> +
-> +#define debug(format, arg...) pr_debug("hid-betopff: " format "\n" , ## arg)
-> +
-> +#include <linux/input.h>
-> +#include <linux/slab.h>
-> +#include <linux/module.h>
-> +#include <linux/hid.h>
-> +
-> +#include "hid-ids.h"
-> +
-> +struct betopff_device {
-> +    struct hid_report *report;
-> +};
-> +
-> +static int hid_betopff_play(struct input_dev *dev, void *data,
-> +             struct ff_effect *effect)
-> +{
-> +    struct hid_device *hid = input_get_drvdata(dev);
-> +    struct betopff_device *betopff = data;
-> +    __u16 left, right;
-> +
-> +    left = effect->u.rumble.strong_magnitude;
-> +    right = effect->u.rumble.weak_magnitude;
-> +
-> +    betopff->report->field[2]->value[0] = left / 256;
-> +    betopff->report->field[3]->value[0] = right / 256;
-> +    debug("running with 0x%02x 0x%02x", left, right);
+I still guessing what some boards have broken i2c pull-ups.
+And real fix must go in the board file.
+http://www.spinics.net/lists/linux-i2c/msg17750.html
 
-Is there really a need for keeping this debug() in the "production" 
-version?
+I could create a patch to confirm this.
+But I don't have omap3530 boards to run.
+I'll be very appreciated if someone could run the patch.
 
-[ ... snip ... ]
-> +static const struct hid_device_id betop_devices[] = {
-> +    { HID_USB_DEVICE(0x11C0, 0x5506), }, /* BTP2185 PC mode */
-> +    { HID_USB_DEVICE(0x8380, 0x1850), }, /* BTP2185 V2 PC mode */
-> +    { HID_USB_DEVICE(0x20bc, 0x5500), }, /* BTP2185 V2 BFM mode */
-> +    { }
+Regards,
+Alexander.
 
-You also need an entry for these devices in hid_have_special_driver[] 
-array in drivers/hid/hid-core.c, otherwise correct device <-> driver 
-binding can't be guaranteed.
-
--- 
-Jiri Kosina
-SUSE Labs
