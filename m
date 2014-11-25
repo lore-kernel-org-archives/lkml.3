@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657AbaKYKyu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:54:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59113 "EHLO
+	id S1752122AbaKYKza (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:55:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59086 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058AbaKYKn0 (ORCPT
+	with ESMTP id S1754037AbaKYKnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:26 -0500
+	Tue, 25 Nov 2014 05:43:23 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Karl Beldan <karl.beldan@rivierawaves.com>,
-        Ian Campbell <ijc@hellion.org.uk>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 219/254] net: mv643xx_eth: reclaim TX skbs only when released by the HW
-Date: Tue, 25 Nov 2014 10:39:29 +0000
-Message-Id: <1416912004-5928-220-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 215/254] ip6_tunnel: Use ip6_tnl_dev_init as the ndo_init function.
+Date: Tue, 25 Nov 2014 10:39:25 +0000
+Message-Id: <1416912004-5928-216-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -32,76 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Karl Beldan <karl.beldan@rivierawaves.com>
+From: Steffen Klassert <steffen.klassert@secunet.com>
 
-commit 2c2a9cbd64387d6b70ac5db013e9bfe9412c7354 upstream.
+commit 6c6151daaf2d8dc2046d9926539feed5f66bf74e upstream.
 
-ATM, txq_reclaim will dequeue and free an skb for each tx desc released
-by the hw that has TX_LAST_DESC set. However, in case of TSO, each
-hw desc embedding the last part of a segment has TX_LAST_DESC set,
-losing the one-to-one 'last skb frag'/'TX_LAST_DESC set' correspondance,
-which causes data corruption.
+ip6_tnl_dev_init() sets the dev->iflink via a call to
+ip6_tnl_link_config(). After that, register_netdevice()
+sets dev->iflink = -1. So we loose the iflink configuration
+for ipv6 tunnels. Fix this by using ip6_tnl_dev_init() as the
+ndo_init function. Then ip6_tnl_dev_init() is called after
+dev->iflink is set to -1 from register_netdevice().
 
-Fix this by checking TX_ENABLE_INTERRUPT instead of TX_LAST_DESC, and
-warn when trying to dequeue from an empty txq (which can be symptomatic
-of releasing skbs prematurely).
-
-Fixes: 3ae8f4e0b98 ('net: mv643xx_eth: Implement software TSO')
-Reported-by: Slawomir Gajzner <slawomir.gajzner@gmail.com>
-Reported-by: Julien D'Ascenzio <jdascenzio@yahoo.fr>
-Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
-Cc: Ian Campbell <ijc@hellion.org.uk>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/marvell/mv643xx_eth.c | 18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ net/ipv6/ip6_tunnel.c | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
-diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-index b151a949f352..d44560d1d268 100644
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -1047,7 +1047,6 @@ static int txq_reclaim(struct tx_queue *txq, int budget, int force)
- 		int tx_index;
- 		struct tx_desc *desc;
- 		u32 cmd_sts;
--		struct sk_buff *skb;
+diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
+index afa082458360..9fd04fff7fea 100644
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -272,9 +272,6 @@ static int ip6_tnl_create2(struct net_device *dev)
+ 	int err;
  
- 		tx_index = txq->tx_used_desc;
- 		desc = &txq->tx_desc_area[tx_index];
-@@ -1066,19 +1065,22 @@ static int txq_reclaim(struct tx_queue *txq, int budget, int force)
- 		reclaimed++;
- 		txq->tx_desc_count--;
+ 	t = netdev_priv(dev);
+-	err = ip6_tnl_dev_init(dev);
+-	if (err < 0)
+-		goto out;
  
--		skb = NULL;
--		if (cmd_sts & TX_LAST_DESC)
--			skb = __skb_dequeue(&txq->tx_skb);
-+		if (!IS_TSO_HEADER(txq, desc->buf_ptr))
-+			dma_unmap_single(mp->dev->dev.parent, desc->buf_ptr,
-+					 desc->byte_cnt, DMA_TO_DEVICE);
-+
-+		if (cmd_sts & TX_ENABLE_INTERRUPT) {
-+			struct sk_buff *skb = __skb_dequeue(&txq->tx_skb);
-+
-+			if (!WARN_ON(!skb))
-+				dev_kfree_skb(skb);
-+		}
+ 	err = register_netdevice(dev);
+ 	if (err < 0)
+@@ -1456,6 +1453,7 @@ ip6_tnl_change_mtu(struct net_device *dev, int new_mtu)
  
- 		if (cmd_sts & ERROR_SUMMARY) {
- 			netdev_info(mp->dev, "tx error\n");
- 			mp->dev->stats.tx_errors++;
- 		}
  
--		if (!IS_TSO_HEADER(txq, desc->buf_ptr))
--			dma_unmap_single(mp->dev->dev.parent, desc->buf_ptr,
--					 desc->byte_cnt, DMA_TO_DEVICE);
--		dev_kfree_skb(skb);
- 	}
+ static const struct net_device_ops ip6_tnl_netdev_ops = {
++	.ndo_init	= ip6_tnl_dev_init,
+ 	.ndo_uninit	= ip6_tnl_dev_uninit,
+ 	.ndo_start_xmit = ip6_tnl_xmit,
+ 	.ndo_do_ioctl	= ip6_tnl_ioctl,
+@@ -1540,16 +1538,10 @@ static int __net_init ip6_fb_tnl_dev_init(struct net_device *dev)
+ 	struct ip6_tnl *t = netdev_priv(dev);
+ 	struct net *net = dev_net(dev);
+ 	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
+-	int err = ip6_tnl_dev_init_gen(dev);
+-
+-	if (err)
+-		return err;
  
- 	__netif_tx_unlock_bh(nq);
+ 	t->parms.proto = IPPROTO_IPV6;
+ 	dev_hold(dev);
+ 
+-	ip6_tnl_link_config(t);
+-
+ 	rcu_assign_pointer(ip6n->tnls_wc[0], t);
+ 	return 0;
+ }
 -- 
 2.1.0
 
