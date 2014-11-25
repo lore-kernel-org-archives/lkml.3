@@ -1,85 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034AbaKYFgI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 00:36:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59690 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990AbaKYFgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752044AbaKYFg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 00:36:27 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:41051 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995AbaKYFgG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Nov 2014 00:36:06 -0500
-Message-ID: <54741540.3010607@suse.com>
-Date: Tue, 25 Nov 2014 06:36:00 +0100
-From: =?windows-1252?Q?J=FCrgen_Gro=DF?= <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: torvalds@linux-foundation.org
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+In-Reply-To: <5473EB8B.3000803@rock-chips.com>
+References: <1415109789-7046-1-git-send-email-addy.ke@rock-chips.com>
+	<1415678573-6093-1-git-send-email-addy.ke@rock-chips.com>
+	<CAPDyKFqUoBjhsbz8rkLa9PY_dpgMxnimz3k7OoA5WVhi7MacPQ@mail.gmail.com>
+	<CAD=FV=VQHZ6YmcoeAb1OEVLYRrYBnc_dM5Kjt1TZX_CQJC=EfA@mail.gmail.com>
+	<5464152E.7040209@rock-chips.com>
+	<CAPDyKFrzGfDew0eLLEcA+_iS_mo-O2bFU58fjirfXXA8AJ9UYQ@mail.gmail.com>
+	<CAD=FV=Ve1TY4+8quq1=18A1YOFvOWuFGrBmHLwMCwdWBSqzxOw@mail.gmail.com>
+	<CAD=FV=UJT5zBkcj2a03Y_RWxad9+Pu83G_z79Xzzn74V=eRqww@mail.gmail.com>
+	<CAPDyKFqt4rrwi940KAPyPONpjixK1730QmHEsN27V97jyHH+Qw@mail.gmail.com>
+	<5473EB8B.3000803@rock-chips.com>
+Date: Mon, 24 Nov 2014 21:36:04 -0800
+X-Google-Sender-Auth: 4_XtvK2dWCi3rZcrnKllgsru5jc
+Message-ID: <CAD=FV=U9Hh-OR2aGh6Q9YAwnP8AuAbQtogD=7wQxgg9XvoWTMw@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: try pick the exact same voltage as vmmc for vqmmc
+From: Doug Anderson <dianders@chromium.org>
+To: Addy <addy.ke@rock-chips.com>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Alexandru Stan <amstan@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-References: <CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com> <CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com> <CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com> <20141121142301.564f7eb7@gandalf.local.home> <CA+55aFw6w+pkG7fs7tBVm7jV_TjsnEyG5XDdk+Ghf5Af+ELUeA@mail.gmail.com> <CA+55aFwOL8thHWWLtuzXkriEH1mJDCQO=NUsMRPptDXc6HC4sg@mail.gmail.com> <CALCETrX9CNx+Zs3timzxoccrqia1RiaOe5dj7crENnt2W6PGjg@mail.gmail.com> <CA+5PVA4mgpAg53bQKnXXgY3N0mkEZrUYf4rgOTHCV-pbK9UF3g@mail.gmail.com> <CALCETrUT3Pn0ZCMsgp9dyDvoaiszCrQRc4159Tyggo5wA6Mp7w@mail.gmail.com> <CA+5PVA5L1Vcs+nrJWZ+jXgnhQMZ_L22rksopPnO7Wt04jD3kUQ@mail.gmail.com> <20141124184856.GA9349@laptop.dumpdata.com>
-In-Reply-To: <20141124184856.GA9349@laptop.dumpdata.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
+        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris Zhong <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2014 07:48 PM, Konrad Rzeszutek Wilk wrote:
-> On Fri, Nov 21, 2014 at 03:23:13PM -0500, Josh Boyer wrote:
->> On Fri, Nov 21, 2014 at 3:16 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> On Fri, Nov 21, 2014 at 12:14 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
->>>> On Fri, Nov 21, 2014 at 2:52 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>> On Fri, Nov 21, 2014 at 11:46 AM, Linus Torvalds
->>>>> <torvalds@linux-foundation.org> wrote:
->>>>>> On Fri, Nov 21, 2014 at 11:34 AM, Linus Torvalds
->>>>>> <torvalds@linux-foundation.org> wrote:
->>>>>>>
->>>>>>> So I kind of agree, but it wouldn't be my primary worry. My primary
->>>>>>> worry is actually paravirt doing something insane.
->>>>>>
->>>>>> Btw, on that tangent, does anybody actually care about paravirt any more?
->>>>>>
+Addy,
 
-Funny, during testing some patches related to Xen I hit the lockup
-issue. It looked a little bit different, but a variation of your patch
-solved my problem. The difference to the original report might be due
-to the rather low system load during my test, so the system was still
-responsive when the first lockup messages appeared. I could see the
-hanging cpus were spinning in pmd_lock() called during
-__handle_mm_fault().
+On Mon, Nov 24, 2014 at 6:38 PM, Addy <addy.ke@rock-chips.com> wrote:
+>> In worst case scenario, VDD = 3.6V and VIO = 2.7V. That gives as the
+>> factor of 0.75, thus we are inside spec but without margins.
+>
+> * From eMMC4.5 spec:
+>   1. (VDDF)vcc: Supply voltage for flash memory,  which is  2.7v -- 3.3v
+>   2. (VDD)vccq: Supply voltage for memory controller, which is  1.7v --
+> 1.95v  and 2,7v -- 3.6v
+>
+> * And from RK3288 datasheet:
+>   Digtial GPIO Power(SDMMC0_VDD --> vccq) is 3.0v -- 3.6v and 1.62v - 1.98v
+>
+> So I think:
+> 3.3v:  (2.7v < vccq < 3.6v)   &&  (3.0v < vccq < 3.6v)  ==> (3.0v < vccq <
+> 3.6v)
+> 1.8v:  (1.7v < vccq < 1.95v)  && (1.62v < vccq < 1.98v) ==> (1.7v < vccq <
+> 1.95v)
+>
+> and (2.7v < vcc < 3.3v)
+>
+> * And according to our hardware engineer:
+>   All of supply voltage must have +/- 10% cushion.
+>
+> * And we have found in some worse card that there is 200mv voltage collapse
+> when these card is insert.
+>
+> So I think the best resolution is that vcc and vccq is configurable int dt
+> table.
 
-I could reproduce the issue within a few minutes reliably without the
-patch below. With it the machine survived 12 hours and is still running.
+Ah, interesting.  ...so what we really need to be able to do is to say
+that the regulator we for vqmmc have supports the ranges 3.0V - 3.3V
+and 1.7V - 1.95V but not anything in between 1.95V ad 3.0V.  I have no
+idea how to express that in the regulator framework.
 
-WHY my test would trigger the problem so fast I have no idea. I saw it
-on a rather huge machine only (128GB memory, 120 cpus), that's quite
-understandable. My test remapped some pages via the hypervisor and
-removed those mappings again. Perhaps the TLB flushing involved in these
-operations is triggering the problem.
-
-
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index d973e61..b847ff7 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -377,7 +377,7 @@ static noinline int vmalloc_fault(unsigned long address)
-          * happen within a race in page table update. In the later
-          * case just flush:
-          */
--       pgd = pgd_offset(current->active_mm, address);
-+       pgd = (pgd_t *)__va(read_cr3()) + pgd_index(address);
-         pgd_ref = pgd_offset_k(address);
-         if (pgd_none(*pgd_ref))
-                 return -1;
+Technically you could take the IO Voltage Domains code (responsible
+for choosing the 1.8V range or the 3.3V range) and have it communicate
+the requirements to the regulator framework if you could figure out
+how to communicate them.
 
 
+...of course if you implemented my suggestion of keeping vqmmc as the
+highest voltage <= vmmc then maybe the whole point is moot and we
+don't have to figure it out.  Just make sure that vmmc never goes
+below 3.0V.
 
-Juergen
+
+-Doug
