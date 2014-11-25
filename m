@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbaKYAwr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 19:52:47 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:49331 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaKYAwo (ORCPT
+	id S1751321AbaKYAyF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 19:54:05 -0500
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:54751 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaKYAyD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 19:52:44 -0500
-X-Originating-IP: 50.43.41.112
-Date: Mon, 24 Nov 2014 16:52:21 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Pieter Smith <pieter@boesman.nl>
-Cc: Alexander Duyck <alexander.h.duyck@intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bertrand Jacquin <beber@meleeweb.net>,
-        Catalina Mocanu <catalina.mocanu@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Hugh Dickins <hughd@google.com>, Iulia Manda <iulia.manda21@gmail.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Jeff Layton <jlayton@poochiereds.net>,
-        "open list:ABI/API" <linux-api@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:KERNEL NFSD, SUNR..." <linux-nfs@vger.kernel.org>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Matt Turner <mattst88@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Foley <pefoley2@pefoley.com>, Thomas Graf <tgraf@suug.ch>,
-        Tom Herbert <therbert@google.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        =?utf-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>
-Subject: Re: [PATCH v4 0/7] kernel tinification: optionally compile out
- splice family of syscalls (splice, vmsplice, tee and sendfile)
-Message-ID: <20141125005221.GB21653@thin>
-References: <1416870079-15254-1-git-send-email-pieter@boesman.nl>
+	Mon, 24 Nov 2014 19:54:03 -0500
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Mitchel Humpherys <mitchelh@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Matt Wagantall <mattw@codeaurora.org>,
+        "Don Brace (PMC)" <Don.Brace@pmcs.com>,
+        "Scales, Webb" <webb.scales@hp.com>
+Subject: RE: [PATCH RESEND v8] iopoll: Introduce memory-mapped IO polling
+ macros
+Thread-Topic: [PATCH RESEND v8] iopoll: Introduce memory-mapped IO polling
+ macros
+Thread-Index: AQHQCCNtAqVL7P1v/0SqGz4Bzc5Be5xwgPlA
+Date: Tue, 25 Nov 2014 00:53:19 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B4029593C5E1F@G9W0745.americas.hpqcorp.net>
+References: <1416860092-11620-1-git-send-email-mitchelh@codeaurora.org>
+In-Reply-To: <1416860092-11620-1-git-send-email-mitchelh@codeaurora.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416870079-15254-1-git-send-email-pieter@boesman.nl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 12:00:59AM +0100, Pieter Smith wrote:
-> REPO: https://github.com/smipi1/linux-tinification.git
-> 
-> BRANCH: tiny/config-syscall-splice
-> 
-> BACKGROUND: This patch-set forms part of the Linux Kernel Tinification effort (
->   https://tiny.wiki.kernel.org/).
-> 
-> GOAL: Support compiling out the splice family of syscalls (splice, vmsplice,
->   tee and sendfile) along with all supporting infrastructure if not needed.
->   Many embedded systems will not need the splice-family syscalls. Omitting them
->   saves space.
-> 
-> HISTORY:
->   PATCH v4:
->     - Drops __splice_p()
->     - Let nfsd fall back to non-splice support when splice is compiled out
->     - Style fixes
-[...]
-> RESULTS: A tinyconfig bloat-o-meter score for the entire patch-set:
-> 
-> add/remove: 0/41 grow/shrink: 5/7 up/down: 23/-8422 (-8399)
 
-I replied to one patch with a minor nit in the commit message.  Other
-than that, I don't see any obvious issues with this.
 
-- Josh Triplett
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Mitchel Humpherys
+> Sent: Monday, 24 November, 2014 2:15 PM
+...
+> From: Matt Wagantall <mattw@codeaurora.org>
+> 
+> It is sometimes necessary to poll a memory-mapped register until its value
+> satisfies some condition. Introduce a family of convenience macros that do
+> this. Tight-looping, sleeping, and timing out can all be accomplished
+> using these macros.
+> 
+...
+> +#define readx_poll_timeout(op, addr, val, cond, sleep_us, timeout_us)	\
+> +({ \
+> +	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
+> +	might_sleep_if(sleep_us); \
+> +	for (;;) { \
+> +		(val) = op(addr); \
+> +		if (cond) \
+> +			break; \
+> +		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) {
+> \
+> +			(val) = op(addr); \
+> +			break; \
+> +		} \
+> +		if (sleep_us) \
+> +			usleep_range((sleep_us >> 2) + 1, sleep_us); \
+
+The hpsa SCSI driver used to use usleep_range in a loop like 
+that, but we found that it caused scheduler problems during
+boots because it uses TASK_UNINTERRUPTIBLE:
+[    9.260668] [sched_delayed] sched: RT throttling activated
+
+msleep() worked much better.
+
+---
+Rob Elliott    HP Server Storage
+
+
+
