@@ -1,108 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaKYAVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 19:21:31 -0500
-Received: from us-mx2.synaptics.com ([192.147.44.131]:21463 "EHLO
-	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750860AbaKYAV1 (ORCPT
+	id S1750824AbaKYARd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 19:17:33 -0500
+Received: from mail-pa0-f74.google.com ([209.85.220.74]:42108 "EHLO
+	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759AbaKYAR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 19:21:27 -0500
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Mon, 24 Nov 2014 16:44:01 -0800
-From: Andrew Duggan <aduggan@synaptics.com>
-To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: [PATCH] HID: rmi: Add support for the touchpad in the Razer Blade 14 laptop
-Date: Mon, 24 Nov 2014 16:20:19 -0800
-Message-ID: <1416874819-9914-1-git-send-email-aduggan@synaptics.com>
-X-Mailer: git-send-email 2.1.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.4.10.98]
+	Mon, 24 Nov 2014 19:17:29 -0500
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH V6 00/12] Tegra xHCI support
+Date: Mon, 24 Nov 2014 16:17:12 -0800
+Message-Id: <1416874644-12070-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Razer Blade 14 has a Synaptic's TouchPad on one of the interfaces of
-a composite USB device. This patch allows the hid-rmi driver to bind
-to that interface. It also adds support for the external click buttons
-on the Razer's touchpad. External buttons are reported using generic
-mouse reports instead of through the F30 like it is on ClickPads.
+This series adds support for xHCI on NVIDIA Tegra SoCs.  This includes:
+ - patches 1, 2, and 3: minor cleanups for mailbox framework and xHCI,
+ - patches 4 and 5: adding a driver for the mailbox used to communicate
+   with the xHCI controller's firmware,
+ - patches 6 and 7: extending the XUSB pad controller driver to support
+   the USB PHY types (UTMI, HSIC, and USB3),
+ - patches 8 and 9: adding a xHCI host-controller driver, and
+ - patches 10, 11, and 12: updating the relevant DT files.
 
-Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
----
-This patch depends on the "HID: rmi: Scan the report descriptor to determine if the device is
-suitable for the hid-rmi driver" I submitted earlier today to correctly bind to the touchpad HID
-device in the composite USB device.
+The mailbox driver (patch 5) has a compile-time dependency on patch 2 and
+a run-time dependency on patch 3.  Both the PHY (patch 7) and host (patch 9)
+drivers have compile-time dependencies on the mailbox driver.  The host
+driver also has a run-time dependency on patch 1.  Because of this, this
+entire series should probably go through the Tegra tree.  Patches 11 and 12
+should probably not be merged until the controller firmware [0] lands in
+linux-firmware since they disable the EHCI controllers.
 
- drivers/hid/hid-core.c |  4 +++-
- drivers/hid/hid-ids.h  |  3 +++
- drivers/hid/hid-rmi.c  | 15 ++++++++++++++-
- 3 files changed, 20 insertions(+), 2 deletions(-)
+Tested on Venice2, Jetson TK1, and Big with a variety of USB2.0 and
+USB3.0 memory sticks and ethernet dongles.  This has also been tested,
+with additional out-of-tree patches, on a Tegra132-based board.
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index ba9dc59..d69ea16 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -792,7 +792,9 @@ static int hid_scan_report(struct hid_device *hid)
- 	/*
- 	* Vendor specific handlings
- 	*/
--	if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS) &&
-+	if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS
-+	    || (hid->vendor == USB_VENDOR_ID_RAZER
-+	    && hid->product == USB_DEVICE_ID_RAZER_BLADE_14)) &&
- 	    (hid->group == HID_GROUP_GENERIC)) {
- 		if ((parser->scan_flags & HID_SCAN_FLAG_VENDOR_SPECIFIC)
- 		    && (parser->scan_flags & HID_SCAN_FLAG_GENDESK_POINTER))
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 25cd674..c677aad 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -751,6 +751,9 @@
- #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3001		0x3001
- #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008		0x3008
- 
-+#define USB_VENDOR_ID_RAZER		0x1532
-+#define USB_DEVICE_ID_RAZER_BLADE_14	0x011D
-+
- #define USB_VENDOR_ID_REALTEK		0x0bda
- #define USB_DEVICE_ID_REALTEK_READER	0x0152
- 
-diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-index 3cccff7..1f131df 100644
---- a/drivers/hid/hid-rmi.c
-+++ b/drivers/hid/hid-rmi.c
-@@ -453,7 +453,15 @@ static int rmi_raw_event(struct hid_device *hdev,
- 	case RMI_ATTN_REPORT_ID:
- 		return rmi_input_event(hdev, data, size);
- 	case RMI_MOUSE_REPORT_ID:
--		rmi_schedule_reset(hdev);
-+		/*
-+		 * touchpads with physical mouse buttons will report those
-+		 * buttons in mouse reports even in RMI mode. Only reset
-+		 * the device if we see reports which contain X or Y data.
-+		 */
-+		if (data[2] != 0 || data[3] != 0)
-+			rmi_schedule_reset(hdev);
-+		else
-+			return 1;
- 		break;
- 	}
- 
-@@ -871,6 +879,11 @@ static int rmi_input_mapping(struct hid_device *hdev,
- 		struct hid_input *hi, struct hid_field *field,
- 		struct hid_usage *usage, unsigned long **bit, int *max)
- {
-+	if (field->application == HID_GD_POINTER
-+		&& (usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON)
-+		/* Pass mouse button reports to generic code for processing */
-+		return 0;
-+
- 	/* we want to make HID ignore the advertised HID collection */
- 	return -1;
- }
+Based on v3.18-rc6.  A branch with the entire series is available at:
+  https://github.com/abrestic/linux/tree/tegra-xhci-v6
+
+Notes:
+ - HSIC support is mostly untested and I think there are still some issues
+   to work out there.  I do have a Tegra124 board with a HSIC hub so I'll
+   try to sort those out later.
+ - The XUSB padctl driver doesn't play nice with the existing Tegra USB2.0
+   PHY driver, so all ports should be assigned to the XHCI controller.
+
+Based on work by:
+  a lot of people, but from what I can tell from the L4T tree [1], the
+  original authors of the Tegra xHCI driver are:
+    Ajay Gupta <ajayg@nvidia.com>
+    Bharath Yadav <byadav@nvidia.com>
+
+[0] https://patchwork.ozlabs.org/patch/400110/
+[1] git://nv-tegra.nvidia.com/linux-3.10.git
+
+Changes from v5:
+ - Addressed review comments from Jassi and Felipe.
+
+Changes from v4:
+ - Made USB support optional in padctl driver.
+ - Made usb3-port a pinconfig property again.
+ - Cleaned up mbox_request_channel() error handling and allowed it to defer
+   probing (patch 3).
+ - Minor xHCI (patch 1) and mailbox framework (patch 2) cleanups suggested
+   by Thierry.
+ - Addressed Thierry's review comments.
+
+Changes from v3:
+ - Fixed USB2.0 flakiness on Jetson-TK1.
+ - Switched to 32-bit DMA mask for host.
+ - Addressed Stephen's review comments.
+
+Chagnes from v2:
+ - Dropped mailbox channel specifier.  The mailbox driver allocates virtual
+   channels backed by the single physical channel.
+ - Added support for HS_CURR_LEVEL adjustment pinconfig property, which
+   will be required for the Blaze board.
+ - Addressed Stephen's review comments.
+
+Changes from v1:
+ - Converted mailbox driver to use the common mailbox framework.
+ - Fixed up host driver so that it can now be built and used as a module.
+ - Addressed Stephen's review comments.
+ - Misc. cleanups.
+
+Andrew Bresticker (11):
+  xhci: Set shared HCD's hcd_priv in xhci_gen_setup
+  mailbox: Make struct mbox_controller's ops field const
+  of: Add NVIDIA Tegra XUSB mailbox binding
+  mailbox: Add NVIDIA Tegra XUSB mailbox driver
+  of: Update Tegra XUSB pad controller binding for USB
+  pinctrl: tegra-xusb: Add USB PHY support
+  of: Add NVIDIA Tegra xHCI controller binding
+  usb: xhci: Add NVIDIA Tegra xHCI host-controller driver
+  ARM: tegra: jetson-tk1: Add xHCI support
+  ARM: tegra: Add Tegra124 XUSB mailbox and xHCI controller
+  ARM: tegra: venice2: Add xHCI support
+
+Benson Leung (1):
+  mailbox: Fix up error handling in mbox_request_channel()
+
+ .../bindings/mailbox/nvidia,tegra124-xusb-mbox.txt |   32 +
+ .../pinctrl/nvidia,tegra124-xusb-padctl.txt        |   63 +-
+ .../bindings/usb/nvidia,tegra124-xhci.txt          |  104 ++
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts          |   46 +-
+ arch/arm/boot/dts/tegra124-venice2.dts             |   79 +-
+ arch/arm/boot/dts/tegra124.dtsi                    |   41 +
+ drivers/mailbox/Kconfig                            |    3 +
+ drivers/mailbox/Makefile                           |    2 +
+ drivers/mailbox/mailbox.c                          |   11 +-
+ drivers/mailbox/tegra-xusb-mailbox.c               |  278 +++++
+ drivers/pinctrl/Kconfig                            |    1 +
+ drivers/pinctrl/pinctrl-tegra-xusb.c               | 1262 +++++++++++++++++++-
+ drivers/usb/host/Kconfig                           |   10 +
+ drivers/usb/host/Makefile                          |    1 +
+ drivers/usb/host/xhci-pci.c                        |    5 -
+ drivers/usb/host/xhci-plat.c                       |    5 -
+ drivers/usb/host/xhci-tegra.c                      |  931 +++++++++++++++
+ drivers/usb/host/xhci.c                            |    6 +-
+ include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h   |    7 +
+ include/linux/mailbox_controller.h                 |    2 +-
+ include/soc/tegra/xusb.h                           |   50 +
+ 21 files changed, 2852 insertions(+), 87 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
+ create mode 100644 drivers/mailbox/tegra-xusb-mailbox.c
+ create mode 100644 drivers/usb/host/xhci-tegra.c
+ create mode 100644 include/soc/tegra/xusb.h
+
 -- 
-2.1.0
+2.1.0.rc2.206.gedb03e5
 
