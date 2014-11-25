@@ -1,161 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750935AbaKYOfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:35:13 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:32905 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760AbaKYOfL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:35:11 -0500
-Date: Tue, 25 Nov 2014 14:35:00 +0000
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Ian Campbell <ijc@debian.org>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH] of: support passing console options with stdout-path
-Message-ID: <20141125143500.GE2361@bivouac.eciton.net>
-References: <1416867838-18652-1-git-send-email-leif.lindholm@linaro.org>
- <20141125103504.GA21525@leverpostej>
- <20141125111724.GC2361@bivouac.eciton.net>
- <1416917249.32327.15.camel@debian.org>
+	id S1751076AbaKYOgD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:36:03 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:35898 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750816AbaKYOgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 09:36:01 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Roger Chen <roger.chen@rock-chips.com>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        peppe.cavallaro@st.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        kever.yang@rock-chips.com, mark.yao@rock-chips.com,
+        eddie.cai@rock-chips.com
+Subject: Re: [PATCH 3/4] GMAC: dts: add gmac info for rk3288
+Date: Tue, 25 Nov 2014 15:39:37 +0100
+Message-ID: <1773507.kOcjDCLbcs@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <547486EB.5080702@cogentembedded.com>
+References: <1416906536-26158-1-git-send-email-roger.chen@rock-chips.com> <547486EB.5080702@cogentembedded.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416917249.32327.15.camel@debian.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 12:07:29PM +0000, Ian Campbell wrote:
-> My concern is that this is Linux specific, other OSes may have different
-> ideas about how stdout options should be formatted within this property.
-> (At least I don't know of any standardisation of the 115200n8 thing --
-> I'd love to be corrected!)
+Am Dienstag, 25. November 2014, 16:40:59 schrieb Sergei Shtylyov:
+> Hello.
 > 
-> If I were a firmware author I'd be wary of specifying a stdout-path with
-> a Linux specific suffix.
- 
-> Search ePAPR for baud it seems that the generic serial binding includes
-> a current-speed property in 6.2.1.2. It then goes on a bit ambiguously
-> to talk about the NS16550 in 6.2.2 but I think 6.2.1.2 was intended to
-> be generic. No mention of stop-bits/parity etc though, they are assumed
-> to be set already I think
+> On 11/25/2014 12:08 PM, Roger Chen wrote:
+> > add gmac info in rk3288.dtsi for GMAC driver
+> > 
+> > Signed-off-by: Roger Chen <roger.chen@rock-chips.com>
+> > ---
+> > 
+> >   arch/arm/boot/dts/rk3288.dtsi |   59
+> >   +++++++++++++++++++++++++++++++++++++++++ 1 file changed, 59
+> >   insertions(+)
+> > 
+> > diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+> > index 0f50d5d..949675d 100644
+> > --- a/arch/arm/boot/dts/rk3288.dtsi
+> > +++ b/arch/arm/boot/dts/rk3288.dtsi
 > 
-> One thought I had was to define a dt-stdout "pseudo-console" so that
-> console=dt-stdout,115200n8 or something could be used.
-
-I'll wait for others to comment on the above.
- 
-> Anyway I applied your patch to v3.18-rc5 and ran it on a Mustang and it
-> didn't work for some reason. I'm using:
+> [...]
 > 
->         fdt set /chosen stdout-path "/soc/serial@1c020000:115200"
->         setenv bootargs "earlycon=uart8250,mmio32,0x1c020000 root=/dev/sda3 rw debug"
+> > @@ -490,6 +497,25 @@
+> > 
+> >   		reg = <0xff740000 0x1000>;
+> >   	
+> >   	};
+> > 
+> > +	gmac: eth@ff290000 {
 > 
-> So I get earlycon but then no proper console. Removing earlycon just
-> makes that stop working.
+>     Please name the node "ethernet@ff290000" to comply with the ePAPR
+> standard.
+> > +		compatible = "rockchip,rk3288-gmac";
+> > +		reg = <0xff290000 0x10000>;
+> > +		interrupts = <GIC_SPI 27 IRQ_TYPE_LEVEL_HIGH>;  /*irq=59*/
+> > +		interrupt-names = "macirq";
+> > +		rockchip,grf = <&grf>;
+> > +		clocks = <&cru SCLK_MAC>, <&cru SCLK_MAC_PLL>,
+> > +			<&cru SCLK_MAC_RX>, <&cru SCLK_MAC_TX>,
+> > +			<&cru SCLK_MACREF>, <&cru SCLK_MACREF_OUT>,
+> > +			<&cru ACLK_GMAC>, <&cru PCLK_GMAC>;
+> > +		clock-names = "stmmaceth", "clk_mac_pll",
+> > +			"mac_clk_rx", "mac_clk_tx",
+> > +			"clk_mac_ref", "clk_mac_refout",
+> > +			"aclk_mac", "pclk_mac";
+> > +		phy-mode = "rgmii";
+> > +		pinctrl-names = "default";
+> > +		pinctrl-0 = <&rgmii_pin /*&rmii_pin*/>;
+> 
+>     Hm, pinctrl props in a .dtsi file? Those are usually board dependent.
 
-Right, so having debugged this a bit offline, I'm amazed I booted
-anything at all, given how badly I broke path scanning...
-Please ignore previous version - a fixed one follows:
+yep, especially as there is a board-dependent selection needed of what to use 
+[rgmii or rmii] depending on the phy on the board.
 
-/
-	Leif
 
->From aef87fd958902afe881720286d525e10997462b8 Mon Sep 17 00:00:00 2001
-From: Leif Lindholm <leif.lindholm@linaro.org>
-Date: Mon, 24 Nov 2014 22:23:58 +0000
-Subject: [PATCH] of: support passing console options with stdout-path
+> 
+> [...]
+> 
+> > @@ -1040,5 +1066,38 @@
+> > 
+> >   				rockchip,pins = <7 23 3 &pcfg_pull_none>;
+> >   			
+> >   			};
+> >   		
+> >   		};
+> > 
+> > +
+> > +		gmac {
+> > +			rgmii_pin: rgmii-pins {
 
-Support specifying console options (like with console=ttyXN,<options>)
-by appending them to the stdout-path property after a separating ':'.
+please add the "s" to the label - "rgmii_pins"
 
-Example:
-	stdout-path = "uart0:115200";
 
-This patch also modifies of_find_node_by_path() to match only the
-portion of the path before a ':'.
+> > +				rockchip,pins = <3 30 3 &pcfg_pull_none>,
+> > +						<3 31 3 &pcfg_pull_none>,
+> > +						<3 26 3 &pcfg_pull_none>,
+> > +						<3 27 3 &pcfg_pull_none>,
+> > +						<3 28 3 &pcfg_pull_none>,
+> > +						<3 29 3 &pcfg_pull_none>,
+> > +						<3 24 3 &pcfg_pull_none>,
+> > +						<3 25 3 &pcfg_pull_none>,
+> > +						<4 0 3 &pcfg_pull_none>,
+> > +						<4 5 3 &pcfg_pull_none>,
+> > +						<4 6 3 &pcfg_pull_none>,
+> > +						<4 9 3 &pcfg_pull_none>,
+> > +						<4 4 3 &pcfg_pull_none>,
+> > +						<4 1 3 &pcfg_pull_none>,
+> > +						<4 3 3 &pcfg_pull_none>;
+> > +			};
+> > +
+> > +			rmii_pin: rmii-pins {
 
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
----
- drivers/of/base.c |   19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+same here
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 3823edf..ecd6290 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -37,6 +37,7 @@ EXPORT_SYMBOL(of_allnodes);
- struct device_node *of_chosen;
- struct device_node *of_aliases;
- struct device_node *of_stdout;
-+static char *of_stdout_options;
- 
- struct kset *of_kset;
- 
-@@ -699,10 +700,15 @@ static struct device_node *__of_find_node_by_path(struct device_node *parent,
- {
- 	struct device_node *child;
- 	int len = strchrnul(path, '/') - path;
-+	int term;
- 
- 	if (!len)
- 		return NULL;
- 
-+	term = strchrnul(path, ':') - path;
-+	if (term < len)
-+		len = term;
-+
- 	__for_each_child_of_node(parent, child) {
- 		const char *name = strrchr(child->full_name, '/');
- 		if (WARN(!name, "malformed device_node %s\n", child->full_name))
-@@ -742,11 +748,16 @@ struct device_node *of_find_node_by_path(const char *path)
- 	if (*path != '/') {
- 		char *p = strchrnul(path, '/');
- 		int len = p - path;
-+		int term;
- 
- 		/* of_aliases must not be NULL */
- 		if (!of_aliases)
- 			return NULL;
- 
-+		term = strchrnul(path, ':') - path;
-+		if (term < len)
-+			len = term;
-+
- 		for_each_property_of_node(of_aliases, pp) {
- 			if (strlen(pp->name) == len && !strncmp(pp->name, path, len)) {
- 				np = of_find_node_by_path(pp->value);
-@@ -1830,8 +1841,12 @@ void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
- 			name = of_get_property(of_chosen, "linux,stdout-path", NULL);
- 		if (IS_ENABLED(CONFIG_PPC) && !name)
- 			name = of_get_property(of_aliases, "stdout", NULL);
--		if (name)
-+		if (name) {
- 			of_stdout = of_find_node_by_path(name);
-+			of_stdout_options = strchr(name, ':');
-+			if (of_stdout_options != NULL)
-+				of_stdout_options++;
-+		}
- 	}
- 
- 	if (!of_aliases)
-@@ -1957,7 +1972,7 @@ bool of_console_check(struct device_node *dn, char *name, int index)
- {
- 	if (!dn || dn != of_stdout || console_set_on_cmdline)
- 		return false;
--	return !add_preferred_console(name, index, NULL);
-+	return !add_preferred_console(name, index, of_stdout_options);
- }
- EXPORT_SYMBOL_GPL(of_console_check);
- 
--- 
-1.7.10.4
 
+> > +				rockchip,pins = <3 30 3 &pcfg_pull_none>,
+> > +						<3 31 3 &pcfg_pull_none>,
+> > +						<3 28 3 &pcfg_pull_none>,
+> > +						<3 29 3 &pcfg_pull_none>,
+> > +						<4 0 3 &pcfg_pull_none>,
+> > +						<4 5 3 &pcfg_pull_none>,
+> > +						<4 4 3 &pcfg_pull_none>,
+> > +						<4 1 3 &pcfg_pull_none>,
+> > +						<4 2 3 &pcfg_pull_none>,
+> > +						<4 3 3 &pcfg_pull_none>;
+> > +			};
+> > +		};
+> 
+>     These are usually define in the board .dts file...
+
+The pinctrl settings itself are soc-specific, i.e. the pins and their settings 
+to use to enable r{g}mii functionality are the same for all boards using this 
+soc, so the pinctrl definitions should stay here and not be redefined in each 
+and every board file.
+
+
+Heiko
