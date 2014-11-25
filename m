@@ -1,123 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374AbaKYP7u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:59:50 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:35567 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856AbaKYP7s (ORCPT
+	id S1751378AbaKYQAD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:00:03 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:46214 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802AbaKYP77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:59:48 -0500
-Date: Tue, 25 Nov 2014 07:59:43 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>, mingo@kernel.org,
-        torvalds@linux-foundation.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCHv2 02/10] kernel: Provide READ_ONCE and ASSIGN_ONCE
-Message-ID: <20141125155943.GB5050@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1416919117-50652-1-git-send-email-borntraeger@de.ibm.com>
- <1416919117-50652-3-git-send-email-borntraeger@de.ibm.com>
+	Tue, 25 Nov 2014 10:59:59 -0500
+Message-ID: <5474A77B.10806@roeck-us.net>
+Date: Tue, 25 Nov 2014 07:59:55 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416919117-50652-3-git-send-email-borntraeger@de.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112515-0005-0000-0000-0000069E217F
+To: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>
+Subject: Re: [PATCH 2/5] hwmon: ina2xx: make shunt resistance configurable
+ at run-time
+References: <1416930423-12179-1-git-send-email-bgolaszewski@baylibre.com> <1416930423-12179-3-git-send-email-bgolaszewski@baylibre.com>
+In-Reply-To: <1416930423-12179-3-git-send-email-bgolaszewski@baylibre.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.5474A77F.0016,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 7
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 01:38:29PM +0100, Christian Borntraeger wrote:
-> ACCESS_ONCE does not work reliably on non-scalar types. For
-> example gcc 4.6 and 4.7 might remove the volatile tag for such
-> accesses during the SRA (scalar replacement of aggregates) step
-> https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
-> 
-> Let's provide READ_ONCE/ASSIGN_ONCE that will do all accesses via
-> scalar types.
-> 
-> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+On 11/25/2014 07:47 AM, Bartosz Golaszewski wrote:
+> The shunt resistance can only be set via platform_data or device tree. This
+> isn't suitable for devices in which the shunt resistance can change/isn't
+> known at boot-time.
+>
+For a given system it should always be known, and it appears unlikely
+that there is a system out there where the shunt resistor value can change.
+
+What system exactly are you talking about ?
+
+Thanks,
+Guenter
+
+> Add a sysfs attribute that allows to read and set the shunt resistance.
+>
+> Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
 > ---
->  include/linux/compiler.h | 34 ++++++++++++++++++++++++++++++++++
->  1 file changed, 34 insertions(+)
-> 
-> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-> index d5ad7b1..0ff01f2 100644
-> --- a/include/linux/compiler.h
-> +++ b/include/linux/compiler.h
-> @@ -186,6 +186,40 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
->  # define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
->  #endif
-> 
-> +#include <linux/types.h>
+>   drivers/hwmon/ina2xx.c | 58 ++++++++++++++++++++++++++++++++++++++++++++------
+>   1 file changed, 51 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
+> index 660f8ca..eb66081 100644
+> --- a/drivers/hwmon/ina2xx.c
+> +++ b/drivers/hwmon/ina2xx.c
+> @@ -51,6 +51,8 @@
+>   #define INA226_ALERT_LIMIT		0x07
+>   #define INA226_DIE_ID			0xFF
+>
+> +/* shunt resistor sysfs attribute index */
+> +#define INA2XX_RSHUNT			0x8
+>
+>   /* register count */
+>   #define INA219_REGISTERS		6
+> @@ -65,6 +67,9 @@
+>   /* worst case is 68.10 ms (~14.6Hz, ina219) */
+>   #define INA2XX_CONVERSION_RATE		15
+>
+> +/* default shunt resistance */
+> +#define INA2XX_RSHUNT_DEFAULT		10000
 > +
-> +static __always_inline void __assign_once_size(volatile void *p, void *res, int size)
+>   enum ina2xx_ids { ina219, ina226 };
+>
+>   struct ina2xx_config {
+> @@ -87,6 +92,8 @@ struct ina2xx_data {
+>
+>   	int kind;
+>   	u16 regs[INA2XX_MAX_REGISTERS];
+> +
+> +	long rshunt;
+>   };
+>
+>   static const struct ina2xx_config ina2xx_config[] = {
+> @@ -110,6 +117,11 @@ static const struct ina2xx_config ina2xx_config[] = {
+>   	},
+>   };
+>
+> +static u16 ina2xx_calibration_val(const struct ina2xx_data *data)
 > +{
-> +	switch (size) {
-> +	case 1: *(volatile u8 *)p = *(u8 *)res; break;
-> +	case 2: *(volatile u16 *)p = *(u16 *)res; break;
-> +	case 4: *(volatile u32 *)p = *(u32 *)res; break;
-> +#ifdef CONFIG_64BIT
-> +	case 8: *(volatile u64 *)p = *(u64 *)res; break;
-
-We really need something like this to catch invalid sizes:
-
-	default: invoke_nonexistent_function();
-
-Of course, a BUILD_BUG_ON() would give a nicer error message.
-
-Without this, in my testing, the following compiles without error, generating
-no code:
-
-	struct foo {
-		int field[10];
-	} f, f1;
-
-	f1 = READ_ONCE(f);
-
-There is probably some better way to do this.
-
-> +#endif
-> +       }
+> +	return (u16)(data->config->calibration_factor / data->rshunt);
 > +}
 > +
-> +#define ASSIGN_ONCE(val, p) \
-> +      ({ typeof(p) __val; __val = val; __assign_once_size(&p, &__val, sizeof(__val)); __val; })
-> +
-> +
-> +static __always_inline void __read_once_size(volatile void *p, void *res, int size)
+>   static int ina2xx_write_register(const struct i2c_client *client,
+>   						u8 reg, u16 value)
+>   {
+> @@ -198,6 +210,9 @@ static int ina2xx_get_value(struct ina2xx_data *data, u8 reg)
+>   		/* signed register, LSB=1mA (selected), in mA */
+>   		val = (s16)data->regs[reg];
+>   		break;
+> +	case INA2XX_RSHUNT:
+> +		val = data->rshunt;
+> +		break;
+>   	default:
+>   		/* programmer goofed */
+>   		WARN_ON_ONCE(1);
+> @@ -221,6 +236,30 @@ static ssize_t ina2xx_show_value(struct device *dev,
+>   			ina2xx_get_value(data, attr->index));
+>   }
+>
+> +static ssize_t ina2xx_set_shunt(struct device *dev,
+> +				struct device_attribute *da,
+> +				const char *buf, size_t count)
 > +{
-> +	switch (size) {
-> +	case 1: *(u8 *)res = *(volatile u8 *)p; break;
-> +	case 2: *(u16 *)res = *(volatile u16 *)p; break;
-> +	case 4: *(u32 *)res = *(volatile u32 *)p; break;
-> +#ifdef CONFIG_64BIT
-> +	case 8: *(u64 *)res = *(volatile u64 *)p; break;
-> +#endif
-
-Ditto here.
-
-							Thanx, Paul
-
-> +       }
+> +	struct ina2xx_data *data = ina2xx_update_device(dev);
+> +	long val;
+> +	s32 status;
+> +
+> +	if (IS_ERR(data))
+> +		return PTR_ERR(data);
+> +
+> +	if ((kstrtol(buf, 10, &val) == -EINVAL) || (val <= 0))
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&data->update_lock);
+> +	data->rshunt = val;
+> +	status = ina2xx_calibrate(data->client, ina2xx_calibration_val(data));
+> +	mutex_unlock(&data->update_lock);
+> +	if (status < 0)
+> +		return -ENODEV;
+> +
+> +	return count;
 > +}
 > +
-> +#define READ_ONCE(p) \
-> +      ({ typeof(p) __val; __read_once_size(&p, &__val, sizeof(__val)); __val; })
+>   /* shunt voltage */
+>   static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, ina2xx_show_value, NULL,
+>   			  INA2XX_SHUNT_VOLTAGE);
+> @@ -237,12 +276,17 @@ static SENSOR_DEVICE_ATTR(curr1_input, S_IRUGO, ina2xx_show_value, NULL,
+>   static SENSOR_DEVICE_ATTR(power1_input, S_IRUGO, ina2xx_show_value, NULL,
+>   			  INA2XX_POWER);
+>
+> +/* shunt resistance */
+> +static SENSOR_DEVICE_ATTR(rshunt, S_IRUGO | S_IWUSR | S_IWGRP,
+> +			  ina2xx_show_value, ina2xx_set_shunt, INA2XX_RSHUNT);
 > +
-> +
->  #endif /* __KERNEL__ */
-> 
->  #endif /* __ASSEMBLY__ */
-> -- 
-> 1.9.3
-> 
+>   /* pointers to created device attributes */
+>   static struct attribute *ina2xx_attrs[] = {
+>   	&sensor_dev_attr_in0_input.dev_attr.attr,
+>   	&sensor_dev_attr_in1_input.dev_attr.attr,
+>   	&sensor_dev_attr_curr1_input.dev_attr.attr,
+>   	&sensor_dev_attr_power1_input.dev_attr.attr,
+> +	&sensor_dev_attr_rshunt.dev_attr.attr,
+>   	NULL,
+>   };
+>   ATTRIBUTE_GROUPS(ina2xx);
+> @@ -255,7 +299,6 @@ static int ina2xx_probe(struct i2c_client *client,
+>   	struct device *dev = &client->dev;
+>   	struct ina2xx_data *data;
+>   	struct device *hwmon_dev;
+> -	long shunt = 10000; /* default shunt value 10mOhms */
+>   	u32 val;
+>
+>   	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_WORD_DATA))
+> @@ -267,13 +310,15 @@ static int ina2xx_probe(struct i2c_client *client,
+>
+>   	if (dev_get_platdata(dev)) {
+>   		pdata = dev_get_platdata(dev);
+> -		shunt = pdata->shunt_uohms;
+> +		data->rshunt = pdata->shunt_uohms;
+>   	} else if (!of_property_read_u32(dev->of_node,
+>   					 "shunt-resistor", &val)) {
+> -		shunt = val;
+> +		data->rshunt = val;
+> +	} else {
+> +		data->rshunt = INA2XX_RSHUNT_DEFAULT;
+>   	}
+>
+> -	if (shunt <= 0)
+> +	if (data->rshunt <= 0)
+>   		return -ENODEV;
+>
+>   	/* set the device type */
+> @@ -287,8 +332,7 @@ static int ina2xx_probe(struct i2c_client *client,
+>   	/* Set current LSB to 1mA, shunt is in uOhms
+>   	 * (equation 13 in datasheet).
+>   	 */
+> -	if (ina2xx_calibrate(client,
+> -			data->config->calibration_factor / shunt) < 0)
+> +	if (ina2xx_calibrate(client, ina2xx_calibration_val(data)) < 0)
+>   		return -ENODEV;
+>
+>   	data->client = client;
+> @@ -300,7 +344,7 @@ static int ina2xx_probe(struct i2c_client *client,
+>   		return PTR_ERR(hwmon_dev);
+>
+>   	dev_info(dev, "power monitor %s (Rshunt = %li uOhm)\n",
+> -		 id->name, shunt);
+> +		 id->name, data->rshunt);
+>
+>   	return 0;
+>   }
+>
 
