@@ -1,158 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751479AbaKYUgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 15:36:49 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:51087 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbaKYUgp (ORCPT
+	id S1751537AbaKYUhW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 15:37:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35371 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300AbaKYUgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 15:36:45 -0500
-Date: Tue, 25 Nov 2014 20:36:29 +0000
-From: Luis de Bethencourt <luis@debethencourt.com>
-To: linux-kernel@vger.kernel.org
-Cc: jarod@wilsonet.com, m.chehab@samsung.com, gregkh@linuxfoundation.org,
-        mahfouz.saif.elyazal@gmail.com, dan.carpenter@oracle.com,
-        tuomas.tynkkynen@iki.fi, gulsah.1004@gmail.com,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] staging: media: lirc: lirc_zilog.c: fix quoted strings
- split across lines
-Message-ID: <20141125203629.GA12059@biggie>
+	Tue, 25 Nov 2014 15:36:44 -0500
+Date: Tue, 25 Nov 2014 15:36:34 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Borislav Petkov <bp@suse.de>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Richard Hendershot <rshendershot@mchsi.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [PATCH 3.17 100/141] x86, microcode: Fix accessing dis_ucode_ldr
+ on 32-bit
+Message-ID: <20141125203634.GA6433@laptop.dumpdata.com>
+References: <20141119205150.700188369@linuxfoundation.org>
+ <20141119205153.916605840@linuxfoundation.org>
+ <5474C67A.7040200@oracle.com>
+ <20141125182410.GB4128@pd.tnic>
+ <5474CDCE.6040000@oracle.com>
+ <20141125184351.GC4128@pd.tnic>
+ <5474D0A1.2020600@oracle.com>
+ <20141125190849.GF4128@pd.tnic>
+ <5474D86E.6020608@oracle.com>
+ <20141125202628.GG4128@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20141125202628.GG4128@pd.tnic>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-checkpatch makes an exception to the 80-colum rule for quotes strings, and
-Documentation/CodingStyle recommends not splitting quotes strings across lines
-because it breaks the ability to grep for the string. Fixing these.
+On Tue, Nov 25, 2014 at 09:26:28PM +0100, Borislav Petkov wrote:
+> On Tue, Nov 25, 2014 at 02:28:46PM -0500, Boris Ostrovsky wrote:
+> > You'd have to decide at runtime --- many baremetal systems are
+> > compiled with PARAVIRT.
+> 
+> Right, but the microcode loader is not used at all on PV, right?
 
-WARNING: quoted string split across lines
+Is there an use-case for this in virtualization at all?
+> 
+> If so, I'd like to add a arch_something_blabla_disabled_loader()
+> function which is run in the loader init path and returns false on
+> baremetal and a true when running as a xen guest. I'm not sure how the
+> detection should be done, though... CPUID with the hypervisor leaf?
 
-Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
----
-Changes in v2:
-	- As pointed out by Joe Perches I missed a space when joining a set of strings
+Why not make it in general then? Like:
 
-Thanks for the review Joe
- drivers/staging/media/lirc/lirc_zilog.c | 39 ++++++++++++++-------------------
- 1 file changed, 17 insertions(+), 22 deletions(-)
+if (cpu_has_hypervisor)
+	return;
 
-diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
-index dca806a..a35d6f2 100644
---- a/drivers/staging/media/lirc/lirc_zilog.c
-+++ b/drivers/staging/media/lirc/lirc_zilog.c
-@@ -372,14 +372,12 @@ static int add_to_buf(struct IR *ir)
- 					   ret);
- 			if (failures >= 3) {
- 				mutex_unlock(&ir->ir_lock);
--				dev_err(ir->l.dev, "unable to read from the IR chip "
--					    "after 3 resets, giving up\n");
-+				dev_err(ir->l.dev, "unable to read from the IR chip after 3 resets, giving up\n");
- 				break;
- 			}
- 
- 			/* Looks like the chip crashed, reset it */
--			dev_err(ir->l.dev, "polling the IR receiver chip failed, "
--				    "trying reset\n");
-+			dev_err(ir->l.dev, "polling the IR receiver chip failed, trying reset\n");
- 
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			if (kthread_should_stop()) {
-@@ -405,8 +403,8 @@ static int add_to_buf(struct IR *ir)
- 		ret = i2c_master_recv(rx->c, keybuf, sizeof(keybuf));
- 		mutex_unlock(&ir->ir_lock);
- 		if (ret != sizeof(keybuf)) {
--			dev_err(ir->l.dev, "i2c_master_recv failed with %d -- "
--				    "keeping last read buffer\n", ret);
-+			dev_err(ir->l.dev, "i2c_master_recv failed with %d -- keeping last read buffer\n",
-+				    ret);
- 		} else {
- 			rx->b[0] = keybuf[3];
- 			rx->b[1] = keybuf[4];
-@@ -713,8 +711,8 @@ static int send_boot_data(struct IR_tx *tx)
- 				       buf[0]);
- 		return 0;
- 	}
--	dev_notice(tx->ir->l.dev, "Zilog/Hauppauge IR blaster firmware version "
--		     "%d.%d.%d loaded\n", buf[1], buf[2], buf[3]);
-+	dev_notice(tx->ir->l.dev, "Zilog/Hauppauge IR blaster firmware version %d.%d.%d loaded\n",
-+		     buf[1], buf[2], buf[3]);
- 
- 	return 0;
- }
-@@ -794,8 +792,7 @@ static int fw_load(struct IR_tx *tx)
- 	if (!read_uint8(&data, tx_data->endp, &version))
- 		goto corrupt;
- 	if (version != 1) {
--		dev_err(tx->ir->l.dev, "unsupported code set file version (%u, expected"
--			    "1) -- please upgrade to a newer driver",
-+		dev_err(tx->ir->l.dev, "unsupported code set file version (%u, expected 1) -- please upgrade to a newer driver",
- 			    version);
- 		fw_unload_locked();
- 		ret = -EFAULT;
-@@ -983,8 +980,8 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
- 	ret = get_key_data(data_block, code, key);
- 
- 	if (ret == -EPROTO) {
--		dev_err(tx->ir->l.dev, "failed to get data for code %u, key %u -- check "
--			    "lircd.conf entries\n", code, key);
-+		dev_err(tx->ir->l.dev, "failed to get data for code %u, key %u -- check lircd.conf entries\n",
-+			    code, key);
- 		return ret;
- 	} else if (ret != 0)
- 		return ret;
-@@ -1059,8 +1056,8 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
- 		ret = i2c_master_send(tx->c, buf, 1);
- 		if (ret == 1)
- 			break;
--		dev_dbg(tx->ir->l.dev, "NAK expected: i2c_master_send "
--			"failed with %d (try %d)\n", ret, i+1);
-+		dev_dbg(tx->ir->l.dev, "NAK expected: i2c_master_send failed with %d (try %d)\n",
-+			ret, i+1);
- 	}
- 	if (ret != 1) {
- 		dev_err(tx->ir->l.dev, "IR TX chip never got ready: last i2c_master_send "
-@@ -1167,12 +1164,10 @@ static ssize_t write(struct file *filep, const char __user *buf, size_t n,
- 		 */
- 		if (ret != 0) {
- 			/* Looks like the chip crashed, reset it */
--			dev_err(tx->ir->l.dev, "sending to the IR transmitter chip "
--				    "failed, trying reset\n");
-+			dev_err(tx->ir->l.dev, "sending to the IR transmitter chip failed, trying reset\n");
- 
- 			if (failures >= 3) {
--				dev_err(tx->ir->l.dev, "unable to send to the IR chip "
--					    "after 3 resets, giving up\n");
-+				dev_err(tx->ir->l.dev, "unable to send to the IR chip after 3 resets, giving up\n");
- 				mutex_unlock(&ir->ir_lock);
- 				mutex_unlock(&tx->client_lock);
- 				put_ir_tx(tx, false);
-@@ -1581,8 +1576,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 				       "zilog-rx-i2c-%d", adap->nr);
- 		if (IS_ERR(rx->task)) {
- 			ret = PTR_ERR(rx->task);
--			dev_err(tx->ir->l.dev, "%s: could not start IR Rx polling thread"
--				    "\n", __func__);
-+			dev_err(tx->ir->l.dev, "%s: could not start IR Rx polling thread\n",
-+				    __func__);
- 			/* Failed kthread, so put back the ir ref */
- 			put_ir_device(ir, true);
- 			/* Failure exit, so put back rx ref from i2c_client */
-@@ -1594,8 +1589,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 
- 		/* Proceed only if the Tx client is also ready */
- 		if (tx == NULL) {
--			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting"
--				   " on IR Tx.\n", adap->name, adap->nr);
-+			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting on IR Tx.\n",
-+				   adap->name, adap->nr);
- 			goto out_ok;
- 		}
- 	}
--- 
-2.1.3
+?
 
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
