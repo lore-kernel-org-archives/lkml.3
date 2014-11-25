@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913AbaKYXhQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 18:37:16 -0500
-Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366AbaKYXhO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 18:37:14 -0500
-From: Richard Weinberger <richard@nod.at>
-To: x86@kernel.org
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        gregkh@linuxfoundation.org, rafael.j.wysocki@intel.com,
-        pebolle@tiscali.nl, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] x86: defconfig: Enable CONFIG_FHANDLE
-Date: Wed, 26 Nov 2014 00:36:52 +0100
-Message-Id: <1416958612-7448-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 2.1.0
+	id S1751828AbaKYXkP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 18:40:15 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42270 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750869AbaKYXkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 18:40:14 -0500
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Cc: Jaegeuk Kim <jaegeuk@kernel.org>
+Subject: [PATCH 1/2] f2fs: fix deadlock during inline_data conversion
+Date: Tue, 25 Nov 2014 15:39:55 -0800
+Message-Id: <1416958796-39186-1-git-send-email-jaegeuk@kernel.org>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-systemd has a hard dependency on CONFIG_FHANDLE.
-If you run systemd with CONFIG_FHANDLE=n it will somehow
-boot but fail to spawn a getty or other basic services.
-As systemd is now used by most x86 distributions it
-makes sense to enabled this by default and save kernel
-hackers a lot of value debugging time.
+A deadlock can be occurred:
+Thread 1]                             Thread 2]
+ - f2fs_write_data_pages              - f2fs_write_begin
+   - lock_page(page #0)
+                                        - grab_cache_page(page #X)
+                                        - get_node_page(inode_page)
+                                        - grab_cache_page(page #0)
+                                          : to convert inline_data
+   - f2fs_write_data_page
+     - f2fs_write_inline_data
+       - get_node_page(inode_page)
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
+In this case, trying to lock inode_page and page #0 causes deadlock.
+In order to avoid this, this patch adds a rule for this locking policy,
+which is that page #0 should be locked followed by inode_page lock.
+
+Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
 ---
- arch/x86/configs/i386_defconfig   | 1 +
- arch/x86/configs/x86_64_defconfig | 1 +
- 2 files changed, 2 insertions(+)
+ fs/f2fs/data.c | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
-index 32d2e70..419819d 100644
---- a/arch/x86/configs/i386_defconfig
-+++ b/arch/x86/configs/i386_defconfig
-@@ -8,6 +8,7 @@ CONFIG_TASKSTATS=y
- CONFIG_TASK_DELAY_ACCT=y
- CONFIG_TASK_XACCT=y
- CONFIG_TASK_IO_ACCOUNTING=y
-+CONFIG_FHANDLE=y
- CONFIG_AUDIT=y
- CONFIG_NO_HZ=y
- CONFIG_HIGH_RES_TIMERS=y
-diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
-index a481dd4..4c311dd 100644
---- a/arch/x86/configs/x86_64_defconfig
-+++ b/arch/x86/configs/x86_64_defconfig
-@@ -7,6 +7,7 @@ CONFIG_TASKSTATS=y
- CONFIG_TASK_DELAY_ACCT=y
- CONFIG_TASK_XACCT=y
- CONFIG_TASK_IO_ACCOUNTING=y
-+CONFIG_FHANDLE=y
- CONFIG_AUDIT=y
- CONFIG_NO_HZ=y
- CONFIG_HIGH_RES_TIMERS=y
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 12dd58a..c7bc626 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -936,6 +936,17 @@ static int f2fs_write_begin(struct file *file, struct address_space *mapping,
+ 	trace_f2fs_write_begin(inode, pos, len, flags);
+ 
+ 	f2fs_balance_fs(sbi);
++
++	/*
++	 * We should check this at this moment to avoid deadlock on inode page
++	 * and #0 page. The locking rule for inline_data conversion should be:
++	 * lock_page(page #0) -> lock_page(inode_page)
++	 */
++	if (index != 0) {
++		err = f2fs_convert_inline_inode(inode);
++		if (err)
++			goto fail;
++	}
+ repeat:
+ 	page = grab_cache_page_write_begin(mapping, index, flags);
+ 	if (!page) {
+@@ -960,21 +971,10 @@ repeat:
+ 			set_inode_flag(F2FS_I(inode), FI_DATA_EXIST);
+ 			sync_inode_page(&dn);
+ 			goto put_next;
+-		} else if (page->index == 0) {
+-			err = f2fs_convert_inline_page(&dn, page);
+-			if (err)
+-				goto put_fail;
+-		} else {
+-			struct page *p = grab_cache_page(inode->i_mapping, 0);
+-			if (!p) {
+-				err = -ENOMEM;
+-				goto put_fail;
+-			}
+-			err = f2fs_convert_inline_page(&dn, p);
+-			f2fs_put_page(p, 1);
+-			if (err)
+-				goto put_fail;
+ 		}
++		err = f2fs_convert_inline_page(&dn, page);
++		if (err)
++			goto put_fail;
+ 	}
+ 	err = f2fs_reserve_block(&dn, index);
+ 	if (err)
 -- 
-2.1.0
+2.1.1
 
