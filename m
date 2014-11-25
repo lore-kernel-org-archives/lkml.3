@@ -1,347 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580AbaKYUNG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 15:13:06 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57367 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751043AbaKYUND (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 15:13:03 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Yegnesh Iyer <yegnesh.s.iyer@intel.com>, linux-acpi@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>
-Subject: Re: [PATCH v3 updated 3/3] ACPI / PMIC: AXP288: support virtual GPIO in ACPI table
-Date: Tue, 25 Nov 2014 21:34:17 +0100
-Message-ID: <1873893.v9fHnNCXPp@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54746FA2.9030408@intel.com>
-References: <1416553911-22990-1-git-send-email-aaron.lu@intel.com> <2204417.orosXAozvY@vostro.rjw.lan> <54746FA2.9030408@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1751623AbaKYUOp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 15:14:45 -0500
+Received: from st11p01mm-asmtpout002.mac.com ([17.172.204.237]:62619 "EHLO
+	st11p01mm-asmtp002.mac.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750866AbaKYUOo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 15:14:44 -0500
+X-Greylist: delayed 3607 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Nov 2014 15:14:43 EST
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.13.68,1.0.28,0.0.0000
+ definitions=2014-11-25_05:2014-11-25,2014-11-25,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ suspectscore=1 phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0
+ reason=mlx scancount=1 engine=7.0.1-1408290000 definitions=main-1411250126
+From: Louis Langholtz <lou_langholtz@me.com>
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 8BIT
+Subject: PATCH: avoid possible integer overflow with cmp_range() in
+ kernel/range.c
+Date: Tue, 25 Nov 2014 12:14:15 -0700
+Message-id: <6F1FC669-B4AE-4593-A1EE-6F72C38D117B@me.com>
+Cc: yinghai@kernel.org, hpa@linux.intel.com
+To: linux-kernel@vger.kernel.org
+MIME-version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 25, 2014 08:01:38 PM Aaron Lu wrote:
-> On 11/24/2014 11:19 PM, Rafael J. Wysocki wrote:
-> > On Monday, November 24, 2014 05:32:33 PM Aaron Lu wrote:
-> >> On 11/24/2014 09:06 AM, Rafael J. Wysocki wrote:
-> >>> On Friday, November 21, 2014 03:11:51 PM Aaron Lu wrote:
-> >>>> +	if (!result) {
-> >>>> +		status = acpi_install_address_space_handler(
-> >>>> +				ACPI_HANDLE(parent), ACPI_ADR_SPACE_GPIO,
-> >>>> +				intel_xpower_pmic_gpio_handler, NULL, NULL);
-> >>>
-> >>> So here we have a problem, because we can't unregister the opregion handler
-> >>> registered above if this fails.  Not nice.
-> >>
-> >> I'm not correct in the cover letter, the actual problem with operation
-> >> region remove is with module unload, it happens like this:
-> >>
-> >> The acpi_remove_address_space_handler doesn't wait for the current
-> >> running handler to return, so if we call
-> >> acpi_remove_address_space_handler in a module's exit function, the
-> >> handler's memory will be freed and the running handler will access to
-> >> a no longer valid memory place.
-> >>
-> >> So as long as we can make sure the handler will not go away from the
-> >> memory, we are safe.
-> > 
-> > This only means that address space handlers cannot be removed from kernel
-> > modules.
-> 
-> If the module can not be unloaded(no module exit call), then we should
-> be safe.
-> 
-> > 
-> > Lv was trying to add a wrapper for that some time ago, maybe it's a good
-> > idea to revive that?
-> 
-> Is it this one? If it is, I'll test it and then add the unload
-> functionality to the PMIC drivers.
+The cmp_range function (in kernel/range.c) is returning the difference between two s64 values (actually coming from u64 typed variables) in an int which can overflow (depending on the size of int). This function is used as a compare function for linux's sort function (in lib/sort.c). Linux's sort function however only cares if the compare function returns a value less than, equal to, or greater than zero.
 
-Well, you need to wait for the patch below to be applied to upstream ACPICA
-and transfered to Linux from there.
+As sort doesn't need the actual difference, this overflow potential is avoided with the following patch (against linux kernel 3.18 code from Linus's git repo and commit 0541881502a1276149889fe468662ff6a8fc8f6d):
 
-> From: Lv Zheng <lv.zheng@intel.com>
-> Date: Tue, 25 Nov 2014 15:42:44 +0800
-> Subject: [PATCH] ACPICA: Events: Add invocation protection for operation region callbacks.
-> 
-> This patch adds invocation protection around operation region callbacks to
-> offer a module safe environment for OSPM provided address space handlers.
-> 
-> It is likely that OSPM where ModuleDevice is supported will implement
-> specific address space handlers in the modules.  Thus the unloading of
-> the handlers' owner modules may lead to program crash around the invocation
-> if the handler callbacks are invoked without protection.  Since the
-> handler callbacks are invoked inside of ACPICA, it is better to implement
-> invocation protection inside of ACPICA.
-> As address space handlers are expected to be executed in parallel, it is
-> not a good choice to implement protection using locks.  This patch uses
-> reference counting based protection mechanism.  When OSPM calls
-> acpi_remove_address_space_handler(), the function waits until all invocations
-> exit to ensure no invocation can happen after the unloading of the modules.
-> 
-> Note that this might be a workaround and not tested, better solution could
-> be implemented to tune the design of the namespace objects. Lv Zheng.
-> 
-> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> ---
->  drivers/acpi/acpica/acevents.h  |   9 ++++
->  drivers/acpi/acpica/acobject.h  |   1 +
->  drivers/acpi/acpica/evhandler.c | 117 ++++++++++++++++++++++++++++++++++++++++
->  drivers/acpi/acpica/evregion.c  |  11 +++-
->  drivers/acpi/acpica/evxfregn.c  |   9 ++++
->  include/acpi/actypes.h          |   2 +
->  6 files changed, 147 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpica/acevents.h b/drivers/acpi/acpica/acevents.h
-> index 7a7811a9fc26..3020ac4ab7a8 100644
-> --- a/drivers/acpi/acpica/acevents.h
-> +++ b/drivers/acpi/acpica/acevents.h
-> @@ -175,6 +175,15 @@ acpi_ev_install_space_handler(struct acpi_namespace_node *node,
->  			      acpi_adr_space_handler handler,
->  			      acpi_adr_space_setup setup, void *context);
->  
-> +acpi_status
-> +acpi_ev_get_space_handler(union acpi_operand_object *handler_desc);
-> +
-> +void acpi_ev_put_space_handler(union acpi_operand_object *handler_desc);
-> +
-> +void acpi_ev_flush_space_handler(union acpi_operand_object *handler_desc);
-> +
-> +s16 acpi_ev_space_handler_count(union acpi_operand_object *handler_desc);
-> +
->  /*
->   * evregion - Operation region support
->   */
-> diff --git a/drivers/acpi/acpica/acobject.h b/drivers/acpi/acpica/acobject.h
-> index 8abb393dafab..a719d9733e6b 100644
-> --- a/drivers/acpi/acpica/acobject.h
-> +++ b/drivers/acpi/acpica/acobject.h
-> @@ -304,6 +304,7 @@ struct acpi_object_notify_handler {
->  
->  struct acpi_object_addr_handler {
->  	ACPI_OBJECT_COMMON_HEADER u8 space_id;
-> +	s16 invocation_count;
->  	u8 handler_flags;
->  	acpi_adr_space_handler handler;
->  	struct acpi_namespace_node *node;	/* Parent device */
-> diff --git a/drivers/acpi/acpica/evhandler.c b/drivers/acpi/acpica/evhandler.c
-> index 78ac29351c9e..b27cc8e0507f 100644
-> --- a/drivers/acpi/acpica/evhandler.c
-> +++ b/drivers/acpi/acpica/evhandler.c
-> @@ -499,6 +499,7 @@ acpi_ev_install_space_handler(struct acpi_namespace_node * node,
->  	handler_obj->address_space.space_id = (u8)space_id;
->  	handler_obj->address_space.handler_flags = flags;
->  	handler_obj->address_space.region_list = NULL;
-> +	handler_obj->address_space.invocation_count = 0;
->  	handler_obj->address_space.node = node;
->  	handler_obj->address_space.handler = handler;
->  	handler_obj->address_space.context = context;
-> @@ -534,3 +535,119 @@ acpi_ev_install_space_handler(struct acpi_namespace_node * node,
->  unlock_and_exit:
->  	return_ACPI_STATUS(status);
->  }
-> +
-> +/*******************************************************************************
-> + *
-> + * FUNCTION:    acpi_ev_flush_space_handler
-> + *
-> + * PARAMETERS:  handler_desc     - Address space object
-> + *                                 (ACPI_TYPE_LOCAL_ADDRESS_HANDLER)
-> + *
-> + * RETURN:      None.
-> + *
-> + * DESCRIPTION: Flush the reference of the given address space handler object.
-> + *
-> + ******************************************************************************/
-> +
-> +void acpi_ev_flush_space_handler(union acpi_operand_object *handler_desc)
-> +{
-> +	acpi_cpu_flags lock_flags;
-> +
-> +	ACPI_FUNCTION_TRACE_PTR(acpi_ev_flush_space_handler, handler_desc);
-> +
-> +	if (handler_desc && handler_desc->address_space.invocation_count >= 0) {
-> +		lock_flags =
-> +		    acpi_os_acquire_lock(acpi_gbl_reference_count_lock);
-> +		handler_desc->address_space.invocation_count |= ACPI_INT16_MIN;
-> +		acpi_os_release_lock(acpi_gbl_reference_count_lock, lock_flags);
-> +	}
-> +
-> +	return_VOID;
-> +}
-> +
-> +/*******************************************************************************
-> + *
-> + * FUNCTION:    acpi_ev_get_space_handler
-> + *
-> + * PARAMETERS:  handler_desc     - Address space object
-> + *                                 (ACPI_TYPE_LOCAL_ADDRESS_HANDLER)
-> + *
-> + * RETURN:      Status.
-> + *
-> + * DESCRIPTION: Acquire an reference of the given address space handler object.
-> + *
-> + ******************************************************************************/
-> +
-> +acpi_status acpi_ev_get_space_handler(union acpi_operand_object *handler_desc)
-> +{
-> +	acpi_cpu_flags lock_flags;
-> +
-> +	ACPI_FUNCTION_TRACE_PTR(acpi_ev_get_space_handler, handler_desc);
-> +
-> +	if (handler_desc && handler_desc->address_space.invocation_count >= 0) {
-> +		lock_flags =
-> +		    acpi_os_acquire_lock(acpi_gbl_reference_count_lock);
-> +		handler_desc->address_space.invocation_count++;
-> +		acpi_os_release_lock(acpi_gbl_reference_count_lock, lock_flags);
-> +		return_ACPI_STATUS(AE_OK);
-> +	}
-> +
-> +	return_ACPI_STATUS(AE_ERROR);
-> +}
-> +
-> +/*******************************************************************************
-> + *
-> + * FUNCTION:    acpi_ev_put_space_handler
-> + *
-> + * PARAMETERS:  handler_desc     - Address space object
-> + *                                 (ACPI_TYPE_LOCAL_ADDRESS_HANDLER)
-> + *
-> + * RETURN:      None.
-> + *
-> + * DESCRIPTION: Release an reference of the given address space handler object.
-> + *
-> + ******************************************************************************/
-> +
-> +void acpi_ev_put_space_handler(union acpi_operand_object *handler_desc)
-> +{
-> +	acpi_cpu_flags lock_flags;
-> +
-> +	ACPI_FUNCTION_TRACE_PTR(acpi_ev_put_space_handler, handler_desc);
-> +
-> +	if (handler_desc) {
-> +		lock_flags =
-> +		    acpi_os_acquire_lock(acpi_gbl_reference_count_lock);
-> +		handler_desc->address_space.invocation_count--;
-> +		acpi_os_release_lock(acpi_gbl_reference_count_lock, lock_flags);
-> +	}
-> +
-> +	return_VOID;
-> +}
-> +
-> +/*******************************************************************************
-> + *
-> + * FUNCTION:    acpi_ev_space_handler_count
-> + *
-> + * PARAMETERS:  handler_desc     - Address space object
-> + *                                 (ACPI_TYPE_LOCAL_ADDRESS_HANDLER)
-> + *
-> + * RETURN:      Invocation count of the handler.
-> + *
-> + * DESCRIPTION: Get the reference of the given address space handler object.
-> + *
-> + ******************************************************************************/
-> +
-> +s16 acpi_ev_space_handler_count(union acpi_operand_object *handler_desc)
-> +{
-> +	s16 count = 0;
-> +	acpi_cpu_flags lock_flags;
-> +
-> +	if (handler_desc) {
-> +		lock_flags =
-> +		    acpi_os_acquire_lock(acpi_gbl_reference_count_lock);
-> +		count = handler_desc->address_space.invocation_count;
-> +		acpi_os_release_lock(acpi_gbl_reference_count_lock, lock_flags);
-> +	}
-> +
-> +	return (count);
-> +}
-> diff --git a/drivers/acpi/acpica/evregion.c b/drivers/acpi/acpica/evregion.c
-> index 8eb8575e8c16..dcdd779257d0 100644
-> --- a/drivers/acpi/acpica/evregion.c
-> +++ b/drivers/acpi/acpica/evregion.c
-> @@ -165,6 +165,10 @@ acpi_ev_address_space_dispatch(union acpi_operand_object *region_obj,
->  		return_ACPI_STATUS(AE_NOT_EXIST);
->  	}
->  
-> +	status = acpi_ev_get_space_handler(handler_desc);
-> +	if (ACPI_FAILURE(status)) {
-> +		return_ACPI_STATUS(AE_NOT_EXIST);
-> +	}
->  	context = handler_desc->address_space.context;
->  
->  	/*
-> @@ -185,7 +189,8 @@ acpi_ev_address_space_dispatch(union acpi_operand_object *region_obj,
->  				    region_obj,
->  				    acpi_ut_get_region_name(region_obj->region.
->  							    space_id)));
-> -			return_ACPI_STATUS(AE_NOT_EXIST);
-> +			status = AE_NOT_EXIST;
-> +			goto error_exit;
->  		}
->  
->  		/*
-> @@ -210,7 +215,7 @@ acpi_ev_address_space_dispatch(union acpi_operand_object *region_obj,
->  					acpi_ut_get_region_name(region_obj->
->  								region.
->  								space_id)));
-> -			return_ACPI_STATUS(status);
-> +			goto error_exit;
->  		}
->  
->  		/* Region initialization may have been completed by region_setup */
-> @@ -306,6 +311,8 @@ acpi_ev_address_space_dispatch(union acpi_operand_object *region_obj,
->  		acpi_ex_enter_interpreter();
->  	}
->  
-> +error_exit:
-> +	acpi_ev_put_space_handler(handler_desc);
->  	return_ACPI_STATUS(status);
->  }
->  
-> diff --git a/drivers/acpi/acpica/evxfregn.c b/drivers/acpi/acpica/evxfregn.c
-> index 2d6f187939c7..c8c8538aae40 100644
-> --- a/drivers/acpi/acpica/evxfregn.c
-> +++ b/drivers/acpi/acpica/evxfregn.c
-> @@ -266,6 +266,15 @@ acpi_remove_address_space_handler(acpi_handle device,
->  
->  			*last_obj_ptr = handler_obj->address_space.next;
->  
-> +			/* Wait for handlers to exit */
-> +
-> +			acpi_ev_flush_space_handler(handler_obj);
-> +			while (acpi_ev_space_handler_count(handler_obj) != ACPI_INT16_MIN) {
-> +				(void)acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
-> +				acpi_os_sleep((u64)10);
-> +				(void)acpi_ut_acquire_mutex(ACPI_MTX_NAMESPACE);
-> +			}
-> +
->  			/* Now we can delete the handler object */
->  
->  			acpi_ut_remove_reference(handler_obj);
-> diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
-> index 7000e66f768e..a341a9a8157f 100644
-> --- a/include/acpi/actypes.h
-> +++ b/include/acpi/actypes.h
-> @@ -65,6 +65,8 @@
->  #define ACPI_UINT16_MAX                 (u16)(~((u16) 0))	/* 0xFFFF             */
->  #define ACPI_UINT32_MAX                 (u32)(~((u32) 0))	/* 0xFFFFFFFF         */
->  #define ACPI_UINT64_MAX                 (u64)(~((u64) 0))	/* 0xFFFFFFFFFFFFFFFF */
-> +#define ACPI_INT16_MAX                  ((s16)(ACPI_UINT16_MAX>>1))
-> +#define ACPI_INT16_MIN                  ((s16)(-ACPI_INT16_MAX - 1))
->  #define ACPI_ASCII_MAX                  0x7F
->  
->  /*
-> 
+commit 641362d32fef0cfd7b12e1821c1139d75dd23330
+Author: Lou Langholtz <lou_langholtz@me.com>
+Date:   Mon Nov 24 09:31:01 2014 -0700
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+    Avoid overflow possibility
+
+diff --git a/kernel/range.c b/kernel/range.c
+index 322ea8e..86337e2 100644
+--- a/kernel/range.c
++++ b/kernel/range.c
+@@ -113,12 +113,17 @@ static int cmp_range(const void *x1, const void *x2)
+ {
+        const struct range *r1 = x1;
+        const struct range *r2 = x2;
+-       s64 start1, start2;
++       u64 start1, start2;
+ 
+        start1 = r1->start;
+        start2 = r2->start;
+ 
+-       return start1 - start2;
++       /* avoid any overflow possibilities and don't just return start1 - start2 */
++       if (start1 > start2)
++               return 1;
++       if (start2 > start1)
++               return -1;
++       return 0;
+ }
+ 
+ int clean_sort_range(struct range *range, int az)
+
