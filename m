@@ -1,134 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750991AbaKYRkv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:40:51 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39150 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791AbaKYRku (ORCPT
+	id S1751204AbaKYRmv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:42:51 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:38542 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaKYRmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:40:50 -0500
-Message-ID: <5474BF19.3040707@arm.com>
-Date: Tue, 25 Nov 2014 17:40:41 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Daniel Thompson <daniel.thompson@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-CC: Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>
-Subject: Re: [PATCH 3.18-rc3 v9 1/5] irqchip: gic: Finer grain locking for
- gic_raise_softirq
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <1416936401-5147-1-git-send-email-daniel.thompson@linaro.org> <1416936401-5147-2-git-send-email-daniel.thompson@linaro.org>
-In-Reply-To: <1416936401-5147-2-git-send-email-daniel.thompson@linaro.org>
-Content-Type: text/plain; charset=windows-1252
+	Tue, 25 Nov 2014 12:42:49 -0500
+Date: Tue, 25 Nov 2014 18:42:38 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v4 05/42] virtio: memory access APIs
+Message-ID: <20141125184238.0a4436f8.cornelia.huck@de.ibm.com>
+In-Reply-To: <1416933600-21398-6-git-send-email-mst@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
+	<1416933600-21398-6-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112517-0017-0000-0000-000001F99814
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Tue, 25 Nov 2014 18:41:42 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-On 25/11/14 17:26, Daniel Thompson wrote:
-> irq_controller_lock is used for multiple purposes within the gic driver.
-> Primarily it is used to make register read-modify-write sequences atomic.
-> It is also used by gic_raise_softirq() in order that the big.LITTLE
-> migration logic can figure out when it is safe to migrate interrupts
-> between physical cores.
+> virtio 1.0 makes all memory structures LE, so
+> we need APIs to conditionally do a byteswap on BE
+> architectures.
 > 
-> The second usage of irq_controller_lock is difficult to discern when
-> reviewing the code because the migration itself takes place outside
-> the lock.
+> To make it easier to check code statically,
+> add virtio specific types for multi-byte integers
+> in memory.
 > 
-> This patch makes the second usage more explicit by splitting it out into
-> a separate lock and providing better comments.
-
-While we're at it, how about an additional patch that would make this
-lock disappear entirely when the big-little stuff is not compiled in,
-which is likely to be the case on a lot of (dare I say most?) systems?
-That will save expensive barriers that we definitely could do without.
-
-It otherwise looks good to me.
-
-Thanks,
-
-	M.
-
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Marc Zyngier <marc.zyngier@arm.com>
+> Add low level wrappers that do a byteswap conditionally, these will be
+> useful e.g. for vhost.  Add high level wrappers that
+> query device endian-ness and act accordingly.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 > ---
->  drivers/irqchip/irq-gic.c | 21 ++++++++++++++++++---
->  1 file changed, 18 insertions(+), 3 deletions(-)
+>  include/linux/virtio_byteorder.h  | 59 +++++++++++++++++++++++++++++++++++++++
+>  include/linux/virtio_config.h     | 32 +++++++++++++++++++++
+>  include/uapi/linux/virtio_ring.h  | 45 ++++++++++++++---------------
+>  include/uapi/linux/virtio_types.h | 48 +++++++++++++++++++++++++++++++
+>  include/uapi/linux/Kbuild         |  1 +
+>  5 files changed, 163 insertions(+), 22 deletions(-)
+>  create mode 100644 include/linux/virtio_byteorder.h
+>  create mode 100644 include/uapi/linux/virtio_types.h
 > 
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 38493ff28fa5..bb4bc20573ea 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -73,6 +73,12 @@ struct gic_chip_data {
->  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
->  
->  /*
-> + * This lock is used by the big.LITTLE migration code to ensure no
-> + * IPIs can be pended on the old core after the map has been updated.
-> + */
-> +static DEFINE_RAW_SPINLOCK(cpu_map_migration_lock);
+> diff --git a/include/linux/virtio_byteorder.h b/include/linux/virtio_byteorder.h
+> new file mode 100644
+> index 0000000..824ed0b
+> --- /dev/null
+> +++ b/include/linux/virtio_byteorder.h
+> @@ -0,0 +1,59 @@
+> +#ifndef _LINUX_VIRTIO_BYTEORDER_H
+> +#define _LINUX_VIRTIO_BYTEORDER_H
+> +#include <linux/types.h>
+> +#include <uapi/linux/virtio_types.h>
 > +
 > +/*
->   * The GIC mapping of CPU interfaces does not necessarily match
->   * the logical CPU numbering.  Let's use a mapping as returned
->   * by the GIC itself.
-> @@ -624,7 +630,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  	int cpu;
->  	unsigned long flags, map = 0;
->  
-> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-> +	raw_spin_lock_irqsave(&cpu_map_migration_lock, flags);
->  
->  	/* Convert our logical CPU mask into a physical one. */
->  	for_each_cpu(cpu, mask)
-> @@ -639,7 +645,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  	/* this always happens on GIC0 */
->  	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
->  
-> -	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
-> +	raw_spin_unlock_irqrestore(&cpu_map_migration_lock, flags);
->  }
->  #endif
->  
-> @@ -710,8 +716,17 @@ void gic_migrate_target(unsigned int new_cpu_id)
->  
->  	raw_spin_lock(&irq_controller_lock);
->  
-> -	/* Update the target interface for this logical CPU */
-> +	/*
-> +	 * Update the target interface for this logical CPU
-> +	 *
-> +	 * From the point we release the cpu_map_migration_lock any new
-> +	 * SGIs will be pended on the new cpu which makes the set of SGIs
-> +	 * pending on the old cpu static. That means we can defer the
-> +	 * migration until after we have released the irq_controller_lock.
-> +	 */
-> +	raw_spin_lock(&cpu_map_migration_lock);
->  	gic_cpu_map[cpu] = 1 << new_cpu_id;
-> +	raw_spin_unlock(&cpu_map_migration_lock);
->  
->  	/*
->  	 * Find all the peripheral interrupts targetting the current
-> 
+> + * Memory accessors for handling virtio in modern little endian and in
 
+"Low-level memory accessors"?
 
--- 
-Jazz is not dead. It just smells funny...
+> + * compatibility native endian format.
+> + */
+(...)
+> diff --git a/include/uapi/linux/virtio_types.h b/include/uapi/linux/virtio_types.h
+> new file mode 100644
+> index 0000000..b90385f
+> --- /dev/null
+> +++ b/include/uapi/linux/virtio_types.h
+> @@ -0,0 +1,48 @@
+> +#ifndef _UAPI_LINUX_VIRTIO_TYPES_H
+> +#define _UAPI_LINUX_VIRTIO_TYPES_H
+> +/* An interface for efficient virtio implementation, currently for use by KVM
+> + * and lguest, but hopefully others soon.  
+
+You probably copied this from the existing virtio header, didn't you?
+
+What about simply:
+
+"Type definitions for virtio implementations."
+
+(and then the remaining text)
+
+> Do NOT change this since it will
+> + * break existing servers and clients.
+> + *
+> + * This header is BSD licensed so anyone can use the definitions to implement
+> + * compatible drivers/servers.
+(...)
+
