@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554AbaKYOyr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:54:47 -0500
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:35306 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012AbaKYOyO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:54:14 -0500
+	id S1751636AbaKYOzD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:55:03 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:55455 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751571AbaKYOy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 09:54:58 -0500
+Message-ID: <54749804.8070400@ti.com>
+Date: Tue, 25 Nov 2014 16:53:56 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAK8d-aL+3eB4WZeqO1sv9p3440EVXQiqF6QiTU5YNAKAbZ7f-w@mail.gmail.com>
-References: <1416419951-27659-1-git-send-email-stevenrwalter@gmail.com>
- <20141120113813.GA23288@t440s.lan> <80321467-10AB-489E-A47E-44B0ECEE4BE1@holtmann.org>
- <CAK8d-aL+3eB4WZeqO1sv9p3440EVXQiqF6QiTU5YNAKAbZ7f-w@mail.gmail.com>
-From: Steven Walter <stevenrwalter@gmail.com>
-Date: Tue, 25 Nov 2014 09:53:52 -0500
-Message-ID: <CAK8d-a+MJBBLkU_=UQGKVmxnM-sYJ=pW7aj0XQ5aa5AuR2G_Wg@mail.gmail.com>
-Subject: Re: [PATCH v3] Bluetooth: automatically flushable packets aren't
- allowed on LE links
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kevin Hilman <khilman@kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robh+dt@kernel.org>,
+        "Geert Uytterhoeven" <geert@linux-m68k.org>, <ssantosh@kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
+References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com> <15074721.IbfeeI3ajE@wuerfel> <54746349.3000306@ti.com> <2301239.aDOlWg3gEs@wuerfel> <5474846C.2000308@ti.com> <20141125140440.GF3836@n2100.arm.linux.org.uk>
+In-Reply-To: <20141125140440.GF3836@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 10:51 AM, Steven Walter <stevenrwalter@gmail.com> wrote:
->> > I think Marcel was after just providing a clarifying code comment in
->> > both places - having two branches of an if-statement doing exactly the
->> > same thing looks a bit weird to me. To make thins completely clear I'd
->> > suggest adding a simple helper function that you can call from both
->> > places to get the needed flags, something like the following:
->>
->> I am actually fine with just adding a comment explaining the complex if
->> statement on why it is correct. It is just a helper for everybody to
->> understand what and why it is done that way.
->
->
-> Is the comment I added sufficient, or should I add one for the other if
-> condition as well?  To me, the second condition is pretty straightforward:
-> if the caller requested it and the hardware supports it, use NO_FLUSH.  The
-> relationship between FLUSH/NO_FLUSH and low-energy is much less clear and
-> more justifies a comment, in my opinion.
+Hi Russell,
 
-Did a miss a reply to this?  How would you like the next iteration of
-the patch to look?
--- 
--Steven Walter <stevenrwalter@gmail.com>
+On 11/25/2014 04:04 PM, Russell King - ARM Linux wrote:
+> On Tue, Nov 25, 2014 at 03:30:20PM +0200, Grygorii Strashko wrote:
+>> On 11/25/2014 02:09 PM, Arnd Bergmann wrote:
+>>> It might be possible to do this implicitly if the driver calls clk_get(),
+>>> basically doing clk_get() (or another call if necessary) would prevent the
+>>> simple pmdomain from turning it off during suspend.
+>>
+>> Unfortunately, clk_get() will not work, because drivers still need to use it
+>> to get functional clocks even if they are not going to control them explicitly.
+>> For example, if it need to know clock's rate.
+> 
+> If you don't want a clock to be turned off, then clk_get() it, then
+> clk_prepare() it, and finally clk_enable() it.
+> 
+> Even if someone else gets it, the only time that a clock is turned off
+> is when _all_ users of it mutually agree that it can be turned off - by
+> every user disabling (and possibly unpreparing) it.
+> 
+> So, if the PM domain code gets a clock, prepares and enables it, then
+> a driver gets the same clock, prepares and enables it also, it won't
+> be disabled until _both_ the PM domain code _and_ the driver disable
+> and unprepare the clock.
+> 
+
+All 100% true :)
+
+But the question here is how prevent pm_clk domain (clock_ops.c) from
+getting the control on clock if this particular clock is optional from driver's
+perspective. So, only driver should control it. As opposite, all other clocks
+should be controlled by pm-domain (in case of GPD from .start/stop callbacks).
+
+You can find more detailed description of problem which this patch was
+created to solve here:
+https://lkml.org/lkml/2014/11/19/225
+
+Thanks for your time.
+
+regards,
+-grygorii
