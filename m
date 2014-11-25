@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757AbaKYM0K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:26:10 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:61198 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754430AbaKYM0H (ORCPT
+	id S1754810AbaKYM0u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:26:50 -0500
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:38935 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753845AbaKYM0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 07:26:07 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-dc-5474755d61a0
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: vinod.koul@intel.com
-Cc: dan.j.williams@intel.com, ars@metafoo.de, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        l.czerwinski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 2/2] dma: pl330: add DMA_PAUSE feature
-Date: Tue, 25 Nov 2014 13:25:46 +0100
-Message-id: <1416918346-2442-3-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1416918346-2442-1-git-send-email-r.baldyga@samsung.com>
-References: <1416918346-2442-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCLMWRmVeSWpSXmKPExsVy+t9jQd3Y0pIQg56lRhYXDnQyWkyfeoHR
-	YvXUv6wWv6ZNYrO4vGsOm8XaI3fZLR4c3slu8bJvP4sDh8fiPS+ZPJa8OcTq0bdlFaPH501y
-	ASxRXDYpqTmZZalF+nYJXBlzdxxjLbjNWzG/+S9jA+My7i5GTg4JAROJS9OPskLYYhIX7q1n
-	A7GFBKYzSkzcWN3FyAVktzNJ7Pp1iBEkwSagI7Hl+wQwW0RAQmL7sz52kCJmgaOMEtPnXgDr
-	FhYwk/j8YA8ziM0ioCqx9O5JsDivgIvExq2zoLbJSZw8NhnM5hRwlehd9JARYrOLxLQjR5km
-	MPIuYGRYxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREcVs+kdjCubLA4xCjAwajEw9txtjhE
-	iDWxrLgy9xCjBAezkgjvk+SSECHelMTKqtSi/Pii0pzU4kOM0hwsSuK8N27mhggJpCeWpGan
-	phakFsFkmTg4pRoYZ2V3xW3kPeEixVvwV2gpy4NaP7fEsgeTLH5yyiRMEX8tx1NepfPMzfrd
-	744c/R384pNFNe4dfhcrdC/f2eO57gtJs9TiNdxBlb5Jq3WMti0svK7x/7F06fcZtbKdO9/y
-	7L9jeezm9VOqC/2zhT4kh30RPKhz4WrKxOwrK/pdeIS2l9gLOn9WYinOSDTUYi4qTgQAruAb
-	MCcCAAA=
+	Tue, 25 Nov 2014 07:26:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <1416852146-9781-7-git-send-email-a.ryabinin@samsung.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com> <1416852146-9781-7-git-send-email-a.ryabinin@samsung.com>
+From: Dmitry Chernenkov <dmitryc@google.com>
+Date: Tue, 25 Nov 2014 16:26:28 +0400
+Message-ID: <CAA6XgkGWdR7r1VmKKE0-Rs9jozdXcv88khB1goFrOyDx1wTkhg@mail.gmail.com>
+Subject: Re: [PATCH v7 06/12] mm: slub: share slab_err and object_err functions
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMA_PAUSE command is used for halting DMA transfer on chosen channel.
-It can be useful when we want to safely read residue before terminating
-all requests on channel. Otherwise there can be situation when some data
-is transferred before channel termination but after reading residue,
-which obviously results with data loss. To avoid this situation we can
-pause channel, read residue and then terminate all requests.
-This scenario is common, for example, in serial port drivers.
+LGTM
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- drivers/dma/pl330.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
-
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index c32806d..9c64421 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2115,6 +2115,26 @@ static int pl330_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd, unsigned
- 		list_splice_tail_init(&pch->completed_list, &pl330->desc_pool);
- 		spin_unlock_irqrestore(&pch->lock, flags);
- 		break;
-+	case DMA_PAUSE:
-+		/*
-+		 * We don't support DMA_RESUME command because of hardware
-+		 * limitations, so after pausing the channel we cannot restore
-+		 * it to active state. We have to terminate channel and setup
-+		 * DMA transfer again. This pause feature was implemented to
-+		 * allow safely read residue before channel termination.
-+		 */
-+		spin_lock_irqsave(&pch->lock, flags);
-+
-+		spin_lock(&pl330->lock);
-+		_stop(pch->thread);
-+		spin_unlock(&pl330->lock);
-+
-+		pch->thread->req[0].desc = NULL;
-+		pch->thread->req[1].desc = NULL;
-+		pch->thread->req_running = -1;
-+
-+		spin_unlock_irqrestore(&pch->lock, flags);
-+		break;
- 	case DMA_SLAVE_CONFIG:
- 		slave_config = (struct dma_slave_config *)arg;
- 
--- 
-1.9.1
-
+On Mon, Nov 24, 2014 at 9:02 PM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
+> Remove static and add function declarations to mm/slab.h so they
+> could be used by kernel address sanitizer.
+>
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> ---
+>  include/linux/slub_def.h | 5 +++++
+>  mm/slub.c                | 4 ++--
+>  2 files changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+> index c75bc1d..144b5cb 100644
+> --- a/include/linux/slub_def.h
+> +++ b/include/linux/slub_def.h
+> @@ -115,4 +115,9 @@ static inline void *virt_to_obj(struct kmem_cache *s, void *slab_page, void *x)
+>         return x - ((x - slab_page) % s->size);
+>  }
+>
+> +__printf(3, 4)
+> +void slab_err(struct kmem_cache *s, struct page *page, const char *fmt, ...);
+> +void object_err(struct kmem_cache *s, struct page *page,
+> +               u8 *object, char *reason);
+> +
+>  #endif /* _LINUX_SLUB_DEF_H */
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 95d2142..0c01584 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -629,14 +629,14 @@ static void print_trailer(struct kmem_cache *s, struct page *page, u8 *p)
+>         dump_stack();
+>  }
+>
+> -static void object_err(struct kmem_cache *s, struct page *page,
+> +void object_err(struct kmem_cache *s, struct page *page,
+>                         u8 *object, char *reason)
+>  {
+>         slab_bug(s, "%s", reason);
+>         print_trailer(s, page, object);
+>  }
+>
+> -static void slab_err(struct kmem_cache *s, struct page *page,
+> +void slab_err(struct kmem_cache *s, struct page *page,
+>                         const char *fmt, ...)
+>  {
+>         va_list args;
+> --
+> 2.1.3
+>
