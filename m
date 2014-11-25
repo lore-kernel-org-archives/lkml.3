@@ -1,64 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaKYVUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 16:20:31 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38570 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaKYVU3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 16:20:29 -0500
-Date: Tue, 25 Nov 2014 21:18:26 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Message-ID: <20141125211826.GR7712@sirena.org.uk>
-References: <5474E91E.6000401@metafoo.de>
- <1416949399-29718-1-git-send-email-olof@lixom.net>
- <20141125211431.GP7712@sirena.org.uk>
+	id S1751917AbaKYVUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 16:20:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44434 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751169AbaKYVUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 16:20:51 -0500
+Date: Tue, 25 Nov 2014 23:20:11 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nikhil Rao <nikhil.rao@intel.com>,
+        Siva Yerramreddy <yshivakrishna@gmail.com>, lguest@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH v4 04/42] virtio: disable virtio 1.0 in transports
+Message-ID: <20141125212011.GA22343@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
+ <1416933600-21398-5-git-send-email-mst@redhat.com>
+ <20141125182942.3890fe7b.cornelia.huck@de.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7b/njLcpB6QT9MFH"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141125211431.GP7712@sirena.org.uk>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] regmap: provide dummy regmap_exit()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20141125182942.3890fe7b.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 25, 2014 at 06:29:42PM +0100, Cornelia Huck wrote:
+> On Tue, 25 Nov 2014 18:41:35 +0200
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> 
+> > disable virtio 1.0 in transports that don't
+> > support it yet.
+> 
+> I'd prefer if you disabled it for _every_ transport in this patch,
+> until the needed infrastructure is in place. Else this is a bit
+> confusing.
 
---7b/njLcpB6QT9MFH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well the only transports left are pci and rpoc, and these only
+read the low 32 bit of the features from the device -
+so there's nothing to clear.
 
-On Tue, Nov 25, 2014 at 09:14:31PM +0000, Mark Brown wrote:
+E.g. the following would be even more confusing, would it not:
 
-> I'll tweak the commit message when applying.
+	u32 features;
+	....
+	features &= ~BIT_ULL(VIRTIO_F_VERSION_1);
 
-Oh, on second thoughts Lars sent his orthogonal fix so we don't need
-this for build.  Given that I'm not entirely happy with that one user
-and don't really want to see others I'll skip this so we catch any other
-potential users.  Makes sense?
+Agree?
 
---7b/njLcpB6QT9MFH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> > We will gradually re-enable as support is added.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  drivers/lguest/lguest_device.c     | 3 ++-
+> >  drivers/misc/mic/card/mic_virtio.c | 2 ++
+> >  drivers/s390/kvm/virtio_ccw.c      | 3 ++-
+> >  drivers/virtio/virtio_mmio.c       | 2 ++
+> >  4 files changed, 8 insertions(+), 2 deletions(-)
+> 
+> Why do you disable ccw but not pci? (Doesn't pci need any changes
+> transport-side?)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+No because the register is 32 bit wide there.
 
-iQEcBAEBAgAGBQJUdPIiAAoJECTWi3JdVIfQ4f8H/2YqJYW3ZL3mF2Xr0Gj8L3Qy
-rIcIMuWqHGlM+u6L4Bh7bkw30eTnwf14mnrvbZ94eRF9D7PJR/RmITY0JO348vi8
-kPKUp2Hk54EKuRWsCm5LJtzTSS7Jdq2IirxCMhWRaHDhoA0EQwMee9ytn2sBnIjl
-G5cHGXTvAgTP/uA3+ADvWbD3rId3YUiWEofGSXa4aGqCb3ybu+oWzBEeGgCFvA2l
-SUdOKJsADpoVLEswxNBDtIrUmn0//XDx4KWtJlaZYCtjgCTc6Dg4y9S/xc42v4xp
-50BpT3ZaSB0GJVs0/zalumXk2Qt729XojJ6mbEftKznlCP6fZ7smZr51N7WKDV8=
-=asbk
------END PGP SIGNATURE-----
+> And you missed the old s390 virtio transport in
+> drivers/s390/kvm/kvm_virtio.c :)
 
---7b/njLcpB6QT9MFH--
+Good catch. I can fix that for v5, but see below.
+
+> > diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+> > index abba04d..08536f0 100644
+> > --- a/drivers/s390/kvm/virtio_ccw.c
+> > +++ b/drivers/s390/kvm/virtio_ccw.c
+> > @@ -704,7 +704,8 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
+> >  out_free:
+> >  	kfree(features);
+> >  	kfree(ccw);
+> > -	return rc;
+> > +	/* TODO: enable virtio 1.0 */
+> > +	return rc & ~BIT_ULL(VIRTIO_F_VERSION_1);;
+> 
+> double ';'
+> 
+> FWIW, as negotiating a revision >= 1 is a pre-req for virtio 1.0
+> support on ccw, virtio 1.0 is already implicitly disabled.
+
+Ah, you mean device guarantees that VIRTIO_F_VERSION_1 isn't set
+if guest sets revision to 0?
+In that case it's probably best to drop this from both ccw
+devices.
+
+It is here temporarily anyway, only in order to avoid
+using transitional devices incorrectly when bisecting.
+
+
+> >  }
+> > 
+> >  static void virtio_ccw_finalize_features(struct virtio_device *vdev)
