@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450AbaKYHWU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 02:22:20 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:65120 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaKYHUl (ORCPT
+	id S1752097AbaKYHUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 02:20:32 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:59796 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaKYHUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 02:20:41 -0500
+	Tue, 25 Nov 2014 02:20:22 -0500
 From: Pieter Smith <pieter@boesman.nl>
 To: pieter@boesman.nl
 Cc: Josh Triplett <josh@joshtriplett.org>,
@@ -45,9 +45,9 @@ Cc: Josh Triplett <josh@joshtriplett.org>,
         Willem de Bruijn <willemb@google.com>,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         =?UTF-8?q?=E8=94=A1=E6=AD=A3=E9=BE=99?= <zhenglong.cai@cs2c.com.cn>
-Subject: [PATCH v5 5/7] net/core: support compiling out splice
-Date: Tue, 25 Nov 2014 08:19:40 +0100
-Message-Id: <1416899996-21315-6-git-send-email-pieter@boesman.nl>
+Subject: [PATCH v5 1/7] fs: move sendfile syscall into fs/splice
+Date: Tue, 25 Nov 2014 08:19:36 +0100
+Message-Id: <1416899996-21315-2-git-send-email-pieter@boesman.nl>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416899996-21315-1-git-send-email-pieter@boesman.nl>
 References: <1416899996-21315-1-git-send-email-pieter@boesman.nl>
@@ -55,89 +55,404 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To implement splice support, net/core makes use of nosteal_pipe_buf_ops. This
-struct is exported by fs/splice. The goal of the larger patch set is to
-completely compile out fs/splice, so uses of the exported struct need to be
-compiled out along with fs/splice.
+sendfile functionally forms part of the splice group of syscalls (splice,
+vmsplice and tee). Grouping sendfile with splice paves the way to compiling out
+the splice group of syscalls for embedded systems that do not need these.
 
-This patch therefore compiles out splice support in net/core when
-CONFIG_SYSCALL_SPLICE is undefined. The compiled out function skb_splice_bits
-is transparently mocked out with a static inline. The greater patch set removes
-userspace splice support so it cannot be called anyway.
+add/remove: 0/0 grow/shrink: 7/2 up/down: 86/-61 (25)
+function                                     old     new   delta
+file_start_write                              34      68     +34
+file_end_write                                29      58     +29
+sys_pwritev                                  115     122      +7
+sys_preadv                                   115     122      +7
+fdput_pos                                     29      36      +7
+sys_pwrite64                                 115     116      +1
+sys_pread64                                  115     116      +1
+sys_tee                                      497     491      -6
+sys_splice                                  1075    1020     -55
 
 Signed-off-by: Pieter Smith <pieter@boesman.nl>
 ---
- include/linux/skbuff.h | 10 ++++++++++
- net/core/skbuff.c      | 11 +++++++----
- 2 files changed, 17 insertions(+), 4 deletions(-)
+ fs/read_write.c | 175 -------------------------------------------------------
+ fs/splice.c     | 178 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 178 insertions(+), 175 deletions(-)
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index a59d934..5cd636b 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2640,9 +2640,19 @@ int skb_copy_bits(const struct sk_buff *skb, int offset, void *to, int len);
- int skb_store_bits(struct sk_buff *skb, int offset, const void *from, int len);
- __wsum skb_copy_and_csum_bits(const struct sk_buff *skb, int offset, u8 *to,
- 			      int len, __wsum csum);
-+#ifdef CONFIG_SYSCALL_SPLICE
- int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
- 		    struct pipe_inode_info *pipe, unsigned int len,
- 		    unsigned int flags);
-+#else
-+static inline int
-+skb_splice_bits(struct sk_buff *skb, unsigned int offset,
-+		struct pipe_inode_info *pipe, unsigned int len,
-+		unsigned int flags)
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 7d9318c..d9451ba 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -1191,178 +1191,3 @@ COMPAT_SYSCALL_DEFINE5(pwritev, compat_ulong_t, fd,
+ }
+ #endif
+ 
+-static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
+-		  	   size_t count, loff_t max)
+-{
+-	struct fd in, out;
+-	struct inode *in_inode, *out_inode;
+-	loff_t pos;
+-	loff_t out_pos;
+-	ssize_t retval;
+-	int fl;
+-
+-	/*
+-	 * Get input file, and verify that it is ok..
+-	 */
+-	retval = -EBADF;
+-	in = fdget(in_fd);
+-	if (!in.file)
+-		goto out;
+-	if (!(in.file->f_mode & FMODE_READ))
+-		goto fput_in;
+-	retval = -ESPIPE;
+-	if (!ppos) {
+-		pos = in.file->f_pos;
+-	} else {
+-		pos = *ppos;
+-		if (!(in.file->f_mode & FMODE_PREAD))
+-			goto fput_in;
+-	}
+-	retval = rw_verify_area(READ, in.file, &pos, count);
+-	if (retval < 0)
+-		goto fput_in;
+-	count = retval;
+-
+-	/*
+-	 * Get output file, and verify that it is ok..
+-	 */
+-	retval = -EBADF;
+-	out = fdget(out_fd);
+-	if (!out.file)
+-		goto fput_in;
+-	if (!(out.file->f_mode & FMODE_WRITE))
+-		goto fput_out;
+-	retval = -EINVAL;
+-	in_inode = file_inode(in.file);
+-	out_inode = file_inode(out.file);
+-	out_pos = out.file->f_pos;
+-	retval = rw_verify_area(WRITE, out.file, &out_pos, count);
+-	if (retval < 0)
+-		goto fput_out;
+-	count = retval;
+-
+-	if (!max)
+-		max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
+-
+-	if (unlikely(pos + count > max)) {
+-		retval = -EOVERFLOW;
+-		if (pos >= max)
+-			goto fput_out;
+-		count = max - pos;
+-	}
+-
+-	fl = 0;
+-#if 0
+-	/*
+-	 * We need to debate whether we can enable this or not. The
+-	 * man page documents EAGAIN return for the output at least,
+-	 * and the application is arguably buggy if it doesn't expect
+-	 * EAGAIN on a non-blocking file descriptor.
+-	 */
+-	if (in.file->f_flags & O_NONBLOCK)
+-		fl = SPLICE_F_NONBLOCK;
+-#endif
+-	file_start_write(out.file);
+-	retval = do_splice_direct(in.file, &pos, out.file, &out_pos, count, fl);
+-	file_end_write(out.file);
+-
+-	if (retval > 0) {
+-		add_rchar(current, retval);
+-		add_wchar(current, retval);
+-		fsnotify_access(in.file);
+-		fsnotify_modify(out.file);
+-		out.file->f_pos = out_pos;
+-		if (ppos)
+-			*ppos = pos;
+-		else
+-			in.file->f_pos = pos;
+-	}
+-
+-	inc_syscr(current);
+-	inc_syscw(current);
+-	if (pos > max)
+-		retval = -EOVERFLOW;
+-
+-fput_out:
+-	fdput(out);
+-fput_in:
+-	fdput(in);
+-out:
+-	return retval;
+-}
+-
+-SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd, off_t __user *, offset, size_t, count)
+-{
+-	loff_t pos;
+-	off_t off;
+-	ssize_t ret;
+-
+-	if (offset) {
+-		if (unlikely(get_user(off, offset)))
+-			return -EFAULT;
+-		pos = off;
+-		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
+-		if (unlikely(put_user(pos, offset)))
+-			return -EFAULT;
+-		return ret;
+-	}
+-
+-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+-}
+-
+-SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd, loff_t __user *, offset, size_t, count)
+-{
+-	loff_t pos;
+-	ssize_t ret;
+-
+-	if (offset) {
+-		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
+-			return -EFAULT;
+-		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
+-		if (unlikely(put_user(pos, offset)))
+-			return -EFAULT;
+-		return ret;
+-	}
+-
+-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+-}
+-
+-#ifdef CONFIG_COMPAT
+-COMPAT_SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd,
+-		compat_off_t __user *, offset, compat_size_t, count)
+-{
+-	loff_t pos;
+-	off_t off;
+-	ssize_t ret;
+-
+-	if (offset) {
+-		if (unlikely(get_user(off, offset)))
+-			return -EFAULT;
+-		pos = off;
+-		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
+-		if (unlikely(put_user(pos, offset)))
+-			return -EFAULT;
+-		return ret;
+-	}
+-
+-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+-}
+-
+-COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
+-		compat_loff_t __user *, offset, compat_size_t, count)
+-{
+-	loff_t pos;
+-	ssize_t ret;
+-
+-	if (offset) {
+-		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
+-			return -EFAULT;
+-		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
+-		if (unlikely(put_user(pos, offset)))
+-			return -EFAULT;
+-		return ret;
+-	}
+-
+-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+-}
+-#endif
+diff --git a/fs/splice.c b/fs/splice.c
+index f5cb9ba..c1a2861 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -28,6 +28,7 @@
+ #include <linux/export.h>
+ #include <linux/syscalls.h>
+ #include <linux/uio.h>
++#include <linux/fsnotify.h>
+ #include <linux/security.h>
+ #include <linux/gfp.h>
+ #include <linux/socket.h>
+@@ -2039,3 +2040,180 @@ SYSCALL_DEFINE4(tee, int, fdin, int, fdout, size_t, len, unsigned int, flags)
+ 
+ 	return error;
+ }
++
++static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
++			   size_t count, loff_t max)
 +{
-+	return -EPERM;
++	struct fd in, out;
++	struct inode *in_inode, *out_inode;
++	loff_t pos;
++	loff_t out_pos;
++	ssize_t retval;
++	int fl;
++
++	/*
++	 * Get input file, and verify that it is ok..
++	 */
++	retval = -EBADF;
++	in = fdget(in_fd);
++	if (!in.file)
++		goto out;
++	if (!(in.file->f_mode & FMODE_READ))
++		goto fput_in;
++	retval = -ESPIPE;
++	if (!ppos) {
++		pos = in.file->f_pos;
++	} else {
++		pos = *ppos;
++		if (!(in.file->f_mode & FMODE_PREAD))
++			goto fput_in;
++	}
++	retval = rw_verify_area(READ, in.file, &pos, count);
++	if (retval < 0)
++		goto fput_in;
++	count = retval;
++
++	/*
++	 * Get output file, and verify that it is ok..
++	 */
++	retval = -EBADF;
++	out = fdget(out_fd);
++	if (!out.file)
++		goto fput_in;
++	if (!(out.file->f_mode & FMODE_WRITE))
++		goto fput_out;
++	retval = -EINVAL;
++	in_inode = file_inode(in.file);
++	out_inode = file_inode(out.file);
++	out_pos = out.file->f_pos;
++	retval = rw_verify_area(WRITE, out.file, &out_pos, count);
++	if (retval < 0)
++		goto fput_out;
++	count = retval;
++
++	if (!max)
++		max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
++
++	if (unlikely(pos + count > max)) {
++		retval = -EOVERFLOW;
++		if (pos >= max)
++			goto fput_out;
++		count = max - pos;
++	}
++
++	fl = 0;
++#if 0
++	/*
++	 * We need to debate whether we can enable this or not. The
++	 * man page documents EAGAIN return for the output at least,
++	 * and the application is arguably buggy if it doesn't expect
++	 * EAGAIN on a non-blocking file descriptor.
++	 */
++	if (in.file->f_flags & O_NONBLOCK)
++		fl = SPLICE_F_NONBLOCK;
++#endif
++	file_start_write(out.file);
++	retval = do_splice_direct(in.file, &pos, out.file, &out_pos, count, fl);
++	file_end_write(out.file);
++
++	if (retval > 0) {
++		add_rchar(current, retval);
++		add_wchar(current, retval);
++		fsnotify_access(in.file);
++		fsnotify_modify(out.file);
++		out.file->f_pos = out_pos;
++		if (ppos)
++			*ppos = pos;
++		else
++			in.file->f_pos = pos;
++	}
++
++	inc_syscr(current);
++	inc_syscw(current);
++	if (pos > max)
++		retval = -EOVERFLOW;
++
++fput_out:
++	fdput(out);
++fput_in:
++	fdput(in);
++out:
++	return retval;
++}
++
++SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd, off_t __user *, offset, size_t, count)
++{
++	loff_t pos;
++	off_t off;
++	ssize_t ret;
++
++	if (offset) {
++		if (unlikely(get_user(off, offset)))
++			return -EFAULT;
++		pos = off;
++		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
++		if (unlikely(put_user(pos, offset)))
++			return -EFAULT;
++		return ret;
++	}
++
++	return do_sendfile(out_fd, in_fd, NULL, count, 0);
++}
++
++SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd, loff_t __user *, offset, size_t, count)
++{
++	loff_t pos;
++	ssize_t ret;
++
++	if (offset) {
++		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
++			return -EFAULT;
++		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
++		if (unlikely(put_user(pos, offset)))
++			return -EFAULT;
++		return ret;
++	}
++
++	return do_sendfile(out_fd, in_fd, NULL, count, 0);
++}
++
++#ifdef CONFIG_COMPAT
++COMPAT_SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd,
++		compat_off_t __user *, offset, compat_size_t, count)
++{
++	loff_t pos;
++	off_t off;
++	ssize_t ret;
++
++	if (offset) {
++		if (unlikely(get_user(off, offset)))
++			return -EFAULT;
++		pos = off;
++		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
++		if (unlikely(put_user(pos, offset)))
++			return -EFAULT;
++		return ret;
++	}
++
++	return do_sendfile(out_fd, in_fd, NULL, count, 0);
++}
++
++COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
++		compat_loff_t __user *, offset, compat_size_t, count)
++{
++	loff_t pos;
++	ssize_t ret;
++
++	if (offset) {
++		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
++			return -EFAULT;
++		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
++		if (unlikely(put_user(pos, offset)))
++			return -EFAULT;
++		return ret;
++	}
++
++	return do_sendfile(out_fd, in_fd, NULL, count, 0);
 +}
 +#endif
- void skb_copy_and_csum_dev(const struct sk_buff *skb, u8 *to);
- unsigned int skb_zerocopy_headlen(const struct sk_buff *from);
- int skb_zerocopy(struct sk_buff *to, struct sk_buff *from,
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 61059a0..bb426d9 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -1678,7 +1678,8 @@ EXPORT_SYMBOL(skb_copy_bits);
-  * Callback from splice_to_pipe(), if we need to release some pages
-  * at the end of the spd in case we error'ed out in filling the pipe.
-  */
--static void sock_spd_release(struct splice_pipe_desc *spd, unsigned int i)
-+static void __maybe_unused sock_spd_release(struct splice_pipe_desc *spd,
-+					    unsigned int i)
- {
- 	put_page(spd->pages[i]);
- }
-@@ -1781,9 +1782,9 @@ static bool __splice_segment(struct page *page, unsigned int poff,
-  * Map linear and fragment data from the skb to spd. It reports true if the
-  * pipe is full or if we already spliced the requested length.
-  */
--static bool __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
--			      unsigned int *offset, unsigned int *len,
--			      struct splice_pipe_desc *spd, struct sock *sk)
-+static bool __maybe_unused __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
-+					     unsigned int *offset, unsigned int *len,
-+					     struct splice_pipe_desc *spd, struct sock *sk)
- {
- 	int seg;
- 
-@@ -1821,6 +1822,7 @@ static bool __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
-  * the frag list, if such a thing exists. We'd probably need to recurse to
-  * handle that cleanly.
-  */
-+#ifdef CONFIG_SYSCALL_SPLICE
- int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
- 		    struct pipe_inode_info *pipe, unsigned int tlen,
- 		    unsigned int flags)
-@@ -1876,6 +1878,7 @@ done:
- 
- 	return ret;
- }
-+#endif /* CONFIG_SYSCALL_SPLICE */
- 
- /**
-  *	skb_store_bits - store bits from kernel buffer to skb
++
 -- 
 2.1.0
 
