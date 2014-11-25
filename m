@@ -1,157 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751343AbaKYS22 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 13:28:28 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:63937 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaKYS21 (ORCPT
+	id S1750950AbaKYSbJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 13:31:09 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:35838 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726AbaKYSbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 13:28:27 -0500
-From: Siddharth Kannan <kannan.siddharth12@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: mail@beyermatthias.de, rickard_strandqvist@spectrumdigital.se,
-        ztugcesirin@gmail.com, fanwlexca@gmail.com, rashika.kheria@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        klmckinney1@gmail.com, kannan.siddharth12@gmail.com
-Subject: [PATCH] staging: bcm: nvm: Fixed spelling errors, that may break grep.
-Date: Tue, 25 Nov 2014 23:58:18 +0530
-Message-Id: <1416940098-7491-1-git-send-email-kannan.siddharth12@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 25 Nov 2014 13:31:07 -0500
+Message-ID: <5474CAC6.8030608@roeck-us.net>
+Date: Tue, 25 Nov 2014 10:30:30 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>
+Subject: Re: [PATCH 1/5] hwmon: ina2xx: bail-out from ina2xx_probe() in case
+ of configuration errors
+References: <1416930423-12179-1-git-send-email-bgolaszewski@baylibre.com>	<1416930423-12179-2-git-send-email-bgolaszewski@baylibre.com>	<5474A72D.2000309@roeck-us.net>	<CAMpxmJUrs-3oXwYyNh26EnuZRH9bpXrmBBLKM7tmKGx=gSwyuQ@mail.gmail.com>	<5474B564.9080902@roeck-us.net>	<CAMpxmJVGE444t3gE-=u8kuK_B9rJ=0fw9ZYVuYgQRPdswiPj7Q@mail.gmail.com>	<5474C36C.1020004@roeck-us.net> <CAMpxmJUhpX+AAmOS2gcgtJGr0dkeQ7YRyae12oRoW2NkT5drBA@mail.gmail.com>
+In-Reply-To: <CAMpxmJUhpX+AAmOS2gcgtJGr0dkeQ7YRyae12oRoW2NkT5drBA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.5474CACC.00A7,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing the following:
+On 11/25/2014 10:22 AM, Bartosz Golaszewski wrote:
+> 2014-11-25 18:59 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
+>> It seems to me this is a problem of your architecture. That doesn't
+>> make it a generic problem. Your architecture should detect that a
+>> probe was disconnected and de-instantiate the device automatically
+>> if so, and re-instantiate it if it is re-inserted. Ultimately this
+>> should be done with, for example, devicetree overlays.
+>
+> You're right and it's planned to be done this way in the future, when
+> this project exits its prototype phase (around Q2 2015). Nevertheless
+> I still think that if we're adding a set function, it should behave
+> like the getters and check the value returned by
+> i2c_smbus_write_word_swapped().
+>
 
-Adapater -> Adapter
-STATUS_SUCESS -> STATUS_SUCCESS
+I do not question that. I question changing the return value to -ENODEV.
 
-Signed-off-by: Siddharth Kannan <kannan.siddharth12@gmail.com>
----
- drivers/staging/bcm/nvm.c |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+Repeating my earlier question: Is the resistor value changed by software
+or by changing the probe ?
 
-diff --git a/drivers/staging/bcm/nvm.c b/drivers/staging/bcm/nvm.c
-index ce09473..3cb6eed 100644
---- a/drivers/staging/bcm/nvm.c
-+++ b/drivers/staging/bcm/nvm.c
-@@ -2953,7 +2953,7 @@ int BcmFlash2xBulkWrite(struct bcm_mini_adapter *Adapter,
-  * @Adapter :-Drivers private Data Structure
-  *
-  * Return Value:-
-- * Return STATUS_SUCESS if get success in setting the right DSD else negative error code
-+ * Return STATUS_SUCCESS if get success in setting the right DSD else negative error code
-  *
-  */
- 
-@@ -2994,7 +2994,7 @@ static int BcmGetActiveDSD(struct bcm_mini_adapter *Adapter)
-  * @Adapter : Driver private Data Structure
-  *
-  * Return Value:-
-- * Sucsess:- STATUS_SUCESS
-+ * Success:- STATUS_SUCCESS
-  * Failure- : negative erro code
-  *
-  */
-@@ -3083,7 +3083,7 @@ static int BcmDumpFlash2xSectionBitMap(struct bcm_flash2x_bitmap *psFlash2xBitMa
-  * @Adapter:-Driver private Data Structure
-  *
-  * Return value:-
-- * Success:- STATUS_SUCESS
-+ * Success:- STATUS_SUCCESS
-  * Failure:- negative error code
-  */
- 
-@@ -3330,7 +3330,7 @@ int BcmGetFlash2xSectionalBitMap(struct bcm_mini_adapter *Adapter, struct bcm_fl
-  * BcmSetActiveSection :- Set Active section is used to make priority field highest over other
-  * section of same type.
-  *
-- * @Adapater :- Bcm Driver Private Data Structure
-+ * @Adapter :- Bcm Driver Private Data Structure
-  * @eFlash2xSectionVal :- Flash section val whose priority has to be made highest.
-  *
-  * Return Value:- Make the priorit highest else return erorr code
-@@ -3510,7 +3510,7 @@ int BcmSetActiveSection(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_secti
- 
- /*
-  * BcmCopyISO - Used only for copying the ISO section
-- * @Adapater :- Bcm Driver Private Data Structure
-+ * @Adapter :- Bcm Driver Private Data Structure
-  * @sCopySectStrut :- Section copy structure
-  *
-  * Return value:- SUCCESS if copies successfully else negative error code
-@@ -3792,7 +3792,7 @@ out:
- /*
-  * BcmFlash2xCorruptSig : this API is used to corrupt the written sig in Bcm Header present in flash section.
-  * It will corrupt the sig, if Section is writable, by making first bytes as zero.
-- * @Adapater :- Bcm Driver Private Data Structure
-+ * @Adapter :- Bcm Driver Private Data Structure
-  * @eFlash2xSectionVal :- Flash section val which has header
-  *
-  * Return Value :-
-@@ -3820,7 +3820,7 @@ int BcmFlash2xCorruptSig(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_sect
- /*
-  *BcmFlash2xWriteSig :-this API is used to Write the sig if requested Section has
-  *					  header and  Write Permission.
-- * @Adapater :- Bcm Driver Private Data Structure
-+ * @Adapter :- Bcm Driver Private Data Structure
-  * @eFlashSectionVal :- Flash section val which has header
-  *
-  * Return Value :-
-@@ -3882,7 +3882,7 @@ int BcmFlash2xWriteSig(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_sectio
- /*
-  * validateFlash2xReadWrite :- This API is used to validate the user request for Read/Write.
-  *						      if requested Bytes goes beyond the Requested section, it reports error.
-- * @Adapater :- Bcm Driver Private Data Structure
-+ * @Adapter :- Bcm Driver Private Data Structure
-  * @psFlash2xReadWrite :-Flash2x Read/write structure pointer
-  *
-  * Return values:-Return TRUE is request is valid else false.
-@@ -3950,7 +3950,7 @@ int validateFlash2xReadWrite(struct bcm_mini_adapter *Adapter, struct bcm_flash2
- 
- /*
-  * IsFlash2x :- check for Flash 2.x
-- * Adapater :- Bcm Driver Private Data Structure
-+ * Adapter :- Bcm Driver Private Data Structure
-  *
-  * Return value:-
-  *	return TRUE if flah2.x of hgher version else return false.
-@@ -3966,7 +3966,7 @@ int IsFlash2x(struct bcm_mini_adapter *Adapter)
- 
- /*
-  * GetFlashBaseAddr :- Calculate the Flash Base address
-- * @Adapater :- Bcm Driver Private Data Structure
-+ * @Adapter :- Bcm Driver Private Data Structure
-  *
-  * Return Value:-
-  *	Success :- Base Address of the Flash
-@@ -4005,7 +4005,7 @@ static int GetFlashBaseAddr(struct bcm_mini_adapter *Adapter)
-  * BcmCopySection :- This API is used to copy the One section in another. Both section should
-  *				    be contiuous and of same size. Hence this Will not be applicabe to copy ISO.
-  *
-- * @Adapater :- Bcm Driver Private Data Structure
-+ * @Adapter :- Bcm Driver Private Data Structure
-  * @SrcSection :- Source section From where data has to be copied
-  * @DstSection :- Destination section to which data has to be copied
-  * @offset :- Offset from/to  where data has to be copied from one section to another.
-@@ -4112,7 +4112,7 @@ int BcmCopySection(struct bcm_mini_adapter *Adapter,
- 
- /*
-  * SaveHeaderIfPresent :- This API is use to Protect the Header in case of Header Sector write
-- * @Adapater :- Bcm Driver Private Data Structure
-+ * @Adapter :- Bcm Driver Private Data Structure
-  * @pBuff :- Data buffer that has to be written in sector having the header map.
-  * @uiOffset :- Flash offset that has to be written.
-  *
-@@ -4181,7 +4181,7 @@ static int SaveHeaderIfPresent(struct bcm_mini_adapter *Adapter, PUCHAR pBuff, u
- 
- /*
-  * BcmDoChipSelect : This will selcet the appropriate chip for writing.
-- * @Adapater :- Bcm Driver Private Data Structure
-+ * @Adapter :- Bcm Driver Private Data Structure
-  *
-  * OutPut:-
-  *	Select the Appropriate chip and retrn status Success
--- 
-1.7.9.5
+Thanks,
+Guenter
 
