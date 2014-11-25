@@ -1,107 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500AbaKYVXI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 16:23:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49912 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875AbaKYVXF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 16:23:05 -0500
-Date: Tue, 25 Nov 2014 13:23:04 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: James Custer <jcuster@sgi.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] x86: Allow 1GB pages to be SPECIAL similar to 2MB
-Message-Id: <20141125132304.ee475f4ea432a2e52ed4f8b5@linux-foundation.org>
-In-Reply-To: <1411656024-33114-1-git-send-email-jcuster@sgi.com>
-References: <1411656024-33114-1-git-send-email-jcuster@sgi.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751775AbaKYVXT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 16:23:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54067 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751366AbaKYVXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 16:23:15 -0500
+Message-ID: <5474F33F.2030402@suse.cz>
+Date: Tue, 25 Nov 2014 22:23:11 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Masahiro Yamada <yamada.m@jp.panasonic.com>
+CC: Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: collect shorthands into the top Makefile
+References: <1414567651-2503-1-git-send-email-yamada.m@jp.panasonic.com> <20141029185907.GA701@ravnborg.org> <20141031111254.8FF3.AA925319@jp.panasonic.com>
+In-Reply-To: <20141031111254.8FF3.AA925319@jp.panasonic.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Sep 2014 09:40:24 -0500 James Custer <jcuster@sgi.com> wrote:
+Dne 31.10.2014 v 03:12 Masahiro Yamada napsal(a):
+> Hi Sam,
+> 
+> On Wed, 29 Oct 2014 19:59:07 +0100
+> Sam Ravnborg <sam@ravnborg.org> wrote:
+> 
+>> On Wed, Oct 29, 2014 at 04:27:31PM +0900, Masahiro Yamada wrote:
+>>> The motivation of this commit is to avoid duplicated definitions
+>>> of "clean" and "hdr-inst" shorthands.
+>>>
+>>> The shorthand "clean" is defined in both the top Makefile and
+>>> scripts/Makefile.clean.
+>>>
+>>> Likewise, "hdr-inst" is defined in both the top Makefile and
+>>> scripts/Makefile.headersinst.
+>>>
+>>> The idea here is define and export them in the top Makefile
+>>> because $(srctree) is constant during the build process.
+>>>
+>>> For consistency, "build" and "modbuiltin" should be also moved.
+>>
+>> As a general rule the exported names are always UPPERCASE, and local variables
+>> are lowercase. (srctree, objtree are the exceptions).
+>> This patch define new lowercase variables that conflicts with this.
+>>
+>> And it is not that logical these are picked up from the enviroment.
+>> Could you find a central place to define them rahter than using
+>> the environemnt to export them?
+> 
+> Maybe we can collect them into scripts/Kbuild.include
+> although it might be too much for Makefile.clean to include
+> the whole things in Kbuild.include.
 
-> Superpages allocated by SGI's superpages module can be backed by 1GB pages,
-> but direct i/o cannot be used. The superpages module uses _PAGE_BIT_SPECIAL
-> to disable direct i/o because some code depends on the memory being backed
-> by page structures. But, because superpages have no backing page structures
-> this causes a panic.
-> 
-> This is the way direct i/o on 1GB pages fails:
-> 
->                BUG: unable to handle kernel paging request at ffffea0038000000
-> [60463.203795] IP: [<ffffffff8103c93a>] gup_huge_pud+0x9a/0xe0
-> [60463.210058] PGD 83ffd3067 PUD 83ffd2067 PMD 0
-> [60463.215052] Oops: 0000 [#1] SMP
-> 
-> Stack traceback for pid 77136
-> 0xffff8867a88ae300    77136    74825  1   56   R  0xffff8867a88ae970 *readdirectsp
->  [<ffffffff8103c93a>] gup_huge_pud+0x9a/0xe0
->  [<ffffffff8103cc33>] gup_pud_range+0x173/0x1b0
->  [<ffffffff8103cd57>] get_user_pages_fast+0xe7/0x1b0
->  [<ffffffff8118eac3>] dio_get_page+0x83/0x150
->  [<ffffffff8118f641>] do_direct_IO+0x81/0x420
->  [<ffffffff8118fb89>] direct_io_worker+0x1a9/0x340
->  [<ffffffffa00c5de8>] ext3_direct_IO+0xe8/0x2c0 [ext3]
->  [<ffffffff810fa527>] generic_file_aio_read+0x237/0x260
->  [<ffffffff81159878>] do_sync_read+0xc8/0x110
->  [<ffffffff8115a027>] vfs_read+0xc7/0x130
->  [<ffffffff8115a193>] sys_read+0x53/0xa0
->  [<ffffffff81466192>] system_call_fastpath+0x16/0x1b
-> 
-> gup_huge_pud() is trying to find the page structure, and with superpages there
-> is none.
-> 
-> With direct i/o on 2MB pages:
-> 
-> static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
->                 int write, struct page **pages, int *nr)
-> {
->  ...
->                 if (pmd_none(pmd) || pmd_trans_splitting(pmd))
->                         return 0;
-> 
-> and pmd_trans_splitting() is testing _PAGE_SPLITTING, which is an alias
-> for _PAGE_SPECIAL which we set on the 2MB or 1GB pages mapped in by superpages.
-> 
-> But gup_pud_range() has no such check:
-> 
-> static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
->                         int write, struct page **pages, int *nr)
-> {
->   ...
->                 if (pud_none(pud))
->                         return 0;
-> 
-> Therefore direct i/o on 1GB pages attempts to get a page structure and panics.
-> 
-> ...
->
-> @@ -223,7 +221,7 @@ static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
->  		pud_t pud = *pudp;
->  
->  		next = pud_addr_end(addr, end);
-> -		if (pud_none(pud))
-> +		if (pud_none(pud) || (pud_val(pud) & _PAGE_SPECIAL))
->  			return 0;
->  		if (unlikely(pud_large(pud))) {
->  			if (!gup_huge_pud(pud, addr, next, write, pages, nr))
+Kbuild.include sounds like a good idea to me. It would also allow to
+de-duplicate the $(cmd) defition in Makefile.include.
 
-If I'm understanding it correctly, this patch is only needed by SGI's
-superpages module, yes?
+BTW:
+$ time -p make $(perl -e 'print "-f scripts/Kbuild.include "x1500')
+make: *** No targets.  Stop.
+real 0.44
+user 0.18
+sys 0.08
 
-That being said, it looks like a reasonable precaution and we could
-easily carry it.
+So 0.44s in total for the 1500 or so subdirectories we visit during make
+clean. But the subprocesses can run in parallel, so the real difference
+is negligible.
 
-But please, this check needs a very good code comment explaining to
-readers why it is here and what it is doing.  Probably that comment
-should also mention that the mainline kernel doesn't strictly need the
-check.
-
-Also, open-coding the flag test looks rather inconsistent.  Should we
-have some (documented, please) helper macro to perform this test?
+Michal
