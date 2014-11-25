@@ -1,117 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750968AbaKYOkg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:40:36 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:59226 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837AbaKYOke (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:40:34 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v5 1/2] of: Rename "poweroff-source" property to
- "system-power-controller"
-To: Romain Perier <romain.perier@gmail.com>, heiko@sntech.de
-Cc: johan@kernel.org, lee.jones@linaro.org, broonie@kernel.org,
-        robh@kernel.org, devicetree@vger.kernel.org, lgirdwood@gmail.com,
-        mark.rutland@arm.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        balbi@ti.com
-In-Reply-To: <1416918506-9366-2-git-send-email-romain.perier@gmail.com>
-References: <1416918506-9366-1-git-send-email-romain.perier@gmail.com>
-	<1416918506-9366-2-git-send-email-romain.perier@gmail.com>
-Date: Tue, 25 Nov 2014 14:40:07 +0000
-Message-Id: <20141125144007.9904BC44343@trevor.secretlab.ca>
+	id S1751057AbaKYOmo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:42:44 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:60539 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750850AbaKYOmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 09:42:43 -0500
+Message-ID: <5474955A.5070605@osg.samsung.com>
+Date: Tue, 25 Nov 2014 07:42:34 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
+        Ingo Molnar <mingo@kernel.org>, Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: [PATCH ftrace/core v6 5/5] kselftest, ftrace: Add ftrace IPMODIFY
+ flag test
+References: <20141121102502.11844.82696.stgit@localhost.localdomain> <20141121102537.11844.9781.stgit@localhost.localdomain> <20141121160329.575fd043@gandalf.local.home> <54729CDE.5030700@hitachi.com> <20141123232932.1ed70d18@gandalf.local.home> <54733C80.6060509@hitachi.com> <54735A4F.8090602@osg.samsung.com> <5473D9F6.8070701@hitachi.com>
+In-Reply-To: <5473D9F6.8070701@hitachi.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014 12:28:25 +0000
-, Romain Perier <romain.perier@gmail.com>
- wrote:
-> It reverts commit a4b4e0461ec5 ("of: Add standard property for poweroff capability").
-> As discussed on the mailing list, it makes more sense to rename back to the
-> old established property name, without the vendor prefix. Problem being that
-> the word "source" usually tends to be used for inputs and that is out of control
-> of the OS. The poweroff capability is an output which simply turns the
-> system-power off. Also, this property might be used by drivers which power-off
-> the system and power back on subsequent RTC alarms. This seems to suggest to
-> remove "poweroff" from the property name and to choose "system-power-controller"
-> as the more generic name. This patchs adds the required renaming changes and
-> defines an helper function which checks if this property is set.
+On 11/24/2014 06:23 PM, Masami Hiramatsu wrote:
+> (2014/11/25 1:18), Shuah Khan wrote:
+>> On 11/24/2014 07:11 AM, Masami Hiramatsu wrote:
+>>> (CC'ed Shuah, since this is related to kselftest)
+>>>
+>>>
+>>> So, if your server directory is mounted with noexec, it's an environmental
+>>> problem. I guess you can not build any kernel drivers on that testbox, can you?
+>>>
+>>> Anyway, this gives us a good question, "should test binaries be made by
+>>> server or client(testbox) environment?" This ipmodify driver is a binary
+>>> and it should be built with the kernel binary (by server) I think.
+>>> But yes, I missed the Makefile didn't allow that (this always referred
+>>> installed running kernel builddir).
+>>>
+>>> I hope to have CONFIG_KSELFTEST_BINARIES for Kconfig, or make prep_kselftest
+>>> target to build these binaries with kernel...
+>>>
+>>> Shuah, what would you think about this?
+>>
+>> I am working on patch series to add an install target to the
+>> main kernel makefile, so these tests can be built and installed
+>> on a target just like we do with kernel and modules. I hope to
+>> get this in 3.19 or definitely into 3.20
+>>
+>> This probably will help address the problem you are seeing.
+>> Install target is needed for qemu type environments as well.
 > 
-> Signed-off-by: Romain Perier <romain.perier@gmail.com>
-
-For both patches:
-Acked-by: Grant Likely <grant.likely@linaro.org>
-
-Let me know if I need to take this series through my tree. Also, does it
-need to go into v3.18 and be backported to stable? Or just v3.19.
-
-g.
-
-> ---
->  .../bindings/power/{poweroff.txt => power-controller.txt}           | 0
->  Documentation/devicetree/bindings/regulator/act8865-regulator.txt   | 4 ++--
->  drivers/regulator/act8865-regulator.c                               | 2 +-
->  include/linux/of.h                                                  | 6 +++---
->  4 files changed, 6 insertions(+), 6 deletions(-)
->  rename Documentation/devicetree/bindings/power/{poweroff.txt => power-controller.txt} (100%)
-> 
-> diff --git a/Documentation/devicetree/bindings/power/poweroff.txt b/Documentation/devicetree/bindings/power/power-controller.txt
-> similarity index 100%
-> rename from Documentation/devicetree/bindings/power/poweroff.txt
-> rename to Documentation/devicetree/bindings/power/power-controller.txt
-> diff --git a/Documentation/devicetree/bindings/regulator/act8865-regulator.txt b/Documentation/devicetree/bindings/regulator/act8865-regulator.txt
-> index 01a5b07..dad6358 100644
-> --- a/Documentation/devicetree/bindings/regulator/act8865-regulator.txt
-> +++ b/Documentation/devicetree/bindings/regulator/act8865-regulator.txt
-> @@ -6,8 +6,8 @@ Required properties:
->  - reg: I2C slave address
->  
->  Optional properties:
-> -- poweroff-source: Telling whether or not this pmic is controlling
-> -  the system power. See Documentation/devicetree/bindings/power/poweroff.txt .
-> +- system-power-controller: Telling whether or not this pmic is controlling
-> +  the system power. See Documentation/devicetree/bindings/power/power-controller.txt .
->  
->  Any standard regulator properties can be used to configure the single regulator.
->  
-> diff --git a/drivers/regulator/act8865-regulator.c b/drivers/regulator/act8865-regulator.c
-> index 76301ed..9eec453 100644
-> --- a/drivers/regulator/act8865-regulator.c
-> +++ b/drivers/regulator/act8865-regulator.c
-> @@ -365,7 +365,7 @@ static int act8865_pmic_probe(struct i2c_client *client,
->  		return ret;
->  	}
->  
-> -	if (of_system_has_poweroff_source(dev->of_node)) {
-> +	if (of_device_is_system_power_controller(dev->of_node)) {
->  		if (!pm_power_off) {
->  			act8865_i2c_client = client;
->  			act8865->off_reg = off_reg;
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index b81dbcf..0abdd70 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -964,14 +964,14 @@ static inline int of_changeset_update_property(struct of_changeset *ocs,
->  extern int of_resolve_phandles(struct device_node *tree);
->  
->  /**
-> - * of_system_has_poweroff_source - Tells if poweroff-source is found for device_node
-> + * of_device_is_system_power_controller - Tells if system-power-controller is found for device_node
->   * @np: Pointer to the given device_node
->   *
->   * return true if present false otherwise
->   */
-> -static inline bool of_system_has_poweroff_source(const struct device_node *np)
-> +static inline bool of_device_is_system_power_controller(const struct device_node *np)
->  {
-> -	return of_property_read_bool(np, "poweroff-source");
-> +	return of_property_read_bool(np, "system-power-controller");
->  }
->  
->  #endif /* _LINUX_OF_H */
-> -- 
-> 1.9.1
+> Yes, that is what we need for this test case!
+> Please CC to me when sending the series. I'd like to try and
+> know how it works :)
 > 
 
+Good. Please take a look at this thread and give it a try. Please
+give me feedback as well. This is the first step to get the install
+feature added and then we can refine it at the selftests level as
+needed.
+
+https://lkml.org/lkml/2014/11/11/851
+
+thanks,
+-- Shuah
+
+
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
