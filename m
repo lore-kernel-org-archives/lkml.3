@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaKYTim (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 14:38:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35034 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751403AbaKYTij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 14:38:39 -0500
-Date: Tue, 25 Nov 2014 16:38:21 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, acme@kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 04/11] perf stat: Use perf_evsel__read_cb in read_counter
-Message-ID: <20141125183821.GD2442@redhat.com>
-References: <1416562275-12404-1-git-send-email-jolsa@kernel.org>
- <1416562275-12404-5-git-send-email-jolsa@kernel.org>
- <20141124203533.GB12236@redhat.com>
- <20141125093633.GC30861@krava.brq.redhat.com>
+	id S1751831AbaKYTkU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 14:40:20 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38692 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117AbaKYTkS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 14:40:18 -0500
+Message-ID: <5474DAAF.2050300@oracle.com>
+Date: Tue, 25 Nov 2014 12:38:23 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141125093633.GC30861@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, corbet@lwn.net, mingo@redhat.com,
+        hpa@zytor.com, peterz@infradead.org, riel@redhat.com,
+        akpm@linux-foundation.org, rientjes@google.com, ak@linux.intel.com,
+        mgorman@suse.de, liwanp@linux.vnet.ibm.com, raistlin@linux.it,
+        kirill.shutemov@linux.intel.com, atomlin@redhat.com, avagin@openvz.org,
+        gorcunov@openvz.org, serge.hallyn@canonical.com, athorlton@sgi.com,
+        oleg@redhat.com, vdavydov@parallels.com, daeseok.youn@gmail.com,
+        keescook@chromium.org, yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu,
+        vishnu.ps@samsung.com, axboe@fb.com, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v3] sched/fair: Add advisory flag for borrowing a timeslice
+References: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com>	 <alpine.DEB.2.11.1411242317380.6439@nanos>	 <1416889208.4335.127.camel@maggy.simpson.net> <54749725.3050307@oracle.com> <1416937564.3512.15.camel@maggy.simpson.net>
+In-Reply-To: <1416937564.3512.15.camel@maggy.simpson.net>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 25, 2014 at 10:36:33AM +0100, Jiri Olsa escreveu:
-> On Mon, Nov 24, 2014 at 06:35:33PM -0200, Arnaldo Carvalho de Melo wrote:
-> > Em Fri, Nov 21, 2014 at 10:31:08AM +0100, Jiri Olsa escreveu:
-> > > Replacing __perf_evsel__read_on_cpu function with perf_evsel__read_cb
-> > > function. The read_cb callback will be used later for global aggregation
-> > > counter values as well.
-> > 
-> > But the changeset makes it look like there are no changes made... Can
-> > you elaborate here?
-> 
-> well the patch change the 'read_counter' function to use the
-> perf_evsel__read_cb instead of __perf_evsel__read_on_cpu
+On 11/25/2014 10:46 AM, Mike Galbraith wrote:
+> On Tue, 2014-11-25 at 07:50 -0700, Khalid Aziz wrote:
+>
+>> It is definitely not an attempt to solve any kind of RT problem.
+>
+> No no, I'm saying that giving certain tasks special dispensations
+> effectively elevates them.  Temporarily or otherwise, they play by
+> different rules, will block more deserving tasks, and it's not cut and
+> dried that that blocking will not do more harm than good.
+>
+> Is it a clear win to make say some kworker or other global asset wait
+> when it could have preempted and been gone in usecs?  Nope.
 
-That part is ok with me, matches what the subject states it does. The
-part I thought was out of place is the SNIP part ;-)
- 
-> SNIP
+I understand. You are right, this allows some apps to gain special 
+dispensation. On a general purpose system, I agree this can be 
+problematic and it is important that it be easy to disable this. This is 
+why I added sysctl tunable and made "disabled" the default state for 
+this feature. Allowing temporary elevation of a task as part of the 
+overall system design is ok when it is intentional and done after 
+considering impact on other tasks running on the system. A large 
+database server typically is not a general purpose server that runs any 
+arbitrary tasks. These systems are tweaked in many ways to ensure 
+optimal performance for database and not necessarily other apps. This 
+patch gives admins one more knob to turn when maximizing performance. 
+Any general purpose system that sees no use for this feature can leave 
+this feature in its default state of disabled. I can see usefulness of 
+this patch for other servers used in telecommunication infrastructure 
+for instance, where the server is dedicated to specific task(s) and 
+needs to update critical database with minimal contention, for example 
+switch map on a telco switch controller or channel allocation map on a 
+base station controller. I am sure people more familiar with other 
+industries can see usefulness in other dedicated applications.
 
-This one:
+Thanks,
+Khalid
 
-
-> +static int read_cb(struct perf_evsel *evsel, int cpu, int thread __maybe_unused,
-> +                struct perf_counts_values *count)
-> +{
-> +     switch (aggr_mode) {
-> +     case AGGR_CORE:
-> +     case AGGR_SOCKET:
-> +     case AGGR_NONE:
-> +             perf_evsel__compute_deltas(evsel, cpu, count);
-> +             perf_counts_values__scale(count, scale, NULL);
-> +             evsel->counts->cpu[cpu] = *count;
-> +             update_shadow_stats(evsel, count->values);
-> +             break;
-> +     case AGGR_GLOBAL:
-> +     default:
-> +             break;
-> +     }
-> +
-> +     return 0;
-
-While the original code did a update_shadow_stats(...), the code that replaces
-it calls perf_evsel__compute_deltas(), etc in addition to updating the shadow
-stats.
-
-Ok, I see, __perf_evsel__read_on_cpu() does that... my bad, will re-read it
-with this in mind, but even then, now we have to make sure
-perf_evsel__alloc_counts() was called before this, and also the original code
-did it for all AGGR_ modes, will check.
-
-- Arnaldo
- 
-> > > +
-> > >  /*
-> > >   * Read out the results of a single counter:
-> > >   * aggregate counts across CPUs in system-wide mode
-> > > @@ -424,16 +444,11 @@ static int read_counter_aggr(struct perf_evsel *counter)
-> > >   */
-> > >  static int read_counter(struct perf_evsel *counter)
-> > >  {
-> > > -	u64 *count;
-> > >  	int cpu;
-> > >  
-> > >  	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
-> > > -		if (__perf_evsel__read_on_cpu(counter, cpu, 0, scale) < 0)
-> > > +		if (perf_evsel__read_cb(counter, cpu, 0, read_cb))
-> 
-> right here ^^^
-> 
-> > >  			return -1;
-> > > -
-> > > -		count = counter->counts->cpu[cpu].values;
-> > > -
-> > > -		update_shadow_stats(counter, count);
-> > >  	}
-> > >  
-> > >  	return 0;
-> > > -- 
-> > > 1.9.3
