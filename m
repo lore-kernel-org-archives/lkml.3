@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500AbaKYL3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:29:18 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:33648 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754257AbaKYL3P (ORCPT
+	id S1755509AbaKYL3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:29:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58572 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753373AbaKYKly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 06:29:15 -0500
-Date: Tue, 25 Nov 2014 11:29:05 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ding Tianhong <dingtianhong@huawei.com>
-Subject: Re: For the problem when using swiotlb
-Message-ID: <20141125112905.GC3836@n2100.arm.linux.org.uk>
-References: <5469E26B.2010905@huawei.com>
- <20141121175118.GA10451@localhost>
- <20141121180925.GG19783@e104818-lin.cambridge.arm.com>
- <2166613.l2i4mdmtLA@wuerfel>
- <20141125105815.GB18858@e104818-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141125105815.GB18858@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 25 Nov 2014 05:41:54 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 115/254] framebuffer: fix screen corruption when copying
+Date: Tue, 25 Nov 2014 10:37:45 +0000
+Message-Id: <1416912004-5928-116-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 10:58:15AM +0000, Catalin Marinas wrote:
-> Since we don't have a coherent_dma_supported() function, we defer the
-> validity check of coherent_dma_mask to dma_alloc_coherent() (and here we
-> can remove bouncing since swiotlb has relatively small buffers).
+3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
 
-Bouncing of coherent DMA buffers is insane; if you have to bounce them,
-they're by definition not coherent.
+------------------
 
-Think about one of the common uses of coherent DMA buffers: ring buffers,
-where both the CPU and the DMA agent write to the ring:
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-- CPU writes to ring, loading address and length, then writing to the
-  status word for the ring entry.
-- DMA reads the ring status word, sees it owns the entry, processes it,
-  DMA writes to the ring status word to give it back.
+commit 5b789da8a7fc357661fc61faaf853e9161cc9700 upstream.
 
-What this means is that if you are bouncing the buffer, you are copying
-it whole-sale between the CPU visible version and the DMA visible
-version, which means that you can miss DMA updates to it.  So, bouncing
-a coherent DMA buffer is simply not an acceptable implementation for
-dma_alloc_coherent().
+The function bitcpy_rev has a bug that may result in screen corruption.
+The bug happens under these conditions:
+* the end of the destination area of a copy operation is aligned on a long
+  word boundary
+* the end of the source area is not aligned on a long word boundary
+* we are copying more than one long word
 
-As for validity of masks, it is defined in the DMA API documentation that
-if a DMA mask is suitable for the streaming APIs, then it is also suitable
-for the coherent APIs.  The reverse is left open, and so may not
-necessarily be true.
+In this case, the variable shift is non-zero and the variable first is
+zero. The statements FB_WRITEL(comp(d0, FB_READL(dst), first), dst) reads
+the last long word of the destination and writes it back unchanged
+(because first is zero). Correctly, we should write the variable d0 to the
+last word of the destination in this case.
 
-In other words:
+This patch fixes the bug by introducing and extra test if first is zero.
 
-	err = dma_set_mask(dev, mask);
-	if (err == 0)
-		assert(dma_set_coherent_mask(dev, mask) == 0);
+The patch also removes the references to fb_memmove in the code that is
+commented out because fb_memmove was removed from framebuffer subsystem.
 
-must always succeed, but reversing the two calls has no guarantee.
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/video/fbdev/core/cfbcopyarea.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-Note that there seems to be only one driver which has different coherent
-and streaming DMA masks today:
-
-drivers/media/pci/sta2x11/sta2x11_vip.c:
-        if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(26))) {
-        err = dma_set_coherent_mask(&vip->pdev->dev, DMA_BIT_MASK(29));
-
+diff --git a/drivers/video/fbdev/core/cfbcopyarea.c b/drivers/video/fbdev/core/cfbcopyarea.c
+index bcb57235fcc7..6d4bfeecee35 100644
+--- a/drivers/video/fbdev/core/cfbcopyarea.c
++++ b/drivers/video/fbdev/core/cfbcopyarea.c
+@@ -55,8 +55,8 @@ bitcpy(struct fb_info *p, unsigned long __iomem *dst, unsigned dst_idx,
+ 	 * If you suspect bug in this function, compare it with this simple
+ 	 * memmove implementation.
+ 	 */
+-	fb_memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
+-		   (char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
++	memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
++		(char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
+ 	return;
+ #endif
+ 
+@@ -221,8 +221,8 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, unsigned dst_idx,
+ 	 * If you suspect bug in this function, compare it with this simple
+ 	 * memmove implementation.
+ 	 */
+-	fb_memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
+-		   (char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
++	memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
++		(char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
+ 	return;
+ #endif
+ 
+@@ -324,7 +324,10 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, unsigned dst_idx,
+ 				d0 = d0 << left | d1 >> right;
+ 			}
+ 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
+-			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
++			if (!first)
++				FB_WRITEL(d0, dst);
++			else
++				FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
+ 			d0 = d1;
+ 			dst--;
+ 			n -= dst_idx+1;
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+2.1.0
+
