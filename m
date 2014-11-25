@@ -1,49 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751766AbaKYRja (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:39:30 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:62426 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042AbaKYRj2 (ORCPT
+	id S1750991AbaKYRkv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:40:51 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39150 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791AbaKYRku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:39:28 -0500
-Date: Tue, 25 Nov 2014 17:39:25 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: leif.lindholm@linaro.org, roy.franz@linaro.org,
-        linux-arm-kernel@lists.infradead.org, mark.rutland@arm.com,
-        msalter@redhat.com, dyoung@redhat.com, linux-efi@vger.kernel.org,
-        matt.fleming@intel.com, will.deacon@arm.com, catalin.marinas@arm.com,
-        grant.likely@linaro.org, geoff.levand@linaro.org,
-        linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
-        Peter Jones <pjones@redhat.com>
-Subject: Re: [PATCH v3 03/13] arm64: improve CONFIG_STRICT_DEVMEM handling
-Message-ID: <20141125173925.GE3331@console-pimps.org>
-References: <1416315432-8534-1-git-send-email-ard.biesheuvel@linaro.org>
- <1416315432-8534-4-git-send-email-ard.biesheuvel@linaro.org>
+	Tue, 25 Nov 2014 12:40:50 -0500
+Message-ID: <5474BF19.3040707@arm.com>
+Date: Tue, 25 Nov 2014 17:40:41 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416315432-8534-4-git-send-email-ard.biesheuvel@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daniel Thompson <daniel.thompson@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Tim Sander <tim@krieglstein.org>
+Subject: Re: [PATCH 3.18-rc3 v9 1/5] irqchip: gic: Finer grain locking for
+ gic_raise_softirq
+References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <1416936401-5147-1-git-send-email-daniel.thompson@linaro.org> <1416936401-5147-2-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1416936401-5147-2-git-send-email-daniel.thompson@linaro.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov, at 01:57:02PM, Ard Biesheuvel wrote:
-> Improve the handling of /dev/mem mappings under CONFIG_STRICT_DEVMEM by:
-> - allowing read-only access to parts of System RAM that are not
->   considered memory by the kernel, this is mainly intended for exposing
->   UEFI Configuration tables to userland;
-> - avoid using non-cached mappings for those parts of System RAM, as it
->   may result in mismatched attributes.
+Hi Daniel,
 
-Is this really the best way to expose EFI config tables?
+On 25/11/14 17:26, Daniel Thompson wrote:
+> irq_controller_lock is used for multiple purposes within the gic driver.
+> Primarily it is used to make register read-modify-write sequences atomic.
+> It is also used by gic_raise_softirq() in order that the big.LITTLE
+> migration logic can figure out when it is safe to migrate interrupts
+> between physical cores.
+> 
+> The second usage of irq_controller_lock is difficult to discern when
+> reviewing the code because the migration itself takes place outside
+> the lock.
+> 
+> This patch makes the second usage more explicit by splitting it out into
+> a separate lock and providing better comments.
 
-We already have parts in /sys/firmware/efi/ and in particular we expose
-the runtime mappings there for kexec on x86.
+While we're at it, how about an additional patch that would make this
+lock disappear entirely when the big-little stuff is not compiled in,
+which is likely to be the case on a lot of (dare I say most?) systems?
+That will save expensive barriers that we definitely could do without.
 
-Hooking this into the /dev/mem infrastructure just seems wrong to me.
+It otherwise looks good to me.
+
+Thanks,
+
+	M.
+
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Marc Zyngier <marc.zyngier@arm.com>
+> ---
+>  drivers/irqchip/irq-gic.c | 21 ++++++++++++++++++---
+>  1 file changed, 18 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+> index 38493ff28fa5..bb4bc20573ea 100644
+> --- a/drivers/irqchip/irq-gic.c
+> +++ b/drivers/irqchip/irq-gic.c
+> @@ -73,6 +73,12 @@ struct gic_chip_data {
+>  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+>  
+>  /*
+> + * This lock is used by the big.LITTLE migration code to ensure no
+> + * IPIs can be pended on the old core after the map has been updated.
+> + */
+> +static DEFINE_RAW_SPINLOCK(cpu_map_migration_lock);
+> +
+> +/*
+>   * The GIC mapping of CPU interfaces does not necessarily match
+>   * the logical CPU numbering.  Let's use a mapping as returned
+>   * by the GIC itself.
+> @@ -624,7 +630,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>  	int cpu;
+>  	unsigned long flags, map = 0;
+>  
+> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
+> +	raw_spin_lock_irqsave(&cpu_map_migration_lock, flags);
+>  
+>  	/* Convert our logical CPU mask into a physical one. */
+>  	for_each_cpu(cpu, mask)
+> @@ -639,7 +645,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>  	/* this always happens on GIC0 */
+>  	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
+>  
+> -	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
+> +	raw_spin_unlock_irqrestore(&cpu_map_migration_lock, flags);
+>  }
+>  #endif
+>  
+> @@ -710,8 +716,17 @@ void gic_migrate_target(unsigned int new_cpu_id)
+>  
+>  	raw_spin_lock(&irq_controller_lock);
+>  
+> -	/* Update the target interface for this logical CPU */
+> +	/*
+> +	 * Update the target interface for this logical CPU
+> +	 *
+> +	 * From the point we release the cpu_map_migration_lock any new
+> +	 * SGIs will be pended on the new cpu which makes the set of SGIs
+> +	 * pending on the old cpu static. That means we can defer the
+> +	 * migration until after we have released the irq_controller_lock.
+> +	 */
+> +	raw_spin_lock(&cpu_map_migration_lock);
+>  	gic_cpu_map[cpu] = 1 << new_cpu_id;
+> +	raw_spin_unlock(&cpu_map_migration_lock);
+>  
+>  	/*
+>  	 * Find all the peripheral interrupts targetting the current
+> 
+
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Jazz is not dead. It just smells funny...
