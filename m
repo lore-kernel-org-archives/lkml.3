@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402AbaKYSr3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 13:47:29 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:43041 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297AbaKYSr0 (ORCPT
+	id S1751475AbaKYSrd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 13:47:33 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39227 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036AbaKYSrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 13:47:26 -0500
-Message-ID: <5474CF68.2020807@oracle.com>
-Date: Tue, 25 Nov 2014 13:50:16 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Richard Hendershot <rshendershot@mchsi.com>,
-        Borislav Petkov <bp@suse.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [PATCH 3.17 100/141] x86, microcode: Fix accessing dis_ucode_ldr
- on 32-bit
-References: <20141119205150.700188369@linuxfoundation.org> <20141119205153.916605840@linuxfoundation.org> <5474C67A.7040200@oracle.com> <20141125184501.GA3461@kroah.com>
-In-Reply-To: <20141125184501.GA3461@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 25 Nov 2014 13:47:32 -0500
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: [PATCH v11 0/2] irqchip: add support for GICv2m MSI controller
+Date: Tue, 25 Nov 2014 18:47:21 +0000
+Message-Id: <1416941243-7181-1-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2014 01:45 PM, Greg Kroah-Hartman wrote:
-> On Tue, Nov 25, 2014 at 01:12:10PM -0500, Boris Ostrovsky wrote:
->> On 11/19/2014 03:52 PM, Greg Kroah-Hartman wrote:
->>> 3.17-stable review patch.  If anyone has any objections, please let me know.
->>
->> This breaks PV on Xen.
-> Does that mean it is also broken in Linus's tree?  If so, please fix it
-> there.  If not, is there some other patch I am missing for 3.17-stable
-> to resolve this?
+GICv2m is a very simple addition to the standard GICv2 interrupt
+controller, offering a way to convert writes from a device to a
+"wire-like" interrupt. Basically what we need to support MSI on the
+GIC.
 
-Yes, it is broken in Linus's tree. That's the only tree that I tested 
-and before we have a fix I wanted to avoid for this to trickle into 
-stable trees as well (although I may be late).
+The v2m widget exposes a "frame", containing a read-only register
+describing the range of interrupts that are MSI-capable, as well as a
+doorbell that the device can kick to generate the interrupt. All the
+rest of the infrastructure is provided by the GIC itself (enabling,
+routing, ack/eoi...). This makes an ideal case for stacked irq
+domains.
 
--boris
+These patches were originally written by Suravee, but I've converted
+them to the stacked irq domains. As this turned out to be quite a
+sizeable rewrite of the original code, please blame me for any issue
+in this code, and not Suravee.
+
+Unsurprisingly, there is quite a long dependency chain here. You need:
+- Jiang's stacked domain patches, from tip/irq/irqdomain
+- The first patch in my GICv3 ITS series:
+  https://lkml.org/lkml/2014/11/24/409
+- The first patch in Yingjoe's sysirq series:
+  https://lkml.org/lkml/2014/11/25/130
+
+For everyone's convenience, I have a branch containing all that, and
+much more:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git irq/v2m
+
+This has been fairly heavily tested on an arm64 platform driving a
+pair of igb interfaces.
+
+>From v10:
+- Rewrote the driver to solely rely on irq domains, and not the
+setup_irq/teardown_irq methods that were used before (similar to what
+has been done for the GICv3 ITS).
+
+Suravee Suthikulpanit (2):
+  irqchip: gicv2m: Add support for ARM GICv2m MSI(-X) doorbell
+  irqchip: gicv2m: Add DT bindings for GICv2m
+
+ Documentation/devicetree/bindings/arm/gic.txt |  53 ++++
+ arch/arm64/Kconfig                            |   1 +
+ drivers/irqchip/Kconfig                       |   6 +
+ drivers/irqchip/Makefile                      |   1 +
+ drivers/irqchip/irq-gic-v2m.c                 | 333 ++++++++++++++++++++++++++
+ drivers/irqchip/irq-gic.c                     |   4 +
+ include/linux/irqchip/arm-gic.h               |   2 +
+ 7 files changed, 400 insertions(+)
+ create mode 100644 drivers/irqchip/irq-gic-v2m.c
+
+-- 
+2.1.3
+
