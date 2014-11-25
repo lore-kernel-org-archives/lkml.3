@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454AbaKYT0C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 14:26:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35548 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032AbaKYTZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 14:25:59 -0500
-Subject: [PATCH v6 5/5] patch to allow arm cross-compile
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-To: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
-        benh@kernel.crashing.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
-        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
-        matthew.vick@intel.com, geert@linux-m68k.org,
-        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
-        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, arnd@arndb.de,
-        will.deacon@arm.com, michael@ellerman.id.au, tony.luck@intel.com,
-        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
-        fweisbec@gmail.com, davem@davemloft.net
-Date: Tue, 25 Nov 2014 10:33:22 -0800
-Message-ID: <20141125183322.1486.90766.stgit@ahduyck-server>
-In-Reply-To: <20141125183009.1486.20845.stgit@ahduyck-server>
-References: <20141125183009.1486.20845.stgit@ahduyck-server>
-User-Agent: StGit/0.17-dirty
+	id S1751561AbaKYT0H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 14:26:07 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:46891 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaKYT0B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 14:26:01 -0500
+Message-ID: <5474D86E.6020608@oracle.com>
+Date: Tue, 25 Nov 2014 14:28:46 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Borislav Petkov <bp@suse.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Richard Hendershot <rshendershot@mchsi.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [PATCH 3.17 100/141] x86, microcode: Fix accessing dis_ucode_ldr
+ on 32-bit
+References: <20141119205150.700188369@linuxfoundation.org> <20141119205153.916605840@linuxfoundation.org> <5474C67A.7040200@oracle.com> <20141125182410.GB4128@pd.tnic> <5474CDCE.6040000@oracle.com> <20141125184351.GC4128@pd.tnic> <5474D0A1.2020600@oracle.com> <20141125190849.GF4128@pd.tnic>
+In-Reply-To: <20141125190849.GF4128@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/25/2014 02:08 PM, Borislav Petkov wrote:
+> On Tue, Nov 25, 2014 at 01:55:29PM -0500, Boris Ostrovsky wrote:
+>> On 11/25/2014 01:43 PM, Borislav Petkov wrote:
+>>> On Tue, Nov 25, 2014 at 01:43:26PM -0500, Boris Ostrovsky wrote:
+>>>> I don't think this routine is called on PV.
+>>> They're either both called or none is. At least on baremetal, that is.
+>>>
+>> PV guests don't start with startup_32.
+>>
+>> We are coming from a resume into load_ucode_ap as:
+> Btw, why is this thing even running on xen? I'd like to make
+> CONFIG_MICROCODE depend on !PARAVIRT and be done with it.
 
----
- arch/arm/kernel/asm-offsets.c |    4 ----
- 1 file changed, 4 deletions(-)
+You'd have to decide at runtime --- many baremetal systems are compiled 
+with PARAVIRT.
 
-diff --git a/arch/arm/kernel/asm-offsets.c b/arch/arm/kernel/asm-offsets.c
-index 2d2d608..6f8e79c 100644
---- a/arch/arm/kernel/asm-offsets.c
-+++ b/arch/arm/kernel/asm-offsets.c
-@@ -49,10 +49,6 @@
- #error Your compiler is too buggy; it is known to miscompile kernels.
- #error    Known good compilers: 3.3, 4.x
- #endif
--#if GCC_VERSION >= 40800 && GCC_VERSION < 40803
--#error Your compiler is too buggy; it is known to miscompile kernels
--#error and result in filesystem corruption and oopses.
--#endif
- #endif
- 
- int main(void)
+-boris
 
