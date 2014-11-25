@@ -1,88 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945AbaKYLem (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:34:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58468 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258AbaKYKlh (ORCPT
+	id S932078AbaKYLfE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:35:04 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37903 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754668AbaKYLfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:37 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 094/254] missing data dependency barrier in prepend_name()
-Date: Tue, 25 Nov 2014 10:37:24 +0000
-Message-Id: <1416912004-5928-95-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 25 Nov 2014 06:35:00 -0500
+Date: Tue, 25 Nov 2014 11:32:51 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Rob Herring <robh+dt@kernel.org>, Wolfram Sang <wsa@the-dreams.de>,
+        linux-spi@vger.kernel.org
+Message-ID: <20141125113251.GN7712@sirena.org.uk>
+References: <1416868422-22103-1-git-send-email-grant.likely@linaro.org>
+ <1416868422-22103-14-git-send-email-grant.likely@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hF9BROpwVWvPzXeD"
+Content-Disposition: inline
+In-Reply-To: <1416868422-22103-14-git-send-email-grant.likely@linaro.org>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 13/14] spi/of: Create new device registration method
+ and accessors
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--hF9BROpwVWvPzXeD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+On Mon, Nov 24, 2014 at 10:33:41PM +0000, Grant Likely wrote:
+> From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+>=20
+> Dynamically inserting spi device nodes requires the use of a single
+> device registration method. Refactor the existing
+> of_register_spi_devices() to split out the core functionality for a
+> single device into a separate function; of_register_spi_device(). This
+> function will be used by the OF_DYNAMIC overlay code to make live
+> modifications to the tree.
+>=20
+> Methods to lookup a device/master using a device node are added
+> as well, of_find_spi_master_by_node() & of_find_spi_device_by_node().
+>=20
+> Changes since v1:
+> * Brown paper bug with parameter on of_register_spi_device().
 
-commit 6d13f69444bd3d4888e43f7756449748f5a98bad upstream.
+Please don't include things like this in the commit message, if you want
+to include a changelog put it after the --- like SubmittingPatches says.
+Once it's in mainline this is just noise.
 
-AFAICS, prepend_name() is broken on SMP alpha.  Disclaimer: I don't have
-SMP alpha boxen to reproduce it on.  However, it really looks like the race
-is real.
+Otherwise
 
-CPU1: d_path() on /mnt/ramfs/<255-character>/foo
-CPU2: mv /mnt/ramfs/<255-character> /mnt/ramfs/<63-character>
+Reviewed-by: Mark Brown <broonie@kernel.org>
 
-CPU2 does d_alloc(), which allocates an external name, stores the name there
-including terminating NUL, does smp_wmb() and stores its address in
-dentry->d_name.name.  It proceeds to d_add(dentry, NULL) and d_move()
-old dentry over to that.  ->d_name.name value ends up in that dentry.
+--hF9BROpwVWvPzXeD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-In the meanwhile, CPU1 gets to prepend_name() for that dentry.  It fetches
-->d_name.name and ->d_name.len; the former ends up pointing to new name
-(64-byte kmalloc'ed array), the latter - 255 (length of the old name).
-Nothing to force the ordering there, and normally that would be OK, since we'd
-run into the terminating NUL and stop.  Except that it's alpha, and we'd need
-a data dependency barrier to guarantee that we see that store of NUL
-__d_alloc() has done.  In a similar situation dentry_cmp() would survive; it
-does explicit smp_read_barrier_depends() after fetching ->d_name.name.
-prepend_name() doesn't and it risks walking past the end of kmalloc'ed object
-and possibly oops due to taking a page fault in kernel mode.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/dcache.c | 5 +++++
- 1 file changed, 5 insertions(+)
+iQEcBAEBAgAGBQJUdGjjAAoJECTWi3JdVIfQRO0H/20xoSTdwqX7g0P6SiVMcI2j
+XaNgzZED/Vvzk+U7oD4GxLPyk6eTTipeefYWy9exRB/tWriBWJwLiWY7+7MaSflI
+4Rr4dG/bhSVEu4Z0jTRJqFrxPxgxc5WNCfRkS8Lth74YmxK5Hd3C1f72fT/mHFAE
+668TWP7/Eklz0+uVtTMLjMq/jQTfFIwceFYULH6zOvknZCgBopPlUJOARPdJjX5/
+ve4w9mrauTDW02fpf128UOm6ecxq7jM9tXyHyJx8PMZMc0acsixBYtwPQt42cWTs
+yk3u1BJ2MQUwbJ+Lpr7qYofjYCuR9ixx987/9w4DdhJ4GGOlJyNHZjJCqhojcyw=
+=uJBJ
+-----END PGP SIGNATURE-----
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index e1308c5423ed..f9cec9d4dbe0 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2806,6 +2806,9 @@ static int prepend(char **buffer, int *buflen, const char *str, int namelen)
-  * the beginning of the name. The sequence number check at the caller will
-  * retry it again when a d_move() does happen. So any garbage in the buffer
-  * due to mismatched pointer and length will be discarded.
-+ *
-+ * Data dependency barrier is needed to make sure that we see that terminating
-+ * NUL.  Alpha strikes again, film at 11...
-  */
- static int prepend_name(char **buffer, int *buflen, struct qstr *name)
- {
-@@ -2813,6 +2816,8 @@ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
- 	u32 dlen = ACCESS_ONCE(name->len);
- 	char *p;
- 
-+	smp_read_barrier_depends();
-+
- 	*buflen -= dlen + 1;
- 	if (*buflen < 0)
- 		return -ENAMETOOLONG;
--- 
-2.1.0
-
+--hF9BROpwVWvPzXeD--
