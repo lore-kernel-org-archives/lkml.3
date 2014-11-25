@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751564AbaKYBXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 20:23:11 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:51251 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaKYBXK (ORCPT
+	id S1751577AbaKYB0I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 20:26:08 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53143 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751195AbaKYB0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 20:23:10 -0500
-Message-ID: <5473D9F6.8070701@hitachi.com>
-Date: Tue, 25 Nov 2014 10:23:02 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 24 Nov 2014 20:26:05 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Yegnesh Iyer <yegnesh.s.iyer@intel.com>, linux-acpi@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/3] Support PMIC operation region for CrystalCove and XPower
+Date: Tue, 25 Nov 2014 02:47:18 +0100
+Message-ID: <1987897.BgdIEqPdlH@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1416553911-22990-1-git-send-email-aaron.lu@intel.com>
+References: <1416553911-22990-1-git-send-email-aaron.lu@intel.com>
 MIME-Version: 1.0
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
-        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH ftrace/core v6 5/5] kselftest, ftrace: Add ftrace IPMODIFY
- flag test
-References: <20141121102502.11844.82696.stgit@localhost.localdomain> <20141121102537.11844.9781.stgit@localhost.localdomain> <20141121160329.575fd043@gandalf.local.home> <54729CDE.5030700@hitachi.com> <20141123232932.1ed70d18@gandalf.local.home> <54733C80.6060509@hitachi.com> <54735A4F.8090602@osg.samsung.com>
-In-Reply-To: <54735A4F.8090602@osg.samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/25 1:18), Shuah Khan wrote:
-> On 11/24/2014 07:11 AM, Masami Hiramatsu wrote:
->> (CC'ed Shuah, since this is related to kselftest)
->>
->>
->> So, if your server directory is mounted with noexec, it's an environmental
->> problem. I guess you can not build any kernel drivers on that testbox, can you?
->>
->> Anyway, this gives us a good question, "should test binaries be made by
->> server or client(testbox) environment?" This ipmodify driver is a binary
->> and it should be built with the kernel binary (by server) I think.
->> But yes, I missed the Makefile didn't allow that (this always referred
->> installed running kernel builddir).
->>
->> I hope to have CONFIG_KSELFTEST_BINARIES for Kconfig, or make prep_kselftest
->> target to build these binaries with kernel...
->>
->> Shuah, what would you think about this?
+On Friday, November 21, 2014 03:11:48 PM Aaron Lu wrote:
+> v3:
+> Only some function/variable name changes, no functiona changes:
+> - Replace the dptf/DPTF word originate from the BIOS ACPI table with more
+>   meaningful word thermal/THERMAL in all places;
+> - Eliminate the soc part in various structure and function names to make
+>   them shorter:
+>   intel_soc_pmic_opregion -> intel_pmic_opregion
+>   intel_soc_pmic_pmop_handler -> intel_pmic_pmop_handler
+>   intel_soc_pmic_install_opregion_handler -> intel_pmic_install_opregion_handler
+>   etc.
 > 
-> I am working on patch series to add an install target to the
-> main kernel makefile, so these tests can be built and installed
-> on a target just like we do with kernel and modules. I hope to
-> get this in 3.19 or definitely into 3.20
 > 
-> This probably will help address the problem you are seeing.
-> Install target is needed for qemu type environments as well.
+> v2:
+> Place PMIC operation files under drivers/acpi/pmic instead of
+> drivers/acpi/pmic_opregion as suggested by Rafael;
+> Rename PMIC operation files to make them shorter as suggested by Rafael.
+> 
+> v1:
+> On Intel Baytrail-T and Baytrail-T-CR platforms, there are two customized
+> ACPI operation regions defined for the Power Management Integrated Circuit
+> device, one is for power resource handling and one is for thermal: sensor
+> temperature reporting, trip point setting, etc. There are different PMIC
+> chips used on those platforms and though each has the same two operation
+> regions and functionality, their implementation is different so every PMIC
+> will need a driver. But since their functionality is similar, some common
+> code is abstracted into the intel_soc_pmic_opregion.c.
+> 
+> The last version is posted here:
+> https://lkml.org/lkml/2014/9/8/801
+> 
+> Changes since then:
+> 1 Move to drivers/acpi as discussed on the above thread;
+> 2 Added support for XPower AXP288 PMIC operation region support;
+> 3 Since operation region handler can not be removed(at the moment at least),
+>   use bool for the two operation region driver configs instead of tristate;
+>   Another reason to do this is that, with Mika's MFD ACPI support patch, all
+>   those MFD cell devices created will have the same modalias as their parent's
+>   so it doesn't make much sense to compile these drivers into modules.
+> 
+> Patch 1 applies on top of Rafael's pm-next branch, and then patch 2 and
+> patch 3 needs merge of Lee's mfd/ib-mfd-iio-3.19 branch where the PMIC
+> driver XPower AXP288 and iio driver axp288_adc is located.
+> 
+> 
+> Aaron Lu (3):
+>   ACPI / PMIC: support PMIC operation region for CrystalCove
+>   ACPI / PMIC: support PMIC operation region for XPower AXP288
+>   ACPI / PMIC: AXP288: support virtual GPIO in ACPI table
 
-Yes, that is what we need for this test case!
-Please CC to me when sending the series. I'd like to try and
-know how it works :)
+OK
 
-Thank you,
+I've pulled the Lee's 'mfd/ib-mfd-iio-3.19' branch and applied your updated
+three on top of that.  Please check the bleeding-edge branch of linux-pm.git
+for the result.
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
