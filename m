@@ -1,101 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751204AbaKYOvl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:51:41 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:43210 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729AbaKYOvj (ORCPT
+	id S1751502AbaKYOwB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:52:01 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:50245 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaKYOv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:51:39 -0500
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-X-Google-Original-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Message-ID: <54749777.7020802@intel.com>
-Date: Tue, 25 Nov 2014 06:51:35 -0800
+	Tue, 25 Nov 2014 09:51:59 -0500
+Message-ID: <54749725.3050307@oracle.com>
+Date: Tue, 25 Nov 2014 07:50:13 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Ethan Zhao <ethan.zhao@oracle.com>, linda.knippers@hp.com,
-        viresh.kumar@linaro.org, rjw@rjwysocki.net, corbet@lwn.net
-CC: dirk.j.brandewie@intel.com, linux-doc@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ethan.kernel@gmail.com
-Subject: Re: [PATCH 2/2 v3] intel_pstate: add kernel parameter to enable loading
- on  Sun X86 servers.
-References: <1416891578-14171-1-git-send-email-ethan.zhao@oracle.com> <1416891578-14171-3-git-send-email-ethan.zhao@oracle.com>
-In-Reply-To: <1416891578-14171-3-git-send-email-ethan.zhao@oracle.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: corbet@lwn.net, mingo@redhat.com, hpa@zytor.com, peterz@infradead.org,
+        riel@redhat.com, akpm@linux-foundation.org, rientjes@google.com,
+        ak@linux.intel.com, mgorman@suse.de, liwanp@linux.vnet.ibm.com,
+        raistlin@linux.it, kirill.shutemov@linux.intel.com, atomlin@redhat.com,
+        avagin@openvz.org, gorcunov@openvz.org, serge.hallyn@canonical.com,
+        athorlton@sgi.com, oleg@redhat.com, vdavydov@parallels.com,
+        daeseok.youn@gmail.com, keescook@chromium.org,
+        yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu, vishnu.ps@samsung.com,
+        axboe@fb.com, paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v3] sched/fair: Add advisory flag for borrowing a timeslice
+References: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com>	 <alpine.DEB.2.11.1411242317380.6439@nanos> <1416889208.4335.127.camel@maggy.simpson.net>
+In-Reply-To: <1416889208.4335.127.camel@maggy.simpson.net>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2014 08:59 PM, Ethan Zhao wrote:
-> To force loading on Oracle Sun X86 servers, provide one kernel command line
-> parameter
+On 11/24/2014 09:20 PM, Mike Galbraith wrote:
+> On Tue, 2014-11-25 at 00:35 +0100, Thomas Gleixner wrote:
 >
->    intel_pstate = onora
+>> Aside of the general issues I have with this (see the inline replies
+>> to your changelog) the overall impression of this patch is that it is
+>> a half baken and carelessly cobbled together extract of some data base
+>> specific kernel hackery, which I prefer not to see at all.
 >
-> For those who be aware of the risk doing so.
+> It culminates in a lumbering pseudo RT class of task disguised as a fair
+> class task.  I'd expect more gain by twiddling knobs to let last buddy
+> do its job than the 3% mentioned.
 >
-> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-> ---
->   v2: change to hardware vendor specific naming parameter.
+> You could perhaps create a SUPER_BATCH class that is not wakeup
+> preempted by any fair class task of <= priority, not only BATCH and
+> IDLE, but that's as nasty as this patch, though loads prettier.  The
+> tick time thing doesn't feel right at all... if you're hurt badly by the
+> tick, you're likely holding the lock too long methinks.
 >
->   Documentation/kernel-parameters.txt | 3 +++
->   drivers/cpufreq/intel_pstate.c      | 6 +++++-
->   2 files changed, 8 insertions(+), 1 deletion(-)
+> 	-Mike
 >
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 479f332..e4b1b81 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -1446,6 +1446,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->   		       disable
->   		         Do not enable intel_pstate as the default
->   		         scaling driver for the supported processors
-> +		       onora
-> +		         Enable loading intel_pstate on Oracle Sun Servers(X86).
-> +			 only for those who be aware of the risk.
-
-What are the risks?  What is the behaviour if platform power management is
-enabled and intel_pstate is trying to control P state selection as well?
-
-If intel_pstate will be able to successfully control P state selection
-with platform power management enabled then how about the name "oracle_force"?
-Also the documentation should say what the risks are.
-
->
->   	intremap=	[X86-64, Intel-IOMMU]
->   			on	enable Interrupt Remapping (default)
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index fa67fb3..e49b050 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -866,6 +866,7 @@ static struct cpufreq_driver intel_pstate_driver = {
->   };
->
->   static int __initdata no_load;
-> +static unsigned int  load_on_sun;
->
->   static int intel_pstate_msrs_not_valid(void)
->   {
-> @@ -1005,7 +1006,8 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
->   		if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
->   			!strncmp(hdr.oem_table_id, v_info->oem_table_id,
->   				ACPI_OEM_TABLE_ID_SIZE) &&
-> -			intel_pstate_has_acpi_ppc())
-> +			intel_pstate_has_acpi_ppc() &&
-> +			!load_on_sun)
->   			return true;
->   	}
->
-> @@ -1080,6 +1082,8 @@ static int __init intel_pstate_setup(char *str)
->
->   	if (!strcmp(str, "disable"))
->   		no_load = 1;
-> +	if (!strcmp(str, "onora"))
-> +		load_on_sun = 1;
->   	return 0;
->   }
->   early_param("intel_pstate", intel_pstate_setup);
 >
 
+It is definitely not an attempt to solve any kind of RT problem. It 
+would be a poor attempt if it indeed attempted to solve an RT problem. 
+RT is all about guarantees. This patch does not help there at all and 
+hence I have no intention of ever applying anything like this to 
+SCHED_FIFO or SCHED_RR.
+
+This problem is not caused by task holding the lock too long. It is 
+caused by the task happening to acquire the lock just before its current 
+timeslice is up. In that case, it does not matter how long the task 
+holds the lock for.
+
+--
+Khalid
