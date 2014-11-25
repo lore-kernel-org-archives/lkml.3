@@ -1,118 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439AbaKYMTM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:19:12 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:26182 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaKYMTJ (ORCPT
+	id S1754466AbaKYMUC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:20:02 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37995 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaKYMT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 07:19:09 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-b7-547473baf81f
-Message-id: <1416917945.29431.6.camel@AMDC1943>
-Subject: Re: [RFC 2/2] clk: samsung: Fix clock disable failure because domain
- being gated
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kukjin Kim <kgene@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Kevin Hilman <khilman@kernel.org>
-Date: Tue, 25 Nov 2014 13:19:05 +0100
-In-reply-to: <CA+Ln22FTJ8AwNOq+jrA6dK=4ziGFwFT+Ofjr2zE4z=8B4f3QJw@mail.gmail.com>
-References: <1416842312-4405-1-git-send-email-k.kozlowski@samsung.com>
- <1416842312-4405-3-git-send-email-k.kozlowski@samsung.com>
- <CA+Ln22FTJ8AwNOq+jrA6dK=4ziGFwFT+Ofjr2zE4z=8B4f3QJw@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xK7q7iktCDFafs7Rou3KQ3eLo7wKL
-	/sevmS2ebn7MZLHp8TVWi8u75rBZzDi/j8ni6YSLbBaH37SzWqza9YfRgcvj7/PrLB47Z91l
-	99i0qpPN4861PWwem5fUe/RtWcXo8XmTXAB7FJdNSmpOZllqkb5dAlfG066PzAVH+CtWfJ/A
-	3MD4kruLkZNDQsBEonXiKWYIW0ziwr31bF2MXBxCAksZJc7tP8EM4XxmlNi79iIbSBWvgL5E
-	093jLCC2sEC0xK+vD9hBbDYBY4nNy5eA1YgIqEt8m9LPDtLMLLCTWWLWkVawIhYBVYk/bx6B
-	2ZwCwRIr+w9BbTjFKHHi/UxWkAQzUPekeYuAEhxANylLNPa7QSwWlPgx+R4LRIm8xOY1b5kn
-	MArMQtIxC0nZLCRlCxiZVzGKppYmFxQnpeca6RUn5haX5qXrJefnbmKExMXXHYxLj1kdYhTg
-	YFTi4b0RVxIixJpYVlyZe4hRgoNZSYT3STJQiDclsbIqtSg/vqg0J7X4ECMTB6dUA2PaXL+V
-	J3wXhB2VyFM+ebh4RrGUwnIB1wj5xJ6KMLcHVy/lNvUw9pux3G7V/Lr2SNsnm2Nv7z+atX23
-	v8b6aibNtpuav6857kldxLUzY36b30zJFV+jp2y7+uHEYjbnJV2JNzwzYwK75tcu6AzyvX/i
-	1EzXC9ONC1WYqqYFzVGd6ZLrybxdxEyJpTgj0VCLuag4EQBnjEj/aQIAAA==
+	Tue, 25 Nov 2014 07:19:59 -0500
+Date: Tue, 25 Nov 2014 12:17:49 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141125121749.GV7712@sirena.org.uk>
+References: <546B5EF9.3080102@mentor.com>
+ <546CAB49.8030103@mentor.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GkP4R6qzw9SWbMoL"
+Content-Disposition: inline
+In-Reply-To: <546CAB49.8030103@mentor.com>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Question about fixed regulator DT properties
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wto, 2014-11-25 at 20:35 +0900, Tomasz Figa wrote:
-> Hi Krzysztof,
-> 
-> Please see my comments inline.
-> 
-> 2014-11-25 0:18 GMT+09:00 Krzysztof Kozlowski <k.kozlowski@samsung.com>:
-> > +static int audss_clk_gate_enable(struct clk_hw *hw)
-> > +{
-> > +       int ret;
-> > +
-> > +       if (!IS_ERR(pll_in))
-> > +               clk_prepare_enable(pll_in);
-> 
-> Calling clk_prepare_enable() from enable() callback doesn't look like
-> a good idea, because enabling is not supposed to sleep, while
-> preparing might do so.
 
-Right.
+--GkP4R6qzw9SWbMoL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I guess you have to pre-prepare this clock in probe and then only call
-> enable here.
+On Wed, Nov 19, 2014 at 04:38:01PM +0200, Vladimir Zapolskiy wrote:
+> Hello Mark,
+>=20
+> On 18.11.2014 17:00, Vladimir Zapolskiy wrote:
 
-Yes, the prepare won't have any negative effect on energy usage anyway.
+Your mail is really quite long and all in quotes which makes it hard to
+follow, brevity is really helpful to readers.
 
-> 
-> > +       ret = clk_gate_ops.enable(hw);
-> > +       if (!IS_ERR(pll_in))
-> > +               clk_disable_unprepare(pll_in);
-> > +
-> > +       return ret;
-> > +}
-> 
-> [snip]
-> 
-> > +/* TODO: Also mux and div */
-> > +const struct clk_ops audss_clk_gate_ops = {
-> 
-> nit: static const probably?
+> > | regulator-boot-on | enable-active-high | GPIO polarity | GPIO output |
+> > +-------------------+--------------------+---------------+-------------+
+> > |        no         |         yes        |  active high  |    low      |
+> > |        no         |          no        |  active low   |   high      |
 
-Yes.
+> > I'd rather think that both resulting GPIO outputs are incorrect or
+> > better to say do not correspond to my perception of "regulator-boot-on"
+> > and "enable-active-high" DTS properties described in the documentation,
+> > however above "enable-active-high" and actual GPIO polarity are the same
+> > (when they are not, it is another open topic for discussion).
 
-> 
-> > +       .enable = audss_clk_gate_enable,
-> > +       .disable = audss_clk_gate_disable,
-> > +       .is_enabled = audss_clk_gate_is_enabled,
-> > +};
-> 
-> As for the approach itself, maybe you should simply register fully
-> custom clocks with clk_register(), without altering
-> clk_register_gate() at all and simply calling gate ops whenever
-> necessary? I don't know, just a loose idea.
+What you're saying seems sensible.
 
-Initially that seemed to me the simplest way to encapsulate gate_ops
-calls. However in that approach I should also change clk_register_mux
-and clk_register_divider... which complicates this patch and maybe your
-idea will be simpler overall.
+> > Should documentation be updated to reflect "regulator-boot-on" role that
+> > a regulator is re-enabled by the kernel?
 
-> By the way, this issue could be probably solved by integrating generic
-> clocks with regmap API, since regmap-mmio can automatically control a
-> clock.
+I'm confused about this.  That's the sole purpose of the flag and as far
+as I can tell it's what the documentation says.
 
-Indeed but this looks like much bigger task.
+> > Should "enable-active-high" be replaced by getting GPIO flags directly?
 
-Anyway thanks for feedback. I'll prepare another version.
+Probably makes sense, it predates those flags by quite some time.
 
-Best regards,
-Krzysztof
+--GkP4R6qzw9SWbMoL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQEcBAEBAgAGBQJUdHNtAAoJECTWi3JdVIfQb1oH/AsnpwoEhS5tk5UMF7HYZphB
+04+FG7LtSNoDPuY+mJD37PIpivewQsg1gW3yYzxTvHf5H+7iTS5rDeBoTvsuj/+b
+r+5AsBc0RyiUOSlOxDa1B22KpiJ0AuJZfh0FZ+fYxx+nuz0KplfYWaZqVc4zYZI1
+RMVpU/GhDTkxYM1o4xr70XlEVE3aq5Sj8zIxOGo2rarnsidQEvvkQl+kHgyOxLjQ
+upCeFrwTVi2la/vrXlC0O3YFgqG+7knyvJo2R/igx78+nlFOZQiDikeXPtG/U+ui
+neFrzPKBCk9iWNJxUXpU0CuFJbT+fKOM8ukvCu5upghwnI3sfRGW4vdxqY+JcYA=
+=lvs6
+-----END PGP SIGNATURE-----
+
+--GkP4R6qzw9SWbMoL--
