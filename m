@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442AbaKYKsg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:48:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59213 "EHLO
+	id S1754423AbaKYKse (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:48:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59217 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151AbaKYKno (ORCPT
+	with ESMTP id S1753354AbaKYKnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:44 -0500
+	Tue, 25 Nov 2014 05:43:45 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+Cc: Richard Guy Briggs <rgb@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 240/254] crypto: caam - remove duplicated sg copy functions
-Date: Tue, 25 Nov 2014 10:39:50 +0000
-Message-Id: <1416912004-5928-241-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 241/254] audit: correct AUDIT_GET_FEATURE return message type
+Date: Tue, 25 Nov 2014 10:39:51 +0000
+Message-Id: <1416912004-5928-242-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,187 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cristian Stoica <cristian.stoica@freescale.com>
+From: Richard Guy Briggs <rgb@redhat.com>
 
-commit 307fd543f3d23f8f56850eca1b27b1be2fe71017 upstream.
+commit 9ef91514774a140e468f99d73d7593521e6d25dc upstream.
 
-Replace equivalent (and partially incorrect) scatter-gather functions
-with ones from crypto-API.
+When an AUDIT_GET_FEATURE message is sent from userspace to the kernel, it
+should reply with a message tagged as an AUDIT_GET_FEATURE type with a struct
+audit_feature.  The current reply is a message tagged as an AUDIT_GET
+type with a struct audit_feature.
 
-The replacement is motivated by page-faults in sg_copy_part triggered
-by successive calls to crypto_hash_update. The following fault appears
-after calling crypto_ahash_update twice, first with 13 and then
-with 285 bytes:
+This appears to have been a cut-and-paste-eo in commit b0fed40.
 
-Unable to handle kernel paging request for data at address 0x00000008
-Faulting instruction address: 0xf9bf9a8c
-Oops: Kernel access of bad area, sig: 11 [#1]
-SMP NR_CPUS=8 CoreNet Generic
-Modules linked in: tcrypt(+) caamhash caam_jr caam tls
-CPU: 6 PID: 1497 Comm: cryptomgr_test Not tainted
-3.12.19-rt30-QorIQ-SDK-V1.6+g9fda9f2 #75
-task: e9308530 ti: e700e000 task.ti: e700e000
-NIP: f9bf9a8c LR: f9bfcf28 CTR: c0019ea0
-REGS: e700fb80 TRAP: 0300   Not tainted
-(3.12.19-rt30-QorIQ-SDK-V1.6+g9fda9f2)
-MSR: 00029002 <CE,EE,ME>  CR: 44f92024  XER: 20000000
-DEAR: 00000008, ESR: 00000000
-
-GPR00: f9bfcf28 e700fc30 e9308530 e70b1e55 00000000 ffffffdd e70b1e54 0bebf888
-GPR08: 902c7ef5 c0e771e2 00000002 00000888 c0019ea0 00000000 00000000 c07a4154
-GPR16: c08d0000 e91a8f9c 00000001 e98fb400 00000100 e9c83028 e70b1e08 e70b1d48
-GPR24: e992ce10 e70b1dc8 f9bfe4f4 e70b1e55 ffffffdd e70b1ce0 00000000 00000000
-NIP [f9bf9a8c] sg_copy+0x1c/0x100 [caamhash]
-LR [f9bfcf28] ahash_update_no_ctx+0x628/0x660 [caamhash]
-Call Trace:
-[e700fc30] [f9bf9c50] sg_copy_part+0xe0/0x160 [caamhash] (unreliable)
-[e700fc50] [f9bfcf28] ahash_update_no_ctx+0x628/0x660 [caamhash]
-[e700fcb0] [f954e19c] crypto_tls_genicv+0x13c/0x300 [tls]
-[e700fd10] [f954e65c] crypto_tls_encrypt+0x5c/0x260 [tls]
-[e700fd40] [c02250ec] __test_aead.constprop.9+0x2bc/0xb70
-[e700fe40] [c02259f0] alg_test_aead+0x50/0xc0
-[e700fe60] [c02241e4] alg_test+0x114/0x2e0
-[e700fee0] [c022276c] cryptomgr_test+0x4c/0x60
-[e700fef0] [c004f658] kthread+0x98/0xa0
-[e700ff40] [c000fd04] ret_from_kernel_thread+0x5c/0x64
-
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Reported-by: Steve Grubb <sgrubb@redhat.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/crypto/caam/caamhash.c   | 22 ++++++++++------
- drivers/crypto/caam/sg_sw_sec4.h | 54 ----------------------------------------
- 2 files changed, 14 insertions(+), 62 deletions(-)
+ kernel/audit.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/crypto/caam/caamhash.c b/drivers/crypto/caam/caamhash.c
-index 42e41f3b5cf1..8ec09e557545 100644
---- a/drivers/crypto/caam/caamhash.c
-+++ b/drivers/crypto/caam/caamhash.c
-@@ -825,8 +825,9 @@ static int ahash_update_ctx(struct ahash_request *req)
- 					   edesc->sec4_sg + sec4_sg_src_index,
- 					   chained);
- 			if (*next_buflen) {
--				sg_copy_part(next_buf, req->src, to_hash -
--					     *buflen, req->nbytes);
-+				scatterwalk_map_and_copy(next_buf, req->src,
-+							 to_hash - *buflen,
-+							 *next_buflen, 0);
- 				state->current_buf = !state->current_buf;
- 			}
- 		} else {
-@@ -859,7 +860,8 @@ static int ahash_update_ctx(struct ahash_request *req)
- 			kfree(edesc);
- 		}
- 	} else if (*next_buflen) {
--		sg_copy(buf + *buflen, req->src, req->nbytes);
-+		scatterwalk_map_and_copy(buf + *buflen, req->src, 0,
-+					 req->nbytes, 0);
- 		*buflen = *next_buflen;
- 		*next_buflen = last_buflen;
- 	}
-@@ -1206,8 +1208,9 @@ static int ahash_update_no_ctx(struct ahash_request *req)
- 		src_map_to_sec4_sg(jrdev, req->src, src_nents,
- 				   edesc->sec4_sg + 1, chained);
- 		if (*next_buflen) {
--			sg_copy_part(next_buf, req->src, to_hash - *buflen,
--				    req->nbytes);
-+			scatterwalk_map_and_copy(next_buf, req->src,
-+						 to_hash - *buflen,
-+						 *next_buflen, 0);
- 			state->current_buf = !state->current_buf;
- 		}
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 855aaa0803d9..6726aa6f82be 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -724,7 +724,7 @@ static int audit_get_feature(struct sk_buff *skb)
  
-@@ -1238,7 +1241,8 @@ static int ahash_update_no_ctx(struct ahash_request *req)
- 			kfree(edesc);
- 		}
- 	} else if (*next_buflen) {
--		sg_copy(buf + *buflen, req->src, req->nbytes);
-+		scatterwalk_map_and_copy(buf + *buflen, req->src, 0,
-+					 req->nbytes, 0);
- 		*buflen = *next_buflen;
- 		*next_buflen = 0;
- 	}
-@@ -1395,7 +1399,8 @@ static int ahash_update_first(struct ahash_request *req)
- 		}
+ 	seq = nlmsg_hdr(skb)->nlmsg_seq;
  
- 		if (*next_buflen)
--			sg_copy_part(next_buf, req->src, to_hash, req->nbytes);
-+			scatterwalk_map_and_copy(next_buf, req->src, to_hash,
-+						 *next_buflen, 0);
+-	audit_send_reply(skb, seq, AUDIT_GET, 0, 0, &af, sizeof(af));
++	audit_send_reply(skb, seq, AUDIT_GET_FEATURE, 0, 0, &af, sizeof(af));
  
- 		sh_len = desc_len(sh_desc);
- 		desc = edesc->hw_desc;
-@@ -1428,7 +1433,8 @@ static int ahash_update_first(struct ahash_request *req)
- 		state->update = ahash_update_no_ctx;
- 		state->finup = ahash_finup_no_ctx;
- 		state->final = ahash_final_no_ctx;
--		sg_copy(next_buf, req->src, req->nbytes);
-+		scatterwalk_map_and_copy(next_buf, req->src, 0,
-+					 req->nbytes, 0);
- 	}
- #ifdef DEBUG
- 	print_hex_dump(KERN_ERR, "next buf@"__stringify(__LINE__)": ",
-diff --git a/drivers/crypto/caam/sg_sw_sec4.h b/drivers/crypto/caam/sg_sw_sec4.h
-index b12ff85f4241..ce28a563effc 100644
---- a/drivers/crypto/caam/sg_sw_sec4.h
-+++ b/drivers/crypto/caam/sg_sw_sec4.h
-@@ -116,57 +116,3 @@ static int dma_unmap_sg_chained(struct device *dev, struct scatterlist *sg,
- 	}
- 	return nents;
+ 	return 0;
  }
--
--/* Map SG page in kernel virtual address space and copy */
--static inline void sg_map_copy(u8 *dest, struct scatterlist *sg,
--			       int len, int offset)
--{
--	u8 *mapped_addr;
--
--	/*
--	 * Page here can be user-space pinned using get_user_pages
--	 * Same must be kmapped before use and kunmapped subsequently
--	 */
--	mapped_addr = kmap_atomic(sg_page(sg));
--	memcpy(dest, mapped_addr + offset, len);
--	kunmap_atomic(mapped_addr);
--}
--
--/* Copy from len bytes of sg to dest, starting from beginning */
--static inline void sg_copy(u8 *dest, struct scatterlist *sg, unsigned int len)
--{
--	struct scatterlist *current_sg = sg;
--	int cpy_index = 0, next_cpy_index = current_sg->length;
--
--	while (next_cpy_index < len) {
--		sg_map_copy(dest + cpy_index, current_sg, current_sg->length,
--			    current_sg->offset);
--		current_sg = scatterwalk_sg_next(current_sg);
--		cpy_index = next_cpy_index;
--		next_cpy_index += current_sg->length;
--	}
--	if (cpy_index < len)
--		sg_map_copy(dest + cpy_index, current_sg, len-cpy_index,
--			    current_sg->offset);
--}
--
--/* Copy sg data, from to_skip to end, to dest */
--static inline void sg_copy_part(u8 *dest, struct scatterlist *sg,
--				      int to_skip, unsigned int end)
--{
--	struct scatterlist *current_sg = sg;
--	int sg_index, cpy_index, offset;
--
--	sg_index = current_sg->length;
--	while (sg_index <= to_skip) {
--		current_sg = scatterwalk_sg_next(current_sg);
--		sg_index += current_sg->length;
--	}
--	cpy_index = sg_index - to_skip;
--	offset = current_sg->offset + current_sg->length - cpy_index;
--	sg_map_copy(dest, current_sg, cpy_index, offset);
--	if (end - sg_index) {
--		current_sg = scatterwalk_sg_next(current_sg);
--		sg_copy(dest + cpy_index, current_sg, end - sg_index);
--	}
--}
 -- 
 2.1.0
 
