@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708AbaKYRXk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:23:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48956 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751303AbaKYRXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:23:37 -0500
-Message-ID: <5474BAD8.7010307@redhat.com>
-Date: Tue, 25 Nov 2014 18:22:32 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751960AbaKYRXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:23:46 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38286 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781AbaKYRXn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 12:23:43 -0500
+Date: Tue, 25 Nov 2014 17:21:20 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Ben Zhang <benzh@chromium.org>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        flove@realtek.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Message-ID: <20141125172120.GI7712@sirena.org.uk>
+References: <1416034608-24238-1-git-send-email-benzh@chromium.org>
+ <CACxGe6stjCvaQZkh=hFcF-56v5qJVar11jRZz0PRSd2wz6EUyA@mail.gmail.com>
+ <5474A78C.7030805@linux.intel.com>
 MIME-Version: 1.0
-To: Peter Maydell <peter.maydell@linaro.org>
-CC: =?UTF-8?B?QWxleCBCZW5uw6ll?= <alex.bennee@linaro.org>,
-        kvm-devel <kvm@vger.kernel.org>,
-        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, Alexander Graf <agraf@suse.de>,
-        "J. Kiszka" <jan.kiszka@siemens.com>,
-        David Hildenbrand <dahi@linux.vnet.ibm.com>,
-        Bharat Bhushan <r65777@freescale.com>, bp@suse.de,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/7] KVM: arm: guest debug, define API headers
-References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org> <1416931805-23223-3-git-send-email-alex.bennee@linaro.org> <5474B6BC.2060309@redhat.com> <CAFEAcA-ikeiciAh4RXpKQQ_pY9FRePxR7nEBUEjcaaxB0ZAAtA@mail.gmail.com>
-In-Reply-To: <CAFEAcA-ikeiciAh4RXpKQQ_pY9FRePxR7nEBUEjcaaxB0ZAAtA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="24l/woCQRgYlHbSG"
+Content-Disposition: inline
+In-Reply-To: <5474A78C.7030805@linux.intel.com>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--24l/woCQRgYlHbSG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On 25/11/2014 18:13, Peter Maydell wrote:
-> On 25 November 2014 at 17:05, Paolo Bonzini <pbonzini@redhat.com> wrote:
->> > So there is no register that says "this breakpoint has triggered" or
->> > "this watchpoint has triggered"?
-> Nope. You take a debug exception; the syndrome register tells
-> you if it was a bp or a wp, and if it was a wp the fault address
-> register tells you the address being accessed (if it was a bp
-> you know the program counter, obviously). The debugger is expected
-> to be able to figure it out from there, if it cares.
+On Tue, Nov 25, 2014 at 08:00:12AM -0800, Darren Hart wrote:
+> On 11/25/14 04:11, Grant Likely wrote:
 
-That's already good enough---do the KVM_DEBUG_EXIT_* constants match the
-syndrome register, or if not why?
+> > Also, since this patch is targeted at v3.19 or later, the
+> > device-properties API should be used. Don't create something custom.
 
-Paolo
+> Right. The ACPI/UEFI forum is managing the creation of new DSD bindings
+> and ensuring they are documented online. I believe this is the... 3rd so
+> far? So we're still optimizing the process. But yes, please, send the
+> schema itself for review and let's get this documented and migrated over
+> to _DSD.
+
+To be clear the main reason I'm querying this is that it doesn't appear
+to be a _DSD based binding at all (as far as I understand it, the API
+it's using is from before the dawn of time or at least the dawn of git).
+
+Given the design of _DSD is to share with DT and we already have device
+tree bindings for the device we should be using, it's not clear to me if
+we want to grind them all through UEFI and I suspect they'd be unhappy
+if we tried but pretty much all audio CODECs are good candidates for use
+with ACPI given the new hardware designs Intel have so if we are doing
+it I ought to be bouncing everyone to UEFI forum.
+
+--24l/woCQRgYlHbSG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdLqPAAoJECTWi3JdVIfQj+QIAIbjpZ0x+N2081Nc1/fgC2jk
+4ASAqxL27XRLakZxTdSXnYMytTXES+L3TNkJalCpt/VCyer3CElcXjAcSBjJYbNi
+ZrkeiHB6W1fwRN80KvSJ95ctSjIbJP4dkqvCr13JdijLxF0h9aXcysa7Q5bPoUSP
+x50XkwaMFsm1jP9bHEzPA4NROh85aRPb9cucMjX3KnvMR93hvtKaEz2yANLvPtHF
+81RhiQwvJvpwc8nmwXK115hL6Rbd+HzrKvfpAzz6EMNiYGM9A3q/BVQxb+MpludV
+w3pGwCFmEMRtZdkCNTKk0odPi4YaWWiOxqWCpYu2Ak2cPbtwgEmyOXH8EFU67Ug=
+=ENqK
+-----END PGP SIGNATURE-----
+
+--24l/woCQRgYlHbSG--
