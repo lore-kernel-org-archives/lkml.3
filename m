@@ -1,118 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200AbaKYUgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 15:36:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35474 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812AbaKYUgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 15:36:19 -0500
-Subject: [PATCH v7 0/4] arch: Add lightweight memory barriers for coherent
- memory access
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-To: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
-        benh@kernel.crashing.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
-        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
-        matthew.vick@intel.com, geert@linux-m68k.org,
-        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
-        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, arnd@arndb.de,
-        will.deacon@arm.com, michael@ellerman.id.au, tony.luck@intel.com,
-        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
-        fweisbec@gmail.com, davem@davemloft.net
-Date: Tue, 25 Nov 2014 12:35:06 -0800
-Message-ID: <20141125203310.8240.27370.stgit@ahduyck-server>
-User-Agent: StGit/0.17-dirty
+	id S1751388AbaKYUgp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 15:36:45 -0500
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:33287 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058AbaKYUgn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 15:36:43 -0500
+Date: Tue, 25 Nov 2014 16:36:31 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Linux PM list <linux-pm@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: Re: [PATCH v2 3/4] thermal: of: Extend of-thermal to export table of
+ trip points
+Message-ID: <20141125203629.GA14292@developer>
+References: <1412872737-624-1-git-send-email-l.majewski@samsung.com>
+ <1416500488-7232-1-git-send-email-l.majewski@samsung.com>
+ <1416500488-7232-4-git-send-email-l.majewski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
+Content-Disposition: inline
+In-Reply-To: <1416500488-7232-4-git-send-email-l.majewski@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches introduce two new primitives for synchronizing cache coherent
-memory writes and reads.  These two new primitives are:
 
-	dma_rmb()
-	dma_wmb()
+--17pEHd4RhPHOinZp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The first patch cleans up some unnecessary overhead related to the
-definition of read_barrier_depends, smp_read_barrier_depends, and comments
-related to the barrier.
+Hello Lukasz,
 
-The second patch adds the primitives for the applicable architectures and
-asm-generic.
+On Thu, Nov 20, 2014 at 05:21:27PM +0100, Lukasz Majewski wrote:
+> This patch extends the of-thermal.c to export copy of trip points for
+> a given thermal zone.
+>=20
+> Thermal drivers should use of_thermal_get_trip_points() method to get
+> pointer to table of thermal trip points.
+>=20
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> ---
+> Changes for v2:
+> - New patch - as suggested by Eduardo Valentin
+> ---
+>  drivers/thermal/of-thermal.c   | 33 +++++++++++++++++++++++++++++++++
+>  drivers/thermal/thermal_core.h |  7 +++++++
+>  include/linux/thermal.h        | 14 ++++++++++++++
+>  3 files changed, 54 insertions(+)
+>=20
+> diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
+> index 336af7f..33921c5 100644
+> --- a/drivers/thermal/of-thermal.c
+> +++ b/drivers/thermal/of-thermal.c
+> @@ -89,6 +89,7 @@ struct __thermal_zone {
+>  	/* trip data */
+>  	int ntrips;
+>  	struct __thermal_trip *trips;
+> +	struct thermal_trip *gtrips;
+> =20
+>  	/* cooling binding data */
+>  	int num_tbps;
+> @@ -152,6 +153,27 @@ bool of_thermal_is_trip_en(struct thermal_zone_devic=
+e *tz, int trip)
+>  	return true;
+>  }
+> =20
+> +/**
+> + * of_thermal_get_trip_points - function to get access to a globally exp=
+orted
+> + *				trip points
+> + *
+> + * @tz:	pointer to a thermal zone
+> + *
+> + * This function provides a pointer to the copy of trip points table
+> + *
+> + * Return: pointer to trip points table, NULL otherwise
+> + */
+> +const struct thermal_trip * const
+> +of_thermal_get_trip_points(struct thermal_zone_device *tz)
+> +{
+> +	struct __thermal_zone *data =3D tz->devdata;
+> +
+> +	if (!data)
+> +		return NULL;
+> +
+> +	return data->gtrips;
+> +}
+> +
 
-The third patch adds the barriers to r8169 which turns out to be a good
-example of where the new barriers might be useful as they have full
-rmb()/wmb() barriers ordering accesses to the descriptors and the DescOwn
-bit.
+EXPORT_SYMBOL_GPL(of_thermal_get_trip_points);
 
-The fourth patch adds support for coherent_rmb() to the Intel fm10k, igb,
-and ixgbe drivers.  Testing with the ixgbe driver has shown a processing
-time reduction of at least 7ns per 64B frame on a Core i7-4930K.
+>  static int of_thermal_get_trend(struct thermal_zone_device *tz, int trip,
+>  				enum thermal_trend *trend)
+>  {
+> @@ -767,6 +789,16 @@ thermal_of_build_thermal_zone(struct device_node *np)
+>  			goto free_tbps;
+>  	}
+> =20
+> +	tz->gtrips =3D kcalloc(tz->ntrips, sizeof(*tz->gtrips), GFP_KERNEL);
+> +	if (!tz->gtrips) {
+> +		ret =3D -ENOMEM;
+> +		goto free_tbps;
+> +	}
+> +
+> +	for (i =3D 0; i < tz->ntrips; i++)
+> +		memcpy(&(tz->gtrips[i]), &(tz->trips[i].temperature),
+> +		       sizeof(*tz->gtrips));
+> +
+>  finish:
+>  	of_node_put(child);
+>  	tz->mode =3D THERMAL_DEVICE_DISABLED;
+> @@ -793,6 +825,7 @@ static inline void of_thermal_free_zone(struct __ther=
+mal_zone *tz)
+>  {
+>  	int i;
+> =20
+> +	kfree(tz->gtrips);
+>  	for (i =3D 0; i < tz->num_tbps; i++)
+>  		of_node_put(tz->tbps[i].cooling_device);
+>  	kfree(tz->tbps);
+> diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_cor=
+e.h
+> index 466208c..a9580ca 100644
+> --- a/drivers/thermal/thermal_core.h
+> +++ b/drivers/thermal/thermal_core.h
+> @@ -91,6 +91,8 @@ int of_parse_thermal_zones(void);
+>  void of_thermal_destroy_zones(void);
+>  int of_thermal_get_ntrips(struct thermal_zone_device *);
+>  bool of_thermal_is_trip_en(struct thermal_zone_device *, int);
+> +const struct thermal_trip * const
+> +of_thermal_get_trip_points(struct thermal_zone_device *);
+>  #else
+>  static inline int of_parse_thermal_zones(void) { return 0; }
+>  static inline void of_thermal_destroy_zones(void) { }
+> @@ -102,6 +104,11 @@ static inline bool of_thermal_is_trip_en(struct ther=
+mal_zone_device *, int)
+>  {
 
-This patch series is essentially the v7 for:
-v4-6:	Add lightweight memory barriers for coherent memory access
-v3:	Add lightweight memory barriers fast_rmb() and fast_wmb()
-v2:	Introduce load_acquire() and store_release()
-v1:	Introduce read_acquire()
+This produces compilation error when CONFIG_THERMAL_OF is not set. Name
+the parameters to fix.
 
-The key changes in this patch series versus the earlier patches are:
-v7:
-	- Dropped test/debug patch that was accidentally slipped in
-v6:
-	- Replaced "memory based device I/O" with "consistent memory" in
-	  docs
-	- Added reference to DMA-API.txt to explain consistent memory
-v5:
-	- Renamed barriers dma_rmb and dma_wmb
-	- Undid smp_wmb changes in x86 and PowerPC
-	- Defined smp_rmb as __lwsync for SMP case on PowerPC
-v4:
-	- Renamed barriers coherent_rmb and coherent_wmb
-	- Added smp_lwsync for use in smp_load_acquire/smp_store_release
-v3:
-	- Moved away from acquire()/store() and instead focused on barriers
-	- Added cleanup of read_barrier_depends
-	- Added change in r8169 to fix cur_tx/DescOwn ordering
-	- Simplified changes to just replacing/moving barriers in r8169
-	- Added update to documentation with code example
-v2:
-	- Renamed read_acquire() to be consistent with smp_load_acquire()
-	- Changed barrier used to be consistent with smp_load_acquire()
-	- Updated PowerPC code to use __lwsync based on IBM article
-	- Added store_release() as this is a viable use case for drivers
-	- Added r8169 patch which is able to fully use primitives
-	- Added fm10k/igb/ixgbe patch which is able to test performance
+>  	return 0;
+>  }
+> +static inline const struct thermal_trip * const
+> +of_thermal_get_trip_points(struct thermal_zone_device *)
+> +{
+> +	return NULL;
+> +}
+>  #endif
+> =20
+>  #endif /* __THERMAL_CORE_H__ */
+> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> index 5bc28a7..88d7249 100644
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -303,6 +303,20 @@ struct thermal_zone_of_device_ops {
+>  	int (*get_trend)(void *, long *);
+>  };
+> =20
+> +/**
+> + * struct thermal_trip - Structure representing themal trip points expor=
+ted from
+> + *                       of-thermal
+> + *
 
----
+The only problem I have with this name is that would look like it is in
+use in all thermal framework, which is not really the case. But I do
+think having a type here is a good thing. So, not sure :-)
 
-Alexander Duyck (4):
-      arch: Cleanup read_barrier_depends() and comments
-      arch: Add lightweight memory barriers dma_rmb() and dma_wmb()
-      r8169: Use dma_rmb() and dma_wmb() for DescOwn checks
-      fm10k/igb/ixgbe: Use dma_rmb on Rx descriptor reads
+> + * @temperature:	trip point temperature
+> + * @hysteresis:		trip point hysteresis
+> + * @type:		trip point type
+> + */
+> +struct thermal_trip {
+> +	unsigned long int temperature;
+> +	unsigned long int hysteresis;
+> +	enum thermal_trip_type type;
+> +};
+> +
+>  /* Function declarations */
+>  #ifdef CONFIG_THERMAL_OF
+>  struct thermal_zone_device *
+> --=20
+> 2.0.0.rc2
+>=20
 
+--17pEHd4RhPHOinZp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- Documentation/memory-barriers.txt             |   42 +++++++++++++++
- arch/alpha/include/asm/barrier.h              |   51 ++++++++++++++++++
- arch/arm/include/asm/barrier.h                |    4 +
- arch/arm64/include/asm/barrier.h              |    3 +
- arch/blackfin/include/asm/barrier.h           |   51 ++++++++++++++++++
- arch/ia64/include/asm/barrier.h               |   25 ++++-----
- arch/metag/include/asm/barrier.h              |   19 ++++---
- arch/mips/include/asm/barrier.h               |   61 ++--------------------
- arch/powerpc/include/asm/barrier.h            |   19 ++++---
- arch/s390/include/asm/barrier.h               |    7 ++-
- arch/sparc/include/asm/barrier_64.h           |    7 ++-
- arch/x86/include/asm/barrier.h                |   70 ++++---------------------
- arch/x86/um/asm/barrier.h                     |   20 ++++---
- drivers/net/ethernet/intel/fm10k/fm10k_main.c |    6 +-
- drivers/net/ethernet/intel/igb/igb_main.c     |    6 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    9 +--
- drivers/net/ethernet/realtek/r8169.c          |   29 ++++++++--
- include/asm-generic/barrier.h                 |    8 +++
- 18 files changed, 258 insertions(+), 179 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
---
+iQEcBAEBAgAGBQJUdOhCAAoJEMLUO4d9pOJW/MsH/2mkqHxROgwKtjuZILnn5HIc
+FW9m6U3rWHqjS8nTvj41M2AoEFsadc8qBT66GoX25bQH8hjeDDi6kiCWHOJ1bHq2
+xe+LQKno4bzOc/3jNiPyTkGxexUDsdmx5pfSDcqhFCuvc+U6DdHKECrwigBWujzI
+JHoW+7P5RGd/jwBjmAma8VqQ+1jpa6eUjlFcWBnruz9Oh/8KLHGEzG+P/pcnj71V
+UIPPWnL13tuz9dEpezMQEl/CDctVlu0h4IEIo7/zPcF2uyKrrT0+1MeBWPV9Vz2U
+uy2AwgVtgffmiC9z2VJYK930akGjSuZnDOxlBCngObSqM2Dz/9A+qsJ1YZre6fw=
+=fm2i
+-----END PGP SIGNATURE-----
+
+--17pEHd4RhPHOinZp--
