@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557AbaKYKvF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:51:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59183 "EHLO
+	id S1754540AbaKYKvD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:51:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59184 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116AbaKYKni (ORCPT
+	with ESMTP id S1754118AbaKYKni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Nov 2014 05:43:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andreas Larsson <andreas@gaisler.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 233/254] sparc32: Implement xchg and atomic_xchg using ATOMIC_HASH locks
-Date: Tue, 25 Nov 2014 10:39:43 +0000
-Message-Id: <1416912004-5928-234-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 234/254] drm/radeon: initialize sadb to NULL in the audio code
+Date: Tue, 25 Nov 2014 10:39:44 +0000
+Message-Id: <1416912004-5928-235-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,107 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Larsson <andreas@gaisler.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 1a17fdc4f4ed06b63fac1937470378a5441a663a upstream.
+commit 83d04c39f9048807a8500e575ae3f1718a3f45bb upstream.
 
-Atomicity between xchg and cmpxchg cannot be guaranteed when xchg is
-implemented with a swap and cmpxchg is implemented with locks.
-Without this, e.g. mcs_spin_lock and mcs_spin_unlock are broken.
+Fixes kfree of the sadb buffer when it's NULL.
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/sparc/include/asm/atomic_32.h  |  2 +-
- arch/sparc/include/asm/cmpxchg_32.h | 12 ++----------
- arch/sparc/lib/atomic32.c           | 27 +++++++++++++++++++++++++++
- 3 files changed, 30 insertions(+), 11 deletions(-)
+ drivers/gpu/drm/radeon/dce3_1_afmt.c    | 2 +-
+ drivers/gpu/drm/radeon/dce6_afmt.c      | 2 +-
+ drivers/gpu/drm/radeon/evergreen_hdmi.c | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/sparc/include/asm/atomic_32.h b/arch/sparc/include/asm/atomic_32.h
-index 7aed2be45b44..2701fb68a24f 100644
---- a/arch/sparc/include/asm/atomic_32.h
-+++ b/arch/sparc/include/asm/atomic_32.h
-@@ -22,7 +22,7 @@
+diff --git a/drivers/gpu/drm/radeon/dce3_1_afmt.c b/drivers/gpu/drm/radeon/dce3_1_afmt.c
+index 71f4d26669cd..13a27d971d35 100644
+--- a/drivers/gpu/drm/radeon/dce3_1_afmt.c
++++ b/drivers/gpu/drm/radeon/dce3_1_afmt.c
+@@ -32,7 +32,7 @@ static void dce3_2_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+ 	struct drm_connector *connector;
+ 	struct radeon_connector *radeon_connector = NULL;
+ 	u32 tmp;
+-	u8 *sadb;
++	u8 *sadb = NULL;
+ 	int sad_count;
  
- int __atomic_add_return(int, atomic_t *);
- int atomic_cmpxchg(atomic_t *, int, int);
--#define atomic_xchg(v, new) (xchg(&((v)->counter), new))
-+int atomic_xchg(atomic_t *, int);
- int __atomic_add_unless(atomic_t *, int, int);
- void atomic_set(atomic_t *, int);
+ 	list_for_each_entry(connector, &encoder->dev->mode_config.connector_list, head) {
+diff --git a/drivers/gpu/drm/radeon/dce6_afmt.c b/drivers/gpu/drm/radeon/dce6_afmt.c
+index ee5da3b56fbf..ed131d7422dc 100644
+--- a/drivers/gpu/drm/radeon/dce6_afmt.c
++++ b/drivers/gpu/drm/radeon/dce6_afmt.c
+@@ -155,7 +155,7 @@ void dce6_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+ 	struct drm_connector *connector;
+ 	struct radeon_connector *radeon_connector = NULL;
+ 	u32 offset, tmp;
+-	u8 *sadb;
++	u8 *sadb = NULL;
+ 	int sad_count;
  
-diff --git a/arch/sparc/include/asm/cmpxchg_32.h b/arch/sparc/include/asm/cmpxchg_32.h
-index 32c29a133f9d..d38b52dca216 100644
---- a/arch/sparc/include/asm/cmpxchg_32.h
-+++ b/arch/sparc/include/asm/cmpxchg_32.h
-@@ -11,22 +11,14 @@
- #ifndef __ARCH_SPARC_CMPXCHG__
- #define __ARCH_SPARC_CMPXCHG__
+ 	if (!dig || !dig->afmt || !dig->afmt->pin)
+diff --git a/drivers/gpu/drm/radeon/evergreen_hdmi.c b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+index d9c8bb9559a9..9343ebc74480 100644
+--- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
++++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+@@ -102,7 +102,7 @@ static void dce4_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+ 	struct drm_connector *connector;
+ 	struct radeon_connector *radeon_connector = NULL;
+ 	u32 tmp;
+-	u8 *sadb;
++	u8 *sadb = NULL;
+ 	int sad_count;
  
--static inline unsigned long xchg_u32(__volatile__ unsigned long *m, unsigned long val)
--{
--	__asm__ __volatile__("swap [%2], %0"
--			     : "=&r" (val)
--			     : "0" (val), "r" (m)
--			     : "memory");
--	return val;
--}
--
-+unsigned long __xchg_u32(volatile u32 *m, u32 new);
- void __xchg_called_with_bad_pointer(void);
- 
- static inline unsigned long __xchg(unsigned long x, __volatile__ void * ptr, int size)
- {
- 	switch (size) {
- 	case 4:
--		return xchg_u32(ptr, x);
-+		return __xchg_u32(ptr, x);
- 	}
- 	__xchg_called_with_bad_pointer();
- 	return x;
-diff --git a/arch/sparc/lib/atomic32.c b/arch/sparc/lib/atomic32.c
-index 1d32b54089aa..8f2f94d53434 100644
---- a/arch/sparc/lib/atomic32.c
-+++ b/arch/sparc/lib/atomic32.c
-@@ -40,6 +40,19 @@ int __atomic_add_return(int i, atomic_t *v)
- }
- EXPORT_SYMBOL(__atomic_add_return);
- 
-+int atomic_xchg(atomic_t *v, int new)
-+{
-+	int ret;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(ATOMIC_HASH(v), flags);
-+	ret = v->counter;
-+	v->counter = new;
-+	spin_unlock_irqrestore(ATOMIC_HASH(v), flags);
-+	return ret;
-+}
-+EXPORT_SYMBOL(atomic_xchg);
-+
- int atomic_cmpxchg(atomic_t *v, int old, int new)
- {
- 	int ret;
-@@ -132,3 +145,17 @@ unsigned long __cmpxchg_u32(volatile u32 *ptr, u32 old, u32 new)
- 	return (unsigned long)prev;
- }
- EXPORT_SYMBOL(__cmpxchg_u32);
-+
-+unsigned long __xchg_u32(volatile u32 *ptr, u32 new)
-+{
-+	unsigned long flags;
-+	u32 prev;
-+
-+	spin_lock_irqsave(ATOMIC_HASH(ptr), flags);
-+	prev = *ptr;
-+	*ptr = new;
-+	spin_unlock_irqrestore(ATOMIC_HASH(ptr), flags);
-+
-+	return (unsigned long)prev;
-+}
-+EXPORT_SYMBOL(__xchg_u32);
+ 	list_for_each_entry(connector, &encoder->dev->mode_config.connector_list, head) {
 -- 
 2.1.0
 
