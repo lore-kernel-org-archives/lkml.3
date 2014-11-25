@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbaKYT3a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 14:29:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51620 "EHLO mx2.suse.de"
+	id S1751530AbaKYTbT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 14:31:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60728 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784AbaKYT33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 14:29:29 -0500
-Date: Tue, 25 Nov 2014 20:29:31 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Petr Mladek <pmladek@suse.cz>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Seth Jennings <sjenning@redhat.com>,
-        Josh Poimboeuf <jpoimboe@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
-        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 2/3] kernel: add support for live patching
-In-Reply-To: <20141125121606.547031b4@gandalf.local.home>
-Message-ID: <alpine.LNX.2.00.1411252027040.23174@pobox.suse.cz>
-References: <1416522580-5593-1-git-send-email-sjenning@redhat.com> <1416522580-5593-3-git-send-email-sjenning@redhat.com> <546EA5DC.6000207@hitachi.com> <20141125163942.GD22487@pathway.suse.cz> <20141125115210.4d7cfca3@gandalf.local.home>
- <20141125170431.GE22487@pathway.suse.cz> <20141125121606.547031b4@gandalf.local.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1750834AbaKYTbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 14:31:18 -0500
+Date: Tue, 25 Nov 2014 17:30:54 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Luiz Capitulino <lcapitulino@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org
+Subject: Re: [patch -rt 1/2] KVM: use simple waitqueue for vcpu->wq
+Message-ID: <20141125193054.GA12902@amt.cnet>
+References: <20141125172108.992070524@redhat.com>
+ <20141125172329.435080075@redhat.com>
+ <5474D121.4070905@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5474D121.4070905@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014, Steven Rostedt wrote:
+On Tue, Nov 25, 2014 at 01:57:37PM -0500, Rik van Riel wrote:
+> On 11/25/2014 12:21 PM, Marcelo Tosatti wrote:
+> > The problem:
+> > 
+> > On -RT, an emulated LAPIC timer instances has the following path:
+> > 
+> > 1) hard interrupt
+> > 2) ksoftirqd is scheduled
+> > 3) ksoftirqd wakes up vcpu thread
+> > 4) vcpu thread is scheduled
+> > 
+> > This extra context switch introduces unnecessary latency in the 
+> > LAPIC path for a KVM guest.
+> > 
+> > The solution:
+> > 
+> > Allow waking up vcpu thread from hardirq context,
+> > thus avoiding the need for ksoftirqd to be scheduled.
+> > 
+> > Normal waitqueues make use of spinlocks, which on -RT 
+> > are sleepable locks. Therefore, waking up a waitqueue 
+> > waiter involves locking a sleeping lock, which 
+> > is not allowed from hard interrupt context.
+> > 
+> 
+> What are the consequences for the realtime kernel of
+> making waitqueue traversal non-preemptible?
+> 
+> Is waitqueue traversal something that ever takes so
+> long we need to care about it being non-preemptible?
 
-> It is not guaranteed from ftrace's stand point. What happens if we have
-> a kprobe handler that modifies it for someplace else? Changing the ip
-> address may not be a kpatch/kGraft privilege only.
+commit d872cfa018625071a3a6b1ea8a62a2790d2c157a
+Author: Thomas Gleixner <tglx@linutronix.de>
+Date:   Mon Dec 12 12:29:04 2011 +0100
 
-This brings me back to the RFC patch I sent back then in october ... what 
-we really want to do is to at least warn about situations when we are 
-going to redirect code flow (through IPMODIFY) for function that has a 
-kprobe installed anywhere inside it. Otherwise the probe will silently 
-vanish (there is no way how to migrate it to the new function 
-automatically), which might be very confusing for uses (cosider systemtap, 
-for example).
+    wait-simple: Simple waitqueue implementation
 
-I'll resurect my patch if noone beats me doing it. It should go in 
-together with the live patching framework I believe.
+    wait_queue is a swiss army knife and in most of the cases the
+    complexity is not needed. For RT waitqueues are a constant source of
+    trouble as we can't convert the head lock to a raw spinlock due to
+    fancy and long lasting callbacks.
 
-Thanks,
+Unsure about the details...
 
--- 
-Jiri Kosina
-SUSE Labs
