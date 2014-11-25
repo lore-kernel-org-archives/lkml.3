@@ -1,103 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747AbaKYK6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:58:23 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38741 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009AbaKYK6V (ORCPT
+	id S1754719AbaKYK6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:58:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59055 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753978AbaKYKnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:58:21 -0500
-Date: Tue, 25 Nov 2014 10:58:15 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ding Tianhong <dingtianhong@huawei.com>
-Subject: Re: For the problem when using swiotlb
-Message-ID: <20141125105815.GB18858@e104818-lin.cambridge.arm.com>
-References: <5469E26B.2010905@huawei.com>
- <20141121175118.GA10451@localhost>
- <20141121180925.GG19783@e104818-lin.cambridge.arm.com>
- <2166613.l2i4mdmtLA@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2166613.l2i4mdmtLA@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 25 Nov 2014 05:43:18 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tang Chen <tangchen@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 211/254] mem-hotplug: reset node present pages when hot-adding a new pgdat
+Date: Tue, 25 Nov 2014 10:39:21 +0000
+Message-Id: <1416912004-5928-212-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 08:12:09PM +0000, Arnd Bergmann wrote:
-> On Friday 21 November 2014 18:09:25 Catalin Marinas wrote:
-> > On Fri, Nov 21, 2014 at 05:51:19PM +0000, Catalin Marinas wrote:
-> > > On Fri, Nov 21, 2014 at 05:04:28PM +0000, Arnd Bergmann wrote:
-> > > > On Friday 21 November 2014 16:57:09 Catalin Marinas wrote:
-> > > > > There is a scenario where smaller mask would work on arm64. For example
-> > > > > Juno, you can have 2GB of RAM in the 32-bit phys range (starting at
-> > > > > 0x80000000). A device with 31-bit mask and a dma_pfn_offset of
-> > > > > 0x80000000 would still work (there isn't any but just as an example). So
-> > > > > the check in dma_alloc_coherent() would be something like:
-> > > > > 
-> > > > > 	phys_to_dma(top of ZONE_DMA) - dma_pfn_offset <= coherent_dma_mask
-> > > > > 
-> > > > > (or assuming RAM starts at 0 and ignoring dma_pfn_offset for now)
-> > > > > 
-> > > > > If the condition above fails, dma_alloc_coherent() would no longer fall
-> > > > > back to swiotlb but issue a dev_warn() and return NULL.
-> > > > 
-> > > > Ah, that looks like it should work on all architectures, very nice.
-> > > > How about checking this condition, and then printing a small warning
-> > > > (dev_warn, not WARN_ON) and setting the dma_mask pointer to NULL?
-> > > 
-> > > I would not add the above ZONE_DMA check to of_dma_configure(). For
-> > > example on arm64, we may not support a small coherent_dma_mask but the
-> > > same value for dma_mask could be fine via swiotlb bouncing (or IOMMU).
-> > > However, that's an arch-specific decision. Maybe after the above setting
-> > > of dev->coherent_dma_mask in of_dma_configure(), we could add:
-> 
-> You seem to implement the opposite:
+3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
 
-Possibly, but I had something else in mind.
+------------------
 
-> > +	/*
-> > +	 * If the bus dma-ranges property specifies a size smaller than 4GB,
-> > +	 * the device would not be capable of accessing the whole 32-bit
-> > +	 * space, so reduce the default coherent_dma_mask accordingly.
-> > +	 */
-> > +	if (size && size < (1ULL << 32))
-> > +		dev->coherent_dma_mask = DMA_BIT_MASK(ilog2(size));
-> > +
-> > +	/*
-> > +	 * Set dma_mask to coherent_dma_mask by default if the architecture
-> > +	 * code has not set it and DMA on such mask is supported.
-> > +	 */
-> > +	if (!dev->dma_mask && dma_supported(dev, dev->coherent_dma_mask))
-> > +		dev->dma_mask = &dev->coherent_dma_mask;
-> >  }
-> 
-> Here, coherent_dma_mask wouldn't work while dma_mask might be
-> fine in case of swiotlb, but you set a nonzero coherent_dma_mask
-> and an invalid dma_mask.
+From: Tang Chen <tangchen@cn.fujitsu.com>
 
-My assumption is that dma_supported() only checks the validity of
-dma_mask (not the coherent one). On arm64 it is currently routed to
-swiotlb_dma_supported() which returns true if the swiotlb bounce buffer
-is within that mask. So if the coherent_dma_mask is enough for swiotlb
-bounce buffer, we point dma_mask to it. Otherwise, there is no way to do
-streaming DMA to such mask, hence setting it to NULL.
+commit 0bd854200873894a76f32603ff2c4c988ad6b5b5 upstream.
 
-Since we don't have a coherent_dma_supported() function, we defer the
-validity check of coherent_dma_mask to dma_alloc_coherent() (and here we
-can remove bouncing since swiotlb has relatively small buffers).
+When memory is hot-added, all the memory is in offline state.  So clear
+all zones' present_pages because they will be updated in online_pages()
+and offline_pages().  Otherwise, /proc/zoneinfo will corrupt:
 
-There is a slight downside if dma_supported() on the default 32-bit mask
-fails, we end up with dma_mask == NULL and the driver calling
-dma_set_mask_and_coherent(64-bit) would fail to set dma_mask even though
-dma-ranges allows it. Is this a real scenario (not for arm64 where we
-allow DMA into 32-bit via ZONE_DMA)?
+When the memory of node2 is offline:
 
+  # cat /proc/zoneinfo
+  ......
+  Node 2, zone   Movable
+  ......
+        spanned  8388608
+        present  8388608
+        managed  0
+
+When we online memory on node2:
+
+  # cat /proc/zoneinfo
+  ......
+  Node 2, zone   Movable
+  ......
+        spanned  8388608
+        present  16777216
+        managed  8388608
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ mm/memory_hotplug.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 2fcc1a2e8ab2..845ca44ee5ab 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1064,6 +1064,16 @@ out:
+ }
+ #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
+ 
++static void reset_node_present_pages(pg_data_t *pgdat)
++{
++	struct zone *z;
++
++	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
++		z->present_pages = 0;
++
++	pgdat->node_present_pages = 0;
++}
++
+ /* we are OK calling __meminit stuff here - we have CONFIG_MEMORY_HOTPLUG */
+ static pg_data_t __ref *hotadd_new_pgdat(int nid, u64 start)
+ {
+@@ -1102,6 +1112,13 @@ static pg_data_t __ref *hotadd_new_pgdat(int nid, u64 start)
+ 	 */
+ 	reset_node_managed_pages(pgdat);
+ 
++	/*
++	 * When memory is hot-added, all the memory is in offline state. So
++	 * clear all zones' present_pages because they will be updated in
++	 * online_pages() and offline_pages().
++	 */
++	reset_node_present_pages(pgdat);
++
+ 	return pgdat;
+ }
+ 
 -- 
-Catalin
+2.1.0
+
