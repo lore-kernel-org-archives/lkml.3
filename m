@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751222AbaKYRxu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:53:50 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:51717 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964AbaKYRxt (ORCPT
+	id S1751125AbaKYRy2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:54:28 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:35071 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792AbaKYRy1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:53:49 -0500
-Date: Tue, 25 Nov 2014 18:53:42 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>, Pawel Moll <pawel.moll@arm.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v4 11/42] virtio: add legacy feature table support
-Message-ID: <20141125185342.761bf72e.cornelia.huck@de.ibm.com>
-In-Reply-To: <1416933600-21398-12-git-send-email-mst@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
-	<1416933600-21398-12-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112517-0009-0000-0000-00000223054F
+	Tue, 25 Nov 2014 12:54:27 -0500
+Message-ID: <5474C255.6020703@arm.com>
+Date: Tue, 25 Nov 2014 17:54:29 +0000
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] sched/deadline: fix pull if dl task who's prio changed
+ is not on queue
+References: <1416386103-90800-1-git-send-email-wanpeng.li@linux.intel.com> <1416386103-90800-2-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1416386103-90800-2-git-send-email-wanpeng.li@linux.intel.com>
+X-OriginalArrivalTime: 25 Nov 2014 17:54:25.0089 (UTC) FILETIME=[D9A0B310:01D008D8]
+X-MC-Unique: 114112517542501301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014 18:42:09 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+Hi,
 
-> virtio blk has some legacy feature bits that modern drivers
-
-virtio-blk
-
-> must not negotiate, but are needed for old legacy hosts
-> (e.g. that dn't support virtio scsi).
-
-(that e.g. don't support virtio-scsi)
-
-> Allow a separate legacy feature table for such cases.
+On 19/11/14 08:35, Wanpeng Li wrote:
+> Dl task who is not on queue and it is also the curr task simultaneously 
+> can not happen. In addition, pull since the priority of a not on queue 
+> dl task doesn't make any sense.
 > 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> This patch fix it by don't pull if dl task who's prio changed is not on 
+> queue.
+> 
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 > ---
->  include/linux/virtio.h  |  4 ++++
->  drivers/virtio/virtio.c | 25 ++++++++++++++++++++++++-
->  2 files changed, 28 insertions(+), 1 deletion(-)
+>  kernel/sched/deadline.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index b9e44ae..4eaf55c 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -1678,7 +1678,10 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
+>  static void prio_changed_dl(struct rq *rq, struct task_struct *p,
+>  			    int oldprio)
+>  {
+> -	if (task_on_rq_queued(p) || rq->curr == p) {
+> +	if (!task_on_rq_queued(p))
+> +		return;
+> +
+> +	if (rq->curr == p) {
 
-> @@ -177,7 +185,22 @@ static int virtio_dev_probe(struct device *_d)
->  		driver_features |= (1ULL << f);
->  	}
+Yeah. I already posted a patches for this, that I forgot to properly
+post again :/. I'll do it soon.
+
+Thanks,
+
+- Juri
+
+>  #ifdef CONFIG_SMP
+>  		/*
+>  		 * This might be too much, but unfortunately
 > 
-> -	dev->features = driver_features & device_features;
-> +	/* Some drivers have a separate feature tables for virtio v1.0 */
-
-/* some drivers have a separate feature table for legacy virtio */
-
-?
-
-> +	if (drv->feature_table_legacy) {
-> +		driver_features_legacy = 0;
-> +		for (i = 0; i < drv->feature_table_size_legacy; i++) {
-> +			unsigned int f = drv->feature_table_legacy[i];
-> +			BUG_ON(f >= 64);
-> +			driver_features_legacy |= (1ULL << f);
-> +		}
-> +	} else {
-> +		driver_features_legacy = driver_features;
-> +	}
-(...)
 
