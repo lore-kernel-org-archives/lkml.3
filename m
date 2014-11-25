@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482AbaKYIGB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 03:06:01 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:53447 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406AbaKYIF6 (ORCPT
+	id S1752243AbaKYIJf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 03:09:35 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:5019 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304AbaKYIJd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 03:05:58 -0500
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Cc: peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
-        james.hogan@imgtec.com, avagin@openvz.org, Paul.Clothier@imgtec.com,
-        palves@redhat.com, oleg@redhat.com, dhowells@redhat.com,
-        davej@redhat.com, davem@davemloft.net, mikey@neuling.org,
-        benh@kernel.crashing.org, sukadev@linux.vnet.ibm.com,
-        mpe@ellerman.id.au, sam.bobroff@au1.ibm.com, kirjanov@gmail.com,
-        shuahkh@osg.samsung.com
-Subject: [V5 2/7] powerpc, process: Add the function flush_tmregs_to_thread
-Date: Tue, 25 Nov 2014 13:35:26 +0530
-Message-Id: <1416902731-22446-3-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1416902731-22446-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1416902731-22446-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112508-0025-0000-0000-00000093E21F
+	Tue, 25 Nov 2014 03:09:33 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 25 Nov 2014 00:08:23 -0800
+Message-ID: <5474391F.6030908@nvidia.com>
+Date: Tue, 25 Nov 2014 17:09:03 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: =?windows-1252?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Linus Walleij <linus.walleij@linaro.org>, <linux-gpio@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>
+Subject: Re: [PATCH] gpio: remove const modifier from gpiod_get_direction()
+References: <1416900045-2304-1-git-send-email-acourbot@nvidia.com> <20141125080122.GY4431@pengutronix.de>
+In-Reply-To: <20141125080122.GY4431@pengutronix.de>
+X-NVConfidentiality: public
+X-Originating-IP: [10.19.57.128]
+X-ClientProxiedBy: DRBGMAIL101.nvidia.com (10.18.16.20) To
+ HKMAIL102.nvidia.com (10.18.16.11)
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch creates a function flush_tmregs_to_thread which
-will then be used by subsequent patches in this series. The
-function checks for self tracing ptrace interface attempts
-while in the TM context and logs appropriate warning message.
+On 11/25/2014 05:01 PM, Uwe Kleine-König wrote:
+> Hello Alexandre,
+>
+> just some minor nitpicking on the commit log:
+>
+> On Tue, Nov 25, 2014 at 04:20:45PM +0900, Alexandre Courbot wrote:
+>> Although gpiod_get_direction() can be considered side-effect free for
+>> consumers, its internals involve setting or clearing bits in the
+>> affected GPIO descriptor, for which we need to force-cast the const
+>> descriptor parameter. This could lead to incorrect behavior is the
+> s/ is/ if/, and I think s/parameter/variable to non-const/
+>
+>> compiler decide to optimize here, so remove this const parameter. The
+> s/decide/decides/; s/parameter/attribute/
+>
+>> intent is to make gpiod_get_direction() private anyway, so it does not
+>> really matter.
+>>
+>> Reported-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- arch/powerpc/include/asm/switch_to.h |  8 ++++++++
- arch/powerpc/kernel/process.c        | 20 ++++++++++++++++++++
- 2 files changed, 28 insertions(+)
+Thanks ; I should have proof-read myself...
 
-diff --git a/arch/powerpc/include/asm/switch_to.h b/arch/powerpc/include/asm/switch_to.h
-index 58abeda..23752a9 100644
---- a/arch/powerpc/include/asm/switch_to.h
-+++ b/arch/powerpc/include/asm/switch_to.h
-@@ -82,6 +82,14 @@ static inline void flush_spe_to_thread(struct task_struct *t)
- }
- #endif
- 
-+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-+extern void flush_tmregs_to_thread(struct task_struct *);
-+#else
-+static inline void flush_tmregs_to_thread(struct task_struct *t)
-+{
-+}
-+#endif
-+
- static inline void clear_task_ebb(struct task_struct *t)
- {
- #ifdef CONFIG_PPC_BOOK3S_64
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index 923cd2d..0013f24 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -745,6 +745,26 @@ void restore_tm_state(struct pt_regs *regs)
- #define __switch_to_tm(prev)
- #endif /* CONFIG_PPC_TRANSACTIONAL_MEM */
- 
-+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-+void flush_tmregs_to_thread(struct task_struct *tsk)
-+{
-+	/*
-+	 * Process self tracing is not yet supported through
-+	 * ptrace interface. Ptrace generic code should have
-+	 * prevented this from happening in the first place.
-+	 * Warn once here with the message, if some how it
-+	 * is attempted.
-+	 */
-+	WARN_ONCE(tsk == current,
-+		"Not expecting ptrace on self: TM regs may be incorrect\n");
-+
-+	/*
-+	 * If task is not current, it should have been flushed
-+	 * already to it's thread_struct during __switch_to().
-+	 */
-+}
-+#endif
-+
- struct task_struct *__switch_to(struct task_struct *prev,
- 	struct task_struct *new)
- {
--- 
-1.9.3
-
+Sending a v2 with a fixed log and your Ack so Linus can just pick the 
+patch as-is.
