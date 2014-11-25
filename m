@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586AbaKYScp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 13:32:45 -0500
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.113]:50661 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751181AbaKYSci (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 13:32:38 -0500
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-14.tower-193.messagelabs.com!1416939939!21866657!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.4; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <4b02cb8422fee25f5bc7c456778b00c9cfd2158f.1416938054.git.Adam.Thomson.Opensource@diasemi.com>
-In-Reply-To: <cover.1416938054.git.Adam.Thomson.Opensource@diasemi.com>
-References: <cover.1416938054.git.Adam.Thomson.Opensource@diasemi.com>
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Date: Tue, 25 Nov 2014 18:25:37 +0000
-Subject: [PATCH v4 7/8] MAINTAINERS: Include DA9150 files in Dialog Semiconductor
- support list.
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>, <linux-iio@vger.kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, <linux-api@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <support.opensource@diasemi.com>
+	id S1751658AbaKYSdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 13:33:07 -0500
+Received: from mga11.intel.com ([192.55.52.93]:46657 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751622AbaKYSdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 13:33:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,456,1413270000"; 
+   d="scan'208";a="637941983"
+Message-ID: <5474CB5D.9050807@linux.intel.com>
+Date: Tue, 25 Nov 2014 10:33:01 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mark Brown <broonie@kernel.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, Ben Zhang <benzh@chromium.org>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        flove@realtek.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
+References: <1416034608-24238-1-git-send-email-benzh@chromium.org> <CACxGe6stjCvaQZkh=hFcF-56v5qJVar11jRZz0PRSd2wz6EUyA@mail.gmail.com> <5474A78C.7030805@linux.intel.com> <20141125172120.GI7712@sirena.org.uk>
+In-Reply-To: <20141125172120.GI7712@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
----
- MAINTAINERS | 4 ++++
- 1 file changed, 4 insertions(+)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 0ff630d..4d2c39a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2990,12 +2990,15 @@ S:	Supported
- F:	Documentation/hwmon/da90??
- F:	drivers/gpio/gpio-da90??.c
- F:	drivers/hwmon/da90??-hwmon.c
-+F:	drivers/iio/adc/da91??-*.c
- F:	drivers/input/misc/da90??_onkey.c
- F:	drivers/input/touchscreen/da9052_tsi.c
- F:	drivers/leds/leds-da90??.c
- F:	drivers/mfd/da903x.c
- F:	drivers/mfd/da90??-*.c
-+F:	drivers/mfd/da91??-*.c
- F:	drivers/power/da9052-battery.c
-+F:	drivers/power/da91??-*.c
- F:	drivers/regulator/da903x.c
- F:	drivers/regulator/da9???-regulator.[ch]
- F:	drivers/rtc/rtc-da90??.c
-@@ -3005,6 +3008,7 @@ F:	include/linux/mfd/da903x.h
- F:	include/linux/mfd/da9052/
- F:	include/linux/mfd/da9055/
- F:	include/linux/mfd/da9063/
-+F:	include/linux/mfd/da9150/
- F:	include/sound/da[79]*.h
- F:	sound/soc/codecs/da[79]*.[ch]
 
---
-1.9.3
+On 11/25/14 09:21, Mark Brown wrote:
+> On Tue, Nov 25, 2014 at 08:00:12AM -0800, Darren Hart wrote:
+>> On 11/25/14 04:11, Grant Likely wrote:
+> 
+>>> Also, since this patch is targeted at v3.19 or later, the 
+>>> device-properties API should be used. Don't create something
+>>> custom.
+> 
+>> Right. The ACPI/UEFI forum is managing the creation of new DSD
+>> bindings and ensuring they are documented online. I believe this
+>> is the... 3rd so far? So we're still optimizing the process. But
+>> yes, please, send the schema itself for review and let's get this
+>> documented and migrated over to _DSD.
+> 
+> To be clear the main reason I'm querying this is that it doesn't
+> appear to be a _DSD based binding at all (as far as I understand
+> it, the API it's using is from before the dawn of time or at least
+> the dawn of git).
+> 
+> Given the design of _DSD is to share with DT and we already have
+> device tree bindings for the device we should be using, it's not
+> clear to me if we want to grind them all through UEFI and I suspect
+> they'd be unhappy if we tried but pretty much all audio CODECs are
+> good candidates for use with ACPI given the new hardware designs
+> Intel have so if we are doing it I ought to be bouncing everyone to
+> UEFI forum.
 
+Right, I realized between sending and driving into the office that my
+statement might be construed this way. I meant *new* _DSD bindings
+should go through the ACPI/UEFI forum. Where we can reuse DT bindings,
+we should absolutely do that, agreed. We should still document this
+and link to the DT binding so it can be referenced and used even when
+Linux is not the target OS.
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
