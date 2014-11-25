@@ -1,167 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706AbaKYX2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 18:28:55 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:37481 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaKYX2y (ORCPT
+	id S1751819AbaKYXdp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 18:33:45 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8013 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751061AbaKYXdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 18:28:54 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Ian Kent <ikent@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        David Howells <dhowells@redhat.com>,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-References: <20141125005255.4974.54193.stgit@pluto.fritz.box>
-	<20141125010734.4974.85347.stgit@pluto.fritz.box>
-	<20141125215248.GA7958@redhat.com>
-	<1416954967.2509.25.camel@pluto.fritz.box>
-Date: Tue, 25 Nov 2014 17:27:36 -0600
-In-Reply-To: <1416954967.2509.25.camel@pluto.fritz.box> (Ian Kent's message of
-	"Wed, 26 Nov 2014 06:36:07 +0800")
-Message-ID: <87egsq6etz.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 25 Nov 2014 18:33:43 -0500
+Message-ID: <547511D1.3050402@sonymobile.com>
+Date: Tue, 25 Nov 2014 15:33:37 -0800
+From: Tim Bird <tim.bird@sonymobile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18+pmptMH/iPwKICmaSWopLcXiXVaWbfoE=
-X-SA-Exim-Connect-IP: 97.121.92.161
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP Message was received from an IP address
-	*  0.7 XMSubLong Long Subject
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Ian Kent <ikent@redhat.com>
-X-Spam-Relay-Country: 
-X-Spam-Timing: total 1350 ms - load_scoreonly_sql: 0.03 (0.0%),
-	signal_user_changed: 7 (0.5%), b_tie_ro: 5 (0.4%), parse: 0.63 (0.0%),
-	extract_message_metadata: 12 (0.9%), get_uri_detail_list: 2.4 (0.2%),
-	tests_pri_-1000: 3.9 (0.3%), tests_pri_-950: 1.26 (0.1%), tests_pri_-900:
-	1.05 (0.1%), tests_pri_-400: 26 (1.9%), check_bayes: 24 (1.8%), b_tokenize: 7
-	(0.5%), b_tok_get_all: 10 (0.7%), b_comp_prob: 2.6 (0.2%), b_tok_touch_all:
-	2.5 (0.2%), b_finish: 0.62 (0.0%), tests_pri_0: 320 (23.7%), tests_pri_500:
-	975 (72.2%), poll_dns_idle: 965 (71.5%), rewrite_mail: 0.00 (0.0%)
-Subject: Re: [RFC PATCH 3/4] kmod - add call_usermodehelper_ns() helper
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Shuah Khan <shuahkh@osg.samsung.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH v3] selftest: size: Add size test for Linux kernel
+References: <546D084D.20002@sonymobile.com> <546D321F.2080405@sonymobile.com> <547376D3.7070709@sonymobile.com> <5474E8F6.8010307@osg.samsung.com>
+In-Reply-To: <5474E8F6.8010307@osg.samsung.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ian Kent <ikent@redhat.com> writes:
 
-> On Tue, 2014-11-25 at 22:52 +0100, Oleg Nesterov wrote:
->> Let me first apologize, I didn't actually read this series yet.
->> 
->> But I have to admit that so far I do not like this approach...
->> probably I am biased.
->
-> Oleg, thanks for your comments.
->
->> 
->> On 11/25, Ian Kent wrote:
->> >
->> > The call_usermodehelper() function executes all binaries in the
->> > global "init" root context. This doesn't allow a binary to be run
->> > within the callers namespace (aka. a container).
->> 
->> Please see below.
->> 
->> > Both containerized NFS client and NFS server need the ability to
->> > execute a binary within their container. To do this create a new
->> > nsproxy within the callers' context so it can be used for setup
->> > prior to calling do_execve() from the user mode helper thread
->> > runner.
->> 
->> and probably we also need this for coredump helpers, we want them
->> to be per-namespace.
->
-> To save me some time could you point me to some of the related code
-> please. I don't normally play in that area.
->
->> 
->> > +static int umh_set_ns(struct subprocess_info *info, struct cred *new)
->> > +{
->> > +	struct nsproxy *ns = info->data;
->> > +
->> > +	mntns_setfs(ns->mnt_ns);
->> 
->> Firstly, it is not clear to me if we should use the caller's ->mnt_ns.
->> Let me remind about the coredump. The dumping task can cloned with
->> CLONE_NEWNS or it cam do unshare(NEWNS)... but OK, I do not understand
->> this enough.
->> 
->> 
->> > +	switch_task_namespaces(current, ns);
->> 
->> This doesn't look sane because this won't switch task_active_pid_ns().
->
-> I wondered about that too but I didn't design the open()/setns()
-> interface and TBH I've been wondering how he hell it is supposed to work
-> because of exactly this.
->
-> The statement amounts to saying that the
-> fd = open(/proc/<pid in target namespace>/ns/mnt);
-> setns(fd);
-> won't set the namespace properly but the documentation I've seen so far
-> (there's probably more that I need to see, I'll look further) implies
-> this is sufficient.
 
-It is but it is a bit peculiar.
+On 11/25/2014 12:39 PM, Shuah Khan wrote:
+> On 11/24/2014 11:20 AM, Tim Bird wrote:
+>>
+>> This test shows the amount of memory used by the system.
+>> Note that this is dependent on the user-space that is loaded
+>> when this program runs.  Optimally, this program would be
+>> run as the init program itself.
+>>
+>> The program is optimized for size itself, to avoid conflating
+>> its own execution with that of the system software.
+>> The code is compiled statically, with no stdlibs. On my x86_64 system,
+>> this results in a statically linked binary of less than 5K.
+>>
+> 
+> This following version information shouldn't be part of changelog.
+> 
+>> Changes from v2:
+>>   - add return values to print routines
+>>   - add .gitignore file
+>>
+>> Changes from v1:
+>>   - use more correct Copyright string in get_size.c
+>>
+>> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+>> ---
+> 
+> Goes here.
 
-> How does one correctly set the namespace in user space since each of
-> the /proc/<pid>/ns/<namespace> will use a slightly different
-> proc_ns_operations install function? 
->
-> Are we saying that, for example, if open(/proc/<pid>/ns/pid)/setns() is
-> used then the process must not do path lookups if it expects them to be
-> within the namespace and restrict itself to pid related system calls
-> only and so on for each of the other namespaces?
+OK - I'll change this.
 
-In userspace you can only set the pid namespace for new children.  You
-can never change your own pid namespace.  Because actually changing a
-processes pid is too nasty to contemplate, or implement and because in a
-login daemon context having your first child be the initial process of
-the pid namespace is actually what is desirable.
+> 
+>>  tools/testing/selftests/Makefile        |   1 +
+>>  tools/testing/selftests/size/.gitignore |   1 +
+>>  tools/testing/selftests/size/Makefile   |  21 +++++++
+>>  tools/testing/selftests/size/get_size.c | 105 ++++++++++++++++++++++++++++++++
+>>  4 files changed, 128 insertions(+)
+>>  create mode 100644 tools/testing/selftests/size/.gitignore
+>>  create mode 100644 tools/testing/selftests/size/Makefile
+>>  create mode 100644 tools/testing/selftests/size/get_size.c
+>>
+>> diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+>> index 45f145c..fa91aef 100644
+>> --- a/tools/testing/selftests/Makefile
+>> +++ b/tools/testing/selftests/Makefile
+>> @@ -15,6 +15,7 @@ TARGETS += user
+>>  TARGETS += sysctl
+>>  TARGETS += firmware
+>>  TARGETS += ftrace
+>> +TARGETS += size
+>>  
+>>  TARGETS_HOTPLUG = cpu-hotplug
+>>  TARGETS_HOTPLUG += memory-hotplug
+>> diff --git a/tools/testing/selftests/size/.gitignore b/tools/testing/selftests/size/.gitignore
+>> new file mode 100644
+>> index 0000000..189b781
+>> --- /dev/null
+>> +++ b/tools/testing/selftests/size/.gitignore
+>> @@ -0,0 +1 @@
+>> +get_size
+>> diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
+>> new file mode 100644
+>> index 0000000..51e5fbd
+>> --- /dev/null
+>> +++ b/tools/testing/selftests/size/Makefile
+>> @@ -0,0 +1,21 @@
+>> +#ifndef CC
+>> +	CC = $(CROSS_COMPILE)gcc
+>> +#endif
+>> +
+>> +#ifndef STRIP
+>> +	STRIP = $(CROSS_COMPILE)strip
+>> +#endif
+>> +
+>> +all: get_size
+>> +
+>> +get_size: get_size.c
+>> +	$(CC) --static -ffreestanding -nostartfiles \
+>> +		-Wl,--entry=main get_size.c -o get_size \
+>> +		`cc -print-libgcc-file-name`
+>> +	$(STRIP) -s get_size
+>> +
+>> +run_tests: all
+>> +	./get_size
+>> +
+>> +clean:
+>> +	$(RM) get_size
+>> diff --git a/tools/testing/selftests/size/get_size.c b/tools/testing/selftests/size/get_size.c
+>> new file mode 100644
+>> index 0000000..9c8d3cd
+>> --- /dev/null
+>> +++ b/tools/testing/selftests/size/get_size.c
+>> @@ -0,0 +1,105 @@
+>> +/*
+>> + * Copyright 2014 Sony
+>> + *
+>> + * Licensed under the terms of the GNU GPL License version 2
+>> + *
+>> + * Selftest for runtime system size
+>> + *
+>> + * Prints the amount of RAM that the currently running system is using.
+>> + *
+>> + * This program tries to be as small as possible itself, to
+>> + * avoid perturbing the system memory utilization with its
+>> + * own execution.  It also attempts to have as few dependencies
+>> + * on kernel features as possible.
+>> + *
+>> + * It should be statically linked, with startup libs avoided.
+>> + * It uses no library calls, and only the following 3 syscalls:
+>> + *   sysinfo(), write(), and _exit()
+>> + *
+>> + * For output, it avoids printf (which in some C libraries
+>> + * has large external dependencies) by implementing its own
+>> + * strlen(), number output and print() routines.
+>> + */
+>> +
+>> +#include <sys/sysinfo.h>
+>> +#include <unistd.h>
+>> +
+>> +#define STDOUT_FILENO 1
+>> +
+>> +int my_strlen(const char *s)
+>> +{
+>> +	int len = 0;
+>> +
+>> +	while (*s++)
+>> +		len++;
+>> +	return len;
+>> +}
+>> +
+>> +/*
+>> + * num_to_str - put digits from num into *s, left to right
+>> + *   do this by dividing the number by powers of 10
+>> + *   the tricky part is to omit leading zeros
+>> + *   don't print zeros until we've started printing any numbers at all
+>> + */
+>> +void num_to_str(unsigned long num, char *s)
+>> +{
+>> +	unsigned long long temp, div;
+>> +	int started;
+>> +
+>> +	temp = num;
+>> +	div = 1000000000000000000LL;
+>> +	started = 0;
+>> +	while (div) {
+>> +		if (temp/div || started) {
+>> +			*s++ = (unsigned char)(temp/div + '0');
+>> +			started = 1;
+>> +		}
+>> +		temp -= (temp/div)*div;
+>> +		div /= 10;
+>> +	}
+>> +	*s = 0;
+>> +}
+>> +
+>> +int print_num(unsigned long num)
+>> +{
+>> +	char num_buf[30];
+>> +
+>> +	num_to_str(num, num_buf);
+>> +	return write(STDOUT_FILENO, num_buf, my_strlen(num_buf));
+>> +}
+>> +
+>> +int print(char *s)
+>> +{
+>> +	return write(STDOUT_FILENO, s, my_strlen(s));
+>> +}
+>> +
+>> +void main(int argc, char **argv)
+>> +{
+>> +	int ccode;
+>> +	unsigned long used;
+>> +	struct sysinfo info;
+>> +	unsigned long long temp;
+>> +
+>> +	print("Testing system size.\n");
+>> +	print("1..1\n");
+> 
+> I ran this test and the reporting could be improved.
+> Could you change the above to say
+> 
+> System RAM in use instead of system size.
+I'll have to think about this.  I'm not sure what the
+correct phrasing would be for XIP systems (for which part of
+the kernel resides in flash, not RAM, maybe "memory"?)
 
-> Or is it assumed that userspace will do
-> open(/proc/<pid>/ns/<namespace>)/setns()/close() every time it makes
-> systems calls that rely on a specific type of namespace?
+> Also can you also
+> print total RAM and other information you already have:
+> 
+I can print it as part of total output, but for regression
+testing and automation I want the tool to have a single
+number result as output (well, one number relating to runtime
+size, and I'm considering adding one number relating
+to compile-time size.)
 
-setns is designed to be the exception, rather thant something you need
-to do every time.
+> Maybe something along the lines of:
+> 
+> System RAM report (units Kilobytes):
+>    Total:
+>    Free:
+>    Bufferram:
+>    In use:
+> 
+> I would remove the print("1..1\n");
 
-But nsproxy is not the one true source of namespaces, nsproxy is simply
-a convinient place so we don't bloat struct task.  The primary reference
-for the pid namespace is in a struct pid, what is in nsproxy is just
-which pid namespace children will be created in.  The user namespace
-reference comes from struct cred.
+This is part of the TAP output format.
 
->> And this reminds me another discussion, please look at
->> http://marc.info/?l=linux-kernel&m=138479570926192
->> 
->> Once again, this is just an idea to provoke more discussion. I am starting
->> to think that perhaps we need pid_ns->umh_helper (init by default). And
->> PR_SET_NS_UMH_HELPER.
->
-> Yeah, I'll need to digest that for a while.
+Is there any (other) output format being standardized for selftest
+programs?
 
-Eric
+TAP allows me to output more human-readable information to go
+along with the "official" result, but I'd like to keep the
+official result in TAP format so it can be handled by automated
+tools.  Maybe it would be best to output both.
+
+I'll try to make a counter-proposal tomorrow that we can discus.
+
+>> +
+>> +	ccode = sysinfo(&info);
+>> +	if (ccode < 0) {
+>> +		print("not ok 1 get size runtime size\n");
+>> +		print("# could not get sysinfo\n");
+>> +		_exit(ccode);
+>> +	}
+>> +
+>> +	/* ignore cache complexities for now */
+>> +	temp = info.totalram - info.freeram - info.bufferram;
+>> +	temp = temp * info.mem_unit;
+>> +	temp = temp / 1024;
+>> +
+>> +	used = temp;
+>> +
+>> +	print("ok 1 get runtime size # size = ");
+>> +	print_num(used);
+>> +	print(" K\n");
+> 
+> Please see above. You can get rid of print(" K\n"); at the end.
+> 
+> Sorry for not giving this feedback earlier. The not so clear
+> reporting aspect stood out for me after running the test.
+
+No problem.  Thanks for looking at it.
+I have some additional changes, based on feedback from Josh Triplett,
+so look for a v4 tomorrow.
+
+ -- Tim
