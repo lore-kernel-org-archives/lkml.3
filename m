@@ -1,285 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549AbaKYQ1V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:27:21 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:61842 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaKYQZ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:25:26 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, tglx@linutronix.de,
-        jason@lakedaemon.net, devicetree@vger.kernel.org
-Subject: [PATCH v2 2/8] irqchip: Supply new driver for STi based devices
-Date: Tue, 25 Nov 2014 16:24:59 +0000
-Message-Id: <1416932705-16880-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416932705-16880-1-git-send-email-lee.jones@linaro.org>
-References: <1416932705-16880-1-git-send-email-lee.jones@linaro.org>
+	id S1751620AbaKYQ22 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:28:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52532 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750821AbaKYQ20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 11:28:26 -0500
+Message-ID: <5474ADB4.5070200@redhat.com>
+Date: Tue, 25 Nov 2014 08:26:28 -0800
+From: Alexander Duyck <alexander.h.duyck@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mathieu.desnoyers@polymtl.ca" <mathieu.desnoyers@polymtl.ca>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "mikey@neuling.org" <mikey@neuling.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
+        "matthew.vick@intel.com" <matthew.vick@intel.com>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
+        "romieu@fr.zoreil.com" <romieu@fr.zoreil.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
+        "michael@ellerman.id.au" <michael@ellerman.id.au>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH v5 2/4] arch: Add lightweight memory barriers dma_rmb()
+ and dma_wmb()
+References: <20141119012205.9563.95544.stgit@ahduyck-server> <20141119012400.9563.21117.stgit@ahduyck-server> <20141125140130.GC8541@arm.com>
+In-Reply-To: <20141125140130.GC8541@arm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is used to enable System Configuration Register controlled
-External, CTI (Core Sight), PMU (Performance Management), and PL310 L2
-Cache IRQs prior to use.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/irqchip/Kconfig  |   7 ++
- drivers/irqchip/Makefile |   1 +
- drivers/irqchip/irq-st.c | 208 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 216 insertions(+)
- create mode 100644 drivers/irqchip/irq-st.c
+On 11/25/2014 06:01 AM, Will Deacon wrote:
+> On Wed, Nov 19, 2014 at 01:24:02AM +0000, Alexander Duyck wrote:
+>> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+>> index 22a969c..a1c589b 100644
+>> --- a/Documentation/memory-barriers.txt
+>> +++ b/Documentation/memory-barriers.txt
+>> @@ -1615,6 +1615,47 @@ There are some more advanced barrier functions:
+>>        operations" subsection for information on where to use these.
+>>
+>>
+>> + (*) dma_wmb();
+>> + (*) dma_rmb();
+>> +
+>> +     These are for use with memory based device I/O to guarantee the ordering
+>> +     of cache coherent writes or reads with respect to other writes or reads
+>> +     to cache coherent DMA memory.
+> Can you please make it crystal clear that "memory based device I/O" != MMIO?
+> If people get these barriers wrong, then debugging will be a nightmare.
 
-diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-index b21f12f..e502f15 100644
---- a/drivers/irqchip/Kconfig
-+++ b/drivers/irqchip/Kconfig
-@@ -93,6 +93,13 @@ config RENESAS_IRQC
- 	bool
- 	select IRQ_DOMAIN
- 
-+config ST_IRQCHIP
-+	bool
-+	select REGMAP
-+	select MFD_SYSCON
-+	help
-+	  Enables SysCfg Controlled IRQs on STi based platforms.
-+
- config TB10X_IRQC
- 	bool
- 	select IRQ_DOMAIN
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index 173bb5f..293b68d 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -31,6 +31,7 @@ obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
- obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
- obj-$(CONFIG_ARCH_NSPIRE)		+= irq-zevio.o
- obj-$(CONFIG_ARCH_VT8500)		+= irq-vt8500.o
-+obj-$(CONFIG_ST_IRQCHIP)		+= irq-st.o
- obj-$(CONFIG_TB10X_IRQC)		+= irq-tb10x.o
- obj-$(CONFIG_XTENSA)			+= irq-xtensa-pic.o
- obj-$(CONFIG_XTENSA_MX)			+= irq-xtensa-mx.o
-diff --git a/drivers/irqchip/irq-st.c b/drivers/irqchip/irq-st.c
-new file mode 100644
-index 0000000..181dad1
---- /dev/null
-+++ b/drivers/irqchip/irq-st.c
-@@ -0,0 +1,208 @@
-+/*
-+ *  drivers/irqchip/irq-st.c
-+ *
-+ *  Copyright (C) 2014 STMicroelectronics – All Rights Reserved
-+ *
-+ *  Author: Lee Jones <lee.jones@linaro.org>
-+ *
-+ *  This is a re-write of Christophe Kerello's PMU driver.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <dt-bindings/interrupt-controller/irq-st.h>
-+#include <linux/err.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+#include <linux/regmap.h>
-+#include <linux/slab.h>
-+
-+#define STIH415_SYSCFG_642		0x0a8
-+#define STIH416_SYSCFG_7543		0x87c
-+#define STIH407_SYSCFG_5102		0x198
-+#define STID127_SYSCFG_734		0x088
-+
-+#define ST_A9_IRQ_MASK			0x001FFFFF
-+#define ST_A9_IRQ_MAX_CHANS		2
-+
-+#define ST_A9_IRQ_EN_CTI_0		BIT(0)
-+#define ST_A9_IRQ_EN_CTI_1		BIT(1)
-+#define ST_A9_IRQ_EN_PMU_0		BIT(2)
-+#define ST_A9_IRQ_EN_PMU_1		BIT(3)
-+#define ST_A9_IRQ_EN_PL310_L2		BIT(4)
-+#define ST_A9_IRQ_EN_EXT_0		BIT(5)
-+#define ST_A9_IRQ_EN_EXT_1		BIT(6)
-+#define ST_A9_IRQ_EN_EXT_2		BIT(7)
-+
-+#define ST_A9_FIQ_N_SEL(dev, chan)	(dev << (8  + (chan * 3)))
-+#define ST_A9_IRQ_N_SEL(dev, chan)	(dev << (14 + (chan * 3)))
-+#define ST_A9_EXTIRQ_INV_SEL(dev)	(dev << 20)
-+
-+struct st_irq_syscfg {
-+	struct regmap *regmap;
-+	unsigned int syscfg;
-+	unsigned int config;
-+	bool ext_inverted;
-+};
-+
-+static const struct of_device_id st_irq_syscfg_match[] = {
-+	{
-+		.compatible = "st,stih415-irq-syscfg",
-+		.data = (void *)STIH415_SYSCFG_642,
-+	},
-+	{
-+		.compatible = "st,stih416-irq-syscfg",
-+		.data = (void *)STIH416_SYSCFG_7543,
-+	},
-+	{
-+		.compatible = "st,stih407-irq-syscfg",
-+		.data = (void *)STIH407_SYSCFG_5102,
-+	},
-+	{
-+		.compatible = "st,stid127-irq-syscfg",
-+		.data = (void *)STID127_SYSCFG_734,
-+	},
-+	{}
-+};
-+
-+static int st_irq_xlate(struct platform_device *pdev,
-+			int device, int channel, bool irq)
-+{
-+	struct st_irq_syscfg *ddata = dev_get_drvdata(&pdev->dev);
-+
-+	/* Set the device enable bit. */
-+	switch (device) {
-+	case ST_IRQ_SYSCFG_EXT_0 :
-+		ddata->config |= ST_A9_IRQ_EN_EXT_0;
-+		break;
-+	case ST_IRQ_SYSCFG_EXT_1 :
-+		ddata->config |= ST_A9_IRQ_EN_EXT_1;
-+		break;
-+	case ST_IRQ_SYSCFG_EXT_2 :
-+		ddata->config |= ST_A9_IRQ_EN_EXT_2;
-+		break;
-+	case ST_IRQ_SYSCFG_CTI_0 :
-+		ddata->config |= ST_A9_IRQ_EN_CTI_0;
-+		break;
-+	case ST_IRQ_SYSCFG_CTI_1 :
-+		ddata->config |= ST_A9_IRQ_EN_CTI_1;
-+		break;
-+	case ST_IRQ_SYSCFG_PMU_0 :
-+		ddata->config |= ST_A9_IRQ_EN_PMU_0;
-+		break;
-+	case ST_IRQ_SYSCFG_PMU_1 :
-+		ddata->config |= ST_A9_IRQ_EN_PMU_1;
-+		break;
-+	case ST_IRQ_SYSCFG_pl310_L2 :
-+		ddata->config |= ST_A9_IRQ_EN_PL310_L2;
-+		break;
-+	case ST_IRQ_SYSCFG_DISABLED :
-+		return 0;
-+	default :
-+		dev_err(&pdev->dev, "Unrecognised device %d\n", device);
-+		return -EINVAL;
-+	}
-+
-+	/* Select IRQ/FIQ channel for device. */
-+	ddata->config |= irq ?
-+		ST_A9_IRQ_N_SEL(device, channel) :
-+		ST_A9_FIQ_N_SEL(device, channel);
-+
-+	return 0;
-+}
-+
-+static int st_irq_syscfg_enable(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct st_irq_syscfg *ddata = dev_get_drvdata(&pdev->dev);
-+	int channels, ret, i;
-+	u32 device, invert;
-+
-+	channels = of_property_count_u32_elems(np, "st,irq-device");
-+	if (channels != ST_A9_IRQ_MAX_CHANS) {
-+		dev_err(&pdev->dev, "st,enable-irq-device must have 2 elems\n");
-+		return -EINVAL;
-+	}
-+
-+	channels = of_property_count_u32_elems(np, "st,fiq-device");
-+	if (channels != ST_A9_IRQ_MAX_CHANS) {
-+		dev_err(&pdev->dev, "st,enable-fiq-device must have 2 elems\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < ST_A9_IRQ_MAX_CHANS; i++) {
-+		of_property_read_u32_index(np, "st,irq-device", i, &device);
-+
-+		ret = st_irq_xlate(pdev, device, i, true);
-+		if (ret)
-+			return ret;
-+
-+		of_property_read_u32_index(np, "st,fiq-device", i, &device);
-+
-+		ret = st_irq_xlate(pdev, device, i, false);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	/* External IRQs may be inverted. */
-+	of_property_read_u32(np, "st,invert-ext", &invert);
-+	ddata->config |= ST_A9_EXTIRQ_INV_SEL(invert);
-+
-+	return regmap_update_bits(ddata->regmap, ddata->syscfg,
-+				  ST_A9_IRQ_MASK, ddata->config);
-+}
-+
-+static int st_irq_syscfg_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	const struct of_device_id *match;
-+	struct st_irq_syscfg *ddata;
-+
-+	ddata = devm_kzalloc(&pdev->dev, sizeof(*ddata), GFP_KERNEL);
-+	if (!ddata)
-+		return -ENOMEM;
-+
-+	match = of_match_device(st_irq_syscfg_match, &pdev->dev);
-+	if (!match)
-+		return -ENODEV;
-+
-+	ddata->syscfg = (unsigned int)match->data;
-+
-+	ddata->regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
-+	if (IS_ERR(ddata->regmap)) {
-+		dev_err(&pdev->dev, "syscfg phandle missing\n");
-+		return PTR_ERR(ddata->regmap);
-+	}
-+
-+	dev_set_drvdata(&pdev->dev, ddata);
-+
-+	return st_irq_syscfg_enable(pdev);
-+}
-+
-+static int st_irq_syscfg_resume(struct device *dev)
-+{
-+	struct st_irq_syscfg *ddata = dev_get_drvdata(dev);
-+
-+	return regmap_update_bits(ddata->regmap, ddata->syscfg,
-+				  ST_A9_IRQ_MASK, ddata->config);
-+}
-+
-+static SIMPLE_DEV_PM_OPS(st_irq_syscfg_pm_ops, NULL, st_irq_syscfg_resume);
-+
-+static struct platform_driver st_irq_syscfg_driver = {
-+	.driver = {
-+		.name = "st_irq_syscfg",
-+		.pm = &st_irq_syscfg_pm_ops,
-+		.of_match_table = st_irq_syscfg_match,
-+	},
-+	.probe = st_irq_syscfg_probe,
-+};
-+
-+static int __init st_irq_syscfg_init(void)
-+{
-+	return platform_driver_register(&st_irq_syscfg_driver);
-+}
-+core_initcall(st_irq_syscfg_init);
--- 
-1.9.1
+I think I'll update that to the following to avoid any confusion:
+      These are for use with consistent memory to guarantee the ordering
+      of writes or reads of shared memory accessible to both the CPU and a
+      DMA capable device.
+
+I will also add a reference to DMA-API.txt at the end for more info on 
+what consistent memory is.
+
+>> diff --git a/arch/arm/include/asm/barrier.h b/arch/arm/include/asm/barrier.h
+>> index c6a3e73..d2f81e6 100644
+>> --- a/arch/arm/include/asm/barrier.h
+>> +++ b/arch/arm/include/asm/barrier.h
+>> @@ -43,10 +43,14 @@
+>>   #define mb()           do { dsb(); outer_sync(); } while (0)
+>>   #define rmb()          dsb()
+>>   #define wmb()          do { dsb(st); outer_sync(); } while (0)
+>> +#define dma_rmb()      dmb(osh)
+>> +#define dma_wmb()      dmb(oshst)
+>>   #else
+>>   #define mb()           barrier()
+>>   #define rmb()          barrier()
+>>   #define wmb()          barrier()
+>> +#define dma_rmb()      barrier()
+>> +#define dma_wmb()      barrier()
+>>   #endif
+>>
+>>   #ifndef CONFIG_SMP
+>> diff --git a/arch/arm64/include/asm/barrier.h b/arch/arm64/include/asm/barrier.h
+>> index 6389d60..a5abb00 100644
+>> --- a/arch/arm64/include/asm/barrier.h
+>> +++ b/arch/arm64/include/asm/barrier.h
+>> @@ -32,6 +32,9 @@
+>>   #define rmb()          dsb(ld)
+>>   #define wmb()          dsb(st)
+>>
+>> +#define dma_rmb()      dmb(oshld)
+>> +#define dma_wmb()      dmb(oshst)
+>> +
+>>   #ifndef CONFIG_SMP
+>>   #define smp_mb()       barrier()
+>>   #define smp_rmb()      barrier()
+> The arm/arm64 bits look fine to me.
+>
+>    Acked-by: Will Deacon <will.deacon@arm.com>
+
+Thanks for the review.
+
+> If we ever see platforms using Linux/dma_alloc_coherent with devices
+> mastering from a different outer-shareable domain that the one containing
+> the CPUs, then we'll need to revisit this.
+
+Would we just need a system wide memory barrier in that case instead of 
+an outer shareable memory barrier, or would we need to look as something 
+like a sync barrier?
+
+- Alex
 
