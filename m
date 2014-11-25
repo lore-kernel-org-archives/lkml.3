@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215AbaKYKpQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:45:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59276 "EHLO
+	id S1754267AbaKYKpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:45:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59255 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932096AbaKYKny (ORCPT
+	with ESMTP id S932087AbaKYKnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:54 -0500
+	Tue, 25 Nov 2014 05:43:51 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Pawel Moll <pawel.moll@arm.com>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 251/254] x86, x32, audit: Fix x32's AUDIT_ARCH wrt audit
-Date: Tue, 25 Nov 2014 10:40:01 +0000
-Message-Id: <1416912004-5928-252-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 239/254] perf: Handle compat ioctl
+Date: Tue, 25 Nov 2014 10:39:49 +0000
+Message-Id: <1416912004-5928-240-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,54 +29,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Pawel Moll <pawel.moll@arm.com>
 
-commit 81f49a8fd7088cfcb588d182eeede862c0e3303e upstream.
+commit b3f207855f57b9c8f43a547a801340bb5cbc59e5 upstream.
 
-is_compat_task() is the wrong check for audit arch; the check should
-be is_ia32_task(): x32 syscalls should be AUDIT_ARCH_X86_64, not
-AUDIT_ARCH_I386.
+When running a 32-bit userspace on a 64-bit kernel (eg. i386
+application on x86_64 kernel or 32-bit arm userspace on arm64
+kernel) some of the perf ioctls must be treated with special
+care, as they have a pointer size encoded in the command.
 
-CONFIG_AUDITSYSCALL is currently incompatible with x32, so this has
-no visible effect.
+For example, PERF_EVENT_IOC_ID in 32-bit world will be encoded
+as 0x80042407, but 64-bit kernel will expect 0x80082407. In
+result the ioctl will fail returning -ENOTTY.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/a0138ed8c709882aec06e4acc30bfa9b623b8717.1409954077.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+This patch solves the problem by adding code fixing up the
+size as compat_ioctl file operation.
+
+Reported-by: Drew Richardson <drew.richardson@arm.com>
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/1402671812-9078-1-git-send-email-pawel.moll@arm.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/ptrace.c | 11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+ kernel/events/core.c | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 678c0ada3b3c..b1a5dfa24789 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -1441,15 +1441,6 @@ void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
- 	force_sig_info(SIGTRAP, &info, tsk);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 5dfa199971d2..6bc75223aaa7 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -41,6 +41,7 @@
+ #include <linux/cgroup.h>
+ #include <linux/module.h>
+ #include <linux/mman.h>
++#include <linux/compat.h>
+ 
+ #include "internal.h"
+ 
+@@ -3747,6 +3748,26 @@ static long perf_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	return 0;
  }
  
--
--#ifdef CONFIG_X86_32
--# define IS_IA32	1
--#elif defined CONFIG_IA32_EMULATION
--# define IS_IA32	is_compat_task()
--#else
--# define IS_IA32	0
--#endif
--
- /*
-  * We must return the syscall number to actually look up in the table.
-  * This can be -1L to skip running any syscall at all.
-@@ -1487,7 +1478,7 @@ long syscall_trace_enter(struct pt_regs *regs)
- 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
- 		trace_sys_enter(regs, regs->orig_ax);
- 
--	if (IS_IA32)
-+	if (is_ia32_task())
- 		audit_syscall_entry(AUDIT_ARCH_I386,
- 				    regs->orig_ax,
- 				    regs->bx, regs->cx,
++#ifdef CONFIG_COMPAT
++static long perf_compat_ioctl(struct file *file, unsigned int cmd,
++				unsigned long arg)
++{
++	switch (_IOC_NR(cmd)) {
++	case _IOC_NR(PERF_EVENT_IOC_SET_FILTER):
++	case _IOC_NR(PERF_EVENT_IOC_ID):
++		/* Fix up pointer size (usually 4 -> 8 in 32-on-64-bit case */
++		if (_IOC_SIZE(cmd) == sizeof(compat_uptr_t)) {
++			cmd &= ~IOCSIZE_MASK;
++			cmd |= sizeof(void *) << IOCSIZE_SHIFT;
++		}
++		break;
++	}
++	return perf_ioctl(file, cmd, arg);
++}
++#else
++# define perf_compat_ioctl NULL
++#endif
++
+ int perf_event_task_enable(void)
+ {
+ 	struct perf_event *event;
+@@ -4252,7 +4273,7 @@ static const struct file_operations perf_fops = {
+ 	.read			= perf_read,
+ 	.poll			= perf_poll,
+ 	.unlocked_ioctl		= perf_ioctl,
+-	.compat_ioctl		= perf_ioctl,
++	.compat_ioctl		= perf_compat_ioctl,
+ 	.mmap			= perf_mmap,
+ 	.fasync			= perf_fasync,
+ };
 -- 
 2.1.0
 
