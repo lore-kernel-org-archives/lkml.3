@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466AbaKYBvi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 20:51:38 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:37122 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaKYBvh (ORCPT
+	id S1751762AbaKYBw5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 20:52:57 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:48117 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636AbaKYBw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 20:51:37 -0500
-Message-ID: <5473E0A2.6020709@hitachi.com>
-Date: Tue, 25 Nov 2014 10:51:30 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 24 Nov 2014 20:52:56 -0500
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
-        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
-        Ingo Molnar <mingo@kernel.org>, Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: Re: [PATCH ftrace/core v6 5/5] kselftest, ftrace: Add ftrace
- IPMODIFY flag test
-References: <20141121102502.11844.82696.stgit@localhost.localdomain> <20141121102537.11844.9781.stgit@localhost.localdomain> <20141121160329.575fd043@gandalf.local.home> <54729CDE.5030700@hitachi.com> <20141123232932.1ed70d18@gandalf.local.home> <54733C80.6060509@hitachi.com> <20141124100727.19531a3b@gandalf.local.home> <20141124101831.69f6db23@gandalf.local.home> <20141124101919.3fd6fd01@gandalf.local.home>
-In-Reply-To: <20141124101919.3fd6fd01@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 24 Nov 2014 17:52:34 -0800
+Message-ID: <CALCETrWS6-DAyQyHbouXqgEwmaOjxMhFGudV7zsXb9_-mK2TPQ@mail.gmail.com>
+Subject: IST stack patches v3.5
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/25 0:19), Steven Rostedt wrote:
-> On Mon, 24 Nov 2014 10:18:31 -0500
-> Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
->> On Mon, 24 Nov 2014 10:07:27 -0500
->> Steven Rostedt <rostedt@goodmis.org> wrote:
->>
->>> On Mon, 24 Nov 2014 23:11:12 +0900
->>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>>  
->>>> So, if your server directory is mounted with noexec, it's an environmental
->>>> problem. I guess you can not build any kernel drivers on that testbox, can you?
->>>>
->>>
->>> You're right about the noexec, even though my fstab has "exec" in it ??
->>
->> Ha! I hit this bug!
->>
->>   https://bugzilla.redhat.com/show_bug.cgi?id=769636
->>
->> If I remove "user" from the flags, it mounts exec.
->>
->> This test box runs Fedora 18.
->>
-> 
-> Oh, and "make O=/tmp" now works :-)
+I've tagged v3.5 of my paranoid stack code.  It's in a strange state right now:
 
-Good :)
+Patch 1 (the actual stack switching) is standalone.  It's not really a
+good base for the memory failure stuff, because all of the ist_enter
+stuff is missing.  It should *work*, but the result will be ugly.
+OTOH, it should be okay as a base for fsgsbase.
 
-So, I don't need to fix that at this point, do I?
-It seems that current kselftest only supports this type of build
-(build on installed kernel), and Shuah is working on fixing that.
+Patch 2 is from Paul McKenney.  It fixes RCU NMI nesting, which is a
+prerequisite for ist_enter.  I think that the current plan is for that
+to happen in 3.20.  Speak up if you want it sooner.
 
-Thank you,
+Patch 4 is purely for testing.  It forces "NMIs" to nest.
+
+"x86, mce: Improve timeout error messages" is in there so I don't
+forget about it.  Tony and Borislav, if you like it, want to pick it
+up?  It really has very little to do with the rest of this code.
+
+The remainder of the non-atomic IST stuff is in there in a plausibly
+final form, but it's oddly based.
+
+--Andy
+
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Andy Lutomirski
+AMA Capital Management, LLC
