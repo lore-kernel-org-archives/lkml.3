@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751196AbaKYOQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:16:50 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:49111 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093AbaKYOQs (ORCPT
+	id S1751275AbaKYORJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:17:09 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:33866 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaKYORG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:16:48 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-06-54748f4eb053
-Message-id: <54748F4A.8030003@samsung.com>
-Date: Tue, 25 Nov 2014 17:16:42 +0300
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Dmitry Chernenkov <dmitryc@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jonathan Corbet <corbet@lwn.net>,
-        Michal Marek <mmarek@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v7 01/12] Add kernel address sanitizer infrastructure.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
- <1416852146-9781-2-git-send-email-a.ryabinin@samsung.com>
- <CAA6XgkH4soz_oCiO+X2Tibc3H6NHiZJp5ySzk5SSntD9dV6Gfw@mail.gmail.com>
-In-reply-to: <CAA6XgkH4soz_oCiO+X2Tibc3H6NHiZJp5ySzk5SSntD9dV6Gfw@mail.gmail.com>
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t/xK7p+/SUhBj2NzBa/985ktZizfg2b
-	xZFr39ktrn97w2jx5EA7o8Wnlw8YLbZcb2KyeP7wIbvFhIdt7BbTNopbrOxuZrPY/uwtk8XK
-	zgesFpd3zWGzuLfmP6vFpQMLmCxa9l1gsjjee4DJ4u2d6SwWi4/cZrZ492wys8XVVQfZLX5s
-	eMzqIO4xf+dHRo+ds+6yeyzYVOqxeYWWx+I9L5k8Nq3qZPPY9GkSu0fX2ytMHidm/GbxeHJl
-	OpPH4r7JrB4fn95i8Xi/7yqbx5kFR9g9Pm+S8zjR8oU1QCCKyyYlNSezLLVI3y6BK+PzFrWC
-	26wVd/q3MTUwnmLpYuTkkBAwkXjWeI0RwhaTuHBvPVsXIxeHkMBSRonOZZ+ZQBJCAs1MEpt3
-	pIPYvAJaEqvO/AdrYBFQldjy+hrYIDYBPYl/s7azgdiiAhESV9bMYYSoF5T4MfkeWI0IUO/5
-	Dw9YQRYwCxxmk3h+Yip7FyMHh7CAl8TXh6YQi1uYJA4uXAQ2iFMgWOL9ysfMIDXMAuoSU6bk
-	goSZBeQlNq95yzyBUWAWkhWzEKpmIalawMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMk
-	0r/uYFx6zOoQowAHoxIP7424khAh1sSy4srcQ4wSHMxKIrxBvUAh3pTEyqrUovz4otKc1OJD
-	jEwcnFINjP0hUx+1P0rsqX+6p/9Zd84xhkY5sQvPbrwpqT2VveOrojn3vsuPm9//mz7X6ueO
-	t82bjF44HdoS4iHJN6NvSqx2xqEf3M3pLrsFrLUPJqltjjBQXTd/alXP7tDgBdpnuufxbp7W
-	/+DNDo34iiOGt8r8uI+/SWivkEvj/baO4/3Eru5E/U3mG5VYijMSDbWYi4oTAQZz7gTSAgAA
+	Tue, 25 Nov 2014 09:17:06 -0500
+Date: Tue, 25 Nov 2014 15:17:13 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Pieter Smith <pieter@boesman.nl>
+Cc: Josh Triplett <josh@joshtriplett.org>, fuse-devel@lists.sourceforge.net,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 4/7] fs/fuse: support compiling out splice
+Message-ID: <20141125141713.GA9137@tucsk.suse.de>
+References: <1416899996-21315-1-git-send-email-pieter@boesman.nl>
+ <1416899996-21315-5-git-send-email-pieter@boesman.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416899996-21315-5-git-send-email-pieter@boesman.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2014 03:40 PM, Dmitry Chernenkov wrote:
-> I'm a little concerned with how enabling/disabling works. If an
-> enable() is forgotten once, it's disabled forever. If disable() is
-> forgotten once, the toggle is reversed for the forseable future. MB
-> check for inequality in kasan_enabled()? like current->kasan_depth >=
-> 0 (will need a signed int for the field). Do you think it's going to
-> decrease performance?
+[Trimming CC.  Please do the same for other patches.  I for one am not
+interested in the general tinification discussion]
 
-I think that check in kasan_enabled shouldn't hurt much.
-But it also doesn't look very useful for me.
-
-There are only few user of kasan_disable_local/kasan_enable_local, it's easy to review them.
-And in future we also shouldn't have a lot of new users of those functions.
-
+On Tue, Nov 25, 2014 at 08:19:39AM +0100, Pieter Smith wrote:
+> To implement splice support, fs/fuse makes use of nosteal_pipe_buf_ops. This
+> struct is exported by fs/splice. The goal of the larger patch set is to
+> completely compile out fs/splice, so uses of the exported struct need to be
+> compiled out along with fs/splice.
 > 
-> LGTM
+> This patch therefore compiles out splice support in fs/fuse when
+> CONFIG_SYSCALL_SPLICE is undefined.
 > 
+> Signed-off-by: Pieter Smith <pieter@boesman.nl>
+> ---
+>  fs/fuse/dev.c | 9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
 > 
+> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> index ca88731..e984302 100644
+> --- a/fs/fuse/dev.c
+> +++ b/fs/fuse/dev.c
+> @@ -1191,8 +1191,9 @@ __releases(fc->lock)
+>   * request_end().  Otherwise add it to the processing list, and set
+>   * the 'sent' flag.
+>   */
+> -static ssize_t fuse_dev_do_read(struct fuse_conn *fc, struct file *file,
+> -				struct fuse_copy_state *cs, size_t nbytes)
+> +static ssize_t __maybe_unused
+> +fuse_dev_do_read(struct fuse_conn *fc, struct file *file,
+> +		 struct fuse_copy_state *cs, size_t nbytes)
 
+fuse_dev_do_read() is definitely going to remain used.  So no point in adding
+__maybe_unused.
+
+>  {
+>  	int err;
+>  	struct fuse_req *req;
+> @@ -1291,6 +1292,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
+>  	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
+>  }
+>  
+> +#ifdef CONFIG_SYSCALL_SPLICE
+>  static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
+>  				    struct pipe_inode_info *pipe,
+>  				    size_t len, unsigned int flags)
+> @@ -1368,6 +1370,9 @@ out:
+>  	kfree(bufs);
+>  	return ret;
+>  }
+> +#else /* CONFIG_SYSCALL_SPLICE */
+> +#define fuse_dev_splice_read NULL
+> +#endif
+
+This looks fine.
+
+Thanks,
+Miklos
+
+>  
+>  static int fuse_notify_poll(struct fuse_conn *fc, unsigned int size,
+>  			    struct fuse_copy_state *cs)
+> -- 
+> 2.1.0
+> 
