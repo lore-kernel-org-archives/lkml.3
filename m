@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758AbaKYSx0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 13:53:26 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:47460 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663AbaKYSxX (ORCPT
+	id S1751794AbaKYSyL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 13:54:11 -0500
+Received: from mail-ig0-f202.google.com ([209.85.213.202]:50886 "EHLO
+	mail-ig0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152AbaKYSyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 13:53:23 -0500
-Date: Tue, 25 Nov 2014 10:53:10 -0800
-From: josh@joshtriplett.org
-To: David Miller <davem@davemloft.net>
-Cc: rdunlap@infradead.org, pieter@boesman.nl, alexander.h.duyck@intel.com,
-        viro@zeniv.linux.org.uk, ast@plumgrid.com, akpm@linux-foundation.org,
-        beber@meleeweb.net, catalina.mocanu@gmail.com, dborkman@redhat.com,
-        edumazet@google.com, ebiederm@xmission.com, fabf@skynet.be,
-        fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
-        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
-        bfields@fieldses.org, jlayton@poochiereds.net,
-        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        mcgrof@suse.com, mattst88@gmail.com, mgorman@suse.de, mst@redhat.com,
-        miklos@szeredi.hu, netdev@vger.kernel.org, oleg@redhat.com,
-        Paul.Durrant@citrix.com, paulmck@linux.vnet.ibm.com,
-        pefoley2@pefoley.com, tgraf@suug.ch, therbert@google.com,
-        trond.myklebust@primarydata.com, willemb@google.com,
-        xiaoguangrong@linux.vnet.ibm.com, zhenglong.cai@cs2c.com.cn
-Subject: Re: [PATCH v4 0/7] kernel tinification: optionally compile out
- splice family of syscalls (splice, vmsplice, tee and sendfile)
-Message-ID: <20141125185310.GA24891@cloud>
-References: <1416870079-15254-1-git-send-email-pieter@boesman.nl>
- <5474ABB6.3030400@infradead.org>
- <20141125.121305.2094097848188324942.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141125.121305.2094097848188324942.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 25 Nov 2014 13:54:08 -0500
+From: Sonny Rao <sonnyrao@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>
+Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        dianders@chromium.org, olof@lixom.net,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kever Yang <kever.yang@rock-chips.com>, eddie.cai@rock-chips.com,
+        Sonny Rao <sonnyrao@chromium.org>
+Subject: [PATCH] ARM: dts: rk3288: add arm,cpu-registers-not-fw-configured
+Date: Tue, 25 Nov 2014 10:54:00 -0800
+Message-Id: <1416941640-324-1-git-send-email-sonnyrao@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 12:13:05PM -0500, David Miller wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
-> Date: Tue, 25 Nov 2014 08:17:58 -0800
-> 
-> > Is the splice family of syscalls the only one that tiny has identified
-> > for optional building or can we expect similar treatment for other
-> > syscalls?
-> > 
-> > Why will many embedded systems not need these syscalls?  You know
-> > exactly what apps they run and you are positive that those apps do
-> > not use splice?
-> 
-> I think starting to compile out system calls is a very slippery
-> slope we should not begin the journey down.
-> 
-> This changes the forward facing interface to userspace.
+This will enable use of physical arch timers on rk3288, where each
+core comes out of reset with a different virtual offset.  Using
+physical timers will help with SMP booting on coreboot and older
+u-boot and should also allow suspend-resume and cpu-hotplug to work on
+all firmwares.
 
-It's not a "slippery slope"; it's been our standard practice for ages.
-We started down that road long, long ago, when we first introduced
-Kconfig and optional/modular features.  /dev/* are user-facing
-interfaces, yet you can compile them out or make them modular.  /sys/*
-and/proc/* are user-facing interfaces, yet you can compile part or all
-of them out.  Filesystem names passed to mount are user-facing
-interfaces, yet you can compile them out.  (Not just things like ext4;
-think FUSE or overlayfs, which some applications will build upon and
-require.)  Some prctls are optional, new syscalls like BPF or inotify or
-process_vm_{read,write}v are optional, hardware interfaces are optional,
-control groups are optional, containers and namespaces are optional,
-checkpoint/restart is optional, KVM is optional, kprobes are optional,
-kmsg is optional, /dev/port is optional, ACL support is optional, USB
-support (as used by libusb) is optional, sound interfaces are optional,
-GPU interfaces are optional, even futexes are optional.
+Firmware which does initialize the cpu registers properly at boot and
+cpu-hotplug can remove this property from the device tree.
 
-For every single one of those, userspace programs or libraries may
-depend on that functionality, and summarily exit if it doesn't exist,
-perhaps with a warning that you need to enable options in your kernel,
-or perhaps with a simple "Function not implemented" or "No such file or
-directory".
+Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+---
+ arch/arm/boot/dts/rk3288.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
 
-Out of the entire list above and the many more where that came from,
-what makes syscalls unique?  What's wildly different between
-open("/dev/foo", ...) returning an error and sys_foo returning an error?
-What makes syscalls so special out of the entire list above?  We're not
-breaking the ability to run old userspace on a new kernel, which *must*
-be supported, and that includes not just syscalls but all user-facing
-interfaces; we don't break userspace.  But we've *never* guaranteed that
-you can run old userspace on a new *allnoconfig* kernel.
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index 0f50d5d..c861f52 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -139,6 +139,7 @@
+ 
+ 	timer {
+ 		compatible = "arm,armv7-timer";
++		arm,cpu-registers-not-fw-configured;
+ 		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
+ 			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
+ 			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
+-- 
+2.1.2
 
-All of these features will remain behind CONFIG_EXPERT, and all of them
-warn that you can only use them if your userspace can cope.
-
-I've actually been thinking of introducing a new CONFIG_ALL_SYSCALLS,
-under which all the "enable support for foo syscall" can live, rather
-than just piling all of them directly under CONFIG_EXPERT; that option
-would then repeat in very clear terms the warning that if you disable
-that option and then disable specific syscalls, you need to know exactly
-what your target userspace uses.  That would group together this whole
-family of options, and make it clearer what the implications are.
-
-- Josh Triplett
