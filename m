@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062AbaKYLlA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:41:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58400 "EHLO
+	id S1753166AbaKYKlZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:41:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58353 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168AbaKYKl1 (ORCPT
+	with ESMTP id S1753108AbaKYKlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:27 -0500
+	Tue, 25 Nov 2014 05:41:19 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
+Cc: Daniel Mack <daniel@zonque.org>, Mark Brown <broonie@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 081/254] mmc: don't request CD IRQ until mmc_start_host()
-Date: Tue, 25 Nov 2014 10:37:11 +0000
-Message-Id: <1416912004-5928-82-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 076/254] ASoC: soc-dapm: fix use after free
+Date: Tue, 25 Nov 2014 10:37:06 +0000
+Message-Id: <1416912004-5928-77-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -32,138 +27,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Daniel Mack <daniel@zonque.org>
 
-commit d4d11449088ee9aca16fd1884b852b8b73a4bda1 upstream.
+commit e5092c96c9c28f4d12811edcd02ca8eec16e748e upstream.
 
-As soon as the CD IRQ is requested, it can trigger, since it's an
-externally controlled event. If it does, delayed_work host->detect will
-be scheduled.
+Coverity spotted the following possible use-after-free condition in
+dapm_create_or_share_mixmux_kcontrol():
 
-Many host controller probe()s are roughly structured as:
+If kcontrol is NULL, and (wname_in_long_name && kcname_in_long_name)
+validates to true, 'name' will be set to an allocated string, and be
+freed a few lines later via the 'long_name' alias. 'name', however,
+is used by dev_err() in case snd_ctl_add() fails.
 
-*_probe() {
-    host = sdhci_pltfm_init();
-    mmc_of_parse(host->mmc);
-    rc = sdhci_add_host(host);
-    if (rc) {
-        sdhci_pltfm_free();
-        return rc;
-    }
+Fix this by adding a jump label that frees 'long_name' at the end of
+the function.
 
-In 3.17, CD IRQs can are enabled quite early via *_probe() ->
-mmc_of_parse() -> mmc_gpio_request_cd() -> mmc_gpiod_request_cd_irq().
-
-Note that in linux-next, mmc_of_parse() calls mmc_gpio*d*_request_cd()
-rather than mmc_gpio_request_cd(), and mmc_gpio*d*_request_cd() doesn't
-call mmc_gpiod_request_cd_irq(). However, this issue still exists if
-mmc_gpio_request_cd() is called directly before mmc_start_host().
-
-sdhci_add_host() may fail part way through (e.g. due to deferred
-probe for a vmmc regulator), and sdhci_pltfm_free() does nothing to
-unrequest the CD IRQ nor cancel the delayed_work. sdhci_pltfm_free() is
-coded to assume that if sdhci_add_host() failed, then the delayed_work
-cannot (or should not) have been triggered.
-
-This can lead to the following with CONFIG_DEBUG_OBJECTS_* enabled, when
-kfree(host) is eventually called inside sdhci_pltfm_free():
-
-WARNING: CPU: 2 PID: 6 at lib/debugobjects.c:263 debug_print_object+0x8c/0xb4()
-ODEBUG: free active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x18
-
-The object being complained about is host->detect.
-
-There's no need to request the CD IRQ so early; mmc_start_host() already
-requests it. For most SDHCI hosts at least, the typical call path that
-does this is: *_probe() -> sdhci_add_host() -> mmc_add_host() ->
-mmc_start_host(). Therefore, remove the call to mmc_gpiod_request_cd_irq()
-from mmc_gpio_request_cd(). This also matches mmc_gpio*d*_request_cd(),
-which already doesn't call mmc_gpiod_request_cd_irq().
-
-However, some host controller drivers call mmc_gpio_request_cd() after
-mmc_start_host() has already been called, and assume that this will also
-call mmc_gpiod_request_cd_irq(). Update those drivers to explicitly call
-mmc_gpiod_request_cd_irq() themselves. Ideally, these drivers should be
-modified to move their call to mmc_gpio_request_cd() before their call
-to mmc_add_host(). However that's too large a change for stable.
-
-This solves the problem (eliminates the kernel error message above),
-since it guarantees that the IRQ can't trigger before mmc_start_host()
-is called.
-
-The critical point here is that once sdhci_add_host() calls
-mmc_add_host() -> mmc_start_host(), sdhci_add_host() is coded not to
-fail. In other words, if there's a chance that mmc_start_host() may have
-been called, and CD IRQs triggered, and the delayed_work scheduled,
-sdhci_add_host() won't fail, and so cleanup is no longer via
-sdhci_pltfm_free() (which doesn't free the IRQ or cancel the work queue)
-but instead must be via sdhci_remove_host(), which calls mmc_remove_host()
--> mmc_stop_host(), which does free the IRQ and cancel the work queue.
-
-CC: Russell King <linux@arm.linux.org.uk>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Daniel Mack <daniel@zonque.org>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mmc/core/slot-gpio.c    | 2 --
- drivers/mmc/host/mmc_spi.c      | 1 +
- drivers/mmc/host/sdhci-sirf.c   | 1 +
- drivers/mmc/host/tmio_mmc_pio.c | 1 +
- 4 files changed, 3 insertions(+), 2 deletions(-)
+ sound/soc/soc-dapm.c | 25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
-index 5f89cb83d5f0..187f48a5795a 100644
---- a/drivers/mmc/core/slot-gpio.c
-+++ b/drivers/mmc/core/slot-gpio.c
-@@ -221,8 +221,6 @@ int mmc_gpio_request_cd(struct mmc_host *host, unsigned int gpio,
- 	ctx->override_cd_active_level = true;
- 	ctx->cd_gpio = gpio_to_desc(gpio);
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index cdc837ed144d..8065fd81b40c 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -566,9 +566,9 @@ static int dapm_create_or_share_mixmux_kcontrol(struct snd_soc_dapm_widget *w,
+ 	int shared;
+ 	struct snd_kcontrol *kcontrol;
+ 	bool wname_in_long_name, kcname_in_long_name;
+-	char *long_name;
++	char *long_name = NULL;
+ 	const char *name;
+-	int ret;
++	int ret = 0;
  
--	mmc_gpiod_request_cd_irq(host);
--
- 	return 0;
+ 	if (dapm->codec)
+ 		prefix = dapm->codec->name_prefix;
+@@ -631,15 +631,17 @@ static int dapm_create_or_share_mixmux_kcontrol(struct snd_soc_dapm_widget *w,
+ 
+ 		kcontrol = snd_soc_cnew(&w->kcontrol_news[kci], NULL, name,
+ 					prefix);
+-		kfree(long_name);
+-		if (!kcontrol)
+-			return -ENOMEM;
++		if (!kcontrol) {
++			ret = -ENOMEM;
++			goto exit_free;
++		}
++
+ 		kcontrol->private_free = dapm_kcontrol_free;
+ 
+ 		ret = dapm_kcontrol_data_alloc(w, kcontrol);
+ 		if (ret) {
+ 			snd_ctl_free_one(kcontrol);
+-			return ret;
++			goto exit_free;
+ 		}
+ 
+ 		ret = snd_ctl_add(card, kcontrol);
+@@ -647,17 +649,18 @@ static int dapm_create_or_share_mixmux_kcontrol(struct snd_soc_dapm_widget *w,
+ 			dev_err(dapm->dev,
+ 				"ASoC: failed to add widget %s dapm kcontrol %s: %d\n",
+ 				w->name, name, ret);
+-			return ret;
++			goto exit_free;
+ 		}
+ 	}
+ 
+ 	ret = dapm_kcontrol_add_widget(kcontrol, w);
+-	if (ret)
+-		return ret;
++	if (ret == 0)
++		w->kcontrols[kci] = kcontrol;
+ 
+-	w->kcontrols[kci] = kcontrol;
++exit_free:
++	kfree(long_name);
+ 
+-	return 0;
++	return ret;
  }
- EXPORT_SYMBOL(mmc_gpio_request_cd);
-diff --git a/drivers/mmc/host/mmc_spi.c b/drivers/mmc/host/mmc_spi.c
-index cc8d4a6099cd..e4a07546f8b6 100644
---- a/drivers/mmc/host/mmc_spi.c
-+++ b/drivers/mmc/host/mmc_spi.c
-@@ -1436,6 +1436,7 @@ static int mmc_spi_probe(struct spi_device *spi)
- 					     host->pdata->cd_debounce);
- 		if (status != 0)
- 			goto fail_add_host;
-+		mmc_gpiod_request_cd_irq(mmc);
- 	}
  
- 	if (host->pdata && host->pdata->flags & MMC_SPI_USE_RO_GPIO) {
-diff --git a/drivers/mmc/host/sdhci-sirf.c b/drivers/mmc/host/sdhci-sirf.c
-index 17004531d089..b6db259aea9e 100644
---- a/drivers/mmc/host/sdhci-sirf.c
-+++ b/drivers/mmc/host/sdhci-sirf.c
-@@ -94,6 +94,7 @@ static int sdhci_sirf_probe(struct platform_device *pdev)
- 				ret);
- 			goto err_request_cd;
- 		}
-+		mmc_gpiod_request_cd_irq(host->mmc);
- 	}
- 
- 	return 0;
-diff --git a/drivers/mmc/host/tmio_mmc_pio.c b/drivers/mmc/host/tmio_mmc_pio.c
-index faf0924e71cb..59d9a7249b2e 100644
---- a/drivers/mmc/host/tmio_mmc_pio.c
-+++ b/drivers/mmc/host/tmio_mmc_pio.c
-@@ -1103,6 +1103,7 @@ int tmio_mmc_host_probe(struct tmio_mmc_host **host,
- 			tmio_mmc_host_remove(_host);
- 			return ret;
- 		}
-+		mmc_gpiod_request_cd_irq(mmc);
- 	}
- 
- 	*host = _host;
+ /* create new dapm mixer control */
 -- 
 2.1.0
 
