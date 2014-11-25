@@ -1,63 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658AbaKYU13 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 15:27:29 -0500
-Received: from smtprelay0031.hostedemail.com ([216.40.44.31]:43113 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751343AbaKYU12 (ORCPT
+	id S1751919AbaKYU1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 15:27:41 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:51599 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750AbaKYU1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 15:27:28 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3872:3874:4321:5007:6261:7875:8957:10004:10400:10848:11232:11657:11658:11914:12043:12296:12517:12519:12660:12740:13069:13071:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sink74_23b804412c010
-X-Filterd-Recvd-Size: 2139
-Message-ID: <1416947244.8358.12.camel@perches.com>
-Subject: Re: [PATCH] staging: media: lirc: lirc_zilog.c: fix quoted strings
- split across lines
-From: Joe Perches <joe@perches.com>
-To: Luis de Bethencourt <luis@debethencourt.com>
-Cc: linux-kernel@vger.kernel.org, jarod@wilsonet.com, m.chehab@samsung.com,
-        gregkh@linuxfoundation.org, mahfouz.saif.elyazal@gmail.com,
-        dan.carpenter@oracle.com, tuomas.tynkkynen@iki.fi,
-        gulsah.1004@gmail.com, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Date: Tue, 25 Nov 2014 12:27:24 -0800
-In-Reply-To: <20141125201905.GA10900@biggie>
-References: <20141125201905.GA10900@biggie>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Nov 2014 15:27:37 -0500
+Date: Tue, 25 Nov 2014 04:25:26 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Linux PM list <linux-pm@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: Re: [PATCH v2 2/4] thermal: of: Extend of-thermal.c to provide check
+ if trip point is enabled
+Message-ID: <20141125082524.GA13924@developer>
+References: <1412872737-624-1-git-send-email-l.majewski@samsung.com>
+ <1416500488-7232-1-git-send-email-l.majewski@samsung.com>
+ <1416500488-7232-3-git-send-email-l.majewski@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
+Content-Disposition: inline
+In-Reply-To: <1416500488-7232-3-git-send-email-l.majewski@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-25 at 20:19 +0000, Luis de Bethencourt wrote:
-> checkpatch makes an exception to the 80-colum rule for quotes strings, and
-> Documentation/CodingStyle recommends not splitting quotes strings across lines
-> because it breaks the ability to grep for the string. Fixing these.
-[]
-> diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
-[]
-> @@ -794,8 +792,7 @@ static int fw_load(struct IR_tx *tx)
->  	if (!read_uint8(&data, tx_data->endp, &version))
->  		goto corrupt;
->  	if (version != 1) {
-> -		dev_err(tx->ir->l.dev, "unsupported code set file version (%u, expected"
-> -			    "1) -- please upgrade to a newer driver",
-> +		dev_err(tx->ir->l.dev, "unsupported code set file version (%u, expected1) -- please upgrade to a newer driver",
->  			    version);
 
-Hello Luis.
-
-Please look at the strings being coalesced before
-submitting patches.
-
-It's a fairly common defect to have either a missing
-space between the coalesced fragments or too many
-spaces.
-
-It's almost certain that there should be a space
-between the "expected" and "1" here.
+--HlL+5n6rz5pIUxbD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 
+Lukasz,
+
+Same stuff here.
+
+On Thu, Nov 20, 2014 at 05:21:26PM +0100, Lukasz Majewski wrote:
+> This patch extends the of-thermal.c to provide check if trip point is
+> enabled.
+>=20
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> ---
+> Changes for v2:
+> - Replace int with bool
+> - Replace 1/0 with true/false
+> - Add check if data pointer is not NULL
+> - Add missing doxygen style comment for the function
+> ---
+>  drivers/thermal/of-thermal.c   | 20 ++++++++++++++++++++
+>  drivers/thermal/thermal_core.h |  5 +++++
+>  2 files changed, 25 insertions(+)
+>=20
+> diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
+> index 7170822..336af7f 100644
+> --- a/drivers/thermal/of-thermal.c
+> +++ b/drivers/thermal/of-thermal.c
+> @@ -132,6 +132,26 @@ int of_thermal_get_ntrips(struct thermal_zone_device=
+ *tz)
+>  	return data->ntrips;
+>  }
+> =20
+> +/**
+> + * of_thermal_is_trip_en - function to check if trip point is enabled
+> + *
+> + * @tz:	pointer to a thermal zone
+> + * @trip:	trip point to evaluate
+> + *
+> + * This function is responsible for checking if passed trip point is ena=
+bled
+> + *
+> + * Return: true if trip point is enabled, false otherwise
+> + */
+> +bool of_thermal_is_trip_en(struct thermal_zone_device *tz, int trip)
+
+This one looks more like "is this trip point valid?" than "is this trip
+point enabled?", isn't it?
+
+By having such a function to check if a trip is enabled, one would
+expect to have functions to enable / disable trips points.
+
+What do you think of naming it:
+of_thermal_is_trip_valid()
+?
+
+> +{
+> +	struct __thermal_zone *data =3D tz->devdata;
+> +
+> +	if (!data || trip >=3D data->ntrips || trip < 0)
+
+Even your check is about looking if the trip value is within a range,
+telling the caller if the trip is valid or not, right?
+
+> +		return false;
+> +
+> +	return true;
+> +}
+> +
+
+Missing:
+EXPORT_SYMBOL_GPL(of_thermal_is_trip_en);
+
+or
+
+EXPORT_SYMBOL_GPL(of_thermal_is_trip_valid);
+
+>  static int of_thermal_get_trend(struct thermal_zone_device *tz, int trip,
+>  				enum thermal_trend *trend)
+>  {
+> diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_cor=
+e.h
+> index c3c7b82..466208c 100644
+> --- a/drivers/thermal/thermal_core.h
+> +++ b/drivers/thermal/thermal_core.h
+> @@ -90,6 +90,7 @@ static inline void thermal_gov_user_space_unregister(vo=
+id) {}
+>  int of_parse_thermal_zones(void);
+>  void of_thermal_destroy_zones(void);
+>  int of_thermal_get_ntrips(struct thermal_zone_device *);
+> +bool of_thermal_is_trip_en(struct thermal_zone_device *, int);
+>  #else
+>  static inline int of_parse_thermal_zones(void) { return 0; }
+>  static inline void of_thermal_destroy_zones(void) { }
+> @@ -97,6 +98,10 @@ static inline int of_thermal_get_ntrips(struct thermal=
+_zone_device *)
+>  {
+>  	return 0;
+>  }
+> +static inline bool of_thermal_is_trip_en(struct thermal_zone_device *, i=
+nt)
+
+Same as in patch 01, this produces compilation error. Please, name your
+parameters.
+
+> +{
+> +	return 0;
+> +}
+>  #endif
+> =20
+>  #endif /* __THERMAL_CORE_H__ */
+> --=20
+> 2.0.0.rc2
+>=20
+
+--HlL+5n6rz5pIUxbD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdDzoAAoJEMLUO4d9pOJW9XMIAJMR5IDoWHWkd41TW8BmEeyf
+QipUFbwkQ7g1vYBKEFmfkGfq8aOAoTlTsvSb1rHMs3TDXHv/TZGzn4rmXkk6JnrQ
+Le/L5ccT0IgnaXP62NzRp+D1qRnzeGd6mK5RdSv21q+ZCbSPlVOMpgX0hanLl4D4
+00vBuW7Fo1FSV485PpMkEoEByz9ClcKwDN6BOYKSJzdytJvQCCRoBoTsR2fUD48H
+6DoUjCyN66g4TOIZsvwm01EC77p+bD7h3JV++1buh05tp8CHiH0hVzeVvgAWHBR7
+923JgRdJ8XfiLJ95TNknSlrlAO6yHxwGgjYnE696a4+xzxPhderqaGirN6V/Tg4=
+=a3ci
+-----END PGP SIGNATURE-----
+
+--HlL+5n6rz5pIUxbD--
