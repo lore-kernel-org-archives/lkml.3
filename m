@@ -1,139 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645AbaKYQwx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:52:53 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:33643 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200AbaKYQwv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:52:51 -0500
-Date: Tue, 25 Nov 2014 16:52:43 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: "Tan, Raymond" <raymond.tan@intel.com>, mturquette@linaro.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen, Alvin" <alvin.chen@intel.com>,
-        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-Subject: Re: [PATCH v2 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000
- I2C-GPIO MFD Driver
-Message-ID: <20141125165243.GQ4241@x1>
-References: <1415713349-16065-1-git-send-email-raymond.tan@intel.com>
- <1415713349-16065-2-git-send-email-raymond.tan@intel.com>
- <20141118172156.GF13959@x1>
- <F0CA9E243F4F424B836EAC30E41BF4CF5C7989F2@PGSMSX104.gar.corp.intel.com>
- <20141125165105.GP4241@x1>
+	id S1751924AbaKYQmr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:42:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37612 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750926AbaKYQmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 11:42:45 -0500
+Date: Tue, 25 Nov 2014 18:42:28 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
+Subject: [PATCH v4 15/42] KVM: s390: virtio-ccw revision 1 SET_VQ
+Message-ID: <1416933600-21398-16-git-send-email-mst@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141125165105.GP4241@x1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1416933600-21398-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Crap!  Forgot to Cc Mike.
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
 
-Fingers faster than brain.
+The CCW_CMD_SET_VQ command has a different format for revision 1+
+devices, allowing to specify a more complex virtqueue layout. For
+now, we stay however with the old layout and simply use the new
+command format for virtio-1 devices.
 
-> Mike,
-> 
-> Something for you down below.
-> 
-> > > > In Quark X1000, there's a single PCI device that provides both an I2C
-> > > > controller and a GPIO controller. This MFD driver will split the 2
-> > > > devices for their respective drivers.
-> > > >
-> > > > This patch is based on Josef Ahmad's initial work for Quark enabling.
-> > > >
-> > > > Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > > > Signed-off-by: Weike Chen <alvin.chen@intel.com>
-> > > > Signed-off-by: Raymond Tan <raymond.tan@intel.com>
-> > > > ---
-> > > >  drivers/mfd/Kconfig                |   11 ++
-> > > >  drivers/mfd/Makefile               |    1 +
-> > > >  drivers/mfd/intel_quark_i2c_gpio.c |  298
-> > > > ++++++++++++++++++++++++++++++++++++
-> > > >  3 files changed, 310 insertions(+)
-> > > >  create mode 100644 drivers/mfd/intel_quark_i2c_gpio.c
-> 
-> [...]
-> 
-> > > > +	depends on COMMON_CLK
-> > > 
-> > > I don't think you should depend on this.  Just use the API and fail if it doesn't
-> > > find the clock you're after.
-> > 
-> > This was added to make sure the clk initialization and other clk related calls will work with the MFD.
-> 
-> [...]
-> 
-> > > > +struct clk *intel_quark_i2c_clk;
-> > > > +struct clk_lookup *intel_quark_i2c_clk_lookups;
-> > > 
-> > > Why do these need to be global?
-> > 
-> > I was trying to keep these as runtime allocated variables, and cleaned up with removal of the driver / upon error handling.
-> 
-> They still can be.  But they need to be in a struct somewhere and not
-> global.
-> 
-> [...]
-> 
-> > > > +static int intel_quark_register_i2c_clk(struct pci_dev *pdev) {
-> > > > +	intel_quark_i2c_clk_lookups = devm_kcalloc(
-> > > > +
-> > > > +		&pdev->dev, INTEL_QUARK_I2C_NCLK,
-> > > > +		sizeof(*intel_quark_i2c_clk_lookups), GFP_KERNEL);
-> > > > +
-> > > > +	if (!intel_quark_i2c_clk_lookups)
-> > > > +		return -ENOMEM;
-> > > > +
-> > > > +	intel_quark_i2c_clk_lookups[0].dev_id =
-> > > > +INTEL_QUARK_I2C_CONTROLLER_CLK;
-> > > > +
-> > > > +	intel_quark_i2c_clk = clk_register_fixed_rate(
-> > > > +		&pdev->dev, INTEL_QUARK_I2C_CONTROLLER_CLK, NULL,
-> > > > +		CLK_IS_ROOT, INTEL_QUARK_I2C_CLK_HZ);
-> > > > +
-> > > > +	return clk_register_clkdevs(intel_quark_i2c_clk,
-> > > > +		intel_quark_i2c_clk_lookups, INTEL_QUARK_I2C_NCLK);
-> > > 
-> > > We don't normally register clks from MFD.  Normally they are registered in
-> > > drivers/clk and fetched when a device requires them.
-> > > Why is this different?
-> > 
-> > This is a static clk and on this platform, there's no clk hardware
-> > to have the clk driver to initialize this and add into the global
-> > struct for use
-> > later by i2c controller. The hardware on the platform itself is
-> > same, and the current driver (i2c_designware_platform) requires the
-> > clk 
-> > for its operation. Due to this, I decided to have the clk initialize
-> > in the MFD before the device being added, which later will trigger
-> > the probe on the i2c controller driver. 
-> 
-> Mike,
-> 
-> Can I get your input on this please?
-> 
-> [...]
-> 
-> > > > +	pdata = intel_quark_get_i2c_mode(pdev);
-> > > > +	if (IS_ERR(pdata))
-> > > > +		return PTR_ERR(pdata);
-> > > 
-> > > Bring this functionality into here?
-> > 
-> > Were you referring the contents of intel_quark_get_i2c_mode(), and avoid the additional function call instead?
-> 
-> Right.  Please rid intel_quark_get_i2c_mode().
-> 
-> [...]
-> 
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/s390/kvm/virtio_ccw.c | 54 +++++++++++++++++++++++++++++++++----------
+ 1 file changed, 42 insertions(+), 12 deletions(-)
 
+diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+index 68709fa..9330065 100644
+--- a/drivers/s390/kvm/virtio_ccw.c
++++ b/drivers/s390/kvm/virtio_ccw.c
+@@ -68,13 +68,22 @@ struct virtio_ccw_device {
+ 	void *airq_info;
+ };
+ 
+-struct vq_info_block {
++struct vq_info_block_legacy {
+ 	__u64 queue;
+ 	__u32 align;
+ 	__u16 index;
+ 	__u16 num;
+ } __packed;
+ 
++struct vq_info_block {
++	__u64 desc;
++	__u32 res0;
++	__u16 index;
++	__u16 num;
++	__u64 avail;
++	__u64 used;
++} __packed;
++
+ struct virtio_feature_desc {
+ 	__u32 features;
+ 	__u8 index;
+@@ -100,7 +109,10 @@ struct virtio_ccw_vq_info {
+ 	struct virtqueue *vq;
+ 	int num;
+ 	void *queue;
+-	struct vq_info_block *info_block;
++	union {
++		struct vq_info_block s;
++		struct vq_info_block_legacy l;
++	} *info_block;
+ 	int bit_nr;
+ 	struct list_head node;
+ 	long cookie;
+@@ -411,13 +423,22 @@ static void virtio_ccw_del_vq(struct virtqueue *vq, struct ccw1 *ccw)
+ 	spin_unlock_irqrestore(&vcdev->lock, flags);
+ 
+ 	/* Release from host. */
+-	info->info_block->queue = 0;
+-	info->info_block->align = 0;
+-	info->info_block->index = index;
+-	info->info_block->num = 0;
++	if (vcdev->revision == 0) {
++		info->info_block->l.queue = 0;
++		info->info_block->l.align = 0;
++		info->info_block->l.index = index;
++		info->info_block->l.num = 0;
++		ccw->count = sizeof(info->info_block->l);
++	} else {
++		info->info_block->s.desc = 0;
++		info->info_block->s.index = index;
++		info->info_block->s.num = 0;
++		info->info_block->s.avail = 0;
++		info->info_block->s.used = 0;
++		ccw->count = sizeof(info->info_block->s);
++	}
+ 	ccw->cmd_code = CCW_CMD_SET_VQ;
+ 	ccw->flags = 0;
+-	ccw->count = sizeof(*info->info_block);
+ 	ccw->cda = (__u32)(unsigned long)(info->info_block);
+ 	ret = ccw_io_helper(vcdev, ccw,
+ 			    VIRTIO_CCW_DOING_SET_VQ | index);
+@@ -500,13 +521,22 @@ static struct virtqueue *virtio_ccw_setup_vq(struct virtio_device *vdev,
+ 	}
+ 
+ 	/* Register it with the host. */
+-	info->info_block->queue = (__u64)info->queue;
+-	info->info_block->align = KVM_VIRTIO_CCW_RING_ALIGN;
+-	info->info_block->index = i;
+-	info->info_block->num = info->num;
++	if (vcdev->revision == 0) {
++		info->info_block->l.queue = (__u64)info->queue;
++		info->info_block->l.align = KVM_VIRTIO_CCW_RING_ALIGN;
++		info->info_block->l.index = i;
++		info->info_block->l.num = info->num;
++		ccw->count = sizeof(info->info_block->l);
++	} else {
++		info->info_block->s.desc = (__u64)info->queue;
++		info->info_block->s.index = i;
++		info->info_block->s.num = info->num;
++		info->info_block->s.avail = (__u64)virtqueue_get_avail(vq);
++		info->info_block->s.used = (__u64)virtqueue_get_used(vq);
++		ccw->count = sizeof(info->info_block->s);
++	}
+ 	ccw->cmd_code = CCW_CMD_SET_VQ;
+ 	ccw->flags = 0;
+-	ccw->count = sizeof(*info->info_block);
+ 	ccw->cda = (__u32)(unsigned long)(info->info_block);
+ 	err = ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_SET_VQ | i);
+ 	if (err) {
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+MST
+
