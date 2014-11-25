@@ -1,82 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915AbaKYASm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 19:18:42 -0500
-Received: from mga02.intel.com ([134.134.136.20]:44575 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751206AbaKYASj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 19:18:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,451,1413270000"; 
-   d="scan'208";a="642900749"
-Message-ID: <5473CADA.6040307@linux.intel.com>
-Date: Tue, 25 Nov 2014 08:18:34 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Lan Tianyu <tianyu.lan@intel.com>, lenb@kernel.org, wsa@the-dreams.de,
-        robert.moore@intel.com, lv.zheng@intel.com, shigorin@gmail.com,
-        adamw@happyassassin.net, jan.brummer@tabos.org,
-        mika.westerberg@linux.intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devel@acpica.org
-Subject: Re: [PATCH V3] ACPI: Add _DEP(Operation Region Dependencies) support
- to fix battery issue on the Asus T100TA
-References: <1416748974-24124-1-git-send-email-tianyu.lan@intel.com> <54729A7B.4050007@linux.intel.com> <1720074.U59stZW2tQ@vostro.rjw.lan>
-In-Reply-To: <1720074.U59stZW2tQ@vostro.rjw.lan>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1751816AbaKYASM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 19:18:12 -0500
+Received: from mail-ig0-f202.google.com ([209.85.213.202]:59897 "EHLO
+	mail-ig0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644AbaKYARq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 19:17:46 -0500
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH V6 12/12] ARM: tegra: venice2: Add xHCI support
+Date: Mon, 24 Nov 2014 16:17:24 -0800
+Message-Id: <1416874644-12070-13-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1416874644-12070-1-git-send-email-abrestic@chromium.org>
+References: <1416874644-12070-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/24 23:27, Rafael J. Wysocki wrote:
-> On Monday, November 24, 2014 10:39:55 AM Li, Aubrey wrote:
->> On 2014/11/23 21:22, Lan Tianyu wrote:
->>> ACPI 5.0 introduces _DEP to designate device objects that OSPM should
->>> assign a higher priority in start ordering due to future operation region
->>> accesses.
->>>
->>> On Asus T100TA, ACPI battery info are read from a I2C slave device via
->>> I2C operation region. Before I2C operation region handler is installed,
->>> battery _STA always returns 0. There is a _DEP method of designating
->>> start order under battery device node.
->>>
->>> This patch is to implement _DEP feature to fix battery issue on the Asus T100TA.
->>> Introducing acpi_dep_list and adding dep_unmet count in the struct
->>> acpi_device. During ACPI namespace scan, create struct acpi_dep_data for a
->>> valid pair of master (device pointed to by _DEP)/slave(device with _DEP), record
->>> master's and slave's ACPI handle in it and put it into acpi_dep_list. The dep_unmet
->>> count will increase by one if there is a device under its _DEP. Driver's probe() should
->>> return EPROBE_DEFER when find dep_unmet is larger than 0. When I2C operation
->>> region handler is installed, remove all struct acpi_dep_data on the acpi_dep_list
->>> whose master is pointed to I2C host controller and decrease slave's dep_unmet.
->>> When dep_unmet decreases to 0, all _DEP conditions are met and then do acpi_bus_attach()
->>> for the device in order to resolve battery _STA issue on the Asus T100TA.
->>
->> Well, Can we explicitly tied this up with ASUS T100TA in the code?
->> If I understand correctly, the assumption in the patch is that the
->> battery device only depends on I2C device, which is true on ASUS T100TA,
->> but may not on the other platforms.
->>
->> This patch does not work on a box I have, on it _DEP contains I2C and GPIO.
-> 
-> Does the patch break anything for you?
+Assign ports previously owned by the EHCI controllers to the xHCI
+controller.  There are two external USB ports (UTMI ports 0/2 and
+USB3 ports 0/1) and an internal USB port (UTMI port 1).  PCIe lanes
+0 and 1 are used by the USB3 ports.
 
-Not I'm aware so far.
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+---
+No changes from v5.
+Changes from v4:
+ - Updated regulator and pinconfig properties.
+No changes from v3.
+Changes from v2:
+ - Updated VBUS power supply names.
+Changes from v1:
+ - Updated USB power supplies.
+---
+ arch/arm/boot/dts/tegra124-venice2.dts | 79 ++++++++++++++++++++++------------
+ 1 file changed, 51 insertions(+), 28 deletions(-)
 
-> 
->> Device (BATC)
->>         {
->>             Name (_HID, EisaId ("PNP0C0A"))  // _HID: Hardware ID
->> --------snip--------
->>             Name (_DEP, Package (0x03)  // _DEP: Dependencies
->>             {
->>                 I2C1,
->>                 GPO2,
->>                 GPO0
->>             })
->>
-> 
+diff --git a/arch/arm/boot/dts/tegra124-venice2.dts b/arch/arm/boot/dts/tegra124-venice2.dts
+index 5c3f781..abe59f7 100644
+--- a/arch/arm/boot/dts/tegra124-venice2.dts
++++ b/arch/arm/boot/dts/tegra124-venice2.dts
+@@ -745,7 +745,7 @@
+ 					regulator-always-on;
+ 				};
+ 
+-				ldo0 {
++				avdd_1v05_run: ldo0 {
+ 					regulator-name = "+1.05V_RUN_AVDD";
+ 					regulator-min-microvolt = <1050000>;
+ 					regulator-max-microvolt = <1050000>;
+@@ -887,6 +887,56 @@
+ 		status = "okay";
+ 	};
+ 
++	usb@0,70090000 {
++		status = "okay";
++		phys = <&padctl TEGRA_XUSB_PADCTL_UTMI_P0>, /* 1st USB A */
++		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P1>, /* Internal USB */
++		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P2>, /* 2nd USB A */
++		       <&padctl TEGRA_XUSB_PADCTL_USB3_P0>, /* 1st USB A */
++		       <&padctl TEGRA_XUSB_PADCTL_USB3_P1>; /* 2nd USB A */
++		phy-names = "utmi-0", "utmi-1", "utmi-2", "usb3-0", "usb3-1";
++		avddio-pex-supply = <&vdd_1v05_run>;
++		dvddio-pex-supply = <&vdd_1v05_run>;
++		avdd-usb-supply = <&vdd_3v3_lp0>;
++		avdd-pll-utmip-supply = <&vddio_1v8>;
++		avdd-pll-erefe-supply = <&avdd_1v05_run>;
++		avdd-usb-ss-pll-supply = <&vdd_1v05_run>;
++		hvdd-usb-ss-supply = <&vdd_3v3_lp0>;
++		hvdd-usb-ss-pll-e-supply = <&vdd_3v3_lp0>;
++	};
++
++	padctl@0,7009f000 {
++		pinctrl-0 = <&padctl_default>;
++		pinctrl-names = "default";
++
++		vbus-0-supply = <&vdd_usb1_vbus>;
++		vbus-1-supply = <&vdd_run_cam>;
++		vbus-2-supply = <&vdd_usb3_vbus>;
++
++		padctl_default: pinmux {
++			otg {
++				nvidia,lanes = "otg-0", "otg-1", "otg-2";
++				nvidia,function = "xusb";
++			};
++
++			usb3p0 {
++				nvidia,lanes = "pcie-0";
++				nvidia,function = "usb3";
++				nvidia,iddq = <0>;
++				nvidia,usb2-port = <0>;
++				nvidia,usb3-port = <0>;
++			};
++
++			usb3p1 {
++				nvidia,lanes = "pcie-1";
++				nvidia,function = "usb3";
++				nvidia,iddq = <0>;
++				nvidia,usb2-port = <2>;
++				nvidia,usb3-port = <1>;
++			};
++		};
++	};
++
+ 	sdhci@0,700b0400 {
+ 		cd-gpios = <&gpio TEGRA_GPIO(V, 2) GPIO_ACTIVE_HIGH>;
+ 		power-gpios = <&gpio TEGRA_GPIO(R, 0) GPIO_ACTIVE_HIGH>;
+@@ -907,33 +957,6 @@
+ 		};
+ 	};
+ 
+-	usb@0,7d000000 {
+-		status = "okay";
+-	};
+-
+-	usb-phy@0,7d000000 {
+-		status = "okay";
+-		vbus-supply = <&vdd_usb1_vbus>;
+-	};
+-
+-	usb@0,7d004000 {
+-		status = "okay";
+-	};
+-
+-	usb-phy@0,7d004000 {
+-		status = "okay";
+-		vbus-supply = <&vdd_run_cam>;
+-	};
+-
+-	usb@0,7d008000 {
+-		status = "okay";
+-	};
+-
+-	usb-phy@0,7d008000 {
+-		status = "okay";
+-		vbus-supply = <&vdd_usb3_vbus>;
+-	};
+-
+ 	backlight: backlight {
+ 		compatible = "pwm-backlight";
+ 
+-- 
+2.1.0.rc2.206.gedb03e5
 
