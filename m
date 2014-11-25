@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561AbaKYT0H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 14:26:07 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46891 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaKYT0B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 14:26:01 -0500
-Message-ID: <5474D86E.6020608@oracle.com>
-Date: Tue, 25 Nov 2014 14:28:46 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751681AbaKYT0S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 14:26:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51572 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751467AbaKYT0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 14:26:15 -0500
+Date: Tue, 25 Nov 2014 20:26:22 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Seth Jennings <sjenning@redhat.com>
+cc: Josh Poimboeuf <jpoimboe@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 0/3] Kernel Live Patching
+In-Reply-To: <1416935709-404-1-git-send-email-sjenning@redhat.com>
+Message-ID: <alpine.LNX.2.00.1411252017010.23174@pobox.suse.cz>
+References: <1416935709-404-1-git-send-email-sjenning@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Borislav Petkov <bp@suse.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Richard Hendershot <rshendershot@mchsi.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [PATCH 3.17 100/141] x86, microcode: Fix accessing dis_ucode_ldr
- on 32-bit
-References: <20141119205150.700188369@linuxfoundation.org> <20141119205153.916605840@linuxfoundation.org> <5474C67A.7040200@oracle.com> <20141125182410.GB4128@pd.tnic> <5474CDCE.6040000@oracle.com> <20141125184351.GC4128@pd.tnic> <5474D0A1.2020600@oracle.com> <20141125190849.GF4128@pd.tnic>
-In-Reply-To: <20141125190849.GF4128@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2014 02:08 PM, Borislav Petkov wrote:
-> On Tue, Nov 25, 2014 at 01:55:29PM -0500, Boris Ostrovsky wrote:
->> On 11/25/2014 01:43 PM, Borislav Petkov wrote:
->>> On Tue, Nov 25, 2014 at 01:43:26PM -0500, Boris Ostrovsky wrote:
->>>> I don't think this routine is called on PV.
->>> They're either both called or none is. At least on baremetal, that is.
->>>
->> PV guests don't start with startup_32.
->>
->> We are coming from a resume into load_ucode_ap as:
-> Btw, why is this thing even running on xen? I'd like to make
-> CONFIG_MICROCODE depend on !PARAVIRT and be done with it.
+On Tue, 25 Nov 2014, Seth Jennings wrote:
 
-You'd have to decide at runtime --- many baremetal systems are compiled 
-with PARAVIRT.
+> Masami's IPMODIFY patch is heading for -next via your tree.  Once it arrives,
+> I'll rebase and make the change to set IPMODIFY.  Do not pull this for -next
+> yet.  This version (v4) is for review and gathering acks.
 
--boris
+Thanks for sending out v4 and incorporating the feedback, I really 
+appreciate your responsiveness!
 
+Anyway, I don't think targetting 3.19 is realistic, given we're currently 
+already past 3.18-rc6 ... even if we rush it into -next in the coming 
+days, it will get close to zero exposure in there before the merge window 
+opens.
+
+I'd like to do quite some more testing and still finish some pending 
+portions of code reviews on our side (especially to make sure that this 
+can be easily extended to support any consistency model in the future).
+
+Once we start collecting Reviewed-by's / Acked-by's on this patchset, I 
+can establish a tree on git.kernel.org that we can use to collect any 
+followup patches during 3.20 development cycle and send a pull request to 
+Linus during 3.20 merge window .. if everybody agrees with this course of 
+action, obviously.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
