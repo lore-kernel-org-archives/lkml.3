@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750887AbaKYQRy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:17:54 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:30163 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaKYQRw (ORCPT
+	id S1751108AbaKYQUE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:20:04 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:63141 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002AbaKYQUB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:17:52 -0500
-Date: Tue, 25 Nov 2014 11:17:39 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: david.vrabel@citrix.com, stefano.stabellini@eu.citrix.com,
-        jun.nakajima@intel.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xen.org
-Subject: Re: [PATCH v3 0/2] xen/pci: Use APIC for MSIs when APIC
- virtualization is supported
-Message-ID: <20141125161738.GB30673@konrad-lan.dumpdata.com>
-References: <1416870378-32481-1-git-send-email-boris.ostrovsky@oracle.com>
+	Tue, 25 Nov 2014 11:20:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416870378-32481-1-git-send-email-boris.ostrovsky@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <1416931805-23223-3-git-send-email-alex.bennee@linaro.org>
+References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org> <1416931805-23223-3-git-send-email-alex.bennee@linaro.org>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Tue, 25 Nov 2014 16:19:39 +0000
+Message-ID: <CAFEAcA9P6aX+mh3rEMy=Z7SKF=kRrxgYefLwFcrk806QQpwiuQ@mail.gmail.com>
+Subject: Re: [PATCH 2/7] KVM: arm: guest debug, define API headers
+To: =?UTF-8?B?QWxleCBCZW5uw6ll?= <alex.bennee@linaro.org>
+Cc: kvm-devel <kvm@vger.kernel.org>,
+        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Alexander Graf <agraf@suse.de>,
+        "J. Kiszka" <jan.kiszka@siemens.com>,
+        David Hildenbrand <dahi@linux.vnet.ibm.com>,
+        Bharat Bhushan <r65777@freescale.com>, bp@suse.de,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 06:06:16PM -0500, Boris Ostrovsky wrote:
-> Changes in v3:
-> * Explicitly include asm/apic.h in arch/x86/pci/xen.c for !CONFIG_SMP.
-> 
-> Changes in v2:
-> * New version of cpuid.h file from Xen tree (with a couple of style adjustments)
-> * Whitespace cleanup
-> 
-> Currently HVM guests handle MSI interrupts using pirqs/event channels, allowing
-> us to not issue APIC accesses that result in somewhat expensive VMEXITs. When
-> hardware supports APIC virtualization we don't need to use pirqs anymore
-> since now guest's APIC accesses can be handled by the processor itself.
-> 
-> There are two patches in this series:
-> 
-> 1. Move setting of x86_msi ops to a later point. The reason for doing so is that
-> we currently decide whether or not to use pirqs before kernel had a chance to
-> see whether it should be using x2APIC instead of plain APIC. Since hardware may
-> virtualize either or both of those two we can only make pirqs vs. APIC selection
-> after kernel has settled down on which APIC version it will use. (Note that
-> currently x2APIC is not used by HVM guests so technically this patch is not
-> necessary. However, it probably makes sense to apply it now to avoid
-> forgetting to do it when we enable x2APIC).
-> 
-> 2. Set x86_msi ops to use pirqs only when APIC virtualization is not available.
-> The commit message describes performance improvements that this change brings.
+On 25 November 2014 at 16:10, Alex Bennée <alex.bennee@linaro.org> wrote:
+> +/* Exit types which define why we did a debug exit */
+> +#define KVM_DEBUG_EXIT_ERROR           0x0
+> +#define KVM_DEBUG_EXIT_SINGLE_STEP     0x1
+> +#define KVM_DEBUG_EXIT_SW_BKPT         0x2
+> +#define KVM_DEBUG_EXIT_HW_BKPT         0x3
+> +#define KVM_DEBUG_EXIT_HW_WTPT         0x4
 
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> Boris Ostrovsky (2):
->   xen/pci: Defer initialization of MSI ops on HVM guests until after
->     x2APIC has been set up
->   xen/pci: Use APIC directly when APIC virtualization is supported by
->     hardware
-> 
->  arch/x86/include/asm/xen/cpuid.h | 91 ++++++++++++++++++++++++++++++++++++++++
->  arch/x86/pci/xen.c               | 25 ++++++++++-
->  2 files changed, 114 insertions(+), 2 deletions(-)
->  create mode 100644 arch/x86/include/asm/xen/cpuid.h
-> 
-> -- 
-> 1.9.3
-> 
+The names of these imply that they're generic, but they're
+defined in an arch-specific header file...
+
+-- PMM
